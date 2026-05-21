@@ -287,15 +287,60 @@ export class AuthService {
   }
 
   /**
-   * 401 path: token expired, refresh failed, or the server kicked us out.
-   * Clear local state without redirecting to the IdP's end-session endpoint
-   * (the session is already dead server-side), then navigate to /login where
-   * the auto-redirect to /oauth2/authorize takes over.
+   * Attempt a refresh_token grant if a refresh token is present. Returns true
+   * iff the OAuth library now reports a valid access token. The interceptor
+   * uses this on 401-with-Bearer to replay the failing request once before
+   * deciding to bounce the user back to /login.
+   *
+   * Resolves false (rather than rejecting) on any failure — the caller wants
+   * a boolean decision, not exception plumbing.
+   */
+  async refreshAccessToken(): Promise<boolean> {
+    if (!this.oauth.getRefreshToken()) return false;
+    try {
+      await this.oauth.refreshToken();
+      return this.oauth.hasValidAccessToken();
+    } catch (err) {
+      console.warn('[oauth] refreshToken failed:', err);
+      return false;
+    }
+  }
+
+  /**
+   * Wire the library's timer-based proactive refresh. Schedules a refresh
+   * before the access_token expiry, using the refresh_token grant when one is
+   * present (Keycloak with offline_access scope) and falling back to the
+   * iframe / prompt=none flow otherwise. Idempotent — safe to call from the
+   * app initializer after every page load.
+   */
+  enableAutomaticSilentRefresh(): void {
+    this.oauth.setupAutomaticSilentRefresh({}, 'access_token');
+  }
+
+  /**
+   * 401 path WITHOUT a Bearer attached — the user wasn't logged in yet
+   * (or local state was already cleared). Clear and route to /login
+   * silently; auto-redirect to /oauth2/authorize takes over there.
    */
   handleUnauthenticated(): void {
     localStorage.removeItem(AuthService.ACTIVE_PROVIDER_KEY);
     this.oauth.logOut(true);
     this.router.navigateByUrl('/login');
+  }
+
+  /**
+   * 401 path WITH a Bearer attached — the server actively rejected our
+   * credentials (resolver failure, account disabled, etc.). Same teardown
+   * as {@link handleUnauthenticated}, but ALSO bumps the {@code
+   * oauthFailures} counter that {@link LoginComponent} reads to suppress
+   * its auto-fire behavior. Without this, /login would silently restart
+   * the OAuth flow via the still-living IdP cookie and land us right back
+   * at the same rejected resource — an infinite loop.
+   */
+  handleAuthRejection(): void {
+    const prev = Number(sessionStorage.getItem('oauthFailures') ?? '0');
+    sessionStorage.setItem('oauthFailures', String(prev + 1));
+    this.handleUnauthenticated();
   }
 
   /**

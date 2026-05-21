@@ -3,6 +3,7 @@ package org.rapla.server.spring;
 import jakarta.servlet.http.HttpServletRequest;
 import org.rapla.entities.User;
 import org.rapla.entities.storage.ReferenceInfo;
+import org.rapla.framework.RaplaException;
 import org.rapla.logger.Logger;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.spring.oauth.external.ExternalProvidersProperties;
@@ -58,10 +59,17 @@ public class SpringSecurityRemoteSession implements RemoteSession
     @Override
     public User checkAndGetUser(HttpServletRequest request) throws RaplaSecurityException
     {
-        User user = jwtUser();
-        if (user != null)
+        // When Spring Security holds a JWT for this request, the JWT path is
+        // authoritative. A resolver failure (e.g. external IdP user can't be
+        // mapped to a rapla account) propagates as a RaplaSecurityException
+        // carrying the actual reason — falling back to the legacy session
+        // path here would swap the meaningful message for the generic
+        // "No user found in session." that the legacy path emits when no
+        // header/cookie token is present.
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth instanceof JwtAuthenticationToken jwtAuth)
         {
-            return user;
+            return resolveJwtOrThrow(jwtAuth.getToken());
         }
         return fallback.checkAndGetUser(request);
     }
@@ -69,7 +77,19 @@ public class SpringSecurityRemoteSession implements RemoteSession
     @Override
     public boolean isAuthentified(HttpServletRequest request)
     {
-        return jwtUser() != null || fallback.isAuthentified(request);
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth instanceof JwtAuthenticationToken jwtAuth)
+        {
+            try
+            {
+                return resolveJwtOrThrow(jwtAuth.getToken()) != null;
+            }
+            catch (RaplaSecurityException ex)
+            {
+                return false;
+            }
+        }
+        return fallback.isAuthentified(request);
     }
 
     @Override
@@ -86,15 +106,14 @@ public class SpringSecurityRemoteSession implements RemoteSession
         fallback.logout();
     }
 
-    private User jwtUser()
+    /**
+     * Resolve the JWT to a rapla User, or throw a {@link RaplaSecurityException}
+     * whose message names the actual reason (e.g. "name already taken",
+     * "auto-provision is disabled"). Callers receive the concrete failure
+     * cause instead of a generic 401 message.
+     */
+    private User resolveJwtOrThrow(Jwt jwt) throws RaplaSecurityException
     {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (!(auth instanceof JwtAuthenticationToken jwtAuth))
-        {
-            return null;
-        }
-        Jwt jwt = jwtAuth.getToken();
-
         // External-issuer dispatch (PRD 036). If `iss` matches an enabled
         // external provider, the JWT's claims describe an external identity
         // that must be mapped to a rapla User via ExternalUserResolver — the
@@ -109,10 +128,15 @@ public class SpringSecurityRemoteSession implements RemoteSession
                 {
                     return externalUserResolver.resolve(jwt, provider);
                 }
-                catch (Exception ex)
+                catch (RaplaSecurityException ex)
                 {
                     logger.warn("External JWT (iss=" + issuer + ") could not be resolved to a Rapla user: " + ex.getMessage());
-                    return null;
+                    throw ex;
+                }
+                catch (RaplaException ex)
+                {
+                    logger.warn("External JWT (iss=" + issuer + ") could not be resolved to a Rapla user: " + ex.getMessage());
+                    throw new RaplaSecurityException(ex.getMessage(), ex);
                 }
             }
         }
@@ -120,16 +144,17 @@ public class SpringSecurityRemoteSession implements RemoteSession
         String subject = jwt.getSubject();
         if (subject == null)
         {
-            return null;
+            throw new RaplaSecurityException("JWT has no subject and no matching external provider for issuer "
+                    + jwt.getClaimAsString("iss"));
         }
         try
         {
             return operator.resolve(new ReferenceInfo<>(subject, User.class));
         }
-        catch (Exception ex)
+        catch (RaplaException ex)
         {
             logger.warn("JWT subject " + subject + " could not be resolved to a Rapla user: " + ex.getMessage());
-            return null;
+            throw new RaplaSecurityException("JWT subject '" + subject + "' could not be resolved: " + ex.getMessage(), ex);
         }
     }
 }

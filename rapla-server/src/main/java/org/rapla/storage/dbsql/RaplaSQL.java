@@ -909,7 +909,18 @@ class LockStorage extends AbstractTableStorage
             while (result.next())
             {
                 java.sql.Timestamp now = result.getTimestamp(1);
-                return now.toLocalDateTime();
+                // UTC-semantic LDT, consistent with getDatabaseTimestamp() above and
+                // getTimestampOrNow() in AbstractTableStorage. Timestamp.toLocalDateTime()
+                // would re-interpret the epoch millis in the JVM's default timezone,
+                // producing an LDT that's offset by the local UTC offset — when that LDT
+                // is later round-tripped through DateTools.toMilli() (which treats LDTs
+                // as UTC) the boundary millis come out shifted by hours, and PreferenceStorage's
+                // "WHERE LAST_CHANGED > ?" readback in DBOperator.dispatch never sees
+                // the patches it just wrote. Fallout: patches issued via
+                // facade.store(prefsEdit) get persisted to the PREFERENCE row but never
+                // applied to the in-memory cache — most visibly, RefreshSessionService's
+                // SESSION pref vanishes immediately after persistSession() on DB-backed stores.
+                return LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(now.getTime()), java.time.ZoneOffset.UTC);
             }
         }
         catch (Exception e)

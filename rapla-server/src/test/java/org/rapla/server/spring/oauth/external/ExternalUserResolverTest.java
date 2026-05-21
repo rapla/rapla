@@ -3,8 +3,6 @@ package org.rapla.server.spring.oauth.external;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.rapla.entities.User;
-import org.rapla.entities.configuration.Preferences;
-import org.rapla.framework.TypedComponentRole;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.test.util.FacadeTestSupport;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -12,14 +10,28 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/**
+ * Identity model: username is the rapla user identity. The resolver maps an
+ * external OIDC token to a rapla user by matching the token's username claims
+ * (upn → preferred_username → email) case-insensitively against
+ * {@code user.getUsername()}. No external-id preference, no active-provider
+ * preference — both removed 2026-05-21 because they (a) made first-login
+ * fragile (the import-from-CSV / hand-created rapla user has no pref and the
+ * stored email often disagreed with the IdP's email claim), and (b) silently
+ * broke when an IdP rotated realms (the stored sub becomes meaningless;
+ * username remains valid).
+ *
+ * <p>Tradeoff documented: an IdP-side username rename produces an orphaned
+ * rapla user + a new auto-provisioned one. Same operator burden as the legacy
+ * LDAP path — admin renames the rapla user manually.
+ */
 class ExternalUserResolverTest extends FacadeTestSupport
 {
     private ExternalUserResolver resolver;
@@ -30,50 +42,83 @@ class ExternalUserResolverTest extends FacadeTestSupport
     void setUp()
     {
         resolver = new ExternalUserResolver(facade, logger);
-        // Tests deliberately default to autoProvision=false to exercise the
-        // pre-provisioned / email-match paths in isolation; auto-provision-on
-        // tests build their own providerConfig.
-        microsoft = providerConfig(ExternalProviderId.MICROSOFT, "oid", "email", false, "");
-        google = providerConfig(ExternalProviderId.GOOGLE, "sub", "email", false, "");
+        // Defaults to autoProvision=false so each test opts in deliberately.
+        microsoft = providerConfig(ExternalProviderId.MICROSOFT, "email", false, "");
+        google = providerConfig(ExternalProviderId.GOOGLE, "email", false, "");
     }
 
     @Test
-    void resolvesByExternalIdPreferenceWhenSet() throws Exception
+    void resolvesByExactUsernameMatch() throws Exception
     {
         User existing = pickAnyExistingUser();
-        attachExternalIdPreference(existing, microsoft.externalIdPreferenceKey(), "entra-oid-abc");
 
-        Jwt jwt = entraJwt("entra-oid-abc", existing.getEmail());
+        Jwt jwt = entraJwt(existing.getUsername(), existing.getEmail());
 
         User resolved = resolver.resolve(jwt, microsoft);
         assertEquals(existing.getUsername(), resolved.getUsername());
     }
 
     @Test
-    void resolvesByEmailFallbackAndSetsExternalIdPreference() throws Exception
+    void resolvesByUsernameCaseInsensitively() throws Exception
+    {
+        User existing = pickAnyExistingUser();
+        String mixed = mixCase(existing.getUsername());
+
+        Jwt jwt = entraJwt(mixed, existing.getEmail());
+
+        User resolved = resolver.resolve(jwt, microsoft);
+        assertEquals(existing.getUsername(), resolved.getUsername(),
+                "case differences between token and stored username must not block the match");
+    }
+
+    @Test
+    void prefersUpnOverPreferredUsernameForLookup() throws Exception
+    {
+        // Token's `upn` is the AD UserPrincipalName form (e.g. the user
+        // imported from AD with their UPN as rapla username), while
+        // `preferred_username` is the bare login. Lookup tries upn first so
+        // an AD-federated Keycloak finds the existing pre-imported user.
+        User existing = pickAnyExistingUser();
+
+        Jwt jwt = Jwt.withTokenValue("tok")
+                .header("alg", "RS256")
+                .claim("iss", microsoft.issuer())
+                .claim("upn", existing.getUsername())
+                .claim("preferred_username", "some.other.handle")
+                .claim("email", "unrelated@example.org")
+                .issuedAt(Instant.now())
+                .expiresAt(Instant.now().plusSeconds(60))
+                .build();
+
+        User resolved = resolver.resolve(jwt, microsoft);
+        assertEquals(existing.getUsername(), resolved.getUsername());
+    }
+
+    @Test
+    void fallsBackToEmailWhenUpnAndPreferredUsernameDoNotMatch() throws Exception
     {
         User existing = pickUserWithEmail();
-        String email = existing.getEmail();
 
-        Jwt jwt = entraJwt("entra-oid-fresh", email);
+        // The email claim is the only one matching a stored username — that
+        // can happen when an institution uses email-as-username and the IdP
+        // doesn't emit upn.
+        Jwt jwt = Jwt.withTokenValue("tok")
+                .header("alg", "RS256")
+                .claim("iss", microsoft.issuer())
+                .claim("preferred_username", "no.such.handle")
+                .claim("email", existing.getUsername())
+                .issuedAt(Instant.now())
+                .expiresAt(Instant.now().plusSeconds(60))
+                .build();
 
         User resolved = resolver.resolve(jwt, microsoft);
         assertEquals(existing.getUsername(), resolved.getUsername());
-
-        TypedComponentRole<String> key = new TypedComponentRole<>(microsoft.externalIdPreferenceKey());
-        String stored = facade.getPreferences(resolved).getEntryAsString(key, null);
-        assertEquals("entra-oid-fresh", stored,
-                "first-time email match must persist the external-id back to preferences");
-
-        TypedComponentRole<String> activeProvider = ExternalUserResolver.ACTIVE_PROVIDER_PREFERENCE;
-        String storedProvider = facade.getPreferences(resolved).getEntryAsString(activeProvider, null);
-        assertEquals("microsoft", storedProvider);
     }
 
     @Test
-    void throwsWhenAutoProvisionOffAndNoMatch()
+    void throwsWhenNoMatchAndAutoProvisionOff()
     {
-        Jwt jwt = entraJwt("entra-oid-unknown", "no.such.email@example.com");
+        Jwt jwt = entraJwt("nobody@example.org", "nobody@example.org");
 
         RaplaSecurityException ex = assertThrows(RaplaSecurityException.class,
                 () -> resolver.resolve(jwt, microsoft));
@@ -81,31 +126,18 @@ class ExternalUserResolverTest extends FacadeTestSupport
     }
 
     @Test
-    void throwsWhenExternalIdClaimMissing()
-    {
-        Jwt jwt = Jwt.withTokenValue("tok")
-                .header("alg", "RS256")
-                .claim("iss", microsoft.issuer())
-                .claim("email", "alice@example.com")
-                .issuedAt(Instant.now())
-                .expiresAt(Instant.now().plusSeconds(60))
-                .build();
-
-        RaplaSecurityException ex = assertThrows(RaplaSecurityException.class,
-                () -> resolver.resolve(jwt, microsoft));
-        assertTrue(ex.getMessage().contains("oid"));
-    }
-
-    @Test
-    void googleRequiresEmailVerifiedForEmailMatch() throws Exception
+    void googleRequiresEmailVerifiedForEmailFallback() throws Exception
     {
         User existing = pickUserWithEmail();
 
+        // No upn / preferred_username match — only the email lookup could
+        // possibly link this token to the existing user. email_verified=false
+        // must veto that path (Google can lie about an unverified email).
         Jwt unverified = Jwt.withTokenValue("tok")
                 .header("alg", "RS256")
                 .claim("iss", google.issuer())
-                .claim("sub", "google-sub-456")
-                .claim("email", existing.getEmail())
+                .claim("preferred_username", "no.such.handle")
+                .claim("email", existing.getUsername())
                 .claim("email_verified", false)
                 .issuedAt(Instant.now())
                 .expiresAt(Instant.now().plusSeconds(60))
@@ -114,19 +146,19 @@ class ExternalUserResolverTest extends FacadeTestSupport
         RaplaSecurityException ex = assertThrows(RaplaSecurityException.class,
                 () -> resolver.resolve(unverified, google));
         assertTrue(ex.getMessage().contains("auto-provision is disabled"),
-                "email_verified=false must block the email-match path even with auto-provision off");
+                "email_verified=false must block the email-fallback path");
     }
 
     @Test
-    void googleAcceptsEmailMatchWhenEmailVerifiedTrue() throws Exception
+    void googleAcceptsEmailFallbackWhenEmailVerifiedTrue() throws Exception
     {
         User existing = pickUserWithEmail();
 
         Jwt verified = Jwt.withTokenValue("tok")
                 .header("alg", "RS256")
                 .claim("iss", google.issuer())
-                .claim("sub", "google-sub-789")
-                .claim("email", existing.getEmail())
+                .claim("preferred_username", "no.such.handle")
+                .claim("email", existing.getUsername())
                 .claim("email_verified", true)
                 .issuedAt(Instant.now())
                 .expiresAt(Instant.now().plusSeconds(60))
@@ -137,11 +169,18 @@ class ExternalUserResolverTest extends FacadeTestSupport
     }
 
     @Test
-    void entraAcceptsEmailMatchWithoutEmailVerifiedClaim() throws Exception
+    void entraAcceptsEmailFallbackWithoutEmailVerifiedClaim() throws Exception
     {
         User existing = pickUserWithEmail();
 
-        Jwt jwt = entraJwt("entra-oid-noverify", existing.getEmail()); // no email_verified
+        Jwt jwt = Jwt.withTokenValue("tok")
+                .header("alg", "RS256")
+                .claim("iss", microsoft.issuer())
+                .claim("preferred_username", "no.such.handle")
+                .claim("email", existing.getUsername())
+                .issuedAt(Instant.now())
+                .expiresAt(Instant.now().plusSeconds(60))
+                .build();
 
         User resolved = resolver.resolve(jwt, microsoft);
         assertEquals(existing.getUsername(), resolved.getUsername(),
@@ -152,12 +191,12 @@ class ExternalUserResolverTest extends FacadeTestSupport
     void hostedDomainRejectsMismatchingHd()
     {
         ProviderConfig googleWithHd = providerConfig(
-                ExternalProviderId.GOOGLE, "sub", "email", false, "example.com");
+                ExternalProviderId.GOOGLE, "email", false, "example.com");
 
         Jwt jwt = Jwt.withTokenValue("tok")
                 .header("alg", "RS256")
                 .claim("iss", googleWithHd.issuer())
-                .claim("sub", "google-sub-xyz")
+                .claim("preferred_username", "alice@evil.com")
                 .claim("email", "alice@evil.com")
                 .claim("hd", "evil.com")
                 .claim("email_verified", true)
@@ -171,51 +210,70 @@ class ExternalUserResolverTest extends FacadeTestSupport
     }
 
     @Test
-    void hostedDomainAcceptsMatchingHd() throws Exception
+    void autoProvisionPrefersUpnOverConfiguredUsernameClaim() throws Exception
     {
-        User existing = pickUserWithEmail();
-        ProviderConfig googleWithHd = providerConfig(
-                ExternalProviderId.GOOGLE, "sub", "email", false, domainOf(existing.getEmail()));
+        // AD-federated Keycloak emits both `upn` (the AD UserPrincipalName,
+        // e.g. "Pat.Test@adcorp.example.org") and `preferred_username` (the
+        // bare login name, "pat.test"). Existing rapla deployments key users
+        // by UPN, so auto-provisioning must prefer it over the configured
+        // `usernameClaim`. The chosen value is lowercased before storage.
+        ProviderConfig keycloakAuto = new ProviderConfig(
+                ExternalProviderId.KEYCLOAK, "display", "icon", 15, true,
+                "client-id", "", "https://kc.example.com/realms/r",
+                "https://kc.example.com/auth", "https://kc.example.com/token",
+                "https://kc.example.com/jwks", "",
+                "",
+                List.of("openid", "profile", "email"),
+                new LinkedHashMap<>(),
+                "preferred_username", "email", "sub",
+                "", true, false);
 
         Jwt jwt = Jwt.withTokenValue("tok")
                 .header("alg", "RS256")
-                .claim("iss", googleWithHd.issuer())
-                .claim("sub", "google-sub-match")
-                .claim("email", existing.getEmail())
-                .claim("hd", domainOf(existing.getEmail()))
-                .claim("email_verified", true)
+                .claim("iss", keycloakAuto.issuer())
+                .claim("sub", "kc-sub-upn-1")
+                .claim("upn", "Pat.Test@adcorp.example.org")
+                .claim("preferred_username", "pat.test")
+                .claim("email", "pat.test@corp.example.org")
+                .claim("name", "Pat Test")
                 .issuedAt(Instant.now())
                 .expiresAt(Instant.now().plusSeconds(60))
                 .build();
 
-        User resolved = resolver.resolve(jwt, googleWithHd);
-        assertEquals(existing.getUsername(), resolved.getUsername());
+        User resolved = resolver.resolve(jwt, keycloakAuto);
+        assertEquals("pat.test@adcorp.example.org", resolved.getUsername(),
+                "UPN must take precedence over preferred_username when both are present, "
+                        + "lowercased so the stored form is case-canonical");
     }
 
     @Test
-    void externalIdMatchTakesPrecedenceOverEmail() throws Exception
+    void autoProvisionLowercasesUsernameRegardlessOfSource() throws Exception
     {
-        User userA = pickAnyExistingUser();
-        User userB = pickUserWithEmail();
-        // userA has the external-id pref; userB matches by email — userA should win.
-        attachExternalIdPreference(userA, microsoft.externalIdPreferenceKey(), "entra-oid-stable");
+        ProviderConfig microsoftAuto = providerConfig(
+                ExternalProviderId.MICROSOFT, "email", true, "");
 
-        Jwt jwt = entraJwt("entra-oid-stable", userB.getEmail());
+        Jwt mixedCase = Jwt.withTokenValue("tok")
+                .header("alg", "RS256")
+                .claim("iss", microsoftAuto.issuer())
+                .claim("preferred_username", "Alice.Doe@Example.COM")
+                .claim("email", "Alice.Doe@Example.COM")
+                .issuedAt(Instant.now())
+                .expiresAt(Instant.now().plusSeconds(60))
+                .build();
 
-        User resolved = resolver.resolve(jwt, microsoft);
-        assertEquals(userA.getUsername(), resolved.getUsername());
+        User resolved = resolver.resolve(mixedCase, microsoftAuto);
+        assertEquals("alice.doe@example.com", resolved.getUsername());
     }
 
     @Test
     void autoProvisionCreatesRaplaUserOnFirstLogin() throws Exception
     {
         ProviderConfig microsoftAuto = providerConfig(
-                ExternalProviderId.MICROSOFT, "oid", "email", true, "");
+                ExternalProviderId.MICROSOFT, "email", true, "");
 
         Jwt jwt = Jwt.withTokenValue("tok")
                 .header("alg", "RS256")
                 .claim("iss", microsoftAuto.issuer())
-                .claim("oid", "entra-oid-new-1")
                 .claim("preferred_username", "newhire@example.com")
                 .claim("email", "newhire@example.com")
                 .claim("name", "New Hire")
@@ -229,52 +287,58 @@ class ExternalUserResolverTest extends FacadeTestSupport
         assertEquals("newhire@example.com", resolved.getUsername());
         assertEquals("New Hire", resolved.getName());
         assertEquals("newhire@example.com", resolved.getEmail());
-
-        // External-id preference must be persisted so the next login takes the
-        // fast path (no email match needed).
-        TypedComponentRole<String> key = new TypedComponentRole<>(microsoftAuto.externalIdPreferenceKey());
-        assertEquals("entra-oid-new-1",
-                facade.getPreferences(facade.getUser("newhire@example.com")).getEntryAsString(key, null));
-
-        // User has rapla default groups (FacadeImpl.newUser): can read events
-        // from others, can create events, can modify preferences. We don't
-        // assert the exact set here — just that there's *some* group, since
-        // group sync from token claims is deferred (PRD 036 OQ §13).
+        // facade.newUser() seeds default groups; the exact set isn't pinned.
         assertNotNull(resolved.getGroupList());
         assertTrue(resolved.getGroupList().size() > 0,
                 "auto-provisioned user must have facade.newUser()'s default groups");
     }
 
     @Test
-    void autoProvisionFallsBackToEmailWhenUsernameClaimMissing() throws Exception
+    void autoProvisionFallsBackToUsernameClaimWhenUpnAbsent() throws Exception
     {
         ProviderConfig microsoftAuto = providerConfig(
-                ExternalProviderId.MICROSOFT, "oid", "email", true, "");
+                ExternalProviderId.MICROSOFT, "email", true, "");
 
         Jwt jwt = Jwt.withTokenValue("tok")
                 .header("alg", "RS256")
                 .claim("iss", microsoftAuto.issuer())
-                .claim("oid", "entra-oid-no-username")
+                .claim("preferred_username", "carol@example.com")
+                .claim("email", "carol@example.com")
+                .issuedAt(Instant.now())
+                .expiresAt(Instant.now().plusSeconds(60))
+                .build();
+
+        User resolved = resolver.resolve(jwt, microsoftAuto);
+        assertEquals("carol@example.com", resolved.getUsername());
+    }
+
+    @Test
+    void autoProvisionFallsBackToEmailWhenUsernameClaimMissing() throws Exception
+    {
+        ProviderConfig microsoftAuto = providerConfig(
+                ExternalProviderId.MICROSOFT, "email", true, "");
+
+        Jwt jwt = Jwt.withTokenValue("tok")
+                .header("alg", "RS256")
+                .claim("iss", microsoftAuto.issuer())
                 .claim("email", "alt@example.com")
                 .issuedAt(Instant.now())
                 .expiresAt(Instant.now().plusSeconds(60))
                 .build();
 
         User resolved = resolver.resolve(jwt, microsoftAuto);
-
         assertEquals("alt@example.com", resolved.getUsername());
     }
 
     @Test
-    void autoProvisionThrowsWhenNeitherUsernameNorEmailClaimPresent()
+    void autoProvisionThrowsWhenNoUsernameSourcePresent()
     {
         ProviderConfig microsoftAuto = providerConfig(
-                ExternalProviderId.MICROSOFT, "oid", "email", true, "");
+                ExternalProviderId.MICROSOFT, "email", true, "");
 
         Jwt jwt = Jwt.withTokenValue("tok")
                 .header("alg", "RS256")
                 .claim("iss", microsoftAuto.issuer())
-                .claim("oid", "entra-oid-empty")
                 .issuedAt(Instant.now())
                 .expiresAt(Instant.now().plusSeconds(60))
                 .build();
@@ -285,45 +349,50 @@ class ExternalUserResolverTest extends FacadeTestSupport
     }
 
     @Test
-    void autoProvisionedUserResolvesByExternalIdOnNextLogin() throws Exception
+    void returningUserResolvesByUsernameWithoutAutoProvisioningAgain() throws Exception
     {
+        // Identity is username-based: a returning user is found by their
+        // stored username regardless of whether the IdP's `sub` changed
+        // (realm rotation / IdP swap). No external-id preference is needed.
         ProviderConfig microsoftAuto = providerConfig(
-                ExternalProviderId.MICROSOFT, "oid", "email", true, "");
+                ExternalProviderId.MICROSOFT, "email", true, "");
 
-        Jwt firstLogin = Jwt.withTokenValue("tok")
+        Jwt first = Jwt.withTokenValue("tok")
                 .header("alg", "RS256")
                 .claim("iss", microsoftAuto.issuer())
-                .claim("oid", "entra-oid-returning")
                 .claim("preferred_username", "alice@example.com")
                 .claim("email", "alice@example.com")
                 .issuedAt(Instant.now())
                 .expiresAt(Instant.now().plusSeconds(60))
                 .build();
-        User first = resolver.resolve(firstLogin, microsoftAuto);
+        User firstUser = resolver.resolve(first, microsoftAuto);
 
-        // Second login with a changed email — should still resolve to the same
-        // rapla user via the external-id preference, not auto-provision again.
-        Jwt secondLogin = Jwt.withTokenValue("tok")
+        // Second login: same username, different email (rare but possible
+        // if the IdP changes the routable-email form). Same human; rapla
+        // must return the same user, not auto-provision a duplicate.
+        Jwt second = Jwt.withTokenValue("tok")
                 .header("alg", "RS256")
                 .claim("iss", microsoftAuto.issuer())
-                .claim("oid", "entra-oid-returning")
-                .claim("preferred_username", "alice.renamed@example.com")
+                .claim("preferred_username", "alice@example.com")
                 .claim("email", "alice.renamed@example.com")
                 .issuedAt(Instant.now())
                 .expiresAt(Instant.now().plusSeconds(60))
                 .build();
-        User second = resolver.resolve(secondLogin, microsoftAuto);
+        User secondUser = resolver.resolve(second, microsoftAuto);
 
-        assertEquals(first.getId(), second.getId(),
-                "external-id should pin the user across email changes");
+        assertEquals(firstUser.getId(), secondUser.getId(),
+                "stable username must pin identity across email changes");
     }
 
-    private ProviderConfig providerConfig(ExternalProviderId id, String externalIdClaim,
-                                          String emailClaim, boolean autoProvision, String hostedDomain)
+    private ProviderConfig providerConfig(ExternalProviderId id, String emailClaim,
+                                          boolean autoProvision, String hostedDomain)
     {
         String issuer = id == ExternalProviderId.MICROSOFT
                 ? "https://login.microsoftonline.com/test-tenant/v2.0"
                 : "https://accounts.google.com";
+        // externalIdClaim kept in the ctor signature (unused by the resolver
+        // since the pref-based lookup was removed) — passed as "" so a future
+        // grep for "external-id" in tests turns up empty.
         return new ProviderConfig(
                 id, "display", "icon", 10, true,
                 "client-id", "", issuer,
@@ -331,17 +400,16 @@ class ExternalUserResolverTest extends FacadeTestSupport
                 "",
                 List.of("openid", "profile", "email"),
                 new LinkedHashMap<>(),
-                "preferred_username", emailClaim, externalIdClaim,
+                "preferred_username", emailClaim, "",
                 hostedDomain, autoProvision, false);
     }
 
-    private Jwt entraJwt(String oid, String email)
+    private Jwt entraJwt(String preferredUsername, String email)
     {
         Jwt.Builder b = Jwt.withTokenValue("tok")
                 .header("alg", "RS256")
                 .claim("iss", microsoft.issuer())
-                .claim("oid", oid)
-                .claim("preferred_username", email == null ? "alice" : email)
+                .claim("preferred_username", preferredUsername == null ? "alice" : preferredUsername)
                 .issuedAt(Instant.now())
                 .expiresAt(Instant.now().plusSeconds(60));
         if (email != null) b = b.claim("email", email);
@@ -364,7 +432,6 @@ class ExternalUserResolverTest extends FacadeTestSupport
             String email = u.getEmail();
             if (email != null && !email.isEmpty()) return u;
         }
-        // fallback: set one
         for (User u : facade.getUsers())
         {
             User editable = facade.edit(u);
@@ -375,17 +442,18 @@ class ExternalUserResolverTest extends FacadeTestSupport
         throw new IllegalStateException("fixture has no users");
     }
 
-    private void attachExternalIdPreference(User user, String prefKey, String value) throws Exception
+    private static String mixCase(String s)
     {
-        TypedComponentRole<String> role = new TypedComponentRole<>(prefKey);
-        Preferences edit = facade.edit(facade.getPreferences(user));
-        edit.putEntry(role, value);
-        facade.store(edit);
-    }
-
-    private static String domainOf(String email)
-    {
-        int at = email.indexOf('@');
-        return at < 0 ? email : email.substring(at + 1);
+        StringBuilder sb = new StringBuilder(s.length());
+        for (int i = 0; i < s.length(); i++)
+        {
+            char c = s.charAt(i);
+            sb.append((i & 1) == 0
+                    ? Character.toUpperCase(c)
+                    : Character.toLowerCase(c));
+        }
+        // sanity check: at least one char must differ in case if input had letters
+        if (sb.toString().equalsIgnoreCase(s) && !sb.toString().equals(s)) return sb.toString();
+        return sb.toString().toLowerCase(Locale.ROOT).equals(s) ? sb.toString().toUpperCase(Locale.ROOT) : sb.toString();
     }
 }

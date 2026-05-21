@@ -111,8 +111,8 @@ public class ClientProxyConfig
         private final org.springframework.http.client.ClientHttpRequestFactory requestFactory;
         private final java.util.concurrent.locks.Lock refreshLock = new java.util.concurrent.locks.ReentrantLock();
 
-        RefreshOn401Interceptor(RemoteConnectionInfo info,
-                                org.springframework.http.client.ClientHttpRequestFactory requestFactory)
+        public RefreshOn401Interceptor(RemoteConnectionInfo info,
+                                       org.springframework.http.client.ClientHttpRequestFactory requestFactory)
         {
             this.info = info;
             this.requestFactory = requestFactory;
@@ -133,24 +133,56 @@ public class ClientProxyConfig
             // Don't recurse on /api/auth/* itself.
             if (request.getURI().getPath().contains("/api/auth/")) return response;
             String refresh = info.getRefreshToken();
-            if (refresh == null || refresh.isEmpty()) return response;
+            if (refresh == null || refresh.isEmpty())
+            {
+                // Nothing to refresh with — session is dead. Signal the higher
+                // layers so the user gets a re-login dialog instead of a silently
+                // failing calendar (see RemoteConnectionInfo.onAuthDead).
+                fireAuthDeadOnce();
+                return response;
+            }
             // Single-flight refresh — concurrent 401-failed requests share one /auth/refresh hit.
             refreshLock.lock();
+            boolean refreshOk;
             try
             {
                 String currentToken = info.getAccessToken();
                 if (java.util.Objects.equals(currentToken, token))
                 {
-                    if (!doRefresh(refresh)) return response;
+                    refreshOk = doRefresh(refresh);
+                }
+                else
+                {
+                    // Another thread already refreshed — proceed with retry.
+                    refreshOk = true;
                 }
             }
             finally
             {
                 refreshLock.unlock();
             }
+            if (!refreshOk)
+            {
+                // Both the access token AND the stored refresh token are dead.
+                // Clear them so subsequent calls don't keep spinning on the same
+                // broken pair, and notify the Swing UI to re-show the login dialog.
+                info.setAccessToken(null);
+                info.setRefreshToken(null);
+                fireAuthDeadOnce();
+                return response;
+            }
             response.close();
             request.getHeaders().setBearerAuth(info.getAccessToken());
             return execution.execute(request, body);
+        }
+
+        private void fireAuthDeadOnce()
+        {
+            Runnable hook = info.getOnAuthDead();
+            if (hook == null) return;
+            // Detach so the hook can't fire repeatedly during a 401-storm.
+            info.setOnAuthDead(null);
+            try { hook.run(); } catch (RuntimeException ignored) { /* don't break the request thread */ }
         }
 
         private boolean doRefresh(String refreshToken) throws java.io.IOException

@@ -20,6 +20,12 @@ public class RemoteConnectionInfo
     String refreshUrl;
     String oauthClientId;
     transient StatusUpdater statusUpdater;
+    /** Fires when the auth seam discovers BOTH the access token AND the cached
+     *  refresh token are dead (refresh request itself returned non-2xx). The
+     *  Swing client wires this to {@code fireStorageDisconnected(...)} so the
+     *  user gets a re-login dialog instead of seeing the calendar quietly
+     *  freeze with logged 401s. Transient — never serialised. */
+    transient Runnable onAuthDead;
     ConnectInfo connectInfo;
 
     @Autowired
@@ -104,6 +110,17 @@ public class RemoteConnectionInfo
 
     public String getServerURL() {
         return serverURL;
+    }
+
+    /** Set a hook fired when refresh-on-401 discovers the session is fully dead
+     *  (both access and refresh tokens rejected). Idempotent — the interceptor
+     *  fires it once per dead-session detection. */
+    public void setOnAuthDead(Runnable onAuthDead) {
+        this.onAuthDead = onAuthDead;
+    }
+
+    public Runnable getOnAuthDead() {
+        return onAuthDead;
     }
 
     public void setReconnectInfo(ConnectInfo connectInfo) 

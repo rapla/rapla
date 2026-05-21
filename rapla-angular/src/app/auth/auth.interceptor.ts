@@ -1,36 +1,149 @@
-import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse, HttpInterceptorFn, HttpRequest } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { catchError, throwError } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
+import { catchError, from, Observable, switchMap, throwError } from 'rxjs';
 
 import { AuthService } from './auth.service';
+import {
+  AuthErrorDialogComponent,
+  AuthErrorDialogData,
+} from './auth-error-dialog.component';
 
 /**
- * Attach Bearer token to every outgoing request. On 401 from an application
- * endpoint, clear local tokens and bounce to /login (which re-initiates the
- * OAuth code flow when configured).
+ * Attach Bearer token to every outgoing request EXCEPT pre-authentication
+ * paths. On 401 with a Bearer attached:
+ *   1. attempt a refresh_token grant (Keycloak offline_access path)
+ *   2. on success, replay the original request with the new token
+ *   3. on failure (or no refresh_token available), show a modal dialog
+ *      explaining the rejection, then route to /login when dismissed
  *
- * Skip `/oauth2/*` and `/.well-known/*` — those are the OAuth library's own
- * traffic (code exchange, refresh, discovery). A 401 there means the flow
- * itself failed; redirecting on those would loop us right back into the same
- * failed exchange. The library raises its own OAuthErrorEvent and the
- * callback component's failure counter (see CallbackComponent) handles it.
+ * The dialog deliberately blocks so the user never silently lands on /login
+ * without knowing why their session ended.
+ *
+ * Pre-authentication paths — Bearer is NOT attached and a 401 there does NOT
+ * trigger any of the above:
+ *   - /oauth2/*            — Spring AS endpoints (authorize/token/jwks)
+ *   - /.well-known/*       — OIDC discovery
+ *   - /api/auth/oauth/*    — rapla OAuth helpers: BFF token-exchange and
+ *                            /config discovery. These endpoints are where a
+ *                            token is obtained; attaching a stale Bearer
+ *                            causes the resource-server JWT filter to reject
+ *                            the request with 401 before the controller runs
+ *                            ("stale-JWT-blocks-OAuth-login" regression,
+ *                            2026-05-21).
+ *
+ * The library raises its own OAuthErrorEvent for OAuth-flow failures and the
+ * callback component's failure counter (see CallbackComponent) handles them.
  */
+const isPreAuthRequest = (req: HttpRequest<unknown>): boolean =>
+  req.url.includes('/oauth2/') ||
+  req.url.includes('/.well-known/') ||
+  req.url.includes('/api/auth/oauth/');
+
+/**
+ * Build a user-facing dialog payload from a 401 response. Tries (in order):
+ *   1. JSON body's `error_description` / `message` / `error`
+ *   2. WWW-Authenticate header's `error_description`
+ *   3. Plain status text
+ * The raw body is exposed as `detail` so the user / support can copy it.
+ */
+function buildDialogData(err: HttpErrorResponse): AuthErrorDialogData {
+  const bodyError =
+    err.error && typeof err.error === 'object'
+      ? err.error.error_description || err.error.message || err.error.error
+      : null;
+
+  let wwwAuth: string | null = null;
+  const wwwAuthHeader = err.headers?.get?.('WWW-Authenticate');
+  if (wwwAuthHeader) {
+    const m = /error_description="([^"]+)"/.exec(wwwAuthHeader);
+    if (m) wwwAuth = m[1];
+  }
+
+  const message =
+    bodyError ||
+    wwwAuth ||
+    'Your sign-in was accepted by the identity provider, but rapla could not link it to a user account. Contact your administrator.';
+
+  let detail: string | undefined;
+  if (typeof err.error === 'string' && err.error.trim().length > 0) {
+    detail = err.error;
+  } else if (err.error && typeof err.error === 'object') {
+    try {
+      detail = JSON.stringify(err.error, null, 2);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  return {
+    title: 'Sign-in rejected',
+    message,
+    detail,
+  };
+}
+
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
+  const dialog = inject(MatDialog);
   const token = auth.token();
+  const preAuth = isPreAuthRequest(req);
+  const bearerAttached = !!(token && !preAuth);
 
-  const authedReq = token ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } }) : req;
+  const authedReq = bearerAttached
+    ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
+    : req;
+
+  const openDialogAndBounce = (err: HttpErrorResponse): Observable<never> => {
+    const data = buildDialogData(err);
+    const ref = dialog.open(AuthErrorDialogComponent, {
+      data,
+      disableClose: false,
+      autoFocus: true,
+      width: '480px',
+    });
+    return ref.afterClosed().pipe(
+      switchMap(() => {
+        auth.handleAuthRejection();
+        return throwError(() => err);
+      }),
+    );
+  };
 
   return next(authedReq).pipe(
     catchError((err: HttpErrorResponse) => {
-      if (
-        err.status === 401 &&
-        !req.url.includes('/oauth2/') &&
-        !req.url.includes('/.well-known/')
-      ) {
-        auth.handleUnauthenticated();
+      if (err.status !== 401 || preAuth) {
+        return throwError(() => err);
       }
-      return throwError(() => err);
+      if (!bearerAttached) {
+        // 401 on a request with no Bearer attached → the user isn't logged
+        // in yet (or token was already cleared). Quietly route to /login.
+        auth.handleUnauthenticated();
+        return throwError(() => err);
+      }
+      // First 401 with a Bearer: try refresh, then replay once. The replay
+      // is called via `next(...)` directly — it does NOT re-enter this
+      // interceptor — so a 401 on the replay is caught by the inner
+      // catchError, never a second refresh.
+      return from(auth.refreshAccessToken()).pipe(
+        switchMap((refreshed) => {
+          if (!refreshed) {
+            return openDialogAndBounce(err);
+          }
+          const fresh = auth.token();
+          const replay = fresh
+            ? authedReq.clone({ setHeaders: { Authorization: `Bearer ${fresh}` } })
+            : authedReq;
+          return next(replay).pipe(
+            catchError((replayErr: HttpErrorResponse) => {
+              if (replayErr.status === 401) {
+                return openDialogAndBounce(replayErr);
+              }
+              return throwError(() => replayErr);
+            }),
+          );
+        }),
+      );
     }),
   );
 };

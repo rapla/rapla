@@ -12,6 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 
 /**Currently Rapla supports the following types:
   <ul>
@@ -56,10 +58,19 @@ public enum RepeatingType {
     	return null;
     }
     
+    /** Reads both the canonical {@code toString()} form ("weekly", "daily") and the
+     *  legacy {@code name()} form ("WEEKLY", "DAILY") persisted by the pre-PRD-011
+     *  Gson serializer / Jackson 2. Read-only — serialization stays toString(). */
+    @JsonCreator
+    public static RepeatingType fromJson(String value) {
+        RepeatingType found = findForString(value);
+        return found != null ? found : RepeatingType.valueOf(value);
+    }
+
     public String toString() {
         return type;
     }
-    
+
 }
 
 

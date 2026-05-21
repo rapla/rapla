@@ -307,6 +307,19 @@ public class ExternalProvidersProperties
         private String emailClaim = "email";
         private String externalIdClaim = "sub";
         private String postLogoutRedirectUri = "";
+        // Default scopes — kept narrow so any standards-conformant Keycloak
+        // realm/client accepts them. To enable refresh_token issuance (for
+        // the SPA's automatic silent refresh and the interceptor's
+        // refresh-then-retry on 401), override in YAML with
+        //   rapla.oauth.external.keycloak.scopes:
+        //     - openid
+        //     - profile
+        //     - email
+        //     - offline_access
+        // AND ensure the realm's client has `offline_access` in its
+        // "Optional client scopes" list. DHBW Mosbach's `rapla-app` client
+        // currently does NOT (gives Keycloak `invalid_scope` at /authorize),
+        // hence not the default.
         private List<String> scopes = List.of("openid", "profile", "email");
 
         public boolean isEnabled() { return enabled; }

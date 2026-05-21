@@ -240,6 +240,22 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         getLogger().debug("RaplaClient started");
         ClientFacade facade = getClientFacade();
         facade.addUpdateErrorListener(this);
+        // Mid-session refresh-on-401 hook: when the auth seam decides the cached
+        // refresh token is dead too, route through the existing facade
+        // "disconnected" pipeline so the user sees the re-login dialog instead
+        // of a silently broken calendar. Without this the calendar would just
+        // log "401 : [no body]" and freeze (see disconnected(...) below).
+        connectionInfo.setOnAuthDead(() -> {
+            getLogger().warn("session_expired: access + refresh tokens both rejected — prompting re-login");
+            // tokenStore holds the persisted refresh token from a previous launch —
+            // drop it too so the next start() opens the login dialog instead of
+            // trying a silent reauth that will fail the same way.
+            try { tokenStore.tryClear(); } catch (Exception ignored) {}
+            // Route through the existing disconnected() pipeline (modal dialog →
+            // restart() → login flow). The hook can fire on any thread; the
+            // dialog code already invokeLater's onto the EDT.
+            this.disconnected(i18n.getString("restart_client"));
+        });
         advanceLoading(true);
 
         logoutAvailable = true;

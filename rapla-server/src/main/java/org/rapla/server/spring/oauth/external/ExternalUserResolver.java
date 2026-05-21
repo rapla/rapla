@@ -2,11 +2,9 @@ package org.rapla.server.spring.oauth.external;
 
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
-import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.TypedComponentRole;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.jndi.JNDIPlugin;
 import org.rapla.storage.RaplaSecurityException;
@@ -16,33 +14,23 @@ import java.util.ArrayList;
 import java.util.Locale;
 
 /**
- * Resolves an externally-authenticated JWT to a rapla {@link User} entity. The
- * algorithm is the same for all providers (Microsoft Entra, Google, future);
- * provider-specific behaviour (claim names, email-verification guard) flows
- * through the {@link ProviderConfig} passed in.
+ * Resolves an externally-authenticated JWT to a rapla {@link User} entity.
+ * Identity is keyed on the rapla username — the same value
+ * {@code user.getUsername()} returns, which already drives permissions,
+ * ownership, and ACLs. The lookup tries the token's username-bearing claims
+ * (upn → preferred_username → email) case-insensitively against stored
+ * usernames; if none match, optionally falls back to email-match; if still
+ * no match, auto-provisions a new user.
  *
- * <p>Three-step lookup:
- * <ol>
- *   <li>Match by per-provider external-id stored under
- *       {@code user.preferences["org.rapla.auth.external-id.&lt;providerId&gt;"]}.
- *       Stable across email changes / account renames.</li>
- *   <li>Fall back to match by email. Sets the external-id preference on first
- *       match. For Google we require {@code email_verified=true}; Entra often
- *       doesn't ship a verified flag so we skip that guard when the claim is
- *       absent.</li>
- *   <li>If {@code auto-provision: true} and still no match, create a new rapla
- *       User. v1 limits auto-provision behaviour to "exists with default
- *       groups" — admin can elevate via the user editor afterwards.</li>
- * </ol>
- *
- * <p>See PRD 036 "Why we keep the rapla User" for why we resolve to a rapla
- * entity rather than authenticating against just the token claims.
+ * <p>Tradeoff vs. the previous {@code external-id} preference design (dropped
+ * 2026-05-21): an IdP-side username rename produces an orphaned rapla user +
+ * a new auto-provisioned one. Same operator burden as the legacy LDAP path —
+ * admin renames the rapla user manually. Wins: no first-login fragility for
+ * CSV-imported users, no realm-rotation breakage, no hidden state in
+ * preferences, less code.
  */
 public class ExternalUserResolver
 {
-    static final TypedComponentRole<String> ACTIVE_PROVIDER_PREFERENCE =
-            new TypedComponentRole<>("org.rapla.auth.provider");
-
     private final RaplaFacade facade;
     private final Logger logger;
 
@@ -54,40 +42,40 @@ public class ExternalUserResolver
 
     public User resolve(Jwt jwt, ProviderConfig provider) throws RaplaException
     {
-        String externalId = jwt.getClaimAsString(provider.externalIdClaim());
-        if (externalId == null || externalId.isEmpty())
-        {
-            throw new RaplaSecurityException(
-                    "External JWT missing required claim '" + provider.externalIdClaim()
-                            + "' for provider " + provider.id());
-        }
         enforceHostedDomain(jwt, provider);
 
-        TypedComponentRole<String> externalIdKey =
-                new TypedComponentRole<>(provider.externalIdPreferenceKey());
+        // Try each candidate as a username (case-insensitive — LocalCache.getUser
+        // already does the equalsIgnoreCase fallback). Stop at first hit.
+        String upn = jwt.getClaimAsString("upn");
+        User byUsername = findUserByUsername(upn);
+        if (byUsername != null) return byUsername;
 
-        User byExternalId = findUserByPreference(externalIdKey, externalId);
-        if (byExternalId != null) return byExternalId;
+        String preferredUsername = jwt.getClaimAsString(provider.usernameClaim());
+        byUsername = findUserByUsername(preferredUsername);
+        if (byUsername != null) return byUsername;
 
         String email = jwt.getClaimAsString(provider.emailClaim());
+        // Allow the email claim as a username fallback only for IdPs where the
+        // email is treated as the username (email-as-username deployments).
+        // Caller controls this via the emailIsVerified guard for Google.
         if (email != null && !email.isEmpty() && emailIsVerified(jwt))
         {
+            byUsername = findUserByUsername(email);
+            if (byUsername != null) return byUsername;
+
             User byEmail = findUserByEmail(email);
-            if (byEmail != null)
-            {
-                attachExternalIdToUser(byEmail, externalIdKey, externalId, provider);
-                return byEmail;
-            }
+            if (byEmail != null) return byEmail;
         }
 
         if (provider.autoProvision())
         {
-            return autoProvisionUser(jwt, provider, externalId, externalIdKey);
+            return autoProvisionUser(jwt, provider);
         }
 
         throw new RaplaSecurityException(
                 "No rapla user matched external identity from " + provider.id()
-                        + " (" + provider.externalIdClaim() + "=" + externalId
+                        + " (upn=" + upn
+                        + ", " + provider.usernameClaim() + "=" + preferredUsername
                         + ", email=" + email + "); auto-provision is disabled.");
     }
 
@@ -129,21 +117,19 @@ public class ExternalUserResolver
         return verified == null || verified;
     }
 
-    private User findUserByPreference(TypedComponentRole<String> key, String value) throws RaplaException
+    private User findUserByUsername(String candidate) throws RaplaException
     {
-        for (User user : facade.getUsers())
+        if (candidate == null || candidate.isEmpty()) return null;
+        try
         {
-            try
-            {
-                String stored = facade.getPreferences(user).getEntryAsString(key, null);
-                if (value.equals(stored)) return user;
-            }
-            catch (RaplaException e)
-            {
-                logger.warn("Failed to read preferences for user " + user.getUsername() + ": " + e.getMessage());
-            }
+            return facade.getUser(candidate);
         }
-        return null;
+        catch (RaplaException ex)
+        {
+            // facade.getUser throws on unknown name; that's a miss, not a
+            // failure — continue to the next candidate.
+            return null;
+        }
     }
 
     private User findUserByEmail(String email) throws RaplaException
@@ -160,19 +146,19 @@ public class ExternalUserResolver
         return null;
     }
 
-    private void attachExternalIdToUser(User user, TypedComponentRole<String> externalIdKey,
-                                        String externalId, ProviderConfig provider) throws RaplaException
+    private User autoProvisionUser(Jwt jwt, ProviderConfig provider) throws RaplaException
     {
-        Preferences edit = facade.edit(facade.getPreferences(user));
-        edit.putEntry(externalIdKey, externalId);
-        edit.putEntry(ACTIVE_PROVIDER_PREFERENCE, provider.id());
-        facade.store(edit);
-    }
-
-    private User autoProvisionUser(Jwt jwt, ProviderConfig provider, String externalId,
-                                   TypedComponentRole<String> externalIdKey) throws RaplaException
-    {
-        String username = jwt.getClaimAsString(provider.usernameClaim());
+        // Same priority as the lookup: upn → usernameClaim → emailClaim.
+        // The chosen value is lowercased so the stored form is case-canonical
+        // — display surfaces (user lists, permission editors, REST DTOs) show
+        // the literal stored case, and this prevents "Christopher.Kohlhaas"
+        // vs "christopher.kohlhaas" visual drift across logins from IdPs that
+        // disagree on case.
+        String username = jwt.getClaimAsString("upn");
+        if (username == null || username.isEmpty())
+        {
+            username = jwt.getClaimAsString(provider.usernameClaim());
+        }
         if (username == null || username.isEmpty())
         {
             username = jwt.getClaimAsString(provider.emailClaim());
@@ -180,9 +166,10 @@ public class ExternalUserResolver
         if (username == null || username.isEmpty())
         {
             throw new RaplaSecurityException(
-                    "Cannot auto-provision: neither '" + provider.usernameClaim()
+                    "Cannot auto-provision: neither 'upn', '" + provider.usernameClaim()
                             + "' nor '" + provider.emailClaim() + "' claim is present");
         }
+        username = username.toLowerCase(Locale.ROOT);
         String displayName = jwt.getClaimAsString("name");
         if (displayName == null || displayName.isEmpty())
         {
@@ -207,16 +194,9 @@ public class ExternalUserResolver
         applyConfiguredGroupsIfPresent(created);
         facade.store(created);
 
-        // Re-fetch via the operator so we can edit attached preferences.
-        User persisted = facade.getUser(username);
-        Preferences edit = facade.edit(facade.getPreferences(persisted));
-        edit.putEntry(externalIdKey, externalId);
-        edit.putEntry(ACTIVE_PROVIDER_PREFERENCE, provider.id());
-        facade.store(edit);
-
         logger.info("Auto-provisioned rapla user '" + username + "' from external provider "
-                + provider.id() + " (externalId=" + externalId + ")");
-        return persisted;
+                + provider.id());
+        return facade.getUser(username);
     }
 
     /**

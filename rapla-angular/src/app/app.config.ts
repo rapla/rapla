@@ -57,7 +57,17 @@ export const appConfig: ApplicationConfig = {
             .then((jwks) => {
               if (jwks) (oauth as unknown as { jwks: unknown }).jwks = jwks;
             })
-            .then(() => oauth.tryLoginCodeFlow());
+            .then(() => oauth.tryLoginCodeFlow())
+            .then(() => {
+              // Proactive refresh: if a valid token is present (either fresh
+              // from this callback or carried over from a prior tab),
+              // schedule the library's auto-silent-refresh so subsequent
+              // expiries are handled invisibly. No-op when no token is
+              // present (e.g. user hasn't signed in yet).
+              if (oauth.hasValidAccessToken()) {
+                authService.enableAutomaticSilentRefresh();
+              }
+            });
         })
         .catch((err) => {
           console.warn('OAuth init failed; SPA will require manual auth via /login:', err);

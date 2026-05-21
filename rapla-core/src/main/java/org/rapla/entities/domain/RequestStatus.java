@@ -15,6 +15,8 @@ package org.rapla.entities.domain;
 
 import java.util.Locale;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 /**Currently Rapla supports the following request status:
   <ul>
         <li>requested</li>
@@ -46,6 +48,15 @@ public enum RequestStatus {
     	return null;
     }
     
+    /** Reads both the canonical {@code toString()} form ("requested") and the legacy
+     *  {@code name()} form ("REQUESTED") persisted by the pre-PRD-011 Gson serializer
+     *  / Jackson 2. Read-only — serialization stays toString(). */
+    @JsonCreator
+    public static RequestStatus fromJson(String value) {
+        RequestStatus found = findForString(value);
+        return found != null ? found : RequestStatus.valueOf(value);
+    }
+
     public String toString() {
         return type;
     }

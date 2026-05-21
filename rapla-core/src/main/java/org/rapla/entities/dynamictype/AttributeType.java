@@ -12,6 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.dynamictype;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 
 /** Attributes are to DynamicTypes, what properties are to Beans.
 Currently Rapla supports the following types:
@@ -56,10 +58,19 @@ public enum AttributeType {
     	return null;
     }
     
+    /** Reads both the canonical {@code toString()} form ("string", "rapla:category")
+     *  and the legacy {@code name()} form ("STRING", "CATEGORY") persisted by the
+     *  pre-PRD-011 Gson serializer / Jackson 2. Read-only — serialization stays toString(). */
+    @JsonCreator
+    public static AttributeType fromJson(String value) {
+        AttributeType found = findForString(value);
+        return found != null ? found : AttributeType.valueOf(value);
+    }
+
     public String toString() {
         return type;
     }
-    
+
 }
 
 

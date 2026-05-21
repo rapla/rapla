@@ -1,5 +1,12 @@
-import { Component, inject, signal, OnInit, ViewChild, AfterViewInit } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import {
+  Component,
+  inject,
+  signal,
+  computed,
+  OnInit,
+  AfterViewInit,
+  ViewChild,
+} from '@angular/core';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
@@ -7,50 +14,22 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { switchMap, map } from 'rxjs';
 
-import { RemoteStorageControllerService } from '../api/api/remote-storage-controller.service';
-import { AppointmentMap } from '../api/model/appointment-map';
-import { AllocatableImpl } from '../api/model/allocatable-impl';
-import { ClassificationImpl } from '../api/model/classification-impl';
+import { TableViewControllerService } from '../api/api/table-view-controller.service';
+import { TablePage } from '../api/model/table-page';
+import { TableRow } from '../api/model/table-row';
+import { TableColumnDescriptor } from '../api/model/table-column-descriptor';
 import { AuthService } from '../auth/auth.service';
-import { ReservationDialogComponent } from './reservation-dialog.component';
-
-interface AppointmentLite {
-  start: string;
-  end: string;
-  reservationName: string;
-  allocatables: string[];
-}
 
 /**
- * Local shapes for the REST payloads this view reads. getResources() is typed
- * `any` by the generated client, so the bundle is described here; the
- * reservation/appointment shapes come from the generated AppointmentMap model.
+ * Reservation table — a thin viewer over the server-side table renderer
+ * (GET /api/table/reservations, PRD 030). The server projects the columns and
+ * the scalar row cells; this component only paints them. It holds no
+ * reservation graph and runs no row projection of its own.
  */
-interface BundleUser {
-  id?: string;
-  username?: string;
-  name?: string;
-  email?: string;
-}
-
-interface ResourceBundle {
-  resources?: AllocatableImpl[];
-  users?: BundleUser[];
-  userId?: string;
-}
-
-interface Classified {
-  id?: string;
-  classification?: ClassificationImpl;
-}
-
 @Component({
   selector: 'app-reservations',
   imports: [
-    DatePipe,
     MatTableModule,
     MatSortModule,
     MatPaginatorModule,
@@ -58,11 +37,10 @@ interface Classified {
     MatToolbarModule,
     MatButtonModule,
     MatIconModule,
-    MatDialogModule,
   ],
   template: `
     <mat-toolbar color="primary">
-      <span>My Reservations</span>
+      <span>Reservations</span>
       <span class="spacer"></span>
       @if (username()) {
         <span class="username">{{ username() }}</span>
@@ -80,40 +58,25 @@ interface Classified {
         <p class="error">{{ error() }}</p>
       } @else {
         <p class="meta">
-          {{ dataSource.data.length }} appointment(s), {{ resourceCount() }} resource(s) hydrated.
+          {{ totalCount() }} reservation row(s)
+          @if (incomplete()) {
+            — result truncated, narrow the date range
+          }
         </p>
 
         <table mat-table [dataSource]="dataSource" matSort class="mat-elevation-z1">
-          <ng-container matColumnDef="start">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Start</th>
-            <td mat-cell *matCellDef="let r">{{ r.start | date: 'medium' }}</td>
-          </ng-container>
+          @for (col of columns(); track col.id) {
+            <ng-container [matColumnDef]="col.id ?? ''">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ col.label }}</th>
+              <td mat-cell *matCellDef="let row">{{ formatCell(row, col) }}</td>
+            </ng-container>
+          }
 
-          <ng-container matColumnDef="end">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>End</th>
-            <td mat-cell *matCellDef="let r">{{ r.end | date: 'medium' }}</td>
-          </ng-container>
-
-          <ng-container matColumnDef="reservationName">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Event</th>
-            <td mat-cell *matCellDef="let r">{{ r.reservationName }}</td>
-          </ng-container>
-
-          <ng-container matColumnDef="allocatables">
-            <th mat-header-cell *matHeaderCellDef>Allocatables</th>
-            <td mat-cell *matCellDef="let r">{{ r.allocatables.join(', ') }}</td>
-          </ng-container>
-
-          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr
-            mat-row
-            *matRowDef="let r; columns: displayedColumns"
-            class="row-clickable"
-            (click)="openDialog(r)"
-          ></tr>
+          <tr mat-header-row *matHeaderRowDef="displayedColumns()"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns()"></tr>
 
           <tr class="mat-row" *matNoDataRow>
-            <td class="empty" [attr.colspan]="displayedColumns.length">
+            <td class="empty" [attr.colspan]="displayedColumns().length || 1">
               No reservations in the queried window.
             </td>
           </tr>
@@ -152,12 +115,6 @@ interface Classified {
       table {
         width: 100%;
       }
-      .row-clickable {
-        cursor: pointer;
-      }
-      .row-clickable:hover {
-        background: rgba(0, 0, 0, 0.04);
-      }
       .empty {
         padding: 1rem;
         color: rgba(0, 0, 0, 0.5);
@@ -176,109 +133,61 @@ interface Classified {
   ],
 })
 export class ReservationsComponent implements OnInit, AfterViewInit {
-  private readonly api = inject(RemoteStorageControllerService);
-  private readonly dialog = inject(MatDialog);
+  private readonly table = inject(TableViewControllerService);
   protected readonly auth = inject(AuthService);
 
-  readonly displayedColumns = ['start', 'end', 'reservationName', 'allocatables'];
-  readonly dataSource = new MatTableDataSource<AppointmentLite>([]);
+  readonly dataSource = new MatTableDataSource<TableRow>([]);
+  readonly columns = signal<TableColumnDescriptor[]>([]);
+  readonly displayedColumns = computed(() => this.columns().map((c) => c.id ?? ''));
 
   loading = signal(true);
   error = signal<string | null>(null);
-  resourceCount = signal(0);
+  totalCount = signal(0);
+  incomplete = signal(false);
   username = signal('');
 
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
 
   ngOnInit() {
-    const now = new Date();
-    const start = new Date(now.getFullYear() - 1, 0, 1).toISOString().replace(/\.\d{3}Z$/, '');
-    const end = new Date(now.getFullYear() + 2, 11, 31).toISOString().replace(/\.\d{3}Z$/, '');
+    const claims = this.auth.identityClaims() ?? {};
+    this.username.set(String(claims['preferred_username'] ?? claims['name'] ?? ''));
 
-    this.api
-      .getResources()
-      .pipe(
-        switchMap((bundle: ResourceBundle) => {
-          const resources = this.buildResourceIndex(bundle);
-          this.resourceCount.set(resources.size);
-          this.username.set(this.resolveUsername(bundle));
-          // Scope to the logged-in user's own events: getResources() reports
-          // the current user's id, which queryAppointments accepts as an owner
-          // filter — the same query as selecting that user in the Swing client.
-          const ownerIds = bundle.userId ? [bundle.userId] : [];
-          return this.api
-            .queryAppointments({ start, end, ownerIds })
-            .pipe(map((appts) => ({ appts, resources })));
-        }),
-      )
-      .subscribe({
-        next: ({ appts, resources }) => {
-          this.dataSource.data = this.flattenAppointments(appts, resources);
-          this.loading.set(false);
-        },
-        error: (err) => {
-          this.error.set(err?.error?.message ?? `Request failed (HTTP ${err?.status ?? '?'})`);
-          this.loading.set(false);
-        },
-      });
+    const year = new Date().getFullYear();
+    const from = `${year - 1}-01-01`;
+    const to = `${year + 2}-12-31`;
+
+    this.table.reservations(from, to).subscribe({
+      next: (page: TablePage) => {
+        this.columns.set(page.columns ?? []);
+        this.dataSource.data = page.rows ?? [];
+        this.totalCount.set(page.totalCount ?? this.dataSource.data.length);
+        this.incomplete.set(page.incomplete ?? false);
+        this.loading.set(false);
+      },
+      error: (err) => {
+        this.error.set(err?.error?.message ?? `Request failed (HTTP ${err?.status ?? '?'})`);
+        this.loading.set(false);
+      },
+    });
   }
 
   ngAfterViewInit() {
     this.dataSource.sort = this.sort;
     this.dataSource.paginator = this.paginator;
+    this.dataSource.sortingDataAccessor = (row, columnId) => {
+      const v: unknown = row.cells?.[columnId];
+      return typeof v === 'number' ? v : String(v ?? '');
+    };
   }
 
-  openDialog(row: AppointmentLite) {
-    this.dialog.open(ReservationDialogComponent, {
-      data: row,
-      width: '480px',
-      autoFocus: 'dialog',
-    });
-  }
-
-  private resolveUsername(bundle: ResourceBundle): string {
-    const me = (bundle.users ?? []).find((u) => u.id === bundle.userId);
-    return me?.username || me?.name || me?.email || '';
-  }
-
-  private buildResourceIndex(bundle: ResourceBundle): Map<string, string> {
-    const out = new Map<string, string>();
-    for (const r of bundle.resources ?? []) {
-      if (r.id) out.set(r.id, this.labelFor(r));
+  formatCell(row: TableRow, col: TableColumnDescriptor): string {
+    const v: unknown = row.cells?.[col.id ?? ''];
+    if (v === null || v === undefined) return '';
+    if (col.type === 'DATE') {
+      const d = new Date(v as string | number);
+      if (!isNaN(d.getTime())) return d.toLocaleString();
     }
-    return out;
-  }
-
-  private labelFor(resource: Classified): string {
-    const data = resource.classification?.data ?? {};
-    for (const key of ['name', 'surname', 'firstname', 'title']) {
-      const v = data[key];
-      if (Array.isArray(v) && v[0]) return String(v[0]);
-    }
-    const firstKey = Object.keys(data)[0];
-    const v = firstKey ? data[firstKey] : null;
-    return Array.isArray(v) && v[0] ? String(v[0]) : (resource.id ?? '');
-  }
-
-  private flattenAppointments(
-    payload: AppointmentMap,
-    resources: Map<string, string>,
-  ): AppointmentLite[] {
-    const result: AppointmentLite[] = [];
-    for (const res of payload.reservations ?? []) {
-      const name = this.labelFor(res) || '(no name)';
-      const allocIds = res.links?.['resources'] ?? res.links?.['allocatable'] ?? [];
-      const allocNames = allocIds.map((id) => resources.get(id) ?? id);
-      for (const appt of res.appointments ?? []) {
-        result.push({
-          start: appt.start ?? '',
-          end: appt.end ?? '',
-          reservationName: name,
-          allocatables: allocNames,
-        });
-      }
-    }
-    return result.sort((a, b) => (a.start < b.start ? -1 : 1));
+    return String(v);
   }
 }

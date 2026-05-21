@@ -25,6 +25,34 @@ import java.util.List;
 @Configuration
 public class SecurityConfig
 {
+    /**
+     * Dedicated chain for the rapla OAuth helper endpoints
+     * ({@code /api/auth/oauth/exchange/*}, {@code /api/auth/oauth/config}).
+     * These are pre-authentication endpoints — the SPA calls them to obtain
+     * a fresh token or discover available providers. They must never run the
+     * resource-server JWT filter, otherwise a stale Bearer left in the SPA's
+     * storage from a prior session is decoded, fails, and the request gets
+     * 401 before the controller can run (the "stale-JWT-blocks-OAuth-login"
+     * regression, 2026-05-21). The {@code permitAll} on the main chain is
+     * NOT sufficient — Spring's {@code BearerTokenAuthenticationFilter}
+     * rejects invalid tokens regardless of authorization rules. The only
+     * reliable carve-out is a separate chain that never installs the filter.
+     *
+     * Ordered ahead of the main chain ({@link #filterChain}, order=2) so
+     * Spring picks this one for {@code /api/auth/oauth/**} traffic.
+     */
+    @Bean
+    @org.springframework.core.annotation.Order(0)
+    public SecurityFilterChain oauthHelperFilterChain(HttpSecurity http) throws Exception
+    {
+        http
+                .securityMatcher("/api/auth/oauth/**")
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+                .csrf(csrf -> csrf.disable())
+                .cors(Customizer.withDefaults());
+        return http.build();
+    }
+
     @Bean
     @org.springframework.core.annotation.Order(2)
     public SecurityFilterChain filterChain(HttpSecurity http,
