@@ -564,18 +564,40 @@ If the Swing client crashes or is force-killed while impersonating:
 - The impersonation override may or may not have been persisted,
   depending on whether it was kept in memory or in TokenStore.
 
-**Default behavior:** discard the impersonation override on cold
-startup. Rationale: a restart is an explicit state-change moment;
-silently resuming a pre-restart impersonation surprises the admin.
-The audit log records the impersonation event so ops still has the
-record. Admin can right-click → "Switch to alice" again if they
-intended to continue.
+**Default behavior (Swing):** discard the impersonation override on
+cold startup. Rationale: a restart is an explicit state-change
+moment; silently resuming a pre-restart impersonation surprises the
+admin. The audit log records the impersonation event so ops still
+has the record. Admin can right-click → "Switch to alice" again if
+they intended to continue.
 
-This matches PRD 051 Open Question §5's "lean: persist across
-restart" — *only that lean is now reversed for the impersonation
-override* (which we control entirely) while the admin's normal
-tokens remain persistent as before (those are the library's
-business, and they survive restart like any other login session).
+**SPA behavior (revised 2026-05-22):** persist the impersonation
+override to **`sessionStorage`** (tab-scoped). A page reload (F5)
+in the same tab keeps the admin acting as the target — without
+persistence, every navigation that happens to trigger a full reload
+silently reverted to admin, which surprised the admin in the
+opposite direction. The tab-scoped store is the deliberate
+trade-off: a new tab still starts fresh as admin (so "I want a
+clean session" still works just by opening a new tab), and walking
+away + closing the tab discards the override naturally. Clear paths
+that wipe both the in-memory signal and the storage entry:
+
+- `endImpersonation()` (explicit "switch back" + the OAuth callback's
+  pre-existing call before processing a fresh `?code=…`)
+- `signOut()`, `handleUnauthenticated()`, `handleAuthRejection()`
+- `impersonate(targetUsername)` with `targetUsername` equal to the
+  admin's own `preferred_username` — short-circuits to
+  `endImpersonation()` without a server round-trip, so re-selecting
+  yourself from the autocomplete is a clean switch-back rather than
+  a wasted mint + audit-log entry.
+
+The PRD-051 line-63 follow-up ("if the SPA evolves to persist the
+override … the callback would need to clear it explicitly") was
+already satisfied — `CallbackComponent.ngOnInit` calls
+`endImpersonation()` before processing the OAuth code. Coverage
+lives in `auth.service.spec.ts` ("impersonation override persists
+across reload (sessionStorage)" + "switching to your own user ends
+impersonation"), 12 cases total.
 
 ### Why we don't store the original admin password anywhere
 

@@ -70,6 +70,16 @@ export class AuthService {
    */
   private static readonly ACTIVE_PROVIDER_KEY = 'rapla.oauth.activeProvider';
 
+  /**
+   * sessionStorage key for the impersonation override. Tab-scoped so a
+   * new tab starts fresh as the admin (matching PRD 051's "explicit
+   * state-change moment" instinct) but a page reload in the same tab
+   * keeps the admin acting as the target. Cleared on every logout-style
+   * path AND on the OAuth callback (a fresh login mustn't inherit a
+   * stale override from a prior session).
+   */
+  private static readonly IMPERSONATION_KEY = 'rapla.impersonationOverride';
+
   private readonly oauth = inject(OAuthService);
   private readonly router = inject(Router);
 
@@ -84,11 +94,43 @@ export class AuthService {
    * the target's username (for the renewal path that needs it as a
    * form parameter). Set by {@link impersonate}, cleared by
    * {@link endImpersonation} and every logout path (signOut,
-   * handleUnauthenticated, handleAuthRejection). In-memory only —
-   * discarded on cold restart per PRD 051 § "Edge case: client restart
-   * mid-impersonation".
+   * handleUnauthenticated, handleAuthRejection). Backed by tab-scoped
+   * sessionStorage so a page reload (F5) in the same tab keeps the
+   * admin acting as the target; a new tab starts fresh as admin.
    */
-  readonly impersonationOverride = signal<{ accessToken: string; targetUsername: string } | null>(null);
+  readonly impersonationOverride = signal<{ accessToken: string; targetUsername: string } | null>(
+    AuthService.readPersistedOverride(),
+  );
+
+  /**
+   * Read and validate the persisted override at construction time.
+   * Malformed JSON, missing fields, or any read-time error → treat as
+   * no override and evict the bad entry so it can't trip up later code.
+   * Static so the field initializer above can use it without `this`.
+   */
+  private static readPersistedOverride(): { accessToken: string; targetUsername: string } | null {
+    try {
+      const raw = sessionStorage.getItem(AuthService.IMPERSONATION_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as Partial<{ accessToken: string; targetUsername: string }>;
+      if (
+        parsed &&
+        typeof parsed.accessToken === 'string' &&
+        typeof parsed.targetUsername === 'string'
+      ) {
+        return { accessToken: parsed.accessToken, targetUsername: parsed.targetUsername };
+      }
+      sessionStorage.removeItem(AuthService.IMPERSONATION_KEY);
+      return null;
+    } catch {
+      try {
+        sessionStorage.removeItem(AuthService.IMPERSONATION_KEY);
+      } catch {
+        /* ignore — quota or non-storage env */
+      }
+      return null;
+    }
+  }
 
   /** True while an impersonation is active (admin acting as another user). */
   readonly isImpersonating = computed(() => this.impersonationOverride() !== null);
@@ -416,6 +458,21 @@ export class AuthService {
    * failure; the caller surfaces the error and remains in admin mode.
    */
   async impersonate(targetUsername: string): Promise<boolean> {
+    // Self-target → end impersonation, don't mint a useless self-as-self
+    // token (wasted round-trip + audit-log noise). Compare against the
+    // admin's claims, not the override's targetUsername, so it works
+    // both for "switch back to me" from an active impersonation and for
+    // "I selected myself" with no impersonation active.
+    const claims = this.oauth.getIdentityClaims() as Record<string, unknown> | null;
+    const adminUsername =
+      typeof claims?.['preferred_username'] === 'string'
+        ? (claims['preferred_username'] as string)
+        : null;
+    if (adminUsername && adminUsername === targetUsername) {
+      this.endImpersonation();
+      return true;
+    }
+
     const adminBearer = this.adminToken();
     if (!adminBearer) return false;
     try {
@@ -431,10 +488,14 @@ export class AuthService {
       if (!resp.ok) return false;
       const body = (await resp.json()) as { access_token?: string };
       if (!body.access_token) return false;
-      this.impersonationOverride.set({
-        accessToken: body.access_token,
-        targetUsername,
-      });
+      const override = { accessToken: body.access_token, targetUsername };
+      this.impersonationOverride.set(override);
+      try {
+        sessionStorage.setItem(AuthService.IMPERSONATION_KEY, JSON.stringify(override));
+      } catch {
+        /* quota / disabled storage — keep the in-memory override, just
+           lose the reload-persistence. Not worth failing the call for. */
+      }
       return true;
     } catch (err) {
       console.warn('[impersonate] request failed:', err);
@@ -464,6 +525,11 @@ export class AuthService {
    */
   endImpersonation(): void {
     this.impersonationOverride.set(null);
+    try {
+      sessionStorage.removeItem(AuthService.IMPERSONATION_KEY);
+    } catch {
+      /* ignore — non-storage env */
+    }
   }
 
   isLoggedIn(): boolean {

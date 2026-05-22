@@ -165,11 +165,7 @@ public class RaplaJNLPController
         {
             return ResponseEntity.badRequest().build();
         }
-        if (!isWebclientJar(request.getServletContext(), name))
-        {
-            return ResponseEntity.notFound().build();
-        }
-        URL jarUrl = locateClasspathJar(name);
+        URL jarUrl = webclientJarIndex(request.getServletContext()).get(name.toLowerCase(Locale.ROOT));
         if (jarUrl == null)
         {
             return ResponseEntity.notFound().build();
@@ -183,22 +179,30 @@ public class RaplaJNLPController
                 .body(resource);
     }
 
-    private boolean isWebclientJar(ServletContext context, String name) throws IOException
+    /** One-time lookup table from lowercase jar name → resource URL, built on first
+     *  request. The classpath / classloader URL set is fixed for the JVM lifetime,
+     *  so the index is built once and reused; subsequent {@code /webclient/X.jar}
+     *  hits are a Map lookup. Double-checked locking on a {@code volatile} ref keeps
+     *  the build cost to one thread even under concurrent first requests. */
+    private volatile java.util.Map<String, URL> webclientJarIndex;
+
+    private java.util.Map<String, URL> webclientJarIndex(ServletContext context) throws IOException
     {
-        String prefix = "webclient/";
-        for (String entry : getClientLibs(context))
+        java.util.Map<String, URL> local = webclientJarIndex;
+        if (local != null) return local;
+        synchronized (this)
         {
-            if (entry.startsWith(prefix) && entry.substring(prefix.length()).equals(name))
-            {
-                return true;
-            }
+            local = webclientJarIndex;
+            if (local != null) return local;
+            local = buildWebclientJarIndex(context);
+            webclientJarIndex = local;
+            return local;
         }
-        return false;
     }
 
     /**
-     * Resolves a webclient jar name (e.g. "rapla-client-2.1-SNAPSHOT.jar") to a URL.
-     * Three lookup strategies, tried in order:
+     * Resolves every jar name in {@code clientlibs.properties} to a URL. Three
+     * lookup strategies, tried in order; the first hit per jar wins:
      * <ol>
      *   <li>{@code java.class.path} — covers {@code mvn spring-boot:run} (every
      *       dependency jar is on the classpath individually) and {@code java -cp …}
@@ -213,30 +217,40 @@ public class RaplaJNLPController
      *       BOOT-INF/classes/static/webclient/ (rxjava, rapla-client).</li>
      * </ol>
      */
-    private URL locateClasspathJar(String name)
+    private java.util.Map<String, URL> buildWebclientJarIndex(ServletContext context) throws IOException
     {
-        String target = name.toLowerCase(Locale.ROOT);
+        // wanted: lowercase key → original case (the latter is needed because the
+        // static/webclient/ resource path is case-sensitive on case-sensitive
+        // filesystems, but the URL-lookup keys are lowercased for case-insensitive
+        // matching against the runtime classpath).
+        java.util.Map<String, String> wanted = new java.util.HashMap<>();
+        String prefix = "webclient/";
+        for (String entry : getClientLibs(context))
+        {
+            if (entry.startsWith(prefix))
+            {
+                String name = entry.substring(prefix.length());
+                wanted.put(name.toLowerCase(Locale.ROOT), name);
+            }
+        }
+
+        java.util.Map<String, URL> result = new java.util.HashMap<>();
+
         String classpath = System.getProperty("java.class.path", "");
         for (String entry : classpath.split(File.pathSeparator))
         {
             if (entry.isEmpty()) continue;
             File file = new File(entry);
             if (!file.isFile()) continue;
-            if (!file.getName().toLowerCase(Locale.ROOT).equals(target)) continue;
+            String key = file.getName().toLowerCase(Locale.ROOT);
+            if (!wanted.containsKey(key) || result.containsKey(key)) continue;
             try
             {
-                return file.toURI().toURL();
+                result.put(key, file.toURI().toURL());
             }
-            catch (MalformedURLException ignored)
-            {
-                // try the next match
-            }
+            catch (MalformedURLException ignored) { }
         }
-        // Fat JAR mode: enumerate the classloader's URLs. Spring Boot 4's
-        // LaunchedClassLoader extends URLClassLoader and exposes BOOT-INF/lib/
-        // entries via getURLs(). For each URL, strip the trailing "!/" if present
-        // (nested-jar URLs end with "!/") and compare the last path segment to
-        // the target jar name. Case-insensitive to match the java.class.path branch.
+
         ClassLoader cl = getClass().getClassLoader();
         if (cl instanceof java.net.URLClassLoader)
         {
@@ -246,14 +260,20 @@ public class RaplaJNLPController
                 if (s.endsWith("!/")) s = s.substring(0, s.length() - 2);
                 int slash = s.lastIndexOf('/');
                 if (slash < 0) continue;
-                String segment = s.substring(slash + 1);
-                if (segment.toLowerCase(Locale.ROOT).equals(target))
-                {
-                    return url;
-                }
+                String key = s.substring(slash + 1).toLowerCase(Locale.ROOT);
+                if (!wanted.containsKey(key) || result.containsKey(key)) continue;
+                result.put(key, url);
             }
         }
-        return getClass().getClassLoader().getResource("static/webclient/" + name);
+
+        for (java.util.Map.Entry<String, String> e : wanted.entrySet())
+        {
+            if (result.containsKey(e.getKey())) continue;
+            URL u = getClass().getClassLoader().getResource("static/webclient/" + e.getValue());
+            if (u != null) result.put(e.getKey(), u);
+        }
+
+        return java.util.Map.copyOf(result);
     }
 
     private String getCodebase(HttpServletRequest request)
