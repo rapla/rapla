@@ -198,10 +198,20 @@ public class RaplaJNLPController
 
     /**
      * Resolves a webclient jar name (e.g. "rapla-client-2.1-SNAPSHOT.jar") to a URL.
-     * Tries the application classpath (via {@code java.class.path}, covering both
-     * extracted-fat-JAR and {@code java -cp} runs), then falls back to the
-     * {@code static/webclient/<name>} classpath resource (jars excluded from
-     * BOOT-INF/lib/ but still bundled).
+     * Three lookup strategies, tried in order:
+     * <ol>
+     *   <li>{@code java.class.path} — covers {@code mvn spring-boot:run} (every
+     *       dependency jar is on the classpath individually) and {@code java -cp …}
+     *       launches.</li>
+     *   <li>The current classloader's URL list — covers the Spring Boot fat JAR
+     *       launched via {@code java -jar fat-jar.jar}, where the launcher's
+     *       classloader exposes BOOT-INF/lib/*.jar entries as nested URLs like
+     *       {@code jar:nested:/path/to/fatjar.jar/!BOOT-INF/lib/jackson-core-3.1.2.jar!/}.
+     *       {@code java.class.path} in this mode is just the outer fat JAR.</li>
+     *   <li>The {@code static/webclient/<name>} classpath resource — covers jars
+     *       excluded from BOOT-INF/lib/ but still bundled at
+     *       BOOT-INF/classes/static/webclient/ (rxjava, rapla-client).</li>
+     * </ol>
      */
     private URL locateClasspathJar(String name)
     {
@@ -220,6 +230,27 @@ public class RaplaJNLPController
             catch (MalformedURLException ignored)
             {
                 // try the next match
+            }
+        }
+        // Fat JAR mode: enumerate the classloader's URLs. Spring Boot 4's
+        // LaunchedClassLoader extends URLClassLoader and exposes BOOT-INF/lib/
+        // entries via getURLs(). For each URL, strip the trailing "!/" if present
+        // (nested-jar URLs end with "!/") and compare the last path segment to
+        // the target jar name. Case-insensitive to match the java.class.path branch.
+        ClassLoader cl = getClass().getClassLoader();
+        if (cl instanceof java.net.URLClassLoader)
+        {
+            for (URL url : ((java.net.URLClassLoader) cl).getURLs())
+            {
+                String s = url.toString();
+                if (s.endsWith("!/")) s = s.substring(0, s.length() - 2);
+                int slash = s.lastIndexOf('/');
+                if (slash < 0) continue;
+                String segment = s.substring(slash + 1);
+                if (segment.toLowerCase(Locale.ROOT).equals(target))
+                {
+                    return url;
+                }
             }
         }
         return getClass().getClassLoader().getResource("static/webclient/" + name);

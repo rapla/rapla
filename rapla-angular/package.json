@@ -37,6 +37,7 @@
     "@angular/cli": "^21.2.10",
     "@angular/compiler-cli": "^21.2.0",
     "@eslint/js": "^10.0.1",
+    "@openapitools/openapi-generator-cli": "^2.32.0",
     "@playwright/test": "^1.60.0",
     "angular-eslint": "21.3.1",
     "eslint": "^10.0.3",

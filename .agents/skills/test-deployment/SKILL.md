@@ -97,6 +97,25 @@ done
 
 Expected: every jar reports `jar verified` and shows the same signer DN. **Mixed signers cause OpenWebStart to refuse the launch under `<all-permissions/>`** — see PRD 003 §JNLP/Code Signing for the full signing-chain rationale.
 
+### `-Psign-pkcs11` (YubiKey) on WSL — attach from bash, no PowerShell needed
+
+If the PKCS#11 signing step fails with `slotListIndex is 0 but token only has 0 slots`, the YubiKey isn't forwarded to WSL. Drive `usbipd` from the same bash session — `usbipd.exe` is on the Windows PATH and reachable through the WSL interop:
+
+```bash
+usbipd.exe list                                  # find the VID 1050:0407 BUSID — typically 2-2
+usbipd.exe attach --wsl --busid 2-2              # idempotent; safe to re-run every session
+lsusb | grep -i yubi                             # verify the device is now in WSL
+opensc-tool --list-readers                       # verify pcscd sees the reader
+```
+
+Then resume the build — `-pl rapla-app -am` (not `-rf :rapla-app`, which won't pull in sibling reactor modules):
+
+```bash
+mvn -pl rapla-app -am package -DskipTests -Psign-pkcs11   # touch the YubiKey when the 8-second countdown fires
+```
+
+Common follow-ups when `attach` succeeds but signing still fails: `sudo systemctl restart pcscd.socket`; or detach + re-attach via `usbipd.exe detach --busid 2-2 && usbipd.exe attach --wsl --busid 2-2`. Full per-session checklist + polkit/opensc one-time setup lives in [`docs/signing.md`](../../../docs/signing.md).
+
 ## Distribution archive
 
 ```bash

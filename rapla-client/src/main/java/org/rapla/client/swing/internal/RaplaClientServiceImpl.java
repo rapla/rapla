@@ -507,27 +507,48 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
 
     private void startLogin() throws Exception
     {
-        // Try to skip the login dialog entirely by refreshing a cached refresh token.
-        // PRD 029 Phase 2: zero-browser-on-launch property. Best-effort — any failure
-        // (no cached token, token expired, server unreachable, store unreadable) just
-        // falls through to the normal login dialog. Runs on a worker thread so the
-        // EDT isn't blocked by the HTTP call.
-        getLogger().info("startup: checking for cached refresh token to skip the login dialog…");
-        commandScheduler.supply(this::tryRestoreFromCachedRefreshToken)
-                .thenAccept(restored -> {
-                    if (restored)
+        // PRD 029 Phase 2 + the swing-legacy-login admin flag tied together:
+        //   swing-legacy-login=true  → always show the login dialog, no silent reauth.
+        //   swing-legacy-login=false → try silent reauth from the cached refresh token;
+        //                              fall back to startLoginInThread (which auto-fires
+        //                              the browser OAuth flow) on any failure.
+        // Discovery failure or OAuth disabled server-side is treated as legacy mode —
+        // there's no OAuth refresh endpoint to call against, so skip straight to the
+        // dialog.
+        getLogger().info("startup: probing /api/auth/oauth/config to decide silent-reauth vs login dialog…");
+        commandScheduler.supply(this::fetchOauthConfig)
+                .thenAccept(cfg -> {
+                    boolean silentReauthAllowed = cfg != null && cfg.isEnabled() && !cfg.isSwingLegacyLogin();
+                    if (!silentReauthAllowed)
                     {
-                        getLogger().info("startup: silent reauth succeeded — main view loading, no dialog");
-                        SwingSafe.invokeLater(logger, this::beginRaplaSessionAfterRestore);
-                    }
-                    else
-                    {
-                        getLogger().info("startup: falling back to login dialog (Swing dialog is the emergency fallback path)");
+                        getLogger().info("startup: silent reauth disabled (" +
+                                (cfg == null ? "no discovery"
+                                        : !cfg.isEnabled() ? "OAuth disabled server-side"
+                                        : "swing-legacy-login=true")
+                                + ") — showing login dialog");
                         SwingSafe.invokeLater(logger, this::startLoginInThread);
+                        return;
                     }
+                    commandScheduler.supply(this::tryRestoreFromCachedRefreshToken)
+                            .thenAccept(restored -> {
+                                if (restored)
+                                {
+                                    getLogger().info("startup: silent reauth succeeded — main view loading, no dialog");
+                                    SwingSafe.invokeLater(logger, this::beginRaplaSessionAfterRestore);
+                                }
+                                else
+                                {
+                                    getLogger().info("startup: silent reauth did not restore — falling through to login dialog");
+                                    SwingSafe.invokeLater(logger, this::startLoginInThread);
+                                }
+                            })
+                            .exceptionally(ex -> {
+                                getLogger().info("startup: silent reauth failed (" + ex.getMessage() + ") — falling through to login dialog");
+                                SwingSafe.invokeLater(logger, this::startLoginInThread);
+                            });
                 })
                 .exceptionally(ex -> {
-                    getLogger().info("startup: restore failed (" + ex.getMessage() + ") — falling back to login dialog");
+                    getLogger().info("startup: discovery failed (" + ex.getMessage() + ") — showing login dialog");
                     SwingSafe.invokeLater(logger, this::startLoginInThread);
                 });
     }

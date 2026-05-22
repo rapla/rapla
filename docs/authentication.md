@@ -60,6 +60,30 @@ For per-device revocation, theft detection via rotation conflict, and
 session inventory UI, deploy against Keycloak (PRD 031: IdP swap is an
 env-var override of the discovery endpoint URLs).
 
+### Access-token claim shape (rapla-SAS)
+
+Rapla's resource-server JWT decoder validates incoming Bearers against
+the JWKS published at `/oauth2/jwks` (the multi-issuer decoder also
+accepts external IdP tokens — see § "External IdP login"). Tokens
+minted by rapla-SAS itself carry:
+
+| Claim | Type | When emitted | Purpose |
+|---|---|---|---|
+| `sub` | string (UUID) | always | rapla User id. Resolver-of-record for `RemoteSession#checkAndGetUser`. |
+| `typ` | `"access"` \| `"refresh"` \| `"api_key"` | always | Distinguishes token kind. `refresh` and `api_key` are rejected on the resource-server path. |
+| `iss` | string | always | Issuer URL. `IssuerAwareJwtDecoder` keys its decoder selection on this — rapla-SAS or one of the configured external IdPs. |
+| `aud` | string | always | `"rapla-client"` for rapla-SAS tokens. |
+| `iat` / `exp` | int (UNIX) | always | Issued-at + expiry. 1 h TTL on access; 30 d on refresh. |
+| `preferred_username` | string | rapla-SAS access tokens (PRD 051, 2026-05-22) | OIDC standard claim. Used by the SPA toolbar chip to render the effective user without an extra `/api/users/me` round-trip. Emitted by both the Spring AS `OAuth2TokenCustomizer` path (authorization_code grant) and the `JwtConfig.JwtIssuer` direct-mint path (password / refresh_token grants) — both grants produce structurally identical tokens. |
+| `name` | string | rapla-SAS access tokens (PRD 051, 2026-05-22) | Display name (may be empty if the rapla User has no `name`). |
+| `act` | object `{sub, username}` | impersonation tokens only (PRD 051) | RFC 8693 delegation actor. Names the admin who minted the impersonation token; the effective subject (`sub`) is the impersonation target. Absent on regular access tokens. See § "Admin impersonation" below. |
+| `jti` | string (UUID) | rapla-SAS | Per-token unique id. Used for audit correlation. |
+
+External-IdP tokens (Keycloak, Entra, Google) carry their own claim
+shape — rapla's `ExternalUserResolver` reads `upn` → `preferred_username`
+→ `email` (case-insensitive) to map them onto a rapla User. See
+§ "External IdP login" for the resolver rules.
+
 ## Direct password via OAuth2 password grant
 
 Replaces the deleted `/api/auth/login` rapla-custom JSON endpoint with
@@ -625,7 +649,7 @@ Content-Type: application/json
 | Issued by | rapla-SAS (always, regardless of which IdP the actor authenticated with) |
 | TTL | 1 h (`access-token-time-to-live` in `application.yml`) |
 | **No `refresh_token`** | Renewal is via repeat call to the same endpoint with the admin's Bearer |
-| `act` claim | `{sub: <admin UUID>, username: <admin>}` per RFC 8693 delegation semantics |
+| `act` claim | `{sub: <admin UUID>, username: <admin>}` per RFC 8693 delegation semantics — see § "Access-token claim shape" for the rest of the JWT |
 
 Failure codes:
 

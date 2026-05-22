@@ -148,6 +148,29 @@ opensc-tool --list-readers               # in WSL — expect "Yubico YubiKey ...
 
 If the reader is missing, restart pcscd: `sudo systemctl restart pcscd.socket`.
 
+### Attaching the YubiKey from inside WSL (no PowerShell switch)
+
+`usbipd.exe` is on the Windows PATH and reachable from WSL via the interop layer
+— so the attach can be driven from the same bash session that runs the build, no
+need to switch to PowerShell. The YubiKey's BUSID is stable for a given USB port
+(VID `1050:0407`), so you can hard-code it once you know it.
+
+```bash
+usbipd.exe list                                  # find the VID 1050:0407 BUSID — typically 2-2
+usbipd.exe attach --wsl --busid 2-2              # forward to WSL (idempotent — safe to re-run)
+lsusb | grep -i yubi                             # verify: "1050:0407 Yubico.com Yubikey ..."
+opensc-tool --list-readers                       # verify pcscd sees the reader
+```
+
+Failure modes:
+- `lsusb` empty → attach didn't take effect. Re-run `usbipd.exe attach` (most common after `wsl --shutdown`).
+- `lsusb` shows the YubiKey but `opensc-tool` says "No smart card readers found" → `sudo systemctl restart pcscd.socket`.
+- Both work but `pkcs11-tool ... --login` returns 0 slots → the polkit rule (step 3) is missing or pcscd is wedged. Restart pcscd; if still 0 slots, detach + re-attach via `usbipd.exe detach --busid 2-2 && usbipd.exe attach --wsl --busid 2-2`.
+
+The `bind` step (one-time, elevated) only has to be done once per device — after
+that the device stays in `Shared` state across reboots and only `attach` is needed
+per session.
+
 ---
 
 ## Running a signed build

@@ -131,16 +131,18 @@ rapla:
     # Swing desktop client via /api/auth/oauth/config (the client probes
     # discovery at startup; no JNLP change).
     #
-    # swing-legacy-login=false (default): the Swing client auto-fires the
-    # browser OAuth flow — the username/password dialog is never shown.
-    # swing-legacy-login=true: the Swing client shows the legacy
-    # username/password dialog instead. Use this to keep end-users on the
-    # familiar dialog while OAuth is being rolled out.
-    swing-legacy-login: ${RAPLA_OAUTH_SWING_LEGACY_LOGIN:false}
-    # Only effective when swing-legacy-login=true. When true, the legacy
-    # dialog also shows the "Sign in with browser…" button so willing users
-    # can opt into testing the SSO flow without it being forced on everyone.
-    swing-legacy-show-sso-button: ${RAPLA_OAUTH_SWING_LEGACY_SHOW_SSO_BUTTON:false}
+    # swing-legacy-login=true (default): the Swing client shows the legacy
+    # username/password dialog. This is the safe default during OAuth rollout —
+    # end-users see the familiar dialog instead of being auto-redirected to a
+    # browser flow that may not be configured yet.
+    # swing-legacy-login=false: the Swing client auto-fires the browser OAuth
+    # flow on launch — the username/password dialog is never shown. Flip this
+    # once OAuth is fully provisioned and you want to retire password login.
+    swing-legacy-login: ${RAPLA_OAUTH_SWING_LEGACY_LOGIN:true}
+    # Only effective when swing-legacy-login=true. When true (default), the
+    # legacy dialog also shows the "Sign in with browser…" button so willing
+    # users can opt into the SSO flow alongside the password form.
+    swing-legacy-show-sso-button: ${RAPLA_OAUTH_SWING_LEGACY_SHOW_SSO_BUTTON:true}
     # Developer convenience: accept redirect URIs whose host is in 172.16.0.0/12
     # (the default Hyper-V WSL2 bridge range) with any port, provided the path
     # matches one of the registered URIs. Lets a developer run the Swing client
