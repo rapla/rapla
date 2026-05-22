@@ -1,11 +1,20 @@
 package org.rapla.server.spring.web;
 
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.nimbusds.jwt.JWTParser;
 import com.nimbusds.jwt.JWTClaimsSet;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.rapla.entities.User;
+import org.rapla.entities.configuration.Preferences;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.server.spring.RaplaSpringBootApplication;
+import org.rapla.server.spring.RefreshSessionService;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -21,11 +30,13 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -79,6 +90,29 @@ class ImpersonationControllerTest
 
     @Autowired
     MockMvc mockMvc;
+
+    @Autowired
+    RaplaFacade raplaFacade;
+
+    private ListAppender<ILoggingEvent> auditAppender;
+
+    @BeforeEach
+    void attachAuditAppender()
+    {
+        // Audit lines are emitted by the rapla Logger bean (Slf4j-backed,
+        // category "rapla"). Logback's root logger receives propagated events,
+        // so attaching the ListAppender there captures the audit lines too.
+        auditAppender = new ListAppender<>();
+        auditAppender.start();
+        ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger("rapla")).addAppender(auditAppender);
+    }
+
+    @AfterEach
+    void detachAuditAppender()
+    {
+        ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger("rapla")).detachAppender(auditAppender);
+        auditAppender.stop();
+    }
 
     private String loginAs(String username, String password) throws Exception
     {
@@ -218,5 +252,84 @@ class ImpersonationControllerTest
                 .andExpect(status().isOk());
         // (the key is created against the impersonated user's identity —
         // that's fine; the test asserts only that the token is honoured.)
+    }
+
+    @Test
+    void auditLogEmittedForEachIssuanceIncludingRenewal() throws Exception
+    {
+        // PRD 051 § "Audit log": one INFO line per /api/auth/impersonate
+        // call, including renewals. Verifies the audit cadence == the
+        // renewal cadence (an admin running an hour-long session
+        // produces one initial line + one renewal line / hour).
+        String adminToken = loginAs("homer", "duffs");
+        mintFor(adminToken, "monty");
+        mintFor(adminToken, "monty");
+
+        List<String> auditLines = auditAppender.list.stream()
+                .map(ILoggingEvent::getFormattedMessage)
+                .filter(m -> m.startsWith("Impersonation:"))
+                .toList();
+        assertEquals(2, auditLines.size(),
+                "expected exactly one audit line per impersonate call, got " + auditLines);
+        for (String line : auditLines)
+        {
+            assertTrue(line.contains("actor=homer"), "audit line must name the actor by username: " + line);
+            assertTrue(line.contains("target=monty"), "audit line must name the target by username: " + line);
+            assertTrue(line.contains("uuid="), "audit line must include UUIDs for forensic correlation: " + line);
+        }
+    }
+
+    @Test
+    void authorizationFailureDoesNotProduceSuccessAuditLine() throws Exception
+    {
+        // 403 path: monty (group admin) cannot impersonate homer (global
+        // admin). The success-path INFO audit line must NOT be emitted.
+        // Negative regression: previously a misplaced log statement could
+        // record an attempt as if it had succeeded.
+        String groupAdminToken = loginAs("monty", "burns");
+        mockMvc.perform(post("/api/auth/impersonate")
+                        .header("Authorization", "Bearer " + groupAdminToken)
+                        .contentType("application/x-www-form-urlencoded")
+                        .content("target_username=homer"))
+                .andExpect(status().isForbidden());
+
+        boolean anySuccessLine = auditAppender.list.stream()
+                .map(ILoggingEvent::getFormattedMessage)
+                .anyMatch(m -> m.startsWith("Impersonation:"));
+        assertFalse(anySuccessLine,
+                "no 'Impersonation:' audit line must appear on a 403 path");
+    }
+
+    @Test
+    void noSessionPreferenceWrittenForTargetAsSideEffect() throws Exception
+    {
+        // PRD 051 § "What's NOT stored anywhere": impersonation must not
+        // touch the target user's org.rapla.auth.session preference. If
+        // it did, the target's own refresh-token slot would be clobbered
+        // (single-token-per-user model — see RefreshSessionService).
+        User target = raplaFacade.getUser("monty");
+        Preferences before = raplaFacade.getPreferences(target);
+        String sessionBefore = before.getEntryAsString(RefreshSessionService.SESSION, null);
+
+        String adminToken = loginAs("homer", "duffs");
+        mintFor(adminToken, "monty");
+        mintFor(adminToken, "monty");
+
+        // Re-read post-impersonation. The session slot may legitimately
+        // be null (testdefault.xml monty has never logged in via OAuth in
+        // this run); either way, it must equal its pre-impersonation
+        // value — impersonation cannot have written to it.
+        Preferences after = raplaFacade.getPreferences(target);
+        String sessionAfter = after.getEntryAsString(RefreshSessionService.SESSION, null);
+        if (sessionBefore == null)
+        {
+            assertNull(sessionAfter,
+                    "impersonation must not write a refresh-token slot for the target");
+        }
+        else
+        {
+            assertEquals(sessionBefore, sessionAfter,
+                    "impersonation must not alter the target's refresh-token slot");
+        }
     }
 }

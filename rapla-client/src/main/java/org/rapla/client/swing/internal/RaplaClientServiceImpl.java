@@ -315,6 +315,12 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             {
                 if (!isRestartingGUI()) {
                     stop();
+                    // PRD 052 Phase 2 — "Beenden" (Exit) menu published the
+                    // CLOSE_ACTIVITY_ID event; Application.startAction called
+                    // this closeCallback after mainView.close(). Now signal
+                    // SpringRaplaClient.main() to break its context loop so
+                    // the JVM exits cleanly instead of blocking on take().
+                    logoutSignal.next(org.rapla.client.spring.NextSession.exit());
                 } else {
                     restartingGUI = false;
                 }

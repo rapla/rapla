@@ -204,6 +204,8 @@ delegate to.
 | `POST /oauth2/token grant_type=password` | live | `PasswordGrantAuthenticationConverter` + `…Provider` |
 | `GET /api/auth/oauth/config`, `POST /api/auth/oauth/exchange/{id}` | live | `OAuthConfigController`, `OAuthExchangeController` |
 | `POST`/`GET`/`DELETE` `/api/auth/api-keys[/{id}]` | live | `ApiKeyController` |
+| `POST /api/auth/impersonate` | live (PRD 051) | `ImpersonationController` — mints impersonation access token (`act` claim, no refresh) |
+| `GET /api/users` | live (PRD 051) | `UsersController` — narrow `{username, displayName}[]` filtered by `canAdminUser`; typeahead source for the "Switch to user" dialog |
 | `POST /api/auth/login`, `/api/auth/refresh`, `/api/auth/logout` | **removed** — PRD 041, commit `d64e8553` (was `AuthController`) | none — no replacement route |
 | JAX-RS `RaplaAuthRestPage` `@Path("login")` | **dead code** — never mounted, 404 | legacy pre-Spring-Boot |
 
@@ -578,7 +580,7 @@ That means **every operation gated by `canAdminUser` must run in
 rapla code**, including impersonation, admin-resets-password, and
 admin-disables-user. Even when the deployment migrates to Keycloak
 for primary auth, these admin operations stay rapla-server-side.
-See [PRD 051](prd/051-switch-user-with-oauth.md) § "Rapla's
+See [PRD 051](prd/done/051-switch-user-with-oauth.md) § "Rapla's
 group-administration policy — the authorization rule" for the
 specific implication for the "switch to user" feature.
 
@@ -732,16 +734,21 @@ right Bearer.
 
 ### Visual indicator
 
-Both clients render an "Impersonating &lt;target&gt;" badge while
-the override is active:
+Both clients show the effective target user plus an "this is an
+impersonation" cue while the override is active:
 
-| Client | Where |
-|---|---|
-| Angular SPA | Right side of the top toolbar — amber pill replaces the regular username chip |
-| Swing | Right side of the menu bar — amber status label (same colour as the SPA) |
+| Client | Where | Visual |
+|---|---|---|
+| Angular SPA | Top-right of the toolbar | The user chip text is the impersonation target (not the admin's name); chip icon flips to Material `person_search` (a magnifying-glass-over-head); the right-hand action button changes from "Sign out" to "Switch back" (the two are mutually exclusive — there is no "Sign out" available while impersonating) |
+| Angular SPA — admin-not-yet-impersonating | Same chip | When the admin can impersonate but isn't currently, the chip stays on the admin's name and the icon shows `swap_horiz` to signal the chip is clickable; the button remains "Sign out" |
+| Swing | Right side of the menu bar | Status label "Acting as &lt;target&gt;" plus a "Switch back" link. Implementation rides PRD 052's close+recreate session channel (PRD 051 Plan §7–§8 was superseded — see PRD 051 § "Closed scope") |
 
-Tooltip on the Swing label and the SPA badge both say "Acting as
-another user — choose 'Switch back' from the admin menu to return".
+Clicking the chip in the SPA opens the "Switch to user" dialog
+(when `canImpersonate` is true OR an impersonation is active —
+see the mid-impersonation flow above). The `GET /api/users`
+typeahead call always uses the admin Bearer, so an already-active
+impersonation does not hide the list of users the admin can
+switch to.
 
 ### Why not RFC 8693 token exchange?
 
@@ -756,7 +763,7 @@ lives only in rapla data. So the authorization check has to run in
 rapla code, and the token issuance has to happen on the same side
 as the check.
 
-See [PRD 051](prd/051-switch-user-with-oauth.md) for the full design,
+See [PRD 051](prd/done/051-switch-user-with-oauth.md) for the full design,
 including the comparison table and the deferred Option 3b (hybrid
 IdP-issued tokens via Keycloak's `requested_subject` extension —
 documented as a future enhancement, not v1).

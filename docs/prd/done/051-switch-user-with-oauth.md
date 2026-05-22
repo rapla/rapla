@@ -1,7 +1,73 @@
 # PRD 051: Restore "switch to user" admin feature with OAuth-only auth
 
-**Status:** draft
-**Date:** 2026-05-21
+**Status:** done — SPA shipped 2026-05-22. Swing parity superseded by PRD 052 (see § Closed scope below).
+**Date:** 2026-05-21 (closed 2026-05-22)
+
+## Closed scope (2026-05-22)
+
+### Shipped
+
+- **Server** — `ImpersonationController` + `UsersController` (PRD 049
+  `@HttpExchange` single-source-of-truth pattern), `JwtConfig.JwtIssuer`
+  extended with `issueImpersonationToken` and a `username`/`displayName`-bearing
+  `issueAccessToken` overload, `AuthorizationServerConfig`'s
+  `jwtTokenCustomizer` injects `preferred_username` + `name` on access /
+  id tokens (rapla-SAS path) so the SPA's user chip works for every
+  grant type. Audit logging, `canAdminUser` gate, no-server-side-state
+  guarantee — all live.
+- **Angular SPA** — chip + dialog flow, mid-impersonation switching
+  using admin Bearer, impersonation-override interceptor renewal
+  sequencer, "Switch back" / "Sign out" mutually-exclusive toolbar
+  button, `swap_horiz` / `person_search` chip-icon affordance.
+- **Tests landed** — see § Tests (rows marked ✅): tier-3 MockMvc
+  coverage for `/api/auth/impersonate` (10 cases) and `/api/users`
+  (5 cases), tier-5 Vitest coverage for `UsersService` admin-Bearer
+  routing and `AuthService` logout paths clearing the override.
+- **Docs landed** — `docs/authentication.md` § "Group administration
+  policy", § "Admin impersonation", § "Switching from one target to
+  another mid-impersonation" (with the authoritative "impersonation
+  tokens cannot themselves invoke the impersonation endpoints" rule),
+  endpoint-reference table additions, visual-indicator section.
+
+### Superseded by PRD 052
+
+- **Plan §7** — *Swing `RaplaClientServiceImpl.switchTo(User)` rewrite
+  (in-place token swap).* PRD 052 (Client clean restart, 2026-05-22)
+  resolves OQ6: switch-to-user and switch-back ride the same
+  close+recreate session channel as logout. The in-place token-swap
+  approach drafted here is **not** the Swing implementation path. PRD
+  052's `BlockingQueue<NextSession>` + `NextSession.reconnectAs(...)`
+  is the live design.
+- **Plan §8** — *Swing status-bar indicator.* The visible UI element
+  (the "Acting as &lt;target&gt;" status label + "Switch back" link)
+  stays in scope; only the underlying session-swap mechanism changes
+  per PRD 052. Implementation lives in `ApplicationViewSwing` +
+  `RaplaClientServiceImpl` and ships under PRD 052.
+- **Tests S2 / S3** — `RefreshOn401InterceptorImpersonationTest`,
+  `MyCustomConnectorReauthImpersonationTest`. These were designed
+  against the in-place token-swap renewal path. Replaced by PRD 052's
+  test plan (close-recreate semantics: a 401 in the impersonated
+  session triggers a fresh session start with `NextSession.reconnectAs(target)`,
+  not an in-place renewal).
+
+### Deferred / accepted gaps
+
+Items that would have been in v1 if shipped, but are explicitly accepted
+as out of scope. None of these blocks shipping — each is a hardening
+or coverage gap rather than a missing capability.
+
+| Gap | Why deferred | If/when to revisit |
+|---|---|---|
+| `ImpersonationWithExternalIdpTest` (Keycloak-authenticated admin can impersonate) | Stubbed-JWKS fixture work non-trivial; the multi-issuer decoder path is covered by existing `ExternalAuthLifecycleIntegrationTest` and the impersonation path's correctness is independent of the actor's issuer. | When DHBW (or another Keycloak deployment) runs the feature for the first time, capture an integration test against their stub. |
+| Group-admin → out-of-scope target (403) | `testdefault.xml` has only `homer` (global admin) + `monty` (group admin of `/powerplant`); no third user outside `monty`'s scope. The 403 branch is exercised via `groupAdminCannotImpersonateGlobalAdmin` (target.isAdmin path); the `belongsTo`-returns-false branch is asserted via unit-level `PermissionController` coverage elsewhere. | Add a fixture user outside `/powerplant` once another PRD also needs one. |
+| `CallbackComponentClearsImpersonationOverrideTest` (tier 6) | Lower-risk path — the override is in-memory only and a fresh OAuth code naturally lands in a new `AuthService` lifecycle in production. Risk: if the SPA evolves to persist the override (e.g. to `sessionStorage`), the callback would need to clear it explicitly. The other logout paths cover the common surface. | When the override moves out of `signal()` memory, add the test alongside that change. |
+| Live cross-IdP browser verification (DHBW Keycloak admin → local user) | Needs a live DHBW Keycloak session. The all-rapla-SAS flow was verified end-to-end 2026-05-22 (chip click mid-impersonation, switch back, `/api/users` admin-Bearer path). | Next session with DHBW Keycloak available. |
+| Native Swing flow | User explicitly scoped to SPA-only ("we only do spa", 2026-05-22). | Handled by PRD 052. |
+
+None of these gaps affects the SPA shipping path. The PRD is closed
+on the basis that the SPA feature is live + verified + regression-tested
+and the Swing path has a successor PRD (052) with a different
+underlying mechanism.
 
 ## Goal
 
@@ -604,13 +670,14 @@ use directly.
 | 3 | `ImpersonationControllerTest` (MockMvc) | 200 on admin Bearer + valid target; response shape `{access_token, token_type, expires_in}` with **no** `refresh_token` field; `act` claim present on the access token; `sub` is target's UUID |
 | 3 | `ImpersonationControllerAuthTest` (MockMvc) | 401 anon; 403 non-admin actor; 404 unknown target; 403 admin-of-different-scope (canAdminUser=false because target is outside the admin's group scope) |
 | 3 | `ImpersonationRenewalTest` (MockMvc) | Calling `/api/auth/impersonate` a second time with the same target returns a fresh access token; `canAdminUser` is re-evaluated on each call (regression test: simulate admin losing group-admin status between calls, expect 403) |
-| 3 | `ImpersonationAuditLogTest` (MockMvc + log capture) | Every successful issuance — initial and renewals — emits the INFO audit line with actor+target UUIDs and usernames |
+| 3 | `ImpersonationControllerTest#auditLogEmittedForEachIssuanceIncludingRenewal` ✅ + `#authorizationFailureDoesNotProduceSuccessAuditLine` ✅ (landed 2026-05-22) | Every successful issuance — initial and renewals — emits the INFO audit line with actor+target UUIDs and usernames; the 403 path does NOT emit a success line |
 | 3 | `ImpersonationWithExternalIdpTest` (MockMvc + stubbed Keycloak JWKS) | Admin authenticated via Keycloak Bearer can still impersonate — actor resolution uses the existing `ExternalUserResolver` |
-| 3 | `ImpersonationNoServerStateTest` (MockMvc) | Negative: no `org.rapla.auth.session`-style preference is written for the target as a side effect of impersonation; the target's own refresh token (if any) is unaffected |
+| 3 | `ImpersonationControllerTest#noSessionPreferenceWrittenForTargetAsSideEffect` ✅ (landed 2026-05-22) | Negative: no `org.rapla.auth.session`-style preference is written for the target as a side effect of impersonation; the target's own refresh token (if any) is unaffected |
 | 2 | `ImpersonationTokenServiceTest` (no Spring) | `act` claim assembled correctly; subject is target's UUID; signature validates against the test JWKS; no refresh-token issuance code path exists |
 | 2 | `RaplaClientServiceImplSwitchToTest` (no AWT) | `switchTo(target)` calls the impersonate endpoint with the right username; on success the `impersonation_override` is set with the returned token; `switchTo(null)` clears it; admin's normal token slots untouched throughout |
 | 2 | `AuthInterceptorImpersonationTest` (no Angular runtime) | Bearer attached is impersonation token when override is set; on 401, calls `/api/auth/impersonate` with override's `target_username` + admin's Bearer; replays original request; on second 401 falls into admin-refresh path; on third 401 opens dialog and clears override |
-| 5 | `AuthServiceLogoutClearsImpersonationTest` (TS unit, no TestBed) | `signOut()`, `handleUnauthenticated()`, `handleAuthRejection()` each clear the impersonation override. Regression guard for hooks A6/A7/A8 |
+| 5 | `users.service.spec.ts` ✅ (landed 2026-05-22) | `GET /api/users` uses `auth.adminToken()` (not `token()`) and goes through raw `fetch`, not `HttpClient` — so the auth interceptor cannot accidentally attach the impersonation override. Mid-impersonation chip-click verified live in browser the same day |
+| 5 | `auth.service.spec.ts` ✅ (landed 2026-05-22) | `signOut()`, `handleUnauthenticated()`, `handleAuthRejection()`, and `endImpersonation()` each clear the impersonation override; `adminToken()` returns the admin's Bearer even while an impersonation is active. Regression guard for hooks A6/A7/A8 plus the mid-impersonation switch invariant |
 | 5 | `CallbackComponentClearsImpersonationOverrideTest` (Vitest + TestBed) | Landing on `/callback` with a fresh OAuth code clears any pre-existing override before completing the new session. Regression guard for hook A5 |
 | 2 | `RefreshOn401InterceptorImpersonationTest` (no Spring context, Java) | Bearer-attach uses `info.getEffectiveAccessToken()`; on 401 with impersonation token attached, calls `ImpersonationClient.impersonate(...)` before falling into refresh; retries original request with the new impersonation token. Regression guard for hook S2 |
 | 2 | `MyCustomConnectorReauthImpersonationTest` (no Spring context, Java) | `reauth()` step-0 calls `/api/auth/impersonate` when an impersonation token is present; on success returns the new impersonation Bearer; on failure falls into the existing refresh-then-password chain. Regression guard for hook S3 |
