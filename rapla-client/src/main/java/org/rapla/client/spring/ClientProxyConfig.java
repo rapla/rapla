@@ -1,13 +1,16 @@
 package org.rapla.client.spring;
 
+import org.rapla.RaplaResources;
 import org.rapla.framework.RaplaException;
 import org.rapla.plugin.export2ical.ICalTimezones;
 import org.rapla.rest.JacksonObjectMapperFactory;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.LoginCredentials;
 import org.rapla.storage.dbrm.LoginTokens;
+import org.rapla.storage.dbrm.RaplaConnectException;
 import org.rapla.storage.dbrm.RemoteAuthentificationService;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
@@ -376,10 +379,12 @@ public class ClientProxyConfig
     static final class OAuth2RemoteAuthentificationService implements RemoteAuthentificationService
     {
         private final RemoteConnectionInfo info;
+        private final RaplaResources i18n;
 
-        OAuth2RemoteAuthentificationService(RemoteConnectionInfo info)
+        OAuth2RemoteAuthentificationService(RemoteConnectionInfo info, RaplaResources i18n)
         {
             this.info = info;
+            this.i18n = i18n;
         }
 
         @Override
@@ -436,7 +441,8 @@ public class ClientProxyConfig
             }
             catch (java.io.IOException ex)
             {
-                throw new RaplaException("Could not reach the OAuth2 token endpoint at " + url + ": " + ex.getMessage(), ex);
+                String errorString = i18n.format("error.connect", serverUrl);
+                throw new RaplaConnectException(errorString + " " + ex.getMessage());
             }
             catch (InterruptedException ex)
             {
@@ -627,13 +633,13 @@ public class ClientProxyConfig
     }
 
     @Bean
-    public RemoteAuthentificationService remoteAuthentificationServiceProxy(RemoteConnectionInfo info)
+    public RemoteAuthentificationService remoteAuthentificationServiceProxy(RemoteConnectionInfo info, RaplaResources i18n)
     {
         // PRD 041: the rapla-custom POST /api/auth/login endpoint was removed
         // with AuthController. Direct username/password login — the Swing
         // fallback dialog and MyCustomConnector's password-reauth path — now
         // goes through the OAuth 2.0 token endpoint. See docs/authentication.md.
-        return new OAuth2RemoteAuthentificationService(info);
+        return new OAuth2RemoteAuthentificationService(info, i18n);
     }
 
     @Bean

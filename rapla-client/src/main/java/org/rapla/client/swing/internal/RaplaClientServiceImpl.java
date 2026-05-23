@@ -380,6 +380,36 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             listeners[i].clientAborted();
     }
 
+    private static Throwable rootCause(Throwable ex)
+    {
+        Throwable root = ex;
+        while (root.getCause() != null && root.getCause() != root) root = root.getCause();
+        return root;
+    }
+
+    private static boolean isServerUnreachable(Throwable ex)
+    {
+        Throwable root = rootCause(ex);
+        return root instanceof java.net.ConnectException
+                || root instanceof java.net.UnknownHostException
+                || root instanceof java.net.NoRouteToHostException
+                || root instanceof java.net.http.HttpConnectTimeoutException
+                || root instanceof java.net.http.HttpTimeoutException;
+    }
+
+    private void abortWithConnectError(Throwable ex)
+    {
+        Throwable root = rootCause(ex);
+        String serverUrl = connectionInfo.getServerURL();
+        String message = i18n.format("error.connect", serverUrl) + " " + root.getMessage();
+        getLogger().warn("startup: " + message);
+        org.rapla.storage.dbrm.RaplaConnectException friendly = new org.rapla.storage.dbrm.RaplaConnectException(message);
+        SwingSafe.invokeLater(logger, () -> {
+            dialogUiFactory.showException(friendly, null);
+            fireClientAborted();
+        });
+    }
+
     public boolean isRunning()
     {
         return started;
@@ -548,6 +578,11 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                             });
                 })
                 .exceptionally(ex -> {
+                    if (isServerUnreachable(ex))
+                    {
+                        abortWithConnectError(ex);
+                        return;
+                    }
                     getLogger().info("startup: discovery failed (" + ex.getMessage() + ") — showing login dialog");
                     SwingSafe.invokeLater(logger, this::startLoginInThread);
                 });
@@ -847,15 +882,21 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                             + (showProviders ? " with the sign-in-method dropdown" : ""));
                     dlg.setVisible(true);
                 }
-            })).exceptionally(ex -> SwingSafe.invokeLater(logger, () -> {
-                Throwable root = ex;
-                while (root.getCause() != null && root.getCause() != root) root = root.getCause();
-                getLogger().info("startup: discovery failed (" + root.getClass().getSimpleName() + ": " + root.getMessage() + ") — showing legacy Swing login dialog as fallback");
-                // Discovery failed — OAuth support can't be confirmed, so offer
-                // only the local password method.
-                dropdownProviders.set(configureLoginMethods(dlg, null));
-                dlg.setVisible(true);
-            }));
+            })).exceptionally(ex -> {
+                if (isServerUnreachable(ex))
+                {
+                    abortWithConnectError(ex);
+                    return;
+                }
+                SwingSafe.invokeLater(logger, () -> {
+                    Throwable root = rootCause(ex);
+                    getLogger().info("startup: discovery failed (" + root.getClass().getSimpleName() + ": " + root.getMessage() + ") — showing legacy Swing login dialog as fallback");
+                    // Discovery failed — OAuth support can't be confirmed, so offer
+                    // only the local password method.
+                    dropdownProviders.set(configureLoginMethods(dlg, null));
+                    dlg.setVisible(true);
+                });
+            });
 
             loginMutex.acquire();
         }

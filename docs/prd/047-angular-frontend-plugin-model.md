@@ -10,8 +10,9 @@ routes, and UI patterns** — without forking `rapla-angular`, without placing
 customer-specific TypeScript in the rapla repo, and without the stock rapla
 bundle carrying dormant customer code.
 
-This is the frontend counterpart of PRD 003 (custom *server* deployments) and
-PRD 046 (drop-in *server* plugin jars). PRD 003's 2026-05-07 decision pulled
+This is the frontend counterpart of PRD 003 (custom *server* deployments,
+legacy) and PRD 045 §4 (drop-in *server* plugin jars). PRD 003's 2026-05-07
+decision pulled
 dhbw **Swing** code into `rapla-client`; this PRD deliberately does **not** do
 the equivalent for Angular. The two drivers behind the Swing decision do not
 transfer:
@@ -136,13 +137,13 @@ and stock rapla ships zero dhbw bytes.
 
 The dhbwrapla path above is the heavyweight delivery: a full custom deployable
 with its own `@SpringBootApplication` and release cadence. The **same remote
-artifact** can also be delivered as a PRD 046 drop-in jar — for the lighter
+artifact** can also be delivered as a PRD 045 §4 drop-in jar — for the lighter
 case of "I run a stock rapla and want to add one frontend feature without
 forking or rebuilding anything."
 
 The enabling fact: Spring Boot's `WebMvcAutoConfiguration` maps `/**` to
 `classpath:/static/` across **every** classpath entry, jars included. PRD
-045/046 already add a `./plugins/*` glob to the flat classpath. So a jar in
+045 already adds a `./plugins/` directory to `loader.path` (Phase 4). So a jar in
 `./plugins/` carrying `static/plugins/<id>/remoteEntry.json` + chunks is served
 at `/plugins/<id>/…` with **no controller** — a Native Federation `remoteEntry`
 and its esbuild chunks are plain static files.
@@ -159,7 +160,7 @@ rapla-plugin-<id>-1.0.jar               ← dropped into ./plugins/
     └── chunk-*.js                         (built by an ng build at jar-build time)
 ```
 
-`<Id>PluginAutoConfiguration` is discovered exactly the way PRD 046's
+`<Id>PluginAutoConfiguration` is discovered exactly the way PRD 045 §4's
 server plugins are — Spring Boot aggregates `AutoConfiguration.imports` from
 every classpath jar. Its one frontend-specific contribution is a `RaplaUiRemote`
 `@Bean` (`new RaplaUiRemote("<id>", "/plugins/<id>/remoteEntry.json",
@@ -172,7 +173,7 @@ rebuild of rapla, no npm on the operator's machine, no signing.
 `static/plugins/<id>/` layout, identical `RaplaUiRemote` bean, identical
 `RaplaFeature` contract. The only differences:
 
-| | dhbwrapla (Model B) | Drop-in jar (PRD 046) |
+| | dhbwrapla (Model B) | Drop-in jar (PRD 045 §4) |
 |---|---|---|
 | Remote bundle location | baked into the dhbwrapla fat JAR | inside a plain library jar in `./plugins/` |
 | `RaplaUiRemote` registration | `@Bean` in `DhbwRaplaApplication` | `@Bean` in the jar's `@AutoConfiguration` |
@@ -198,9 +199,9 @@ In scope:
 - Native Federation host wiring + runtime `loadRemoteModule`.
 - `@rapla/feature-api` published contract package.
 - dhbwrapla `rapla-plugin-web/` remote + Maven build integration.
-- The PRD 046 drop-in-jar delivery: a frontend plugin jar carrying server beans
-  *and* `static/plugins/<id>/` remote assets, served from `./plugins/` on a
-  stock deployable. Same artifact shape as the dhbwrapla remote.
+- The PRD 045 §4 drop-in-jar delivery: a frontend plugin jar carrying server
+  beans *and* `static/plugins/<id>/` remote assets, served from `./plugins/`
+  on a stock deployable. Same artifact shape as the dhbwrapla remote.
 
 Out of scope:
 - Converting stock rapla features into remotes (they stay in the host bundle).
@@ -223,8 +224,8 @@ Out of scope:
   override, and a dhbw OpenAPI client.
 - **Phase 6 — Drop-in delivery.** Confirm classpath-jar `static/` serving for a
   `./plugins/` jar; the `static/plugins/<id>/` namespacing architecture test;
-  package the dhbw remote as a PRD 046 drop-in jar variant to prove the shared
-  artifact shape.
+  package the dhbw remote as a PRD 045 §4 drop-in jar variant to prove the
+  shared artifact shape.
 - **Phase 7 — Docs + e2e.** Operator/developer docs; tier-7 Playwright tests
   for both delivery modes.
 

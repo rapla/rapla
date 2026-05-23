@@ -1,6 +1,6 @@
 # Development guide — WSL2 + Windows
 
-This guide covers what's specific to developing rapla on **WSL2 with the OpenWebStart client running on Windows**. For everything else (Maven reactor, dev server, parallel work, signing profiles) start with [AGENTS.md](../AGENTS.md). For the deployable runtime classloader bug see [PRD 018](prd/018-fat-jar-classloader-defect.md).
+This guide covers what's specific to developing rapla on **WSL2 with the OpenWebStart client running on Windows**. For everything else (Maven reactor, dev server, parallel work, signing profiles) start with [AGENTS.md](../AGENTS.md).
 
 ## Quick map
 
@@ -11,7 +11,6 @@ This guide covers what's specific to developing rapla on **WSL2 with the OpenWeb
 | Fat-JAR test (no signing, no OWS) | `.agents/skills/test-deployment/SKILL.md` |
 | **Full JNLP + OWS launch with self-signing** (this guide) | `.agents/skills/test-jnlp-launch/SKILL.md` |
 | JNLP code signing — YubiKey (`sign-pkcs11`) & self-signed (`sign-jks`) profiles | [docs/signing.md](signing.md) |
-| Spring Boot 4 LaunchedClassLoader workaround (extract-and-run) | [PRD 018](prd/018-fat-jar-classloader-defect.md) |
 | Six known JNLP build/code defects | [memory: project_jnlp_signing_pitfalls](#known-jnlp-defects) (also in agent memory) |
 
 ## Bootstrap a fresh WSL2 Ubuntu environment
@@ -208,7 +207,7 @@ netsh interface portproxy add v4tov4 listenport=8051 listenaddress=127.0.0.1 con
 
 ## Self-signed build — what's automated vs. manual
 
-`mvn -Psign-jks package` now produces a launchable webclient JNLP without hand-patching. Six gotchas the build (or generator) handles, and one that's still on you:
+`mvn -Psign-jks package` now produces a launchable webclient JNLP without hand-patching. Six gotchas the build (or generator) handles:
 
 1. **Signs the bundled jars** — `archiveDirectory` in both signing profiles points at `target/classes/static/webclient/`, the path Spring Boot's repackage actually embeds.
 2. **Injects `Permissions: all-permissions`** (plus `Codebase: *`, `Application-Name: Rapla`) into every webclient jar's `META-INF/MANIFEST.MF` — `maven-antrun-plugin` execution `add-jnlp-manifest-attributes`. Required by Java Web Start since 7u51 for `<all-permissions/>`.
@@ -216,8 +215,6 @@ netsh interface portproxy add v4tov4 listenport=8051 listenaddress=127.0.0.1 con
 4. **Strips `META-INF/versions/` from `slf4j-api`** — `maven-antrun-plugin` execution `strip-mr-from-slf4j-api`. icedtea-netx 1.x's signing verifier rejects the MR `module-info.class` entry as unsigned, failing `<all-permissions/>` with "Cannot grant permissions to unsigned jars" (11 other multi-release jars in the set are unaffected — only slf4j-api triggers it). OWS 1.13+ handles MR correctly so this strip is a parity gesture for legacy launchers.
 5. **Injects `rapla.download.url`** as a `<property>` in the JNLP — `RaplaJNLPPageGenerator` emits the server root URL (host:port, **without** the `/rapla/` context path — the REST proxy adds that). `ClientConfig.java:131` reads it; fixes the localhost-fallback that otherwise made REST calls miss the server when launched from a remote codebase. Emitting the full codebase doubles the path → `/rapla/rapla/auth/login` → 401.
 6. **Icon URL has a single slash** — `RaplaJNLPPageGenerator.java:177-178` strips the redundant leading `/` so it doesn't 401 against Spring Security's `/webclient/**` whitelist. Tier-1 regression tests cover it.
-
-**Still manual: the LaunchedClassLoader workaround** ([PRD 018](prd/018-fat-jar-classloader-defect.md)). Spring Boot 4.0.6's nested-jar classloader fails on lazy class loads under the fat JAR's launcher. Mitigation: `unzip` the fat JAR and run it with a flat classpath (or `java -Djarmode=tools -jar X.jar extract` followed by running the inner JAR). Until upstream fixes this, every deployment needs an extract step.
 
 ## Self-sign + launch (one-shot)
 
@@ -234,20 +231,15 @@ mvn -pl rapla-app -am package -DskipTests -Psign-jks \
   -Dkeystore.file=/tmp/rapla-selfsigned.jks \
   -Dkeystore.alias=rapla -Dkeystore.password=changeit -Dkeystore.keypass=changeit
 
-# 3. Extract for the LaunchedClassLoader workaround (PRD 018) — still needed.
-rm -rf /tmp/rapla-flat && mkdir /tmp/rapla-flat && cd /tmp/rapla-flat
-unzip -q /home/chris/git/rapla/rapla-app/target/rapla-2.1-SNAPSHOT.jar
-
-# 4. Run with flat classpath
-mkdir -p /tmp/rapla-flat/logs
-CP="BOOT-INF/classes:$(printf '%s:' BOOT-INF/lib/*.jar | sed 's/:$//')"
-nohup java -cp "$CP" \
+# 3. Run the fat JAR
+mkdir -p /home/chris/git/rapla/logs
+nohup java \
   -Dserver.tomcat.accesslog.enabled=true \
-  -Dserver.tomcat.accesslog.directory=/tmp/rapla-flat/logs \
+  -Dserver.tomcat.accesslog.directory=/home/chris/git/rapla/logs \
   -Dserver.tomcat.accesslog.prefix=access -Dserver.tomcat.accesslog.suffix=.log \
   -Dserver.tomcat.accesslog.pattern='%h %t "%r" %s %b "%{User-Agent}i"' \
   -Dserver.tomcat.accesslog.buffered=false \
-  org.rapla.server.spring.RaplaSpringBootApplication \
+  -jar /home/chris/git/rapla/rapla-app/target/rapla-2.1-SNAPSHOT.jar \
   > /home/chris/git/rapla/logs/rapla.log 2>&1 < /dev/null &
 disown
 ```
@@ -275,7 +267,7 @@ If OWS reports any error and you can't tell what failed, the **real** log is at:
 ## Watching the WSL server live during a Windows OWS test
 
 ```bash
-tail -f /tmp/rapla-flat/logs/access.2026-05-10.log
+tail -f /home/chris/git/rapla/logs/access.2026-05-10.log
 ```
 
 Three diagnostic shapes:

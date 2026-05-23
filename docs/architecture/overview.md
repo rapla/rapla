@@ -64,7 +64,7 @@ is being rethought; future PRD).
 There is also a **headless web/JNLP path**: `rapla-app` serves
 `raplaclient.jnlp` from a signed `webclient/` directory; OpenWebStart
 on Windows downloads and launches the same Swing client.
-See `docs/development.md` and PRD 018 for the JNLP / classloader story.
+See `docs/development.md` for the JNLP / signing story.
 
 The server-to-client transport is **polling**, not push: the client
 periodically calls `RemoteOperator.refreshAsync()` and the server

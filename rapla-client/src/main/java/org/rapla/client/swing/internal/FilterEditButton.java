@@ -24,6 +24,8 @@ import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
@@ -32,6 +34,7 @@ public class FilterEditButton extends RaplaGUIComponent
     protected RaplaArrowButton filterButton;
     JWindow popup;
     ClassifiableFilterEdit ui;
+    private boolean popupWasVisibleAtPress;
 
     private FilterEditButton(final ClientFacade facade, final RaplaResources i18n, final RaplaLocale raplaLocale, final Logger logger,
             final TreeFactory treeFactory, final ClassifiableFilter filter, final ChangeListener listener,
@@ -43,11 +46,27 @@ public class FilterEditButton extends RaplaGUIComponent
         filterButton.setText(getString("filter"));
         filterButton.setSize(80,18);
         final PopupContext popupContext = dialogUiFactory.createPopupContext(null);
+        // Snapshot popup visibility at mouse-press time. On Windows the
+        // popup's windowLostFocus can dispatch before the button's action
+        // listener and dismiss the popup first — the action listener then
+        // sees popup == null and would reopen. The press-time snapshot
+        // captures the true "was open" state regardless of event order.
+        filterButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent ev) {
+                popupWasVisibleAtPress = (popup != null);
+            }
+        });
         filterButton.addActionListener(e -> {
 
             if ( popup != null)
             {
                 dismissPopup();
+                return;
+            }
+            if (popupWasVisibleAtPress)
+            {
+                popupWasVisibleAtPress = false;
                 return;
             }
             try {

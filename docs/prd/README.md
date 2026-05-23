@@ -1,6 +1,6 @@
 # PRD index
 
-48 PRDs total — **31 active** in this directory, **17 done** under `done/`. AGENTS.md §2 + §3 cover the lifecycle (move to `done/` when complete; `git mv` back if reopening). This index exists so agents and humans don't `ls` and guess.
+46 PRDs total — **29 active** in this directory, **17 done** under `done/`. AGENTS.md §2 + §3 cover the lifecycle (move to `done/` when complete; `git mv` back if reopening). This index exists so agents and humans don't `ls` and guess.
 
 > **Numbering note:** there are two `031` files (`031-api-namespace-redesign.md` and `031-token-refresh-and-api-keys.md`). Both are in-progress and on different tracks. Future PRDs should pick the next free number (currently 042) rather than reusing.
 
@@ -64,8 +64,7 @@
 | [012-dhbwrapla-client-migration.md](012-dhbwrapla-client-migration.md) | Migrate dhbwrapla client-side plugin code to server pages / general rapla | rapla-side carve-out fully landed 2026-05-10 |
 | [022-architecture-documentation.md](022-architecture-documentation.md) | Architecture reference documentation | in-progress |
 | [040-dispatch-validate-before-lock.md](040-dispatch-validate-before-lock.md) | Dispatch validates against a stale cache before locking (multi-pod) | draft 2026-05-15 |
-| [045-end-user-deployment-and-db-config.md](045-end-user-deployment-and-db-config.md) | End-user deployment model & database configuration | in-progress — Phases 1+2+3 landed 2026-05-18; OQ5 packaging deferred |
-| [046-drop-in-plugin-model.md](046-drop-in-plugin-model.md) | Drop-in server plugin / extension model (`./plugins/` autoconfig jars) | draft 2026-05-18 |
+| [045-end-user-deployment-and-db-config.md](045-end-user-deployment-and-db-config.md) | End-user deployment, database configuration & drop-in plugins | in-progress — Phases 1+2+3 landed 2026-05-18; Phase 4 (PropertiesLauncher) + Phases 5+6 (plugin contract, merged from former PRD 046) planned 2026-05-23 |
 | [048-eliminate-server-container-context.md](048-eliminate-server-container-context.md) | Eliminate `ServerContainerContext` + implement reload-on-restart | design complete 2026-05-18; ready to implement |
 
 ### Decisions / policies (no implementation phase)
@@ -79,7 +78,6 @@
 | File | Title | Notes |
 |---|---|---|
 | [002-multi-tenancy.md](002-multi-tenancy.md) | Multi-Tenancy Support | future / speculative |
-| [018-fat-jar-classloader-defect.md](018-fat-jar-classloader-defect.md) | Spring Boot 4.0.6 Fat-JAR Classloader Defect — Extract-and-Run Workaround | workaround documented; upstream fix tracked |
 | [025-headless-client-test-harness.md](025-headless-client-test-harness.md) | Headless client test harness | scoping |
 | [028-angular-power-search.md](028-angular-power-search.md) | Angular power search (single-calendar shell) | research / scoping only |
 | [032-angular-ui-library-evaluation.md](032-angular-ui-library-evaluation.md) | Angular calendar view + UI component library | research 2026-05-12 |

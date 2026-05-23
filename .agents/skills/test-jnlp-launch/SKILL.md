@@ -16,7 +16,7 @@ The full background is in [`docs/development.md`](../../../docs/development.md).
 - Reproducing a Windows OWS bug report on WSL
 - Pre-handoff smoke test before tagging a deployable
 
-Do NOT use for plain "does the fat JAR boot" — `test-deployment` skill is faster and doesn't need keystore/sign/extract.
+Do NOT use for plain "does the fat JAR boot" — `test-deployment` skill is faster and doesn't need keystore/sign.
 
 ## Prerequisites
 
@@ -40,21 +40,15 @@ mvn -pl rapla-app -am package -DskipTests -Psign-jks \
   -Dkeystore.file=/tmp/rapla-selfsigned.jks \
   -Dkeystore.alias=rapla -Dkeystore.password=changeit -Dkeystore.keypass=changeit
 
-# 3. Extract for the LaunchedClassLoader workaround (PRD 018) — still needed,
-# Spring Boot 4 nested-jar loader is broken for lazy class loads. No upstream fix.
-rm -rf /tmp/rapla-flat && mkdir /tmp/rapla-flat && cd /tmp/rapla-flat
-unzip -q /home/chris/git/rapla/rapla-app/target/rapla-2.1-SNAPSHOT.jar
-mkdir -p logs
-
-# 4. Run with flat classpath
-CP="BOOT-INF/classes:$(printf '%s:' BOOT-INF/lib/*.jar | sed 's/:$//')"
-nohup java -cp "$CP" \
+# 3. Run the fat JAR
+mkdir -p /home/chris/git/rapla/logs
+nohup java \
   -Dserver.tomcat.accesslog.enabled=true \
-  -Dserver.tomcat.accesslog.directory=/tmp/rapla-flat/logs \
+  -Dserver.tomcat.accesslog.directory=/home/chris/git/rapla/logs \
   -Dserver.tomcat.accesslog.prefix=access -Dserver.tomcat.accesslog.suffix=.log \
   -Dserver.tomcat.accesslog.pattern='%h %t "%r" %s %b "%{User-Agent}i"' \
   -Dserver.tomcat.accesslog.buffered=false \
-  org.rapla.server.spring.RaplaSpringBootApplication \
+  -jar /home/chris/git/rapla/rapla-app/target/rapla-2.1-SNAPSHOT.jar \
   > /home/chris/git/rapla/logs/rapla.log 2>&1 < /dev/null &
 disown
 ```
@@ -73,7 +67,8 @@ curl -s "http://$(hostname -I | awk '{print $1}'):8051/rapla/raplaclient.jnlp" \
 # wrong:  ...value="http://<IP>:8051/rapla/"... → POST goes to /rapla/rapla/auth/login → 401
 
 # every webclient jar signed by single identity, with Permissions: attribute
-for j in /tmp/rapla-flat/BOOT-INF/classes/static/webclient/*.jar; do
+# (signing profiles target target/classes/static/webclient/ — same jars as in the fat JAR)
+for j in /home/chris/git/rapla/rapla-app/target/classes/static/webclient/*.jar; do
   jarsigner -verify "$j" 2>/dev/null | grep -q 'jar verified' || echo "UNSIGNED: $(basename $j)"
   unzip -p "$j" META-INF/MANIFEST.MF 2>/dev/null | grep -q '^Permissions: all-permissions' \
     || echo "MISSING Permissions: $(basename $j)"
@@ -95,7 +90,7 @@ keytool -importcert -keystore /home/chris/.config/icedtea-web/security/trusted.c
 javaws "http://$(hostname -I | awk '{print $1}'):8051/rapla/raplaclient.jnlp"
 ```
 
-Watch `tail -f /tmp/rapla-flat/logs/access.2026-05-10.log` (substitute the current date). Healthy launch shape: `GET .../raplaclient.jnlp 200` once, then ~120 `HEAD/GET .../webclient/*.jar 200` entries, then `POST .../auth/login 200`.
+Watch `tail -f /home/chris/git/rapla/logs/access.2026-05-10.log` (substitute the current date). Healthy launch shape: `GET .../raplaclient.jnlp 200` once, then ~120 `HEAD/GET .../webclient/*.jar 200` entries, then `POST .../auth/login 200`.
 
 ## Launch via OpenWebStart (closer to production, supports MR jars natively)
 
@@ -140,9 +135,7 @@ When the JNLP launcher is on Windows and the server is in WSL:
 
 ```bash
 # stop server
-[ -f /home/chris/git/rapla/logs/rapla.pid ] && kill "$(cat /home/chris/git/rapla/logs/rapla.pid)"
-# remove extracted layout
-rm -rf /tmp/rapla-flat
+pkill -f RaplaSpringBootApplication
 # keystore + cert may stay for next test
 ```
 
@@ -151,5 +144,4 @@ rm -rf /tmp/rapla-flat
 - [`AGENTS.md` §8](../../../AGENTS.md) — dev server lifecycle (the path you use most days)
 - [`swing-client-launch` skill](../swing-client-launch/SKILL.md) — Swing client without JNLP (`mvn exec:java` — fastest end-to-end client check)
 - [`docs/development.md`](../../../docs/development.md) — long-form companion to this skill, including the WSL2↔Windows networking deep-dive
-- [PRD 018](../../../docs/prd/018-fat-jar-classloader-defect.md) — Spring Boot 4.0.6 LaunchedClassLoader defect that forces the extract-and-run shape used in step 3
 - [`test-deployment` skill](../test-deployment/SKILL.md) — fat-JAR smoke test without signing or OWS

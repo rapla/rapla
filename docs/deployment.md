@@ -51,18 +51,6 @@ java -jar rapla-2.1-SNAPSHOT.jar
 Browse to `http://localhost:8051`. The bundled store starts with one admin
 account — username `admin`, empty password. **Set a password immediately.**
 
-> **Production launch — known Spring Boot 4 defect.** Running the fat JAR
-> directly with `java -jar` is subject to a Spring Boot 4 nested-jar
-> classloader defect that can collapse the HTTP layer under load
-> (see [PRD 018](prd/018-fat-jar-classloader-defect.md)). The documented
-> production launch is **extract-and-run on a flat classpath**:
-> ```sh
-> unzip -q rapla-2.1-SNAPSHOT.jar -d rapla-extracted
-> cd rapla-extracted
-> java -cp "BOOT-INF/classes:BOOT-INF/lib/*" org.rapla.server.spring.RaplaSpringBootApplication
-> ```
-> Use this form for any real deployment until the upstream fix lands.
-
 ## Configuration
 
 Rapla is a standard Spring Boot application — you **override `application.yml`
@@ -140,8 +128,8 @@ rapla:
 ```
 
 For PostgreSQL / MariaDB / SQL Server, drop the driver jar into `./lib/` next
-to the JAR (and onto the classpath of the extract-and-run launch above —
-`BOOT-INF/lib/` or an added `-cp` entry).
+to the JAR and add `-Dloader.path=lib/` to the `java -jar` invocation (Spring
+Boot's fat-JAR convention for external classpath entries).
 
 ### First boot
 
@@ -159,27 +147,25 @@ importing it into the new database.
 
 ### Linux — systemd
 
-The production launch is extract-and-run (see the launch note above), so the
-service layout keeps the **extracted application** separate from the operator's
-**state** (`config/`, `data/`, `lib/`, `logs/`) — an upgrade replaces `app/`
+The service layout matches the install layout from §"Install layout" — the JAR
+sits at the top of `/opt/rapla` and the operator's **state** (`config/`,
+`data/`, `lib/`, `logs/`) lives beside it. An upgrade replaces the JAR
 wholesale and never touches the rest:
 
 ```
 /opt/rapla/
-  app/                  ← extracted fat JAR; replaced on every upgrade
-    BOOT-INF/classes
-    BOOT-INF/lib/
+  rapla-2.1-SNAPSHOT.jar  ← the artifact, replaced on every upgrade
   config/application.yml  ← your overrides
   data/data.xml           ← datastore (XML mode) or first-boot seed (DB mode)
   lib/                    ← extra JDBC drivers (PostgreSQL / MariaDB / …)
   logs/
 ```
 
-**1. Install.** As root, create the layout and extract the JAR into `app/`:
+**1. Install.** As root, create the layout and drop the JAR in:
 
 ```sh
-sudo mkdir -p /opt/rapla/{app,config,data,lib,logs}
-sudo unzip -q rapla-2.1-SNAPSHOT.jar -d /opt/rapla/app
+sudo mkdir -p /opt/rapla/{config,data,lib,logs}
+sudo cp rapla-2.1-SNAPSHOT.jar /opt/rapla/
 ```
 
 **2. Service account.** A dedicated, login-less system user owns the runtime:
@@ -212,8 +198,8 @@ User=rapla
 Group=rapla
 WorkingDirectory=/opt/rapla
 ExecStart=/usr/bin/java -Xmx2048m -Djava.awt.headless=true \
-  -cp "/opt/rapla/app/BOOT-INF/classes:/opt/rapla/app/BOOT-INF/lib/*:/opt/rapla/lib/*" \
-  org.rapla.server.spring.RaplaSpringBootApplication
+  -Dloader.path=/opt/rapla/lib/ \
+  -jar /opt/rapla/rapla-2.1-SNAPSHOT.jar
 Restart=on-failure
 TimeoutStopSec=45
 SuccessExitStatus=143
@@ -224,11 +210,10 @@ WantedBy=multi-user.target
 
 Notes on the unit:
 - `WorkingDirectory=/opt/rapla` is the **state root** — Rapla resolves
-  `config/`, `data/`, `lib/`, `logs/` relative to it. The classpath uses
-  **absolute** paths into `app/` so the extracted application directory stays
-  independent of it (an upgrade re-extracts `app/` without disturbing CWD).
-- `/opt/rapla/lib/*` on the classpath is where operator-supplied JDBC drivers
-  (PostgreSQL, MariaDB) go — drop the jar in, restart, no re-extract.
+  `config/`, `data/`, `lib/`, `logs/` relative to it.
+- `-Dloader.path=/opt/rapla/lib/` is Spring Boot's fat-JAR convention for
+  adding external classpath entries — that's where operator-supplied JDBC
+  drivers (PostgreSQL, MariaDB) go; drop the jar in, restart, no rebuild.
 - `-Xmx2048m` is a starting point; tune to the host.
 - `SuccessExitStatus=143` — the JVM exits `143` (128 + SIGTERM) on a clean
   `systemctl stop`; without this systemd would log the stop as failed.
@@ -275,14 +260,12 @@ Configure `<executable>java</executable>`, the classpath/main-class arguments,
 
 ## Upgrading
 
-Replace the application only — leave `config/`, `data/`, and `lib/` untouched.
-With the systemd / extract-and-run layout that means re-extracting into `app/`:
+Replace the JAR only — leave `config/`, `data/`, and `lib/` untouched:
 
 ```sh
 sudo systemctl stop rapla
-sudo rm -rf /opt/rapla/app && sudo mkdir /opt/rapla/app
-sudo unzip -q rapla-2.1-SNAPSHOT.jar -d /opt/rapla/app
-sudo chown -R root:rapla /opt/rapla/app && sudo chmod -R 750 /opt/rapla/app
+sudo cp rapla-2.1-SNAPSHOT.jar /opt/rapla/
+sudo chown root:rapla /opt/rapla/rapla-2.1-SNAPSHOT.jar
 sudo systemctl start rapla
 ```
 
