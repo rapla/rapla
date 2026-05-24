@@ -13,7 +13,9 @@
     <resetJUL>true</resetJUL>
   </contextListener>
 
-  <root level="DEBUG">
+  <!-- Root at INFO so the JUL bridge doesn't flood the log with AWT/Swing/X11
+       chatter. Rapla code is opted into DEBUG below. -->
+  <root level="INFO">
     <appender-ref ref="STDOUT" />
   </root>
 
@@ -27,6 +29,14 @@
   <!-- <logger name="rapla.ldap" level="INFO"/>            -->
   <!-- <logger name="rapla.ical" level="INFO"/>            -->
   <!-- <logger name="rapla.404" level="WARN"/>             -->
+
+  <!-- Silence JDK AWT/Swing j.u.l chatter that now flows through the SLF4J
+       bridge. Without these, root=DEBUG would mean tens of thousands of
+       focus / paint / X11 events per minute. -->
+  <logger name="sun.awt" level="WARN"/>
+  <logger name="java.awt" level="WARN"/>
+  <logger name="javax.swing" level="WARN"/>
+  <logger name="sun.swing" level="WARN"/>
 
   <logger name="org.springframework" level="WARN"/>
   <logger name="org.springframework.beans.factory" level="WARN"/>
