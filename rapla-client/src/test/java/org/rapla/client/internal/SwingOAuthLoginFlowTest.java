@@ -118,32 +118,6 @@ public class SwingOAuthLoginFlowTest
     }
 
     @Test
-    public void deliverPastedCallbackCompletesTheFlow() throws Exception
-    {
-        OAuthConfig cfg = new OAuthConfig(true, "rapla-client",
-                fakeAuthServerUrl() + "/oauth2/authorize",
-                fakeAuthServerUrl() + "/oauth2/token",
-                List.of("openid"));
-
-        AtomicReference<URI> opened = new AtomicReference<>();
-        SwingOAuthLoginFlow flow = new SwingOAuthLoginFlow(cfg,
-                (url) -> { opened.set(url); /* skip browser entirely */ });
-
-        SwingOAuthLoginFlow.Session session = flow.start();
-        // Simulate the user pasting the URL they saw in the browser. The pasted URL
-        // can use any port (it doesn't have to match the bound listener) — the
-        // session uses the listener's own port and only forwards the query string.
-        Map<String, String> q = parseForm(opened.get().getRawQuery());
-        String pasted = "http://127.0.0.1:99999/login/oauth2/code/rapla"
-                + "?code=pasted-code-1234&state=" + q.get("state");
-        session.deliverPasted(pasted);
-
-        OAuthTokens tokens = session.future().get(10, TimeUnit.SECONDS);
-        assertEquals(fakeAccessToken, tokens.getAccessToken());
-        assertEquals("pasted-code-1234", capturedCode);
-    }
-
-    @Test
     public void timeoutCompletesWithTimeoutException() throws Exception
     {
         // Browser that never sends the callback — simulates user closing the tab.

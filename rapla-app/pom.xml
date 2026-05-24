@@ -362,7 +362,24 @@
                                           rapla-core despite the misleading package name).
                          org.reactivestreams CANNOT be excluded — Spring 7's spring-web,
                          spring-core, spring-context, spring-security-* all reference it
-                         internally at runtime even with no reactive endpoints. -->
+                         internally at runtime even with no reactive endpoints.
+
+                         swagger-annotations-jakarta is excluded because OpenAPI is generated
+                         at test time only (OpenApiSpecCaptureTest via springdoc-openapi,
+                         <scope>test</scope>). The runtime never reflects on @OpenAPIDefinition,
+                         @Operation, @Schema etc — the JVM tolerates missing annotation types
+                         on loaded classes (getAnnotations() silently skips them). If you ever
+                         promote springdoc-openapi to runtime scope to serve /v3/api-docs live,
+                         remove this exclusion.
+
+                         -->
+                    <!-- includeTools=false drops spring-boot-jarmode-tools (~55 KiB) from
+                         BOOT-INF/lib. That jar backs `java -jar app.jar -mode=tools` for
+                         layered-jar extraction (Docker image layering). We use <layout>ZIP</layout>,
+                         not layered, so the tools jar has no callers and the normal launcher
+                         (PropertiesLauncher per PRD 045) is unaffected. Re-enable if you ever
+                         switch to layered jars. -->
+                    <includeTools>false</includeTools>
                     <excludes>
                         <exclude>
                             <groupId>io.reactivex.rxjava3</groupId>
@@ -371,6 +388,10 @@
                         <exclude>
                             <groupId>org.rapla</groupId>
                             <artifactId>rapla-client</artifactId>
+                        </exclude>
+                        <exclude>
+                            <groupId>io.swagger.core.v3</groupId>
+                            <artifactId>swagger-annotations-jakarta</artifactId>
                         </exclude>
                     </excludes>
                 </configuration>

@@ -30,7 +30,6 @@ public class OAuthConfigController
     private final boolean enabled;
     private final String clientId;
     private final List<String> scopes;
-    private final boolean showPasteFallback;
     // PRD 029 Phase 3 — admin-selectable legacy Swing login. Both default false
     // (Phase-2 OAuth-first behaviour). Delivered to the Swing client via this
     // discovery endpoint; see startLoginInThread in RaplaClientServiceImpl.
@@ -55,7 +54,6 @@ public class OAuthConfigController
             @Value("${rapla.oauth.enabled:true}") boolean enabled,
             @Value("${rapla.oauth.client-id:rapla-client}") String clientId,
             @Value("${rapla.oauth.scopes:openid,profile,offline_access}") List<String> scopes,
-            @Value("${rapla.oauth.show-paste-fallback:false}") boolean showPasteFallback,
             @Value("${rapla.oauth.swing-legacy-login:false}") boolean swingLegacyLogin,
             @Value("${rapla.oauth.swing-legacy-show-sso-button:false}") boolean swingLegacyShowSsoButton,
             @Value("${rapla.oauth.public-base-url:}") String publicBaseUrlOverride,
@@ -75,7 +73,6 @@ public class OAuthConfigController
         this.enabled = enabled;
         this.clientId = clientId;
         this.scopes = scopes;
-        this.showPasteFallback = showPasteFallback;
         this.swingLegacyLogin = swingLegacyLogin;
         this.swingLegacyShowSsoButton = swingLegacyShowSsoButton;
         this.publicBaseUrlOverride = nullToEmpty(publicBaseUrlOverride);
@@ -99,7 +96,7 @@ public class OAuthConfigController
         if (!enabled)
         {
             return new OAuthConfig(false, null, null, null, null, null, null, null, null,
-                    List.of(), false, swingLegacyLogin, swingLegacyShowSsoButton,
+                    List.of(), swingLegacyLogin, swingLegacyShowSsoButton,
                     new Picker("never", "rapla"), List.of());
         }
         // App-facing base: respects X-Forwarded-* so dev proxy on :4200 produces
@@ -147,7 +144,6 @@ public class OAuthConfigController
                 userinfoUrl,
                 endSessionUrl,
                 scopes,
-                showPasteFallback,
                 swingLegacyLogin,
                 swingLegacyShowSsoButton,
                 new Picker(pickerMode, pickerPrimary),
@@ -254,7 +250,6 @@ public class OAuthConfigController
         public final String userinfoUrl;
         public final String endSessionUrl;
         public final List<String> scopes;
-        public final boolean showPasteFallback;
         public final boolean swingLegacyLogin;
         public final boolean swingLegacyShowSsoButton;
         public final Picker picker;
@@ -263,7 +258,7 @@ public class OAuthConfigController
         public OAuthConfig(boolean enabled, String clientId, String issuer, String authorizeUrl,
                            String tokenUrl, String logoutUrl, String jwksUrl,
                            String userinfoUrl, String endSessionUrl, List<String> scopes,
-                           boolean showPasteFallback, boolean swingLegacyLogin,
+                           boolean swingLegacyLogin,
                            boolean swingLegacyShowSsoButton, Picker picker,
                            List<ProviderEntry> providers)
         {
@@ -277,7 +272,6 @@ public class OAuthConfigController
             this.userinfoUrl = userinfoUrl;
             this.endSessionUrl = endSessionUrl;
             this.scopes = scopes;
-            this.showPasteFallback = showPasteFallback;
             this.swingLegacyLogin = swingLegacyLogin;
             this.swingLegacyShowSsoButton = swingLegacyShowSsoButton;
             this.picker = picker;
@@ -294,7 +288,6 @@ public class OAuthConfigController
         public String getUserinfoUrl() { return userinfoUrl; }
         public String getEndSessionUrl() { return endSessionUrl; }
         public List<String> getScopes() { return scopes; }
-        public boolean isShowPasteFallback() { return showPasteFallback; }
         public boolean isSwingLegacyLogin() { return swingLegacyLogin; }
         public boolean isSwingLegacyShowSsoButton() { return swingLegacyShowSsoButton; }
         public Picker getPicker() { return picker; }

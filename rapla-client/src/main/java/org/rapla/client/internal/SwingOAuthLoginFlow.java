@@ -75,42 +75,16 @@ public final class SwingOAuthLoginFlow
     {
         private final CompletableFuture<OAuthTokens> future;
         private final URI redirectUri;
-        private final HttpClient http;
 
-        Session(CompletableFuture<OAuthTokens> future, URI redirectUri, HttpClient http)
+        Session(CompletableFuture<OAuthTokens> future, URI redirectUri)
         {
             this.future = future;
             this.redirectUri = redirectUri;
-            this.http = http;
         }
 
         public CompletableFuture<OAuthTokens> future() { return future; }
 
         public URI redirectUri() { return redirectUri; }
-
-        /**
-         * Re-issues the callback locally using the query parameters from a pasted URL.
-         * Used when the system browser can't reach the loopback listener directly
-         * (e.g. WSL2 NAT mode); the user pastes the URL from their browser and we
-         * deliver it to the in-process listener.
-         */
-        public void deliverPasted(String pastedUrl) throws IOException, InterruptedException
-        {
-            String trimmed = pastedUrl == null ? "" : pastedUrl.trim();
-            if (trimmed.isEmpty())
-            {
-                throw new IllegalArgumentException("URL is empty");
-            }
-            URI parsed = URI.create(trimmed);
-            String query = parsed.getRawQuery();
-            if (query == null || query.isEmpty())
-            {
-                throw new IllegalArgumentException("URL has no query string with code/state");
-            }
-            URI local = URI.create(redirectUri.toString() + "?" + query);
-            http.send(HttpRequest.newBuilder(local).GET().timeout(java.time.Duration.ofSeconds(10)).build(),
-                    HttpResponse.BodyHandlers.discarding());
-        }
     }
 
     public Session start()
@@ -141,7 +115,7 @@ public final class SwingOAuthLoginFlow
         catch (IOException e)
         {
             result.completeExceptionally(e);
-            return new Session(result, URI.create("http://127.0.0.1:0" + CALLBACK_PATH), http);
+            return new Session(result, URI.create("http://127.0.0.1:0" + CALLBACK_PATH));
         }
         final String redirectUri = "http://" + redirectHost + ":" + port + CALLBACK_PATH;
 
@@ -160,11 +134,11 @@ public final class SwingOAuthLoginFlow
         catch (IOException e)
         {
             result.completeExceptionally(e);
-            return new Session(result, URI.create(redirectUri), http);
+            return new Session(result, URI.create(redirectUri));
         }
 
         scheduleTimeout(result);
-        return new Session(result, URI.create(redirectUri), http);
+        return new Session(result, URI.create(redirectUri));
     }
 
     private static String discoverWslBridgeIp()

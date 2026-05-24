@@ -14,10 +14,6 @@
 package org.rapla.storage.impl.server;
 
 import org.rapla.scheduler.Action;
-import org.apache.commons.collections4.BidiMap;
-import org.apache.commons.collections4.SortedBidiMap;
-import org.apache.commons.collections4.bidimap.DualHashBidiMap;
-import org.apache.commons.collections4.bidimap.DualTreeBidiMap;
 import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
@@ -122,7 +118,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     InitStatus connectStatus = InitStatus.Disconnected;
     // some indexMaps
     AppointmentMapClass appointmentBindings;
-    private BidiMap<String, ReferenceInfo> externalIds;
+    private TwoWayMap<String, ReferenceInfo> externalIds;
 
     protected enum InitStatus
     {
@@ -146,7 +142,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     //private SortedSet<LastChangedTimestamp> timestampSet;
     // we need a bidi to sort the values instead of the keys
     protected final EntityHistory history;
-    private SortedBidiMap<String, DeleteUpdateEntry> deleteUpdateSet;
+    private IndexedSortedMap<String, DeleteUpdateEntry> deleteUpdateSet;
 
     private TimeZone systemTimeZone = TimeZone.getDefault();
     private final CommandScheduler scheduler;
@@ -1032,8 +1028,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     protected void initIndizes() throws RaplaException
     {
-        deleteUpdateSet = new DualTreeBidiMap<>();
-        externalIds = new DualHashBidiMap<>();
+        deleteUpdateSet = new IndexedSortedMap<>(Comparator.naturalOrder());
+        externalIds = new TwoWayMap<>();
         // The appointment map
 
         final Collection<Allocatable> alloctables = cache.getAllocatables();
@@ -1423,8 +1419,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     private void updateExternalId(UpdateOperation op, ReferenceInfo id)
     {
-        final BidiMap<ReferenceInfo, String> referenceInfoStringBidiMap = externalIds.inverseBidiMap();
-        final String oldExternalId = referenceInfoStringBidiMap.get(id);
+        final String oldExternalId = externalIds.getKey(id);
         if (op instanceof Remove)
         {
             externalIds.remove(oldExternalId);
@@ -1580,7 +1575,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
     }
 
-    private void addPermissions(SortedBidiMap<String, DeleteUpdateEntry> deleteUpdateSet, DeleteUpdateEntry entry, ReferenceInfo<Reservation> reservation)
+    private void addPermissions(IndexedSortedMap<String, DeleteUpdateEntry> deleteUpdateSet, DeleteUpdateEntry entry, ReferenceInfo<Reservation> reservation)
     {
         Reservation event = tryResolve(reservation);
         if (event != null)
@@ -1809,8 +1804,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         String userId = user != null ? user.getId() : null;
         synchronized ( deleteUpdateSet )
         {
-            SortedMap<DeleteUpdateEntry, String> tailMap = deleteUpdateSet.inverseBidiMap().tailMap(fromElement);
-            Set<DeleteUpdateEntry> tailSet = tailMap.keySet();
+            SortedSet<DeleteUpdateEntry> tailSet = deleteUpdateSet.tailSetByValue(fromElement);
             for (DeleteUpdateEntry entry : tailSet)
             {
                 if (entry.isDelete != isDelete)

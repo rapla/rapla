@@ -12,6 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -53,6 +54,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest(classes = {RaplaSpringBootApplication.class})
 @AutoConfigureMockMvc
+@TestPropertySource(properties = {
+    // springdoc settings are test-only — see the comment in application.yml.
+    // api-docs.path overrides springdoc's default /v3/api-docs so it lands under
+    // the /api/ prefix this test (and the runtime StaticOpenApiController) expects.
+    // default-produces-media-type makes endpoints without explicit produces=...
+    // serialize as application/json in the captured spec, so generated TS clients
+    // don't treat responses as Blobs.
+    "springdoc.api-docs.path=/api/v3/api-docs",
+    "springdoc.default-produces-media-type=application/json"
+})
 @Tag("e2e")
 class OpenApiSpecCaptureTest
 {

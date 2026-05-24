@@ -257,7 +257,8 @@ roundtrip dominates login time.
    that wraps the runnable with try/catch and routes throwables to the
    rapla logger. Replace the ~13 `SwingUtilities.invokeLater(...)`
    sites in the OAuth + logout/restart paths
-   (`RaplaClientServiceImpl`, `OAuthCallbackPasteDialog`) with the
+   (`RaplaClientServiceImpl`; the former `OAuthCallbackPasteDialog`
+   has been removed — see PRD 029 status) with the
    helper. Master-shape `initialize()` recovered; **zero** AWT-static
    listener registrations remain in the client tier. Independent of
    A — can land first.
@@ -310,9 +311,10 @@ change.
   }
   ```
 - Replace `SwingUtilities.invokeLater(...)` with `SwingSafe.invokeLater(..., logger)`
-  at the ~13 call sites in OAuth + logout/restart paths
-  (`RaplaClientServiceImpl` lines 513, 518, 523, 642, 799, 821, 1002,
-  1003, 1040, 1063, 1225, 1338; `OAuthCallbackPasteDialog` line 100).
+  at the call sites in OAuth + logout/restart paths
+  (`RaplaClientServiceImpl`; the `OAuthCallbackPasteDialog` callsite
+  no longer exists — the paste fallback was removed because it wasn't
+  practical, see PRD 029 status).
 - Delete `RaplaClientServiceImpl.initialize()` lines 198-223
   (the `Toolkit.getDefaultToolkit().getSystemEventQueue().push(...)` block).
 - `initialize()` should now match master's shape — only the

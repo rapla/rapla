@@ -412,7 +412,6 @@ be overridden with the matching env var.
 | `rapla.oauth.enabled` | `RAPLA_OAUTH_ENABLED` | `true` | Master toggle for the OAuth flow. When `false`, the Swing "Sign in with browser…" button is hidden and the discovery endpoint reports `enabled: false`. `/oauth2/token grant_type=password` direct-login still works. |
 | `rapla.oauth.client-id` | `RAPLA_OAUTH_CLIENT_ID` | `rapla-client` | OAuth client id. Both Swing and Angular use this single id; their redirect URIs differ. |
 | `rapla.oauth.scopes` | `RAPLA_OAUTH_SCOPES` | `openid,profile` | Scopes granted to issued tokens. Comma-separated. |
-| `rapla.oauth.show-paste-fallback` | `RAPLA_OAUTH_SHOW_PASTE_FALLBACK` | `false` | Show a "paste callback URL here" dialog alongside the browser launch. Enable only for environments where the automatic loopback redirect can't reach the client. |
 | `rapla.oauth.swing-legacy-login` | `RAPLA_OAUTH_SWING_LEGACY_LOGIN` | `false` | When `true`, the Swing client shows the legacy username/password dialog instead of auto-firing the browser OAuth flow. Use it to keep end-users on the familiar dialog during an OAuth rollout. The browser flow still works from the dialog when the SSO button is also enabled (below). |
 | `rapla.oauth.swing-legacy-show-sso-button` | `RAPLA_OAUTH_SWING_LEGACY_SHOW_SSO_BUTTON` | `false` | Only effective when `swing-legacy-login=true`. Adds a "Sign in with browser…" button to the legacy dialog so willing users can opt into testing SSO without it being forced on everyone. |
 | `rapla.oauth.allow-wsl-bridge-redirects` | `RAPLA_OAUTH_ALLOW_WSL_BRIDGE_REDIRECTS` | `true` | **Dev-only**: accept any port for redirect URIs in `172.16.0.0/12` (Hyper-V WSL2 bridge). Lets developers run the Swing client in WSL2 without enabling mirrored networking. **Set to `false` in production.** |
@@ -808,8 +807,7 @@ Expected response (defaults):
   "clientId": "rapla-client",
   "authorizeUrl": "http://localhost:8051/rapla/oauth2/authorize",
   "tokenUrl": "http://localhost:8051/rapla/oauth2/token",
-  "scopes": ["openid", "profile"],
-  "showPasteFallback": false
+  "scopes": ["openid", "profile"]
 }
 ```
 

@@ -42,7 +42,6 @@ export interface OAuthDiscovery {
   userinfoUrl: string;
   endSessionUrl: string;
   scopes: string[];
-  showPasteFallback?: boolean;
   picker: OAuthPicker;
   providers: OAuthProviderEntry[];
 }

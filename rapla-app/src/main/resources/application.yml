@@ -120,13 +120,6 @@ rapla:
     # External IdP: set to the IdP's origin, e.g. https://keycloak.example.com,
     # via the RAPLA_OAUTH_PUBLIC_BASE_URL env var.
     public-base-url: ${RAPLA_OAUTH_PUBLIC_BASE_URL:}
-    # Show a "paste callback URL here" dialog alongside the OAuth browser launch
-    # as a fallback for environments where the automatic loopback redirect can't
-    # reach the Swing client (WSL2 NAT, corporate firewalls blocking inbound
-    # localhost, etc.). Off by default — most deployments don't need it. Enable
-    # via RAPLA_OAUTH_SHOW_PASTE_FALLBACK=true if your users hit "site can't be
-    # reached" after sign-in.
-    show-paste-fallback: false
     # PRD 029 Phase 3 — admin-selectable legacy Swing login. Delivered to the
     # Swing desktop client via /api/auth/oauth/config (the client probes
     # discovery at startup; no JNLP change).
@@ -165,27 +158,12 @@ rapla:
     #   RAPLA_OAUTH_ALLOW_SAME_ORIGIN_REDIRECTS=false
     allow-same-origin-redirects: true
 
-springdoc:
-  # Serve the OpenAPI spec under the same /api prefix every other REST endpoint
-  # carries (PRD 031 / AGENTS.md §15). SpringDoc's default would put it at
-  # /v3/api-docs; we keep /api/v3/api-docs so generated Angular/TS clients use
-  # the same base path as runtime requests.
-  api-docs:
-    path: /api/v3/api-docs
-  # Default response media type for endpoints that don't declare `produces`
-  # explicitly. Controllers without an explicit @GetMapping(produces=...) end
-  # up with Accept: */* in the generated OpenAPI spec, which makes the
-  # typescript-angular client treat the response as a Blob instead of parsing
-  # it as JSON (Configuration.isJsonMime('*/*') == false). Setting this to
-  # application/json makes responses default to JSON at both spec and runtime.
-  default-produces-media-type: application/json
-  swagger-ui:
-    # OAuth2 code+PKCE wiring — used only at test capture time (springdoc is test-scope
-    # in production per PRD 041). The runtime swagger-ui at /swagger-ui/index.html
-    # is the static page under static/swagger-ui/ which has its own clientId in JS.
-    oauth:
-      client-id: rapla-client
-      use-pkce-with-authorization-code-grant: true
+# Note: there is no `springdoc:` section here on purpose. SpringDoc is
+# <scope>test</scope>; the production runtime serves the captured static OpenAPI
+# spec via StaticOpenApiController and never reads springdoc.* properties. The
+# two settings the test-time spec capture actually needs
+# (springdoc.api-docs.path + default-produces-media-type) live as
+# @TestPropertySource on OpenApiSmokeTest + OpenApiSpecCaptureTest.
 
 logging:
   level:

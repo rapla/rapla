@@ -24,7 +24,6 @@ import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.internal.LanguageChooser;
 import org.rapla.client.internal.LoginDialog;
-import org.rapla.client.internal.OAuthCallbackPasteDialog;
 import org.rapla.client.internal.OAuthConfig;
 import org.rapla.client.internal.OAuthTokens;
 import org.rapla.client.internal.SwingOAuthLoginFlow;
@@ -1057,10 +1056,6 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                 // session existed — honour it now.
                 session.future().cancel(true);
             }
-            if (provider.isShowPasteFallback())
-            {
-                scheduleDelayedPasteHelper(dlg, session);
-            }
             return session.future().get();
         }).thenAccept(tokens -> SwingSafe.invokeLater(() -> finishOauthLogin(dlg, loginMutex, tokens, provider)))
                 .exceptionally(ex -> SwingSafe.invokeLater(() -> {
@@ -1090,41 +1085,6 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             current = current.getCause();
         }
         return current;
-    }
-
-    private void scheduleDelayedPasteHelper(LoginDialog dlg, SwingOAuthLoginFlow.Session session)
-    {
-        // Don't show the paste dialog if the automatic callback arrives quickly
-        // (the typical case on native OSes). Wait 12 s; if the flow hasn't
-        // completed by then, surface the fallback so the user can paste the URL
-        // their browser is stuck on.
-        java.util.concurrent.CompletableFuture
-                .runAsync(() -> {}, java.util.concurrent.CompletableFuture.delayedExecutor(12, java.util.concurrent.TimeUnit.SECONDS))
-                .thenRun(() -> SwingSafe.invokeLater(() -> {
-                    if (session.future().isDone())
-                    {
-                        return;
-                    }
-                    javax.swing.JDialog paste = OAuthCallbackPasteDialog.show(dlg, i18n,
-                            pastedUrl -> {
-                                try
-                                {
-                                    session.deliverPasted(pastedUrl);
-                                }
-                                catch (Exception ex)
-                                {
-                                    LOGGER.error("paste delivery failed", ex);
-                                    dialogUiFactory.showException(ex, new SwingPopupContext(dlg, null));
-                                }
-                            },
-                            () -> {
-                                // User cancelled the paste dialog — abort the OAuth flow so the
-                                // login dialog releases its busy state and the user can retry
-                                // without waiting the 5-minute callback timeout.
-                                session.future().cancel(true);
-                            });
-                    session.future().whenComplete((t, e) -> SwingSafe.invokeLater(paste::dispose));
-                }));
     }
 
     private void finishOauthLogin(LoginDialog dlg, Semaphore loginMutex, OAuthTokens tokens, OAuthConfig provider)
@@ -1195,7 +1155,6 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         // servers — default false keeps the OAuth-first behaviour.
         boolean swingLegacyLogin = tree.path("swingLegacyLogin").asBoolean(false);
         boolean swingLegacyShowSsoButton = tree.path("swingLegacyShowSsoButton").asBoolean(false);
-        boolean showPasteFallback = tree.path("showPasteFallback").asBoolean(false);
         // PRD 029 Phase 4: parse the providers[] array so the Swing login dialog
         // can offer a method dropdown (rapla SAS, Keycloak, …). Each entry is
         // turned into a provider-level OAuthConfig that SwingOAuthLoginFlow can
@@ -1219,7 +1178,6 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                         p.path("tokenUrl").asString(),
                         pEndSession,
                         pScopes,
-                        showPasteFallback,
                         false,
                         false,
                         p.path("id").asString(),
@@ -1234,7 +1192,6 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                 tree.path("tokenUrl").asString(),
                 logoutUrl,
                 scopes,
-                showPasteFallback,
                 swingLegacyLogin,
                 swingLegacyShowSsoButton,
                 "rapla",

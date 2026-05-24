@@ -532,7 +532,6 @@ Angular renders the picker from.
   "userinfoUrl":    "http://localhost:8051/userinfo",
   "endSessionUrl":  "http://localhost:8051/connect/logout",
   "scopes":         ["openid", "profile", "email", "offline_access"],
-  "showPasteFallback": false,
 
   "picker": {
     "mode": "auto",

@@ -77,7 +77,6 @@ Spring's default `RegisteredClient` only allows exact-match redirect URIs. `Auth
 
 - Login dialog has a **"Sign in with browser…"** button next to the password form.
 - Flow: spawn an ephemeral loopback server on a random port → open Windows browser to the authorize URL → user logs in → browser is redirected to `http://127.0.0.1:<port>/callback?code=…` → loopback server captures the code → exchanges it at `/oauth2/token`.
-- **Paste-URL fallback** when browser auto-launch fails (e.g. headless WSL): a dialog shows the authorize URL and accepts the returned `?code=…` URL by paste. Server-driven toggle: `rapla.oauth.show-paste-fallback` (default `false`).
 - **Refresh-token cache:** hybrid `TokenStore` (JNLP `PersistenceService` → `~/.rapla/tokens.json` 0600 → NoOp). All operations `catch(Throwable)` — never surfaces storage errors as login failures.
 - **Logout** (`RaplaClientServiceImpl.logout()`) POSTs `/oauth2/revoke`, opens a browser tab to discovery's `logoutUrl`, clears `TokenStore`, then `SwingUtilities.invokeLater(start(null))` to in-JVM relaunch. After logout, the next `runOauthLogin` adds `prompt=login` to defeat the race where the browser keeps the cookie.
 
