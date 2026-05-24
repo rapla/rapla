@@ -31,7 +31,6 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.weekview.WeekviewPlugin;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,7 +54,6 @@ public class WeekViewFactory implements SwingViewFactory
     private final InfoFactory infoFactory;
     private final DateRenderer dateRenderer;
     private final DialogUiFactoryInterface dialogUiFactory;
-    private final Logger logger;
     private final RaplaLocale raplaLocale;
     private final RaplaResources i18n;
     private final ClientFacade facade;
@@ -64,7 +62,7 @@ public class WeekViewFactory implements SwingViewFactory
     private final EditController editController;
 
     @Autowired
-    public WeekViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<ObjectMenuFactory> objectMenuFactories,
+    public WeekViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Set<ObjectMenuFactory> objectMenuFactories,
             MenuFactory menuFactory, Supplier<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard,
             ReservationController reservationController, InfoFactory infoFactory, DateRenderer dateRenderer,
             DialogUiFactoryInterface dialogUiFactory,  IOInterface ioInterface, AppointmentFormater appointmentFormater, EditController editController)
@@ -72,7 +70,6 @@ public class WeekViewFactory implements SwingViewFactory
         this.facade = facade;
         this.i18n = i18n;
         this.raplaLocale = raplaLocale;
-        this.logger = logger;
         this.objectMenuFactories = objectMenuFactories;
         this.menuFactory = menuFactory;
         this.dateRendererProvider = dateRendererProvider;
@@ -95,7 +92,7 @@ public class WeekViewFactory implements SwingViewFactory
 
     public SwingCalendarView createSwingView(CalendarModel model, boolean editable, boolean printing) throws RaplaException
     {
-        return new SwingWeekCalendar(facade, i18n, raplaLocale, logger, model, editable, printing, objectMenuFactories, menuFactory, dateRendererProvider,
+        return new SwingWeekCalendar(facade, i18n, raplaLocale, model, editable, printing, objectMenuFactories, menuFactory, dateRendererProvider,
                 calendarSelectionModel, clipboard, reservationController, infoFactory, dateRenderer, dialogUiFactory,
                 ioInterface, appointmentFormater, editController);
     }

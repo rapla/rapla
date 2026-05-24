@@ -1,6 +1,7 @@
 package org.rapla.storage.dbrm;
 
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -26,20 +27,19 @@ import java.util.Optional;
  */
 public final class FileTokenStore implements TokenStore
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(FileTokenStore.class);
     private static final String KEY_REFRESH_TOKEN = "refreshToken";
 
     private final Path tokenFile;
-    private final Logger logger;
 
-    public FileTokenStore(Logger logger)
+    public FileTokenStore()
     {
-        this(Path.of(System.getProperty("user.home", "."), ".rapla", "tokens.json"), logger);
+        this(Path.of(System.getProperty("user.home", "."), ".rapla", "tokens.json"));
     }
 
-    FileTokenStore(Path tokenFile, Logger logger)
+    FileTokenStore(Path tokenFile)
     {
         this.tokenFile = tokenFile;
-        this.logger = logger;
     }
 
     @Override
@@ -71,7 +71,7 @@ public final class FileTokenStore implements TokenStore
             }
             catch (Throwable t)
             {
-                if (logger != null) logger.warn("file token-store clear failed: " + t.getMessage());
+                LOGGER.warn("file token-store clear failed: {}", t.getMessage());
             }
         }
         else
@@ -119,7 +119,7 @@ public final class FileTokenStore implements TokenStore
         }
         catch (Throwable t)
         {
-            if (logger != null) logger.debug("file token-store read failed: " + t.getMessage());
+            LOGGER.debug("file token-store read failed: {}", t.getMessage());
             return new LinkedHashMap<>();
         }
     }
@@ -143,7 +143,7 @@ public final class FileTokenStore implements TokenStore
         }
         catch (Throwable t)
         {
-            if (logger != null) logger.warn("file token-store write failed (NOT persisted): " + t.getMessage());
+            LOGGER.warn("file token-store write failed (NOT persisted): {}", t.getMessage());
         }
     }
 }

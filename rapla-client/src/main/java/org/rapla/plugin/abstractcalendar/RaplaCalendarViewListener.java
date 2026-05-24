@@ -24,7 +24,8 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.plugin.abstractcalendar.client.swing.SwingRaplaBlock;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
@@ -39,6 +40,7 @@ import java.util.List;
 import java.time.LocalDateTime;
 public class RaplaCalendarViewListener extends RaplaGUIComponent implements ViewListener
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RaplaCalendarViewListener.class);
     protected boolean keepTime = false;
 
     protected JComponent calendarContainerComponent;
@@ -50,10 +52,10 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
     final EditController editController;
 
 
-    public RaplaCalendarViewListener(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, JComponent calendarContainerComponent,
+    public RaplaCalendarViewListener(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, CalendarModel model, JComponent calendarContainerComponent,
              MenuFactory menuFactory, ReservationController reservationController,  DialogUiFactoryInterface dialogUiFactory, EditController editController)
     {
-        super(facade, i18n, raplaLocale, logger);
+        super(facade, i18n, raplaLocale);
         this.editController = editController;
         this.model = model;
         this.calendarContainerComponent = calendarContainerComponent;
@@ -199,7 +201,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
         }
         catch (RaplaException e)
         {
-            getLogger().error(e.getMessage(), e);
+            LOGGER.error(e.getMessage(), e);
             return Collections.emptyList();
         }
     }
@@ -213,7 +215,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
         }
         catch (RaplaException e)
         {
-            getLogger().error(e.getMessage(), e);
+            LOGGER.error(e.getMessage(), e);
             return Collections.emptyList();
         }
     }

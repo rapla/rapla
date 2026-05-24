@@ -345,6 +345,13 @@
                 <configuration>
                     <mainClass>org.rapla.server.spring.RaplaSpringBootApplication</mainClass>
                     <skip>${rapla.app.spring-boot-run.skip}</skip>
+                    <!-- PRD 045 §4 / Phase 4: switch to PropertiesLauncher so the
+                         bundled loader.properties (loader.path=lib/,plugins/) takes
+                         effect at launch. Operators get drop-in JDBC drivers (./lib/)
+                         and drop-in plugins (./plugins/) without any -D flag or
+                         launcher script — just `java -jar X.jar`. JarLauncher (the
+                         default) ignores loader.path. -->
+                    <layout>ZIP</layout>
                     <!-- Client-only jars excluded from BOOT-INF/lib/ — server bytecode has zero
                          references to either (verified with strings on rapla-server + rapla-core).
                          They live under BOOT-INF/classes/static/webclient/ instead and are served

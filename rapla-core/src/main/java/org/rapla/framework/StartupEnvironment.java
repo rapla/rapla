@@ -1,7 +1,5 @@
 package org.rapla.framework;
 
-import org.rapla.logger.Logger;
-
 import java.net.URL;
 
 public interface StartupEnvironment
@@ -13,6 +11,4 @@ public interface StartupEnvironment
 
     /** Either CONSOLE or WEBSTART. (Java applets unsupported since Java 11; APPLET removed.) */
     int getStartupMode();
-
-    Logger getBootstrapLogger();
 }

@@ -16,7 +16,8 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TimeZoneConverter;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.plugin.ical.ICalImport;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.impl.AbstractCachableOperator;
@@ -38,25 +39,23 @@ import java.util.TimeZone;
 @ConditionalOnProperty(prefix = "rapla.services", name = "org.rapla.plugin.ical", matchIfMissing = true)
 public class ICalImportController implements ICalImport
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ICalImportController.class);
     private final TimeZoneConverter timeZoneConverter;
     private final RemoteSession session;
     private final RaplaFacade facade;
     private final org.rapla.storage.SyncStorageOperator syncOperator;
-    private final Logger logger;
     private final HttpServletRequest request;
 
     public ICalImportController(TimeZoneConverter timeZoneConverter,
                                  RemoteSession session,
                                  RaplaFacade facade,
                                  org.rapla.storage.SyncStorageOperator syncOperator,
-                                 Logger logger,
                                  HttpServletRequest request)
     {
         this.timeZoneConverter = timeZoneConverter;
         this.session = session;
         this.facade = facade;
         this.syncOperator = syncOperator;
-        this.logger = logger;
         this.request = request;
     }
 
@@ -149,7 +148,7 @@ public class ICalImportController implements ICalImport
                 }
                 else
                 {
-                    logger.debug("Ignoring event with uid " + uid + " already imported. Ignoring");
+                    LOGGER.debug("Ignoring event with uid {} already imported. Ignoring", uid);
                     eventsPresent++;
                 }
             }

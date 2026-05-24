@@ -17,15 +17,14 @@ import org.rapla.client.UserClientService;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 
 public class RestartRaplaAction extends RaplaAction{
     private final UserClientService clientService;
 
-    public RestartRaplaAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, UserClientService clientService)
+    public RestartRaplaAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, UserClientService clientService)
     {
-        super(facade, i18n, raplaLocale, logger);
+        super(facade, i18n, raplaLocale);
         this.clientService = clientService;
         boolean logoutAvailable = clientService.isLogoutAvailable();
         String string = getString("restart_client");

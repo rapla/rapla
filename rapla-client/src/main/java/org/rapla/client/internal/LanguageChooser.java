@@ -15,7 +15,6 @@ package org.rapla.client.internal;
 import org.rapla.RaplaResources;
 import org.rapla.client.RaplaWidget;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 import javax.swing.Action;
 import javax.swing.DefaultListCellRenderer;
@@ -30,10 +29,8 @@ final public class LanguageChooser implements RaplaWidget
 {
     JComboBox jComboBox;
     String country;
-    Logger logger;
 
-    public LanguageChooser(Logger logger, final RaplaResources i18n, final RaplaLocale raplaLocale)  {
-        this.logger = logger;
+    public LanguageChooser(final RaplaResources i18n, final RaplaLocale raplaLocale)  {
         country = raplaLocale.getLocale().getCountry();
         String[] languages = raplaLocale.getAvailableLanguages().toArray(new String[0]);
 

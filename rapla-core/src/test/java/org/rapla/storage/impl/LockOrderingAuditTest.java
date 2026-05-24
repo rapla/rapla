@@ -3,8 +3,6 @@ package org.rapla.storage.impl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.rapla.framework.RaplaSynchronizationException;
-import org.rapla.logger.Logger;
-import org.rapla.logger.RaplaBootstrapLogger;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -47,13 +45,11 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 class LockOrderingAuditTest
 {
-    private final Logger logger = RaplaBootstrapLogger.createRaplaLogger();
-
     @Test
     @DisplayName("disconnectLock.read with 3s timeout fails cleanly when disconnectLock.write is held")
     void scheduledTaskGivesUpWhenDisconnectIsHoldingItsLock() throws Exception
     {
-        DefaultRaplaLock disconnectLock = new DefaultRaplaLock(logger);
+        DefaultRaplaLock disconnectLock = new DefaultRaplaLock();
 
         CountDownLatch acquired = new CountDownLatch(1);
         CountDownLatch release = new CountDownLatch(1);
@@ -87,8 +83,8 @@ class LockOrderingAuditTest
     void twoLockInversionResolvesViaTimeout() throws Exception
     {
         // Simulate the operator's two locks.
-        DefaultRaplaLock lockManager = new DefaultRaplaLock(logger);
-        DefaultRaplaLock disconnectLock = new DefaultRaplaLock(logger);
+        DefaultRaplaLock lockManager = new DefaultRaplaLock();
+        DefaultRaplaLock disconnectLock = new DefaultRaplaLock();
 
         CountDownLatch threadAReady = new CountDownLatch(1);
         CountDownLatch threadBReady = new CountDownLatch(1);

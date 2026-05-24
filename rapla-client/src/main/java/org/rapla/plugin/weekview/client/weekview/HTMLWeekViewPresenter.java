@@ -5,7 +5,8 @@ import org.rapla.components.calendarview.Builder;
 import org.rapla.components.calendarview.Builder.PreperationResult;
 import org.rapla.components.calendarview.html.AbstractHTMLView;
 import org.rapla.components.util.DateTools;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBlock;
 
 import java.util.ArrayList;
@@ -19,6 +20,7 @@ import java.util.TreeSet;
 import java.time.LocalDateTime;
 public class HTMLWeekViewPresenter extends AbstractHTMLView
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(HTMLWeekViewPresenter.class);
     private final CalendarWeekView<?> view;
 
     private int endMinutes;
@@ -29,12 +31,10 @@ public class HTMLWeekViewPresenter extends AbstractHTMLView
     HTMLDaySlot[] daySlots;
     ArrayList<Block> blocks = new ArrayList<>();
     String weeknumber;
-    Logger logger;
 
-    public HTMLWeekViewPresenter(CalendarWeekView<?> view, Logger logger)
+    public HTMLWeekViewPresenter(CalendarWeekView<?> view)
     {
         this.view = view;
-        this.logger = logger;
     }
 
     /** The granularity of the selection rows.
@@ -138,7 +138,7 @@ public class HTMLWeekViewPresenter extends AbstractHTMLView
             {
                 b.build(this, getStartDate(),prepareBuild.getBlocks());
             }
-            logger.info("building took  " + (System.currentTimeMillis() - time) + " ms");
+            LOGGER.info("building took  {} ms", (System.currentTimeMillis() - time));
         }
 
         for (int minuteOfDay = minMinute; minuteOfDay < maxMinute; minuteOfDay++)
@@ -217,12 +217,12 @@ public class HTMLWeekViewPresenter extends AbstractHTMLView
                     timelist.add(rowSlot);
                 }
             }
-            logger.info("tableprep took  " + (System.currentTimeMillis() - time) + " ms");
+            LOGGER.info("tableprep took  {} ms", (System.currentTimeMillis() - time));
         }
         {
             long time = System.currentTimeMillis();
             view.update(daylist, timelist, weeknumber);
-            logger.info("update took  " + (System.currentTimeMillis() - time) + " ms");
+            LOGGER.info("update took  {} ms", (System.currentTimeMillis() - time));
         }
 
     }

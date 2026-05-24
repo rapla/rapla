@@ -61,7 +61,8 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.ModifiableCalendarState;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.client.edit.reservation.AllocatableRowStatusModel;
@@ -155,6 +156,7 @@ import java.time.LocalDateTime;
  */
 public class AllocatableSelection extends RaplaGUIComponent implements AppointmentListener, PopupListener, RaplaWidget
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AllocatableSelection.class);
     JSplitPane content = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
     JPanel leftPanel = new JPanel();
     JTreeTable completeTable;
@@ -212,12 +214,12 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     private final DialogUiFactoryInterface dialogUiFactory;
     private final boolean restrictionVisible;
 
-    public AllocatableSelection(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, boolean addCalendarButton,
+    public AllocatableSelection(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, boolean addCalendarButton,
             CommandHistory commandHistory, TreeFactory treeFactory, CalendarSelectionModel originalModel, AppointmentFormater appointmentFormater,
             MenuFactory menuFactory, InfoFactory infoFactory,
             DialogUiFactoryInterface dialogUiFactory, FilterEditButtonFactory filterEditButtonFactory, boolean restrictionVisible)
     {
-        super(facade, i18n, raplaLocale, logger);
+        super(facade, i18n, raplaLocale);
         this.restrictionVisible = restrictionVisible;
         this.appointmentFormater = appointmentFormater;
         // Undo Command History
@@ -435,7 +437,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
     public void appointmentSelected(Collection<Appointment> appointments)
     {
-        getLogger().debug("Appointment selected " + appointments);
+        LOGGER.debug("Appointment selected {}", appointments);
         this.selectedAppointments = appointments;
     }
 
@@ -536,7 +538,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         catch (RaplaException ex)
         {
             // Don't blow up typing — log + leave the tree as-is.
-            getLogger().warn("Name-search refresh failed: " + ex.getMessage());
+            LOGGER.warn("Name-search refresh failed: {}", ex.getMessage());
         }
     }
 
@@ -2122,7 +2124,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         }
         catch (RaplaException ex)
         {
-            getLogger().error("Can't get permissions!", ex);
+            LOGGER.error("Can't get permissions!", ex);
             return false;
         }
     }
@@ -2356,7 +2358,6 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         private final ClientFacade facade;
         private final RaplaResources i18n;
         private final RaplaLocale raplaLocale;
-        private final Logger logger;
         private final AppointmentFormater appointmentFormater;
         private final TreeFactory treeFactory;
         private final CalendarSelectionModel model;
@@ -2366,7 +2367,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         private final FilterEditButtonFactory filterEditButtonFactory;
 
         @Autowired
-        public AllocatableSelectionFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
+        public AllocatableSelectionFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale,
                 AppointmentFormater appointmentFormater, TreeFactory treeFactory, CalendarSelectionModel model,
                 MenuFactory menuFactory, InfoFactory infoFactory,  DialogUiFactoryInterface dialogUiFactory,
                 FilterEditButtonFactory filterEditButtonFactory)
@@ -2375,7 +2376,6 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             this.facade = facade;
             this.i18n = i18n;
             this.raplaLocale = raplaLocale;
-            this.logger = logger;
             this.appointmentFormater = appointmentFormater;
             this.treeFactory = treeFactory;
             this.model = model;
@@ -2387,7 +2387,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
         public AllocatableSelection create(boolean addCalendarButton, CommandHistory commandHistory, boolean restrictionVisible)
         {
-            return new AllocatableSelection(facade, i18n, raplaLocale, logger, addCalendarButton, commandHistory, treeFactory, model, appointmentFormater,
+            return new AllocatableSelection(facade, i18n, raplaLocale, addCalendarButton, commandHistory, treeFactory, model, appointmentFormater,
                     menuFactory, infoFactory, dialogUiFactory, filterEditButtonFactory, restrictionVisible);
         }
     }

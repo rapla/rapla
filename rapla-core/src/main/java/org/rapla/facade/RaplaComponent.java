@@ -32,7 +32,6 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 
@@ -46,15 +45,13 @@ import java.time.LocalDateTime;
 public class RaplaComponent
 {
 	public static final TypedComponentRole<RaplaConfiguration> PLUGIN_CONFIG= new TypedComponentRole<>("org.rapla.plugin");
-    private Logger logger;
     RaplaLocale raplaLocale;
     protected RaplaResources i18n;
     RaplaFacade facade;
 
-    public RaplaComponent(RaplaFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
+    public RaplaComponent(RaplaFacade facade, RaplaResources i18n, RaplaLocale raplaLocale) {
         this.facade = facade;
         this.i18n = i18n;
-        this.logger = logger;
         this.raplaLocale = raplaLocale;
     }
 
@@ -113,14 +110,6 @@ public class RaplaComponent
                 });
     }
 
-    protected void setLogger(Logger logger) 
-    {
-    	this.logger = logger;
-	}
-
-
-
-    
     @SuppressWarnings("deprecation")
     final public boolean isModifyPreferencesAllowed(User user) 
     {
@@ -189,10 +178,6 @@ public class RaplaComponent
     }
 
 
-
-    protected Logger getLogger() {
-        return logger;
-    }
 
     /** lookupDeprecated RaplaLocale from the context */
     protected RaplaLocale getRaplaLocale() {

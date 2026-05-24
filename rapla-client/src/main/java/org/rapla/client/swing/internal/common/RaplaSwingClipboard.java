@@ -3,7 +3,6 @@ package org.rapla.client.swing.internal.common;
 import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.facade.client.ClientFacade;
-import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.function.Supplier;
@@ -17,9 +16,9 @@ public class RaplaSwingClipboard extends RaplaClipboard
 
     Supplier<IOInterface> serviceProvider;
     @Autowired
-    public RaplaSwingClipboard(ClientFacade facade, Supplier<IOInterface> serviceProvider, Logger logger)
+    public RaplaSwingClipboard(ClientFacade facade, Supplier<IOInterface> serviceProvider)
     {
-        super(facade, logger);
+        super(facade);
         this.serviceProvider = serviceProvider;
     }
 

@@ -20,7 +20,6 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.logger.Logger;
 
 import java.util.Collections;
 
@@ -31,10 +30,10 @@ public class SaveableToggleAction extends RaplaAction
     String name;
     private final DialogUiFactoryInterface dialogUiFactory;
 
-    public SaveableToggleAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, String name,
+    public SaveableToggleAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, String name,
             TypedComponentRole<Boolean> configEntry, DialogUiFactoryInterface dialogUiFactory)
     {
-        super(facade, i18n, raplaLocale, logger);
+        super(facade, i18n, raplaLocale);
         this.name = name;
         this.dialogUiFactory = dialogUiFactory;
         putValue(NAME, getString(name));

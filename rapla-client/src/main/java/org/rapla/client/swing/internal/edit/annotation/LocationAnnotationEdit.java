@@ -12,7 +12,6 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.springframework.stereotype.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,8 +27,8 @@ public class LocationAnnotationEdit extends RaplaGUIComponent implements Annotat
     private final BooleanFieldFactory booleanFieldFactory;
 
     @Autowired
-    public LocationAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, BooleanFieldFactory booleanFieldFactory) {
-        super(facade, i18n, raplaLocale, logger);
+    public LocationAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, BooleanFieldFactory booleanFieldFactory) {
+        super(facade, i18n, raplaLocale);
         this.booleanFieldFactory = booleanFieldFactory;
     }
 

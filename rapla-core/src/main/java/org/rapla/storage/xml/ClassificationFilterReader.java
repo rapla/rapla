@@ -24,12 +24,15 @@ import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
 
 class ClassificationFilterReader extends RaplaXMLReader {
-    
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ClassificationFilterReader.class);
     DynamicType dynamicType;
     ClassificationFilter filter;
     Attribute attribute;
@@ -110,7 +113,7 @@ class ClassificationFilterReader extends RaplaXMLReader {
                 String attributeName = getString(atts,"attribute");
                 attribute = dynamicType.getAttribute(attributeName);
                 if (attribute == null) {
-                	getLogger().error("Error reading filter with " + dynamicType +" Attribute: " + attributeName,null);
+                	LOGGER.error("Error reading filter with " + dynamicType +" Attribute: " + attributeName);
                 	return;
                 }
             }

@@ -28,7 +28,6 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.AbstractAction;
@@ -71,8 +70,8 @@ public class TreeAllocatableSelection extends RaplaGUIComponent implements Chang
     private final TreeCellRenderer treeRenderer;
 
     @Autowired
-	public TreeAllocatableSelection(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, DialogUiFactoryInterface dialogUiFactory, TreeCellRenderer treeRenderer) {
-        super(facade, i18n, raplaLocale, logger);
+	public TreeAllocatableSelection(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, TreeFactory treeFactory, DialogUiFactoryInterface dialogUiFactory, TreeCellRenderer treeRenderer) {
+        super(facade, i18n, raplaLocale);
         this.treeRenderer = treeRenderer;
         this.treeFactory = treeFactory;
         this.dialogUiFactory = dialogUiFactory;

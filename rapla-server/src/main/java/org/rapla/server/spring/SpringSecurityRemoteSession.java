@@ -4,7 +4,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.rapla.entities.User;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.spring.oauth.external.ExternalProvidersProperties;
 import org.rapla.server.spring.oauth.external.ExternalUserResolver;
@@ -15,6 +14,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.slf4j.LoggerFactory;
 
 /**
  * Bridges Spring Security's JWT authentication to Rapla's {@link RemoteSession}.
@@ -32,26 +32,25 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
  */
 public class SpringSecurityRemoteSession implements RemoteSession
 {
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(SpringSecurityRemoteSession.class);
+
     private final RemoteSession fallback;
     private final StorageOperator operator;
-    private final Logger logger;
     private final ExternalProvidersProperties externalProviders;
     private final ExternalUserResolver externalUserResolver;
 
-    public SpringSecurityRemoteSession(RemoteSession fallback, StorageOperator operator, Logger logger)
+    public SpringSecurityRemoteSession(RemoteSession fallback, StorageOperator operator)
     {
-        this(fallback, operator, logger, null, null);
+        this(fallback, operator, null, null);
     }
 
     public SpringSecurityRemoteSession(RemoteSession fallback,
                                        StorageOperator operator,
-                                       Logger logger,
                                        ExternalProvidersProperties externalProviders,
                                        ExternalUserResolver externalUserResolver)
     {
         this.fallback = fallback;
         this.operator = operator;
-        this.logger = logger;
         this.externalProviders = externalProviders;
         this.externalUserResolver = externalUserResolver;
     }
@@ -93,12 +92,6 @@ public class SpringSecurityRemoteSession implements RemoteSession
     }
 
     @Override
-    public Logger getLogger()
-    {
-        return logger;
-    }
-
-    @Override
     public void logout()
     {
         // Spring-managed JWT — there's no server-side session to invalidate.
@@ -130,12 +123,12 @@ public class SpringSecurityRemoteSession implements RemoteSession
                 }
                 catch (RaplaSecurityException ex)
                 {
-                    logger.warn("External JWT (iss=" + issuer + ") could not be resolved to a Rapla user: " + ex.getMessage());
+                    LOGGER.warn("External JWT (iss={}) could not be resolved to a Rapla user: {}", issuer, ex.getMessage());
                     throw ex;
                 }
                 catch (RaplaException ex)
                 {
-                    logger.warn("External JWT (iss=" + issuer + ") could not be resolved to a Rapla user: " + ex.getMessage());
+                    LOGGER.warn("External JWT (iss={}) could not be resolved to a Rapla user: {}", issuer, ex.getMessage());
                     throw new RaplaSecurityException(ex.getMessage(), ex);
                 }
             }
@@ -153,7 +146,7 @@ public class SpringSecurityRemoteSession implements RemoteSession
         }
         catch (RaplaException ex)
         {
-            logger.warn("JWT subject " + subject + " could not be resolved to a Rapla user: " + ex.getMessage());
+            LOGGER.warn("JWT subject {} could not be resolved to a Rapla user: {}", subject, ex.getMessage());
             throw new RaplaSecurityException("JWT subject '" + subject + "' could not be resolved: " + ex.getMessage(), ex);
         }
     }

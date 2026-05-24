@@ -45,7 +45,8 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import java.awt.Component;
@@ -62,18 +63,19 @@ the entities of rapla.
 public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
 
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(InfoFactoryImpl.class);
     Map<Class,HTMLInfo> views = new HashMap<>();
     private final IOInterface ioInterface;
     private final DialogUiFactoryInterface dialogUiFactory;
 
     @Autowired
-    public InfoFactoryImpl(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AppointmentFormater appointmentFormater, IOInterface ioInterface,  DialogUiFactoryInterface dialogUiFactory) {
-        super(clientFacade, i18n, raplaLocale, logger);
+    public InfoFactoryImpl(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, AppointmentFormater appointmentFormater, IOInterface ioInterface,  DialogUiFactoryInterface dialogUiFactory) {
+        super(clientFacade, i18n, raplaLocale);
         RaplaFacade facade = clientFacade.getRaplaFacade();
         this.ioInterface = ioInterface;
         this.dialogUiFactory = dialogUiFactory;
-        views.put( DynamicType.class, new DynamicTypeInfoUI(clientFacade, i18n, raplaLocale, logger) );
-        views.put( Reservation.class, new ReservationInfoUI(i18n, raplaLocale, facade, logger, appointmentFormater, false)
+        views.put( DynamicType.class, new DynamicTypeInfoUI(clientFacade, i18n, raplaLocale) );
+        views.put( Reservation.class, new ReservationInfoUI(i18n, raplaLocale, facade, appointmentFormater, false)
                 {
                     // Special usecase, because we want to use export name in all other names
                     @Override
@@ -84,11 +86,11 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
                     }
                 }
         );
-        views.put( Appointment.class, new AppointmentInfoUI(i18n, raplaLocale, facade, logger, appointmentFormater, false) );
-        views.put( Allocatable.class, new AllocatableInfoUI(clientFacade, i18n, raplaLocale, logger) );
-        views.put( User.class, new UserInfoUI(clientFacade, i18n, raplaLocale, logger) );
-        views.put( Period.class, new PeriodInfoUI(facade, i18n, raplaLocale, logger) );
-        views.put( Category.class, new CategoryInfoUI(facade, i18n, raplaLocale, logger) );
+        views.put( Appointment.class, new AppointmentInfoUI(i18n, raplaLocale, facade, appointmentFormater, false) );
+        views.put( Allocatable.class, new AllocatableInfoUI(clientFacade, i18n, raplaLocale) );
+        views.put( User.class, new UserInfoUI(clientFacade, i18n, raplaLocale) );
+        views.put( Period.class, new PeriodInfoUI(facade, i18n, raplaLocale) );
+        views.put( Category.class, new CategoryInfoUI(facade, i18n, raplaLocale) );
     }
 
     /** this method is used by the viewtable to dynamicaly createInfoDialog an
@@ -128,7 +130,7 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
             else
                 return text;
         } catch(RaplaException ex) {
-            getLogger().error( ex.getMessage(), ex );
+            LOGGER.error(ex.getMessage(), ex);
         }
         if (obj instanceof Named)
             return ((Named) obj).getName(getI18n().getLocale());
@@ -143,7 +145,7 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
             throws RaplaException
     {
 
-        final ViewTable<T> viewTable = new ViewTable<>(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), this, ioInterface, dialogUiFactory);
+        final ViewTable<T> viewTable = new ViewTable<>(getClientFacade(), getI18n(), getRaplaLocale(), this, ioInterface, dialogUiFactory);
         final DialogInterface dlg = dialogUiFactory.createContentDialog(popupContext
                 ,
                 viewTable.getComponent()
@@ -205,7 +207,7 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
 
     /*
     public <T> Component createInfoComponent( T object ) throws RaplaException {
-        ViewTable<T> viewTable = new ViewTable<T>(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), this, ioInterface, dialogUiFactory);
+        ViewTable<T> viewTable = new ViewTable<T>(getClientFacade(), getI18n(), getRaplaLocale(), this, ioInterface, dialogUiFactory);
         viewTable.updateInfo( object );
         return viewTable.getComponent();
     }*/

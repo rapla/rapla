@@ -20,7 +20,6 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,9 +27,9 @@ import java.util.Collection;
 public class UserInfoUI extends HTMLInfo<User> {
 	ClassificationInfoUI<Allocatable> classificationInfo;
     ClientFacade clientFacade;
-    public UserInfoUI(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
-        super(i18n, raplaLocale, clientFacade.getRaplaFacade(), logger);
-        classificationInfo = new ClassificationInfoUI<>(i18n, raplaLocale, clientFacade.getRaplaFacade(), logger);
+    public UserInfoUI(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale) {
+        super(i18n, raplaLocale, clientFacade.getRaplaFacade());
+        classificationInfo = new ClassificationInfoUI<>(i18n, raplaLocale, clientFacade.getRaplaFacade());
         this.clientFacade = clientFacade;
     }
 

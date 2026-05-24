@@ -8,7 +8,8 @@ import org.rapla.entities.domain.Permission;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.server.AuthenticationStore;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.CachableStorageOperator;
@@ -26,6 +27,7 @@ import java.util.Set;
 
 public class RaplaAuthentificationService
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RaplaAuthentificationService.class);
     @Autowired
     RaplaResources i18n;
     @Autowired
@@ -34,19 +36,12 @@ public class RaplaAuthentificationService
     Set<AuthenticationStore> authenticationStores;
     @Autowired
     CachableStorageOperator operator;
-    @Autowired
-    Logger logger;
 
     private static boolean passwordCheckDisabled = false;
 
     @Autowired
     public RaplaAuthentificationService()
     {
-    }
-
-    public Logger getLogger()
-    {
-        return logger;
     }
 
     public static void setPasswordCheckDisabled(boolean passwordCheckDisabled)
@@ -79,8 +74,7 @@ public class RaplaAuthentificationService
         }
         else
         {
-            Logger logger = getLogger().getChildLogger("login");
-            user = authenticate(username, password, connectAs, logger);
+            user = authenticate(username, password, connectAs);
         }
         checkConnectAsRights(user, username, connectAs);
         return user;
@@ -100,19 +94,19 @@ public class RaplaAuthentificationService
     public User getUserWithPassword(String username, String password) throws RaplaException
     {
         String connectAs = null;
-        User user = authenticate(username, password, connectAs, getLogger());
+        User user = authenticate(username, password, connectAs);
         return user;
     }
 
-    public User authenticate(String username, String password, String connectAs, Logger logger) throws RaplaException
+    public User authenticate(String username, String password, String connectAs) throws RaplaException
     {
         User user = null;
         String toConnect = connectAs != null && !connectAs.isEmpty() ? connectAs : username;
-        logger.info("User '" + username + "' is requesting login.");
+        LOGGER.info("User '" + username + "' is requesting login.");
         AuthenticationStore authenticationStoreSuccessfull = null;
         for (AuthenticationStore authenticationStore : authenticationStores)
         {
-            logger.info("Checking external authentifiction for user " + username);
+            LOGGER.info("Checking external authentifiction for user " + username);
             try
             {
                 if ( !authenticationStore.isEnabled())
@@ -128,7 +122,7 @@ public class RaplaAuthentificationService
             }
             catch (RaplaException ex)
             {
-                getLogger().error(ex.getMessage(), ex);
+                LOGGER.error(ex.getMessage(), ex);
             }
         }
 
@@ -138,7 +132,7 @@ public class RaplaAuthentificationService
             user = operator.getUser(username);
             if (user == null)
             {
-                logger.info("Successfull for User " + username + ".Creating new Rapla user.");
+                LOGGER.info("Successfull for User " + username + ".Creating new Rapla user.");
                 java.time.LocalDateTime now = operator.getCurrentTimestamp();
                 UserImpl newUser = new UserImpl(now, now);
                 final ReferenceInfo<User> userReferenceInfo = operator.createIdentifier(User.class, 1).get(0);
@@ -157,7 +151,7 @@ public class RaplaAuthentificationService
             try
             {
                 Category groupCategory = operator.getSuperCategory().getCategory(Permission.GROUP_CATEGORY_KEY);
-                logger.debug("Looking for update for rapla user '" + username + "' from external source.");
+                LOGGER.debug("Looking for update for rapla user '" + username + "' from external source.");
                 initUser = authenticationStoreSuccessfull.initUser(user, username, password, groupCategory);
             }
             catch (RaplaSecurityException ex)
@@ -178,7 +172,7 @@ public class RaplaAuthentificationService
             }
             if (initUser)
             {
-                logger.info("Udating rapla user '" + username + "' from external source.");
+                LOGGER.info("Udating rapla user '" + username + "' from external source.");
                 List<Entity<?>> storeList = new ArrayList<>(1);
                 storeList.add(user);
                 List<ReferenceInfo<Entity<?>>> removeList = Collections.emptyList();
@@ -187,18 +181,18 @@ public class RaplaAuthentificationService
             }
             else
             {
-                logger.info("User '" + username + "' already up to date");
+                LOGGER.info("User '" + username + "' already up to date");
             }
         }
         else
         {
             if (authenticationStores.size() == 0)
             {
-                logger.info("Check password for " + username);
+                LOGGER.info("Check password for " + username);
             }
             else
             {
-                logger.info("Now trying to authenticate with local store '" + username + "'");
+                LOGGER.info("Now trying to authenticate with local store '" + username + "'");
             }
             operator.authenticate(username, password);
         }
@@ -206,11 +200,11 @@ public class RaplaAuthentificationService
         if (connectAs != null && connectAs.length() > 0 && user != null)
         {
             checkConnectAsRights(user, username, connectAs);
-            logger.info("Successfull login for '" + username + "' acts as user '" + connectAs + "'");
+            LOGGER.info("Successfull login for '" + username + "' acts as user '" + connectAs + "'");
         }
         else
         {
-            logger.info("Successfull login for '" + username + "'");
+            LOGGER.info("Successfull login for '" + username + "'");
         }
         user = operator.getUser(toConnect);
 

@@ -21,7 +21,7 @@ class FileTokenStoreTest
     void roundTripReadsBackWhatWasWritten()
     {
         Path tokenFile = tempDir.resolve("tokens.json");
-        FileTokenStore store = new FileTokenStore(tokenFile, null);
+        FileTokenStore store = new FileTokenStore(tokenFile);
         assertTrue(store.read().isEmpty(), "empty before write");
 
         store.tryWrite("eyJraWQ.eyJ0eXA.signature");
@@ -37,7 +37,7 @@ class FileTokenStoreTest
     void readReturnsEmptyOnMissingFile()
     {
         Path nonexistent = tempDir.resolve("does-not-exist.json");
-        FileTokenStore store = new FileTokenStore(nonexistent, null);
+        FileTokenStore store = new FileTokenStore(nonexistent);
         assertTrue(store.read().isEmpty());
     }
 
@@ -46,7 +46,7 @@ class FileTokenStoreTest
     {
         Path file = tempDir.resolve("garbage.json");
         Files.writeString(file, "not json at all");
-        FileTokenStore store = new FileTokenStore(file, null);
+        FileTokenStore store = new FileTokenStore(file);
         assertTrue(store.read().isEmpty(), "garbage doesn't crash; returns empty");
     }
 
@@ -57,7 +57,7 @@ class FileTokenStoreTest
         Path conflict = tempDir.resolve("conflict-file");
         try { Files.writeString(conflict, ""); } catch (IOException e) { /* setup */ }
         Path under = conflict.resolve("tokens.json");   // can't have a file under a file
-        FileTokenStore store = new FileTokenStore(under, null);
+        FileTokenStore store = new FileTokenStore(under);
         // Must not throw; contract is catch-Throwable.
         store.tryWrite("some-token");
         assertTrue(store.read().isEmpty(), "after failed write, read still returns empty");
@@ -66,7 +66,7 @@ class FileTokenStoreTest
     @Test
     void clearOnNonexistentFileDoesNotThrow()
     {
-        FileTokenStore store = new FileTokenStore(tempDir.resolve("nope.json"), null);
+        FileTokenStore store = new FileTokenStore(tempDir.resolve("nope.json"));
         store.tryClear(); // must not throw
     }
 
@@ -74,7 +74,7 @@ class FileTokenStoreTest
     void writeWithNullTokenIsNoOp()
     {
         Path file = tempDir.resolve("tokens.json");
-        FileTokenStore store = new FileTokenStore(file, null);
+        FileTokenStore store = new FileTokenStore(file);
         store.tryWrite(null);
         store.tryWrite("");
         assertFalse(Files.exists(file), "null/empty tokens are silently ignored");
@@ -85,7 +85,7 @@ class FileTokenStoreTest
     {
         // PRD 029 Phase 4: tryClear() (logout) drops the token but keeps the
         // login preferences, so the next login dialog still defaults sensibly.
-        FileTokenStore store = new FileTokenStore(tempDir.resolve("tokens.json"), null);
+        FileTokenStore store = new FileTokenStore(tempDir.resolve("tokens.json"));
         store.tryWritePref(TokenStore.KEY_LANGUAGE, "de");
         store.tryWrite("eyJ.refresh.tok");
         assertEquals("eyJ.refresh.tok", store.read().orElse(null));
@@ -100,7 +100,7 @@ class FileTokenStoreTest
     @Test
     void tokenAndPrefWritesDoNotClobberEachOther()
     {
-        FileTokenStore store = new FileTokenStore(tempDir.resolve("tokens.json"), null);
+        FileTokenStore store = new FileTokenStore(tempDir.resolve("tokens.json"));
         store.tryWrite("tok1");
         store.tryWritePref(TokenStore.KEY_LOGIN_METHOD, "keycloak");
         store.tryWritePref(TokenStore.KEY_LANGUAGE, "fr");
@@ -114,7 +114,7 @@ class FileTokenStoreTest
     @Test
     void emptyPrefValueClearsThePref()
     {
-        FileTokenStore store = new FileTokenStore(tempDir.resolve("tokens.json"), null);
+        FileTokenStore store = new FileTokenStore(tempDir.resolve("tokens.json"));
         store.tryWritePref(TokenStore.KEY_LANGUAGE, "de");
         store.tryWritePref(TokenStore.KEY_LANGUAGE, "");
         assertTrue(store.readPref(TokenStore.KEY_LANGUAGE).isEmpty());

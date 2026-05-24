@@ -42,7 +42,6 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.JButton;
@@ -95,26 +94,26 @@ public class UserEditUI  extends AbstractEditUI<User> {
      * @throws RaplaException
      */
     @Autowired
-    public UserEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, DialogUiFactoryInterface dialogUiFactory, GroupListField groupField, TextFieldFactory textFieldFactory, TreeCellRenderer treeCellRenderer) throws
+    public UserEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, TreeFactory treeFactory, DialogUiFactoryInterface dialogUiFactory, GroupListField groupField, TextFieldFactory textFieldFactory, TreeCellRenderer treeCellRenderer) throws
             RaplaInitializationException {
-        super(facade, i18n, raplaLocale, logger);
+        super(facade, i18n, raplaLocale);
         this.treeFactory = treeFactory;
         this.dialogUiFactory = dialogUiFactory;
         this.treeCellRenderer = treeCellRenderer;
         List<EditField> fields = new ArrayList<>();
         usernameField = textFieldFactory.create(getString("username"));
         fields.add(usernameField);
-        personSelect = new PersonSelectField(facade, i18n, raplaLocale, logger);
+        personSelect = new PersonSelectField(facade, i18n, raplaLocale);
         fields.add(personSelect);
         nameField = textFieldFactory.create(getString("name"));
         fields.add(nameField);
         emailField = textFieldFactory.create(getString("email"));
         fields.add(emailField);
-        adminField = new AdminBooleanField(facade, i18n, raplaLocale, logger, getString("admin"));
+        adminField = new AdminBooleanField(facade, i18n, raplaLocale, getString("admin"));
         fields.add(adminField);
         this.groupField = groupField;
         fields.add(this.groupField);
-        authenticationSourceField = new AuthenticationSourceField(facade, i18n, raplaLocale, logger);
+        authenticationSourceField = new AuthenticationSourceField(facade, i18n, raplaLocale);
         fields.add(authenticationSourceField);
         setFields(fields);
     }
@@ -126,8 +125,8 @@ public class UserEditUI  extends AbstractEditUI<User> {
     
     class AdminBooleanField extends BooleanField implements ChangeListener {
         User user;
-        public AdminBooleanField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, String fieldName) throws RaplaInitializationException  {
-            super(facade, i18n, raplaLocale, logger, fieldName);
+        public AdminBooleanField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, String fieldName) throws RaplaInitializationException  {
+            super(facade, i18n, raplaLocale, fieldName);
             try
             {
                 this.user = facade.getUser();
@@ -189,8 +188,8 @@ public class UserEditUI  extends AbstractEditUI<User> {
         RaplaButton newButton  = new RaplaButton(RaplaButton.SMALL);
         RaplaButton removeButton  = new RaplaButton(RaplaButton.SMALL);
         
-        public PersonSelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) throws RaplaInitializationException {
-            super(facade, i18n, raplaLocale, logger);
+        public PersonSelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale) throws RaplaInitializationException {
+            super(facade, i18n, raplaLocale);
             setFieldName( getString("person"));
             final Category rootCategory;
             try
@@ -416,8 +415,8 @@ public class UserEditUI  extends AbstractEditUI<User> {
         private final RaplaButton disconnectButton = new RaplaButton(RaplaButton.SMALL);
         private boolean disconnectRequested = false;
 
-        AuthenticationSourceField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) throws RaplaInitializationException {
-            super(facade, i18n, raplaLocale, logger);
+        AuthenticationSourceField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale) throws RaplaInitializationException {
+            super(facade, i18n, raplaLocale);
             setFieldName("Authentication");
             disconnectButton.setText("Disconnect");
             disconnectButton.addActionListener(e -> {

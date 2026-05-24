@@ -14,7 +14,6 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.springframework.stereotype.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,9 +29,9 @@ public class CategorizationAnnotationEdit extends RaplaGUIComponent implements A
     private final BooleanFieldFactory booleanFieldFactory;
 
     @Autowired
-    public CategorizationAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, BooleanFieldFactory booleanFieldFactory)
+    public CategorizationAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, BooleanFieldFactory booleanFieldFactory)
     {
-        super(facade, i18n, raplaLocale, logger);
+        super(facade, i18n, raplaLocale);
         this.booleanFieldFactory = booleanFieldFactory;
     }
 

@@ -9,7 +9,6 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.plugin.planningstatus.PlanningStatusPlugin;
 import org.rapla.plugin.planningstatus.PlanningStatusResources;
@@ -27,18 +26,16 @@ public class PlanningStatusPublishExtensionFactory implements PublishExtensionFa
     private final RaplaResources i18n;
     private final PlanningStatusResources i18nPlanninsgStatus;
     private final RaplaLocale raplaLocale;
-    private final Logger logger;
     private final PluginsService plugins;
     private volatile Boolean cachedEnabled;
 
     @Autowired
-	public PlanningStatusPublishExtensionFactory(ClientFacade facade, RaplaResources i18n, PlanningStatusResources i18nPlanninsgStatus,RaplaLocale raplaLocale, Logger logger, PluginsService plugins)
+	public PlanningStatusPublishExtensionFactory(ClientFacade facade, RaplaResources i18n, PlanningStatusResources i18nPlanninsgStatus,RaplaLocale raplaLocale, PluginsService plugins)
 	{
         this.facade = facade;
         this.i18n = i18n;
         this.i18nPlanninsgStatus = i18nPlanninsgStatus;
         this.raplaLocale = raplaLocale;
-        this.logger = logger;
         this.plugins = plugins;
 	}
 
@@ -61,7 +58,7 @@ public class PlanningStatusPublishExtensionFactory implements PublishExtensionFa
 	public PublishExtension creatExtension(CalendarSelectionModel model,
 			PropertyChangeListener revalidateCallback) throws RaplaException 
 	{
-		return new PlanningStatusPublishExtension(facade, i18n, raplaLocale, logger, model, i18nPlanninsgStatus);
+		return new PlanningStatusPublishExtension(facade, i18n, raplaLocale, model, i18nPlanninsgStatus);
 	}
 
 	

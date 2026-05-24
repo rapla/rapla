@@ -13,7 +13,6 @@ import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.module.SimpleModule;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
-import org.rapla.logger.ConsoleLogger;
 import org.rapla.rest.JacksonObjectMapperFactory;
 import org.rapla.rest.JsonParserWrapper;
 import org.rapla.rest.client.RemoteConnectException;
@@ -28,7 +27,6 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class JacksonParserWrapper  implements Supplier<JsonParserWrapper.JsonParser> {
-    static ConsoleLogger logger = new ConsoleLogger();
     @Override
     public JsonParserWrapper.JsonParser get() {
         return new JsonParserWrapper.JsonParser() {
@@ -75,7 +73,7 @@ public class JacksonParserWrapper  implements Supplier<JsonParserWrapper.JsonPar
             {
                 try
                 {
-                    final Object result = SynchronizedCompletablePromise.waitFor(promise, 1000, logger);
+                    final Object result = SynchronizedCompletablePromise.waitFor(promise, 1000);
                     ValueSerializer<Object> serializer = ctx.findValueSerializer(result.getClass());
                     serializer.serialize(result, jsonGenerator, ctx);
                 }

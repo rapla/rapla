@@ -13,7 +13,8 @@
 
 package org.rapla.components.iolayer;
 
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.awt.Component;
 import java.awt.Frame;
@@ -31,6 +32,7 @@ import java.lang.reflect.Method;
 import java.net.URL;
 
 final public class WebstartIO extends DefaultIO {
+    private static final Logger LOGGER = LoggerFactory.getLogger(WebstartIO.class);
     Method lookup;
     Method getDefaultPage;
     Method showPageFormatDialog;
@@ -49,8 +51,8 @@ final public class WebstartIO extends DefaultIO {
     String fileOpenService = "javax.jnlp.FileOpenService";
     String clipboardService = "javax.jnlp.ClipboardService";
 
-    public WebstartIO(Logger logger) throws UnsupportedOperationException {
-        super( logger);
+    public WebstartIO() throws UnsupportedOperationException {
+        super();
         try {
             Class<?> serviceManagerC = Class.forName("javax.jnlp.ServiceManager");
             Class<?> printServiceC = Class.forName(printService);
@@ -73,10 +75,10 @@ final public class WebstartIO extends DefaultIO {
             getContents = clipboardServiceC.getMethod("getContents");
             showDocument = basicServiceC.getMethod("showDocument", URL.class);
         } catch (ClassNotFoundException ex) {
-        	getLogger().error(ex.getMessage());
+        	LOGGER.error(ex.getMessage());
             throw new UnsupportedOperationException("Java Webstart not available due to " + ex.getMessage());
         } catch (Exception ex) {
-        	getLogger().error(ex.getMessage());
+        	LOGGER.error(ex.getMessage());
             throw new UnsupportedOperationException(ex.getMessage());
         }
     }
@@ -103,7 +105,7 @@ final public class WebstartIO extends DefaultIO {
         try {
             format = (PageFormat) invoke ( printService, getDefaultPage, new Object[] {} ) ;
         } catch (Exception ex) {
-            getLogger().error("Can't get print service using default PageFormat." + ex.getMessage());
+            LOGGER.error("Can't get print service using default PageFormat.{}", ex.getMessage());
         }
         if (format == null)
             format = new PageFormat();

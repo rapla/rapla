@@ -1,6 +1,7 @@
 package org.rapla.client.internal;
 
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.awt.Desktop;
 import java.io.IOException;
@@ -12,16 +13,17 @@ import java.util.Locale;
 
 public final class BrowserLauncher
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(BrowserLauncher.class);
     private BrowserLauncher() {}
 
-    public static void open(URI url, Logger logger) throws IOException
+    public static void open(URI url) throws IOException
     {
-        if (tryDesktopBrowse(url, logger)) return;
+        if (tryDesktopBrowse(url)) return;
 
         if (isWsl())
         {
-            if (tryProcess(logger, "wslview", url.toString())) return;
-            if (tryProcess(logger, "cmd.exe", "/c", "start", "", url.toString())) return;
+            if (tryProcess("wslview", url.toString())) return;
+            if (tryProcess("cmd.exe", "/c", "start", "", url.toString())) return;
         }
 
         String os = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
@@ -48,12 +50,12 @@ public final class BrowserLauncher
         }
         for (String[] cmd : attempts)
         {
-            if (tryProcess(logger, cmd)) return;
+            if (tryProcess(cmd)) return;
         }
         throw new IOException("No usable browser launcher found for URL: " + url);
     }
 
-    private static boolean tryDesktopBrowse(URI url, Logger logger)
+    private static boolean tryDesktopBrowse(URI url)
     {
         try
         {
@@ -65,12 +67,12 @@ public final class BrowserLauncher
         }
         catch (Throwable t)
         {
-            if (logger != null) logger.debug("Desktop.browse failed: " + t.getMessage());
+            LOGGER.debug("Desktop.browse failed: {}", t.getMessage());
         }
         return false;
     }
 
-    private static boolean tryProcess(Logger logger, String... cmd)
+    private static boolean tryProcess(String... cmd)
     {
         try
         {
@@ -79,7 +81,7 @@ public final class BrowserLauncher
         }
         catch (IOException notFound)
         {
-            if (logger != null) logger.debug("browser launch via " + cmd[0] + " failed: " + notFound.getMessage());
+            LOGGER.debug("browser launch via {} failed: {}", cmd[0], notFound.getMessage());
             return false;
         }
     }

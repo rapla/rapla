@@ -33,7 +33,8 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -52,6 +53,7 @@ public class DateChooserPanel extends RaplaGUIComponent
         Disposable
         ,RaplaWidget
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DateChooserPanel.class);
     Collection<DateChangeListener> listenerList = new ArrayList<>();
 
     JPanel panel = new JPanel();
@@ -66,14 +68,14 @@ public class DateChooserPanel extends RaplaGUIComponent
     
     JButton todayButton= new RaplaButton(getString("today"), RaplaButton.SMALL);
     
-    public DateChooserPanel(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, DateRenderer dateRenderer, IOInterface ioInterface) throws RaplaException {
-        super(facade, i18n, raplaLocale, logger);
+    public DateChooserPanel(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, CalendarModel model, DateRenderer dateRenderer, IOInterface ioInterface) throws RaplaException {
+        super(facade, i18n, raplaLocale);
         this.model = model;
         prevButton.setSize(30, 20);
         nextButton.setSize(30, 20);
-        
+
         periodChooser = new PeriodChooser(i18n, facade.getRaplaFacade(),PeriodChooser.START_ONLY);
-        dateSelection = RaplaGUIComponent.createRaplaCalendar(dateRenderer, ioInterface,i18n,raplaLocale,logger);
+        dateSelection = RaplaGUIComponent.createRaplaCalendar(dateRenderer, ioInterface,i18n,raplaLocale);
 
         //prevButton.setText("<");
         //nextButton.setText(">");
@@ -225,7 +227,7 @@ public class DateChooserPanel extends RaplaGUIComponent
                 final LocalDateTime end = period.getEnd();
                 if ( start == null || end == null)
                 {
-                    getLogger().warn("Period start or end can't be null");
+                    LOGGER.warn("Period start or end can't be null");
                     return;
                 }
                 date = periodDate;

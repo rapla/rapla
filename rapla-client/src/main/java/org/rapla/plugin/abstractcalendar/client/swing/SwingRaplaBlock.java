@@ -24,6 +24,8 @@ import org.rapla.entities.domain.RequestStatus;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.plugin.abstractcalendar.RaplaBlock;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
@@ -51,6 +53,7 @@ import java.util.Map;
 
 import java.time.LocalDateTime;
 public class SwingRaplaBlock extends RaplaBlock implements SwingBlock {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SwingRaplaBlock.class);
     private static BufferedImage exceptionImage;
     RaplaBlockView m_view = new RaplaBlockView();
 
@@ -381,7 +384,7 @@ public class SwingRaplaBlock extends RaplaBlock implements SwingBlock {
                                 if (c.length >= offset + length) {
                                     g.drawChars(c, offset, length, x, y);
                                 } else {
-                                    getContext().getBuildContext().getLogger().error("wrong offset[" + offset + "] or length[" + length + "] for string '" + text + "'");
+                                    LOGGER.error("wrong offset[{}] or length[{}] for string '{}'", offset, length, text);
                                 }
                                 //              System.out.println("Drawing " + new String(c,offset,breakingSpace-offset));
                                 len -= length;
@@ -403,7 +406,7 @@ public class SwingRaplaBlock extends RaplaBlock implements SwingBlock {
                 if (c.length >= offset + len) {
                     g.drawChars(c, offset, len, x, y);
                 } else {
-                    getContext().getBuildContext().getLogger().error("wrong offset[" + offset + "] or length[" + len + "] for string '" + text + "'");
+                    LOGGER.error("wrong offset[{}] or length[{}] for string '{}'", offset, len, text);
                 }
             }
             //      System.out.println("Drawing rest " + new String(c,offset,len));

@@ -20,7 +20,6 @@ import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.ArrayList;
@@ -46,7 +45,7 @@ public class RaplaClipboard implements ModificationListener
 	CopyType copyType;
 	
 	@Autowired
-    public RaplaClipboard( ClientFacade facade, Logger logger )
+    public RaplaClipboard( ClientFacade facade )
     {
         facade.addModificationListener( this );
     }

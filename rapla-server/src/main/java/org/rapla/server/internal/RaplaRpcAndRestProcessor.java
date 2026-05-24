@@ -1,7 +1,5 @@
 package org.rapla.server.internal;
 
-import org.rapla.logger.Logger;
-
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -12,8 +10,6 @@ public class RaplaRpcAndRestProcessor
     public static final String READBODY = "readbody";
     //final ServerServiceContainer serverContainer;
 //    final Map<String, WebserviceCreator> webserviceMap;
-    Logger logger;
-    Logger readBodyLogger;
 
 //    public RaplaRpcAndRestProcessor(Logger logger, WebserviceCreatorMap webservices)
 //    {

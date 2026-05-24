@@ -12,9 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.iolayer;
 
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import javax.print.Doc;
 import javax.print.DocFlavor;
 import javax.print.PrintException;
@@ -49,21 +49,15 @@ import java.io.OutputStream;
 import java.net.URL;
 
 public class DefaultIO  implements IOInterface{
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultIO.class);
     static DocFlavor flavor = DocFlavor.SERVICE_FORMATTED.PRINTABLE;
     /**
      * Name of all Rapla printjobs (used in dialogs, printerqueue, etc).
    */
     public final static String RAPLA_JOB= "Rapla Printjob";
     public PrinterJob job;
-    Logger logger;
 
-    @Autowired
-    public DefaultIO(Logger logger) {
-        this.logger =  logger;
-    }
-    
-    public Logger getLogger() {
-        return logger;
+    public DefaultIO() {
     }
 
     private PrinterJob getJob() {
@@ -107,7 +101,7 @@ public class DefaultIO  implements IOInterface{
             getClass().getClassLoader().loadClass("javax.print.StreamPrintServiceFactory");
             return true;
         } catch (ClassNotFoundException ex) {
-            getLogger().warn("No support for javax.print.StreamPrintServiceFactory");
+            LOGGER.warn("No support for javax.print.StreamPrintServiceFactory");
             return false;
         }
     }
@@ -261,8 +255,8 @@ public class DefaultIO  implements IOInterface{
     }
 
     void logPaperSize(Paper paper) {
-        if (getLogger().isDebugEnabled())
-            getLogger().debug(
+        if (LOGGER.isDebugEnabled())
+            LOGGER.debug(
                          (paper.getImageableX()/72) * INCH_TO_MM
                          +", " +(paper.getImageableY()/72) * INCH_TO_MM
                          +", " +(paper.getImageableWidth() /72) * INCH_TO_MM
@@ -377,7 +371,7 @@ public class DefaultIO  implements IOInterface{
 		}
 		catch (Throwable  ex)
 		{
-			getLogger().error(ex.getMessage(), ex);
+			LOGGER.error(ex.getMessage(), ex);
 			return false;
 			
 		}

@@ -2,9 +2,9 @@ package org.rapla.storage.impl;
 
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaSynchronizationException;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Stack;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -13,17 +13,16 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class DefaultRaplaLock implements RaplaLock
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultRaplaLock.class);
+
     public static final int DEFAULT_READLOCK_TIMEOUT_SECONDS = 20;
     public static final int DEFAULT_WRITELOCK_TIMEOUT_SECONDS = 60;
     final protected ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
     Stack<WriteLock> writeLocks = new Stack<>();
     Stack<ReadLock> readLocks = new Stack<>();
-    Logger logger;
 
-    @Autowired
-    public DefaultRaplaLock(Logger raplaLogger)
+    public DefaultRaplaLock()
     {
-        this.logger = raplaLogger;
     }
 
     public WriteLock writeLock(Class clazz, String name) throws RaplaException
@@ -35,7 +34,7 @@ public class DefaultRaplaLock implements RaplaLock
     public ReadLock readLock(Class clazz, String name,int seconds) throws RaplaException
     {
         // Enabling the stack trace is a huge performance cost
-        StackTraceElement[] stackTrace = logger.isTraceEnabled() ? getStackTrace() : new StackTraceElement[] {};
+        StackTraceElement[] stackTrace = LOGGER.isTraceEnabled() ? getStackTrace() : new StackTraceElement[] {};
         final long currentTime = System.currentTimeMillis();
         final Lock lock = lock(this.readWriteLock.readLock(), seconds, true);
         final ReadLock readLock = new ReadLock(lock,clazz, name, stackTrace, currentTime);
@@ -65,12 +64,9 @@ public class DefaultRaplaLock implements RaplaLock
             }
             else
             {
-                if (logger != null)
-                {
-                    int logThreshholdTime = 0;
-                    logLongLocks(this.writeLocks, logThreshholdTime);
-                    logLongLocks(this.readLocks, logThreshholdTime);
-                }
+                int logThreshholdTime = 0;
+                logLongLocks(this.writeLocks, logThreshholdTime);
+                logLongLocks(this.readLocks, logThreshholdTime);
                 if ( isRead)
                 {
                     throw new RaplaSynchronizationException("Someone is currently writing. Please try again! Can't acquire read lock.");
@@ -100,7 +96,7 @@ public class DefaultRaplaLock implements RaplaLock
                 final RaplaSynchronizationException ex = new RaplaSynchronizationException(
                         "Current lock [" + i + "] is blocking for " + timeSinceLock + " seconds " + lock);
                 ex.setStackTrace( lock.getStackTrace());
-                logger.warn("Lock Blocking ", ex);
+                LOGGER.warn("Lock Blocking ", ex);
             }
         }
     }
@@ -108,7 +104,7 @@ public class DefaultRaplaLock implements RaplaLock
     public WriteLock writeLock(Class clazz, String name,int seconds) throws RaplaException
     {
         final WriteLock lock;
-        StackTraceElement[] stackTrace = logger.isDebugEnabled() ? getStackTrace() : new StackTraceElement[] {};
+        StackTraceElement[] stackTrace = LOGGER.isDebugEnabled() ? getStackTrace() : new StackTraceElement[] {};
         final long currentTime = System.currentTimeMillis();
         if (seconds > 0)
         {
@@ -214,4 +210,3 @@ public class DefaultRaplaLock implements RaplaLock
     }
 
 }
-

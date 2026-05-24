@@ -40,7 +40,6 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.storage.PermissionController;
 
 import javax.swing.JComponent;
@@ -74,8 +73,8 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
         this.selectedView = selectedView;
     }
 
-    public ClassificationEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,  DateFieldFactory dateFieldFactory, DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory) {
-		super(facade, i18n, raplaLocale, logger);
+    public ClassificationEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, TreeFactory treeFactory,  DateFieldFactory dateFieldFactory, DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory) {
+		super(facade, i18n, raplaLocale);
         this.treeFactory = treeFactory;
         this.dateFieldFactory = dateFieldFactory;
         this.dialogUiFactory = dialogUiFactory;
@@ -196,7 +195,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 //            final Boolean belongsTo = (Boolean) attribute.getConstraint(ConstraintIds.KEY_BELONGS_TO);
 //            final Boolean groups = (Boolean) attribute.getConstraint(ConstraintIds.KEY_GROUPS);
 	//		 if (dynamicTypeConstraint == null || multipleSelectionPossible) {
-				 AllocatableSelectField allocField = new AllocatableSelectField(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), treeFactory,  dynamicTypeConstraint, dialogUiFactory)
+				 AllocatableSelectField allocField = new AllocatableSelectField(getClientFacade(), getI18n(), getRaplaLocale(), treeFactory,  dynamicTypeConstraint, dialogUiFactory)
                  {
 //                     @Override protected Allocatable[] getAllocatables()
 //                     {
@@ -235,12 +234,12 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
             }
 			Boolean multipleSelectionPossible = (Boolean) attribute.getConstraint(ConstraintIds.KEY_MULTI_SELECT);
             if ((rootCategory != null && rootCategory.getDepth() > 2) || multipleSelectionPossible) {
-                CategorySelectField catField = new CategorySelectField(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), treeFactory,  dialogUiFactory, rootCategory, defaultCategory);
+                CategorySelectField catField = new CategorySelectField(getClientFacade(), getI18n(), getRaplaLocale(), treeFactory,  dialogUiFactory, rootCategory, defaultCategory);
                 catField.setMultipleSelectionPossible( multipleSelectionPossible != null ? multipleSelectionPossible : false);
                 catField.setFieldName( label );
                 field = catField;
             } else {
-			    CategoryListField catField = new CategoryListField(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(),  rootCategory);
+			    CategoryListField catField = new CategoryListField(getClientFacade(), getI18n(), getRaplaLocale(),  rootCategory);
 			    catField.setFieldName( label );
 			    field = catField;
             }

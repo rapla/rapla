@@ -7,7 +7,8 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.server.RaplaKeyStorage;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
@@ -25,6 +26,7 @@ import java.util.Map;
 
 public class RaplaKeyStorageImpl implements RaplaKeyStorage
 {
+	private static final Logger LOGGER = LoggerFactory.getLogger(RaplaKeyStorageImpl.class);
 	//private static final String USER_KEYSTORE = "keystore";
     
 	private static final String ASYMMETRIC_ALGO = "RSA";
@@ -43,9 +45,8 @@ public class RaplaKeyStorageImpl implements RaplaKeyStorage
 	CryptoHandler cryptoHandler;
 	
 	RaplaFacade facade;
-	Logger logger;
-	
-    public String getRootKeyBase64() 
+
+    public String getRootKeyBase64()
 	{
 		return rootKey;
 	}
@@ -58,9 +59,8 @@ public class RaplaKeyStorageImpl implements RaplaKeyStorage
      * @throws RaplaInitializationException
      */
     @Autowired
-    public RaplaKeyStorageImpl(RaplaFacade facade, Logger logger) throws RaplaInitializationException {
+    public RaplaKeyStorageImpl(RaplaFacade facade) throws RaplaInitializationException {
         this.facade = facade;
-        this.logger = logger;
         byte[] linebreake = {};
         // we use an url safe encoder for the keys
         this.base64 = new Base64(64, linebreake, true);
@@ -129,7 +129,7 @@ public class RaplaKeyStorageImpl implements RaplaKeyStorage
         }
         catch (Exception e)
         {
-            logger.warn("corrupt api-key slot map for user " + user.getUsername() + ": " + e.getMessage());
+            LOGGER.warn("corrupt api-key slot map for user {}: {}", user.getUsername(), e.getMessage());
             return new LinkedHashMap<>();
         }
     }
@@ -239,13 +239,13 @@ public class RaplaKeyStorageImpl implements RaplaKeyStorage
 //    }
 
 	private void generateRootKeyStorage()	throws NoSuchAlgorithmException, RaplaException {
-		logger.info("Generating new root key. This can take a while.");
+		LOGGER.info("Generating new root key. This can take a while.");
 		//Classification newClassification = dynamicType.newClassification();
 		//newClassification.setValue("name", "root");
 		KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance( ASYMMETRIC_ALGO );
 		keyPairGen.initialize( 2048);
 		KeyPair keyPair = keyPairGen.generateKeyPair();
-		logger.info("Root key generated");
+		LOGGER.info("Root key generated");
         PrivateKey privateKeyObj = keyPair.getPrivate();
         this.rootKey = base64.encodeAsString(privateKeyObj.getEncoded());
 		PublicKey publicKeyObj = keyPair.getPublic();

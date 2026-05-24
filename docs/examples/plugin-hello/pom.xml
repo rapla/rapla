@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Minimal drop-in rapla plugin — PRD 045 §4 + Phase 6.
+
+  Not part of the rapla reactor. Build standalone:
+    mvn -f docs/examples/plugin-hello/pom.xml package
+    cp docs/examples/plugin-hello/target/rapla-plugin-hello-1.0.jar /opt/rapla/plugins/
+    systemctl restart rapla
+    curl http://localhost:8051/api/hello
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.exampleplugin</groupId>
+    <artifactId>rapla-plugin-hello</artifactId>
+    <version>1.0</version>
+    <packaging>jar</packaging>
+
+    <properties>
+        <maven.compiler.release>17</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!-- Pin to the rapla release you're targeting. See docs/plugins.md
+             § "API stability" — there is no cross-version guarantee. -->
+        <rapla.version>2.1-SNAPSHOT</rapla.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.rapla</groupId>
+            <artifactId>rapla-server</artifactId>
+            <version>${rapla.version}</version>
+            <!-- The deployed rapla JAR provides rapla-server + rapla-core +
+                 the Spring Boot stack at runtime. The plugin jar must not
+                 bundle them. -->
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+</project>

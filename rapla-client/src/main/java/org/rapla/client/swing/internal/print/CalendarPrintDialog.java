@@ -32,7 +32,6 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.MultiCalendarPrint;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
@@ -171,14 +170,11 @@ public class CalendarPrintDialog extends DialogUI
 
     private final RaplaLocale raplaLocale;
 
-    private final Logger logger;
-
     @Autowired
-    public CalendarPrintDialog(RaplaFrame owner, RaplaLocale raplaLocale,CommandScheduler scheduler, Logger logger, IOInterface printInterface, RaplaResources i18n, BundleManager bundleManager, DialogUiFactoryInterface dialogUiFactory, ExportServiceList exportServiceList, Supplier<ErrorDialog> errorDialogProvider) throws
+    public CalendarPrintDialog(RaplaFrame owner, RaplaLocale raplaLocale,CommandScheduler scheduler, IOInterface printInterface, RaplaResources i18n, BundleManager bundleManager, DialogUiFactoryInterface dialogUiFactory, ExportServiceList exportServiceList, Supplier<ErrorDialog> errorDialogProvider) throws
             RaplaInitializationException {
         super(i18n,  bundleManager, scheduler, owner);
         this.raplaLocale = raplaLocale;
-        this.logger = logger;
         this.i18n = i18n;
         this.printTool = printInterface;
         this.dialogUiFactory = dialogUiFactory;
@@ -211,7 +207,7 @@ public class CalendarPrintDialog extends DialogUI
         content.setLayout(new BorderLayout());
         titlePanel.add(titleLabel);
         titlePanel.add(titleEdit);
-        RaplaGUIComponent.addCopyPaste(titleEdit, i18n, raplaLocale, printTool, logger);
+        RaplaGUIComponent.addCopyPaste(titleEdit, i18n, raplaLocale, printTool);
 
         if ( currentView instanceof MultiCalendarPrint)
         {

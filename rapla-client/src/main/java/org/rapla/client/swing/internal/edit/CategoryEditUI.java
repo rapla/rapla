@@ -30,7 +30,6 @@ import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.DefaultListCellRenderer;
@@ -61,11 +60,11 @@ public class CategoryEditUI extends RaplaGUIComponent implements EditComponent<C
     boolean editKeys = true;
 
     @Autowired
-    public CategoryEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
+    public CategoryEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale,
             DialogUiFactoryInterface dialogUiFactory, MultiLanguageFieldFactory multiLanguageFieldFactory, TextFieldFactory textFieldFactory)
     {
-        super(facade, i18n, raplaLocale, logger);
-        detailPanel = new CategoryDetail(facade, i18n, raplaLocale, logger,  dialogUiFactory, multiLanguageFieldFactory, textFieldFactory);
+        super(facade, i18n, raplaLocale);
+        detailPanel = new CategoryDetail(facade, i18n, raplaLocale,  dialogUiFactory, multiLanguageFieldFactory, textFieldFactory);
         panel.setPreferredSize(new Dimension(690, 350));
         panel.setLayout(new BorderLayout());
         detailPanel.setEditKeys(editKeys);
@@ -139,10 +138,10 @@ class CategoryDetail extends RaplaGUIComponent implements ChangeListener
     RaplaArrowButton addButton = new RaplaArrowButton('>', 25);
     RaplaArrowButton removeButton = new RaplaArrowButton('<', 25);
 
-    public CategoryDetail(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
+    public CategoryDetail(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale,
             DialogUiFactoryInterface dialogUiFactory, MultiLanguageFieldFactory multiLanguageFieldFactory, TextFieldFactory textFieldFactory)
     {
-        super(facade, i18n, raplaLocale, logger);
+        super(facade, i18n, raplaLocale);
         name = multiLanguageFieldFactory.create();
         key = textFieldFactory.create();
         colorTextField = textFieldFactory.create();

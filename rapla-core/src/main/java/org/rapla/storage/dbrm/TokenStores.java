@@ -1,6 +1,7 @@
 package org.rapla.storage.dbrm;
 
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 
@@ -20,25 +21,27 @@ import java.util.Optional;
  */
 public final class TokenStores
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TokenStores.class);
+
     private TokenStores() {}
 
-    public static TokenStore create(Logger logger)
+    public static TokenStore create()
     {
-        Optional<TokenStore> jnlp = JnlpTokenStore.tryCreate(logger);
+        Optional<TokenStore> jnlp = JnlpTokenStore.tryCreate();
         if (jnlp.isPresent())
         {
-            if (logger != null) logger.info("token store: JNLP PersistenceService");
+            LOGGER.info("token store: JNLP PersistenceService");
             return jnlp.get();
         }
         try
         {
-            FileTokenStore file = new FileTokenStore(logger);
-            if (logger != null) logger.info("token store: file (~/.rapla/tokens.json)");
+            FileTokenStore file = new FileTokenStore();
+            LOGGER.info("token store: file (~/.rapla/tokens.json)");
             return file;
         }
         catch (Throwable t)
         {
-            if (logger != null) logger.warn("token store: no backend available; persistence disabled");
+            LOGGER.warn("token store: no backend available; persistence disabled");
             return noOp();
         }
     }

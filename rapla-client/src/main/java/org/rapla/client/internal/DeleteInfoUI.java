@@ -17,11 +17,10 @@ import org.rapla.RaplaResources;
 import org.rapla.entities.User;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 public class DeleteInfoUI extends HTMLInfo<Object[]> {
-    public DeleteInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, RaplaFacade facade, Logger logger) {
-        super(i18n, raplaLocale, facade, logger);
+    public DeleteInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, RaplaFacade facade) {
+        super(i18n, raplaLocale, facade);
     }
 
     public String createHTMLAndFillLinks(Object[] deletables,LinkController controller, User user) {

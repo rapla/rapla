@@ -24,7 +24,6 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -32,11 +31,9 @@ import java.util.Iterator;
 public abstract class HTMLInfo<T> extends RaplaComponent
 {
 
-    public HTMLInfo(RaplaResources i18n, RaplaLocale raplaLocale, RaplaFacade facade, Logger logger)
+    public HTMLInfo(RaplaResources i18n, RaplaLocale raplaLocale, RaplaFacade facade)
     {
-        super(facade, i18n, raplaLocale, logger);
-        //        this.i18n = i18n;
-        //        this.raplaLocale = raplaLacale;
+        super(facade, i18n, raplaLocale);
     }
 
     /** performs xml-encoding of a string the output goes to the buffer*/

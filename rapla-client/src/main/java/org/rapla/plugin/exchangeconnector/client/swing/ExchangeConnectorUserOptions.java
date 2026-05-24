@@ -13,7 +13,8 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.plugin.exchangeconnector.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +29,7 @@ import java.time.LocalDateTime;
 
 public class ExchangeConnectorUserOptions implements UserOptionPanel
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExchangeConnectorUserOptions.class);
 
     // private static final String DEFAULT_DISPLAYED_VALUE = "******";
     //private Preferences preferences;
@@ -63,17 +65,15 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
     private final RaplaResources i18n;
     private final ClientFacade clientFacade;
     private Preferences preferences;
-    private final Logger logger;
 
     private final ShowExchangeForUser showExchangeForUser;
 
     @Autowired
-    public ExchangeConnectorUserOptions(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ExchangeConnectorRemote service,
+    public ExchangeConnectorUserOptions(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, ExchangeConnectorRemote service,
             ExchangeConnectorResources exchangeConnectorResources, DialogUiFactoryInterface dialogUiFactory, ShowExchangeForUser showExchangeForUser,
             ExchangeConnectorConfigRemote configService)
     {
         this.exchangeConnectorResources = exchangeConnectorResources;
-        this.logger = logger;
         this.clientFacade = clientFacade;
         this.i18n = i18n;
         this.raplaLocale = raplaLocale;
@@ -214,7 +214,7 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
                    updateComponentState();
                } catch (RaplaException ex) {
                    dialogUiFactory.showException(ex, popupContext);
-                   logger.error("The operation was not successful!", ex);
+                   LOGGER.error("The operation was not successful!", ex);
                }
            }
 
@@ -228,7 +228,7 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
             catch (RaplaException ex)
             {
                 dialogUiFactory.showException(ex, popupContext);
-                logger.error("The operation was not successful!", ex);
+                LOGGER.error("The operation was not successful!", ex);
             }
         });
         refreshMailboxesButton.addActionListener(e -> {
@@ -241,7 +241,7 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
             catch (RaplaException ex)
             {
                 dialogUiFactory.showException(ex, popupContext);
-                logger.error("The operation was not successful!", ex);
+                LOGGER.error("The operation was not successful!", ex);
             }
         });
 
@@ -287,7 +287,7 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
 
     private void showResultWillBeSentByMailDialog() throws RaplaException
     {
-        new SyncResultDialog(clientFacade, i18n, raplaLocale, logger, exchangeConnectorResources, dialogUiFactory).showResultDialog();
+        new SyncResultDialog(clientFacade, i18n, raplaLocale, exchangeConnectorResources, dialogUiFactory).showResultDialog();
     }
 
     private String getConnectButtonString()
@@ -309,7 +309,7 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
         boolean enableNotify;
         try
         {
-            logger.info("ExchangeConnectorUserOptions.setValuesToJComponents(): fetching /exchange/config/user via REST");
+            LOGGER.info("ExchangeConnectorUserOptions.setValuesToJComponents(): fetching /exchange/config/user via REST");
             ExchangeUserSettings settings = configService.getUserSettings();
             enableNotify = settings.sendInvitationAndCancellation() != null
                     ? settings.sendInvitationAndCancellation()
@@ -317,7 +317,7 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
         }
         catch (Exception e)
         {
-            logger.warn("GET /exchange/config/user failed, falling back to local cache: " + e.getMessage());
+            LOGGER.warn("GET /exchange/config/user failed, falling back to local cache: {}", e.getMessage());
             enableNotify = preferences.getEntryAsBoolean(ExchangeConnectorConfig.EXCHANGE_SEND_INVITATION_AND_CANCELATION,
                     ExchangeConnectorConfig.DEFAULT_EXCHANGE_SEND_INVITATION_AND_CANCELATION);
         }

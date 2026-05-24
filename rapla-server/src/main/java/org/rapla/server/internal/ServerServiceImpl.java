@@ -31,7 +31,6 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.AbstractRaplaLocale;
 import org.rapla.framework.internal.DefaultScheduler;
 import org.rapla.framework.internal.RaplaLocaleImpl;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.server.ServerServiceContainer;
@@ -42,6 +41,8 @@ import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.function.Supplier;
 import java.util.Collection;
@@ -53,9 +54,10 @@ import java.util.TreeSet;
 
 public class ServerServiceImpl implements ServerServiceContainer
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServerServiceImpl.class);
+
     final protected CachableStorageOperator operator;
     final protected RaplaFacade facade;
-    final Logger logger;
 
     private final RaplaLocale raplaLocale;
     private final CommandScheduler scheduler;
@@ -67,26 +69,25 @@ public class ServerServiceImpl implements ServerServiceContainer
     }
 
     @Autowired public ServerServiceImpl(CachableStorageOperator operator, RaplaFacade facade, RaplaLocale raplaLocale, TimeZoneConverter importExportLocale,
-            Logger logger, final Supplier<Set<ServletRequestPreprocessor>> requestPreProcessors,
+            final Supplier<Set<ServletRequestPreprocessor>> requestPreProcessors,
             CommandScheduler scheduler, RaplaResources i18n, RaplaSystemInfo systemInfo, ServerBundleManager bundleManager) throws RaplaInitializationException
     {
         String version = systemInfo.getString("rapla.version");
-        logger.info("Rapla.Version=" + version);
+        LOGGER.info("Rapla.Version={}", version);
         version = systemInfo.getString("rapla.build");
-        logger.info("Rapla.Build=" + version);
+        LOGGER.info("Rapla.Build={}", version);
         try
         {
             String javaversion = System.getProperty("java.version");
-            logger.info("Java.Version=" + javaversion);
+            LOGGER.info("Java.Version={}", javaversion);
         }
         catch (SecurityException ex)
         {
-            logger.warn("Permission to system property java.version is denied!");
+            LOGGER.warn("Permission to system property java.version is denied!");
         }
         try
         {
             this.scheduler = scheduler;
-            this.logger = logger;
             this.raplaLocale = raplaLocale;
             //webMethods.setList( );
             //        SimpleProvider<Object> externalMailSession = new SimpleProvider<Object>();
@@ -147,7 +148,7 @@ public class ServerServiceImpl implements ServerServiceContainer
                     // FIXME createInfoDialog VTimezones for GMT+1-12 and GMT-1-12
                     // if ( timezoneId.startsWith("GMT") )
                     String fallback = "Etc/GMT";
-                    logger.error("Timezone " + timezoneId + " not found in ical registry. " + " Using " + fallback);
+                    LOGGER.error("Timezone {} not found in ical registry.  Using {}", timezoneId, fallback);
                     timeZone = registry.getTimeZone(fallback);
                     if (timeZone == null)
                     {
@@ -169,8 +170,8 @@ public class ServerServiceImpl implements ServerServiceContainer
             }
             catch (Exception rc)
             {
-                logger.error(
-                        "Timezone " + timezoneId + " not found. " + rc.getMessage() + " Using system timezone " + importExportLocale.getImportExportTimeZone());
+                LOGGER.error(
+                        "Timezone {} not found. {} Using system timezone {}", timezoneId, rc.getMessage(), importExportLocale.getImportExportTimeZone());
             }
             this.requestPreProcessors = requestPreProcessors.get();
             // PRD 019 Phase 4: ServerExtension iteration removed. Recurring tasks now use
@@ -187,11 +188,6 @@ public class ServerServiceImpl implements ServerServiceContainer
     public RaplaLocale getRaplaLocale()
     {
         return raplaLocale;
-    }
-
-    public Logger getLogger()
-    {
-        return logger;
     }
 
     public RaplaFacade getFacade()
@@ -233,19 +229,18 @@ public class ServerServiceImpl implements ServerServiceContainer
         // handle per-bean teardown.
         ((DefaultScheduler) scheduler).dispose();
         boolean wasConnected = operator.isConnected();
-        Logger logger = getLogger();
         try
         {
             operator.disconnect();
         }
         catch (RaplaException e)
         {
-            logger.error("Could not disconnect operator ", e);
+            LOGGER.error("Could not disconnect operator ", e);
         }
 
         if (wasConnected)
         {
-            logger.info("Storage service stopped");
+            LOGGER.info("Storage service stopped");
         }
     }
 

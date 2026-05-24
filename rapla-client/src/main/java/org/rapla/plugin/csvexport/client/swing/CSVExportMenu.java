@@ -28,7 +28,6 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.csvexport.CSVExportPlugin;
 import org.rapla.rest.PluginsService;
 import org.rapla.plugin.tableview.RaplaTableColumn;
@@ -64,8 +63,8 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
     private final PluginsService plugins;
     private volatile Boolean cachedEnabled;
 
-    public CSVExportMenu(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TableConfig.TableConfigLoader tableConfigLoader, CalendarSelectionModel model, IOInterface io, DialogUiFactoryInterface dialogUiFactory, PluginsService plugins) {
-        super(facade, i18n, raplaLocale, logger);
+    public CSVExportMenu(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, TableConfig.TableConfigLoader tableConfigLoader, CalendarSelectionModel model, IOInterface io, DialogUiFactoryInterface dialogUiFactory, PluginsService plugins) {
+        super(facade, i18n, raplaLocale);
         this.tableConfigLoader = tableConfigLoader;
         this.model = model;
         this.io = io;

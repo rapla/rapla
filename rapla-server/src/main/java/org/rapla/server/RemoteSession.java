@@ -13,18 +13,16 @@
 package org.rapla.server;
 
 import org.rapla.entities.User;
-import org.rapla.logger.Logger;
 import org.rapla.storage.RaplaSecurityException;
 
 import jakarta.servlet.http.HttpServletRequest;
+
 
 /** An interface to access the SessionInformation. An implementation of
  * RemoteSession gets passed to the creation RaplaRemoteService.*/
 
 public interface RemoteSession
 {
-
-    Logger getLogger();
 
     User checkAndGetUser(HttpServletRequest request) throws RaplaSecurityException;
 

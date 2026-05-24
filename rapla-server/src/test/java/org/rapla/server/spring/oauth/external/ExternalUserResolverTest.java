@@ -41,7 +41,7 @@ class ExternalUserResolverTest extends FacadeTestSupport
     @BeforeEach
     void setUp()
     {
-        resolver = new ExternalUserResolver(facade, logger);
+        resolver = new ExternalUserResolver(facade);
         // Defaults to autoProvision=false so each test opts in deliberately.
         microsoft = providerConfig(ExternalProviderId.MICROSOFT, "email", false, "");
         google = providerConfig(ExternalProviderId.GOOGLE, "email", false, "");

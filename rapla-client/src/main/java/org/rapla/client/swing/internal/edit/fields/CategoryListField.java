@@ -16,7 +16,6 @@ import org.rapla.RaplaResources;
 import org.rapla.entities.Category;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 import java.util.Collections;
 import java.util.Vector;
@@ -24,8 +23,8 @@ import java.util.Vector;
 public class CategoryListField extends ListField<Category>  {
     Category rootCategory;
 
-    public CategoryListField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,Category rootCategory) {
-        super(facade, i18n, raplaLocale, logger, true);
+    public CategoryListField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale,Category rootCategory) {
+        super(facade, i18n, raplaLocale, true);
         this.rootCategory = rootCategory != null ? rootCategory : facade.getRaplaFacade().getSuperCategory();
 
         Vector<Category> list = new Vector<>();

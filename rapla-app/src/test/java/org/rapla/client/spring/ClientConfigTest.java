@@ -8,7 +8,6 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
-import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
@@ -21,7 +20,6 @@ class ClientConfigTest
     {
         try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(ClientConfig.class, ClientProxyConfig.class))
         {
-            assertNotNull(context.getBean(Logger.class));
             assertNotNull(context.getBean(BundleManager.class));
             assertNotNull(context.getBean(RaplaResources.class));
             assertNotNull(context.getBean(RaplaSystemInfo.class));

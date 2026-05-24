@@ -33,7 +33,6 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.monthview.MonthViewPlugin;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,14 +59,13 @@ public class MonthViewFactory implements SwingViewFactory
     private final ClientFacade facade;
     private final RaplaResources i18n;
     private final RaplaLocale raplaLocale;
-    private final Logger logger;
     private final IOInterface ioInterface;
     private final AppointmentFormater appointmentFormater;
     private final RaplaConfiguration config;
     private final EditController editController;
 
     @Autowired
-    public MonthViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<ObjectMenuFactory> objectMenuFactories,
+    public MonthViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Set<ObjectMenuFactory> objectMenuFactories,
             MenuFactory menuFactory, Supplier<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard,
             ReservationController reservationController, InfoFactory infoFactory, DateRenderer dateRenderer,
             DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface, AppointmentFormater appointmentFormater, EditController editController) throws RaplaInitializationException
@@ -75,7 +73,6 @@ public class MonthViewFactory implements SwingViewFactory
         this.facade = facade;
         this.i18n = i18n;
         this.raplaLocale = raplaLocale;
-        this.logger = logger;
         this.objectMenuFactories = objectMenuFactories;
         this.menuFactory = menuFactory;
         this.dateRendererProvider = dateRendererProvider;
@@ -100,7 +97,7 @@ public class MonthViewFactory implements SwingViewFactory
 
     public SwingCalendarView createSwingView(CalendarModel model, boolean editable, boolean printing) throws RaplaException
     {
-        return new SwingMonthCalendar(facade, i18n, raplaLocale, logger, model, editable, printing, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard,
+        return new SwingMonthCalendar(facade, i18n, raplaLocale, model, editable, printing, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard,
                 reservationController, infoFactory,  dateRenderer, dialogUiFactory, ioInterface, appointmentFormater, editController);
     }
     

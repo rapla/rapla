@@ -214,8 +214,7 @@ public class MailapiClient implements MailInterface
             String token =username + ":"+ password;
             try
             {
-                final ObjectNode object1 = connector.sendPost(url, object, token);
-                System.out.println( object1);
+                connector.sendPost(url, object, token);
             }
             catch (IOException e)
             {

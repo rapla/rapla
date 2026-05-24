@@ -10,7 +10,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
 import org.rapla.client.swing.SwingSchedulerImpl;
-import org.rapla.logger.ConsoleLogger;
 import org.rapla.scheduler.CommandScheduler;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -19,7 +18,7 @@ class RaplaEventBusTest
 {
     private RaplaEventBus newBus()
     {
-        CommandScheduler scheduler = new SwingSchedulerImpl(new ConsoleLogger());
+        CommandScheduler scheduler = new SwingSchedulerImpl();
         return new RaplaEventBus(scheduler);
     }
 

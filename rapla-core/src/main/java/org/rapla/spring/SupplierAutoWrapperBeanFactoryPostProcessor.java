@@ -1,5 +1,7 @@
 package org.rapla.spring;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
@@ -20,6 +22,8 @@ import java.util.function.Supplier;
  */
 public class SupplierAutoWrapperBeanFactoryPostProcessor implements BeanFactoryPostProcessor
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SupplierAutoWrapperBeanFactoryPostProcessor.class);
+
     @Override
     public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory)
     {
@@ -28,7 +32,29 @@ public class SupplierAutoWrapperBeanFactoryPostProcessor implements BeanFactoryP
         {
             Class<?> beanClass = beanFactory.getType(beanName, false);
             if (beanClass == null) continue;
-            collectSupplierTypeArgs(beanClass, wantedByName);
+            // PRD 002's Supplier wrapper is rapla-internal. Skip Spring framework,
+            // 3rd-party, and plugin beans — their fields may reference types not
+            // on rapla's runtime classpath (e.g. jakarta.inject.Provider in a
+            // Spring autoconfig bean), which crashes getDeclaredFields() →
+            // ResolvableType.forField() with NoClassDefFoundError. Plugins
+            // (PRD 045 §4) don't use Supplier<T> injection, so this filter is
+            // safe.
+            String pkg = beanClass.getName();
+            if (!pkg.startsWith("org.rapla.")) continue;
+            try
+            {
+                collectSupplierTypeArgs(beanClass, wantedByName);
+            }
+            catch (NoClassDefFoundError ex)
+            {
+                // Defensive: a rapla class references a type the runtime class-
+                // path doesn't have (typically an optional jakarta.inject.Provider
+                // field on a legacy DI seam). Surface it so it's actually
+                // fixable, but don't crash the boot — the wrapper this
+                // PostProcessor produces is best-effort.
+                LOGGER.warn("[SupplierAutoWrapper] skipping bean '{}' class {} — getDeclaredFields() failed: {}",
+                        beanName, beanClass.getName(), ex.toString());
+            }
         }
         if (!(beanFactory instanceof BeanDefinitionRegistry registry)) return;
         for (Map.Entry<String, ResolvableType> e : wantedByName.entrySet())

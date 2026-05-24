@@ -20,18 +20,17 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 public class AppointmentInfoUI extends HTMLInfo<Appointment> {
 	ReservationInfoUI parent;
 	AppointmentFormater appointmentFormater;
     boolean exportContext = false;
-	
-    public AppointmentInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, RaplaFacade facade, Logger logger, AppointmentFormater appointmentFormater, boolean exportContext)
+
+    public AppointmentInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, RaplaFacade facade, AppointmentFormater appointmentFormater, boolean exportContext)
     {
-        super( i18n, raplaLocale, facade, logger);
+        super(i18n, raplaLocale, facade);
         this.exportContext = exportContext;
-        parent = new ReservationInfoUI( i18n, raplaLocale, facade, logger, appointmentFormater, exportContext);
+        parent = new ReservationInfoUI(i18n, raplaLocale, facade, appointmentFormater, exportContext);
         this.appointmentFormater = appointmentFormater;
     }
 

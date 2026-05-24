@@ -24,7 +24,6 @@ import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.AbstractCellEditor;
@@ -57,17 +56,17 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
     private final DialogUiFactoryInterface dialogUiFactory;
     private final IOInterface ioInterface;
 
-    private MultiLanguageField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
+    private MultiLanguageField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale,
             IOInterface ioInterface, DialogUiFactoryInterface dialogUiFactory, TextFieldFactory textFieldFactory, String fieldName)
     {
-        this(facade, i18n, raplaLocale, logger,  ioInterface, dialogUiFactory, textFieldFactory);
+        this(facade, i18n, raplaLocale,  ioInterface, dialogUiFactory, textFieldFactory);
         setFieldName(fieldName);
     }
 
-    private MultiLanguageField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
+    private MultiLanguageField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale,
             IOInterface ioInterface, DialogUiFactoryInterface dialogUiFactory, TextFieldFactory textFieldFactory)
     {
-        super(facade, i18n, raplaLocale, logger);
+        super(facade, i18n, raplaLocale);
         this.ioInterface = ioInterface;
         this.dialogUiFactory = dialogUiFactory;
         textField = textFieldFactory.create("name");
@@ -193,7 +192,7 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
                     if (table.isEditing()) {
                         if (table.getEditingColumn() == 1) {
                             JTextField textField = (JTextField) table.getEditorComponent();
-                            RaplaGUIComponent.addCopyPaste(textField, i18n, raplaLocale, ioInterface, logger);
+                            RaplaGUIComponent.addCopyPaste(textField, i18n, raplaLocale, ioInterface);
                             int row = table.getEditingRow();
                             String value = textField.getText();
                             editorValue.setName(availableLanguages[row], value);
@@ -243,19 +242,17 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
         private final ClientFacade facade;
         private final RaplaResources i18n;
         private final RaplaLocale raplaLocale;
-        private final Logger logger;
         private final DialogUiFactoryInterface dialogUiFactory;
         private final TextFieldFactory textFieldFactory;
         private final IOInterface ioInterface;
 
         @Autowired
-        public MultiLanguageFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
+        public MultiLanguageFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale,
                 DialogUiFactoryInterface dialogUiFactory, TextFieldFactory textFieldFactory, IOInterface ioInterface)
         {
             this.facade = facade;
             this.i18n = i18n;
             this.raplaLocale = raplaLocale;
-            this.logger = logger;
             this.dialogUiFactory = dialogUiFactory;
             this.textFieldFactory = textFieldFactory;
             this.ioInterface = ioInterface;
@@ -263,12 +260,12 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
 
         public MultiLanguageField create()
         {
-            return new MultiLanguageField(facade, i18n, raplaLocale, logger,  ioInterface, dialogUiFactory, textFieldFactory);
+            return new MultiLanguageField(facade, i18n, raplaLocale,  ioInterface, dialogUiFactory, textFieldFactory);
         }
 
         public MultiLanguageField create(String fieldName)
         {
-            return new MultiLanguageField(facade, i18n, raplaLocale, logger,  ioInterface, dialogUiFactory, textFieldFactory, fieldName);
+            return new MultiLanguageField(facade, i18n, raplaLocale,  ioInterface, dialogUiFactory, textFieldFactory, fieldName);
         }
     }
 

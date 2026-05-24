@@ -23,7 +23,8 @@ import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.PreferencePatch;
@@ -36,18 +37,17 @@ import java.time.LocalDateTime;
 /** checks if the client can store or delete an entity */
  public class SecurityManager
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SecurityManager.class);
     // Can be enababled to check if user has the right to remove an allocation
     private static final boolean CHECK_IF_REMOVE_ALLOCATION_ALLOWED = false;
     final RaplaResources i18n;
     final AppointmentFormater appointmentFormater;
     final CachableStorageOperator operator;
     final org.rapla.storage.SyncStorageOperator syncOperator;
-    final Logger logger;
     private final PermissionController permissionController;
 
-    @Autowired public SecurityManager(Logger logger, RaplaResources i18n, AppointmentFormater appointmentFormater, CachableStorageOperator operator, org.rapla.storage.SyncStorageOperator syncOperator)
+    @Autowired public SecurityManager(RaplaResources i18n, AppointmentFormater appointmentFormater, CachableStorageOperator operator, org.rapla.storage.SyncStorageOperator syncOperator)
     {
-        this.logger = logger;
         this.i18n = i18n;
         this.appointmentFormater = appointmentFormater;
         this.operator = operator;
@@ -98,9 +98,9 @@ import java.time.LocalDateTime;
             if (original == null)
             {
                 permitted = entityOwnerReference != null && user.getReference().equals(entityOwnerReference);
-                if (getLogger().isDebugEnabled())
+                if (LOGGER.isDebugEnabled())
                 {
-                    getLogger().debug("Permissions for new object " + entity + "\nUser check: " + user + " = " + operator.tryResolve(entityOwnerReference));
+                    LOGGER.debug("Permissions for new object {}\nUser check: {} = {}", entity, user, operator.tryResolve(entityOwnerReference));
                 }
             }
             else
@@ -115,11 +115,11 @@ import java.time.LocalDateTime;
                     originalOwnerReference = ((Appointment) original).getOwnerRef();
                 }
 
-                if (getLogger().isDebugEnabled())
+                if (LOGGER.isDebugEnabled())
                 {
                     final User entityOwner = operator.tryResolve(entityOwnerReference);
                     final User originalOwner = operator.tryResolve(originalOwnerReference);
-                    getLogger().debug("Permissions for existing object " + entity + "\nUser check: " + user + " = " + entityOwner + " = " + originalOwner);
+                    LOGGER.debug("Permissions for existing object {}\nUser check: {} = {} = {}", entity, user, entityOwner, originalOwner);
                 }
                 permitted = (originalOwnerReference != null) && originalOwnerReference.equals(user.getReference()) && originalOwnerReference
                         .equals(entityOwnerReference);
@@ -260,10 +260,6 @@ import java.time.LocalDateTime;
         }
     }
 
-    private Logger getLogger()
-    {
-        return logger;
-    }
 
     //    protected boolean isRegisterer(User user) throws RaplaSecurityException {
     //        try {

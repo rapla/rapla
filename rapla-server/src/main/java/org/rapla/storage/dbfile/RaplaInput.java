@@ -17,7 +17,8 @@ import org.rapla.components.util.xml.RaplaErrorHandler;
 import org.rapla.components.util.xml.RaplaSAXHandler;
 import org.rapla.components.util.xml.XMLReaderAdapter;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.InputSource;
@@ -36,20 +37,15 @@ import java.net.URL;
     LocalCache and converts it to a newer version if necessary.
  */
 public final class RaplaInput {
-    private final Logger logger;
+    private static final Logger LOGGER = LoggerFactory.getLogger(RaplaInput.class);
     private URL fileSource;
     private Reader reader;
-    
-    public RaplaInput(Logger logger) {
-        this.logger = logger;
-    }
 
-    protected Logger getLogger() {
-        return logger;
+    public RaplaInput() {
     }
 
     public void read(URL file, RaplaSAXHandler handler, boolean validate) throws RaplaException,IOException {
-        getLogger().debug("Parsing " + file.toString());
+        LOGGER.debug("Parsing " + file.toString());
         fileSource = file;
         reader = null;
         parseData( handler , validate);
@@ -77,7 +73,7 @@ public final class RaplaInput {
             } 
 
             XMLReader parser = XMLReaderAdapter.createXMLReader(false);
-            RaplaErrorHandler errorHandler = new RaplaErrorHandler(logger);
+            RaplaErrorHandler errorHandler = new RaplaErrorHandler();
             parser.setContentHandler(contentHandler);
             parser.setErrorHandler(errorHandler);
             parser.parse(source);
@@ -112,7 +108,7 @@ public final class RaplaInput {
      */
     private void validate(InputSource in, String schema) throws RaplaException {
         try {
-            ErrorHandler errorHandler = new RaplaErrorHandler(getLogger());
+            ErrorHandler errorHandler = new RaplaErrorHandler();
             /* // short version 
              * propMapBuilder = new com.thaiopensource.util.PropertyMapBuilder();
              * propMapBuilder.put(com.thaiopensource.validate.ValidateProperty.ERROR_HANDLER, errorHandler);

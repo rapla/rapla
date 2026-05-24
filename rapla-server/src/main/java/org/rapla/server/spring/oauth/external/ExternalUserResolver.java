@@ -5,7 +5,8 @@ import org.rapla.entities.User;
 import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.plugin.jndi.JNDIPlugin;
 import org.rapla.storage.RaplaSecurityException;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -31,13 +32,12 @@ import java.util.Locale;
  */
 public class ExternalUserResolver
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExternalUserResolver.class);
     private final RaplaFacade facade;
-    private final Logger logger;
 
-    public ExternalUserResolver(RaplaFacade facade, Logger logger)
+    public ExternalUserResolver(RaplaFacade facade)
     {
         this.facade = facade;
-        this.logger = logger;
     }
 
     public User resolve(Jwt jwt, ProviderConfig provider) throws RaplaException
@@ -115,8 +115,7 @@ public class ExternalUserResolver
         if (sourceNeedsUpdate)
         {
             edit.setAuthenticationSource(expectedSource);
-            logger.info("Stamped authentication-source='" + expectedSource + "' on rapla user '"
-                    + user.getUsername() + "' (external login from " + provider.id() + ")");
+            LOGGER.info("Stamped authentication-source='{}' on rapla user '{}' (external login from {})", expectedSource, user.getUsername(), provider.id());
         }
         // Only refresh name/email when the IdP is the authoritative source.
         // If currentSource is null and we just stamped it, this login is the
@@ -131,12 +130,12 @@ public class ExternalUserResolver
             if (nameNeedsUpdate)
             {
                 edit.setName(idpName);
-                logger.info("Synced name from " + provider.id() + " for rapla user '" + user.getUsername() + "'");
+                LOGGER.info("Synced name from {} for rapla user '{}'", provider.id(), user.getUsername());
             }
             if (emailNeedsUpdate)
             {
                 edit.setEmail(idpEmail);
-                logger.info("Synced email from " + provider.id() + " for rapla user '" + user.getUsername() + "'");
+                LOGGER.info("Synced email from {} for rapla user '{}'", provider.id(), user.getUsername());
             }
         }
         facade.store(edit);
@@ -276,8 +275,7 @@ public class ExternalUserResolver
         applyConfiguredGroupsIfPresent(created);
         facade.store(created);
 
-        logger.info("Auto-provisioned rapla user '" + username + "' from external provider "
-                + provider.id());
+        LOGGER.info("Auto-provisioned rapla user '{}' from external provider {}", username, provider.id());
         return facade.getUser(username);
     }
 

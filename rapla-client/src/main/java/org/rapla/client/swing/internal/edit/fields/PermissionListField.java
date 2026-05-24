@@ -26,7 +26,6 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.BorderFactory;
@@ -69,10 +68,10 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
 
     List<Permission> notAllList = new ArrayList<>();
 
-    public PermissionListField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, String fieldName,
+    public PermissionListField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, String fieldName,
             RaplaListEditFactory raplaListEditFactory, PermissionFieldFactory permissionFieldFactory) throws RaplaException
     {
-        super(facade, i18n, raplaLocale, logger);
+        super(facade, i18n, raplaLocale);
         this.permissionField = permissionFieldFactory.create();
         super.setFieldName(fieldName);
         jPanel.setLayout(new BorderLayout());
@@ -397,26 +396,24 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
         private final ClientFacade facade;
         private final RaplaResources i18n;
         private final RaplaLocale raplaLocale;
-        private final Logger logger;
         private final RaplaListEditFactory raplaListEditFactory;
         private final PermissionFieldFactory permissionFieldFactory;
 
         @Autowired
-        public PermissionListFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
+        public PermissionListFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale,
                 RaplaListEditFactory raplaListEditFactory, PermissionFieldFactory permissionFieldFactory)
         {
             super();
             this.facade = facade;
             this.i18n = i18n;
             this.raplaLocale = raplaLocale;
-            this.logger = logger;
             this.raplaListEditFactory = raplaListEditFactory;
             this.permissionFieldFactory = permissionFieldFactory;
         }
 
         public PermissionListField create(final String fieldName) throws RaplaException
         {
-            return new PermissionListField(facade, i18n, raplaLocale, logger, fieldName, raplaListEditFactory, permissionFieldFactory);
+            return new PermissionListField(facade, i18n, raplaLocale, fieldName, raplaListEditFactory, permissionFieldFactory);
         }
     }
 

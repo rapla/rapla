@@ -24,7 +24,6 @@ import org.rapla.components.i18n.LocaleChangeListener;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
-import org.rapla.logger.Logger;
 
 import javax.swing.Action;
 import javax.swing.BorderFactory;
@@ -82,20 +81,18 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
     StartupEnvironment env;
     // we have to add an extra gui component here because LoginDialog extends RaplaFrame and therefore can't extent RaplaGUIComponent
     private final RaplaLocale raplaLocale;
-    private final Logger logger;
     // Whether the method chooser row should be shown — true once more than one
     // sign-in method is available. Remembered so clearBrowserLoginInProgress
     // can restore it.
     private boolean methodChooserVisible = false;
 
-    private LoginDialog(StartupEnvironment env, RaplaResources i18n, AbstractBundleManager bundleManager, Logger logger, RaplaLocale raplaLocale) throws RaplaException
+    private LoginDialog(StartupEnvironment env, RaplaResources i18n, AbstractBundleManager bundleManager, RaplaLocale raplaLocale) throws RaplaException
 	{
 		super();
 		this.env =  env;
 		this.i18n = i18n;
 		localeSelector = bundleManager;
 		localeSelector.addLocaleChangeListener(this);
-		this.logger = logger;
 		this.raplaLocale = raplaLocale;
 		getRootPane().setGlassPane(new DisabledGlassPane());
 	}
@@ -111,9 +108,9 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 		glassPane.deactivate();
 	}
 
-	public static LoginDialog create(StartupEnvironment env, RaplaResources i18n, AbstractBundleManager bundleManager, Logger logger, RaplaLocale raplaLocale, JComponent languageSelector) throws RaplaException
+	public static LoginDialog create(StartupEnvironment env, RaplaResources i18n, AbstractBundleManager bundleManager, RaplaLocale raplaLocale, JComponent languageSelector) throws RaplaException
 	{
-		LoginDialog dlg = new LoginDialog(env, i18n, bundleManager, logger, raplaLocale);
+		LoginDialog dlg = new LoginDialog(env, i18n, bundleManager, raplaLocale);
 		dlg.init(languageSelector);
 		return dlg;
 	}
@@ -330,8 +327,8 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 		password.addActionListener(listener);
 		languageSelector.addFocusListener(listener);
         IOInterface service = null;
-        RaplaGUIComponent.addCopyPaste(username, i18n, raplaLocale, service, logger);
-        RaplaGUIComponent.addCopyPaste(password, i18n, raplaLocale, service, logger);
+        RaplaGUIComponent.addCopyPaste(username, i18n, raplaLocale, service);
+        RaplaGUIComponent.addCopyPaste(password, i18n, raplaLocale, service);
 		// ################## END LABELS AND TEXTFIELDS ###################
 
 		// ################## BEGIN BUTTONS ###################

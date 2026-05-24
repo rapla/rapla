@@ -50,7 +50,6 @@ import org.rapla.entities.dynamictype.internal.ClassificationImpl;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PermissionController;
@@ -107,13 +106,13 @@ public class ReservationInfoEdit extends RaplaGUIComponent
     TabSelected selectedView = TabSelected.Main;
     private final DialogUiFactoryInterface dialogUiFactory;
 
-    public ReservationInfoEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,  CommandHistory commandHistory,  DateFieldFactory dateFieldFactory, DialogUiFactoryInterface dialogUiFactory, PermissionListFieldFactory permissionListFieldFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory) throws RaplaException
+    public ReservationInfoEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, TreeFactory treeFactory,  CommandHistory commandHistory,  DateFieldFactory dateFieldFactory, DialogUiFactoryInterface dialogUiFactory, PermissionListFieldFactory permissionListFieldFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory) throws RaplaException
     {
-        super(facade, i18n, raplaLocale, logger);
+        super(facade, i18n, raplaLocale);
         this.dialogUiFactory = dialogUiFactory;
         typeSelector = new RaplaListComboBox( raplaLocale );
         this.commandHistory = commandHistory;
-        editUI = new MyClassificationEditUI(facade, i18n, raplaLocale, logger, treeFactory,  dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);
+        editUI = new MyClassificationEditUI(facade, i18n, raplaLocale, treeFactory,  dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);
         this.permissionListField = permissionListFieldFactory.create("permissions");
         this.permissionListField.setPermissionLevels(Permission.DENIED, Permission.READ,Permission.EDIT, Permission.ADMIN);
         this.permissionListField.setDefaultAccessLevel( Permission.READ );
@@ -399,8 +398,8 @@ public class ReservationInfoEdit extends RaplaGUIComponent
 
     class MyClassificationEditUI extends ClassificationEditUI {
         int height  = 0;
-        public MyClassificationEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,  DateFieldFactory dateFieldFactory, DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory) {
-            super(facade, i18n, raplaLocale, logger, treeFactory,  dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);
+        public MyClassificationEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, TreeFactory treeFactory,  DateFieldFactory dateFieldFactory, DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory) {
+            super(facade, i18n, raplaLocale, treeFactory,  dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);
         }
 
         public int getHeight()
@@ -759,7 +758,6 @@ public class ReservationInfoEdit extends RaplaGUIComponent
         private final ClientFacade facade;
         private final RaplaResources i18n;
         private final RaplaLocale raplaLocale;
-        private final Logger logger;
         private final TreeFactory treeFactory;
         private final DateFieldFactory dateFieldFactory;
         private final DialogUiFactoryInterface dialogUiFactory;
@@ -769,7 +767,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
         private final LongFieldFactory longFieldFactory;
 
         @Autowired
-        public ReservationInfoEditFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,
+        public ReservationInfoEditFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, TreeFactory treeFactory,
                  DateFieldFactory dateFieldFactory, DialogUiFactoryInterface dialogUiFactory,
                 PermissionListFieldFactory permissionListFieldFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory,
                 LongFieldFactory longFieldFactory)
@@ -778,7 +776,6 @@ public class ReservationInfoEdit extends RaplaGUIComponent
             this.facade = facade;
             this.i18n = i18n;
             this.raplaLocale = raplaLocale;
-            this.logger = logger;
             this.treeFactory = treeFactory;
             this.dateFieldFactory = dateFieldFactory;
             this.dialogUiFactory = dialogUiFactory;
@@ -790,7 +787,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
 
         public ReservationInfoEdit create(CommandHistory commandHistory) throws RaplaException
         {
-            return new ReservationInfoEdit(facade, i18n, raplaLocale, logger, treeFactory, commandHistory,  dateFieldFactory,
+            return new ReservationInfoEdit(facade, i18n, raplaLocale, treeFactory, commandHistory,  dateFieldFactory,
                     dialogUiFactory, permissionListFieldFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);
         }
     }

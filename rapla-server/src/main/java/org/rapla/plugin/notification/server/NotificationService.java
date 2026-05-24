@@ -29,7 +29,8 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.AllocationChangeFinder;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.AbstractRaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.plugin.mail.server.MailToUserImpl;
 import org.rapla.plugin.notification.NotificationPlugin;
 import org.rapla.plugin.notification.NotificationResources;
@@ -52,6 +53,8 @@ import java.time.LocalDateTime;
  *  {@code @Scheduled} for the recurring-task lifecycle. */
 public class NotificationService
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(NotificationService.class);
+
     static final String NOTIFICATION_LOCK_ID = "NOTIFICATION";
     private static final long VALID_LOCK = DateTools.MILLISECONDS_PER_MINUTE * 5;
     private final RaplaFacade raplaFacade;
@@ -62,20 +65,17 @@ public class NotificationService
     private final RaplaResources raplaI18n;
     private final CachableStorageOperator operator;
 
-    private final Logger logger;
-
     @Autowired
     public NotificationService(RaplaFacade facade, RaplaResources i18nBundle, NotificationResources notificationI18n, AppointmentFormater appointmentFormater,
-                               Supplier<MailToUserImpl> mailToUserInterface, Logger logger) throws RaplaException {
+                               Supplier<MailToUserImpl> mailToUserInterface) throws RaplaException {
         this.notificationI18n = notificationI18n;
         this.raplaFacade = facade;
         this.raplaI18n = i18nBundle;
-        this.logger = logger.getChildLogger("notification");
         this.mailToUserInterface = mailToUserInterface;
         this.appointmentFormater = appointmentFormater;
         this.operator = (CachableStorageOperator) facade.getOperator();
         planningStatusEnabled = raplaFacade.getSystemPreferences().getEntryAsBoolean(PlanningStatusPlugin.ENABLED, PlanningStatusPlugin.ENABLE_BY_DEFAULT);
-        getLogger().info("NotificationServer Plugin started");
+        LOGGER.info("NotificationServer Plugin started");
     }
 
     /** Sends notification mails for any allocation changes that have happened since
@@ -96,7 +96,7 @@ public class NotificationService
         }
         catch (Throwable t)
         {
-            logger.warn("Could not send mail: " + t.getMessage(), t);
+            LOGGER.warn("Could not send mail: {}", t.getMessage(), t);
         }
         finally
         {
@@ -109,14 +109,9 @@ public class NotificationService
             }
             catch (RaplaException re)
             {
-                logger.warn("Failed to release notification lock: " + re.getMessage(), re);
+                LOGGER.warn("Failed to release notification lock: {}", re.getMessage(), re);
             }
         }
-    }
-
-    protected Logger getLogger()
-    {
-        return logger;
     }
 
     public Locale getLocale()
@@ -126,7 +121,7 @@ public class NotificationService
 
     private void changed(UpdateResult updateResult) throws RaplaException
     {
-        getLogger().debug("Mail check triggered");
+        LOGGER.debug("Mail check triggered");
         List<AllocationMail> mailList = getAllocationMails(updateResult);
         List<AllocationMail> mailList2;
         try {
@@ -134,7 +129,7 @@ public class NotificationService
         }
         catch (Throwable ex)
          {
-             logger.error("Cant get Booking request Mails due to ", ex);
+             LOGGER.error("Cant get Booking request Mails due to ", ex);
             mailList2 = Collections.emptyList();
          }
 
@@ -152,7 +147,7 @@ public class NotificationService
         }
         catch (Throwable ex)
         {
-            getLogger().error("Could not sent all mails. Not rerolling" + ex.getMessage(), ex);
+            LOGGER.error("Could not sent all mails. Not rerolling{}", ex.getMessage(), ex);
         }
     }
 
@@ -165,7 +160,7 @@ public class NotificationService
         }
         User owner = null;
         Map<String,List<AllocationChangeEvent>> eventsPerEmail = new LinkedHashMap<>();
-        final List<AllocationChangeEvent> changeEvents = AllocationChangeFinder.getTriggerEvents(updateResult, owner, logger, operator);
+        final List<AllocationChangeEvent> changeEvents = AllocationChangeFinder.getTriggerEvents(updateResult, owner, operator);
         for (AllocationChangeEvent event: changeEvents) 
         {
             final Allocatable allocatable = event.getAllocatable();
@@ -245,7 +240,7 @@ public class NotificationService
                     mailList.add(allocationMail);
                 }
             } catch (Throwable t) {
-                getLogger().error("Could not send mail to " + email + " Cause: " + t.getMessage(), t);
+                LOGGER.error("Could not send mail to {} Cause: {}", email, t.getMessage(), t);
             }
         }
         return mailList;
@@ -289,7 +284,7 @@ public class NotificationService
 
                 }
             } catch (RaplaException e) {
-                logger.error("Ignoring mails from user " + user.getUsername() + " due to ", e);
+                LOGGER.error("Ignoring mails from user {} due to ", user.getUsername(), e);
             }
         }
         return mailList;
@@ -301,19 +296,18 @@ public class NotificationService
         while (it.hasNext())
         {
             AllocationMail mail = it.next();
-            if (getLogger().isDebugEnabled())
-                getLogger().debug("Sending mail " + mail.toString());
-            getLogger().info(context + ": Sending mail to " + mail.recipient);
+            LOGGER.debug("Sending mail {}", mail);
+            LOGGER.info("{}: Sending mail to {}", context, mail.recipient);
             try
             {
                 MailToUserImpl mailToUser = mailToUserInterface.get();
                 mailToUser.sendMailToEmail(mail.recipient, mail.subject, mail.body);
                 //notificationStorage.markSent(mail);
-                getLogger().info(context + ": Mail sent.");
+                LOGGER.info("{}: Mail sent.", context);
             }
             catch (RaplaException ex)
             {
-                getLogger().error("Could not send mail to " + mail.recipient + " Cause: " + ex.getMessage(), ex);
+                LOGGER.error("Could not send mail to {} Cause: {}", mail.recipient, ex.getMessage(), ex);
                 //notificationStorage.increateAndStoreRetryCount(mail);
             }
         }
@@ -328,7 +322,7 @@ public class NotificationService
         }
         final HashMap<Reservation, List<AllocationChangeEvent>> reservationMap = new HashMap<>(4);
         final HashSet<Allocatable> changedAllocatables = new HashSet<>();
-        final List<AllocationChangeEvent> changeEvents = AllocationChangeFinder.getTriggerEvents(updateResult, owner, logger, operator);
+        final List<AllocationChangeEvent> changeEvents = AllocationChangeFinder.getTriggerEvents(updateResult, owner, operator);
         for (int i = 0; i < changeEvents.size(); i++)
         {
             AllocationChangeEvent event = changeEvents.get(i);
@@ -371,7 +365,7 @@ public class NotificationService
                 changedAllocatables.add(allocatable);
                 eventList.add(event);
             } catch (Exception e) {
-                logger.error("Error while processing allocation mail. Ignoring reservation " + reservation != null ? reservation.getId() : "" , e);
+                LOGGER.error("Error while processing allocation mail. Ignoring reservation {}", reservation != null ? reservation.getId() : "", e);
             }
 
         }

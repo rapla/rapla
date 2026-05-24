@@ -7,7 +7,6 @@ import org.rapla.client.extensionpoints.AppointmentStatusFactory;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorFactory;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
 import org.springframework.stereotype.Service;
@@ -22,19 +21,17 @@ public class EventTimeCalculatorStatusFactory implements AppointmentStatusFactor
     private final ClientFacade facade;
     private final RaplaResources i18n;
     private final RaplaLocale raplaLocale;
-    private final Logger logger;
 
     @Autowired
-    public EventTimeCalculatorStatusFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, EventTimeCalculatorFactory factory, EventTimeCalculatorResources resources)
+    public EventTimeCalculatorStatusFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, EventTimeCalculatorFactory factory, EventTimeCalculatorResources resources)
     {
         this.facade = facade;
         this.i18n = i18n;
         this.raplaLocale = raplaLocale;
-        this.logger = logger;
         this.factory = factory;
         this.resources = resources;
     }
 	public RaplaWidget createStatus(ReservationEdit reservationEdit) throws RaplaException {
-        return new EventTimeCalculatorStatusWidget(facade, i18n, raplaLocale, logger, reservationEdit,factory, resources);
+        return new EventTimeCalculatorStatusWidget(facade, i18n, raplaLocale, reservationEdit,factory, resources);
     }
 }

@@ -23,7 +23,6 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.notification.NotificationPlugin;
 import org.rapla.plugin.notification.NotificationResources;
 import org.springframework.context.annotation.Scope;
@@ -48,8 +47,8 @@ public class NotificationOption extends RaplaGUIComponent implements UserOptionP
     NotificationResources notificationI18n;
 
     @Autowired
-    public NotificationOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, NotificationResources notificationI18n, TreeAllocatableSelection selection) {
-        super(facade, i18n, raplaLocale, logger);
+    public NotificationOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, NotificationResources notificationI18n, TreeAllocatableSelection selection) {
+        super(facade, i18n, raplaLocale);
         this.notificationI18n = notificationI18n;
         this.selection = selection;
         selection.setAddDialogTitle(notificationI18n.getString("subscribe_notification"));

@@ -5,7 +5,8 @@ import org.rapla.facade.CalendarNotFoundExeption;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.plugin.urlencryption.UrlEncryption;
 import org.rapla.plugin.urlencryption.UrlEncryptionPlugin;
 import org.rapla.server.extensionpoints.ServletRequestPreprocessor;
@@ -28,15 +29,14 @@ import java.time.LocalDateTime;
  */
 
 public class UrlEncryptionServletRequestResponsePreprocessor  implements ServletRequestPreprocessor {
+    private static final Logger LOGGER = LoggerFactory.getLogger(UrlEncryptionServletRequestResponsePreprocessor.class);
     private final UrlEncryptor urlEncryptor;
     private final RaplaFacade facade;
-    private final Logger logger;
     @Autowired
-    public UrlEncryptionServletRequestResponsePreprocessor(UrlEncryptor urlEncryptor, RaplaFacade facade, Logger logger)
+    public UrlEncryptionServletRequestResponsePreprocessor(UrlEncryptor urlEncryptor, RaplaFacade facade)
     {
     	this.urlEncryptor =  urlEncryptor;
     	this.facade = facade;
-    	this.logger = logger;
     }
     
     public HttpServletRequest handleRequest( ServletContext servletContext, HttpServletRequest request, HttpServletResponse response) throws RaplaException {
@@ -76,7 +76,7 @@ public class UrlEncryptionServletRequestResponsePreprocessor  implements Servlet
             final EncryptedHttpServletRequest servletRequest = new EncryptedHttpServletRequest(request, urlEncryptor);
             return servletRequest;
         } catch (Exception ex) {
-            logger.error(ex.getMessage());
+            LOGGER.error(ex.getMessage());
             return null;
         }
     }

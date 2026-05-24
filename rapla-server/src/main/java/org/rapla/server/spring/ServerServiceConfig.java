@@ -7,7 +7,6 @@ import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.RemoteSession;
@@ -56,7 +55,6 @@ public class ServerServiceConfig
             RaplaFacade facade,
             RaplaLocale raplaLocale,
             TimeZoneConverter timeZoneConverter,
-            Logger logger,
             ObjectProvider<Set<ServletRequestPreprocessor>> requestPreProcessorsProvider,
             CommandScheduler scheduler,
             RaplaResources i18n,
@@ -67,18 +65,18 @@ public class ServerServiceConfig
                 () -> requestPreProcessorsProvider.getIfAvailable(Collections::emptySet);
         // PRD 019 Phase 4: ServerExtension Map<> arg dropped. Scheduling/startup work
         // is now driven by @Scheduled / @EventListener.
-        return new ServerServiceImpl(operator, facade, raplaLocale, timeZoneConverter, logger,
+        return new ServerServiceImpl(operator, facade, raplaLocale, timeZoneConverter,
                 setProvider, scheduler, i18n, systemInfo, bundleManager);
     }
 
     @Bean
-    public RaplaKeyStorage raplaKeyStorage(RaplaFacade facade, Logger logger) throws RaplaInitializationException
+    public RaplaKeyStorage raplaKeyStorage(RaplaFacade facade) throws RaplaInitializationException
     {
         // PRD 019 Phase 1: @DependsOn("serverServiceContainer") removed — the facade
         // is now wired with a connected operator at @Bean factory time, so any consumer
         // that injects RaplaFacade gets a ready-to-use instance regardless of whether
         // ServerServiceImpl has been constructed yet.
-        return new RaplaKeyStorageImpl(facade, logger);
+        return new RaplaKeyStorageImpl(facade);
     }
 
     @Bean
@@ -111,35 +109,33 @@ public class ServerServiceConfig
     }
 
     @Bean
-    public RemoteSession remoteSession(Logger logger,
-                                        TokenHandler tokenHandler,
+    public RemoteSession remoteSession(TokenHandler tokenHandler,
                                         RaplaAuthentificationService authService,
                                         org.rapla.storage.CachableStorageOperator operator,
                                         ObjectProvider<org.rapla.server.spring.oauth.external.ExternalProvidersProperties> externalProvidersProvider,
                                         ObjectProvider<org.rapla.server.spring.oauth.external.ExternalUserResolver> externalUserResolverProvider)
     {
-        RemoteSession legacy = new RemoteSessionImpl(logger, tokenHandler, authService);
+        RemoteSession legacy = new RemoteSessionImpl(tokenHandler, authService);
         return new org.rapla.server.spring.SpringSecurityRemoteSession(
-                legacy, operator, logger,
+                legacy, operator,
                 externalProvidersProvider.getIfAvailable(),
                 externalUserResolverProvider.getIfAvailable());
     }
 
     @Bean
     public org.rapla.server.spring.oauth.external.ExternalUserResolver externalUserResolver(
-            RaplaFacade facade, Logger logger)
+            RaplaFacade facade)
     {
-        return new org.rapla.server.spring.oauth.external.ExternalUserResolver(facade, logger);
+        return new org.rapla.server.spring.oauth.external.ExternalUserResolver(facade);
     }
 
     @Bean
-    public org.rapla.server.internal.SecurityManager securityManager(Logger logger,
-                                                                      org.rapla.RaplaResources i18n,
+    public org.rapla.server.internal.SecurityManager securityManager(org.rapla.RaplaResources i18n,
                                                                       org.rapla.entities.domain.AppointmentFormater appointmentFormater,
                                                                       org.rapla.storage.CachableStorageOperator operator,
                                                                       org.rapla.storage.SyncStorageOperator syncOperator)
     {
-        return new org.rapla.server.internal.SecurityManager(logger, i18n, appointmentFormater, operator, syncOperator);
+        return new org.rapla.server.internal.SecurityManager(i18n, appointmentFormater, operator, syncOperator);
     }
 
 
@@ -154,31 +150,28 @@ public class ServerServiceConfig
     }
 
     @Bean
-    public org.rapla.server.internal.UpdateDataManager updateDataManager(Logger logger,
-                                                                          org.rapla.storage.CachableStorageOperator operator,
+    public org.rapla.server.internal.UpdateDataManager updateDataManager(org.rapla.storage.CachableStorageOperator operator,
                                                                           org.rapla.server.internal.SecurityManager securityManager)
     {
-        return new org.rapla.server.internal.UpdateDataManagerImpl(logger, operator, securityManager);
+        return new org.rapla.server.internal.UpdateDataManagerImpl(operator, securityManager);
     }
 
     @Bean
     @org.springframework.context.annotation.Lazy
     public org.rapla.plugin.urlencryption.server.UrlEncryptor urlEncryptor(org.rapla.facade.RaplaFacade facade,
-                                                                            Logger logger,
                                                                             RaplaKeyStorage keyStore,
                                                                             RemoteSession session)
     {
-        return new org.rapla.plugin.urlencryption.server.UrlEncryptor(facade, logger, keyStore, session);
+        return new org.rapla.plugin.urlencryption.server.UrlEncryptor(facade, keyStore, session);
     }
 
     @Bean
     @org.springframework.context.annotation.Lazy
     @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(prefix = "rapla.services", name = "org.rapla.plugin.urlencryption", matchIfMissing = true)
     public org.rapla.server.extensionpoints.ServletRequestPreprocessor urlEncryptionPreprocessor(@org.springframework.context.annotation.Lazy org.rapla.plugin.urlencryption.server.UrlEncryptor urlEncryptor,
-                                                                                                  @org.springframework.context.annotation.Lazy org.rapla.facade.RaplaFacade facade,
-                                                                                                  Logger logger)
+                                                                                                  @org.springframework.context.annotation.Lazy org.rapla.facade.RaplaFacade facade)
     {
-        return new org.rapla.plugin.urlencryption.server.UrlEncryptionServletRequestResponsePreprocessor(urlEncryptor, facade, logger);
+        return new org.rapla.plugin.urlencryption.server.UrlEncryptionServletRequestResponsePreprocessor(urlEncryptor, facade);
     }
 
     @Bean
@@ -201,11 +194,10 @@ public class ServerServiceConfig
     @Bean
     @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(prefix = "rapla.services", name = "org.rapla.plugin.export2ical", matchIfMissing = true)
     public org.rapla.plugin.export2ical.server.Export2iCalConverter export2iCalConverter(org.rapla.framework.TimeZoneConverter timezoneConverter,
-                                                                                          Logger logger,
                                                                                           org.rapla.facade.RaplaFacade facade,
                                                                                           org.rapla.RaplaResources i18n)
     {
-        return new org.rapla.plugin.export2ical.server.Export2iCalConverter(timezoneConverter, logger, facade, i18n);
+        return new org.rapla.plugin.export2ical.server.Export2iCalConverter(timezoneConverter, facade, i18n);
     }
 
     @Bean
@@ -264,26 +256,25 @@ public class ServerServiceConfig
     @Bean(name = "org.rapla.plugin.javascriptpatch.server")
     @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
             prefix = "rapla.services", name = "org.rapla.plugin.javascriptpatch", matchIfMissing = true)
-    public org.rapla.plugin.javasciptpatch.server.JavascriptPatcher javascriptPatcher(RaplaFacade facade, Logger logger,
+    public org.rapla.plugin.javasciptpatch.server.JavascriptPatcher javascriptPatcher(RaplaFacade facade,
                                                       RaplaServerProperties properties,
                                                       org.rapla.storage.CachableStorageOperator cachableStorageOperator)
     {
         return new org.rapla.plugin.javasciptpatch.server.JavascriptPatcher(
-                facade, logger, properties, cachableStorageOperator);
+                facade, properties, cachableStorageOperator);
     }
 
     // PRD 019 Phase 3c: ArchiverServiceTask uses @Scheduled internally.
     @Bean(name = org.rapla.plugin.archiver.ArchiverService.PLUGIN_ID + ".server")
     @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
             prefix = "rapla.services", name = "org.rapla.plugin.archiver", matchIfMissing = true)
-    public org.rapla.plugin.archiver.server.ArchiverServiceTask archiverServiceTask(Logger logger,
-                                                        RaplaFacade facade,
+    public org.rapla.plugin.archiver.server.ArchiverServiceTask archiverServiceTask(RaplaFacade facade,
                                                         org.rapla.storage.SyncStorageOperator syncOperator,
                                                         org.rapla.storage.ImportExportManager importExportManager)
             throws RaplaInitializationException
     {
         return new org.rapla.plugin.archiver.server.ArchiverServiceTask(
-                logger, facade, syncOperator, importExportManager);
+                facade, syncOperator, importExportManager);
     }
 
     @Bean
@@ -302,11 +293,10 @@ public class ServerServiceConfig
             RaplaFacade facade, RaplaResources i18nBundle,
             org.rapla.plugin.notification.NotificationResources notificationI18n,
             org.rapla.entities.domain.AppointmentFormater appointmentFormater,
-            org.springframework.beans.factory.ObjectProvider<org.rapla.plugin.mail.server.MailToUserImpl> mailToUserProvider,
-            Logger logger)
+            org.springframework.beans.factory.ObjectProvider<org.rapla.plugin.mail.server.MailToUserImpl> mailToUserProvider)
             throws org.rapla.framework.RaplaException
     {
         return new org.rapla.plugin.notification.server.NotificationService(
-                facade, i18nBundle, notificationI18n, appointmentFormater, mailToUserProvider::getObject, logger);
+                facade, i18nBundle, notificationI18n, appointmentFormater, mailToUserProvider::getObject);
     }
 }

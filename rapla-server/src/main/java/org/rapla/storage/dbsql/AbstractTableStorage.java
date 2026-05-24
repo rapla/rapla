@@ -3,7 +3,8 @@ package org.rapla.storage.dbsql;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.IOUtil;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.framework.internal.TimeZoneConverterImpl;
 
 import java.sql.Clob;
@@ -28,11 +29,11 @@ import java.util.regex.Pattern;
 import java.time.LocalDateTime;
 public class AbstractTableStorage implements TableStorage
 {
+	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractTableStorage.class);
 	/** first paramter is 1 */
     protected final String tableName;
 	protected final boolean checkLastChanged;
 	protected Connection con;
-	protected Logger logger;
 	private String dbProductName = "";
 	final private Map<String,ColumnDef> columns = new LinkedHashMap<>();
 	protected String insertSql;
@@ -47,10 +48,9 @@ public class AbstractTableStorage implements TableStorage
 	private LocalDateTime connectionTimestamp;
 
 
-	public AbstractTableStorage(String table, Logger logger, String[] entries,boolean checkLastChanged)
+	public AbstractTableStorage(String table, String[] entries,boolean checkLastChanged)
 	{
 		tableName = table;
-		this.logger = logger;
 		for ( String unparsedEntry: entries)
 		{
 			ColumnDef col = new ColumnDef(unparsedEntry);
@@ -60,13 +60,13 @@ public class AbstractTableStorage implements TableStorage
 		this.checkLastChanged = checkLastChanged;//
 		datetimeCal =Calendar.getInstance( getSystemTimeZone());
 		createSQL(columns.values());
-		if (getLogger().isDebugEnabled()) {
-			getLogger().debug(insertSql);
-			getLogger().debug(deleteSql);
-			getLogger().debug(deleteSqlWithoutCheck);
-			getLogger().debug(selectSql);
-			getLogger().debug(deleteAllSql);
-			getLogger().debug(containsSql);
+		if (LOGGER.isDebugEnabled()) {
+			LOGGER.debug(insertSql);
+			LOGGER.debug(deleteSql);
+			LOGGER.debug(deleteSqlWithoutCheck);
+			LOGGER.debug(selectSql);
+			LOGGER.debug(deleteAllSql);
+			LOGGER.debug(containsSql);
 		}
 	}
 
@@ -83,9 +83,12 @@ public class AbstractTableStorage implements TableStorage
 		executeBatchedStatement(con, deleteAllSql);
 	}
 
-	protected Logger getLogger() {
-        return logger;
-    }
+	/** Concrete-class slf4j logger — used by subclasses for per-class log routing
+	 *  after the PRD 053 Logger-DI removal. */
+	protected Logger getLogger()
+	{
+		return LoggerFactory.getLogger(getClass());
+	}
 
 	protected ColumnDef getColumn(String name)
     {
@@ -272,7 +275,7 @@ public class AbstractTableStorage implements TableStorage
     	{
     		return;
     	}
-        getLogger().info("Creating table " + tablename);
+        LOGGER.info("Creating table {}", tablename);
 		for (String createSQL : createSQL1)
 		{
 			Statement stmt = con.createStatement();
@@ -300,7 +303,7 @@ public class AbstractTableStorage implements TableStorage
 
 		if (tableDef.getColumn(name) == null)
         {
-            getLogger().warn("Patching Database for table " + tableName + " adding column "+ name);
+            LOGGER.warn("Patching Database for table {} adding column {}", tableName, name);
             {
             	String sql = "ALTER TABLE " + tableName + " ADD COLUMN ";
                 sql += getColumnCreateStatemet( col, true, true);
@@ -313,7 +316,7 @@ public class AbstractTableStorage implements TableStorage
 			if ( col.isKey() && !col.isPrimary())
 			{
 				String sql = createKeySQL(tableName, name);
-	            getLogger().info("Adding index for " + name);
+	            LOGGER.info("Adding index for {}", name);
 
     			try (Statement stmt = con.createStatement())
     			{
@@ -335,7 +338,7 @@ public class AbstractTableStorage implements TableStorage
         LocalDateTime date = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(timestamp.getTime()), java.time.ZoneOffset.UTC);
 		if ( date.isAfter( currentTimestamp))
 		{
-			getLogger().error("Timestamp in table " + getTableName() + " in the future. " + date+ " > "+ currentTimestamp +" Ignoring.");
+			LOGGER.error("Timestamp in table {} in the future. {} > {} Ignoring.", getTableName(), date, currentTimestamp);
 		}
 		else
 		{
@@ -354,7 +357,7 @@ public class AbstractTableStorage implements TableStorage
         LocalDateTime date = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(timestamp.getTime()), java.time.ZoneOffset.UTC);
 		if ( date.isAfter( currentTimestamp) && checkCurrent)
 		{
-			getLogger().error("Timestamp in table " + getTableName() + " in the future. Something went wrong");
+			LOGGER.error("Timestamp in table {} in the future. Something went wrong", getTableName());
 			return null;
 		}
 		else
@@ -569,7 +572,7 @@ public class AbstractTableStorage implements TableStorage
 
 	public void dropTable() throws SQLException
     {
-        getLogger().info("Dropping table " + getTableName());
+        LOGGER.info("Dropping table {}", getTableName());
         String sql = "DROP TABLE " + getTableName();
         try (Statement stmt = con.createStatement())
         {

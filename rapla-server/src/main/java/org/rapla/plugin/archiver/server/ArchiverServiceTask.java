@@ -5,7 +5,8 @@ import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.plugin.archiver.ArchiverService;
 import org.rapla.storage.ImportExportManager;
 
@@ -20,18 +21,17 @@ import org.springframework.scheduling.annotation.Scheduled;
  *  preferences config are picked up between hours without a restart. */
 public class ArchiverServiceTask
 {
-    final Logger logger;
+    private static final Logger LOGGER = LoggerFactory.getLogger(ArchiverServiceTask.class);
     final RaplaFacade facade;
     final org.rapla.storage.SyncStorageOperator syncOperator;
     final ImportExportManager importExportManager;
 
     @Autowired
-    public ArchiverServiceTask(final Logger logger, final RaplaFacade facade,
+    public ArchiverServiceTask(final RaplaFacade facade,
                                final org.rapla.storage.SyncStorageOperator syncOperator,
                                final ImportExportManager importExportManager)
             throws RaplaInitializationException
     {
-        this.logger = logger;
         this.facade = facade;
         this.syncOperator = syncOperator;
         this.importExportManager = importExportManager;
@@ -47,7 +47,7 @@ public class ArchiverServiceTask
         }
         catch (RaplaException e)
         {
-            logger.error("Could not read archiver config", e);
+            LOGGER.error("Could not read archiver config", e);
             return;
         }
         final int days = config.getChild(ArchiverService.REMOVE_OLDER_THAN_ENTRY).getValueAsInteger(-20);
@@ -69,12 +69,12 @@ public class ArchiverServiceTask
             }
             if (days != -20)
             {
-                ArchiverServiceImpl.delete(days, facade, syncOperator, logger);
+                ArchiverServiceImpl.delete(days, facade, syncOperator);
             }
         }
         catch (Exception e)
         {
-            logger.error("Could not execute archiver task ", e);
+            LOGGER.error("Could not execute archiver task ", e);
         }
     }
 }

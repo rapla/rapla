@@ -12,7 +12,8 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.plugin.externaleventimport.ExternalEventImportPlugin;
 import org.rapla.plugin.externaleventimport.client.ExternalEventImportController;
 import org.rapla.plugin.externaleventimport.client.ExternalEventImportEnabledCondition;
@@ -26,6 +27,7 @@ import org.springframework.stereotype.Service;
 @Conditional(ExternalEventImportEnabledCondition.class)
 public class ExternalEventImportWizard extends TemplateWizard implements IdentifiableMenuEntry, ReservationWizardExtension
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExternalEventImportWizard.class);
     private final ExternalEventImportResources resources;
     private final ExternalEventImportController importController;
     /** Source name (e.g. "Dualis") for the menu label's {@code {0}} placeholder.
@@ -36,16 +38,16 @@ public class ExternalEventImportWizard extends TemplateWizard implements Identif
     private volatile String sourceName = "";
 
     @Autowired
-    public ExternalEventImportWizard(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model,
+    public ExternalEventImportWizard(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, CalendarModel model,
             DialogUiFactoryInterface dialogUiFactory, ExternalEventImportResources resources, ExternalEventImportController importController,
             ApplicationEventBus eventBus, MenuItemFactory menuItemFactory, org.rapla.rest.PluginsService plugins) throws RaplaInitializationException
     {
-        super(facade, i18n, raplaLocale, logger, model, eventBus, dialogUiFactory, menuItemFactory, plugins);
+        super(facade, i18n, raplaLocale, model, eventBus, dialogUiFactory, menuItemFactory, plugins);
         this.resources = resources;
         this.importController = importController;
         importController.getMetadata()
                 .thenAccept(m -> sourceName = m.getSourceName() == null ? "" : m.getSourceName())
-                .exceptionally(ex -> logger.warn("Could not fetch external-event-import metadata: " + ex.getMessage()));
+                .exceptionally(ex -> LOGGER.warn("Could not fetch external-event-import metadata: {}", ex.getMessage()));
     }
 
     @Override

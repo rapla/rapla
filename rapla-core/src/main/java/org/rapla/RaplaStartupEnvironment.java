@@ -15,8 +15,6 @@ package org.rapla;
 
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
-import org.rapla.logger.ConsoleLogger;
-import org.rapla.logger.Logger;
 
 import java.net.URL;
 
@@ -24,13 +22,7 @@ final public class RaplaStartupEnvironment implements StartupEnvironment
 {
     private int startupMode = CONSOLE;
     //private LoadingProgress progressbar;
-    private Logger bootstrapLogger = new ConsoleLogger( ConsoleLogger.LEVEL_WARN );
     private URL downloadURL;
-
-    public Logger getBootstrapLogger()
-    {
-        return bootstrapLogger;
-    }
 
     public void setStartupMode( int startupMode )
     {
@@ -43,11 +35,6 @@ final public class RaplaStartupEnvironment implements StartupEnvironment
     public int getStartupMode()
     {
         return startupMode;
-    }
-
-    public void setBootstrapLogger( Logger logger )
-    {
-        bootstrapLogger = logger;
     }
 
 	public URL getDownloadURL() throws RaplaException

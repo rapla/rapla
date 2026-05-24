@@ -26,7 +26,8 @@ import org.rapla.facade.internal.ModifiableCalendarState;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.AbstractRaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Observable;
@@ -43,8 +44,8 @@ import java.util.function.Function;
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
 public class Application implements ApplicationView.Presenter, ModificationListener {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
     public static final String CLOSE_ACTIVITY_ID = "close";
-    private final Logger logger;
     private final BundleManager bundleManager;
     private final ClientFacade clientFacade;
     private final AbstractActivityController abstractActivityController;
@@ -62,7 +63,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
     private final Map<ApplicationEvent, TaskPresenter> openDialogsPresenter = new HashMap<>();
 
     @Autowired
-    public Application(final Supplier<ApplicationView> mainViewProvider, ApplicationEventBus eventBus, Logger logger, BundleManager bundleManager, ClientFacade clientFacade,
+    public Application(final Supplier<ApplicationView> mainViewProvider, ApplicationEventBus eventBus, BundleManager bundleManager, ClientFacade clientFacade,
                        AbstractActivityController abstractActivityController, RaplaResources i18n, Map<String, Supplier<TaskPresenter>> activityPresenters,
                        Supplier<Set<ClientExtension>> clientExtensions, Supplier<CalendarSelectionModel> calendarModel, CommandScheduler scheduler,
                        DialogUiFactoryInterface dialogUiFactory) {
@@ -70,7 +71,6 @@ public class Application implements ApplicationView.Presenter, ModificationListe
         this.mainViewProvider = mainViewProvider;
         this.bundleManager = bundleManager;
         this.clientFacade = clientFacade;
-        this.logger = logger;
         this.eventBus = eventBus;
         this.i18n = i18n;
         this.activityPresenters = activityPresenters;
@@ -101,7 +101,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
             try {
                 closeCallback.run();
             } catch (Throwable ex) {
-                logger.error(ex.getMessage(), ex);
+                LOGGER.error(ex.getMessage(), ex);
             }
             return false;
         }
@@ -115,12 +115,12 @@ public class Application implements ApplicationView.Presenter, ModificationListe
 
         final Supplier<TaskPresenter> taskPresenterProvider = activityPresenters.get(activityId);
         if (taskPresenterProvider == null) {
-            logger.warn("startAction: no TaskPresenter for id='" + activityId + "', map keys=" + activityPresenters.keySet());
+            LOGGER.warn("startAction: no TaskPresenter for id='{}', map keys={}", activityId, activityPresenters.keySet());
             return false;
         }
         final TaskPresenter taskPresenter = taskPresenterProvider.get();
         if (taskPresenter == null) {
-            logger.warn("startAction: provider.get() returned null for id='" + activityId + "'");
+            LOGGER.warn("startAction: provider.get() returned null for id='{}'", activityId);
             return false;
         }
 
@@ -184,7 +184,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
                     {
                         String currentLanguage = i18n.getLang();
                         prefs.putEntry(RaplaLocale.LANGUAGE_ENTRY, currentLanguage);
-                    }).exceptionally((ex) -> logger.error("Can't  store language change", ex));
+                    }).exceptionally((ex) -> LOGGER.error("Can't  store language change", ex));
         } else {
             final String localeId = facade.getSystemPreferences().getEntryAsString(AbstractRaplaLocale.LOCALE, null);
             String systemDefaultLang = null;

@@ -18,7 +18,6 @@ import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,9 +28,9 @@ public class AbstractAppointmentEditor extends RaplaGUIComponent
     ArrayList<AppointmentListener> listenerList = new ArrayList<>();
     private boolean hasChanged;
 
-    public AbstractAppointmentEditor(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
+    public AbstractAppointmentEditor(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale)
     {
-        super(facade, i18n, raplaLocale, logger);
+        super(facade, i18n, raplaLocale);
     }
 
     public void addAppointmentListener(AppointmentListener listener)

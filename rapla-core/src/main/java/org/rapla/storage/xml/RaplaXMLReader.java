@@ -34,7 +34,8 @@ import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.storage.IdCreator;
 import org.rapla.storage.impl.EntityStore;
 
@@ -44,9 +45,9 @@ import java.time.LocalDateTime;
 import java.time.LocalDate;
 public class RaplaXMLReader extends DelegationHandler implements Namespaces
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RaplaXMLReader.class);
     public static TypedComponentRole<Double> VERSION = new TypedComponentRole<>("org.rapla.version");
     protected EntityStore store;
-    private final Logger logger;
     private final IdCreator idTable;
     private final Map<String,Class<? extends RaplaObject>> localnameMap;
     private final Map<Class<? extends RaplaObject>,RaplaXMLReader> readerMap;
@@ -91,7 +92,6 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
     public RaplaXMLReader( RaplaXMLContext context ) throws RaplaException
     {
         this.context = context;
-        logger = context.lookup( Logger.class );
         this.i18n = context.lookup(RaplaResources.class);
         RaplaLocale raplaLocale = context.lookup( RaplaLocale.class );
         this.store = context.lookup( EntityStore.class);
@@ -127,12 +127,12 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
 	    }
 	    if ( changeTime.isAfter( now) )
 	    {
-	        getLogger().warn("Last changed is in the future " +lastChanged  + ". Taking current time as new timestamp.");
+	        LOGGER.warn("Last changed is in the future {}. Taking current time as new timestamp.", lastChanged);
 	        changeTime = now;
 	    }
 	    if ( createTime.isAfter( now) )
 	    {
-	        getLogger().warn("Create time is in the future " +createTime  + ". Taking current time as new timestamp.");
+	        LOGGER.warn("Create time is in the future {}. Taking current time as new timestamp.", createTime);
 	        createTime = now;
 	    }
 	    TimestampDates result = new TimestampDates();
@@ -166,12 +166,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
         return childReader;
     }
 
-    protected Logger getLogger()
-    {
-        return logger;
-    }
-
-    public I18nBundle getI18n() 
+    public I18nBundle getI18n()
     {
     	return i18n;
     }

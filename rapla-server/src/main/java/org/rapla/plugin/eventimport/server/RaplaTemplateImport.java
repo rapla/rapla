@@ -4,7 +4,8 @@ import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.plugin.eventimport.ParsedTemplateResult;
 import org.rapla.plugin.eventimport.TemplateImport;
 import org.rapla.server.RemoteSession;
@@ -25,12 +26,11 @@ import java.util.Map;
 import java.time.LocalDateTime;
 public class RaplaTemplateImport implements TemplateImport
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RaplaTemplateImport.class);
     @Autowired
     TimeZoneConverter timeZoneConverter;
     @Autowired
     RaplaFacade facade;
-    @Autowired
-    Logger logger;
     @Autowired
     RaplaLocale raplaLocale;
 
@@ -97,7 +97,7 @@ public class RaplaTemplateImport implements TemplateImport
                 }
                 count++;
             }
-            logger.debug("Found " + count + " Entries ");
+            LOGGER.debug("Found {} Entries ", count);
 
         }
         catch ( final Exception e )

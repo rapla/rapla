@@ -5,7 +5,6 @@ import org.rapla.RaplaResources;
 import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.server.spring.RaplaServerProperties;
 import org.rapla.storage.CachableStorageOperator;
@@ -29,7 +28,6 @@ public class ServerStorageSelector implements Supplier<CachableStorageOperator>
     FileOperator file;
     DBOperator db;
 
-    final Logger logger;
     final RaplaResources i18n;
     final RaplaLocale raplaLocale;
     final CommandScheduler scheduler;
@@ -38,12 +36,11 @@ public class ServerStorageSelector implements Supplier<CachableStorageOperator>
     final RaplaServerProperties properties;
     ImportExportManager manager;
 
-    public ServerStorageSelector(@Nullable DataSource primaryDbDatasource, Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler, Map<String, FunctionFactory> functionFactoryMap,
+    public ServerStorageSelector(@Nullable DataSource primaryDbDatasource, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler, Map<String, FunctionFactory> functionFactoryMap,
             Set<PermissionExtension> permissionExtensions, RaplaServerProperties properties)
     {
 
         this.primaryDbDatasource = primaryDbDatasource;
-        this.logger = logger;
         this.i18n = i18n;
         this.raplaLocale = raplaLocale;
         this.scheduler = scheduler;
@@ -64,7 +61,7 @@ public class ServerStorageSelector implements Supplier<CachableStorageOperator>
     {
         final String raplafile = properties.getMainFilesource();
         final String fileDatasource = raplafile != null ? raplafile : "data/data.xml";
-        FileOperator op = new FileOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, fileDatasource, permissionExtensions);
+        FileOperator op = new FileOperator(i18n, raplaLocale, scheduler, functionFactoryMap, fileDatasource, permissionExtensions);
         applyMergeConfig(op);
         return op;
     }
@@ -73,7 +70,7 @@ public class ServerStorageSelector implements Supplier<CachableStorageOperator>
     {
         if (manager == null)
         {
-            manager = new ImportExportManagerImpl(logger, getFile(), getDb());
+            manager = new ImportExportManagerImpl(getFile(), getDb());
         }
         return manager;
     }
@@ -86,7 +83,7 @@ public class ServerStorageSelector implements Supplier<CachableStorageOperator>
     @NotNull private DBOperator createDbOperator()
     {
         Supplier<ImportExportManager> importExportMananger = getImportExportManager();
-        DBOperator op = new DBOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, importExportMananger, primaryDbDatasource, permissionExtensions);
+        DBOperator op = new DBOperator(i18n, raplaLocale, scheduler, functionFactoryMap, importExportMananger, primaryDbDatasource, permissionExtensions);
         applyMergeConfig(op);
         return op;
     }

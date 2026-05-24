@@ -12,7 +12,6 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.plugin.export2ical.Export2iCalResources;
 import org.rapla.plugin.export2ical.ICalExport;
@@ -46,8 +45,8 @@ public class Export2iCalMenu extends RaplaGUIComponent implements ExportMenuExte
 	private boolean enabled = false;
 
 	@Autowired
-	public Export2iCalMenu(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,ICalExport exportService, Export2iCalResources i18nIcal, CalendarModel calendarModel, IOInterface ioInterface,  DialogUiFactoryInterface dialogUiFactory){
-		super(facade, i18n, raplaLocale, logger);
+	public Export2iCalMenu(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale,ICalExport exportService, Export2iCalResources i18nIcal, CalendarModel calendarModel, IOInterface ioInterface,  DialogUiFactoryInterface dialogUiFactory){
+		super(facade, i18n, raplaLocale);
 		this.exportService = exportService;
 		this.i18nIcal = i18nIcal;
         this.calendarModel = calendarModel;

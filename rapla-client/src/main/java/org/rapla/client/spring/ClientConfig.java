@@ -6,8 +6,6 @@ import org.rapla.client.swing.i18n.SwingBundleManager;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
-import org.rapla.logger.Logger;
-import org.rapla.logger.RaplaBootstrapLogger;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -26,12 +24,6 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class ClientConfig
 {
-    @Bean
-    public Logger raplaLogger()
-    {
-        return RaplaBootstrapLogger.createRaplaLogger();
-    }
-
     /** Empty default so {@code Application}'s {@code Provider<Set<ClientExtension>>} resolves
      *  when no plugin contributes a ClientExtension. Plugins with extensions just register their
      *  own {@code @Bean Set<ClientExtension>} or individual {@code @Component ClientExtension}s. */
@@ -45,9 +37,9 @@ public class ClientConfig
      *  When {@code SwingClientConfig} is also loaded, its {@code @Service @Primary}
      *  {@link SwingBundleManager} wins for {@code BundleManager} injection points. */
     @Bean
-    public BundleManager swingBundleManager(Logger logger)
+    public BundleManager swingBundleManager()
     {
-        return new SwingBundleManager(logger);
+        return new SwingBundleManager();
     }
 
     @Bean
@@ -72,25 +64,23 @@ public class ClientConfig
      *  When {@code SwingClientConfig} is loaded, its {@code @Service @Primary}
      *  {@code SwingSchedulerImpl} wins. */
     @Bean
-    public org.rapla.scheduler.CommandScheduler commandScheduler(Logger logger)
+    public org.rapla.scheduler.CommandScheduler commandScheduler()
     {
-        return new org.rapla.framework.internal.DefaultScheduler(logger);
+        return new org.rapla.framework.internal.DefaultScheduler();
     }
 
     @Bean
     public org.rapla.facade.RaplaFacade raplaFacade(RaplaResources i18n,
-                                                     org.rapla.scheduler.CommandScheduler scheduler,
-                                                     Logger logger)
+                                                     org.rapla.scheduler.CommandScheduler scheduler)
     {
-        return new org.rapla.facade.internal.FacadeImpl(i18n, scheduler, logger);
+        return new org.rapla.facade.internal.FacadeImpl(i18n, scheduler);
     }
 
     @Bean
     public org.rapla.facade.client.ClientFacade clientFacade(org.rapla.facade.RaplaFacade raplaFacade,
-                                                              Logger logger,
                                                               RaplaResources i18n)
     {
-        return new org.rapla.facade.internal.ClientFacadeImpl(raplaFacade, logger, i18n);
+        return new org.rapla.facade.internal.ClientFacadeImpl(raplaFacade, i18n);
     }
 
     @Bean
@@ -115,13 +105,13 @@ public class ClientConfig
     }
 
     @Bean
-    public org.rapla.storage.impl.RaplaLock raplaLock(Logger logger)
+    public org.rapla.storage.impl.RaplaLock raplaLock()
     {
-        return new org.rapla.storage.impl.DefaultRaplaLock(logger);
+        return new org.rapla.storage.impl.DefaultRaplaLock();
     }
 
     @Bean
-    public org.rapla.framework.StartupEnvironment startupEnvironment(Logger bootstrapLogger)
+    public org.rapla.framework.StartupEnvironment startupEnvironment()
     {
         return new org.rapla.framework.StartupEnvironment()
         {
@@ -144,19 +134,13 @@ public class ClientConfig
             {
                 return CONSOLE;
             }
-
-            @Override
-            public Logger getBootstrapLogger()
-            {
-                return bootstrapLogger;
-            }
         };
     }
 
     @Bean
-    public org.rapla.components.iolayer.IOInterface ioInterface(Logger logger)
+    public org.rapla.components.iolayer.IOInterface ioInterface()
     {
-        return new org.rapla.components.iolayer.DefaultIO(logger);
+        return new org.rapla.components.iolayer.DefaultIO();
     }
 
     @Bean
@@ -176,14 +160,13 @@ public class ClientConfig
      *  JNLP {@code PersistenceService} when launched via OWS/IcedTea-Web, dotfile
      *  fallback otherwise. Best-effort — never throws even if storage is unavailable. */
     @Bean
-    public org.rapla.storage.dbrm.TokenStore tokenStore(Logger logger)
+    public org.rapla.storage.dbrm.TokenStore tokenStore()
     {
-        return org.rapla.storage.dbrm.TokenStores.create(logger);
+        return org.rapla.storage.dbrm.TokenStores.create();
     }
 
     @Bean
-    public org.rapla.storage.dbrm.RemoteOperator remoteOperator(Logger logger,
-                                                                  org.rapla.RaplaResources i18n,
+    public org.rapla.storage.dbrm.RemoteOperator remoteOperator(org.rapla.RaplaResources i18n,
                                                                   org.rapla.framework.RaplaLocale locale,
                                                                   org.rapla.scheduler.CommandScheduler scheduler,
                                                                   java.util.Map<String, org.rapla.entities.extensionpoints.FunctionFactory> functionFactoryMap,
@@ -193,7 +176,7 @@ public class ClientConfig
                                                                   java.util.Set<org.rapla.entities.domain.permission.PermissionExtension> permissionExtensions,
                                                                   org.rapla.storage.impl.RaplaLock lockManager)
     {
-        return new org.rapla.storage.dbrm.RemoteOperator(logger, i18n, locale, scheduler,
+        return new org.rapla.storage.dbrm.RemoteOperator(i18n, locale, scheduler,
                 functionFactoryMap, remoteAuthentificationService, remoteStorage,
                 connectionInfo, permissionExtensions, lockManager);
     }

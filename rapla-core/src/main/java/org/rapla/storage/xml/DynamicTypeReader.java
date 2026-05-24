@@ -32,6 +32,8 @@ import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -40,6 +42,7 @@ import java.util.Map;
 
 public class DynamicTypeReader extends RaplaXMLReader
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DynamicTypeReader.class);
     DynamicTypeImpl dynamicType;
     MultiLanguageName currentName = null;
     String currentLang = null;
@@ -158,7 +161,7 @@ public class DynamicTypeReader extends RaplaXMLReader
             AttributeType type = AttributeType.findForString( typeName );
             if (type == null)
             {
-            	getLogger().error( "AttributeType '" + typeName + "' not found. Using string.");
+            	LOGGER.error( "AttributeType '" + typeName + "' not found. Using string.");
             	type = AttributeType.STRING;
             }
             attribute.setType( type );
@@ -192,7 +195,7 @@ public class DynamicTypeReader extends RaplaXMLReader
             }
             catch (IllegalAnnotationException e)
             {
-                getLogger().error("Can't parse annotation " + e.getMessage(), e);
+                LOGGER.error("Can't parse annotation " + e.getMessage(), e);
             	//throw createSAXParseException( e.getMessage() );
             }
         }

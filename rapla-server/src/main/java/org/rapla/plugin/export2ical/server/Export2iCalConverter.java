@@ -49,7 +49,8 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.ConfigurationException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.framework.TimeZoneConverter;
 
@@ -66,6 +67,7 @@ import java.util.TimeZone;
 
 public class Export2iCalConverter
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Export2iCalConverter.class);
 
     private final boolean global_export_attendees;
     private final String global_export_attendees_participation_status;
@@ -76,18 +78,16 @@ public class Export2iCalConverter
     TimeZoneRegistry registry;
     boolean hasLocationType;
     final Locale locale;
-    final Logger logger;
     final RaplaFacade facade;
     final RaplaResources i18n;
 
     @Autowired
-    public Export2iCalConverter(TimeZoneConverter timezoneConverter, Logger logger, RaplaFacade facade, RaplaResources i18n)
+    public Export2iCalConverter(TimeZoneConverter timezoneConverter, RaplaFacade facade, RaplaResources i18n)
             throws RaplaInitializationException
     {
         this.timezoneConverter = timezoneConverter;
         this.facade = facade;
         this.locale = i18n.getLocale();
-        this.logger = logger;
         this.i18n = i18n;
         TimeZone zone = timezoneConverter.getImportExportTimeZone();
         DynamicType[] dynamicTypes;
@@ -121,7 +121,7 @@ public class Export2iCalConverter
         catch (ConfigurationException e)
         {
             exportAttendeesAttribute = "";
-            getLogger().info("ExportAttendeesMailAttribute is not set. So do not export as meeting");
+            LOGGER.info("ExportAttendeesMailAttribute is not set. So do not export as meeting");
         }
         if (zone != null)
         {
@@ -140,11 +140,6 @@ public class Export2iCalConverter
                 timeZone.setRawOffset(rawOffset);
             }
         }
-    }
-
-    protected Logger getLogger()
-    {
-        return logger;
     }
 
     public Calendar createiCalender(Collection<Appointment> appointments, Preferences preferences, User user)
@@ -267,7 +262,7 @@ public class Export2iCalConverter
         }
         catch (EntityNotFoundException e1)
         {
-            getLogger().error("Error getting user for Export2iCal: " + e1.getMessage(), e1);
+            LOGGER.error("Error getting user for Export2iCal: {}", e1.getMessage(), e1);
             return;
         }
         try
@@ -394,7 +389,7 @@ public class Export2iCalConverter
                 frequency = Frequency.YEARLY;
                 break;
             default:
-                getLogger().warn("Invalid data in recurrency rule!");
+                LOGGER.warn("Invalid data in recurrency rule!");
                 return;
         }
 
@@ -444,7 +439,7 @@ public class Export2iCalConverter
         }
         else
         {
-            getLogger().warn("Invalid data in recurrency rule!");
+            LOGGER.warn("Invalid data in recurrency rule!");
         }
 
         properties.add(new RRule(recur));

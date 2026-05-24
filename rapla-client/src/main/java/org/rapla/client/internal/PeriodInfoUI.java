@@ -18,14 +18,13 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Period;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 import java.util.ArrayList;
 import java.util.Collection;
 
 public class PeriodInfoUI extends HTMLInfo<Period> {
-    public PeriodInfoUI(RaplaFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
-        super(i18n, raplaLocale, facade, logger);
+    public PeriodInfoUI(RaplaFacade facade, RaplaResources i18n, RaplaLocale raplaLocale) {
+        super(i18n, raplaLocale, facade);
     }
 
     public String createHTMLAndFillLinks(Period period,LinkController controller, User user) {

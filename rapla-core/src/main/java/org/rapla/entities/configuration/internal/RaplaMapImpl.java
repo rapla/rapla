@@ -34,12 +34,16 @@ import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.rest.GenericObjectSerializable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
 /** Maps can only support one type value at a time. Especially  a mixture out of references and other values is not supported*/
 public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, RaplaObject, RaplaMap, GenericObjectSerializable
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RaplaMapImpl.class);
+
     //this map stores all objects in the map
     private Map<String, String> constants;
     private Map<String, RaplaConfiguration> configurations;
@@ -145,7 +149,7 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
             T next = it.next();
             if (next == null)
             {
-                System.err.println("Adding null value in list");
+                LOGGER.warn("Adding null value in list");
             }
             map.put(String.valueOf(key++), next);
         }
@@ -681,7 +685,7 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
                     String id = links.getId(key);
                     if (id == null)
                     {
-                        System.err.println("Empty id " + id);
+                        LOGGER.warn("Empty id {}", id);
                     }
                     cachedEntries.add(new Entry(key, id));
                 }
@@ -697,7 +701,7 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
                 {
                     if (entry.getValue() == null)
                     {
-                        System.err.println("Empty value for  " + entry.getKey());
+                        LOGGER.warn("Empty value for {}", entry.getKey());
                     }
                     cachedEntries.add(entry);
                 }

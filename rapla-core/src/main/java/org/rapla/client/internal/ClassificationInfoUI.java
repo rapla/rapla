@@ -26,17 +26,16 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Locale;
 
 public class ClassificationInfoUI<T extends Classifiable> extends HTMLInfo<T> {
-    
-    public ClassificationInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, RaplaFacade facade, Logger logger)
+
+    public ClassificationInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, RaplaFacade facade)
     {
-        super(i18n, raplaLocale, facade, logger);
+        super(i18n, raplaLocale, facade);
     }
 
     public void insertClassificationTitle( Classifiable classifiable, StringBuffer buf ) {

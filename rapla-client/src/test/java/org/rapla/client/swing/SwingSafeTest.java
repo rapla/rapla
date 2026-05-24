@@ -5,45 +5,45 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import javax.swing.SwingUtilities;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.rapla.logger.AbstractLogger;
-import org.rapla.logger.Logger;
+import org.slf4j.LoggerFactory;
 
 class SwingSafeTest
 {
-    /** Hand-rolled capture logger — no mocks per PRD 027 / AGENTS.md §13. */
-    static final class CapturingLogger extends AbstractLogger
+    private Logger logger;
+    private ListAppender<ILoggingEvent> appender;
+
+    @BeforeEach
+    void attachAppender()
     {
-        final AtomicInteger errorCount = new AtomicInteger();
-        final AtomicReference<Throwable> lastError = new AtomicReference<>();
+        logger = (Logger) LoggerFactory.getLogger(SwingSafe.class);
+        appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+    }
 
-        CapturingLogger() { super(LEVEL_INFO); }
-
-        @Override protected void write(int level, String message, Throwable cause)
-        {
-            if (level == LEVEL_ERROR)
-            {
-                errorCount.incrementAndGet();
-                lastError.set(cause);
-            }
-        }
-
-        @Override public Logger getChildLogger(String name) { return this; }
+    @AfterEach
+    void detachAppender()
+    {
+        logger.detachAppender(appender);
     }
 
     @Test
     void runnableExceptionRoutedToLoggerNotStderr() throws Exception
     {
-        CapturingLogger logger = new CapturingLogger();
         CountDownLatch done = new CountDownLatch(1);
         RuntimeException boom = new RuntimeException("boom");
 
-        SwingSafe.invokeLater(logger, () -> {
+        SwingSafe.invokeLater(() -> {
             try { throw boom; }
             finally { done.countDown(); }
         });
@@ -53,21 +53,25 @@ class SwingSafeTest
         // we still need to make sure the EDT has finished before we observe the counter.
         SwingUtilities.invokeAndWait(() -> {});
 
-        assertEquals(1, logger.errorCount.get(), "Logger should have received exactly one error");
-        assertEquals(boom, logger.lastError.get(), "Logger should receive the same throwable");
+        long errorCount = appender.list.stream().filter(e -> e.getLevel() == Level.ERROR).count();
+        assertEquals(1, errorCount, "Logger should have received exactly one error");
+        ILoggingEvent errorEvent = appender.list.stream().filter(e -> e.getLevel() == Level.ERROR).findFirst().orElseThrow();
+        assertEquals(boom, errorEvent.getThrowableProxy() == null ? null
+                : ((ch.qos.logback.classic.spi.ThrowableProxy) errorEvent.getThrowableProxy()).getThrowable(),
+                "Logger should receive the same throwable");
     }
 
     @Test
     void normalRunnableRunsWithoutLogging() throws Exception
     {
-        CapturingLogger logger = new CapturingLogger();
         CountDownLatch done = new CountDownLatch(1);
 
-        SwingSafe.invokeLater(logger, done::countDown);
+        SwingSafe.invokeLater(done::countDown);
 
         assertTrue(done.await(5, TimeUnit.SECONDS), "EDT runnable should have run");
         SwingUtilities.invokeAndWait(() -> {});
 
-        assertEquals(0, logger.errorCount.get(), "Logger should not be invoked on a clean runnable");
+        long errorCount = appender.list.stream().filter(e -> e.getLevel() == Level.ERROR).count();
+        assertEquals(0, errorCount, "Logger should not be invoked on a clean runnable");
     }
 }

@@ -25,7 +25,6 @@ import org.rapla.entities.domain.Permission;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.springframework.stereotype.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -74,8 +73,8 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
     
   
     @SuppressWarnings("unchecked")
-	public PermissionField(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, DialogUiFactoryInterface dialogUiFactory, DateFieldFactory dateFieldFactory, LongFieldFactory longFieldFactory) throws RaplaException {
-        super(clientFacade, i18n, raplaLocale, logger);
+	public PermissionField(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, TreeFactory treeFactory, DialogUiFactoryInterface dialogUiFactory, DateFieldFactory dateFieldFactory, LongFieldFactory longFieldFactory) throws RaplaException {
+        super(clientFacade, i18n, raplaLocale);
 
         panel.setBorder(BorderFactory.createEmptyBorder(5,8,5,8));
 
@@ -93,7 +92,7 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
              {pre,5,pre,5,pre}} // Rows
                                           ));
 
-        userSelect = new UserListField( clientFacade, i18n, raplaLocale, logger );
+        userSelect = new UserListField( clientFacade, i18n, raplaLocale );
         userLabel = new JLabel(i18n.getString("user") + ":");
         userPanel.add( userLabel, "0,0,l,f" );
         userPanel.add( userSelect.getComponent(),"2,0,l,f" );
@@ -102,11 +101,11 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
         if ( rootCategory != null) {
             AbstractEditField groupSelect;
             if (rootCategory.getDepth() > 2) {
-                CategorySelectField field= new CategorySelectField(clientFacade, i18n, raplaLocale, logger, treeFactory,  dialogUiFactory, rootCategory);
+                CategorySelectField field= new CategorySelectField(clientFacade, i18n, raplaLocale, treeFactory,  dialogUiFactory, rootCategory);
                 this.groupSelect = field;
                 groupSelect = field;
             } else {
-                CategoryListField field = new CategoryListField(clientFacade, i18n, raplaLocale, logger, rootCategory);
+                CategoryListField field = new CategoryListField(clientFacade, i18n, raplaLocale, rootCategory);
                 this.groupSelect = field;
                 groupSelect = field;
             }
@@ -148,7 +147,7 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
         reservationPanel.add( maxAdvance.getComponent() , "4,2,l,f" );
 
         userPanel.add( new JLabel(i18n.getString("permission.access") + ":"), "0,4,f,f" );
-        accessField = new ListField<>(clientFacade, i18n, raplaLocale, logger, permissionLevels);
+        accessField = new ListField<>(clientFacade, i18n, raplaLocale, permissionLevels);
         accessField.setRenderer( new DefaultListCellRenderer() {
             private static final long serialVersionUID = 1L;
 
@@ -364,8 +363,8 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
 
     class UserListField extends ListField<User> {
 
-        public UserListField(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) throws RaplaException{
-            super(clientFacade, i18n, raplaLocale, logger, true);
+        public UserListField(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale) throws RaplaException{
+            super(clientFacade, i18n, raplaLocale, true);
             User[] users = raplaFacade.getUsers();
             List<User> asList = new ArrayList<>(Arrays.asList(users));
             Collections.sort( asList, new NamedComparator<>(i18n.getLocale()));
@@ -408,20 +407,18 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
         private final ClientFacade facade;
         private final RaplaResources i18n;
         private final RaplaLocale raplaLocale;
-        private final Logger logger;
         private final TreeFactory treeFactory;
         private final DialogUiFactoryInterface dialogUiFactory;
         private final DateFieldFactory dateFieldFactory;
         private final LongFieldFactory longFieldFactory;
 
         @Autowired
-        public PermissionFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,
+        public PermissionFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, TreeFactory treeFactory,
                   DialogUiFactoryInterface dialogUiFactory, DateFieldFactory dateFieldFactory, LongFieldFactory longFieldFactory)
         {
             this.facade = facade;
             this.i18n = i18n;
             this.raplaLocale = raplaLocale;
-            this.logger = logger;
             this.treeFactory = treeFactory;
             this.dialogUiFactory = dialogUiFactory;
             this.dateFieldFactory = dateFieldFactory;
@@ -430,7 +427,7 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
 
         public PermissionField create() throws RaplaException
         {
-            return new PermissionField(facade, i18n, raplaLocale, logger, treeFactory,  dialogUiFactory, dateFieldFactory, longFieldFactory);
+            return new PermissionField(facade, i18n, raplaLocale, treeFactory,  dialogUiFactory, dateFieldFactory, longFieldFactory);
         }
     }
 

@@ -13,7 +13,6 @@ import org.rapla.components.iolayer.IOInterface;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 
@@ -28,8 +27,8 @@ public class DeleteDialogSwing extends RaplaGUIComponent implements DeleteDialog
     final private InfoFactory infoFactory;
 
     @Autowired
-    public DeleteDialogSwing(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface, InfoFactory infoFactory) {
-        super(facade, i18n, raplaLocale, logger);
+    public DeleteDialogSwing(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface, InfoFactory infoFactory) {
+        super(facade, i18n, raplaLocale);
         this.dialogUiFactory = dialogUiFactory;
         this.ioInterface = ioInterface;
         this.infoFactory = infoFactory;
@@ -60,8 +59,8 @@ public class DeleteDialogSwing extends RaplaGUIComponent implements DeleteDialog
             popupContext = dialogUiFactory.createPopupContext( null);
         }
 
-        ViewTable<Object[]> viewTable = new ViewTable<>(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), infoFactory, ioInterface, dialogUiFactory);
-        DeleteInfoUI deleteView = new DeleteInfoUI(getI18n(), getRaplaLocale(), getFacade(), getLogger());
+        ViewTable<Object[]> viewTable = new ViewTable<>(getClientFacade(), getI18n(), getRaplaLocale(), infoFactory, ioInterface, dialogUiFactory);
+        DeleteInfoUI deleteView = new DeleteInfoUI(getI18n(), getRaplaLocale(), getFacade());
         DialogInterface dlg = dialogUiFactory.createContentDialog(popupContext
                 ,
                 viewTable.getComponent()

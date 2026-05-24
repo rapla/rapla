@@ -9,7 +9,8 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.plugin.export2ical.Export2iCalResources;
 import org.rapla.plugin.export2ical.ICalConfigService;
@@ -38,6 +39,7 @@ import java.util.Locale;
 @Scope("prototype")
 
 public class Export2iCalUserOption extends RaplaGUIComponent implements UserOptionPanel, ActionListener {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Export2iCalUserOption.class);
 	
 	private Preferences preferences;
 	private final JPanel panel = new JPanel();
@@ -65,9 +67,9 @@ public class Export2iCalUserOption extends RaplaGUIComponent implements UserOpti
 	final Export2iCalResources i18nIcal;
 
 	@Autowired
-    public Export2iCalUserOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,ICalConfigService configService, Export2iCalResources i18nIcal)
+    public Export2iCalUserOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale,ICalConfigService configService, Export2iCalResources i18nIcal)
 	{
-		super(facade, i18n, raplaLocale, logger);
+		super(facade, i18n, raplaLocale);
 		this.configService = configService;
 		this.i18nIcal = i18nIcal;
 	}
@@ -92,7 +94,7 @@ public class Export2iCalUserOption extends RaplaGUIComponent implements UserOpti
         }
         catch (RaplaException e)
         {
-            getLogger().warn("Failed to load iCal config via /ical/config/default; falling back to default", e);
+            LOGGER.warn("Failed to load iCal config via /ical/config/default; falling back to default", e);
             return Export2iCalPlugin.ENABLE_BY_DEFAULT;
         }
 	}
@@ -175,7 +177,7 @@ public class Export2iCalUserOption extends RaplaGUIComponent implements UserOpti
 	public void show() throws RaplaException {
 	    // System defaults (any-user) + per-user overrides — both via REST
 	    // instead of the bulk /storage/resources preference cache.
-	    getLogger().info("Export2iCalUserOption.show(): fetching /ical/config/{default,user} via REST");
+	    LOGGER.info("Export2iCalUserOption.show(): fetching /ical/config/{default,user} via REST");
 	    Configuration config = configService.getUserDefaultConfig();
 
 		global_days_before = config.getChild(Export2iCalPlugin.DAYS_BEFORE).getValueAsInteger(Export2iCalPlugin.DEFAULT_daysBefore);
@@ -191,7 +193,7 @@ public class Export2iCalUserOption extends RaplaGUIComponent implements UserOpti
         }
         catch (Exception e)
         {
-            getLogger().warn("GET /ical/config/user failed, falling back to local cache: " + e.getMessage());
+            LOGGER.warn("GET /ical/config/user failed, falling back to local cache: {}", e.getMessage());
             userSettings = new UserICalSettings(
                     preferences.hasEntry(Export2iCalPlugin.PREF_BEFORE_DAYS)
                             ? preferences.getEntryAsInteger(Export2iCalPlugin.PREF_BEFORE_DAYS, 0) : null,

@@ -35,7 +35,6 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.client.swing.IntervalChooserPanel;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.RaplaTableModel;
@@ -110,7 +109,7 @@ public class SwingTableView<T> extends RaplaGUIComponent implements SwingCalenda
 
     private final Supplier<Promise<List<T>>> initFunction;
 
-    public SwingTableView(RaplaMenuBarContainer menuBar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
+    public SwingTableView(RaplaMenuBarContainer menuBar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale,
                                      final CalendarModel model, final Set<? extends SummaryExtension> summaryExtensions, final boolean editable, boolean printing,
                           List<RaplaTableColumn<T>> raplaTableColumns, MenuFactory menuFactory, EditController editController, ReservationController reservationController,
                                      final InfoFactory infoFactory, IntervalChooserPanel dateChooser, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface
@@ -118,7 +117,7 @@ public class SwingTableView<T> extends RaplaGUIComponent implements SwingCalenda
             ,String tableName
                 ) throws RaplaException
     {
-        super(facade, i18n, raplaLocale, logger);
+        super(facade, i18n, raplaLocale);
         this.initFunction = initFunction;
         this.i18n = i18n;
         this.menuBar = menuBar;

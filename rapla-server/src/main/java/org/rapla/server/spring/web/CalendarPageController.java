@@ -18,7 +18,8 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.AbstractRaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.plugin.autoexport.AutoExportResources;
@@ -67,23 +68,22 @@ import java.util.function.Supplier;
 @ConditionalOnProperty(prefix = "rapla.services", name = "org.rapla.plugin.autoexport", matchIfMissing = true)
 public class CalendarPageController
 {
+    private static final Logger NOT_FOUND_LOG = LoggerFactory.getLogger("rapla.404");
+
     private final Map<String, Supplier<HTMLViewPage>> factoryMap;
     private final RaplaFacade facade;
-    private final Logger logger;
     private final RaplaLocale raplaLocale;
     private final RaplaResources i18n;
     private final AutoExportResources autoexportI18n;
 
     public CalendarPageController(Map<String, Supplier<HTMLViewPage>> factoryMap,
                                    RaplaFacade facade,
-                                   Logger logger,
                                    RaplaLocale raplaLocale,
                                    RaplaResources i18n,
                                    AutoExportResources autoexportI18n)
     {
         this.factoryMap = factoryMap;
         this.facade = facade;
-        this.logger = logger;
         this.raplaLocale = raplaLocale;
         this.i18n = i18n;
         this.autoexportI18n = autoexportI18n;
@@ -153,7 +153,7 @@ public class CalendarPageController
             {
                 String message = "404 Calendar not available. User not found ";
                 write404(response, message);
-                logger.getChildLogger("html.404").warn("404 Username not found ");
+                NOT_FOUND_LOG.warn("404 Username not found ");
                 return;
             }
             try
@@ -389,7 +389,7 @@ public class CalendarPageController
     {
         response.setStatus(404);
         response.getWriter().print(message);
-        logger.getChildLogger("html.404").warn(message);
+        NOT_FOUND_LOG.warn(message);
         response.getWriter().close();
     }
 

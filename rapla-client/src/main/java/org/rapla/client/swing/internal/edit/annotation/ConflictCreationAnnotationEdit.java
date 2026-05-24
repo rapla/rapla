@@ -11,7 +11,6 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.springframework.stereotype.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,8 +29,8 @@ public class ConflictCreationAnnotationEdit extends RaplaGUIComponent implements
     private final String annotationName = DynamicTypeAnnotations.KEY_CONFLICTS;
 
     @Autowired
-    public ConflictCreationAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
-        super(facade, i18n, raplaLocale, logger);
+    public ConflictCreationAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale) {
+        super(facade, i18n, raplaLocale);
     }
 
     @Override
@@ -50,7 +49,7 @@ public class ConflictCreationAnnotationEdit extends RaplaGUIComponent implements
         }
         String annotation = annotatable.getAnnotation(annotationName);
         Collection<String> collection = Arrays.asList(DynamicTypeAnnotations.VALUE_CONFLICTS_ALWAYS,DynamicTypeAnnotations.VALUE_CONFLICTS_NONE,DynamicTypeAnnotations.VALUE_CONFLICTS_WITH_OTHER_TYPES);
-        ListField<String> field = new ListField<>(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), collection);
+        ListField<String> field = new ListField<>(getClientFacade(), getI18n(), getRaplaLocale(), collection);
         field.setFieldName( getString(annotationName));
         
         if (annotation  == null)

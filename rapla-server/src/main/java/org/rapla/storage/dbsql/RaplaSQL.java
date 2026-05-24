@@ -51,7 +51,8 @@ import org.rapla.entities.storage.internal.ExternalSyncEntityImpl;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.rest.JsonParserWrapper;
 import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.impl.server.EntityHistory;
@@ -94,8 +95,8 @@ import java.util.stream.Collectors;
 import java.time.LocalDateTime;
 class RaplaSQL
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RaplaSQL.class);
     private final Map<Class,RaplaTypeStorage> stores = new LinkedHashMap<>();
-    private final Logger logger;
     private final HistoryStorage history;
     RaplaXMLContext context;
     PreferenceStorage preferencesStorage;
@@ -105,8 +106,7 @@ class RaplaSQL
     RaplaSQL(RaplaXMLContext context) throws RaplaException
     {
         this.context = context;
-        logger = context.lookup(Logger.class);
-        lockStorage = new LockStorage(logger);
+        lockStorage = new LockStorage();
         // The order is important. e.g. appointments can only be loaded if the reservation they are refering to are already loaded.
         add(Category.class,new CategoryStorage(context));
         add(User.class,new UserStorage(context));
@@ -161,11 +161,6 @@ class RaplaSQL
         }
         storages.add(history);
         return storages;
-    }
-
-    protected Logger getLogger()
-    {
-        return logger;
     }
 
     /***************************************************
@@ -515,7 +510,7 @@ class RaplaSQL
             {
                 if (ids.size() > 1)
                 {
-                    getLogger().warn("More then one lock requested when using a global lock.");
+                    LOGGER.warn("More then one lock requested when using a global lock.");
                 }
                 lockStorage.getGlobalLock();
             }
@@ -574,6 +569,7 @@ class RaplaSQL
 // TODO Think about canDelete and remove of locks when entities are deleted (not updated)
 class LockStorage extends AbstractTableStorage
 {
+    private static final Logger LOCK_LOGGER = LoggerFactory.getLogger(LockStorage.class);
     static final String GLOBAL_LOCK = "GLOBAL_LOCK";
     private final String countLocksSql = "SELECT COUNT(LOCKID) FROM WRITE_LOCK WHERE LOCKID <> '" + GLOBAL_LOCK + "' AND ACTIVE = 1";
     private final String cleanupSql = "UPDATE WRITE_LOCK SET ACTIVE = 2 WHERE ACTIVE = 1 and VALID_UNTIL < CURRENT_TIMESTAMP";
@@ -584,9 +580,9 @@ class LockStorage extends AbstractTableStorage
     private String readTimestampInclusiveLockedSql;
     private String requestTimestampSql;
 
-    public LockStorage(Logger logger)
+    public LockStorage()
     {
-        super("WRITE_LOCK", logger,
+        super("WRITE_LOCK",
                 new String[] { "LOCKID VARCHAR(255) NOT NULL PRIMARY KEY", "LAST_CHANGED TIMESTAMP", "LAST_REQUESTED TIMESTAMP", "VALID_UNTIL TIMESTAMP",
                         "ACTIVE INTEGER NOT NULL" }, false);
         insertSql = "insert into WRITE_LOCK (LOCKID, LAST_CHANGED, LAST_REQUESTED, VALID_UNTIL, ACTIVE) values (?, CURRENT_TIMESTAMP, ?, ?, 1)";
@@ -647,7 +643,7 @@ class LockStorage extends AbstractTableStorage
             }
 
             final int[] result = stmt.executeBatch();
-            logger.debug("deactivated logs: " + Arrays.toString(result));
+            LOCK_LOGGER.debug("deactivated logs: {}", Arrays.toString(result));
         }
         catch (Exception e)
         {
@@ -663,7 +659,7 @@ class LockStorage extends AbstractTableStorage
         {
             deleteStmt.setQueryTimeout(10);
             final int executeBatch = deleteStmt.executeUpdate();
-            logger.debug("cleanuped logs: " + executeBatch);
+            LOCK_LOGGER.debug("cleanuped logs: {}", executeBatch);
         }
         catch (Exception e)
         {
@@ -841,7 +837,7 @@ class LockStorage extends AbstractTableStorage
             }
             catch (SQLException re)
             {
-                logger.error("Could not commit remove of locks (" + ids + ") caused by: " + re.getMessage(), re);
+                LOCK_LOGGER.error("Could not commit remove of locks ({}) caused by: {}", ids, re.getMessage(), re);
             }
             throw e;
         }
@@ -986,7 +982,7 @@ abstract class RaplaTypeStorage<T extends Entity<T>> extends EntityStorage<T>
         }
         String xmlWithNamespaces = RaplaXMLReader.wrapRaplaDataTag(xml);
         RaplaNonValidatedInput parser = context.lookup(RaplaNonValidatedInput.class);
-        parser.read(xmlWithNamespaces, raplaXMLReader, logger);
+        parser.read(xmlWithNamespaces, raplaXMLReader);
         //return raplaXMLReader;
     }
 
@@ -2763,7 +2759,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
                 }
             }
         }
-        logger.info("Deleted " + sum + " history entries");
+        getLogger().info("Deleted " + sum + " history entries");
     }
 
     @Override
@@ -3018,7 +3014,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
                     }
                     else
                     {
-                        logger.debug("Ignoring entity without timestamp " + entity);
+                        getLogger().debug("Ignoring entity without timestamp " + entity);
                     }
                 }
             }

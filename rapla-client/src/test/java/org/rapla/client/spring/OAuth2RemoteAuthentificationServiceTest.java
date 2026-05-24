@@ -6,6 +6,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.rapla.RaplaResources;
+import org.rapla.client.swing.i18n.SwingBundleManager;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.LoginCredentials;
 import org.rapla.storage.dbrm.LoginTokens;
@@ -65,7 +67,8 @@ public class OAuth2RemoteAuthentificationServiceTest
 
     private RemoteAuthentificationService service()
     {
-        return new ClientProxyConfig.OAuth2RemoteAuthentificationService(info);
+        RaplaResources i18n = new RaplaResources(new SwingBundleManager());
+        return new ClientProxyConfig.OAuth2RemoteAuthentificationService(info, i18n);
     }
 
     @Test

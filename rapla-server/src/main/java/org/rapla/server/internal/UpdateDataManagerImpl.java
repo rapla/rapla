@@ -40,7 +40,8 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.UpdateEvent;
@@ -61,26 +62,19 @@ import java.time.LocalDateTime;
  */
 public class UpdateDataManagerImpl implements  UpdateDataManager
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(UpdateDataManagerImpl.class);
     private final CachableStorageOperator operator;
 
     private final SecurityManager security;
 
-    private final Logger logger;
-
     private final PermissionController permissionController;
 
 
-    @Autowired public UpdateDataManagerImpl(Logger logger, CachableStorageOperator operator, SecurityManager securityManager)
+    @Autowired public UpdateDataManagerImpl(CachableStorageOperator operator, SecurityManager securityManager)
     {
-        this.logger = logger;
         this.operator = operator;
         this.permissionController = operator.getPermissionController();
         this.security = securityManager;
-    }
-
-    protected Logger getLogger()
-    {
-        return logger;
     }
 
     public static Preferences removeServerOnlyPreferences(Preferences preferences)
@@ -125,12 +119,12 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
         LocalDateTime conflictValidStart = operator.getConnectStart();
         LocalDateTime lastRefreshed = operator.getLastRefreshed();
         if ( lastSynced == null) {
-            getLogger().warn("Timestamp of client for user " + user  + " not set ");
+            LOGGER.warn("Timestamp of client for user {} not set ", user);
         }
         else if (lastSynced.isAfter(lastRefreshed))
         {
             long diff = java.time.Duration.between(lastRefreshed, lastSynced).toMillis();
-            getLogger().warn("Timestamp of client " + diff + " ms  after server ");
+            LOGGER.warn("Timestamp of client {} ms  after server ", diff);
             lastSynced = currentTimestamp;
         }
         final UpdateEvent safeResultEvent = new UpdateEvent();
@@ -184,7 +178,7 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
             Entity newObject = updateResult.getLastKnown(currentId);
             if ( newObject == null)
             {
-                getLogger().error("Object with id " + currentId + " not found in history. Ignoring. ");
+                LOGGER.error("Object with id {} not found in history. Ignoring. ", currentId);
             }
             // we get all the permissions that have changed on an allocatable
             if (typeClass == Allocatable.class && isTransferedToClient(newObject))
@@ -402,7 +396,7 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
                     ((ReferenceHandler) lastEntryBeforeUpdate).setResolver(((ReferenceHandler) event).getResolver());
                 }
                 if (permissionController.isRequestFor(event, user) || (lastEntryBeforeUpdate != null && permissionController.isRequestFor((Reservation)lastEntryBeforeUpdate, user))){
-                    logger.debug("Request for " + user + " is transfered to client");
+                    LOGGER.debug("Request for {} is transfered to client", user);
                 } else {
                     return;
                 }

@@ -28,6 +28,8 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.ExternalSyncEntity;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -36,6 +38,7 @@ import java.util.Map;
 
 public class RaplaMainReader extends RaplaXMLReader
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RaplaMainReader.class);
     private final Map<String,RaplaXMLReader> localnameTable = new HashMap<>();
     public final static String INPUT_FILE_VERSION = RaplaMainWriter.OUTPUT_FILE_VERSION;
     private TimeInterval invalidateInterval = null;
@@ -82,7 +85,7 @@ public class RaplaMainReader extends RaplaXMLReader
         try
         {
             String version = null;
-            getLogger().debug( "Getting version." );
+            LOGGER.debug( "Getting version." );
             if (name.equals( "data" ) && uri.equals( RAPLA_NS ))
             {
                 version = atts.getValue( "version" );
@@ -131,11 +134,11 @@ public class RaplaMainReader extends RaplaXMLReader
                     throw new RaplaException("This version of Rapla cannot read files with a version-number"
                                              + " greater than " + RaplaMainReader.INPUT_FILE_VERSION
                                              + ", try out the latest version.");
-                getLogger().warn( "Older version detected. " );
+                LOGGER.warn( "Older version detected. " );
             }
             this.writeableContext.put(VERSION, versionNr);
             
-            getLogger().debug( "Found compatible version-number." );
+            LOGGER.debug( "Found compatible version-number." );
             // We've got the right version. We can proceed.
         }
         catch (Exception ex)

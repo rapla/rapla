@@ -20,7 +20,6 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.components.i18n.I18nIcon;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -33,9 +32,9 @@ public abstract class RaplaAction extends RaplaGUIComponent implements Action {
     private final ArrayList<PropertyChangeListener> listenerList = new ArrayList<>();
     I18nIcon icon;
 
-    public RaplaAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
+    public RaplaAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale)
     {
-        super(facade, i18n, raplaLocale, logger);
+        super(facade, i18n, raplaLocale);
         setEnabled(true);
     }
 

@@ -1,7 +1,6 @@
 package org.rapla.server.spring;
 
 import org.rapla.facade.RaplaFacade;
-import org.rapla.logger.Logger;
 import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.internal.RaplaTokenRepository;
 import org.springframework.beans.factory.ObjectProvider;
@@ -140,9 +139,9 @@ public class SecurityConfig
      * by {@link RaplaKeyStorage}.
      */
     @Bean
-    public PersistentTokenRepository rememberMeTokenRepository(RaplaFacade facade, Logger logger)
+    public PersistentTokenRepository rememberMeTokenRepository(RaplaFacade facade)
     {
-        return new RaplaTokenRepository(facade, logger);
+        return new RaplaTokenRepository(facade);
     }
 
     @Bean

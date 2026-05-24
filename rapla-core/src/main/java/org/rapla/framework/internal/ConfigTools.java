@@ -19,7 +19,6 @@ import org.rapla.components.util.xml.RaplaNonValidatedInput;
 import org.rapla.components.util.xml.RaplaSAXHandler;
 import org.rapla.components.util.xml.XMLReaderAdapter;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
@@ -36,6 +35,7 @@ import java.util.Map;
 /** Tools for configuring the rapla-system. */
 public abstract class ConfigTools
 {
+
     /** parse startup parameters. The parse format:
      <pre>
      [-?|-c PATH_TO_CONFIG_FILE] [ACTION]
@@ -134,14 +134,14 @@ public abstract class ConfigTools
     
     static public class RaplaReaderImpl implements RaplaNonValidatedInput
     {
-		public void read(String xml, RaplaSAXHandler handler, Logger logger) throws RaplaException
+		public void read(String xml, RaplaSAXHandler handler) throws RaplaException
 		{
 		    InputSource source = new InputSource( new StringReader(xml));
 	        try {
 	        	XMLReader reader = XMLReaderAdapter.createXMLReader(false);
 	        	reader.setContentHandler( new RaplaContentHandler(handler));
 	        	reader.parse(source );
-	        	reader.setErrorHandler( new RaplaErrorHandler( logger));
+	        	reader.setErrorHandler( new RaplaErrorHandler());
 	        } catch (SAXException ex) {
 	            Throwable cause = ex.getException();
 	            if (cause instanceof SAXParseException) {

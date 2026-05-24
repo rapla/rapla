@@ -10,7 +10,6 @@ import org.rapla.components.layout.TableLayout;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 
 import javax.swing.BorderFactory;
@@ -32,8 +31,8 @@ class IcalPublishExtension extends RaplaGUIComponent implements PublishExtension
     final JTextField icalURL;
     private final IOInterface ioInterface;
 	 
-	public IcalPublishExtension(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model, IOInterface ioInterface) {
-		super(facade, i18n, raplaLocale, logger);
+	public IcalPublishExtension(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, CalendarSelectionModel model, IOInterface ioInterface) {
+		super(facade, i18n, raplaLocale);
 		this.model = model;
         this.ioInterface = ioInterface;
 
@@ -58,7 +57,7 @@ class IcalPublishExtension extends RaplaGUIComponent implements PublishExtension
 	
 	JPanel createStatus( final JTextField urlLabel)  
     {
-        addCopyPaste(urlLabel, getI18n(), getRaplaLocale(), ioInterface, getLogger());
+        addCopyPaste(urlLabel, getI18n(), getRaplaLocale(), ioInterface);
         final RaplaButton copyButton = new RaplaButton();
         JPanel status = new JPanel()
         {

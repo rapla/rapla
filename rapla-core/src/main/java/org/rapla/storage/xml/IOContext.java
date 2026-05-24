@@ -21,7 +21,6 @@ import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.logger.Logger;
 import org.rapla.storage.IdCreator;
 import org.rapla.storage.impl.EntityStore;
 
@@ -32,6 +31,7 @@ import java.util.Map;
 
 public class IOContext
 {
+
    protected Map<String,Class<? extends RaplaObject>> getLocalnameMap()  {
         //WARNING We can't use RaplaType.getRegisteredTypes() because the class could not be registered on load time
         Map<String,Class<? extends RaplaObject>> localnameMap = new HashMap<>();
@@ -85,15 +85,14 @@ public class IOContext
         writerMap.put( ExternalSyncEntity.class, new ImportExportWriter(context) );
     }
 
-    public RaplaDefaultXMLContext createInputContext(Logger logger,RaplaLocale locale,RaplaResources i18n, EntityStore store, IdCreator idTable, Category superCategory) throws RaplaException {
-         
+    public RaplaDefaultXMLContext createInputContext(RaplaLocale locale,RaplaResources i18n, EntityStore store, IdCreator idTable, Category superCategory) throws RaplaException {
+
         RaplaDefaultXMLContext ioContext = new RaplaDefaultXMLContext( );
         ioContext.put(RaplaResources.class, i18n);
         ioContext.put(RaplaLocale.class, locale);
         ioContext.put(EntityStore.class, store);
         ioContext.put(Category.class, superCategory);
         ioContext.put(IdCreator.class,idTable);
-        ioContext.put(Logger.class, logger);
         ioContext.put(KeyAndPathResolver.class,new KeyAndPathResolver(store, superCategory));
         ioContext.put(PreferenceReader.LOCALNAMEMAPENTRY, getLocalnameMap());
         Map<Class<? extends  RaplaObject>,RaplaXMLReader> readerMap = new HashMap<>();
@@ -104,12 +103,11 @@ public class IOContext
     public static TypedComponentRole<Boolean> PRINTID = new TypedComponentRole<>(IOContext.class.getName() + ".idonly");
     public static TypedComponentRole<Supplier<Category>> SUPERCATEGORY = new TypedComponentRole<>(IOContext.class.getName() + ".supercategory");
     
-    public RaplaDefaultXMLContext createOutputContext(Logger logger,RaplaLocale locale,RaplaResources i18n, Supplier<Category> superCategory,boolean includeIds) throws RaplaException {
-        
+    public RaplaDefaultXMLContext createOutputContext(RaplaLocale locale,RaplaResources i18n, Supplier<Category> superCategory,boolean includeIds) throws RaplaException {
+
         RaplaDefaultXMLContext ioContext = new RaplaDefaultXMLContext( );
         ioContext.put(RaplaResources.class, i18n);
         ioContext.put(RaplaLocale.class, locale);
-        ioContext.put( Logger.class,logger );
         if ( includeIds)
         {
             ioContext.put(PRINTID, Boolean.TRUE);

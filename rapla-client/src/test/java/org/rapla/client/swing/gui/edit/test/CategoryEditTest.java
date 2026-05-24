@@ -28,7 +28,6 @@ import org.rapla.components.iolayer.IOInterface;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
-import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
 
 import java.util.Collections;
@@ -37,21 +36,19 @@ public final class CategoryEditTest extends GUITestCase
 {
 
     public void testMain() throws Exception {
-        final Logger logger = getLogger();
-        final AbstractBundleManager bundleManager = new SwingBundleManager(logger);
+        final AbstractBundleManager bundleManager = new SwingBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
         RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
-        IOInterface ioInterface = new DefaultIO(logger);
+        IOInterface ioInterface = new DefaultIO();
         ClientFacade facade = getFacade();
-        CommandScheduler scheduler = new SwingSchedulerImpl(logger);
-        DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n,  scheduler,bundleManager, logger );
-        TextFieldFactory textField = new TextFieldFactory(facade, i18n, raplaLocale, logger, ioInterface);
-        MultiLanguageFieldFactory multiLAnguageFieldFactoy = new MultiLanguageFieldFactory(facade, i18n, raplaLocale, logger,  dialogUiFactory, textField, ioInterface);
-        TextFieldFactory longFieldFactory = new TextFieldFactory(facade, i18n, raplaLocale, logger, ioInterface);
-        CategoryEditUI editor = new CategoryEditUI( getFacade(), i18n, getRaplaLocale(), getLogger(),  dialogUiFactory, multiLAnguageFieldFactoy, longFieldFactory);
+        CommandScheduler scheduler = new SwingSchedulerImpl();
+        DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n,  scheduler,bundleManager);
+        TextFieldFactory textField = new TextFieldFactory(facade, i18n, raplaLocale, ioInterface);
+        MultiLanguageFieldFactory multiLAnguageFieldFactoy = new MultiLanguageFieldFactory(facade, i18n, raplaLocale,  dialogUiFactory, textField, ioInterface);
+        TextFieldFactory longFieldFactory = new TextFieldFactory(facade, i18n, raplaLocale, ioInterface);
+        CategoryEditUI editor = new CategoryEditUI( getFacade(), i18n, getRaplaLocale(),  dialogUiFactory, multiLAnguageFieldFactoy, longFieldFactory);
         editor.setObjects( Collections.singletonList(getFacade().getRaplaFacade().getSuperCategory().getCategories()[0] ));
         testComponent(editor.getComponent(),600,500);
-        getLogger().info("Category edit started");
     }
 
 

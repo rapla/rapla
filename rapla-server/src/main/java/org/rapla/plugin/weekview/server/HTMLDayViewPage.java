@@ -18,7 +18,6 @@ import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.weekview.WeekviewPlugin;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
@@ -28,9 +27,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class HTMLDayViewPage extends HTMLWeekViewPage
 {
     @Autowired
-    public HTMLDayViewPage(RaplaLocale raplaLocale, RaplaResources raplaResources, RaplaFacade facade, Logger logger, AppointmentFormater appointmentFormater)
+    public HTMLDayViewPage(RaplaLocale raplaLocale, RaplaResources raplaResources, RaplaFacade facade, AppointmentFormater appointmentFormater)
     {
-        super(raplaLocale, raplaResources, facade, logger, appointmentFormater);
+        super(raplaLocale, raplaResources, facade, appointmentFormater);
     }
 
     @Override

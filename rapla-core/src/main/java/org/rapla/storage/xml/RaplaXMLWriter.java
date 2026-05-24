@@ -33,7 +33,8 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.function.Supplier;
 import java.io.IOException;
@@ -46,20 +47,19 @@ import java.time.LocalDateTime;
 abstract public class RaplaXMLWriter extends XMLWriter
     implements Namespaces
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RaplaXMLWriter.class);
 
     //protected NamespaceSupport namespaceSupport = new NamespaceSupport();
     private final boolean isPrintId;
 
     private final Map<String,Class<? extends RaplaObject>> localnameMap;
-    Logger logger;
     Map<Class<? extends RaplaObject>,RaplaXMLWriter> writerMap;
     protected RaplaXMLContext context;
     protected SerializableDateTimeFormat dateTimeFormat = SerializableDateTimeFormat.INSTANCE;
     Supplier<Category> superCategory;
-    
+
     public RaplaXMLWriter( RaplaXMLContext context) throws RaplaException {
         this.context = context;
-        enableLogging( context.lookup( Logger.class));
         this.writerMap =context.lookup( PreferenceWriter.WRITERMAP );
         this.localnameMap = context.lookup(PreferenceReader.LOCALNAMEMAPENTRY);
         this.isPrintId = context.has(IOContext.PRINTID);
@@ -78,14 +78,6 @@ abstract public class RaplaXMLWriter extends XMLWriter
     public Category getSuperCategory()
     {
     	return superCategory.get();
-    }
-
-    public void enableLogging(Logger logger) {
-        this.logger = logger;
-    }
-
-    protected Logger getLogger() {
-        return logger;
     }
 
     protected void printTimestamp(Timestamp stamp) throws IOException {
@@ -135,7 +127,7 @@ abstract public class RaplaXMLWriter extends XMLWriter
     protected void printPermission(Permission p) throws IOException,RaplaException {
         Permission.AccessLevel accessLevel = p.getAccessLevel();
         if (accessLevel == null) {
-            logger.warn("Permission without access level found. Ignoring permission");
+            LOGGER.warn("Permission without access level found. Ignoring permission");
             return;
         }
         openTag("rapla:permission");

@@ -1,6 +1,7 @@
 package org.rapla.server.spring.web;
 
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.server.spring.oauth.external.ExternalProvidersProperties;
 import org.rapla.server.spring.oauth.external.ProviderConfig;
 import org.springframework.http.MediaType;
@@ -45,14 +46,13 @@ import java.util.stream.Collectors;
 @RequestMapping(value = "/api/auth/oauth", produces = "application/json")
 public class OAuthExchangeController
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(OAuthExchangeController.class);
     private final ExternalProvidersProperties externalProviders;
-    private final Logger logger;
     private final HttpClient httpClient;
 
-    public OAuthExchangeController(ExternalProvidersProperties externalProviders, Logger logger)
+    public OAuthExchangeController(ExternalProvidersProperties externalProviders)
     {
         this.externalProviders = externalProviders;
-        this.logger = logger;
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10))
                 .build();
@@ -94,8 +94,7 @@ public class OAuthExchangeController
         }
         catch (Exception e)
         {
-            logger.warn("BFF token exchange to " + provider.id() + " (" + provider.tokenUrl()
-                    + ") failed: " + e.getMessage());
+            LOGGER.warn("BFF token exchange to {} ({}) failed: {}", provider.id(), provider.tokenUrl(), e.getMessage());
             return ResponseEntity.status(502)
                     .body("{\"error\":\"server_error\",\"error_description\":\"Token exchange proxy failure\"}");
         }

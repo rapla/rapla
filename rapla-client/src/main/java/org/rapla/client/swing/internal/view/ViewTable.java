@@ -27,7 +27,8 @@ import org.rapla.entities.RaplaObject;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
@@ -49,6 +50,7 @@ public class ViewTable<T> extends RaplaGUIComponent
         ,RaplaWidget
         ,LinkController
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ViewTable.class);
     String title;
     HTMLView htmlView = new HTMLView();
     JScrollPane pane = new JScrollPane(htmlView, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER) {
@@ -71,8 +73,8 @@ public class ViewTable<T> extends RaplaGUIComponent
     private final IOInterface ioInterface;
     private final DialogUiFactoryInterface dialogUiFactory;
 
-    public ViewTable(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, InfoFactory infoFactory, IOInterface ioInterface, DialogUiFactoryInterface dialogUiFactory) {
-        super(facade, i18n, raplaLocale, logger);
+    public ViewTable(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, InfoFactory infoFactory, IOInterface ioInterface, DialogUiFactoryInterface dialogUiFactory) {
+        super(facade, i18n, raplaLocale);
         this.infoFactory = infoFactory;
         this.ioInterface = ioInterface;
         this.dialogUiFactory = dialogUiFactory;
@@ -163,7 +165,7 @@ public class ViewTable<T> extends RaplaGUIComponent
         	try
         	{
         		Integer index=  Integer.parseInt(link);
-        		getLogger().debug("Hyperlink pressed: " + link);
+        		LOGGER.debug("Hyperlink pressed: {}", link);
         		Object object = linkMap.get(index);
         		Assert.notNull(object,"link was not found in linkMap");
         		Assert.notNull(infoFactory);

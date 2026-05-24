@@ -22,7 +22,8 @@ import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.storage.LocalCache;
 import org.rapla.storage.impl.EntityStore;
 import org.rapla.storage.impl.server.EntityHistory;
@@ -43,6 +44,7 @@ import java.util.Set;
 
 import java.time.LocalDateTime;
 abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage implements Storage<T> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(EntityStorage.class);
 	//String searchForIdSql;
 
     protected LocalCache cache;
@@ -69,7 +71,7 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
         return false;
     }
     protected EntityStorage( RaplaXMLContext context, String table,String[] entries, boolean checkLastChanged) throws RaplaException {
-		super(table,context.lookup(Logger.class), entries, checkLastChanged);
+		super(table, entries, checkLastChanged);
         this.context = context;
         if ( context.has( EntityStore.class))
         {
@@ -167,7 +169,7 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
         catch ( EntityNotFoundException ex)
         {
             if (printWarningIfNotFound) {
-                getLogger().warn("Could not find " + class1.getName() + "  with id " + id + " in the " + getTableName() + " table. Ignoring.");
+                LOGGER.warn("Could not find {}  with id {} in the {} table. Ignoring.", class1.getName(), id, getTableName());
             }
             return null;
         }

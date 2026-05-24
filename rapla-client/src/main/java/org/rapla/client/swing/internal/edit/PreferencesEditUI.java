@@ -33,7 +33,6 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.function.Supplier;
@@ -91,11 +90,11 @@ public class PreferencesEditUI extends RaplaGUIComponent
     @Autowired
     public PreferencesEditUI(TreeFactory treeFactory, Supplier<Set<UserOptionPanel>> userOptionPanel,
                              Supplier<Set<SystemOptionPanel>> systemOptionPanel, Map<String, Supplier<PluginOptionPanel>> pluginOptionPanel, ClientFacade facade,
-                             RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DialogUiFactoryInterface dialogUiFactory, InfoFactory infoFactory,
+                             RaplaResources i18n, RaplaLocale raplaLocale, DialogUiFactoryInterface dialogUiFactory, InfoFactory infoFactory,
                              TreeCellRenderer renderer
     )
     {
-        super(facade, i18n, raplaLocale, logger);
+        super(facade, i18n, raplaLocale);
         this.treeFactory = treeFactory;
         this.userOptionPanel = userOptionPanel;
         this.systemOptionPanel = systemOptionPanel;

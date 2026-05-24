@@ -24,7 +24,6 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.storage.PermissionController;
 
 import java.util.ArrayList;
@@ -36,9 +35,9 @@ public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
     final AppointmentFormater appointmentFormater;
     final boolean exportContext;
 
-    public ReservationInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, RaplaFacade facade, Logger logger, AppointmentFormater appointmentFormater,boolean exportContext)
+    public ReservationInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, RaplaFacade facade, AppointmentFormater appointmentFormater,boolean exportContext)
     {
-        super(i18n, raplaLocale, facade, logger);
+        super(i18n, raplaLocale, facade);
         this.exportContext = exportContext;
         this.appointmentFormater = appointmentFormater;
         this.permissionController = facade.getPermissionController();

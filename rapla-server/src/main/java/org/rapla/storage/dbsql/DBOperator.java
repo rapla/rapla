@@ -33,7 +33,8 @@ import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ConfigTools;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.IdCreator;
@@ -73,6 +74,7 @@ import java.time.LocalDateTime;
 /** This Operator is used to store the data in a SQL-DBMS.*/
  public class DBOperator extends LocalAbstractCachableOperator
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DBOperator.class);
     //protected String datasourceName;
     boolean bSupportsTransactions = false;
     boolean hsqldb = false;
@@ -85,10 +87,10 @@ import java.time.LocalDateTime;
     private String connectionName;
     Supplier<ImportExportManager> importExportManager;
 
-    public DBOperator(Logger logger, RaplaResources i18n, RaplaLocale locale, final CommandScheduler scheduler, Map<String, FunctionFactory> functionFactoryMap,
+    public DBOperator(RaplaResources i18n, RaplaLocale locale, final CommandScheduler scheduler, Map<String, FunctionFactory> functionFactoryMap,
             Supplier<ImportExportManager> importExportManager, DataSource dataSource, Set<PermissionExtension> permissionExtensions)
     {
-        super(logger, i18n, locale, scheduler, functionFactoryMap, permissionExtensions);
+        super(i18n, locale, scheduler, functionFactoryMap, permissionExtensions);
         lookup = dataSource;
         this.importExportManager = importExportManager;
         //        String backupFile = config.getChild("backup").getValue("");
@@ -131,7 +133,7 @@ import java.time.LocalDateTime;
                         }
                         catch (Throwable t)
                         {
-                            DBOperator.this.logger.error("Could not release old locks", t);
+                            LOGGER.error("Could not release old locks", t);
                         }
                     }
 
@@ -151,7 +153,7 @@ import java.time.LocalDateTime;
                 }
                 catch(Throwable t)
                 {
-                    DBOperator.this.logger.error("could not clean up history: "+t.getMessage(), t);
+                    LOGGER.error("could not clean up history: {}", t.getMessage(), t);
                 }
             }, delay, period);
         }
@@ -226,7 +228,7 @@ import java.time.LocalDateTime;
                 catch (ClassCastException ex)
                 {
                     String text = "Datasource object " + source.getClass() + " does not implement a datasource interface.";
-                    getLogger().error(text);
+                    LOGGER.error(text);
                     throw new RaplaDBException(text);
                 }
             }
@@ -249,7 +251,7 @@ import java.time.LocalDateTime;
                 }
                 else
                 {
-                    getLogger().warn("No Transaction support");
+                    LOGGER.warn("No Transaction support");
                 }
             }
             else
@@ -276,7 +278,7 @@ import java.time.LocalDateTime;
             }
             if (ex instanceof SQLException && count < 2)
             {
-                getLogger().warn("Getting error " + ex.getMessage() + ". Retrying.");
+                LOGGER.warn("Getting error {}. Retrying.", ex.getMessage());
                 return createConnection(withTransactionSupport, count + 1);
             }
             if (ex instanceof RaplaDBException)
@@ -291,7 +293,7 @@ import java.time.LocalDateTime;
     {
         if (!isConnected())
         {
-            getLogger().debug("Connecting: " + getConnectionName());
+            LOGGER.debug("Connecting: {}", getConnectionName());
             loadData();
             changeStatus(InitStatus.Loaded);
             initIndizes();
@@ -330,7 +332,7 @@ import java.time.LocalDateTime;
         catch (Throwable e)
         {
             LocalDateTime lastUpdated = getLastRefreshed();
-            logger.error("Error updating model from DB. Last success was at " + lastUpdated, e);
+            LOGGER.error("Error updating model from DB. Last success was at {}", lastUpdated, e);
             return null;
         }
     }
@@ -398,7 +400,7 @@ import java.time.LocalDateTime;
             String sql = "SHUTDOWN COMPACT";
             try
             {
-                getLogger().info("Disconnecting: " + getConnectionName());
+                LOGGER.info("Disconnecting: {}", getConnectionName());
                 Connection connection = createConnection();
                 Statement statement = connection.createStatement();
                 statement.execute(sql);
@@ -422,7 +424,7 @@ import java.time.LocalDateTime;
         {
             c = createConnection();
             connectionName = c.getMetaData().getURL();
-            getLogger().info("Using datasource " + c.getMetaData().getDatabaseProductName() + ": " + connectionName);
+            LOGGER.info("Using datasource {}: {}", c.getMetaData().getDatabaseProductName(), connectionName);
             if (upgradeDatabase(c))
             {
                 close(c);
@@ -433,11 +435,11 @@ import java.time.LocalDateTime;
             addInternalTypes(cache);
             loadData(c, cache);
 
-            if (getLogger().isDebugEnabled())
-                getLogger().debug("Entities contextualized");
+            if (LOGGER.isDebugEnabled())
+                LOGGER.debug("Entities contextualized");
 
-            if (getLogger().isDebugEnabled())
-                getLogger().debug("All ConfigurationReferences resolved");
+            if (LOGGER.isDebugEnabled())
+                LOGGER.debug("All ConfigurationReferences resolved");
         }
         catch (RaplaException ex)
         {
@@ -519,7 +521,7 @@ import java.time.LocalDateTime;
         if (!empty && (unpatchedTables == oldIdColumnCount && unpatchedTables > 0))
         {
             final String message = "Old database schema detected. Please export data.xml with 1.8 rapla version and import in new !";
-            getLogger().error(message);
+            LOGGER.error(message);
             throw new RaplaException(message);
             //close( c);
         }
@@ -534,17 +536,17 @@ import java.time.LocalDateTime;
             }
             if (unpatchedTables > 0)
             {
-                getLogger().info("Reading data from xml.");
+                LOGGER.info("Reading data from xml.");
             }
             else
             {
-                getLogger().warn("Empty database. Importing data from " + sourceOperator);
+                LOGGER.warn("Empty database. Importing data from {}", sourceOperator);
             }
             sourceOperator.connect();
             if (unpatchedTables > 0)
             {
                 org.rapla.storage.dbsql.RaplaSQL raplaSQLOutput = new org.rapla.storage.dbsql.RaplaSQL(createOutputContext(cache));
-                getLogger().warn("Dropping database tables and reimport from " + sourceOperator);
+                LOGGER.warn("Dropping database tables and reimport from {}", sourceOperator);
                 raplaSQLOutput.removeAll(c);
                 // we need to load the new schema after dropping
                 schema = loadDBSchema(c);
@@ -706,7 +708,7 @@ import java.time.LocalDateTime;
                 }
                 catch (SQLException e)
                 {
-                    getLogger().error("Could not load update from db. Will be loaded afterwards", e);
+                    LOGGER.error("Could not load update from db. Will be loaded afterwards", e);
                 }
             }
             finally
@@ -779,12 +781,12 @@ import java.time.LocalDateTime;
             {
                 raplaSQLOutput.remove(connection, id, connectionTimestamp);
             }
-            getLogger().debug("Locks requested storing");
+            LOGGER.debug("Locks requested storing");
             raplaSQLOutput.store(connection, storeMap, connectionTimestamp);
             raplaSQLOutput.storePatches(connection, preferencePatches, connectionTimestamp);
             if (bSupportsTransactions)
             {
-                getLogger().debug("Commiting");
+                LOGGER.debug("Commiting");
                 connection.commit();
             }
         }
@@ -795,13 +797,13 @@ import java.time.LocalDateTime;
                 if (bSupportsTransactions)
                 {
                     connection.rollback();
-                    getLogger().error("Doing rollback for: " + ex.getMessage());
+                    LOGGER.error("Doing rollback for: {}", ex.getMessage());
                     throw new RaplaDBException(getI18n().getString("error.rollback"), ex);
                 }
                 else
                 {
                     String message = getI18n().getString("error.no_rollback");
-                    getLogger().error(message);
+                    LOGGER.error(message);
                     forceDisconnect();
                     throw new RaplaDBException(message, ex);
                 }
@@ -809,7 +811,7 @@ import java.time.LocalDateTime;
             catch (SQLException sqlEx)
             {
                 String message = "Unrecoverable error while storing";
-                getLogger().error(message, sqlEx);
+                LOGGER.error(message, sqlEx);
                 forceDisconnect();
                 throw new RaplaDBException(message, sqlEx);
             }
@@ -826,7 +828,7 @@ import java.time.LocalDateTime;
             }
             catch (Exception ex)
             {
-                getLogger().error("Could not remove locks. They will be removed during next cleanup. ", ex);
+                LOGGER.error("Could not remove locks. They will be removed during next cleanup. ", ex);
             }
         }
     }
@@ -881,7 +883,7 @@ import java.time.LocalDateTime;
         }
         catch (Exception ex)
         {
-            getLogger().warn("disabled conflicts could not be removed from database due to ", ex);
+            LOGGER.warn("disabled conflicts could not be removed from database due to ", ex);
         }
 
     }
@@ -900,11 +902,11 @@ import java.time.LocalDateTime;
                 raplaSQLOutput.removeAll(connection);
                 connection.commit();
                 // do something here
-                getLogger().info("DB cleared");
+                LOGGER.info("DB cleared");
             }
             else
             {
-                getLogger().warn("DB is not created. Could not remove all");
+                LOGGER.warn("DB is not created. Could not remove all");
             }
         }
         catch (SQLException ex)
@@ -943,7 +945,7 @@ import java.time.LocalDateTime;
     protected void saveData(Connection connection, LocalCache cache,Collection<ExternalSyncEntity> externalSyncEntityList) throws RaplaException, SQLException
     {
         String connectionName = getConnectionName();
-        getLogger().info("Importing Data into " + connectionName);
+        LOGGER.info("Importing Data into {}", connectionName);
         RaplaSQL raplaSQLOutput = new RaplaSQL(createOutputContext(cache));
 
         //		if (dropOldTables)
@@ -953,10 +955,10 @@ import java.time.LocalDateTime;
         //		}
         //		else
         {
-            getLogger().info("Deleting all old Data from " + connectionName);
+            LOGGER.info("Deleting all old Data from {}", connectionName);
             raplaSQLOutput.removeAll(connection);
         }
-        getLogger().info("Inserting new Data into " + connectionName);
+        LOGGER.info("Inserting new Data into {}", connectionName);
         raplaSQLOutput.createAll(connection);
         raplaSQLOutput.saveAllSyncEntities(connection, externalSyncEntityList );
         if (!connection.getAutoCommit())
@@ -964,7 +966,7 @@ import java.time.LocalDateTime;
             connection.commit();
         }
         // do something here
-        getLogger().info("Import complete for " + connectionName);
+        LOGGER.info("Import complete for {}", connectionName);
     }
 
     private void close(Connection connection)
@@ -978,13 +980,13 @@ import java.time.LocalDateTime;
         {
             if (!connection.isClosed())
             {
-                getLogger().debug("Closing " + connection);
+                LOGGER.debug("Closing {}", connection);
                 connection.close();
             }
         }
         catch (SQLException e)
         {
-            getLogger().error("Can't close connection to database ", e);
+            LOGGER.error("Can't close connection to database ", e);
         }
     }
 
@@ -1074,7 +1076,7 @@ import java.time.LocalDateTime;
 
     private RaplaDefaultXMLContext createInputContext(EntityStore store, IdCreator idCreator, Category superCategory) throws RaplaException
     {
-        RaplaDefaultXMLContext inputContext = new IOContext().createInputContext(logger, raplaLocale, i18n, store, idCreator, superCategory);
+        RaplaDefaultXMLContext inputContext = new IOContext().createInputContext(raplaLocale, i18n, store, idCreator, superCategory);
         RaplaNonValidatedInput xmlAdapter = new ConfigTools.RaplaReaderImpl();
         inputContext.put(RaplaNonValidatedInput.class, xmlAdapter);
         inputContext.put(LocalDateTime.class, getLastRefreshed().minus(java.time.Duration.ofMillis(HISTORY_DURATION)));
@@ -1085,7 +1087,7 @@ import java.time.LocalDateTime;
 
     private RaplaDefaultXMLContext createOutputContext(LocalCache cache) throws RaplaException
     {
-        RaplaDefaultXMLContext outputContext = new IOContext().createOutputContext(logger, raplaLocale, i18n, cache.getSuperCategoryProvider(), true);
+        RaplaDefaultXMLContext outputContext = new IOContext().createOutputContext(raplaLocale, i18n, cache.getSuperCategoryProvider(), true);
         outputContext.put(LocalCache.class, cache);
         return outputContext;
 

@@ -15,7 +15,6 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.UpdateErrorListener;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.RaplaSecurityException;
@@ -23,6 +22,8 @@ import org.rapla.storage.StorageOperator;
 import org.rapla.storage.StorageUpdateListener;
 import org.rapla.storage.dbrm.RemoteOperator;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,6 +32,8 @@ import java.util.Iterator;
 import java.util.Vector;
 
 public class ClientFacadeImpl implements ClientFacade, StorageUpdateListener {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ClientFacadeImpl.class);
+
     final private RaplaResources i18n;
     protected CommandScheduler notifyQueue;
 
@@ -42,25 +45,18 @@ public class ClientFacadeImpl implements ClientFacade, StorageUpdateListener {
     //	private ConflictFinder conflictFinder;
     private final Vector<ModificationListener> directListenerList = new Vector<>();
     public CommandHistory commandHistory = new CommandHistory();
-    Logger logger;
 
     @Autowired
-    public ClientFacadeImpl(RaplaFacade raplaFacade, Logger logger,RaplaResources i18n)
+    public ClientFacadeImpl(RaplaFacade raplaFacade, RaplaResources i18n)
     {
         this.raplaFacade = raplaFacade;
         notifyQueue = raplaFacade.getScheduler();
-        this.logger = logger;
         this.i18n = i18n;
     }
 
     @Override public RaplaFacade getRaplaFacade()
     {
         return raplaFacade;
-    }
-
-    public Logger getLogger()
-    {
-        return logger;
     }
 
     public void setOperator(StorageOperator operator)
@@ -89,8 +85,8 @@ public class ClientFacadeImpl implements ClientFacade, StorageUpdateListener {
      * method, causing deadlocks
      */
     public void objectsUpdated(ModificationEvent evt) {
-        if (getLogger().isDebugEnabled())
-            getLogger().debug("Objects updated");
+        if (LOGGER.isDebugEnabled())
+            LOGGER.debug("Objects updated");
 
         if (getWorkingUserId() != null)
         {
@@ -159,7 +155,7 @@ public class ClientFacadeImpl implements ClientFacade, StorageUpdateListener {
 
         if ( user != null)
         {
-            getLogger().info("Login " + user.getUsername());
+            LOGGER.info("Login {}", user.getUsername());
             this.setWorkingUserId(user.getId());
             return true;
         }
@@ -196,7 +192,7 @@ public class ClientFacadeImpl implements ClientFacade, StorageUpdateListener {
 
         if (this.getWorkingUserId() == null )
             return;
-        getLogger().info("Logout " + getWorkingUserId());
+        LOGGER.info("Logout {}", getWorkingUserId());
         aborting = true;
 
         try
@@ -394,11 +390,11 @@ public class ClientFacadeImpl implements ClientFacade, StorageUpdateListener {
                 try {
                     if (isAborting())
                         return;
-                    if (getLogger().isDebugEnabled())
-                        getLogger().debug("Notifying " + listener);
+                    if (LOGGER.isDebugEnabled())
+                        LOGGER.debug("Notifying {}", listener);
                     listener.dataChanged(modificationEvent);
                 } catch (Exception ex) {
-                    getLogger().error("update-exception", ex);
+                    LOGGER.error("update-exception", ex);
                 }
             }
         }

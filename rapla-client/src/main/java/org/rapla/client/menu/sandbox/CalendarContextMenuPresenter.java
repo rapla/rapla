@@ -25,7 +25,8 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.plugin.abstractcalendar.RaplaBlock;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
@@ -41,6 +42,7 @@ import java.util.Map;
 import java.time.LocalDateTime;
 public class CalendarContextMenuPresenter extends RaplaComponent implements MenuView.Presenter
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CalendarContextMenuPresenter.class);
     protected boolean keepTime = false;
 
     private final CalendarSelectionModel model;
@@ -56,10 +58,10 @@ public class CalendarContextMenuPresenter extends RaplaComponent implements Menu
     //private final MenuFactory menuFactory;
 
     @Autowired
-    public CalendarContextMenuPresenter(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model,
+    public CalendarContextMenuPresenter(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, CalendarSelectionModel model,
             ReservationController reservationController,  @SuppressWarnings("rawtypes") MenuView view, EditController editController)
     {
-        super(facade.getRaplaFacade(), i18n, raplaLocale, logger);
+        super(facade.getRaplaFacade(), i18n, raplaLocale);
         this.model = model;
         this.reservationController = reservationController;
         this.view = view;
@@ -168,7 +170,7 @@ public class CalendarContextMenuPresenter extends RaplaComponent implements Menu
         }
         catch (RaplaException e)
         {
-            getLogger().error(e.getMessage(), e);
+            LOGGER.error(e.getMessage(), e);
             return Collections.emptyList();
         }
     }

@@ -7,7 +7,8 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,21 +29,20 @@ import java.net.URLEncoder;
 
 public class URLEncyrptionPublicExtensionFactory implements PublishExtensionFactory
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(URLEncyrptionPublicExtensionFactory.class);
 
     private final UrlEncryption webservice;
     private final StartupEnvironment env;
     private final UrlEncryptionResources i18n;
-    private final Logger logger;
     private final ClientFacade facade;
 
     @Autowired
-    public URLEncyrptionPublicExtensionFactory(UrlEncryption webservice, StartupEnvironment env, UrlEncryptionResources i18n, Logger logger,
+    public URLEncyrptionPublicExtensionFactory(UrlEncryption webservice, StartupEnvironment env, UrlEncryptionResources i18n,
             ClientFacade facade)
     {
         this.webservice = webservice;
         this.env = env;
         this.i18n = i18n;
-        this.logger = logger;
         this.facade = facade;
     }
 
@@ -145,7 +145,7 @@ public class URLEncyrptionPublicExtensionFactory implements PublishExtensionFact
             }
             catch (RaplaException ex)
             {
-                logger.error(ex.getMessage(), ex);
+                LOGGER.error(ex.getMessage(), ex);
                 return "Exportname is invalid ";
             }
             catch (MalformedURLException e)

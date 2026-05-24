@@ -18,8 +18,6 @@ import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.DefaultScheduler;
 import org.rapla.framework.internal.RaplaLocaleImpl;
-import org.rapla.logger.Logger;
-import org.rapla.logger.RaplaBootstrapLogger;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.dbfile.FileOperator;
@@ -61,7 +59,6 @@ public class DbOperatorBootTest
     @TempDir
     Path tempDir;
 
-    private Logger logger;
     private JDBCDataSource dataSource;
     private FileOperator fileOperator;
     private DBOperator operator;
@@ -69,8 +66,6 @@ public class DbOperatorBootTest
     @BeforeEach
     void setUp() throws Exception
     {
-        logger = RaplaBootstrapLogger.createRaplaLogger();
-
         Path xmlFile = tempDir.resolve("rapla-data.xml");
         try (InputStream in = getClass().getResourceAsStream(DEFAULT_FIXTURE))
         {
@@ -88,7 +83,7 @@ public class DbOperatorBootTest
         AbstractBundleManager bundleManager = new ServerBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
         RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
-        CommandScheduler scheduler = new DefaultScheduler(logger);
+        CommandScheduler scheduler = new DefaultScheduler();
 
         Set<PermissionExtension> permissionExtensions = new LinkedHashSet<>();
         permissionExtensions.add(new RaplaDefaultPermissionImpl());
@@ -96,15 +91,15 @@ public class DbOperatorBootTest
         Map<String, FunctionFactory> functionFactoryMap = new LinkedHashMap<>();
         functionFactoryMap.put(StandardFunctions.NAMESPACE, new StandardFunctions(raplaLocale));
 
-        fileOperator = new FileOperator(logger, i18n, raplaLocale, scheduler,
+        fileOperator = new FileOperator(i18n, raplaLocale, scheduler,
                 functionFactoryMap, xmlFile.toAbsolutePath().toString(),
                 permissionExtensions);
 
-        operator = new DBOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap,
+        operator = new DBOperator(i18n, raplaLocale, scheduler, functionFactoryMap,
                 /* importExportSupplier set below */ () -> null, dataSource, permissionExtensions);
 
         // file → db: file is the source the DB seeds itself from on first connect.
-        ImportExportManagerImpl manager = new ImportExportManagerImpl(logger, fileOperator, operator);
+        ImportExportManagerImpl manager = new ImportExportManagerImpl(fileOperator, operator);
         operator.importExportManager = () -> manager;
     }
 

@@ -10,7 +10,6 @@ import org.rapla.components.layout.TableLayout;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.plugin.planningstatus.PlanningStatusPlugin;
 import org.rapla.plugin.planningstatus.PlanningStatusResources;
@@ -24,8 +23,8 @@ class PlanningStatusPublishExtension extends RaplaGUIComponent implements Publis
 	CalendarSelectionModel model;
 	final JCheckBox checkbox;
 
-	public PlanningStatusPublishExtension(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model, PlanningStatusResources planningStatusResources) {
-		super(facade, i18n, raplaLocale, logger);
+	public PlanningStatusPublishExtension(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, CalendarSelectionModel model, PlanningStatusResources planningStatusResources) {
+		super(facade, i18n, raplaLocale);
 		this.model = model;
 
         panel.setLayout(new TableLayout( new double[][] {{TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.FILL},

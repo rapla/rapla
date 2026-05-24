@@ -11,7 +11,6 @@ import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
 import org.rapla.plugin.abstractcalendar.RaplaBlock;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
@@ -30,10 +29,10 @@ import java.time.LocalDateTime;
 public class HTMLDayResourcePage extends HTMLDayViewPage
 {
     @Autowired
-	public HTMLDayResourcePage(RaplaLocale raplaLocale, RaplaResources raplaResources, RaplaFacade facade, Logger logger,
+	public HTMLDayResourcePage(RaplaLocale raplaLocale, RaplaResources raplaResources, RaplaFacade facade,
 			AppointmentFormater appointmentFormater)
 	{
-		super(raplaLocale, raplaResources, facade, logger, appointmentFormater);
+		super(raplaLocale, raplaResources, facade, appointmentFormater);
 	}
 
 	@Override

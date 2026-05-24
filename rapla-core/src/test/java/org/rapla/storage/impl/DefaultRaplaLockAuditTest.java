@@ -4,8 +4,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaSynchronizationException;
-import org.rapla.logger.Logger;
-import org.rapla.logger.RaplaBootstrapLogger;
 import org.rapla.storage.impl.DefaultRaplaLock;
 import org.rapla.storage.impl.RaplaLock;
 
@@ -27,13 +25,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class DefaultRaplaLockAuditTest
 {
-    private final Logger logger = RaplaBootstrapLogger.createRaplaLogger();
-
     @Test
     @DisplayName("unlock(null) is a silent no-op for both ReadLock and WriteLock")
     void unlockNullIsSafe()
     {
-        DefaultRaplaLock m = new DefaultRaplaLock(logger);
+        DefaultRaplaLock m = new DefaultRaplaLock();
         assertDoesNotThrow(() -> m.unlock((RaplaLock.ReadLock) null));
         assertDoesNotThrow(() -> m.unlock((RaplaLock.WriteLock) null));
     }
@@ -42,7 +38,7 @@ class DefaultRaplaLockAuditTest
     @DisplayName("reentrant write-lock from the same thread succeeds")
     void writeLockIsReentrant() throws Exception
     {
-        DefaultRaplaLock m = new DefaultRaplaLock(logger);
+        DefaultRaplaLock m = new DefaultRaplaLock();
         RaplaLock.WriteLock l1 = m.writeLock(getClass(), "outer", 5);
         assertNotNull(l1);
         RaplaLock.WriteLock l2 = m.writeLock(getClass(), "inner", 5);
@@ -55,7 +51,7 @@ class DefaultRaplaLockAuditTest
     @DisplayName("writeLockIfAvaliable returns null while another thread holds the write lock (no deadlock)")
     void writeLockIfAvailableNonBlockingUnderContention() throws Exception
     {
-        DefaultRaplaLock m = new DefaultRaplaLock(logger);
+        DefaultRaplaLock m = new DefaultRaplaLock();
         CountDownLatch acquired = new CountDownLatch(1);
         CountDownLatch release = new CountDownLatch(1);
         AtomicReference<Throwable> err = new AtomicReference<>();
@@ -89,7 +85,7 @@ class DefaultRaplaLockAuditTest
     @DisplayName("writeLock(timeout) throws RaplaSynchronizationException after timeout when held by another thread")
     void writeLockTimeoutThrowsSyncException() throws Exception
     {
-        DefaultRaplaLock m = new DefaultRaplaLock(logger);
+        DefaultRaplaLock m = new DefaultRaplaLock();
         CountDownLatch acquired = new CountDownLatch(1);
         CountDownLatch release = new CountDownLatch(1);
 
@@ -122,7 +118,7 @@ class DefaultRaplaLockAuditTest
     @DisplayName("isWriteLocked / isReadLocked report current state without permanently affecting it")
     void lockStateProbesAreNonInvasive() throws Exception
     {
-        DefaultRaplaLock m = new DefaultRaplaLock(logger);
+        DefaultRaplaLock m = new DefaultRaplaLock();
 
         // Initially no locks — both probes should report unlocked.
         assertTrue(m.isWriteLocked(),

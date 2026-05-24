@@ -31,7 +31,8 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 
@@ -45,6 +46,7 @@ import java.time.LocalDateTime;
 @org.springframework.context.annotation.Scope("prototype")
 @org.springframework.context.annotation.Lazy
 public class AppointmentAction extends RaplaComponent  {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AppointmentAction.class);
     public final static int DELETE = 1;
     public final static int COPY = 2;
     public final static int PASTE = 3;
@@ -79,11 +81,11 @@ public class AppointmentAction extends RaplaComponent  {
     private Allocatable allocatable;
 
     @Autowired
-    public AppointmentAction(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
+    public AppointmentAction(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale,
             CalendarSelectionModel calendarSelectionModel, ReservationController reservationController, EditController editController, InfoFactory infoFactory,
             DialogUiFactoryInterface dialogUiFactory)
     {
-        super(clientFacade.getRaplaFacade(),i18n,raplaLocale,logger);
+        super(clientFacade.getRaplaFacade(),i18n,raplaLocale);
         this.clientFacade = clientFacade;
         this.raplaFacade = clientFacade.getRaplaFacade();
         this.i18n = i18n;
@@ -239,7 +241,7 @@ public class AppointmentAction extends RaplaComponent  {
         } 
         catch (RaplaException ex)
         {
-            getLogger().error( "Can't get user",ex);
+            LOGGER.error( "Can't get user",ex);
         }
         return this;
     }

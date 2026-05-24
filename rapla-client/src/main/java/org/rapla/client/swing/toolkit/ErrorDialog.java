@@ -18,7 +18,8 @@ import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.components.i18n.I18nBundle;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.scheduler.UnsynchronizedPromise;
@@ -33,25 +34,19 @@ import java.lang.reflect.Method;
 
 @org.springframework.stereotype.Service
 final public class ErrorDialog {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ErrorDialog.class);
     private final DialogUiFactoryInterface dialogUiFactory;
     private final RaplaResources i18n;
-    private final Logger logger;
 
     @Autowired
-    public ErrorDialog(Logger logger, RaplaResources i18n, DialogUiFactoryInterface dialogUiFactory)  {
-        this.logger = logger;
+    public ErrorDialog(RaplaResources i18n, DialogUiFactoryInterface dialogUiFactory)  {
         this.i18n = i18n;
         this.dialogUiFactory = dialogUiFactory;
     }
-    
+
     protected I18nBundle getI18n()
     {
         return i18n;
-    }
-    
-    protected Logger getLogger()
-    {
-        return logger;
     }
 
     public static final int WARNING_MESSAGE = 1;
@@ -111,8 +106,7 @@ final public class ErrorDialog {
         test(e,EXCEPTION_MESSAGE);
         try {
             String message = getMessage(e);
-            if ( getLogger() != null )
-                getLogger().error(message, e);
+            LOGGER.error(message, e);
             JPanel component = new JPanel();
             component.setLayout( new BorderLayout());
             
@@ -173,8 +167,8 @@ final public class ErrorDialog {
             dlg.setIcon(i18n.getIcon("icon.error"));
             return startAndPack(dlg);
         } catch (Exception ex) {
-            getLogger().error( e.getMessage(), e);
-            getLogger().error("Can't show errorDialog " + ex);
+            LOGGER.error(e.getMessage(), e);
+            LOGGER.error("Can't show errorDialog {}", ex);
             return new ResolvedPromise<>( ex );
         }
     }
@@ -186,7 +180,7 @@ final public class ErrorDialog {
             dlg.setIcon(i18n.getIcon("icon.error"));
             return startAndPack(dlg);
         } catch (Exception ex2) {
-            getLogger().error(ex2.getMessage());
+            LOGGER.error(ex2.getMessage());
             return new ResolvedPromise<>( ex2 );
         }
     }
@@ -198,7 +192,7 @@ final public class ErrorDialog {
             dlg.setIcon(i18n.getIcon("icon.warning"));
             return startAndPack(dlg);
         } catch (Exception ex2) {
-            getLogger().error(ex2.getMessage());
+            LOGGER.error(ex2.getMessage());
             return ResolvedPromise.VOID_PROMISE;
         }
     }

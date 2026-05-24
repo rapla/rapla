@@ -23,7 +23,8 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.plugin.export2ical.server.Export2iCalConverter;
 import org.rapla.storage.StorageOperator;
@@ -58,9 +59,10 @@ import java.util.SimpleTimeZone;
 public class Export2iCalController
 {
     private static final LocalDateTime FIRST_PLUGIN_START_DATE = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(0), java.time.ZoneOffset.UTC);
+    private static final Logger ICAL_LOG = LoggerFactory.getLogger("rapla.ical");
+    private static final Logger NOT_FOUND_LOG = LoggerFactory.getLogger("rapla.404");
 
     private final RaplaFacade facade;
-    private final Logger logger;
     private final RaplaLocale raplaLocale;
     private final RaplaResources i18n;
     private final Export2iCalConverter converter;
@@ -72,13 +74,11 @@ public class Export2iCalController
     private final SimpleDateFormat rfc1123DateFormat;
 
     public Export2iCalController(RaplaFacade facade,
-                                  Logger logger,
                                   RaplaLocale raplaLocale,
                                   RaplaResources i18n,
                                   Export2iCalConverter converter)
     {
         this.facade = facade;
-        this.logger = logger.getChildLogger("ical");
         this.raplaLocale = raplaLocale;
         this.i18n = i18n;
         this.converter = converter;
@@ -121,8 +121,8 @@ public class Export2iCalController
 
     private void renderIcal(String path, HttpServletRequest request, HttpServletResponse response, final String filename, final String username) throws IOException, ServletException
     {
-        logger.debug("File: " + filename);
-        logger.debug("User: " + username);
+        ICAL_LOG.debug("File: {}", filename);
+        ICAL_LOG.debug("User: {}", username);
         response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
         response.setHeader("Pragma", "no-cache");
         response.setDateHeader("Expires", 0);
@@ -145,7 +145,7 @@ public class Export2iCalController
             {
                 response.getWriter().println(message);
                 response.getWriter().close();
-                logger.getChildLogger("404").warn(message);
+                NOT_FOUND_LOG.warn(message);
                 response.setStatus(404);
                 return;
             }
@@ -157,7 +157,7 @@ public class Export2iCalController
                 response.getWriter().println(message);
                 response.getWriter().close();
                 response.setStatus(404);
-                logger.getChildLogger("404").warn(message);
+                NOT_FOUND_LOG.warn(message);
                 return;
             }
 
@@ -168,7 +168,7 @@ public class Export2iCalController
             {
                 response.getWriter().println(message);
                 response.getWriter().close();
-                logger.getChildLogger("404").warn(message);
+                NOT_FOUND_LOG.warn(message);
                 response.setStatus(404);
                 return;
             }
@@ -188,7 +188,7 @@ public class Export2iCalController
             response.getWriter().println();
             e.printStackTrace(response.getWriter());
             response.getWriter().close();
-            logger.error(e.getMessage(), e);
+            ICAL_LOG.error(e.getMessage(), e);
         }
         finally
         {
@@ -221,7 +221,7 @@ public class Export2iCalController
         }
         catch (RaplaException e)
         {
-            logger.getChildLogger("404").error("The Calendarmodel " + filename + " could not be read for the user " + user + " due to " + e.getMessage());
+            NOT_FOUND_LOG.error("The Calendarmodel {} could not be read for the user {} due to {}", filename, user, e.getMessage());
             return null;
         }
         catch (NullPointerException e)
@@ -256,7 +256,7 @@ public class Export2iCalController
         }
         catch (ValidationException e)
         {
-            logger.error("The calendar file is invalid!\n" + e);
+            ICAL_LOG.error("The calendar file is invalid!\n{}", e.toString());
         }
         finally
         {

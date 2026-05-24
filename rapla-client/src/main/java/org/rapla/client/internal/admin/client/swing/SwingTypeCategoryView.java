@@ -32,7 +32,6 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.StorageOperator;
@@ -62,7 +61,6 @@ public class SwingTypeCategoryView extends RaplaGUIComponent implements
 
 	// hierarchical
 	RaplaTree selectionTreeTable;
-	final Logger logger;
 
 
 	RaplaButton okButton;
@@ -79,10 +77,9 @@ public class SwingTypeCategoryView extends RaplaGUIComponent implements
 
 
 	@Autowired
-	public SwingTypeCategoryView(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, MenuFactory menuFactory, TreeFactory treeFactory, DialogUiFactoryInterface dialogUiFactory, TreeCellRenderer treeCellRenderer) throws
+	public SwingTypeCategoryView(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, MenuFactory menuFactory, TreeFactory treeFactory, DialogUiFactoryInterface dialogUiFactory, TreeCellRenderer treeCellRenderer) throws
 			RaplaInitializationException {
-		super(facade, i18n, raplaLocale, logger);
-		this.logger = logger;
+		super(facade, i18n, raplaLocale);
 		raplaFacade = facade.getRaplaFacade();
 		this.menuFactory = menuFactory;
 		this.treeFactory = treeFactory;

@@ -24,7 +24,8 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.BoxLayout;
 import javax.swing.JPanel;
@@ -42,14 +43,15 @@ import java.util.Set;
 
 public class PublishDialog extends RaplaGUIComponent
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(PublishDialog.class);
 	private final Set<PublishExtensionFactory> extensionFactories;
 	PublishExtension addressCreator= null;
     private final DialogUiFactoryInterface dialogUiFactory;
     StartupEnvironment environment;
 
-    public PublishDialog(StartupEnvironment environment,ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<PublishExtensionFactory> extensionFactories, DialogUiFactoryInterface dialogUiFactory)
+    public PublishDialog(StartupEnvironment environment,ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Set<PublishExtensionFactory> extensionFactories, DialogUiFactoryInterface dialogUiFactory)
     {
-        super(facade, i18n, raplaLocale, logger);
+        super(facade, i18n, raplaLocale);
         this.environment = environment;
         this.dialogUiFactory = dialogUiFactory;
         if ( !isModifyPreferencesAllowed() ) {
@@ -111,7 +113,7 @@ public class PublishDialog extends RaplaGUIComponent
 			{
 				if ( addressCreator != null)
 				{
-					getLogger().error("Only one address creator can be used. " + addressCreator.toString()  + " will be ignored.");
+					LOGGER.error("Only one address creator can be used. {} will be ignored.", addressCreator.toString());
 				}
 				addressCreator = extension;
 			}

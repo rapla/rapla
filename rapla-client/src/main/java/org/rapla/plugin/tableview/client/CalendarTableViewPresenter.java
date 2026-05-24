@@ -9,7 +9,8 @@ import org.rapla.client.event.ApplicationEventBus;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.plugin.tableview.client.CalendarTableView.Presenter;
 import org.rapla.scheduler.Promise;
 
@@ -19,19 +20,18 @@ import java.util.Collections;
 import java.time.LocalDateTime;
 public class CalendarTableViewPresenter implements Presenter, CalendarPlugin
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CalendarTableViewPresenter.class);
 
     public static final String TABLE_VIEW = "table";
     private final CalendarTableView view;
-    private final Logger logger;
     private final ApplicationEventBus eventBus;
     private final CalendarSelectionModel model;
-    
+
     @SuppressWarnings("unchecked")
     @Autowired
-    public CalendarTableViewPresenter(CalendarTableView view, Logger logger, ApplicationEventBus eventBus, CalendarSelectionModel model)
+    public CalendarTableViewPresenter(CalendarTableView view, ApplicationEventBus eventBus, CalendarSelectionModel model)
     {
         this.view = view;
-        this.logger = logger;
         this.eventBus = eventBus;
         this.model = model;
         this.view.setPresenter(this);
@@ -79,7 +79,7 @@ public class CalendarTableViewPresenter implements Presenter, CalendarPlugin
         // changing double-click behaviour while the sample is removed.
         final ApplicationEvent activity = new ApplicationEvent("editevent", selectedObject.getId(),context, editContext);
         eventBus.publish(activity);
-        logger.info("selection changed");
+        LOGGER.info("selection changed");
 
     }
 
@@ -90,8 +90,8 @@ public class CalendarTableViewPresenter implements Presenter, CalendarPlugin
         Promise<Collection<Reservation>> resultPromise = model.queryReservations(model.getTimeIntervall());
         resultPromise.thenAccept((result) ->
         {
-            logger.info(result.size() + " Reservations loaded.");
+            LOGGER.info("{} Reservations loaded.", result.size());
             view.update(result);
-        }).exceptionally((e) -> logger.error(e.getMessage(), e));
+        }).exceptionally((e) -> LOGGER.error(e.getMessage(), e));
     }
 }

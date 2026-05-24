@@ -12,10 +12,14 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.toolkit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.swing.JTextPane;
 import java.net.URL;
 
 final public class HTMLView extends JTextPane  {
+    private static final Logger LOGGER = LoggerFactory.getLogger(HTMLView.class);
     private static final long serialVersionUID = 1L;
     
     public HTMLView() {
@@ -41,7 +45,7 @@ final public class HTMLView extends JTextPane  {
                 String marker = "org/rapla/gui/images/repeating.png";
                 URL url= HTMLView.class.getClassLoader().getResource(marker);
                 if (url == null) {
-                    System.err.println("Marker not found " + marker);
+                    LOGGER.warn("Marker not found {}", marker);
                     return;
                 }
                 //System.out.println("resource:" + url);
@@ -50,7 +54,7 @@ final public class HTMLView extends JTextPane  {
                 //System.out.println("document-base:" + base);
             } catch (Exception ex) {
                 error = ex;
-                System.err.println("Can't get document-base: " + ex + " in class: " + HTMLView.class.getName());
+                LOGGER.warn("Can't get document-base: {} in class: {}", ex, HTMLView.class.getName());
             }
         }
 

@@ -4,24 +4,24 @@ import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.plugin.mail.MailPlugin;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class MailToUserImpl
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MailToUserImpl.class);
 
     final MailInterface mail;
     final RaplaFacade facade;
-    final Logger logger;
 
     @Autowired
-    public MailToUserImpl(final MailInterface mail, final RaplaFacade facade, final Logger logger)
+    public MailToUserImpl(final MailInterface mail, final RaplaFacade facade)
     {
         this.mail = mail;
         this.facade = facade;
-        this.logger = logger;
     }
 
     public void sendMailToUser(String userName, String subject, String body) throws RaplaException
@@ -31,7 +31,7 @@ public class MailToUserImpl
         String recipientEmail = recipientUser.getEmail();
         if (recipientEmail == null || recipientEmail.trim().length() == 0)
         {
-            logger.warn("No email address specified for user " + recipientUser.getUsername() + " Can't send mail.");
+            LOGGER.warn("No email address specified for user {} Can't send mail.", recipientUser.getUsername());
             return;
         }
 
@@ -43,6 +43,6 @@ public class MailToUserImpl
         Preferences prefs = facade.getSystemPreferences();
         final String defaultSender = prefs.getEntryAsString(MailPlugin.DEFAULT_SENDER_ENTRY, "");
         mail.sendMail(defaultSender, recipientEmail, subject, body);
-        logger.getChildLogger("mail").info("Email send to user " + recipientEmail);
+        LOGGER.info("Email send to user {}", recipientEmail);
     }
 }

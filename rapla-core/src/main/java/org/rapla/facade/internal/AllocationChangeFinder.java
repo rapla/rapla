@@ -27,9 +27,10 @@ import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.facade.AllocationChangeEvent;
-import org.rapla.logger.Logger;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.UpdateResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,14 +41,14 @@ import java.util.List;
 import java.util.Set;
 
 /** Converts updateResults into AllocationChangeEvents */
-public class AllocationChangeFinder 
+public class AllocationChangeFinder
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AllocationChangeFinder.class);
+
     ArrayList<AllocationChangeEvent> changeList = new ArrayList<>();
-    Logger logger;
     private final EntityResolver resolver;
 
-    private AllocationChangeFinder(Logger logger, UpdateResult updateResult, User user, EntityResolver resolver) {
-        this.logger = logger;
+    private AllocationChangeFinder(UpdateResult updateResult, User user, EntityResolver resolver) {
         this.resolver = resolver;
         if ( updateResult == null)
             return;
@@ -68,15 +69,10 @@ public class AllocationChangeFinder
             changed(old , newObj, user );
         }
     }
-    
-    public Logger getLogger() 
-    {
-        return logger;
-    }
 
-    static public List<AllocationChangeEvent> getTriggerEvents(UpdateResult result, User user, Logger logger, EntityResolver resolver) {
-    	AllocationChangeFinder finder = new AllocationChangeFinder(logger, result, user, resolver);
-    	return finder.changeList; 
+    static public List<AllocationChangeEvent> getTriggerEvents(UpdateResult result, User user, EntityResolver resolver) {
+    	AllocationChangeFinder finder = new AllocationChangeFinder(result, user, resolver);
+    	return finder.changeList;
     }
 
     private void added(RaplaObject entity,  User user) {
@@ -94,21 +90,10 @@ public class AllocationChangeFinder
 
     private void removed(ReferenceInfo reference, Entity removedEntity, User user) {
         if ( reference.getType() == Reservation.class ) {
-            if (getLogger().isDebugEnabled())
-                getLogger().debug("Reservation removed: " + removedEntity.getId());
+            LOGGER.debug("Reservation removed: {}", removedEntity.getId());
             Reservation oldRes = (Reservation) removedEntity;
             final Appointment[] appointments = oldRes.getAppointments();
             final List<Allocatable> allocatables = getAllocatablesUsingIds(oldRes);
-//            for (Allocatable allocatable:allocatables)
-//            {
-//                for (Appointment appointment:appointments)
-//                {
-//                    if (!oldRes.hasAllocated(allocatable,appointment))
-//                        continue;
-//
-//                    changeList.add(new AllocationChangeEvent(AllocationChangeEvent.REMOVE,user, newRes,allocatable,appointment));
-//                }
-//            }
             addAppointmentRemove(
                                  user
                                  ,oldRes
@@ -118,7 +103,7 @@ public class AllocationChangeFinder
                                 );
         }
     }
-    
+
     private List<Allocatable> getAllocatablesUsingIds(Reservation reservation)
     {
         final ArrayList<Allocatable> result = new ArrayList<>();
@@ -145,12 +130,11 @@ public class AllocationChangeFinder
     private void changed(Entity oldEntity,Entity newEntity, User user) {
         Class<? extends Entity> raplaType = newEntity.getTypeClass();
         if (oldEntity == null) {
-            getLogger().error(" change event triggered but old entity = null for " + newEntity);
+            LOGGER.error(" change event triggered but old entity = null for {}", newEntity);
             return;
         }
         if (raplaType ==  Reservation.class ) {
-            if (getLogger().isDebugEnabled())
-                getLogger().debug("Reservation changed: " + oldEntity);
+            LOGGER.debug("Reservation changed: {}", oldEntity);
             Reservation oldRes = (Reservation) oldEntity;
             Reservation newRes = (Reservation) newEntity;
 
@@ -176,15 +160,6 @@ public class AllocationChangeFinder
         }
     }
 
-    /*
-    private void printList(List list) {
-        Iterator it = list.iterator();
-        while (it.hasNext()) {
-            System.out.println(it.next());
-        }
-    }
-    */
-
     /**
      * Calculates the allocations that have changed
      */
@@ -197,19 +172,13 @@ public class AllocationChangeFinder
         ArrayList<Appointment> addList = new ArrayList<>(app2);
         addList.removeAll(app1);
         addAppointmentAdd(user, newRes,oldRes,allocatableList,addList);
-        /*
-        System.out.println("OLD appointments");
-        printList(app1);
-        System.out.println("NEW appointments");
-        printList(app2);
-        */
         Set<Appointment> newList = new HashSet<>(app2);
         newList.retainAll(app1);
 
         ArrayList<Appointment> oldList = new ArrayList<>(app1);
         oldList.retainAll(app2);
         sort(oldList);
-        
+
 
         for (int i=0;i<oldList.size();i++) {
             Appointment oldApp =  oldList.get(i);
@@ -224,7 +193,7 @@ public class AllocationChangeFinder
             if ( newApp == null)
             {
             	// This should never happen as we call retainAll before
-            	getLogger().error("Not found matching pair for " + oldApp);
+            	LOGGER.error("Not found matching pair for {}", oldApp);
             	continue;
             }
             for (Allocatable allocatable: allocatableList )
@@ -251,7 +220,7 @@ public class AllocationChangeFinder
                 }
                 else if (!newApp.matches(oldApp))
                 {
-                    getLogger().debug("\n" + newApp + " doesn't match \n" + oldApp);
+                    LOGGER.debug("\n{} doesn't match \n{}", newApp, oldApp);
                     changeList.add(new AllocationChangeEvent(user,newRes,oldRes,allocatable,newApp,oldApp));
                 }
                 if (requestStatus != oldRequestStatus ){
@@ -307,4 +276,3 @@ public class AllocationChangeFinder
         }
     }
 }
-

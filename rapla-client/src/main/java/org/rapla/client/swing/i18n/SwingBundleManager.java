@@ -4,9 +4,9 @@ import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.internal.AbstractBundleManager;
 import org.rapla.components.util.IOUtil;
 import org.rapla.components.i18n.internal.PropertyResourceBundleWrapper;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.*;
 import java.io.IOException;
 import java.net.URL;
@@ -17,12 +17,11 @@ import java.util.*;
 @org.springframework.context.annotation.Primary
 public class SwingBundleManager extends AbstractBundleManager
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SwingBundleManager.class);
     Map<String, Icon> iconCache = Collections.synchronizedMap(new TreeMap<String, Icon>());
-    final Logger logger;
-    @Autowired
-    public SwingBundleManager(Logger logger)
+
+    public SwingBundleManager()
     {
-        this.logger = logger;
     }
 
 
@@ -50,7 +49,7 @@ public class SwingBundleManager extends AbstractBundleManager
         catch (Exception ex)
         {
             String message = "Icon " + iconfile + " can't be created: " + ex.getMessage();
-            logger.error(message);
+            LOGGER.error(message);
             throw new MissingResourceException(message, packageId, key);
         }
     }

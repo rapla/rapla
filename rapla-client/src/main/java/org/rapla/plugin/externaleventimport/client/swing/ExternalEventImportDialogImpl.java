@@ -8,7 +8,6 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.externaleventimport.ExternalEventImportMetadata;
 import org.rapla.plugin.externaleventimport.ExternalEventImportResult;
 import org.rapla.plugin.externaleventimport.client.ExternalEventImportDialog;
@@ -32,19 +31,17 @@ public class ExternalEventImportDialogImpl implements ExternalEventImportDialog
 {
     private final ClientFacade clientFacade;
     private final RaplaLocale raplaLocale;
-    private final Logger logger;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final ExternalEventImportResources resources;
     private final RaplaResources raplaResources;
     private final Supplier<ExternalEventImportAllocatableSelectionDialog> allocatableDialogSupplier;
 
     @Autowired
-    public ExternalEventImportDialogImpl(ClientFacade clientFacade, RaplaLocale raplaLocale, Logger logger, DialogUiFactoryInterface dialogUiFactory,
+    public ExternalEventImportDialogImpl(ClientFacade clientFacade, RaplaLocale raplaLocale, DialogUiFactoryInterface dialogUiFactory,
             ExternalEventImportResources resources, RaplaResources raplaResources, Supplier<ExternalEventImportAllocatableSelectionDialog> allocatableDialogSupplier)
     {
         this.clientFacade = clientFacade;
         this.raplaLocale = raplaLocale;
-        this.logger = logger;
         this.dialogUiFactory = dialogUiFactory;
         this.resources = resources;
         this.raplaResources = raplaResources;
@@ -90,7 +87,7 @@ public class ExternalEventImportDialogImpl implements ExternalEventImportDialog
             options = new String[] { raplaResources.getString("close") };
         }
 
-        ExternalEventImportPanel panel = new ExternalEventImportPanel(clientFacade, raplaResources, raplaLocale, logger, model, dialogUiFactory, resources,
+        ExternalEventImportPanel panel = new ExternalEventImportPanel(clientFacade, raplaResources, raplaLocale, model, dialogUiFactory, resources,
                 metadata, result, innerCallback, closeAfterSubmit);
         panel.getComponent().setSize(900, 450);
 

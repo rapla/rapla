@@ -45,7 +45,6 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.LocalCache;
@@ -54,6 +53,8 @@ import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -82,10 +83,11 @@ import java.util.Set;
 
 public abstract class AbstractCachableOperator implements StorageOperator
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractCachableOperator.class);
+
     final protected RaplaLocale raplaLocale;
     final protected LocalCache cache;
     final protected RaplaResources i18n;
-    final protected Logger logger;
     final protected Map<String, FunctionFactory> functionFactoryMap;
     private volatile java.time.LocalDateTime lastRefreshed;
     final protected PermissionController permissionController;
@@ -96,10 +98,9 @@ public abstract class AbstractCachableOperator implements StorageOperator
     protected RaplaLock lockManager;
     ThreadLocal<Map<String,Object>> threadContextMap = new ThreadLocal<>();
 
-    public AbstractCachableOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, Map<String, FunctionFactory> functionFactoryMap,
+    public AbstractCachableOperator(RaplaResources i18n, RaplaLocale raplaLocale, Map<String, FunctionFactory> functionFactoryMap,
             Set<PermissionExtension> permissionExtensions, RaplaLock lockManager)
     {
-        this.logger = logger;
         this.lockManager = lockManager;
         this.raplaLocale = raplaLocale;
         this.i18n = i18n;
@@ -126,11 +127,6 @@ public abstract class AbstractCachableOperator implements StorageOperator
     public PermissionController getPermissionController()
     {
         return permissionController;
-    }
-
-    public Logger getLogger()
-    {
-        return logger;
     }
 
     public java.time.LocalDateTime getLastRefreshed()
@@ -799,9 +795,9 @@ public abstract class AbstractCachableOperator implements StorageOperator
                 continue;
             }
 
-            if (getLogger().isDebugEnabled())
+            if (LOGGER.isDebugEnabled())
             {
-                getLogger().debug("Storing old: " + entity);
+                LOGGER.debug("Storing old: {}", entity);
             }
 
             if (persistentEntity instanceof Appointment)// || ((persistantEntity instanceof Category) && storeObjects.contains( ((Category) persistantEntity).getParent())))
@@ -901,7 +897,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
 
             }
         } catch (RaplaException e) {
-            getLogger().error("Can't update Period Model", e);
+            LOGGER.error("Can't update Period Model", e);
         }
 
     }
@@ -966,13 +962,13 @@ public abstract class AbstractCachableOperator implements StorageOperator
             }
             else
             {
-                getLogger().warn("No create date set for entity " + newEntity.getReference());
+                LOGGER.warn("No create date set for entity {}", newEntity.getReference());
                 return false;
             }
         }
         else
         {
-            getLogger().warn("entity  " + newEntity.getReference() + " does not implement timestamp");
+            LOGGER.warn("entity  {} does not implement timestamp", newEntity.getReference());
             return false;
         }
     }

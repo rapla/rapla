@@ -6,12 +6,27 @@
     </encoder>
   </appender>
 
+  <!-- LevelChangePropagator syncs Logback per-logger levels down to JUL so the
+       SLF4JBridgeHandler installed in SpringRaplaClient.main captures DEBUG
+       events from JUL callers that JUL would otherwise filter early. -->
+  <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator">
+    <resetJUL>true</resetJUL>
+  </contextListener>
+
   <root level="DEBUG">
     <appender-ref ref="STDOUT" />
   </root>
 
-  <logger name="rapla" level="DEBUG"/>
-  <logger name="rapla.remote" level="DEBUG"/>
+  <!-- rapla code uses class-named SLF4J loggers (org.rapla.*) plus a handful of
+       named subsystem loggers (PRD 053 § "Child logger decision"). -->
+  <logger name="org.rapla" level="DEBUG"/>
+
+  <!-- Named subsystem loggers — operators tune these independently. -->
+  <!-- <logger name="rapla.webservice" level="DEBUG"/>     -->
+  <!-- <logger name="rapla.exchangeupdate" level="INFO"/>  -->
+  <!-- <logger name="rapla.ldap" level="INFO"/>            -->
+  <!-- <logger name="rapla.ical" level="INFO"/>            -->
+  <!-- <logger name="rapla.404" level="WARN"/>             -->
 
   <logger name="org.springframework" level="WARN"/>
   <logger name="org.springframework.beans.factory" level="WARN"/>

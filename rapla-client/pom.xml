@@ -55,11 +55,19 @@
             <artifactId>junit</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- Runtime SLF4J + Logback so `mvn -pl rapla-client -am spring-boot:run` (Swing client launch) has a logger. -->
+        <!-- SLF4J + Logback for the Swing client. slf4j-api is compile-scope so source can
+             reference org.slf4j.Logger / LoggerFactory directly (PRD 053). -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <scope>runtime</scope>
+        </dependency>
+        <!-- jul-to-slf4j: SpringRaplaClient.main installs SLF4JBridgeHandler so
+             j.u.l calls from third-party libs (JNLP runtime, Swing/AWT internals,
+             JDK HTTP client) route through Logback. Compile-scope for the import. -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jul-to-slf4j</artifactId>
+            <version>${slf4j.version}</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>

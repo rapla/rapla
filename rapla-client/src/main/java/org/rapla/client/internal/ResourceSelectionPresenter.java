@@ -33,7 +33,8 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.storage.PermissionController;
 
@@ -48,6 +49,7 @@ import java.util.Set;
 @org.springframework.context.annotation.Lazy
 public class ResourceSelectionPresenter implements Presenter
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ResourceSelectionPresenter.class);
     protected final CalendarSelectionModel model;
 
     private final EditController editController;
@@ -55,7 +57,6 @@ public class ResourceSelectionPresenter implements Presenter
     private final CalendarEventBus eventBus;
     private final ResourceSelectionView view;
     private final ClientFacade facade;
-    private final Logger logger;
     private PresenterChangeCallback callback;
     private final CommandScheduler scheduler;
     private final ResourceSelectionState state = new ResourceSelectionState();
@@ -64,12 +65,11 @@ public class ResourceSelectionPresenter implements Presenter
     private boolean syncingToModel = false;
 
     @Autowired
-    public ResourceSelectionPresenter(ClientFacade facade, Logger logger, CalendarSelectionModel model, EditController editController,
+    public ResourceSelectionPresenter(ClientFacade facade, CalendarSelectionModel model, EditController editController,
             DialogUiFactoryInterface dialogUiFactory, CalendarEventBus eventBus, ResourceSelectionView view, CommandScheduler scheduler)
             throws RaplaInitializationException
     {
         this.facade = facade;
-        this.logger = logger;
         this.view = view;
         this.model = model;
         this.eventBus = eventBus;
@@ -119,7 +119,7 @@ public class ResourceSelectionPresenter implements Presenter
             }
             catch (RaplaException ex)
             {
-                logger.error("Failed to sync sidebar selection to model", ex);
+                LOGGER.error("Failed to sync sidebar selection to model", ex);
             }
             finally
             {
@@ -190,7 +190,7 @@ public class ResourceSelectionPresenter implements Presenter
             }
             catch (RaplaException e)
             {
-                logger.error("Error getting user in resource selection: " + e.getMessage(), e);
+                LOGGER.error("Error getting user in resource selection: {}", e.getMessage(), e);
             }
         }
     }

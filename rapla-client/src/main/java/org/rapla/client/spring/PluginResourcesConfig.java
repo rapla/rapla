@@ -2,7 +2,6 @@ package org.rapla.client.spring;
 
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.facade.RaplaFacade;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.autoexport.AutoExportResources;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorFactory;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
@@ -34,9 +33,9 @@ public class PluginResourcesConfig
     @Bean public PlanningStatusResources planningStatusResources(BundleManager bm) { return new PlanningStatusResources(bm); }
 
     @Bean
-    public EventTimeCalculatorFactory eventTimeCalculatorFactory(Supplier<RaplaFacade> facade, Logger logger, EventTimeCalculatorResources i18n)
+    public EventTimeCalculatorFactory eventTimeCalculatorFactory(Supplier<RaplaFacade> facade, EventTimeCalculatorResources i18n)
     {
-        return new EventTimeCalculatorFactory(facade, logger, i18n);
+        return new EventTimeCalculatorFactory(facade, i18n);
     }
 
     @Bean

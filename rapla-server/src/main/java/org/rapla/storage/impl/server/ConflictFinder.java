@@ -27,7 +27,8 @@ import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
@@ -48,14 +49,13 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import java.time.LocalDateTime;
 class ConflictFinder {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConflictFinder.class);
 	AllocationMap  allocationMap;
     // stores all conflicts (can be without enable/disable information)
     private final Map<ReferenceInfo<Allocatable>,Map<ReferenceInfo<Conflict>,Conflict>> conflictMap;
-    Logger logger;
     EntityResolver resolver;
     private final PermissionController permissionController;
-    public ConflictFinder( AllocationMap  allocationMap, LocalDateTime today, Logger logger, EntityResolver resolver,  PermissionController permissionController)  {
-    	this.logger = logger;
+    public ConflictFinder( AllocationMap  allocationMap, LocalDateTime today, EntityResolver resolver,  PermissionController permissionController)  {
     	this.allocationMap = allocationMap;
         this.permissionController = permissionController;
     	conflictMap = new ConcurrentHashMap<>();
@@ -67,7 +67,7 @@ class ConflictFinder {
         	conflictMap.put( allocatable.getReference(), newConflicts);
         	conflictSize+= newConflicts.size();
 		}
-        logger.info("Conflict initialization found " + conflictSize + " conflicts and took " + (System.currentTimeMillis()- startTime) + "ms. " ); 
+        LOGGER.info("Conflict initialization found {} conflicts and took {}ms. ", conflictSize, (System.currentTimeMillis()- startTime));
         this.resolver = resolver;
 	}
     
@@ -83,7 +83,7 @@ class ConflictFinder {
             java.time.LocalDateTime date = java.time.LocalDateTime.now();
             dummyConflict = new ConflictImpl(ref.getId(), date, dummyLastChanged);
         } catch (RaplaException e) {
-            logger.error(e.getMessage(), e);
+            LOGGER.error(e.getMessage(), e);
             return null;
         }
         ReferenceInfo<Allocatable> allocatable = dummyConflict.getAllocatableId();
@@ -715,7 +715,7 @@ class ConflictFinder {
             Map<ReferenceInfo<Conflict>,Conflict> sortedSet = conflictMap.get( alloc);
             if ( sortedSet != null && !sortedSet.isEmpty())
             {
-                logger.error("Removing non empty conflict map for resource " +  alloc + " Appointments:" + sortedSet);
+                LOGGER.error("Removing non empty conflict map for resource {} Appointments:{}", alloc, sortedSet);
             }
             conflictMap.remove( alloc);
         }

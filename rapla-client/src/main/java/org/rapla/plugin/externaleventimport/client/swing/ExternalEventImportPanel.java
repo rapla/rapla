@@ -12,7 +12,8 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.plugin.externaleventimport.ExternalEventImportMetadata;
 import org.rapla.plugin.externaleventimport.ExternalEventImportResult;
 import org.rapla.plugin.externaleventimport.ImportItem;
@@ -48,6 +49,7 @@ import java.util.List;
  */
 class ExternalEventImportPanel extends RaplaComponent implements RaplaWidget<JComponent>
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExternalEventImportPanel.class);
     private static final int SOURCE_ID_COLUMN = -1; // logical: source id is tracked in parallel array, not visible
 
     private final ClientFacade clientFacade;
@@ -66,11 +68,11 @@ class ExternalEventImportPanel extends RaplaComponent implements RaplaWidget<JCo
     /** Source IDs, one per visible row, parallel to the table model. */
     private List<String> rowSourceIds = new ArrayList<>();
 
-    public ExternalEventImportPanel(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model,
+    public ExternalEventImportPanel(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, CalendarModel model,
             DialogUiFactoryInterface dialogUiFactory, ExternalEventImportResources resources, ExternalEventImportMetadata metadata,
             ExternalEventImportResult result, ExternalEventImportSubmitCallback callback, boolean hideCreate) throws RaplaInitializationException
     {
-        super(facade.getRaplaFacade(), i18n, raplaLocale, logger);
+        super(facade.getRaplaFacade(), i18n, raplaLocale);
         this.clientFacade = facade;
         this.dialogUiFactory = dialogUiFactory;
         this.resources = resources;
@@ -125,7 +127,7 @@ class ExternalEventImportPanel extends RaplaComponent implements RaplaWidget<JCo
 
         if (!hideCreate)
         {
-            createReservationAction = new RaplaAction(clientFacade, getI18n(), getRaplaLocale(), getLogger())
+            createReservationAction = new RaplaAction(clientFacade, getI18n(), getRaplaLocale())
             {
                 @Override
                 public void actionPerformed()
@@ -200,7 +202,7 @@ class ExternalEventImportPanel extends RaplaComponent implements RaplaWidget<JCo
         {
             DialogInterface info = dialogUiFactory.createInfoDialog(new SwingPopupContext(contentPane, null), "CSV import",
                     "CSV upload not yet wired through the controller — file: " + selFile.getName());
-            info.start(false).exceptionally(e -> getLogger().error(e.getMessage(), e));
+            info.start(false).exceptionally(e -> LOGGER.error(e.getMessage(), e));
         }
     }
 

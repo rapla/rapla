@@ -23,7 +23,6 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
@@ -32,8 +31,8 @@ import javax.swing.tree.TreeModel;
 public class AllocatableSelectField extends AbstractSelectField<Allocatable>
 {
 	DynamicType dynamicTypeConstraint;
-    public AllocatableSelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,  DynamicType dynamicTypeConstraint, DialogUiFactoryInterface dialogUiFactory){
-       super( facade, i18n, raplaLocale, logger, treeFactory,  dialogUiFactory);
+    public AllocatableSelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, TreeFactory treeFactory,  DynamicType dynamicTypeConstraint, DialogUiFactoryInterface dialogUiFactory){
+       super( facade, i18n, raplaLocale, treeFactory,  dialogUiFactory);
        this.dynamicTypeConstraint = dynamicTypeConstraint;
     }
     

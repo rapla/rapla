@@ -6,8 +6,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.rapla.components.util.DateTools;
-import org.rapla.logger.Logger;
-import org.rapla.logger.RaplaBootstrapLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.Date;
@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.time.LocalDateTime;
 @Tag("db") public class ConcurrentTests
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConcurrentTests.class);
     private Connection con1;
     private Connection con2;
     private Connection con3;
@@ -37,7 +38,6 @@ import java.time.LocalDateTime;
     private final String deleteT2 = "DELETE FROM T2 WHERE ID = ? and LAST_CHANGED = ?";
     private final String updateT1 = "UPDATE T1 set LAST_CHANGED = ? where ID = ? ";
     private final String updateT2 = "UPDATE T2 set LAST_CHANGED = ? where ID = ? ";
-    Logger logger = RaplaBootstrapLogger.createRaplaLogger();
 
     private static class T1Obj
     {
@@ -424,7 +424,7 @@ import java.time.LocalDateTime;
                 final Timestamp timestamp2;
                 final Timestamp timestamp3;
 
-                logger.info(threadname + " start reading");
+                LOGGER.info("{} start reading", threadname);
                 con.setSavepoint();
                 {
                     final PreparedStatement stmt = con.prepareStatement(selectT1);
@@ -435,7 +435,7 @@ import java.time.LocalDateTime;
                         Assertions.assertTrue(resultSet.next());
                         timestamp1 = resultSet.getTimestamp(3);
                     }
-                    logger.info(threadname +" read table 1 " + timestamp1);
+                    LOGGER.info("{} read table 1 {}", threadname, timestamp1);
                 }
                 Thread.sleep(3000);
                 {
@@ -447,7 +447,7 @@ import java.time.LocalDateTime;
                         Assertions.assertTrue(resultSet.next());
                         timestamp2 = resultSet.getTimestamp(3);
                     }
-                    logger.info(threadname +" read table 2 " + timestamp2);
+                    LOGGER.info("{} read table 2 {}", threadname, timestamp2);
                 }
                 con.commit();
                 //Thread.sleep(100);
@@ -462,7 +462,7 @@ import java.time.LocalDateTime;
                     {
                         Assertions.assertTrue(resultSet.next());
                         timestamp3 = resultSet.getTimestamp(3);
-                        logger.info(threadname +" read table 2 again " + timestamp1);
+                        LOGGER.info("{} read table 2 again {}", threadname, timestamp1);
                     }
                 }
                 con.commit();
@@ -502,7 +502,7 @@ import java.time.LocalDateTime;
                 try
                 {
                     Thread.sleep(200);
-                    logger.info("T2 start writing");
+                    LOGGER.info("T2 start writing");
                     final Timestamp newValue = new Timestamp(System.currentTimeMillis());
                     x.set(newValue);
                     {
@@ -511,9 +511,9 @@ import java.time.LocalDateTime;
                         stmt.setString(2, t1Obj.id);
                         stmt.setTimestamp(1, newValue);
                         stmt.addBatch();
-                        logger.info("T2 updating table 1");
+                        LOGGER.info("T2 updating table 1");
                         stmt.executeBatch();
-                        logger.info("T2 updated table 1 " + newValue);
+                        LOGGER.info("T2 updated table 1 {}", newValue);
                     }
                     {
                         final PreparedStatement stmt = con.prepareStatement(updateT2);
@@ -521,12 +521,12 @@ import java.time.LocalDateTime;
                         stmt.setString(2, t2Obj.id);
                         stmt.setTimestamp(1, newValue);
                         stmt.addBatch();
-                        logger.info("T2 updating table 2");
+                        LOGGER.info("T2 updating table 2");
                         stmt.executeBatch();
-                        logger.info("T2 updated table 2" + newValue);
+                        LOGGER.info("T2 updated table 2{}", newValue);
                     }
                     con.commit();
-                    logger.info("T2 commited");
+                    LOGGER.info("T2 commited");
                 }
                 catch (Exception e)
                 {

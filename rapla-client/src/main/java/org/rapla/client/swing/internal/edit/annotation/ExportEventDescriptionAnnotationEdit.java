@@ -13,7 +13,6 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.springframework.stereotype.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,8 +30,8 @@ public class ExportEventDescriptionAnnotationEdit extends RaplaGUIComponent impl
     private final TextFieldFactory textFieldFactory;
     
     @Autowired
-    public ExportEventDescriptionAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface service, TextFieldFactory textFieldFactory) {
-        super(facade, i18n, raplaLocale, logger);
+    public ExportEventDescriptionAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, IOInterface service, TextFieldFactory textFieldFactory) {
+        super(facade, i18n, raplaLocale);
         this.service = service;
         this.textFieldFactory = textFieldFactory;
     }
@@ -59,7 +58,7 @@ public class ExportEventDescriptionAnnotationEdit extends RaplaGUIComponent impl
         {
             field.setValue( DEFAULT_VALUE);
         }
-        addCopyPaste(field.getComponent(), getI18n(), getRaplaLocale(), service, getLogger());
+        addCopyPaste(field.getComponent(), getI18n(), getRaplaLocale(), service);
         return Collections.singleton(field);
     }
 

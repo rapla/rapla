@@ -8,7 +8,6 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorPlugin;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
 
@@ -36,9 +35,9 @@ public class EventTimeCalculatorOption extends RaplaGUIComponent {
     EventTimeCalculatorResources eventTimei18n;
 
 
-    public EventTimeCalculatorOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, boolean adminOptions, EventTimeCalculatorResources eventTimei18n)
+    public EventTimeCalculatorOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, boolean adminOptions, EventTimeCalculatorResources eventTimei18n)
     {
-        super(facade, i18n, raplaLocale, logger);
+        super(facade, i18n, raplaLocale);
         this.adminOptions = adminOptions;
         this.eventTimei18n = eventTimei18n;
     }

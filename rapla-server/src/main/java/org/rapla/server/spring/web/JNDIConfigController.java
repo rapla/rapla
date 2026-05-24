@@ -7,7 +7,8 @@ import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.plugin.jndi.JNDIPlugin;
 import org.rapla.plugin.jndi.internal.JNDIConfig;
 import org.rapla.plugin.jndi.server.JNDIAuthenticationStore;
@@ -22,18 +23,16 @@ import org.springframework.web.bind.annotation.RestController;
 @ConditionalOnProperty(prefix = "rapla.services", name = "org.rapla.plugin.jndi", matchIfMissing = true)
 public class JNDIConfigController implements JNDIConfig
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(JNDIConfigController.class);
     private final RaplaFacade facade;
-    private final Logger logger;
     private final RemoteSession session;
     private final HttpServletRequest request;
 
     public JNDIConfigController(RaplaFacade facade,
-                                Logger logger,
                                 RemoteSession session,
                                 HttpServletRequest request)
     {
         this.facade = facade;
-        this.logger = logger;
         this.session = session;
         this.request = request;
     }
@@ -49,9 +48,9 @@ public class JNDIConfigController implements JNDIConfig
         {
             throw new RaplaSecurityException("Access only for admin users");
         }
-        JNDIAuthenticationStore testStore = new JNDIAuthenticationStore(facade, logger);
+        JNDIAuthenticationStore testStore = new JNDIAuthenticationStore(facade);
         testStore.initWithConfig(config);
-        logger.info("Test of JNDI Plugin started");
+        LOGGER.info("Test of JNDI Plugin started");
         boolean authenticate;
         if (password == null || password.equals(""))
         {
@@ -73,7 +72,7 @@ public class JNDIConfigController implements JNDIConfig
         {
             throw new RaplaSecurityException("Can establish connection but can't authenticate test user " + username);
         }
-        logger.info("Test of JNDI Plugin successfull");
+        LOGGER.info("Test of JNDI Plugin successfull");
         return true;
     }
 

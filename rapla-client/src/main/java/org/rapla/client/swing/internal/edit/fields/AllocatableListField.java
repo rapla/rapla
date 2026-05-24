@@ -20,7 +20,6 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 import java.util.Arrays;
 import java.util.Set;
@@ -30,10 +29,10 @@ public class AllocatableListField extends ListField<Allocatable>
 {
     DynamicType dynamicTypeConstraint;
 
-    public AllocatableListField(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DynamicType dynamicTypeConstraint)
+    public AllocatableListField(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, DynamicType dynamicTypeConstraint)
             throws RaplaException
     {
-        super(clientFacade, i18n, raplaLocale, logger, true);
+        super(clientFacade, i18n, raplaLocale, true);
         this.dynamicTypeConstraint = dynamicTypeConstraint;
         ClassificationFilter filter = dynamicTypeConstraint.newClassificationFilter();
         ClassificationFilter[] filters = new ClassificationFilter[] { filter };

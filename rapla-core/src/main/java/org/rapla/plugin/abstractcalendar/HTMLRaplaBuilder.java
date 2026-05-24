@@ -22,23 +22,22 @@ import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import java.time.LocalDateTime;
 public class HTMLRaplaBuilder extends RaplaBuilder {
-    
+
     static String COLOR_NO_RESOURCE = "#BBEEBB";
     int m_rowsPerHour = 4;
     /** shared calendar instance. Only used for temporary stored values. */
     String m_html;
     int index = 0;
     protected boolean onlyAllocationInfo;
-    
+
     @Autowired
-    public HTMLRaplaBuilder(RaplaLocale raplaLocale, RaplaFacade raplaFacade, RaplaResources i18n, Logger logger, AppointmentFormater appointmentFormater) {
-        super(raplaLocale, raplaFacade, i18n, logger, appointmentFormater);
+    public HTMLRaplaBuilder(RaplaLocale raplaLocale, RaplaFacade raplaFacade, RaplaResources i18n, AppointmentFormater appointmentFormater) {
+        super(raplaLocale, raplaFacade, i18n, appointmentFormater);
         this.setBlockCreator(( blockContext, start, end)->createBlock(blockContext,start,end));
     }
 

@@ -49,7 +49,8 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig;
 import org.rapla.plugin.exchangeconnector.server.SynchronizationTask;
 import org.rapla.plugin.exchangeconnector.server.SynchronizationTask.SyncStatus;
@@ -70,6 +71,8 @@ import java.time.LocalDateTime;
  */
 public class AppointmentSynchronizer
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AppointmentSynchronizer.class);
+    private static final Logger EXCHANGE_UPDATE_LOG = LoggerFactory.getLogger("rapla.exchangeupdate");
 
     private static final ExtendedPropertyDefinition RAPLA_APPOINTMENT_MARKER;
     private static final ExtendedPropertyDefinition RAPLA_APPOINTMENT_ID;
@@ -99,7 +102,6 @@ public class AppointmentSynchronizer
     private final TimeZone systemTimeZone = TimeZone.getDefault();
     private final SynchronizationTask appointmentTask;
     private final boolean sendNotificationMail;
-    private final Logger logger;
     private final Map<ReferenceInfo<Allocatable>, CalendarFolder> usedSharedMailboxes;
     private final EWSConnector ewsConnector;
     private final String exchangeTimezoneId;
@@ -107,13 +109,12 @@ public class AppointmentSynchronizer
     private final Locale locale;
 
 
-    public AppointmentSynchronizer(Logger logger, TimeZoneConverter converter, final String exchangeTimezoneId,
+    public AppointmentSynchronizer(TimeZoneConverter converter, final String exchangeTimezoneId,
             final String exchangeAppointmentCategory, User user, EWSConnector ewsConnector, boolean sendNotificationMail,
             SynchronizationTask appointmentTask, Appointment appointment, Locale locale, Map<ReferenceInfo<Allocatable>, CalendarFolder> usedSharedMailboxes)
     {
         this.usedSharedMailboxes = usedSharedMailboxes;
         this.sendNotificationMail = sendNotificationMail;
-        this.logger = logger;
         this.raplaUser = user;
         this.locale = locale;
         this.ewsConnector = ewsConnector;
@@ -124,11 +125,9 @@ public class AppointmentSynchronizer
         this.exchangeAppointmentCategory = exchangeAppointmentCategory;
     }
 
-    static public Collection<String> remove(Logger logger, EWSConnector ewsConnector, CalendarFolder folder) throws RaplaException
+    static public Collection<String> remove(EWSConnector ewsConnector, CalendarFolder folder) throws RaplaException
     {
         Collection<String> errors = new LinkedHashSet<>();
-        final Logger ewsLogger = logger.getChildLogger("webservice");
-
         List<ExchangeAppointment> exchangeAppointments = getExchangeAppointments(ewsConnector, folder);
         if (exchangeAppointments.isEmpty())
             return errors;
@@ -246,11 +245,6 @@ public class AppointmentSynchronizer
         return exchangeAppointments;
     }
 
-    public Logger getLogger()
-    {
-        return logger;
-    }
-
     public Appointment getRaplaAppointment()
     {
         return raplaAppointment;
@@ -295,8 +289,7 @@ public class AppointmentSynchronizer
         saveToExchangeServer(exchangeAppointment, sendNotificationMail);
         // FIXME it an error occurs exceptions may not be serialized correctly
         removeRecurrenceExceptions(exchangeAppointment);
-        Logger logger = getLogger().getChildLogger("exchangeupdate");
-        logger.info(getMailboxName() + " updated appointment " + raplaAppointment + " took " + (System.currentTimeMillis() - time) + " ms ");
+        EXCHANGE_UPDATE_LOG.info("{} updated appointment {} took {} ms", getMailboxName(), raplaAppointment, System.currentTimeMillis() - time);
     }
 
     private synchronized void delete() throws Exception
@@ -330,7 +323,6 @@ public class AppointmentSynchronizer
         }
 
         String identifier = appointmentTask.getAppointmentId();
-        Logger logger = getLogger().getChildLogger("exchangeupdate");
         long time = System.currentTimeMillis();
         try
         {
@@ -340,12 +332,12 @@ public class AppointmentSynchronizer
             {
                 try
                 {
-                    getLogger().debug("Deleting  " + exchangeAppointment.getId().getUniqueId() + " " + exchangeAppointment);
+                    LOGGER.debug("Deleting  {} {}", exchangeAppointment.getId().getUniqueId(), exchangeAppointment);
                     exchangeAppointment.delete(DeleteMode.HardDelete, SendCancellationsMode.SendToNone);
                 }
                 catch (ServiceResponseException e)
                 {
-                    getLogger().warn(getMailboxName() + " Deleted appointment with id " + identifier + " failed due to " + e.getMessage());
+                    LOGGER.warn("{} Deleted appointment with id {} failed due to {}", getMailboxName(), identifier, e.getMessage());
                 }
             }
         }
@@ -355,7 +347,7 @@ public class AppointmentSynchronizer
         }
         //delete on the Exchange Server side
         //remove it from the "to-be-removed"-list
-        logger.info(getMailboxName() + " Deleted appointment with id " + identifier + " took " + (System.currentTimeMillis() - time) + " ms ");
+        EXCHANGE_UPDATE_LOG.info("{} Deleted appointment with id {} took {} ms", getMailboxName(), identifier, System.currentTimeMillis() - time);
     }
 
     private void saveToExchangeServer(microsoft.exchange.webservices.data.core.service.item.Appointment exchangeAppointment, boolean notify) throws Exception
@@ -365,13 +357,13 @@ public class AppointmentSynchronizer
         {
             FolderId folderId = getFolderId();
 
-            getLogger().info(getMailboxName() +  "Adding " + exchangeAppointment.getSubject() + " to exchange");
+            LOGGER.info("{}Adding {} to exchange", getMailboxName(), exchangeAppointment.getSubject());
             SendInvitationsMode sendMode = notify ? SendInvitationsMode.SendOnlyToAll : SendInvitationsMode.SendToNone;
             exchangeAppointment.save(folderId,sendMode);
         }
         else
         {
-            getLogger().info(getMailboxName() +  "Updating " + exchangeAppointment.getId() + " " + exchangeAppointment.getSubject() + "," + exchangeAppointment.getWhen());
+            LOGGER.info("{}Updating {} {},{}", getMailboxName(), exchangeAppointment.getId(), exchangeAppointment.getSubject(), exchangeAppointment.getWhen());
             SendInvitationsOrCancellationsMode sendMode = notify ? SendInvitationsOrCancellationsMode.SendOnlyToAll
                     : SendInvitationsOrCancellationsMode.SendToNone;
             exchangeAppointment.update(ConflictResolutionMode.AlwaysOverwrite, sendMode);
@@ -533,7 +525,7 @@ public class AppointmentSynchronizer
         int offset = 0;//TimeZoneConverterImpl.getOffset(timeZone, systemTimeZone, time);
         LocalDateTime offsetToSystemTime = DateTools.toLocalDateTime(time + offset);
         LocalDateTime exportDate = timeZoneConverter.fromRaplaTime(timeZone, offsetToSystemTime);
-        getLogger().debug("Rapladate " + date + " converted to exchange " + exportDate);
+        LOGGER.debug("Rapladate {} converted to exchange {}", date, exportDate);
         return java.util.Date.from(exportDate.toInstant(java.time.ZoneOffset.UTC));
     }
 
@@ -726,7 +718,7 @@ public class AppointmentSynchronizer
             int i = calendar.get(Calendar.DAY_OF_WEEK) - 1;
             if (i < 0 || i >= values.length)
             {
-                getLogger().error("Illegal exchange values for repeating in day of week " + values + " does not have index " + i);
+                LOGGER.error("Illegal exchange values for repeating in day of week {} does not have index {}", values, i);
                 dayOfWeek = DayOfTheWeek.Monday;
             }
             else
@@ -745,7 +737,7 @@ public class AppointmentSynchronizer
             int i = calendar.get(Calendar.WEEK_OF_MONTH) - 1;
             if (i < 0 || i >= values.length)
             {
-                getLogger().error("Illegal exchange values for repeating in week of month " + values + " does not have index " + i);
+                LOGGER.error("Illegal exchange values for repeating in week of month {} does not have index {}", values, i);
                 weekOfMonth = DayOfTheWeekIndex.First;
             }
             else
@@ -808,7 +800,7 @@ public class AppointmentSynchronizer
                 {
                     break;
                 }
-                logger.info(e.getMessage());
+                LOGGER.info(e.getMessage());
             }
             if (occurrence == null)
             {
@@ -821,7 +813,7 @@ public class AppointmentSynchronizer
             }
             if (exceptionDates.contains(exchangeException))
             {
-                getLogger().info(getMailboxName() + " Removing exception for " + occurrence.getId().getUniqueId() + " " + occurrence);
+                LOGGER.info("{} Removing exception for {} {}", getMailboxName(), occurrence.getId().getUniqueId(), occurrence);
                 occurrence.delete(DeleteMode.MoveToDeletedItems, SendCancellationsMode.SendOnlyToAll);
             }
         }

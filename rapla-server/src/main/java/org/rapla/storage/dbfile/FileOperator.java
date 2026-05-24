@@ -46,7 +46,8 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.server.ServerService;
 import org.rapla.storage.LocalCache;
@@ -87,6 +88,7 @@ import java.time.LocalDateTime;
  */
 final public class FileOperator extends LocalAbstractCachableOperator
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(FileOperator.class);
     protected URI storageURL;
 
     final boolean includeIds = false;
@@ -149,11 +151,11 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
     private final Map<ImportExportMapKey, Map<String, ExternalSyncEntity>> externalSyncEntities = new LinkedHashMap<>();
 
-    public FileOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,
+    public FileOperator(RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,
             Map<String, FunctionFactory> functionFactoryMap, @Qualifier(ServerService.ENV_RAPLAFILE_ID) String resolvedPath,
             Set<PermissionExtension> permissionExtensions) throws RaplaInitializationException
     {
-        super(logger, i18n, raplaLocale, scheduler, functionFactoryMap, permissionExtensions);
+        super(i18n, raplaLocale, scheduler, functionFactoryMap, permissionExtensions);
         try
         {
             storageURL = new File(resolvedPath).getCanonicalFile().toURI();
@@ -194,7 +196,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
     {
         if (!isConnected())
         {
-            getLogger().info("Connecting: " + getURL());
+            LOGGER.info("Connecting: " + getURL());
             cache.clearAll();
             externalSyncEntities.clear();
             addInternalTypes(cache);
@@ -237,7 +239,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
     @Override
     protected void refreshWithoutLock(Object refreshData)
     {
-        //getLogger().warn("Incremental refreshs are not supported");
+        //LOGGER.warn("Incremental refreshs are not supported");
         setLastRefreshed(getCurrentTimestamp());
         // TODO check if file timestamp has changed and either abort server with warning or refresh all data
     }
@@ -246,8 +248,8 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
     protected void loadData(LocalCache cache) throws RaplaException
     {
-        if (getLogger().isDebugEnabled())
-            getLogger().debug("Reading data from file:" + getURL());
+        if (LOGGER.isDebugEnabled())
+            LOGGER.debug("Reading data from file:" + getURL());
 
         // TODO implement history storage
         java.time.LocalDateTime lastUpdated = getCurrentTimestamp();
@@ -262,7 +264,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
         superCategory.getName().setName("en", "Root");
         entityStore.put( superCategory);
 
-        RaplaDefaultXMLContext inputContext = new IOContext().createInputContext(logger, raplaLocale, i18n, entityStore, this, superCategory);
+        RaplaDefaultXMLContext inputContext = new IOContext().createInputContext(raplaLocale, i18n, entityStore, this, superCategory);
         RaplaMainReader contentHandler = new RaplaMainReader(inputContext);
         boolean isLowerThen1_2 = false;
         try
@@ -272,13 +274,13 @@ final public class FileOperator extends LocalAbstractCachableOperator
         }
         catch (FileNotFoundException ex)
         {
-            getLogger().warn("Data file not found " + getURL() + " creating default system.");
+            LOGGER.warn("Data file not found " + getURL() + " creating default system.");
             createDefaultSystem(entityStore);
             isLowerThen1_2 = false;
         }
         catch (IOException ex)
         {
-            getLogger().warn("Loading error: " + getURL());
+            LOGGER.warn("Loading error: " + getURL());
             throw new RaplaException("Can't load file at " + getURL() + ": " + ex.getMessage());
         }
         try
@@ -338,8 +340,8 @@ final public class FileOperator extends LocalAbstractCachableOperator
                 cache.putPassword(id, password);
             }
             // contextualize all Entities
-            if (getLogger().isDebugEnabled())
-                getLogger().debug("Entities contextualized");
+            if (LOGGER.isDebugEnabled())
+                LOGGER.debug("Entities contextualized");
             // init history
             for (Entity entity : new IterableChain<>(list, migratedTemplates))
             {
@@ -411,7 +413,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
         {
             InputSource source = FileIO.getInputSource(storageURL);
             XMLReader parser = XMLReaderAdapter.createXMLReader(false);
-            RaplaErrorHandler errorHandler = new RaplaErrorHandler(getLogger().getChildLogger("reading"));
+            RaplaErrorHandler errorHandler = new RaplaErrorHandler();
             parser.setContentHandler(contentHandler);
             parser.setErrorHandler(errorHandler);
             parser.parse(source);
@@ -615,7 +617,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
                 final Entity e = tryResolve(id);
                 if ( e == null)
                 {
-                    getLogger().warn("Trying to remove an already removed entity " + id);
+                    LOGGER.warn("Trying to remove an already removed entity " + id);
                 }
                 else
                 {
@@ -684,7 +686,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
     private RaplaMainWriter getMainWriter(LocalCache cache, Collection<ExternalSyncEntity> externalSyncEntityList,String version, boolean includeIds) throws RaplaException
     {
-        RaplaDefaultXMLContext outputContext = new IOContext().createOutputContext(logger, raplaLocale, i18n, cache.getSuperCategoryProvider(), includeIds);
+        RaplaDefaultXMLContext outputContext = new IOContext().createOutputContext(raplaLocale, i18n, cache.getSuperCategoryProvider(), includeIds);
         RaplaMainWriter writer = new RaplaMainWriter(outputContext, cache, externalSyncEntityList);
         writer.setEncoding("utf-8");
         if (version != null)

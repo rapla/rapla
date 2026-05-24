@@ -30,7 +30,8 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.Action;
 import javax.swing.JComponent;
@@ -65,6 +66,7 @@ import java.time.LocalDateTime;
  */
 public class RaplaGUIComponent extends RaplaComponent
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RaplaGUIComponent.class);
     private static Component mainComponent;
     ClientFacade clientFacade;
 
@@ -74,9 +76,9 @@ public class RaplaGUIComponent extends RaplaComponent
         RaplaGUIComponent.mainComponent = mainComponent;
     }
 
-    public RaplaGUIComponent( final ClientFacade facade, final RaplaResources i18n, final RaplaLocale raplaLocale, final Logger logger )
+    public RaplaGUIComponent( final ClientFacade facade, final RaplaResources i18n, final RaplaLocale raplaLocale )
     {
-        super(facade.getRaplaFacade(), i18n, raplaLocale, logger);
+        super(facade.getRaplaFacade(), i18n, raplaLocale);
         this.clientFacade = facade;
     }
 
@@ -142,11 +144,11 @@ public class RaplaGUIComponent extends RaplaComponent
         return new SwingPopupContext(parent, p);
     }
 
-    static public RaplaCalendar createRaplaCalendar( final DateRenderer dateRenderer, final IOInterface service, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger )
+    static public RaplaCalendar createRaplaCalendar( final DateRenderer dateRenderer, final IOInterface service, RaplaResources i18n, RaplaLocale raplaLocale )
     {
         final RaplaCalendar cal = new RaplaCalendar(i18n.getLocale(), IOUtil.getTimeZone());
         cal.setDateRenderer(dateRenderer);
-        addCopyPaste(cal.getDateField(), i18n, raplaLocale, service, logger);
+        addCopyPaste(cal.getDateField(), i18n, raplaLocale, service);
         return cal;
     }
 
@@ -236,7 +238,7 @@ public class RaplaGUIComponent extends RaplaComponent
         cal.setTimeRenderer(getTimeRenderer());
         final int rowsPerHour = getCalendarOptions().getRowsPerHour();
         cal.setRowsPerHour(rowsPerHour);
-        addCopyPaste(cal.getTimeField(), getI18n(), getRaplaLocale(), service, getLogger());
+        addCopyPaste(cal.getTimeField(), getI18n(), getRaplaLocale(), service);
         return cal;
     }
 
@@ -250,9 +252,9 @@ public class RaplaGUIComponent extends RaplaComponent
         return mainComponent;
     }
 
-    public static void addCopyPaste( final JComponent component, final RaplaResources i18n, final RaplaLocale raplaLocale, final IOInterface service, final Logger logger )
+    public static void addCopyPaste( final JComponent component, final RaplaResources i18n, final RaplaLocale raplaLocale, final IOInterface service )
     {
-        final ActionListener pasteListener = e -> paste(component, e, service, logger);
+        final ActionListener pasteListener = e -> paste(component, e, service);
         final ActionListener copyListener = e -> copy(component, e, service, raplaLocale);
         final JPopupMenu menu = new JPopupMenu();
         {
@@ -418,7 +420,7 @@ public class RaplaGUIComponent extends RaplaComponent
 
     /** Code End	 */
 
-    protected static void paste( final JComponent component, final ActionEvent e, final IOInterface service, final Logger logger )
+    protected static void paste( final JComponent component, final ActionEvent e, final IOInterface service )
     {
         try
         {
@@ -468,7 +470,7 @@ public class RaplaGUIComponent extends RaplaComponent
                 }
                 catch ( final Exception ex )
                 {
-                    logger.warn(ex.getMessage(), ex);
+                    LOGGER.warn(ex.getMessage(), ex);
                 }
 
             }
@@ -496,10 +498,7 @@ public class RaplaGUIComponent extends RaplaComponent
                     }
                     catch ( final Exception e1 )
                     {
-                        if ( logger != null )
-                        {
-                            logger.error(e1.getMessage(), e1);
-                        }
+                        LOGGER.error(e1.getMessage(), e1);
                     }
                 }
             }

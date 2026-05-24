@@ -1,6 +1,7 @@
 package org.rapla.storage.dbrm;
 
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -19,24 +20,24 @@ import java.util.Optional;
  *
  * <p>Accessed via reflection so rapla-core doesn't take a hard compile
  * dependency on {@code javax.jnlp.*} (which is only on the classpath
- * when launched under JNLP). Use {@link #tryCreate(Logger)} to
- * instantiate; it returns {@link Optional#empty()} when not running
- * under a JNLP runtime.
+ * when launched under JNLP). Use {@link #tryCreate()} to instantiate;
+ * it returns {@link Optional#empty()} when not running under a JNLP
+ * runtime.
  */
 public final class JnlpTokenStore implements TokenStore
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(JnlpTokenStore.class);
     private static final String TOKEN_KEY_PATH = "rapla/refresh-token";
     private static final long RESERVED_SIZE = 4096L;
 
     private final Object persistenceService;
     private final URL key;
-    private final Logger logger;
 
     /**
      * @return a JnlpTokenStore if the JNLP {@code PersistenceService} is
      *         available, empty otherwise. Never throws.
      */
-    public static Optional<TokenStore> tryCreate(Logger logger)
+    public static Optional<TokenStore> tryCreate()
     {
         try
         {
@@ -46,23 +47,22 @@ public final class JnlpTokenStore implements TokenStore
             Object persistence = lookup.invoke(null, "javax.jnlp.PersistenceService");
             URL codebase = (URL) basic.getClass().getMethod("getCodeBase").invoke(basic);
             URL key = new URL(codebase, TOKEN_KEY_PATH);
-            if (logger != null) logger.debug("JNLP token store available; codebase=" + codebase);
-            return Optional.of(new JnlpTokenStore(persistence, key, logger));
+            LOGGER.debug("JNLP token store available; codebase={}", codebase);
+            return Optional.of(new JnlpTokenStore(persistence, key));
         }
         catch (Throwable t)
         {
             // Not running under JNLP, or JNLP API not on classpath. Expected for
             // dev runs (mvn exec:java) and plain java -jar launches.
-            if (logger != null) logger.debug("JNLP token store unavailable: " + t.getClass().getSimpleName());
+            LOGGER.debug("JNLP token store unavailable: {}", t.getClass().getSimpleName());
             return Optional.empty();
         }
     }
 
-    private JnlpTokenStore(Object persistenceService, URL key, Logger logger)
+    private JnlpTokenStore(Object persistenceService, URL key)
     {
         this.persistenceService = persistenceService;
         this.key = key;
-        this.logger = logger;
     }
 
     private static final String KEY_REFRESH_TOKEN = "refreshToken";
@@ -97,7 +97,7 @@ public final class JnlpTokenStore implements TokenStore
             }
             catch (Throwable t)
             {
-                if (logger != null) logger.warn("JNLP token-store clear failed: " + t.getMessage());
+                LOGGER.warn("JNLP token-store clear failed: {}", t.getMessage());
             }
         }
         else
@@ -154,7 +154,7 @@ public final class JnlpTokenStore implements TokenStore
         {
             // get() throws FileNotFoundException-equivalent when the entry doesn't
             // exist yet — that's the empty case, not a real failure.
-            if (logger != null) logger.debug("JNLP token-store read miss: " + t.getClass().getSimpleName());
+            LOGGER.debug("JNLP token-store read miss: {}", t.getClass().getSimpleName());
             return new java.util.LinkedHashMap<>();
         }
     }
@@ -184,7 +184,7 @@ public final class JnlpTokenStore implements TokenStore
         }
         catch (Throwable t)
         {
-            if (logger != null) logger.warn("JNLP token-store write failed (NOT persisted): " + t.getMessage());
+            LOGGER.warn("JNLP token-store write failed (NOT persisted): {}", t.getMessage());
         }
     }
 }

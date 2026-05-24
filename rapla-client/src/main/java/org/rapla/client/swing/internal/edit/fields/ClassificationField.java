@@ -40,7 +40,6 @@ import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.storage.PermissionController;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,10 +81,10 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
     boolean mainTabSelected = true;
     private final DialogUiFactoryInterface dialogUiFactory;
     
-	ClassificationField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, DateFieldFactory dateFieldFactory, DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory)  {
-		super(facade, i18n, raplaLocale, logger);
+	ClassificationField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, TreeFactory treeFactory, DateFieldFactory dateFieldFactory, DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory)  {
+		super(facade, i18n, raplaLocale);
         this.dialogUiFactory = dialogUiFactory;
-		editUI = new ClassificationEditUI(facade, i18n, raplaLocale, logger, treeFactory, dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);
+		editUI = new ClassificationEditUI(facade, i18n, raplaLocale, treeFactory, dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);
 		editUI.addChangeListener(e -> fireContentChanged());
 		setFieldName("type");
 		content.setBorder(BorderFactory.createEmptyBorder(3, 2, 3, 2));
@@ -367,19 +366,17 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
         private final ClientFacade facade;
         private final RaplaResources i18n;
         private final RaplaLocale raplaLocale;
-        private final Logger logger;
         private final TextFieldFactory textFieldFactory;
         private final LongFieldFactory longFieldFactory;
 
 	    @Autowired
-        public ClassificationFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,  DateFieldFactory dateFieldFactory,
+        public ClassificationFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, TreeFactory treeFactory,  DateFieldFactory dateFieldFactory,
                 DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory)
         {
             super();
             this.facade = facade;
             this.i18n = i18n;
             this.raplaLocale = raplaLocale;
-            this.logger = logger;
             this.treeFactory = treeFactory;
             this.dateFieldFactory = dateFieldFactory;
             this.dialogUiFactory = dialogUiFactory;
@@ -390,7 +387,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 
         public ClassificationField create()
 	    {
-	        return new ClassificationField(facade, i18n, raplaLocale, logger, treeFactory,  dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);
+	        return new ClassificationField(facade, i18n, raplaLocale, treeFactory,  dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);
 	    }
 	}
 }

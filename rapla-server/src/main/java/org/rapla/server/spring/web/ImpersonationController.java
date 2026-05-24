@@ -8,7 +8,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.rapla.entities.User;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.spring.JwtConfig;
 import org.rapla.storage.PermissionController;
@@ -38,6 +39,11 @@ import org.springframework.web.bind.annotation.RestController;
 @ConditionalOnBean(RemoteSession.class)
 public class ImpersonationController implements ImpersonationService
 {
+    /** Audit log routed to the named "rapla" category so the
+     *  {@code ImpersonationControllerTest} ListAppender keeps capturing
+     *  impersonation events after the per-class LOGGER migration.
+     *  See PRD 053 § "Test-contract caveat surfaced". */
+    private static final Logger AUDIT_LOG = LoggerFactory.getLogger("rapla");
     /** Matches rapla-SAS's {@code access-token-time-to-live: 1h} default
      *  (PRD 041, {@code application.yml:95}). Renewal is via another
      *  call to this endpoint; no refresh-token. */
@@ -47,19 +53,16 @@ public class ImpersonationController implements ImpersonationService
     private final RaplaFacade facade;
     private final JwtConfig.JwtIssuer jwtIssuer;
     private final HttpServletRequest request;
-    private final Logger logger;
 
     public ImpersonationController(RemoteSession session,
                                     RaplaFacade facade,
                                     JwtConfig.JwtIssuer jwtIssuer,
-                                    HttpServletRequest request,
-                                    Logger logger)
+                                    HttpServletRequest request)
     {
         this.session = session;
         this.facade = facade;
         this.jwtIssuer = jwtIssuer;
         this.request = request;
-        this.logger = logger;
     }
 
     @Override
@@ -120,7 +123,7 @@ public class ImpersonationController implements ImpersonationService
         // 5. Audit. One line per issuance, including renewals — the
         //    renewal cadence is the audit cadence. Lands wherever ops
         //    collects rapla logs.
-        logger.info("Impersonation: actor=" + actor.getUsername() + " (uuid=" + actor.getId()
+        AUDIT_LOG.info("Impersonation: actor=" + actor.getUsername() + " (uuid=" + actor.getId()
                 + ") target=" + target.getUsername() + " (uuid=" + target.getId() + ")");
 
         return new ImpersonationResponse(token, "Bearer", IMPERSONATION_TTL_SECONDS);

@@ -21,8 +21,6 @@ import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.DefaultScheduler;
 import org.rapla.framework.internal.RaplaLocaleImpl;
-import org.rapla.logger.Logger;
-import org.rapla.logger.RaplaBootstrapLogger;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.dbfile.FileOperator;
@@ -62,7 +60,6 @@ public class DbOperatorRoundTripTest
     @TempDir
     Path tempDir;
 
-    private Logger logger;
     private RaplaResources i18n;
     private CommandScheduler scheduler;
     private FileOperator fileOperator;
@@ -72,8 +69,6 @@ public class DbOperatorRoundTripTest
     @BeforeEach
     void setUp() throws Exception
     {
-        logger = RaplaBootstrapLogger.createRaplaLogger();
-
         Path xmlFile = tempDir.resolve("rapla-data.xml");
         try (InputStream in = getClass().getResourceAsStream(DEFAULT_FIXTURE))
         {
@@ -90,7 +85,7 @@ public class DbOperatorRoundTripTest
         AbstractBundleManager bundleManager = new ServerBundleManager();
         i18n = new RaplaResources(bundleManager);
         RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
-        scheduler = new DefaultScheduler(logger);
+        scheduler = new DefaultScheduler();
 
         Set<PermissionExtension> permissionExtensions = new LinkedHashSet<>();
         permissionExtensions.add(new RaplaDefaultPermissionImpl());
@@ -98,18 +93,18 @@ public class DbOperatorRoundTripTest
         Map<String, FunctionFactory> functionFactoryMap = new LinkedHashMap<>();
         functionFactoryMap.put(StandardFunctions.NAMESPACE, new StandardFunctions(raplaLocale));
 
-        fileOperator = new FileOperator(logger, i18n, raplaLocale, scheduler,
+        fileOperator = new FileOperator(i18n, raplaLocale, scheduler,
                 functionFactoryMap, xmlFile.toAbsolutePath().toString(), permissionExtensions);
 
-        operator = new DBOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap,
+        operator = new DBOperator(i18n, raplaLocale, scheduler, functionFactoryMap,
                 () -> null, dataSource, permissionExtensions);
 
-        ImportExportManagerImpl manager = new ImportExportManagerImpl(logger, fileOperator, operator);
+        ImportExportManagerImpl manager = new ImportExportManagerImpl(fileOperator, operator);
         operator.importExportManager = () -> manager;
 
         operator.connect();
 
-        FacadeImpl impl = new FacadeImpl(i18n, scheduler, logger);
+        FacadeImpl impl = new FacadeImpl(i18n, scheduler);
         impl.setOperator(operator);
         facade = impl;
     }
@@ -132,7 +127,7 @@ public class DbOperatorRoundTripTest
     {
         operator.disconnect();
         operator.connect();
-        FacadeImpl impl = new FacadeImpl(i18n, scheduler, logger);
+        FacadeImpl impl = new FacadeImpl(i18n, scheduler);
         impl.setOperator(operator);
         facade = impl;
     }

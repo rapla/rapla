@@ -19,7 +19,6 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,8 +27,8 @@ import java.util.List;
 import java.time.LocalDateTime;
 public class AllocatableInfoUI extends ClassificationInfoUI<Allocatable> {
     final private ClientFacade clientFacade;
-    public AllocatableInfoUI(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
-        super(i18n, raplaLocale, clientFacade.getRaplaFacade(), logger);
+    public AllocatableInfoUI(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale) {
+        super(i18n, raplaLocale, clientFacade.getRaplaFacade());
         this.clientFacade = clientFacade;
     }
 

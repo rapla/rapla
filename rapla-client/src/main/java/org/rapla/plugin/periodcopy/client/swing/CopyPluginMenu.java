@@ -31,7 +31,6 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.periodcopy.PeriodCopyResources;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
@@ -64,8 +63,8 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
     private final Supplier<CopyDialog> copyDialogProvider;
     private final DialogUiFactoryInterface dialogUiFactory;
 	@Autowired
-    public CopyPluginMenu(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PeriodCopyResources periodCopyI18n, Supplier<CopyDialog> copyDialogProvider,  DialogUiFactoryInterface dialogUiFactory)  {
-        super(facade, i18n, raplaLocale, logger);
+    public CopyPluginMenu(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, PeriodCopyResources periodCopyI18n, Supplier<CopyDialog> copyDialogProvider,  DialogUiFactoryInterface dialogUiFactory)  {
+        super(facade, i18n, raplaLocale);
         //menu.insert( new RaplaSeparator("info_end"));
         this.periodCopyI18n = periodCopyI18n;
         this.copyDialogProvider = copyDialogProvider;

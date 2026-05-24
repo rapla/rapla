@@ -12,7 +12,6 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.springframework.stereotype.Service;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
@@ -37,7 +36,7 @@ public class ConflictReservationCheck implements EventCheck
     final RaplaResources i18n;
 
     @Autowired
-    public ConflictReservationCheck(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DialogUiFactoryInterface dialogUiFactory,
+    public ConflictReservationCheck(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, DialogUiFactoryInterface dialogUiFactory,
             ConflictDialogView conflictDialogView)
     {
         this.clientFacade = facade;

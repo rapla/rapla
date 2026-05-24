@@ -14,7 +14,6 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorFactory;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorPlugin;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
@@ -42,8 +41,8 @@ public class EventTimeCalculatorStatusWidget extends RaplaGUIComponent implement
     /**
      * creates the panel for the GUI in window "reservation".
      */
-    public EventTimeCalculatorStatusWidget(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, final ReservationEdit reservationEdit, EventTimeCalculatorFactory factory, EventTimeCalculatorResources resources) throws RaplaException {
-        super(facade, i18n, raplaLocale, logger);
+    public EventTimeCalculatorStatusWidget(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, final ReservationEdit reservationEdit, EventTimeCalculatorFactory factory, EventTimeCalculatorResources resources) throws RaplaException {
+        super(facade, i18n, raplaLocale);
         this.factory = factory;
         //this.config = config;
         eventTimei18n = resources;

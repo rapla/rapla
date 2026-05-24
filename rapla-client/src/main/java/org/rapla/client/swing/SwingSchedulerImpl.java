@@ -1,20 +1,15 @@
 package org.rapla.client.swing;
 
-import org.rapla.logger.Logger;
-import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.sync.UtilConcurrentCommandScheduler;
-
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Primary
 public class SwingSchedulerImpl extends UtilConcurrentCommandScheduler implements DisposableBean
 {
-    @Autowired
-    public SwingSchedulerImpl(Logger logger)
+    public SwingSchedulerImpl()
     {
-        super(logger);
+        super();
     }
 
     /**

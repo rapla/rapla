@@ -7,7 +7,8 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.plugin.archiver.ArchiverService;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.server.RemoteSession;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.time.LocalDateTime;
 public class ArchiverServiceImpl  implements ArchiverService
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ArchiverServiceImpl.class);
     @Autowired
     RemoteSession session;
     @Autowired
@@ -35,8 +37,6 @@ public class ArchiverServiceImpl  implements ArchiverService
     org.rapla.storage.SyncStorageOperator syncOperator;
     @Autowired
     ImportExportManager importExportManager;
-    @Autowired
-    Logger logger;
     private final HttpServletRequest request;
 
     @Autowired
@@ -104,10 +104,10 @@ public class ArchiverServiceImpl  implements ArchiverService
 
 	public void deleteSync(Integer removeOlderInDays) throws RaplaException {
         checkAccess();
-        delete(removeOlderInDays, this.raplaFacade, this.syncOperator, this.logger);
+        delete(removeOlderInDays, this.raplaFacade, this.syncOperator);
 	}
 
-    static public void delete(Integer removeOlderInDays, RaplaFacade raplaFacade, org.rapla.storage.SyncStorageOperator syncOperator, Logger logger) throws RaplaException
+    static public void delete(Integer removeOlderInDays, RaplaFacade raplaFacade, org.rapla.storage.SyncStorageOperator syncOperator) throws RaplaException
     {
         LocalDateTime endDate = raplaFacade.today().atStartOfDay().minusDays(removeOlderInDays);
         User[] owners = raplaFacade.getUsers();
@@ -122,7 +122,7 @@ public class ArchiverServiceImpl  implements ArchiverService
         }
         if (toRemove.size() > 0)
         {
-            logger.info("Removing " + toRemove.size() + " old events.");
+            LOGGER.info("Removing " + toRemove.size() + " old events.");
             Reservation[] eventsToRemove = toRemove.toArray(Reservation.RESERVATION_ARRAY);
             int STEP_SIZE = 100;
             for (int i = 0; i < eventsToRemove.length; i += STEP_SIZE)

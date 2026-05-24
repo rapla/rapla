@@ -30,7 +30,6 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.storage.PermissionController;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,8 +60,8 @@ public class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
 
     @SuppressWarnings("unchecked")
     @Autowired
-    public AllocatableEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory, BooleanFieldFactory booleanFieldFactory) throws RaplaInitializationException {
-        super(facade, i18n, raplaLocale, logger);
+    public AllocatableEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory, BooleanFieldFactory booleanFieldFactory) throws RaplaInitializationException {
+        super(facade, i18n, raplaLocale);
         this.permissionController = facade.getRaplaFacade().getPermissionController();
         classificationField = classificationFieldFactory.create();
         try

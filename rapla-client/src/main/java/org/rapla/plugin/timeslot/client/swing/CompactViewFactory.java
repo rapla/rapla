@@ -33,7 +33,6 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.timeslot.TimeslotPlugin;
 import org.rapla.plugin.timeslot.TimeslotProvider;
 
@@ -63,14 +62,13 @@ public class CompactViewFactory implements SwingViewFactory
     private final ClientFacade facade;
     private final RaplaResources i18n;
     private final RaplaLocale raplaLocale;
-    private final Logger logger;
     private final IOInterface ioInterface;
     private final AppointmentFormater appointmentFormater;
     private final RaplaConfiguration config;
     private final EditController editController;
 
     @Autowired
-    public CompactViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<ObjectMenuFactory> objectMenuFactories,
+    public CompactViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Set<ObjectMenuFactory> objectMenuFactories,
             MenuFactory menuFactory, TimeslotProvider timeslotProvider, Supplier<DateRenderer> dateRendererProvider,
             CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory infoFactory,
             DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory,
@@ -79,7 +77,6 @@ public class CompactViewFactory implements SwingViewFactory
         this.facade = facade;
         this.i18n = i18n;
         this.raplaLocale = raplaLocale;
-        this.logger = logger;
         this.objectMenuFactories = objectMenuFactories;
         this.menuFactory = menuFactory;
         this.timeslotProvider = timeslotProvider;
@@ -105,7 +102,7 @@ public class CompactViewFactory implements SwingViewFactory
 
     public SwingCalendarView createSwingView(CalendarModel model, boolean editable, boolean printing) throws RaplaException
     {
-        return new SwingCompactCalendar(facade, i18n, raplaLocale, logger, model, editable, printing, objectMenuFactories, menuFactory, timeslotProvider, dateRendererProvider,
+        return new SwingCompactCalendar(facade, i18n, raplaLocale, model, editable, printing, objectMenuFactories, menuFactory, timeslotProvider, dateRendererProvider,
                 calendarSelectionModel, clipboard, reservationController, infoFactory, dateRenderer, dialogUiFactory, ioInterface, appointmentFormater, editController);
     }
     @Override

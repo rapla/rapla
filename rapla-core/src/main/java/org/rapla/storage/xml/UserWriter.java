@@ -21,11 +21,15 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.framework.RaplaException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
 public class UserWriter extends RaplaXMLWriter {
-    
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(UserWriter.class);
+
     public UserWriter(RaplaXMLContext sm) throws RaplaException {
         super(sm);
     }
@@ -67,7 +71,7 @@ public class UserWriter extends RaplaXMLWriter {
             }
             catch (Exception ex)
             {
-            	getLogger().error(ex.getMessage(), ex);
+            	LOGGER.error(ex.getMessage(), ex);
             }
         }
 

@@ -2,17 +2,17 @@ package org.rapla.server.spring.web;
 
 import org.rapla.endpoints.RemoteLogger;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class RemoteLoggerController implements RemoteLogger
 {
-    private final Logger logger;
+    private static final Logger LOGGER = LoggerFactory.getLogger(RemoteLoggerController.class);
 
-    public RemoteLoggerController(Logger logger)
+    public RemoteLoggerController()
     {
-        this.logger = logger;
     }
 
     @Override
@@ -21,10 +21,9 @@ public class RemoteLoggerController implements RemoteLogger
         if (id == null)
         {
             String message2 = "Id missing in logging call";
-            logger.error(message2);
+            LOGGER.error(message2);
             throw new RaplaException(message);
         }
-        Logger childLogger = logger.getChildLogger(id);
-        childLogger.info(message);
+        LoggerFactory.getLogger("rapla." + id).info(message);
     }
 }

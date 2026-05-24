@@ -33,7 +33,8 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.scheduler.Promise;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,8 +45,8 @@ import java.time.LocalDateTime;
 @org.springframework.context.annotation.Lazy
 public class RequestSelectionPresenter implements ResourceRequestSelectionView.Presenter
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RequestSelectionPresenter.class);
     protected final CalendarSelectionModel model;
-    private final Logger logger;
     private Collection<Reservation> requests = Collections.emptySet();
     private final CalendarEventBus eventBus;
     private final DialogUiFactoryInterface dialogUiFactory;
@@ -55,11 +56,10 @@ public class RequestSelectionPresenter implements ResourceRequestSelectionView.P
     private PresenterChangeCallback callback;
 
     @Autowired
-    public RequestSelectionPresenter(ClientFacade facade, Logger logger, final CalendarSelectionModel model, CalendarEventBus eventBus,
+    public RequestSelectionPresenter(ClientFacade facade, final CalendarSelectionModel model, CalendarEventBus eventBus,
                                      DialogUiFactoryInterface dialogUiFactory, ResourceRequestSelectionView view) throws RaplaInitializationException
     {
         this.facade = facade;
-        this.logger = logger;
         this.model = model;
         this.eventBus = eventBus;
         this.dialogUiFactory = dialogUiFactory;
@@ -162,7 +162,7 @@ public class RequestSelectionPresenter implements ResourceRequestSelectionView.P
         raplaFacade.getResourceRequests()
                    .thenAccept(requests->updateTree(requests))
                    .exceptionally(ex -> {
-                       logger.error(ex.getMessage(), ex);
+                       LOGGER.error(ex.getMessage(), ex);
                    });
     }
 

@@ -7,7 +7,8 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.plugin.urlencryption.UrlEncryption;
 import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.RemoteSession;
@@ -26,6 +27,7 @@ import java.security.NoSuchAlgorithmException;
 
 public class UrlEncryptor
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(UrlEncryptor.class);
 
     @Deprecated
     private static final TypedComponentRole<String> KEY_PREFERENCE_ENTRY = new TypedComponentRole<>("org.rapla.plugin.urlencryption.urlEncKey");
@@ -36,16 +38,14 @@ public class UrlEncryptor
     private Cipher decryptionCipher;
 
     private final RaplaFacade facade;
-    private final Logger logger;
     private final RaplaKeyStorage keyStore;
     private final RemoteSession session;
 
     @Autowired
-    public UrlEncryptor(RaplaFacade facade, Logger logger, RaplaKeyStorage keyStore, RemoteSession session)
+    public UrlEncryptor(RaplaFacade facade, RaplaKeyStorage keyStore, RemoteSession session)
     {
         super();
         this.facade = facade;
-        this.logger = logger;
         this.keyStore = keyStore;
         this.session = session;
     }
@@ -185,12 +185,12 @@ public class UrlEncryptor
         catch (NoSuchAlgorithmException e)
         {
             // AES Algorithm does not exist here
-            logger.error("AES Algorithm does not exist here");
+            LOGGER.error("AES Algorithm does not exist here");
         }
         catch (NoSuchPaddingException e)
         {
             // AES/ECB/PKCS5 Padding missing
-            logger.error("AES/ECB/PKCS5 Padding missing");
+            LOGGER.error("AES/ECB/PKCS5 Padding missing");
         }
     }
 }

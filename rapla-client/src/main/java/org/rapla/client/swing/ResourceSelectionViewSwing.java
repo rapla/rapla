@@ -50,7 +50,8 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.BorderFactory;
@@ -78,6 +79,7 @@ import java.util.*;
 @org.springframework.context.annotation.Lazy
 public class ResourceSelectionViewSwing implements ResourceSelectionView
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ResourceSelectionViewSwing.class);
     private final ClientFacade facade;
     protected JPanel content = new JPanel();
     public RaplaTree treeSelection = new RaplaTree();
@@ -98,7 +100,6 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
      *  Drives the hidden-count: any selected object NOT in this set is hidden. */
     private java.util.Set<Object> visibleUserObjects = java.util.Collections.emptySet();
     private final TreeFactory treeFactory;
-    private final Logger logger;
     private final RaplaResources i18n;
     private final RaplaMenuBarContainer menuBar;
     private final DialogUiFactoryInterface dialogUiFactory;
@@ -109,7 +110,7 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
     ComplexTreeCellRenderer treeCellRenderer;
 
     @Autowired
-    public ResourceSelectionViewSwing(RaplaMenuBarContainer menuBar, RaplaResources i18n, Logger logger,
+    public ResourceSelectionViewSwing(RaplaMenuBarContainer menuBar, RaplaResources i18n,
                                       TreeFactory treeFactory, MenuFactory menuFactory, InfoFactory infoFactory,
                                       DialogUiFactoryInterface dialogUiFactory, FilterEditButtonFactory filterEditButtonFactory,
                                       final ComplexTreeCellRenderer renderer,
@@ -121,7 +122,6 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
         this.facade = facade;
         this.menuBar = menuBar;
         this.i18n = i18n;
-        this.logger = logger;
         this.treeFactory = treeFactory;
         this.menuFactory = menuFactory;
         this.dialogUiFactory = dialogUiFactory;
@@ -225,7 +225,7 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
             }
             catch (RaplaException ex)
             {
-                logger.error("Failed to refresh from state", ex);
+                LOGGER.error("Failed to refresh from state", ex);
             }
         }
         updateHiddenSelectionStatus();
@@ -342,7 +342,7 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
         }
         catch (Exception ex)
         {
-            logger.error(ex.getMessage(), ex);
+            LOGGER.error(ex.getMessage(), ex);
         }
         finally
         {

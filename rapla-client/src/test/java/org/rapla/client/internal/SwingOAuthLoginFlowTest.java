@@ -6,9 +6,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.rapla.logger.ConsoleLogger;
-import org.rapla.logger.Logger;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
@@ -36,7 +33,6 @@ import static org.junit.Assert.fail;
 @RunWith(JUnit4.class)
 public class SwingOAuthLoginFlowTest
 {
-    private final Logger logger = new ConsoleLogger(ConsoleLogger.LEVEL_WARN);
     private HttpServer fakeAuthServer;
     private String fakeAccessToken;
     private String fakeRefreshToken;
@@ -86,8 +82,8 @@ public class SwingOAuthLoginFlowTest
                 fakeAuthServerUrl() + "/oauth2/token",
                 List.of("openid", "profile"));
 
-        SwingOAuthLoginFlow flow = new SwingOAuthLoginFlow(cfg, logger,
-                (url, log) -> simulateBrowserLogin(url, "test-code-xyz", null));
+        SwingOAuthLoginFlow flow = new SwingOAuthLoginFlow(cfg,
+                (url) -> simulateBrowserLogin(url, "test-code-xyz", null));
 
         OAuthTokens tokens = flow.start().future().get(10, TimeUnit.SECONDS);
         assertEquals(fakeAccessToken, tokens.getAccessToken());
@@ -107,8 +103,8 @@ public class SwingOAuthLoginFlowTest
                 fakeAuthServerUrl() + "/oauth2/token",
                 List.of("openid"));
 
-        SwingOAuthLoginFlow flow = new SwingOAuthLoginFlow(cfg, logger,
-                (url, log) -> simulateBrowserLogin(url, "test-code", "wrong-state"));
+        SwingOAuthLoginFlow flow = new SwingOAuthLoginFlow(cfg,
+                (url) -> simulateBrowserLogin(url, "test-code", "wrong-state"));
 
         try
         {
@@ -130,8 +126,8 @@ public class SwingOAuthLoginFlowTest
                 List.of("openid"));
 
         AtomicReference<URI> opened = new AtomicReference<>();
-        SwingOAuthLoginFlow flow = new SwingOAuthLoginFlow(cfg, logger,
-                (url, log) -> { opened.set(url); /* skip browser entirely */ });
+        SwingOAuthLoginFlow flow = new SwingOAuthLoginFlow(cfg,
+                (url) -> { opened.set(url); /* skip browser entirely */ });
 
         SwingOAuthLoginFlow.Session session = flow.start();
         // Simulate the user pasting the URL they saw in the browser. The pasted URL
@@ -160,8 +156,8 @@ public class SwingOAuthLoginFlowTest
                 List.of());
 
         AtomicReference<URI> opened = new AtomicReference<>();
-        SwingOAuthLoginFlow flow = new SwingOAuthLoginFlow(cfg, logger,
-                (url, log) -> { opened.set(url); /* do nothing — never call back */ });
+        SwingOAuthLoginFlow flow = new SwingOAuthLoginFlow(cfg,
+                (url) -> { opened.set(url); /* do nothing — never call back */ });
 
         try
         {

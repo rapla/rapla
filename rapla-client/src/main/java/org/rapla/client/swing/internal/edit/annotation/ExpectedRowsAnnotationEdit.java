@@ -14,7 +14,6 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.springframework.stereotype.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,8 +30,8 @@ public class ExpectedRowsAnnotationEdit extends RaplaGUIComponent implements Ann
     private final LongFieldFactory longFieldFactory;
     
     @Autowired
-    public ExpectedRowsAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface service, LongFieldFactory longFieldFactory) {
-        super(facade, i18n, raplaLocale, logger);
+    public ExpectedRowsAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, IOInterface service, LongFieldFactory longFieldFactory) {
+        super(facade, i18n, raplaLocale);
         this.service = service;
         this.longFieldFactory = longFieldFactory;
     }
@@ -59,7 +58,7 @@ public class ExpectedRowsAnnotationEdit extends RaplaGUIComponent implements Ann
         {
             field.setValue( DEFAULT_VALUE);
         }
-        addCopyPaste(field.getComponent(), getI18n(), getRaplaLocale(), service, getLogger());
+        addCopyPaste(field.getComponent(), getI18n(), getRaplaLocale(), service);
         return Collections.singleton(field);
     }
 

@@ -15,7 +15,6 @@ package org.rapla.client.swing.internal.edit.fields;
 import org.rapla.RaplaResources;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.BoxLayout;
@@ -44,9 +43,9 @@ public class BooleanField extends AbstractEditField implements ActionListener, F
 
 	JLabel multipleValuesLabel = new JLabel();
 	
-    public BooleanField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, String fieldName)
+    public BooleanField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, String fieldName)
     {
-        this(facade, i18n, raplaLocale, logger);
+        this(facade, i18n, raplaLocale);
         setFieldName( fieldName );
     }
 
@@ -56,9 +55,9 @@ public class BooleanField extends AbstractEditField implements ActionListener, F
         field2.setEnabled(flag);
     }
 
-    public BooleanField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
+    public BooleanField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale)
     {
-        super(facade, i18n, raplaLocale, logger);
+        super(facade, i18n, raplaLocale);
         panel  = new JPanel(){
             @Override
             public void setEnabled(boolean enabled)
@@ -177,25 +176,23 @@ public class BooleanField extends AbstractEditField implements ActionListener, F
         private final ClientFacade facade;
         private final RaplaResources i18n;
         private final RaplaLocale raplaLocale;
-        private final Logger logger;
 
         @Autowired
-        public BooleanFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
+        public BooleanFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale)
         {
             this.facade = facade;
             this.i18n = i18n;
             this.raplaLocale = raplaLocale;
-            this.logger = logger;
         }
 
         public BooleanField create()
         {
-            return new BooleanField(facade, i18n, raplaLocale, logger);
+            return new BooleanField(facade, i18n, raplaLocale);
         }
 
         public BooleanField create(String fieldName)
         {
-            return new BooleanField(facade, i18n, raplaLocale, logger, fieldName);
+            return new BooleanField(facade, i18n, raplaLocale, fieldName);
         }
 
     }

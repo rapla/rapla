@@ -14,7 +14,6 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.springframework.stereotype.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,31 +31,29 @@ public class AppointmentCounterFactory implements AppointmentStatusFactory
     private final ClientFacade facade;
     private final RaplaResources i18n;
     private final RaplaLocale raplaLocale;
-    private final Logger logger;
 
 	@Autowired
-	public AppointmentCounterFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
+	public AppointmentCounterFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale)
 	{
 	    super();
 	    this.facade = facade;
 	    this.i18n = i18n;
 	    this.raplaLocale = raplaLocale;
-	    this.logger = logger;
 	}
-	
+
 	public RaplaWidget createStatus(ReservationEdit reservationEdit) throws RaplaException
 	{
-		return new AppointmentCounter(facade, i18n, raplaLocale, logger, reservationEdit);
+		return new AppointmentCounter(facade, i18n, raplaLocale, reservationEdit);
 	}
-	
+
     class AppointmentCounter extends RaplaGUIComponent implements RaplaWidget
 	{
 		JLabel statusBar = new JLabel();
-		
-		   
+
+
 		ReservationEdit reservationEdit;
-		public AppointmentCounter(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, final ReservationEdit reservationEdit) {
-			super(facade, i18n, raplaLocale, logger);
+		public AppointmentCounter(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, final ReservationEdit reservationEdit) {
+			super(facade, i18n, raplaLocale);
 
 			Font font = statusBar.getFont().deriveFont( (float)11.0);
 			statusBar.setFont( font ); 

@@ -24,7 +24,6 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.appointmentnote.AppointmentNotePlugin;
 import org.rapla.plugin.appointmentnote.AppointmentNoteFunctions;
 import org.rapla.rest.PluginsService;
@@ -43,19 +42,17 @@ public class AppointmentNoteEditFactory implements AppointmentEditExtensionFacto
     private final ClientFacade facade;
     private final RaplaResources i18n;
     private final RaplaLocale raplaLocale;
-    private final Logger logger;
     private final TextField.TextFieldFactory textFieldFactory;
     private final PluginsService plugins;
     private volatile Boolean cachedEnabled;
 
     @Autowired
-    public AppointmentNoteEditFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TextField.TextFieldFactory textFieldFactory, PluginsService plugins)
+    public AppointmentNoteEditFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, TextField.TextFieldFactory textFieldFactory, PluginsService plugins)
     {
         super();
         this.facade = facade;
         this.i18n = i18n;
         this.raplaLocale = raplaLocale;
-        this.logger = logger;
         this.textFieldFactory = textFieldFactory;
         this.plugins = plugins;
     }

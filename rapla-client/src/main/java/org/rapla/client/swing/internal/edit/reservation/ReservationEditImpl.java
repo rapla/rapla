@@ -45,7 +45,8 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 
@@ -86,6 +87,7 @@ import java.time.LocalDateTime;
 @org.springframework.context.annotation.Lazy
 public final class ReservationEditImpl extends AbstractAppointmentEditor implements ReservationEdit<Component>
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReservationEditImpl.class);
     protected Reservation mutableReservation;
     private Reservation original;
 
@@ -151,13 +153,13 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
     Runnable deleteCmd;
 
     @Autowired
-    public ReservationEditImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
+    public ReservationEditImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale,
             Set<AppointmentStatusFactory> appointmentStatusFactories,
             DialogUiFactoryInterface dialogUiFactory, ReservationInfoEditFactory reservationInfoEditFactory,
             AppointmentListEditFactory appointmentListEditFactory, AllocatableSelectionFactory allocatableSelectionFactory,
             Set<ReservationToolbarExtension> reservationToolbarExtensions) throws RaplaInitializationException
     {
-        super(facade, i18n, raplaLocale, logger);
+        super(facade, i18n, raplaLocale);
         this.reservationToolbarExtensions = reservationToolbarExtensions;
         this.appointmentStatusFactories = appointmentStatusFactories;
         this.dialogUiFactory = dialogUiFactory;
@@ -353,7 +355,7 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         }
         catch (RaplaException e)
         {
-            getLogger().error( e.getMessage(),e);
+            LOGGER.error(e.getMessage(), e);
         }
         setHasChanged( true);
     }
@@ -394,7 +396,7 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         // Insert into open ReservationEditWindows, so that
         // we can't edit the same Reservation in different windows
         reservationInfo.requestFocus();
-        getLogger().debug("New Reservation-Window created");
+        LOGGER.debug("New Reservation-Window created");
         final User user = getUser();
         deleteButton.setEnabled(permissionController.canDelete(reservation, user));
         if (!permissionController.canModify(reservation, user))
@@ -525,13 +527,13 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         {
             if (evt.getSource() == reservationInfo)
             {
-                getLogger().debug("ReservationInfo changed");
+                LOGGER.debug("ReservationInfo changed");
                 //        		PermissionContainer.Util.processOldPermissionModify(mutableReservation, original);
                 setHasChanged(true);
             }
             if (evt.getSource() == allocatableEdit)
             {
-                getLogger().debug("AllocatableEdit changed");
+                LOGGER.debug("AllocatableEdit changed");
                 setHasChanged(true);
             }
             fireReservationChanged(evt);

@@ -12,8 +12,13 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /** Some of the assert functionality of 1.4 for 1.3 versions of Rapla*/
 public class Assert {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Assert.class);
+
     static String NOT_NULL_ASSERTION = "notNull-Assertion";
     static String IS_TRUE_ASSERTION = "isTrue-Assertion";
     static String ASSERTION_FAIL = "Assertion fail";
@@ -52,7 +57,7 @@ public class Assert {
     }
 
     private static void doAssert(String text) throws AssertionError {
-	System.err.println(text);
+	LOGGER.error(text);
 	throw new AssertionError(text);
     }
 

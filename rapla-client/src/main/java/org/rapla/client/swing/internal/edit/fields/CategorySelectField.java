@@ -21,7 +21,6 @@ import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 import javax.swing.tree.TreeModel;
 import java.util.Collections;
@@ -31,13 +30,13 @@ public class CategorySelectField extends AbstractSelectField<Category>
 {
     Category rootCategory;
 
-    public CategorySelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, DialogUiFactoryInterface dialogUiFactory, Category rootCategory){
-       this( facade, i18n, raplaLocale, logger, treeFactory,  dialogUiFactory, rootCategory, null);
+    public CategorySelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, TreeFactory treeFactory, DialogUiFactoryInterface dialogUiFactory, Category rootCategory){
+       this( facade, i18n, raplaLocale, treeFactory,  dialogUiFactory, rootCategory, null);
     }
-    
-    public CategorySelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,  DialogUiFactoryInterface dialogUiFactory, Category rootCategory, Category defaultCategory)
+
+    public CategorySelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, TreeFactory treeFactory,  DialogUiFactoryInterface dialogUiFactory, Category rootCategory, Category defaultCategory)
     {
-        super( facade, i18n, raplaLocale, logger, treeFactory, dialogUiFactory, defaultCategory);
+        super( facade, i18n, raplaLocale, treeFactory, dialogUiFactory, defaultCategory);
         Assert.notNull( rootCategory);
         this.rootCategory = rootCategory;
     }

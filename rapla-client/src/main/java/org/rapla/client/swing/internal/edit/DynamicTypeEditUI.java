@@ -43,7 +43,8 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
@@ -73,6 +74,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
     implements
      EditComponent<DynamicType,JComponent>
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DynamicTypeEditUI.class);
     public static String WARNING_SHOWED = DynamicTypeEditUI.class.getName() + "/Warning";
     DynamicType dynamicType;
     JPanel editPanel = new JPanel();
@@ -106,10 +108,10 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
     private final DialogUiFactoryInterface dialogUiFactory;
 
     @Autowired
-    public DynamicTypeEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, final AttributeEdit attributeEdit, Set<AnnotationEditTypeExtension> annotationExtensions, final DialogUiFactoryInterface dialogUiFactory, final PermissionListFieldFactory permissionListFieldFactory, MultiLanguageFieldFactory multiLanguageFieldFactory, TextFieldFactory textFieldFactory, IOInterface ioInterface) throws RaplaInitializationException {
-        super(facade, i18n, raplaLocale, logger);
+    public DynamicTypeEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, final AttributeEdit attributeEdit, Set<AnnotationEditTypeExtension> annotationExtensions, final DialogUiFactoryInterface dialogUiFactory, final PermissionListFieldFactory permissionListFieldFactory, MultiLanguageFieldFactory multiLanguageFieldFactory, TextFieldFactory textFieldFactory, IOInterface ioInterface) throws RaplaInitializationException {
+        super(facade, i18n, raplaLocale);
         this.dialogUiFactory = dialogUiFactory;
-        annotationEdit = new AnnotationEditUI(facade, i18n, raplaLocale, logger, annotationExtensions);
+        annotationEdit = new AnnotationEditUI(facade, i18n, raplaLocale, annotationExtensions);
         {
         	@SuppressWarnings("unchecked")
         	JComboBox jComboBox = new JComboBox(new String[] {getString("color.automated"),getString("color.manual"),getString("color.no")});
@@ -143,7 +145,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
 //            ,{PRE,5,PRE,5,PRE, 5, PRE,5, PRE,5,PRE}
 //        }));
 
-        addCopyPaste( annotationText, i18n, raplaLocale, ioInterface, logger);
+        addCopyPaste( annotationText, i18n, raplaLocale, ioInterface);
         //addCopyPaste(annotationTreeText);
         editPanel.add(new JLabel(getString("options") + ":" ),"1,6");
         editPanel.add(annotationButton ,"3,6");
@@ -351,7 +353,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
                 try {
                     annotationEdit.mapTo(asList);
                 } catch (Exception e1) {
-                    getLogger().error(e1.getMessage(), e1);
+                    LOGGER.error(e1.getMessage(), e1);
                     dialogUiFactory.showException( e1, new SwingPopupContext(getMainComponent(), null));
                 }
                 dialog.close();

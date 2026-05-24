@@ -32,7 +32,6 @@ import org.rapla.facade.PeriodModel;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.BorderFactory;
@@ -85,17 +84,17 @@ public class IntervalChooserPanel extends RaplaGUIComponent implements RaplaWidg
     JPanel periodPanel;
 
     @Autowired
-    public IntervalChooserPanel(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, DateRenderer dateRenderer, IOInterface ioInterface) throws
+    public IntervalChooserPanel(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, CalendarModel model, DateRenderer dateRenderer, IOInterface ioInterface) throws
             RaplaInitializationException
     {
-        super(facade, i18n, raplaLocale, logger);
+        super(facade, i18n, raplaLocale);
         this.model = model;
 
         periodChooser = new PeriodChooser(i18n, facade.getRaplaFacade(), PeriodChooser.START_AND_END);
         periodChooser.setWeekOfPeriodVisible(false);
 
-        startDateSelection = RaplaGUIComponent.createRaplaCalendar(dateRenderer, ioInterface, i18n,raplaLocale, logger);
-        endDateSelection = RaplaGUIComponent.createRaplaCalendar(dateRenderer, ioInterface, i18n,raplaLocale, logger);
+        startDateSelection = RaplaGUIComponent.createRaplaCalendar(dateRenderer, ioInterface, i18n,raplaLocale);
+        endDateSelection = RaplaGUIComponent.createRaplaCalendar(dateRenderer, ioInterface, i18n,raplaLocale);
         //prevButton.setText("<");
         //nextButton.setText(">");
         double pre = TableLayout.PREFERRED;

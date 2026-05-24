@@ -3,7 +3,8 @@ package org.rapla.client.internal;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
@@ -27,26 +28,25 @@ import java.util.concurrent.TimeoutException;
 
 public final class SwingOAuthLoginFlow
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SwingOAuthLoginFlow.class);
     private static final String CALLBACK_PATH = "/login/oauth2/code/rapla";
     private static final Duration CALLBACK_TIMEOUT = Duration.ofMinutes(5);
     private static final Duration HTTP_TIMEOUT = Duration.ofSeconds(20);
     private static final ObjectMapper JSON = JsonMapper.builder().build();
 
     private final OAuthConfig config;
-    private final Logger logger;
     private final HttpClient http;
     private final BrowserOpener browserOpener;
     private boolean forceLogin = false;
 
-    public SwingOAuthLoginFlow(OAuthConfig config, Logger logger)
+    public SwingOAuthLoginFlow(OAuthConfig config)
     {
-        this(config, logger, (url, log) -> BrowserLauncher.open(url, log));
+        this(config, (url) -> BrowserLauncher.open(url));
     }
 
-    public SwingOAuthLoginFlow(OAuthConfig config, Logger logger, BrowserOpener browserOpener)
+    public SwingOAuthLoginFlow(OAuthConfig config, BrowserOpener browserOpener)
     {
         this.config = config;
-        this.logger = logger;
         this.http = HttpClient.newBuilder().connectTimeout(HTTP_TIMEOUT).build();
         this.browserOpener = browserOpener;
     }
@@ -68,7 +68,7 @@ public final class SwingOAuthLoginFlow
     @FunctionalInterface
     public interface BrowserOpener
     {
-        void open(URI url, Logger logger) throws IOException;
+        void open(URI url) throws IOException;
     }
 
     public static final class Session
@@ -127,7 +127,7 @@ public final class SwingOAuthLoginFlow
         // Windows routes directly to that IP via the Hyper-V vSwitch, bypassing
         // the forwarder. Requires the server to accept WSL bridge IPs in its
         // redirect validator — see AuthorizationServerConfig.
-        final String wslIp = BrowserLauncher.isWsl() ? discoverWslBridgeIp(logger) : null;
+        final String wslIp = BrowserLauncher.isWsl() ? discoverWslBridgeIp() : null;
         final String bindHost = wslIp != null ? "0.0.0.0" : "127.0.0.1";
         final String redirectHost = wslIp != null ? wslIp : "127.0.0.1";
 
@@ -148,14 +148,14 @@ public final class SwingOAuthLoginFlow
         server.createContext(CALLBACK_PATH, new CallbackHandler(state, verifier, redirectUri, result));
         server.setExecutor(null);
         server.start();
-        if (logger != null) logger.info("OAuth loopback listener bound on " + redirectUri);
+        LOGGER.info("OAuth loopback listener bound on {}", redirectUri);
 
         result.whenComplete((tokens, err) -> server.stop(0));
 
         URI authorize = URI.create(buildAuthorizeUrl(redirectUri, challenge, state));
         try
         {
-            browserOpener.open(authorize, logger);
+            browserOpener.open(authorize);
         }
         catch (IOException e)
         {
@@ -167,7 +167,7 @@ public final class SwingOAuthLoginFlow
         return new Session(result, URI.create(redirectUri), http);
     }
 
-    private static String discoverWslBridgeIp(Logger logger)
+    private static String discoverWslBridgeIp()
     {
         try
         {
@@ -184,15 +184,15 @@ public final class SwingOAuthLoginFlow
             int second = Integer.parseInt(octets[1]);
             if (!first.startsWith("172.") || second < 16 || second > 31)
             {
-                if (logger != null) logger.debug("WSL bridge IP " + first + " is not in 172.16.0.0/12 — falling back to loopback");
+                LOGGER.debug("WSL bridge IP {} is not in 172.16.0.0/12 — falling back to loopback", first);
                 return null;
             }
-            if (logger != null) logger.info("WSL detected; OAuth loopback will use bridge IP " + first);
+            LOGGER.info("WSL detected; OAuth loopback will use bridge IP {}", first);
             return first;
         }
         catch (Exception e)
         {
-            if (logger != null) logger.debug("WSL bridge IP detection failed: " + e.getMessage());
+            LOGGER.debug("WSL bridge IP detection failed: {}", e.getMessage());
             return null;
         }
     }
@@ -303,12 +303,9 @@ public final class SwingOAuthLoginFlow
             JsonNode refresh = tree.get("refresh_token");
             JsonNode idToken = tree.get("id_token");
             JsonNode expires = tree.get("expires_in");
-            if (logger != null)
-            {
-                logger.info("token endpoint returned: keys=" + tree.propertyNames()
-                        + (refresh == null ? " (NO refresh_token)" : " (refresh_token present)")
-                        + (idToken == null ? " (NO id_token)" : " (id_token present)"));
-            }
+            LOGGER.info("token endpoint returned: keys=" + tree.propertyNames()
+                    + (refresh == null ? " (NO refresh_token)" : " (refresh_token present)")
+                    + (idToken == null ? " (NO id_token)" : " (id_token present)"));
             return new OAuthTokens(
                     access.asString(),
                     refresh != null ? refresh.asString() : null,

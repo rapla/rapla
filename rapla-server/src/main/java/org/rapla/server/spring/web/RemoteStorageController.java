@@ -26,7 +26,8 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.AbstractRaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.plugin.mail.MailPlugin;
 import org.rapla.plugin.mail.server.MailInterface;
 import org.rapla.server.AuthenticationStore;
@@ -68,13 +69,13 @@ import java.util.stream.Collectors;
 @ConditionalOnBean(RemoteSession.class)
 public class RemoteStorageController implements RemoteStorage
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RemoteStorageController.class);
     private final RemoteSession session;
     private final CachableStorageOperator operator;
     private final SyncStorageOperator syncOperator;
     private final SecurityManager security;
     private final ReloadService reloadService;
     private final Set<PrePostDispatchProcessor> prePostDispatchProcessors;
-    private final Logger logger;
     private final Set<AuthenticationStore> authenticationStore;
     private final RaplaResources i18n;
     private final Supplier<MailInterface> mailInterface;
@@ -87,7 +88,6 @@ public class RemoteStorageController implements RemoteStorage
                                    SecurityManager security,
                                    ReloadService reloadService,
                                    Set<PrePostDispatchProcessor> prePostDispatchProcessors,
-                                   Logger logger,
                                    Set<AuthenticationStore> authenticationStore,
                                    RaplaResources i18n,
                                    Supplier<MailInterface> mailInterface,
@@ -100,7 +100,6 @@ public class RemoteStorageController implements RemoteStorage
         this.security = security;
         this.reloadService = reloadService;
         this.prePostDispatchProcessors = prePostDispatchProcessors;
-        this.logger = logger;
         this.authenticationStore = authenticationStore;
         this.i18n = i18n;
         this.mailInterface = mailInterface;
@@ -112,7 +111,7 @@ public class RemoteStorageController implements RemoteStorage
     public UpdateEvent getResources() throws RaplaException
     {
         User user = checkSessionUser();
-        logger.debug("A RemoteAuthentificationService wants to get all resource-objects.");
+        LOGGER.debug("A RemoteAuthentificationService wants to get all resource-objects.");
         Collection<Entity> visibleEntities = operator.getVisibleEntities(user);
         UpdateEvent evt = new UpdateEvent();
         evt.setUserId(user.getId());
@@ -193,7 +192,7 @@ public class RemoteStorageController implements RemoteStorage
             }
             security.checkRead(sessionUser, entity);
             completeList.add(entity);
-            logger.debug("Get entity " + entity);
+            LOGGER.debug("Get entity {}", entity);
         }
         UpdateEvent evt = new UpdateEvent();
         evt.setLastValidated(operator.getLastRefreshed());
@@ -219,7 +218,7 @@ public class RemoteStorageController implements RemoteStorage
         LocalDateTime start = job.getStart();
         LocalDateTime end = job.getEnd();
         Map<String, String> annotationQuery = job.getAnnotations();
-        logger.debug("A RemoteAuthentificationService wants to reservations from ." + start + " to " + end);
+        LOGGER.debug("A RemoteAuthentificationService wants to reservations from .{} to {}", start, end);
         User user = null;
         List<Allocatable> allocatables = new ArrayList<>();
         if (allocatableIds != null)
@@ -246,7 +245,7 @@ public class RemoteStorageController implements RemoteStorage
         boolean requestsOnly = job.isRequestsOnly();
         AppointmentMapping reservations = syncOperator.queryAppointmentsSync(user, allocatables, owners, start, end, classificationFilters, annotationQuery, requestsOnly);
         AppointmentMap list = new AppointmentMap(reservations);
-        logger.debug("Get reservations " + start + " " + end + ": " + "," + list);
+        LOGGER.debug("Get reservations {} {}: ,{}", start, end, list);
         return list;
     }
 
@@ -292,7 +291,7 @@ public class RemoteStorageController implements RemoteStorage
         User target = operator.resolve(userId, User.class);
         if (target.getAuthenticationSource() == null)
         {
-            logger.info("disconnectExternalAuth: user '" + target.getUsername() + "' is already local — no-op");
+            LOGGER.info("disconnectExternalAuth: user '{}' is already local — no-op", target.getUsername());
             return;
         }
         String previousSource = target.getAuthenticationSource();
@@ -300,8 +299,7 @@ public class RemoteStorageController implements RemoteStorage
         edit.setAuthenticationSource(null);
         operator.storeAndRemove(java.util.Collections.singletonList(edit),
                 java.util.Collections.emptyList(), admin);
-        logger.info("disconnectExternalAuth: admin '" + admin.getUsername() + "' disconnected user '"
-                + target.getUsername() + "' from external auth (was: " + previousSource + ")");
+        LOGGER.info("disconnectExternalAuth: admin '{}' disconnected user '{}' from external auth (was: {})", admin.getUsername(), target.getUsername(), previousSource);
     }
 
     @Override
@@ -565,16 +563,16 @@ public class RemoteStorageController implements RemoteStorage
         if (lastSynced.isAfter(lastRefreshed))
         {
             long diff = java.time.Duration.between(lastRefreshed, lastSynced).toMillis();
-            logger.warn("Timestamp of client " + diff + " ms  after server ");
+            LOGGER.warn("Timestamp of client {} ms  after server ", diff);
             lastSynced = lastRefreshed;
         }
-        logger.info("Dispatching change for user " + sessionUser);
+        LOGGER.info("Dispatching change for user {}", sessionUser);
         if (sessionUser != null)
         {
             event.setUserId(sessionUser.getId());
         }
         dispatch_(event);
-        logger.info("Change for user " + sessionUser + " dispatched.");
+        LOGGER.info("Change for user {} dispatched.", sessionUser);
         UpdateEvent result = updateDataManager.createUpdateEvent(sessionUser, lastSynced);
         for (PrePostDispatchProcessor processor : prePostDispatchProcessors)
         {
@@ -653,23 +651,23 @@ public class RemoteStorageController implements RemoteStorage
                 }
             }
 
-            if (logger.isDebugEnabled())
+            if (LOGGER.isDebugEnabled())
             {
-                logger.debug("Processing plugin-update processors ");
+                LOGGER.debug("Processing plugin-update processors ");
             }
             for (PrePostDispatchProcessor processor : prePostDispatchProcessors)
             {
                 processor.preProcess(user, evt);
             }
-            if (logger.isDebugEnabled())
+            if (LOGGER.isDebugEnabled())
             {
-                logger.debug("Dispatching changes to " + operator.getClass());
+                LOGGER.debug("Dispatching changes to {}", operator.getClass());
             }
 
             operator.dispatch(evt);
-            if (logger.isDebugEnabled())
+            if (LOGGER.isDebugEnabled())
             {
-                logger.debug("Changes dispatched returning result.");
+                LOGGER.debug("Changes dispatched returning result.");
             }
         }
         catch (DependencyException ex)
@@ -682,22 +680,22 @@ public class RemoteStorageController implements RemoteStorage
         }
         catch (RaplaSecurityException ex)
         {
-            logger.warn(ex.getMessage());
+            LOGGER.warn(ex.getMessage());
             throw ex;
         }
         catch (RaplaException ex)
         {
-            logger.error(ex.getMessage(), ex);
+            LOGGER.error(ex.getMessage(), ex);
             throw ex;
         }
         catch (Exception ex)
         {
-            logger.error(ex.getMessage(), ex);
+            LOGGER.error(ex.getMessage(), ex);
             throw new RaplaException(ex);
         }
         catch (Error ex)
         {
-            logger.error(ex.getMessage(), ex);
+            LOGGER.error(ex.getMessage(), ex);
             throw ex;
         }
     }

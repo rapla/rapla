@@ -32,7 +32,6 @@ import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
@@ -91,8 +90,8 @@ public class CalendarOption extends RaplaGUIComponent implements UserOptionPanel
     RaplaNumber daysInWeekview;
 
     @Autowired
-    public CalendarOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface ioInterface) {
-        super(facade, i18n, raplaLocale, logger);
+    public CalendarOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, IOInterface ioInterface) {
+        super(facade, i18n, raplaLocale);
         daysInWeekview = new RaplaNumber(7, 3, 35, false);
         mapper = new WeekdayMapper(raplaLocale, DateTools.MONDAY);
         worktimeStart = createRaplaTime(ioInterface);

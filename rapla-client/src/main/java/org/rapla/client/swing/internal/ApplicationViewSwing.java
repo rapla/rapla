@@ -17,7 +17,8 @@ import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Observable;
 
@@ -52,11 +53,11 @@ import java.util.function.Function;
 @org.springframework.context.annotation.Lazy
 public class ApplicationViewSwing implements ApplicationView<JComponent>
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ApplicationViewSwing.class);
     private static final String MENU_ACTION = "RAPLA_MENU_ACTION";
     private final RaplaResources i18n;
     private Presenter presenter;
 
-    private final Logger logger;
     RaplaMenuBar menuBar;
     private final RaplaFrame frame;
     private final Map<ApplicationEvent, DialogUI> childFrames = new HashMap<>();
@@ -70,14 +71,13 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
     private final org.rapla.storage.dbrm.RemoteConnectionInfo connectionInfo;
 
     @Autowired
-    public ApplicationViewSwing(RaplaMenuBarContainer menuBarContainer, RaplaResources i18n, RaplaFrame frame, RaplaLocale raplaLocale, Logger logger,
+    public ApplicationViewSwing(RaplaMenuBarContainer menuBarContainer, RaplaResources i18n, RaplaFrame frame, RaplaLocale raplaLocale,
             RaplaMenuBar raplaMenuBar, CommandScheduler scheduler,
             DialogUiFactoryInterface dialogUiFactory,
             org.rapla.storage.dbrm.RemoteConnectionInfo connectionInfo) throws RaplaInitializationException
     {
         this.i18n = i18n;
         this.scheduler = scheduler;
-        this.logger = logger;
         this.menuBar = raplaMenuBar;
         this.dialogUiFactory = dialogUiFactory;
         this.frame = frame;
@@ -353,7 +353,7 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
 
             final ApplicationEvent applicationEvent = new ApplicationEvent(windowId.getApplicationEventId(), windowId.getInfo(),
                     new SwingPopupContext(component, null), null);
-            logger.debug("Closing");
+            LOGGER.debug("Closing");
             if (windowClosing.apply(applicationEvent))
             {
                 subscribe.dispose();

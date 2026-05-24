@@ -31,7 +31,6 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.weekview.WeekviewPlugin;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,13 +57,12 @@ public class DayViewFactory implements SwingViewFactory
     private final ClientFacade facade;
     private final RaplaResources i18n;
     private final RaplaLocale raplaLocale;
-    private final Logger logger;
     private final IOInterface ioInterface;
     private final AppointmentFormater appointmentFormater;
     private final EditController editController;
 
     @Autowired
-    public DayViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<ObjectMenuFactory> objectMenuFactories,
+    public DayViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Set<ObjectMenuFactory> objectMenuFactories,
             MenuFactory menuFactory, Supplier<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard,
             ReservationController reservationController, InfoFactory infoFactory, DateRenderer dateRenderer,
             DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface, AppointmentFormater appointmentFormater, EditController editController)
@@ -72,7 +70,6 @@ public class DayViewFactory implements SwingViewFactory
         this.facade = facade;
         this.i18n = i18n;
         this.raplaLocale = raplaLocale;
-        this.logger = logger;
         this.objectMenuFactories = objectMenuFactories;
         this.menuFactory = menuFactory;
         this.dateRendererProvider = dateRendererProvider;
@@ -95,7 +92,7 @@ public class DayViewFactory implements SwingViewFactory
 
     public SwingCalendarView createSwingView(CalendarModel model, boolean editable, boolean printing) throws RaplaException
     {
-        return new SwingDayCalendar(facade, i18n, raplaLocale, logger, model, editable, printing, objectMenuFactories, menuFactory, dateRendererProvider,
+        return new SwingDayCalendar(facade, i18n, raplaLocale, model, editable, printing, objectMenuFactories, menuFactory, dateRendererProvider,
                 calendarSelectionModel, clipboard, reservationController, infoFactory,  dateRenderer, dialogUiFactory,
                 ioInterface, appointmentFormater, editController);
     }

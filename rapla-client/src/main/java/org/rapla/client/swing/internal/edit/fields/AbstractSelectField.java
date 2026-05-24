@@ -28,7 +28,6 @@ import org.rapla.components.util.Tools;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 import javax.swing.AbstractAction;
 import javax.swing.Box;
@@ -81,12 +80,12 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
         return selectButton;
     }
 
-    public AbstractSelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, DialogUiFactoryInterface dialogUiFactory){
-       this( facade, i18n, raplaLocale, logger, treeFactory,  dialogUiFactory, null);
+    public AbstractSelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, TreeFactory treeFactory, DialogUiFactoryInterface dialogUiFactory){
+       this( facade, i18n, raplaLocale, treeFactory,  dialogUiFactory, null);
     }
-    
-    public AbstractSelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,  DialogUiFactoryInterface dialogUiFactory, T defaultValue) {
-        super(facade, i18n, raplaLocale, logger);
+
+    public AbstractSelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, TreeFactory treeFactory,  DialogUiFactoryInterface dialogUiFactory, T defaultValue) {
+        super(facade, i18n, raplaLocale);
         this.treeFactory = treeFactory;
         this.dialogUiFactory = dialogUiFactory;
         this.panel = new JPanel()

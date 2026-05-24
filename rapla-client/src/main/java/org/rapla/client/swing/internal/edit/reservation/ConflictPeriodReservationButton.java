@@ -30,7 +30,8 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,16 +46,17 @@ import java.time.LocalDateTime;
 
 public class ConflictPeriodReservationButton extends RaplaGUIComponent implements ReservationToolbarExtension
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConflictPeriodReservationButton.class);
     private final DialogUiFactoryInterface dialogUiFactory;
     private Reservation reservation;
     private RaplaButton button;
     private final HolidayExceptionCheck check;
 
     @Autowired
-    public ConflictPeriodReservationButton(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
+    public ConflictPeriodReservationButton(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale,
             DialogUiFactoryInterface dialogUiFactory, HolidayExceptionCheck check)
     {
-        super(facade, i18n, raplaLocale, logger);
+        super(facade, i18n, raplaLocale);
         this.dialogUiFactory = dialogUiFactory;
         this.check = check;
     }
@@ -155,7 +157,7 @@ public class ConflictPeriodReservationButton extends RaplaGUIComponent implement
         }
         catch (RaplaException e)
         {
-            getLogger().error( e.getMessage(),e);
+            LOGGER.error(e.getMessage(), e);
             return;
         }
         int count = org.rapla.client.edit.check.HolidayWarningModel.countAllPeriodConflicts(periodConflicts);

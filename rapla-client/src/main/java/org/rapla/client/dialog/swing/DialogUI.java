@@ -30,7 +30,8 @@ import org.rapla.components.i18n.LocaleChangeEvent;
 import org.rapla.components.i18n.LocaleChangeListener;
 import org.rapla.entities.DependencyException;
 import org.rapla.framework.RaplaInitializationException;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.scheduler.*;
 import org.rapla.scheduler.sync.SynchronizedCompletablePromise;
 import org.rapla.scheduler.sync.SynchronizedPromise;
@@ -472,18 +473,17 @@ public class DialogUI extends JDialog
     @org.springframework.stereotype.Service
     public static class DialogUiFactory implements DialogUiFactoryInterface
     {
+        private static final Logger LOGGER = LoggerFactory.getLogger(DialogUiFactory.class);
         private final RaplaResources i18n;
         private final BundleManager bundleManager;
-        private final Logger logger;
         private final CommandScheduler scheduler;
 
         @Autowired
-        public DialogUiFactory(RaplaResources i18n, CommandScheduler scheduler,BundleManager bundleManager, Logger logger)
+        public DialogUiFactory(RaplaResources i18n, CommandScheduler scheduler,BundleManager bundleManager)
         {
             this.i18n = i18n;
             this.scheduler = scheduler;
             this.bundleManager = bundleManager;
-            this.logger = logger;
         }
 
 
@@ -550,17 +550,17 @@ public class DialogUI extends JDialog
             {
                 popupContext = createPopupContext( null);
             }
-            return showException(ex, popupContext, i18n,  logger);
+            return showException(ex, popupContext, i18n);
         }
 
-        private Promise<Void> showException(Throwable ex, PopupContext popupContext, RaplaResources i18n, Logger logger)
+        private Promise<Void> showException(Throwable ex, PopupContext popupContext, RaplaResources i18n)
         {
             if ( ex instanceof CommandAbortedException)
             {
                 return ResolvedPromise.VOID_PROMISE;
             }
             Component owner = SwingPopupContext.extractParent(popupContext);
-            ErrorDialog dialog = new ErrorDialog(logger, i18n, this);
+            ErrorDialog dialog = new ErrorDialog(i18n, this);
             if (ex instanceof RaplaConnectException)
             {
                 String message = ex.getMessage();
@@ -571,7 +571,7 @@ public class DialogUI extends JDialog
                     additionalInfo = " " + cause.getClass() + ":" + cause.getMessage();
                 }
 
-                logger.warn(message + additionalInfo);
+                LOGGER.warn("{}{}", message, additionalInfo);
                 if (ex instanceof RaplaRestartingException)
                 {
                     return ResolvedPromise.VOID_PROMISE;
@@ -630,7 +630,7 @@ public class DialogUI extends JDialog
                 popupContext2 = createPopupContext(null);
             }
             Component owner = SwingPopupContext.extractParent(popupContext2);
-            ErrorDialog dialog = new ErrorDialog(logger, i18n, this);
+            ErrorDialog dialog = new ErrorDialog(i18n, this);
             return dialog.showWarningDialog(warning, owner);
         }
 

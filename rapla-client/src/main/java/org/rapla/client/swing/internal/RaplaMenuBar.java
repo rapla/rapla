@@ -64,7 +64,8 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ConfigTools;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.client.internal.admin.client.AdminUserTask;
 import org.rapla.scheduler.Promise;
@@ -100,6 +101,7 @@ import java.util.stream.Stream;
 @org.springframework.context.annotation.Lazy
 public class RaplaMenuBar extends RaplaGUIComponent
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RaplaMenuBar.class);
     final JMenuItem exit;
     final JMenuItem redo;
     final JMenuItem undo;
@@ -116,14 +118,14 @@ public class RaplaMenuBar extends RaplaGUIComponent
     private final Supplier<UserAction> userActionProvider;
 
 
-    @Autowired public RaplaMenuBar(RaplaMenuBarContainer menuBarContainer, ClientFacade clientFacade, RaplaSystemInfo systemInfo, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
+    @Autowired public RaplaMenuBar(RaplaMenuBarContainer menuBarContainer, ClientFacade clientFacade, RaplaSystemInfo systemInfo, RaplaResources i18n, RaplaLocale raplaLocale,
             PrintAction printAction, Set<AdminMenuExtension> adminMenuExt, Set<EditMenuExtension> editMenuExt, Set<ViewMenuExtension> viewMenuExt, Set<HelpMenuExtension> helpMenuExt, Set<ImportMenuExtension> importMenuExt,
             Set<ExportMenuExtension> exportMenuExt, EditController editController, CalendarSelectionModel model, UserClientService clientService, RestartServer restartServerService,
             DialogUiFactoryInterface dialogUiFactory, Supplier<TemplateEdit> templateEditFactory, Supplier<LicenseInfoUI> licenseInfoUIProvider, CalendarEventBus eventBus, ApplicationEventBus appEventBus, MenuItemFactory menuItemFactory,
             Supplier<UserAction> userActionProvider,
             org.rapla.client.swing.internal.adminpanels.ServerDrivenSettingsDialog settingsDialog)            throws RaplaInitializationException
     {
-        super(clientFacade, i18n, raplaLocale, logger);
+        super(clientFacade, i18n, raplaLocale);
         this.systemInfo = systemInfo;
         this.model = model;
         this.licenseInfoUIProvider = licenseInfoUIProvider;
@@ -185,13 +187,13 @@ public class RaplaMenuBar extends RaplaGUIComponent
         if (server && isAdmin)
         {
             JMenuItem restartServer = new JMenuItem();
-            restartServer.setAction(new ActionWrapper(new RestartServerAction(clientFacade, i18n, raplaLocale, logger, restartServerService)));
+            restartServer.setAction(new ActionWrapper(new RestartServerAction(clientFacade, i18n, raplaLocale, restartServerService)));
             adminMenu.add(restartServer);
         }
 
         Listener listener = new Listener();
         JMenuItem restart = new JMenuItem();
-        restart.setAction(new ActionWrapper(new RestartRaplaAction(clientFacade, i18n, raplaLocale, logger, clientService)));
+        restart.setAction(new ActionWrapper(new RestartRaplaAction(clientFacade, i18n, raplaLocale, clientService)));
         systemMenu.add(restart);
 
         systemMenu.setMnemonic('F');
@@ -243,13 +245,13 @@ public class RaplaMenuBar extends RaplaGUIComponent
         try
         {
             {
-                SaveableToggleAction action = new SaveableToggleAction(clientFacade, i18n, raplaLocale, logger, "show_tips", RaplaBuilder.SHOW_TOOLTIP_CONFIG_ENTRY, dialogUiFactory);
+                SaveableToggleAction action = new SaveableToggleAction(clientFacade, i18n, raplaLocale, "show_tips", RaplaBuilder.SHOW_TOOLTIP_CONFIG_ENTRY, dialogUiFactory);
                 RaplaMenuItem menu = createMenuItem(action);
                 viewMenu.insertBeforeId(menu, "view_save");
                 action.setEnabled(modifyPreferencesAllowed);
             }
             {
-                SaveableToggleAction action = new SaveableToggleAction(clientFacade, i18n, raplaLocale, logger, CalendarPlacePresenter.SHOW_CONFLICTS_MENU_ENTRY,
+                SaveableToggleAction action = new SaveableToggleAction(clientFacade, i18n, raplaLocale, CalendarPlacePresenter.SHOW_CONFLICTS_MENU_ENTRY,
                         CalendarPlacePresenter.SHOW_CONFLICTS_CONFIG_ENTRY, dialogUiFactory);
                 RaplaMenuItem menu = createMenuItem(action);
                 viewMenu.insertBeforeId(menu, "view_save");
@@ -490,7 +492,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
                     catch (SecurityException ex)
                     {
                         javaversion = "-";
-                        getLogger().warn("Permission to system properties denied!");
+                        LOGGER.warn("Permission to system properties denied!");
                     }
 
                     String mainText = systemInfo.infoText(javaversion);

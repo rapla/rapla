@@ -53,7 +53,8 @@ import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
@@ -81,6 +82,7 @@ public class RaplaBuilder
         Builder
         ,Cloneable
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RaplaBuilder.class);
 
     private Collection<Reservation> selectedReservations;
     private final Collection<Allocatable> selectedAllocatables = new LinkedHashSet<>();
@@ -111,17 +113,15 @@ public class RaplaBuilder
 	final private RaplaLocale raplaLocale;
 	final private RaplaFacade raplaFacade;
 	final private RaplaResources i18n;
-	final private Logger logger;
 	final private AppointmentFormater appointmentFormater;
     Predicate<Appointment> appointmentFilter= null;
 	@Autowired
-	public RaplaBuilder(RaplaLocale raplaLocale, RaplaFacade raplaFacade, RaplaResources i18n, Logger logger, AppointmentFormater appointmentFormater) {
+	public RaplaBuilder(RaplaLocale raplaLocale, RaplaFacade raplaFacade, RaplaResources i18n, AppointmentFormater appointmentFormater) {
         Locale locale = raplaLocale.getLocale();
         buildStrategy = new GroupAllocatablesStrategy( locale );
         this.raplaLocale = raplaLocale;
         this.raplaFacade = raplaFacade;
         this.i18n = i18n;
-        this.logger = logger;
         this.appointmentFormater = appointmentFormater;
 	}
 
@@ -142,10 +142,6 @@ public class RaplaBuilder
     protected RaplaResources getI18n()
     {
         return i18n;
-    }
-    
-    protected Logger getLogger() {
-        return logger;
     }
     
     /** Sync sibling of {@link #initFromModel}. Requires the underlying operator to implement
@@ -515,7 +511,7 @@ public class RaplaBuilder
         ArrayList<Block> blocks = new ArrayList<>();
         {
             //long time = System.currentTimeMillis();
-            AppointmentInfoUI appointmentInfoUI = new AppointmentInfoUI(i18n,raplaLocale, raplaFacade,logger, appointmentFormater, isExportContext());
+            AppointmentInfoUI appointmentInfoUI = new AppointmentInfoUI(i18n,raplaLocale, raplaFacade, appointmentFormater, isExportContext());
 
         	BuildContext buildContext = new BuildContext(this, appointmentInfoUI, blocks);
             Assert.notNull(preparedBlocks, "call prepareBuild first");
@@ -607,7 +603,6 @@ public class RaplaBuilder
         Map<Allocatable,String> colors;
         RaplaResources i18n;
         RaplaLocale raplaLocale;
-        Logger logger;
         User user;
         List<Block> blocks;
 		private final boolean isResourceColoring;
@@ -629,7 +624,6 @@ public class RaplaBuilder
             this.bRepeatingVisible= builder.bRepeatingVisible;
             this.colors = (Map<Allocatable,String>) builder.colors.clone();
             this.i18n =builder.getI18n();
-            this.logger = builder.getLogger();
             this.user = builder.editingUser;
             this.conflictsOrRequestSelected = builder.isConflictsOrRequestSelected();
             this.isResourceColoring = builder.isResourceColoring;
@@ -641,7 +635,7 @@ public class RaplaBuilder
                 this.showTooltips = clientFacade.getPreferences(user).getEntryAsBoolean(RaplaBuilder.SHOW_TOOLTIP_CONFIG_ENTRY, true);
             } catch (RaplaException e) {
                 this.showTooltips = true;
-                getLogger().error(e.getMessage(), e);
+                LOGGER.error(e.getMessage(), e);
             }
         }
 
@@ -691,11 +685,6 @@ public class RaplaBuilder
 		public boolean isEventColoringEnabled() {
 			return isEventColoring;
 		}
-
-		public Logger getLogger() {
-			return logger;
-		}
-
 
         public boolean isShowToolTips() {
             return showTooltips;

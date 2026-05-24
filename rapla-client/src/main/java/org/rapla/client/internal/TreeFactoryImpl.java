@@ -39,7 +39,6 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.ArrayList;
@@ -67,9 +66,9 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
     final ClientFacade clientFacade;
     final TreeItemFactory treeItemFactory;
     @Autowired
-    public TreeFactoryImpl(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeItemFactory treeItemFactory)
+    public TreeFactoryImpl(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, TreeItemFactory treeItemFactory)
     {
-        super(clientFacade.getRaplaFacade(), i18n, raplaLocale, logger);
+        super(clientFacade.getRaplaFacade(), i18n, raplaLocale);
         this.clientFacade = clientFacade;
         this.treeItemFactory = treeItemFactory;
     }

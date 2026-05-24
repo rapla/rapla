@@ -16,22 +16,24 @@ import org.rapla.RaplaResources;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.storage.dbrm.RestartServer;
 
 
 public class RestartServerAction extends RaplaAction {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RestartServerAction.class);
     private final RestartServer service;
 
-    public RestartServerAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, final RestartServer service) {
-        super(facade, i18n, raplaLocale, logger);
+    public RestartServerAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, final RestartServer service) {
+        super(facade, i18n, raplaLocale);
         this.service = service;
         putValue(NAME,i18n.getString("restart_server"));
         setIcon(i18n.getIcon( "icon.restart"));
     }
     
     public void actionPerformed() {
-        service.restartServer().exceptionally( (ex)->getLogger().error("Error restarting ", ex));
+        service.restartServer().exceptionally( (ex)->LOGGER.error("Error restarting ", ex));
     }
 
 

@@ -27,7 +27,6 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.storage.PermissionController;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,10 +50,10 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
     private final PermissionController permissionController;
 
     @Autowired
-    public ReservationEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,  ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory,
+    public ReservationEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale,  ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory,
              AllocatableSelection.AllocatableSelectionFactory allocatableSelectionFactory) throws RaplaInitializationException
     {
-        super(facade, i18n, raplaLocale, logger);
+        super(facade, i18n, raplaLocale);
         this.permissionController = facade.getRaplaFacade().getPermissionController();
         classificationField = classificationFieldFactory.create();
         try

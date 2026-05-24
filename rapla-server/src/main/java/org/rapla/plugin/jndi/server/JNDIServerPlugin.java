@@ -19,11 +19,13 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.storage.xml.RaplaXMLContextException;
 
 public class JNDIServerPlugin  {
-    
+    private static final Logger LOGGER = LoggerFactory.getLogger(JNDIServerPlugin.class);
+
 //    private void convertSettings(RaplaFacade facade, Logger logger,Configuration config)
 //    {
 //        String className = JNDIPlugin.class.getName();
@@ -34,7 +36,7 @@ public class JNDIServerPlugin  {
 //        }
 //    }
 
-    static public void convertToNewPluginConfig(RaplaFacade facade, Logger logger, String className, TypedComponentRole<RaplaConfiguration> newConfKey)
+    static public void convertToNewPluginConfig(RaplaFacade facade, String className, TypedComponentRole<RaplaConfiguration> newConfKey)
             throws RaplaXMLContextException
     {
         try
@@ -50,7 +52,7 @@ public class JNDIServerPlugin  {
             // we split the config entry in the plugin config and the new config entry;
             if (pluginConfig != null)
             {
-                logger.info("Converting plugin conf " + className + " to preference entry " + newConfKey);
+                LOGGER.info("Converting plugin conf " + className + " to preference entry " + newConfKey);
                 newPluginConfigEntry.removeChild(pluginConfig);
                 boolean enabled = pluginConfig.getAttributeAsBoolean("enabled", false);
                 RaplaConfiguration newPluginConfig = new RaplaConfiguration(pluginConfig.getName());

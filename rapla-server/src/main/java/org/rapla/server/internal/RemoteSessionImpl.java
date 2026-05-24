@@ -3,7 +3,6 @@ package org.rapla.server.internal;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.LoginTokens;
@@ -17,20 +16,17 @@ public class RemoteSessionImpl implements RemoteSession
     private static final String LOGIN_COOKIE = "raplaLoginToken";
 
     private User user;
-    final private Logger logger;
     private TokenHandler tokenHandler;
     private RaplaAuthentificationService service;
 
-    public RemoteSessionImpl(Logger logger, User user)
+    public RemoteSessionImpl(User user)
     {
-        this.logger = logger;
         this.user = user;
     }
 
     @Autowired
-    public RemoteSessionImpl(Logger logger, TokenHandler tokenHandler, RaplaAuthentificationService service)
+    public RemoteSessionImpl(TokenHandler tokenHandler, RaplaAuthentificationService service)
     {
-        this.logger = logger;
         this.tokenHandler = tokenHandler;
         this.service = service;
 
@@ -103,11 +99,6 @@ public class RemoteSessionImpl implements RemoteSession
             }
         }
         return user;
-    }
-
-    public Logger getLogger()
-    {
-        return logger;
     }
 
     public User checkAndGetUser(HttpServletRequest request) throws RaplaSecurityException

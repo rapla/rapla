@@ -13,7 +13,6 @@ import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 import org.rapla.plugin.tableview.internal.TableConfig.ViewDefinition;
@@ -59,18 +58,16 @@ import java.util.Set;
     private Sorting sorting;
 
     private final RaplaResources i18n;
-    private final Logger logger;
     private final RaplaLocale raplaLocale;
     private Preferences preferences;
     private final TableConfig.TableConfigLoader tableConfigLoader;
     private final MultiLanguageFieldFactory multiLanguageFieldFactory;
 
     @Autowired
-    public TableviewOption(RaplaFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TableConfig.TableConfigLoader tableConfigLoader,
+    public TableviewOption(RaplaFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, TableConfig.TableConfigLoader tableConfigLoader,
             MultiLanguageFieldFactory multiLanguageFieldFactory)
     {
         this.i18n = i18n;
-        this.logger = logger;
         this.raplaLocale = raplaLocale;
         this.tableConfigLoader = tableConfigLoader;
         this.multiLanguageFieldFactory = multiLanguageFieldFactory;

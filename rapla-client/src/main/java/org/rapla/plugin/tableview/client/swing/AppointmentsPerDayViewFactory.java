@@ -32,7 +32,6 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.client.swing.IntervalChooserPanel;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TablePage;
@@ -72,21 +71,19 @@ public class AppointmentsPerDayViewFactory implements SwingViewFactory {
     private final ClientFacade facade;
     private final RaplaResources i18n;
     private final RaplaLocale raplaLocale;
-    private final Logger logger;
     private final IOInterface ioInterface;
     private final RaplaMenuBarContainer menuBar;
     private final TableViewService tableViewService;
     private final CommandScheduler commandScheduler;
 
     @Autowired
-    public AppointmentsPerDayViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<AppointmentSummaryExtension> appointmentSummaryExtensions,
+    public AppointmentsPerDayViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Set<AppointmentSummaryExtension> appointmentSummaryExtensions,
                                          TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory,
                                          ReservationController reservationController, EditController editController, InfoFactory infoFactory, IntervalChooserPanel dateChooser, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface,
                                          RaplaMenuBarContainer menuBar, TableViewService tableViewService, CommandScheduler commandScheduler) {
         this.facade = facade;
         this.i18n = i18n;
         this.raplaLocale = raplaLocale;
-        this.logger = logger;
         this.appointmentSummaryExtensions = appointmentSummaryExtensions;
         this.tableConfigLoader = tableConfigLoader;
         this.menuFactory = menuFactory;
@@ -140,7 +137,7 @@ public class AppointmentsPerDayViewFactory implements SwingViewFactory {
             });
         };
 
-        SwingTableView<TableRow> view = new SwingTableView<>(menuBar, facade, i18n, raplaLocale, logger, model, appointmentSummaryExtensions, editable, printing, raplaTableColumns, menuFactory,
+        SwingTableView<TableRow> view = new SwingTableView<>(menuBar, facade, i18n, raplaLocale, model, appointmentSummaryExtensions, editable, printing, raplaTableColumns, menuFactory,
                 editController, reservationController, infoFactory, dateChooser, dialogUiFactory, ioInterface, initFunction, tableName);
         return view;
     }

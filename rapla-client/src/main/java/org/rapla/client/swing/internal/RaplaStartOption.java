@@ -28,7 +28,8 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.AbstractRaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.plugin.export2ical.ICalTimezones;
 import org.rapla.rest.SettingsService;
 import org.rapla.rest.dto.SystemSettings;
@@ -52,6 +53,7 @@ import java.util.Stack;
 @Scope("prototype")
 
 public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionPanel {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RaplaStartOption.class);
     JPanel panel = new JPanel();
     JTextField calendarName;
     Preferences preferences;
@@ -74,16 +76,16 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
 
 
     @Autowired
-    public RaplaStartOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ICalTimezones timezoneService, RemoteLocaleService localeService, IOInterface ioInterface, RestartServer restartServer, CommandScheduler scheduler, SettingsService settings) throws
+    public RaplaStartOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, ICalTimezones timezoneService, RemoteLocaleService localeService, IOInterface ioInterface, RestartServer restartServer, CommandScheduler scheduler, SettingsService settings) throws
             RaplaInitializationException {
-        super(facade, i18n, raplaLocale, logger);
+        super(facade, i18n, raplaLocale);
         this.settings = settings;
         isRestartPossible = restartServer.isRestartPossible();
         double pre = TableLayout.PREFERRED;
         panel.setLayout( new TableLayout(new double[][] {{pre, 5,pre, 5, pre}, {pre,5,pre, 5 , pre, 5, pre,5 , pre, 5, pre ,5 , pre, 5, pre}}));
         this.timezoneService = timezoneService;      
         calendarName = new JTextField();
-        addCopyPaste(calendarName, i18n, raplaLocale, ioInterface, logger);
+        addCopyPaste(calendarName, i18n, raplaLocale, ioInterface);
         calendarName.setColumns(20);
         panel.add(new JLabel(getString("custom_applicationame")), "0,0");
         panel.add(calendarName, "2,0");
@@ -109,11 +111,11 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
         panel.add(cboTimezone, "2,2");
 		cboTimezone.setEditable(false);
 
-        languageChooser = new LanguageChooser(getLogger(),i18n,raplaLocale);
+        languageChooser = new LanguageChooser(i18n,raplaLocale);
         panel.add( new JLabel(i18n.getString("server.language") ), "0,4");
         panel.add( languageChooser.getComponent(), "2,4");
 
-        countryChooser = new CountryChooser(getLogger(),i18n,raplaLocale,localeService,scheduler);
+        countryChooser = new CountryChooser(i18n,raplaLocale,localeService,scheduler);
         panel.add( new JLabel(i18n.getString("server.country") ), "0,6");
         panel.add( countryChooser.getComponent(), "2,6");
         languageChooser.addActionListener(e -> countryChooser.changeLanguage(languageChooser.getSelectedLanguage()));
@@ -129,7 +131,7 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
         panel.add(htmlCharset, "2,10");
         panel.add( new JLabel("CSV Export Charset"),"0,12"  );
         panel.add(csvCharset, "2,12");
-        addCopyPaste( seconds.getNumberField(), i18n, raplaLocale, ioInterface, logger);
+        addCopyPaste( seconds.getNumberField(), i18n, raplaLocale, ioInterface);
     }
 
     public JComponent getComponent() {
@@ -150,12 +152,12 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
         // framework saves via facade.store -> /storage/dispatch.
         SystemSettings sys;
         try {
-            getLogger().info("RaplaStartOption.show(): fetching /settings/system via REST");
+            LOGGER.info("RaplaStartOption.show(): fetching /settings/system via REST");
             sys = settings.getSystem();
         }
         catch (Exception e)
         {
-            getLogger().warn("GET /settings/system failed, falling back to local cache: " + e.getMessage());
+            LOGGER.warn("GET /settings/system failed, falling back to local cache: {}", e.getMessage());
             try {
                 String tzFallback = preferences.getEntryAsString(AbstractRaplaLocale.TIMEZONE, timezoneService.getDefaultTimezone());
                 sys = new SystemSettings(

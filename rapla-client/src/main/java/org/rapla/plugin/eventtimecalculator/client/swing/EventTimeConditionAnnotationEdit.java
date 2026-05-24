@@ -13,7 +13,6 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorPlugin;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
 
@@ -34,8 +33,8 @@ public class EventTimeConditionAnnotationEdit extends RaplaGUIComponent implemen
     EventTimeCalculatorResources eventTimei18n;
 
     @Autowired
-    public EventTimeConditionAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface service, TextFieldFactory textFieldFactory, EventTimeCalculatorResources eventTimei18n) {
-        super(facade, i18n, raplaLocale, logger);
+    public EventTimeConditionAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, IOInterface service, TextFieldFactory textFieldFactory, EventTimeCalculatorResources eventTimei18n) {
+        super(facade, i18n, raplaLocale);
         this.service = service;
         this.textFieldFactory = textFieldFactory;
         this.eventTimei18n = eventTimei18n;
@@ -63,7 +62,7 @@ public class EventTimeConditionAnnotationEdit extends RaplaGUIComponent implemen
         {
             field.setValue( DEFAULT_VALUE);
         }
-        addCopyPaste(field.getComponent(), getI18n(), getRaplaLocale(), service, getLogger());
+        addCopyPaste(field.getComponent(), getI18n(), getRaplaLocale(), service);
         return Collections.singleton(field);
     }
 

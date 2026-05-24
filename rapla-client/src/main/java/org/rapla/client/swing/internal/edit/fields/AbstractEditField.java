@@ -17,7 +17,6 @@ import org.rapla.client.swing.EditField;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 import javax.swing.JComponent;
 import javax.swing.event.ChangeEvent;
@@ -38,15 +37,13 @@ public abstract class AbstractEditField implements EditField
     protected final RaplaFacade raplaFacade;
     protected final RaplaResources i18n;
     protected final RaplaLocale raplaLocale;
-    protected final Logger logger;
 
-    public AbstractEditField(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
+    public AbstractEditField(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale)
     {
         this.clientFacade = clientFacade;
         this.raplaFacade = clientFacade.getRaplaFacade();
         this.i18n = i18n;
         this.raplaLocale = raplaLocale;
-        this.logger = logger;
     }
 
 

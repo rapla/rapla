@@ -6,7 +6,6 @@ import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEventBus;
 import org.rapla.framework.RaplaException;
 import org.springframework.stereotype.Service;
-import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -23,9 +22,9 @@ public class SwingActivityController extends AbstractActivityController
 //    private final MergeController mergeController;
 
     @Autowired
-    public SwingActivityController(ApplicationEventBus eventBus, Logger logger)
+    public SwingActivityController(ApplicationEventBus eventBus)
     {
-        super(eventBus, logger);
+        super(eventBus);
     }
 
 

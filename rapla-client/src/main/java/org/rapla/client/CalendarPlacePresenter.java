@@ -22,7 +22,8 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
@@ -35,6 +36,7 @@ import java.time.LocalDateTime;
 @org.springframework.context.annotation.Lazy
 public class CalendarPlacePresenter implements Presenter, TaskPresenter
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CalendarPlacePresenter.class);
     public static final String PLACE_ID = "cal";
     public static final TypedComponentRole<Boolean> SHOW_CONFLICTS_CONFIG_ENTRY = new TypedComponentRole<>("org.rapla.showConflicts");
     public static final TypedComponentRole<Boolean> SHOW_SELECTION_CONFIG_ENTRY = new TypedComponentRole<>("org.rapla.showSelection");
@@ -48,7 +50,6 @@ public class CalendarPlacePresenter implements Presenter, TaskPresenter
     private final DialogUiFactoryInterface dialogUiFactory;
     private final RaplaFacade facade;
     private final CalendarSelectionModel model;
-    private final Logger logger;
 
     final private ResourceSelectionPresenter resourceSelectionPresenter;
     final private SavedCalendarInterface savedViews;
@@ -58,7 +59,7 @@ public class CalendarPlacePresenter implements Presenter, TaskPresenter
     final ClientFacade clientFacade;
 
     @SuppressWarnings({ "rawtypes", "unchecked" }) @Autowired public CalendarPlacePresenter(final CalendarPlaceView view, final ClientFacade clientFacade,
-            final RaplaResources i18n, final CalendarSelectionModel model, final Logger logger, final CalendarEventBus eventBus,/*, Map<String, CalendarPlugin> views*/
+            final RaplaResources i18n, final CalendarSelectionModel model, final CalendarEventBus eventBus,/*, Map<String, CalendarPlugin> views*/
             ResourceSelectionPresenter resourceSelectionPresenter, SavedCalendarInterface savedViews, ConflictSelectionPresenter conflictsSelectionPresenter,
                                                                                          RequestSelectionPresenter requestSelectionPresenter,
             CalendarContainer calendarContainer,final CommandScheduler scheduler, DialogUiFactoryInterface dialogUiFactory) throws RaplaInitializationException
@@ -68,7 +69,6 @@ public class CalendarPlacePresenter implements Presenter, TaskPresenter
         this.facade = clientFacade.getRaplaFacade();
         this.clientFacade = clientFacade;
         this.model = model;
-        this.logger = logger;
         this.resourceSelectionPresenter = resourceSelectionPresenter;
         this.savedViews = savedViews;
         this.conflictsPresenter = conflictsSelectionPresenter;
@@ -112,7 +112,7 @@ public class CalendarPlacePresenter implements Presenter, TaskPresenter
                     calendarContainer.update().doOnComplete(() ->
                             busyIdleObservable.onNext(""))
             .doOnError((ex2)->
-                    logger.error( ex2.getMessage(), ex2))
+                    LOGGER.error( ex2.getMessage(), ex2))
             .subscribe();
         });
         try
@@ -337,7 +337,7 @@ public class CalendarPlacePresenter implements Presenter, TaskPresenter
         }
         catch (RaplaException e1)
         {
-            logger.error(e1.getMessage(), e1);
+            LOGGER.error(e1.getMessage(), e1);
         }
     }
 

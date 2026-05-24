@@ -1,5 +1,6 @@
 package org.rapla.server.spring;
 
+import org.rapla.server.spring.plugin.PluginApiPathWarningListener;
 import org.rapla.spring.SupplierAutoWrapperBeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -25,7 +26,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
         SecurityConfig.class,
         RaplaJacksonConfig.class,
         AdminPanelsScanConfig.class,
-        RefreshSessionService.class
+        RefreshSessionService.class,
+        PluginApiPathWarningListener.class
 })
 @ComponentScan("org.rapla.server.spring.web")
 @EnableConfigurationProperties(RaplaServerProperties.class)

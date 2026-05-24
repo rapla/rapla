@@ -1,7 +1,8 @@
 package org.rapla.plugin.javasciptpatch.server;
 
 import org.rapla.facade.RaplaFacade;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.server.spring.RaplaServerProperties;
 import org.rapla.storage.CachableStorageOperator;
 
@@ -22,17 +23,16 @@ import java.io.FileReader;
  *  unneeded because the legacy {@code stop()} body was empty. */
 public class JavascriptPatcher
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(JavascriptPatcher.class);
     final RaplaFacade facade;
-    final Logger logger;
     final RaplaServerProperties properties;
     final CachableStorageOperator cachableStorageOperator;
 
     @Autowired
-    public JavascriptPatcher(RaplaFacade facade, Logger logger, RaplaServerProperties properties,
+    public JavascriptPatcher(RaplaFacade facade, RaplaServerProperties properties,
                              CachableStorageOperator cachableStorageOperator)
     {
         this.facade = facade;
-        this.logger = logger;
         this.properties = properties;
         this.cachableStorageOperator = cachableStorageOperator;
     }
@@ -45,11 +45,11 @@ public class JavascriptPatcher
         File file = new File(patchScript);
         try (final FileReader reader = new FileReader(file))
         {
-            logger.info("Patch Script " + patchScript + " done.");
+            LOGGER.info("Patch Script {} done.", patchScript);
         }
         catch (Exception e)
         {
-            logger.error(e.getMessage(), e);
+            LOGGER.error(e.getMessage(), e);
         }
     }
 

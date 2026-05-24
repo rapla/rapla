@@ -22,7 +22,6 @@ import org.rapla.components.i18n.I18nIcon;
 import org.rapla.entities.User;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
 import org.rapla.storage.PermissionController;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,14 +45,12 @@ public class UserAction  {
     private I18nIcon icon;
     private boolean enabled;
     ClientFacade clientFacade;
-    Logger logger;
 
     @Autowired
-    public UserAction(ClientFacade facade, RaplaResources i18n, Logger logger, UserClientService service, EditController editController,
+    public UserAction(ClientFacade facade, RaplaResources i18n, UserClientService service, EditController editController,
             DialogUiFactoryInterface dialogUiFactory, MenuItemFactory menuItemFactory, Supplier<PasswordChangeAction> passwordChangeAction) {
         this.clientFacade = facade;
         this.i18n = i18n;
-        this.logger = logger;
         this.service = service;
         this.editController = editController;
         this.dialogUiFactory = dialogUiFactory;

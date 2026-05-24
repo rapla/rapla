@@ -17,8 +17,6 @@ import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.DefaultScheduler;
 import org.rapla.framework.internal.RaplaLocaleImpl;
-import org.rapla.logger.Logger;
-import org.rapla.logger.RaplaBootstrapLogger;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.storage.dbfile.FileOperator;
 
@@ -58,7 +56,6 @@ class ReloadServiceTest
     @BeforeEach
     void setUp() throws Exception
     {
-        Logger logger = RaplaBootstrapLogger.createRaplaLogger();
         dataFile = tempDir.resolve("rapla-data.xml");
         try (InputStream in = getClass().getResourceAsStream("/testdefault.xml"))
         {
@@ -69,7 +66,7 @@ class ReloadServiceTest
         AbstractBundleManager bundleManager = new ServerBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
         RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
-        CommandScheduler scheduler = new DefaultScheduler(logger);
+        CommandScheduler scheduler = new DefaultScheduler();
 
         Set<PermissionExtension> permissionExtensions = new LinkedHashSet<>();
         permissionExtensions.add(new RaplaDefaultPermissionImpl());
@@ -77,12 +74,12 @@ class ReloadServiceTest
         Map<String, FunctionFactory> functionFactoryMap = new LinkedHashMap<>();
         functionFactoryMap.put(StandardFunctions.NAMESPACE, new StandardFunctions(raplaLocale));
 
-        operator = new FileOperator(logger, i18n, raplaLocale, scheduler,
+        operator = new FileOperator(i18n, raplaLocale, scheduler,
                 functionFactoryMap, dataFile.toAbsolutePath().toString(),
                 permissionExtensions);
         operator.connect();
 
-        FacadeImpl impl = new FacadeImpl(i18n, scheduler, logger);
+        FacadeImpl impl = new FacadeImpl(i18n, scheduler);
         impl.setOperator(operator);
         facade = impl;
     }

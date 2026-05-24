@@ -27,7 +27,6 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.springframework.stereotype.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,9 +56,9 @@ public class AttributeEdit extends RaplaGUIComponent
     private final DialogUiFactoryInterface dialogUiFactory;
 
     @Autowired
-    public AttributeEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AttributeDefaultConstraints constraintPanel, RaplaListEditFactory raplaListEditFactory, DialogUiFactoryInterface dialogUiFactory) throws
+    public AttributeEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, AttributeDefaultConstraints constraintPanel, RaplaListEditFactory raplaListEditFactory, DialogUiFactoryInterface dialogUiFactory) throws
             RaplaInitializationException {
-        super(facade, i18n, raplaLocale, logger);
+        super(facade, i18n, raplaLocale);
         this.constraintPanel = constraintPanel;
         this.dialogUiFactory = dialogUiFactory;
         listEdit = raplaListEditFactory.create( constraintPanel.getComponent(), listener, false );

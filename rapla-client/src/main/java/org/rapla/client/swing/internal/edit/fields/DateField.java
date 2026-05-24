@@ -21,7 +21,6 @@ import org.rapla.components.calendar.RaplaCalendar;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.JComponent;
@@ -40,13 +39,13 @@ public class DateField extends AbstractEditField implements DateChangeListener, 
     
     JLabel multipleValuesLabel = new JLabel();
     
-    private DateField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DateRenderer dateRenderer, IOInterface ioInterface,String fieldName) {
-        this( facade, i18n, raplaLocale, logger, dateRenderer, ioInterface);
+    private DateField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, DateRenderer dateRenderer, IOInterface ioInterface,String fieldName) {
+        this( facade, i18n, raplaLocale, dateRenderer, ioInterface);
         setFieldName(fieldName);
     }
-    
-    private DateField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DateRenderer dateRenderer, IOInterface ioInterface) {
-        super( facade, i18n, raplaLocale, logger);
+
+    private DateField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, DateRenderer dateRenderer, IOInterface ioInterface) {
+        super( facade, i18n, raplaLocale);
         panel = new JPanel(){
             @Override
             public void setEnabled(boolean enabled)
@@ -55,7 +54,7 @@ public class DateField extends AbstractEditField implements DateChangeListener, 
                 field.setEnabled(enabled);
             }
         };
-        field = RaplaGUIComponent.createRaplaCalendar(dateRenderer, ioInterface,i18n,raplaLocale,logger);
+        field = RaplaGUIComponent.createRaplaCalendar(dateRenderer, ioInterface,i18n,raplaLocale);
         panel.setLayout(new BorderLayout());
         panel.add(field,BorderLayout.WEST);
         panel.add( multipleValuesLabel, BorderLayout.CENTER);
@@ -140,17 +139,15 @@ public class DateField extends AbstractEditField implements DateChangeListener, 
 	    private final ClientFacade facade;
         private final RaplaResources i18n;
         private final RaplaLocale raplaLocale;
-        private final Logger logger;
         private final DateRenderer dateRenderer;
         private final IOInterface ioInterface;
 	    @Autowired
-        public DateFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
+        public DateFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale,
                 DateRenderer dateRenderer, IOInterface ioInterface)
         {
             this.facade = facade;
             this.i18n = i18n;
             this.raplaLocale = raplaLocale;
-            this.logger = logger;
             this.dateRenderer = dateRenderer;
             this.ioInterface = ioInterface;
 
@@ -158,12 +155,12 @@ public class DateField extends AbstractEditField implements DateChangeListener, 
 
 	    public DateField create(String fieldName)
 	    {
-	        return new DateField(facade, i18n, raplaLocale, logger, dateRenderer, ioInterface, fieldName);
+	        return new DateField(facade, i18n, raplaLocale, dateRenderer, ioInterface, fieldName);
 	    }
-	    
+
 	    public DateField create()
 	    {
-	        return new DateField(facade, i18n, raplaLocale, logger, dateRenderer, ioInterface);
+	        return new DateField(facade, i18n, raplaLocale, dateRenderer, ioInterface);
 	    }
 	}
 }

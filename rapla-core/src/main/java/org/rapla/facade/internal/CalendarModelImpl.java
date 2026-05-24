@@ -48,13 +48,14 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.AbstractRaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.planningstatus.PlanningStatusPlugin;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.StorageOperator;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -82,7 +83,7 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
     private static final String DEFAULT_VIEW = "week";//WeekViewFactory.WEEK_VIEW;
     private static final String ICAL_EXPORT_ENABLED = "org.rapla.plugin.export2ical" + ".selected";
     private static final String HTML_EXPORT_ENABLED = EXPORT_ENTRY + ".selected";
-    private final Logger logger;
+    private static final Logger LOGGER = LoggerFactory.getLogger(CalendarModelImpl.class);
     LocalDateTime startDate;
     LocalDateTime endDate;
     LocalDateTime selectedDate;
@@ -108,7 +109,7 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
 
     @Autowired public CalendarModelImpl(ClientFacade clientFacade, RaplaLocale locale) throws RaplaInitializationException
     {
-        this(locale.getLocale(), getUser(clientFacade), ((ClientFacadeImpl)clientFacade).getOperator(), ((ClientFacadeImpl) clientFacade).getLogger());
+        this(locale.getLocale(), getUser(clientFacade), ((ClientFacadeImpl)clientFacade).getOperator());
         try
         {
             load(null);
@@ -137,9 +138,8 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
         return operator.getPreferences(null, true);
     }
 
-    public CalendarModelImpl(Locale locale, User user, StorageOperator operator, Logger logger) throws RaplaInitializationException
+    public CalendarModelImpl(Locale locale, User user, StorageOperator operator) throws RaplaInitializationException
     {
-        this.logger = logger.getChildLogger("calendarmodel");
         this.locale = locale;
         this.operator = operator;
         LocalDateTime today = this.operator.today().atStartOfDay();
@@ -936,7 +936,7 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
         CalendarModelImpl clone;
         try
         {
-            clone = new CalendarModelImpl(locale, user, operator, logger);
+            clone = new CalendarModelImpl(locale, user, operator);
             CalendarModelConfiguration config = createConfiguration();
             Map<String, String> alternativOptions = null;
             clone.setConfiguration(config, alternativOptions, true);
@@ -991,7 +991,7 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
 
     @Override public AppointmentMapping queryAppointmentBindingsSync(TimeInterval interval) throws RaplaException
     {
-        final boolean debugEnabled = logger.isDebugEnabled();
+        final boolean debugEnabled = LOGGER.isDebugEnabled();
         final long start = debugEnabled ? System.currentTimeMillis() : 0;
         Collection<Allocatable> allocatables = new LinkedHashSet<>();
         Collection<User> owners = new LinkedHashSet<>();
@@ -1013,8 +1013,8 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
         AppointmentMapping result = queryAppointmentBindingsSync(allocatables, owners, startDate, endDate, useFilter);
         if (debugEnabled)
         {
-            logger.debug("queryAppointments for " + allocatables.size() + " resources took " + (System.currentTimeMillis() - start) + " ms (selected allocatables "
-                    + selectedAllocatableTimes + " ms). Found appointments for  " + result.size() + " resources.");
+            LOGGER.debug("queryAppointments for {} resources took {} ms (selected allocatables {} ms). Found appointments for  {} resources.",
+                    allocatables.size(), (System.currentTimeMillis() - start), selectedAllocatableTimes, result.size());
         }
         return result;
     }
@@ -1147,13 +1147,13 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
     {
         List<Allocatable> result = new ArrayList<>(getSelectedAllocatablesAsList());
         long start = 0;
-        final boolean debugEnabled = logger.isDebugEnabled();
+        final boolean debugEnabled = LOGGER.isDebugEnabled();
         if (debugEnabled)
             start = System.currentTimeMillis();
         Collections.sort(result, new SortedClassifiableComparator(locale));
         if (debugEnabled)
         {
-            logger.debug("sort allocatables took " + (System.currentTimeMillis() - start) + " ms for " + result.size() + " objects.");
+            LOGGER.debug("sort allocatables took {} ms for {} objects.", (System.currentTimeMillis() - start), result.size());
         }
 
         //List<Allocatable> filled = operator.queryDependent(result);
@@ -1170,7 +1170,7 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
     @NotNull
     private Collection<RaplaObject> getSelectedRaplaObjects(boolean addUser) throws RaplaException {
         long start = 0;
-        final boolean debugEnabled = logger.isDebugEnabled();
+        final boolean debugEnabled = LOGGER.isDebugEnabled();
         if (debugEnabled)
             start = System.currentTimeMillis();
 
@@ -1212,7 +1212,7 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
         }
         if (debugEnabled)
         {
-            logger.debug("getSelectedAllocatables took " + (System.currentTimeMillis() - start) + " ms for " + result.size() + " objects.");
+            LOGGER.debug("getSelectedAllocatables took {} ms for {} objects.", (System.currentTimeMillis() - start), result.size());
         }
 
         return result;

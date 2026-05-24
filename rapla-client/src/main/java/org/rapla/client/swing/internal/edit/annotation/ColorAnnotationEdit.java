@@ -13,7 +13,6 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.springframework.stereotype.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,8 +28,8 @@ public class ColorAnnotationEdit extends RaplaGUIComponent implements Annotation
     private final BooleanFieldFactory booleanFieldFactory;
 
     @Autowired
-    public ColorAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, BooleanFieldFactory booleanFieldFactory) {
-        super(facade, i18n, raplaLocale, logger);
+    public ColorAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, BooleanFieldFactory booleanFieldFactory) {
+        super(facade, i18n, raplaLocale);
         this.booleanFieldFactory = booleanFieldFactory;
     }
 

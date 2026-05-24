@@ -32,7 +32,8 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PermissionController;
@@ -68,6 +69,7 @@ import java.time.LocalDateTime;
 @org.springframework.context.annotation.Lazy
 public class TemplateEdit extends RaplaGUIComponent
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TemplateEdit.class);
     RaplaListEdit<Allocatable> templateList;
 
     Collection<Entity> toStore = new LinkedHashSet<>();
@@ -84,17 +86,17 @@ public class TemplateEdit extends RaplaGUIComponent
     JTextField filterTextField;// text field for filter
 
     @Autowired
-    public TemplateEdit(final ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel calendarSelectionModel,
+    public TemplateEdit(final ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, CalendarSelectionModel calendarSelectionModel,
             final DialogUiFactoryInterface dialogUiFactory, ClassificationFieldFactory classificationFieldFactory,
             PermissionListFieldFactory permissionListFieldFactory, RaplaListEditFactory raplaListEditFactory, BooleanFieldFactory booleanFieldFactory,
             EditController editController)
     {
-        super(facade, i18n, raplaLocale, logger);
+        super(facade, i18n, raplaLocale);
         this.calendarSelectionModel = calendarSelectionModel;
         this.dialogUiFactory = dialogUiFactory;
         this.permissionController = facade.getRaplaFacade().getPermissionController();
         this.editController = editController;
-        allocatableEdit = new AllocatableEditUI(facade, i18n, raplaLocale, logger, classificationFieldFactory, permissionListFieldFactory, booleanFieldFactory)
+        allocatableEdit = new AllocatableEditUI(facade, i18n, raplaLocale, classificationFieldFactory, permissionListFieldFactory, booleanFieldFactory)
         {
             protected void mapFromObjects() throws RaplaException
             {
@@ -122,7 +124,7 @@ public class TemplateEdit extends RaplaGUIComponent
                 }
                 catch (RaplaException e)
                 {
-                    getLogger().error(e.getMessage(), e);
+                    LOGGER.error(e.getMessage(), e);
                 }
             }
         };
@@ -183,7 +185,7 @@ public class TemplateEdit extends RaplaGUIComponent
                 }
                 catch (RaplaException e1)
                 {
-                    logger.error( e1.getMessage(), e1);
+                    LOGGER.error( e1.getMessage(), e1);
                 }
 
             }
@@ -283,7 +285,7 @@ public class TemplateEdit extends RaplaGUIComponent
             }
             catch (RaplaException e)
             {
-                getLogger().error("Could not resolve username for user: " + e.getMessage(), e);
+                LOGGER.error("Could not resolve username for user: " + e.getMessage(), e);
             }
         }
         return username;

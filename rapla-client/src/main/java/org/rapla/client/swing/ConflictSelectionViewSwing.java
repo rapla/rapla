@@ -33,7 +33,6 @@ import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.BorderFactory;
@@ -65,7 +64,7 @@ public class ConflictSelectionViewSwing implements ConflictSelectionView<Compone
     private boolean selectionFromProgram = false;
 
     @Autowired
-    public ConflictSelectionViewSwing(RaplaResources i18n,  Logger logger, TreeFactory treeFactory,
+    public ConflictSelectionViewSwing(RaplaResources i18n, TreeFactory treeFactory,
                                       DialogUiFactoryInterface dialogUiFactory, ConflictTreeCellRenderer treeCellRenderer) throws RaplaInitializationException
     {
         this.i18n = i18n;

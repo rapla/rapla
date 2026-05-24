@@ -18,7 +18,6 @@ import org.rapla.client.swing.toolkit.AWTColorUtil;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.BorderFactory;
@@ -56,19 +55,19 @@ public class TextField extends AbstractEditField implements ActionListener, Focu
     // values are shown in this field
     public final static int DEFAULT_LENGTH = 30;
 
-    private TextField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface ioInterface)
+    private TextField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, IOInterface ioInterface)
     {
-        this(facade, i18n, raplaLocale, logger, ioInterface, "", 1, TextField.DEFAULT_LENGTH);
+        this(facade, i18n, raplaLocale, ioInterface, "", 1, TextField.DEFAULT_LENGTH);
     }
 
-    private TextField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface ioInterface, String fieldName)
+    private TextField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, IOInterface ioInterface, String fieldName)
     {
-        this(facade, i18n, raplaLocale, logger, ioInterface, fieldName, 1, TextField.DEFAULT_LENGTH);
+        this(facade, i18n, raplaLocale, ioInterface, fieldName, 1, TextField.DEFAULT_LENGTH);
     }
 
-    private TextField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface ioInterface, String fieldName, int rows, int columns)
+    private TextField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, IOInterface ioInterface, String fieldName, int rows, int columns)
     {
-        super(facade, i18n, raplaLocale, logger);
+        super(facade, i18n, raplaLocale);
         setFieldName(fieldName);
         if (rows > 1)
         {
@@ -83,7 +82,7 @@ public class TextField extends AbstractEditField implements ActionListener, Focu
         {
             field = new JTextField(columns);
         }
-        RaplaGUIComponent.addCopyPaste(field, i18n, raplaLocale, ioInterface, logger);
+        RaplaGUIComponent.addCopyPaste(field, i18n, raplaLocale, ioInterface);
         field.addFocusListener(this);
         field.addKeyListener(this);
         field.setDisabledTextColor(Color.black);
@@ -276,33 +275,31 @@ public class TextField extends AbstractEditField implements ActionListener, Focu
         private final ClientFacade facade;
         private final RaplaResources i18n;
         private final RaplaLocale raplaLocale;
-        private final Logger logger;
         private final IOInterface ioInterface;
 
         @Autowired
-        public TextFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface ioInterface)
+        public TextFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, IOInterface ioInterface)
         {
             super();
             this.facade = facade;
             this.i18n = i18n;
             this.raplaLocale = raplaLocale;
-            this.logger = logger;
             this.ioInterface = ioInterface;
         }
 
         public TextField create(String fieldName)
         {
-            return new TextField(facade, i18n, raplaLocale, logger, ioInterface, fieldName);
+            return new TextField(facade, i18n, raplaLocale, ioInterface, fieldName);
         }
 
         public TextField create(String fieldName, int rows, int columns)
         {
-            return new TextField(facade, i18n, raplaLocale, logger, ioInterface, fieldName, rows, columns);
+            return new TextField(facade, i18n, raplaLocale, ioInterface, fieldName, rows, columns);
         }
 
         public TextField create()
         {
-            return new TextField(facade, i18n, raplaLocale, logger, ioInterface);
+            return new TextField(facade, i18n, raplaLocale, ioInterface);
         }
 
     }

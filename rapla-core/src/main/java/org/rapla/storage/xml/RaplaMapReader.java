@@ -21,9 +21,12 @@ import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RaplaMapReader extends RaplaXMLReader  {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(RaplaMapReader.class);
     String key;
     RaplaMapImpl entityMap;
     RaplaXMLReader childReader;
@@ -53,7 +56,7 @@ public class RaplaMapReader extends RaplaXMLReader  {
             	}
             	catch (ClassCastException ex)
             	{
-            		getLogger().error("Mixed maps are currently not supported.", ex);
+            		LOGGER.error("Mixed maps are currently not supported.", ex);
             	}
             }
             return;
@@ -88,7 +91,7 @@ public class RaplaMapReader extends RaplaXMLReader  {
             }
             else
             {
-                getLogger().warn("Can't find " + raplaType + " for keyref " + keyref);
+                LOGGER.warn("Can't find " + raplaType + " for keyref " + keyref);
             }
         } else {
             childReader = getChildHandlerForType( raplaType );
@@ -112,7 +115,7 @@ public class RaplaMapReader extends RaplaXMLReader  {
         	}
         	catch (ClassCastException ex)
         	{
-        		getLogger().error("Mixed maps are currently not supported.", ex);
+        		LOGGER.error("Mixed maps are currently not supported.", ex);
         	}
         }
         childReader = null;

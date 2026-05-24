@@ -37,7 +37,8 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Observable;
 import org.rapla.scheduler.ResolvedPromise;
@@ -62,14 +63,14 @@ import java.util.Set;
 @org.springframework.context.annotation.Scope(org.springframework.beans.factory.config.ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class MultiCalendarPresenter implements CalendarContainer,Presenter
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MultiCalendarPresenter.class);
     private static final String ERROR_NO_VIEW_DEFINED = "No views enabled. Please add a plugin in the menu admin/settings/plugins";
-    
+
     private final Map<String,RaplaMenuItem> viewMenuItems = new HashMap<>();
     private  CalendarSelectionModel model;
     private final Set<SwingViewFactory> factoryList;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final MultiCalendarView view;
-    private final Logger logger;
 
     // Default view, when no plugin defined
     private String currentViewId;
@@ -86,14 +87,13 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
 
 
     @Autowired
-    public MultiCalendarPresenter(ClientFacade facade, RaplaResources i18n,  Logger logger, CalendarSelectionModel model,
+    public MultiCalendarPresenter(ClientFacade facade, RaplaResources i18n, CalendarSelectionModel model,
             DialogUiFactoryInterface dialogUiFactory, final Set<SwingViewFactory> factoryList,
             MultiCalendarView view) throws RaplaInitializationException
     {
         scheduler = facade.getRaplaFacade().getScheduler();
         this.i18n = i18n;
         filterChanged = org.rapla.scheduler.Observables.createPublisher(scheduler.getExecutor());
-        this.logger = logger;
         this.dialogUiFactory = dialogUiFactory;
         this.factoryList = factoryList;
         this.view = view;
@@ -106,7 +106,7 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
             view.setFiltered(!model.isDefaultEventTypes());
             return update();
         });
-        objectObservable.doOnError((ex)->logger.error(ex.getMessage(),ex)).subscribe();
+        objectObservable.doOnError((ex)->LOGGER.error(ex.getMessage(),ex)).subscribe();
 
     }
     
@@ -234,10 +234,10 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
             SwingViewFactory factory = findFactory( viewId );
             if ( factory == null ) 
             {
-            	logger.error("View with id " + viewId + " not found. Selecting first view.");
+            	LOGGER.error("View with id {} not found. Selecting first view.", viewId);
             	if( factoryList.size() == 0)
             	{
-                	logger.error(ERROR_NO_VIEW_DEFINED);
+                	LOGGER.error(ERROR_NO_VIEW_DEFINED);
             		viewId =null;
             	}
             	else

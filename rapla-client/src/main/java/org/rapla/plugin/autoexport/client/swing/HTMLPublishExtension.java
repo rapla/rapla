@@ -13,7 +13,6 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.MultiCalendarPrint;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.plugin.autoexport.AutoExportResources;
@@ -39,9 +38,9 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
      private final IOInterface ioInterface;
 	JComboBox pagesBox;
 
-	 public HTMLPublishExtension(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,CalendarSelectionModel model, AutoExportResources autoExportI18n, IOInterface ioInterface)
+	 public HTMLPublishExtension(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, CalendarSelectionModel model, AutoExportResources autoExportI18n, IOInterface ioInterface)
 	 {
-		super(facade, i18n, raplaLocale, logger);
+		super(facade, i18n, raplaLocale);
 		this.autoExportI18n = autoExportI18n ;
         this.ioInterface = ioInterface;
         this.i18n = i18n;
@@ -54,7 +53,7 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
         panel.setLayout(new TableLayout( new double[][] {{TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.FILL},
                 {TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED, 5,TableLayout.PREFERRED, 5, TableLayout.PREFERRED,5, TableLayout.PREFERRED,20  }}));
 	   	titleField = new JTextField(20);
-        addCopyPaste(titleField, i18n, raplaLocale, ioInterface, logger);
+        addCopyPaste(titleField, i18n, raplaLocale, ioInterface);
   
         showNavField = new JCheckBox();
         saveSelectedDateField = new JCheckBox();
@@ -149,7 +148,7 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
 	 
 	JPanel createStatus( final JTextField urlLabel, String title)
 	{
-		addCopyPaste(urlLabel, getI18n(), getRaplaLocale(), ioInterface, getLogger());
+		addCopyPaste(urlLabel, getI18n(), getRaplaLocale(), ioInterface);
 		final RaplaButton copyButton = new RaplaButton();
 		JPanel status = new JPanel()
 		{

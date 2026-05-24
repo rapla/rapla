@@ -43,7 +43,8 @@ import org.rapla.facade.internal.ModificationEventImpl;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
@@ -90,6 +91,7 @@ import java.time.LocalDateTime;
  */
 public class RemoteOperator
         extends AbstractCachableOperator implements RestartServer, Disposable {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RemoteOperator.class);
     final List<StorageUpdateListener> storageUpdateListeners = new Vector<>();
 
     private boolean bSessionActive = false;
@@ -104,10 +106,10 @@ public class RemoteOperator
     RemoteConnectionInfo connectionInfo;
 
     @Autowired
-    public RemoteOperator(Logger logger, RaplaResources i18n, RaplaLocale locale, CommandScheduler scheduler,
+    public RemoteOperator(RaplaResources i18n, RaplaLocale locale, CommandScheduler scheduler,
                           Map<String, FunctionFactory> functionFactoryMap, RemoteAuthentificationService remoteAuthentificationService, RemoteStorage remoteStorage,
                           RemoteConnectionInfo connectionInfo, Set<PermissionExtension> permissionExtensions, RaplaLock lockManager) {
-        super(logger.getChildLogger("remote"), i18n, locale, functionFactoryMap, permissionExtensions, lockManager);
+        super(i18n, locale, functionFactoryMap, permissionExtensions, lockManager);
         this.remoteAuthentificationService = remoteAuthentificationService;
         this.remoteStorage = remoteStorage;
         commandQueue = scheduler;
@@ -138,7 +140,7 @@ public class RemoteOperator
 
         if (isConnected())
             throw new RaplaException("Already connected");
-        getLogger().info("Connecting to server and starting login..");
+        LOGGER.info("Connecting to server and starting login..");
         if (connectInfo != null) {
             try {
                 if (connectInfo.getAccessToken() != null) {
@@ -165,7 +167,7 @@ public class RemoteOperator
                 disconnect();
                 throw new RaplaException(ex);
             }
-            getLogger().info("login successfull");
+            LOGGER.info("login successfull");
             connectionInfo.setReconnectInfo(connectInfo);
         }
         user = loadData();
@@ -264,7 +266,7 @@ public class RemoteOperator
             UpdateEvent evt = serv.refresh(clientRepoVersion);
             refresh(evt);
         } catch (EntityNotFoundException ex) {
-            getLogger().error("Refreshing all resources due to " + ex.getMessage(), ex);
+            LOGGER.error("Refreshing all resources due to " + ex.getMessage(), ex);
             refreshAll();
         } catch (RaplaException ex) {
             throw ex;
@@ -297,7 +299,7 @@ public class RemoteOperator
             try {
                 refresh(evt);
             } catch (EntityNotFoundException ex) {
-                getLogger().error("Refreshing all resources due to " + ex.getMessage(), ex);
+                LOGGER.error("Refreshing all resources due to " + ex.getMessage(), ex);
                 refreshAll();
             }
         }).finally_(() -> refreshInProgress = false);
@@ -324,7 +326,7 @@ public class RemoteOperator
     }
 
     synchronized public Promise<Void> restartServer()  {
-        getLogger().info("Restart in progress ...");
+        LOGGER.info("Restart in progress ...");
         String message = i18n.getString("restart_server");
         return commandQueue.supply(() -> { getRemoteStorage().restartServer(); return null; })
                 .thenRun(() -> fireStorageDisconnected(message));
@@ -342,7 +344,7 @@ public class RemoteOperator
      */
     synchronized public void disconnect(String message) throws RaplaException {
         boolean wasConnected = bSessionActive;
-        getLogger().info("Disconnecting from server");
+        LOGGER.info("Disconnecting from server");
         try {
             bSessionActive = false;
             cache.clearAll();
@@ -398,9 +400,9 @@ public class RemoteOperator
     private User loadData() throws RaplaException {
         RemoteStorage serv = getRemoteStorage();
         try {
-            getLogger().debug("Loading Data from server");
+            LOGGER.debug("Loading Data from server");
             UpdateEvent evt = serv.getResources();
-            getLogger().debug("Data loaded");
+            LOGGER.debug("Data loaded");
             return loadData(evt);
         } catch (RaplaException ex) {
             throw ex;
@@ -435,7 +437,7 @@ public class RemoteOperator
             for (Entity entity : storeObjects) {
                 cache.put(entity);
             }
-            getLogger().debug("Data flushed");
+            LOGGER.debug("Data flushed");
             bSessionActive = true;
             User user = cache.resolve(userId, User.class);
             intervalLength = getPreferences(null,true).getEntryAsInteger(ClientFacade.REFRESH_INTERVAL_ENTRY, ClientFacade.REFRESH_INTERVAL_DEFAULT);
@@ -508,17 +510,17 @@ public class RemoteOperator
 
     private void logEvent(UpdateEvent evt) throws RaplaException {
         // Store on server
-        if (getLogger().isDebugEnabled()) {
+        if (LOGGER.isDebugEnabled()) {
             for (Entity entity : evt.getStoreObjects()) {
-                getLogger().debug("dispatching store for: " + entity);
+                LOGGER.debug("dispatching store for: " + entity);
             }
             for (ReferenceInfo id : evt.getRemoveIds()) {
-                getLogger().debug("dispatching remove for: " + id);
+                LOGGER.debug("dispatching remove for: " + id);
             }
             //            Iterator<Entity> it =evt.getRemoveObjects().iterator();
             //            while (it.hasNext()) {
             //                Entity entity = it.next();
-            //                getLogger().debug("dispatching remove for: " + entity);
+            //                LOGGER.debug("dispatching remove for: " + entity);
             //            }
         }
     }
@@ -717,12 +719,12 @@ public class RemoteOperator
             return commandQueue.supply(() -> serv.queryAppointments(new QueryAppointments(ownerIds, allocatableId, start, end, annotationQuery, requestsOnly))).thenApply(list -> {
                 AppointmentMapping filtered;
                 {
-                    logger.debug("event server call took  " + (System.currentTimeMillis() - time) + " ms");
+                    LOGGER.debug("event server call took  " + (System.currentTimeMillis() - time) + " ms");
                 }
                 {
                     long time2 = System.currentTimeMillis();
                     filtered = processReservationResult(list, filters);
-                    logger.debug("event post processing took  " + (System.currentTimeMillis() - time2) + " ms");
+                    LOGGER.debug("event post processing took  " + (System.currentTimeMillis() - time2) + " ms");
                 }
 
                 return filtered;
@@ -735,7 +737,7 @@ public class RemoteOperator
         return getScheduler().supply(() -> {
             // if a refresh is due, we assume the system went to sleep so we refresh before we continue
             if (intervalLength > 0 && lastValidatedTimeServer != null && (DateTools.toMilli(lastValidatedTimeServer) + intervalLength * 2L) < DateTools.toMilli(getCurrentTimestamp())) {
-                getLogger().info("cache not uptodate. Refreshing first.");
+                LOGGER.info("cache not uptodate. Refreshing first.");
                 return refreshAsync().thenApply((dummy)->true);
             } else {
                 return new ResolvedPromise<>(false);
@@ -811,7 +813,7 @@ public class RemoteOperator
         LocalDateTime since = getLastRefreshed();
         LocalDateTime until = evt.getLastValidated();
         if (bSessionActive && !evt.isEmpty()) {
-            getLogger().debug("Objects updated!");
+            LOGGER.debug("Objects updated!");
             // TODO User informieren, dass sich daten evtl geaendert haben
             final Collection<Entity> storeObjects = evt.getStoreObjects();
             Collection<ReferenceInfo> removedIds = evt.getRemoveIds();
@@ -837,7 +839,7 @@ public class RemoteOperator
 
         if ( entity instanceof  Reservation) {
             // We ignore Reservations on the client cache
-            logger.debug("Ignoring reservation " + entity);
+            LOGGER.debug("Ignoring reservation " + entity);
         } else {
             super.addToCache(entity);
         }
@@ -865,9 +867,9 @@ public class RemoteOperator
         RemoteStorage serv = getRemoteStorage();
         UpdateEvent evt;
         try {
-            getLogger().info("Reloading all Data from Server triggered");
+            LOGGER.info("Reloading all Data from Server triggered");
             evt = serv.getResources();
-            getLogger().debug("Data loaded");
+            LOGGER.debug("Data loaded");
         } catch (RaplaException ex)
         {
 
@@ -1007,10 +1009,10 @@ public class RemoteOperator
         final long time = System.currentTimeMillis();
         final Promise<List<ReservationImpl>> listPromise = commandQueue.supply(() -> serv.getAllAllocatableBindings(new AllocatableBindingsRequest(allocatableIds, appointmentArray, reservationIds)));
         return listPromise.thenApply((serverResult) -> {
-            logger.debug("event server call took  " + (System.currentTimeMillis() - time) + " ms");
+            LOGGER.debug("event server call took  " + (System.currentTimeMillis() - time) + " ms");
             long time2 = System.currentTimeMillis();
             Map<ReferenceInfo<Allocatable>, Map<Appointment, Collection<Appointment>>> map = getMap(allocatables, appointments, ignoreList, serverResult);
-            logger.debug("event post processing took  " + (System.currentTimeMillis() - time2) + " ms");
+            LOGGER.debug("event post processing took  " + (System.currentTimeMillis() - time2) + " ms");
             return map;
         }
         );
@@ -1135,7 +1137,7 @@ public class RemoteOperator
     //				serv.logEntityNotFound("Not found", id.toString() );
     //			}
     //		} catch (Exception e) {
-    //			getLogger().error("Can't call server logging for " + ex.getMessage() + " due to " + e.getMessage(), e);
+    //			LOGGER.error("Can't call server logging for " + ex.getMessage() + " due to " + e.getMessage(), e);
     //		}
     //	}
 }

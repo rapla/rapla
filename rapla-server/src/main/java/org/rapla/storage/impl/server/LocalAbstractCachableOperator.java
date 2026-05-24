@@ -79,7 +79,6 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
 import org.rapla.rest.JsonParserWrapper;
 import org.rapla.scheduler.CommandScheduler;
@@ -104,6 +103,8 @@ import org.rapla.storage.impl.AbstractCachableOperator;
 import org.rapla.storage.impl.DefaultRaplaLock;
 import org.rapla.storage.impl.EntityStore;
 import org.rapla.storage.impl.RaplaLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -116,6 +117,7 @@ import java.util.stream.Stream;
 import java.time.LocalDateTime;
 public abstract class LocalAbstractCachableOperator extends AbstractCachableOperator implements Disposable, CachableStorageOperator, IdCreator, org.rapla.storage.SyncStorageOperator
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(LocalAbstractCachableOperator.class);
 
     InitStatus connectStatus = InitStatus.Disconnected;
     // some indexMaps
@@ -152,16 +154,16 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     private java.time.LocalDateTime connectStart;
     private final DefaultRaplaLock disconnectLock;
 
-    public LocalAbstractCachableOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,
+    public LocalAbstractCachableOperator(RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,
             Map<String, FunctionFactory> functionFactoryMap, Set<PermissionExtension> permissionExtensions)
     {
-        super(logger, i18n, raplaLocale, functionFactoryMap, permissionExtensions, new DefaultRaplaLock(logger));
+        super(i18n, raplaLocale, functionFactoryMap, permissionExtensions, new DefaultRaplaLock());
         this.scheduler = scheduler;
-        disconnectLock = new DefaultRaplaLock(logger);
+        disconnectLock = new DefaultRaplaLock();
         //context.lookupDeprecated( CommandScheduler.class);
         this.history = new EntityHistory(this);
 
-        appointmentBindings = new AppointmentMapClass(logger);
+        appointmentBindings = new AppointmentMapClass(LOGGER);
     }
 
     @Override
@@ -179,7 +181,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     protected void changeStatus(InitStatus status)
     {
         connectStatus = status;
-        getLogger().debug("Initstatus " + status);
+        LOGGER.debug("Initstatus {}", status);
     }
 
     @Override
@@ -669,7 +671,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     public String authenticate(String username, String password) throws RaplaException
     {
         checkConnected();
-        getLogger().debug("Check password for User " + username);
+        LOGGER.debug("Check password for User {}", username);
         User user = cache.getUser(username);
         if (user != null)
         {
@@ -679,7 +681,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 return userId;
             }
         }
-        getLogger().warn("Login failed for " + username);
+        LOGGER.warn("Login failed for {}", username);
         throw new RaplaSecurityException(i18n.getString("error.login"));
     }
 
@@ -690,7 +692,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     public void changePassword(User user, char[] oldPassword, char[] newPassword) throws RaplaException
     {
-        getLogger().info("Change password for User " + user.getUsername());
+        LOGGER.info("Change password for User {}", user.getUsername());
         String password = new String(newPassword);
         if (encryption != null)
             password = encrypt(encryption, password);
@@ -815,7 +817,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             return Collections.emptyList();
         }
-        getLogger().warn("Found old templates. Migrating.");
+        LOGGER.warn("Found old templates. Migrating.");
 
         Collection<Entity> toStore = new HashSet<>();
         for (String templateKey : templateMap.keySet())
@@ -843,7 +845,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     owner = tryResolve(ownerId);
                 }
             }
-            getLogger().info("Migrating " + templateKey);
+            LOGGER.info("Migrating {}", templateKey);
             template.setOwner(owner);
             toStore.add(template);
         }
@@ -966,7 +968,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             if (disposing)
             {
-                getLogger().warn("Disposing is called twice", new RaplaException(""));
+                LOGGER.warn("Disposing is called twice", new RaplaException(""));
                 return;
             }
             disposing = true;
@@ -1012,7 +1014,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         catch (Exception ex)
         {
-            getLogger().error("Error during disconnect ", ex);
+            LOGGER.error("Error during disconnect ", ex);
         }
     }
 
@@ -1083,8 +1085,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
         };
         // The conflict map
-        Logger logger = getLogger();
-        conflictFinder = new ConflictFinder(allocationMap, today2.atStartOfDay(), logger, this, permissionController);
+        conflictFinder = new ConflictFinder(allocationMap, today2.atStartOfDay(), this, permissionController);
 
         // if a client request changes before the start date return refresh conflict flag
         Action cleanUpConflicts = ()->
@@ -1160,7 +1161,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 }
                 catch (Throwable t)
                 {
-                    getLogger().info("Could not refresh data");
+                    LOGGER.info("Could not refresh data");
                 }
         }, delayRefresh, refreshPeriod);
 
@@ -1207,7 +1208,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         catch (Exception ex)
         {
-            getLogger().error("Could not get writeLock. Scheduled task is probably running > 10sec. Forcing disconnect." + ex.getMessage(), ex);
+            LOGGER.error("Could not get writeLock. Scheduled task is probably running > 10sec. Forcing disconnect.{}", ex.getMessage(), ex);
         }
         RaplaLock.WriteLock disconnectWrite;
         try
@@ -1216,7 +1217,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         catch (Exception ex)
         {
-            getLogger().error("Could not get disconnectWirte. Scheduled task is probably running > 10sec. Forcing disconnect." + ex.getMessage(), ex);
+            LOGGER.error("Could not get disconnectWirte. Scheduled task is probably running > 10sec. Forcing disconnect.{}", ex.getMessage(), ex);
             disconnectWrite = null;
         }
         try
@@ -1265,7 +1266,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     @Override
     synchronized public void reload() throws RaplaException
     {
-        getLogger().info("Reloading server data store (logical restart)");
+        LOGGER.info("Reloading server data store (logical restart)");
         disconnect();
         connect();
     }
@@ -1507,7 +1508,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                         lastKnown = tryResolve(reference);
                     }
                     if ( lastKnown == null ) {
-                        logger.error("Reservation thats is scheduled to delete not found " + reference.getId());
+                        LOGGER.error("Reservation thats is scheduled to delete not found {}", reference.getId());
                     } else {
                         appointmentBindings.updateReservation((Reservation) lastKnown, toUpdate, true);
                     }
@@ -1551,7 +1552,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 entry.isDelete = isDelete;
                 entry.timestamp = timestamp;
                 if (isDelete && remove == null) {
-                    getLogger().warn("Can't remove entry for id " + id);
+                    LOGGER.warn("Can't remove entry for id {}", id);
                 }
             }
             if (type == User.class && current != null) {
@@ -1863,7 +1864,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     static final class AppointmentMapClass
     {
-        final private Logger logger;
+        final private org.slf4j.Logger logger;
         private Map<ReferenceInfo<User>, SortedSet<Appointment>> appointmentUserMap;
         private Map<ReferenceInfo<Allocatable>, SortedSet<Appointment>> appointmentMap;
 
@@ -1874,7 +1875,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         Set<String> problematicIdSet = Collections.synchronizedSet(new HashSet<>());
 
 
-        private AppointmentMapClass(Logger newLogger)
+        private AppointmentMapClass(org.slf4j.Logger newLogger)
         {
             logger = newLogger;
         }
@@ -2012,7 +2013,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         public boolean checkAbandonedAppointments(LocalCache cache)
         {
             Collection<? extends Allocatable> allocatables = cache.getAllocatables();
-            Logger logger = this.logger.getChildLogger("appointmentcheck");
+            org.slf4j.Logger logger = this.logger;
             try
             {
                 for (Allocatable allocatable : allocatables)
@@ -2152,7 +2153,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         if (!conflictsToDelete.isEmpty())
         {
             final String message = "Removing old conflicts " + conflictsToDelete.size();
-            getLogger().info(message);
+            LOGGER.info(message);
             removeConflictsFromDatabase(conflictsToDelete);
             //Order is important they can't be removed from database if they are not in cache
             removeConflictsFromCache(conflictsToDelete);
@@ -2220,8 +2221,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
         for (Entity entity : storeObjects)
         {
-            if (getLogger().isDebugEnabled())
-                getLogger().debug("Contextualizing " + entity);
+            if (LOGGER.isDebugEnabled())
+                LOGGER.debug("Contextualizing {}", entity);
             ((EntityReferencer) entity).setResolver(store);
             if (entity instanceof DynamicType)
             {
@@ -2502,8 +2503,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             // Classifiables need update?
             if (!dependant.needsChange(type) && !toRemove)
                 continue;
-            if (getLogger().isDebugEnabled())
-                getLogger().debug("Classifiable " + entity + " needs change!");
+            if (LOGGER.isDebugEnabled())
+                LOGGER.debug("Classifiable {} needs change!", entity);
             // Classifiables are allready on the store list
             addChangedDependencies(evt, user, store, type, entity, toRemove);
         }
@@ -2921,7 +2922,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     LocalDateTime lastChangeTime = ((LastChangedTimestamp) entity).getLastChanged();
                     if (lastChangeTimePersistant != null && lastChangeTime != null && lastChangeTimePersistant.isAfter(lastChangeTime))
                     {
-                        getLogger().warn("There is a newer  version for: " + entity.getId() + " stored version :" + SerializableDateTimeFormat.INSTANCE
+                        LOGGER.warn("There is a newer  version for: " + entity.getId() + " stored version :" + SerializableDateTimeFormat.INSTANCE
                                 .formatTimestamp(lastChangeTimePersistant) + " version to store :" + SerializableDateTimeFormat.INSTANCE
                                 .formatTimestamp(lastChangeTime));
                         throw new RaplaNewVersionException(getI18n().format("error.new_version", entity.toString()));
@@ -2952,11 +2953,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 if (entity instanceof Conflict && e instanceof EntityNotFoundException)
                 {
-                    getLogger().info("Not loading disabled conflict with id: " + entity.getId() + " appointment not found, so conflict is probably removed.");
+                    LOGGER.info("Not loading disabled conflict with id: {} appointment not found, so conflict is probably removed.", entity.getId());
                 }
                 else
                 {
-                    getLogger().error("Not loading entity with id: " + entity.getId(), e);
+                    LOGGER.error("Not loading entity with id: {}", entity.getId(), e);
                 }
                 toRemove.add( entity.getReference() );
                 cache.remove(entity);
@@ -3202,7 +3203,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         if (!reservations.isEmpty())
         {
             JsonParserWrapper.JsonParser jsonParser = JsonParserWrapper.defaultJson().get();
-            getLogger().error("The following events will be removed because they have no appointments: \n" + jsonParser.toJson(reservations));
+            LOGGER.error("The following events will be removed because they have no appointments: \n{}", jsonParser.toJson(reservations));
         }
         return reservationRefs;
     }
@@ -3959,7 +3960,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 if (latest != null) {
                     oldEntity = history.getEntity(latest);
                 } else {
-                    getLogger().warn("the entity " + update + " was deleted but not found in the history.");
+                    LOGGER.warn("the entity {} was deleted but not found in the history.", update);
                 }
             }
             if (oldEntity != null) {
@@ -4070,12 +4071,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         catch (RaplaException ra)
         {
-            getLogger().error("Error doing a merge for " + selectedObject + " and allocatables " + allocatableIds + ": " + ra.getLocalizedMessage());
+            LOGGER.error("Error doing a merge for {} and allocatables {}: {}", selectedObject, allocatableIds, ra.getLocalizedMessage());
             throw ra;
         }
         catch (Exception e)
         {
-            getLogger().error("Error doing a merge for " + selectedObject + " and allocatables " + allocatableIds + ": " + e.getMessage());
+            LOGGER.error("Error doing a merge for {} and allocatables {}: {}", selectedObject, allocatableIds, e.getMessage());
             throw new RaplaException(e);
         }
         finally

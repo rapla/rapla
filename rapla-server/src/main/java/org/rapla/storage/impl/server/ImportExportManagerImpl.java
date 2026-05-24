@@ -12,7 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.impl.server;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.CachableStorageOperatorCommand;
 import org.rapla.storage.ImportExportManager;
@@ -23,43 +24,34 @@ import org.rapla.storage.dbsql.DBOperator;
  Export does an import with source and destination exchanged.
 */
 public class ImportExportManagerImpl implements ImportExportManager {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ImportExportManagerImpl.class);
     CachableStorageOperator source;
     CachableStorageOperator dest;
-    Logger logger;
 
-
-    public ImportExportManagerImpl(Logger logger,CachableStorageOperator source,CachableStorageOperator dest)
+    public ImportExportManagerImpl(CachableStorageOperator source, CachableStorageOperator dest)
     {
-        this.logger =  logger;
         this.source = source;
         this.dest = dest;
-        
-    }
-    
-    protected Logger getLogger() {
-        return logger.getChildLogger("importexport");
     }
 
     /* Import the source into dest.   */
     public void doImport() throws RaplaException {
-        Logger logger = getLogger();
-		CachableStorageOperator source = getSource();
+        CachableStorageOperator source = getSource();
         CachableStorageOperator destination = getDestination();
-        logger.info("Import from " + source.toString() + " into " + dest.toString());
+        LOGGER.info("Import from {} into {}", source, dest);
         source.connect();
 		doConvert(source,destination);
-        logger.info("Import completed");
+        LOGGER.info("Import completed");
     }
 
     /* Export the dest into source.   */
     public void doExport() throws RaplaException {
-        Logger logger = getLogger();
         CachableStorageOperator source = getSource();
         CachableStorageOperator destination = getDestination();
-        logger.info("Export from " +  dest.toString() + " into " + source.toString());
+        LOGGER.info("Export from {} into {}", dest, source);
         destination.connect();
 		doConvert(destination,source);
-        logger.info("Export completed");
+        LOGGER.info("Export completed");
     }
 
     private void doConvert(final CachableStorageOperator cachableStorageOperator1,final CachableStorageOperator cachableStorageOperator2) throws RaplaException {

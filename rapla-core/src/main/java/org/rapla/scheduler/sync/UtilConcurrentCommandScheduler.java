@@ -1,11 +1,12 @@
 package org.rapla.scheduler.sync;
 
-import org.rapla.logger.Logger;
 import org.rapla.scheduler.Action;
 import org.rapla.scheduler.Cancellation;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.CompletablePromise;
 import org.rapla.scheduler.Promise;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -17,23 +18,22 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
-import java.time.LocalTime;
 public class UtilConcurrentCommandScheduler implements CommandScheduler, Executor
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(UtilConcurrentCommandScheduler.class);
+
     private final ScheduledExecutorService scheduledExecutor;
     private final Executor promiseExecuter;
-    protected final Logger logger;
 
     private ConcurrentHashMap<Object, CancableTask> futureTasks = new ConcurrentHashMap<Object, CancableTask>();
 
-    public UtilConcurrentCommandScheduler(Logger logger)
+    public UtilConcurrentCommandScheduler()
     {
-        this(logger, 6);
+        this(6);
     }
 
-    public UtilConcurrentCommandScheduler(Logger logger, int poolSize)
+    public UtilConcurrentCommandScheduler(int poolSize)
     {
-        this.logger = logger;
         final ScheduledExecutorService executor = Executors.newScheduledThreadPool(poolSize, new ThreadFactory()
         {
 
@@ -82,22 +82,22 @@ public class UtilConcurrentCommandScheduler implements CommandScheduler, Executo
 
     protected void error(String message, Exception ex)
     {
-        logger.error(message, ex);
+        LOGGER.error(message, ex);
     }
 
     protected void debug(String message)
     {
-        logger.debug(message);
+        LOGGER.debug(message);
     }
 
     protected void info(String message)
     {
-        logger.info(message);
+        LOGGER.info(message);
     }
 
     protected void warn(String message)
     {
-        logger.warn(message);
+        LOGGER.warn(message);
     }
 
     @Override
@@ -182,8 +182,8 @@ public class UtilConcurrentCommandScheduler implements CommandScheduler, Executo
                     scheduleNext();
                 }
             }
-            
-            
+
+
         }
 
 
@@ -223,29 +223,6 @@ public class UtilConcurrentCommandScheduler implements CommandScheduler, Executo
 
         abstract protected void endOfQueueReached();
     }
-
-
-    /*
-    public  <T> T waitFor(Promise<T> promise, int timeout) throws Throwable
-    {
-        Semaphore semaphore = new Semaphore(0);
-        AtomicReference<T> atomicReference = new AtomicReference<>();
-        AtomicReference<Throwable> atomicReferenceE = new AtomicReference<>();
-        promise.whenComplete((t, ex) -> {
-            atomicReferenceE.set(ex);
-            atomicReference.set(t);
-            semaphore.release();
-        });
-        semaphore.tryAcquire(timeout, TimeUnit.MILLISECONDS);
-        final Throwable throwable = atomicReferenceE.get();
-        if (throwable != null)
-        {
-            throw throwable;
-        }
-        final T t = atomicReference.get();
-        return t;
-    }
-*/
 
 
     public void cancel()
@@ -290,7 +267,6 @@ public class UtilConcurrentCommandScheduler implements CommandScheduler, Executo
         return supply(supplier, promiseExecuter);
     }
 
-//    @Override
     public Promise<Void> delay(long delay) {
         CompletablePromise<Void> promise = createCompletable();
         Runnable task = ()->promise.complete(null);
@@ -382,44 +358,5 @@ public class UtilConcurrentCommandScheduler implements CommandScheduler, Executo
         try { task.run(); }
         catch (Throwable ex) { error("scheduled task failed: " + ex.getMessage(), ex instanceof Exception ? (Exception) ex : new Exception(ex)); }
     }
-
-
-//    Disposable schedule(Action task, int hourOfDay, int minute)
-//    {
-//        Clock clock = Clock.systemDefaultZone();
-//        LocalTime time = LocalTime.of(hourOfDay,minute);
-//        HOURS.between( clock.instant(), time);
-//    }
-
-    /*
-    public <T> Promise<T> synchronizeTo(Promise<T> promise)
-    {
-        return synchronizeTo(promise,promiseExecuter);
-    }
-    /*
-
-    /** the promise complete and exceptional methods will be called with the passed executer Consumer&lt;Runnable&gt; is the same as java.util.concurrent.Executor interface
-     * You can use this to synchronize to SwingEventQueues*/
-    /*
-    public <T> Promise<T> synchronizeTo(Promise<T> promise, Executor executor)
-    {
-        final CompletablePromise<T> completablePromise = new UnsynchronizedCompletablePromise<>();
-        promise.whenComplete((t, ex) ->
-        {
-            executor.execute(() ->
-            {
-                if (ex != null)
-                {
-                    completablePromise.completeExceptionally(ex);
-                }
-                else
-                {
-                    completablePromise.complete(t);
-                }
-            });
-        });
-        return completablePromise;
-    }
-    */
 
 }

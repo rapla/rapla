@@ -32,7 +32,8 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustAllStrategy;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLContext;
 import java.net.URI;
@@ -47,10 +48,10 @@ import java.util.*;
  */
 public class EWSConnector {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(EWSConnector.class);
     private static final int SERVICE_DEFAULT_TIMEOUT = 10000;
     private final URI uri;
     private final WebCredentials credentials;
-    private final Logger logger;
     private final Boolean developmentMode= Boolean.valueOf(System.getProperty("org.rapla.developmentmode","false"));
 
     private String exchangeUsername;
@@ -58,8 +59,8 @@ public class EWSConnector {
 
 //	private final Character DOMAIN_SEPERATION_SYMBOL = new Character('@');
 
-    public EWSConnector(String fqdn, String exchangeUsername,String exchangePassword, Logger logger, String mailboxAddress) throws URISyntaxException  {
-    	this( fqdn,new WebCredentials(exchangeUsername, exchangePassword), logger);
+    public EWSConnector(String fqdn, String exchangeUsername,String exchangePassword, String mailboxAddress) throws URISyntaxException  {
+    	this( fqdn,new WebCredentials(exchangeUsername, exchangePassword));
         this.exchangeUsername = exchangeUsername;
         this.mailboxAddress = mailboxAddress;
 
@@ -69,13 +70,11 @@ public class EWSConnector {
      *
      * @param fqdn        : {@link String}
      * @param credentials : {@link WebCredentials}
-     * @param logger 
-     * @throws URISyntaxException 
+     * @throws URISyntaxException
      * @throws Exception
      */
-    private EWSConnector(String fqdn, WebCredentials credentials, Logger logger) throws URISyntaxException  {
+    private EWSConnector(String fqdn, WebCredentials credentials) throws URISyntaxException  {
         super();
-        this.logger = logger;
         uri = new URI(fqdn.toLowerCase().endsWith("/ews/exchange.asmx") ? fqdn : fqdn + "/EWS/Exchange.asmx");
         this.credentials = credentials;
 
@@ -86,13 +85,13 @@ public class EWSConnector {
      */
     public ExchangeService getService() throws RaplaException {
         ExchangeService tmpService = new RaplaExchangeService(); //, DateTools.getTimeZone());//, DateTools.getTimeZone());
-        if ( logger!= null && logger.isDebugEnabled())
+        if ( LOGGER.isDebugEnabled())
         {
             tmpService.setTraceEnabled( true );
             tmpService.setTraceListener((traceType, traceMessage) -> {
                 if ( traceType.equals(TraceFlags.EwsRequest.toString()))
                 {
-                    logger.debug(traceMessage);
+                    LOGGER.debug(traceMessage);
                 }
             });
         }
@@ -210,11 +209,11 @@ public class EWSConnector {
                             String lastName = parts[0].trim().toLowerCase();
                             String firstName = parts[1].trim().toLowerCase();
                             mailbox = firstName + "." + lastName + "@" + domain;
-                            logger.info("Could not find maibox for  lnLegDN " + lnLegDN + " guessing mailbox " + mailbox);
+                            LOGGER.info("Could not find maibox for  lnLegDN {} guessing mailbox {}", lnLegDN, mailbox);
                         } else {
                             String message = "Could not resolve calender for " + subject + " lnLegDN: " + lnLegDN;
                             errorMessages.add(message);
-                            logger.warn(message);
+                            LOGGER.warn(message);
                             continue;
                         }
                     }
@@ -222,9 +221,9 @@ public class EWSConnector {
                     CalendarFolder sharedFolder;
                     try {
                         sharedFolder= (CalendarFolder) Folder.bind(service, SharedCalendarId);
-                        logger.debug("bind successful for mailbox " + mailbox + " for lnLegDN " + lnLegDN);
+                        LOGGER.debug("bind successful for mailbox {} for lnLegDN {}", mailbox, lnLegDN);
                     } catch (Exception ex) {
-                        logger.warn("Can't bind calendar folder for mailbox " + mailbox + " Cause " + ex.getMessage());
+                        LOGGER.warn("Can't bind calendar folder for mailbox {} Cause {}", mailbox, ex.getMessage());
                         errorMessages.add(mailbox + " Error: cannot bind " );
                         continue;
                     }
@@ -232,7 +231,7 @@ public class EWSConnector {
                 } else {
                     String message = "Could not find calendar for " + subject;
                     errorMessages.add(message);
-                    logger.warn(message);
+                    LOGGER.warn(message);
                 }
             }
         }

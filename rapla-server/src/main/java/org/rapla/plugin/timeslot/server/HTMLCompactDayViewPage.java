@@ -25,7 +25,6 @@ import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
 import org.rapla.plugin.timeslot.Timeslot;
@@ -45,10 +44,10 @@ public class HTMLCompactDayViewPage extends AbstractHTMLCalendarPage
 {
 	private final TimeslotProvider timeslotProvider;
 	@Autowired
-	public HTMLCompactDayViewPage(RaplaLocale raplaLocale, RaplaResources raplaResources, RaplaFacade facade, Logger logger,
+	public HTMLCompactDayViewPage(RaplaLocale raplaLocale, RaplaResources raplaResources, RaplaFacade facade,
 			AppointmentFormater appointmentFormater, TimeslotProvider timeslotProvider)
 	{
-		super(raplaLocale, raplaResources, facade, logger, appointmentFormater);
+		super(raplaLocale, raplaResources, facade, appointmentFormater);
 		this.timeslotProvider = timeslotProvider;
 	}
 

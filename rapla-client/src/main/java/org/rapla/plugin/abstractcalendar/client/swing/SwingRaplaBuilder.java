@@ -18,14 +18,13 @@ import org.rapla.RaplaResources;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 
 public class SwingRaplaBuilder extends RaplaBuilder
 {
-    public SwingRaplaBuilder(RaplaFacade raplaFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AppointmentFormater appointmentFormater)
+    public SwingRaplaBuilder(RaplaFacade raplaFacade, RaplaResources i18n, RaplaLocale raplaLocale, AppointmentFormater appointmentFormater)
     {
-        super(raplaLocale, raplaFacade, i18n, logger, appointmentFormater);
+        super(raplaLocale, raplaFacade, i18n, appointmentFormater);
         this.setBlockCreator(( blockContext, start, end)->new SwingRaplaBlock( blockContext, start, end));
     }
 

@@ -35,7 +35,6 @@ import org.rapla.client.swing.internal.view.TreeItemFactorySwing;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.i18n.internal.AbstractBundleManager;
 import org.rapla.client.swing.i18n.SwingBundleManager;
-import org.rapla.logger.RaplaBootstrapLogger;
 import org.rapla.components.iolayer.DefaultIO;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.domain.Allocatable;
@@ -43,7 +42,6 @@ import org.rapla.entities.domain.Permission;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
-import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
 
 import java.util.Collections;
@@ -54,22 +52,21 @@ public final class PermissionEditTest extends GUITestCase
 {
     @Test
     public void testMain() throws Exception {
-        final Logger logger = getLogger();
-        final AbstractBundleManager bundleManager = new SwingBundleManager(RaplaBootstrapLogger.createRaplaLogger());
+        final AbstractBundleManager bundleManager = new SwingBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
         RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
-        IOInterface ioInterface = new DefaultIO(logger);
+        IOInterface ioInterface = new DefaultIO();
         ClientFacade facade = getFacade();
-        CommandScheduler scheduler = new SwingSchedulerImpl(logger);
-        DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n,  scheduler,bundleManager,  logger );
+        CommandScheduler scheduler = new SwingSchedulerImpl();
+        DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n,  scheduler,bundleManager);
         TreeItemFactory treeItemFactory = new TreeItemFactorySwing(i18n);
-        TreeFactory treeFactory = new TreeFactoryImpl(getFacade(), i18n, getRaplaLocale(), getLogger(), treeItemFactory);
+        TreeFactory treeFactory = new TreeFactoryImpl(getFacade(), i18n, getRaplaLocale(), treeItemFactory);
         DateRenderer dateRenderer = new RaplaDateRenderer(getFacade().getRaplaFacade(),  getRaplaLocale());
         RaplaListEditFactory raplaListEditFactory = new RaplaListEditFactory( i18n);
-        DateFieldFactory dateFieldFactory = new DateFieldFactory(getFacade(), i18n, getRaplaLocale(), getLogger(), dateRenderer, ioInterface);
-        LongFieldFactory longFieldFactory = new LongFieldFactory(facade, i18n, raplaLocale, logger, ioInterface);
-        PermissionFieldFactory permissionFieldFactory = new PermissionFieldFactory(getFacade(), i18n, getRaplaLocale(), getLogger(), treeFactory,  dialogUiFactory, dateFieldFactory, longFieldFactory);
-        PermissionListField editor = new PermissionListField(getFacade(), i18n, getRaplaLocale(), getLogger(),"permissions", raplaListEditFactory, permissionFieldFactory);
+        DateFieldFactory dateFieldFactory = new DateFieldFactory(getFacade(), i18n, getRaplaLocale(), dateRenderer, ioInterface);
+        LongFieldFactory longFieldFactory = new LongFieldFactory(facade, i18n, raplaLocale, ioInterface);
+        PermissionFieldFactory permissionFieldFactory = new PermissionFieldFactory(getFacade(), i18n, getRaplaLocale(), treeFactory,  dialogUiFactory, dateFieldFactory, longFieldFactory);
+        PermissionListField editor = new PermissionListField(getFacade(), i18n, getRaplaLocale(),"permissions", raplaListEditFactory, permissionFieldFactory);
         Allocatable a = facade.getRaplaFacade().getAllocatablesWithFilter(null)[0];
         Allocatable r = facade.getRaplaFacade().edit( a );
         Permission p1 = r.newPermission();
@@ -82,7 +79,6 @@ public final class PermissionEditTest extends GUITestCase
         r.addPermission(p3);
         editor.mapFrom(Collections.singletonList(r));
         testComponent(editor.getComponent(),700,300);
-        getLogger().info("Permission edit started");
     }
 
 

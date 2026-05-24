@@ -22,7 +22,6 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.ical.ICalImport;
 import org.rapla.plugin.ical.ICalImport.Import;
 import org.rapla.plugin.ical.ImportFromICalPlugin;
@@ -82,9 +81,9 @@ public class ImportFromICalMenu extends RaplaComponent implements ImportMenuExte
 	private boolean enabled;
 
 	@Autowired
-	public ImportFromICalMenu(RaplaFacade facade, RaplaResources i18n, ImportFromICalResources iCalResources, RaplaLocale raplaLocale, Logger logger, ICalImport importService, ImportFromICalResources icalImportResources, Supplier<TreeAllocatableSelection> treeAllocatableSelectionProvider, IOInterface io, MenuItemFactory menuItemFactory, DialogUiFactoryInterface dialogUiFactory)
+	public ImportFromICalMenu(RaplaFacade facade, RaplaResources i18n, ImportFromICalResources iCalResources, RaplaLocale raplaLocale, ICalImport importService, ImportFromICalResources icalImportResources, Supplier<TreeAllocatableSelection> treeAllocatableSelectionProvider, IOInterface io, MenuItemFactory menuItemFactory, DialogUiFactoryInterface dialogUiFactory)
 	{
-		super( facade,i18n, raplaLocale, logger);
+		super( facade,i18n, raplaLocale);
 		this.importService = importService;
 		this.icalI18n = icalImportResources;
         this.treeAllocatableSelectionProvider = treeAllocatableSelectionProvider;
@@ -140,7 +139,7 @@ public class ImportFromICalMenu extends RaplaComponent implements ImportMenuExte
 
 		final String urlText = icalI18n.getString("enter_url");
 		final JTextField urlField = new JTextField(urlText);
-		RaplaGUIComponent.addCopyPaste(urlField, getI18n(), getRaplaLocale(), io, getLogger());
+		RaplaGUIComponent.addCopyPaste(urlField, getI18n(), getRaplaLocale(), io);
 		panel1.add(urlField, "2,0");
 
 		final JTextField fileField = new JTextField(icalI18n.getString("click_for_file"));

@@ -16,7 +16,6 @@ import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.facade.ClassifiableFilter;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.*;
@@ -36,12 +35,12 @@ public class FilterEditButton extends RaplaGUIComponent
     ClassifiableFilterEdit ui;
     private boolean popupWasVisibleAtPress;
 
-    private FilterEditButton(final ClientFacade facade, final RaplaResources i18n, final RaplaLocale raplaLocale, final Logger logger,
+    private FilterEditButton(final ClientFacade facade, final RaplaResources i18n, final RaplaLocale raplaLocale,
             final TreeFactory treeFactory, final ClassifiableFilter filter, final ChangeListener listener,
             final DateFieldFactory dateFieldFactory, final BooleanFieldFactory booleanFieldFactory, final DialogUiFactoryInterface dialogUiFactory,
             final boolean isResourceSelection, final TextFieldFactory textFieldFactory, final LongFieldFactory longFieldFactory)
     {
-        super(facade, i18n, raplaLocale, logger);
+        super(facade, i18n, raplaLocale);
         filterButton = new RaplaArrowButton('v');
         filterButton.setText(getString("filter"));
         filterButton.setSize(80,18);
@@ -74,7 +73,7 @@ public class FilterEditButton extends RaplaGUIComponent
                 {
                     ui.removeChangeListener( listener);
                 }
-                ui = new ClassifiableFilterEdit( facade, i18n, raplaLocale, logger, treeFactory, isResourceSelection,  dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);
+                ui = new ClassifiableFilterEdit( facade, i18n, raplaLocale, treeFactory, isResourceSelection,  dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);
                 if ( listener != null)
                 {
                     ui.addChangeListener(listener);
@@ -195,7 +194,6 @@ public class FilterEditButton extends RaplaGUIComponent
         private final ClientFacade facade;
         private final RaplaResources i18n;
         private final RaplaLocale raplaLocale;
-        private final Logger logger;
         private final TreeFactory treeFactory;
 
         private final DateFieldFactory dateFieldFactory;
@@ -205,7 +203,7 @@ public class FilterEditButton extends RaplaGUIComponent
         private final LongFieldFactory longFieldFactory;
 
         @Autowired
-        public FilterEditButtonFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,
+        public FilterEditButtonFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, TreeFactory treeFactory,
                   DateFieldFactory dateFieldFactory,
                 BooleanFieldFactory booleanFieldFactory, DialogUiFactoryInterface dialogUiFactory, TextFieldFactory textFieldFactory,
                 LongFieldFactory longFieldFactory)
@@ -214,7 +212,6 @@ public class FilterEditButton extends RaplaGUIComponent
             this.facade = facade;
             this.i18n = i18n;
             this.raplaLocale = raplaLocale;
-            this.logger = logger;
             this.treeFactory = treeFactory;
             this.dateFieldFactory = dateFieldFactory;
             this.booleanFieldFactory = booleanFieldFactory;
@@ -225,7 +222,7 @@ public class FilterEditButton extends RaplaGUIComponent
 
         public FilterEditButton create(ClassifiableFilter filter,boolean isResourceSelection,ChangeListener listener)
         {
-            return new FilterEditButton(facade, i18n, raplaLocale, logger, treeFactory, filter, listener,  dateFieldFactory, booleanFieldFactory,
+            return new FilterEditButton(facade, i18n, raplaLocale, treeFactory, filter, listener,  dateFieldFactory, booleanFieldFactory,
                     dialogUiFactory, isResourceSelection, textFieldFactory, longFieldFactory);
         }
     }

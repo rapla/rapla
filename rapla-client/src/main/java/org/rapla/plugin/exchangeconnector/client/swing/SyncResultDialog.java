@@ -8,7 +8,6 @@ import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorResources;
 
 import javax.swing.JLabel;
@@ -20,8 +19,8 @@ public class SyncResultDialog extends RaplaGUIComponent
     private final DialogUiFactoryInterface dialogUiFactory;
     private final ExchangeConnectorResources exchangeConnectorResources;
 
-    public SyncResultDialog(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ExchangeConnectorResources exchangeConnectorResources, DialogUiFactoryInterface dialogUiFactory) {
-        super(facade, i18n, raplaLocale, logger);
+    public SyncResultDialog(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, ExchangeConnectorResources exchangeConnectorResources, DialogUiFactoryInterface dialogUiFactory) {
+        super(facade, i18n, raplaLocale);
         this.exchangeConnectorResources = exchangeConnectorResources;
 //        setChildBundleName(exchangeConnectorResources);
         this.dialogUiFactory = dialogUiFactory;

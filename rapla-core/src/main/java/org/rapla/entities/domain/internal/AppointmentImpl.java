@@ -25,6 +25,8 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.RaplaComponent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -722,9 +724,11 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         return true;
     }
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(AppointmentImpl.class);
+
     private static String print(String string) {
         if (string != null)
-            System.out.println(string);
+            LOGGER.debug(string);
         return string;
     }
 

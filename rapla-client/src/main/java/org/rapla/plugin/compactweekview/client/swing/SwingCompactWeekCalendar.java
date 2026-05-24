@@ -42,7 +42,6 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
 import org.rapla.plugin.abstractcalendar.RaplaBlock;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
@@ -64,13 +63,13 @@ import java.util.Set;
 import java.time.LocalDateTime;
 public class SwingCompactWeekCalendar extends AbstractRaplaSwingCalendar
 {
-    public SwingCompactWeekCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel settings, boolean editable,
+    public SwingCompactWeekCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, CalendarModel settings, boolean editable,
             boolean printing, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Supplier<DateRenderer> dateRendererProvider,
             CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory infoFactory,
             DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface,
             AppointmentFormater appointmentFormater, EditController editController) throws RaplaException
     {
-        super(facade, i18n, raplaLocale, logger, settings, editable, printing, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel,
+        super(facade, i18n, raplaLocale, settings, editable, printing, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel,
                 clipboard, reservationController, infoFactory,  dateRenderer, dialogUiFactory, ioInterface, appointmentFormater, editController);
     }
     
@@ -122,7 +121,7 @@ public class SwingCompactWeekCalendar extends AbstractRaplaSwingCalendar
 
     
     protected ViewListener createListener() throws RaplaException {
-        RaplaCalendarViewListener listener = new RaplaCalendarViewListener(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), model, view.getComponent(),  menuFactory,  reservationController,  dialogUiFactory, editController) {
+        RaplaCalendarViewListener listener = new RaplaCalendarViewListener(getClientFacade(), getI18n(), getRaplaLocale(), model, view.getComponent(),  menuFactory,  reservationController,  dialogUiFactory, editController) {
             
             @Override
             public void selectionChanged(LocalDateTime start, LocalDateTime end) {

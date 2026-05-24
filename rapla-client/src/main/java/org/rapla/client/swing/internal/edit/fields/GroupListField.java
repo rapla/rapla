@@ -13,7 +13,6 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.DefaultListCellRenderer;
@@ -58,9 +57,9 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
     private final DialogUiFactoryInterface dialogUiFactory;
 
     @Autowired
-    public GroupListField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,  DialogUiFactoryInterface dialogUiFactory) throws
+    public GroupListField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, TreeFactory treeFactory,  DialogUiFactoryInterface dialogUiFactory) throws
             RaplaInitializationException {
-        super(facade, i18n, raplaLocale, logger);
+        super(facade, i18n, raplaLocale);
         this.dialogUiFactory = dialogUiFactory;
         final Category rootCategory;
         try
@@ -73,7 +72,7 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
         }
         if ( rootCategory == null )
             return;
-        newCategory = new CategorySelectField(facade, i18n, raplaLocale, logger, treeFactory,  dialogUiFactory, rootCategory );
+        newCategory = new CategorySelectField(facade, i18n, raplaLocale, treeFactory,  dialogUiFactory, rootCategory );
         newCategory.setUseNull( false);
         newCategory.setMultipleSelectionPossible( true);
         toolbar.add( newButton  );

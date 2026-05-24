@@ -3,7 +3,8 @@ package org.rapla.storage.dbrm;
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.rest.SerializableExceptionInformation;
 import org.rapla.rest.client.AuthenticationException;
 import org.rapla.rest.client.CustomConnector;
@@ -19,24 +20,24 @@ import java.util.function.Supplier;
 
 public class MyCustomConnector implements CustomConnector
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MyCustomConnector.class);
+
     private final RemoteConnectionInfo remoteConnectionInfo;
     private final Supplier<RemoteAuthentificationService> authentificationService;
     private final TokenStore tokenStore;
     //private final String errorString;
     private final CommandScheduler commandQueue;
     Supplier<RaplaResources> i18n;
-    Logger logger;
     private int wrongLoginCounter=0;
 
     @Autowired public MyCustomConnector(RemoteConnectionInfo remoteConnectionInfo, Supplier<RaplaResources> i18n,Supplier<RemoteAuthentificationService> authentificationService,
-            CommandScheduler commandQueue, Logger logger, TokenStore tokenStore)
+            CommandScheduler commandQueue, TokenStore tokenStore)
     {
         this.remoteConnectionInfo = remoteConnectionInfo;
         this.authentificationService = authentificationService;
         this.tokenStore = tokenStore == null ? TokenStores.noOp() : tokenStore;
         this.commandQueue = commandQueue;
         this.i18n = i18n;
-        this.logger = logger.getChildLogger("connector");
     }
 
 
@@ -67,7 +68,7 @@ public class MyCustomConnector implements CustomConnector
             }
             catch (Exception ex)
             {
-                logger.info("impersonation renewal failed (" + ex.getMessage()
+                LOGGER.info("impersonation renewal failed (" + ex.getMessage()
                         + "), falling back to admin refresh");
             }
         }
@@ -89,7 +90,7 @@ public class MyCustomConnector implements CustomConnector
             }
             catch (Exception refreshFailed)
             {
-                logger.info("refresh-token reauth failed (" + refreshFailed.getMessage()
+                LOGGER.info("refresh-token reauth failed (" + refreshFailed.getMessage()
                         + "), falling back to password reauth");
             }
         }
@@ -118,7 +119,7 @@ public class MyCustomConnector implements CustomConnector
         final LoginTokens loginTokens;
         try {
             loginTokens = remoteAuthentificationService.login(new org.rapla.storage.dbrm.LoginCredentials(username, password, connectAs));
-            logger.info("Reauthenticating user " + username + (connectAs != null ? " as " + connectAs : ""));
+            LOGGER.info("Reauthenticating user " + username + (connectAs != null ? " as " + connectAs : ""));
         } catch (RaplaSecurityException e) {
             wrongLoginCounter++;
             throw e;
@@ -190,7 +191,7 @@ public class MyCustomConnector implements CustomConnector
             remoteConnectionInfo.setRefreshToken(newRefresh);
             tokenStore.tryWrite(newRefresh);
         }
-        logger.info("refresh-token reauth succeeded against " + url);
+        LOGGER.info("refresh-token reauth succeeded against " + url);
         return newAccess;
     }
 
@@ -233,7 +234,7 @@ public class MyCustomConnector implements CustomConnector
         String newToken = extractJsonString(respBody, "access_token");
         if (newToken == null) return null;
         remoteConnectionInfo.setImpersonationToken(newToken, target);
-        logger.info("impersonation renewal succeeded (target=" + target + ")");
+        LOGGER.info("impersonation renewal succeeded (target=" + target + ")");
         return newToken;
     }
 
@@ -318,11 +319,5 @@ public class MyCustomConnector implements CustomConnector
     {
         return remoteConnectionInfo.getServerURL() + "/" + relativePath;
     }
-
-    @Override public Logger getLogger()
-    {
-        return logger;
-    }
-
 
 }

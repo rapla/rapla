@@ -25,12 +25,15 @@ import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 import java.util.TreeSet;
 
 import java.time.LocalDate;
 public class ReservationReader extends RaplaXMLReader {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReservationReader.class);
     ReservationImpl reservation;
     private ReferenceInfo<Allocatable> allocatableId = null;
     private AppointmentImpl appointment = null;
@@ -174,7 +177,7 @@ public class ReservationReader extends RaplaXMLReader {
                 if (requestStatus != null){
                     reservation.setRequestStatusForId(allocatableId.getId(), requestStatus);
                 } else {
-                    getLogger().error("Unknown request status " + requestStatusString + " for " + reservation.getId());
+                    LOGGER.error("Unknown request status " + requestStatusString + " for " + reservation.getId());
                 }
 
             }

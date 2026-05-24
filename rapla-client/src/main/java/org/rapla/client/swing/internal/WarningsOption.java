@@ -22,7 +22,8 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.rest.SettingsService;
 import org.rapla.rest.dto.UserSettings;
 import org.springframework.context.annotation.Scope;
@@ -40,6 +41,7 @@ import java.util.Locale;
 
 public class WarningsOption extends RaplaGUIComponent implements UserOptionPanel
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(WarningsOption.class);
     JPanel panel = new JPanel();
     Preferences preferences;
     JCheckBox showConflictWarningsField = new JCheckBox();
@@ -54,8 +56,8 @@ public class WarningsOption extends RaplaGUIComponent implements UserOptionPanel
     private final SettingsService settings;
 
     @Autowired
-    public WarningsOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, SettingsService settings) {
-        super(facade, i18n, raplaLocale, logger);
+    public WarningsOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, SettingsService settings) {
+        super(facade, i18n, raplaLocale);
         this.settings = settings;
         showConflictWarningsField.setText("");        
         double pre = TableLayout.PREFERRED;
@@ -120,7 +122,7 @@ public class WarningsOption extends RaplaGUIComponent implements UserOptionPanel
         {
             // Endpoint unreachable — fall back to the local cache reads so
             // the dialog still opens with sensible values.
-            getLogger().warn("GET /settings/me failed, falling back to local cache: " + e.getMessage());
+            LOGGER.warn("GET /settings/me failed, falling back to local cache: {}", e.getMessage());
             showConflictWarningsField.setSelected(preferences.getEntryAsBoolean(CalendarOptionsImpl.SHOW_CONFLICT_WARNING, true));
             showNotInCalendarWarningsField.setSelected(preferences.getEntryAsBoolean(CalendarOptionsImpl.SHOW_NOT_IN_CALENDAR_WARNING, true));
             showAbortEditWarningsField.setSelected(preferences.getEntryAsBoolean(CalendarOptionsImpl.SHOW_ABORT_EDIT_WARNING, true));

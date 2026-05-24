@@ -13,14 +13,13 @@
 package org.rapla.components.util.xml;
 
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
 
 /** Reads the data in xml format from an InputSource into the
     LocalCache and converts it to a newer version if necessary.
  */
-public interface RaplaNonValidatedInput 
+public interface RaplaNonValidatedInput
 {
-	void read(String xml, RaplaSAXHandler handler, Logger logger) throws RaplaException;
+	void read(String xml, RaplaSAXHandler handler) throws RaplaException;
 
 
     

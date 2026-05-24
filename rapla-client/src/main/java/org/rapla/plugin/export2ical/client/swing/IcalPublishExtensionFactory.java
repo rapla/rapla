@@ -9,7 +9,8 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.plugin.export2ical.ICalConfigService;
 import org.springframework.stereotype.Service;
@@ -21,22 +22,21 @@ import java.beans.PropertyChangeListener;
 
 public class IcalPublishExtensionFactory implements PublishExtensionFactory
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(IcalPublishExtensionFactory.class);
     private final ClientFacade facade;
     private final RaplaResources i18n;
     private final RaplaLocale raplaLocale;
-    private final Logger logger;
     private final IOInterface ioInterface;
     private final ICalConfigService configService;
     /** Cached enabled flag — isEnabled() is called on every UI render. Null = not yet fetched. */
     private volatile Boolean cachedEnabled;
 
     @Autowired
-	public IcalPublishExtensionFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface ioInterface, ICalConfigService configService)
+	public IcalPublishExtensionFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, IOInterface ioInterface, ICalConfigService configService)
 	{
         this.facade = facade;
         this.i18n = i18n;
         this.raplaLocale = raplaLocale;
-        this.logger = logger;
         this.ioInterface = ioInterface;
         this.configService = configService;
 	}
@@ -59,7 +59,7 @@ public class IcalPublishExtensionFactory implements PublishExtensionFactory
         }
         catch (RaplaException e)
         {
-            logger.warn("Failed to load iCal config via /ical/config/default; falling back to default", e);
+            LOGGER.warn("Failed to load iCal config via /ical/config/default; falling back to default", e);
             return Export2iCalPlugin.ENABLE_BY_DEFAULT;
         }
     }
@@ -67,7 +67,7 @@ public class IcalPublishExtensionFactory implements PublishExtensionFactory
 	public PublishExtension creatExtension(CalendarSelectionModel model,
 			PropertyChangeListener revalidateCallback) throws RaplaException 
 	{
-		return new IcalPublishExtension(facade, i18n, raplaLocale, logger, model, ioInterface);
+		return new IcalPublishExtension(facade, i18n, raplaLocale, model, ioInterface);
 	}
 
 	

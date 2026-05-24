@@ -37,7 +37,6 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.periodcopy.PeriodCopyResources;
 import org.rapla.scheduler.Promise;
 
@@ -92,8 +91,8 @@ public class CopyDialog extends RaplaGUIComponent implements RaplaWidget
     
     @SuppressWarnings("unchecked")
     @Autowired
-	public CopyDialog(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PeriodCopyResources periodCopyI18n, CalendarModel model, DateRenderer dateRenderer, BooleanFieldFactory booleanFieldFactory, final DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface) throws RaplaInitializationException {
-        super(facade, i18n, raplaLocale, logger);
+	public CopyDialog(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, PeriodCopyResources periodCopyI18n, CalendarModel model, DateRenderer dateRenderer, BooleanFieldFactory booleanFieldFactory, final DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface) throws RaplaInitializationException {
+        super(facade, i18n, raplaLocale);
         this.periodCopyI18n = periodCopyI18n;
         this.model = model;
         locale = getRaplaLocale();
@@ -217,7 +216,7 @@ public class CopyDialog extends RaplaGUIComponent implements RaplaWidget
 
     private RaplaCalendar createRaplaCalendar(DateRenderer dateRenderer, IOInterface ioInterface)
     {
-        return RaplaGUIComponent.createRaplaCalendar(dateRenderer,ioInterface,getI18n(), getRaplaLocale(), getLogger());
+        return RaplaGUIComponent.createRaplaCalendar(dateRenderer,ioInterface,getI18n(), getRaplaLocale());
     }
 
     public LocalDateTime getSourceStart()

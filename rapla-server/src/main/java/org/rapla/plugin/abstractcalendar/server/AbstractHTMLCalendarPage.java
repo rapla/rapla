@@ -29,7 +29,8 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBuilder;
 import org.rapla.plugin.abstractcalendar.MultiCalendarPrint;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
@@ -53,18 +54,17 @@ import java.util.Locale;
 
 public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractHTMLCalendarPage.class);
     protected AbstractHTMLView view;
     protected CalendarModel model = null;
     final protected RaplaResources raplaResources;
     final protected RaplaLocale raplaLocale;
     final protected RaplaFacade facade;
-    final protected Logger logger;
     final protected AppointmentFormater appointmentFormater;
 
-    public AbstractHTMLCalendarPage(RaplaLocale raplaLocale, RaplaResources raplaResources, RaplaFacade facade, Logger logger, AppointmentFormater appointmentFormater) {
+    public AbstractHTMLCalendarPage(RaplaLocale raplaLocale, RaplaResources raplaResources, RaplaFacade facade, AppointmentFormater appointmentFormater) {
         this.raplaResources = raplaResources;
         this.raplaLocale = raplaLocale;
-        this.logger = logger;
         this.facade = facade;
         this.appointmentFormater = appointmentFormater;
     }
@@ -87,7 +87,7 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
     }
 
     protected RaplaBuilder createBuilder() throws RaplaException {
-        RaplaBuilder builder = new HTMLRaplaBuilder( raplaLocale,facade,raplaResources, logger, appointmentFormater);
+        RaplaBuilder builder = new HTMLRaplaBuilder( raplaLocale,facade,raplaResources, appointmentFormater);
         LocalDateTime startDate = view.getStartDate();
         LocalDateTime endDate = view.getEndDate();
         builder.setNonFilteredEventsVisible( false);
@@ -182,7 +182,7 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
             view = createCalendarView();
         	configureView();
         } catch (RaplaException ex) {
-            logger.error("Can't configure view ", ex);
+            LOGGER.error("Can't configure view ", ex);
             throw new ServletException( ex );
         }
         view.setLocale( raplaLocale );
@@ -200,7 +200,7 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
             RaplaBuilder builder = createBuilder();
              view.rebuild( builder);
         } catch (RaplaException ex) {
-            logger.error("Can't create builder ", ex);
+            LOGGER.error("Can't create builder ", ex);
             throw new ServletException( ex );
         }
     }

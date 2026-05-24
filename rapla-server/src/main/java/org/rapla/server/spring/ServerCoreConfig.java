@@ -15,8 +15,6 @@ import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.DefaultScheduler;
 import org.rapla.framework.internal.RaplaLocaleImpl;
-import org.rapla.logger.Logger;
-import org.rapla.logger.RaplaBootstrapLogger;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.framework.TimeZoneConverter;
 import org.rapla.server.internal.ServerStorageSelector;
@@ -35,12 +33,6 @@ import org.springframework.context.annotation.Primary;
 @Configuration
 public class ServerCoreConfig
 {
-    @Bean
-    public Logger raplaLogger()
-    {
-        return RaplaBootstrapLogger.createRaplaLogger();
-    }
-
     /** Bean name / qualifier of the primary rapla database {@link DataSource}.
      *  Consumers (notably {@code serverStorageSelector}) must qualify by this
      *  name so a deployment-private secondary {@code DataSource} &mdash; e.g.
@@ -94,9 +86,9 @@ public class ServerCoreConfig
     }
 
     @Bean
-    public CommandScheduler commandScheduler(Logger logger, TimeZoneConverter timeZoneConverter)
+    public CommandScheduler commandScheduler(TimeZoneConverter timeZoneConverter)
     {
-        return new DefaultScheduler(logger, timeZoneConverter);
+        return new DefaultScheduler(timeZoneConverter);
     }
 
     @Bean(name = StandardFunctions.NAMESPACE)
@@ -121,10 +113,9 @@ public class ServerCoreConfig
     @Bean
     public org.rapla.plugin.eventtimecalculator.EventTimeCalculatorFactory eventTimeCalculatorFactory(
             org.springframework.beans.factory.ObjectProvider<org.rapla.facade.RaplaFacade> facadeProvider,
-            org.rapla.logger.Logger logger,
             org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources i18n)
     {
-        return new org.rapla.plugin.eventtimecalculator.EventTimeCalculatorFactory(facadeProvider::getObject, logger, i18n);
+        return new org.rapla.plugin.eventtimecalculator.EventTimeCalculatorFactory(facadeProvider::getObject, i18n);
     }
 
     @Bean(name = org.rapla.plugin.eventtimecalculator.DurationFunctions.NAMESPACE)
@@ -151,10 +142,9 @@ public class ServerCoreConfig
 
     @Bean
     public org.rapla.plugin.mail.server.MailToUserImpl mailToUser(org.rapla.plugin.mail.server.MailInterface mail,
-                                                                   org.rapla.facade.RaplaFacade facade,
-                                                                   Logger logger)
+                                                                   org.rapla.facade.RaplaFacade facade)
     {
-        return new org.rapla.plugin.mail.server.MailToUserImpl(mail, facade, logger);
+        return new org.rapla.plugin.mail.server.MailToUserImpl(mail, facade);
     }
 
     @Bean
@@ -210,73 +200,73 @@ public class ServerCoreConfig
     @Bean(name = org.rapla.plugin.weekview.WeekviewPlugin.DAY_VIEW)
     @org.springframework.context.annotation.Scope("prototype")
     public org.rapla.server.extensionpoints.HTMLViewPage htmlDayViewPage(
-            RaplaLocale raplaLocale, RaplaResources i18n, RaplaFacade facade, Logger logger,
+            RaplaLocale raplaLocale, RaplaResources i18n, RaplaFacade facade,
             org.rapla.entities.domain.AppointmentFormater appointmentFormater)
     {
         return new org.rapla.plugin.weekview.server.HTMLDayViewPage(
-                raplaLocale, i18n, facade, logger, appointmentFormater);
+                raplaLocale, i18n, facade, appointmentFormater);
     }
 
     @Bean(name = org.rapla.plugin.weekview.WeekviewPlugin.WEEK_VIEW)
     @org.springframework.context.annotation.Scope("prototype")
     public org.rapla.server.extensionpoints.HTMLViewPage htmlWeekViewPage(
-            RaplaLocale raplaLocale, RaplaResources i18n, RaplaFacade facade, Logger logger,
+            RaplaLocale raplaLocale, RaplaResources i18n, RaplaFacade facade,
             org.rapla.entities.domain.AppointmentFormater appointmentFormater)
     {
         return new org.rapla.plugin.weekview.server.HTMLWeekViewPage(
-                raplaLocale, i18n, facade, logger, appointmentFormater);
+                raplaLocale, i18n, facade, appointmentFormater);
     }
 
     @Bean(name = org.rapla.plugin.monthview.MonthViewPlugin.MONTH_VIEW)
     @org.springframework.context.annotation.Scope("prototype")
     public org.rapla.server.extensionpoints.HTMLViewPage htmlMonthViewPage(
-            RaplaLocale raplaLocale, RaplaResources i18n, RaplaFacade facade, Logger logger,
+            RaplaLocale raplaLocale, RaplaResources i18n, RaplaFacade facade,
             org.rapla.entities.domain.AppointmentFormater appointmentFormater)
     {
         return new org.rapla.plugin.monthview.server.HTMLMonthViewPage(
-                raplaLocale, i18n, facade, logger, appointmentFormater);
+                raplaLocale, i18n, facade, appointmentFormater);
     }
 
     @Bean(name = org.rapla.plugin.compactweekview.CompactWeekviewPlugin.COMPACT_WEEK_VIEW)
     @org.springframework.context.annotation.Scope("prototype")
     public org.rapla.server.extensionpoints.HTMLViewPage htmlCompactWeekViewPage(
-            RaplaLocale raplaLocale, RaplaResources i18n, RaplaFacade facade, Logger logger,
+            RaplaLocale raplaLocale, RaplaResources i18n, RaplaFacade facade,
             org.rapla.entities.domain.AppointmentFormater appointmentFormater)
     {
         return new org.rapla.plugin.compactweekview.server.HTMLCompactWeekViewPage(
-                raplaLocale, i18n, facade, logger, appointmentFormater);
+                raplaLocale, i18n, facade, appointmentFormater);
     }
 
     @Bean(name = org.rapla.plugin.timeslot.TimeslotPlugin.DAY_TIMESLOT)
     @org.springframework.context.annotation.Scope("prototype")
     public org.rapla.server.extensionpoints.HTMLViewPage htmlCompactDayViewPage(
-            RaplaLocale raplaLocale, RaplaResources i18n, RaplaFacade facade, Logger logger,
+            RaplaLocale raplaLocale, RaplaResources i18n, RaplaFacade facade,
             org.rapla.entities.domain.AppointmentFormater appointmentFormater,
             org.rapla.plugin.timeslot.TimeslotProvider timeslotProvider)
     {
         return new org.rapla.plugin.timeslot.server.HTMLCompactDayViewPage(
-                raplaLocale, i18n, facade, logger, appointmentFormater, timeslotProvider);
+                raplaLocale, i18n, facade, appointmentFormater, timeslotProvider);
     }
 
     @Bean(name = org.rapla.plugin.timeslot.TimeslotPlugin.WEEK_TIMESLOT)
     @org.springframework.context.annotation.Scope("prototype")
     public org.rapla.server.extensionpoints.HTMLViewPage htmlCompactViewPage(
-            RaplaLocale raplaLocale, RaplaResources i18n, RaplaFacade facade, Logger logger,
+            RaplaLocale raplaLocale, RaplaResources i18n, RaplaFacade facade,
             org.rapla.entities.domain.AppointmentFormater appointmentFormater,
             org.rapla.plugin.timeslot.TimeslotProvider timeslotProvider)
     {
         return new org.rapla.plugin.timeslot.server.HTMLCompactViewPage(
-                raplaLocale, i18n, facade, logger, appointmentFormater, timeslotProvider);
+                raplaLocale, i18n, facade, appointmentFormater, timeslotProvider);
     }
 
     @Bean(name = org.rapla.plugin.dayresource.DayResourcePlugin.DAY_RESOURCE_VIEW)
     @org.springframework.context.annotation.Scope("prototype")
     public org.rapla.server.extensionpoints.HTMLViewPage htmlDayResourcePage(
-            RaplaLocale raplaLocale, RaplaResources i18n, RaplaFacade facade, Logger logger,
+            RaplaLocale raplaLocale, RaplaResources i18n, RaplaFacade facade,
             org.rapla.entities.domain.AppointmentFormater appointmentFormater)
     {
         return new org.rapla.plugin.dayresource.server.HTMLDayResourcePage(
-                raplaLocale, i18n, facade, logger, appointmentFormater);
+                raplaLocale, i18n, facade, appointmentFormater);
     }
 
     @Bean(name = org.rapla.plugin.tableview.TableViewPlugin.TABLE_APPOINTMENTS_VIEW)
@@ -337,7 +327,7 @@ public class ServerCoreConfig
     }
 
     @Bean
-    public RaplaFacade raplaFacade(RaplaResources i18n, CommandScheduler scheduler, Logger logger,
+    public RaplaFacade raplaFacade(RaplaResources i18n, CommandScheduler scheduler,
             org.rapla.storage.CachableStorageOperator operator)
     {
         // PRD 019 Phase 1: wire the operator into the facade up-front so consumers
@@ -345,7 +335,7 @@ public class ServerCoreConfig
         // Removes the historical "ServerServiceImpl constructor calls setOperator"
         // dependency, which forced @DependsOn("serverServiceContainer") on every
         // bean that wanted to use the facade.
-        FacadeImpl facade = new FacadeImpl(i18n, scheduler, logger);
+        FacadeImpl facade = new FacadeImpl(i18n, scheduler);
         facade.setOperator(operator);
         return facade;
     }
@@ -353,7 +343,6 @@ public class ServerCoreConfig
     @Bean
     public ServerStorageSelector serverStorageSelector(
                                                        @org.springframework.beans.factory.annotation.Qualifier(RAPLA_DATASOURCE_BEAN) ObjectProvider<DataSource> raplaDataSourceProvider,
-                                                       Logger logger,
                                                        RaplaResources i18n,
                                                        RaplaLocale raplaLocale,
                                                        CommandScheduler scheduler,
@@ -365,7 +354,7 @@ public class ServerCoreConfig
         // getIfAvailable() yields it when db-backed, or null when file-backed (no
         // such bean). Qualifying is mandatory: a deployment may register other
         // DataSource beans (dhbwrapla's Dualis DB) that must NOT be picked here.
-        return new ServerStorageSelector(raplaDataSourceProvider.getIfAvailable(), logger, i18n, raplaLocale, scheduler,
+        return new ServerStorageSelector(raplaDataSourceProvider.getIfAvailable(), i18n, raplaLocale, scheduler,
                 functionFactoryMap, permissionExtensions, properties);
     }
 }

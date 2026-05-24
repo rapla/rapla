@@ -22,15 +22,14 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 import java.util.ArrayList;
 import java.util.Collection;
 
 public class DynamicTypeInfoUI extends HTMLInfo<DynamicType> {
     final private ClientFacade clientFacade;
-    public DynamicTypeInfoUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
-        super(i18n, raplaLocale, facade.getRaplaFacade(), logger);
+    public DynamicTypeInfoUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale) {
+        super(i18n, raplaLocale, facade.getRaplaFacade());
         this.clientFacade = facade;
     }
 

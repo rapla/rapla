@@ -31,7 +31,6 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.client.swing.IntervalChooserPanel;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TablePage;
@@ -68,7 +67,6 @@ public class ReservationTableViewFactory implements SwingViewFactory
     private final InfoFactory infoFactory;
     private final IntervalChooserPanel dateChooser;
     private final DialogUiFactoryInterface dialogUiFactory;
-    private final Logger logger;
     private final RaplaLocale raplaLocale;
     private final RaplaResources i18n;
     private final ClientFacade facade;
@@ -79,7 +77,7 @@ public class ReservationTableViewFactory implements SwingViewFactory
     private final CommandScheduler commandScheduler;
 
     @Autowired
-    public ReservationTableViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
+    public ReservationTableViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale,
                                        Set<ReservationSummaryExtension> reservationSummaryExtensions, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory,
                                        ReservationController reservationController, InfoFactory infoFactory, IntervalChooserPanel dateChooser,
                                        DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface, RaplaMenuBarContainer menuBar, EditController editController,
@@ -88,7 +86,6 @@ public class ReservationTableViewFactory implements SwingViewFactory
         this.facade = facade;
         this.i18n = i18n;
         this.raplaLocale = raplaLocale;
-        this.logger = logger;
         this.reservationSummaryExtensions = reservationSummaryExtensions;
         this.tableConfigLoader = tableConfigLoader;
         this.menuFactory = menuFactory;
@@ -139,7 +136,7 @@ public class ReservationTableViewFactory implements SwingViewFactory
             });
         };
 
-        return new SwingTableView<TableRow>(menuBar, facade, i18n, raplaLocale, logger, model, reservationSummaryExtensions, editable, printing, raplaTableColumns, menuFactory,
+        return new SwingTableView<TableRow>(menuBar, facade, i18n, raplaLocale, model, reservationSummaryExtensions, editable, printing, raplaTableColumns, menuFactory,
                 editController, reservationController, infoFactory,  dateChooser,  dialogUiFactory, ioInterface, initFunction, tableName);
     }
 

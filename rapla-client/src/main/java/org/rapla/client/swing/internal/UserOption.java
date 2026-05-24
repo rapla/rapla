@@ -34,7 +34,8 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.rest.SettingsService;
 import org.rapla.rest.dto.UserSettings;
 import org.rapla.storage.dbrm.RemoteStorage;
@@ -62,6 +63,7 @@ import java.util.Map;
 
 public class UserOption extends RaplaGUIComponent implements UserOptionPanel
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(UserOption.class);
     JPanel superPanel = new JPanel();
 
     JLabel emailLabel = new JLabel();
@@ -81,11 +83,11 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
     private final RemoteStorage remoteStorage;
 
     @Autowired
-    public UserOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
+    public UserOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale,
             DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface,Supplier<PasswordChangeAction> passwordChangeAction,
             SettingsService settings, RemoteStorage remoteStorage)
     {
-        super(facade, i18n, raplaLocale, logger);
+        super(facade, i18n, raplaLocale);
         this.passwordChangeAction = passwordChangeAction;
         this.dialogUiFactory = dialogUiFactory;
         this.ioInterface = ioInterface;
@@ -106,7 +108,7 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
                 new double[][] { { TableLayout.PREFERRED, 5, TableLayout.PREFERRED, 5, TableLayout.PREFERRED, 5, TableLayout.PREFERRED },
                         { TableLayout.PREFERRED, 5, TableLayout.PREFERRED, 5, TableLayout.PREFERRED, 5, TableLayout.PREFERRED, 5, TableLayout.PREFERRED, 5,
                                 TableLayout.PREFERRED, 5, TableLayout.PREFERRED } });
-        languageChooser = new LanguageChooser(getLogger(), getI18n(), getRaplaLocale());
+        languageChooser = new LanguageChooser(getI18n(), getRaplaLocale());
         RaplaButton changeNameButton = new RaplaButton();
         RaplaButton changeEmailButton = new RaplaButton();
         RaplaButton changePasswordButton = new RaplaButton();
@@ -156,7 +158,7 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
         }
         catch (Exception ex)
         {
-            getLogger().warn("getProfileEditCapabilities failed; leaving change buttons enabled: " + ex.getMessage());
+            LOGGER.warn("getProfileEditCapabilities failed; leaving change buttons enabled: {}", ex.getMessage());
             return;
         }
         if (caps.externalIdpLabel() == null)
@@ -194,13 +196,13 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
         String language;
         try
         {
-            getLogger().info("UserOption.show(): fetching /settings/me via REST");
+            LOGGER.info("UserOption.show(): fetching /settings/me via REST");
             UserSettings me = settings.getMe();
             language = me.language();
         }
         catch (Exception e)
         {
-            getLogger().warn("GET /settings/me failed, falling back to local cache: " + e.getMessage());
+            LOGGER.warn("GET /settings/me failed, falling back to local cache: {}", e.getMessage());
             language = preferences.getEntryAsString(RaplaLocale.LANGUAGE_ENTRY, null);
         }
         if (language != null && language.isEmpty()) language = null;
@@ -253,11 +255,11 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
 
                 Allocatable person = user.getPerson();
                 JTextField inputSurname = new JTextField();
-                addCopyPaste(inputSurname, getI18n(), getRaplaLocale(), ioInterface, getLogger());
+                addCopyPaste(inputSurname, getI18n(), getRaplaLocale(), ioInterface);
                 JTextField inputFirstname = new JTextField();
-                addCopyPaste(inputFirstname, getI18n(), getRaplaLocale(), ioInterface, getLogger());
+                addCopyPaste(inputFirstname, getI18n(), getRaplaLocale(), ioInterface);
                 JTextField inputTitle = new JTextField();
-                addCopyPaste(inputTitle, getI18n(), getRaplaLocale(), ioInterface, getLogger());
+                addCopyPaste(inputTitle, getI18n(), getRaplaLocale(), ioInterface);
                 // Person connected?
                 if (person != null)
                 {
@@ -348,8 +350,8 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
                 content.add(codeField);
                 validate.setText(getString("code_validate"));
                 content.add(validate);
-                addCopyPaste(emailField, getI18n(), getRaplaLocale(), ioInterface, getLogger());
-                addCopyPaste(codeField, getI18n(), getRaplaLocale(), ioInterface, getLogger());
+                addCopyPaste(emailField, getI18n(), getRaplaLocale(), ioInterface);
+                addCopyPaste(codeField, getI18n(), getRaplaLocale(), ioInterface);
                 dlg = (DialogUI) dialogUiFactory.createContentDialog(popupContext, content, new String[] { getString("save"), getString("abort") });
                 validate.setAction(new EmailChangeActionA(dlg));
                 validate.setEnabled(false);

@@ -1,7 +1,8 @@
 package org.rapla.client.internal;
 
 import org.rapla.RaplaResources;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -21,6 +22,7 @@ import java.util.function.Consumer;
 
 public final class OAuthCallbackPasteDialog
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(OAuthCallbackPasteDialog.class);
     private OAuthCallbackPasteDialog() {}
 
     /**
@@ -34,23 +36,22 @@ public final class OAuthCallbackPasteDialog
      *
      * @param owner       parent for centering and z-order
      * @param i18n        resource bundle (or null — falls back to English)
-     * @param logger      diagnostic logger
      * @param onSubmit    receives the trimmed URL the user pasted; the caller
      *                    is responsible for delivering it to the local
      *                    listener and surfacing any error
      */
-    public static JDialog show(JFrame owner, RaplaResources i18n, Logger logger, Consumer<String> onSubmit)
+    public static JDialog show(JFrame owner, RaplaResources i18n, Consumer<String> onSubmit)
     {
-        return show(owner, i18n, logger, onSubmit, null);
+        return show(owner, i18n, onSubmit, null);
     }
 
     /**
-     * Same as {@link #show(JFrame, RaplaResources, Logger, Consumer)}, plus an
+     * Same as {@link #show(JFrame, RaplaResources, Consumer)}, plus an
      * onCancel hook fired when the user closes the dialog. Use it to abort the
      * underlying OAuth flow so the user can retry without waiting for the
      * 5-minute callback timeout.
      */
-    public static JDialog show(JFrame owner, RaplaResources i18n, Logger logger,
+    public static JDialog show(JFrame owner, RaplaResources i18n,
                                Consumer<String> onSubmit, Runnable onCancel)
     {
         JDialog dialog = new JDialog(owner, label(i18n, "login.oauth.paste.title", "Browser callback"), false);
@@ -87,7 +88,7 @@ public final class OAuthCallbackPasteDialog
             }
             catch (Exception ex)
             {
-                if (logger != null) logger.warn("clipboard paste failed: " + ex.getMessage());
+                LOGGER.warn("clipboard paste failed: {}", ex.getMessage());
             }
         });
 
@@ -104,7 +105,7 @@ public final class OAuthCallbackPasteDialog
                 }
                 catch (Exception ex)
                 {
-                    if (logger != null) logger.error("paste-submit failed", ex);
+                    LOGGER.error("paste-submit failed", ex);
                 }
             });
         });

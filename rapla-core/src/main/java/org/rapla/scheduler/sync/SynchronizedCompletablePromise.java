@@ -1,6 +1,7 @@
 package org.rapla.scheduler.sync;
 
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.scheduler.CompletablePromise;
 import org.rapla.scheduler.Promise;
 
@@ -12,6 +13,8 @@ import java.util.function.Function;
 
 public class SynchronizedCompletablePromise<T> extends  SynchronizedPromise<T> implements CompletablePromise<T>
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SynchronizedCompletablePromise.class);
+
     public SynchronizedCompletablePromise(Executor executor)
     {
         super(executor, new CompletableFuture<T>());
@@ -36,16 +39,16 @@ public class SynchronizedCompletablePromise<T> extends  SynchronizedPromise<T> i
     }
 
     /** waits until the promise completes or the timeout has Passed. Pass -1 if you want to wait without timeout*/
-    public static  <T> T waitFor(Promise<T> promise, int timeout,Logger logger) throws Exception
+    public static  <T> T waitFor(Promise<T> promise, int timeout) throws Exception
     {
-        final CompletableFuture<T> future = getCompletableFuture(promise, logger, null);
-        final boolean isDebugEnabled = logger.isDebugEnabled();
+        final CompletableFuture<T> future = getCompletableFuture(promise, null);
+        final boolean isDebugEnabled = LOGGER.isDebugEnabled();
         long index = isDebugEnabled ? System.currentTimeMillis() : 0;
         try
         {
             if (isDebugEnabled)
             {
-                logger.debug("Aquire lock " + index);
+                LOGGER.debug("Aquire lock " + index);
             }
             T t;
             if ( timeout >=0)
@@ -58,7 +61,7 @@ public class SynchronizedCompletablePromise<T> extends  SynchronizedPromise<T> i
             }
             if (isDebugEnabled)
             {
-                logger.debug("SwingUtilities waitFor " + index);
+                LOGGER.debug("SwingUtilities waitFor " + index);
             }
             return t;
 
@@ -78,15 +81,15 @@ public class SynchronizedCompletablePromise<T> extends  SynchronizedPromise<T> i
         }
     }
 
-    public static <T> CompletableFuture<T> getCompletableFuture(Promise<T> promise, Logger logger, Function<Throwable,Throwable> exceptionMapper) {
+    public static <T> CompletableFuture<T> getCompletableFuture(Promise<T> promise, Function<Throwable,Throwable> exceptionMapper) {
         CompletableFuture<T> future;
-        final boolean isDebugEnabled = logger.isDebugEnabled();
+        final boolean isDebugEnabled = LOGGER.isDebugEnabled();
         long index = isDebugEnabled ? System.currentTimeMillis() : 0;
         future = new CompletableFuture<>();
         promise.handle((t, ex) ->
         {
             if (isDebugEnabled) {
-                logger.debug("promise complete " + index);
+                LOGGER.debug("promise complete " + index);
             }
             if (ex != null) {
                 if ( exceptionMapper != null)
@@ -98,7 +101,7 @@ public class SynchronizedCompletablePromise<T> extends  SynchronizedPromise<T> i
                 future.complete(t);
             }
             if (isDebugEnabled) {
-                logger.debug("Release lock  " + index);
+                LOGGER.debug("Release lock  " + index);
             }
             return t;
         });

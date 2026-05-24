@@ -20,7 +20,8 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBlock;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBuilder;
@@ -36,12 +37,12 @@ import java.util.Set;
 import java.time.LocalDateTime;
 public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CalendarWeekViewPresenter.class);
     public static final String WEEK_VIEW = "week";
 
     private final CalendarWeekView view;
     private final ReservationController reservationController;
 
-    private final Logger logger;
     private final ApplicationEventBus eventBus;
     private final CalendarSelectionModel model;
     private final ClientFacade facade;
@@ -53,13 +54,12 @@ public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin
 
     @SuppressWarnings("unchecked")
     @Autowired
-    public CalendarWeekViewPresenter(CalendarWeekView view, ReservationController reservationController, Logger logger, ApplicationEventBus eventBus,
+    public CalendarWeekViewPresenter(CalendarWeekView view, ReservationController reservationController, ApplicationEventBus eventBus,
                                      CalendarSelectionModel model, ClientFacade facade, HTMLRaplaBuilder builder, RaplaLocale raplaLocale, RaplaResources i18n, CalendarContextMenuPresenter presenter, DialogUiFactoryInterface dialogUiFactory)
     {
         super();
         this.view = view;
         this.reservationController = reservationController;
-        this.logger = logger;
         this.eventBus = eventBus;
         this.model = model;
         this.facade = facade;
@@ -170,7 +170,7 @@ public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin
     @Override
     public void updateContent() throws RaplaException
     {
-        HTMLWeekViewPresenter weekView = new HTMLWeekViewPresenter(view, logger);
+        HTMLWeekViewPresenter weekView = new HTMLWeekViewPresenter(view);
         configure(weekView);
         LocalDateTime startDate = weekView.getStartDate();
         LocalDateTime endDate = weekView.getEndDate();
@@ -193,7 +193,7 @@ public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin
                 weekView.rebuild(builder);
         }
             );
-            logger.info("events loaded took  " + (System.currentTimeMillis() - time) + " ms");
+            LOGGER.info("events loaded took  {} ms", (System.currentTimeMillis() - time));
         }
 
 

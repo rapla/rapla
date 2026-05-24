@@ -9,7 +9,6 @@ import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.internal.ResourceBundleList;
 import org.rapla.storage.RemoteLocaleService;
@@ -28,7 +27,6 @@ public class RemoteLocaleController implements RemoteLocaleService
     private final ServerBundleManager bundleManager;
     private final RaplaLocale raplaLocale;
     private final RemoteSession session;
-    private final Logger logger;
     private final StorageOperator operator;
     private final ResourceBundleList resourceBundleList;
     private final HttpServletRequest request;
@@ -36,7 +34,6 @@ public class RemoteLocaleController implements RemoteLocaleService
     public RemoteLocaleController(ServerBundleManager bundleManager,
                                   RaplaLocale raplaLocale,
                                   RemoteSession session,
-                                  Logger logger,
                                   StorageOperator operator,
                                   ResourceBundleList resourceBundleList,
                                   HttpServletRequest request)
@@ -44,7 +41,6 @@ public class RemoteLocaleController implements RemoteLocaleService
         this.bundleManager = bundleManager;
         this.raplaLocale = raplaLocale;
         this.session = session;
-        this.logger = logger;
         this.operator = operator;
         this.resourceBundleList = resourceBundleList;
         this.request = request;

@@ -25,6 +25,8 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,6 +36,7 @@ import java.util.Map;
 import java.time.LocalDateTime;
 public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(RaplaCalendarSettingsReader.class);
     CalendarModelConfiguration settings;
     String title;
     String view;
@@ -129,7 +132,7 @@ public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
                 }
                 else
                 {
-                    getLogger().error("Can't find type with key " + keyref + " while loading calendar selections " + ( title != null ? "for " + title : ""));
+                    LOGGER.error("Can't find type with key " + keyref + " while loading calendar selections " + ( title != null ? "for " + title : ""));
                 }
             }
         }

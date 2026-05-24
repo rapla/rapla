@@ -32,20 +32,19 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 import java.util.function.Supplier;
 import java.util.Set;
 
 public class SwingDayCalendar extends SwingWeekCalendar
 {
-    public SwingDayCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, boolean editable,
+    public SwingDayCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, CalendarModel model, boolean editable,
             boolean printing, final Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Supplier<DateRenderer> dateRendererProvider,
             CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory infoFactory,
             DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory,
             IOInterface ioInterface, AppointmentFormater appointmentFormater, EditController editController) throws RaplaException
     {
-        super(facade, i18n, raplaLocale, logger, model, editable, printing, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard,
+        super(facade, i18n, raplaLocale, model, editable, printing, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard,
                 reservationController, infoFactory,  dateRenderer, dialogUiFactory, ioInterface, appointmentFormater, editController);
     }
 

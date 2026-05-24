@@ -36,7 +36,8 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.plugin.tempatewizard.TemplatePlugin;
 import org.rapla.storage.PermissionController;
 import org.springframework.context.annotation.Lazy;
@@ -66,6 +67,7 @@ import java.util.stream.Collectors;
  public class TemplateWizard
         implements ReservationWizardExtension, ModificationListener
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TemplateWizard.class);
     final public static TypedComponentRole<Boolean> ENABLED = new TypedComponentRole<>("org.rapla.plugin.templatewizard.enabled");
     boolean templateNamesValid = false;
     List<Allocatable> templateNames;
@@ -75,17 +77,15 @@ import java.util.stream.Collectors;
     protected final ClientFacade clientFacade;
     protected final RaplaFacade raplaFacade;
     protected final RaplaLocale raplaLocale;
-    protected final Logger logger;
     protected final RaplaResources i18n;
     protected final DialogUiFactoryInterface dialogUiFactory;
     protected final MenuItemFactory menuItemFactory;
     protected final org.rapla.rest.PluginsService plugins;
     private volatile Boolean cachedEnabled;
 
-    @Autowired public TemplateWizard(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model,
+    @Autowired public TemplateWizard(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, CalendarModel model,
                                   ApplicationEventBus eventBus, DialogUiFactoryInterface dialogUiFactory, MenuItemFactory menuItemFactory, org.rapla.rest.PluginsService plugins) throws RaplaInitializationException
     {
-        this.logger = logger;
         this.i18n = i18n;
         this.clientFacade = clientFacade;
         this.raplaFacade = clientFacade.getRaplaFacade();
@@ -160,7 +160,7 @@ import java.util.stream.Collectors;
         }
         catch (RaplaException e)
         {
-            logger.error("Error creating menu element for TemplateWizard: "+e.getMessage(), e);
+            LOGGER.error("Error creating menu element for TemplateWizard: {}", e.getMessage(), e);
             return null;
         }
         boolean canCreateReservation = permissionController.canCreateReservation(user);
@@ -191,7 +191,7 @@ import java.util.stream.Collectors;
                         addTemplates(templateNames, container);
 
                     } catch (Exception ex) {
-                        logger.error("Error initializing menu", ex);
+                        LOGGER.error("Error initializing menu", ex);
                     }
                 });
 

@@ -50,7 +50,6 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
-import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
@@ -58,6 +57,8 @@ import org.rapla.storage.PermissionController;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -86,12 +87,12 @@ import java.time.LocalDateTime;
  * </p>
  */
 public class FacadeImpl implements RaplaFacade {
+	private static final Logger LOGGER = LoggerFactory.getLogger(FacadeImpl.class);
+
 	private StorageOperator operator;
 	private final RaplaResources i18n;
 
 	Locale locale;
-
-	Logger logger;
 
 	String templateId;
 	protected CommandScheduler notifyQueue;
@@ -100,9 +101,7 @@ public class FacadeImpl implements RaplaFacade {
 
 
 	@Autowired
-	public FacadeImpl(RaplaResources i18n, CommandScheduler notifyQueue, Logger logger) {
-	    
-		this.logger = logger;
+	public FacadeImpl(RaplaResources i18n, CommandScheduler notifyQueue) {
 		this.i18n = i18n;
 		this.notifyQueue = notifyQueue;
 		locale = i18n.getLocale();
@@ -163,11 +162,6 @@ public class FacadeImpl implements RaplaFacade {
 		return operator.getPermissionController() ;
 	}
 
-    public Logger getLogger()
-	{
-        return logger;
-    }
-	
 	public StorageOperator getOperator() {
 		return operator;
 	}
@@ -282,7 +276,7 @@ public class FacadeImpl implements RaplaFacade {
 			}
 			return false;
 		} catch (Exception e) {
-			logger.error( e.getMessage(), e );
+			LOGGER.error( e.getMessage(), e );
 			return false;
 		}
 	}
@@ -503,9 +497,9 @@ public class FacadeImpl implements RaplaFacade {
 		final User user = null;
 		return	operator.getConflicts(user).thenApply(conflicts->
 				{
-					if (getLogger().isDebugEnabled())
+					if (LOGGER.isDebugEnabled())
 					{
-						getLogger().debug("getConflits called. Returned " + conflicts.size() + " conflicts.");
+						LOGGER.debug("getConflits called. Returned {} conflicts.", conflicts.size());
 					}
 					return conflicts;
 				}
@@ -910,7 +904,7 @@ public class FacadeImpl implements RaplaFacade {
 	    {
 	        throw new RaplaException("Can't createInfoDialog a calendar model for a different user.");
 	    }
-	    return new CalendarModelImpl( locale, user, operator, logger);
+	    return new CalendarModelImpl( locale, user, operator);
     }
 
 	private String createDynamicTypeKey(String classificationType)
@@ -958,8 +952,8 @@ public class FacadeImpl implements RaplaFacade {
 			entity.setResolver(operator);
 			if ((entity instanceof Reservation) && user == null)
 				throw new IllegalStateException("The reservation " + entity + " needs an owner but user specified is null ");
-			if (getLogger() != null && getLogger().isDebugEnabled()) {
-				getLogger().debug("new " + entity.getId());
+			if (LOGGER.isDebugEnabled()) {
+				LOGGER.debug("new {}", entity.getId());
 			}
 			if ( entity instanceof Reservation || entity instanceof Allocatable)
 			{

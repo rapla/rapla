@@ -23,7 +23,6 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
@@ -52,13 +51,13 @@ public class AllocatableMergeEditUI extends AllocatableEditUI
     final ListField<Allocatable> allocatableSelectField;
     @SuppressWarnings("unchecked")
     @Autowired
-    public AllocatableMergeEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
+    public AllocatableMergeEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale,
             ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory,
             BooleanFieldFactory booleanFieldFactory, final DialogUiFactory dialogUiFactory) throws RaplaInitializationException
     {
-        super(facade, i18n, raplaLocale, logger, classificationFieldFactory, permissionListFieldFactory, booleanFieldFactory);
-        
-        allocatableSelectField = new ListField<>(facade, i18n, raplaLocale, logger, false);
+        super(facade, i18n, raplaLocale, classificationFieldFactory, permissionListFieldFactory, booleanFieldFactory);
+
+        allocatableSelectField = new ListField<>(facade, i18n, raplaLocale, false);
         final JLabel label = new JLabel(i18n.getString("selection"));
         final JComponent component = allocatableSelectField.getComponent();
         final JPanel header = new JPanel();

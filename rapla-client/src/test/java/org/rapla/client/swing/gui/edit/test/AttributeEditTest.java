@@ -25,34 +25,30 @@ import org.rapla.client.swing.i18n.SwingBundleManager;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.RaplaFacade;
-import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
 
 public final class AttributeEditTest extends GUITestCase
 {
     public void testMain() throws Exception {
         RaplaFacade facade = null;
-        final Logger logger = getLogger();
-        BundleManager bundleManager = new SwingBundleManager(logger);
+        BundleManager bundleManager = new SwingBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
         final RaplaListEditFactory raplaListEditFactory = new RaplaListEditFactory ( i18n);
-        CommandScheduler scheduler = new SwingSchedulerImpl(logger);
-        DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n,  scheduler,bundleManager,  logger);
-        AttributeEdit editor = new AttributeEdit(getFacade(), i18n, getRaplaLocale(), getLogger(), null, raplaListEditFactory, dialogUiFactory);
+        CommandScheduler scheduler = new SwingSchedulerImpl();
+        DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n,  scheduler,bundleManager);
+        AttributeEdit editor = new AttributeEdit(getFacade(), i18n, getRaplaLocale(), null, raplaListEditFactory, dialogUiFactory);
         editor.setDynamicType(facade.getDynamicTypes(null)[0]);
         testComponent(editor.getComponent(),500,500);
-        getLogger().info("Attribute edit started");
     }
 
     public void testNew() throws Exception {
         RaplaFacade facade = null;
-        final Logger logger = getLogger();
-        BundleManager bundleManager = new SwingBundleManager(logger);
+        BundleManager bundleManager = new SwingBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
         final RaplaListEditFactory raplaListEditFactory = new RaplaListEditFactory ( i18n);
-        CommandScheduler scheduler = new SwingSchedulerImpl(logger);
-        DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n,  scheduler,bundleManager,  logger);
-        AttributeEdit editor = new AttributeEdit(getFacade(), i18n, getRaplaLocale(), getLogger(), null, raplaListEditFactory, dialogUiFactory);
+        CommandScheduler scheduler = new SwingSchedulerImpl();
+        DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n,  scheduler,bundleManager);
+        AttributeEdit editor = new AttributeEdit(getFacade(), i18n, getRaplaLocale(), null, raplaListEditFactory, dialogUiFactory);
         DynamicType type =  facade.edit(facade.getDynamicTypes(null)[0]);
         Attribute attribute = type.getAttributes()[0];
         editor.setDynamicType(type);

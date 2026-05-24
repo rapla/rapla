@@ -4,7 +4,8 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.web.authentication.rememberme.PersistentRememberMeToken;
 import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
 import tools.jackson.databind.JsonNode;
@@ -32,18 +33,17 @@ import java.util.Date;
  */
 public class RaplaTokenRepository implements PersistentTokenRepository
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RaplaTokenRepository.class);
     static final TypedComponentRole<String> TOKENS =
             new TypedComponentRole<>("org.rapla.auth.rememberMeTokens");
 
     private static final ObjectMapper MAPPER = JsonMapper.builder().build();
 
     private final RaplaFacade facade;
-    private final Logger logger;
 
-    public RaplaTokenRepository(RaplaFacade facade, Logger logger)
+    public RaplaTokenRepository(RaplaFacade facade)
     {
         this.facade = facade;
-        this.logger = logger;
     }
 
     @Override
@@ -103,7 +103,7 @@ public class RaplaTokenRepository implements PersistentTokenRepository
         }
         catch (Exception e)
         {
-            logger.warn("Failed to read remember-me tokens; treating as empty: " + e.getMessage());
+            LOGGER.warn("Failed to read remember-me tokens; treating as empty: {}", e.getMessage());
             return MAPPER.createObjectNode();
         }
     }
@@ -119,7 +119,7 @@ public class RaplaTokenRepository implements PersistentTokenRepository
         }
         catch (RaplaException e)
         {
-            logger.error("Failed to persist remember-me tokens: " + e.getMessage());
+            LOGGER.error("Failed to persist remember-me tokens: {}", e.getMessage());
         }
     }
 }

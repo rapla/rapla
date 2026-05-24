@@ -33,7 +33,8 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.scheduler.Promise;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,8 +54,8 @@ import java.time.LocalDateTime;
 @org.springframework.context.annotation.Lazy
 public class ConflictSelectionPresenter implements Presenter
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConflictSelectionPresenter.class);
     protected final CalendarSelectionModel model;
-    private final Logger logger;
     private Collection<Conflict> conflicts = Collections.emptySet();
     private final CalendarEventBus eventBus;
     private final DialogUiFactoryInterface dialogUiFactory;
@@ -64,11 +65,10 @@ public class ConflictSelectionPresenter implements Presenter
     private PresenterChangeCallback callback;
 
     @Autowired
-    public ConflictSelectionPresenter(ClientFacade facade, Logger logger, final CalendarSelectionModel model, CalendarEventBus eventBus,
+    public ConflictSelectionPresenter(ClientFacade facade, final CalendarSelectionModel model, CalendarEventBus eventBus,
             DialogUiFactoryInterface dialogUiFactory, ConflictSelectionView view) throws RaplaInitializationException
     {
         this.facade = facade;
-        this.logger = logger;
         this.model = model;
         this.eventBus = eventBus;
         this.dialogUiFactory = dialogUiFactory;
@@ -257,7 +257,7 @@ public class ConflictSelectionPresenter implements Presenter
         raplaFacade.getConflicts()
                    .thenAccept(conflicts->updateTree(conflicts))
                    .exceptionally(ex -> {
-                       logger.error(ex.getMessage(), ex);
+                       LOGGER.error(ex.getMessage(), ex);
                    });
     }
 

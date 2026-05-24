@@ -3,7 +3,8 @@ package org.rapla.client.event;
 import org.rapla.client.Application;
 import org.rapla.client.RaplaWidget;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -11,9 +12,9 @@ import java.util.Set;
 
 public abstract class AbstractActivityController
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractActivityController.class);
     protected Place place;
     protected final Set<ApplicationEvent> activities = new LinkedHashSet<>();
-    protected final Logger logger;
     private RaplaWidget activePlace;
 
     public Application getApplication()
@@ -28,11 +29,10 @@ public abstract class AbstractActivityController
 
     protected Application application;
 
-    public AbstractActivityController(ApplicationEventBus eventBus, Logger logger)
+    public AbstractActivityController(ApplicationEventBus eventBus)
     {
-        this.logger = logger;
         eventBus.getApplicationEventObservable().doOnError(ex-> {
-            logger.error(ex.getMessage(),ex);
+            LOGGER.error(ex.getMessage(),ex);
         }).subscribe(this::handle);
     }
 
@@ -57,7 +57,7 @@ public abstract class AbstractActivityController
         }
         catch (Exception ex)
         {
-            logger.error(ex.getMessage(), ex);
+            LOGGER.error(ex.getMessage(), ex);
         }
 
     }

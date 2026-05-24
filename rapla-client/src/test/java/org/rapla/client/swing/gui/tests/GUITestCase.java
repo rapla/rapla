@@ -22,7 +22,8 @@ import org.rapla.client.swing.toolkit.RaplaFrame;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.JComponent;
 import java.awt.BorderLayout;
@@ -30,17 +31,12 @@ import java.util.concurrent.Semaphore;
 
 public abstract class GUITestCase  {
 
-    Logger logger;
+    private static final Logger LOGGER = LoggerFactory.getLogger(GUITestCase.class);
     ClientFacade facade;
     RaplaLocale raplaLocale;
 
     protected <T> T getService(Class<T> role) throws RaplaException {
            return null;
-    }
-
-    public Logger getLogger()
-    {
-        return logger;
     }
 
     public ClientFacade getFacade()
@@ -67,7 +63,7 @@ public abstract class GUITestCase  {
                 waitUntilLastFrameClosed( getService(FrameControllerList.class) );
                 System.exit(0);
             } catch (Exception ex) {
-                logger.error(ex.getMessage(), ex);
+                LOGGER.error(ex.getMessage(), ex);
                 System.exit(1);
             }
         } catch (Exception ex) {

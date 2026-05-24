@@ -13,7 +13,6 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.springframework.stereotype.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,8 +32,8 @@ public class SortingAnnotationEdit extends RaplaGUIComponent implements Annotati
     String NOTHING_SELECTED = "nothing_selected";
     
     @Autowired
-    public SortingAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
-        super(facade, i18n, raplaLocale, logger);
+    public SortingAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale) {
+        super(facade, i18n, raplaLocale);
     }
 
     @Override
@@ -53,7 +52,7 @@ public class SortingAnnotationEdit extends RaplaGUIComponent implements Annotati
         String annotation = annotatable.getAnnotation(annotationName);
         Collection<String> collection = Arrays.asList(NOTHING_SELECTED,AttributeAnnotations.VALUE_SORTING_ASCENDING,
                 AttributeAnnotations.VALUE_SORTING_DESCENDING);
-        ListField<String> field = new ListField<>(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), collection);
+        ListField<String> field = new ListField<>(getClientFacade(), getI18n(), getRaplaLocale(), collection);
         field.setFieldName( getString(annotationName));
         
         if (annotation  == null)

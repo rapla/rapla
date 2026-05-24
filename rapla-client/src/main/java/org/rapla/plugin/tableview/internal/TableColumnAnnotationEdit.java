@@ -14,7 +14,6 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.internal.TableConfig;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
@@ -38,8 +37,8 @@ public class TableColumnAnnotationEdit extends RaplaGUIComponent implements Anno
     private final TextFieldFactory textFieldFactory;
     private final Map<TextField, TableColumnConfig> textFieldsToColumnConfig = new HashMap<>();
     @Autowired
-    public TableColumnAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TableConfig.TableConfigLoader tableConfigLoader, TextFieldFactory textFieldFactory) {
-        super(facade, i18n, raplaLocale, logger);
+    public TableColumnAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, TableConfig.TableConfigLoader tableConfigLoader, TextFieldFactory textFieldFactory) {
+        super(facade, i18n, raplaLocale);
         this.tableConfigLoader = tableConfigLoader;
         this.textFieldFactory = textFieldFactory;
         

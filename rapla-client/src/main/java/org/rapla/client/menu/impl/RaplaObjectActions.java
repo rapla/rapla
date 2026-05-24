@@ -36,7 +36,8 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PermissionController;
@@ -51,6 +52,7 @@ import java.util.List;
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Scope("prototype")
 public class RaplaObjectActions {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RaplaObjectActions.class);
     public final static int DELETE = 1;
     public final static int COPY = 2;
     public final static int PASTE = 3;
@@ -79,16 +81,14 @@ public class RaplaObjectActions {
     private final DeleteDialogInterface deleteDialogInterface;
     private final PermissionController permissionController;
 
-    private final Logger logger;
     private String name;
     private I18nIcon icon;
     private final MenuItemFactory menuItemFactory;
 
     @Autowired
-    public RaplaObjectActions(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, EditController editController, InfoFactory infoFactory, DialogUiFactoryInterface dialogUiFactory, DeleteDialogInterface deleteDialogInterface,
+    public RaplaObjectActions(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, EditController editController, InfoFactory infoFactory, DialogUiFactoryInterface dialogUiFactory, DeleteDialogInterface deleteDialogInterface,
             MenuItemFactory menuItemFactory)  {
         this.raplaFacade = facade.getRaplaFacade();
-        this.logger = logger;
         this.clientFacade = facade;
         this.i18n = i18n;
         this.editController = editController;
@@ -303,7 +303,7 @@ public class RaplaObjectActions {
 
     public DynamicType[] guessTypesFor(Object object) throws RaplaException {
         DynamicType dynamicType = null;
-        logger.debug("Guessing DynamicType from " + object);
+        LOGGER.debug("Guessing DynamicType from {}", object);
         if (object instanceof DynamicType)
             dynamicType = (DynamicType) object;
 

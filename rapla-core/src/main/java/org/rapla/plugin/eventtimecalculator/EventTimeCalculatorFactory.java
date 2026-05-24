@@ -5,22 +5,23 @@ import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+
 import java.util.function.Supplier;
 
 public class EventTimeCalculatorFactory
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(EventTimeCalculatorFactory.class);
 
 	private final Supplier<RaplaFacade> facadeProvider;
-	private final Logger logger;
     private final EventTimeCalculatorResources eventTimeI18n;
+
 	@Autowired
-    public EventTimeCalculatorFactory(Supplier<RaplaFacade> facade,Logger logger, final EventTimeCalculatorResources eventTimeI18n)
+    public EventTimeCalculatorFactory(Supplier<RaplaFacade> facade, final EventTimeCalculatorResources eventTimeI18n)
 	{
 		this.facadeProvider = facade;
-		this.logger = logger;
         this.eventTimeI18n = eventTimeI18n;
 	}
 
@@ -47,9 +48,9 @@ public class EventTimeCalculatorFactory
 	        		configuration = raplaConfig;
 	        	}
 			} catch (RaplaException e) {
-				logger.warn(e.getMessage());
+				LOGGER.warn(e.getMessage());
 			}
-        
+
         }
         EventTimeModel m = new EventTimeModel(configuration, eventTimeI18n);
         return m;
@@ -57,4 +58,3 @@ public class EventTimeCalculatorFactory
 
 
 }
-

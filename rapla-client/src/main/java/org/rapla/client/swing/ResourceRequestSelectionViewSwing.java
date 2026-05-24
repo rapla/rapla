@@ -32,7 +32,6 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
-import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.*;
@@ -57,7 +56,7 @@ public class ResourceRequestSelectionViewSwing implements ResourceRequestSelecti
     private Presenter presenter;
 
     @Autowired
-    public ResourceRequestSelectionViewSwing(RaplaResources i18n, Logger logger, TreeFactory treeFactory,
+    public ResourceRequestSelectionViewSwing(RaplaResources i18n, TreeFactory treeFactory,
                                              DialogUiFactoryInterface dialogUiFactory, RequestTreeCellRenderer treeCellRenderer) throws RaplaInitializationException
     {
         this.i18n = i18n;

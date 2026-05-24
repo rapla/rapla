@@ -3,6 +3,7 @@ package org.rapla.client.spring;
 import org.rapla.ConnectInfo;
 import org.rapla.client.api.ClientService;
 import org.rapla.facade.client.ClientFacade;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
@@ -111,6 +112,11 @@ public class SpringRaplaClient implements AutoCloseable
      */
     public static void main(String[] args) throws Exception
     {
+        // Route j.u.l calls from third-party libs (JNLP runtime, JDK HTTP
+        // client, Swing/AWT internals) through SLF4J/Logback so they land
+        // in logs/rapla-client.log and respect logback.xml category rules.
+        SLF4JBridgeHandler.removeHandlersForRootLogger();
+        SLF4JBridgeHandler.install();
         ConnectInfo initial = parseConnectInfo(args);
         NextSession next = initial != null ? NextSession.reconnectAs(initial) : NextSession.showLoginDialog();
 

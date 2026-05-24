@@ -17,14 +17,17 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.framework.RaplaException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
 
-    
+
 public class RaplaMapWriter extends RaplaXMLWriter {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(RaplaMapWriter.class);
     final static String TAGNAME =  "map";
     public RaplaMapWriter(RaplaXMLContext sm) throws RaplaException {
         super(sm);
@@ -65,7 +68,7 @@ public class RaplaMapWriter extends RaplaXMLWriter {
     private void printRaplaObject(Object key,Object obj) throws RaplaException, IOException {
         if (obj == null)
         {
-            getLogger().warn( "Map contains empty value under key " + key );
+            LOGGER.warn( "Map contains empty value under key " + key );
             return;
         }
         int start = getIndentLevel();

@@ -42,7 +42,6 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.RaplaBlock;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.abstractcalendar.RaplaCalendarViewListener;
@@ -68,13 +67,13 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
     List<Timeslot> timeslots;
     private final TimeslotProvider timeslotProvider;
 
-    public SwingCompactDayCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel settings, boolean editable,
+    public SwingCompactDayCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, CalendarModel settings, boolean editable,
             boolean printing, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel,
             RaplaClipboard clipboard, TimeslotProvider timeslotProvider, ReservationController reservationController, InfoFactory infoFactory,
             DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface,
             AppointmentFormater appointmentFormater, EditController editController) throws RaplaException
     {
-        super(facade, i18n, raplaLocale, logger, settings, editable, printing, objectMenuFactories, menuFactory, null, calendarSelectionModel, clipboard,
+        super(facade, i18n, raplaLocale, settings, editable, printing, objectMenuFactories, menuFactory, null, calendarSelectionModel, clipboard,
                 reservationController, infoFactory, dateRenderer, dialogUiFactory, ioInterface, appointmentFormater, editController);
         this.timeslotProvider = timeslotProvider;
     }
@@ -161,7 +160,7 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
 
     protected ViewListener createListener()
     {
-        return new RaplaCalendarViewListener(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), model, view.getComponent(),
+        return new RaplaCalendarViewListener(getClientFacade(), getI18n(), getRaplaLocale(), model, view.getComponent(),
                 menuFactory,   reservationController,   dialogUiFactory, editController)
         {
             @Override protected Collection<Allocatable> getMarkedAllocatables()

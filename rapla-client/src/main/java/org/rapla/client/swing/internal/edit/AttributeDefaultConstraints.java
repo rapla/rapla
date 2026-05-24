@@ -38,7 +38,6 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.storage.PermissionController;
 import org.springframework.stereotype.Service;
 
@@ -105,16 +104,16 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
     private final DialogUiFactoryInterface dialogUiFactory;
     private final PermissionController permissionController;
 
-    @Autowired public AttributeDefaultConstraints(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,
+    @Autowired public AttributeDefaultConstraints(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, TreeFactory treeFactory,
             Set<AnnotationEditAttributeExtension> attributeExtensionSet,  DateRenderer dateRenderer,
             final DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory,
             MultiLanguageFieldFactory multiLanguageFieldFactory, IOInterface ioInterface) throws RaplaInitializationException
     {
-        super(clientFacade, i18n, raplaLocale, logger);
+        super(clientFacade, i18n, raplaLocale);
         this.dialogUiFactory = dialogUiFactory;
         final RaplaFacade raplaFacade = clientFacade.getRaplaFacade();
         this.permissionController = raplaFacade.getPermissionController();
-        annotationEdit = new AnnotationEditUI(clientFacade, i18n, raplaLocale, logger, attributeExtensionSet);
+        annotationEdit = new AnnotationEditUI(clientFacade, i18n, raplaLocale, attributeExtensionSet);
         key = textFieldFactory.create();
         name = multiLanguageFieldFactory.create();
         Collection<DynamicType> typeList;
@@ -128,23 +127,23 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
         {
             throw new RaplaInitializationException(e);
         }
-        dynamicTypeSelect = new ListField<>(clientFacade, i18n, raplaLocale, logger, true);
+        dynamicTypeSelect = new ListField<>(clientFacade, i18n, raplaLocale, true);
         dynamicTypeSelect.setVector(typeList);
         final Locale locale = raplaLocale.getLocale();
         dynamicTypeSelect.setRenderer(new NamedListCellRenderer(locale));
 
         rootCategory = this.raplaFacade.getSuperCategory();
 
-        categorySelect = new CategorySelectField(clientFacade, i18n, raplaLocale, logger, treeFactory,  dialogUiFactory, rootCategory);
+        categorySelect = new CategorySelectField(clientFacade, i18n, raplaLocale, treeFactory,  dialogUiFactory, rootCategory);
         categorySelect.setUseNull(false);
-        defaultSelectCategory = new CategorySelectField(clientFacade, i18n, raplaLocale, logger, treeFactory, dialogUiFactory, rootCategory);
+        defaultSelectCategory = new CategorySelectField(clientFacade, i18n, raplaLocale, treeFactory, dialogUiFactory, rootCategory);
         defaultSelectText = textFieldFactory.create();
-        RaplaGUIComponent.addCopyPaste(defaultSelectNumber.getNumberField(), i18n, raplaLocale, ioInterface, logger);
+        RaplaGUIComponent.addCopyPaste(defaultSelectNumber.getNumberField(), i18n, raplaLocale, ioInterface);
         //addCopyPaste( expectedRows.getNumberField());
         //addCopyPaste( expectedColumns.getNumberField());
 
         defaultSelectBoolean = booleanFieldFactory.create();
-        defaultSelectDate = RaplaGUIComponent.createRaplaCalendar(dateRenderer, ioInterface, i18n, raplaLocale, logger);
+        defaultSelectDate = RaplaGUIComponent.createRaplaCalendar(dateRenderer, ioInterface, i18n, raplaLocale);
         defaultSelectDate.setNullValuePossible(true);
         defaultSelectDate.setDate(null);
         double fill = TableLayout.FILL;

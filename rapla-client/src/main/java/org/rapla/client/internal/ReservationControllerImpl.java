@@ -37,7 +37,8 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PermissionController;
@@ -61,6 +62,7 @@ import java.time.LocalDateTime;
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
 public class ReservationControllerImpl implements ReservationController {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReservationControllerImpl.class);
     /**
      * We store all open ReservationEditWindows with their reservationId
      * in a map, to lookupDeprecated if the reservation is already beeing edited.
@@ -69,7 +71,6 @@ public class ReservationControllerImpl implements ReservationController {
     AppointmentFormater appointmentFormater;
     ClientFacade facade;
     private RaplaLocale raplaLocale;
-    private final Logger logger;
     private final RaplaResources i18n;
     private final CalendarSelectionModel calendarModel;
     private final RaplaClipboard clipboard;
@@ -79,11 +80,10 @@ public class ReservationControllerImpl implements ReservationController {
     private final Supplier<Set<EventCheck>> eventCheckers;
 
     @Autowired
-    public ReservationControllerImpl(ClientFacade facade, RaplaLocale raplaLocale, Logger logger, RaplaResources i18n, AppointmentFormater appointmentFormater,
+    public ReservationControllerImpl(ClientFacade facade, RaplaLocale raplaLocale, RaplaResources i18n, AppointmentFormater appointmentFormater,
                                      CalendarSelectionModel calendarModel, RaplaClipboard clipboard, DialogUiFactoryInterface dialogUI, DeleteDialogInterface deleteDialog, Supplier<Set<EventCheck>> eventCheckers) {
         this.facade = facade;
         this.raplaLocale = raplaLocale;
-        this.logger = logger;
         this.i18n = i18n;
         this.calendarModel = calendarModel;
         this.appointmentFormater = appointmentFormater;
@@ -104,10 +104,6 @@ public class ReservationControllerImpl implements ReservationController {
 
     protected RaplaLocale getRaplaLocale() {
         return raplaLocale;
-    }
-
-    protected Logger getLogger() {
-        return logger;
     }
 
     protected RaplaResources getI18n() {
@@ -203,7 +199,7 @@ public class ReservationControllerImpl implements ReservationController {
     protected void showException(Throwable ex, PopupContext sourceComponent)
     {
         dialogUI.showException(ex, sourceComponent);
-        getLogger().error(ex.getMessage(), ex);
+        LOGGER.error(ex.getMessage(), ex);
     }
 
     protected Promise<Integer> showDialog( PopupContext popupContext, List<String> optionList, List<I18nIcon> iconList, String title, String content,
@@ -518,7 +514,7 @@ public class ReservationControllerImpl implements ReservationController {
         Appointment appointment = appointmentBlock.getAppointment();
         LocalDateTime from = DateTools.toLocalDateTime(appointmentBlock.getStart());
         Reservation reservation = appointment.getReservation();
-        getLogger().debug(action + " '" + appointment + "' for reservation '" + reservation + "'");
+        LOGGER.debug("{} '{}' for reservation '{}'", action, appointment, reservation);
         List<String> optionList = new ArrayList<>();
         List<I18nIcon> iconList = new ArrayList<>();
         List<DialogAction> actionList = new ArrayList<>();
@@ -619,7 +615,7 @@ public class ReservationControllerImpl implements ReservationController {
         // copyReservations info text to system clipboard
         {
             StringBuffer buf = new StringBuffer();
-            ReservationInfoUI reservationInfoUI = new ReservationInfoUI(getI18n(), getRaplaLocale(), getFacade(), logger, appointmentFormater, false);
+            ReservationInfoUI reservationInfoUI = new ReservationInfoUI(getI18n(), getRaplaLocale(), getFacade(), appointmentFormater, false);
             boolean excludeAdditionalInfos = false;
 
             List<Row> attributes = reservationInfoUI.getAttributes(sourceReservation, null, null, excludeAdditionalInfos);
@@ -727,7 +723,7 @@ public class ReservationControllerImpl implements ReservationController {
             final long offset = getOffset(appointment.getStart(), start, keepTime);
             final ResolvedPromise<CommandUndo<RaplaException>> defaultPastCommand = new ResolvedPromise<>(new AppointmentPaste(appointment, reservation, restrictedAllocatables, asNewReservation, copyWholeReservation, offset, popupContext));
 
-            getLogger().debug("Paste appointment '" + appointment + "' for reservation '" + reservation + "' at " + start);
+            LOGGER.debug("Paste appointment '{}' for reservation '{}' at {}", appointment, reservation, start);
 
             Collection<Allocatable> currentlyMarked = calendarModel.getMarkedAllocatables();
             Collection<Allocatable> previouslyMarked = clipboard.getContextAllocatables();
@@ -768,7 +764,7 @@ public class ReservationControllerImpl implements ReservationController {
         LocalDateTime from = DateTools.toLocalDateTime(appointmentBlock.getStart());
         if (newStart.equals(from))
             return ResolvedPromise.VOID_PROMISE;
-        getLogger().info("Moving appointment " + appointmentBlock.getAppointment() + " from " + from + " to " + newStart);
+        LOGGER.info("Moving appointment {} from {} to {}", appointmentBlock.getAppointment(), from, newStart);
         return resizeAppointment(appointmentBlock, newStart, null, context, keepTime);
     }
 

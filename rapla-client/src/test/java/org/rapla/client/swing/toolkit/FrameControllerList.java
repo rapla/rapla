@@ -14,7 +14,8 @@ package org.rapla.client.swing.toolkit;
 
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.Tools;
-import org.rapla.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.*;
@@ -33,22 +34,17 @@ import java.util.Stack;
    and closing all open windows on exit.
 */
 final public class FrameControllerList {
+    private static final Logger LOGGER = LoggerFactory.getLogger(FrameControllerList.class);
     private final Stack<FrameController> openFrameController = new Stack<FrameController>();
     Point center;
-    Logger logger = null;
     ArrayList<FrameControllerListener> listenerList = new ArrayList<FrameControllerListener>();
 
     @Autowired
-    public FrameControllerList(Logger logger) 
+    public FrameControllerList()
     {
-        this.logger = logger;
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         center = new Point(screenSize.width / 2
                                ,screenSize.height / 2);
-    }
-
-    protected Logger getLogger() {
-        return logger;
     }
 
     /** the center will be used by the
@@ -77,8 +73,8 @@ final public class FrameControllerList {
     public void remove(FrameController c) {
         openFrameController.remove(c);
         String s = c.toString();
-        if (getLogger() != null && getLogger().isDebugEnabled())
-            getLogger().debug("Frame closed " + Tools.left(s,60) + "...");
+        if (LOGGER.isDebugEnabled())
+            LOGGER.debug("Frame closed {}...", Tools.left(s,60));
         fireFrameClosed(c);
         if (openFrameController.size() == 0)
             fireListEmpty();
@@ -91,7 +87,7 @@ final public class FrameControllerList {
             int size = openFrameController.size();
             c.close();
             if ( size <= openFrameController.size())
-                getLogger().error("removeFrameController() not called in close() in " + c);
+                LOGGER.error("removeFrameController() not called in close() in {}", c);
         }
     }
     

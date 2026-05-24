@@ -32,7 +32,6 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.logger.Logger;
 import org.rapla.storage.PermissionController;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -60,7 +59,7 @@ import java.time.LocalDateTime;
     private final org.rapla.rest.PluginsService plugins;
     private volatile Boolean cachedEnabled;
 
-    @Autowired public DefaultWizard(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model,
+    @Autowired public DefaultWizard(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, CalendarModel model,
                                   ApplicationEventBus eventBus, MenuItemFactory menuFactory, org.rapla.rest.PluginsService plugins)
     {
         this.clientFacade = clientFacade;
