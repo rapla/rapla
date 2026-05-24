@@ -4,9 +4,19 @@
     <meta charset="UTF-8">
     <title>Rapla REST API — Swagger UI</title>
     <!--
-      PRD 041: Swagger UI as the alternative explorer alongside Scalar (/scalar/).
-      CDN-loaded from jsdelivr — no webjar in the fat JAR. Same offline-fallback
-      story as Scalar (npm install swagger-ui-dist + copy to static/).
+      PRD 041 + PRD 035: Swagger UI as one of the API explorers (alongside
+      Scalar and GraphiQL). CDN-loaded from jsdelivr — no webjar in the fat
+      JAR. Offline-fallback story: npm install swagger-ui-dist + copy to static/.
+
+      Auth: shared via the Angular SPA's /app/login (PRD 035). Swagger UI no
+      longer runs its own in-UI OAuth flow — instead a requestInterceptor
+      reads the access_token the SPA stored in localStorage (via
+      angular-oauth2-oidc) after the user signs in. This means:
+        - no /swagger-ui/oauth2-redirect.html callback URI to register per IdP
+        - all 4 providers (rapla, Microsoft, Keycloak, Google) work for free
+          via the SPA's already-registered /app/auth/callback
+        - Swagger UI's "Authorize" padlock UI is no longer functional (gone
+          alongside initOAuth); use the "Log in via rapla SPA" link below
     -->
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.30.1/swagger-ui.css">
     <link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.30.1/favicon-32x32.png" sizes="32x32">
@@ -14,13 +24,49 @@
         html { box-sizing: border-box; overflow: -moz-scrollbars-vertical; overflow-y: scroll; }
         *, *:before, *:after { box-sizing: inherit; }
         body { margin: 0; background: #fafafa; }
+        .auth-bar { padding: 6px 12px; background: #1e2937; color: #fff; display: flex; gap: 12px; align-items: center; font-size: 13px; flex-wrap: wrap; font-family: system-ui, sans-serif; }
+        .auth-bar .label { opacity: 0.7; }
+        .auth-bar .principal { font-family: monospace; opacity: 0.9; }
+        .auth-bar a, .auth-bar button { background: #2563eb; color: #fff; border: 0; padding: 4px 10px; border-radius: 3px; cursor: pointer; font-size: 12px; text-decoration: none; display: inline-block; }
+        .auth-bar a:hover, .auth-bar button:hover { background: #1d4ed8; }
+        .auth-bar button.secondary { background: #6b7280; }
+        .auth-bar button.secondary:hover { background: #4b5563; }
     </style>
 </head>
 <body>
+<div id="auth-bar" class="auth-bar"></div>
 <div id="swagger-ui"></div>
 <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.30.1/swagger-ui-bundle.js" charset="UTF-8"></script>
 <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.30.1/swagger-ui-standalone-preset.js" charset="UTF-8"></script>
 <script>
+    function getToken() { return localStorage.getItem('access_token') || null; }
+    function logout() { localStorage.removeItem('access_token'); location.reload(); }
+
+    function renderAuthBar() {
+        var bar = document.getElementById('auth-bar');
+        bar.innerHTML = '';
+        var token = getToken();
+        if (token) {
+            var display = '(unknown)';
+            try {
+                var payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+                display = payload.preferred_username || payload.sub || display;
+            } catch (e) { /* ignore */ }
+            var label = document.createElement('span'); label.className = 'label'; label.textContent = 'authenticated as';
+            var principal = document.createElement('span'); principal.className = 'principal'; principal.textContent = display;
+            var out = document.createElement('button'); out.className = 'secondary'; out.textContent = 'Drop token'; out.onclick = logout;
+            bar.append(label, principal, out);
+        } else {
+            var label = document.createElement('span'); label.className = 'label';
+            label.textContent = 'anonymous — sign in via the SPA:';
+            var loginLink = document.createElement('a');
+            loginLink.href = '/app/login?returnTo=swagger';
+            loginLink.textContent = 'Log in via rapla SPA';
+            bar.append(label, loginLink);
+        }
+    }
+    renderAuthBar();
+
     window.onload = function () {
         window.ui = SwaggerUIBundle({
             // Loads the group inventory served by StaticOpenApiController; the dropdown
@@ -31,16 +77,31 @@
             presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
             plugins: [SwaggerUIBundle.plugins.DownloadUrl],
             layout: "StandaloneLayout",
-            // OAuth2 code+PKCE — uses the single rapla-client public client.
-            // The /swagger-ui/oauth2-redirect.html URI is registered under
-            // rapla-client.registration.redirect-uris in application.yml.
-            oauth2RedirectUrl: window.location.origin + "/swagger-ui/oauth2-redirect.html"
-        });
-        ui.initOAuth({
-            clientId: "rapla-client",
-            usePkceWithAuthorizationCodeGrant: true
+            // PRD 035: shared OAuth via SPA. Inject the SPA-stored JWT as
+            // Bearer on every request (reads localStorage per-call → auto
+            // picks up SPA refreshes). No in-UI OAuth, no callback URI.
+            requestInterceptor: function (req) {
+                var token = getToken();
+                if (token) req.headers['Authorization'] = 'Bearer ' + token;
+                return req;
+            },
+            // 401 with a present token = stale; drop it + bounce to login.
+            // Skipped if the user is intentionally anonymous (no token).
+            responseInterceptor: function (res) {
+                if (res.status === 401 && getToken()) {
+                    localStorage.removeItem('access_token');
+                    location.href = '/app/login?returnTo=swagger';
+                }
+                return res;
+            }
         });
     };
+
+    // Cross-tab reactivity: re-render the auth bar when SPA refreshes /
+    // drops the token in another tab.
+    window.addEventListener('storage', function (e) {
+        if (e.key === 'access_token') renderAuthBar();
+    });
 </script>
 </body>
 </html>

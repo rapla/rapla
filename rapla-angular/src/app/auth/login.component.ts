@@ -6,6 +6,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 
 import { AuthService, OAuthProviderEntry } from './auth.service';
+import { resolveLoginReturnPath } from './login-return-to';
 
 /**
  * Entry point reached either by direct navigation, the authGuard, or the
@@ -144,6 +145,16 @@ export class LoginComponent implements OnInit {
 
   ngOnInit() {
     const params = this.route.snapshot.queryParamMap;
+
+    // PRD 035: capture returnTo (allowlisted via login-return-to.ts) and
+    // persist for the post-callback navigation. Must happen BEFORE any
+    // auto-redirect to the IdP so the value survives the OAuth round-trip
+    // via sessionStorage.
+    const returnTo = params.get('returnTo');
+    if (resolveLoginReturnPath(returnTo)) {
+      sessionStorage.setItem('loginReturnTo', returnTo!);
+    }
+
     const oauthError = params.get('error');
     if (oauthError) {
       this.errorMessage = `Sign-in failed: ${oauthError}. Try again.`;

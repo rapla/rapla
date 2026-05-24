@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { OAuthService } from 'angular-oauth2-oidc';
 
 import { AuthService } from './auth.service';
+import { resolveLoginReturnPath } from './login-return-to';
 
 /**
  * OAuth2 redirect landing. The library has already processed the `?code=...`
@@ -33,6 +34,18 @@ export class CallbackComponent implements OnInit {
     this.auth.endImpersonation();
     if (this.oauth.hasValidAccessToken()) {
       sessionStorage.removeItem('oauthFailures');
+
+      // PRD 035: honour ?returnTo=<key> captured at /app/login. External
+      // explorers (GraphiQL, …) sit at non-Angular paths — use a full
+      // navigation so the browser leaves the SPA shell.
+      const returnTo = sessionStorage.getItem('loginReturnTo');
+      sessionStorage.removeItem('loginReturnTo');
+      const returnPath = resolveLoginReturnPath(returnTo);
+      if (returnPath) {
+        window.location.href = returnPath;
+        return;
+      }
+
       this.router.navigateByUrl('/reservations');
     } else {
       const prev = Number(sessionStorage.getItem('oauthFailures') ?? '0');

@@ -453,6 +453,17 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-oauth2-authorization-server</artifactId>
         </dependency>
+        <!-- PRD 035: GraphQL endpoint at /api/graphql. Pulls spring-graphql +
+             graphql-java + dataloader. spring-graphql 2.x ships a thin
+             CDN-loaded GraphiQL launcher (~3 KiB, esm.sh-based) under
+             graphiql/index.html — we use that directly via
+             spring.graphql.graphiql.enabled=true rather than custom HTML,
+             since it already matches the PRD 041 zero-bundled-UI-bytes
+             pattern. No antrun strip needed at current spring-graphql size. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-graphql</artifactId>
+        </dependency>
         <!-- PRD 041: OpenAPI spec is generated ONCE at build time (capture-in-test
              pattern, OpenApiSpecCaptureTest writes to src/main/resources/openapi/).
              At runtime StaticOpenApiController serves those files — no SpringDoc on

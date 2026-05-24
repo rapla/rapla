@@ -420,28 +420,66 @@ be overridden with the matching env var.
 ### Spring redirect URIs
 
 The "registered" redirect URIs live under
-`spring.security.oauth2.authorizationserver.client.rapla-client.registration.redirect-uris`:
+`spring.security.oauth2.authorizationserver.client.rapla-client.registration.redirect-uris`.
+They effectively define the set of **allowed paths**, not actual URIs —
+the custom same-origin validator extracts the path component and
+matches it against the deployment's own public origin.
 
-```yaml
-redirect-uris:
-  - http://127.0.0.1/login/oauth2/code/rapla   # Swing loopback (end users)
-  - http://localhost/auth/callback             # Angular dev (any port)
-  - http://127.0.0.1/auth/callback             # Angular dev alt
-```
+#### Validation order
 
-Spring matches **any port** on loopback hosts (`127.0.0.1`, `localhost`,
-`::1`). For non-loopback hosts, exact match required. To register
-additional URIs in production:
+1. **Spring AS default validator** — exact match against the YAML list,
+   plus built-in loopback any-port match (RFC 8252) for `127.0.0.1` /
+   `localhost` / `::1`.
+2. **Same-origin validator** (rapla custom, default on via
+   `rapla.oauth.allow-same-origin-redirects=true`) — accept any URI
+   whose scheme/host/port match the auth-server request's public
+   origin (honoring `X-Forwarded-*`), provided its **path** matches
+   one of the registered paths.
+3. **WSL bridge validator** (rapla custom, default on via
+   `rapla.oauth.allow-wsl-bridge-redirects=true`) — dev convenience
+   for hosts in `172.16.0.0/12`.
+
+#### Production override — almost never needed
+
+A deployment at `https://rapla.yourdomain.com` works out of the box.
+The Angular SPA computes its redirect from `window.location.origin +
+'/app/auth/callback'`; the same-origin validator extracts the path
+`/app/auth/callback`, matches it against the registered
+`http://localhost/app/auth/callback`, and accepts. Same for
+`/auth/callback`.
+
+The only time you need to redefine `redirect-uris` is for a path that
+isn't registered — e.g. an explorer hosted on a separate origin from
+rapla itself. Two safe ways:
 
 ```bash
-export SPRING_SECURITY_OAUTH2_AUTHORIZATIONSERVER_CLIENT_RAPLA-CLIENT_REGISTRATION_REDIRECT-URIS_3=https://rapla.yourdomain.com/auth/callback
+# A. SPRING_APPLICATION_JSON — atomic full redefinition
+export SPRING_APPLICATION_JSON='{"spring":{"security":{"oauth2":{"authorizationserver":{"client":{"rapla-client":{"registration":{"redirect-uris":["https://rapla.example.com/auth/callback","https://rapla.example.com/app/auth/callback","https://explorer.example.com/oauth/callback"]}}}}}}}}'
 ```
 
-(Use `_0`, `_1`, `_2`, `_3` etc. to append to the array.)
+```yaml
+# B. application-prod.yml overlay (activate with SPRING_PROFILES_ACTIVE=prod)
+spring:
+  security:
+    oauth2:
+      authorizationserver:
+        client:
+          rapla-client:
+            registration:
+              redirect-uris:
+                - https://rapla.example.com/auth/callback
+                - https://rapla.example.com/app/auth/callback
+                - https://explorer.example.com/oauth/callback
+```
 
-In practice you usually don't need this because
-`rapla.oauth.allow-same-origin-redirects=true` auto-accepts URIs at
-the deployment's own origin.
+**Do not use indexed env vars** like
+`SPRING_..._REDIRECT-URIS_3=…`. Spring Boot list-binding resolves
+each index from the highest-priority property source — so `_3` would
+silently **overwrite** the YAML entry at index 3 (currently
+`http://localhost/auth/callback`), breaking loopback callbacks.
+Appending without breakage would require knowing the YAML's current
+length and choosing the next free index, which drifts as the YAML
+evolves.
 
 ## Deployment recipes
 
@@ -822,8 +860,12 @@ your proxy isn't passing `X-Forwarded-*` headers — fix that.
 
 The auth server rejected the redirect URI. Cause: deployment-specific
 redirect URI isn't on the registered list AND doesn't match any
-loopback / WSL bridge / same-origin allowance. Fix: register the URI
-explicitly with `SPRING_SECURITY_OAUTH2_…_REDIRECT-URIS_n=…`.
+loopback / WSL bridge / same-origin allowance. Fix: redefine
+`redirect-uris` via `SPRING_APPLICATION_JSON` or an
+`application-prod.yml` overlay — see "Production override" under
+"Spring redirect URIs" above. Avoid indexed env vars
+(`…_REDIRECT-URIS_n=…`) — they overwrite YAML entries by index, not
+append.
 
 ### "This site can't be reached" after sign-in
 

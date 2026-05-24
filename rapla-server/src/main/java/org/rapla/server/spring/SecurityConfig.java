@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -22,6 +23,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
 @Configuration
+@EnableMethodSecurity   // enables @PreAuthorize / @PostAuthorize on @Controller and @Bean methods
 public class SecurityConfig
 {
     /**
@@ -81,7 +83,14 @@ public class SecurityConfig
                             "/rapla/ical", "/rapla/internal_ical",
                             "/raplaclient", "/raplaclient.jnlp",
                             "/api/v3/api-docs/**", "/v3/api-docs/**",
-                            "/scalar/**", "/swagger-ui/**",
+                            "/scalar/**", "/swagger-ui/**", "/graphiql/**",
+                            // PRD 035 testbed: GraphQL endpoint open while
+                            // resolvers expose only trivial public data
+                            // (hello, serverTime, version). Tighten to
+                            // .authenticated() when real PRD 035 resolvers
+                            // land — every read/write field is §12-gated
+                            // server-side regardless of transport auth.
+                            "/api/graphql",
                             "/oauth2/**", "/.well-known/**", "/login", "/error",
                             "/dhbw/status").permitAll();
                     if (decoder != null)

@@ -1,0 +1,30 @@
+# PRD 035 testbed — minimal schema to validate end-to-end wiring.
+# Real schema (reservations, allocatables, types, mutations, etc.) lands
+# during PRD 035 implementation per the design in
+# docs/prd/035-rapla-mcp-server.md §"2026-05-24 design refinement".
+#
+# Two trivial queries: enough to prove the endpoint serves, the resolver
+# binds, and the GraphiQL UI can talk to it. No facade, no auth, no §12 yet.
+
+type Query {
+  # Echo, optionally personalized — classic smoke test.
+  hello(name: String = "world"): String!
+
+  # Server-side current time as ISO-8601 string.
+  serverTime: String!
+
+  # rapla version string.
+  version: String!
+
+  # Current authentication context. Useful for verifying auth wiring
+  # (paste a Bearer JWT in GraphiQL Headers → re-run `me` → see authenticated=true).
+  # Returns authenticated=false for anonymous callers (path is permitAll for
+  # the testbed; tighten when real resolvers land).
+  me: Me!
+}
+
+type Me {
+  authenticated: Boolean!
+  principal:     String        # null when anonymous
+  authorities:   [String!]!
+}

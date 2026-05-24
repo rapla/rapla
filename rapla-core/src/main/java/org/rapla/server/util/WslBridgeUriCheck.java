@@ -7,8 +7,9 @@ import java.util.Collection;
  * Pure URI check used by the server's custom OAuth redirect validator
  * (and unit-testable without any Spring scaffolding). A redirect URI is
  * a "WSL bridge" URI when its host is in <b>172.16.0.0/12</b> (the default
- * Hyper-V vSwitch range used by WSL2) and its path matches the path of one
- * of the client's registered redirect URIs.
+ * Hyper-V vSwitch range used by WSL2) and its path is in the configured
+ * callback-path allowlist ({@code rapla.oauth.same-origin-callback-paths},
+ * shared with the same-origin validator).
  *
  * <p>Lives in rapla-core so both the server validator and its tests can
  * use it.
@@ -18,11 +19,12 @@ public final class WslBridgeUriCheck
     private WslBridgeUriCheck() {}
 
     /**
-     * @param redirectUri the candidate redirect URI from the authorize request
-     * @param registeredUris the redirect URIs configured for the client
-     * @return true if the URI is on the WSL bridge subnet AND its path matches one of the registered URIs
+     * @param redirectUri  the candidate redirect URI from the authorize request
+     * @param allowedPaths the configured callback paths from
+     *                     {@code rapla.oauth.same-origin-callback-paths}
+     * @return true if the URI is on the WSL bridge subnet AND its path is in the allowlist
      */
-    public static boolean isWslBridgeRedirect(String redirectUri, Collection<String> registeredUris)
+    public static boolean isWslBridgeRedirect(String redirectUri, Collection<String> allowedPaths)
     {
         if (redirectUri == null) return false;
         URI parsed;
@@ -31,19 +33,7 @@ public final class WslBridgeUriCheck
         if (!isWslBridgeHost(parsed.getHost())) return false;
         String path = parsed.getPath();
         if (path == null || path.isEmpty()) return false;
-        for (String registered : registeredUris)
-        {
-            try
-            {
-                URI regUri = URI.create(registered);
-                if (path.equals(regUri.getPath()))
-                {
-                    return true;
-                }
-            }
-            catch (Exception ignore) { /* skip malformed registered */ }
-        }
-        return false;
+        return allowedPaths.contains(path);
     }
 
     static boolean isWslBridgeHost(String host)

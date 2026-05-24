@@ -1499,6 +1499,96 @@ script). Pin under `docs/showcases/`.
     atomic per batch) — never multiple, or a partial write is possible. The
     GraphQL mutation resolver builds one `UpdateEvent` and dispatches once.
 
+15. **`Conflict` GraphQL type — symmetry + N-way + compute "self" perspective.**
+    *Opened 2026-05-24 during the §"2026-05-24 design refinement" §9 search work.*
+    Three coupled sub-questions:
+    (a) **Symmetric** `Conflict { reservation1, reservation2 }` — one type
+        shared across `search`, `checkConflicts`, `conflicts(...)` — vs.
+        **keep asymmetric** `Conflict { withReservation }` (per the original
+        §"Compute operations" shape) plus a separate symmetric `ConflictPair`
+        for search results. The original is asymmetric because `checkConflicts`
+        has a natural "self" perspective; symmetric is the right fit for
+        search (no caller-side "self"). One type is cleaner; two types preserve
+        each use case's natural shape.
+    (b) **If symmetric:** how does `checkConflicts` carry the "self"
+        perspective — by convention (`self = reservation1` in compute results)
+        or via a wrapper (`SelfPerspectiveConflict { conflict: Conflict,
+        selfIndex: Int }`)?
+    (c) **Are rapla conflicts always pairwise**, or is N-way possible (three
+        reservations all booking the same room at the same time)? Check
+        `ConflictFinder`. If N-way is possible, the type carries `reservations:
+        [Reservation!]!` not a `reservation1`/`reservation2` pair, and
+        `matchedField` becomes `"reservations[i].<field>"`.
+    Affects: `Conflict` GraphQL type definition, `matchedField` path syntax
+    for search hits, `checkConflicts` return shape.
+
+16. **§12 on Conflict search hits where one side is unreadable.**
+    *Opened 2026-05-24.* When a conflict surfaces in search and one of the
+    paired reservations is §12-unreadable (private to a group the caller
+    doesn't belong to), two options:
+    - **Privacy-first drop** — exclude the conflict entirely. Consistent with
+      PRD 035's §12 doctrine ("behave as if response were a CSV emailed to the
+      user"). Default lean.
+    - **Utility-first null-render** — return the conflict with the unreadable
+      reservation as `null` ("Room 101 14:00–15:30 conflicts with: <Public
+      Event>, <unavailable>"). The caller learns "something's in the way at
+      this time" — but that's existence-of-private-data leakage.
+    UX cost of drop: a caller can't see a conflict warning at a time where one
+    party is private even if the OTHER party is fully public. Tradeoff is
+    real; needs explicit decision rather than implicit default.
+
+17. **Window-match semantic for `search` / `reservations(from, to)`.**
+    *Opened 2026-05-24.* Settle: (a) half-open `[from, to)` boundaries with
+    intersection rule (`appointment.end > from AND appointment.start < to`);
+    (b) "a reservation matches if ANY of its appointments intersects the
+    window" — matches rapla's existing `getReservations(allocatables, from,
+    to)` rule; (c) `DateTime` is wall-time / `LocalDateTime` per PRD 014, in
+    the deployment timezone. Mostly documentation, but worth landing so the
+    SPA doesn't use `<=` on the boundary. Implementation note: resolver should
+    pre-compute per-reservation `[firstStart, lastEnd]` bounds to cheaply
+    reject non-overlapping reservations before walking individual appointments
+    (avoids 500k-intersection cost on 10k reservations × 50 appointments × 5y
+    windows).
+
+18. **Default window — value + partial-input handling.**
+    *Opened 2026-05-24.* When the client doesn't supply `from`/`to`:
+    (a) **Value**: `search.defaultWindowDays` deployment config; fallback 730
+        (±1 year), symmetric around `serverTime`.
+    (b) **Partial inputs**: strict (both supplied together or both absent;
+        partial = `INVALID_ARGUMENT`) vs permissive (server fills the missing
+        endpoint from the default window). Lean strict — clearer semantics;
+        partial-input is ambiguous ("from this date, default forward" vs
+        "from this date, default reach").
+    (c) Server default centered on `serverTime`, NOT on a notional viewport
+        — the server doesn't know the client's viewport. SPA passes its own
+        viewport-derived `from`/`to` (see OQ#20).
+
+19. **Max-range cap — value + admin override + cap target.**
+    *Opened 2026-05-24.* To prevent DoS via unbounded searches:
+    (a) **Value**: `search.maxWindowDays` deployment config; fallback 1825
+        (~5 years).
+    (b) **Error**: top-level GraphQL `WINDOW_TOO_LARGE { maxDays, requestedDays }`
+        — query rejected, not partial result.
+    (c) **Admin override**: none v1 (admins paginate windows for archive
+        searches). Future: opt-in admin-only unbounded search backed by a real
+        index (follow-on, not v1).
+    (d) **Cap target**: days-based (simple, predictable contract) rather than
+        cost-based (match count, time budget). Days is a proxy for cost — bad
+        on very-large or very-small deployments — but the API contract is
+        clearer this way. Implementations may also have a defensive
+        time/count budget on top.
+
+20. **PRD 028 viewport-centered default — cross-PRD.**
+    *Opened 2026-05-24.* The SPA's calendar viewport is client state; the
+    server default centers on `serverTime`. A user viewing the March 2025
+    calendar in June 2026 expects "search Algorithms" to find the Algorithms
+    course in March 2025 — needs the SPA to pass viewport-derived `from`/`to`
+    rather than rely on the server default. Decision is PRD 028 territory
+    (not PRD 035): does the SPA always pass viewport, never pass, or
+    conditionally? Flag for whenever PRD 028 resumes. PRD 035's contract is
+    unchanged either way — server default is `serverTime`-centered for
+    headless callers.
+
 ## Risks
 
 | Risk | Mitigation |

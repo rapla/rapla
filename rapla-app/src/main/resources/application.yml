@@ -19,17 +19,61 @@ server:
 spring:
   application:
     name: rapla
+  graphql:
+    # PRD 035 testbed: GraphQL endpoint at /api/graphql per AGENTS.md §15.
+    # GraphiQL UI is served from static/graphiql/index.html with a custom
+    # OAuth2 PKCE login button (mirroring the Swagger UI pattern in
+    # static/swagger-ui/index.html). Spring's bundled CDN launcher is
+    # disabled so our custom one owns /graphiql/ — the bundled launcher
+    # has no OAuth integration, only manual Headers-tab paste of a bearer.
+    #
+    # NB: In Spring Boot 4 the endpoint path moved from spring.graphql.path
+    # (SB3) to spring.graphql.http.path — see
+    # spring-boot-graphql-*.jar:META-INF/spring-configuration-metadata.json.
+    http:
+      path: /api/graphql
+    graphiql:
+      enabled: false
   security:
     oauth2:
       authorizationserver:
         client:
           # Single public OAuth client for ALL rapla UIs (Swing desktop, Angular SPA,
           # plus the Scalar + Swagger UI dev explorers — PRD 041). One client,
-          # one registration, every redirect URI listed below. All loopback redirects
-          # → Spring's loopback any-port match applies, so the Swing client can bind
-          # a random port and the Angular dev server can run on any local port.
-          # Production deployments behind a real hostname add their URI via env override:
-          #   SPRING_SECURITY_OAUTH2_AUTHORIZATIONSERVER_CLIENT_RAPLA-CLIENT_REGISTRATION_REDIRECT-URIS_3=https://rapla.example.com/auth/callback
+          # one registration.
+          #
+          # Spring AS's DEFAULT_REDIRECT_URI_VALIDATOR uses the redirect-uris
+          # list below for exact-string matching. rapla wraps that with three
+          # fallback allowances (see
+          # AuthorizationServerConfig.redirectUriAndScopeValidator). All three
+          # share ONE path allowlist (rapla.oauth.same-origin-callback-paths)
+          # and differ only in how they handle host/port:
+          #
+          #   1. Loopback any-port (rapla.oauth.allow-loopback-redirects, default on)
+          #      — 127.0.0.1 / [::1] at any port, path in allowlist. RFC 8252 §7.3.
+          #
+          #   2. Same-origin (rapla.oauth.allow-same-origin-redirects, default on)
+          #      — for production deployments at any hostname. URI's scheme/host/port
+          #      must match the incoming auth-server request's public origin
+          #      (honoring X-Forwarded-*). For loopback↔loopback origin pairs the
+          #      port match is relaxed (handles dev SPA at :4200 hitting AS at :8051;
+          #      127.0.0.1↔localhost equivalent). Zero-config:
+          #      https://rapla.example.com just works for /app/auth/callback (SPA)
+          #      and /login/oauth2/code/rapla (Swing).
+          #
+          #   3. WSL bridge (rapla.oauth.allow-wsl-bridge-redirects, default on)
+          #      — dev convenience for hosts in 172.16.0.0/12.
+          #
+          # The redirect-uris list below has ONLY a placeholder entry. Spring AS
+          # requires at least one registered URI; everything else is delegated to
+          # the three validators above. NO PORT appears anywhere in this YAML —
+          # all port matching is dynamic.
+          #
+          # If a deployment needs a path not covered above (e.g. cross-origin
+          # redirects to a separate explorer host), use SPRING_APPLICATION_JSON
+          # or an application-prod.yml overlay to redefine the list atomically.
+          # NEVER use indexed env vars like ..._REDIRECT-URIS_3 — they OVERWRITE
+          # YAML entries by index, not append.
           rapla-client:
             registration:
               client-id: ${rapla.oauth.client-id}
@@ -45,26 +89,23 @@ spring:
                 # delegate credential checking to RaplaAuthentificationService.
                 - password
               redirect-uris:
-                - http://127.0.0.1/login/oauth2/code/rapla
-                - http://localhost/auth/callback
-                - http://127.0.0.1/auth/callback
-                # PRD 031 + 026: Angular SPA's OAuth2 callback.
-                # - Loopback (no port) covers prod and any loopback port via
-                #   Spring's loopback any-port match (RFC 8252 native-app convention).
-                # - :4200 explicitly listed because spring-security-oauth2-authorization-server
-                #   7.0.5's DEFAULT_REDIRECT_URI_VALIDATOR doesn't always apply the
-                #   loopback any-port match in the issuer-side path. Same-origin
-                #   matcher (allow-same-origin-redirects) doesn't help here either
-                #   because the SPA's origin (:4200) differs from the AS origin (:8051).
+                # Placeholder. Spring AS's RegisteredClient requires at least
+                # one redirect-uri; all actual URI acceptance is delegated to
+                # the three custom validators documented above. NO PORT is
+                # specified anywhere in this YAML — port matching for loopback
+                # is handled dynamically by the same-origin validator's
+                # loopback-port-relaxation rule (treats any port pair on
+                # 127.0.0.1 / localhost / [::1] as equivalent, gated by the
+                # path allowlist). This URL is never matched literally; treat
+                # it as documentation of the SPA's canonical callback path.
+                #
+                # PRD 035: GraphiQL, Swagger UI, and Scalar all share the
+                # SPA's /app/auth/callback OAuth callback — they read the
+                # access_token the SPA stores in localStorage after login,
+                # via /app/login?returnTo=<key> (login-return-to.ts in the
+                # SPA). No explorer registers its own redirect URI in any
+                # IdP. Adding a new explorer = zero per-IdP admin work.
                 - http://localhost/app/auth/callback
-                - http://127.0.0.1/app/auth/callback
-                - http://localhost:4200/app/auth/callback
-                - http://127.0.0.1:4200/app/auth/callback
-                # PRD 041 — explorer callbacks (Scalar reads window.location.href; Swagger UI uses
-                # its dedicated oauth2-redirect.html). Loopback-only; the loopback any-port match
-                # validates these against any local port.
-                - http://localhost:8051/scalar/index.html
-                - http://localhost:8051/swagger-ui/oauth2-redirect.html
               # No `post-logout-redirect-uris` listed here on purpose:
               # AuthorizationServerConfig installs a permissive validator
               # for /connect/logout that accepts any URI. Spring AS's default
@@ -136,27 +177,52 @@ rapla:
     # legacy dialog also shows the "Sign in with browser…" button so willing
     # users can opt into the SSO flow alongside the password form.
     swing-legacy-show-sso-button: ${RAPLA_OAUTH_SWING_LEGACY_SHOW_SSO_BUTTON:true}
-    # Developer convenience: accept redirect URIs whose host is in 172.16.0.0/12
-    # (the default Hyper-V WSL2 bridge range) with any port, provided the path
-    # matches one of the registered URIs. Lets a developer run the Swing client
-    # inside WSL2 without configuring WSL2 mirrored networking — the Windows
-    # browser routes directly to the WSL bridge IP, bypassing the NAT forwarder.
-    # Not a production concern: 172.16.0.0/12 is private and non-routable, the
-    # path must still match a registered URI, and PKCE is mandatory — so the
-    # flag is inert in any non-WSL deployment regardless of its value. A secure
-    # rapla installation uses a proper external IdP (see docs/authentication.md).
-    # Override with RAPLA_OAUTH_ALLOW_WSL_BRIDGE_REDIRECTS=false if desired.
+    # Three custom fallback validators for redirect URIs that Spring AS's
+    # DEFAULT_REDIRECT_URI_VALIDATOR rejects. See
+    # AuthorizationServerConfig.redirectUriAndScopeValidator for the cascade.
+
+    # 1. Loopback any-port — accept 127.0.0.1 or [::1] at any port, provided
+    # the path is in same-origin-callback-paths (below). RFC 8252 §7.3
+    # any-port match, with the path-allowlist gate kept consistent with the
+    # other two validators. Disable via:
+    #   RAPLA_OAUTH_ALLOW_LOOPBACK_REDIRECTS=false
+    allow-loopback-redirects: true
+
+    # 2. WSL bridge — accept hosts in 172.16.0.0/12 (the default Hyper-V WSL2
+    # bridge range) at any port, provided the path is in
+    # same-origin-callback-paths (below). Lets a developer run the Swing
+    # client inside WSL2 without configuring WSL2 mirrored networking — the
+    # Windows browser routes directly to the WSL bridge IP, bypassing the NAT
+    # forwarder. Not a production concern: 172.16.0.0/12 is private and
+    # non-routable, the path must still be in the allowlist, and PKCE is
+    # mandatory. Override with RAPLA_OAUTH_ALLOW_WSL_BRIDGE_REDIRECTS=false.
     allow-wsl-bridge-redirects: true
-    # Production convenience: accept any redirect URI whose scheme/host/port
-    # match the public origin the auth-server request came in on (honoring
+
+    # 3. Same-origin — accept any redirect URI whose scheme/host/port match the
+    # public origin the auth-server request came in on (honoring
     # X-Forwarded-Proto and X-Forwarded-Host when behind a reverse proxy),
-    # provided the path matches one of the registered URIs. Lets a deployment
-    # at https://rapla.example.com auto-accept https://rapla.example.com/auth/callback
-    # for the Angular SPA without registering the deployment-specific URI in
-    # this YAML. Safe because PKCE is mandatory AND the path still has to
-    # match. Disable via:
+    # provided its path is in same-origin-callback-paths (below). Lets a
+    # deployment at https://rapla.example.com auto-accept
+    # https://rapla.example.com/app/auth/callback for the Angular SPA without
+    # registering the deployment-specific URI in this YAML. Safe because PKCE
+    # is mandatory AND the path still has to match. Disable via:
     #   RAPLA_OAUTH_ALLOW_SAME_ORIGIN_REDIRECTS=false
     allow-same-origin-redirects: true
+
+    # Path allowlist consumed by both the WSL-bridge AND same-origin
+    # validators. The single source of truth for "what paths is the rapla
+    # client allowed to redirect to". Replaces the older pattern where
+    # spring...redirect-uris did double duty (literal registered URIs +
+    # implicit path allowlist via URI.getPath() extraction).
+    same-origin-callback-paths:
+      - /login/oauth2/code/rapla             # Swing OIDC default
+      - /app/auth/callback                   # Angular SPA callback — shared
+                                             # by GraphiQL, Swagger UI, and
+                                             # Scalar explorers via the
+                                             # SPA-mediated login flow
+                                             # (login-return-to.ts; PRD 035).
+                                             # Explorers no longer have their
+                                             # own OAuth callbacks.
 
 # Note: there is no `springdoc:` section here on purpose. SpringDoc is
 # <scope>test</scope>; the production runtime serves the captured static OpenAPI

@@ -11,9 +11,12 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.internal.RaplaAuthentificationService;
+import org.rapla.server.spring.oauth.RaplaOauthRedirectProperties;
+import org.rapla.server.util.LoopbackUriCheck;
 import org.rapla.server.util.SameOriginUriCheck;
 import org.rapla.server.util.WslBridgeUriCheck;
 import org.rapla.storage.dbrm.LoginCredentials;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -117,13 +120,15 @@ import java.util.stream.Collectors;
  *   - Issuer URI configured to deployment URL
  */
 @Configuration
+@EnableConfigurationProperties(RaplaOauthRedirectProperties.class)
 public class AuthorizationServerConfig
 {
-    @Value("${rapla.oauth.allow-wsl-bridge-redirects:true}")
-    private boolean allowWslBridgeRedirects;
+    private final RaplaOauthRedirectProperties redirectProps;
 
-    @Value("${rapla.oauth.allow-same-origin-redirects:true}")
-    private boolean allowSameOriginRedirects;
+    public AuthorizationServerConfig(RaplaOauthRedirectProperties redirectProps)
+    {
+        this.redirectProps = redirectProps;
+    }
 
     @Bean
     @Order(1)
@@ -145,7 +150,10 @@ public class AuthorizationServerConfig
                     if (provider instanceof OAuth2AuthorizationCodeRequestAuthenticationProvider codeRequestProvider)
                     {
                         codeRequestProvider.setAuthenticationValidator(redirectUriAndScopeValidator(
-                                allowWslBridgeRedirects, allowSameOriginRedirects));
+                                redirectProps.isAllowLoopbackRedirects(),
+                                redirectProps.isAllowWslBridgeRedirects(),
+                                redirectProps.isAllowSameOriginRedirects(),
+                                redirectProps.getSameOriginCallbackPaths()));
                     }
                 })));
 
@@ -224,25 +232,42 @@ public class AuthorizationServerConfig
     }
 
     /**
-     * Wraps Spring's default redirect-URI + scope validation with two extra
-     * allowances:
+     * Wraps Spring's default redirect-URI + scope validation with three
+     * fallback allowances. Each fires only when the default validator rejects
+     * the URI; ordering is from broadest (any-path loopback) to narrowest
+     * (path allowlist):
      * <ol>
+     *   <li><b>Loopback any-port</b> — accept any URI on 127.0.0.1 or [::1]
+     *       at any port, provided the path is in
+     *       {@code rapla.oauth.same-origin-callback-paths}. Local processes
+     *       binding loopback are trusted to bind any port; the path allowlist
+     *       remains the consistent security gate across all three validators.
+     *       Toggle via {@code rapla.oauth.allow-loopback-redirects=false}.</li>
      *   <li><b>WSL bridge</b> — accept any port for hosts in 172.16.0.0/12
-     *       (Hyper-V WSL2 bridge), provided the path matches a registered
-     *       URI. Lets a developer run the Swing client in WSL2 without
-     *       enabling mirrored networking. Toggle via
+     *       (Hyper-V WSL2 bridge), provided the path is in the same-origin
+     *       callback-paths allowlist. Lets a developer run the Swing client
+     *       in WSL2 without enabling mirrored networking. Toggle via
      *       {@code rapla.oauth.allow-wsl-bridge-redirects=false}.</li>
      *   <li><b>Same-origin</b> — accept any redirect URI whose scheme/host/port
      *       match the auth-server request's public origin (honoring
-     *       X-Forwarded-*), provided the path matches a registered URI.
-     *       Zero-config Angular SPA deployment: the SPA registers
-     *       {@code /auth/callback} as its path and the validator accepts
-     *       whatever public origin rapla is serving on. Toggle via
-     *       {@code rapla.oauth.allow-same-origin-redirects=false}.</li>
+     *       X-Forwarded-*), provided the path is in
+     *       {@code rapla.oauth.same-origin-callback-paths}. Zero-config
+     *       Angular SPA deployment: the registered {@code /app/auth/callback}
+     *       path is accepted at whatever public hostname rapla is serving on.
+     *       Toggle via {@code rapla.oauth.allow-same-origin-redirects=false}.</li>
      * </ol>
+     *
+     * <p>This is a deliberate deviation from RFC 9700 (OAuth 2.0 Security BCP)
+     * which mandates exact string matching. The relaxation is bounded by
+     * mandatory PKCE ({@code require-proof-key: true}) and by trust in the
+     * reverse-proxy's X-Forwarded-* hygiene. See {@code docs/authentication.md}
+     * for the full rationale.
      */
     private static Consumer<OAuth2AuthorizationCodeRequestAuthenticationContext> redirectUriAndScopeValidator(
-            boolean allowWslBridge, boolean allowSameOrigin)
+            boolean allowLoopback,
+            boolean allowWslBridge,
+            boolean allowSameOrigin,
+            List<String> sameOriginCallbackPaths)
     {
         Consumer<OAuth2AuthorizationCodeRequestAuthenticationContext> redirectValidator =
                 OAuth2AuthorizationCodeRequestAuthenticationValidator.DEFAULT_REDIRECT_URI_VALIDATOR;
@@ -260,10 +285,12 @@ public class AuthorizationServerConfig
                 // (general code) for redirect URI mismatches, not a dedicated
                 // "invalid_redirect_uri". Filtering by error code is brittle — we
                 // just attempt our fallback checks unconditionally. They themselves
-                // are narrow (host range + path-must-be-registered) so a request
-                // that doesn't match WSL bridge / same-origin still re-throws.
-                if (allowWslBridge && isWslBridgeRedirect(ctx)) return;
-                if (allowSameOrigin && isSameOriginRedirect(ctx)) return;
+                // are narrow (loopback host literals, WSL subnet + path allowlist,
+                // or same-origin + path allowlist) so a request that doesn't match
+                // any still re-throws.
+                if (allowLoopback && isLoopbackRedirect(ctx, sameOriginCallbackPaths)) return;
+                if (allowWslBridge && isWslBridgeRedirect(ctx, sameOriginCallbackPaths)) return;
+                if (allowSameOrigin && isSameOriginRedirect(ctx, sameOriginCallbackPaths)) return;
                 throw ex;
             }
         };
@@ -293,17 +320,24 @@ public class AuthorizationServerConfig
         return ctx -> { /* accept any post_logout_redirect_uri */ };
     }
 
-    private static boolean isWslBridgeRedirect(OAuth2AuthorizationCodeRequestAuthenticationContext ctx)
+    private static boolean isLoopbackRedirect(OAuth2AuthorizationCodeRequestAuthenticationContext ctx,
+                                               List<String> allowedPaths)
     {
         OAuth2AuthorizationCodeRequestAuthenticationToken auth = ctx.getAuthentication();
         String redirectUri = auth == null ? null : auth.getRedirectUri();
-        RegisteredClient client = ctx.getRegisteredClient();
-        if (client == null) return false;
-        Set<String> registered = client.getRedirectUris().stream().collect(Collectors.toUnmodifiableSet());
-        return WslBridgeUriCheck.isWslBridgeRedirect(redirectUri, registered);
+        return LoopbackUriCheck.isLoopbackRedirect(redirectUri, allowedPaths);
     }
 
-    private static boolean isSameOriginRedirect(OAuth2AuthorizationCodeRequestAuthenticationContext ctx)
+    private static boolean isWslBridgeRedirect(OAuth2AuthorizationCodeRequestAuthenticationContext ctx,
+                                                List<String> allowedPaths)
+    {
+        OAuth2AuthorizationCodeRequestAuthenticationToken auth = ctx.getAuthentication();
+        String redirectUri = auth == null ? null : auth.getRedirectUri();
+        return WslBridgeUriCheck.isWslBridgeRedirect(redirectUri, allowedPaths);
+    }
+
+    private static boolean isSameOriginRedirect(OAuth2AuthorizationCodeRequestAuthenticationContext ctx,
+                                                 List<String> allowedPaths)
     {
         OAuth2AuthorizationCodeRequestAuthenticationToken auth = ctx.getAuthentication();
         String redirectUri = auth == null ? null : auth.getRedirectUri();
@@ -347,8 +381,7 @@ public class AuthorizationServerConfig
             host = request.getServerName();
             port = request.getServerPort();
         }
-        Set<String> registered = client.getRedirectUris().stream().collect(Collectors.toUnmodifiableSet());
-        return SameOriginUriCheck.isSameOriginRedirect(redirectUri, scheme, host, port, registered);
+        return SameOriginUriCheck.isSameOriginRedirect(redirectUri, scheme, host, port, allowedPaths);
     }
 
     private static String headerOr(HttpServletRequest request, String header, String fallback)
