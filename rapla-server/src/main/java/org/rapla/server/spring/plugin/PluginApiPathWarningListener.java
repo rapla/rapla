@@ -38,6 +38,11 @@ public class PluginApiPathWarningListener implements ApplicationListener<Context
     private static final Logger LOG = LoggerFactory.getLogger(PluginApiPathWarningListener.class);
 
     private static final String STOCK_RAPLA_PACKAGE_PREFIX = "org.rapla.";
+    // Spring framework / Spring Boot ship controllers as infrastructure
+    // (e.g. BasicErrorController auto-registered at /error by
+    // spring-boot-webmvc-autoconfigure; Actuator endpoints when enabled).
+    // These are not third-party "plugins" and shouldn't trigger the warning.
+    private static final String SPRING_FRAMEWORK_PACKAGE_PREFIX = "org.springframework.";
     private static final String API_PREFIX = "/api/";
     private static final String API_ROOT = "/api";
 
@@ -50,7 +55,8 @@ public class PluginApiPathWarningListener implements ApplicationListener<Context
         {
             mapping.getHandlerMethods().forEach((info, method) -> {
                 String declaringClass = method.getBeanType().getName();
-                if (declaringClass.startsWith(STOCK_RAPLA_PACKAGE_PREFIX))
+                if (declaringClass.startsWith(STOCK_RAPLA_PACKAGE_PREFIX)
+                        || declaringClass.startsWith(SPRING_FRAMEWORK_PACKAGE_PREFIX))
                 {
                     return;
                 }

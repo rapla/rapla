@@ -1,4 +1,4 @@
-package org.rapla.storage.impl.server;
+package org.rapla.components.util;
 
 import org.junit.jupiter.api.Test;
 

@@ -15,6 +15,42 @@ server:
   # the SPA at /app/, REST under /api/ (Phase 2), and anchors only the six
   # load-bearing legacy URLs (/rapla/calendar, /rapla/ical, etc.) explicitly via
   # class-level @RequestMapping in CalendarPageController + Export2iCalController.
+  tomcat:
+    # Tomcat resolves the access-log `directory` relative to basedir; without
+    # this, basedir defaults to /tmp/tomcat.<port>.<random>/ and access logs
+    # land in a hard-to-find temp dir. Pinning basedir to ${user.dir} (the
+    # JVM's CWD) puts the access log alongside the application log in
+    # ${user.dir}/logs/.
+    #
+    # ${user.dir} resolves to:
+    #   - The install dir for `java -jar rapla-*.jar`           → e.g. /opt/rapla/logs/
+    #   - The module dir for `mvn -pl rapla-app spring-boot:run` → rapla-app/logs/
+    # In dev the file `logs/rapla.log` at the REPO ROOT is unrelated to
+    # the application log — it's whatever your shell redirected mvn's stdout
+    # to (the team convention is to redirect mvn to logs/build.log so the
+    # two stay separate; see docs/logging.md when it lands).
+    basedir: ${user.dir}
+    # HTTP access log via Tomcat's built-in AccessLogValve. Lands at
+    # ${user.dir}/logs/rapla_access.YYYY-MM-DD.log, rotated daily, Apache
+    # Combined Log Format. Operators tune via env vars without editing this
+    # file:
+    #   SERVER_TOMCAT_ACCESSLOG_ENABLED=false       # disable (cloud / k8s
+    #                                                 where the ingress / LB
+    #                                                 already logs requests)
+    #   SERVER_TOMCAT_ACCESSLOG_DIRECTORY=/var/log/rapla
+    #   SERVER_TOMCAT_ACCESSLOG_PATTERN=common      # NCSA Common Log Format
+    #   SERVER_TOMCAT_ACCESSLOG_MAX_DAYS=14
+    accesslog:
+      enabled: true
+      directory: logs
+      prefix: rapla_access
+      suffix: .log
+      file-date-format: .yyyy-MM-dd
+      pattern: combined
+      rotate: true
+      max-days: 30
+      buffered: false              # flush per line — safer for live tailing
+      request-attributes-enabled: true   # capture X-Forwarded-* behind a proxy
 
 spring:
   application:
@@ -235,3 +271,11 @@ logging:
   level:
     root: INFO
     org.rapla: INFO
+    # Silence Spring Security's "Global AuthenticationManager configured with
+    # an AuthenticationProvider bean. UserDetailsService beans will not be
+    # used..." WARN. Rapla intentionally provides BOTH a raplaAuthenticationProvider
+    # (does the actual auth — see AuthorizationServerConfig:534) AND a
+    # raplaUserDetailsService (supplies username→User for remember-me + OIDC
+    # principal resolution — :602). Spring Security's auto-config doesn't
+    # know we mean it; the warning text itself recommends this silencer.
+    org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer: ERROR

@@ -91,6 +91,24 @@ class PluginApiPathWarningListenerTest
                 .isZero();
     }
 
+    @Test
+    void silentForSpringFrameworkControllersOutsideApi()
+    {
+        // Spring Boot auto-registers BasicErrorController (and Actuator endpoints
+        // when enabled) under paths like /error that are not under /api/. Those
+        // are framework infrastructure, not third-party "plugins" — the listener
+        // must not warn about them.
+        StaticApplicationContext ctx = contextWithMapping(
+                org.springframework.exampleframeworkstub.SpringFakeController.class);
+        new PluginApiPathWarningListener().onApplicationEvent(new ContextRefreshedEvent(ctx));
+
+        long warns = appender.list.stream().filter(e -> e.getLevel() == Level.WARN).count();
+        assertThat(warns)
+                .as("Spring framework / Spring Boot controllers (org.springframework.*) are "
+                        + "infrastructure, not plugins — they're allowed to map outside /api/")
+                .isZero();
+    }
+
     /**
      * Bypasses {@code @EnableWebMvc} (which would need a ServletContext) and
      * directly registers a single controller into a fresh

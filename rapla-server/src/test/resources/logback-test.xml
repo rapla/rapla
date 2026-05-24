@@ -1,72 +1,28 @@
-<configuration scan="true" scanPeriod="30 seconds" >
+<configuration>
+  <!--
+    Test-only logback config. Wins over rapla-app's logback-spring.xml on the
+    test classpath. Kept minimal on purpose:
+      - Console only (tests don't write rolling files to logs/)
+      - No JUL LevelChangePropagator (overhead in tests; nothing in tests
+        relies on JUL → SLF4J propagation working)
+      - INFO root, raise per-package via -Dlogging.level.* on the surefire
+        argLine or per-test @TestPropertySource
+
+    Operator-facing logging defaults live in
+    rapla-app/src/main/resources/logback-spring.xml (see docs/logging.md).
+  -->
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
     <target>System.out</target>
-    <filter class="ch.qos.logback.classic.filter.LevelFilter">
-      <level>DEBUG</level>
-      <onMatch>ACCEPT</onMatch>
-    </filter>
-    <filter class="ch.qos.logback.classic.filter.LevelFilter">
-      <level>INFO</level>
-      <onMatch>ACCEPT</onMatch>
-      <onMismatch>DENY</onMismatch>
-    </filter>
     <encoder>
-      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %class{0}.%method %logger{36} - %msg%n</pattern>
+      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
     </encoder>
   </appender>
 
-  <appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
-    <target>System.err</target>
-    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-      <level>WARN</level>
-    </filter>
-    <encoder>
-      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %class{0}.%method %logger{36} - %msg%n</pattern>
-    </encoder>
-  </appender>
+  <!-- Silence libraries that log noisily at INFO during tests. -->
+  <logger name="net.fortuna.ical4j" level="WARN"/>
+  <logger name="net.fortuna.ical4j.model.TimeZoneRegistryImpl" level="ERROR"/>
 
-  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>${jetty.home}/logs/rapla.log</file>
-    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-      <fileNamePattern>${jetty.home}/logs/rapla_%d{yyyy-MM-dd}.log</fileNamePattern>
-      <maxHistory>30</maxHistory>
-      <cleanHistoryOnStart>true</cleanHistoryOnStart>
-    </rollingPolicy>
-    <encoder>
-      <pattern>%d{HH:mm:ss.SSS} %-4relative [%thread] %-5level %class{0}.%method %logger{35} - %msg%n</pattern>
-    </encoder>
-  </appender>
-
-  <!-- LevelChangePropagator syncs Logback per-logger levels down to JUL so the
-       SLF4JBridgeHandler installed in RaplaSpringBootApplication.main /
-       SpringRaplaClient.main captures DEBUG events from JUL callers that JUL
-       would otherwise filter early. -->
-  <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator">
-    <resetJUL>true</resetJUL>
-  </contextListener>
-
-  <!-- Third-party noise control -->
-  <logger name="org.eclipse.jetty.plus.webapp.PlusConfiguration" level="WARN"/>
-  <logger name="org.eclipse.jetty.webapp.StandardDescriptorProcessor" level="WARN"/>
-  <logger name="net.fortuna.ical4j.model.TimeZoneRegistryImpl" level="ERROR" />
-  <logger name="net.fortuna.ical4j.model.*" level="INFO" />
-
-  <!-- rapla code uses class-named SLF4J loggers (org.rapla.*) plus a handful of
-       named subsystem loggers (PRD 053 § "Child logger decision"). Tune via the
-       package path for fine control. -->
-  <logger name="org.rapla" level="INFO" />
-
-  <!-- Named subsystem loggers — operators tune these independently.
-       Defaults match the legacy behaviour (root rapla INFO inheritance). -->
-  <!-- <logger name="rapla.webservice" level="DEBUG"/>     EWS wire log -->
-  <!-- <logger name="rapla.exchangeupdate" level="INFO"/>  Exchange sync audit -->
-  <!-- <logger name="rapla.ldap" level="INFO"/>            JNDI/LDAP -->
-  <!-- <logger name="rapla.ical" level="INFO"/>            iCal export subsystem -->
-  <!-- <logger name="rapla.404" level="WARN"/>             HTTP missing-resource warnings -->
-
-  <root level="info">
-    <appender-ref ref="STDOUT" />
-    <appender-ref ref="STDERR" />
-    <appender-ref ref="FILE" />
+  <root level="INFO">
+    <appender-ref ref="STDOUT"/>
   </root>
 </configuration>

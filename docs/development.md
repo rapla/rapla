@@ -12,6 +12,7 @@ This guide covers what's specific to developing rapla on **WSL2 with the OpenWeb
 | **Full JNLP + OWS launch with self-signing** (this guide) | `.agents/skills/test-jnlp-launch/SKILL.md` |
 | JNLP code signing — YubiKey (`sign-pkcs11`) & self-signed (`sign-jks`) profiles | [docs/signing.md](signing.md) |
 | Six known JNLP build/code defects | [memory: project_jnlp_signing_pitfalls](#known-jnlp-defects) (also in agent memory) |
+| Where logs land, how to change levels, what's bundled | [docs/logging.md](logging.md) |
 
 ## Bootstrap a fresh WSL2 Ubuntu environment
 

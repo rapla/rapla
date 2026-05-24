@@ -74,7 +74,7 @@ change. Profiles work too: `config/application-prod.yml` activated with
 | `server.port` | `8051` | HTTP port |
 | `rapla.oauth.public-base-url` | empty (request-derived) | Leave empty behind a reverse proxy that sets `X-Forwarded-*`; set explicitly only for an external IdP. |
 | `rapla.file-datasources.raplafile` | `data/data.xml` | XML store path, or use a database (below) |
-| `logging.level.org.rapla` | `INFO` | |
+| `logging.level.org.rapla` | `INFO` | See [`logging.md`](logging.md) for the full picture (file locations, access log, profile-based stdout-only, full-replace, JUL bridge). |
 
 Behind a reverse proxy / load balancer, keep `server.forward-headers-strategy:
 FRAMEWORK` (the default) so Rapla derives correct absolute URLs from

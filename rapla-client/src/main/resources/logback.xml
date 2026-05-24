@@ -1,4 +1,13 @@
 <configuration>
+  <!-- Swing desktop client logback config (bundled in rapla-client.jar; loaded
+       at JNLP launch by AnnotationConfigApplicationContext — Swing does NOT
+       use Spring Boot, so logback.xml not logback-spring.xml).
+
+       org.rapla defaults to INFO, matching the server's posture (post-cleanup
+       2026-05-24). Opt into DEBUG at launch:
+         java -DRAPLA_LOG_LEVEL=DEBUG ...
+       or via the JNLP launcher's JVM args. Per-subsystem tuning by
+       overriding the bundled config: -Dlogback.configurationFile=/path/to/custom-logback.xml -->
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
     <target>System.out</target>
     <encoder>
@@ -14,14 +23,15 @@
   </contextListener>
 
   <!-- Root at INFO so the JUL bridge doesn't flood the log with AWT/Swing/X11
-       chatter. Rapla code is opted into DEBUG below. -->
+       chatter. Rapla code at INFO by default; raise to DEBUG via JVM arg. -->
   <root level="INFO">
     <appender-ref ref="STDOUT" />
   </root>
 
-  <!-- rapla code uses class-named SLF4J loggers (org.rapla.*) plus a handful of
-       named subsystem loggers (PRD 053 § "Child logger decision"). -->
-  <logger name="org.rapla" level="DEBUG"/>
+  <!-- rapla code uses class-named SLF4J loggers (org.rapla.*) plus a handful
+       of named subsystem loggers (PRD 053 § "Child logger decision"). Default
+       INFO; ops opts into DEBUG via -DRAPLA_LOG_LEVEL=DEBUG. -->
+  <logger name="org.rapla" level="${RAPLA_LOG_LEVEL:-INFO}"/>
 
   <!-- Named subsystem loggers — operators tune these independently. -->
   <!-- <logger name="rapla.webservice" level="DEBUG"/>     -->

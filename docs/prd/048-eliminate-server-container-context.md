@@ -218,3 +218,53 @@ All resolved 2026-05-18 — design complete, ready to implement.
    so the dhbwrapla migration is part of the same coordinated change. Phase 2
    (`ReloadService`) lands with or just after Phase 1. Cross-reference from
    PRD 003 D2, but this PRD does not block on PRD 003's other work.
+
+## Adjacent cleanup — commons-collections4 → in-tree helpers (2026-05-24)
+
+Not in this PRD's main goal; folded in because it touches the same file
+(`LocalAbstractCachableOperator`) and removes pre-Spring scaffolding in the
+same spirit. Apache `commons-collections4` had exactly two consumers in the
+whole reactor, both private fields of `LocalAbstractCachableOperator`:
+
+- `DualHashBidiMap<String, ReferenceInfo> externalIds` — bidirectional
+  external-id ↔ entity-reference map (Dualis import, KEY_EXTERNALID
+  annotation, ExchangeWebServices UIDs).
+- `DualTreeBidiMap<String, DeleteUpdateEntry> deleteUpdateSet` — the
+  change-feed structure that powers `getEntities(user, since=T)` and the
+  ~10 s update-history polling that drives multi-pod cache invalidation
+  (`docs/architecture/locking.md`). Needs replace-by-key **and**
+  range-scan-by-value, which is why a plain `TreeMap` couldn't do it.
+
+Both replaced with package-private helpers in `rapla-server`:
+
+| Helper | Backing | Methods | Replaces |
+|---|---|---|---|
+| `TwoWayMap<K,V>` | two `HashMap`s kept in sync | `put`, `get`, `getKey`, `remove` | `DualHashBidiMap` |
+| `IndexedSortedMap<K,V>` | `HashMap<K,V>` + `TreeSet<V>` with external `Comparator` | `put` (replaces & evicts old from sorted view), `get`, `remove` (returns prev), `tailSetByValue` | `DualTreeBidiMap` |
+
+12 tier-1 unit tests cover the load-bearing invariants:
+
+- Equal-timestamp tie-break in the `Comparator` does not collapse same-timestamp
+  entries in the `TreeSet` (`DeleteUpdateEntry.compareTo` tie-breaks on id —
+  removing the tie-break would silently lose change-feed entries).
+- `put(k, newValue)` removes the old value from the sorted view (otherwise a
+  second update to the same id would leave two entries in the change feed).
+- `remove(k)` returns the previous value (`addToDeleteUpdate` at
+  `LocalAbstractCachableOperator.java:1551` uses the return for a warning log).
+- `TwoWayMap.put` evicts both directions when the new key or value collides.
+
+Dropped from poms:
+
+- `commons-collections4` dependency in `rapla-server/pom.xml`.
+- `commons-collections4` dependencyManagement entry + `commons-collections.version`
+  property in `rapla-bom/pom.xml`.
+- Dead `guava.version` and `requestfactory.version` properties in
+  `rapla-bom/pom.xml` — neither artifact appears in any `<dependency>` block
+  nor in `mvn dependency:tree` (residue from the pre-Spring-Boot era).
+
+Net delta: 4 dep/property lines removed, ~115 LOC of focused in-tree code
+added (helpers + tests), one transitive third-party library out of the
+reactor. Verified by full reactor `mvn clean compile` + `mvn test`
+(rapla-core, rapla-client, rapla-server all green; rapla-app reds are
+unrelated parallel auth/SPA WIP — see memory
+`project_spring_boot_auth_wip_failures`).

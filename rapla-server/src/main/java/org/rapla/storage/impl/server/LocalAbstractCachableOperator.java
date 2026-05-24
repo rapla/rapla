@@ -21,6 +21,7 @@ import org.rapla.components.util.DateTools;
 import org.rapla.components.util.IOUtil;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.Tools;
+import org.rapla.components.util.TwoWayMap;
 import org.rapla.components.util.iterator.IterableChain;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
