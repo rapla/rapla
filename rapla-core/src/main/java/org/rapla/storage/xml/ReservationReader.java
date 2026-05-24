@@ -177,7 +177,7 @@ public class ReservationReader extends RaplaXMLReader {
                 if (requestStatus != null){
                     reservation.setRequestStatusForId(allocatableId.getId(), requestStatus);
                 } else {
-                    LOGGER.error("Unknown request status " + requestStatusString + " for " + reservation.getId());
+                    LOGGER.error("Unknown request status {} for {}", requestStatusString, reservation.getId());
                 }
 
             }

@@ -285,7 +285,7 @@ public class TemplateEdit extends RaplaGUIComponent
             }
             catch (RaplaException e)
             {
-                LOGGER.error("Could not resolve username for user: " + e.getMessage(), e);
+                LOGGER.error("Could not resolve username for user: {}", e.getMessage(), e);
             }
         }
         return username;

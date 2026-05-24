@@ -122,7 +122,7 @@ public class ArchiverServiceImpl  implements ArchiverService
         }
         if (toRemove.size() > 0)
         {
-            LOGGER.info("Removing " + toRemove.size() + " old events.");
+            LOGGER.info("Removing {} old events.", toRemove.size());
             Reservation[] eventsToRemove = toRemove.toArray(Reservation.RESERVATION_ARRAY);
             int STEP_SIZE = 100;
             for (int i = 0; i < eventsToRemove.length; i += STEP_SIZE)

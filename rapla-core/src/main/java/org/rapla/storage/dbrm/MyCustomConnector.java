@@ -68,8 +68,7 @@ public class MyCustomConnector implements CustomConnector
             }
             catch (Exception ex)
             {
-                LOGGER.info("impersonation renewal failed (" + ex.getMessage()
-                        + "), falling back to admin refresh");
+                LOGGER.info("impersonation renewal failed ({}), falling back to admin refresh", ex.getMessage());
             }
         }
 
@@ -90,8 +89,7 @@ public class MyCustomConnector implements CustomConnector
             }
             catch (Exception refreshFailed)
             {
-                LOGGER.info("refresh-token reauth failed (" + refreshFailed.getMessage()
-                        + "), falling back to password reauth");
+                LOGGER.info("refresh-token reauth failed ({}), falling back to password reauth", refreshFailed.getMessage());
             }
         }
 
@@ -119,7 +117,7 @@ public class MyCustomConnector implements CustomConnector
         final LoginTokens loginTokens;
         try {
             loginTokens = remoteAuthentificationService.login(new org.rapla.storage.dbrm.LoginCredentials(username, password, connectAs));
-            LOGGER.info("Reauthenticating user " + username + (connectAs != null ? " as " + connectAs : ""));
+            LOGGER.info("Reauthenticating user {}{}", username, (connectAs != null ? " as " + connectAs : ""));
         } catch (RaplaSecurityException e) {
             wrongLoginCounter++;
             throw e;
@@ -191,7 +189,7 @@ public class MyCustomConnector implements CustomConnector
             remoteConnectionInfo.setRefreshToken(newRefresh);
             tokenStore.tryWrite(newRefresh);
         }
-        LOGGER.info("refresh-token reauth succeeded against " + url);
+        LOGGER.info("refresh-token reauth succeeded against {}", url);
         return newAccess;
     }
 
@@ -234,7 +232,7 @@ public class MyCustomConnector implements CustomConnector
         String newToken = extractJsonString(respBody, "access_token");
         if (newToken == null) return null;
         remoteConnectionInfo.setImpersonationToken(newToken, target);
-        LOGGER.info("impersonation renewal succeeded (target=" + target + ")");
+        LOGGER.info("impersonation renewal succeeded (target={})", target);
         return newToken;
     }
 

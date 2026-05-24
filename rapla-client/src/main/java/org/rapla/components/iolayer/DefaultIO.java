@@ -255,13 +255,11 @@ public class DefaultIO  implements IOInterface{
     }
 
     void logPaperSize(Paper paper) {
-        if (LOGGER.isDebugEnabled())
-            LOGGER.debug(
-                         (paper.getImageableX()/72) * INCH_TO_MM
-                         +", " +(paper.getImageableY()/72) * INCH_TO_MM
-                         +", " +(paper.getImageableWidth() /72) * INCH_TO_MM
-                         +", " +(paper.getImageableHeight() /72) * INCH_TO_MM
-                         );
+        LOGGER.debug("{}, {}, {}, {}",
+                (paper.getImageableX() / 72) * INCH_TO_MM,
+                (paper.getImageableY() / 72) * INCH_TO_MM,
+                (paper.getImageableWidth() / 72) * INCH_TO_MM,
+                (paper.getImageableHeight() / 72) * INCH_TO_MM);
     }
 
     public String saveFile(Frame frame,String dir,final  String[] fileExtensions, String filename, byte[] content) throws IOException {

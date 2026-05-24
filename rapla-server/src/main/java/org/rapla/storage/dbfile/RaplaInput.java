@@ -45,7 +45,7 @@ public final class RaplaInput {
     }
 
     public void read(URL file, RaplaSAXHandler handler, boolean validate) throws RaplaException,IOException {
-        LOGGER.debug("Parsing " + file.toString());
+        LOGGER.debug("Parsing {}", file);
         fileSource = file;
         reader = null;
         parseData( handler , validate);

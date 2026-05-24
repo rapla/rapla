@@ -266,7 +266,7 @@ public class RemoteOperator
             UpdateEvent evt = serv.refresh(clientRepoVersion);
             refresh(evt);
         } catch (EntityNotFoundException ex) {
-            LOGGER.error("Refreshing all resources due to " + ex.getMessage(), ex);
+            LOGGER.error("Refreshing all resources due to {}", ex.getMessage(), ex);
             refreshAll();
         } catch (RaplaException ex) {
             throw ex;
@@ -299,7 +299,7 @@ public class RemoteOperator
             try {
                 refresh(evt);
             } catch (EntityNotFoundException ex) {
-                LOGGER.error("Refreshing all resources due to " + ex.getMessage(), ex);
+                LOGGER.error("Refreshing all resources due to {}", ex.getMessage(), ex);
                 refreshAll();
             }
         }).finally_(() -> refreshInProgress = false);
@@ -512,10 +512,10 @@ public class RemoteOperator
         // Store on server
         if (LOGGER.isDebugEnabled()) {
             for (Entity entity : evt.getStoreObjects()) {
-                LOGGER.debug("dispatching store for: " + entity);
+                LOGGER.debug("dispatching store for: {}", entity);
             }
             for (ReferenceInfo id : evt.getRemoveIds()) {
-                LOGGER.debug("dispatching remove for: " + id);
+                LOGGER.debug("dispatching remove for: {}", id);
             }
             //            Iterator<Entity> it =evt.getRemoveObjects().iterator();
             //            while (it.hasNext()) {
@@ -719,12 +719,12 @@ public class RemoteOperator
             return commandQueue.supply(() -> serv.queryAppointments(new QueryAppointments(ownerIds, allocatableId, start, end, annotationQuery, requestsOnly))).thenApply(list -> {
                 AppointmentMapping filtered;
                 {
-                    LOGGER.debug("event server call took  " + (System.currentTimeMillis() - time) + " ms");
+                    LOGGER.debug("event server call took  {} ms", (System.currentTimeMillis() - time));
                 }
                 {
                     long time2 = System.currentTimeMillis();
                     filtered = processReservationResult(list, filters);
-                    LOGGER.debug("event post processing took  " + (System.currentTimeMillis() - time2) + " ms");
+                    LOGGER.debug("event post processing took  {} ms", (System.currentTimeMillis() - time2));
                 }
 
                 return filtered;
@@ -839,7 +839,7 @@ public class RemoteOperator
 
         if ( entity instanceof  Reservation) {
             // We ignore Reservations on the client cache
-            LOGGER.debug("Ignoring reservation " + entity);
+            LOGGER.debug("Ignoring reservation {}", entity);
         } else {
             super.addToCache(entity);
         }
@@ -1009,10 +1009,10 @@ public class RemoteOperator
         final long time = System.currentTimeMillis();
         final Promise<List<ReservationImpl>> listPromise = commandQueue.supply(() -> serv.getAllAllocatableBindings(new AllocatableBindingsRequest(allocatableIds, appointmentArray, reservationIds)));
         return listPromise.thenApply((serverResult) -> {
-            LOGGER.debug("event server call took  " + (System.currentTimeMillis() - time) + " ms");
+            LOGGER.debug("event server call took  {} ms", (System.currentTimeMillis() - time));
             long time2 = System.currentTimeMillis();
             Map<ReferenceInfo<Allocatable>, Map<Appointment, Collection<Appointment>>> map = getMap(allocatables, appointments, ignoreList, serverResult);
-            LOGGER.debug("event post processing took  " + (System.currentTimeMillis() - time2) + " ms");
+            LOGGER.debug("event post processing took  {} ms", (System.currentTimeMillis() - time2));
             return map;
         }
         );

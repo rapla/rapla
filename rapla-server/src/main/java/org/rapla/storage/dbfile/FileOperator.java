@@ -196,7 +196,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
     {
         if (!isConnected())
         {
-            LOGGER.info("Connecting: " + getURL());
+            LOGGER.info("Connecting: {}", getURL());
             cache.clearAll();
             externalSyncEntities.clear();
             addInternalTypes(cache);
@@ -248,8 +248,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
     protected void loadData(LocalCache cache) throws RaplaException
     {
-        if (LOGGER.isDebugEnabled())
-            LOGGER.debug("Reading data from file:" + getURL());
+        LOGGER.debug("Reading data from file:{}", getURL());
 
         // TODO implement history storage
         java.time.LocalDateTime lastUpdated = getCurrentTimestamp();
@@ -274,13 +273,13 @@ final public class FileOperator extends LocalAbstractCachableOperator
         }
         catch (FileNotFoundException ex)
         {
-            LOGGER.warn("Data file not found " + getURL() + " creating default system.");
+            LOGGER.warn("Data file not found {} creating default system.", getURL());
             createDefaultSystem(entityStore);
             isLowerThen1_2 = false;
         }
         catch (IOException ex)
         {
-            LOGGER.warn("Loading error: " + getURL());
+            LOGGER.warn("Loading error: {}", getURL());
             throw new RaplaException("Can't load file at " + getURL() + ": " + ex.getMessage());
         }
         try
@@ -340,8 +339,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
                 cache.putPassword(id, password);
             }
             // contextualize all Entities
-            if (LOGGER.isDebugEnabled())
-                LOGGER.debug("Entities contextualized");
+            LOGGER.debug("Entities contextualized");
             // init history
             for (Entity entity : new IterableChain<>(list, migratedTemplates))
             {
@@ -617,7 +615,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
                 final Entity e = tryResolve(id);
                 if ( e == null)
                 {
-                    LOGGER.warn("Trying to remove an already removed entity " + id);
+                    LOGGER.warn("Trying to remove an already removed entity {}", id);
                 }
                 else
                 {

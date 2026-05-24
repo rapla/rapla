@@ -113,7 +113,7 @@ class ClassificationFilterReader extends RaplaXMLReader {
                 String attributeName = getString(atts,"attribute");
                 attribute = dynamicType.getAttribute(attributeName);
                 if (attribute == null) {
-                	LOGGER.error("Error reading filter with " + dynamicType +" Attribute: " + attributeName);
+                	LOGGER.error("Error reading filter with {} Attribute: {}", dynamicType, attributeName);
                 	return;
                 }
             }

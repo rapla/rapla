@@ -435,11 +435,9 @@ import java.time.LocalDateTime;
             addInternalTypes(cache);
             loadData(c, cache);
 
-            if (LOGGER.isDebugEnabled())
-                LOGGER.debug("Entities contextualized");
+            LOGGER.debug("Entities contextualized");
 
-            if (LOGGER.isDebugEnabled())
-                LOGGER.debug("All ConfigurationReferences resolved");
+            LOGGER.debug("All ConfigurationReferences resolved");
         }
         catch (RaplaException ex)
         {

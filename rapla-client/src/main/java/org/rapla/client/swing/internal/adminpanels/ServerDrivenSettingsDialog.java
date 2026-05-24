@@ -246,7 +246,7 @@ public class ServerDrivenSettingsDialog
         }
         catch (Exception e)
         {
-            LOGGER.error("Could not load panel " + summary.id(), e);
+            LOGGER.error("Could not load panel {}", summary.id(), e);
             rightPanel.add(new JLabel("Could not load panel: " + e.getMessage()), "current");
         }
         ((CardLayout) rightPanel.getLayout()).show(rightPanel, "current");
@@ -263,7 +263,7 @@ public class ServerDrivenSettingsDialog
         }
         catch (Exception ex)
         {
-            LOGGER.error("Save failed for panel " + summary.id(), ex);
+            LOGGER.error("Save failed for panel {}", summary.id(), ex);
             javax.swing.JOptionPane.showMessageDialog(rightPanel, ex.getMessage(),
                     i18n.getString("error"), javax.swing.JOptionPane.ERROR_MESSAGE);
         }
@@ -283,7 +283,7 @@ public class ServerDrivenSettingsDialog
         }
         catch (Exception e)
         {
-            LOGGER.error("Could not load legacy panel " + entry.title, e);
+            LOGGER.error("Could not load legacy panel {}", entry.title, e);
             rightPanel.add(new JLabel("Could not load: " + e.getMessage()), "current");
         }
         ((CardLayout) rightPanel.getLayout()).show(rightPanel, "current");
@@ -307,7 +307,7 @@ public class ServerDrivenSettingsDialog
             }
             catch (Exception ex)
             {
-                LOGGER.error("Save failed for legacy panel " + entry.title, ex);
+                LOGGER.error("Save failed for legacy panel {}", entry.title, ex);
                 javax.swing.JOptionPane.showMessageDialog(bar, ex.getMessage(),
                         i18n.getString("error"), javax.swing.JOptionPane.ERROR_MESSAGE);
             }
@@ -324,7 +324,7 @@ public class ServerDrivenSettingsDialog
         }
         catch (Exception e)
         {
-            LOGGER.error("Action " + actionId + " on panel " + panelId + " failed", e);
+            LOGGER.error("Action {} on panel {} failed", actionId, panelId, e);
             return ActionResult.fail(e.getMessage() == null ? "Action failed" : e.getMessage());
         }
     }

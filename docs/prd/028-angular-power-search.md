@@ -36,9 +36,12 @@ Out of scope:
 
 - The reservation-edit flow itself (PRD 026 Phase 2+).
 - Admin views, plugin UIs, user / category administration.
-- Server-side search endpoint design — separate PRD once UX is
-  locked. Until then assume `/storage/queryAppointments` +
-  `/storage/resources` + a future `/search` exist.
+- Server-side search endpoint design — **specified in
+  [PRD 035 §"2026-05-24 design refinement" §9](035-rapla-mcp-server.md)**
+  as the GraphQL `search` root + per-type `searchText` args. Phase 2
+  consumes that. Until those land, the SPA can stub against
+  `/storage/queryAppointments` + `/storage/resources` while the
+  GraphQL substrate is built.
 - Conflict detail UI; this PRD only ranks conflicts as a result
   type, clicking one defers to a future conflict-detail view.
 
@@ -154,12 +157,14 @@ made.
    "show all" expander, or let the longest tier dominate? Power
    users with thousands of allocatables will hit this; needs a
    bounded query shape on the backend either way.
-3. **Asymmetric scope per tier.** Should E1/E2 query the full
+3. **Asymmetric scope per tier.** ~~Should E1/E2 query the full
    reservation history (years back) or only a bounded window
-   (say, ±1 year around the viewport)? Full history is honest but
-   slow; bounded is fast but misleads when the only match is
-   outside the window. Likely: bounded with a "search older →"
-   row at the bottom of E4.
+   (say, ±1 year around the viewport)?~~
+   **Resolved 2026-05-24 via PRD 035 §"2026-05-24 design refinement"
+   §9** — bounded window via `from`/`to` args on the GraphQL `search`
+   root, server default ±1 year around `serverTime`, client-overridable.
+   "Search older →" expander widens the window on demand by re-issuing
+   the query with broader `from`/`to`.
 4. **Conflict tier interaction.** When the user clicks a conflict
    row that maps to two off-screen reservations, jump to which?
    Earliest start? Or open a transient "conflict pair" preview?
@@ -182,10 +187,16 @@ made.
    search box, or live as a separate panel? Search subsumes most
    filter use cases but not "show me all reservations of type X
    in this period" — that's still a filter.
-10. **Permission leakage.** §12 of AGENTS.md is the binding
+10. **Permission leakage.** ~~§12 of AGENTS.md is the binding
     constraint — search must not echo back ids the user can't
     read. The `/storage/resources` payload is already filtered;
-    confirm a future `/search` endpoint uses the same boundary.
+    confirm a future `/search` endpoint uses the same boundary.~~
+    **Resolved 2026-05-24 via PRD 035 §"2026-05-24 design refinement"
+    §9** — the GraphQL `search` resolver applies §12 at both layers:
+    (a) drop hits whose entity is unreadable; (b) drop hits whose
+    matched field is unreadable (existence-of-match is information,
+    don't leak it). Mandatory `GraphQlLeakTest` coverage of search
+    paths (PRD 035 §Tests).
 
 ## Plan
 
@@ -198,10 +209,14 @@ To be drafted once open questions are decided. Likely shape:
   rendering) wired to **client-side filtering** of the already-loaded
   allocatable cache. No server changes. Tier A1/A2/A3 work end-to-end;
   E-tiers stubbed as "search reservations →" CTA.
-- **Phase 2** — add reservation search. Reuses
-  `/storage/queryAppointments` for E1/E2 (viewport-bounded) plus a
-  new `/search/reservations?q=` endpoint for E3/E4 (bounded
-  window). Server PRD here.
+- **Phase 2** — add reservation search. Consumes
+  [PRD 035 §"2026-05-24 design refinement" §9](035-rapla-mcp-server.md):
+  GraphQL `reservations(allocatableIds, from, to, searchText)` for
+  E1/E2 + `search(text, scope, from, to)` for E3/E4 + `conflicts`
+  scope for conflict rows. Tier composition is client-side via
+  multiple aliased queries in one GraphQL request (e.g. `inViewport:
+  reservations(...)`, `selectedAll: reservations(...)`, `global:
+  search(...)` — one round trip, server parallelizes).
 - **Phase 3** — recency ring (read/write), tier ordering by
   recency.
 - **Phase 4** — conflict result type; piggy-backs on

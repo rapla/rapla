@@ -795,10 +795,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
                 continue;
             }
 
-            if (LOGGER.isDebugEnabled())
-            {
-                LOGGER.debug("Storing old: {}", entity);
-            }
+            LOGGER.debug("Storing old: {}", entity);
 
             if (persistentEntity instanceof Appointment)// || ((persistantEntity instanceof Category) && storeObjects.contains( ((Category) persistantEntity).getParent())))
             {

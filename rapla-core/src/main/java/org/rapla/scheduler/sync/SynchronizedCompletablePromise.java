@@ -42,14 +42,10 @@ public class SynchronizedCompletablePromise<T> extends  SynchronizedPromise<T> i
     public static  <T> T waitFor(Promise<T> promise, int timeout) throws Exception
     {
         final CompletableFuture<T> future = getCompletableFuture(promise, null);
-        final boolean isDebugEnabled = LOGGER.isDebugEnabled();
-        long index = isDebugEnabled ? System.currentTimeMillis() : 0;
+        long index = System.currentTimeMillis();
         try
         {
-            if (isDebugEnabled)
-            {
-                LOGGER.debug("Aquire lock " + index);
-            }
+            LOGGER.debug("Aquire lock {}", index);
             T t;
             if ( timeout >=0)
             {
@@ -59,10 +55,7 @@ public class SynchronizedCompletablePromise<T> extends  SynchronizedPromise<T> i
             {
                 t = future.get();
             }
-            if (isDebugEnabled)
-            {
-                LOGGER.debug("SwingUtilities waitFor " + index);
-            }
+            LOGGER.debug("SwingUtilities waitFor {}", index);
             return t;
 
         }
@@ -83,14 +76,11 @@ public class SynchronizedCompletablePromise<T> extends  SynchronizedPromise<T> i
 
     public static <T> CompletableFuture<T> getCompletableFuture(Promise<T> promise, Function<Throwable,Throwable> exceptionMapper) {
         CompletableFuture<T> future;
-        final boolean isDebugEnabled = LOGGER.isDebugEnabled();
-        long index = isDebugEnabled ? System.currentTimeMillis() : 0;
+        long index = System.currentTimeMillis();
         future = new CompletableFuture<>();
         promise.handle((t, ex) ->
         {
-            if (isDebugEnabled) {
-                LOGGER.debug("promise complete " + index);
-            }
+            LOGGER.debug("promise complete {}", index);
             if (ex != null) {
                 if ( exceptionMapper != null)
                 {
@@ -100,9 +90,7 @@ public class SynchronizedCompletablePromise<T> extends  SynchronizedPromise<T> i
             } else {
                 future.complete(t);
             }
-            if (isDebugEnabled) {
-                LOGGER.debug("Release lock  " + index);
-            }
+            LOGGER.debug("Release lock  {}", index);
             return t;
         });
         return future;

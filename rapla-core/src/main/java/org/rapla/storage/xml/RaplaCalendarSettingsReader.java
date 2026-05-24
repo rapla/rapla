@@ -132,7 +132,7 @@ public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
                 }
                 else
                 {
-                    LOGGER.error("Can't find type with key " + keyref + " while loading calendar selections " + ( title != null ? "for " + title : ""));
+                    LOGGER.error("Can't find type with key {} while loading calendar selections {}", keyref, ( title != null ? "for " + title : ""));
                 }
             }
         }

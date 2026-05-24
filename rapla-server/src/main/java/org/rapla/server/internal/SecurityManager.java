@@ -98,10 +98,7 @@ import java.time.LocalDateTime;
             if (original == null)
             {
                 permitted = entityOwnerReference != null && user.getReference().equals(entityOwnerReference);
-                if (LOGGER.isDebugEnabled())
-                {
-                    LOGGER.debug("Permissions for new object {}\nUser check: {} = {}", entity, user, operator.tryResolve(entityOwnerReference));
-                }
+                LOGGER.debug("Permissions for new object {}\nUser check: {} = {}", entity, user, operator.tryResolve(entityOwnerReference));
             }
             else
             {

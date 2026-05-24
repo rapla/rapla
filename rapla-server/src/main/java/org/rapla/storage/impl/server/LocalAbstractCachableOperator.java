@@ -2221,8 +2221,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
         for (Entity entity : storeObjects)
         {
-            if (LOGGER.isDebugEnabled())
-                LOGGER.debug("Contextualizing {}", entity);
+            LOGGER.debug("Contextualizing {}", entity);
             ((EntityReferencer) entity).setResolver(store);
             if (entity instanceof DynamicType)
             {
@@ -2503,8 +2502,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             // Classifiables need update?
             if (!dependant.needsChange(type) && !toRemove)
                 continue;
-            if (LOGGER.isDebugEnabled())
-                LOGGER.debug("Classifiable {} needs change!", entity);
+            LOGGER.debug("Classifiable {} needs change!", entity);
             // Classifiables are allready on the store list
             addChangedDependencies(evt, user, store, type, entity, toRemove);
         }
@@ -2922,9 +2920,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     LocalDateTime lastChangeTime = ((LastChangedTimestamp) entity).getLastChanged();
                     if (lastChangeTimePersistant != null && lastChangeTime != null && lastChangeTimePersistant.isAfter(lastChangeTime))
                     {
-                        LOGGER.warn("There is a newer  version for: " + entity.getId() + " stored version :" + SerializableDateTimeFormat.INSTANCE
-                                .formatTimestamp(lastChangeTimePersistant) + " version to store :" + SerializableDateTimeFormat.INSTANCE
-                                .formatTimestamp(lastChangeTime));
+                        LOGGER.warn("There is a newer  version for: {} stored version :{} version to store :{}",
+                                entity.getId(),
+                                SerializableDateTimeFormat.INSTANCE.formatTimestamp(lastChangeTimePersistant),
+                                SerializableDateTimeFormat.INSTANCE.formatTimestamp(lastChangeTime));
                         throw new RaplaNewVersionException(getI18n().format("error.new_version", entity.toString()));
                     }
                 }

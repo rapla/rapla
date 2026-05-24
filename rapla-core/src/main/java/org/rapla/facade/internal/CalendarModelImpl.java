@@ -991,8 +991,7 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
 
     @Override public AppointmentMapping queryAppointmentBindingsSync(TimeInterval interval) throws RaplaException
     {
-        final boolean debugEnabled = LOGGER.isDebugEnabled();
-        final long start = debugEnabled ? System.currentTimeMillis() : 0;
+        final long start = System.currentTimeMillis();
         Collection<Allocatable> allocatables = new LinkedHashSet<>();
         Collection<User> owners = new LinkedHashSet<>();
         Collection<RaplaObject> selectedRaplaObjects = getSelectedRaplaObjects(true);
@@ -1005,17 +1004,14 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
             }
         }
 
-        final long selectedAllocatableTimes = (debugEnabled) ? System.currentTimeMillis() - start : 0;
+        final long selectedAllocatableTimes = System.currentTimeMillis() - start;
         LocalDateTime startDate = interval != null ? interval.getStart() : null;
         LocalDateTime endDate = interval != null ? interval.getEnd() : null;
 
         boolean useFilter = getSelectedConflicts().isEmpty() && getSelectedResourceRequests().isEmpty();
         AppointmentMapping result = queryAppointmentBindingsSync(allocatables, owners, startDate, endDate, useFilter);
-        if (debugEnabled)
-        {
-            LOGGER.debug("queryAppointments for {} resources took {} ms (selected allocatables {} ms). Found appointments for  {} resources.",
-                    allocatables.size(), (System.currentTimeMillis() - start), selectedAllocatableTimes, result.size());
-        }
+        LOGGER.debug("queryAppointments for {} resources took {} ms (selected allocatables {} ms). Found appointments for  {} resources.",
+                allocatables.size(), (System.currentTimeMillis() - start), selectedAllocatableTimes, result.size());
         return result;
     }
 
@@ -1146,15 +1142,9 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
     @Override public List<Allocatable> getSelectedAllocatablesSorted() throws RaplaException
     {
         List<Allocatable> result = new ArrayList<>(getSelectedAllocatablesAsList());
-        long start = 0;
-        final boolean debugEnabled = LOGGER.isDebugEnabled();
-        if (debugEnabled)
-            start = System.currentTimeMillis();
+        long start = System.currentTimeMillis();
         Collections.sort(result, new SortedClassifiableComparator(locale));
-        if (debugEnabled)
-        {
-            LOGGER.debug("sort allocatables took {} ms for {} objects.", (System.currentTimeMillis() - start), result.size());
-        }
+        LOGGER.debug("sort allocatables took {} ms for {} objects.", (System.currentTimeMillis() - start), result.size());
 
         //List<Allocatable> filled = operator.queryDependent(result);
         return result;
@@ -1169,10 +1159,7 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
 
     @NotNull
     private Collection<RaplaObject> getSelectedRaplaObjects(boolean addUser) throws RaplaException {
-        long start = 0;
-        final boolean debugEnabled = LOGGER.isDebugEnabled();
-        if (debugEnabled)
-            start = System.currentTimeMillis();
+        long start = System.currentTimeMillis();
 
         Collection<RaplaObject> result = new HashSet<>();
         Collection<RaplaObject> selectedObjectsAndChildren = getSelectedObjectsAndChildren();
@@ -1210,10 +1197,7 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
                 result.add( owner);
             }
         }
-        if (debugEnabled)
-        {
-            LOGGER.debug("getSelectedAllocatables took {} ms for {} objects.", (System.currentTimeMillis() - start), result.size());
-        }
+        LOGGER.debug("getSelectedAllocatables took {} ms for {} objects.", (System.currentTimeMillis() - start), result.size());
 
         return result;
     }

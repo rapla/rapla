@@ -85,8 +85,7 @@ public class ClientFacadeImpl implements ClientFacade, StorageUpdateListener {
      * method, causing deadlocks
      */
     public void objectsUpdated(ModificationEvent evt) {
-        if (LOGGER.isDebugEnabled())
-            LOGGER.debug("Objects updated");
+        LOGGER.debug("Objects updated");
 
         if (getWorkingUserId() != null)
         {
@@ -390,8 +389,7 @@ public class ClientFacadeImpl implements ClientFacade, StorageUpdateListener {
                 try {
                     if (isAborting())
                         return;
-                    if (LOGGER.isDebugEnabled())
-                        LOGGER.debug("Notifying {}", listener);
+                    LOGGER.debug("Notifying {}", listener);
                     listener.dataChanged(modificationEvent);
                 } catch (Exception ex) {
                     LOGGER.error("update-exception", ex);

@@ -497,10 +497,7 @@ public class FacadeImpl implements RaplaFacade {
 		final User user = null;
 		return	operator.getConflicts(user).thenApply(conflicts->
 				{
-					if (LOGGER.isDebugEnabled())
-					{
-						LOGGER.debug("getConflits called. Returned {} conflicts.", conflicts.size());
-					}
+					LOGGER.debug("getConflits called. Returned {} conflicts.", conflicts.size());
 					return conflicts;
 				}
 			);
@@ -952,9 +949,7 @@ public class FacadeImpl implements RaplaFacade {
 			entity.setResolver(operator);
 			if ((entity instanceof Reservation) && user == null)
 				throw new IllegalStateException("The reservation " + entity + " needs an owner but user specified is null ");
-			if (LOGGER.isDebugEnabled()) {
-				LOGGER.debug("new {}", entity.getId());
-			}
+			LOGGER.debug("new {}", entity.getId());
 			if ( entity instanceof Reservation || entity instanceof Allocatable)
 			{
 	             entity.setOwner(user);

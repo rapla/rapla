@@ -617,28 +617,22 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
 	{
 
         // Validate the credentials specified by the user
-        if ( LOGGER.isDebugEnabled() ) {
-            log("  validating credentials by binding as the user");
-       }
+        LOGGER.debug("  validating credentials by binding as the user");
 
        // Set up security environment to bind as the user
        context.addToEnvironment(Context.SECURITY_PRINCIPAL, userPath);
        context.addToEnvironment(Context.SECURITY_CREDENTIALS, credentials);
 
        try {
-           if ( LOGGER.isDebugEnabled() ) {
-               log("  binding as "  + userPath);
-           }
-           //Attributes attr = 
+           LOGGER.debug("  binding as {}", userPath);
+           //Attributes attr =
            String attributeName = userPath;
            Attributes attributes = context.getAttributes(attributeName, null);
            JNDIUser user = createUser(username, userPath, attributes);
            return user;
        }
        catch (NamingException e) {
-           if ( LOGGER.isDebugEnabled() ) {
-               log("  bind attempt failed" + e.getMessage());
-           }
+           LOGGER.debug("  bind attempt failed{}", e.getMessage());
            return null;
        }
        finally
@@ -717,10 +711,8 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
             attrIds = new String[0];
         constraints.setReturningAttributes(attrIds);
 
-        if (LOGGER.isDebugEnabled()) {
-            log("  Searching for " + username);
-            log("  base: " + userBase + "  filter: " + filter);
-        }
+        LOGGER.debug("  Searching for {}", username);
+        LOGGER.debug("  base: {}  filter: {}", userBase, filter);
         //filter = "";
         //Attributes attributes = new BasicAttributes(true);
         //attributes.put(new BasicAttribute("uid","admin"));
@@ -736,15 +728,13 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
         try
         {
 	        if (results == null || !results.hasMore()) {
-	            if (LOGGER.isDebugEnabled()) {
-	                log("  username not found");
-	            }
+	            LOGGER.debug("  username not found");
 	            return (null);
 	        }
 	    }
         catch ( PartialResultException ex)
         {
-        	LOGGER.info("User "+ username + " not found in jndi due to partial result.");
+        	LOGGER.info("User {} not found in jndi due to partial result.", username);
         	return (null);
         }
 
@@ -759,7 +749,7 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
             }
         } catch (PartialResultException ex) {
             // this may occur but is legal
-        	LOGGER.debug("Partial result for username " + username);
+        	LOGGER.debug("Partial result for username {}", username);
         }
 
         // Get the entry's distinguished name
@@ -771,8 +761,7 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
         name = name.addAll(entryName);
         String dn = name.toString();
 
-        if (LOGGER.isDebugEnabled())
-            log("  entry found for " + username + " with dn " + dn);
+        LOGGER.debug("  entry found for {} with dn {}", username, dn);
 
         // Get the entry's attributes
         Attributes attrs = result.getAttributes();
@@ -831,12 +820,10 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
              validated = compareCredentials(context, user, credentials);
          }
 
-         if ( LOGGER.isDebugEnabled() ) {
-             if (validated) {
-                 log("jndiRealm.authenticateSuccess: " + user.username);
-             } else {
-                 log("jndiRealm.authenticateFailure: " + user.username);
-             }
+         if (validated) {
+             LOGGER.debug("jndiRealm.authenticateSuccess: {}", user.username);
+         } else {
+             LOGGER.debug("jndiRealm.authenticateFailure: {}", user.username);
          }
          return (validated);
      }
@@ -866,8 +853,7 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
             return (false);
 
         // Validate the credentials specified by the user
-        if ( LOGGER.isDebugEnabled() )
-            log("  validating credentials");
+        LOGGER.debug("  validating credentials");
 
         boolean validated = false;
         if (hasMessageDigest()) {
@@ -940,9 +926,7 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
              return (false);
 
          // Validate the credentials specified by the user
-         if ( LOGGER.isDebugEnabled() ) {
-             log("  validating credentials by binding as the user");
-        }
+         LOGGER.debug("  validating credentials by binding as the user");
 
         // Set up security environment to bind as the user
         context.addToEnvironment(Context.SECURITY_PRINCIPAL, dn);
@@ -951,19 +935,15 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
         // Elicit an LDAP bind operation
         boolean validated = false;
         try {
-            if ( LOGGER.isDebugEnabled() ) {
-                log("  binding as "  + dn);
-            }
-            //Attributes attr = 
+            LOGGER.debug("  binding as {}", dn);
+            //Attributes attr =
             String attributeName;
             	attributeName = "";
             context.getAttributes(attributeName, null);
             validated = true;
         }
         catch (NamingException e) {
-            if ( LOGGER.isDebugEnabled() ) {
-                log("  bind attempt failed" + e.getMessage());
-            }
+            LOGGER.debug("  bind attempt failed{}", e.getMessage());
         }
 
         // Restore the original security environment
@@ -997,8 +977,7 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
     private String getAttributeValue(String attrId, Attributes attrs)
         throws NamingException {
 
-        if ( LOGGER.isDebugEnabled() )
-            log("  retrieving attribute " + attrId);
+        LOGGER.debug("  retrieving attribute {}", attrId);
 
         if (attrId == null || attrs == null)
             return null;
@@ -1032,8 +1011,7 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
 
         // Close our opened connection
         try {
-            if ( LOGGER.isDebugEnabled() )
-                log("Closing directory context");
+            LOGGER.debug("Closing directory context");
             context.close();
         } catch (NamingException e) {
             log("jndiRealm.close", e);
@@ -1092,8 +1070,8 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
         Hashtable<String,Object> env = new Hashtable<>();
 
         // Configure our directory context environment.
-        if ( LOGGER.isDebugEnabled() && connectionAttempt == 0)
-            log("Connecting to URL " + connectionURL);
+        if (connectionAttempt == 0)
+            LOGGER.debug("Connecting to URL {}", connectionURL);
         env.put(Context.INITIAL_CONTEXT_FACTORY, contextFactory);
         if (connectionName != null)
             env.put(Context.SECURITY_PRINCIPAL, connectionName);
@@ -1136,7 +1114,7 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
                 System.out.println( "Authentication failed" );
             }
         } catch (Exception ex ) {
-            ex.printStackTrace();
+            LOGGER.error("JNDI authentication test failed", ex);
         }
     }
 

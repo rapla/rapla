@@ -473,7 +473,7 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
                 }
                 catch (RaplaException e1)
                 {
-                    e1.printStackTrace();
+                    LOGGER.error("changeEmail failed", e1);
                 }
             }
         }

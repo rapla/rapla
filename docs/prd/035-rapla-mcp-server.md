@@ -1,6 +1,6 @@
 # PRD 035: rapla external integration API + MCP server
 
-**Status:** draft — **design complete 2026-05-16; implementation not started** (2026-05-13; scope broadened 2026-05-15 after design review)
+**Status:** draft — **design complete 2026-05-16; refined 2026-05-24 (SPA-on-GraphQL); implementation not started** (2026-05-13; scope broadened 2026-05-15 after design review; SPA migration moved from deferred to in-scope 2026-05-24)
 **Date:** 2026-05-13
 
 > **2026-05-15 scope change.** This PRD originally covered only an MCP server
@@ -24,17 +24,22 @@ Plan (Phase 1 onward); no further design work is required to start.
 **Deferred — not v1, by deliberate decision** (so a later reader does not read
 these as gaps):
 
-- Group **output** interfaces — input groups (typed cross-type *filtering*)
-  are v1; output interfaces (typed shared *output* fields) are deferred.
 - `findFreeSlots` multiple independent pools + one-call embedded `poolFilter`
   — v1 has a single explicit-id `poolIds`.
 - Resource (allocatable) **writes** — v1 is booking-focused (read resources,
   write reservations).
 - Subscriptions / streaming — Phase 2.
 - Rate limiting / per-key quotas — add with a real consumer.
-- Plugin-contributed schema types — OQ#8, Phase-N.
-- SPA → GraphQL migration — a separate track gated on PRDs 023/030; v1 ships
-  GraphQL for external + MCP without it.
+- Bulk type change — single-entity type change is v1; bulk is rare + confirmation
+  UX awkward (see 2026-05-24 refinement below).
+
+**Moved INTO v1 by the 2026-05-24 refinement (was previously deferred):**
+
+- SPA → GraphQL migration — now v1 (was: "separate track gated on PRDs 023/030").
+- Group **output** interfaces — now v1 alongside input group filters.
+- Plugin-contributed schema types — **revised, not just promoted:** plugins
+  get their own per-plugin APIs rather than being stitched into the core
+  schema. Supersedes OQ#8 below.
 
 **Implementation-gating item:** the Spring AI MCP starter's Spring Boot 4 /
 Jackson 3 alignment (OQ#2 residual) is a Phase-1 spike — verify before
@@ -47,6 +52,317 @@ encoding, the full error-`code` taxonomy.
 [PRD 041](041-openapi-runtime-removal.md) are independent spun-out cleanups;
 [PRD 043](043-api-keys-jwt-pat.md) details the scoped-API-key mechanism this
 PRD's Auth section sits on (supersedes PRD 031 §"API key surface").
+
+## 2026-05-24 design refinement — SPA-on-GraphQL, bulk, reshape, search
+
+**Status:** decisions locked. Updates §Architecture, §"Write mutations",
+§"Operation surface", §"Input vs. output groups", and several OQ
+resolutions below; supersedes the prior "SPA → GraphQL migration deferred"
+(OQ#4) and "Group output interfaces deferred" (formerly in the Deferred
+list above). New v1 surface area: §1–§9 below.
+
+This session moved the SPA → GraphQL migration from deferred to in scope.
+The corollary decisions tighten v1 around three principles:
+
+1. **Bounded contexts.** The core GraphQL surface covers the scheduling
+   domain only. Preferences, plugin features, calendar feed export, and
+   modification history have their own API surfaces — see §"Out of core
+   GraphQL" below.
+2. **Server-side rendering for views, descriptor-on-edit for forms.** The
+   SPA never walks raw classifications on view paths; descriptors are
+   fetched only on edit-form open. No long-lived client-side typeRegistry,
+   no Zod runtime validation.
+3. **Server is authoritative on validation.** Widget pre-validation is UX
+   convenience; every save runs L1 (GraphQL schema) + L2 (rapla semantic)
+   against the merged full object under PRD 040's lock.
+
+### 1. Three callers, three mutation input shapes
+
+| Caller | Read path | Write path |
+|---|---|---|
+| Angular SPA | `renderedBlocks` for views; `reservation(id) + type(key)` for edits | Generic `updateReservation(patch: ReservationPatch!)` — accepts type change in `classification.typeId` (admin-gated) |
+| Codegen integrator | Typed `course`/`lecture`/... roots + group-interface roots | Typed `updateCourse(patch: CoursePatch!)` etc. — reject type change with `TYPE_MISMATCH` |
+| MCP agent | `graphql_query` over the same surface | Curated `book(...)` (cautious) + the generic mutations |
+
+### 2. View paths vs edit paths
+
+| Path | Query shape | Descriptor needed? |
+|---|---|---|
+| **View** (calendar grid, table, dashboard) | `renderedBlocks(window, filter, viewType)` — server-rendered display blocks | No |
+| **Edit-open** | `reservation(id) + type(key)` in one query — atomic descriptor + entity per edit (~1 KB overhead) | Yes |
+| **Admin / introspection** | `types` standalone | Yes (full set) |
+
+`renderedBlocks` is a GraphQL field wrapping
+[PRD 030](030-server-side-view-rendering.md)'s existing
+`CalendarLayoutEngine` + `CalendarViewController` substrate (already
+shipped Phases 1–6). PRD 030's REST endpoints (`/calendar/view`,
+`/table/*`, `/export/csv`) stay for direct REST callers; CSV/iCal export
+stays REST (its own API surface — see §"Out of core GraphQL").
+
+### 3. Group output interfaces promoted to v1
+
+Output `<Group>` interfaces (typed shared attributes across DynamicTypes)
+are now v1 alongside the `<Group>Filter` input groups (which were already
+v1). With both:
+
+- SPA queries `courseEvents { status semester { path } lecturer }` and
+  gets typed cross-DynamicType shared-attribute access without
+  per-deployment rebuild.
+- Codegen integrators get typed `updateCourseEvent(patch:
+  CourseEventPatch!)` for shared-attribute writes.
+- The `groups` annotation on a DynamicType becomes the SPA's
+  schema-stability boundary: changing a group definition is an SDK
+  contract change; adding a member DynamicType is not.
+
+Supersedes §"Input vs. output groups" (line 426–435): both v1.
+
+### 4. Descriptor transfer mechanism — descriptor-on-edit (B), no A, no per-response metadata
+
+Three options considered and resolved:
+
+- **A — `AttributeValue` value-wrapping union dropped.** Per-value type
+  tagging is redundant once descriptors are present; constraints and
+  annotations the widgets need live on `AttributeDescriptor`. Reference
+  values (Category, Allocatable) remain structured as full typed objects
+  through the resolver chain — §12 stub requirement, not part of A.
+- **B — descriptor query, lazy — chosen.**
+  - `type(key: String!): DynamicType` fetched alongside the entity in the
+    same edit-open query — atomic per-edit.
+  - `types: [DynamicType!]!` standalone for admin UIs / MCP
+    `graphql_schema` introspection.
+- **C — per-response `typesUsed`/`typeVersions` dropped.** Type changes
+  are rare; stale descriptors surface as server-side L2 rejection on
+  save, prompting the user to reopen the form (re-fetches the
+  descriptor).
+- **No long-lived client-side `typeRegistry`; no client-side Zod
+  validation.** Descriptor drives widget configuration on form open only.
+
+### 5. Widget-driven form input + server-authoritative save validation
+
+Form widgets are configured from `AttributeDescriptor`:
+
+| Descriptor signal | Widget |
+|---|---|
+| `valueType: STRING` + annotation `email`/`url`/`phone` | typed `<input type="...">` |
+| `valueType: STRING` + `constraints.maxLength`/`pattern` | text input with HTML5 constraints |
+| `valueType: INT` + `constraints.min`/`max` | `<input type="number" min max>` |
+| `valueType: CATEGORY` + `constraints.rootCategory` | category picker rooted at that node |
+| `valueType: ALLOCATABLE` + `constraints.expectedType` | allocatable picker filtered |
+| `required: true` | required marker + submit block |
+| `multiplicity: LIST` | wrap widget in add/remove list |
+
+Widgets catch syntactic errors at input time. Server runs L1 (schema) +
+L2 (semantic — permissions, conflicts, required satisfaction, reference
+integrity, business rules) against the merged full object on every save.
+`ValidationError { path, code, message }` (PRD 035 §"Write-side
+validation") maps back to form fields for display. No client-side
+revalidation layer; widget pre-validation is UX convenience only.
+
+### 6. Bulk mutations — type-agnostic
+
+Three new top-level mutations, one consistent shape:
+
+```graphql
+mutation { bulkCreateReservations(inputs: [CreateReservationInput!]!, mode: BulkMode = ATOMIC): BulkResult }
+mutation { bulkUpdateReservations(updates: [ReservationUpdate!]!, mode: BulkMode = ATOMIC): BulkResult }
+mutation { bulkDeleteReservations(ids: [ID!]!, mode: BulkMode = ATOMIC): BulkResult }
+
+input CreateReservationInput {
+  typeId:         String!                    # per-input discriminator
+  classification: ClassificationInput!
+  appointments:   [AppointmentInput!]!
+  allocations:    [AllocationInput!]!
+  ownerId:        ID
+}
+input ReservationUpdate {
+  id:              ID!
+  expectedVersion: Int
+  patch:           ReservationPatch!         # generic; cross-type batches allowed
+}
+type BulkResult {
+  overallStatus: BulkStatus!                 # SUCCESS | PARTIAL_SUCCESS | TOTAL_REJECTION
+  results:       [BulkResultEntry!]!
+}
+type BulkResultEntry {
+  index:       Int!
+  reservation: Reservation                   # for create/update; null on error or for delete
+  deletedId:   ID                            # for delete
+  errors:      [ValidationError!]!
+}
+enum BulkMode { ATOMIC  PARTIAL }
+```
+
+- One UpdateEvent per bulk call (preserves OQ#14 atomicity).
+- ATOMIC default; PARTIAL drops bad items and commits the rest.
+- `BulkResultEntry.index` maps results back to the input list.
+- Cross-type batches are first-class: `bulkUpdateReservations` accepts
+  patches against different DynamicTypes in one transaction (the
+  owner-change use case).
+- No typed per-DynamicType bulks (no `bulkCreateLectures`) — generic
+  covers the cases; integrators validate type-correctness via codegen.
+- Bulk type change deferred (rare + per-item confirmation UX awkward in
+  bulk).
+
+**Dependency:** bulk amplifies PRD 040's lock-scope requirement
+(PRD 040 OQ#2) — lock-set computation must include every allocatable
+referenced across the batch, not just the touched entity ids.
+
+### 7. Type change — non-persistent reshape query + regular save
+
+```graphql
+# Non-persistent — SPA sends current in-memory edit state, server returns proposed reshape
+query ReshapeForType($current: ClassificationInput!, $newTypeId: String!) {
+  reshapeClassification(current: $current, newTypeId: $newTypeId) {
+    proposed:        ClassificationInput!
+    dropped:         [DroppedAttribute!]!
+    missingRequired: [String!]!
+    newType:         DynamicType!
+    hasDataLoss:     Boolean!                # true if any dropped attr has non-default user data
+  }
+}
+
+type DroppedAttribute {
+  key:         String!
+  value:       JSONValue
+  reason:      DropReason!
+  detail:      String                         # optional human-readable detail
+  hasUserData: Boolean!                       # true if value is non-default — drives SPA confirmation
+}
+
+enum DropReason {
+  KEY_NOT_ON_NEW_TYPE
+  VALUE_TYPE_INCOMPATIBLE
+  CONSTRAINT_VIOLATION
+}
+```
+
+- Reshape is **read-only** (Query, not Mutation); actual persist happens
+  via the regular `updateReservation` accepting the type change in the
+  patch.
+- Typed `update<Type>` mutations reject type change with `TYPE_MISMATCH`
+  (target type fixed by mutation name).
+- SPA shows pre-switch confirmation when `hasDataLoss ||
+  missingRequired.length > 0`.
+- Generic `updateReservation` resolver branches on typeId-diff for
+  permission (type change is admin-only, matching Swing) and audit (logs
+  distinct event in the UpdateEvent).
+- v1 scope: classification only (no reshape of appointments / allocations
+  on type change — type change only affects the classification in rapla
+  today).
+- Bulk type change out of scope for v1.
+
+### 8. New query roots — completing the SPA's scheduling-domain needs
+
+Each maps 1-1 to an existing `RaplaFacade` operation, was implicit in
+PRD 035, now made explicit:
+
+```graphql
+type Query {
+  category(id: ID, path: String): Category
+  categories(rootId: ID, depth: Int = -1, filter: CategoryFilter): [Category!]!
+
+  users(filter: UserFilter, first: Int, after: String): UserConnection!
+  user(id: ID, username: String): User
+
+  periods: [Period!]!
+  period(id: ID!): Period
+
+  conflicts(filter: ConflictFilter, first: Int, after: String): ConflictConnection!
+
+  templates(first: Int, after: String): ReservationConnection!     # reservations where isTemplate=true
+
+  serverTime: DateTime!
+}
+
+type Category { id: ID!  key: String!  name: String!  path: String!  parent: Category  children: [Category!]!  depth: Int! }
+type Period   { id: ID!  name: String!  start: DateTime!  end: DateTime! }
+# Reservation gains: isTemplate: Boolean!
+```
+
+All §12-filtered; all paginated where lists can grow.
+
+### 9. Search root + per-type `searchText` arg
+
+Substrate for [PRD 028](028-angular-power-search.md) (Angular power
+search). Single root for cross-type discovery + `searchText` arg on
+per-type roots for typed flows:
+
+```graphql
+type Query {
+  search(text: String!, scope: [SearchScope!],
+         from: DateTime, to: DateTime,             # reservation/conflict window — bounded by default
+         first: Int = 20, after: String): SearchConnection!
+
+  # Existing per-type roots gain a searchText arg
+  reservations(searchText: String, ... existing args ...): ReservationConnection!
+  resources(searchText: String,    ... existing args ...): AllocatableConnection!
+}
+
+enum SearchScope { RESERVATIONS  ALLOCATABLES  USERS  CATEGORIES  CONFLICTS }
+
+type SearchConnection {
+  edges:       [SearchEdge!]!
+  pageInfo:    PageInfo!
+  totalCounts: SearchCounts!
+}
+type SearchEdge {
+  node:         SearchHit!
+  matchedField: String                          # for client highlighting
+  matchKind:    MatchKind!                      # PRD 028 ranking (prefix > substring > fuzzy)
+  cursor:       String!
+}
+type SearchCounts { reservations: Int!  allocatables: Int!  users: Int!  categories: Int!  conflicts: Int! }
+union SearchHit = Reservation | Allocatable | User | Category | Conflict
+enum MatchKind  { PREFIX  SUBSTRING  FUZZY }
+```
+
+- Substring scan over `LocalCache` for v1 (same algorithm rapla uses
+  today, just exposed via GraphQL). Full-text indexing is follow-on.
+- §12: drop hits where the matched field is unreadable; entity-level §12
+  also applies (a hit's entity must be readable).
+- `MatchKind` enum supports PRD 028's prefix/substring/fuzzy bucketing
+  within tiers.
+- The PRD 028 tier model (A1/A2/A3 for allocatables, E1–E4 for
+  reservations) is **client-side** — depends on calendar selection +
+  viewport + recency, all client state. PRD 028 composes tiers from
+  multiple aliased queries in one GraphQL request.
+
+PRD 028 OQ#3 (bounded window) and OQ#10 (§12) are resolved by this
+substrate.
+
+### Out of core GraphQL — own API surfaces
+
+Bounded-contexts: the core GraphQL surface is scheduling-domain only.
+These each have their own API surface:
+
+| Subsystem | Surface | Why |
+|---|---|---|
+| Preferences + preference-derived features (theme, locale, default view, …) | Separate preferences subsystem (PRD TBD) | Hidden from SPA behind purpose-built typed endpoints; not a generic key/value bag |
+| Saved calendar configurations | Preferences subsystem (or sibling) | Stored in preferences today; not scheduling-domain |
+| Plugin features | Per-plugin API (REST today; GraphQL per-plugin if a plugin wants it) | Plugins are independent contexts; not stitched into the core schema. **Revises OQ#8** |
+| Calendar feed export (`/rapla/calendar.csv`, `/rapla/ical`) | Existing literal URLs (AGENTS.md §15 allow-list) | External subscribers depend on the URLs; stays REST |
+| CSV export (`/export/csv`) | PRD 030's existing REST endpoint | Bytes-streamed file download; GraphQL fits poorly |
+| Modification history / audit log | Separate PRD (TBD) | Distinct concern; not v1 of core GraphQL |
+| Resource utilization aggregates | Follow-on | Not blocked; can add as compute operations later |
+
+### Cross-PRD impact
+
+- **PRD 028** — substrate is §9 above; OQ#3 + OQ#10 resolved. PRD 028
+  Plan Phase 2's `/search/reservations?q=` becomes the GraphQL `search`
+  root.
+- **PRD 030** — `renderedBlocks` GraphQL field wraps PRD 030's
+  `CalendarViewController` substrate; REST endpoints stay for direct
+  REST callers. PRD 030's "no GraphQL" rule narrows: per-view shape
+  still applies (no cross-view aggregation), but GraphQL is the SPA's
+  transport for the per-view rendered blocks.
+- **PRD 040** — coupled dependency for bulk; lock-set computation must
+  include allocatables across the batch (PRD 040 OQ#2).
+- **PRD 026** (Angular frontend) — SPA evolves from `/api/storage/*`
+  thick-client to a thin GraphQL client over the course of PRD 035
+  implementation.
+- **OQ#4 below** — superseded; SPA → GraphQL migration is v1 (see §1).
+- **OQ#8 below** — revised; plugin-contributed schema types are NOT the
+  direction (plugins get per-plugin APIs).
 
 ## Goal
 
@@ -1047,19 +1363,20 @@ script). Pin under `docs/showcases/`.
    Independent of the PRD 031 SpringDoc groups (those are OpenAPI/REST).
 4. **Does GraphQL replace PRD 009's `/api/resources` + `/api/events` CRUD as
    the external surface?**
-   **Resolved 2026-05-15.** GraphQL is *the* external surface.
-   `/api/resources` + `/api/events` are not promoted to a second external
-   contract — they stay internal/transitional (PRD 009) and get absorbed or
-   deprecated as GraphQL covers their cases. `/api/storage/*` stays for the
-   Swing client unconditionally (Swing is an irreducibly thick
-   `RemoteStorage`/`LocalCache` client). The Angular SPA is *also* a thick
-   client today (it calls `getResources()` for a full-tree sync), so moving
-   the SPA onto GraphQL is a **thick→thin re-architecture**, not a transport
-   swap — GraphQL gives a full-sync client nothing. That migration rides on
-   the PRD 023/030 thin-client move, incrementally view-by-view, and is a
-   **separate follow-on track — PRD 035 ships GraphQL for external + MCP
-   without waiting for it.** Until then the thick SPA keeps using
-   `/api/storage/*` alongside Swing.
+   **Resolved 2026-05-15; SPA-migration portion superseded 2026-05-24.**
+   GraphQL is *the* external surface. `/api/resources` + `/api/events` are
+   not promoted to a second external contract — they stay
+   internal/transitional (PRD 009) and get absorbed or deprecated as
+   GraphQL covers their cases. `/api/storage/*` stays for the Swing client
+   unconditionally (Swing is an irreducibly thick
+   `RemoteStorage`/`LocalCache` client).
+   **The "SPA migration is a separate follow-on track" part is superseded
+   by the 2026-05-24 refinement (above) — SPA → GraphQL migration is now
+   v1.** The thin-client re-architecture rides on PRD 030's already-shipped
+   server-side rendering (calendar/table/CSV) wrapped by GraphQL
+   `renderedBlocks`, plus `reservation(id) + type(key)` for edits. The thick
+   SPA keeps using `/api/storage/*` only until each view migrates; the
+   migration is part of PRD 035's implementation, not a separate track.
 5. **Persisted queries vs. schema rebuild.**
    **Resolved 2026-05-15 — not adopting persisted queries.** The allowlist
    flavor protects public/anonymous endpoints; rapla's GraphQL endpoint is
@@ -1114,8 +1431,14 @@ script). Pin under `docs/showcases/`.
    (a query fanning out to many associations, mixed visible/hidden/
    non-existent ids) so a per-batch-filter regression is caught.
 8. **Plugin-contributed types.** rapla plugins (`custom/`) may add entities.
-   Schema stitching / type extension by plugins — Phase-N, but flag now so the
-   generator isn't built closed.
+   ~~Schema stitching / type extension by plugins — Phase-N, but flag now so
+   the generator isn't built closed.~~
+   **Revised 2026-05-24** (per the bounded-contexts decision in the
+   2026-05-24 refinement above): plugins get their own per-plugin API
+   surfaces (REST today, GraphQL per-plugin if a plugin wants it) — they
+   are **not** stitched into the core GraphQL schema. The schema generator
+   does not need to stay open for plugin-contributed types. This is a
+   simplification: no schema-stitching / federation machinery is needed.
 9. **PRD 038/039 entities in the schema.**
    **Resolved 2026-05-15.** PRD 038 (Graph calendar sync) adds no
    schema-visible entities — sync-backend plumbing over existing

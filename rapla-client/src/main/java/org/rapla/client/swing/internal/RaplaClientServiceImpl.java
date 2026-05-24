@@ -396,7 +396,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         Throwable root = rootCause(ex);
         String serverUrl = connectionInfo.getServerURL();
         String message = i18n.format("error.connect", serverUrl) + " " + root.getMessage();
-        LOGGER.warn("startup: " + message);
+        LOGGER.warn("startup: {}", message);
         org.rapla.storage.dbrm.RaplaConnectException friendly = new org.rapla.storage.dbrm.RaplaConnectException(message);
         SwingSafe.invokeLater(() -> {
             dialogUiFactory.showException(friendly, null);
@@ -451,7 +451,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             {
                 throw new RaplaException("Impersonation endpoint returned no access token.");
             }
-            LOGGER.info("Switching from admin to '" + user.getUsername() + "' — closing admin context, opening impersonation context");
+            LOGGER.info("Switching from admin to '{}' — closing admin context, opening impersonation context", user.getUsername());
             // PRD 052 Phase 2 — close the admin context and build a fresh one
             // for the impersonation session. Avoids the "non system preferences
             // for other users" cache-integrity error that the old in-place
@@ -501,7 +501,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         }
         catch (Throwable ex)
         {
-            LOGGER.error("Clean logout failed. " + ex.getMessage());
+            LOGGER.error("Clean logout failed. {}", ex.getMessage());
         }
         started = false;
         fireClientClosed(reconnect);
@@ -545,11 +545,10 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                     boolean silentReauthAllowed = cfg != null && cfg.isEnabled() && !cfg.isSwingLegacyLogin();
                     if (!silentReauthAllowed)
                     {
-                        LOGGER.info("startup: silent reauth disabled (" +
+                        LOGGER.info("startup: silent reauth disabled ({}) — showing login dialog",
                                 (cfg == null ? "no discovery"
                                         : !cfg.isEnabled() ? "OAuth disabled server-side"
-                                        : "swing-legacy-login=true")
-                                + ") — showing login dialog");
+                                        : "swing-legacy-login=true"));
                         SwingSafe.invokeLater(this::startLoginInThread);
                         return;
                     }
@@ -567,7 +566,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                                 }
                             })
                             .exceptionally(ex -> {
-                                LOGGER.info("startup: silent reauth failed (" + ex.getMessage() + ") — falling through to login dialog");
+                                LOGGER.info("startup: silent reauth failed ({}) — falling through to login dialog", ex.getMessage());
                                 SwingSafe.invokeLater(this::startLoginInThread);
                             });
                 })
@@ -577,7 +576,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                         abortWithConnectError(ex);
                         return;
                     }
-                    LOGGER.info("startup: discovery failed (" + ex.getMessage() + ") — showing login dialog");
+                    LOGGER.info("startup: discovery failed ({}) — showing login dialog", ex.getMessage());
                     SwingSafe.invokeLater(this::startLoginInThread);
                 });
     }
@@ -597,7 +596,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         }
         catch (Throwable t)
         {
-            LOGGER.info("startup: token-store read failed: " + t + " — falling back to login dialog");
+            LOGGER.info("startup: token-store read failed: {} — falling back to login dialog", t);
             return false;
         }
         if (cached.isEmpty())
@@ -633,8 +632,8 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                     java.net.http.HttpResponse.BodyHandlers.ofString(java.nio.charset.StandardCharsets.UTF_8));
             if (resp.statusCode() / 100 != 2)
             {
-                LOGGER.info("startup: cached refresh token rejected by server (HTTP " + resp.statusCode()
-                        + ") — clearing cache and falling back to login dialog");
+                LOGGER.info("startup: cached refresh token rejected by server (HTTP {}) — clearing cache and falling back to login dialog",
+                        resp.statusCode());
                 tokenStore.tryClear();
                 return false;
             }
@@ -643,7 +642,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             String newRefresh = extractJson(respBody, "refreshToken");
             if (newAccess == null)
             {
-                LOGGER.info("startup: refresh response missing accessToken — falling back to login dialog. body=" + respBody);
+                LOGGER.info("startup: refresh response missing accessToken — falling back to login dialog. body={}", respBody);
                 return false;
             }
             ConnectInfo info = ConnectInfo.withAccessToken(newAccess, newRefresh);
@@ -660,7 +659,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         }
         catch (Throwable t)
         {
-            LOGGER.info("startup: refresh HTTP call failed: " + t + " — falling back to login dialog");
+            LOGGER.info("startup: refresh HTTP call failed: {} — falling back to login dialog", t);
             return false;
         }
     }
@@ -715,7 +714,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             if (!savedLanguage.isEmpty())
             {
                 try { localeSelector.setLanguage(savedLanguage); }
-                catch (Exception ex) { LOGGER.debug("could not restore saved language '" + savedLanguage + "': " + ex); }
+                catch (Exception ex) { LOGGER.debug("could not restore saved language '{}': {}", savedLanguage, ex); }
             }
             final LanguageChooser languageChooser = new LanguageChooser(i18n, raplaLocale);
             activeLanguageChooser = languageChooser;
@@ -743,9 +742,9 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                         else
                         {
                             defaultLanguageChosen = false;
-                            LOGGER.debug("Language changing to " + lang);
+                            LOGGER.debug("Language changing to {}", lang);
                             localeSelector.setLanguage(lang);
-                            LOGGER.info("Language changed " + localeSelector.getLocale().getLanguage());
+                            LOGGER.info("Language changed {}", localeSelector.getLocale().getLanguage());
                         }
                     }
                     catch (Exception ex)
@@ -884,7 +883,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                 }
                 SwingSafe.invokeLater(() -> {
                     Throwable root = rootCause(ex);
-                    LOGGER.info("startup: discovery failed (" + root.getClass().getSimpleName() + ": " + root.getMessage() + ") — showing legacy Swing login dialog as fallback");
+                    LOGGER.info("startup: discovery failed ({}: {}) — showing legacy Swing login dialog as fallback", root.getClass().getSimpleName(), root.getMessage());
                     // Discovery failed — OAuth support can't be confirmed, so offer
                     // only the local password method.
                     dropdownProviders.set(configureLoginMethods(dlg, null));
@@ -930,7 +929,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         }
         catch (Throwable t)
         {
-            LOGGER.debug("could not persist login prefs: " + t);
+            LOGGER.debug("could not persist login prefs: {}", t);
         }
     }
 
@@ -1354,12 +1353,12 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                 }
                 else
                 {
-                    LOGGER.info("logout: server returned HTTP " + resp.statusCode() + "; local logout proceeds");
+                    LOGGER.info("logout: server returned HTTP {}; local logout proceeds", resp.statusCode());
                 }
             }
             catch (Throwable t)
             {
-                LOGGER.info("logout: server-side revocation failed (" + t.getMessage() + "); local logout proceeds");
+                LOGGER.info("logout: server-side revocation failed ({}); local logout proceeds", t.getMessage());
             }
         }
         // Also clear the browser's session AND remember-me cookies at the auth
@@ -1375,12 +1374,12 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             {
                 String fullUrl = appendIdTokenHint(logoutUrl, connectionInfo.getIdToken());
                 org.rapla.client.internal.BrowserLauncher.open(URI.create(fullUrl));
-                LOGGER.info("logout: opened browser to clear IdP session cookie at " + logoutUrl
-                        + (connectionInfo.getIdToken() != null ? " (with id_token_hint)" : " (NO id_token — server may reject)"));
+                LOGGER.info("logout: opened browser to clear IdP session cookie at {}{}", logoutUrl,
+                        (connectionInfo.getIdToken() != null ? " (with id_token_hint)" : " (NO id_token — server may reject)"));
             }
             catch (Throwable t)
             {
-                LOGGER.info("logout: couldn't open browser for IdP logout (" + t.getMessage() + "); local logout proceeds anyway");
+                LOGGER.info("logout: couldn't open browser for IdP logout ({}); local logout proceeds anyway", t.getMessage());
             }
         }
         tokenStore.tryClear();

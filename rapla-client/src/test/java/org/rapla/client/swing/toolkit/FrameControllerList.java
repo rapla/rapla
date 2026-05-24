@@ -73,8 +73,7 @@ final public class FrameControllerList {
     public void remove(FrameController c) {
         openFrameController.remove(c);
         String s = c.toString();
-        if (LOGGER.isDebugEnabled())
-            LOGGER.debug("Frame closed {}...", Tools.left(s,60));
+        LOGGER.debug("Frame closed {}...", Tools.left(s,60));
         fireFrameClosed(c);
         if (openFrameController.size() == 0)
             fireListEmpty();

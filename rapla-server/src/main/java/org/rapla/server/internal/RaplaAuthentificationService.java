@@ -102,11 +102,11 @@ public class RaplaAuthentificationService
     {
         User user = null;
         String toConnect = connectAs != null && !connectAs.isEmpty() ? connectAs : username;
-        LOGGER.info("User '" + username + "' is requesting login.");
+        LOGGER.info("User '{}' is requesting login.", username);
         AuthenticationStore authenticationStoreSuccessfull = null;
         for (AuthenticationStore authenticationStore : authenticationStores)
         {
-            LOGGER.info("Checking external authentifiction for user " + username);
+            LOGGER.info("Checking external authentifiction for user {}", username);
             try
             {
                 if ( !authenticationStore.isEnabled())
@@ -132,7 +132,7 @@ public class RaplaAuthentificationService
             user = operator.getUser(username);
             if (user == null)
             {
-                LOGGER.info("Successfull for User " + username + ".Creating new Rapla user.");
+                LOGGER.info("Successfull for User {}.Creating new Rapla user.", username);
                 java.time.LocalDateTime now = operator.getCurrentTimestamp();
                 UserImpl newUser = new UserImpl(now, now);
                 final ReferenceInfo<User> userReferenceInfo = operator.createIdentifier(User.class, 1).get(0);
@@ -151,7 +151,7 @@ public class RaplaAuthentificationService
             try
             {
                 Category groupCategory = operator.getSuperCategory().getCategory(Permission.GROUP_CATEGORY_KEY);
-                LOGGER.debug("Looking for update for rapla user '" + username + "' from external source.");
+                LOGGER.debug("Looking for update for rapla user '{}' from external source.", username);
                 initUser = authenticationStoreSuccessfull.initUser(user, username, password, groupCategory);
             }
             catch (RaplaSecurityException ex)
@@ -172,7 +172,7 @@ public class RaplaAuthentificationService
             }
             if (initUser)
             {
-                LOGGER.info("Udating rapla user '" + username + "' from external source.");
+                LOGGER.info("Udating rapla user '{}' from external source.", username);
                 List<Entity<?>> storeList = new ArrayList<>(1);
                 storeList.add(user);
                 List<ReferenceInfo<Entity<?>>> removeList = Collections.emptyList();
@@ -181,18 +181,18 @@ public class RaplaAuthentificationService
             }
             else
             {
-                LOGGER.info("User '" + username + "' already up to date");
+                LOGGER.info("User '{}' already up to date", username);
             }
         }
         else
         {
             if (authenticationStores.size() == 0)
             {
-                LOGGER.info("Check password for " + username);
+                LOGGER.info("Check password for {}", username);
             }
             else
             {
-                LOGGER.info("Now trying to authenticate with local store '" + username + "'");
+                LOGGER.info("Now trying to authenticate with local store '{}'", username);
             }
             operator.authenticate(username, password);
         }
@@ -200,11 +200,11 @@ public class RaplaAuthentificationService
         if (connectAs != null && connectAs.length() > 0 && user != null)
         {
             checkConnectAsRights(user, username, connectAs);
-            LOGGER.info("Successfull login for '" + username + "' acts as user '" + connectAs + "'");
+            LOGGER.info("Successfull login for '{}' acts as user '{}'", username, connectAs);
         }
         else
         {
-            LOGGER.info("Successfull login for '" + username + "'");
+            LOGGER.info("Successfull login for '{}'", username);
         }
         user = operator.getUser(toConnect);
 

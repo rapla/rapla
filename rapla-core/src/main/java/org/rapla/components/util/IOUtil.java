@@ -35,8 +35,13 @@ import java.util.StringTokenizer;
 import java.util.TimeZone;
 
 import java.time.LocalDateTime;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 /** Some IOHelper methods. */
 abstract public class IOUtil {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(IOUtil.class);
 
     /** returns the path of the url without the last path component */
     public static URL getBase(URL url) {
@@ -54,7 +59,7 @@ abstract public class IOUtil {
                            ,dir);
         } catch ( MalformedURLException e) {
             // This should not happen
-            e.printStackTrace();
+            LOGGER.error("Failed to derive base URL from {}", url, e);
             throw new RuntimeException("Unknown error while getting the base of the url!");
         } // end of try-catch
     }
@@ -127,13 +132,13 @@ abstract public class IOUtil {
                                                , String.class);
                 return (String) method.invoke(null, s);
             } catch (Exception ex2) {
-                ex2.printStackTrace();
+                LOGGER.error("Reflective invocation of {}.{} failed", clazz.getName(), methodName, ex2);
                 throw new IllegalStateException("Should not happen" + ex2.getMessage());
             }
         } catch (InvocationTargetException ex) {
             throw (UnsupportedEncodingException) ex.getTargetException();
         } catch (IllegalAccessException ex) {
-            ex.printStackTrace();
+            LOGGER.error("Reflective invocation of {}.{} not permitted", clazz.getName(), methodName, ex);
             throw new IllegalStateException("Should not happen" + ex.getMessage());
         }
     }

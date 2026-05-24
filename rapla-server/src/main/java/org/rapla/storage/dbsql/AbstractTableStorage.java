@@ -60,14 +60,12 @@ public class AbstractTableStorage implements TableStorage
 		this.checkLastChanged = checkLastChanged;//
 		datetimeCal =Calendar.getInstance( getSystemTimeZone());
 		createSQL(columns.values());
-		if (LOGGER.isDebugEnabled()) {
-			LOGGER.debug(insertSql);
-			LOGGER.debug(deleteSql);
-			LOGGER.debug(deleteSqlWithoutCheck);
-			LOGGER.debug(selectSql);
-			LOGGER.debug(deleteAllSql);
-			LOGGER.debug(containsSql);
-		}
+		LOGGER.debug(insertSql);
+		LOGGER.debug(deleteSql);
+		LOGGER.debug(deleteSqlWithoutCheck);
+		LOGGER.debug(selectSql);
+		LOGGER.debug(deleteAllSql);
+		LOGGER.debug(containsSql);
 	}
 
 	public static void executeBatchedStatement(Connection con,String sql) throws SQLException {

@@ -61,6 +61,7 @@ public class DialogUI extends JDialog
         ,DialogInterface
 {
     private static final long serialVersionUID = 1L;
+    private static final Logger LOGGER = LoggerFactory.getLogger(DialogUI.class);
 
     protected List<RaplaButton> buttons;
     protected JComponent content;
@@ -301,7 +302,7 @@ public class DialogUI extends JDialog
             if ( localeSelector != null )
                 localeSelector.removeLocaleChangeListener(this);
         } catch (Exception ex) {
-            ex.printStackTrace();
+            LOGGER.error("dispose failed", ex);
         }
     }
 

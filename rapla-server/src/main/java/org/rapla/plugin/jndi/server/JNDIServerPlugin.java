@@ -52,7 +52,7 @@ public class JNDIServerPlugin  {
             // we split the config entry in the plugin config and the new config entry;
             if (pluginConfig != null)
             {
-                LOGGER.info("Converting plugin conf " + className + " to preference entry " + newConfKey);
+                LOGGER.info("Converting plugin conf {} to preference entry {}", className, newConfKey);
                 newPluginConfigEntry.removeChild(pluginConfig);
                 boolean enabled = pluginConfig.getAttributeAsBoolean("enabled", false);
                 RaplaConfiguration newPluginConfig = new RaplaConfiguration(pluginConfig.getName());

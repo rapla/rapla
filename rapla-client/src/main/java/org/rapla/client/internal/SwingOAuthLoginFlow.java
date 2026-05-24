@@ -303,9 +303,9 @@ public final class SwingOAuthLoginFlow
             JsonNode refresh = tree.get("refresh_token");
             JsonNode idToken = tree.get("id_token");
             JsonNode expires = tree.get("expires_in");
-            LOGGER.info("token endpoint returned: keys=" + tree.propertyNames()
-                    + (refresh == null ? " (NO refresh_token)" : " (refresh_token present)")
-                    + (idToken == null ? " (NO id_token)" : " (id_token present)"));
+            LOGGER.info("token endpoint returned: keys={}{}{}", tree.propertyNames(),
+                    (refresh == null ? " (NO refresh_token)" : " (refresh_token present)"),
+                    (idToken == null ? " (NO id_token)" : " (id_token present)"));
             return new OAuthTokens(
                     access.asString(),
                     refresh != null ? refresh.asString() : null,

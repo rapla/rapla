@@ -35,6 +35,8 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.abstractcalendar.MultiCalendarPrint;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
@@ -69,6 +71,7 @@ import java.util.Map;
 public class CalendarPrintDialog extends DialogUI
 {
     private static final long serialVersionUID = 1L;
+    private static final Logger LOGGER = LoggerFactory.getLogger(CalendarPrintDialog.class);
     
     private final JPanel titlePanel = new JPanel();
     private final JPanel southPanel = new JPanel();
@@ -142,7 +145,7 @@ public class CalendarPrintDialog extends DialogUI
     		   previousPage.setEnabled( curPage > 0);
     		   savebutton.setEnabled(pageCount!=0);
 	        } catch (PrinterException e) {
-                e.printStackTrace();
+                LOGGER.error("print preview failed", e);
             }
            finally
            {

@@ -651,24 +651,15 @@ public class RemoteStorageController implements RemoteStorage
                 }
             }
 
-            if (LOGGER.isDebugEnabled())
-            {
-                LOGGER.debug("Processing plugin-update processors ");
-            }
+            LOGGER.debug("Processing plugin-update processors ");
             for (PrePostDispatchProcessor processor : prePostDispatchProcessors)
             {
                 processor.preProcess(user, evt);
             }
-            if (LOGGER.isDebugEnabled())
-            {
-                LOGGER.debug("Dispatching changes to {}", operator.getClass());
-            }
+            LOGGER.debug("Dispatching changes to {}", operator.getClass());
 
             operator.dispatch(evt);
-            if (LOGGER.isDebugEnabled())
-            {
-                LOGGER.debug("Changes dispatched returning result.");
-            }
+            LOGGER.debug("Changes dispatched returning result.");
         }
         catch (DependencyException ex)
         {

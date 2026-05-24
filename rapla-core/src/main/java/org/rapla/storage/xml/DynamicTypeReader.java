@@ -195,7 +195,7 @@ public class DynamicTypeReader extends RaplaXMLReader
             }
             catch (IllegalAnnotationException e)
             {
-                LOGGER.error("Can't parse annotation " + e.getMessage(), e);
+                LOGGER.error("Can't parse annotation {}", e.getMessage(), e);
             	//throw createSAXParseException( e.getMessage() );
             }
         }

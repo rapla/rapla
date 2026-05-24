@@ -91,7 +91,7 @@ public class RaplaMapReader extends RaplaXMLReader  {
             }
             else
             {
-                LOGGER.warn("Can't find " + raplaType + " for keyref " + keyref);
+                LOGGER.warn("Can't find {} for keyref {}", raplaType, keyref);
             }
         } else {
             childReader = getChildHandlerForType( raplaType );

@@ -359,7 +359,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
         }
         catch (RaplaException ex)
         {
-            ex.printStackTrace();
+            LOGGER.error("Failed to resolve reference id", ex);
             throw createSAXParseException( ex.getMessage() );
         }
     }
