@@ -23,9 +23,8 @@ import org.springframework.context.annotation.Configuration;
  * exception). See AGENTS.md §15.
  *
  * <p><b>When you add a new controller:</b> add its path to the appropriate group
- * below. New SPA-facing endpoint → {@link #clientApi()}. New external bulk-REST
- * endpoint → {@link #restApi()}. New file in/out endpoint → {@link #exportsApi()}.
- * New auth endpoint → {@link #authApi()}.
+ * below. New SPA-facing endpoint → {@link #clientApi()}. New file in/out
+ * endpoint → {@link #exportsApi()}. New auth endpoint → {@link #authApi()}.
  */
 @Configuration
 public class SpringDocGroupsConfig
@@ -176,25 +175,6 @@ public class SpringDocGroupsConfig
                         // Timezone catalog — SPA admin panels (Exchange/iCal config) need it
                         "/api/ical/timezones",
                         "/api/ical/timezones/**")
-                .build();
-    }
-
-    /**
-     * Public/external REST API (PRD 009). Fine-grained CRUD with full REST verbs
-     * (GET/POST/PUT/PATCH/DELETE) and per-entity URLs — what an integrator looking
-     * for a "normal" REST API will reach for.
-     */
-    @Bean
-    public GroupedOpenApi restApi()
-    {
-        return GroupedOpenApi.builder()
-                .group("rest")
-                .displayName("Public REST API (PRD 009)")
-                .pathsToMatch(
-                        "/api/events",
-                        "/api/events/**",
-                        "/api/resources",
-                        "/api/resources/**")
                 .build();
     }
 

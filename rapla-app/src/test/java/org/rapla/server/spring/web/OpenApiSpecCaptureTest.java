@@ -67,8 +67,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Tag("e2e")
 class OpenApiSpecCaptureTest
 {
-    /** The four PRD 031 group specs we capture. */
-    private static final List<String> GROUPS = List.of("auth", "client", "rest", "exports");
+    /** The PRD 031 group specs we capture. {@code rest} dropped when
+     *  {@code /api/events*} / {@code /api/resources*} were removed. */
+    private static final List<String> GROUPS = List.of("auth", "client", "exports");
 
     /**
      * Where the committed specs live. Resolved by locating the {@code rapla-app}

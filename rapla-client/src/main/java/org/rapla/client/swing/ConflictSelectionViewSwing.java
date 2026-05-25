@@ -150,6 +150,10 @@ public class ConflictSelectionViewSwing implements ConflictSelectionView<Compone
     {
         public void valueChanged(TreeSelectionEvent e)
         {
+            if (selectionFromProgram)
+            {
+                return;
+            }
             PopupContext context = new SwingPopupContext(treeSelection, null);
             getPresenter().showConflicts(context);
         }
@@ -206,8 +210,16 @@ public class ConflictSelectionViewSwing implements ConflictSelectionView<Compone
         }
         SwingUtilities.invokeLater( ()->
                 {
-                    treeSelection.exchangeTreeModel(treeModel);
-                    treeSelection.getTree().expandRow(0);
+                    try
+                    {
+                        selectionFromProgram = true;
+                        treeSelection.exchangeTreeModel(treeModel);
+                        treeSelection.getTree().expandRow(0);
+                    }
+                    finally
+                    {
+                        selectionFromProgram = false;
+                    }
                     summary.setText(i18n.getString("conflicts") + " (" + conflicts.size() + ") ");
                 }
         );

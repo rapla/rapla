@@ -1,5 +1,6 @@
 package org.rapla.server.spring.web;
 
+import org.rapla.server.openapi.OpenApiSpecContribution;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
@@ -45,15 +46,18 @@ import tools.jackson.databind.ObjectMapper;
 public class StaticOpenApiController
 {
     /**
-     * The four PRD 031 group names. Must mirror {@code OpenApiSpecCaptureTest.GROUPS}
+     * The PRD 031 group names. Must mirror {@code OpenApiSpecCaptureTest.GROUPS}
      * and the file names committed under {@code src/main/resources/openapi/}. If a
      * group is added there, add it here too — there's no auto-discovery on purpose
      * (so a missing capture file fails loudly at startup, not at first request).
      *
+     * <p>{@code rest} was dropped when {@code /api/events*} and {@code /api/resources*}
+     * were removed (no controllers left to describe).
+     *
      * <p>Plugins contribute additional groups by declaring a
      * {@link OpenApiSpecContribution} bean — see that class's javadoc.
      */
-    static final List<String> GROUPS = List.of("auth", "client", "rest", "exports");
+    static final List<String> GROUPS = List.of("auth", "client", "exports");
 
     private static final String CLASSPATH_PREFIX = "openapi/";
 
