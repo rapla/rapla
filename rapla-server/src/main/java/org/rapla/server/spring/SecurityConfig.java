@@ -92,7 +92,12 @@ public class SecurityConfig
                             // server-side regardless of transport auth.
                             "/api/graphql",
                             "/oauth2/**", "/.well-known/**", "/login", "/error",
-                            "/dhbw/status").permitAll();
+                            // dhbwrapla plugin endpoints. /dhbw/status is the
+                            // dhbw-specific health probe; /api/dhbw/stele is
+                            // the terminal-display XML feed polled by
+                            // unauthenticated terminal hardware (scope is
+                            // server-side via rapla.dhbw.terminal.stele-user).
+                            "/dhbw/status", "/api/dhbw/stele").permitAll();
                     if (decoder != null)
                     {
                         auth.anyRequest().authenticated();

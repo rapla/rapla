@@ -170,6 +170,38 @@ Drop the `external:` block if you are not testing external IdPs; with only the
 rapla provider enabled the web picker does not render and the SPA auto-fires the
 rapla authorization server.
 
+#### Optional: switch the dev backend from `data.xml` to embedded HSQLDB
+
+Default `local` profile uses `FileOperator` over
+`rapla-app/data/data.xml` (per `application.yml`'s
+`rapla.file-datasources.raplafile`). That's fine for most dev work, but
+the `DBOperator` code path (post-save refresh, CHANGES history, locking)
+only exercises through a real JDBC datasource. To put the dev server on
+embedded HSQLDB instead, add this block to `application-local.yml`:
+
+```yaml
+rapla:
+  db-datasources:
+    rapladb:
+      url: jdbc:hsqldb:file:./data/rapla-hsqldb
+      username: db_user
+      password: your_pwd
+```
+
+`ServerStorageSelector` picks `DBOperator` whenever a `rapla.db-datasources.*`
+bean is present; the XML file then becomes only the seed for the first
+import. The DB files land at `rapla-app/data/rapla-hsqldb.{script,log,properties,…}`
+under the working dir of `mvn spring-boot:run`. To reset to a clean DB,
+stop the server and delete those files (the next boot will re-import
+from `data/data.xml`).
+
+The credentials `db_user` / `your_pwd` match the convention used in the
+sibling `dhbwrapla` checkout — keep them the same so you can copy an
+HSQLDB snapshot between worktrees without password mismatch. (HSQLDB
+embedded ships with `SA` / `""` by default, but rapla's bundled DB files
+were created with the credentials above; using `SA` against an existing
+file fails authentication.)
+
 ## Windows-side OpenWebStart — networking caveats
 
 The default WSL2 NAT mode has a quirk: **IPv4 localhost forwarding from Windows to WSL is unreliable, IPv6 (`::1`) forwarding works**. Most tools never notice because they implement [Happy Eyeballs (RFC 8305)](https://datatracker.ietf.org/doc/html/rfc8305) and try both stacks in parallel — Chrome, curl, modern Java all succeed via IPv6.

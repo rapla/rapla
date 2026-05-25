@@ -50,7 +50,6 @@ public class ComplexTreeCellRenderer extends DefaultTreeCellRenderer {
         this.raplaFacade = raplaFacade;
         this.i18n = i18n;
         this.clientFacade = clientFacade;
-        setLeafIcon(defaultIcon);
         bigFolderResourcesFiltered = RaplaImages.getIcon(i18n.getIcon("icon.big_folder_resources_filtered"));
         bigFolderResourcesUnfiltered = RaplaImages.getIcon(i18n.getIcon("icon.big_folder_resources"));
         bigFolderUsers = RaplaImages.getIcon(i18n.getIcon("icon.big_folder_users"));
@@ -61,6 +60,7 @@ public class ComplexTreeCellRenderer extends DefaultTreeCellRenderer {
         folderOpenIcon = RaplaImages.getIcon(i18n.getIcon("icon.folder"));
         forbiddenIcon = RaplaImages.getIcon(i18n.getIcon("icon.no_perm"));
         requestIcon = RaplaImages.getIcon(i18n.getIcon("icon.permissions"));
+        setLeafIcon(defaultIcon);
     }
 
     private void setIcon(Object object, boolean leaf) {
@@ -100,6 +100,13 @@ public class ComplexTreeCellRenderer extends DefaultTreeCellRenderer {
         }
         if (icon == null) {
             setBorder(nonIconBorder);
+            // Fall back to rapla's "tree.default" (green dot) so non-Allocatable
+            // leaf nodes — e.g. the option-panel labels under "Plugins" / "Admin"
+            // in PreferencesEditUI — render with a rapla glyph instead of the
+            // JTree default leaf icon (white sheet).
+            if (leaf) {
+                icon = defaultIcon;
+            }
         }
         if (leaf) {
             setLeafIcon(icon);

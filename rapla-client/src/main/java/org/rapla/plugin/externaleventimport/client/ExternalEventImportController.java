@@ -24,7 +24,6 @@ import org.rapla.plugin.externaleventimport.ImportCriteria;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -43,7 +42,6 @@ import java.util.stream.Collectors;
  * fetch metadata, pick allocatables, fetch results, render dialog, submit selections.
  */
 @Service
-@Conditional(ExternalEventImportEnabledCondition.class)
 public class ExternalEventImportController
 {
     private final ClientFacade clientFacade;

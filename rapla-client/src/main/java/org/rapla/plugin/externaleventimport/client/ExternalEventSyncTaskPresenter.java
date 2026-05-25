@@ -10,7 +10,6 @@ import org.rapla.scheduler.Observables;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.Subject;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Service;
 
 /**
@@ -19,7 +18,6 @@ import org.springframework.stereotype.Service;
  * Active only when the property gate is on.
  */
 @Service(ExternalEventSyncTaskPresenter.ID)
-@Conditional(ExternalEventImportEnabledCondition.class)
 public class ExternalEventSyncTaskPresenter implements TaskPresenter
 {
     public static final String ID = "org.rapla.client.externaleventimport.SyncTaskPresenter";

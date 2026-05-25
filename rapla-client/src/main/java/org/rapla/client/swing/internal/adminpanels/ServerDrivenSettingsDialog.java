@@ -242,7 +242,10 @@ public class ServerDrivenSettingsDialog
                     (actionId, currentValues) -> invokeAction(summary.id(), actionId, currentValues),
                     values -> saveServerPanel(rightPanel, summary, values),
                     i18n.getString("save"));
-            rightPanel.add(new JScrollPane(renderer.getComponent()), "current");
+            // PanelRenderer owns the JScrollPane internally so the footer
+            // (Save button + action buttons) stays pinned and the scrollable
+            // body tracks viewport width.
+            rightPanel.add(renderer.getComponent(), "current");
         }
         catch (Exception e)
         {

@@ -1,6 +1,6 @@
 ---
 name: swing-client-launch
-description: Use when launching, restarting, or debugging rapla's Swing desktop client (the legacy GUI alongside the Angular SPA). Covers the `mvn exec:java` invocation (NOT `spring-boot:run` — Swing uses plain `AnnotationConfigApplicationContext`), the daemon-thread-timeout magic that keeps the EDT alive, log markers for readiness probing, and the two-client / two-log gotchas. Skip when only the server, REST API, or Angular SPA is in scope — those have their own lifecycle rules in AGENTS.md §8 and §14.
+description: Use when launching, restarting, or debugging rapla's Swing desktop client (the legacy GUI alongside the Angular SPA). Covers the `mvn exec:java` invocation (NOT `spring-boot:run` — Swing uses plain `AnnotationConfigApplicationContext`), the daemon-thread-timeout magic that keeps the EDT alive, log markers for readiness probing, the two-log convention, and running multiple clients in parallel against the same server. Skip when only the server, REST API, or Angular SPA is in scope — those have their own lifecycle rules in AGENTS.md §8 and §14.
 ---
 
 # Swing client lifecycle
@@ -114,11 +114,17 @@ has a matching auth-failure entry server-side.
 
 ## Footguns
 
-- **Don't run two clients against the same server.** Both try to log in
-  as the same admin, and the second sees stale data after the first
-  mutates. Use a worktree (AGENTS.md §7) for parallel work.
 - **The §8 server must be running first.** Without it the login dialog
   hangs at "Connection refused" or returns 401.
 - **JNLP launch is a separate concern** — for that, load the
   `test-jnlp-launch` skill instead. This skill covers the dev-loop
   `mvn exec:java` path only.
+
+## Two clients in parallel
+
+Two (or more) Swing clients against the same server is supported and
+useful — e.g. concurrent-edit testing, multi-user permission probing,
+A/B'ing changes. Give each its own log/pid pair so they don't clobber:
+`logs/rapla-client.{log,pid}` for the first, `logs/rapla-client-2.{log,pid}`
+for the second, and so on. Same `-Dexec.args="admin"` is fine; the server
+issues separate sessions per login.

@@ -13,6 +13,7 @@ import org.rapla.rest.dto.PluginInfo;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.core.env.Environment;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -25,12 +26,14 @@ public class PluginsController implements PluginsService
     private final RaplaFacade facade;
     private final RemoteSession session;
     private final HttpServletRequest request;
+    private final Environment env;
 
-    public PluginsController(RaplaFacade facade, RemoteSession session, HttpServletRequest request)
+    public PluginsController(RaplaFacade facade, RemoteSession session, HttpServletRequest request, Environment env)
     {
         this.facade = facade;
         this.session = session;
         this.request = request;
+        this.env = env;
     }
 
     @Override
@@ -65,6 +68,11 @@ public class PluginsController implements PluginsService
             throw new RaplaSecurityException("Only admins can toggle plugins");
         }
         PluginRegistry.PluginEntry entry = lookup(id);
+        if (entry.envPropertyKey() != null)
+        {
+            throw new RaplaException("Plugin '" + id + "' is operator-managed via application.yml ("
+                    + entry.envPropertyKey() + "); not runtime-toggleable");
+        }
         Preferences prefs = facade.getSystemPreferences();
         Preferences edit = facade.edit(prefs);
         applyEnabled(edit, entry, body.enabled());
@@ -82,8 +90,12 @@ public class PluginsController implements PluginsService
         return entry;
     }
 
-    private static boolean isEnabled(Preferences prefs, PluginRegistry.PluginEntry entry)
+    private boolean isEnabled(Preferences prefs, PluginRegistry.PluginEntry entry)
     {
+        if (entry.envPropertyKey() != null)
+        {
+            return env.getProperty(entry.envPropertyKey(), Boolean.class, entry.defaultEnabled());
+        }
         if (entry.boolEnabledKey() != null)
         {
             TypedComponentRole<Boolean> role = new TypedComponentRole<>(entry.boolEnabledKey());

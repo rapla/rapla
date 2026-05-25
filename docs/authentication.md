@@ -133,6 +133,118 @@ Returns HTTP 200 either way (RFC 7009 — opaque "did this token exist?"
 non-disclosure). Side effect: clears the user's session entry; all
 their refresh tokens become invalid.
 
+## Pluggable external authentication stores
+
+Rapla's password-validation step is pluggable via the
+`org.rapla.server.AuthenticationStore` SPI. Every `AuthenticationStore`
+bean Spring discovers is collected into a `Set<AuthenticationStore>`
+that `RaplaAuthentificationService.authenticate(username, password)`
+iterates in undefined order — first store to return `true` from
+`authenticate(...)` wins; an external success short-circuits the local
+password check.
+
+Built-in stores:
+
+| Class | Origin | Bean trigger |
+|---|---|---|
+| `JNDIAuthenticationStore` | rapla-server, in-tree LDAP/JNDI plugin | `@Service` (gated by JNDI plugin enable flag) |
+| `DhbwNtlmAuthStore` | dhbwrapla plugin jar | `@Component` (gated by `rapla.plugins.dhbw.enabled`) |
+
+Per-login server-side log trail (visible in `logs/rapla.log` /
+`logs/run.log`):
+
+```
+RaplaAuthentificationService : User 'X' is requesting login.
+RaplaAuthentificationService : Checking external authentifiction for user X   ← once per @Component AuthenticationStore
+DhbwLdapAuthenticate         : Successfully authenticated X with NTLM         ← per-store success line
+RaplaAuthentificationService : Udating rapla user 'X' from external source.   ← only when initUser() reports a change
+RaplaAuthentificationService : Successfull login for 'X'
+```
+
+If you see `"Check password for X"` (i.e. local-store-only branch) where
+you expected an external-store check, your `Set<AuthenticationStore>` is
+empty. The two ways that happens:
+
+1. **Plugin not on the classpath at boot.** For dhbwrapla in dev, this
+   means you launched stock rapla-app without `-Pdhbw` and aggregator-pom
+   (see dhbwrapla's `AGENTS.md` § Server lifecycle for the canonical
+   recipe).
+2. **An explicit `@Bean Set<AuthenticationStore>` somewhere wins over
+   Spring's auto-collection.** This regressed once historically (an empty
+   default `@Bean` shadowed plugin-provided stores until 2026-05-25);
+   `AuthenticationStoreInjectionTest` is the regression guard. If the
+   test goes red, look for a stray `@Bean Set<AuthenticationStore>`.
+
+### The `authenticationSource` user marker
+
+After the first successful external authentication, rapla stamps
+`user.authenticationSource = "<store id>"` (e.g. `"ldap"` for the
+default LDAP/NTLM store) and persists it via `operator.storeAndRemove`.
+The marker drives every downstream "is this an external user?" gate:
+
+- `RemoteStorageController.changePassword` / `changeName` /
+  `changeEmail` / `confirmEmail` return 401 with the IdP name in the
+  message — even for the user themselves (PRD 050).
+- `GET /api/storage/profile/capabilities` returns all-false +
+  `authenticationSource` for stamped users; all-true + null for local
+  users. The Angular SPA / Swing client toggles its self-edit UI off this.
+- `POST /api/storage/user/{id}/disconnect-external-auth` is admin-only,
+  idempotent, and clears the marker — used when an external IdP is
+  decommissioned or a user needs to revert to local password auth.
+
+The Swing user-edit panel (`UserEditUI$AuthenticationSourceField`)
+displays `"Local"` when the marker is null and `"External: ldap"` (etc.)
+otherwise; the **Disconnect** button stages the same admin action.
+
+Mental model: the marker is **sticky** — once an external IdP has
+claimed the username, subsequent logins through any store may refresh
+name/email/groups (each store decides — see § "Per-store sync policy"
+below) but never change the source. Only admin disconnect clears it.
+
+### Per-store sync policy for name / email / groups
+
+When an external login succeeds, each store decides on its own how much
+of the user's local rapla record to refresh from the IdP. The policies
+differ; treat the table as authoritative — if a field's "Sync on every
+login" cell is **No**, no amount of relogging will fix a stale value
+short of admin disconnect + reconnect.
+
+| Store | `authenticationSource` | Email | Name | Groups | Password auth |
+|---|---|---|---|---|---|
+| `ExternalUserResolver` (Keycloak, Microsoft, Google) | IdP id (`"keycloak"`, `"microsoft"`, `"google"`) | **Authoritative** — overwrites every login when the IdP value differs (case-insensitive compare) | **Authoritative** — same | Not synced (groups stay rapla-managed) | Not local — IdP holds the password |
+| `JNDIAuthenticationStore` (rapla-server LDAP plugin) | `"ldap"` | **Authoritative** — writes whenever LDAP `mail` differs from local (case-insensitive) | Authoritative — same with LDAP `cn` | Not synced | LDAP bind |
+| `DhbwNtlmAuthStore` (dhbwrapla NTLM plugin) | `"ldap"` | **First-write-wins** — only written when local email is null/empty | Not synced (only `username` is) | **First-write-wins** — only added when user has zero groups | NTLM bind to AD |
+
+Two consequences worth remembering:
+
+1. **dhbwrapla's NTLM store is the most conservative** — once a
+   user has an email and any group, NTLM relogins are no-ops for those
+   fields. The trade-off was: never clobber operator-edited values.
+   Operationally this means an org-wide email-domain rename can't be
+   pushed by re-login alone; admin has to clear the local value first
+   (disconnect → edit → reconnect), or change the policy to mirror
+   `ExternalUserResolver`.
+2. **All email comparisons across stores are
+   `equalsIgnoreCase`** — same-domain mailboxes that just change case
+   never trigger spurious saves (and never hit the optimistic-lock /
+   delete-then-insert path that would otherwise cause a PK violation on
+   no-op updates).
+
+### Error-message contract on failed auth
+
+The OAuth2 password-grant authentication provider
+(`AuthorizationServerConfig.raplaAuthenticationProvider`) distinguishes
+two failure modes:
+
+| Java exception thrown by `getUserFromCredentials` | Spring exception | OAuth2 error code | What it means |
+|---|---|---|---|
+| `RaplaSecurityException` (or no user returned) | `BadCredentialsException` | `invalid_grant` | Real auth failure — wrong password, disabled user, external store rejected |
+| Any other `Exception` (DB error, NPE, etc.) | `InternalAuthenticationServiceException` | `server_error` (mapped) | Credentials were accepted but a downstream server step failed — the catch block logs the actual cause at ERROR with stacktrace; check `logs/rapla.log` for the real reason |
+
+Never collapse the latter into "invalid username/password" — that
+misleads users into retyping a valid password and hides actionable
+server-side errors (DB rollbacks, permission-store gone, etc.).
+
 ## Client login flows — browser, SPA, Swing
 
 Three client surfaces authenticate against rapla — all on OAuth 2.0.

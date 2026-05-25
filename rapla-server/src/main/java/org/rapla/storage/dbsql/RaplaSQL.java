@@ -2703,7 +2703,14 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
                     // we leave the latest timestamp, so we can still get the difference
                     else if (!idToTimestamp.containsKey(id))
                     {
-                        idToTimestamp.put(id, LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(timestamp.getTime()), java.time.ZoneOffset.UTC));
+                        // Match the CHANGES write path: Timestamp.valueOf(LDT) stores the
+                        // LDT verbatim, so the inverse on read is .toLocalDateTime().
+                        // The earlier ofInstant(ofEpochMilli(...), UTC) pattern returned an
+                        // LDT shifted by the JVM-local UTC offset; that worked here only
+                        // because line 2726 binds via new Timestamp(toMilli(...)) — the
+                        // wrong-wrong cancellation. Aligning both sides on
+                        // Timestamp.valueOf removes the coincidence.
+                        idToTimestamp.put(id, timestamp.toLocalDateTime());
                     }
                 }
             }
@@ -2723,7 +2730,12 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
             for (Entry<String, LocalDateTime> idAndTimestamp : idToTimestamp.entrySet())
             {
                 final String id = idAndTimestamp.getKey();
-                final java.sql.Timestamp changedAt = new java.sql.Timestamp(DateTools.toMilli(idAndTimestamp.getValue()));
+                // Match the CHANGES INSERT path: Timestamp.valueOf(LDT) stores the LDT
+                // verbatim as the column's wall-clock; the predicate must use the same
+                // convention to match. The earlier new Timestamp(toMilli(LDT)) bind
+                // worked only because the LDT was already JVM-zone-shifted by the
+                // matching wrong-direction read at line ~2706 (two wrongs cancelled).
+                final java.sql.Timestamp changedAt = java.sql.Timestamp.valueOf(idAndTimestamp.getValue());
                 stmt.setString(1, id);
                 stmt.setTimestamp(2, changedAt);
                 stmt.setString(3, id);
@@ -2942,7 +2954,16 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
     {
         try (final PreparedStatement stmt = con.prepareStatement(loadAllUpdatesSql))
         {
-            stmt.setTimestamp(1, new java.sql.Timestamp(DateTools.toMilli(lastUpdated)));
+            // PRD 054 — CHANGED_AT is INSERTed via Timestamp.valueOf(LDT) in write()
+            // below, which stores the LDT verbatim as the column's wall-clock value.
+            // Binding the read parameter via `new Timestamp(toMilli(LDT))` instead
+            // re-interprets the same LDT through the JVM default zone (Berlin in CI
+            // ≠ UTC) and sends a wall-clock value shifted by the local UTC offset.
+            // The "WHERE CHANGED_AT >= ?" predicate then misses every just-written
+            // row, leaving the in-process cache stale after dispatch. Match the
+            // INSERT side: use Timestamp.valueOf so the bind round-trips through the
+            // same wall-clock representation HSQL/MariaDB stored.
+            stmt.setTimestamp(1, java.sql.Timestamp.valueOf(lastUpdated));
             final ResultSet result = stmt.executeQuery();
             if (result == null)
             {
@@ -3029,7 +3050,16 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         final Class<? extends Entity> typeClass = RaplaType.find(raplaTypeLocalName);
         final String className = getString(rs, 3, null);
         final String json = getText(rs, 4);
-        final LocalDateTime lastChanged = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(rs.getTimestamp(5).getTime()), java.time.ZoneOffset.UTC);
+        // PRD 054 — CHANGED_AT is INSERTed via Timestamp.valueOf(LDT) (the LDT
+        // verbatim as the column's wall-clock value, see write() above). The
+        // round-trip inverse is rs.getTimestamp(...).toLocalDateTime(), NOT
+        // ofInstant(ofEpochMilli(getTime()), UTC) — that pattern would re-render
+        // the epoch in the JVM zone (Berlin in CI ≠ UTC) and return an LDT
+        // shifted by the local UTC offset. The shifted LDT then feeds the
+        // history map AND the in-memory deleteUpdateSet (via addToDeleteUpdate),
+        // so getEntities(user, lastSynced) misses every recently-changed entity
+        // by ~2 h and the client's refresh response comes back empty.
+        final LocalDateTime lastChanged = rs.getTimestamp(5).toLocalDateTime();
         final Integer isDelete = getInt(rs, 6);
         history.addHistoryEntry(new ReferenceInfo(id, typeClass), json, lastChanged, isDelete != null && isDelete == 1);
     }

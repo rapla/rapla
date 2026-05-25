@@ -68,3 +68,4 @@ secrets.yaml
 # Local Keycloak dev server — local dev tooling (machine-specific realm
 # config, dev secret), not committed
 /tools/keycloak/
+/.agents/scheduled_tasks.lock

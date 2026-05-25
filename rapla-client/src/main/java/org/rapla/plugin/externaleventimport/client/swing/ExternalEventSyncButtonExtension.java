@@ -7,10 +7,8 @@ import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.plugin.externaleventimport.client.ExternalEventImportController;
-import org.rapla.plugin.externaleventimport.client.ExternalEventImportEnabledCondition;
 import org.rapla.plugin.externaleventimport.client.ExternalEventImportResources;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Service;
 
 import javax.swing.JButton;
@@ -23,7 +21,6 @@ import java.util.Collections;
  * source against the currently-edited reservation.
  */
 @Service(ExternalEventSyncButtonExtension.ID)
-@Conditional(ExternalEventImportEnabledCondition.class)
 public class ExternalEventSyncButtonExtension implements ReservationToolbarExtension
 {
     public static final String ID = "org.rapla.plugin.externaleventimport.sync";

@@ -17,7 +17,6 @@ import org.rapla.storage.PermissionController;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.LoginCredentials;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,20 +27,28 @@ import java.util.Set;
 public class RaplaAuthentificationService
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(RaplaAuthentificationService.class);
-    @Autowired
-    RaplaResources i18n;
-    @Autowired
-    TokenHandler tokenHandler;
-    @Autowired
-    Set<AuthenticationStore> authenticationStores;
-    @Autowired
-    CachableStorageOperator operator;
+    final RaplaResources i18n;
+    final TokenHandler tokenHandler;
+    /** At most one external auth source — dhbwrapla NTLM, rapla JNDI/LDAP, or
+     *  similar plugin. Vanilla rapla has none, so this is {@code null} and
+     *  authentication falls through to the local-DB path. Multiple
+     *  {@code @Bean AuthenticationStore} declarations are rejected at startup
+     *  (Spring's {@code ObjectProvider.getIfAvailable()} throws on ambiguity)
+     *  — see {@link ServerServiceConfig#raplaAuthentificationService}. */
+    final AuthenticationStore authenticationStore;
+    final CachableStorageOperator operator;
 
     private static boolean passwordCheckDisabled = false;
 
-    @Autowired
-    public RaplaAuthentificationService()
+    public RaplaAuthentificationService(RaplaResources i18n,
+                                        TokenHandler tokenHandler,
+                                        CachableStorageOperator operator,
+                                        AuthenticationStore authenticationStore)
     {
+        this.i18n = i18n;
+        this.tokenHandler = tokenHandler;
+        this.operator = operator;
+        this.authenticationStore = authenticationStore;
     }
 
     public static void setPasswordCheckDisabled(boolean passwordCheckDisabled)
@@ -104,20 +111,14 @@ public class RaplaAuthentificationService
         String toConnect = connectAs != null && !connectAs.isEmpty() ? connectAs : username;
         LOGGER.info("User '{}' is requesting login.", username);
         AuthenticationStore authenticationStoreSuccessfull = null;
-        for (AuthenticationStore authenticationStore : authenticationStores)
+        if (authenticationStore != null && authenticationStore.isEnabled())
         {
-            LOGGER.info("Checking external authentifiction for user {}", username);
+            LOGGER.info("Checking external authentication for user {}", username);
             try
             {
-                if ( !authenticationStore.isEnabled())
-                {
-                    continue;
-                }
-                boolean authenticateExternal = authenticationStore.authenticate(username, password);
-                if (authenticateExternal)
+                if (authenticationStore.authenticate(username, password))
                 {
                     authenticationStoreSuccessfull = authenticationStore;
-                    break;
                 }
             }
             catch (RaplaException ex)
@@ -186,7 +187,7 @@ public class RaplaAuthentificationService
         }
         else
         {
-            if (authenticationStores.size() == 0)
+            if (authenticationStore == null)
             {
                 LOGGER.info("Check password for {}", username);
             }

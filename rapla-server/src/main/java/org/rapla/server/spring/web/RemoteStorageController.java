@@ -30,7 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.rapla.plugin.mail.MailPlugin;
 import org.rapla.plugin.mail.server.MailInterface;
-import org.rapla.server.AuthenticationStore;
 import org.rapla.server.PrePostDispatchProcessor;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.internal.ReloadService;
@@ -76,7 +75,6 @@ public class RemoteStorageController implements RemoteStorage
     private final SecurityManager security;
     private final ReloadService reloadService;
     private final Set<PrePostDispatchProcessor> prePostDispatchProcessors;
-    private final Set<AuthenticationStore> authenticationStore;
     private final RaplaResources i18n;
     private final Supplier<MailInterface> mailInterface;
     private final UpdateDataManager updateDataManager;
@@ -88,7 +86,6 @@ public class RemoteStorageController implements RemoteStorage
                                    SecurityManager security,
                                    ReloadService reloadService,
                                    Set<PrePostDispatchProcessor> prePostDispatchProcessors,
-                                   Set<AuthenticationStore> authenticationStore,
                                    RaplaResources i18n,
                                    Supplier<MailInterface> mailInterface,
                                    UpdateDataManager updateDataManager,
@@ -100,7 +97,6 @@ public class RemoteStorageController implements RemoteStorage
         this.security = security;
         this.reloadService = reloadService;
         this.prePostDispatchProcessors = prePostDispatchProcessors;
-        this.authenticationStore = authenticationStore;
         this.i18n = i18n;
         this.mailInterface = mailInterface;
         this.updateDataManager = updateDataManager;

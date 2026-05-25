@@ -86,17 +86,21 @@ public class ServerServiceConfig
     }
 
     @Bean
-    public RaplaAuthentificationService raplaAuthentificationService(AutowireCapableBeanFactory beanFactory)
+    public RaplaAuthentificationService raplaAuthentificationService(
+            RaplaResources i18n,
+            TokenHandler tokenHandler,
+            CachableStorageOperator operator,
+            ObjectProvider<AuthenticationStore> authenticationStoreProvider)
     {
-        RaplaAuthentificationService impl = new RaplaAuthentificationService();
-        beanFactory.autowireBean(impl);
-        return impl;
-    }
-
-    @Bean
-    public Set<AuthenticationStore> authenticationStores()
-    {
-        return Collections.emptySet();
+        // ObjectProvider.getIfAvailable(): null when no AuthenticationStore bean
+        // is published, the single bean when exactly one exists, throws
+        // NoUniqueBeanDefinitionException at startup when two or more do —
+        // matching the design invariant that at most ONE external auth source
+        // is active per server (vanilla rapla has none; dhbwrapla NTLM, rapla
+        // legacy JNDI/LDAP, or a future Keycloak adapter each register one).
+        // See AuthenticationStoreInjectionTest for the regression check.
+        return new RaplaAuthentificationService(i18n, tokenHandler, operator,
+                authenticationStoreProvider.getIfAvailable());
     }
 
     /** PRD 009: empty default so the constructor of {@code RemoteStorageController}

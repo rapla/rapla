@@ -11,12 +11,10 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.externaleventimport.ExternalEventImportMetadata;
 import org.rapla.plugin.externaleventimport.ExternalEventImportResult;
 import org.rapla.plugin.externaleventimport.client.ExternalEventImportDialog;
-import org.rapla.plugin.externaleventimport.client.ExternalEventImportEnabledCondition;
 import org.rapla.plugin.externaleventimport.client.ExternalEventImportResources;
 import org.rapla.plugin.externaleventimport.client.ExternalEventImportSubmitCallback;
 import org.rapla.scheduler.Promise;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Service;
 
 import java.text.MessageFormat;
@@ -26,7 +24,6 @@ import java.util.List;
 import java.util.function.Supplier;
 
 @Service
-@Conditional(ExternalEventImportEnabledCondition.class)
 public class ExternalEventImportDialogImpl implements ExternalEventImportDialog
 {
     private final ClientFacade clientFacade;

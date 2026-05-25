@@ -424,15 +424,15 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
         </dependency>
-        <!-- slf4j-api: declared 'provided' upstream (rapla-bom) for compile-time use.
-             Override to 'runtime' here so maven-dependency-plugin:copy-dependencies
-             stages it under target/webclient/ and it lands in the JNLP set.
-             Without this, the Swing client launched via JNLP dies on startup with
-             NoClassDefFoundError: org.slf4j.LoggerFactory (logback-classic depends on it). -->
+        <!-- slf4j-api: rapla-bom defaults to 'provided' (compile-only, not packaged).
+             Override to default (compile) here so it's BOTH compile-visible to
+             rapla-app sources (AuthorizationServerConfig uses LoggerFactory) AND
+             staged by maven-dependency-plugin:copy-dependencies into target/webclient/
+             for the JNLP set (without staging, JNLP Swing client dies on startup
+             with NoClassDefFoundError: org.slf4j.LoggerFactory from logback-classic). -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <scope>runtime</scope>
         </dependency>
         <!-- jcl-over-slf4j: provides org.apache.commons.logging.LogFactory but routes
              every call through SLF4J → logback. Required because Spring 7 dropped
@@ -463,6 +463,43 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-graphql</artifactId>
+        </dependency>
+        <!-- PRD 035: extra scalar types (DateTime, Date, Time, …) not in
+             graphql-java's built-in set. Registered as a Spring bean via
+             GraphQlScalarConfig. ~100 KiB; needed long-term anyway once
+             reservation/appointment types land. -->
+        <dependency>
+            <groupId>com.graphql-java</groupId>
+            <artifactId>graphql-java-extended-scalars</artifactId>
+            <version>24.0</version>
+        </dependency>
+        <!-- PRD 035 testbed: HttpGraphQlTester for tier-3 resolver tests
+             (Spring for GraphQL's MockMvc-equivalent — wraps the configured
+             GraphQL endpoint via MockMvc, no random port).
+             Test scope only — never bundled in the production fat JAR. -->
+        <dependency>
+            <groupId>org.springframework.graphql</groupId>
+            <artifactId>spring-graphql-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- @WithMockUser + SecurityMockMvcRequestPostProcessors.jwt() — push
+             authenticated principals into MockMvc-based tests so they reach the
+             GraphQL resolver via the Spring Security filter chain (needed for
+             HttpGraphQlTester auth propagation, since the ThreadLocal-based
+             SecurityContextHolder doesn't follow Reactor schedulers).
+             Test scope. Not pulled by spring-boot-starter-test in Spring Boot 4. -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- WebTestClient (used by MockMvcWebTestClient + HttpGraphQlTester) is in
+             spring-webflux. Test scope. Production stays Spring MVC; this is only
+             for the test wrapper that adapts MockMvc → WebTestClient → GraphQlTester. -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-webflux</artifactId>
+            <scope>test</scope>
         </dependency>
         <!-- PRD 041: OpenAPI spec is generated ONCE at build time (capture-in-test
              pattern, OpenApiSpecCaptureTest writes to src/main/resources/openapi/).
@@ -555,6 +592,24 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+        <!-- Dev-loop loader for the dhbwrapla plugin. Vanilla rapla has no compile-time
+             knowledge of dhbwrapla, but `mvn spring-boot:run` builds its classpath from
+             rapla-app's declared deps — without one, `DhbwPluginAutoConfiguration` is
+             not on the classpath and beans like `DhbwNtlmAuthStore` never instantiate.
+             Activate only when launching through the dhbwrapla aggregator pom (which
+             pulls dhbwrapla's `target/classes` into the reactor in-tree, so no
+             `mvn install` is needed). Activation: `-Pdhbw` on the command line. -->
+        <profile>
+            <id>dhbw</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.rapla.dhbw</groupId>
+                    <artifactId>dhbwrapla</artifactId>
+                    <version>1.0-SNAPSHOT</version>
+                    <scope>runtime</scope>
+                </dependency>
+            </dependencies>
         </profile>
         <!-- PRD 005 cleanup C: signing profiles relocated from the deleted root pom.xml
              into rapla-app, where the runnable fat JAR + JNLP webclient/ staging lives.

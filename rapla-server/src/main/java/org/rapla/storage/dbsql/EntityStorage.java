@@ -22,6 +22,7 @@ import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.storage.RaplaNewVersionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.rapla.storage.LocalCache;
@@ -348,7 +349,7 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
             try
             {
                 stmt = con.prepareStatement(deleteSql);
-                boolean commitNeeded = false;
+                final java.util.List<String> batchedIds = new java.util.ArrayList<>();
                 for (ReferenceInfo referenceInfo : entities)
                 {
                     final String id = referenceInfo.getId();
@@ -360,7 +361,7 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
                             stmt.setString(1, id);
                             setTimestamp(stmt, 2, loadedEntities.getLastChanged());
                             stmt.addBatch();
-                            commitNeeded = true;
+                            batchedIds.add(id);
                         }
                         else
                         {
@@ -368,9 +369,35 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
                         }
                     }
                 }
-                if(commitNeeded)
+                if(!batchedIds.isEmpty())
                 {
-                    stmt.executeBatch();
+                    final int[] updateCounts = stmt.executeBatch();
+                    // PRD 054 — conditional delete is rapla's optimistic-lock check
+                    // (DELETE … WHERE ID = ? AND LAST_CHANGED = ?). A row count of 0
+                    // for an entity that has(id)=true means the cache's lastChanged
+                    // disagreed with what's in the DB — either another writer slipped
+                    // a commit in between, OR the in-process cache drifted (the
+                    // post-save refresh failed to write the new lastChanged back to
+                    // the cache). Without this guard the follow-up INSERT trips the
+                    // PK constraint and the user sees an opaque integrity-violation
+                    // message; raising RaplaNewVersionException here surfaces the
+                    // real cause and lets RaplaExceptionHandler return 409 Conflict.
+                    for (int i = 0; i < batchedIds.size(); i++)
+                    {
+                        final int affected = i < updateCounts.length ? updateCounts[i] : 0;
+                        if (affected == 0)
+                        {
+                            final String missedId = batchedIds.get(i);
+                            final Timestamp cached = (Timestamp) cache.get(missedId);
+                            final LocalDateTime cachedLastChanged = cached != null ? cached.getLastChanged() : null;
+                            throw new RaplaNewVersionException(
+                                    "Conditional delete of " + missedId + " in " + getTableName()
+                                            + " affected 0 rows. Cache held lastChanged="
+                                            + cachedLastChanged
+                                            + " but the DB row carries a different value. "
+                                            + "Another writer changed the entity, or the in-process cache drifted (see PRD 054).");
+                        }
+                    }
                 }
             }
             finally

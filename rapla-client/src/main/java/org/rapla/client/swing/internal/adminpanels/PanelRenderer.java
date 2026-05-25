@@ -14,7 +14,9 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
+import javax.swing.Scrollable;
 import javax.swing.SwingConstants;
 
 import java.awt.BorderLayout;
@@ -24,6 +26,8 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.LayoutManager;
+import java.awt.Rectangle;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -95,12 +99,43 @@ final class PanelRenderer
     private JPanel build(BiFunction<String, Map<String, Object>, ActionResult> actionInvoker,
             Consumer<Map<String, Object>> saveAction, String saveLabel)
     {
-        JPanel container = new JPanel(new BorderLayout(0, 8));
-        container.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
-        container.add(buildHeader(),  BorderLayout.NORTH);
-        container.add(buildFields(),  BorderLayout.CENTER);
-        container.add(buildFooter(actionInvoker, saveAction, saveLabel), BorderLayout.SOUTH);
+        // Body (header + fields) lives inside a JScrollPane so long forms
+        // become scrollable; the footer (Save / action buttons) lives in the
+        // outer SOUTH so it is always pinned to the bottom and visible.
+        ScrollablePanel body = new ScrollablePanel(new BorderLayout(0, 8));
+        body.setBorder(BorderFactory.createEmptyBorder(16, 16, 8, 16));
+        body.add(buildHeader(), BorderLayout.NORTH);
+        body.add(buildFields(), BorderLayout.CENTER);
+
+        JScrollPane scroll = new JScrollPane(body);
+        scroll.setBorder(null);
+        scroll.getVerticalScrollBar().setUnitIncrement(16);
+
+        JComponent footer = buildFooter(actionInvoker, saveAction, saveLabel);
+        footer.setBorder(BorderFactory.createEmptyBorder(0, 16, 16, 16));
+
+        JPanel container = new JPanel(new BorderLayout(0, 0));
+        container.add(scroll, BorderLayout.CENTER);
+        container.add(footer, BorderLayout.SOUTH);
         return container;
+    }
+
+    /** Inner panel for the scrollable body. Tracks viewport width so wide
+     *  combo options (e.g. the Exchange Connector timezone list) shrink to
+     *  fit the viewport instead of forcing a horizontal scrollbar. Does
+     *  NOT track viewport height — content taller than the viewport gets
+     *  a vertical scrollbar as expected. */
+    private static final class ScrollablePanel extends JPanel implements Scrollable
+    {
+        ScrollablePanel(LayoutManager lm) { super(lm); }
+        @Override public Dimension getPreferredScrollableViewportSize() { return getPreferredSize(); }
+        @Override public int getScrollableUnitIncrement(Rectangle vis, int orientation, int direction) { return 16; }
+        @Override public int getScrollableBlockIncrement(Rectangle vis, int orientation, int direction)
+        {
+            return orientation == SwingConstants.VERTICAL ? vis.height : vis.width;
+        }
+        @Override public boolean getScrollableTracksViewportWidth() { return true; }
+        @Override public boolean getScrollableTracksViewportHeight() { return false; }
     }
 
     private JComponent buildHeader()

@@ -16,15 +16,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.rapla.plugin.externaleventimport.ExternalEventImportPlugin;
 import org.rapla.plugin.externaleventimport.client.ExternalEventImportController;
-import org.rapla.plugin.externaleventimport.client.ExternalEventImportEnabledCondition;
 import org.rapla.plugin.externaleventimport.client.ExternalEventImportResources;
 import org.rapla.plugin.tempatewizard.client.TemplateWizard;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Service;
 
 @Service(ExternalEventImportPlugin.PLUGIN_ID)
-@Conditional(ExternalEventImportEnabledCondition.class)
 public class ExternalEventImportWizard extends TemplateWizard implements IdentifiableMenuEntry, ReservationWizardExtension
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExternalEventImportWizard.class);
@@ -36,6 +33,9 @@ public class ExternalEventImportWizard extends TemplateWizard implements Identif
      *  by the time the user opens the menu. The controller caches the metadata,
      *  so a brief lag on the very first menu open is the worst case. */
     private volatile String sourceName = "";
+
+    /** Server-driven enablement, cached after first probe. See {@link #isEnabled()}. */
+    private volatile Boolean cachedEnabled;
 
     @Autowired
     public ExternalEventImportWizard(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, CalendarModel model,
@@ -78,6 +78,21 @@ public class ExternalEventImportWizard extends TemplateWizard implements Identif
     @Override
     public boolean isEnabled()
     {
-        return true;
+        // Server is the single source of truth (PluginRegistry entry maps to
+        // rapla.externalevents.enabled in server's application.yml). Client has
+        // no equivalent config — discovery via /api/plugins/externaleventimport.
+        // Mirrors TemplateWizard.isEnabled() pattern.
+        Boolean c = cachedEnabled;
+        if (c != null) return c;
+        try
+        {
+            cachedEnabled = plugins.get("externaleventimport").enabled();
+            return cachedEnabled;
+        }
+        catch (Exception e)
+        {
+            LOGGER.warn("Could not query external-event-import plugin state: {}", e.getMessage());
+            return false;
+        }
     }
 }

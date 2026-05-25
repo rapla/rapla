@@ -104,7 +104,7 @@ public class ExternalUserResolver
 
         boolean sourceNeedsUpdate = !expectedSource.equals(currentSource);
         boolean nameNeedsUpdate = idpName != null && !idpName.isEmpty() && !idpName.equals(user.getName());
-        boolean emailNeedsUpdate = idpEmail != null && !idpEmail.isEmpty() && !idpEmail.equals(user.getEmail());
+        boolean emailNeedsUpdate = idpEmail != null && !idpEmail.isEmpty() && !idpEmail.equalsIgnoreCase(user.getEmail());
 
         if (!sourceNeedsUpdate && !nameNeedsUpdate && !emailNeedsUpdate)
         {
@@ -212,11 +212,10 @@ public class ExternalUserResolver
 
     private User findUserByEmail(String email) throws RaplaException
     {
-        String normalized = email.toLowerCase(Locale.ROOT);
         for (User user : facade.getUsers())
         {
             String userEmail = user.getEmail();
-            if (userEmail != null && normalized.equals(userEmail.toLowerCase(Locale.ROOT)))
+            if (userEmail != null && email.equalsIgnoreCase(userEmail))
             {
                 return user;
             }

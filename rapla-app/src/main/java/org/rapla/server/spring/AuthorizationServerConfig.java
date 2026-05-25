@@ -15,7 +15,10 @@ import org.rapla.server.spring.oauth.RaplaOauthRedirectProperties;
 import org.rapla.server.util.LoopbackUriCheck;
 import org.rapla.server.util.SameOriginUriCheck;
 import org.rapla.server.util.WslBridgeUriCheck;
+import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.LoginCredentials;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,6 +26,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.Customizer;
 import org.springframework.beans.factory.annotation.Value;
@@ -123,6 +127,8 @@ import java.util.stream.Collectors;
 @EnableConfigurationProperties(RaplaOauthRedirectProperties.class)
 public class AuthorizationServerConfig
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthorizationServerConfig.class);
+
     private final RaplaOauthRedirectProperties redirectProps;
 
     public AuthorizationServerConfig(RaplaOauthRedirectProperties redirectProps)
@@ -568,9 +574,27 @@ public class AuthorizationServerConfig
                 {
                     throw e;
                 }
+                catch (RaplaSecurityException e)
+                {
+                    // Genuine auth failure surfaced by rapla (wrong password,
+                    // disabled user, AuthenticationStore returned false). Map to
+                    // Spring's "bad credentials" so OAuth2 surfaces invalid_grant.
+                    throw new BadCredentialsException(e.getMessage(), e);
+                }
                 catch (Exception e)
                 {
-                    throw new BadCredentialsException("authentication failed", e);
+                    // Internal failure on the server AFTER credentials were
+                    // already accepted (e.g. storeAndRemove rolled back on a DB
+                    // integrity violation while stamping authenticationSource).
+                    // BadCredentialsException would mislead the user into
+                    // re-typing a valid password — surface as Spring's
+                    // InternalAuthenticationServiceException so OAuth2 maps it to
+                    // server_error and log the actual cause prominently.
+                    LOGGER.error("Authentication for user '{}' failed due to a server-side error after credentials were accepted: {}",
+                            username, e.getMessage(), e);
+                    throw new InternalAuthenticationServiceException(
+                            "Authentication for '" + username + "' failed on the server (not a credentials problem): "
+                                    + e.getMessage(), e);
                 }
             }
 

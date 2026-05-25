@@ -703,6 +703,44 @@ import java.time.LocalDateTime;
                     {
                         refreshWithoutLock(refreshObject);
                     }
+                    // PRD 054 — detect post-save cache drift. Every just-stored
+                    // entity must round-trip back through the history-replay
+                    // query, otherwise the cache holds the pre-save state and
+                    // the next save of the same id will trip a PK violation.
+                    final Set<String> refreshedIds = new HashSet<>();
+                    if (refreshObject != null)
+                    {
+                        for (ReferenceInfo id : refreshObject.allIds)
+                        {
+                            refreshedIds.add(id.getId());
+                        }
+                    }
+                    final List<String> missing = new ArrayList<>();
+                    for (Entity stored : storeObjects)
+                    {
+                        if (!refreshedIds.contains(stored.getId()))
+                        {
+                            missing.add(stored.getId());
+                        }
+                    }
+                    for (ReferenceInfo removed : removeObjects)
+                    {
+                        if (!refreshedIds.contains(removed.getId()))
+                        {
+                            missing.add(removed.getId());
+                        }
+                    }
+                    if (!missing.isEmpty())
+                    {
+                        LOGGER.warn("PRD054 post-save cache drift: dispatch committed {} entity/ies that the history-replay query did not return — cache is now stale. missing={} refreshObject={} lastUpdated={} connectionTime={} storeCount={} removeCount={}",
+                                missing.size(),
+                                missing,
+                                refreshObject == null ? "NULL" : "PRESENT",
+                                refreshObject == null ? "-" : refreshObject.lastUpdated,
+                                refreshObject == null ? "-" : refreshObject.connectionTime,
+                                storeObjects.size(),
+                                removeObjects.size());
+                    }
                 }
                 catch (SQLException e)
                 {

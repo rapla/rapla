@@ -377,10 +377,10 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
             modified = true;
         }
         String oldEmail = user.getEmail();
-        if ( intUser.mail != null && (oldEmail == null || !oldEmail.equals( intUser.mail ))) {
+        if ( intUser.mail != null && (oldEmail == null || !oldEmail.equalsIgnoreCase( intUser.mail ))) {
             user.setEmail( intUser.mail );
             modified = true;
-        } 
+        }
         String oldName = user.getName();
         if ( intUser.cn != null && (oldName == null || !oldName.equals( intUser.cn )) ) {
             user.setName( intUser.cn );
