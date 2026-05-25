@@ -1,0 +1,50 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Rapla",
+  "version": "2.1.0",
+  "identifier": "de.erdkante.rapla.standalone",
+  "build": {
+    "beforeDevCommand": "",
+    "beforeBuildCommand": "",
+    "frontendDist": "../frontend-placeholder"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Rapla",
+        "url": "about:blank",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 600,
+        "resizable": true,
+        "center": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["msi"],
+    "icon": [
+      "icons/icon.ico"
+    ],
+    "category": "Productivity",
+    "publisher": "erdkante GmbH",
+    "shortDescription": "Resource scheduling and event planning",
+    "longDescription": "Rapla — standalone trial install. Single-user, file-backed storage. For evaluation; deploy the full multi-user server for production.",
+    "copyright": "Copyright (c) 2026 erdkante GmbH",
+    "resources": {
+      "../runtime/rapla-server": "rapla-server"
+    },
+    "windows": {
+      "wix": {
+        "language": ["en-US", "de-DE"]
+      },
+      "_signCommand_comment": "Phase 1 ships unsigned / self-signed. For SSL.com YubiKey production signing, replace this comment with a real signCommand. Example: 'signtool sign /tr http://timestamp.sectigo.com /td sha256 /fd sha256 /sha1 <CERT-THUMBPRINT> \"%1\"' — requires the YubiKey plugged in + the thumbprint of the SSL.com cert in the Windows Certificate Store (Personal → Certificates). See docs/signing.md."
+    }
+  }
+}

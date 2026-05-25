@@ -90,7 +90,8 @@ public class ServerServiceConfig
             RaplaResources i18n,
             TokenHandler tokenHandler,
             CachableStorageOperator operator,
-            ObjectProvider<AuthenticationStore> authenticationStoreProvider)
+            ObjectProvider<AuthenticationStore> authenticationStoreProvider,
+            @org.springframework.beans.factory.annotation.Value("${rapla.password-check-disabled:false}") boolean passwordCheckDisabled)
     {
         // ObjectProvider.getIfAvailable(): null when no AuthenticationStore bean
         // is published, the single bean when exactly one exists, throws
@@ -100,7 +101,7 @@ public class ServerServiceConfig
         // legacy JNDI/LDAP, or a future Keycloak adapter each register one).
         // See AuthenticationStoreInjectionTest for the regression check.
         return new RaplaAuthentificationService(i18n, tokenHandler, operator,
-                authenticationStoreProvider.getIfAvailable());
+                authenticationStoreProvider.getIfAvailable(), passwordCheckDisabled);
     }
 
     /** PRD 009: empty default so the constructor of {@code RemoteStorageController}

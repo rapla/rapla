@@ -14,6 +14,10 @@
              Downstream deployments override to true so this module's run goal
              doesn't run alongside theirs. -->
         <rapla.app.spring-boot-run.skip>false</rapla.app.spring-boot-run.skip>
+        <!-- Default for the JNLP webclient/ staging skip flag (PRD 054).
+             -Pstandalone flips this true to drop the Swing client's staging
+             executions from the build. -->
+        <webclient.skip>false</webclient.skip>
     </properties>
     <name>rapla - app</name>
     <description>Runnable Spring Boot application: @SpringBootApplication entry point, JNLP webclient/ staging, signing profiles, distribution assembly. Depends on rapla-server + rapla-client. Final on-disk JAR is rapla-2.1-SNAPSHOT.jar via &lt;finalName&gt; (PRD 005 OQ2).</description>
@@ -72,6 +76,10 @@
                             <goal>copy-dependencies</goal>
                         </goals>
                         <configuration>
+                            <!-- PRD 054: webclient.skip flips on under -Pstandalone (no Swing
+                                 client in the standalone build, so target/webclient/ would be
+                                 dead bytes). Defaults false. -->
+                            <skip>${webclient.skip}</skip>
                             <outputDirectory>${project.build.directory}/webclient</outputDirectory>
                             <includeScope>runtime</includeScope>
                             <!-- The Swing client uses spring-context (NOT @SpringBootApplication —
@@ -129,6 +137,7 @@
                             <goal>run</goal>
                         </goals>
                         <configuration>
+                            <skip>${webclient.skip}</skip>
                             <target>
                                 <echo file="${project.build.directory}/jnlp-manifest-attrs.txt"
                                       message="Permissions: all-permissions${line.separator}Codebase: *${line.separator}Application-Name: Rapla${line.separator}"
@@ -161,6 +170,7 @@
                             <goal>run</goal>
                         </goals>
                         <configuration>
+                            <skip>${webclient.skip}</skip>
                             <target>
                                 <fileset id="slf4j.api.jars"
                                          dir="${project.build.directory}/webclient"
@@ -184,6 +194,7 @@
                             <goal>run</goal>
                         </goals>
                         <configuration>
+                            <skip>${webclient.skip}</skip>
                             <target>
                                 <mkdir dir="${project.build.directory}/classes" />
                                 <pathconvert pathsep=";" property="webclient.jars">
@@ -214,6 +225,7 @@
                             <goal>run</goal>
                         </goals>
                         <configuration>
+                            <skip>${webclient.skip}</skip>
                             <target>
                                 <mkdir dir="${project.build.directory}/fatjar-overlay/BOOT-INF/lib" />
                                 <copy todir="${project.build.directory}/fatjar-overlay/BOOT-INF/lib" overwrite="true">
@@ -308,6 +320,7 @@
                         <phase>prepare-package</phase>
                         <goals><goal>copy-resources</goal></goals>
                         <configuration>
+                            <skip>${webclient.skip}</skip>
                             <outputDirectory>${project.build.directory}/classes/static/webclient</outputDirectory>
                             <resources>
                                 <resource>
@@ -608,6 +621,54 @@
                     <artifactId>dhbwrapla</artifactId>
                     <version>1.0-SNAPSHOT</version>
                     <scope>runtime</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+        <!-- PRD 054 (2026-05-25) — Standalone trial install (Windows desktop).
+             Excludes the Swing client (rapla-client) and skips the JNLP webclient
+             staging steps — both are useless in the Tauri/SPA standalone shape.
+             Runtime activates the `standalone` Spring profile via
+             {@code application-standalone.yml} (oauth disabled, password check
+             skipped, FileOperator storage). The Tauri launcher passes the
+             Spring profile via JVM arg when it spawns the JAR as a child
+             process.
+
+             Phase 1.5 (deferred): also exclude spring-security-* /
+             spring-authorization-server / springdoc-openapi / nimbus-jose-jwt
+             once {@code @ConditionalOnClass} guards on SecurityConfig /
+             JwtConfig / AuthorizationServerConfig are in place. Saves ~25 MB. -->
+        <profile>
+            <id>standalone</id>
+            <properties>
+                <!-- Skip the JNLP webclient staging — no Swing client in standalone,
+                     so target/webclient/ would just be dead bytes. Both the
+                     dependency-plugin copy step and the antrun manifest-injection
+                     step check this. -->
+                <webclient.skip>true</webclient.skip>
+            </properties>
+            <build>
+                <!-- Output as rapla-standalone.jar (no version suffix) so the
+                     standalone artifact doesn't clobber the regular fat JAR
+                     (rapla-2.1-SNAPSHOT.jar) in target/. Both can live side by
+                     side; the Tauri build script bundles this one specifically. -->
+                <finalName>rapla-standalone</finalName>
+            </build>
+            <dependencies>
+                <!-- Swing desktop client — useless in the Tauri/SPA standalone shape.
+                     `provided` scope drops it from the runtime classpath (and thus
+                     the fat JAR) without breaking the reactor build order. -->
+                <dependency>
+                    <groupId>org.rapla</groupId>
+                    <artifactId>rapla-client</artifactId>
+                    <scope>provided</scope>
+                </dependency>
+                <!-- rxjava is a rapla-client / Swing-UI concern (Swing scheduler glue,
+                     UI event streams). Server-side bytecode has zero references —
+                     same exclusion logic as rapla-client. -->
+                <dependency>
+                    <groupId>io.reactivex.rxjava3</groupId>
+                    <artifactId>rxjava</artifactId>
+                    <scope>provided</scope>
                 </dependency>
             </dependencies>
         </profile>

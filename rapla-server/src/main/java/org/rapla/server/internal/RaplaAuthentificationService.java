@@ -38,22 +38,23 @@ public class RaplaAuthentificationService
     final AuthenticationStore authenticationStore;
     final CachableStorageOperator operator;
 
-    private static boolean passwordCheckDisabled = false;
+    /** PRD 054 (2026-05-25) — standalone trial install: skip password verification
+     *  entirely (single-user, no auth). Bound from the Spring property
+     *  {@code rapla.password-check-disabled}. Defaults false; the {@code standalone}
+     *  Spring profile flips it true via {@code application-standalone.yml}. */
+    private final boolean passwordCheckDisabled;
 
     public RaplaAuthentificationService(RaplaResources i18n,
                                         TokenHandler tokenHandler,
                                         CachableStorageOperator operator,
-                                        AuthenticationStore authenticationStore)
+                                        AuthenticationStore authenticationStore,
+                                        @org.springframework.beans.factory.annotation.Value("${rapla.password-check-disabled:false}") boolean passwordCheckDisabled)
     {
         this.i18n = i18n;
         this.tokenHandler = tokenHandler;
         this.operator = operator;
         this.authenticationStore = authenticationStore;
-    }
-
-    public static void setPasswordCheckDisabled(boolean passwordCheckDisabled)
-    {
-        RaplaAuthentificationService.passwordCheckDisabled = passwordCheckDisabled;
+        this.passwordCheckDisabled = passwordCheckDisabled;
     }
 
     protected User getValidUser(final RemoteSession session, HttpServletRequest request) throws RaplaSecurityException
