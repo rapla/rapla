@@ -4,6 +4,44 @@ import org.rapla.ConnectInfo;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
+/**
+ * In-memory holder for the Swing client's current session state — access /
+ * refresh tokens, OAuth provider routing, optional impersonation override, and
+ * an auth-dead hook the interceptor fires when everything is rejected.
+ *
+ * <h2>Two-slot bearer model</h2>
+ *
+ * Mirrors the Angular SPA's two-slot design (see
+ * {@code rapla-angular/src/app/auth/auth.service.ts}, PRD 051):
+ *
+ * <ul>
+ *   <li><b>Admin session</b> — {@link #accessToken} + {@link #refreshToken} +
+ *       {@link #refreshUrl} + {@link #oauthClientId}. Persistent across the
+ *       session. Refreshed by {@code MyCustomConnector.refreshUsingToken} and
+ *       {@code RefreshOn401Interceptor.doRefresh} via the saved provider URL.
+ *       Angular equivalent: {@code angular-oauth2-oidc} library state stored
+ *       under {@code localStorage}.</li>
+ *   <li><b>Impersonation override</b> — {@link #impersonationAccessToken} +
+ *       {@link #impersonationTargetUsername}. Sidecar that takes precedence for
+ *       outbound bearers via {@link #getEffectiveAccessToken()}, but is
+ *       invisible to {@link #getAccessToken()} / {@link #adminToken()} so the
+ *       impersonation-renewal call to {@code /api/auth/impersonate} still
+ *       authenticates as the admin. No refresh counterpart by PRD 051 design.
+ *       Angular equivalent: {@code AuthService.impersonationOverride} signal
+ *       backed by {@code sessionStorage} key {@code rapla.impersonationOverride}.</li>
+ * </ul>
+ *
+ * <p>The {@code getEffectiveAccessToken()} / {@code getAccessToken()} split is
+ * the load-bearing contract — call the right one at each site:
+ * <ul>
+ *   <li>Outbound API request → {@code getEffectiveAccessToken()} (uses override
+ *       if active)</li>
+ *   <li>Refresh-token reauth → {@code getAccessToken()} (always admin's, since
+ *       impersonation has no refresh)</li>
+ *   <li>Impersonation renewal POST → {@code adminToken()} (alias for
+ *       {@code getAccessToken()}; named to match the Angular method)</li>
+ * </ul>
+ */
 public class RemoteConnectionInfo
 {
     String accessToken;
@@ -17,7 +55,9 @@ public class RemoteConnectionInfo
     // No refresh-token counterpart by design — renewal is via another
     // call to /api/auth/impersonate when the token expires.
     // Cleared on switch-back, on logout, and on the auth-dead hook.
-    String impersonationToken;
+    // PRD 029 Phase 5: renamed from `impersonationToken` to make the access-only
+    // nature explicit and match Angular's `override.accessToken` naming.
+    String impersonationAccessToken;
     String impersonationTargetUsername;
     // PRD 029 Phase 4 — the token endpoint + client_id this session must use
     // for refresh-token reauth. For a rapla-SAS / password session these stay
@@ -34,6 +74,9 @@ public class RemoteConnectionInfo
      *  user gets a re-login dialog instead of seeing the calendar quietly
      *  freeze with logged 401s. Transient — never serialised. */
     transient Runnable onAuthDead;
+    /** Stashed reauth credentials — always tokens-only (PRD 029 Phase 5).
+     *  The slimmed {@link ConnectInfo} no longer carries username/password,
+     *  so this field can never hold a password reference. */
     ConnectInfo connectInfo;
 
     @Autowired
@@ -43,11 +86,11 @@ public class RemoteConnectionInfo
     public void setStatusUpdater(StatusUpdater statusUpdater) {
         this.statusUpdater = statusUpdater;
     }
-    
+
     public StatusUpdater getStatusUpdater() {
         return statusUpdater;
     }
-    
+
     public void setAccessToken(String accessToken) {
         this.accessToken = accessToken;
     }
@@ -55,13 +98,24 @@ public class RemoteConnectionInfo
     public void setServerURL(String serverURL) {
         this.serverURL = serverURL;
     }
-    
+
     public String get()
     {
         return serverURL;
     }
 
+    /** The admin's regular access token — ignores any active impersonation
+     *  override. Use {@link #getEffectiveAccessToken()} for outbound API
+     *  request bearers; use this one only for "is the admin's own session
+     *  still alive?" semantics (refresh-token reauth, impersonation renewal). */
     public String getAccessToken() {
+        return accessToken;
+    }
+
+    /** Alias for {@link #getAccessToken()} — named to mirror the Angular
+     *  SPA's {@code AuthService.adminToken()}. Same return semantics: always
+     *  the admin's token, never the impersonation override. */
+    public String adminToken() {
         return accessToken;
     }
 
@@ -148,26 +202,32 @@ public class RemoteConnectionInfo
      * requests use {@link #getEffectiveAccessToken()} which prefers
      * this token when set.
      *
-     * @param impersonationToken the rapla-SAS-signed access JWT, or
+     * <p>Angular equivalent: {@code AuthService.impersonationOverride.set(...)}
+     * which writes to the {@code rapla.impersonationOverride} key in
+     * {@code sessionStorage}.
+     *
+     * @param impersonationAccessToken the rapla-SAS-signed access JWT, or
      *   {@code null} to clear (switch back to admin's identity)
      * @param targetUsername the impersonated user's username, for UI
      *   indicators and for renewal calls that need the {@code
      *   target_username} form parameter
      */
-    public void setImpersonationToken(String impersonationToken, String targetUsername)
+    public void setImpersonationAccessToken(String impersonationAccessToken, String targetUsername)
     {
-        this.impersonationToken = impersonationToken;
-        this.impersonationTargetUsername = (impersonationToken == null) ? null : targetUsername;
+        this.impersonationAccessToken = impersonationAccessToken;
+        this.impersonationTargetUsername = (impersonationAccessToken == null) ? null : targetUsername;
     }
 
+    /** Clear the impersonation override (switch back to admin identity).
+     *  Angular equivalent: {@code AuthService.endImpersonation()}. */
     public void clearImpersonationToken()
     {
-        setImpersonationToken(null, null);
+        setImpersonationAccessToken(null, null);
     }
 
-    public String getImpersonationToken()
+    public String getImpersonationAccessToken()
     {
-        return impersonationToken;
+        return impersonationAccessToken;
     }
 
     public String getImpersonationTargetUsername()
@@ -175,21 +235,25 @@ public class RemoteConnectionInfo
         return impersonationTargetUsername;
     }
 
-    public boolean hasImpersonationToken()
+    /** True when an impersonation override is active. Angular equivalent:
+     *  {@code AuthService.isImpersonating()}. */
+    public boolean isImpersonating()
     {
-        return impersonationToken != null && !impersonationToken.isEmpty();
+        return impersonationAccessToken != null && !impersonationAccessToken.isEmpty();
     }
 
     /**
      * The Bearer to send on outbound API requests. Returns the
      * impersonation token when set, otherwise the admin's regular
      * access token. The renewal-on-401 path reads
-     * {@link #getAccessToken()} directly (the admin token) so it can
-     * authenticate the {@code /api/auth/impersonate} call even while
-     * an impersonation is active.
+     * {@link #getAccessToken()} / {@link #adminToken()} directly (the admin
+     * token) so it can authenticate the {@code /api/auth/impersonate} call
+     * even while an impersonation is active.
+     *
+     * <p>Angular equivalent: {@code AuthService.token()}.
      */
     public String getEffectiveAccessToken()
     {
-        return hasImpersonationToken() ? impersonationToken : accessToken;
+        return isImpersonating() ? impersonationAccessToken : accessToken;
     }
 }

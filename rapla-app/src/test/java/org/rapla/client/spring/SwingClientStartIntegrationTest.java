@@ -5,8 +5,12 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.rapla.ConnectInfo;
+import org.rapla.entities.User;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.server.spring.RaplaSpringBootApplication;
+import org.rapla.server.spring.RefreshSessionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -85,12 +89,24 @@ class SwingClientStartIntegrationTest
     @LocalServerPort
     int serverPort;
 
+    /** PRD 029 Phase 5: mint a JWT for "homer" via the server-side
+     *  {@link RefreshSessionService} — no password handling in the test. */
+    @Autowired RefreshSessionService refreshSessionService;
+    @Autowired RaplaFacade serverFacade;
+
     @Test
     void clientConnectsToServerAndOperatorIsConnected() throws Exception
     {
         // Point the Swing client's StartupEnvironment.getDownloadURL() at the live test server.
         // RaplaClientServiceImpl reads this in its ctor and pushes it onto RemoteConnectionInfo.
         System.setProperty("rapla.download.url", "http://localhost:" + serverPort + "/");
+
+        // PRD 029 Phase 5: mint a token for "homer" server-side and use it as
+        // the bootstrap credential. No password ever appears in this test.
+        User homer = serverFacade.getOperator().getUser("homer");
+        assertNotNull(homer, "test fixture should have user 'homer'");
+        RefreshSessionService.IssuedTokens tokens = refreshSessionService.issueAndPersist(homer);
+        ConnectInfo info = new ConnectInfo(tokens.accessToken(), tokens.refreshToken());
 
         try (SpringRaplaClient client = new SpringRaplaClient())
         {
@@ -99,13 +115,14 @@ class SwingClientStartIntegrationTest
 
             // Force RaplaClientServiceImpl construction — its ctor wires the RemoteOperator
             // onto the facade via setOperator(). With global lazy-init nothing else triggers
-            // this, so the facade would have null operator and login() would NPE.
+            // this, so the facade would have null operator and connect() would NPE.
             assertNotNull(client.getContext().getBean(org.rapla.client.api.ClientService.class),
                     "ClientService bean must wire (this triggers operator → facade attach)");
 
-            // login() drives RemoteOperator.connect() — full REST round-trip to /authentication.
-            boolean ok = facade.login("homer", "duffs".toCharArray());
-            assertTrue(ok, "homer/duffs must authenticate against the test server");
+            // connect() drives RemoteOperator.connect() — full REST round-trip with the
+            // minted Bearer; exercises the URL plumbing + JWT validation end-to-end.
+            boolean ok = facade.connect(info);
+            assertTrue(ok, "minted homer JWT must authenticate against the test server");
             assertTrue(facade.isSessionActive(), "facade session must be active after successful login");
         }
     }

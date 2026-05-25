@@ -32,7 +32,7 @@ Use for human debugging or when you want stdout in your shell:
 
 ```bash
 mvn -pl rapla-client -am compile exec:java \
-    -Dexec.args="admin" \
+    -Dexec.args="$RAPLA_DEV_TOKEN" \
     -Dexec.daemonThreadJoinTimeout=86400000
 ```
 
@@ -44,7 +44,7 @@ Use this when an AI agent launches the client (Bash tool with
 ```bash
 mkdir -p logs
 mvn -pl rapla-client -am compile exec:java \
-    -Dexec.args="admin" \
+    -Dexec.args="$RAPLA_DEV_TOKEN" \
     -Dexec.daemonThreadJoinTimeout=86400000 \
     > logs/rapla-client.log 2>&1 &
 CLIENT_PID=$!
@@ -60,10 +60,22 @@ is the actual app PID; SIGTERM triggers Spring's context shutdown hooks
 
 ### `-Dexec.args` — credentials
 
-- `-Dexec.args="admin"` — auto-login as admin with empty password (dev DB default)
-- `-Dexec.args="admin admin-password"` — if you changed the admin password
-- `-Dexec.args="homer duffs"` — alternative testdefault.xml user
-- Omit entirely → the Swing login dialog opens
+PRD 029 Phase 5 (2026-05-25): the CLI takes a single **API JWT** as the only
+arg — no more `username password` form. Mint a JWT once via Scalar UI
+(`/scalar` → `POST /api/auth/api-keys` body `{"label":"dev-cli","expiresInDays":3650}`,
+copy the `key` field from the response), save to env var, reuse forever:
+
+```bash
+export RAPLA_DEV_TOKEN="eyJhbGciOiJSUzI1NiIs..."
+```
+
+- `-Dexec.args="$RAPLA_DEV_TOKEN"` — auto-login as the user whose API key this is
+- Omit entirely → the Swing login dialog opens (which is also the path you take
+  the very first time before you have an API key minted — log in as admin via
+  the dialog, mint a key from there, save to env var)
+
+The OLD `-Dexec.args="admin"` / `-Dexec.args="admin password"` form is gone;
+`parseConnectInfo` treats a single arg as an access token only.
 
 ## Why the long `daemonThreadJoinTimeout`
 
@@ -126,5 +138,5 @@ Two (or more) Swing clients against the same server is supported and
 useful — e.g. concurrent-edit testing, multi-user permission probing,
 A/B'ing changes. Give each its own log/pid pair so they don't clobber:
 `logs/rapla-client.{log,pid}` for the first, `logs/rapla-client-2.{log,pid}`
-for the second, and so on. Same `-Dexec.args="admin"` is fine; the server
-issues separate sessions per login.
+for the second, and so on. Same `-Dexec.args="$RAPLA_DEV_TOKEN"` is fine;
+the server issues separate sessions per login.

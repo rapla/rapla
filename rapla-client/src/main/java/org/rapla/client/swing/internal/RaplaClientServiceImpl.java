@@ -52,7 +52,7 @@ import org.rapla.scheduler.Promise;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.LoginTokens;
 import org.rapla.storage.dbrm.TokenStore;
-import org.rapla.storage.dbrm.RemoteAuthentificationService;
+import org.rapla.storage.dbrm.OAuth2PasswordLogin;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteOperator;
 
@@ -104,7 +104,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
 
     Application application;
     final private Supplier<Application> applicationProvider;
-    RemoteAuthentificationService authentificationService;
+    OAuth2PasswordLogin passwordLogin;
     RemoteConnectionInfo connectionInfo;
     final org.rapla.storage.dbrm.TokenStore tokenStore;
     final org.rapla.client.event.RaplaEventBus eventBus;
@@ -123,13 +123,13 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     @Autowired
     public RaplaClientServiceImpl(StartupEnvironment env, DialogUiFactoryInterface dialogUiFactory, ClientFacade facade, RaplaResources i18n, RaplaSystemInfo systemInfo,
                                   RaplaLocale raplaLocale, BundleManager bundleManager, CommandScheduler commandScheduler, final RemoteOperator storageOperator,
-                                  Supplier<Application> applicationProvider, RemoteConnectionInfo connectionInfo, RemoteAuthentificationService authentificationService,
+                                  Supplier<Application> applicationProvider, RemoteConnectionInfo connectionInfo, OAuth2PasswordLogin passwordLogin,
                                   org.rapla.storage.dbrm.TokenStore tokenStore, org.rapla.client.event.RaplaEventBus eventBus,
                                   org.rapla.client.spring.LogoutSignal logoutSignal)
     {
         this.tokenStore = tokenStore == null ? org.rapla.storage.dbrm.TokenStores.noOp() : tokenStore;
         this.env = env;
-        this.authentificationService = authentificationService;
+        this.passwordLogin = passwordLogin;
         this.i18n = i18n;
         String version = systemInfo.getString("rapla.version");
         LOGGER.info("Rapla.Version={}", version);
@@ -205,6 +205,14 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         return facade;
     }
 
+    @Override
+    public void setImpersonation(String impersonationAccessToken, String targetUsername)
+    {
+        if (impersonationAccessToken == null || impersonationAccessToken.isEmpty()) return;
+        connectionInfo.setImpersonationAccessToken(impersonationAccessToken, targetUsername);
+        LOGGER.info("impersonation override applied for target user '{}'", targetUsername);
+    }
+
     public void start(ConnectInfo connectInfo) throws Exception
     {
         if (started)
@@ -231,10 +239,11 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         advanceLoading(true);
 
         logoutAvailable = true;
-        // Auto-login when the ConnectInfo carries any credential — username +
-        // password (legacy), or an access token (PRD 052 Phase 2 switch-to-user
-        // path: impersonation ConnectInfo has only an access token, no username).
-        if (connectInfo != null && (connectInfo.getUsername() != null || connectInfo.getAccessToken() != null))
+        // PRD 029 Phase 5: ConnectInfo carries tokens only. Non-null means the
+        // launcher supplied an access token (CLI args carrying an API JWT, OAuth
+        // tokens from a previous iteration's switch-to-user, etc.); null means
+        // "no credentials, show login dialog".
+        if (connectInfo != null)
         {
             login(connectInfo).thenAccept( (result)-> {
                 LOGGER.info("Login successfull");
@@ -426,10 +435,14 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     {
         if (user == null)
         {
-            // PRD 052 Phase 2 — "are we impersonating?" comes from LogoutSignal,
-            // not connectionInfo.hasImpersonationToken(). The close+recreate
-            // model carries the impersonation token in the regular accessToken
-            // slot, not the dual-slot the old in-place switchTo populated.
+            // PRD 052 Phase 2 + PRD 029 Phase 5 — "are we impersonating?" still
+            // comes from LogoutSignal even though the dual-slot model is now
+            // wired correctly. LogoutSignal carries the boolean across the
+            // context boundary because the launcher (SpringRaplaClient.main)
+            // is the source of truth for "this iteration was started as an
+            // impersonation session"; reading connectionInfo.isImpersonating()
+            // works too but couples this decision to the post-start setter
+            // ordering. Keep the signal-based flag.
             if (!logoutSignal.isImpersonationSession())
             {
                 throw new RaplaException("Not currently switched to another user.");
@@ -457,20 +470,24 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             // token swap hit because admin's LocalCache contained data the
             // impersonated user shouldn't see.
             //
-            // PRD 051 § "Token renewal model" — impersonation tokens are not
-            // refreshable; the new ConnectInfo carries only the access token.
-            // When it expires, the user re-clicks switch-to-user (or we add a
-            // re-impersonate hook later).
-            ConnectInfo impersonationInfo = ConnectInfo.withAccessToken(resp.getAccessToken(), null);
-            // Capture admin's current credentials NOW — connectionInfo dies with
-            // the context. Without this the launcher can't restore the admin
-            // session on switch-back, especially when admin logged in via the
-            // interactive dialog (then there's no startup-supplied ConnectInfo
-            // to fall back to).
-            ConnectInfo adminRestoreInfo = ConnectInfo.withAccessToken(
+            // PRD 029 Phase 5 dual-slot — the new context starts with the
+            // ADMIN's full session as primary (so refresh + impersonation
+            // renewal both work), then sets the impersonation token in the
+            // dedicated impersonation slot via ClientService.setImpersonation().
+            // Admin Keycloak refresh continues to route through the saved
+            // provider URL even after the context restart.
+            String impersonationAccessToken = resp.getAccessToken();
+            String targetUsername = user.getUsername();
+            // Capture admin's FULL session NOW — connectionInfo dies with
+            // the context. Carry tokens + provider routing so post-restart
+            // refresh hits the right provider.
+            ConnectInfo adminFullInfo = new ConnectInfo(
                     connectionInfo.getAccessToken(),
-                    connectionInfo.getRefreshToken());
-            logoutSignal.next(org.rapla.client.spring.NextSession.switchTo(impersonationInfo, adminRestoreInfo));
+                    connectionInfo.getRefreshToken(),
+                    connectionInfo.getRefreshUrl(),
+                    connectionInfo.getOauthClientId());
+            logoutSignal.next(org.rapla.client.spring.NextSession.switchTo(
+                    adminFullInfo, impersonationAccessToken, targetUsername));
         }
     }
 
@@ -585,6 +602,13 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
      * a fresh access token, and stashes both on the connectionInfo. Returns true
      * if the user is now logged in; false to fall through to the login dialog.
      * Never throws — any failure falls through.
+     *
+     * <p>PRD 029 Phase 4 + 2026-05-25: the refresh URL + client_id are persisted
+     * alongside the token at login time ({@link TokenStore#KEY_REFRESH_URL},
+     * {@link TokenStore#KEY_OAUTH_CLIENT_ID}). Empty prefs = rapla-SAS session →
+     * fall back to {@code serverURL + /oauth2/token} with {@code client_id=rapla-client}.
+     * A populated pref = the provider's token endpoint (Keycloak direct, or the
+     * rapla BFF for secret-backed providers).
      */
     private boolean tryRestoreFromCachedRefreshToken()
     {
@@ -607,53 +631,52 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         LOGGER.info("startup: cached refresh token found — attempting silent reauth");
         try
         {
-            // The discovery refresh URL isn't known until we hit /api/auth/oauth/config —
-            // for the cached-token path we use the rapla default <server>/api/auth/refresh.
-            // If discovery later changes the refresh URL (Keycloak), the cached token
-            // from the embedded auth server won't validate there anyway — fall through.
-            String serverUrl = connectionInfo.getServerURL();
-            if (serverUrl == null || serverUrl.isEmpty())
+            String savedRefreshUrl = readLoginPref(TokenStore.KEY_REFRESH_URL);
+            String savedClientId = readLoginPref(TokenStore.KEY_OAUTH_CLIENT_ID);
+            String tokenUrl;
+            if (savedRefreshUrl != null && !savedRefreshUrl.isEmpty())
             {
-                LOGGER.info("startup: server URL not yet set — falling back to login dialog");
-                return false;
+                tokenUrl = savedRefreshUrl;
             }
-            String refreshEndpoint = serverUrl + "/api/auth/refresh";
-            String body = "{\"refreshToken\":\"" + cachedRefresh + "\"}";
-            java.net.http.HttpClient http = java.net.http.HttpClient.newBuilder()
-                    .connectTimeout(java.time.Duration.ofSeconds(10)).build();
-            java.net.http.HttpRequest req = java.net.http.HttpRequest.newBuilder(java.net.URI.create(refreshEndpoint))
-                    .timeout(java.time.Duration.ofSeconds(10))
-                    .header("Content-Type", "application/json")
-                    .header("Accept", "application/json")
-                    .POST(java.net.http.HttpRequest.BodyPublishers.ofString(body, java.nio.charset.StandardCharsets.UTF_8))
-                    .build();
-            java.net.http.HttpResponse<String> resp = http.send(req,
-                    java.net.http.HttpResponse.BodyHandlers.ofString(java.nio.charset.StandardCharsets.UTF_8));
-            if (resp.statusCode() / 100 != 2)
+            else
             {
-                LOGGER.info("startup: cached refresh token rejected by server (HTTP {}) — clearing cache and falling back to login dialog",
-                        resp.statusCode());
+                String serverUrl = connectionInfo.getServerURL();
+                if (serverUrl == null || serverUrl.isEmpty())
+                {
+                    LOGGER.info("startup: server URL not yet set — falling back to login dialog");
+                    return false;
+                }
+                String trimmed = serverUrl.endsWith("/") ? serverUrl.substring(0, serverUrl.length() - 1) : serverUrl;
+                tokenUrl = trimmed + "/oauth2/token";
+            }
+            String clientId = (savedClientId == null || savedClientId.isEmpty()) ? "rapla-client" : savedClientId;
+            SilentRefreshResult result = executeSilentRefresh(tokenUrl, clientId, cachedRefresh);
+            if (!result.succeeded())
+            {
+                LOGGER.info("startup: cached refresh token rejected (HTTP {} from {}) — clearing cache and falling back to login dialog",
+                        result.httpStatus, tokenUrl);
                 tokenStore.tryClear();
                 return false;
             }
-            String respBody = resp.body();
-            String newAccess = extractJson(respBody, "accessToken");
-            String newRefresh = extractJson(respBody, "refreshToken");
-            if (newAccess == null)
-            {
-                LOGGER.info("startup: refresh response missing accessToken — falling back to login dialog. body={}", respBody);
-                return false;
-            }
-            ConnectInfo info = ConnectInfo.withAccessToken(newAccess, newRefresh);
+            // Restore the provider routing on connectionInfo so subsequent mid-session
+            // refreshes (RefreshOn401Interceptor.doRefresh, MyCustomConnector.refreshUsingToken)
+            // hit the same provider rather than rapla-SAS.
+            if (savedRefreshUrl != null && !savedRefreshUrl.isEmpty()) connectionInfo.setRefreshUrl(savedRefreshUrl);
+            if (savedClientId != null && !savedClientId.isEmpty()) connectionInfo.setOauthClientId(savedClientId);
+            // PRD 029 Phase 5 — restored ConnectInfo carries the full 4-tuple so a
+            // subsequent close+recreate context (e.g. switch-to-user) inherits the
+            // provider routing too.
+            ConnectInfo info = new ConnectInfo(result.accessToken, result.refreshToken,
+                    savedRefreshUrl, savedClientId);
             reconnectInfo = info;
-            connectionInfo.setAccessToken(newAccess);
-            if (newRefresh != null)
+            connectionInfo.setAccessToken(result.accessToken);
+            if (result.refreshToken != null)
             {
-                connectionInfo.setRefreshToken(newRefresh);
-                tokenStore.tryWrite(newRefresh);
+                connectionInfo.setRefreshToken(result.refreshToken);
+                tokenStore.tryWrite(result.refreshToken);
             }
             connectionInfo.setReconnectInfo(info);
-            LOGGER.info("startup: silent reauth via cached refresh token succeeded — skipping login dialog");
+            LOGGER.info("startup: silent reauth via cached refresh token succeeded against {} — skipping login dialog", tokenUrl);
             return true;
         }
         catch (Throwable t)
@@ -687,6 +710,55 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         int closingQuote = body.indexOf('"', firstQuote + 1);
         if (closingQuote < 0) return null;
         return body.substring(firstQuote + 1, closingQuote);
+    }
+
+    /**
+     * Pure HTTP-level OAuth2 refresh-token request, extracted for testability.
+     * Posts {@code grant_type=refresh_token&refresh_token=...&client_id=...} to
+     * {@code tokenUrl} and parses the snake_case OAuth2 response into a pair of
+     * tokens. Returns {@code null} when the server responds non-2xx OR the body
+     * lacks {@code access_token}.
+     *
+     * <p>Package-private + static so {@code RaplaClientServiceImplSilentReauthHelperTest}
+     * can exercise it without building the whole Swing client context.
+     */
+    static SilentRefreshResult executeSilentRefresh(String tokenUrl, String clientId, String refreshToken) throws Exception
+    {
+        String body = "grant_type=refresh_token&refresh_token="
+                + java.net.URLEncoder.encode(refreshToken, java.nio.charset.StandardCharsets.UTF_8)
+                + "&client_id=" + java.net.URLEncoder.encode(clientId, java.nio.charset.StandardCharsets.UTF_8);
+        java.net.http.HttpClient http = java.net.http.HttpClient.newBuilder()
+                .connectTimeout(java.time.Duration.ofSeconds(10)).build();
+        java.net.http.HttpRequest req = java.net.http.HttpRequest.newBuilder(java.net.URI.create(tokenUrl))
+                .timeout(java.time.Duration.ofSeconds(10))
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .header("Accept", "application/json")
+                .POST(java.net.http.HttpRequest.BodyPublishers.ofString(body, java.nio.charset.StandardCharsets.UTF_8))
+                .build();
+        java.net.http.HttpResponse<String> resp = http.send(req,
+                java.net.http.HttpResponse.BodyHandlers.ofString(java.nio.charset.StandardCharsets.UTF_8));
+        if (resp.statusCode() / 100 != 2) return new SilentRefreshResult(resp.statusCode(), null, null);
+        String respBody = resp.body();
+        String newAccess = extractJson(respBody, "access_token");
+        if (newAccess == null) return new SilentRefreshResult(resp.statusCode(), null, null);
+        String newRefresh = extractJson(respBody, "refresh_token");
+        return new SilentRefreshResult(resp.statusCode(), newAccess, newRefresh);
+    }
+
+    /** Outcome of a silent-refresh attempt. {@code accessToken == null} when the
+     *  refresh failed (non-2xx, or 2xx but missing access_token). */
+    static final class SilentRefreshResult
+    {
+        final int httpStatus;
+        final String accessToken;
+        final String refreshToken;
+        SilentRefreshResult(int httpStatus, String accessToken, String refreshToken)
+        {
+            this.httpStatus = httpStatus;
+            this.accessToken = accessToken;
+            this.refreshToken = refreshToken;
+        }
+        boolean succeeded() { return accessToken != null; }
     }
 
     private void beginRaplaSessionAfterRestore()
@@ -778,27 +850,41 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                         }
                         return;
                     }
-                    String username = dlg.getUsername();
+                    final String username = dlg.getUsername();
                     char[] password = dlg.getPassword();
-                    final String[] split = username.split(" su ");
-                    String connectAs = null;
-                    if (split.length > 1) {
-                        username = split[0];
-                        connectAs = split[1];
-                    }
-                    reconnectInfo = new ConnectInfo(username, password, connectAs);
+                    // PRD 029 Phase 5 (2026-05-25): dropped the legacy " su "
+                    // syntax for in-dialog impersonation. The OAuth2 password
+                    // grant has no connect_as parameter; the modern path is
+                    // log in as yourself + admin menu "Switch to user" (uses
+                    // /api/auth/impersonate via the dual-slot model). Typing
+                    // "admin su other" now logs in as the literal username
+                    // "admin su other" — which won't exist and surfaces as a
+                    // normal login failure.
                     dlg.busy( i18n.getString("login"));
-                    login(reconnectInfo).thenAccept(
-                            (success) ->
-                    {
-                        if (!success)
-                        {
+                    // PRD 029 Phase 5: the dialog is the password-flow user-input
+                    // boundary. Exchange password→tokens here via the auth seam
+                    // and from then on only token-bearing ConnectInfo flows.
+                    // Password char[] is zeroed in the finally block of the
+                    // background task — no reference survives past this lambda.
+                    commandScheduler.supply(() -> {
+                        org.rapla.storage.dbrm.LoginCredentials wireCreds =
+                                new org.rapla.storage.dbrm.LoginCredentials(username, password);
+                        try {
+                            return passwordLogin.login(wireCreds);
+                        } finally {
+                            wireCreds.clearPassword();
+                            if (password != null) java.util.Arrays.fill(password, '\0');
+                        }
+                    }).thenAccept(tokens -> SwingSafe.invokeLater(() -> {
+                        if (tokens == null || tokens.getAccessToken() == null) {
                             dlg.resetPassword();
                             dlg.idle();
                             dialogUiFactory.showWarning(i18n.getString("error.login"), new SwingPopupContext(dlg, null));
+                            return;
                         }
-                        else
-                        {
+                        ConnectInfo info = new ConnectInfo(tokens.getAccessToken(), tokens.getRefreshToken());
+                        reconnectInfo = info;
+                        login(info).thenAccept(success -> SwingSafe.invokeLater(() -> {
                             // PRD 029 Phase 4: remember language + "password" method.
                             persistLoginPrefs("password");
                             dlg.idle();
@@ -809,16 +895,24 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                                 dialogUiFactory.showException(ex, null);
                                 dlg.idle();
                                 fireClientAborted();
-                            }
-                            );
+                            });
+                        })).exceptionally(ex -> SwingSafe.invokeLater(() -> {
+                            dialogUiFactory.showException(ex, new SwingPopupContext(dlg, null));
+                            dlg.idle();
+                        }));
+                    })).exceptionally(ex -> SwingSafe.invokeLater(() -> {
+                        Throwable root = unwrap(ex);
+                        if (root instanceof org.springframework.web.client.HttpClientErrorException.Unauthorized
+                                || root instanceof org.rapla.storage.RaplaSecurityException) {
+                            dlg.resetPassword();
+                            dlg.idle();
+                            dialogUiFactory.showWarning(i18n.getString("error.login"), new SwingPopupContext(dlg, null));
+                        } else {
+                            dlg.resetPassword();
+                            dialogUiFactory.showException(ex, new SwingPopupContext(dlg, null));
+                            dlg.idle();
                         }
-                    }).exceptionally((ex)->
-                    {
-                        dlg.resetPassword();
-                        dialogUiFactory.showException(ex, new SwingPopupContext(dlg, null));
-                        dlg.idle();
-                    });
-
+                    }));
                 }
 
             };
@@ -925,6 +1019,13 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             {
                 tokenStore.tryWritePref(TokenStore.KEY_LOGIN_METHOD, loginMethod);
             }
+            // Persist the refresh-token target (provider URL + client_id) alongside
+            // the token itself so cold-startup silent reauth knows where to POST.
+            // Empty = use rapla SAS defaults (serverURL + /oauth2/token, client_id=rapla-client).
+            String refreshUrl = connectionInfo.getRefreshUrl();
+            String oauthClientId = connectionInfo.getOauthClientId();
+            tokenStore.tryWritePref(TokenStore.KEY_REFRESH_URL, refreshUrl == null ? "" : refreshUrl);
+            tokenStore.tryWritePref(TokenStore.KEY_OAUTH_CLIENT_ID, oauthClientId == null ? "" : oauthClientId);
         }
         catch (Throwable t)
         {
@@ -1089,7 +1190,14 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
 
     private void finishOauthLogin(LoginDialog dlg, Semaphore loginMutex, OAuthTokens tokens, OAuthConfig provider)
     {
-        ConnectInfo info = ConnectInfo.withAccessToken(tokens.getAccessToken(), tokens.getRefreshToken());
+        // PRD 029 Phase 5 — carry provider routing alongside the tokens so a
+        // later switch-to-user / switch-back can rebuild the new context with
+        // the right refresh URL + client_id. Falls back to rapla-SAS defaults
+        // when provider is null.
+        String providerRefreshUrl = provider != null ? provider.getTokenUrl() : null;
+        String providerClientId = provider != null ? provider.getClientId() : null;
+        ConnectInfo info = new ConnectInfo(tokens.getAccessToken(), tokens.getRefreshToken(),
+                providerRefreshUrl, providerClientId);
         reconnectInfo = info;
         // Capture the id_token for use as id_token_hint when the user signs out.
         // Without it, /connect/logout rejects the request (404) and the
@@ -1356,7 +1464,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         // have completed before /oauth2/authorize runs. prompt=login defeats
         // the race deterministically.
         nextOauthForcesLogin = true;
-        stop(new ConnectInfo(null, "".toCharArray()));
+        stop(null);
         // PRD 052 Phase 2 — signal SpringRaplaClient.main() to close this
         // Spring context and build a fresh one for the next login. main()
         // disposes JFrames, runs ctx.close() (which fires DisposableBean /
@@ -1366,55 +1474,37 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         logoutSignal.next(org.rapla.client.spring.NextSession.showLoginDialog());
     }
 
+    /**
+     * Token-only session start. PRD 029 Phase 5: ConnectInfo carries access
+     * + refresh tokens AND provider routing (refreshUrl / oauthClientId), so
+     * a new context built after a switch-back (or any close+recreate boundary)
+     * restores admin's full session and mid-session refresh hits the right
+     * provider. The password→token conversion happens at the user-input
+     * boundary (legacy dialog, CLI bootstrap), never here.
+     */
     private Promise<Boolean> login(ConnectInfo connectInfo)
     {
-        if (connectInfo.getAccessToken() != null)
-        {
-            return commandScheduler.supply(() -> {
-                this.connectionInfo.setAccessToken(connectInfo.getAccessToken());
-                this.connectionInfo.setRefreshToken(connectInfo.getRefreshToken());
-                this.connectionInfo.setReconnectInfo(connectInfo);
-                this.reconnectInfo = connectInfo;
-                if (connectInfo.getRefreshToken() != null)
-                {
-                    tokenStore.tryWrite(connectInfo.getRefreshToken());
-                    LOGGER.info("login: refresh token persisted for next launch (skip login dialog)");
-                }
-                else
-                {
-                    LOGGER.warn("login: no refresh token received — next launch will require login again");
-                }
-                return true;
-            });
-        }
-        String connectAs = connectInfo.getConnectAs();
-        String password = new String(connectInfo.getPassword());
-        String username = connectInfo.getUsername();
-        return commandScheduler.supply(()->
-        {
-            LoginTokens loginToken;
-            try {
-                loginToken = authentificationService.login(new org.rapla.storage.dbrm.LoginCredentials(username, password, connectAs));
-            } catch (org.springframework.web.client.HttpClientErrorException.Unauthorized ex) {
-                return false;
+        return commandScheduler.supply(() -> {
+            this.connectionInfo.setAccessToken(connectInfo.getAccessToken());
+            this.connectionInfo.setRefreshToken(connectInfo.getRefreshToken());
+            // Restore provider routing — without this, post-restart refresh
+            // falls back to rapla SAS even for Keycloak sessions.
+            if (connectInfo.getRefreshUrl() != null && !connectInfo.getRefreshUrl().isEmpty()) {
+                this.connectionInfo.setRefreshUrl(connectInfo.getRefreshUrl());
             }
-            String accessToken = loginToken.getAccessToken();
-            if (accessToken != null) {
-                this.connectionInfo.setAccessToken(accessToken);
-                this.connectionInfo.setRefreshToken(loginToken.getRefreshToken());
-                this.connectionInfo.setReconnectInfo( connectInfo);
-                this.reconnectInfo = connectInfo;
-                if (loginToken.getRefreshToken() != null)
-                {
-                    tokenStore.tryWrite(loginToken.getRefreshToken());
-                    LOGGER.info("login: refresh token persisted for next launch (skip login dialog)");
-                }
-                else
-                {
-                    LOGGER.warn("login: no refresh token from /auth/login — next launch will require login again");
-                }
-            } else {
-                throw new RaplaSecurityException("Invalid Access token");
+            if (connectInfo.getOauthClientId() != null && !connectInfo.getOauthClientId().isEmpty()) {
+                this.connectionInfo.setOauthClientId(connectInfo.getOauthClientId());
+            }
+            this.connectionInfo.setReconnectInfo(connectInfo);
+            this.reconnectInfo = connectInfo;
+            if (connectInfo.getRefreshToken() != null)
+            {
+                tokenStore.tryWrite(connectInfo.getRefreshToken());
+                LOGGER.info("login: refresh token persisted for next launch (skip login dialog)");
+            }
+            else
+            {
+                LOGGER.warn("login: no refresh token received — next launch will require login again");
             }
             return true;
         });

@@ -2,7 +2,6 @@ package org.rapla.server.internal;
 
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
-import org.rapla.framework.RaplaException;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.LoginTokens;
@@ -11,13 +10,26 @@ import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 
+/**
+ * Legacy {@link RemoteSession} fallback — fires only when
+ * {@link org.rapla.server.spring.SpringSecurityRemoteSession} doesn't find a
+ * JwtAuthenticationToken in the SecurityContextHolder. Used today by permit-all
+ * endpoints (iCal export, JNLP, status page) that don't go through Spring
+ * Security's JWT filter chain but still need to resolve a user from the request.
+ *
+ * <p>PRD 029 Phase 5 (2026-05-25): dropped the legacy {@code ?username=...&password=...}
+ * request-param branch — confirmed dead via audit (nothing in the codebase
+ * sends those params for auth). Three live extraction paths remain:
+ * {@code Authorization: Bearer} header, {@code ?access_token=...} query param
+ * (URL-embedded JWT for external iCal subscribers), {@code raplaLoginToken}
+ * cookie (legacy browser session login).
+ */
 public class RemoteSessionImpl implements RemoteSession
 {
     private static final String LOGIN_COOKIE = "raplaLoginToken";
 
     private User user;
     private TokenHandler tokenHandler;
-    private RaplaAuthentificationService service;
 
     public RemoteSessionImpl(User user)
     {
@@ -25,11 +37,9 @@ public class RemoteSessionImpl implements RemoteSession
     }
 
     @Autowired
-    public RemoteSessionImpl(TokenHandler tokenHandler, RaplaAuthentificationService service)
+    public RemoteSessionImpl(TokenHandler tokenHandler)
     {
         this.tokenHandler = tokenHandler;
-        this.service = service;
-
     }
 
     private User extractUser(HttpServletRequest request) throws RaplaSecurityException
@@ -70,35 +80,14 @@ public class RemoteSessionImpl implements RemoteSession
                 }
             }
         }
-        User user = null;
-        if (token == null)
+        try
         {
-            String username = request.getParameter("username");
-            String password = request.getParameter("password");
-            if (username != null && password != null)
-            {
-                try
-                {
-                    user = service.getUserWithPassword(username, password);
-                }
-                catch(RaplaException e)
-                {
-                    throw new RaplaSecurityException(e);
-                }
-            }
+            return tokenHandler.getUserWithAccessToken(token);
         }
-        if (user == null)
+        catch (EntityNotFoundException ex)
         {
-            try
-            {
-                user = tokenHandler.getUserWithAccessToken(token);
-            }
-            catch ( EntityNotFoundException ex)
-            {
-                throw new RaplaSecurityException("User not found.");
-            }
+            throw new RaplaSecurityException("User not found.");
         }
-        return user;
     }
 
     public User checkAndGetUser(HttpServletRequest request) throws RaplaSecurityException

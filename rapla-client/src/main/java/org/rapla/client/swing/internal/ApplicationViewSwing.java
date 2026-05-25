@@ -104,13 +104,14 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
 
     /**
      * PRD 051 — render "Impersonating &lt;target&gt;" in the menu bar's
-     * right-aligned status label when the old in-place impersonation
-     * model was active. Under PRD 052 Phase 2 (close+recreate) the
-     * impersonation token lives in the regular accessToken slot, so
-     * {@link RemoteConnectionInfo#hasImpersonationToken()} returns
-     * {@code false} and this method becomes a no-op. The
-     * impersonation-session indicator is now the "Switch back" admin
-     * menu entry; the statusBar is reserved for the username display.
+     * right-aligned status label when an impersonation override is
+     * active. PRD 029 Phase 5 wires the dual-slot model under the
+     * close+recreate context (impersonation in the dedicated
+     * {@code impersonationAccessToken} slot, admin tokens in the regular
+     * accessToken/refreshToken slots), so this method fires whenever
+     * {@link RemoteConnectionInfo#isImpersonating()} is true and renders
+     * the indicator. The "Switch back" admin menu entry is the action;
+     * this label is the status cue.
      *
      * <p>The no-impersonation branch deliberately does NOT clear the
      * statusBar — that branch previously wiped the username on every
@@ -118,7 +119,7 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
      */
     private void refreshImpersonationStatus()
     {
-        if (connectionInfo != null && connectionInfo.hasImpersonationToken())
+        if (connectionInfo != null && connectionInfo.isImpersonating())
         {
             String target = connectionInfo.getImpersonationTargetUsername();
             statusBar.setText("  Impersonating " + (target == null ? "" : target) + "  ");

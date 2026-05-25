@@ -136,7 +136,7 @@ Different port — don't collide with the server's 5005. The Swing client uses 5
 
 ```bash
 mvn -pl rapla-client -am compile exec:java \
-    -Dexec.args="admin" \
+    -Dexec.args="$RAPLA_DEV_TOKEN" \
     -Dexec.daemonThreadJoinTimeout=86400000 \
     -Dexec.jvmArgs="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5006" \
     > logs/rapla-client.log 2>&1 &

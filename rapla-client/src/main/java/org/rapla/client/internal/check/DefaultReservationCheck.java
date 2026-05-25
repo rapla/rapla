@@ -48,6 +48,7 @@ public class DefaultReservationCheck implements EventCheck
 
     public Promise<Boolean> check(Collection<Reservation> reservations, PopupContext sourceComponent)
     {
+        view.clear();
         try
         {
             User user = clientFacade.getUser();

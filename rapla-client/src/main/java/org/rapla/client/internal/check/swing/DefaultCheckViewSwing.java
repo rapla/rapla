@@ -33,6 +33,11 @@ public class DefaultCheckViewSwing implements CheckView, RaplaWidget
     }
 
     @Override
+    public void clear() {
+        warningPanel.removeAll();
+    }
+
+    @Override
     public Object getComponent()
     {
         return warningPanel;

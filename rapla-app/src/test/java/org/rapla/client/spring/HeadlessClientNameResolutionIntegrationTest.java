@@ -10,9 +10,12 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.ConnectInfo;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.server.spring.RaplaSpringBootApplication;
+import org.rapla.server.spring.RefreshSessionService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -107,10 +110,22 @@ class HeadlessClientNameResolutionIntegrationTest
     @LocalServerPort
     int serverPort;
 
+    /** PRD 029 Phase 5: mint a JWT for "homer" via the server-side
+     *  {@link RefreshSessionService} — no password handling in the test. */
+    @Autowired RefreshSessionService refreshSessionService;
+    @Autowired RaplaFacade serverFacade;
+
     @Test
     void clientNameResolutionEndToEnd() throws Exception
     {
         System.setProperty("rapla.download.url", "http://localhost:" + serverPort + "/");
+
+        // PRD 029 Phase 5: mint a token for "homer" server-side; bootstrap the
+        // client session with the JWT — no password handling in this test.
+        User homer = serverFacade.getOperator().getUser("homer");
+        assertNotNull(homer, "test fixture should have user 'homer'");
+        RefreshSessionService.IssuedTokens tokens = refreshSessionService.issueAndPersist(homer);
+        ConnectInfo info = new ConnectInfo(tokens.accessToken(), tokens.refreshToken());
 
         try (SpringRaplaClient client = new SpringRaplaClient())
         {
@@ -121,8 +136,8 @@ class HeadlessClientNameResolutionIntegrationTest
             assertNotNull(client.getContext().getBean(org.rapla.client.api.ClientService.class),
                     "ClientService bean must wire (this triggers operator → facade attach)");
 
-            assertTrue(clientFacade.login("homer", "duffs".toCharArray()),
-                    "homer/duffs must authenticate against the test server");
+            assertTrue(clientFacade.connect(info),
+                    "minted homer JWT must authenticate against the test server");
             assertTrue(clientFacade.isSessionActive(), "facade session must be active after login");
 
             RaplaFacade facade = clientFacade.getRaplaFacade();
@@ -218,12 +233,12 @@ class HeadlessClientNameResolutionIntegrationTest
             // Probe by manually corrupting the access token and asserting a follow-up call
             // still succeeds.
             checks.add(() -> {
-                org.rapla.storage.dbrm.RemoteConnectionInfo info =
+                org.rapla.storage.dbrm.RemoteConnectionInfo connInfo =
                         client.getContext().getBean(org.rapla.storage.dbrm.RemoteConnectionInfo.class);
-                String good = info.getAccessToken();
+                String good = connInfo.getAccessToken();
                 assertNotNull(good, "must have valid access token after login");
                 int refreshesBefore = org.rapla.client.spring.ClientProxyConfig.RefreshOn401Interceptor.refreshAttempts.get();
-                info.setAccessToken("garbage-expired-token");
+                connInfo.setAccessToken("garbage-expired-token");
                 try
                 {
                     org.rapla.storage.dbrm.RemoteStorage rs =
@@ -240,7 +255,7 @@ class HeadlessClientNameResolutionIntegrationTest
                     int refreshesAfter = org.rapla.client.spring.ClientProxyConfig.RefreshOn401Interceptor.refreshAttempts.get();
                     assertTrue(refreshesAfter > refreshesBefore,
                             "interceptor must have attempted at least one /auth/refresh call after the corrupted token returned 401");
-                    info.setAccessToken(good);
+                    connInfo.setAccessToken(good);
                 }
             });
 

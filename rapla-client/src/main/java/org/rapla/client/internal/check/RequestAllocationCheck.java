@@ -53,6 +53,7 @@ public class RequestAllocationCheck implements EventCheck
 
     public Promise<Boolean> check(Collection<Reservation> reservations, PopupContext sourceComponent)
     {
+        view.clear();
         // Pure decision in rapla-core; rendered to Swing dialog text below.
         // Same decision an Angular client would run before submitting a save.
         List<ReservationWarning> warnings = RequestAllocationWarnings.evaluate(reservations, null);

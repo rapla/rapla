@@ -370,8 +370,8 @@ Implementation:
   ```
 - `RaplaClientServiceImpl`:
   - `logout()` → `eventBus.reset()` + `logoutSignal.next(NextSession.showLoginDialog())`. Drop the `SwingSafe.invokeLater(this::start)` self-restart (line 1338) — `main()` drives the rebuild now.
-  - `switchTo(User target)` (PRD 051) → `logoutSignal.next(NextSession.reconnectAs(impersonationConnectInfo))`. Replaces in-place token swap.
-  - `switchBack()` → `logoutSignal.next(NextSession.reconnectAs(savedAdminConnectInfo))`.
+  - `switchTo(User target)` (PRD 051) → `logoutSignal.next(NextSession.switchTo(adminFullInfo, impersonationToken, targetUsername))`. Phase 5 (PRD 029 §7, 2026-05-25) updated the signature: admin's full 4-tuple is carried as the primary session for the new context, the impersonation token + target are passed separately and applied via `ClientService.setImpersonation()` post-start. Originally `reconnectAs(impersonationConnectInfo)` was used, which broke renewal because the impersonation token went into the regular accessToken slot.
+  - `switchBack()` → `logoutSignal.next(NextSession.switchBack())`. Launcher restores `savedAdminInfo` (4-tuple including provider routing) so post-restart Keycloak refresh works even when admin's access token expired during impersonation.
   - "Exit Rapla" menu action → `logoutSignal.next(NextSession.exit())` to break out of `main()`'s loop cleanly.
 - Refactor `SpringRaplaClient.main()`:
   ```java

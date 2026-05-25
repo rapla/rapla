@@ -1,15 +1,12 @@
 package org.rapla.client.spring;
 
 import org.rapla.RaplaResources;
-import org.rapla.framework.RaplaException;
 import org.rapla.plugin.export2ical.ICalTimezones;
 import org.rapla.rest.JacksonObjectMapperFactory;
-import org.rapla.storage.RaplaSecurityException;
-import org.rapla.storage.dbrm.LoginCredentials;
-import org.rapla.storage.dbrm.LoginTokens;
-import org.rapla.storage.dbrm.RaplaConnectException;
-import org.rapla.storage.dbrm.RemoteAuthentificationService;
+import org.rapla.storage.dbrm.OAuth2PasswordLogin;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
+import org.rapla.storage.dbrm.TokenStore;
+import org.rapla.storage.dbrm.TokenStores;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -53,7 +50,8 @@ public class ClientProxyConfig
     }
 
     @Bean
-    public HttpServiceProxyFactory httpServiceProxyFactory(RestClient.Builder builder, RemoteConnectionInfo info)
+    public HttpServiceProxyFactory httpServiceProxyFactory(RestClient.Builder builder, RemoteConnectionInfo info,
+                                                           TokenStore tokenStore)
     {
         // The server URL is set by RaplaClientServiceImpl after context refresh,
         // so we cannot freeze a baseUrl at @Bean factory time. Use a custom
@@ -85,7 +83,7 @@ public class ClientProxyConfig
                 .requestFactory(requestFactory)
                 .uriBuilderFactory(dynamicFactory)
                 .messageConverters(converters -> converters.add(0, jacksonConverter))
-                .requestInterceptor(new RefreshOn401Interceptor(info, requestFactory))
+                .requestInterceptor(new RefreshOn401Interceptor(info, requestFactory, tokenStore))
                 .build();
         return HttpServiceProxyFactory
                 .builderFor(RestClientAdapter.create(restClient))
@@ -112,13 +110,22 @@ public class ClientProxyConfig
         public static final java.util.concurrent.atomic.AtomicInteger refreshAttempts = new java.util.concurrent.atomic.AtomicInteger();
         private final RemoteConnectionInfo info;
         private final org.springframework.http.client.ClientHttpRequestFactory requestFactory;
+        private final TokenStore tokenStore;
         private final java.util.concurrent.locks.Lock refreshLock = new java.util.concurrent.locks.ReentrantLock();
 
         public RefreshOn401Interceptor(RemoteConnectionInfo info,
                                        org.springframework.http.client.ClientHttpRequestFactory requestFactory)
         {
+            this(info, requestFactory, TokenStores.noOp());
+        }
+
+        public RefreshOn401Interceptor(RemoteConnectionInfo info,
+                                       org.springframework.http.client.ClientHttpRequestFactory requestFactory,
+                                       TokenStore tokenStore)
+        {
             this.info = info;
             this.requestFactory = requestFactory;
+            this.tokenStore = tokenStore == null ? TokenStores.noOp() : tokenStore;
         }
 
         @Override
@@ -146,7 +153,7 @@ public class ClientProxyConfig
             // the refresh-then-retry path which refreshes the admin
             // token, then we retry impersonation, then retry the
             // original request.
-            if (info.hasImpersonationToken())
+            if (info.isImpersonating())
             {
                 if (tryRenewImpersonation())
                 {
@@ -208,7 +215,7 @@ public class ClientProxyConfig
             // admin token (which will likely 403 on the original request
             // — at which point the audit log explains why and the user
             // sees the dialog via fireAuthDeadOnce).
-            if (info.hasImpersonationToken())
+            if (info.isImpersonating())
             {
                 tryRenewImpersonation();
             }
@@ -229,7 +236,11 @@ public class ClientProxyConfig
          */
         private boolean tryRenewImpersonation()
         {
-            String adminToken = info.getAccessToken();
+            // adminToken() — explicit "give me the admin bearer, ignoring any
+            // active impersonation override". Identical to getAccessToken() but
+            // names the intent at the call site (parity with Angular's
+            // AuthService.adminToken()).
+            String adminToken = info.adminToken();
             if (adminToken == null || adminToken.isEmpty()) return false;
             String target = info.getImpersonationTargetUsername();
             if (target == null || target.isEmpty()) return false;
@@ -257,7 +268,7 @@ public class ClientProxyConfig
                             java.nio.charset.StandardCharsets.UTF_8);
                     String newToken = extractJsonStringField(json, "access_token");
                     if (newToken == null || newToken.isEmpty()) return false;
-                    info.setImpersonationToken(newToken, target);
+                    info.setImpersonationAccessToken(newToken, target);
                     return true;
                 }
             }
@@ -281,13 +292,26 @@ public class ClientProxyConfig
             // PRD 041: refresh via OAuth2-standard /oauth2/token grant_type=refresh_token
             // (form-encoded body, snake_case response). Replaces the rapla-custom
             // JSON /api/auth/refresh path.
-            String baseUrl = info.getServerURL();
-            if (baseUrl == null || baseUrl.isEmpty()) return false;
-            String trimmed = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
-            String tokenUrl = trimmed + "/oauth2/token";
+            // PRD 029 Phase 4: when the session was started via a non-rapla OAuth
+            // provider (Keycloak, Entra, Google), SwingOAuthLoginFlow stashes that
+            // provider's token endpoint + client_id on RemoteConnectionInfo. We
+            // must route the refresh there, NOT to rapla's own /oauth2/token —
+            // rapla SAS cannot validate a Keycloak-signed refresh JWT. Same fallback
+            // shape as MyCustomConnector.refreshUsingToken().
+            String tokenUrl = info.getRefreshUrl();
+            if (tokenUrl == null || tokenUrl.isEmpty())
+            {
+                String baseUrl = info.getServerURL();
+                if (baseUrl == null || baseUrl.isEmpty()) return false;
+                String trimmed = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+                tokenUrl = trimmed + "/oauth2/token";
+            }
+            String clientId = info.getOauthClientId();
+            if (clientId == null || clientId.isEmpty()) clientId = "rapla-client";
             String encoded = java.net.URLEncoder.encode(refreshToken, java.nio.charset.StandardCharsets.UTF_8);
+            String encodedClientId = java.net.URLEncoder.encode(clientId, java.nio.charset.StandardCharsets.UTF_8);
             byte[] reqBody = ("grant_type=refresh_token&refresh_token=" + encoded
-                    + "&client_id=rapla-client").getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                    + "&client_id=" + encodedClientId).getBytes(java.nio.charset.StandardCharsets.UTF_8);
             org.springframework.http.client.ClientHttpRequest req =
                     requestFactory.createRequest(java.net.URI.create(tokenUrl), org.springframework.http.HttpMethod.POST);
             req.getHeaders().setContentType(org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED);
@@ -300,7 +324,15 @@ public class ClientProxyConfig
                 String newRefresh = extractJsonStringField(json, "refresh_token");
                 if (newAccess == null) return false;
                 info.setAccessToken(newAccess);
-                if (newRefresh != null) info.setRefreshToken(newRefresh);
+                if (newRefresh != null)
+                {
+                    info.setRefreshToken(newRefresh);
+                    // Mirror MyCustomConnector.refreshUsingToken(): persist the rotated
+                    // refresh token so cold restart can silent-reauth. Without this,
+                    // the on-disk token goes stale the first time a Keycloak realm
+                    // with refresh-token rotation rotates mid-session.
+                    tokenStore.tryWrite(newRefresh);
+                }
                 return true;
             }
         }
@@ -364,148 +396,6 @@ public class ClientProxyConfig
         }
     }
 
-    /**
-     * {@link RemoteAuthentificationService} backed by the OAuth 2.0 token
-     * endpoint. PRD 041 removed the rapla-custom {@code POST /api/auth/login};
-     * direct username/password login now POSTs {@code grant_type=password} to
-     * {@code /oauth2/token} (RFC 6749 §4.3), and {@link #refresh} POSTs
-     * {@code grant_type=refresh_token}. The base URL is read from
-     * {@link RemoteConnectionInfo} per call (set after context refresh).
-     *
-     * <p>No JSON library here on purpose — the token response is flat, so two
-     * tiny field extractors avoid dragging a mapper into this seam (same
-     * approach as {@code MyCustomConnector.refreshUsingToken}).</p>
-     */
-    static final class OAuth2RemoteAuthentificationService implements RemoteAuthentificationService
-    {
-        private final RemoteConnectionInfo info;
-        private final RaplaResources i18n;
-
-        OAuth2RemoteAuthentificationService(RemoteConnectionInfo info, RaplaResources i18n)
-        {
-            this.info = info;
-            this.i18n = i18n;
-        }
-
-        @Override
-        public LoginTokens login(LoginCredentials credentials) throws RaplaException
-        {
-            String connectAs = credentials.getConnectAs();
-            if (connectAs != null && !connectAs.isEmpty())
-            {
-                // The OAuth2 password grant has no connectAs/impersonation
-                // parameter — fail loudly rather than log the user in as
-                // themselves and silently drop the "su" intent.
-                throw new RaplaSecurityException(
-                        "Impersonation (\" su \") is not supported via the OAuth2 password grant.");
-            }
-            String body = "grant_type=password"
-                    + "&username=" + enc(credentials.getUsername())
-                    + "&password=" + enc(credentials.getPassword())
-                    + "&client_id=rapla-client";
-            return tokenRequest(body);
-        }
-
-        @Override
-        public LoginTokens refresh(RefreshRequest body) throws RaplaException
-        {
-            String form = "grant_type=refresh_token"
-                    + "&refresh_token=" + enc(body == null ? null : body.refreshToken)
-                    + "&client_id=rapla-client";
-            return tokenRequest(form);
-        }
-
-        private LoginTokens tokenRequest(String body) throws RaplaException
-        {
-            String serverUrl = info.getServerURL();
-            if (serverUrl == null || serverUrl.isEmpty())
-            {
-                throw new RaplaException("Server URL not set — cannot reach the OAuth2 token endpoint.");
-            }
-            String trimmed = serverUrl.endsWith("/") ? serverUrl.substring(0, serverUrl.length() - 1) : serverUrl;
-            String url = trimmed + "/oauth2/token";
-            java.net.http.HttpResponse<String> resp;
-            try
-            {
-                java.net.http.HttpClient http = java.net.http.HttpClient.newBuilder()
-                        .connectTimeout(java.time.Duration.ofSeconds(10)).build();
-                java.net.http.HttpRequest req = java.net.http.HttpRequest.newBuilder(java.net.URI.create(url))
-                        .timeout(java.time.Duration.ofSeconds(15))
-                        .header("Content-Type", "application/x-www-form-urlencoded")
-                        .header("Accept", "application/json")
-                        .POST(java.net.http.HttpRequest.BodyPublishers.ofString(
-                                body, java.nio.charset.StandardCharsets.UTF_8))
-                        .build();
-                resp = http.send(req, java.net.http.HttpResponse.BodyHandlers.ofString(
-                        java.nio.charset.StandardCharsets.UTF_8));
-            }
-            catch (java.io.IOException ex)
-            {
-                String errorString = i18n.format("error.connect", serverUrl);
-                throw new RaplaConnectException(errorString + " " + ex.getMessage());
-            }
-            catch (InterruptedException ex)
-            {
-                Thread.currentThread().interrupt();
-                throw new RaplaException("Interrupted contacting the OAuth2 token endpoint at " + url, ex);
-            }
-            int status = resp.statusCode();
-            if (status == 400 || status == 401)
-            {
-                // OAuth2 invalid_grant / invalid credentials.
-                throw new RaplaSecurityException("Login failed.");
-            }
-            if (status / 100 != 2)
-            {
-                throw new RaplaException("OAuth2 token endpoint error (HTTP " + status + "): " + resp.body());
-            }
-            String json = resp.body();
-            String access = jsonString(json, "access_token");
-            if (access == null)
-            {
-                throw new RaplaException("OAuth2 token response missing access_token: " + json);
-            }
-            return new LoginTokens(access, jsonString(json, "refresh_token"), jsonNumber(json, "expires_in"));
-        }
-
-        private static String enc(String s)
-        {
-            return java.net.URLEncoder.encode(s == null ? "" : s, java.nio.charset.StandardCharsets.UTF_8);
-        }
-
-        /** Flat-JSON string-field extractor — the token response is flat, so this
-         *  avoids pulling a JSON mapper into the auth seam. */
-        private static String jsonString(String json, String field)
-        {
-            String key = "\"" + field + "\"";
-            int k = json.indexOf(key);
-            if (k < 0) return null;
-            int colon = json.indexOf(':', k + key.length());
-            if (colon < 0) return null;
-            int q1 = json.indexOf('"', colon + 1);
-            if (q1 < 0) return null;
-            int q2 = json.indexOf('"', q1 + 1);
-            if (q2 < 0) return null;
-            return json.substring(q1 + 1, q2);
-        }
-
-        /** Flat-JSON numeric-field extractor for {@code expires_in}; 0 if absent. */
-        private static long jsonNumber(String json, String field)
-        {
-            String key = "\"" + field + "\"";
-            int k = json.indexOf(key);
-            if (k < 0) return 0;
-            int colon = json.indexOf(':', k + key.length());
-            if (colon < 0) return 0;
-            int i = colon + 1;
-            while (i < json.length() && Character.isWhitespace(json.charAt(i))) i++;
-            int start = i;
-            while (i < json.length() && Character.isDigit(json.charAt(i))) i++;
-            if (i == start) return 0;
-            try { return Long.parseLong(json.substring(start, i)); }
-            catch (NumberFormatException e) { return 0; }
-        }
-    }
 
     @Bean
     public ICalTimezones iCalTimezonesProxy(HttpServiceProxyFactory factory)
@@ -633,13 +523,15 @@ public class ClientProxyConfig
     }
 
     @Bean
-    public RemoteAuthentificationService remoteAuthentificationServiceProxy(RemoteConnectionInfo info, RaplaResources i18n)
+    public OAuth2PasswordLogin oauth2PasswordLogin(RemoteConnectionInfo info, RaplaResources i18n)
     {
         // PRD 041: the rapla-custom POST /api/auth/login endpoint was removed
         // with AuthController. Direct username/password login — the Swing
-        // fallback dialog and MyCustomConnector's password-reauth path — now
+        // fallback dialog and ClientFacadeImpl.login (test bootstrap) — now
         // goes through the OAuth 2.0 token endpoint. See docs/authentication.md.
-        return new OAuth2RemoteAuthentificationService(info, i18n);
+        // PRD 029 Phase 5 (2026-05-25): dropped the RemoteAuthentificationService
+        // interface; one method, one impl, no plugin point.
+        return new OAuth2PasswordLogin(info, i18n);
     }
 
     @Bean

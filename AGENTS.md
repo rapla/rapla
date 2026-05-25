@@ -216,7 +216,8 @@ The Swing desktop client launches via `mvn exec:java` (NOT
 with `-Dexec.daemonThreadJoinTimeout=86400000` to keep the EDT alive
 past `main()` return. For the full start/stop/restart procedure, the
 two-log convention (`logs/rapla.log` + `logs/rapla-client.log`),
-`-Dexec.args="admin"` auto-login, and the "don't run two clients
+`-Dexec.args="$RAPLA_DEV_TOKEN"` auto-login (PRD 029 Phase 5: CLI takes
+an API JWT, not `username password`), and the "don't run two clients
 against the same server" rule, load the **`swing-client-launch`**
 skill. Server must be running per §8 first.
 

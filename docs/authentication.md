@@ -291,45 +291,109 @@ Token refresh for every client kind is OAuth-standard:
 `POST /oauth2/token grant_type=refresh_token` (`MyCustomConnector.java:129`,
 `ClientProxyConfig.java:159`, PRD 041).
 
+#### Provider-aware refresh routing (PRD 029 Phase 5)
+
+When a Keycloak / Entra / Google session is active, the refresh request goes
+to the **provider's** token endpoint (or rapla's BFF for secret-backed providers),
+NOT to rapla's own `/oauth2/token`. `SwingOAuthLoginFlow` stashes the provider's
+token URL + `client_id` on `RemoteConnectionInfo` at login time
+(`refreshUrl` + `oauthClientId` fields); both refresh paths read them and fall
+back to rapla-SAS defaults only when null:
+
+| Refresh path | URL | client_id |
+|---|---|---|
+| Rapla-SAS / password session | `serverURL + /oauth2/token` | `rapla-client` |
+| Keycloak browser-OAuth session | the BFF URL (e.g. `/api/auth/oauth/exchange/keycloak`) | the Keycloak client id (e.g. `rapla-app`) |
+
+Pre-Phase-5, both refresh paths hardcoded the rapla-SAS combination; Keycloak
+refresh tokens were rejected by rapla-SAS at every refresh, producing a
+`session_expired: access + refresh tokens both rejected` log line and a
+re-login dialog every ~10 min (Keycloak's default access TTL). Fixed in
+`ClientProxyConfig.RefreshOn401Interceptor.doRefresh()` to mirror
+`MyCustomConnector.refreshUsingToken()` (which was already correct).
+
+Rotated refresh tokens (Keycloak's default) are persisted to `TokenStore` on
+both refresh paths so cold-restart silent reauth still works after rotation.
+
+#### CLI bootstrap (dev / CI)
+
+The Swing client's CLI launcher (`SpringRaplaClient.main`) accepts a single
+API token JWT as the only CLI arg:
+
+```bash
+# Get a JWT once (do this in the browser via the Scalar UI at /scalar):
+# POST /api/auth/api-keys { "label":"dev-cli", "expiresInDays":365 }
+# Copy the "key" field from the response.
+
+export RAPLA_DEV_TOKEN="eyJhbGciOiJSUzI1NiIs..."
+
+mvn exec:java -Dexec.daemonThreadJoinTimeout=86400000 \
+    -Dexec.args="$RAPLA_DEV_TOKEN" \
+    -Dexec.mainClass=org.rapla.client.spring.SpringRaplaClient
+```
+
+No args → dialog. With one arg → treats it as an access token (no refresh —
+API keys carry their own `exp`). Pre-Phase-5 the CLI accepted
+`-Dexec.args="admin password"`; that path is gone. To use the default empty-
+password `admin` account once for bootstrap, launch with no args and type
+`admin` + blank password in the dialog, then mint a key for future launches.
+
 ### Swing fallback password dialog → OAuth2 password grant
 
-When the fallback dialog is used, `loginAction` builds a
-`ConnectInfo(username, password, connectAs)` with no access token
-(`RaplaClientServiceImpl.java:651-696`) and calls `RemoteOperator.connect()`.
-With a null access token, `connect()` takes the password else-branch
-(`RemoteOperator.java:144-152`) and calls `RemoteAuthentificationService.login()`.
+When the fallback dialog is used, `loginAction` (`RaplaClientServiceImpl.startLoginInThread`)
+takes the typed username + password `char[]` and exchanges them for tokens via
+`OAuth2PasswordLogin.login(LoginCredentials)` *inline at the dialog button*
+(PRD 029 Phase 5). The password `char[]` is zeroed in the same lambda that
+calls the seam, so no password reference survives past the HTTP round-trip.
+Only the resulting `(accessToken, refreshToken)` are stashed on the session.
 
-That seam is implemented by `ClientProxyConfig.OAuth2RemoteAuthentificationService`,
-which POSTs `grant_type=password` to `/oauth2/token` (RFC 6749 §4.3) and parses
-the snake_case token response into a `LoginTokens`. `MyCustomConnector`'s
-password-reauth path (`MyCustomConnector.java:96`) calls the same seam.
+`OAuth2PasswordLogin` (rapla-core) POSTs `grant_type=password` to
+`/oauth2/token` (RFC 6749 §4.3) and parses the snake_case token response into
+a `LoginTokens`.
 
-> **Historical note.** Before PRD 041's client-side cleanup,
-> `RemoteAuthentificationService` was a Spring HTTP-interface proxy
-> (`@HttpExchange("/api/auth")` + `@PostExchange("/login")`) pointing at the
-> rapla-custom `POST /api/auth/login`. That server endpoint was deleted with
-> `AuthController` (commit `d64e8553`), so the fallback dialog returned **404**
-> until the proxy was swapped for the OAuth2-backed implementation. The
-> interface and both call sites (`RemoteOperator`, `MyCustomConnector`) were
-> left untouched — only the `ClientProxyConfig` bean implementation changed.
-
-**Limitation:** the OAuth2 password grant has no `connectAs` parameter, so the
-dialog's `" su "` impersonation shorthand is rejected with a clear error
-rather than silently logging in as the typed user. Restoring impersonation
-needs a dedicated change — a `connect_as` parameter on
-`PasswordGrantAuthenticationConverter`, threaded into
-`RaplaAuthentificationService`.
+> **PRD 029 Phase 5 (2026-05-25): no password caching anywhere.** Pre-Phase-5,
+> the dialog built a `ConnectInfo(username, password, connectAs)` polymorphic
+> object that propagated through `start() → login() → dispatch` and was stashed
+> in `RemoteConnectionInfo.connectInfo` for the session's lifetime — keeping
+> the cleartext password reachable from a heap dump until logout. Phase 5
+> slimmed `ConnectInfo` to tokens + provider routing only, removed the
+> polymorphic dispatch from every layer, and confined password handling to
+> (a) the dialog Login button, and (b) the `OAuth2PasswordLogin.login()` seam
+> itself. The `RemoteAuthentificationService` interface (with one method, one
+> impl, no plugin point) was deleted; the impl was promoted to the top-level
+> concrete class `OAuth2PasswordLogin` in rapla-core.
+>
+> The test-bootstrap entry point `ClientFacade.login(String, char[])` was
+> replaced with `ClientFacade.connect(ConnectInfo)`. Integration tests
+> (`SwingClientStartIntegrationTest`, `HeadlessClientNameResolutionIntegrationTest`)
+> mint a JWT server-side via `RefreshSessionService.issueAndPersist(homer)`
+> and pass it to `facade.connect(info)` — zero password references in test
+> fixture code.
+>
+> `MyCustomConnector.reauth()` also lost its password-fallback path; mid-session
+> reauth is now refresh-token-only for both password and OAuth sessions. When
+> the refresh token is dead, the user sees the re-login dialog — same UX
+> Keycloak users already had.
+>
+> The dialog's `" su "` impersonation shorthand was dropped — the OAuth2
+> password grant has no `connect_as` parameter; modern admin "switch to user"
+> is the dedicated `/api/auth/impersonate` endpoint with dual-slot client
+> state (PRD 051 + Phase 5 §7).
+>
+> The legacy `?username=...&password=...` request-param branch in
+> `RemoteSessionImpl.extractUser` was dropped as dead — confirmed via audit
+> that nothing in the codebase sends those params for auth. The
+> `?access_token=...` query param + `raplaLoginToken` cookie + `Authorization: Bearer`
+> header branches remain (used by external iCal subscribers + legacy browser
+> session login).
 
 **Remaining dead code.** The JAX-RS `org.rapla.endpoints.server.RaplaAuthRestPage`
 (`@Path("login")`) is unmounted — its `AuthController` is gone. It is *not*
 freely removable: `RemoteSessionImpl` still reads its `LOGIN_COOKIE` constant
-for an (also-dead) `raplaLoginToken`-cookie auth branch, so deleting it means
-retiring that branch too — a separate cleanup. The orphaned
-`RemoteAuthentificationServiceImpl` (an unused `RemoteAuthentificationService`
-subclass — no bean, no callers) **has been removed**. Note the sibling
-`RaplaEventsRestPage` / `RaplaResourcesRestPage` / `RaplaDynamicTypesRestPage`
-are **not** dead — they are live beans the matching `@RestController`s
-delegate to.
+for the `raplaLoginToken`-cookie auth branch (legacy browser session login —
+still live). Note the sibling `RaplaEventsRestPage` / `RaplaResourcesRestPage`
+/ `RaplaDynamicTypesRestPage` are **not** dead — they are live beans the
+matching `@RestController`s delegate to.
 
 ### Auth endpoint reference
 
@@ -823,14 +887,36 @@ session produces one initial line plus one renewal line per hour.
 ### What's NOT stored anywhere
 
 The 2026-05-21 design (PRD 051) deliberately ships *zero* impersonation
-state outside the issued JWT itself:
+state outside the issued JWT itself. PRD 029 Phase 5 (2026-05-25) wires
+the client-side dual-slot model so the in-memory storage matches the
+Angular SPA's pattern:
 
 | | Stored where? |
 |---|---|
 | Impersonation **refresh** token | **Nowhere.** Not issued. |
-| Impersonation **access** token (client-side) | In-memory only; discarded on client cold restart, on logout, and on switch-back |
-| Admin's password | Never stored anywhere by the impersonation feature (the legacy `ConnectInfo.password` field is unused; the admin's existing refresh token is the only credential needed for renewal) |
+| Impersonation **access** token (Swing) | In-memory only on `RemoteConnectionInfo.impersonationAccessToken` — a sidecar slot distinct from admin's `accessToken`. Discarded on client cold restart, on logout, and on switch-back. |
+| Impersonation **access** token (Angular) | `sessionStorage` under key `rapla.impersonationOverride` (tab-scoped JSON `{accessToken, targetUsername}`). Survives F5 reload; dies on tab close. Mirrored by the Swing sidecar slot above. |
+| Admin's password | Never stored anywhere by the impersonation feature (Phase 5 removed all password caching — the admin's refresh token is the only credential needed for renewal) |
 | Per-impersonation server-side session record | **None.** Each `/api/auth/impersonate` call is independent; authorization is re-checked from scratch |
+
+**Two-slot bearer model — both clients:**
+
+| | Angular (`AuthService`) | Swing (`RemoteConnectionInfo`) |
+|---|---|---|
+| Admin's access token | `oauth.getAccessToken()` (library, `localStorage`) | `accessToken` |
+| Admin's refresh token | `oauth.getRefreshToken()` (library, `localStorage`) | `refreshToken` |
+| Effective bearer (override if set, else admin) | `token()` | `getEffectiveAccessToken()` |
+| Admin's bearer always (ignore override) | `adminToken()` | `adminToken()` |
+| Impersonation token | `impersonationOverride().accessToken` | `impersonationAccessToken` |
+| Impersonation target | `impersonationOverride().targetUsername` | `impersonationTargetUsername` |
+| Is impersonating? | `isImpersonating()` | `isImpersonating()` |
+
+Both clients' interceptor 401 handling: try impersonation renewal via
+`adminToken()` first; on failure refresh admin's tokens then retry; on
+total failure show re-login dialog. The renewal path **never** uses the
+impersonation token to authenticate the impersonation endpoint itself
+(server rule — see § "Switching from one target to another
+mid-impersonation").
 
 If an admin loses their group-admin rights mid-session (e.g. an
 admin removes them from `/groups/department-1/admins`), the next

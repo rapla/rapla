@@ -546,7 +546,10 @@ public class AuthorizationServerConfig
             {
                 String username = authentication.getName();
                 String password = authentication.getCredentials() == null ? "" : authentication.getCredentials().toString();
-                LoginCredentials credentials = new LoginCredentials(username, password, null);
+                // Spring delivers the password as a String already (request-scope,
+                // short-lived). Cast to char[] for the LoginCredentials contract;
+                // the String becomes GC-eligible at end of this request.
+                LoginCredentials credentials = new LoginCredentials(username, password.toCharArray());
                 try
                 {
                     User user = authService.getUserFromCredentials(credentials);
@@ -961,7 +964,8 @@ public class AuthorizationServerConfig
             try
             {
                 user = raplaAuthService.getUserFromCredentials(
-                        new org.rapla.storage.dbrm.LoginCredentials(auth.username, auth.password, null));
+                        new org.rapla.storage.dbrm.LoginCredentials(auth.username,
+                                auth.password == null ? null : auth.password.toCharArray()));
             }
             catch (Exception e)
             {

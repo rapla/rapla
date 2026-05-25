@@ -185,6 +185,11 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
 
     public boolean isMatchingSelectionAndFilter(Reservation reservation, Appointment appointment) throws RaplaException
     {
+        Collection<Conflict> selectedConflicts = getSelectedConflicts();
+        if (!selectedConflicts.isEmpty())
+        {
+            return isReservationInAnySelectedConflict(reservation, selectedConflicts);
+        }
         Set<RaplaObject> hashSet;
         if ( appointment == null)
         {
@@ -224,6 +229,19 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
         for (ClassificationFilter filter : reservationFilter)
         {
             if (filter.matches(classification))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static boolean isReservationInAnySelectedConflict(Reservation reservation, Collection<Conflict> selectedConflicts)
+    {
+        ReferenceInfo<Reservation> ref = reservation.getReference();
+        for (Conflict c : selectedConflicts)
+        {
+            if (ref.equals(c.getReservation1()) || ref.equals(c.getReservation2()))
             {
                 return true;
             }

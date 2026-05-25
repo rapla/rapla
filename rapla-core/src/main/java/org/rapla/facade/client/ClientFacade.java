@@ -1,5 +1,6 @@
 package org.rapla.facade.client;
 
+import org.rapla.ConnectInfo;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -15,11 +16,21 @@ public interface ClientFacade
 {
     RaplaFacade getRaplaFacade();
 
-    /** The login method establishes the connection and loads data.
-     * @return false on an invalid login.
+    /**
+     * Token-based session bootstrap — connect with already-obtained access +
+     * refresh tokens and set the working user. The only test-bootstrap entry
+     * point; production goes through {@code RaplaClientServiceImpl}'s dialog /
+     * OAuth flows. PRD 029 Phase 5 (2026-05-25) replaced the legacy
+     * {@code login(String, char[])} that built a password ConnectInfo.
+     *
+     * <p>Tests mint a JWT via {@code RefreshSessionService.issueAndPersist(user)}
+     * (server-side) and pass it here. Returns false if the tokens are
+     * rejected; throws on connection error.
+     *
+     * @return false on an invalid token (server rejected). True on success.
      * @throws RaplaException if the connection can't be established.
      */
-    boolean login(String username,char[] password) throws RaplaException;
+    boolean connect(ConnectInfo info) throws RaplaException;
 
     /** logout of the current user */
     void logout() throws RaplaException;

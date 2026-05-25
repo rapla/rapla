@@ -154,14 +154,25 @@ public class SpringRaplaClient implements AutoCloseable
                 ClientService clientService = ctx.getBean(ClientService.class);
                 clientService.start(currentInfo);
 
+                // PRD 029 Phase 5 — dual-slot impersonation. The context started
+                // above with admin's full 4-tuple as primary; now apply the
+                // impersonation token as the override slot so outbound calls use
+                // it while renewal/refresh continue to use admin's tokens.
+                if (isImpersonationSession && next.impersonationAccessToken() != null)
+                {
+                    clientService.setImpersonation(
+                            next.impersonationAccessToken(),
+                            next.impersonationTargetUsername());
+                }
+
                 NextSession received = ctx.getBean(LogoutSignal.class).take();
                 disposeAllFrames();
 
                 // Capture admin restore info from the signal — the impersonation
                 // call (RaplaClientServiceImpl.switchTo) reads connectionInfo
-                // and packs the admin's tokens into restoreInfo() BEFORE the
-                // context closes. Can't read it from `currentInfo` because that
-                // is null when admin logged in via the interactive dialog.
+                // and packs the admin's full session into restoreInfo() BEFORE
+                // the context closes. Can't read it from `currentInfo` because
+                // that is null when admin logged in via the interactive dialog.
                 if (received.restoreInfo() != null)
                 {
                     savedAdminInfo = received.restoreInfo();
@@ -172,12 +183,21 @@ public class SpringRaplaClient implements AutoCloseable
         }
     }
 
+    /**
+     * Parses CLI args into a bootstrap {@link ConnectInfo}. PRD 029 Phase 5
+     * (2026-05-25): the CLI takes a long-lived API JWT as a single arg, not
+     * username+password. Mint via {@code POST /api/auth/api-keys} (PRD 043)
+     * through the Scalar UI at {@code /scalar} once, then paste the JWT into
+     * {@code -Dexec.args="$RAPLA_DEV_TOKEN"}.
+     *
+     * <p>Returns {@code null} for no-args → next iteration shows the login
+     * dialog. For one arg, treats it as the access token (no refresh — API
+     * keys have their own lifetime via {@code exp}).
+     */
     private static ConnectInfo parseConnectInfo(String[] args)
     {
         if (args.length == 0) return null;
-        String user = args[0];
-        char[] password = args.length >= 2 ? args[1].toCharArray() : new char[0];
-        return new ConnectInfo(user, password);
+        return new ConnectInfo(args[0], null);
     }
 
     private static void disposeAllFrames()

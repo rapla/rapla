@@ -335,22 +335,7 @@ public class DialogUI extends JDialog
             this.validate();
         }
         Component anchor = (parent != null && parent.isShowing()) ? parent : getOwner();
-        try {
-            java.awt.Point anchorLoc = (anchor != null && anchor.isShowing()) ? anchor.getLocationOnScreen() : null;
-            java.awt.Dimension anchorSize = (anchor != null) ? anchor.getSize() : null;
-            System.err.println("[DIALOG-ANCHOR] title='" + getTitle()
-                + "' parent=" + (parent != null ? parent.getClass().getName() + "@" + System.identityHashCode(parent) : "null")
-                + " parent.isShowing=" + (parent != null ? parent.isShowing() : "n/a")
-                + " owner=" + (getOwner() != null ? getOwner().getClass().getName() + "@" + System.identityHashCode(getOwner()) : "null")
-                + " owner.isShowing=" + (getOwner() != null ? getOwner().isShowing() : "n/a")
-                + " anchor=" + (anchor != null ? anchor.getClass().getName() + "@" + System.identityHashCode(anchor) : "null")
-                + " anchorLoc=" + anchorLoc
-                + " anchorSize=" + anchorSize);
-        } catch (Throwable t) {
-            System.err.println("[DIALOG-ANCHOR] diag failed: " + t);
-        }
         setLocationRelativeTo(anchor);
-        System.err.println("[DIALOG-ANCHOR] after setLocationRelativeTo: getLocation=" + getLocation() + " getSize=" + getSize());
 
         if ( initFocusComponent != null)
         {

@@ -88,11 +88,18 @@ class LogoutSignalTest
         assertNull(back.info());
         assertNull(back.restoreInfo());
 
-        ConnectInfo target = ConnectInfo.withAccessToken("imp-token", null);
-        ConnectInfo admin = ConnectInfo.withAccessToken("admin-access", "admin-refresh");
-        NextSession switchTo = NextSession.switchTo(target, admin);
-        assertSame(target, switchTo.info());
-        assertSame(admin, switchTo.restoreInfo());
+        // PRD 029 Phase 5 dual-slot — switchTo carries admin's full session as
+        // the primary ConnectInfo (info() AND restoreInfo()) PLUS the
+        // impersonation access token + target username separately. The launcher
+        // starts the new context with admin's session, then applies the
+        // impersonation override via ClientService.setImpersonation().
+        ConnectInfo adminFull = new ConnectInfo("admin-access", "admin-refresh",
+                "http://kc/realms/r/token", "rapla-app");
+        NextSession switchTo = NextSession.switchTo(adminFull, "imp-token", "alice");
+        assertSame(adminFull, switchTo.info());
+        assertSame(adminFull, switchTo.restoreInfo());
+        assertEquals("imp-token", switchTo.impersonationAccessToken());
+        assertEquals("alice", switchTo.impersonationTargetUsername());
         assertFalse(switchTo.isExit());
         assertFalse(switchTo.isSwitchBack());
 

@@ -33,6 +33,7 @@ import javax.swing.JTree;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreeCellRenderer;
 import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 
@@ -78,6 +79,7 @@ public class ServerDrivenSettingsDialog
     private final Supplier<Set<UserOptionPanel>> userOptionPanels;
     private final Supplier<Set<SystemOptionPanel>> systemOptionPanels;
     private final Map<String, Supplier<PluginOptionPanel>> pluginOptionPanels;
+    private final TreeCellRenderer treeCellRenderer;
 
     @Autowired
     public ServerDrivenSettingsDialog(PreferencesAdminService api,
@@ -86,7 +88,8 @@ public class ServerDrivenSettingsDialog
             ClientFacade clientFacade,
             Supplier<Set<UserOptionPanel>> userOptionPanels,
             Supplier<Set<SystemOptionPanel>> systemOptionPanels,
-            Map<String, Supplier<PluginOptionPanel>> pluginOptionPanels)
+            Map<String, Supplier<PluginOptionPanel>> pluginOptionPanels,
+            TreeCellRenderer treeCellRenderer)
     {
         this.api = api;
         this.dialogUiFactory = dialogUiFactory;
@@ -95,6 +98,7 @@ public class ServerDrivenSettingsDialog
         this.userOptionPanels = userOptionPanels;
         this.systemOptionPanels = systemOptionPanels;
         this.pluginOptionPanels = pluginOptionPanels;
+        this.treeCellRenderer = treeCellRenderer;
     }
 
     public void show(PopupContext popupContext, PanelScope scope) throws RaplaException
@@ -168,6 +172,7 @@ public class ServerDrivenSettingsDialog
         addLegacyLeaves(root, legacyEntries);
 
         JTree tree = new JTree(new DefaultTreeModel(root));
+        tree.setCellRenderer(treeCellRenderer);
         tree.setRootVisible(false);
         tree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
         for (int i = tree.getRowCount() - 1; i >= 0; i--) tree.expandRow(i);

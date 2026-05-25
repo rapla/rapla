@@ -4,7 +4,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClas
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,21 +49,37 @@ public class StaticOpenApiController
      * and the file names committed under {@code src/main/resources/openapi/}. If a
      * group is added there, add it here too — there's no auto-discovery on purpose
      * (so a missing capture file fails loudly at startup, not at first request).
+     *
+     * <p>Plugins contribute additional groups by declaring a
+     * {@link OpenApiSpecContribution} bean — see that class's javadoc.
      */
     static final List<String> GROUPS = List.of("auth", "client", "rest", "exports");
 
     private static final String CLASSPATH_PREFIX = "openapi/";
 
     private final Map<String, byte[]> specBytes = new ConcurrentHashMap<>();
+    private final List<String> orderedGroupNames;
     private final byte[] swaggerConfigBytes;
 
-    public StaticOpenApiController()
+    public StaticOpenApiController(List<OpenApiSpecContribution> pluginSpecs)
     {
+        List<String> allGroups = new ArrayList<>(GROUPS);
         for (String group : GROUPS)
         {
             specBytes.put(group, loadOrFail(CLASSPATH_PREFIX + group + ".json"));
         }
-        this.swaggerConfigBytes = buildSwaggerConfig();
+        for (OpenApiSpecContribution contribution : pluginSpecs)
+        {
+            if (specBytes.containsKey(contribution.name()))
+            {
+                throw new IllegalStateException("Plugin OpenAPI group name '" + contribution.name()
+                        + "' collides with a rapla built-in or another plugin contribution.");
+            }
+            specBytes.put(contribution.name(), loadOrFail(contribution.classpathLocation()));
+            allGroups.add(contribution.name());
+        }
+        this.orderedGroupNames = List.copyOf(allGroups);
+        this.swaggerConfigBytes = buildSwaggerConfig(orderedGroupNames);
     }
 
     /**
@@ -126,7 +142,7 @@ public class StaticOpenApiController
      * Builds the Swagger UI {@code swagger-config} payload — same shape SpringDoc
      * emits, so the bundled UI's group dropdown works without further config.
      */
-    private static byte[] buildSwaggerConfig()
+    private static byte[] buildSwaggerConfig(List<String> groupNames)
     {
         Map<String, Object> config = new LinkedHashMap<>();
         config.put("configUrl", "/api/v3/api-docs/swagger-config");
@@ -137,7 +153,7 @@ public class StaticOpenApiController
         // http://localhost:8051/swagger-ui/oauth2-redirect.html. A relative path
         // in this field would break the OAuth flow with HTTP 400 invalid_redirect_uri.
         config.put("validatorUrl", "");
-        List<Map<String, String>> urls = GROUPS.stream()
+        List<Map<String, String>> urls = groupNames.stream()
                 .map(g -> Map.of("name", g, "url", "/api/v3/api-docs/" + g))
                 .toList();
         config.put("urls", urls);

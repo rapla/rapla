@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.rapla.server.spring.RaplaSpringBootApplication;
 import org.rapla.storage.dbrm.LoginCredentials;
-import org.rapla.storage.dbrm.RemoteAuthentificationService;
+import org.rapla.storage.dbrm.OAuth2PasswordLogin;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -73,16 +73,18 @@ class BadLoginErrorMessageTest
                      new AnnotationConfigApplicationContext(ClientProxyConfig.class))
         {
             ctx.getBean(RemoteConnectionInfo.class).setServerURL("http://localhost:" + port + "/api");
-            RemoteAuthentificationService proxy = ctx.getBean(RemoteAuthentificationService.class);
+            OAuth2PasswordLogin passwordLogin = ctx.getBean(OAuth2PasswordLogin.class);
 
-            HttpClientErrorException.Unauthorized ex = assertThrows(
-                    HttpClientErrorException.Unauthorized.class,
-                    () -> proxy.login(new LoginCredentials("admin", "wrongpw", null)),
-                    "bad creds must surface as HttpClientErrorException.Unauthorized");
-            String body = ex.getResponseBodyAsString();
-            assertTrue(body.contains("Login failed"),
-                    "server's i18n'd 401 body must reach the client (got: '" + body + "')");
-            assertEquals(401, ex.getStatusCode().value());
+            // PRD 029 Phase 5: dropped RemoteAuthentificationService — OAuth2PasswordLogin
+            // is the concrete seam now. Bad credentials surface as RaplaSecurityException
+            // (mapped at the seam from HTTP 400/401), with the server's i18n'd "Login failed"
+            // message preserved on the cause for visibility in logs.
+            org.rapla.storage.RaplaSecurityException ex = assertThrows(
+                    org.rapla.storage.RaplaSecurityException.class,
+                    () -> passwordLogin.login(new LoginCredentials("admin", "wrongpw".toCharArray())),
+                    "bad creds must surface as RaplaSecurityException");
+            assertTrue(ex.getMessage().contains("Login failed"),
+                    "seam must preserve the server's localised 'Login failed' message (got: '" + ex.getMessage() + "')");
         }
     }
 }

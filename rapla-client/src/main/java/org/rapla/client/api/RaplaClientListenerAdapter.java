@@ -22,6 +22,6 @@ public class RaplaClientListenerAdapter implements RaplaClientListener
     }
     public void clientAborted()
     {
-        
+
     }
 }

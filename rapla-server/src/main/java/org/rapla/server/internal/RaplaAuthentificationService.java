@@ -66,14 +66,14 @@ public class RaplaAuthentificationService
     {
         User user;
         String username = credentials.getUsername();
-        String password = credentials.getPassword();
-        String connectAs = credentials.getConnectAs();
+        // authenticate() takes String — bridge to char[] at this in-server seam.
+        // The String is request-scoped and becomes GC-eligible at end of request.
+        String password = credentials.getPassword() == null ? null : new String(credentials.getPassword());
 
         if (passwordCheckDisabled)
         {
-            String toConnect = connectAs != null && !connectAs.isEmpty() ? connectAs : username;
             // don't check passwords in standalone version
-            user = operator.getUser(toConnect);
+            user = operator.getUser(username);
             if (user == null)
             {
                 throw new RaplaSecurityException(i18n.getString("error.login"));
@@ -81,34 +81,22 @@ public class RaplaAuthentificationService
         }
         else
         {
-            user = authenticate(username, password, connectAs);
+            // PRD 029 Phase 5 (2026-05-25): impersonation no longer routes
+            // through the password grant. The dedicated /api/auth/impersonate
+            // endpoint + dual-slot model on the client (PRD 051 / Phase 5 §7)
+            // covers admin "switch to user".
+            user = authenticate(username, password);
         }
-        checkConnectAsRights(user, username, connectAs);
         return user;
     }
 
-    private void checkConnectAsRights(User user, String username, String connectAs) throws RaplaException {
-        if (connectAs != null && connectAs.length() > 0)
-        {
-            final User user1 = operator.getUser(username);
-            if (!PermissionController.canAdminUser(user1, user))
-            {
-                throw new RaplaSecurityException("Non admin user is requesting switchToUser permission!");
-            }
-        }
-    }
 
-    public User getUserWithPassword(String username, String password) throws RaplaException
+    public User authenticate(String username, String password) throws RaplaException
     {
-        String connectAs = null;
-        User user = authenticate(username, password, connectAs);
-        return user;
-    }
-
-    public User authenticate(String username, String password, String connectAs) throws RaplaException
-    {
+        // PRD 029 Phase 5 (2026-05-25): dropped the legacy connectAs parameter.
+        // Admin "switch to user" is now its own server endpoint
+        // (/api/auth/impersonate, PRD 051) — not piggybacked on password login.
         User user = null;
-        String toConnect = connectAs != null && !connectAs.isEmpty() ? connectAs : username;
         LOGGER.info("User '{}' is requesting login.", username);
         AuthenticationStore authenticationStoreSuccessfull = null;
         if (authenticationStore != null && authenticationStore.isEnabled())
@@ -198,20 +186,12 @@ public class RaplaAuthentificationService
             operator.authenticate(username, password);
         }
 
-        if (connectAs != null && connectAs.length() > 0 && user != null)
-        {
-            checkConnectAsRights(user, username, connectAs);
-            LOGGER.info("Successfull login for '{}' acts as user '{}'", username, connectAs);
-        }
-        else
-        {
-            LOGGER.info("Successfull login for '{}'", username);
-        }
-        user = operator.getUser(toConnect);
+        LOGGER.info("Successfull login for '{}'", username);
+        user = operator.getUser(username);
 
         if (user == null)
         {
-            throw new RaplaException("User with username '" + toConnect + "' not found");
+            throw new RaplaException("User with username '" + username + "' not found");
         }
         return user;
     }

@@ -17,9 +17,12 @@ import java.util.Optional;
  *
  * <p>On disk it is a flat JSON object: the refresh token under
  * {@code refreshToken}, preferences under their own keys
- * ({@link #KEY_LANGUAGE}, {@link #KEY_LOGIN_METHOD}). {@link #tryClear()}
- * removes only the token — the preferences survive logout so the next
- * login dialog still defaults sensibly.
+ * ({@link #KEY_LANGUAGE}, {@link #KEY_LOGIN_METHOD},
+ * {@link #KEY_REFRESH_URL}, {@link #KEY_OAUTH_CLIENT_ID}).
+ * {@link #tryClear()} removes only the token — the preferences survive
+ * logout so the next login dialog still defaults sensibly and so
+ * cold-startup silent reauth knows which provider URL to POST against
+ * (PRD 029 Phase 5).
  *
  * <p>Backends today: {@link FileTokenStore} (dotfile in
  * {@code ~/.rapla/}), {@link JnlpTokenStore} (JNLP
@@ -36,6 +39,20 @@ public interface TokenStore
      *  {@code "password"} or an OAuth provider id ({@code "rapla"},
      *  {@code "keycloak"}, …). */
     String KEY_LOGIN_METHOD = "loginMethod";
+
+    /** Preference key: the token endpoint URL the persisted refresh token was
+     *  issued by — Keycloak's {@code /realms/.../token}, rapla's BFF
+     *  {@code /api/auth/oauth/exchange/{id}}, or empty/absent for rapla-SAS
+     *  password sessions (callers fall back to {@code serverURL + /oauth2/token}).
+     *  Written at login time by {@code RaplaClientServiceImpl} so cold-startup
+     *  silent reauth knows where to POST the cached refresh token. */
+    String KEY_REFRESH_URL = "refreshUrl";
+
+    /** Preference key: the OAuth client_id to send on cold-startup silent
+     *  refresh. Empty/absent → {@code rapla-client}. Mirrors the
+     *  {@link #KEY_REFRESH_URL} pair so the persisted refresh round-trips to
+     *  the right provider. */
+    String KEY_OAUTH_CLIENT_ID = "oauthClientId";
 
     /** Returns the cached refresh token, or empty on any failure. Never throws. */
     Optional<String> read();

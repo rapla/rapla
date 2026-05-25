@@ -3,6 +3,9 @@ package org.rapla.facade.internal;
 import org.rapla.scheduler.Action;
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
+// PRD 029 Phase 5: imports of LoginCredentials / LoginTokens / OAuth2PasswordLogin
+// are gone — the facade no longer handles passwords. Test bootstrap goes
+// through ClientFacade.connect(ConnectInfo) with a pre-minted JWT.
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.EntityNotFoundException;
@@ -126,32 +129,20 @@ public class ClientFacadeImpl implements ClientFacade, StorageUpdateListener {
     }
 
     @Override
-    public boolean login(String username, char[] password)
-            throws RaplaException {
-        ConnectInfo connectInfo =new ConnectInfo(username, password);
-        User user = null;
-        try {
-            if ( getOperator() instanceof RemoteOperator)
-            {
-                user = ((RemoteOperator) getOperator()).connect(connectInfo);
-            }
-            else
-            {
-                user = getOperator().getUser(username);
-                if ( user == null)
-                {
-                    throw new EntityNotFoundException("user with username " + username + " not found.");
-                }
-            }
-        } catch (RaplaSecurityException ex) {
+    public boolean connect(ConnectInfo info) throws RaplaException {
+        if (!(getOperator() instanceof RemoteOperator))
+        {
+            throw new RaplaException("ClientFacade.connect(ConnectInfo) requires a RemoteOperator backend.");
+        }
+        User user;
+        try
+        {
+            user = ((RemoteOperator) getOperator()).connect(info);
+        }
+        catch (RaplaSecurityException ex)
+        {
             return false;
         }
-//       String username = connectInfo.getUsername();
-//       if  ( connectInfo.getConnectAs() != null)
-//       {
-//           username = connectInfo.getConnectAs();
-//       }
-
         if ( user != null)
         {
             LOGGER.info("Login {}", user.getUsername());

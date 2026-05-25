@@ -170,14 +170,13 @@ public class ClientConfig
                                                                   org.rapla.framework.RaplaLocale locale,
                                                                   org.rapla.scheduler.CommandScheduler scheduler,
                                                                   java.util.Map<String, org.rapla.entities.extensionpoints.FunctionFactory> functionFactoryMap,
-                                                                  org.rapla.storage.dbrm.RemoteAuthentificationService remoteAuthentificationService,
                                                                   org.rapla.storage.dbrm.RemoteStorage remoteStorage,
                                                                   org.rapla.storage.dbrm.RemoteConnectionInfo connectionInfo,
                                                                   java.util.Set<org.rapla.entities.domain.permission.PermissionExtension> permissionExtensions,
                                                                   org.rapla.storage.impl.RaplaLock lockManager)
     {
         return new org.rapla.storage.dbrm.RemoteOperator(i18n, locale, scheduler,
-                functionFactoryMap, remoteAuthentificationService, remoteStorage,
+                functionFactoryMap, remoteStorage,
                 connectionInfo, permissionExtensions, lockManager);
     }
 }

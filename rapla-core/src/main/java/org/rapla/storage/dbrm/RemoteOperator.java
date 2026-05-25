@@ -96,7 +96,6 @@ public class RemoteOperator
 
     private boolean bSessionActive = false;
     String userId;
-    RemoteAuthentificationService remoteAuthentificationService;
     RemoteStorage remoteStorage;
     protected CommandScheduler commandQueue;
 
@@ -107,10 +106,13 @@ public class RemoteOperator
 
     @Autowired
     public RemoteOperator(RaplaResources i18n, RaplaLocale locale, CommandScheduler scheduler,
-                          Map<String, FunctionFactory> functionFactoryMap, RemoteAuthentificationService remoteAuthentificationService, RemoteStorage remoteStorage,
+                          Map<String, FunctionFactory> functionFactoryMap, RemoteStorage remoteStorage,
                           RemoteConnectionInfo connectionInfo, Set<PermissionExtension> permissionExtensions, RaplaLock lockManager) {
         super(i18n, locale, functionFactoryMap, permissionExtensions, lockManager);
-        this.remoteAuthentificationService = remoteAuthentificationService;
+        // PRD 029 Phase 5 (2026-05-25): RemoteAuthentificationService was
+        // dropped — connect(ConnectInfo) is token-only now (password→token
+        // conversion happens at the user-input boundary), so no auth seam
+        // needed here.
         this.remoteStorage = remoteStorage;
         commandQueue = scheduler;
         this.connectionInfo = connectionInfo;
@@ -143,26 +145,11 @@ public class RemoteOperator
         LOGGER.info("Connecting to server and starting login..");
         if (connectInfo != null) {
             try {
-                if (connectInfo.getAccessToken() != null) {
-                    connectionInfo.setAccessToken(connectInfo.getAccessToken());
-                    connectionInfo.setRefreshToken(connectInfo.getRefreshToken());
-                } else {
-                    String connectAs = connectInfo.getConnectAs();
-                    String password = new String(connectInfo.getPassword());
-                    String username = connectInfo.getUsername();
-                    RemoteAuthentificationService serv1 = getRemoteAuthentificationService();
-                    LoginTokens loginToken = serv1.login(new LoginCredentials(username, password, connectAs));
-                    String accessToken = loginToken.getAccessToken();
-                    if (accessToken != null) {
-                        connectionInfo.setAccessToken(accessToken);
-                        connectionInfo.setRefreshToken(loginToken.getRefreshToken());
-                    } else {
-                        throw new RaplaSecurityException("Invalid Access token");
-                    }
-                }
-            } catch (RaplaException ex) {
-                disconnect();
-                throw ex;
+                // PRD 029 Phase 5: ConnectInfo is tokens-only. Password→token
+                // conversion happens at the user-input boundary (legacy dialog,
+                // test bootstrap) before connect() is called.
+                connectionInfo.setAccessToken(connectInfo.getAccessToken());
+                connectionInfo.setRefreshToken(connectInfo.getRefreshToken());
             } catch (Exception ex) {
                 disconnect();
                 throw new RaplaException(ex);
@@ -547,10 +534,6 @@ public class RemoteOperator
 
     public RemoteStorage getRemoteStorage() {
         return remoteStorage;
-    }
-
-    private RemoteAuthentificationService getRemoteAuthentificationService() {
-        return remoteAuthentificationService;
     }
 
     public boolean canChangePassword() throws RaplaException {

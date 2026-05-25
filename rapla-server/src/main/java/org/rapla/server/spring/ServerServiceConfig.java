@@ -114,12 +114,15 @@ public class ServerServiceConfig
 
     @Bean
     public RemoteSession remoteSession(TokenHandler tokenHandler,
-                                        RaplaAuthentificationService authService,
                                         org.rapla.storage.CachableStorageOperator operator,
                                         ObjectProvider<org.rapla.server.spring.oauth.external.ExternalProvidersProperties> externalProvidersProvider,
                                         ObjectProvider<org.rapla.server.spring.oauth.external.ExternalUserResolver> externalUserResolverProvider)
     {
-        RemoteSession legacy = new RemoteSessionImpl(tokenHandler, authService);
+        // PRD 029 Phase 5 (2026-05-25): RaplaAuthentificationService no longer
+        // injected here — the legacy session's username/password request-param
+        // branch (which was the only consumer) is gone. The fallback now only
+        // handles Bearer header / ?access_token= / raplaLoginToken cookie.
+        RemoteSession legacy = new RemoteSessionImpl(tokenHandler);
         return new org.rapla.server.spring.SpringSecurityRemoteSession(
                 legacy, operator,
                 externalProvidersProvider.getIfAvailable(),

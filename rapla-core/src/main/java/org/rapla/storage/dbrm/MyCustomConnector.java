@@ -1,6 +1,5 @@
 package org.rapla.storage.dbrm;
 
-import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
 import org.rapla.framework.RaplaException;
 import org.slf4j.Logger;
@@ -23,18 +22,15 @@ public class MyCustomConnector implements CustomConnector
     private static final Logger LOGGER = LoggerFactory.getLogger(MyCustomConnector.class);
 
     private final RemoteConnectionInfo remoteConnectionInfo;
-    private final Supplier<RemoteAuthentificationService> authentificationService;
     private final TokenStore tokenStore;
     //private final String errorString;
     private final CommandScheduler commandQueue;
     Supplier<RaplaResources> i18n;
-    private int wrongLoginCounter=0;
 
-    @Autowired public MyCustomConnector(RemoteConnectionInfo remoteConnectionInfo, Supplier<RaplaResources> i18n,Supplier<RemoteAuthentificationService> authentificationService,
+    @Autowired public MyCustomConnector(RemoteConnectionInfo remoteConnectionInfo, Supplier<RaplaResources> i18n,
             CommandScheduler commandQueue, TokenStore tokenStore)
     {
         this.remoteConnectionInfo = remoteConnectionInfo;
-        this.authentificationService = authentificationService;
         this.tokenStore = tokenStore == null ? TokenStores.noOp() : tokenStore;
         this.commandQueue = commandQueue;
         this.i18n = i18n;
@@ -43,8 +39,12 @@ public class MyCustomConnector implements CustomConnector
 
     @Override public String reauth(Class proxy) throws Exception
     {
-        final boolean isAuthentificationService = proxy.getCanonicalName().contains(RemoteAuthentificationService.class.getCanonicalName());
-        if (isAuthentificationService )
+        // PRD 029 Phase 5 (2026-05-25): RemoteAuthentificationService was
+        // dropped. The legacy guard against recursive reauth-on-auth-proxy is
+        // no-op now — OAuth2PasswordLogin doesn't go through the RPC proxy
+        // mechanism (it builds its own HTTP request directly). Kept as a
+        // belt-and-suspenders check against any future seam that gets RPC-proxied.
+        if (proxy.getCanonicalName().contains(OAuth2PasswordLogin.class.getCanonicalName()))
         {
             return null;
         }
@@ -56,7 +56,7 @@ public class MyCustomConnector implements CustomConnector
         // failure fall into the existing refresh-then-password chain
         // (which renews the admin Bearer, after which the next 401
         // round-trip will retry impersonation step 0).
-        if (remoteConnectionInfo.hasImpersonationToken())
+        if (remoteConnectionInfo.isImpersonating())
         {
             try
             {
@@ -72,66 +72,28 @@ public class MyCustomConnector implements CustomConnector
             }
         }
 
-        // Prefer refresh-token reauth (silent, works for both password and
-        // OAuth-logged-in sessions) before falling back to re-running the
-        // password login (which needs cached credentials we may not have).
+        // Refresh-token reauth — works for both password and OAuth-logged-in
+        // sessions because OAuth2 password grant returns a refresh token too.
+        // No password fallback: when the refresh fails (expired, revoked, server
+        // hash-store wiped), surface session-expired and let the higher layers
+        // re-show the login dialog. Caching the password to silently re-login
+        // gained ~one corner case (refresh expired + password unchanged + server
+        // still up) at the cost of keeping cleartext in JVM memory for the full
+        // session lifetime — not worth it. Removed 2026-05-25.
         final String refreshToken = remoteConnectionInfo.getRefreshToken();
         if (refreshToken != null && !refreshToken.isEmpty())
         {
             try
             {
                 String newAccessToken = refreshUsingToken(refreshToken);
-                if (newAccessToken != null)
-                {
-                    wrongLoginCounter = 0;
-                    return newAccessToken;
-                }
+                if (newAccessToken != null) return newAccessToken;
             }
             catch (Exception refreshFailed)
             {
-                LOGGER.info("refresh-token reauth failed ({}), falling back to password reauth", refreshFailed.getMessage());
+                LOGGER.info("refresh-token reauth failed ({}) — session expired", refreshFailed.getMessage());
             }
         }
-
-        // Password reauth — only works if the user logged in with username/password
-        // AND we kept the password in memory. For OAuth-logged-in sessions this is
-        // null and we just bubble up a session-expired error.
-        final RemoteAuthentificationService remoteAuthentificationService = authentificationService.get();
-        if ( remoteAuthentificationService == null)
-        {
-            return  null;
-        }
-        if ( wrongLoginCounter > 1)
-        {
-            throw new RaplaSecurityException("Authentication Failure. Maybe your password has changed. Please close rapla and login again");
-        }
-        final ConnectInfo connectInfo = remoteConnectionInfo.connectInfo;
-        if (connectInfo == null || connectInfo.getPassword() == null)
-        {
-            // OAuth-logged-in session with no usable refresh token. Force re-login.
-            throw new RaplaSecurityException("Your session has expired. Please sign in again.");
-        }
-        final String username = connectInfo.getUsername();
-        final String password = new String(connectInfo.getPassword());
-        final String connectAs = connectInfo.getConnectAs();
-        final LoginTokens loginTokens;
-        try {
-            loginTokens = remoteAuthentificationService.login(new org.rapla.storage.dbrm.LoginCredentials(username, password, connectAs));
-            LOGGER.info("Reauthenticating user {}{}", username, (connectAs != null ? " as " + connectAs : ""));
-        } catch (RaplaSecurityException e) {
-            wrongLoginCounter++;
-            throw e;
-        }
-        wrongLoginCounter = 0;
-
-        final String accessToken = loginTokens.getAccessToken();
-        remoteConnectionInfo.setAccessToken( accessToken);
-        if (loginTokens.getRefreshToken() != null)
-        {
-            remoteConnectionInfo.setRefreshToken(loginTokens.getRefreshToken());
-            tokenStore.tryWrite(loginTokens.getRefreshToken());
-        }
-        return accessToken;
+        throw new RaplaSecurityException("Your session has expired. Please sign in again.");
     }
 
     /**
@@ -231,7 +193,7 @@ public class MyCustomConnector implements CustomConnector
         String respBody = resp.body();
         String newToken = extractJsonString(respBody, "access_token");
         if (newToken == null) return null;
-        remoteConnectionInfo.setImpersonationToken(newToken, target);
+        remoteConnectionInfo.setImpersonationAccessToken(newToken, target);
         LOGGER.info("impersonation renewal succeeded (target={})", target);
         return newToken;
     }
