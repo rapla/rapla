@@ -2,7 +2,15 @@ package org.rapla.server.spring.graphql;
 
 import graphql.GraphQL;
 import graphql.execution.instrumentation.Instrumentation;
+import graphql.schema.DataFetcher;
+import graphql.schema.GraphQLCodeRegistry;
+import graphql.schema.GraphQLFieldDefinition;
+import graphql.schema.GraphQLInterfaceType;
+import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
+import graphql.schema.GraphQLType;
+import graphql.schema.PropertyDataFetcher;
+import graphql.schema.SingletonPropertyDataFetcher;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -15,6 +23,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
 import org.rapla.storage.StorageOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,7 +96,8 @@ public class HotSwappableGraphQlSource implements GraphQlSource
             ObjectProvider<SubscriptionExceptionResolver> subscriptionExceptionResolvers,
             ObjectProvider<Instrumentation> instrumentations,
             ObjectProvider<GraphQlSourceBuilderCustomizer> sourceBuilderCustomizers,
-            StorageOperator operator)
+            StorageOperator operator,
+            RaplaLocale raplaLocale)
     {
         this.resourceResolver = resourceResolver;
         this.wiringConfigurers = wiringConfigurers;
@@ -96,7 +106,7 @@ public class HotSwappableGraphQlSource implements GraphQlSource
         this.instrumentations = instrumentations;
         this.sourceBuilderCustomizers = sourceBuilderCustomizers;
         this.operator = operator;
-        this.generatedWiring = new GeneratedClassificationWiring(operator);
+        this.generatedWiring = new GeneratedClassificationWiring(operator, raplaLocale);
         // Build the initial source eagerly. The bean is consumed by
         // ExecutionGraphQlService; failure here = boot failure (correct).
         this.delegate.set(buildSource());
@@ -146,6 +156,64 @@ public class HotSwappableGraphQlSource implements GraphQlSource
         return buildSource(types, generatedSdl);
     }
 
+    /**
+     * Validate that every Classification-family interface field has an
+     * explicit (non-{@link PropertyDataFetcher}) DataFetcher registered on
+     * every concrete implementation. Loud-fails the build if any are missing
+     * — the alternative is silent-null in production when graphql-java falls
+     * back to its default PropertyDataFetcher (which calls the bean getter,
+     * usually returning null for our entity-backed types).
+     *
+     * <p>Why this exists: graphql-java's {@code RuntimeWiringConfigurer.type(name).dataFetcher(...)}
+     * registers on the named type only — it doesn't propagate interface-level
+     * registrations to concrete implementations the way Spring's
+     * {@code @SchemaMapping} walker did. Forgetting to re-register an
+     * inherited field on each generated {@code <TypeKey>Classification} is a
+     * silent production bug; this check catches it at boot.
+     */
+    private static void validateInterfaceCoverage(GraphQLSchema schema)
+    {
+        for (String interfaceName : new String[] {
+                "Classification", "AllocatableClassification", "ReservationClassification" })
+        {
+            GraphQLType t = schema.getType(interfaceName);
+            if (!(t instanceof GraphQLInterfaceType iface)) continue;
+            List<GraphQLFieldDefinition> ifaceFields = iface.getFields();
+            GraphQLCodeRegistry codeRegistry = schema.getCodeRegistry();
+            List<GraphQLObjectType> impls = schema.getImplementations(iface);
+            for (GraphQLObjectType impl : impls)
+            {
+                for (GraphQLFieldDefinition field : ifaceFields)
+                {
+                    DataFetcher<?> fetcher = codeRegistry.getDataFetcher(impl, field);
+                    if (isPropertyFallback(fetcher))
+                    {
+                        throw new IllegalStateException(
+                                "GraphQL wiring incomplete: interface field '"
+                                        + interfaceName + "." + field.getName()
+                                        + "' has no explicit DataFetcher on implementation '"
+                                        + impl.getName() + "' — graphql-java would fall back to PropertyDataFetcher, "
+                                        + "returning null silently. Register the field's DataFetcher in "
+                                        + "GeneratedClassificationWiring.configure() (per-generated-type block).");
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * True if the fetcher is graphql-java's default property-getter fallback.
+     * Our explicit fetchers (LightDataFetcher subclasses) are never instances
+     * of PropertyDataFetcher / SingletonPropertyDataFetcher, so catching those
+     * two reliably flags "no explicit registration."
+     */
+    private static boolean isPropertyFallback(DataFetcher<?> fetcher)
+    {
+        return fetcher == null
+                || fetcher instanceof PropertyDataFetcher<?>
+                || fetcher instanceof SingletonPropertyDataFetcher<?>;
+    }
+
     /** Rebuild path — caller passes the freshly-generated state. */
     private GraphQlSource buildSource(Collection<DynamicType> types, String generatedSdl)
     {
@@ -168,7 +236,9 @@ public class HotSwappableGraphQlSource implements GraphQlSource
             builder.instrumentation(instrumentations.orderedStream().toList());
             sourceBuilderCustomizers.orderedStream().forEach(c -> c.customize(builder));
 
-            return builder.build();
+            GraphQlSource built = builder.build();
+            validateInterfaceCoverage(built.schema());
+            return built;
         }
         catch (IOException e)
         {

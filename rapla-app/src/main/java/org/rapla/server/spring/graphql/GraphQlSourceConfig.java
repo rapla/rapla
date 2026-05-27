@@ -1,6 +1,7 @@
 package org.rapla.server.spring.graphql;
 
 import graphql.execution.instrumentation.Instrumentation;
+import org.rapla.framework.RaplaLocale;
 import org.rapla.storage.StorageOperator;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.graphql.autoconfigure.GraphQlSourceBuilderCustomizer;
@@ -35,7 +36,8 @@ public class GraphQlSourceConfig
             ObjectProvider<SubscriptionExceptionResolver> subscriptionExceptionResolvers,
             ObjectProvider<Instrumentation> instrumentations,
             ObjectProvider<GraphQlSourceBuilderCustomizer> sourceBuilderCustomizers,
-            StorageOperator operator)
+            StorageOperator operator,
+            RaplaLocale raplaLocale)
     {
         return new HotSwappableGraphQlSource(
                 resourceResolver,
@@ -44,6 +46,7 @@ public class GraphQlSourceConfig
                 subscriptionExceptionResolvers,
                 instrumentations,
                 sourceBuilderCustomizers,
-                operator);
+                operator,
+                raplaLocale);
     }
 }

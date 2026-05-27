@@ -167,6 +167,21 @@ one or more Allocatables.
   to every appointment in the reservation, but you can restrict
   it to just some
 - `getRestriction(Allocatable)` / `getAppointmentsFor(Allocatable)`
+
+**The restriction model — granularity note.** Restrictions are
+**appointment-level**, not block-level. A restriction binds an
+allocatable to specific appointments; if an appointment recurs,
+every materialized block of that appointment inherits the same
+allocatable set. Two consequences for downstream callers:
+
+- "Which allocatables are bound to *this appointment*?" is the
+  natural query — `getAppointmentsFor()` inverted. External APIs
+  (PRD 035) expose this as `Appointment.allocatables` (pre-resolved
+  through restriction); blocks inherit it via their parent.
+- The restriction structure itself (`appointmentIds` per
+  allocatable, with `null` meaning "bound to all") is only relevant
+  to editor-shaped consumers that round-trip the reservation back
+  on save. Read-only / listview consumers should never see it.
 - `getFirstDate()`, `getMaxEnd()` — derived bounds across appointments
 - `getClassification()` — the metadata bag (title, course code, etc.)
 - `getPermissionList()` — per-reservation ACL (who can read this event)
@@ -210,6 +225,15 @@ is the materialized form of one occurrence. It is **not persisted** —
 it's computed by expanding the appointment's repeating rule on demand.
 A block has start, end, a back-reference to its appointment, and an
 `isException` flag. Calendar views render blocks, not appointments.
+
+**Recurrence-aware consumers (iCal, CalDAV) work at the Appointment
+level, not the block level** — they consume RRULE / EXDATE natively
+and expand client-side. Rapla's own calendar UI expands server-side
+into blocks because the UI grid is indexed by time, not by
+appointment. External APIs (PRD 035) therefore expose appointments
+as a primary read shape with blocks as an opt-in materialization
+(`Appointment.blocks(from:, to:)`) — same query root, two
+consumption shapes.
 
 ---
 
@@ -285,6 +309,14 @@ facade. Each Conflict identifies one Allocatable and two
 (Reservation, Appointment) pairs that overlap on it. See
 [conflicts-and-events.md](conflicts-and-events.md) and
 [../conflict-detection.md](../conflict-detection.md).
+
+**Aggregation granularity:** the conflict primitive is
+**appointment-pair plus a list of dates**, not block-pair. Two
+weekly recurring lectures sharing Room A produce **one** Conflict
+spanning N dates, not N Conflicts — the Swing client renders them
+that way, and external APIs (PRD 035) preserve the same shape
+(`{ allocatable, otherAppointment, dates: [LocalDate!]! }`). A
+block-pair shape would force every consumer to re-aggregate.
 
 ---
 

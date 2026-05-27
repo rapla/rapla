@@ -5,25 +5,14 @@ import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.TypeResolver;
 import graphql.schema.idl.RuntimeWiring;
-import graphql.schema.idl.TypeRuntimeWiring;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
-import org.rapla.entities.User;
-import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.Attribute;
-import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
-import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.framework.RaplaException;
-import org.rapla.storage.PermissionController;
+import org.rapla.framework.RaplaLocale;
 import org.rapla.storage.StorageOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 
 /**
  * PRD 035 Cut C — programmatic wiring for the per-DynamicType generated
@@ -55,10 +44,12 @@ public final class GeneratedClassificationWiring
     private static final Logger LOGGER = LoggerFactory.getLogger(GeneratedClassificationWiring.class);
 
     private final StorageOperator operator;
+    private final RaplaLocale     raplaLocale;
 
-    public GeneratedClassificationWiring(StorageOperator operator)
+    public GeneratedClassificationWiring(StorageOperator operator, RaplaLocale raplaLocale)
     {
-        this.operator = operator;
+        this.operator    = operator;
+        this.raplaLocale = raplaLocale;
     }
 
     /**
@@ -78,12 +69,25 @@ public final class GeneratedClassificationWiring
         wiringBuilder.type("AllocatableClassification", b -> b.typeResolver(classificationResolver));
         wiringBuilder.type("ReservationClassification",       b -> b.typeResolver(classificationResolver));
 
+        // Performance-critical structural type fields (Allocatable / DynamicType /
+        // Classification interface) — programmatic LightDataFetcher singletons
+        // bypass Spring's per-dispatch HandlerMethod construction.
+        StructuralTypeFetchers.wire(wiringBuilder, operator, raplaLocale);
+
         if (dynamicTypes == null) return;
         for (DynamicType dt : dynamicTypes)
         {
             if (dt == null || dt.getKey() == null || dt.getKey().isBlank()) continue;
             String typeName = ClassificationSdlGenerator.sanitizeTypeName(dt.getKey()) + "Classification";
             wiringBuilder.type(typeName, builder -> {
+                // graphql-java doesn't auto-propagate interface-level DataFetchers
+                // to concrete types (unlike Spring's @SchemaMapping walker), so we
+                // re-register the inherited Classification interface fields on
+                // each generated implementation explicitly.
+                builder.dataFetcher("typeId",     StructuralTypeFetchers.CLASSIFICATION_TYPE_ID);
+                builder.dataFetcher("type",       StructuralTypeFetchers.CLASSIFICATION_TYPE);
+                builder.dataFetcher("attributes", StructuralTypeFetchers.CLASSIFICATION_ATTRIBUTES);
+                // Then the typed per-attribute fields generated for this DynamicType.
                 for (Attribute attr : dt.getAttributes())
                 {
                     if (attr == null || attr.getKey() == null || attr.getKey().isBlank()) continue;
@@ -124,96 +128,13 @@ public final class GeneratedClassificationWiring
     }
 
     /**
-     * Builds a DataFetcher for one (generated-type, attribute) field. The
-     * closure captures the attribute key + type so it doesn't repeat work
-     * per request.
+     * Returns the (cached, immutable) per-attribute {@link AttributeDataFetcher}
+     * instance to register against a generated type's typed field. One
+     * instance per (DynamicType, Attribute) — built once at schema build,
+     * reused for every row.
      */
     private DataFetcher<Object> attributeFetcher(Attribute attr)
     {
-        String key = attr.getKey();
-        AttributeType type = attr.getType();
-        boolean multi = isMultiSelect(attr);
-        return env -> {
-            Object src = env.getSource();
-            if (!(src instanceof Classification c)) return null;
-            if (multi) return readMultiValued(c, attr, type);
-            return readSingleValued(c, key, type);
-        };
-    }
-
-    private Object readSingleValued(Classification c, String key, AttributeType type)
-    {
-        Object v = c.getValue(key);
-        if (v == null) return null;
-        return switch (type)
-        {
-            case STRING      -> v.toString();
-            case INT         -> v instanceof Number n ? n.longValue() : null;
-            case BOOLEAN     -> v instanceof Boolean b ? b : null;
-            case DATE        -> v;
-            case CATEGORY    -> v;
-            case ALLOCATABLE -> {
-                if (!(v instanceof Allocatable a)) yield null;
-                yield filterAllocatable(a) ? a : null;
-            }
-        };
-    }
-
-    private Object readMultiValued(Classification c, Attribute attr, AttributeType type)
-    {
-        Collection<Object> values = c.getValues(attr);
-        if (values == null) return List.of();
-        if (type == AttributeType.CATEGORY)
-        {
-            List<Object> out = new ArrayList<>(values.size());
-            for (Object v : values) out.add(v);
-            return out;
-        }
-        if (type == AttributeType.ALLOCATABLE)
-        {
-            List<Allocatable> out = new ArrayList<>(values.size());
-            for (Object v : values)
-            {
-                if (v instanceof Allocatable a && filterAllocatable(a)) out.add(a);
-            }
-            return out;
-        }
-        // No multi-select for other types in current rapla data model.
-        return List.of();
-    }
-
-    /**
-     * §12 gate for ALLOCATABLE attribute values. Anonymous callers see
-     * nothing (matches the ClassificationGraphQLController policy); known
-     * callers must {@code canRead} the target.
-     */
-    private boolean filterAllocatable(Allocatable a)
-    {
-        User caller = resolveCaller();
-        if (caller == null) return false;
-        return operator.getPermissionController().canRead(a, caller);
-    }
-
-    private User resolveCaller()
-    {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) return null;
-        String username = null;
-        if (auth.getPrincipal() instanceof Jwt jwt)
-        {
-            username = jwt.getClaimAsString("preferred_username");
-        }
-        if (username == null || username.isBlank()) username = auth.getName();
-        if (username == null || username.isBlank() || "anonymousUser".equals(username)) return null;
-        try { return operator.getUser(username); }
-        catch (RaplaException e) { return null; }
-    }
-
-    private static boolean isMultiSelect(Attribute attr)
-    {
-        Object c = attr.getConstraint(ConstraintIds.KEY_MULTI_SELECT);
-        if (c == null) return false;
-        if (c instanceof Boolean b) return b;
-        return "true".equalsIgnoreCase(c.toString());
+        return new AttributeDataFetcher(attr);
     }
 }

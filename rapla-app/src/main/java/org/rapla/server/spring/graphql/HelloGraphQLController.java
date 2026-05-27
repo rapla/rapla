@@ -229,34 +229,11 @@ public class HelloGraphQLController
         return children == null ? List.of() : Arrays.asList(children);
     }
 
-    @SchemaMapping(typeName = "Category", field = "name")
-    public String categoryName(Category c)
-    {
-        return c.getName(Locale.getDefault());
-    }
-
-    @SchemaMapping(typeName = "Category", field = "path")
-    public String categoryPath(Category c)
-    {
-        Category root = operator.getSuperCategory();
-        return c.getPath(root, Locale.getDefault());
-    }
-
-    @SchemaMapping(typeName = "Category", field = "children")
-    public List<Category> categoryChildren(Category c)
-    {
-        Category[] arr = c.getCategories();
-        return arr == null ? List.of() : Arrays.asList(arr);
-    }
-
-    @SchemaMapping(typeName = "Category", field = "parent")
-    public Category categoryParent(Category c)
-    {
-        Category parent = c.getParent();
-        // Hide super-category as a "parent" — clients only see real category
-        // subtrees, not the synthetic root.
-        return parent == operator.getSuperCategory() ? null : parent;
-    }
+    // Category.name/path/parent/children resolvers were @SchemaMapping methods
+    // here; they're now LightDataFetcher singletons in StructuralTypeFetchers
+    // (wired at schema build) to bypass Spring's per-dispatch HandlerMethod
+    // construction. ~80-120k Category dispatches per 42k-Person query saw
+    // ~5-10 µs / call instead of ~25-30 µs after the conversion.
 
     // --- helpers --------------------------------------------------------------
 

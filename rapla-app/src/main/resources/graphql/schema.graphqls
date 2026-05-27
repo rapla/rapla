@@ -102,7 +102,7 @@ null = unconstrained. Multiple predicates AND together. Filter runs over
 the §12-visible subset.
 """
 input AllocatableFilter {
-  "Exact-match on the DynamicType key (e.g. \"room\", \"lecturer\")."
+  "Exact-match on the DynamicType key (e.g. \"room\", \"lecturer\"). When set, pre-filters at the storage layer (skips full-table scan)."
   typeKeyEq:    String
   "True → only persons. False → only resources. null → both."
   isPersonEq:   Boolean
@@ -110,6 +110,13 @@ input AllocatableFilter {
   nameContains: String
   "Exact-match on owner id."
   ownerEq:      ID
+  """
+  Cap the result size. Iteration stops as soon as `limit` visible matches
+  have accumulated. Strongly recommended on large deployments — at admin
+  scale, 11 typed fields × 40k+ rows is ~15s of graphql-java per-field
+  overhead. Null = no limit (legacy default; may change).
+  """
+  limit:        Int
 }
 
 type User {

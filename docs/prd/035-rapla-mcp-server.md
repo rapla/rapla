@@ -347,6 +347,14 @@ These each have their own API surface:
 
 ### Cross-PRD impact
 
+- **PRD 055** (child / implementation) — events-side resolver batch.
+  Covers the Reservation / Appointment / Allocation read surface
+  (locked 2026-05-27 — single + list queries, restriction-aware
+  `Reservation.allocations` + pre-resolved `Appointment.allocatables`,
+  `blocks(from:, to:)` materializer). Inherits the architectural
+  decisions from §"Consumer-driven read surfaces" + §"Per-type shape"
+  above. Mutations / conflicts / templates remain in PRD 055's deferred
+  list (their own implementation PRDs).
 - **PRD 028** — substrate is §9 above; OQ#3 + OQ#10 resolved. PRD 028
   Plan Phase 2's `/search/reservations?q=` becomes the GraphQL `search`
   root.
@@ -441,6 +449,50 @@ Broadened-scope additions:
 The external DTOs are **hand-built, versioned, a tree not a graph, with zero
 back-references**. They are *not* the internal entity wire format.
 
+### Consumer-driven read surfaces (locked 2026-05-27)
+
+Read consumers fall into four shapes; the schema is designed so each
+shape gets the natural primitive for its job. Conflating them produces
+either client-side join logic or "two ways to express the same thing"
+documentation cost.
+
+| Consumer | Primitive | Why |
+|---|---|---|
+| **Editor open / save** | `Reservation` (deep, with `allocations[]` restriction-aware) | Round-trip must preserve restriction structure — `Reservation.allocations` is the lossless source of truth |
+| **Listviews + per-appointment allocation visibility** ("all my reservations / for resource X, with what's booked at each appointment") | `Reservation { appointments { allocatables[] } }` — restrictions pre-resolved per appointment | No client-side join; the workhorse query for SPA list/table views |
+| **iCal / CalDAV export** (and future recurrence-aware consumers) | `Appointment` with `repeating[]` rule intact, no expansion | iCal carries RRULE / EXDATE natively; expanding to blocks server-side throws away the structure these consumers want |
+| **Calendar grid rendering** (SPA week/month views) | `Appointment.blocks(from:, to:)` sub-resolver — materialized expansion | Calendar grid indexes by time, not by appointment; server-side expansion via `Appointment.createBlocks` avoids reimplementing rapla's recurrence semantics in JS |
+| **Scheduling pre-flight** (drag-drop validate, "what conflicts with this proposal") | `checkConflicts(...)` returning `Conflict` aggregated at appointment-pair + dates | A weekly clash between two recurring lectures is **one** conflict spanning N dates, not N separate conflicts — see [domain-model.md §Conflict](../architecture/domain-model.md#conflict-facade-level-computed) |
+
+**Block is a sub-resolution of Appointment, not a peer query root.**
+There is no top-level `appointmentBlocks(filter:)` query. Calendar UI
+selects `appointments(filter:) { blocks(from:, to:) { ... } }` and
+flatMaps client-side; the duplication of `from`/`to` is honest (filter
+window selects appointments; sub-arg controls materialization range).
+Block has no `allocatables` field of its own — they come via
+`block.appointment.allocatables` because restrictions are
+appointment-level (see [domain-model.md §Reservation](../architecture/domain-model.md#reservation)).
+
+**Two-shape allocation exposure rationale.** `Reservation.allocations`
+(restriction-aware structure) and `Appointment.allocatables`
+(pre-resolved list) are not redundant — they serve different
+consumers and live at different abstraction levels. The editor is
+the only consumer that needs the restriction structure; every other
+consumer needs the resolved view. Documenting them as "editor uses
+A; everyone else uses B" removes the "two ways to express the same
+data" smell.
+
+### Out of the External API data model — what stays REST
+
+The literal-URL feed exports under [AGENTS.md §15 allow-list](../../AGENTS.md)
+— `/rapla/ical`, `/rapla/calendar.csv` — stay on REST regardless of
+the table above. External calendar subscribers depend on the URLs.
+The "iCal-shaped consumer" row above describes the *internal* GraphQL
+consumer shape (e.g. a future MCP tool that wants RRULE-bearing
+appointment data); the existing public iCal export endpoint is
+unaffected by this PRD.
+
+
 > **Why not reuse the internal format.** PRD 009 Risk 1 is the canary: the
 > internal Jackson format serializes raw `EntityImpl` graphs whose back-refs
 > (`getResolver()` → scheduler → unserializable inner class) must be patched
@@ -471,15 +523,29 @@ selecting deeper fields.
   lastChanged, canModify }`. The appointments array *owns* its children; an
   Appointment carries **no** `eventId` back-pointer.
 - **Appointment** — `{ id, start, end, allDay, repeating:{ type, interval,
-  end|count, exceptions[] } }`. start/end are `LocalDateTime` (PRD 014).
-  Recurrence two ways: the raw `repeating` rule by default, or materialized
-  instances for a window via an `occurrences(from:,to:)` field.
-- **Allocation** — explicit, *not* the internal implicit-restriction model:
-  `{ allocatable: <stub>, appointmentIds: [...] | null }`. `appointmentIds`
-  is an **intra-document id list** (the appointments are components of the
-  same event, already present) — not a stub, not expandable. `null` = bound
-  to every appointment. On write the resolver translates back to
-  `setRestriction(alloc, appointments[])`.
+  end|count, exceptions[] }, allocatables:[<stub>] }`. start/end are
+  `LocalDateTime` (PRD 014). Recurrence two ways: the raw `repeating` rule by
+  default, or materialized instances for a window via an
+  `occurrences(from:,to:)` field. **`allocatables` is the per-appointment
+  pre-resolved view** — restrictions already applied. This is the workhorse
+  field for listviews ("all my reservations, with what's booked at each
+  appointment"), iCal-shaped consumers, and conflict UI. Restrictions are
+  appointment-level (see [domain-model.md §Reservation](../architecture/domain-model.md#reservation)),
+  so blocks inherit allocatables from their parent appointment with no
+  duplication.
+- **Allocation** — `{ allocatable: <stub>, appointmentIds: [...] | null }`.
+  Restriction structure exposed: `appointmentIds` is an **intra-document
+  id list** (the appointments are components of the same event, already
+  present) — not a stub, not expandable. `null` = bound to every appointment.
+  On write the resolver translates back to `setRestriction(alloc,
+  appointments[])`. **Role:** this field is the editor's lossless
+  source-of-truth — the only place where restriction structure is visible on
+  the wire. Read-only and listview consumers should select
+  `Appointment.allocatables` instead (pre-resolved per-appointment view).
+  The cost of carrying two shapes ("two ways to express the same data") is
+  paid deliberately: editor needs the round-trip-lossless form,
+  everyone else needs the no-client-join form. Apollo normalization +
+  gzip absorb the duplication for the common reservation-wide case.
 - **Allocatable (resource/person)** — `{ id, type:"resource"|"person",
   displayName, classification }`. Person allocatables may link to a `User` —
   expose `displayName` only, never the account/login.
@@ -1111,14 +1177,24 @@ checkConflicts(reservationId: ID, proposed: ProposedReservationInput): ConflictR
 input ProposedReservationInput { appointments: [AppointmentInput!]!  allocatableIds: [ID!]! }
 type ConflictReport { hasConflicts: Boolean!  conflicts: [Conflict!]! }
 type Conflict {
-  allocatable: Allocatable!          # the double-booked resource (stub)
-  start: DateTime!  end: DateTime!   # the overlapping window
-  withReservation: Reservation       # §12 — null if the caller cannot read it
+  allocatable:      Allocatable!         # the double-booked resource (stub)
+  myAppointment:    Appointment!         # the appointment in the input
+  otherAppointment: Appointment          # the appointment we clash with — §12: null if unreadable
+  withReservation:  Reservation          # parent of otherAppointment — §12: null if unreadable
+  dates:            [LocalDate!]!        # days where both appointments fire
 }
 ```
 
 Checks an existing reservation *or* a proposed (unsaved) shape. Classification
 is irrelevant to conflicts — the input is appointments × allocatables only.
+
+**Aggregation:** one `Conflict` per `(allocatable, myAppointment,
+otherAppointment)` triple, with all clash dates collected into
+`dates[]`. Two weekly recurring lectures sharing Room A produce
+**one** Conflict spanning N dates, not N Conflicts. Matches rapla's
+internal `ConflictFinder` shape and how the Swing client displays
+conflicts. A block-pair shape would force every consumer to
+re-aggregate (see [domain-model.md §Conflict](../architecture/domain-model.md#conflict-facade-level-computed)).
 
 ### `whoIsFree` — availability picture
 

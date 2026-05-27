@@ -1,10 +1,7 @@
 package org.rapla.server.spring.graphql;
 
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -13,17 +10,15 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
-import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.StorageOperator;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
-import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -66,20 +61,43 @@ public class ClassificationGraphQLController
     public List<Allocatable> allocatables(@Argument("filter") AllocatableFilter filter) throws RaplaException
     {
         User caller = resolveCaller();
-        Collection<Allocatable> all = operator.getAllocatables(null);
+        // Operator-level pre-filter when typeKeyEq is set — avoids materializing
+        // every allocatable across all types just to narrow to one type.
+        ClassificationFilter[] storageFilter = buildStorageFilter(filter);
+        Collection<Allocatable> all = operator.getAllocatables(storageFilter);
         if (all == null) return List.of();
         PermissionController pc = operator.getPermissionController();
-        List<Allocatable> visible = new ArrayList<>();
+        int cap = (filter != null && filter.limit() != null) ? filter.limit() : Integer.MAX_VALUE;
+        List<Allocatable> visible = new ArrayList<>(Math.min(cap, 256));
         for (Allocatable a : all)
         {
             if (a == null) continue;
             if (isInternalAllocatable(a)) continue;   // skip rapla-internal (template/period/etc.)
+            // Match-then-canRead — matches() is microseconds on hash-compare;
+            // canRead can be a permission-graph walk for non-admins. Filtering
+            // first short-circuits the expensive check for non-matching entries.
+            if (!matches(a, filter)) continue;
             if (caller != null && !pc.canRead(a, caller)) continue;
             if (caller == null && !isWorldReadable(a)) continue;
-            if (!matches(a, filter)) continue;
             visible.add(a);
+            if (visible.size() >= cap) break;
         }
         return visible;
+    }
+
+    /**
+     * Build a {@link ClassificationFilter} array for the storage layer's
+     * type-aware accessor when the caller asks for a single type. Returns
+     * null (= "all types") otherwise. The storage layer's filter does
+     * coarse-grained "DynamicType match"; the in-resolver loop still applies
+     * the rest of the predicates (isPerson, nameContains, ownerEq, limit).
+     */
+    private ClassificationFilter[] buildStorageFilter(AllocatableFilter filter) throws RaplaException
+    {
+        if (filter == null || filter.typeKeyEq() == null || filter.typeKeyEq().isBlank()) return null;
+        DynamicType dt = type(filter.typeKeyEq());
+        if (dt == null) return null;   // unknown / rapla-internal — type() returns null
+        return new ClassificationFilter[] { dt.newClassificationFilter() };
     }
 
     /**
@@ -155,178 +173,12 @@ public class ClassificationGraphQLController
         return null;
     }
 
-    // === Allocatable derived-field resolvers ==================================
-
-    @SchemaMapping(typeName = "Allocatable", field = "type")
-    public String allocatableType(Allocatable a)
-    {
-        return a.isPerson() ? "PERSON" : "RESOURCE";
-    }
-
-    @SchemaMapping(typeName = "Allocatable", field = "displayName")
-    public String allocatableDisplayName(Allocatable a)
-    {
-        return a.getName(Locale.getDefault());
-    }
-
-    @SchemaMapping(typeName = "Allocatable", field = "owner")
-    public User allocatableOwner(Allocatable a) throws RaplaException
-    {
-        ReferenceInfo<User> ref = a.getOwnerRef();
-        if (ref == null) return null;
-        return operator.tryResolve(ref);
-    }
-
-    @SchemaMapping(typeName = "Allocatable", field = "createdAt")
-    public OffsetDateTime allocatableCreatedAt(Allocatable a)
-    {
-        LocalDateTime ts = a.getCreateDate();
-        return ts == null ? null : ts.atOffset(ZoneOffset.UTC);
-    }
-
-    @SchemaMapping(typeName = "Allocatable", field = "lastModifiedAt")
-    public OffsetDateTime allocatableLastModifiedAt(Allocatable a)
-    {
-        LocalDateTime ts = a.getLastChanged();
-        return ts == null ? null : ts.atOffset(ZoneOffset.UTC);
-    }
-
-    @SchemaMapping(typeName = "Allocatable", field = "classification")
-    public Classification allocatableClassification(Allocatable a)
-    {
-        return a.getClassification();
-    }
-
-    // === DynamicType derived-field resolvers ==================================
-
-    @SchemaMapping(typeName = "DynamicType", field = "name")
-    public String dynamicTypeName(DynamicType dt)
-    {
-        return dt.getName(Locale.getDefault());
-    }
-
-    @SchemaMapping(typeName = "DynamicType", field = "classificationType")
-    public String dynamicTypeClassificationType(DynamicType dt)
-    {
-        String v = dt.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
-        if (DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON.equals(v))      return "PERSON";
-        if (DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION.equals(v)) return "RESERVATION";
-        return "RESOURCE";
-    }
-
-    @SchemaMapping(typeName = "DynamicType", field = "attributes")
-    public List<AttributeDescriptorDto> dynamicTypeAttributes(DynamicType dt)
-    {
-        Attribute[] attrs = dt.getAttributes();
-        if (attrs == null) return List.of();
-        List<AttributeDescriptorDto> out = new ArrayList<>(attrs.length);
-        for (Attribute attr : attrs)
-        {
-            if (attr == null) continue;
-            out.add(AttributeDescriptorDto.from(attr));
-        }
-        return out;
-    }
-
-    // === Classification interface field resolvers =============================
-    //
-    // These apply to EVERY GENERATED `<TypeKey>Classification implements
-    // Classification` — interface fields are inherited at the GraphQL level,
-    // so a single @SchemaMapping on the interface name does the job.
-
-    @SchemaMapping(typeName = "Classification", field = "typeId")
-    public String classificationTypeId(Classification c)
-    {
-        DynamicType dt = c.getType();
-        return dt == null ? null : dt.getId();
-    }
-
-    @SchemaMapping(typeName = "Classification", field = "type")
-    public DynamicType classificationType(Classification c)
-    {
-        return c.getType();
-    }
-
-    @SchemaMapping(typeName = "Classification", field = "attributes")
-    public List<AttributeValueDto> classificationAttributes(Classification c)
-    {
-        DynamicType dt = c.getType();
-        if (dt == null) return List.of();
-        User caller = resolveCaller();
-        PermissionController pc = operator.getPermissionController();
-        List<AttributeValueDto> out = new ArrayList<>();
-        for (Attribute attr : dt.getAttributes())
-        {
-            if (attr == null) continue;
-            AttributeValueDto dto = buildAttributeValue(c, attr, caller, pc);
-            if (dto != null) out.add(dto);
-        }
-        return out;
-    }
-
-    /** Build an {@link AttributeValueDto} for a single attribute. §12 applies
-     *  to reference values (Category passes through, Allocatable filtered). */
-    private AttributeValueDto buildAttributeValue(Classification c, Attribute attr,
-            User caller, PermissionController pc)
-    {
-        String key = attr.getKey();
-        AttributeType t = attr.getType();
-        if (t == null) return null;
-        boolean multi = isMultiSelect(attr);
-
-        if (multi)
-        {
-            Collection<Object> values = c.getValues(attr);
-            if (values == null || values.isEmpty()) return AttributeValueDto.bare(key);
-            if (t == AttributeType.CATEGORY)
-            {
-                List<Category> out = new ArrayList<>(values.size());
-                for (Object v : values) if (v instanceof Category cat) out.add(cat);
-                return AttributeValueDto.categoryList(key, out);
-            }
-            if (t == AttributeType.ALLOCATABLE)
-            {
-                List<Allocatable> out = new ArrayList<>(values.size());
-                for (Object v : values)
-                {
-                    if (!(v instanceof Allocatable a)) continue;
-                    if (caller != null && !pc.canRead(a, caller)) continue;
-                    if (caller == null && !isWorldReadable(a)) continue;
-                    out.add(a);
-                }
-                return AttributeValueDto.allocatableList(key, out);
-            }
-            // No multi-select for STRING / INT / BOOLEAN / DATE in current rapla data model.
-            return AttributeValueDto.bare(key);
-        }
-
-        Object v = c.getValueForAttribute(attr);
-        if (v == null) return AttributeValueDto.bare(key);
-
-        return switch (t)
-        {
-            case STRING      -> AttributeValueDto.stringV(key, v.toString());
-            case INT         -> AttributeValueDto.intV(key,
-                    v instanceof Number n ? n.longValue() : null);
-            case BOOLEAN     -> AttributeValueDto.boolV(key, v instanceof Boolean b ? b : null);
-            case DATE        -> AttributeValueDto.dateV(key, v instanceof LocalDateTime ldt ? ldt : null);
-            case CATEGORY    -> AttributeValueDto.categoryV(key, v instanceof Category cat ? cat : null);
-            case ALLOCATABLE -> {
-                if (!(v instanceof Allocatable a)) yield AttributeValueDto.bare(key);
-                if (caller != null && !pc.canRead(a, caller)) yield AttributeValueDto.bare(key);
-                if (caller == null && !isWorldReadable(a))    yield AttributeValueDto.bare(key);
-                yield AttributeValueDto.allocatableV(key, a);
-            }
-        };
-    }
-
-    private static boolean isMultiSelect(Attribute attr)
-    {
-        Object c = attr.getConstraint(ConstraintIds.KEY_MULTI_SELECT);
-        if (c == null) return false;
-        if (c instanceof Boolean b) return b;
-        return "true".equalsIgnoreCase(c.toString());
-    }
+    // Per-type derived-field resolvers (Allocatable / DynamicType /
+    // Classification interface fields) are wired programmatically as
+    // LightDataFetcher singletons by StructuralTypeFetchers — invoked from
+    // HotSwappableGraphQlSource at schema build. This skips Spring's
+    // per-dispatch DataFetcherHandlerMethod allocation + Method.toGenericString
+    // reflection (~34 leaf profile samples, 2026-05-27).
 
     // === filter predicate =====================================================
 
@@ -390,7 +242,8 @@ public class ClassificationGraphQLController
             String  typeKeyEq,
             Boolean isPersonEq,
             String  nameContains,
-            String  ownerEq) {}
+            String  ownerEq,
+            Integer limit) {}
 
     /**
      * Mirror of the {@code AttributeDescriptor} GraphQL type. Read snapshot

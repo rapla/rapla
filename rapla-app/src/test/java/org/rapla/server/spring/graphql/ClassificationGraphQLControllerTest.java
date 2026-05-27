@@ -227,6 +227,21 @@ class ClassificationGraphQLControllerTest
 
     @Test
     @WithMockUser(username = "homer", roles = "ADMIN")
+    void allocatablesFilterLimitCapsResultSize()
+    {
+        // testdefault has ~6 allocatables visible to admin; limit:2 must cap at 2.
+        List<Map<String, Object>> capped = tester.document("""
+                { allocatables(filter: { limit: 2 }) { id } }
+                """)
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertEquals(2, capped.size(), () -> "limit:2 should cap at 2 entries, got " + capped.size());
+    }
+
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
     void allocatableByUnknownIdReturnsNull()
     {
         tester.document("{ allocatable(id: \"does-not-exist\") { id } }")
