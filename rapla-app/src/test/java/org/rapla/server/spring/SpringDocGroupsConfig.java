@@ -140,7 +140,6 @@ public class SpringDocGroupsConfig
                         // Core SPA data + layout
                         "/api/storage/**",
                         "/api/edit/**",
-                        "/api/calendar/**",
                         "/api/table/**",
                         "/api/dynamictypes",
                         "/api/dynamictypes/**",
@@ -148,6 +147,8 @@ public class SpringDocGroupsConfig
                         "/api/locale/**",
                         "/api/logger/**",
                         // Admin UI
+                        "/api/users",
+                        "/api/users/**",
                         "/api/plugins",
                         "/api/plugins/**",
                         "/api/settings",
@@ -190,8 +191,6 @@ public class SpringDocGroupsConfig
                 .displayName("Imports / Exports / Legacy feeds")
                 .pathsToMatch(
                         // /api/ current
-                        "/api/export",
-                        "/api/export/**",
                         "/api/ical/import",
                         "/api/ical/import/**",
                         "/api/externaleventimport",

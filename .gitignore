@@ -18,6 +18,10 @@
 # PRD 005: ignore target/ and data/ in every module / subdir of the reactor
 **/target/
 **/data/
+# Cached signed webclient jars + source-shas manifest produced by
+# SignWebclientJars (rapla-app -Psign-pkcs11). Survives `mvn clean` and lets
+# server-only or Angular-only rebuilds skip the YubiKey touch.
+rapla-app/signed-webclient-cache/
 /parent/rapla-parent.iml
 /.settings/
 /.idea/

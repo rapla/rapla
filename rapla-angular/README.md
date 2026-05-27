@@ -6,8 +6,8 @@ proxy) and prod (via Spring Boot static handler).
 ## Quick start
 
 ```bash
-# 1) one-time install + generate the typed API client
-cd rapla-angular && npm install && npm run gen:api
+# 1) one-time install
+cd rapla-angular && npm install
 
 # 2) Terminal A — Spring Boot (REST + OAuth2 on :8051)
 mvn -pl rapla-app -am spring-boot:run -Dspring-boot.run.fork=false
@@ -33,7 +33,6 @@ Default login on the bundled dev DB: **user `admin`, empty password**.
 | `npm run lint` | ESLint + Prettier `--check` | Run via `build`; rarely directly |
 | `npm run format` | Prettier `--write` | Auto-fix formatting before commit |
 | `npm test` | Vitest (`ng test`) | Session end / CI |
-| `npm run gen:api` | Generate `src/app/api/` from the committed OpenAPI spec (`rapla-app/src/main/resources/openapi/client.json`) | One-time setup + after server REST changes |
 
 ## Prerequisites (once-off)
 
@@ -42,7 +41,7 @@ See PRD 026 §Phase 0 "What needs to be installed". Short version:
 ```bash
 sudo apt-get install -y libatomic1
 nvm use --lts                                          # Node 22+
-npm install -g @angular/cli @openapitools/openapi-generator-cli
+npm install -g @angular/cli
 ```
 
 ## First run
@@ -50,13 +49,14 @@ npm install -g @angular/cli @openapitools/openapi-generator-cli
 ```bash
 cd rapla-angular
 npm install
-npm run gen:api   # generates src/app/api/ — the build won't compile without it
 ```
 
-`src/app/api/` is gitignored and **not** part of a fresh checkout, but
-several components import from it (`app.config.ts`, the reservations
-component, …). A fresh clone must run `npm run gen:api` once before the
-first `npm start` / `npm run build`.
+REST wire-format types (`TablePage`, `TableRow`, etc.) live as hand-rolled
+TypeScript interfaces under each feature module (e.g.
+`reservations/table.types.ts`). Type drift is guarded by Java contract
+tests on the server side — e.g. `TableViewServiceContractTest` pins the
+record shapes. The SPA is on the path to GraphQL; REST codegen was
+removed to avoid maintaining a throwaway build artefact.
 
 ## Dev workflow A — HMR via `ng serve` (recommended for humans)
 
@@ -120,26 +120,22 @@ mvn -pl rapla-app -am spring-boot:run -Dspring-boot.run.fork=false
 Open **http://localhost:8051/app/**. Manual browser refresh required
 (no HMR), but the URL exactly matches prod.
 
-## Regenerating the typed client
+## REST wire types
 
-The TypeScript client under `src/app/api/` is generated from the
-committed OpenAPI spec `rapla-app/src/main/resources/openapi/client.json`
-(no running server needed):
+Each feature module owns the TypeScript shape of the endpoints it calls
+(e.g. `reservations/table.types.ts` for `/api/table/*`). No code
+generation: requests go through `HttpClient` directly with same-origin
+URLs (`/api/...`). The server's record-component contract tests (e.g.
+`TableViewServiceContractTest` in `rapla-core`) keep the wire shape
+honest; if a server-side record adds or renames a field, those tests
+fail loudly and the matching TS interface gets a manual update in the
+same change.
 
-```bash
-npm run gen:api
-```
-
-Generated files are gitignored, so `src/app/api/` is absent from a fresh
-checkout — run `gen:api` once during setup, then again whenever the REST
-surface changes (controller added, request/response DTO changed, etc.).
-The `client.json` spec itself is committed and refreshed server-side; if
-the server's REST surface changed, regenerate `client.json` first, then
-run `gen:api`.
-
-`BASE_PATH` is set to `''` (empty) in `app.config.ts` because SpringDoc
-emits absolute paths that already include the `/api` prefix — adding
-it again at the client would double-prefix.
+The OpenAPI spec at `/api/v3/api-docs` (committed snapshots in
+`rapla-app/src/main/resources/openapi/`) is still produced and served —
+useful for SwaggerUI, external integrators who want to generate their
+own client, and `OpenApiSpecCaptureTest` for drift detection. It just
+isn't consumed by this SPA.
 
 ## Distribution build
 

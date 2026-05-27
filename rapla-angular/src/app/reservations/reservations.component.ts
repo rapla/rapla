@@ -1,15 +1,7 @@
-import {
-  Component,
-  inject,
-  signal,
-  computed,
-  OnInit,
-  AfterViewInit,
-  ViewChild,
-} from '@angular/core';
+import { Component, inject, signal, computed, effect, OnInit } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import { MatSort, MatSortModule } from '@angular/material/sort';
-import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
+import { MatSortModule } from '@angular/material/sort';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
@@ -17,10 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
 
 import { MatDialog } from '@angular/material/dialog';
 
-import { TableViewControllerService } from '../api/api/table-view-controller.service';
-import { TablePage } from '../api/model/table-page';
-import { TableRow } from '../api/model/table-row';
-import { TableColumnDescriptor } from '../api/model/table-column-descriptor';
+import { TablePage, TableRow, TableColumnDescriptor } from './table.types';
 import { AuthService } from '../auth/auth.service';
 import { UsersService } from '../auth/users.service';
 import { SwitchToUserDialogComponent } from '../auth/switch-to-user-dialog.component';
@@ -36,7 +25,6 @@ import { SwitchToUserDialogComponent } from '../auth/switch-to-user-dialog.compo
   imports: [
     MatTableModule,
     MatSortModule,
-    MatPaginatorModule,
     MatProgressSpinnerModule,
     MatToolbarModule,
     MatButtonModule,
@@ -54,7 +42,11 @@ import { SwitchToUserDialogComponent } from '../auth/switch-to-user-dialog.compo
             [class.impersonating]="auth.isImpersonating()"
             [title]="
               auth.isImpersonating()
-                ? 'Acting as ' + effectiveUsername() + ' via admin ' + adminUsername() + ' — click to switch to another user'
+                ? 'Acting as ' +
+                  effectiveUsername() +
+                  ' via admin ' +
+                  adminUsername() +
+                  ' — click to switch to another user'
                 : 'Click to switch to another user'
             "
             (click)="openSwitchToUser()"
@@ -113,12 +105,6 @@ import { SwitchToUserDialogComponent } from '../auth/switch-to-user-dialog.compo
             </td>
           </tr>
         </table>
-
-        <mat-paginator
-          [pageSizeOptions]="[10, 25, 50, 100]"
-          [pageSize]="25"
-          showFirstLastButtons
-        ></mat-paginator>
       }
     </section>
   `,
@@ -191,8 +177,8 @@ import { SwitchToUserDialogComponent } from '../auth/switch-to-user-dialog.compo
     `,
   ],
 })
-export class ReservationsComponent implements OnInit, AfterViewInit {
-  private readonly table = inject(TableViewControllerService);
+export class ReservationsComponent implements OnInit {
+  private readonly http = inject(HttpClient);
   protected readonly auth = inject(AuthService);
   private readonly usersService = inject(UsersService);
   private readonly dialog = inject(MatDialog);
@@ -240,8 +226,27 @@ export class ReservationsComponent implements OnInit, AfterViewInit {
     return claim ?? '';
   });
 
-  @ViewChild(MatSort) sort!: MatSort;
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  constructor() {
+    // Re-fetch whenever the impersonation override flips — covers
+    // openSwitchToUser → confirm → impersonate, switchBack, and any
+    // other path that mutates auth.impersonationOverride. Tracks the
+    // current target by id (or null when not impersonating); only fires
+    // when that changes. ngOnInit's initial fetch isn't enough because
+    // the dialog-close subscription path was unreliable across the
+    // angular-zone / microtask boundary.
+    let lastTarget: string | null | undefined = undefined;
+    effect(() => {
+      const target = this.auth.impersonationOverride()?.targetUsername ?? null;
+      if (lastTarget === undefined) {
+        lastTarget = target;
+        return; // skip the initial run — ngOnInit fires the first fetch
+      }
+      if (target !== lastTarget) {
+        lastTarget = target;
+        this.fetchReservations();
+      }
+    });
+  }
 
   ngOnInit() {
     const claims = this.auth.identityClaims() ?? {};
@@ -258,32 +263,46 @@ export class ReservationsComponent implements OnInit, AfterViewInit {
   private fetchReservations(): void {
     this.loading.set(true);
     this.error.set(null);
-    const year = new Date().getFullYear();
-    const from = `${year - 1}-01-01`;
-    const to = `${year + 2}-12-31`;
 
-    this.table.reservations(from, to).subscribe({
-      next: (page: TablePage) => {
-        this.columns.set(page.columns ?? []);
-        this.dataSource.data = page.rows ?? [];
-        this.totalCount.set(page.totalCount ?? this.dataSource.data.length);
-        this.incomplete.set(page.incomplete ?? false);
-        this.loading.set(false);
+    // Window: today ±1 year. Until the SPA grows a date-picker UI the table
+    // shows two years centred on now — wide enough to cover the typical
+    // teacher's semester ±, narrow enough to keep the response small.
+    const now = new Date();
+    const fromDate = new Date(now);
+    fromDate.setFullYear(now.getFullYear() - 1);
+    const toDate = new Date(now);
+    toDate.setFullYear(now.getFullYear() + 1);
+    const from = fromDate.toISOString().slice(0, 10);
+    const to = toDate.toISOString().slice(0, 10);
+
+    // Scope to "reservations I made": fetch the rapla User id from
+    // /api/users/me (the JWT alone isn't enough — when an external IdP
+    // fronts rapla, `sub` is the IdP's id, not rapla's), then anchor the
+    // query on that id via `owners`.
+    this.http.get<{ id: string }>('/api/users/me').subscribe({
+      next: (me) => {
+        const body = { from, to, owners: [me.id] };
+        this.http.post<TablePage>('/api/table/reservations', body).subscribe({
+          next: (page) => {
+            this.columns.set(page.columns ?? []);
+            this.dataSource.data = page.rows ?? [];
+            this.totalCount.set(page.totalCount ?? this.dataSource.data.length);
+            this.incomplete.set(page.incomplete ?? false);
+            this.loading.set(false);
+          },
+          error: (err) => {
+            this.error.set(err?.error?.message ?? `Request failed (HTTP ${err?.status ?? '?'})`);
+            this.loading.set(false);
+          },
+        });
       },
       error: (err) => {
-        this.error.set(err?.error?.message ?? `Request failed (HTTP ${err?.status ?? '?'})`);
+        this.error.set(
+          err?.error?.message ?? `Failed to resolve current user (HTTP ${err?.status ?? '?'})`,
+        );
         this.loading.set(false);
       },
     });
-  }
-
-  ngAfterViewInit() {
-    this.dataSource.sort = this.sort;
-    this.dataSource.paginator = this.paginator;
-    this.dataSource.sortingDataAccessor = (row, columnId) => {
-      const v: unknown = row.cells?.[columnId];
-      return typeof v === 'number' ? v : String(v ?? '');
-    };
   }
 
   /**

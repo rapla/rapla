@@ -236,6 +236,81 @@
         }
       }
     },
+    "/api/table/reservations" : {
+      "post" : {
+        "tags" : [ "table-view-controller" ],
+        "operationId" : "reservations",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TableQueryRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TablePage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/table/appointments" : {
+      "post" : {
+        "tags" : [ "table-view-controller" ],
+        "operationId" : "appointments",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TableQueryRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TablePage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/storage/user/{userId}/disconnect-external-auth" : {
+      "post" : {
+        "tags" : [ "remote-storage-controller" ],
+        "operationId" : "disconnectExternalAuth",
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
     "/api/storage/restart" : {
       "post" : {
         "tags" : [ "remote-storage-controller" ],
@@ -954,6 +1029,35 @@
         }
       }
     },
+    "/api/auth/impersonate" : {
+      "post" : {
+        "tags" : [ "impersonation-controller" ],
+        "operationId" : "impersonate",
+        "parameters" : [ {
+          "name" : "target_username",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ImpersonationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/auth/api-keys" : {
       "get" : {
         "tags" : [ "api-key-controller" ],
@@ -1140,67 +1244,38 @@
         }
       }
     },
-    "/api/table/reservations" : {
+    "/api/users" : {
       "get" : {
-        "tags" : [ "table-view-controller" ],
-        "operationId" : "reservations",
-        "parameters" : [ {
-          "name" : "from",
-          "in" : "query",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "to",
-          "in" : "query",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "columns",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "array",
-            "items" : {
-              "type" : "string"
-            }
-          }
-        }, {
-          "name" : "sort",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "array",
-            "items" : {
-              "type" : "string"
-            }
-          }
-        }, {
-          "name" : "cursor",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "pageSize",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int32"
-          }
-        } ],
+        "tags" : [ "users-controller" ],
+        "operationId" : "list_1",
         "responses" : {
           "200" : {
             "description" : "OK",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/TablePage"
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/UserSummary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/me" : {
+      "get" : {
+        "tags" : [ "users-controller" ],
+        "operationId" : "me",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserMe"
                 }
               }
             }
@@ -1260,74 +1335,6 @@
         }
       }
     },
-    "/api/table/appointments" : {
-      "get" : {
-        "tags" : [ "table-view-controller" ],
-        "operationId" : "appointments",
-        "parameters" : [ {
-          "name" : "from",
-          "in" : "query",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "to",
-          "in" : "query",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "columns",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "array",
-            "items" : {
-              "type" : "string"
-            }
-          }
-        }, {
-          "name" : "sort",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "array",
-            "items" : {
-              "type" : "string"
-            }
-          }
-        }, {
-          "name" : "cursor",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "pageSize",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int32"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/TablePage"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/storage/user" : {
       "get" : {
         "tags" : [ "remote-storage-controller" ],
@@ -1372,6 +1379,24 @@
         }
       }
     },
+    "/api/storage/profile/capabilities" : {
+      "get" : {
+        "tags" : [ "remote-storage-controller" ],
+        "operationId" : "getProfileEditCapabilities",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProfileEditCapabilities"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/storage/conflicts" : {
       "get" : {
         "tags" : [ "remote-storage-controller" ],
@@ -1393,28 +1418,10 @@
         }
       }
     },
-    "/api/storage/change/canchangepassword" : {
-      "get" : {
-        "tags" : [ "remote-storage-controller" ],
-        "operationId" : "canChangePassword",
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "boolean"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/plugins" : {
       "get" : {
         "tags" : [ "plugins-controller" ],
-        "operationId" : "list_1",
+        "operationId" : "list_2",
         "responses" : {
           "200" : {
             "description" : "OK",
@@ -1695,94 +1702,6 @@
         }
       }
     },
-    "/api/dynamictypes" : {
-      "get" : {
-        "tags" : [ "rapla-dynamic-types-controller" ],
-        "operationId" : "list_2",
-        "parameters" : [ {
-          "name" : "classificationType",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "array",
-                  "items" : {
-                    "$ref" : "#/components/schemas/DynamicTypeImpl"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/calendar/view" : {
-      "get" : {
-        "tags" : [ "calendar-view-controller" ],
-        "operationId" : "view",
-        "parameters" : [ {
-          "name" : "from",
-          "in" : "query",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "to",
-          "in" : "query",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "strategy",
-          "in" : "query",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "enum" : [ "GROUP_START_TIMES", "BEST_FIT" ]
-          }
-        }, {
-          "name" : "groupBy",
-          "in" : "query",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "enum" : [ "DAY", "RESOURCE" ]
-          }
-        }, {
-          "name" : "allocatables",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "array",
-            "items" : {
-              "type" : "string"
-            }
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/CalendarPage"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/auth/oauth/config" : {
       "get" : {
         "tags" : [ "o-auth-config-controller" ],
@@ -1985,115 +1904,138 @@
           }
         }
       },
-      "AttributeImpl" : {
+      "Condition" : {
         "properties" : {
-          "links" : {
-            "type" : "object",
-            "additionalProperties" : {
-              "type" : "array",
-              "items" : {
-                "type" : "string"
-              }
+          "operator" : {
+            "type" : "string"
+          },
+          "value" : {
+            "type" : "object"
+          }
+        }
+      },
+      "ReservationFilter" : {
+        "properties" : {
+          "typeId" : {
+            "type" : "string"
+          },
+          "rules" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Rule"
+            }
+          }
+        }
+      },
+      "Rule" : {
+        "properties" : {
+          "attributeKey" : {
+            "type" : "string"
+          },
+          "conditions" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Condition"
+            }
+          }
+        }
+      },
+      "TableQueryRequest" : {
+        "properties" : {
+          "from" : {
+            "type" : "string"
+          },
+          "to" : {
+            "type" : "string"
+          },
+          "allocatables" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
             }
           },
+          "types" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "owners" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "reservationFilter" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ReservationFilter"
+            }
+          },
+          "columns" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "sort" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "TableColumnDescriptor" : {
+        "properties" : {
           "id" : {
             "type" : "string"
           },
-          "name" : {
-            "$ref" : "#/components/schemas/MultiLanguageName"
+          "label" : {
+            "type" : "string"
           },
           "type" : {
             "type" : "string",
-            "enum" : [ "string", "int", "date", "boolean", "rapla:category", "rapla:allocatable" ]
-          },
-          "key" : {
-            "type" : "string"
-          },
-          "multiSelect" : {
-            "type" : "boolean"
-          },
-          "belongsTo" : {
-            "type" : "boolean"
-          },
-          "packages" : {
-            "type" : "boolean"
-          },
-          "optional" : {
-            "type" : "boolean"
-          },
-          "annotations" : {
-            "type" : "object",
-            "additionalProperties" : {
-              "type" : "string"
-            }
-          },
-          "defaultValue" : {
-            "type" : "string"
+            "enum" : [ "STRING", "INTEGER", "LONG", "DOUBLE", "DATE", "BOOLEAN" ]
           }
         }
       },
-      "DynamicTypeImpl" : {
+      "TablePage" : {
         "properties" : {
-          "links" : {
-            "type" : "object",
-            "additionalProperties" : {
-              "type" : "array",
-              "items" : {
-                "type" : "string"
-              }
+          "columns" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TableColumnDescriptor"
             }
           },
+          "rows" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TableRow"
+            }
+          },
+          "totalCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "nextCursor" : {
+            "type" : "string"
+          },
+          "incomplete" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "TableRow" : {
+        "properties" : {
           "id" : {
             "type" : "string"
           },
-          "lastChanged" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "createDate" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "attributes" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/AttributeImpl"
-            }
-          },
-          "permissions" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/PermissionImpl"
-            }
-          },
-          "name" : {
-            "$ref" : "#/components/schemas/MultiLanguageName"
-          },
-          "key" : {
-            "type" : "string"
-          },
-          "annotations" : {
+          "cells" : {
             "type" : "object",
             "additionalProperties" : {
-              "$ref" : "#/components/schemas/ParsedText"
+              "type" : "object"
             }
-          }
-        }
-      },
-      "MultiLanguageName" : {
-        "properties" : {
-          "mapLocales" : {
-            "type" : "object",
-            "additionalProperties" : {
-              "type" : "string"
-            }
-          }
-        }
-      },
-      "ParsedText" : {
-        "properties" : {
-          "formatString" : {
-            "type" : "string"
           }
         }
       },
@@ -2698,6 +2640,20 @@
           }
         }
       },
+      "ImpersonationResponse" : {
+        "properties" : {
+          "access_token" : {
+            "type" : "string"
+          },
+          "token_type" : {
+            "type" : "string"
+          },
+          "expires_in" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
       "CreateRequest" : {
         "properties" : {
           "label" : {
@@ -2836,56 +2792,26 @@
           }
         }
       },
-      "TableColumnDescriptor" : {
+      "UserSummary" : {
+        "properties" : {
+          "username" : {
+            "type" : "string"
+          },
+          "displayName" : {
+            "type" : "string"
+          }
+        }
+      },
+      "UserMe" : {
         "properties" : {
           "id" : {
             "type" : "string"
           },
-          "label" : {
+          "username" : {
             "type" : "string"
           },
-          "type" : {
-            "type" : "string",
-            "enum" : [ "STRING", "INTEGER", "LONG", "DOUBLE", "DATE", "BOOLEAN" ]
-          }
-        }
-      },
-      "TablePage" : {
-        "properties" : {
-          "columns" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/TableColumnDescriptor"
-            }
-          },
-          "rows" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/TableRow"
-            }
-          },
-          "totalCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "nextCursor" : {
+          "displayName" : {
             "type" : "string"
-          },
-          "incomplete" : {
-            "type" : "boolean"
-          }
-        }
-      },
-      "TableRow" : {
-        "properties" : {
-          "id" : {
-            "type" : "string"
-          },
-          "cells" : {
-            "type" : "object",
-            "additionalProperties" : {
-              "type" : "object"
-            }
           }
         }
       },
@@ -2899,6 +2825,22 @@
             "items" : {
               "$ref" : "#/components/schemas/TableColumnDescriptor"
             }
+          }
+        }
+      },
+      "ProfileEditCapabilities" : {
+        "properties" : {
+          "canChangePassword" : {
+            "type" : "boolean"
+          },
+          "canChangeName" : {
+            "type" : "boolean"
+          },
+          "canChangeEmail" : {
+            "type" : "boolean"
+          },
+          "externalIdpLabel" : {
+            "type" : "string"
           }
         }
       },
@@ -3058,100 +3000,6 @@
           }
         }
       },
-      "CalendarPage" : {
-        "properties" : {
-          "from" : {
-            "type" : "string",
-            "format" : "date"
-          },
-          "to" : {
-            "type" : "string",
-            "format" : "date"
-          },
-          "groupBy" : {
-            "type" : "string",
-            "enum" : [ "DAY", "RESOURCE" ]
-          },
-          "strategy" : {
-            "type" : "string",
-            "enum" : [ "GROUP_START_TIMES", "BEST_FIT" ]
-          },
-          "columns" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/Column"
-            }
-          },
-          "blocks" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/RenderedBlock"
-            }
-          }
-        }
-      },
-      "Column" : {
-        "properties" : {
-          "id" : {
-            "type" : "string"
-          },
-          "label" : {
-            "type" : "string"
-          },
-          "index" : {
-            "type" : "integer",
-            "format" : "int32"
-          }
-        }
-      },
-      "RenderedBlock" : {
-        "properties" : {
-          "reservationId" : {
-            "type" : "string"
-          },
-          "appointmentId" : {
-            "type" : "string"
-          },
-          "columnIndex" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "slotIndex" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "slotCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "start" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "end" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "colorsHex" : {
-            "type" : "array",
-            "items" : {
-              "type" : "string"
-            }
-          },
-          "isException" : {
-            "type" : "boolean"
-          },
-          "isRequest" : {
-            "type" : "boolean"
-          },
-          "name" : {
-            "type" : "string"
-          },
-          "tooltip" : {
-            "type" : "string"
-          }
-        }
-      },
       "OAuthConfig" : {
         "properties" : {
           "enabled" : {
@@ -3186,9 +3034,6 @@
             "items" : {
               "type" : "string"
             }
-          },
-          "showPasteFallback" : {
-            "type" : "boolean"
           },
           "swingLegacyLogin" : {
             "type" : "boolean"

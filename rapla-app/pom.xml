@@ -18,6 +18,11 @@
              -Pstandalone flips this true to drop the Swing client's staging
              executions from the build. -->
         <webclient.skip>false</webclient.skip>
+        <!-- Default for SignWebclientJars's signed-webclient cache bypass.
+             Pass -Dwebclient.force-sign=true on the command line to re-sign
+             every webclient jar even when their unsigned content is unchanged
+             since the last signed build. -->
+        <webclient.force-sign>false</webclient.force-sign>
     </properties>
     <name>rapla - app</name>
     <description>Runnable Spring Boot application: @SpringBootApplication entry point, JNLP webclient/ staging, signing profiles, distribution assembly. Depends on rapla-server + rapla-client. Final on-disk JAR is rapla-2.1-SNAPSHOT.jar via &lt;finalName&gt; (PRD 005 OQ2).</description>
@@ -254,8 +259,7 @@
                  so spring-boot:repackage stages it into BOOT-INF/classes/. Bound to
                  prepare-package so `mvn compile` / `mvn test` skip Node + npm; only
                  `mvn package` (the distribution build) downloads Node and runs ng build.
-                 Sequence: install-node-and-npm → npm ci → gen:api (regenerates
-                 src/app/api/ from the captured OpenAPI spec) → build:fast (ng build,
+                 Sequence: install-node-and-npm → npm ci → build:fast (ng build,
                  skipping lint — lint is a dev/CI quality gate, not a release blocker)
                  → copy-spa (maven-resources-plugin) drops the dist into target/classes/. -->
             <plugin>
@@ -281,14 +285,6 @@
                         <phase>prepare-package</phase>
                         <configuration>
                             <arguments>ci</arguments>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>gen-api</id>
-                        <goals><goal>npm</goal></goals>
-                        <phase>prepare-package</phase>
-                        <configuration>
-                            <arguments>run gen:api</arguments>
                         </configuration>
                     </execution>
                     <execution>
@@ -740,6 +736,11 @@
                                     <arguments>
                                         <argument>--add-modules</argument>
                                         <argument>jdk.jartool</argument>
+                                        <!-- Thread the cache force-resign flag through to the
+                                             sub-JVM. Default false; pass -Dwebclient.force-sign=true
+                                             on the mvn command line to bypass the signed-webclient
+                                             cache check and re-sign even when inputs are unchanged. -->
+                                        <argument>-Dwebclient.force-sign=${webclient.force-sign}</argument>
                                         <argument>${project.basedir}/src/build/SignWebclientJars.java</argument>
                                         <!-- pkcs11.cfg / pkcs11.certchain / pkcs11.pin are
                                              NOT committed. The maintainer defines them in the

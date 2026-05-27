@@ -216,7 +216,6 @@ public class Application implements ApplicationView.Presenter, ModificationListe
         ((ClientFacadeImpl) clientFacade).addDirectModificationListener(evt -> calendarState.dataChanged(evt));
 
         final RaplaFacade raplaFacade = clientFacade.getRaplaFacade();
-        raplaFacade.getReservations(clientFacade.getUser(), null, null, null);
         // start client provides
         for (ClientExtension ext : clientExtensions.get()) {
             ext.start();

@@ -556,16 +556,6 @@ public class ClientProxyConfig
     }
 
     @Bean
-    public org.rapla.plugin.calendarview.CalendarViewService calendarViewServiceProxy(HttpServiceProxyFactory factory)
-    {
-        // PRD 024 Phase 3: server-side calendar layout. Swing client doesn't
-        // call this in-flow yet (the in-process RaplaBuilder path is still
-        // the renderer source), but the proxy is registered so a future
-        // migration or a worktree-side experiment can resolve the bean.
-        return factory.createClient(org.rapla.plugin.calendarview.CalendarViewService.class);
-    }
-
-    @Bean
     public org.rapla.plugin.reservationedit.ReservationEditService reservationEditServiceProxy(HttpServiceProxyFactory factory)
     {
         // PRD 024 Phase 1: server-authoritative recurrence-rule validation.

@@ -1075,11 +1075,10 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
 
     private String cacheValidString;
     /**
-     * <b>Swing-legacy (PRD 030 Phase 6).</b> Cross-navigation cache for the
-     * appointment-bindings query. Server-side rendered surfaces
-     * ({@code /calendar/view}, {@code /table/*}, {@code /export/csv})
-     * never hit this cache — each request runs the engine fresh. The cache
-     * is retained for the in-process Swing path; it stays {@code disabled}
+     * <b>Swing-legacy.</b> Cross-navigation cache for the appointment-bindings
+     * query. The server-side table endpoints under {@code /api/table/*} never
+     * hit this cache — each request runs the engine fresh. The cache is
+     * retained for the in-process Swing path; it stays {@code disabled}
      * by default ({@link #cachingEnabled} {@code = false}), so it's
      * effectively dormant. Don't add new callers; don't remove until the
      * Swing client is retired.

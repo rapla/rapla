@@ -1,0 +1,49 @@
+# PRD 054 — Standalone trial install (Windows desktop).
+#
+# Activated when the Spring profile "standalone" is on, typically via
+#   java -jar rapla.jar --spring.profiles.active=standalone
+# from the Tauri shell launcher (which is how the trial MSI ships).
+#
+# This file overlays the production `application.yml`:
+#   - single-user, no password verification (passwordCheckDisabled)
+#   - OAuth surface stays ENABLED — the SPA goes through its normal login
+#     flow; user clicks "Sign in" and types "admin" + anything (or nothing).
+#     Same auth code path as production, just with the password check no-oped.
+#   - file-backed storage in the user's %APPDATA%\rapla\ directory
+#   - random local port so multiple desktops on the same machine don't clash
+#
+# Cross-link: docs/prd/054-standalone-windows-installer.md
+
+server:
+  # Pick a free port at runtime. The Tauri launcher reads the actual port
+  # from the Spring Boot startup log (or hits /api/health on a probe range)
+  # before navigating the WebView2 window.
+  port: 0
+
+spring:
+  application:
+    name: rapla-standalone
+
+rapla:
+  # Skip password verification — single-user desktop, no concept of "wrong password."
+  # OAuth flow still runs normally; any submitted password is accepted.
+  # Read by RaplaAuthentificationService (PRD 054, 2026-05-25).
+  password-check-disabled: true
+
+  # Single XML data file in the user's per-OS app-data directory. Windows
+  # resolves ${APPDATA} via env var (set on every Win11 install for the
+  # current user — typically C:\Users\<name>\AppData\Roaming).
+  #
+  # The XML format matches a file-backed multi-pod server deployment — a
+  # trial user who graduates to a real server can point that server at the
+  # same `rapla-data.xml` with zero migration.
+  file-datasources:
+    raplafile: ${APPDATA:/tmp}/rapla/rapla-data.xml
+
+logging:
+  level:
+    # Standalone is a desktop app, not a server — keep startup logs terse
+    # so the Tauri launcher's progress UX isn't drowned in INFO chatter.
+    # Bump to DEBUG via -Dlogging.level.org.rapla=DEBUG for troubleshooting.
+    org.rapla: INFO
+    org.springframework: WARN

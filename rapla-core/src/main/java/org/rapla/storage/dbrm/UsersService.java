@@ -30,4 +30,15 @@ public interface UsersService
 {
     @GetExchange
     List<UserSummary> list() throws RaplaException;
+
+    /**
+     * Returns the calling user's own identifiers. Useful for callers
+     * (SPA, third-party integrators) that need the rapla User id to
+     * scope subsequent queries — the JWT alone isn't enough when an
+     * external IdP is fronting rapla, since the JWT {@code sub} is
+     * the IdP's id, not rapla's. Always available, no permission
+     * predicate beyond the standard auth gate.
+     */
+    @GetExchange("/me")
+    UserMe me() throws RaplaException;
 }

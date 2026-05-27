@@ -92,6 +92,41 @@ class UsersControllerLeakTest
     }
 
     @Test
+    void meRequiresAuthentication() throws Exception
+    {
+        mockMvc.perform(get("/api/users/me"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void meReturnsCallerIdentity() throws Exception
+    {
+        String adminToken = OAuthTestSupport.loginAs(mockMvc, "homer", "duffs");
+        mockMvc.perform(get("/api/users/me")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("homer"))
+                .andExpect(jsonPath("$.id").exists())
+                .andExpect(jsonPath("$.displayName").exists());
+    }
+
+    @Test
+    void meReturnsTheCallersOwnRecordEvenForNonAdmin() throws Exception
+    {
+        // The endpoint isn't gated by canAdminUser — every authenticated
+        // caller can ask "who am I". Verifies a non-admin (monty here, group
+        // admin but not global) gets HIS own record, not someone else's,
+        // and that the id is non-empty.
+        String montyToken = OAuthTestSupport.loginAs(mockMvc, "monty", "burns");
+        mockMvc.perform(get("/api/users/me")
+                        .header("Authorization", "Bearer " + montyToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("monty"))
+                .andExpect(jsonPath("$.id").isString())
+                .andExpect(jsonPath("$.id").isNotEmpty());
+    }
+
+    @Test
     void globalAdminSeesUserList() throws Exception
     {
         String adminToken = OAuthTestSupport.loginAs(mockMvc, "homer", "duffs");

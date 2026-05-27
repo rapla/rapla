@@ -75,14 +75,20 @@ fn spawn_rapla_server(app: &AppHandle, port: u16) -> Result<Child, Box<dyn std::
     let server_exe = locate_server_binary(app)?;
     log::info!("spawning rapla server: {} on port {}", server_exe.display(), port);
 
-    let child = Command::new(server_exe)
-        .arg("--spring.profiles.active=standalone")
+    let mut cmd = Command::new(server_exe);
+    cmd.arg("--spring.profiles.active=standalone")
         .arg(format!("--server.port={port}"))
         .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()?;
+        .stderr(Stdio::piped());
 
-    Ok(child)
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+
+    Ok(cmd.spawn()?)
 }
 
 /// Resolve the bundled rapla-server.exe path. Tauri's resource resolution
@@ -90,7 +96,7 @@ fn spawn_rapla_server(app: &AppHandle, port: u16) -> Result<Child, Box<dyn std::
 /// per the tauri.conf.json bundle.resources config.
 fn locate_server_binary(app: &AppHandle) -> Result<PathBuf, Box<dyn std::error::Error>> {
     let resource_dir = app.path().resource_dir()?;
-    Ok(resource_dir.join("rapla-server").join("bin").join("rapla-server.exe"))
+    Ok(resource_dir.join("rapla-server").join("bin").join("rapla-server.bat"))
 }
 
 /// Poll the local port until something accepts a TCP connection or we
@@ -121,7 +127,8 @@ fn wait_for_server_ready(port: u16, timeout: Duration) -> Result<(), Box<dyn std
 /// wait 5 s for the JVM's shutdown hooks (data file flush, etc.) to run,
 /// then kill -9 if still alive.
 fn shutdown_rapla_server(app: &AppHandle) {
-    let mut handle = app.state::<ChildHandle>().0.lock().unwrap();
+    let state = app.state::<ChildHandle>();
+    let mut handle = state.0.lock().unwrap();
     if let Some(mut child) = handle.take() {
         log::info!("shutting down rapla server (pid {})", child.id());
 

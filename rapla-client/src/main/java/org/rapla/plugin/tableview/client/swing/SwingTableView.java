@@ -200,6 +200,15 @@ public class SwingTableView<T> extends RaplaGUIComponent implements SwingCalenda
             if (col instanceof RaplaSwingTableColumnImpl) {
                 ((RaplaSwingTableColumnImpl)col).init(column1);
             }
+            // Server-projected path (PRD 030): TableRowColumn wraps the
+            // reference column. The renderer + width setup lives on the
+            // wrapped metadata, so apply init() through there too —
+            // otherwise date columns render as raw ISO strings.
+            else if (col instanceof org.rapla.plugin.tableview.internal.TableRowColumn trc
+                    && trc.getMetadata() instanceof RaplaSwingTableColumnImpl inner)
+            {
+                inner.init(column1);
+            }
         	column++;
         }
         table.setColumnSelectionAllowed( true );

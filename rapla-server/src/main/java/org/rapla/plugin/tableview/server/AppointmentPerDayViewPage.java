@@ -64,10 +64,10 @@ import java.time.LocalDateTime;
                 final List<AppointmentBlock> blocks = ((org.rapla.facade.SyncCalendarModel) model).queryBlocksSync(timeIntervall);
                 final  Map<String,List<AppointmentBlock>> blockSorter = new LinkedHashMap<>();
                 if (isCsv()) {
-                    List<RaplaTableColumn<AppointmentBlock>> columnPluginsPlusDate = new ArrayList<>(columnPlugins);
-                    columnPluginsPlusDate.add(0, tableConfigLoader.createDateColumn( "appointment_per_date_date", user));
-                    Map<RaplaTableColumn<AppointmentBlock>, Integer> sortDirections = RaplaTableModel.getSortDirections(model,columnPluginsPlusDate, tableViewName);
-                    return super.getCalendarBody( columnPluginsPlusDate, blocks, sortDirections);
+                    // loadColumns(APPOINTMENTS_PER_DAY_VIEW) already includes
+                    // the leading "date" column.
+                    Map<RaplaTableColumn<AppointmentBlock>, Integer> sortDirections = RaplaTableModel.getSortDirections(model,columnPlugins, tableViewName);
+                    return super.getCalendarBody( columnPlugins, blocks, sortDirections);
                 }
                 else
                 {

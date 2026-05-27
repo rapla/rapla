@@ -2,6 +2,13 @@
 # Real PRD 035 surface (typed-per-DynamicType reservations, group interfaces,
 # §12 batch loaders, mutations, etc.) lands per the design in
 # docs/prd/035-rapla-mcp-server.md §"2026-05-24 design refinement".
+#
+# Cut C (this iteration): structural types are declared here; per-DynamicType
+# classification types (`<TypeKey>Classification implements Classification`)
+# are GENERATED at startup by ClassificationSdlGenerator from the deployment's
+# DynamicTypes and merged into this SDL by HotSwappableGraphQlSource. They
+# rebuild on DynamicType admin change (UpdateEvent listener). The SPA queries
+# only the `Classification` interface — never the typed implementations.
 
 # ISO-8601 OffsetDateTime. From graphql-java-extended-scalars; registered in
 # GraphQlScalarConfig. Used for instant-in-time fields (e.g. serverTime).
@@ -10,7 +17,9 @@ scalar DateTime
 # ISO-8601 LocalDateTime (wall-time, no offset). Custom scalar in
 # GraphQlScalarConfig. Used for rapla domain time fields per PRD 014 —
 # appointments, periods, etc. are wall-time semantics (a 10:00 lecture
-# happens at 10:00 local, not at a particular UTC instant).
+# happens at 10:00 local, not at a particular UTC instant). Also used for
+# rapla AttributeType.DATE attribute values (rapla stores DATE as
+# LocalDateTime — see AttributeImpl line 414).
 scalar LocalDateTime
 
 type Query {
@@ -50,6 +59,25 @@ type Query {
   # to return (looked up under super); when null, returns the super-category's
   # immediate children. Empty list if rootKey doesn't exist.
   categories(rootKey: String): [Category!]!
+
+  # Allocatables (resources + persons) visible to the caller.
+  # §12: every entry is canRead-gated; mixed visible/hidden requests are
+  # silently narrowed to the visible subset. Filter narrows the visible
+  # subset further (never reveals hidden entities).
+  allocatables(filter: AllocatableFilter): [Allocatable!]!
+
+  # Allocatable by id, or null if not found / not visible (§12 — existence
+  # not leaked).
+  allocatable(id: ID!): Allocatable
+
+  # All DynamicTypes (resource / person / reservation classifications).
+  # No §12 — DynamicTypes are deployment-global metadata. Used by SPA form
+  # widget config (PRD 035 §4 "descriptor query, lazy") and admin / MCP
+  # introspection.
+  types: [DynamicType!]!
+
+  # DynamicType by key (e.g. "room", "lecturer", "event"). Null if unknown.
+  type(key: String!): DynamicType
 }
 
 """
@@ -66,6 +94,22 @@ input UserFilter {
   isAdmin:          Boolean
   "Case-insensitive substring match on username."
   usernameContains: String
+}
+
+"""
+Narrowing predicates for `allocatables(filter:)`. All fields optional;
+null = unconstrained. Multiple predicates AND together. Filter runs over
+the §12-visible subset.
+"""
+input AllocatableFilter {
+  "Exact-match on the DynamicType key (e.g. \"room\", \"lecturer\")."
+  typeKeyEq:    String
+  "True → only persons. False → only resources. null → both."
+  isPersonEq:   Boolean
+  "Case-insensitive substring match on displayName."
+  nameContains: String
+  "Exact-match on owner id."
+  ownerEq:      ID
 }
 
 type User {
@@ -98,4 +142,174 @@ type Category {
   path:     String!      # slash-separated, relative to the super-category root
   parent:   Category     # null at the top-level (super-category is hidden)
   children: [Category!]!
+}
+
+# === Allocatables + classifications =========================================
+
+"""
+Whether an Allocatable represents a bookable resource or a person.
+Derived from the DynamicType's classification-type annotation.
+"""
+enum AllocatableType {
+  RESOURCE
+  PERSON
+}
+
+"""
+A bookable entity in rapla — room, equipment, lecturer, student, etc.
+The `type` is structural (resource vs person); the `classification` carries
+deployment-specific attribute values typed via the DynamicType schema.
+The classification field is narrowed to `AllocatableClassification` so an
+inline fragment on an event-only type (e.g. `... on LehrveranstaltungClassification`)
+fails GraphQL validation rather than silently returning null at runtime.
+"""
+type Allocatable {
+  id:             ID!
+  type:           AllocatableType!
+  "Locale-resolved name, classification-derived (PRD 035 §\"Stub fields\")."
+  displayName:    String!
+  owner:          User
+  createdAt:      DateTime
+  lastModifiedAt: DateTime
+  classification: AllocatableClassification!
+}
+
+# === DynamicType + descriptors (PRD 035 §4) =================================
+
+"""
+What kind of entity a DynamicType classifies. rapla has three categories of
+DynamicTypes — resources, persons, and reservations.
+"""
+enum ClassificationType {
+  RESOURCE
+  PERSON
+  RESERVATION
+}
+
+"""
+The Java type used to represent an attribute value. Drives widget choice in
+the SPA per PRD 035 §5 (valueType + annotations + constraints → widget).
+"""
+enum AttributeValueType {
+  STRING
+  INT
+  BOOLEAN
+  DATE
+  CATEGORY
+  ALLOCATABLE
+}
+
+"""
+Cardinality of an attribute's value. CATEGORY and ALLOCATABLE attributes
+may be multi-select; STRING / INT / BOOLEAN / DATE are always SINGLE in
+the current rapla data model.
+"""
+enum Multiplicity {
+  SINGLE
+  LIST
+}
+
+"""
+A single attribute slot on a DynamicType — name, type, constraints. Drives
+SPA form widget configuration on edit-open (PRD 035 §5). Stable across
+GraphQL schema rebuilds: re-fetched per edit-open per PRD 035 §4.
+"""
+type AttributeDescriptor {
+  key:          String!
+  "Locale-resolved attribute name (e.g. \"Number of seats\" for the \"seats\" key)."
+  name:         String!
+  valueType:    AttributeValueType!
+  multiplicity: Multiplicity!
+  required:     Boolean!
+  "For CATEGORY attributes: slash-separated path of the allowed root, or null."
+  rootCategoryPath: String
+  "For ALLOCATABLE attributes: required DynamicType key (e.g. \"room\"), or null."
+  expectedTypeKey:  String
+}
+
+"""
+A deployment-defined classification (event type, resource type, person type).
+The shape of values an `Allocatable` or `Reservation` of this type carries.
+"""
+type DynamicType {
+  id:                 ID!
+  key:                String!
+  "Locale-resolved name (e.g. \"Lecture room\")."
+  name:               String!
+  classificationType: ClassificationType!
+  attributes:         [AttributeDescriptor!]!
+}
+
+# === Classification — interface + AttributeValue =============================
+
+"""
+Classification — an Allocatable's or Reservation's typed attribute payload.
+Implementations are GENERATED at startup, one per DynamicType
+(`<TypeKey>Classification`), exposing typed per-attribute fields for codegen
+consumers (plugins, MCP).
+SPA consumers query the interface only (PRD 035 §540 lock-in) — one
+deployment-agnostic renderer iterates `attributes` and uses the descriptor
+on `type` for widget config.
+
+Three-way interface split:
+- `Classification` — the structural base. Every generated type implements it.
+  Rapla-internal types (classification-type=rapla — Period, Template, etc.)
+  implement ONLY this; they're invisible from entity-level narrowing.
+- `AllocatableClassification` — narrows the target type of `Allocatable.classification`.
+  Implemented by generated types whose DynamicType has
+  classification-type ∈ {resource, person}.
+- `ReservationClassification` — narrows the target type of `Reservation.classification`
+  (lands with the reservation resolvers next batch). Implemented by generated
+  types whose DynamicType has classification-type = reservation.
+"""
+interface Classification {
+  typeId:     ID!
+  type:       DynamicType!
+  attributes: [AttributeValue!]!
+}
+
+"""
+Resource / person classifications. The `Allocatable.classification` field
+targets this interface so a typed-narrow fragment like
+`... on LehrveranstaltungClassification` (an event type) fails GraphQL
+validation up-front instead of resolving to null at runtime.
+"""
+interface AllocatableClassification implements Classification {
+  typeId:     ID!
+  type:       DynamicType!
+  attributes: [AttributeValue!]!
+}
+
+"""
+Reservation classifications. Targets `Reservation.classification` when
+the reservation resolvers land next batch. Same split rationale as
+`AllocatableClassification`.
+"""
+interface ReservationClassification implements Classification {
+  typeId:     ID!
+  type:       DynamicType!
+  attributes: [AttributeValue!]!
+}
+
+"""
+A single attribute value, keyed by attribute key. Exactly one *Value or *Values
+field is populated per record per the descriptor's valueType + multiplicity
+(STRING + SINGLE → stringValue; CATEGORY + LIST → categoryValues; etc.).
+Reference values (Category, Allocatable) are full typed objects, §12-filtered
+through the resolver chain. PRD 035 §3-A dropped the value-wrapping union in
+favor of optional-variant fields — descriptors carry type info, this carries
+just the value.
+"""
+type AttributeValue {
+  key:               String!
+  # === singular variants ===
+  stringValue:       String
+  intValue:          Int
+  boolValue:         Boolean
+  dateValue:         LocalDateTime
+  categoryValue:     Category
+  allocatableValue:  Allocatable
+  # === multi-valued variants (only CATEGORY + ALLOCATABLE in the current data model) ===
+  categoryValues:    [Category!]
+  allocatableValues: [Allocatable!]
 }

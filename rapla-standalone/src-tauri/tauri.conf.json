@@ -42,9 +42,8 @@
     },
     "windows": {
       "wix": {
-        "language": ["en-US", "de-DE"]
-      },
-      "_signCommand_comment": "Phase 1 ships unsigned / self-signed. For SSL.com YubiKey production signing, replace this comment with a real signCommand. Example: 'signtool sign /tr http://timestamp.sectigo.com /td sha256 /fd sha256 /sha1 <CERT-THUMBPRINT> \"%1\"' — requires the YubiKey plugged in + the thumbprint of the SSL.com cert in the Windows Certificate Store (Personal → Certificates). See docs/signing.md."
+        "language": ["en-US"]
+      }
     }
   }
 }

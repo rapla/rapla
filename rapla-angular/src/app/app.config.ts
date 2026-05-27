@@ -10,7 +10,6 @@ import { provideAnimationsAsync } from '@angular/platform-browser/animations/asy
 import { OAuthService, provideOAuthClient } from 'angular-oauth2-oidc';
 
 import { routes } from './app.routes';
-import { BASE_PATH } from './api/variables';
 import { authInterceptor } from './auth/auth.interceptor';
 import { AuthService, OAuthDiscovery } from './auth/auth.service';
 
@@ -20,10 +19,6 @@ export const appConfig: ApplicationConfig = {
     provideAnimationsAsync(),
     provideRouter(routes),
     provideHttpClient(withInterceptors([authInterceptor])),
-    // BASE_PATH stays empty: SpringDoc emits absolute /api/... paths via the
-    // WebMvcConfigurer prefix, so the generated client + interceptor pair
-    // produces correct same-origin URLs without extra prefixing.
-    { provide: BASE_PATH, useValue: '' },
     provideOAuthClient(),
     provideAppInitializer(() => {
       const oauth = inject(OAuthService);

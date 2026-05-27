@@ -35,6 +35,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.abstractcalendar.client.swing.IntervalChooserPanel;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TablePage;
+import org.rapla.plugin.tableview.TableQueryRequest;
 import org.rapla.plugin.tableview.TableRow;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.TableViewService;
@@ -109,12 +110,11 @@ public class AppointmentsPerDayViewFactory implements SwingViewFactory {
         final String tableName = TableConfig.APPOINTMENTS_PER_DAY_VIEW;
         final User user = facade.getUser();
 
-        // PRD 030 Phase 8 — server-rendered rows. The per-day grouping date column
-        // is a legacy client-side projection; here it gets the same TableRow
-        // adapter so it can read from row.cells using its configured key.
-        final List<RaplaTableColumn<AppointmentBlock>> referenceColumns = new ArrayList<>();
-        referenceColumns.add(tableConfigLoader.createDateColumn("appointment_per_date_date", user));
-        referenceColumns.addAll(tableConfigLoader.loadColumns(tableName, user));
+        // loadColumns(APPOINTMENTS_PER_DAY_VIEW, user) already includes the
+        // leading "date" column for day-grouping — the server-side resolver
+        // does the same so projected rows match the client-side column set.
+        final List<RaplaTableColumn<AppointmentBlock>> referenceColumns =
+                new ArrayList<>(tableConfigLoader.loadColumns(tableName, user));
 
         final List<RaplaTableColumn<TableRow>> raplaTableColumns = referenceColumns.stream()
                 .<RaplaTableColumn<TableRow>>map(TableRowColumn::new)
@@ -132,7 +132,9 @@ public class AppointmentsPerDayViewFactory implements SwingViewFactory {
             final String toIso   = (end   != null ? end.toLocalDate()   : LocalDateTime.now().toLocalDate().plusYears(1)).toString();
             return commandScheduler.supply(() ->
             {
-                TablePage page = tableViewService.appointments(fromIso, toIso, columnIds, null, null, null);
+                TablePage page = tableViewService.appointments(
+                        TableQueryRequest.fromCalendarModel(model, fromIso, toIso, columnIds, null,
+                                TableConfig.APPOINTMENTS_PER_DAY_VIEW));
                 return new ArrayList<>(page.rows());
             });
         };

@@ -602,6 +602,19 @@ public class TableConfig
             {
                 reservationColumnPlugins.add(tableColumnCreator.createColumn(column, user,raplaLocale));
             }
+            // The per-day view always leads with a "date" column for the
+            // day-grouping. Historically the Swing factory + the legacy
+            // AppointmentPerDayViewPage each prepended it themselves; now
+            // it's part of the configured column set so every caller —
+            // including the server-side projection in TableViewController —
+            // gets it without special-casing the id.
+            if (APPOINTMENTS_PER_DAY_VIEW.equals(configName))
+            {
+                @SuppressWarnings("unchecked")
+                RaplaTableColumn<T> dateColumn =
+                        (RaplaTableColumn<T>) createDateColumn("appointment_per_date_date", user);
+                reservationColumnPlugins.add(0, dateColumn);
+            }
             return reservationColumnPlugins;
         }
 

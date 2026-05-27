@@ -37,6 +37,7 @@ import org.rapla.plugin.abstractcalendar.client.swing.IntervalChooserPanel;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TableColumnType;
 import org.rapla.plugin.tableview.TablePage;
+import org.rapla.plugin.tableview.TableQueryRequest;
 import org.rapla.plugin.tableview.TableRow;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.TableViewService;
@@ -134,7 +135,8 @@ public class AppointmentTableViewFactory implements SwingViewFactory
             final String toIso   = (end   != null ? end.toLocalDate()   : LocalDateTime.now().toLocalDate().plusYears(1)).toString();
             return commandScheduler.supply(() ->
             {
-                TablePage page = tableViewService.appointments(fromIso, toIso, columnIds, null, null, null);
+                TablePage page = tableViewService.appointments(
+                        TableQueryRequest.fromCalendarModel(model, fromIso, toIso, columnIds, null));
                 return new ArrayList<>(page.rows());
             });
         };

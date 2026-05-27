@@ -73,7 +73,8 @@ if (-not $SkipJlink) {
         "java.security.sasl", "java.sql", "java.xml", "java.xml.crypto",
         "jdk.crypto.cryptoki", "jdk.crypto.ec", "jdk.unsupported",
         "jdk.unsupported.desktop", "jdk.localedata", "jdk.zipfs",
-        "java.instrument"
+        "java.instrument", "java.scripting", "java.compiler",
+        "java.rmi", "jdk.httpserver", "jdk.naming.dns"
     ) -join ","
 
     Write-Host "[2/5] jlink -> $jreDir"

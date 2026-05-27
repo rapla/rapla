@@ -1,9 +1,11 @@
 package org.rapla.plugin.tableview;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.service.annotation.GetExchange;
 import org.springframework.web.service.annotation.HttpExchange;
+import org.springframework.web.service.annotation.PostExchange;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -19,9 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
- * Pins the wire shape of {@link TableViewService} (PRD 030 Phase 2).
- * Any path / method / return-type / DTO-field rename breaks this test,
- * forcing the Angular team and the server controller to coordinate.
+ * Pins the wire shape of {@link TableViewService}. Any path / method /
+ * return-type / DTO-field rename breaks this test, forcing the Angular
+ * team and the server controller to coordinate.
  */
 class TableViewServiceContractTest
 {
@@ -34,52 +36,77 @@ class TableViewServiceContractTest
     }
 
     @Test
-    void reservationsEndpointIsGetExchangeUnderRoot()
+    void reservationsEndpointIsPostExchangeUnderRoot()
     {
         Method m = methodNamed("reservations");
-        GetExchange ge = m.getAnnotation(GetExchange.class);
-        assertNotNull(ge, "reservations() must be @GetExchange");
-        assertEquals("/reservations", ge.value());
+        PostExchange pe = m.getAnnotation(PostExchange.class);
+        assertNotNull(pe, "reservations() must be @PostExchange");
+        assertEquals("/reservations", pe.value());
         assertEquals(TablePage.class, m.getReturnType());
     }
 
     @Test
-    void appointmentsEndpointIsGetExchangeUnderRoot()
+    void appointmentsEndpointIsPostExchangeUnderRoot()
     {
         Method m = methodNamed("appointments");
-        GetExchange ge = m.getAnnotation(GetExchange.class);
-        assertNotNull(ge, "appointments() must be @GetExchange");
-        assertEquals("/appointments", ge.value());
+        PostExchange pe = m.getAnnotation(PostExchange.class);
+        assertNotNull(pe, "appointments() must be @PostExchange");
+        assertEquals("/appointments", pe.value());
         assertEquals(TablePage.class, m.getReturnType());
     }
 
     @Test
-    void reservationsHasSixQueryParams()
+    void reservationsTakesTableQueryRequestBody()
     {
-        Method m = methodNamed("reservations");
-        assertParamLayoutForTableEndpoint(m);
+        assertSingleRequestBodyParam(methodNamed("reservations"));
     }
 
     @Test
-    void appointmentsHasSixQueryParams()
+    void appointmentsTakesTableQueryRequestBody()
     {
-        Method m = methodNamed("appointments");
-        assertParamLayoutForTableEndpoint(m);
+        assertSingleRequestBodyParam(methodNamed("appointments"));
     }
 
-    private static void assertParamLayoutForTableEndpoint(Method m)
+    private static void assertSingleRequestBodyParam(Method m)
     {
         Parameter[] ps = m.getParameters();
-        assertEquals(6, ps.length, "expected: from, to, columns, sort, cursor, pageSize");
-        assertRequestParam(ps[0], "from",     String.class,  true);
-        assertRequestParam(ps[1], "to",       String.class,  true);
-        assertRequestParam(ps[2], "columns",  List.class,    false);
-        assertRequestParam(ps[3], "sort",     List.class,    false);
-        assertRequestParam(ps[4], "cursor",   String.class,  false);
-        assertRequestParam(ps[5], "pageSize", Integer.class, false);
+        assertEquals(1, ps.length, "expected a single @RequestBody parameter");
+        assertNotNull(ps[0].getAnnotation(RequestBody.class),
+                "param must be @RequestBody, was " + Arrays.toString(ps[0].getAnnotations()));
+        assertEquals(TableQueryRequest.class, ps[0].getType(),
+                "param type must be TableQueryRequest");
     }
 
     // ---------- wire record shapes ----------
+
+    @Test
+    void tableQueryRequestHasExpectedRecordComponents()
+    {
+        assertRecordComponents(TableQueryRequest.class,
+                List.of("from", "to", "allocatables", "types", "owners",
+                        "reservationFilter", "columns", "sort"));
+    }
+
+    @Test
+    void reservationFilterDtoHasExpectedRecordComponents()
+    {
+        assertRecordComponents(TableQueryRequest.ReservationFilter.class,
+                List.of("typeId", "rules"));
+    }
+
+    @Test
+    void ruleDtoHasExpectedRecordComponents()
+    {
+        assertRecordComponents(TableQueryRequest.Rule.class,
+                List.of("attributeKey", "conditions"));
+    }
+
+    @Test
+    void conditionDtoHasExpectedRecordComponents()
+    {
+        assertRecordComponents(TableQueryRequest.Condition.class,
+                List.of("operator", "value"));
+    }
 
     @Test
     void tablePageHasExpectedRecordComponents()
@@ -112,7 +139,7 @@ class TableViewServiceContractTest
                 "v1 wire-format cell types: " + got);
     }
 
-    // ---------- /config + /columns/catalog (Phase 3) ----------
+    // ---------- /config + /columns/catalog ----------
 
     @Test
     void configEndpointIsGetExchangeUnderRoot()

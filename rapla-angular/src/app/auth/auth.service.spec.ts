@@ -383,3 +383,101 @@ describe('AuthService.adminToken() — admin Bearer survives impersonation', () 
     expect(auth.adminToken()).toBe('ADMIN-ACCESS');
   });
 });
+
+/**
+ * Regression lock for the HTTP-localhost + external-IdP combination
+ * (DHBW Mosbach signed in via Keycloak; SPA on http://localhost:8051
+ * during deployment testing). The angular-oauth2-oidc library refuses
+ * to call the BFF token-exchange endpoint over HTTP when
+ * {@code requireHttps} is true — which silently breaks the OAuth code
+ * exchange on HTTP loopback. The contract is: HTTPS pages require
+ * HTTPS endpoints; HTTP pages don't.
+ */
+describe('AuthService.applyProviderToOAuthService — requireHttps follows page protocol', () => {
+  const externalIdpProvider = {
+    id: 'dhbw',
+    displayName: 'DHBW',
+    icon: 'shield',
+    order: 1,
+    webPickerVisible: true,
+    issuer: 'https://login.mosbach.dhbw.de/realms/dhbwmos-lehre',
+    clientId: 'rapla-app',
+    scopes: ['openid', 'profile'],
+    authorizeUrl:
+      'https://login.mosbach.dhbw.de/realms/dhbwmos-lehre/protocol/openid-connect/auth',
+    tokenUrl: 'http://localhost:8051/api/auth/oauth/exchange/dhbw',
+    endSessionUrl:
+      'https://login.mosbach.dhbw.de/realms/dhbwmos-lehre/protocol/openid-connect/logout',
+    jwksUrl: 'https://login.mosbach.dhbw.de/realms/dhbwmos-lehre/protocol/openid-connect/certs',
+    extraAuthorizeParams: {},
+  };
+  const cfg = {
+    issuer: 'https://login.mosbach.dhbw.de/realms/dhbwmos-lehre',
+    clientId: 'rapla-app',
+    scopes: ['openid', 'profile'],
+    userinfoUrl: 'https://login.mosbach.dhbw.de/realms/dhbwmos-lehre/protocol/openid-connect/userinfo',
+  };
+
+  let configureCalls: Array<Record<string, unknown>>;
+  let originalLocation: Location;
+
+  function setProtocol(p: 'http:' | 'https:') {
+    const origin = p === 'https:' ? 'https://rapla.example.com' : 'http://localhost:8051';
+    Object.defineProperty(window, 'location', {
+      value: { ...originalLocation, protocol: p, origin, href: origin + '/app/' },
+      configurable: true,
+      writable: true,
+    });
+  }
+
+  beforeEach(() => {
+    originalLocation = window.location;
+    configureCalls = [];
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        AuthService,
+        {
+          provide: OAuthService,
+          useValue: {
+            events: new Subject<unknown>(),
+            logOut: vi.fn(),
+            hasValidAccessToken: vi.fn(() => false),
+            getRefreshToken: vi.fn(() => null),
+            getIdentityClaims: vi.fn(() => null),
+            getAccessToken: vi.fn(() => null),
+            loginUrl: '',
+            configure: vi.fn((c: Record<string, unknown>) => {
+              configureCalls.push(c);
+            }),
+          },
+        },
+        { provide: Router, useValue: { navigateByUrl: vi.fn() } },
+      ],
+    });
+  });
+
+  afterEach(() => {
+    Object.defineProperty(window, 'location', {
+      value: originalLocation,
+      configurable: true,
+      writable: true,
+    });
+  });
+
+  it('sets requireHttps=false when the SPA is served over HTTP (deployment test on loopback)', () => {
+    setProtocol('http:');
+    const auth = TestBed.inject(AuthService);
+    auth.applyProviderToOAuthService(externalIdpProvider, cfg as never);
+    expect(configureCalls).toHaveLength(1);
+    expect(configureCalls[0]['requireHttps']).toBe(false);
+  });
+
+  it('sets requireHttps=true when the SPA is served over HTTPS (production)', () => {
+    setProtocol('https:');
+    const auth = TestBed.inject(AuthService);
+    auth.applyProviderToOAuthService(externalIdpProvider, cfg as never);
+    expect(configureCalls).toHaveLength(1);
+    expect(configureCalls[0]['requireHttps']).toBe(true);
+  });
+});

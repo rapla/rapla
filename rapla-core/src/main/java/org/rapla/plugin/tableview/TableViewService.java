@@ -1,72 +1,54 @@
 package org.rapla.plugin.tableview;
 
 import org.rapla.framework.RaplaException;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.service.annotation.GetExchange;
 import org.springframework.web.service.annotation.HttpExchange;
-
-import java.util.List;
+import org.springframework.web.service.annotation.PostExchange;
 
 /**
- * Server-side table projection endpoints (PRD 030 Phase 2).
+ * Server-side table projection endpoints.
  *
- * <p>The server queries reservations / appointment-blocks for {@code [from, to)},
- * projects them through the requested column set via
- * {@link TableViewEngine#project(java.util.Collection, java.util.List, SortSpec, PageSpec, java.util.function.Function)},
- * and returns a {@link TablePage} of scalar rows. Avoids re-implementing
- * the table column / sort / pagination logic in TypeScript for the
- * future Angular client.
+ * <p>The server resolves the caller's tree-selection from
+ * {@link TableQueryRequest#allocatables} / {@link TableQueryRequest#types} /
+ * {@link TableQueryRequest#owners}, applies
+ * {@link TableQueryRequest#reservationFilter} as a classification filter,
+ * queries via the same {@code CalendarModel.queryReservationsSync} path the
+ * week view uses, then projects the result through the requested column set
+ * via {@link TableViewEngine#project(java.util.Collection, java.util.List, SortSpec, PageSpec, java.util.function.Function)}.
+ * The TypeScript / SPA client avoids re-implementing rapla's column / sort
+ * logic; Swing's table view shares the same wire contract.
  *
- * <p>Permission filter: server-authoritative via
- * {@code RaplaFacade.getReservations(user, ...)}. Unknown / unreadable
- * reservations are silently dropped (AGENTS.md §12).
+ * <p>Permission filter is built into the {@code CalendarModel} path —
+ * resources the caller can't read are silently dropped (AGENTS.md §12).
+ *
+ * <p>POST rather than GET because {@code reservationFilter} mirrors the
+ * full in-process {@code ClassificationFilter[]} shape, nested deeper than
+ * a query string handles cleanly. Same trade {@code /api/storage/queryAppointments}
+ * makes. No server-side pagination: the row payload is N×(columnCount × scalar)
+ * after projection. A {@code DEFAULT_CAP} safety limit prevents unbounded
+ * responses; when exceeded the response carries {@code incomplete: true}.
  *
  * <p><b>Returns synchronous types</b> — same caveat as
- * {@code RemoteLocaleService} / {@code CalendarViewService}: Spring's
- * HttpServiceProxyFactory has no built-in Promise adapter. Async callers
- * should wrap in {@code commandScheduler.supply(...)}.
+ * {@code RemoteLocaleService}: Spring's HttpServiceProxyFactory has no
+ * built-in Promise adapter. Async callers should wrap in
+ * {@code commandScheduler.supply(...)}.
  */
 @HttpExchange("/api/table")
 public interface TableViewService
 {
-    /**
-     * Reservation table — one row per reservation.
-     *
-     * @param fromIso     inclusive start date in ISO format ({@code yyyy-MM-dd})
-     * @param toIso       exclusive end date in ISO format
-     * @param columnIds   optional ordered list of column ids to project; when
-     *                    omitted, the server uses the user's configured column
-     *                    set from preferences
-     * @param sortSpecs   optional list of sort directives, each of the form
-     *                    {@code "<columnId>:<asc|desc>"}; applied in order
-     * @param cursor      opaque cursor from a previous page's {@code nextCursor};
-     *                    omit for the first page
-     * @param pageSize    when present, return at most this many rows + a cursor;
-     *                    when omitted, return all rows (subject to a server-side
-     *                    safety cap, see {@link TablePage#incomplete()})
-     */
-    @GetExchange("/reservations")
-    TablePage reservations(@RequestParam("from") String fromIso,
-                           @RequestParam("to") String toIso,
-                           @RequestParam(value = "columns", required = false) List<String> columnIds,
-                           @RequestParam(value = "sort", required = false) List<String> sortSpecs,
-                           @RequestParam(value = "cursor", required = false) String cursor,
-                           @RequestParam(value = "pageSize", required = false) Integer pageSize)
-            throws RaplaException;
+    /** Reservation table — one row per reservation. */
+    @PostExchange("/reservations")
+    TablePage reservations(@RequestBody TableQueryRequest body) throws RaplaException;
 
     /**
      * Appointment-block table — one row per visible appointment block (each
      * occurrence of a repeating appointment within {@code [from, to)} is a
-     * separate row). Same parameter contract as {@link #reservations(String, String, List, List, String, Integer)}.
+     * separate row). Same request shape as {@link #reservations}.
      */
-    @GetExchange("/appointments")
-    TablePage appointments(@RequestParam("from") String fromIso,
-                           @RequestParam("to") String toIso,
-                           @RequestParam(value = "columns", required = false) List<String> columnIds,
-                           @RequestParam(value = "sort", required = false) List<String> sortSpecs,
-                           @RequestParam(value = "cursor", required = false) String cursor,
-                           @RequestParam(value = "pageSize", required = false) Integer pageSize)
-            throws RaplaException;
+    @PostExchange("/appointments")
+    TablePage appointments(@RequestBody TableQueryRequest body) throws RaplaException;
 
     /**
      * The user's visible column set for {@code tableName} ({@code "events"}

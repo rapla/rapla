@@ -9,6 +9,7 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.PermissionController;
+import org.rapla.storage.dbrm.UserMe;
 import org.rapla.storage.dbrm.UserSummary;
 import org.rapla.storage.dbrm.UsersService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -64,6 +65,13 @@ public class UsersController implements UsersService
         result.sort(Comparator.comparing(UserSummary::getUsername,
                 String.CASE_INSENSITIVE_ORDER));
         return result;
+    }
+
+    @Override
+    public UserMe me() throws RaplaException
+    {
+        User caller = session.checkAndGetUser(request);
+        return new UserMe(caller.getId(), caller.getUsername(), nonNullName(caller));
     }
 
     private static String nonNullName(User u)
