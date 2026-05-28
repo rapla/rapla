@@ -85,8 +85,8 @@ public final class GeneratedClassificationWiring
                 // to concrete types (unlike Spring's @SchemaMapping walker), so we
                 // re-register the inherited Classification interface fields on
                 // each generated implementation explicitly.
-                builder.dataFetcher("typeId", StructuralTypeFetchers.CLASSIFICATION_TYPE_ID);
-                builder.dataFetcher("type",   StructuralTypeFetchers.CLASSIFICATION_TYPE);
+                builder.dataFetcher("typeKey", StructuralTypeFetchers.CLASSIFICATION_TYPE_KEY);
+                builder.dataFetcher("type",    StructuralTypeFetchers.CLASSIFICATION_TYPE);
                 // Then the typed per-attribute fields generated for this DynamicType.
                 for (Attribute attr : dt.getAttributes())
                 {

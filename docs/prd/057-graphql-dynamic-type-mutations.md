@@ -1,6 +1,6 @@
 # PRD 057 — GraphQL DynamicType Schema Editor Mutations
 
-**Status:** draft (placeholder — not slated for implementation)
+**Status:** in-progress — v1 controller shipped 2026-05-29 (create + replace + delete, admin gate, key collision, multiplicity validation, REFERENCE_NOT_FOUND on unknown id; 9 tier-3 tests). Deferred: valueType-change-with-data migration, DefaultValueInput coercion, full annotation allow-list, hot-swap UX tightening, reservation-side referrer enumeration in `deleteDynamicTypes`.
 
 **Parent:** PRD 035 §"Schema design — structural-static + classification-generated"
 + §"Rebuild on admin change". **Siblings:** PRD 055 (events read), PRD 056
@@ -594,13 +594,16 @@ Limit v1 to well-known annotations (`name-format`, `classification-type`,
 strict validates against a known list. **Lean: strict v1** — known set
 only; expand as new admin features need them.
 
-### OQ4 — Constraint shape for ALLOCATABLE attributes — `expectedTypeId` or
-`expectedTypeKey`?
+### OQ4 — Constraint shape for ALLOCATABLE attributes — RESOLVED 2026-05-29
 
-Read side uses `expectedTypeKey` (the human-meaningful key). Write side
-could mirror this. But `expectedTypeId` (the UUID) is stable through
-renames. **Lean: `expectedTypeId`** — referential stability beats key
-mutability.
+**Resolved: `expectedTypeKey`** (the human-meaningful key). Aligned with
+the PRD 035 §11 final decision that dropped `typeId` from
+Classification + generated typed impls — keys are the deployment-wide
+identifier and the read-side `@expectedType(key:)` directive already
+uses the key. Verbatim key emission to the SDL means a key rename is
+already a breaking schema change, so the "rename stability" argument
+for `expectedTypeId` doesn't actually save anyone. Symmetric
+read/write naming wins.
 
 ### OQ5 — Should schema-editor mutations be in `applyChanges`? — RESOLVED 2026-05-28
 

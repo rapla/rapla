@@ -1,6 +1,6 @@
 # PRD 055 — GraphQL Events API (Reservation + Appointment + Allocation)
 
-**Status:** in-progress
+**Status:** in-progress (read resolvers shipped 2026-05-29; restriction round-trip test deferred)
 
 **Parent:** PRD 035 §"Per-type shape" (line 467+) + §6 "Bulk mutations" (line 161+).
 PRD 035 fixes the architecture; this PRD nails down the resolver-batch surface,
@@ -535,7 +535,42 @@ Implementation steps:
    block list via existing `Appointment.createBlocks(...)` (TableViewController
    line 159-163). `AppointmentBlock` carries `{ appointment, start, end, isException }`
    only — no `allocatables` (consumers traverse `block.appointment.allocatables`).
-6. **Tier-3 tests** — MockMvc + `HttpGraphQlTester`, fixtures via testdefault.xml:
+6. **Perf — apply the Cut C catalog from the allocatables work**
+   (`docs/graphql.md` § "Performance patterns"). Reservation reads
+   trigger many more per-row dispatches than allocatables because each
+   reservation has multiple appointments and each appointment can
+   materialize dozens of blocks. The per-row hot paths are:
+   - `Reservation.canModify` — once per visible reservation
+   - `Reservation.allocations` — once per visible reservation
+   - `Appointment.allocatables` — once per appointment per reservation
+   - `Appointment.blocks(from:, to:)` — once per appointment with a
+     materialization cost proportional to the recurrence rule
+   - Generated `<TypeKey>Classification` typed fields — same hot path as
+     allocatables (shared infrastructure: `GeneratedClassificationWiring`,
+     `StructuralTypeFetchers`, `HotSwappableGraphQlSource.validateInterfaceCoverage`
+     all cover `ReservationClassification` implementations)
+
+   **v1 (this batch):** the `@SchemaMapping` annotation path is fine for
+   correctness. Caller / `PermissionController` resolution MUST go
+   through the existing `RequestContextInstrumentation` cache (per-query,
+   not per-dispatch) — never call `SecurityContextHolder.getContext()`
+   from a `@SchemaMapping` method. This single rule alone eliminates the
+   N × dispatch SecurityContext-read pattern that the allocatables Cut C
+   work caught.
+
+   **v2 (Tier-1 perf round):** if dhbw-scale browser e2e shows >2 s on a
+   typical calendar query, migrate `canModify` / `firstDate` /
+   `lastDate` / `appointments` / `allocations` from `@SchemaMapping` to
+   `LightDataFetcher` singletons via `StructuralTypeFetchers`, mirroring
+   `ALLOCATABLE_DISPLAY_NAME` and `allocatableOwner(...)`. Add the new
+   interfaces (`Reservation`, `Appointment`, `Allocation`,
+   `AppointmentBlock`, `RepeatingRule`) to
+   `HotSwappableGraphQlSource.validateInterfaceCoverage`'s loop if any
+   of them gain interface fields. Same caveat on
+   `ClassificationImpl.getType()` caching — DON'T (rapla-core invalidation
+   missing).
+
+7. **Tier-3 tests** — MockMvc + `HttpGraphQlTester`, fixtures via testdefault.xml:
    - §12 leak: non-admin can't see admin-only reservations
    - Window enforcement: query without `from`/`to` → error
    - Window cap: query with span >365 days → error

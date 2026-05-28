@@ -572,6 +572,114 @@ is flat (`id, key, name` only). If a future PRD adds tree support, it
 appears here as `parent: Group` / `children: [Group!]!` without
 breaking existing queries.
 
+### 5d. Typed `<TypeKey>Where` predicates on `allocatables(filter:)` (2026-05-29)
+
+Server-side per-attribute filtering on Allocatable queries. Today every
+"find rooms with ≥100 seats and a projector" query falls back to
+`allocatables(filter: { typeKeyEq: "Raum" }) { ... }` plus client-side
+filter — ~250 rows on the wire and ~250× the §12 permission check, per
+call. §5d shrinks the wire payload by 10–100× for these common patterns
+and shifts CPU from client to server.
+
+**Locked design — preview in [`dhbwrapla/docs/graphql.md`](../../../dhbwrapla/docs/graphql.md)
+§"§5d typed-where queries — preview"** (full executable examples against
+the dhbw schema). The static `*Where` inputs are already in
+`schema.graphqls`; §5d adds the dynamic per-type / per-enum generation
+and wires the predicate evaluator. Summary of the locked shape:
+
+```graphqls
+# === Schema additions per generated AllocatableClassification implementor ===
+# RaumWhere shown — one is generated per DT that is RESOURCE or PERSON kind.
+input RaumWhere {
+  Raumname:                  StringWhere
+  Raumnummer:                StringWhere
+  Grundflaeche:              IntWhere
+  RollstuhlgerechterZugang:  BooleanWhere
+  Raumart:                   raumtypWhere
+  AusstattungListe:          ausstattungenListWhere
+  Gebaeude:                  AllocatableWhere
+  AND: [RaumWhere!]
+  OR:  [RaumWhere!]
+  NOT: RaumWhere
+}
+
+# Per VALUE_LIST enum — generated alongside the existing <Enum> typed enum
+input raumtypWhere    { eq: raumtyp  ne: raumtyp  in: [raumtyp!]  isNull: Boolean }
+input ausstattungenListWhere {
+  contains:    ausstattungen
+  containsAny: [ausstattungen!]
+  containsAll: [ausstattungen!]
+  isEmpty:     Boolean
+  isNull:      Boolean
+}
+
+# AllocatableFilter gains one where field per resource/person DT
+input AllocatableFilter {
+  # ... existing scalar fields ...
+  whereRaum:     RaumWhere
+  whereGebaeude: GebaeudeWhere
+  wherePerson:   PersonWhere
+}
+```
+
+**Predicate semantics (locked):**
+
+- Multiple non-null operators inside ONE `*Where` AND together
+  (e.g. `Grundflaeche: { gte: 50, lte: 200 }`).
+- Multiple typed `where<TypeKey>` fields at the top-level AND with the
+  scalar fields (`typeKeyEq`, `nameContains`, `ownerEq`, `limit`).
+- Combinators: `AND: [<TypeKey>Where!]`, `OR: [<TypeKey>Where!]`,
+  `NOT: <TypeKey>Where`. Recursively nestable up to depth 10.
+- `typeKeyEq` + `where<TypeKey>` combo: only one `where<TypeKey>` matches
+  at runtime (allocatable belongs to one DT). A `where<TypeKey>` against
+  a non-matching allocatable contributes no constraint; combined with
+  `typeKeyIn:` this enables per-type predicates in a cross-type union.
+- `isNull: true` matches the attribute being unset; every other predicate
+  auto-implies "and not null".
+
+**Java wiring (locked):**
+
+- The dynamic `where<TypeKey>` fields can't fit a Java record. Drop the
+  record, switch `allocatables` to a programmatic `LightDataFetcher`
+  (same pattern as the per-attribute fetchers in `StructuralTypeFetchers`),
+  read the raw argument map, dispatch to a `WhereEvaluator`.
+- `WhereEvaluator` walks the where map, looks up the per-attribute
+  predicate operator, applies it to `Classification.getValue(attribute)`.
+  Operators are dispatched by predicate-input type name.
+- `ClassificationSdlGenerator` gains `emitWhereInputs(...)` — generates
+  `<TypeKey>Where` per allocatable DT, `<EnumName>Where` /
+  `<EnumName>ListWhere` per VALUE_LIST root, plus the `where<TypeKey>`
+  fields on `AllocatableFilter` via SDL type extension.
+
+**Phasing (each a separately landable slice):**
+
+1. **Phase 1 — SDL generation only.** Emit `<TypeKey>Where`,
+   `<EnumName>Where`, `<EnumName>ListWhere` inputs in
+   `ClassificationSdlGenerator`. Schema validates; no runtime behaviour
+   change (the `where<TypeKey>` fields aren't wired on `AllocatableFilter`
+   yet). Tier-1 test: SDL contains expected inputs for a 3-attr DT.
+2. **Phase 2 — `where<TypeKey>` fields on `AllocatableFilter`.** SDL
+   extension. Switch `allocatables` resolver to raw `Map<String, Object>`.
+   No-op `WhereEvaluator` (always returns true). Tier-3 test: empty
+   where predicates leave results unchanged.
+3. **Phase 3 — Predicate evaluator for one operator per kind.**
+   StringWhere `eq`/`contains`/`startsWith`; IntWhere `gte`/`lte`;
+   BooleanWhere `eq`; one enum `eq`; CategoryWhere `eq`. Tier-3 test
+   per kind, no combinators yet.
+4. **Phase 4 — Combinators AND/OR/NOT.** Recursive evaluator; depth
+   cap 10. Tier-3 test per combinator + one nested.
+5. **Phase 5 — Remaining predicates** (`endsWith`, `ne`, `in`, `between`,
+   `gt`/`lt`, `containsAll`, etc.) + `isNull`. Coverage matrix tests.
+
+**Out of scope (deferred):**
+
+- Nested where on `AllocatableWhere`. Today id-equality only. A
+  recursive type structure (`AllocatableWhere.where: AllocatableWhere`)
+  is a separate PRD if real consumer demand emerges.
+- Where on Reservations (`reservations(filter:)`). Same evaluator could
+  apply; separate phase / separate PRD.
+- Sort by typed attribute.
+
 ### 6. Bulk mutations — type-agnostic
 
 > **Superseded 2026-05-28 by [PRD 056](056-graphql-events-mutations.md).**
@@ -765,6 +873,139 @@ enum MatchKind  { PREFIX  SUBSTRING  FUZZY }
 
 PRD 028 OQ#3 (bounded window) and OQ#10 (§12) are resolved by this
 substrate.
+
+### 10. Time-field shape — single `LocalDateTime` scalar (2026-05-29)
+
+Locked: every time-bearing field in the schema is a single custom
+`LocalDateTime` scalar (ISO-8601 wall-time, no offset; format
+`2026-05-25T14:30:00`). Covers `Appointment.start/end`,
+`Reservation.firstDate/lastDate`, `Period.start/end`, `RepeatingRule.end`
+(via the related `Date` scalar for the date-only part), every
+`LocalDateTimeWhere` predicate, every `ReservationFilter.from/to`, all
+the `createdAt`/`lastModifiedAt` audit timestamps.
+
+Implementation already wired in `GraphQlScalarConfig.LOCAL_DATE_TIME`.
+Distinct from `DateTime` (`OffsetDateTime`, used for the few true
+instant-in-time fields like `Query.serverTime`) and from `Date`
+(`LocalDate`, used for the date-only `RepeatingRule.end`/`exceptions`).
+
+**Alternatives considered and rejected:**
+
+| Shape | Why rejected |
+|---|---|
+| Two fields (`date: Date! + time: LocalTime!`) | Doubles every time-bearing field and every filter input; range queries ("Wed 17:00 → Thu 09:00") become 3–4 conjunctions; compound sort key; reachable invalid states (`date` set, `time` null when consumer expected both); a "moment" is one concept and splitting it spreads cognitive load across the schema. Day-equality queries ARE simpler with two fields (`date: "2026-05-25"` vs a window), but the cost is paid on every read site, not just day-equality reads. |
+| Plain `String` | Type system says nothing — introspection can't distinguish a time string from a name string; MCP/AI consumers can't reason about field nature; validation pushed to every resolver; filter predicates have to reinvent comparator semantics. |
+| `DateTime` (offset, from extended-scalars) | **Wrong domain semantics.** A "10:00 lecture in Berlin" stored as offset shifts an hour relative to the wall clock at DST transitions. Forces the server to pick a zone, which behaves differently across distributed deployments. A US client viewing a Berlin booking gets "01:00 PST" — technically correct, semantically wrong for room booking. Conflicts with iCal floating-time semantics (round-trips with external calendars become lossy). PRD 014 wall-time invariant is non-negotiable for the rapla domain. |
+
+**Rationale for the single-scalar choice:**
+
+- **Domain fit.** Rapla bookings are wall-time (PRD 014). `LocalDateTime`
+  matches `java.time.LocalDateTime` 1:1 — zero impedance with the entity
+  layer.
+- **One field per moment.** Matches how the domain talks ("the lecture
+  starts at 14:30 on the 25th"). One field, one identifier, one round-trip.
+- **Wire format is dev-trivial.** `2026-05-25T14:30:00` is one
+  `LocalDateTime.parse(...)` in Java, one `parseISO(...)` in date-fns,
+  one constructor pass in Luxon/Temporal.
+- **Total-orderable lexicographically.** ISO-8601 collates as a string in
+  the same order as the underlying time, so range queries, sort, and
+  filter comparisons work without special-casing.
+- **Typed semantics in introspection.** MCP/AI consumers see a documented
+  scalar with wall-time meaning, not an opaque `String`. Codegens can be
+  configured to map `LocalDateTime` → a typed wrapper (`Temporal.PlainDateTime`,
+  `LocalDateTime` from `@js-joda/core`, etc.) for type-safety in clients
+  that want it.
+
+**SPA consumer guidance:**
+
+The SPA should treat `LocalDateTime` values as opaque strings or map them
+to `Temporal.PlainDateTime` once it ships. Avoid `new Date(...)` —
+`new Date("2026-05-25T14:30:00")` parses as **local time** in the browser,
+which happens to be what we want for display, but it's a leaky abstraction:
+the JS `Date` carries an implicit zone and `.toISOString()` will reshape
+the value through UTC. The opaque-string approach is safer in all cases.
+
+**MCP consumer guidance:**
+
+Document the scalar's wall-time semantics in the MCP tool description.
+Reading hint: a `LocalDateTime` answers "what does the wall clock at the
+venue say at this moment?" — not "what UTC instant is this?".
+
+**Tradeoffs accepted:**
+
+- Day-equality queries take a window (`gte 2026-05-25T00:00:00, lt
+  2026-05-26T00:00:00`) instead of `date: "2026-05-25"`. The window form
+  is verbose but unambiguous and reuses the same comparator surface as
+  every other range query.
+- "All-day vs timed" requires a sibling `allDay: Boolean` flag on
+  `Appointment` (already in the schema). Two fields would have let
+  `time: null` encode all-day, but the sibling flag costs one boolean,
+  doesn't reach invalid states, and matches iCal's `VALUE=DATE` /
+  `VALUE=DATE-TIME` discriminator approach.
+
+### 11. `typeKey` vs `typeId` — locked 2026-05-29 (revised same day: `typeId` dropped)
+
+Surfaced by the PRD 056 happy-path test: `Classification.typeId` returned
+the DynamicType UUID, but the input `CreateReservationInput.typeId` was
+the discriminator that had to match the `@oneOf` variant name (which is
+the verbatim DynamicType key per the 2026-05-25 lock). Same field name,
+two semantics.
+
+**Intermediate fix (early 2026-05-29).** Added `typeKey: String!` next
+to `typeId: ID!` on every Classification interface + generated impl;
+renamed input `CreateReservationInput.typeId` → `typeKey` (matches
+@oneOf variant). Kept output `typeId: ID!` (UUID) for stable references
+through renames.
+
+**Final fix (later same day) — `typeId` dropped entirely from
+Classification + generated typed impls.** Reasoning:
+
+- Rapla enforces DynamicType key uniqueness across the deployment, so
+  `typeKey` alone unambiguously identifies the type.
+- Nothing user-facing in the API uses the UUID. The `@oneOf` variants,
+  typed-narrow fragments (`... on eventClassification`), generated enum
+  names, MCP tool descriptions, and SPA codegen all use the key.
+- The "survives admin renames" benefit was mostly theoretical —
+  verbatim key emission to the SDL means a key rename is *already* a
+  breaking change for the GraphQL schema, so caching the UUID doesn't
+  save you.
+- Carrying both names forced every consumer to decide "which one do I
+  use?" — cognitive tax for a benefit nothing concrete consumed.
+- The deref escape hatch `type { id }` is still available for the rare
+  consumer that genuinely needs the UUID.
+
+**Final surface (locked).** One identifier on Classification + the
+generated impls; the DynamicType ref carries everything else:
+
+| Field | What it returns | When to use |
+|---|---|---|
+| `typeKey: String!` | Human-readable key (`"event"`, `"room"`, `"Lehrveranstaltung"`). Unique across the deployment. | Discriminator for the `@oneOf` variant. Codegen typed-narrow fragment selector. SPA display. `@expectedType(key:)` directive target. |
+| `type: DynamicType!` | Full DynamicType ref. | When you need other fields on the type (name, classificationType, `id` for the rare UUID-needing consumer). |
+
+**Inputs.** `CreateReservationInput.typeKey` + `UpdateReservationInput.typeKey`
+(both renamed from `typeId`). `applyChanges` `ChangeOpUpdateReservation.input`
+inherits transparently. `AttributeInput.expectedTypeKey` (PRD 057) — the
+target DynamicType key for ALLOCATABLE attributes, matching the
+`@expectedType(key:)` directive on the read side.
+
+**Mechanical implementation (final):**
+- `Classification`, `AllocatableClassification`, `ReservationClassification`
+  interfaces declare `typeKey: String!` + `type: DynamicType!` only.
+- `ClassificationSdlGenerator` emits both on every generated typed impl.
+- `StructuralTypeFetchers.CLASSIFICATION_TYPE_KEY` light-fetcher returns
+  `dt.getKey()`. (`CLASSIFICATION_TYPE_ID` removed.)
+- `GeneratedClassificationWiring` re-registers `typeKey` + `type` on
+  every generated implementation (Pattern 5).
+- `HotSwappableGraphQlSource.validateInterfaceCoverage` covers the three
+  interfaces; field set picked up automatically from `iface.getFields()`.
+
+**Lesson.** Whenever a field name appears on both an input and an
+output, check that each direction has the same semantic — or use
+different names. The original `typeId` choice was pattern-matching on
+the output interface name without thinking about what the input
+discriminator's semantic actually was; a happy-path round-trip test in
+PRD 056 would have caught this on day one (it was added 2026-05-29 and
+did).
 
 ### Out of core GraphQL — own API surfaces
 

@@ -20,7 +20,7 @@ admins own convention (case style). But it means an admin who keys a
 DynamicType `room` and category leaves `seminar_raum` / `hoersaal`
 gets a schema like:
 
-```graphql
+```graphqls
 type roomClassification implements Classification { ... }
 enum raumtyp { seminar_raum hoersaal }
 ```
@@ -74,6 +74,39 @@ For the schema design, the `Classification` interface split (§540 lock-in),
 and the SPA-on-interface contract see
 [PRD 035 §"2026-05-24 design refinement"](prd/035-rapla-mcp-server.md).
 
+## Testing the queries in this doc
+
+Every fenced ```graphql block in this file and in
+`~/git/dhbwrapla/docs/graphql.md` is executable against a running rapla
+server. The schema-as-data nature of the API plus rapla's PRD 058
+verbatim-key emission means doc drift is real — queries go stale
+silently when admins rename a DynamicType / attribute / category root,
+or refactor the schema.
+
+The companion script `docs/test-graphql-doc.sh` runs every executable
+block in a graphql.md file against a live server and reports per-block
+OK/ERR with the GraphQL error messages. ```graphqls fenced blocks
+(schema definitions like `input X { … }`, `enum Y { … }`,
+`type Z { … }`) are intentionally skipped — they're SDL documentation,
+not queries.
+
+```bash
+RAPLA_USER=your.user@example.org RAPLA_PASS=secret \
+  ./docs/test-graphql-doc.sh                                # tests this generic doc
+
+RAPLA_USER=... RAPLA_PASS=... \
+  ./docs/test-graphql-doc.sh ~/git/dhbwrapla/docs/graphql.md  # tests the dhbw deployment-specific tour
+```
+
+Defaults to the local dev server on `:8051`; override with `RAPLA_URL`.
+`QUIET=1` suppresses the per-OK output, keeping only failures. Exit
+code 0 = all blocks OK, 1 = at least one block errored, 2 = auth or
+network failure.
+
+Run after editing either doc; run before merging if you've touched
+schema-shaping code (`ClassificationSdlGenerator`, migration paths,
+controller resolvers).
+
 ## Auth
 
 GraphQL is a regular `/api/*` endpoint behind Spring Security. Get a JWT
@@ -114,11 +147,11 @@ Query
 ├── types, type(key:)                              # DynamicType descriptors
 └── allocatables(filter:), allocatable(id:)        # resources + persons
 
-Classification (interface, base — shape: typeId, type, attributes)
+Classification (interface, base — shape: typeId, type only after β refactor)
 ├── AllocatableClassification  (narrows resources + persons)
-│   ├── <TypeKey>Classification  ← one per resource/person DynamicType, generated
+│   ├── <typeKey>Classification  ← one per resource/person DynamicType, generated
 └── ReservationClassification  (narrows reservations)
-    └── <TypeKey>Classification  ← one per reservation DynamicType, generated
+    └── <typeKey>Classification  ← one per reservation DynamicType, generated
 
 # Rapla-internal scaffolding types (annotation classification-type=rapla
 # — period / template / defaultUser / anonymousEvent) are filtered out
@@ -128,9 +161,19 @@ Classification (interface, base — shape: typeId, type, attributes)
 # operator for the subsystems that need them.
 ```
 
-The SPA must query the **interface** path only — never the typed
-implementations. Typed implementations are for codegen consumers (plugin
-authors, MCP integrators with a fixed deployment).
+**β refactor 2026-05-28** removed the `attributes: [AttributeValue!]!`
+field from the `Classification` interface AND the `attributes:
+[AttributeDescriptor!]!` field from `DynamicType`. Per-attribute structure
+lives on the generated `<typeKey>Classification` types — read via
+introspection + SDL custom directives (`@displayName`,
+`@expectedType`, `@rootCategory`, `@multiplicity`, `@required`).
+
+**SPA pattern:** introspect the schema to learn the deployment's
+attribute layout, then construct typed-narrow queries dynamically:
+`... on roomClassification { name seats Gebaeude { displayName } }`.
+**Codegen consumer pattern:** same typed fragments, but as static
+documents — regenerate types when admin edits a DynamicType (rare,
+explicit, deploy-coupled).
 
 ---
 
@@ -169,7 +212,7 @@ For ORGANIZATION-kind and SYSTEM-kind categories (plus generic admin/MCP
 exploration of any category including the trees backing VALUE_LIST
 roots), the generic Category type:
 
-```graphql
+```graphqls
 enum CategoryKind {
   VALUE_LIST     # flat picklist — also surfaces as a generated enum (see below)
   ORGANIZATION   # hierarchical tree — render as drill-down picker
@@ -202,7 +245,7 @@ For every root with `kind: VALUE_LIST`, the schema also generates a
 GraphQL enum whose values mirror the root's children. Classification
 typed fields targeting those roots use the enum directly:
 
-```graphql
+```graphqls
 enum Raumart {
   """Büroräume allgemein"""
   Bueroraeume
@@ -214,14 +257,16 @@ enum Raumart {
   Pruefungsraum
 }
 
-type RaumClassification implements Classification & AllocatableClassification {
+type roomClassification implements Classification & AllocatableClassification {
   typeId: ID!
   type: DynamicType!
-  attributes: [AttributeValue!]!
-  Raumart:          Raumart           # ← enum, not Category
-  AusstattungListe: [Ausstattung!]    # ← enum list (multi-select)
-  SyncStatus:       SyncStatus
-  Gebaeude:         Allocatable       # ALLOCATABLE attrs unchanged
+  # β refactor 2026-05-28: no `attributes: [AttributeValue!]!` field.
+  # Per-attribute typed fields below, with custom directives carrying
+  # the metadata the dropped AttributeDescriptor used to expose.
+  Raumart:          Raumart                 @displayName(value: "Raumart")    @rootCategory(path: "Raumtypen")
+  AusstattungListe: [Ausstattung!]          @displayName(value: "Ausstattung") @rootCategory(path: "Ausstattungen") @multiplicity(value: LIST)
+  SyncStatus:       SyncStatus              @displayName(value: "Sync-Status")
+  Gebaeude:         Allocatable             @displayName(value: "Gebäude")     @expectedType(key: "building")
 }
 ```
 
@@ -273,7 +318,7 @@ A first-class `type Group` covers all group reads. This keeps the
 Category contract focused and gives the API a clean affordance for
 permission-group operations:
 
-```graphql
+```graphqls
 type Group {
   id:   ID!
   key:  String!
@@ -305,7 +350,7 @@ a future PRD if real consumer needs surface. Initial shipping is flat.
 ## Core query catalog
 
 Substitute `"<TypeKey>"` with an actual key from `{ types { key } }`,
-and `<TypeKey>Classification` with the corresponding PascalCased
+and `<typeKey>Classification` with the corresponding PascalCased
 generated type name (e.g. key `course-group` → type `CourseGroupClassification`).
 
 ### 1. who am I
@@ -323,48 +368,69 @@ generated type name (e.g. key `course-group` → type `CourseGroupClassification
 Returns only user-visible classifications — internal rapla scaffolding
 (`rapla:*`) is filtered server-side.
 
-### 3. one DynamicType — full descriptor
+### 3. one DynamicType — basic metadata
+
+```graphql
+{ type(key: "<TypeKey>") { key name classificationType } }
+```
+
+**β refactor 2026-05-28:** `DynamicType.attributes` was removed.
+Per-attribute metadata lives on the generated `<typeKey>Classification`
+type — discover it via introspection (query 4 below).
+
+### 4. allocatables — schema-as-data via introspection
+
+The right SPA shape after the β refactor: discover the deployment's
+attribute layout by introspecting the generated classification types,
+then construct typed-narrow queries dynamically.
+
+Introspection — what attribute fields exist on a given classification:
 
 ```graphql
 {
-  type(key: "<TypeKey>") {
-    key name classificationType
-    attributes {
-      key name valueType multiplicity required
-      rootCategoryPath expectedTypeKey
+  __type(name: "<typeKey>Classification") {
+    name
+    interfaces { name }
+    fields {
+      name
+      type { name kind ofType { name kind ofType { name kind } } }
     }
   }
 }
 ```
 
-`rootCategoryPath` is the allowed-root hint for category pickers;
-`expectedTypeKey` is the DynamicType filter for allocatable pickers
-(PRD 035 §5 widget config).
+The field `name` is the attribute key. The field `type` (unwrapping
+through `ofType` for `[X!]` / `!` wrappers) tells you the value type:
 
-### 4. allocatables — SPA / descriptor-driven (interface path)
+- `name: "String" | "Int" | "Boolean"` etc. — scalar attribute
+- `name: "<EnumName>"`, `kind: "ENUM"` — VALUE_LIST CATEGORY attribute
+- `name: "Category"` — ORGANIZATION CATEGORY attribute
+- `name: "Allocatable"` — ALLOCATABLE attribute (server validates the
+  expected DynamicType per the `@expectedType` directive)
 
-The right SPA shape: a single generic renderer iterates the descriptor and
-the value list. Never mentions deployment-specific type names.
+SDL directives carry the bits introspection alone doesn't expose:
+
+| Directive | When emitted | Read |
+|---|---|---|
+| `@displayName(value: "...")` | Always (locale-resolved at SDL-gen time) | Human-readable form label |
+| `@required` | Attribute is `!isOptional()` | Save-time required, read-time still nullable (legacy data may carry null) |
+| `@multiplicity(value: BELONGS_TO \| PACKAGE)` | ALLOCATABLE only, non-default multiplicity | Widget hint (vs plain LIST/SINGLE which is implied by the field type wrapper) |
+| `@expectedType(key: "...")` | ALLOCATABLE attrs with a DynamicType constraint | Filter the allocatable picker |
+| `@rootCategory(path: "key/path")` | CATEGORY attrs with an admin-set root | Allowed root for the category picker |
+
+Once the SPA has the descriptor info, the read query targets the
+specific classification's typed fields directly:
 
 ```graphql
 {
-  allocatables {
+  allocatables(filter: { typeKeyEq: "<typeKey>" }) {
     id
     displayName
-    type
     classification {
-      typeId
-      type { key }
-      attributes {
-        key
-        stringValue
-        intValue
-        boolValue
-        dateValue
-        categoryValue { id path name }
-        allocatableValue { id displayName }
-        categoryValues { name }
-        allocatableValues { id displayName }
+      ... on <typeKey>Classification {
+        # The SPA injects field selections per the descriptor it just
+        # learned. Apollo/urql `gql(string)` accepts dynamically-constructed
+        # query documents; codegen consumers use static fragments.
       }
     }
   }
@@ -381,7 +447,7 @@ consumers with a fixed deployment use this for compile-time field access:
   allocatables(filter: { typeKeyEq: "<TypeKey>" }) {
     displayName
     classification {
-      ... on <TypeKey>Classification {
+      ... on <typeKey>Classification {
         # Replace with actual attribute keys from query 3.
         someStringAttribute
         someIntAttribute
@@ -409,15 +475,16 @@ consumers with a fixed deployment use this for compile-time field access:
 
 ### 7. follow a reference attribute
 
-When an attribute has `valueType: ALLOCATABLE` and `expectedTypeKey: "<OtherKey>"`,
-chain through to the referenced entity's typed classification:
+When an attribute is typed `Allocatable` (per the `@expectedType(key:)`
+directive on the field), chain through to the referenced entity's typed
+classification:
 
 ```graphql
 {
   allocatables(filter: { typeKeyEq: "<TypeKey>" }) {
     displayName
     classification {
-      ... on <TypeKey>Classification {
+      ... on <typeKey>Classification {
         someStringAttribute
         someReferenceAttribute {     # this is an Allocatable
           displayName
@@ -462,7 +529,7 @@ query Workbench {
 
 # detailed shape of one generated type
 {
-  __type(name: "<TypeKey>Classification") {
+  __type(name: "<typeKey>Classification") {
     interfaces { name }
     fields { name type { name kind ofType { name } } }
   }
@@ -504,10 +571,10 @@ Verify:
 
 ```graphql
 # Before admin save:
-{ __type(name: "<TypeKey>Classification") { fields { name } } }
+{ __type(name: "<typeKey>Classification") { fields { name } } }
 # Admin adds an attribute "NewFlag" on <TypeKey>.
 # Wait ~10s, then re-query:
-{ __type(name: "<TypeKey>Classification") { fields { name } } }
+{ __type(name: "<typeKey>Classification") { fields { name } } }
 # 'NewFlag' should now appear in the fields list.
 ```
 

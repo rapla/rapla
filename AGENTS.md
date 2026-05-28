@@ -203,7 +203,16 @@ Quick essentials that stay inline:
 - Stop: `pkill -f RaplaSpringBootApplication` (10 s graceful window — never `kill -9` first).
 - One server per checkout (port 8051 binds once); use a worktree per §7 for parallel work.
 - Never start the server during a `mvn package` build (`spring-boot:repackage` rewrites the same JAR).
-- **Testing an external plugin (dhbwrapla etc.): run `spring-boot:run` through the plugin's aggregator pom** (e.g. `mvn -f /home/chris/git/dhbwrapla/aggregator-pom.xml -pl ../rapla/rapla-app -am -Pdhbw spring-boot:run -Dspring-boot.run.fork=false`), not rapla's pom. The aggregator's reactor pulls the plugin's `target/classes` onto rapla-app's classpath; the `-P<plugin-id>` profile (e.g. `dhbw`) in `rapla-app/pom.xml` declares the plugin as a `runtime`-scope dep, so the plugin's `@AutoConfiguration` actually fires. Running rapla's pom in isolation will silently leave the plugin off the classpath and beans like `DhbwNtlmAuthStore` will never be created. Never `java -jar` the packaged fat JAR for routine dev — that's deployment testing only (see `test-deployment` skill).
+- **Testing an external plugin: run `spring-boot:run` through the plugin's aggregator pom** AND pin the working directory to the plugin checkout root. Custom plugins typically reference their dataset / yaml files by **relative path** (`./data/rapla-hsqldb`, `./local/`, etc.) keyed off the plugin repo root. `spring-boot:run`'s default `workingDirectory` is the rapla-app module dir, so those relative paths land in rapla-app's vanilla dev DB instead of the plugin's dataset — boot then fails the moment a plugin bean looks up a plugin-seeded resource (e.g. `EntityNotFoundException: No dynamictype with elementKey X`). Canonical recipe, with `<PLUGIN_ROOT>` = the plugin checkout root (e.g. `~/git/dhbwrapla`):
+  ```
+  mvn -f <PLUGIN_ROOT>/aggregator-pom.xml -pl ../rapla/rapla-app -am -P<plugin-id> \
+      spring-boot:run \
+      -Dspring-boot.run.fork=false \
+      -Dspring-boot.run.workingDirectory=<PLUGIN_ROOT> \
+      -Dspring-boot.run.profiles=local \
+      -Dspring-boot.run.arguments="--spring.config.additional-location=file:<PLUGIN_ROOT>/local/"
+  ```
+  The aggregator's reactor pulls the plugin's `target/classes` onto rapla-app's classpath; the `-P<plugin-id>` profile in `rapla-app/pom.xml` declares the plugin as a `runtime`-scope dep, so the plugin's `@AutoConfiguration` actually fires. Running rapla's pom in isolation will silently leave the plugin off the classpath and the plugin's beans (auth stores, sync services, etc.) will never be created. Never `java -jar` the packaged fat JAR for routine dev — that's deployment testing only (see `test-deployment` skill).
 - **Working inside an external-plugin checkout (e.g. `~/git/dhbwrapla/`): read that repo's `AGENTS.md` first.** It has the canonical dev recipe + plugin-specific knobs (workingDirectory, additional config locations, conditional beans) that rapla's AGENTS.md doesn't know about.
 
 #### Default credentials + REST probing — see the `api-testing` skill

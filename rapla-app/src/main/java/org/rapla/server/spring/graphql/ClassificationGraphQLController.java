@@ -31,8 +31,8 @@ import org.springframework.stereotype.Controller;
  * filtering is inline at the output boundary, matching the pattern in
  * {@link HelloGraphQLController}.
  *
- * <p>The interface fields ({@code Classification.typeId}, {@code .type},
- * {@code .attributes}) are resolved here via {@link SchemaMapping}; the
+ * <p>The interface fields ({@code Classification.typeKey}, {@code .type})
+ * are resolved here via {@link SchemaMapping}; the
  * GENERATED per-DynamicType implementing types (e.g. {@code RoomClassification})
  * are wired programmatically by {@link HotSwappableGraphQlSource} using
  * {@link GeneratedClassificationWiring} — their attribute fields can't carry
@@ -185,10 +185,16 @@ public class ClassificationGraphQLController
     private static boolean matches(Allocatable a, AllocatableFilter f)
     {
         if (f == null) return true;
+        // typeKeyEq takes precedence over typeKeyIn when both are set.
         if (f.typeKeyEq() != null && !f.typeKeyEq().isBlank())
         {
             DynamicType dt = a.getClassification() == null ? null : a.getClassification().getType();
             if (dt == null || !f.typeKeyEq().equals(dt.getKey())) return false;
+        }
+        else if (f.typeKeyIn() != null && !f.typeKeyIn().isEmpty())
+        {
+            DynamicType dt = a.getClassification() == null ? null : a.getClassification().getType();
+            if (dt == null || !f.typeKeyIn().contains(dt.getKey())) return false;
         }
         if (f.isPersonEq() != null && a.isPerson() != f.isPersonEq()) return false;
         if (f.nameContains() != null && !f.nameContains().isBlank())
@@ -239,11 +245,12 @@ public class ClassificationGraphQLController
 
     /** Mirror of the {@code AllocatableFilter} GraphQL input. */
     public record AllocatableFilter(
-            String  typeKeyEq,
-            Boolean isPersonEq,
-            String  nameContains,
-            String  ownerEq,
-            Integer limit) {}
+            String       typeKeyEq,
+            List<String> typeKeyIn,
+            Boolean      isPersonEq,
+            String       nameContains,
+            String       ownerEq,
+            Integer      limit) {}
 
     // AttributeDescriptorDto and AttributeValueDto records dropped 2026-05-28
     // (PRD 055 β refactor). Descriptor data is now exposed via introspection

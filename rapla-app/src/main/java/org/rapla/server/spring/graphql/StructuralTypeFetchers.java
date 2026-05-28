@@ -280,13 +280,13 @@ public final class StructuralTypeFetchers
 
     // === Classification interface fetchers ====================================
 
-    static final LightDataFetcher<String> CLASSIFICATION_TYPE_ID =
+    static final LightDataFetcher<String> CLASSIFICATION_TYPE_KEY =
             new LightSourceFetcher<Classification, String>(Classification.class)
             {
                 @Override protected String read(Classification c, Supplier<DataFetchingEnvironment> env)
                 {
                     DynamicType dt = c.getType();
-                    return dt == null ? null : dt.getId();
+                    return dt == null ? null : dt.getKey();
                 }
             };
 
@@ -338,8 +338,8 @@ public final class StructuralTypeFetchers
                 .dataFetcher("name",               DYNAMIC_TYPE_NAME)
                 .dataFetcher("classificationType", DYNAMIC_TYPE_CLASSIFICATION_TYPE));
         b.type("Classification", t -> t
-                .dataFetcher("typeId", CLASSIFICATION_TYPE_ID)
-                .dataFetcher("type",   CLASSIFICATION_TYPE));
+                .dataFetcher("typeKey", CLASSIFICATION_TYPE_KEY)
+                .dataFetcher("type",    CLASSIFICATION_TYPE));
         b.type("Category", t -> t
                 .dataFetcher("name",     CATEGORY_NAME)
                 .dataFetcher("path",     categoryPath(operator))

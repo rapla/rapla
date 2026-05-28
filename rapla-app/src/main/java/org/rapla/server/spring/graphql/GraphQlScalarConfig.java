@@ -101,6 +101,54 @@ public class GraphQlScalarConfig
     {
         return wiringBuilder -> wiringBuilder
                 .scalar(ExtendedScalars.DateTime)
-                .scalar(LOCAL_DATE_TIME);
+                .scalar(LOCAL_DATE_TIME)
+                // PRD 055 reservation read types — RepeatingRule.exceptions is LocalDate
+                .scalar(ExtendedScalars.Date)
+                // PRD 056 mutations — Duration for moveReservations / copyReservations dateShift
+                .scalar(DURATION);
     }
+
+    /**
+     * ISO-8601 Duration scalar. Format: {@code "P7D"}, {@code "PT-30M"},
+     * {@code "P1DT12H"} etc. Used by PRD 056 mutation verbs
+     * {@code moveReservations}/{@code copyReservations} for dateShift inputs.
+     */
+    public static final GraphQLScalarType DURATION = GraphQLScalarType.newScalar()
+            .name("Duration")
+            .description("ISO-8601 Duration (P[n]Y[n]M[n]DT[n]H[n]M[n]S). Examples: P7D, PT-30M, P1DT12H.")
+            .coercing(new Coercing<java.time.Duration, String>()
+            {
+                @Override public String serialize(Object v, GraphQLContext c, Locale l)
+                        throws CoercingSerializeException
+                {
+                    if (v instanceof java.time.Duration d) return d.toString();
+                    throw new CoercingSerializeException("Expected Duration, got " + (v == null ? "null" : v.getClass().getName()));
+                }
+                @Override public java.time.Duration parseValue(Object input, GraphQLContext c, Locale l)
+                        throws CoercingParseValueException
+                {
+                    if (input instanceof java.time.Duration d) return d;
+                    if (input instanceof String s) {
+                        try { return java.time.Duration.parse(s); }
+                        catch (java.time.format.DateTimeParseException e) {
+                            throw new CoercingParseValueException("Invalid Duration: " + s, e);
+                        }
+                    }
+                    throw new CoercingParseValueException(
+                            "Expected String or Duration, got " + (input == null ? "null" : input.getClass().getName()));
+                }
+                @Override public java.time.Duration parseLiteral(Value<?> input, CoercedVariables vars,
+                        GraphQLContext c, Locale l) throws CoercingParseLiteralException
+                {
+                    if (input instanceof StringValue sv) {
+                        try { return java.time.Duration.parse(sv.getValue()); }
+                        catch (java.time.format.DateTimeParseException e) {
+                            throw new CoercingParseLiteralException("Invalid Duration: " + sv.getValue(), e);
+                        }
+                    }
+                    throw new CoercingParseLiteralException(
+                            "Expected StringValue literal, got " + input.getClass().getName());
+                }
+            })
+            .build();
 }

@@ -86,6 +86,36 @@ type Query {
 
   # Permission group by id, or null if unknown / anonymous caller.
   group(id: ID!): Group
+
+  # PRD 055 reservation reads.
+  # §12: anonymous → empty / null. Authenticated → canRead-filtered.
+  # `reservations` requires a mandatory time window (from + to); the server
+  # caps the window at 365 days and the result size at 5000 entries (default 500).
+  reservation(id: ID!): Reservation
+  reservations(filter: ReservationFilter!): [Reservation!]!
+}
+
+"""
+PRD 055 — mandatory time window + optional narrowing predicates for
+`reservations(filter:)`. Window is mandatory because the un-windowed query
+is "scan every reservation in the deployment" — at admin scale that's many
+seconds of CPU per call. Default limit 500; hard cap 5000.
+"""
+input ReservationFilter {
+  "Mandatory lower bound (inclusive)."
+  from:              LocalDateTime!
+  "Mandatory upper bound (exclusive). Window must be ≤ 365 days."
+  to:                LocalDateTime!
+  "Exact-match on reservation DynamicType key (e.g. \"event\")."
+  typeKeyEq:         String
+  "Exact-match on owner id."
+  ownerEq:           ID
+  "Reservations using ANY of the listed allocatable ids."
+  allocatableIdsIn:  [ID!]
+  "Case-insensitive substring match on default-locale name."
+  nameContains:      String
+  "Cap result size. Default 500, hard cap 5000."
+  limit:             Int
 }
 
 """
@@ -116,6 +146,13 @@ fields below — one per resource/person DynamicType in the deployment.
 input AllocatableFilter {
   "Exact-match on the DynamicType key (e.g. \"room\", \"lecturer\"). When set, pre-filters at the storage layer (skips full-table scan)."
   typeKeyEq:    String
+  """
+  Match any DynamicType key in the list (cross-type union). Server-side
+  union — e.g. `typeKeyIn: ["Raum", "Teilraum"]` returns rooms AND partial
+  rooms in one result list. `typeKeyEq` takes precedence if both are set.
+  Each key is validated against {@code types}; unknown keys are ignored.
+  """
+  typeKeyIn:    [String!]
   "True → only persons. False → only resources. null → both."
   isPersonEq:   Boolean
   "Case-insensitive substring match on displayName."
@@ -218,6 +255,18 @@ input AllocatableWhere {
   ne:     ID
   in:     [ID!]
   isNull: Boolean
+}
+
+"""
+Predicates for multi-select ALLOCATABLE attributes (rapla `multi-select=true`,
+typically `package=true` flavor). Symmetric mirror of CategoryListWhere.
+"""
+input AllocatableListWhere {
+  contains:    ID
+  containsAny: [ID!]
+  containsAll: [ID!]
+  isEmpty:     Boolean
+  isNull:      Boolean
 }
 
 type User {
@@ -395,8 +444,9 @@ Three-way interface split:
   types whose DynamicType has classification-type = reservation.
 """
 interface Classification {
-  typeId: ID!
-  type:   DynamicType!
+  "Human-readable key of the DynamicType (e.g. \"event\", \"room\", \"Lehrveranstaltung\"). Unique across the deployment. Matches the @oneOf variant name on the input side, the codegen typed-narrow fragment selector, and the @expectedType directive on ALLOCATABLE attribute fields. For the underlying DynamicType's UUID (rare — admin renames don't require it; rapla keys are uniqueness-enforced), use `type { id }`."
+  typeKey: String!
+  type:    DynamicType!
 }
 
 """
@@ -406,8 +456,8 @@ targets this interface so a typed-narrow fragment like
 validation up-front instead of resolving to null at runtime.
 """
 interface AllocatableClassification implements Classification {
-  typeId: ID!
-  type:   DynamicType!
+  typeKey: String!
+  type:    DynamicType!
 }
 
 """
@@ -416,8 +466,8 @@ the reservation resolvers land next batch. Same split rationale as
 `AllocatableClassification`.
 """
 interface ReservationClassification implements Classification {
-  typeId: ID!
-  type:   DynamicType!
+  typeKey: String!
+  type:    DynamicType!
 }
 
 # === Custom directives on generated classification fields (PRD 055 β refactor) ===
@@ -458,3 +508,374 @@ Marker on required attribute fields. The field type stays nullable
 populate.
 """
 directive @required on FIELD_DEFINITION
+
+# === PRD 055 Reservation read types (minimal — full resolver impl in PRD 055 later) ===
+# Added 2026-05-28 alongside PRD 056 mutations so create/update return Reservation.
+
+"""
+Calendar event — the central booking entity. One or more Appointments
+(time slots) carry the booking against Allocatables (resources/persons).
+"""
+type Reservation {
+  id:             ID!
+  classification: ReservationClassification!
+  appointments:   [Appointment!]!
+  allocations:    [Allocation!]!
+  owner:          User
+  createdAt:      DateTime
+  lastModifiedAt: DateTime
+  "min(appointment.start)"
+  firstDate:      LocalDateTime!
+  "max(appointment.maxEnd)"
+  lastDate:       LocalDateTime!
+  "Server-derived per caller — controls edit-button gating in the SPA without a second roundtrip."
+  canModify:      Boolean!
+}
+
+"""
+A single appointment of a Reservation. Owns its recurrence rule;
+materialized blocks come from `blocks(from:, to:)` on demand.
+"""
+type Appointment {
+  id:        ID!
+  start:     LocalDateTime!
+  end:       LocalDateTime!
+  allDay:    Boolean!
+  "Null = single-occurrence appointment."
+  repeating: RepeatingRule
+  """
+  Pre-resolved per-appointment allocatables (PRD 055 Q4 — restrictions
+  applied). Restriction-aware editing reads parent Reservation.allocations.
+  """
+  allocatables: [Allocatable!]!
+  "Materialize blocks within a window. Server-side recurrence expansion."
+  blocks(from: LocalDateTime!, to: LocalDateTime!): [AppointmentBlock!]!
+}
+
+"Materialized occurrence of a recurring Appointment. No id (synthetic per-expansion)."
+type AppointmentBlock {
+  start:       LocalDateTime!
+  end:         LocalDateTime!
+  isException: Boolean!
+}
+
+enum RepeatingType { DAILY  WEEKLY  MONTHLY  YEARLY }
+
+type RepeatingRule {
+  type:       RepeatingType!
+  interval:   Int!
+  end:        Date
+  count:      Int
+  "0-6, WEEKLY-only — needed for 'every Tue + Thu' patterns."
+  weekdays:   [Int!]
+  exceptions: [Date!]!
+}
+
+"""
+Per-allocatable restriction record. `appointmentIds: null` = bound to all
+appointments (default). Non-null = restricted to those appointment ids
+(intra-document references to Appointment.id within the same Reservation).
+"""
+type Allocation {
+  allocatable:    Allocatable!
+  appointmentIds: [ID!]
+}
+
+scalar Date
+
+# === PRD 056 — mutation surface (locked 2026-05-28) ===
+#
+# Mutations split into three rings:
+#   1. Editor flow — single-entity full-state CRUD
+#   2. Bulk transforms — named intent verbs for admin workflows
+#   3. applyChanges — generic atomic batch (cross-type compound + concurrency-checked delete)
+#
+# ATOMIC-only in v1 (PRD 058 defers PARTIAL + heavier robustness patterns).
+# `@oneOf` on ChangeOp enforces exactly-one-variant at parse time.
+
+scalar Duration
+
+type Mutation {
+  # ===== editor flow =====
+
+  "Create a new reservation. Server sets owner to caller. Client-supplied id (UUID) recommended for retry safety; absent = server generates."
+  createReservation(input: CreateReservationInput!): Reservation!
+
+  """
+  Update an existing reservation's content (classification / appointments /
+  allocations). Owner changes go through `changeReservationOwner`; type
+  changes are rejected (future `reshapeReservation` mutation).
+  `expectedLastChanged` enables optimistic concurrency — mismatch returns
+  `CONCURRENT_MODIFICATION` with the current value in the error extension.
+  """
+  updateReservation(id: ID!, input: UpdateReservationInput!,
+                    expectedLastChanged: LocalDateTime): Reservation!
+
+  # ===== bulk transforms =====
+
+  "Reassign owner across N reservations to a single new owner. Admin/group-admin workflow."
+  changeReservationOwner(ids: [ID!]!, newOwnerId: ID!): BulkResult!
+
+  "Shift the start of N reservations' appointments by an ISO-8601 Duration. Recurrence rules preserved structurally."
+  moveReservations(ids: [ID!]!, dateShift: Duration!): BulkResult!
+
+  "Duplicate N reservations with new UUIDs, shifted by an ISO-8601 Duration. Copies start with no permission overrides."
+  copyReservations(ids: [ID!]!, dateShift: Duration!): BulkResult!
+
+  "Delete N reservations. No per-id concurrency check — accepts the race. For concurrency-checked delete use applyChanges with DeleteInput.expectedLastChanged."
+  deleteReservations(ids: [ID!]!): BulkResult!
+
+  # ===== applyChanges (escape hatch) =====
+
+  """
+  Generic atomic batch — one UpdateEvent per call. Maps 1:1 to rapla's
+  `operator.dispatch`. Used for cross-type compound workflows and the
+  concurrency-checked delete path. ChangeOp carries the typed operation
+  variants; `@oneOf` enforces exactly-one-set per parse.
+  """
+  applyChanges(operations: [ChangeOp!]!): BulkResult!
+
+  # ===== PRD 057 — DynamicType (schema editor) mutations =====
+
+  """
+  Upsert a DynamicType. `input.id` null = create; supplied = update.
+  Admin-only. Update with `expectedLastChanged` mismatch returns
+  `CONCURRENT_MODIFICATION`. Returns the stored DynamicType reflecting
+  the dispatched state. Note: the generated `<TypeKey>Classification`
+  GraphQL type appears in the schema on the next hot-swap poll (~10s);
+  callers that want the typed-narrow shape immediately should poll
+  `__type(name: ...)` until present.
+  """
+  saveDynamicType(input: DynamicTypeInput!,
+                  expectedLastChanged: LocalDateTime): DynamicType!
+
+  """
+  Delete N DynamicTypes by id. Admin-only. Rejected with
+  `REFERENCE_EXISTS` (and `referrers: [ID!]` capped at 50) if any data
+  instance still uses the type — the admin must first delete instances
+  or reassign via a future reshape mutation.
+  """
+  deleteDynamicTypes(ids: [ID!]!): BulkResult!
+}
+
+# === PRD 057 — DynamicType mutation inputs ===
+
+"""
+Upsert payload for a DynamicType. `id` null = create; supplied = update.
+`attributes` is order-significant — rapla preserves attribute order; the
+SPA drag-reorder UI submits the new order and the server stores it.
+"""
+input DynamicTypeInput {
+  "Null = create; supplied = update (must match an existing DynamicType.id)."
+  id:                 ID
+  "Admin-supplied — unique across deployment. Verbatim emission to SDL per PRD 058 (no silent transforms)."
+  key:                String!
+  "Multi-locale name (rapla DynamicType is MultiLanguageNamed)."
+  name:               MultiLanguageStringInput!
+  classificationType: ClassificationType!
+  "Order-significant — index = display order."
+  attributes:         [AttributeInput!]!
+  "Open-ended annotation map (name-format, etc.). v1: known keys only — server rejects unknown keys with INVALID_VALUE."
+  annotations:        [KeyValueInput!]
+}
+
+"""
+Attribute definition within a DynamicType. `id` null for new attributes
+(server generates); supplied for updates to existing attributes.
+"""
+input AttributeInput {
+  id:             ID
+  key:            String!
+  name:           MultiLanguageStringInput!
+  valueType:      AttributeValueType!
+  multiplicity:   Multiplicity!
+  required:       Boolean!
+  "CATEGORY only — root of allowed subtree. REFERENCE_NOT_FOUND if unresolved."
+  rootCategoryId: ID
+  "ALLOCATABLE only — required target DynamicType key (matches @expectedType directive on the read side). REFERENCE_NOT_FOUND if unresolved."
+  expectedTypeKey: String
+  "Optional default value. @oneOf enforces exactly-one-variant at parse time. Must match the attribute's valueType + multiplicity."
+  defaultValue:   DefaultValueInput
+  annotations:    [KeyValueInput!]
+}
+
+"""
+Multi-locale name shape. `default` is the default-locale fallback
+(required). `translations` provides per-locale overrides; missing
+locales fall back to `default`.
+"""
+input MultiLanguageStringInput {
+  default:      String!
+  translations: [LocaleEntryInput!]
+}
+
+input LocaleEntryInput {
+  "ISO code: \"de\", \"en\", \"fr\"."
+  locale: String!
+  value:  String!
+}
+
+"""
+Typed primitive value for AttributeInput.defaultValue. The @oneOf
+directive enforces exactly-one-variant per input.
+"""
+input DefaultValueInput @oneOf {
+  stringValue:    String
+  intValue:       Int
+  boolValue:      Boolean
+  dateValue:      LocalDateTime
+  categoryId:     ID
+  allocatableId:  ID
+  stringValues:   [String!]
+  categoryIds:    [ID!]
+  allocatableIds: [ID!]
+}
+
+"""
+Open-ended key/value pair for annotation maps. v1: server rejects
+unknown keys with INVALID_VALUE.
+"""
+input KeyValueInput {
+  key:   String!
+  value: String!
+}
+
+# === PRD 056 — generic types ===
+
+"Heterogeneous batch result. `overallStatus` quick-signals success/failure; per-op detail in `results[]` indexed to the input order."
+type BulkResult {
+  overallStatus: BulkStatus!
+  results:       [ChangeResult!]!
+}
+
+"PARTIAL_SUCCESS is reserved for the future PARTIAL mode (PRD 058)."
+enum BulkStatus { SUCCESS  REJECTED }
+
+"""
+One entry per applyChanges operation, indexed to the input array.
+Per-operation kind populates exactly one of the typed fields below;
+errors[] populates on failure.
+"""
+type ChangeResult {
+  "Position in the request's operations[]."
+  index:        Int!
+  "Populated for create/update Reservation ops."
+  reservation:  Reservation
+  "Populated for create/update Allocatable ops (future PRD 057-allocatables)."
+  allocatable:  Allocatable
+  "Populated for create/update User ops (future PRD 058-users)."
+  user:         User
+  "Populated for any delete op."
+  deletedKind:  EntityKind
+  "Populated for any delete op."
+  deletedId:    ID
+  "Populated on failure. Empty list = op succeeded."
+  errors:       [ValidationError!]!
+}
+
+enum EntityKind { RESERVATION  ALLOCATABLE  USER  PERMISSION }
+
+"""
+Stable-coded validation error. `code` is a string (not enum) so future codes
+don't break existing clients. Common codes: REQUIRED, INVALID_VALUE,
+REFERENCE_NOT_FOUND, REFERENCE_EXISTS, PERMISSION_DENIED, CONCURRENT_MODIFICATION,
+ID_COLLISION, INVALID_TYPE_CHANGE, CONFLICT. Extensions vary per code.
+"""
+type ValidationError {
+  "GraphQL-style path: operations[3].createReservation.appointments[0].repeating.exceptions[2]"
+  path:    String!
+  code:    String!
+  message: String!
+}
+
+# === PRD 056 — ChangeOp + input types ===
+
+"""
+A single operation in an applyChanges batch. Exactly one variant must be
+set per op (engine-enforced by `@oneOf`). New entity types grow via
+additive variants (PRD 057-allocatables, PRD 058-users, etc.).
+"""
+input ChangeOp @oneOf {
+  createReservation: CreateReservationInput
+  updateReservation: ChangeOpUpdateReservation
+  deleteReservation: DeleteInput
+}
+
+"Update variant wrapped with the id since update-by-id can't piggyback on a mutation-level argument inside ChangeOp."
+input ChangeOpUpdateReservation {
+  id:                  ID!
+  input:               UpdateReservationInput!
+  expectedLastChanged: LocalDateTime
+}
+
+"Concurrency-checked delete payload for applyChanges. The top-level deleteReservations skips expectedLastChanged for bulk simplicity."
+input DeleteInput {
+  id:                  ID!
+  expectedLastChanged: LocalDateTime
+}
+
+"""
+Create a Reservation. typeKey is the discriminator; the @oneOf variant in
+classification must match it. Server sets owner to caller (no ownerId
+field — see PRD 056 OQ1.a).
+"""
+input CreateReservationInput {
+  "Client-supplied UUID for retry safety + same-batch refs. Null = server generates."
+  id:             ID
+  "Discriminator — must match the @oneOf variant in classification (the DynamicType key, e.g. \"event\")."
+  typeKey:        String!
+  classification: ReservationClassificationInput!
+  "Must be non-empty (PRD 056 OQ1.d). Order-significant."
+  appointments:   [AppointmentInput!]!
+  "Restriction-aware allocations. Empty list valid (reservation with no resources is legal but unusual)."
+  allocations:    [AllocationInput!]!
+}
+
+"""
+Update a Reservation's content. Server validates typeKey matches stored
+(PRD 056 OQ1.c — in-place type changes rejected). Owner immutable here
+(use changeReservationOwner).
+"""
+input UpdateReservationInput {
+  "Defensive cross-check — must equal the stored reservation's typeKey."
+  typeKey:        String!
+  classification: ReservationClassificationInput!
+  "Non-empty. Order-significant."
+  appointments:   [AppointmentInput!]!
+  allocations:    [AllocationInput!]!
+}
+
+"""
+Appointment input — id is nullable for new appointments (server assigns
+UUIDs), required for updates to existing appointments. Same-batch
+references from AllocationInput.appointmentIds use these ids.
+"""
+input AppointmentInput {
+  id:        ID
+  start:     LocalDateTime!
+  end:       LocalDateTime!
+  allDay:    Boolean!
+  "Null = single occurrence."
+  repeating: RepeatingRuleInput
+}
+
+input RepeatingRuleInput {
+  type:       RepeatingType!
+  interval:   Int!
+  end:        Date
+  count:      Int
+  "0-6, WEEKLY-only."
+  weekdays:   [Int!]
+  exceptions: [Date!]!
+}
+
+"""
+Restriction record. `appointmentIds: null` = bound to all appointments
+of the parent reservation. Non-null = restricted to those appointment
+ids (must reference appointments declared in the same input).
+"""
+input AllocationInput {
+  "References an existing allocatable, or a same-batch UUID for create."
+  allocatableId:  ID!
+  appointmentIds: [ID!]
+}

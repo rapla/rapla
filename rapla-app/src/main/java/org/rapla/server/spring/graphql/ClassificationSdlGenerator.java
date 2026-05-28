@@ -34,9 +34,8 @@ import org.slf4j.LoggerFactory;
  * <pre>{@code
  * type RoomClassification implements Classification {
  *     # interface fields
- *     typeId:     ID!
+ *     typeKey:    String!
  *     type:       DynamicType!
- *     attributes: [AttributeValue!]!
  *     # typed per-attribute fields:
  *     name:       String
  *     seats:      Int
@@ -170,7 +169,329 @@ public final class ClassificationSdlGenerator
             }
             appendClassificationType(sb, typeName, dt, valueListEnums);
         }
+
+        // === PRD 056 — write-side typed inputs (symmetric β² mirror of reads) ===
+        appendWriteSideInputs(sb, dynamicTypes, valueListEnums);
+
+        // === PRD 035 §5d — typed <TypeKey>Where + per-enum *Where inputs ===
+        appendWhereInputs(sb, dynamicTypes, valueListEnums);
+
         return sb.toString();
+    }
+
+    /**
+     * Generate per-DynamicType ClassificationInput types + the @oneOf
+     * polymorphic dispatch wrappers (AllocatableClassificationInput,
+     * ReservationClassificationInput). Mirrors read-side classification
+     * type generation but with input-specific encoding:
+     *
+     * <ul>
+     *   <li>ALLOCATABLE attrs → ID (write uses references, read returns
+     *       full entities)</li>
+     *   <li>CATEGORY ORGANIZATION attrs → ID</li>
+     *   <li>CATEGORY VALUE_LIST attrs → same generated enum (shared)</li>
+     *   <li>Multi-valued → [X!] (no outer !)</li>
+     *   <li>All fields nullable — required semantics enforced server-side
+     *       per Attribute.isOptional() on save, not via input typing</li>
+     *   <li>typeId / type interface fields omitted — they belong on output</li>
+     * </ul>
+     *
+     * <p>Per-DynamicType inputs are named `<typeKey>ClassificationInput`
+     * (verbatim key + suffix). Dispatch wrappers carry one variant per
+     * contributing DynamicType, variant name = verbatim type key, so
+     * callers can do `classification: { [typeId]: payload }`.
+     */
+    private static void appendWriteSideInputs(StringBuilder sb, Collection<DynamicType> dynamicTypes,
+            Map<String, Category> valueListEnums)
+    {
+        sb.append("\n# === PRD 056 GENERATED per-DynamicType classification INPUTS ===\n");
+        sb.append("# Symmetric β² — typed write inputs mirror typed read outputs.\n\n");
+
+        Set<String> emittedInputNames = new HashSet<>();
+        List<String> allocatableVariants = new ArrayList<>();
+        List<String> reservationVariants = new ArrayList<>();
+
+        for (DynamicType dt : sortedByKey(dynamicTypes))
+        {
+            if (dt == null) continue;
+            if (isRaplaInternal(dt)) continue;
+            String key = dt.getKey();
+            if (key == null || key.isBlank()) continue;
+            String inputName = checkGraphQlCompliantName(key) + "ClassificationInput";
+            if (!emittedInputNames.add(inputName))
+            {
+                LOGGER.warn("DynamicType '{}': sanitized input name '{}' already emitted", key, inputName);
+                continue;
+            }
+            appendClassificationInputType(sb, inputName, dt, valueListEnums);
+
+            // Collect variant entry for the @oneOf wrapper based on classification-kind.
+            String kind = dt.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
+            String variantField = key;          // verbatim — matches typeId discriminator
+            String variantLine = "  " + variantField + ": " + inputName;
+            if (DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE.equals(kind)
+                    || DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON.equals(kind))
+            {
+                allocatableVariants.add(variantLine);
+            }
+            else if (DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION.equals(kind))
+            {
+                reservationVariants.add(variantLine);
+            }
+        }
+
+        // Emit the @oneOf dispatch wrappers. Empty deployments still get a
+        // valid wrapper — empty @oneOf inputs are spec-valid (just unsatisfiable
+        // for any caller, which is fine when the deployment has no such types yet).
+        appendOneOfWrapper(sb, "AllocatableClassificationInput", allocatableVariants);
+        appendOneOfWrapper(sb, "ReservationClassificationInput", reservationVariants);
+    }
+
+    /** Emit `input <Name>ClassificationInput { ... per-attribute typed fields ... }`. */
+    private static void appendClassificationInputType(StringBuilder sb, String inputName,
+            DynamicType dt, Map<String, Category> valueListEnums)
+    {
+        sb.append("\"\"\"\nWrite-side typed input for DynamicType `")
+          .append(dt.getKey()).append("` classifications.\n")
+          .append("All fields nullable — required semantics enforced server-side per Attribute.isOptional().\n")
+          .append("\"\"\"\n");
+        sb.append("input ").append(inputName).append(" {\n");
+        Set<String> emittedFieldNames = new HashSet<>();
+        for (Attribute attr : dt.getAttributes())
+        {
+            if (attr == null) continue;
+            String attrKey = attr.getKey();
+            if (attrKey == null || attrKey.isBlank()) continue;
+            String fieldName = checkGraphQlCompliantFieldName(attrKey);
+            if (!emittedFieldNames.add(fieldName))
+            {
+                LOGGER.warn("DynamicType '{}': input field name '{}' collides", dt.getKey(), fieldName);
+                continue;
+            }
+            String fieldType = inputGraphqlTypeFor(attr, valueListEnums);
+            sb.append("  ").append(fieldName).append(": ").append(fieldType).append("\n");
+        }
+        sb.append("}\n\n");
+    }
+
+    /**
+     * Input-side type encoding — differs from the read-side
+     * {@link #graphqlTypeFor} in two ways:
+     * <ul>
+     *   <li>ALLOCATABLE → ID (caller supplies references)</li>
+     *   <li>CATEGORY ORGANIZATION → ID (same reason)</li>
+     *   <li>CATEGORY VALUE_LIST → same enum (shared between read/write)</li>
+     *   <li>Always nullable (no outer !) — required handled server-side</li>
+     * </ul>
+     */
+    private static String inputGraphqlTypeFor(Attribute attr, Map<String, Category> valueListEnums)
+    {
+        AttributeType t = attr.getType();
+        if (t == null) return "String";
+        String base;
+        if (t == AttributeType.CATEGORY)
+        {
+            Object root = attr.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
+            String enumName = (root instanceof Category cat) ? enumNameFor(cat) : "";
+            base = (!enumName.isEmpty() && valueListEnums.containsKey(enumName))
+                    ? enumName       // VALUE_LIST shares the enum with reads
+                    : "ID";          // ORGANIZATION → reference by id
+        }
+        else
+        {
+            base = switch (t)
+            {
+                case STRING      -> "String";
+                case INT         -> "Int";
+                case BOOLEAN     -> "Boolean";
+                case DATE        -> "LocalDateTime";
+                case ALLOCATABLE -> "ID";     // write uses id reference
+                case CATEGORY    -> "ID";     // unreachable; covered above
+            };
+        }
+        return isList(attr) ? ("[" + base + "!]") : base;
+    }
+
+    /** Emit `input <Name> @oneOf { variant: <TypeInput> ... }`. */
+    private static void appendOneOfWrapper(StringBuilder sb, String wrapperName, List<String> variants)
+    {
+        sb.append("\"\"\"\n@oneOf polymorphic dispatch — exactly one variant matching the entity's typeId.\n\"\"\"\n");
+        sb.append("input ").append(wrapperName).append(" @oneOf {\n");
+        if (variants.isEmpty())
+        {
+            // GraphQL spec requires non-empty input types. Stub field for the
+            // deployment-has-no-such-types degenerate case. Server validates
+            // it's never actually set.
+            sb.append("  _empty: String\n");
+        }
+        else
+        {
+            for (String v : variants) sb.append(v).append("\n");
+        }
+        sb.append("}\n\n");
+    }
+
+    /**
+     * PRD 035 §5d Phase 1 — emit typed where-predicate inputs.
+     *
+     * For each VALUE_LIST enum, emit `<enum>Where` (eq/ne/in/isNull) and
+     * `<enum>ListWhere` (contains/containsAny/containsAll/isEmpty/isNull).
+     *
+     * For each RESOURCE or PERSON DynamicType, emit `<typeKey>Where` with
+     * one field per attribute (predicate type matched by attribute kind +
+     * multi-select cardinality) plus AND / OR / NOT combinators.
+     *
+     * Reservation DTs get no where-input in Phase 1; reservation filtering
+     * lands on `reservations(filter:)` (deferred — PRD 035 §5d Out of scope).
+     */
+    private static void appendWhereInputs(StringBuilder sb, Collection<DynamicType> dynamicTypes,
+            Map<String, Category> valueListEnums)
+    {
+        sb.append("\n# === PRD 035 §5d GENERATED <TypeKey>Where + per-enum *Where inputs ===\n");
+        sb.append("# Per VALUE_LIST root: <enum>Where + <enum>ListWhere.\n");
+        sb.append("# Per RESOURCE/PERSON DT: <typeKey>Where with AND/OR/NOT combinators.\n\n");
+
+        for (Map.Entry<String, Category> e : valueListEnums.entrySet())
+        {
+            appendEnumWhereInputs(sb, e.getKey());
+        }
+
+        Set<String> emittedWhereNames = new HashSet<>();
+        for (DynamicType dt : sortedByKey(dynamicTypes))
+        {
+            if (dt == null) continue;
+            if (isRaplaInternal(dt)) continue;
+            String kind = dt.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
+            if (!DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE.equals(kind)
+                    && !DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON.equals(kind))
+            {
+                continue;
+            }
+            String key = dt.getKey();
+            if (key == null || key.isBlank()) continue;
+            String whereName = checkGraphQlCompliantName(key) + "Where";
+            if (!emittedWhereNames.add(whereName))
+            {
+                LOGGER.warn("DynamicType '{}': where input '{}' name collision; skipping", key, whereName);
+                continue;
+            }
+            appendTypeWhereInput(sb, whereName, dt, valueListEnums);
+        }
+    }
+
+    /** Emit per-enum `<enum>Where` (single) and `<enum>ListWhere` (multi) inputs. */
+    private static void appendEnumWhereInputs(StringBuilder sb, String enumName)
+    {
+        sb.append("input ").append(enumName).append("Where {\n");
+        sb.append("  eq:     ").append(enumName).append("\n");
+        sb.append("  ne:     ").append(enumName).append("\n");
+        sb.append("  in:     [").append(enumName).append("!]\n");
+        sb.append("  isNull: Boolean\n");
+        sb.append("}\n\n");
+
+        sb.append("input ").append(enumName).append("ListWhere {\n");
+        sb.append("  contains:    ").append(enumName).append("\n");
+        sb.append("  containsAny: [").append(enumName).append("!]\n");
+        sb.append("  containsAll: [").append(enumName).append("!]\n");
+        sb.append("  isEmpty:     Boolean\n");
+        sb.append("  isNull:      Boolean\n");
+        sb.append("}\n\n");
+    }
+
+    /** Emit a `<typeKey>Where` input for one resource/person DynamicType. */
+    private static void appendTypeWhereInput(StringBuilder sb, String whereName,
+            DynamicType dt, Map<String, Category> valueListEnums)
+    {
+        sb.append("\"\"\"\n");
+        sb.append("Generated typed-where predicate for DynamicType `").append(dt.getKey()).append("`.\n");
+        sb.append("Multiple operators inside one field AND together; AND/OR/NOT combinators\n");
+        sb.append("compose multiple where shapes recursively.\n");
+        sb.append("\"\"\"\n");
+        sb.append("input ").append(whereName).append(" {\n");
+
+        Set<String> emittedFieldNames = new HashSet<>();
+        for (Attribute attr : dt.getAttributes())
+        {
+            if (attr == null) continue;
+            String attrKey = attr.getKey();
+            if (attrKey == null || attrKey.isBlank()) continue;
+            String fieldName = checkGraphQlCompliantFieldName(attrKey);
+            if (!emittedFieldNames.add(fieldName))
+            {
+                LOGGER.warn("DynamicType '{}': where field name '{}' collides; skipping", dt.getKey(), fieldName);
+                continue;
+            }
+            String predicateType = wherePredicateTypeFor(attr, valueListEnums);
+            if (predicateType == null)
+            {
+                LOGGER.warn("DynamicType '{}': attribute '{}' has no supported where-predicate type "
+                        + "(multi-select STRING/INT/BOOLEAN/DATE not yet supported); skipping field",
+                        dt.getKey(), attrKey);
+                continue;
+            }
+            sb.append("  ").append(fieldName).append(": ").append(predicateType).append("\n");
+        }
+
+        // Combinators — recursive references to the same where input.
+        sb.append("  AND: [").append(whereName).append("!]\n");
+        sb.append("  OR:  [").append(whereName).append("!]\n");
+        sb.append("  NOT: ").append(whereName).append("\n");
+        sb.append("}\n\n");
+    }
+
+    /**
+     * Resolve the where-predicate input type name for one attribute.
+     * Returns null when no predicate type covers this attribute (e.g.
+     * multi-select STRING — deferred to Phase 5).
+     */
+    private static String wherePredicateTypeFor(Attribute attr, Map<String, Category> valueListEnums)
+    {
+        AttributeType t = attr.getType();
+        if (t == null) return null;
+        boolean multi = isList(attr);
+
+        if (t == AttributeType.CATEGORY)
+        {
+            Object root = attr.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
+            String enumName = (root instanceof Category cat) ? enumNameFor(cat) : "";
+            boolean valueList = !enumName.isEmpty() && valueListEnums.containsKey(enumName);
+            if (valueList)
+            {
+                return multi ? (enumName + "ListWhere") : (enumName + "Where");
+            }
+            return multi ? "CategoryListWhere" : "CategoryWhere";
+        }
+        if (t == AttributeType.ALLOCATABLE)
+        {
+            return multi ? "AllocatableListWhere" : "AllocatableWhere";
+        }
+        if (multi)
+        {
+            // STRING/INT/BOOLEAN/DATE list — no static *ListWhere yet. Phase 5.
+            return null;
+        }
+        return switch (t)
+        {
+            case STRING   -> "StringWhere";
+            case INT      -> "IntWhere";
+            case BOOLEAN  -> "BooleanWhere";
+            case DATE     -> "LocalDateTimeWhere";
+            case CATEGORY -> null;     // unreachable; covered above
+            case ALLOCATABLE -> null;  // unreachable; covered above
+        };
+    }
+
+    /** Check + return a key as a valid GraphQL field name (per spec). */
+    private static String checkGraphQlCompliantFieldName(String key)
+    {
+        // checkGraphQlCompliantName handles spec validation; field names share
+        // the spec but reserved keywords get a trailing underscore.
+        String name = checkGraphQlCompliantName(key);
+        if (GRAPHQL_RESERVED.contains(name.toLowerCase(Locale.ROOT)))
+        {
+            return name + "_";
+        }
+        return name;
     }
 
     /**
@@ -325,10 +646,10 @@ public final class ClassificationSdlGenerator
         sb.append("Interface fields are inherited; typed fields below are per-attribute reads.\n");
         sb.append("\"\"\"\n");
         sb.append("type ").append(typeName).append(" implements ").append(implementsClause).append(" {\n");
-        sb.append("  typeId: ID!\n");
-        sb.append("  type:   DynamicType!\n");
+        sb.append("  typeKey: String!\n");
+        sb.append("  type:    DynamicType!\n");
 
-        Set<String> emittedFieldNames = new HashSet<>(Set.of("typeId", "type"));
+        Set<String> emittedFieldNames = new HashSet<>(Set.of("typeKey", "type"));
         for (Attribute attr : dt.getAttributes())
         {
             if (attr == null) continue;
@@ -427,11 +748,35 @@ public final class ClassificationSdlGenerator
     }
 
     /**
-     * Resolve the rapla multiplicity flavor for an attribute. The four values
-     * correspond to mutually-exclusive admin-UI choices (see PRD 057
-     * §"Multiplicity expansion"). Server treats first-truthy-constraint-wins;
-     * if more than one is set (data error), the earlier one in the
-     * BELONGS_TO → PACKAGE → MULTI_SELECT order wins.
+     * Schema cardinality — true when the attribute holds a list of values
+     * rather than a single one. Driven exclusively by the {@code multi-select}
+     * constraint. The {@code belongsTo} / {@code package} markers are
+     * <b>semantic flags</b> (drive the SPA widget choice via the
+     * {@code @multiplicity} directive); they do NOT imply list cardinality.
+     *
+     * <p>Pre-fix bug: {@link #multiplicityOf} returned {@code BELONGS_TO}
+     * for any belongsTo-flagged attribute regardless of its multi-select
+     * setting. The schema then emitted {@code [Allocatable!]} for a
+     * single-valued {@code Gebaeude} field — runtime returns a single
+     * Allocatable → "expected type LIST" mismatch at every read. Same
+     * shape for {@code package} attributes that happen to be single-select.
+     * Splitting cardinality from marker semantics fixes both.
+     */
+    private static boolean isList(Attribute attr)
+    {
+        return truthy(attr.getConstraint(ConstraintIds.KEY_MULTI_SELECT));
+    }
+
+    /**
+     * Resolve the rapla multiplicity FLAVOR — the marker that drives the
+     * SPA widget choice via the {@code @multiplicity} directive. This is a
+     * semantic categorization, not a cardinality assertion: a BELONGS_TO
+     * attribute may be single-valued (multi-select=false) or list-valued
+     * (multi-select=true). Use {@link #isList} for the cardinality
+     * question.
+     *
+     * <p>First-truthy-constraint-wins; if more than one is set (data error),
+     * the earlier one in the BELONGS_TO → PACKAGE → MULTI_SELECT order wins.
      */
     private static Multiplicity multiplicityOf(Attribute attr)
     {
@@ -519,10 +864,10 @@ public final class ClassificationSdlGenerator
                 case CATEGORY    -> "Category";   // unreachable; covered above
             };
         }
-        // Per the expanded Multiplicity enum (PRD 057): LIST, BELONGS_TO, and
-        // PACKAGE all emit as `[X!]`. SINGLE stays bare.
-        boolean multiValued = multiplicityOf(attr) != Multiplicity.SINGLE;
-        return multiValued ? ("[" + base + "!]") : base;
+        // Cardinality is `multi-select`-only — see isList() rationale.
+        // BELONGS_TO/PACKAGE markers are emitted as @multiplicity directives
+        // on the field (separate concern from cardinality).
+        return isList(attr) ? ("[" + base + "!]") : base;
     }
 
     /**

@@ -237,6 +237,155 @@ class ClassificationGraphQLControllerTest
         return t == null ? null : (String) t.get("name");
     }
 
+    // === §5d Phase 1 — generated <TypeKey>Where input SDL ====================
+
+    /**
+     * PRD 035 §5d Phase 1 — per resource/person DT the generator emits a
+     * `<TypeKey>Where` input. Field types per attribute kind:
+     *   STRING → StringWhere, INT → IntWhere, BOOLEAN → BooleanWhere,
+     *   DATE → LocalDateTimeWhere, ALLOCATABLE (single) → AllocatableWhere,
+     *   ALLOCATABLE (multi) → AllocatableListWhere,
+     *   CATEGORY ORGANIZATION (single) → CategoryWhere,
+     *   CATEGORY ORGANIZATION (multi) → CategoryListWhere,
+     *   CATEGORY VALUE_LIST → generated `<Enum>Where` / `<Enum>ListWhere`.
+     * Plus AND / OR / NOT combinators.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void roomWhereInputCarriesPerAttributePredicateTypes()
+    {
+        // testdefault.xml `room`: name(string), seats(int), belongsto(category, single).
+        // The department root is treated as VALUE_LIST (depth-1) by §5b — so
+        // belongsto's predicate is the generated `departmentWhere`, not CategoryWhere.
+        Map<String, Object> result = tester.document("""
+                {
+                  __type(name: "roomWhere") {
+                    kind
+                    inputFields {
+                      name
+                      type { name kind ofType { name kind ofType { name kind } } }
+                    }
+                  }
+                }
+                """)
+                .execute()
+                .path("__type")
+                .entity(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertNotNull(result, "roomWhere input must be generated (PRD 035 §5d Phase 1)");
+        assertEquals("INPUT_OBJECT", result.get("kind"));
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> fields = (List<Map<String, Object>>) result.get("inputFields");
+        Map<String, String> attrFieldTypes = new java.util.HashMap<>();
+        for (Map<String, Object> f : fields) attrFieldTypes.put((String) f.get("name"), leafTypeName(f.get("type")));
+        assertEquals("StringWhere",     attrFieldTypes.get("name"),       () -> "got: " + attrFieldTypes);
+        assertEquals("IntWhere",        attrFieldTypes.get("seats"),      () -> "got: " + attrFieldTypes);
+        assertEquals("departmentWhere", attrFieldTypes.get("belongsto"),  () -> "got: " + attrFieldTypes);
+        assertEquals("roomWhere",       attrFieldTypes.get("AND"),        () -> "got: " + attrFieldTypes);
+        assertEquals("roomWhere",       attrFieldTypes.get("OR"),         () -> "got: " + attrFieldTypes);
+        assertEquals("roomWhere",       attrFieldTypes.get("NOT"),        () -> "got: " + attrFieldTypes);
+    }
+
+    /**
+     * Phase 1 — reservation DynamicTypes do NOT get a `<TypeKey>Where` input.
+     * Where on Reservations lands on `reservations(filter:)` and is its own
+     * scope (deferred — PRD 035 §5d "Out of scope"). The fixture `event` DT
+     * is reservation-kind; assert no `eventWhere` was emitted.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void reservationDTGetsNoWhereInputInPhase1()
+    {
+        tester.document("{ __type(name: \"eventWhere\") { name } }")
+                .execute()
+                .path("__type")
+                .valueIsNull();
+    }
+
+    /**
+     * Phase 1 — per VALUE_LIST root, two enum *Where inputs are generated:
+     *   <enum>Where     { eq, ne, in, isNull }
+     *   <enum>ListWhere { contains, containsAny, containsAll, isEmpty, isNull }
+     * testdefault.xml has the `department` VALUE_LIST root.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void enumWhereInputsGeneratedPerValueListRoot()
+    {
+        Map<String, Object> single = tester.document("""
+                {
+                  __type(name: "departmentWhere") {
+                    kind
+                    inputFields { name type { name ofType { name } } }
+                  }
+                }
+                """)
+                .execute()
+                .path("__type")
+                .entity(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertNotNull(single, "departmentWhere must be generated");
+        assertEquals("INPUT_OBJECT", single.get("kind"));
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> singleFields = (List<Map<String, Object>>) single.get("inputFields");
+        java.util.Set<String> singleNames = new java.util.HashSet<>();
+        for (Map<String, Object> f : singleFields) singleNames.add((String) f.get("name"));
+        assertTrue(singleNames.containsAll(java.util.List.of("eq", "ne", "in", "isNull")),
+                () -> "departmentWhere should have eq/ne/in/isNull, got " + singleNames);
+
+        Map<String, Object> list = tester.document("""
+                {
+                  __type(name: "departmentListWhere") {
+                    kind
+                    inputFields { name }
+                  }
+                }
+                """)
+                .execute()
+                .path("__type")
+                .entity(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertNotNull(list, "departmentListWhere must be generated");
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> listFields = (List<Map<String, Object>>) list.get("inputFields");
+        java.util.Set<String> listNames = new java.util.HashSet<>();
+        for (Map<String, Object> f : listFields) listNames.add((String) f.get("name"));
+        assertTrue(listNames.containsAll(java.util.List.of("contains", "containsAny", "containsAll", "isEmpty", "isNull")),
+                () -> "departmentListWhere should have contains/containsAny/containsAll/isEmpty/isNull, got " + listNames);
+    }
+
+    /**
+     * Phase 1 — multi-select allocatable attribute. testdefault.xml resource2.a1
+     * is multi-select=true allocatable → predicate type is `AllocatableListWhere`
+     * (added alongside the existing static AllocatableWhere for symmetry with
+     * CategoryWhere/CategoryListWhere).
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void multiAllocatableAttributeUsesAllocatableListWhere()
+    {
+        Map<String, Object> result = tester.document("""
+                {
+                  __type(name: "resource2Where") {
+                    inputFields { name type { name kind ofType { name kind } } }
+                  }
+                }
+                """)
+                .execute()
+                .path("__type")
+                .entity(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertNotNull(result);
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> fields = (List<Map<String, Object>>) result.get("inputFields");
+        Map<String, Object> a1 = fields.stream()
+                .filter(f -> "a1".equals(f.get("name")))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("a1 missing on resource2Where"));
+        assertEquals("AllocatableListWhere", leafTypeName(a1.get("type")),
+                () -> "a1 should be AllocatableListWhere, got " + a1.get("type"));
+    }
+
     // === allocatables / allocatable ==========================================
 
     @Test
@@ -256,7 +405,7 @@ class ClassificationGraphQLControllerTest
     void adminSeesAllocatables()
     {
         List<Map<String, Object>> all = tester.document("""
-                { allocatables { id displayName type classification { typeId } } }
+                { allocatables { id displayName type classification { typeKey } } }
                 """)
                 .execute()
                 .path("allocatables")
@@ -264,8 +413,8 @@ class ClassificationGraphQLControllerTest
                 .get();
         assertFalse(all.isEmpty(), "admin should see allocatables");
         // Every allocatable must carry a classification.
-        all.forEach(a -> assertNotNull(((Map<?, ?>) a.get("classification")).get("typeId"),
-                () -> "every allocatable must have a classification.typeId: " + a));
+        all.forEach(a -> assertNotNull(((Map<?, ?>) a.get("classification")).get("typeKey"),
+                () -> "every allocatable must have a classification.typeKey: " + a));
     }
 
     @Test
@@ -285,6 +434,70 @@ class ClassificationGraphQLControllerTest
                 .get();
         // testdefault.xml has 2 rooms ("Room A66", "erwin")
         assertEquals(2, rooms.size(), () -> "expected 2 rooms, got " + rooms);
+    }
+
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void allocatablesFilterByTypeKeyInReturnsUnionAcrossTypes()
+    {
+        // Cross-DT union — testdefault.xml has 2 rooms (Room A66, erwin) and
+        // 2 lecturers (Simpson Homer, Burns Monty). The union should return
+        // all four.
+        List<Map<String, Object>> union = tester.document("""
+                {
+                  allocatables(filter: { typeKeyIn: ["room", "lecturer"] }) {
+                    displayName
+                    classification { typeKey }
+                  }
+                }
+                """)
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertEquals(4, union.size(), () -> "expected 4 entries (2 rooms + 2 lecturers), got " + union);
+    }
+
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void allocatablesFilterTypeKeyEqOverridesTypeKeyIn()
+    {
+        // When both typeKeyEq and typeKeyIn are set, typeKeyEq wins per the
+        // schema doc. Confirms intent: stricter narrowing trumps the broader
+        // list, mirroring how SQL "= X AND IN (X, Y)" reduces to "= X".
+        List<Map<String, Object>> only = tester.document("""
+                {
+                  allocatables(filter: { typeKeyEq: "room", typeKeyIn: ["room", "lecturer"] }) {
+                    displayName
+                  }
+                }
+                """)
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertEquals(2, only.size(), () -> "expected 2 rooms only, got " + only);
+    }
+
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void allocatablesFilterTypeKeyInWithUnknownKeyIgnoresIt()
+    {
+        // Unknown keys in the list are silently dropped — matches typeKeyEq's
+        // existing behavior of "no match → empty". A typo in one key shouldn't
+        // hide the matches for the other keys.
+        List<Map<String, Object>> result = tester.document("""
+                {
+                  allocatables(filter: { typeKeyIn: ["room", "does-not-exist"] }) {
+                    displayName
+                  }
+                }
+                """)
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertEquals(2, result.size(), () -> "expected 2 rooms (unknown key ignored), got " + result);
     }
 
     @Test
@@ -515,11 +728,14 @@ class ClassificationGraphQLControllerTest
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> fields = (List<Map<String, Object>>) result.get("fields");
         // Must carry interface fields + the typed attribute fields. Note:
-        // β refactor 2026-05-28 — the `attributes: [AttributeValue!]!` interface
-        // field was dropped; only `typeId` + `type` survive as interface fields.
+        // β refactor 2026-05-28 — `attributes: [AttributeValue!]!` dropped.
+        // 2026-05-29 — typeId dropped (PRD 035 §11); `typeKey` + `type` are
+        // the only surviving interface fields (use `type { id }` for the UUID).
         List<String> fieldNames = fields.stream().map(f -> (String) f.get("name")).toList();
-        assertTrue(fieldNames.contains("typeId"),    () -> "missing interface field typeId in " + fieldNames);
+        assertTrue(fieldNames.contains("typeKey"),   () -> "missing interface field typeKey in " + fieldNames);
         assertTrue(fieldNames.contains("type"),      () -> "missing interface field type in " + fieldNames);
+        assertFalse(fieldNames.contains("typeId"),
+                () -> "typeId was dropped 2026-05-29 — use type { id } for UUID; got " + fieldNames);
         assertFalse(fieldNames.contains("attributes"),
                 () -> "β refactor: `attributes` should NOT be in generated type's fields; got " + fieldNames);
         assertTrue(fieldNames.contains("name"),      () -> "missing typed field name in " + fieldNames);
@@ -566,7 +782,7 @@ class ClassificationGraphQLControllerTest
                   allocatables(filter: { typeKeyEq: "room" }) {
                     classification {
                       ... on eventClassification {
-                        typeId
+                        typeKey
                       }
                     }
                   }
