@@ -357,6 +357,7 @@ public final class ClassificationSdlGenerator
         }
 
         Set<String> emittedWhereNames = new HashSet<>();
+        List<String> filterExtensionLines = new ArrayList<>();
         for (DynamicType dt : sortedByKey(dynamicTypes))
         {
             if (dt == null) continue;
@@ -376,7 +377,27 @@ public final class ClassificationSdlGenerator
                 continue;
             }
             appendTypeWhereInput(sb, whereName, dt, valueListEnums);
+            String fieldName = "where" + capitalizeFirst(checkGraphQlCompliantName(key));
+            filterExtensionLines.add("  " + fieldName + ": " + whereName);
         }
+
+        // === Phase 2 — extend the static `AllocatableFilter` with one
+        // `where<TypeKey>` field per resource/person DT. Without this
+        // extension the Spring binder rejects `whereRoom:` as "field not in
+        // AllocatableFilter". GraphQL `extend input` is the spec-correct
+        // hook for runtime-generated additions to a statically-declared input.
+        if (!filterExtensionLines.isEmpty())
+        {
+            sb.append("extend input AllocatableFilter {\n");
+            for (String line : filterExtensionLines) sb.append(line).append("\n");
+            sb.append("}\n\n");
+        }
+    }
+
+    private static String capitalizeFirst(String s)
+    {
+        if (s == null || s.isEmpty()) return s;
+        return Character.toUpperCase(s.charAt(0)) + s.substring(1);
     }
 
     /** Emit per-enum `<enum>Where` (single) and `<enum>ListWhere` (multi) inputs. */

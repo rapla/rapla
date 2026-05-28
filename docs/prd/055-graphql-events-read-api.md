@@ -1,19 +1,23 @@
-# PRD 055 — GraphQL Events API (Reservation + Appointment + Allocation)
+# PRD 055 — GraphQL Events Read API (Reservation + Appointment + Allocation)
 
-**Status:** in-progress (read resolvers shipped 2026-05-29; restriction round-trip test deferred)
+**Status:** in-progress — reopened 2026-05-29 to land the Tier-1 `LightDataFetcher` perf migration (formerly deferred per step 6 v2). Initial read resolvers shipped 2026-05-29 (single + list, derived fields, RepeatingRule, blocks, §12 leak gates, `RequestContextInstrumentation` caller cache); restriction round-trip test deferred to a future tier-3 spec.
 
-**Parent:** PRD 035 §"Per-type shape" (line 467+) + §6 "Bulk mutations" (line 161+).
-PRD 035 fixes the architecture; this PRD nails down the resolver-batch surface,
-captures open design questions specifically about the allocation/restriction
-model, and lands the read-side resolvers.
+**Parent:** [PRD 035 (done) — GraphQL foundations](done/035-graphql-foundations.md) §"Per-type shape" + spin-out map.
+PRD 035 fixes the architecture; this PRD nailed down the resolver-batch surface,
+captured open design questions specifically about the allocation/restriction
+model, and landed the read-side resolvers.
 
-**Related work shipped:**
+**Sibling:** [PRD 056](056-graphql-events-write-api.md) — write side
+(mutations) inherits this PRD's typed-classification surface symmetrically
+(β²: typed per-DynamicType classification inputs mirror typed reads).
+
+**Related work shipped before this PRD:**
 - Cut C allocatables/classifications (`AllocatableClassification`,
   `ReservationClassification` interfaces, generated `<TypeKey>Classification`
-  types). The `ReservationClassification` interface already has its 6
-  implementations from this deployment's reservation DynamicTypes
+  types). The `ReservationClassification` interface already had its 6
+  implementations from the dhbw deployment's reservation DynamicTypes
   (`Lehrveranstaltung`, `Pruefung`, `Exkursion`, etc.).
-- `Allocatable` resolvers + `§12` patterns we extend here.
+- `Allocatable` resolvers + the §12 patterns extended here.
 
 ## Goal
 
@@ -25,12 +29,12 @@ classification, owner. The shape must:
   scoping) for editor round-trips.
 - Be naturally ergonomic for the SPA's calendar / list views.
 - Default to time-bounded queries to avoid the 14s admin-scale problem
-  we hit on `allocatables`.
+  hit on `allocatables`.
 
-**This PRD explicitly considers improvements over the legacy rapla
-restriction model.** We're designing a new API surface, not faithfully
-mirroring storage internals. Where a cleaner API shape exists, take it
-and adapt the storage-side mapping rather than the reverse.
+**This PRD explicitly considered improvements over the legacy rapla
+restriction model.** A new API surface, not a faithful mirror of storage
+internals. Where a cleaner API shape exists, take it and adapt the
+storage-side mapping rather than the reverse.
 
 ## Scope
 
@@ -48,7 +52,7 @@ In:
 - Mandatory window arg + default limit + window-size cap
 
 Out (future PRDs):
-- **Mutations (create/update/delete/bulk)** — covered by [PRD 056](056-graphql-events-mutations.md)
+- **Mutations (create/update/delete/bulk)** — covered by [PRD 056](../056-graphql-events-write-api.md)
   (sibling). Supersedes PRD 035 §6 with named-verbs + `applyChanges` design.
   Symmetric β² (2026-05-28): write side gets typed per-DynamicType
   classification inputs mirroring this PRD's typed reads — same
@@ -65,7 +69,7 @@ Out (future PRDs):
 | 1 | Name `Reservation` (not `Event`) | Matches rapla internal naming + already locked in PRD 035 schema (`ReservationClassification`) |
 | 2 | `AppointmentBlock` is id-less | Block ids aren't stable across recurring expansions; use parent ids + start for addressing |
 | 3 | `Appointment.repeating` nullable (not `RepeatingType.NONE`) | Cleaner: "no recurrence" is its own state, not an enum value |
-| 4 | `Reservation.allocations[]` (restriction-aware, editor-only) + `Appointment.allocatables[]` (pre-resolved, everyone else). Block has no `allocatables` field — traverses via `block.appointment.allocatables`. Block is a sub-resolution on Appointment (`Appointment.blocks(from:, to:)`), not a peer query root. | Use-case driven: editor needs lossless restriction structure for round-trip save; listviews / iCal / calendar need pre-resolved per-appointment lists with no client-side join. Restrictions are appointment-level in rapla's domain (see [domain-model.md §Reservation](../architecture/domain-model.md#reservation)), so blocks inherit allocatables from their parent appointment with no duplication. Architectural rationale lives in [PRD 035 §"Consumer-driven read surfaces"](035-rapla-mcp-server.md#consumer-driven-read-surfaces-locked-2026-05-27). |
+| 4 | `Reservation.allocations[]` (restriction-aware, editor-only) + `Appointment.allocatables[]` (pre-resolved, everyone else). Block has no `allocatables` field — traverses via `block.appointment.allocatables`. Block is a sub-resolution on Appointment (`Appointment.blocks(from:, to:)`), not a peer query root. | Use-case driven: editor needs lossless restriction structure for round-trip save; listviews / iCal / calendar need pre-resolved per-appointment lists with no client-side join. Restrictions are appointment-level in rapla's domain (see [domain-model.md §Reservation](../../architecture/domain-model.md#reservation)), so blocks inherit allocatables from their parent appointment with no duplication. Architectural rationale lives in [PRD 035 §"Consumer-driven read surfaces"](035-graphql-foundations.md#consumer-driven-read-surfaces-locked-2026-05-27). |
 | 5 | `RepeatingRule.exceptions: [LocalDate!]!` (not LocalDateTime) | Exceptions are calendar-date concept, not wall-time |
 
 ## Allocation / restriction model — locked 2026-05-27 (see Q4)
@@ -76,15 +80,15 @@ of truth). `Appointment.allocatables[]` carries the pre-resolved
 per-appointment list (every other consumer). Blocks have no
 `allocatables` field — they inherit via traversal
 `block.appointment.allocatables`. See
-[PRD 035 §"Consumer-driven read surfaces"](035-rapla-mcp-server.md#consumer-driven-read-surfaces-locked-2026-05-27)
-for the per-consumer rationale; [PRD 035 §"Per-type shape"](035-rapla-mcp-server.md#per-type-shape)
+[PRD 035 §"Consumer-driven read surfaces"](035-graphql-foundations.md#consumer-driven-read-surfaces-locked-2026-05-27)
+for the per-consumer rationale; [PRD 035 §"Per-type shape"](035-graphql-foundations.md#per-type-shape)
 for the locked SDL fragments.
 
 The Options A–E discussion below is preserved as decision-log
 context; resolution maps to **Option C with refinement** — pre-resolved
 allocatables live on `Appointment` (not on Block, because rapla
 restrictions are appointment-level — see
-[domain-model.md §Reservation](../architecture/domain-model.md#reservation)).
+[domain-model.md §Reservation](../../architecture/domain-model.md#reservation)).
 
 ### The rapla legacy model
 
@@ -104,41 +108,15 @@ The storage shape: `Allocatable[] allocatables` + `void setRestriction(Allocatab
 > not allocating a resource on every individual appointment but keeping
 > the flexibility to do so."
 
-### Option A — faithful mirror
+### Option A — faithful mirror (rejected)
 
-```graphql
-type Reservation {
-  allocations: [Allocation!]!
-}
-type Allocation {
-  allocatable:    Allocatable!
-  appointmentIds: [ID!]   # null = bound to all; non-null = restricted to these
-}
-```
+`Reservation.allocations[]` with `Allocation { allocatable, appointmentIds }` (null = bound to all). Rejected because every non-editor consumer has to client-side-join with the null-sentinel to render per-appointment views — ~5 lines of fiddly logic at every callsite for what the server can resolve once.
 
-Pros: lossless, smallest wire shape, source-of-truth for editor saves.
-Cons: client-side join for "what's booked at appointment X" (~5 lines of
-fiddly logic with the null sentinel handling).
+### Option B — appointment-centric (rejected)
 
-### Option B — appointment-centric
+`Appointment.allocatables: [Allocatable!]!` only, no top-level allocations. Rejected because editor save must reconstruct restrictions server-side from the delta — risk of round-trip data loss if the user toggles "bind X to all" vs "bind X to every individual currently". Wire shape inflates the common case (~14× duplication).
 
-```graphql
-type Reservation {
-  # No top-level allocations; everything per-appointment
-}
-type Appointment {
-  allocatables: [Allocatable!]!   # always populated, no restriction concept exposed
-}
-```
-
-Pros: most natural for renderers; no client-side join; no null-sentinel
-weirdness.
-Cons: editor save must reconstruct restrictions server-side from the
-delta — risk of round-trip data loss if the user toggles "bind X to all"
-vs "bind X to every individual currently". Wire shape inflates the
-common case (~14× duplication).
-
-### Option C — both (current leaning, 2026-05-27)
+### Option C — both (shipped)
 
 ```graphql
 type Reservation {
@@ -160,48 +138,17 @@ overhead for the common case.
 Cons: two ways to express the same data; documentation cost (which to use
 when).
 
-### Option D — tag-based binding
+### Option D — tag-based binding (rejected)
 
-```graphql
-type Reservation {
-  allocations: [Allocation!]!
-}
-type Allocation {
-  allocatable: Allocatable!
-  scope:       AllocationScope!
-}
-union AllocationScope = ReservationWide | AppointmentRestricted
-type ReservationWide { _: Boolean }
-type AppointmentRestricted { appointmentIds: [ID!]! }
-```
+`Allocation { allocatable, scope: union ReservationWide | AppointmentRestricted }`. Rejected: more verbose than C, unions are awkward for some clients, and it doesn't address the client-side join question — every non-editor consumer still has to resolve per-appointment views themselves.
 
-Pros: eliminates the null-sentinel ambiguity; restriction is explicit
-in the type system; readable in introspection.
-Cons: more verbose; unions are awkward for some clients; doesn't address
-the client-side join question.
+### Option E — Allocation as first-class entity (rejected)
 
-### Option E — Allocation as first-class entity
-
-```graphql
-type Allocation {
-  id:           ID!
-  allocatable:  Allocatable!
-  reservation:  Reservation!
-  appointments: [Appointment!]!  # which slots — empty = reservation-wide
-}
-type Query {
-  allocations(filter: ...): [Allocation!]!  # queryable directly
-}
-```
-
-Pros: lets you ask "which reservations book Room X?" without joining
-through Reservation. Becomes a real graph edge.
-Cons: heavier (new entity, new id space, new query root); not what most
-consumers need; closer to a CRM model than a calendar model.
+`Allocation` as a top-level entity with its own id + `Query.allocations(filter:)`. Rejected: heavier than the use case warrants (new entity, new id space, new query root); closer to a CRM model than a calendar model; "which reservations book Room X?" is already covered by `reservations(filter: { allocatableIdsIn: [...] })`.
 
 ### Improvement opportunities the new API enables
 
-We're not bound to legacy semantics. Worth considering:
+We're not bound to legacy semantics. Worth considering for future evolution:
 
 - **Explicit "Reservation-wide" sentinel in the type system** rather than
   null-means-all (Option D's union, or an enum). Loses a footgun.
@@ -213,7 +160,7 @@ We're not bound to legacy semantics. Worth considering:
 - **Per-appointment notes / colour on Allocation** — annotations specific
   to one slot ("Room A used as overflow only").
 
-## Open questions
+## Open questions (all resolved)
 
 ### OQ1 — Allocation model (A/B/C/D/E or hybrid?) — RESOLVED 2026-05-27
 
@@ -251,13 +198,13 @@ rendering.
 **Defer.** No conflict field on Reservation in v1. Conflict computation
 has real perf implications (cross-allocatable schedule scan); modelling
 it as a separate top-level `checkConflicts(...)` query later — per
-PRD 035 §"Consumer-driven read surfaces" line 457 "Scheduling pre-flight"
+PRD 035 §"Consumer-driven read surfaces" "Scheduling pre-flight"
 row — gives us room to design the appointment-pair aggregation properly
 (a weekly clash = **one** conflict spanning N dates, not N conflicts).
 
 ## Example queries
 
-The ten consumer shapes that drive the schema. Generic — substitute
+The ten consumer shapes that drove the schema. Generic — substitute
 `<ResTypeKey>` with a deployment's reservation DynamicType key
 (e.g. `Lehrveranstaltung`/`Pruefung`/`Exkursion` in dhbw, `event` in
 testdefault.xml).
@@ -377,7 +324,7 @@ query ICalExport($from: LocalDateTime!, $to: LocalDateTime!) {
 Week / month view. Server expands the recurrence via
 `Appointment.createBlocks(...)` so the SPA doesn't reimplement rapla's
 recurrence semantics (MONTHLY = Nth-weekday, YEARLY = leap-year skip,
-etc. — see [domain-model.md §Appointment](../architecture/domain-model.md#appointment--repeating--appointmentblock)).
+etc. — see [domain-model.md §Appointment](../../architecture/domain-model.md#appointment--repeating--appointmentblock)).
 
 ```graphql
 query CalendarWeek($from: LocalDateTime!, $to: LocalDateTime!) {
@@ -489,15 +436,15 @@ The `appointments[].allocatables` is server-side derived from
 `allocations` per the rule in PRD 035 §"Consumer-driven read surfaces":
 `appointmentIds == null || appointmentIds.contains(this.id)`.
 
-## Plan
+## Plan (implemented)
 
-All design questions resolved (see Locked decisions + Open questions
+All design questions were resolved (see Locked decisions + Open questions
 sections above).
 
 **Cross-PRD dependency:** the **β read simplification** (drop
 `Classification.attributes` + `DynamicType.attributes`, introspection
 + directives in place of descriptor data) is owned by
-[PRD 035 Phase 2](035-rapla-mcp-server.md#phase-2--classification-schema-generation)
+[PRD 035 Phase 2](035-graphql-foundations.md#phase-2--classification-schema-generation)
 items 5-7. It is not gated on the 055 Reservation surface and can ship
 independently — but the example queries in this PRD (specifically
 query 1, editor open) reflect the post-β shape, so a pre-β
@@ -558,17 +505,26 @@ Implementation steps:
    N × dispatch SecurityContext-read pattern that the allocatables Cut C
    work caught.
 
-   **v2 (Tier-1 perf round):** if dhbw-scale browser e2e shows >2 s on a
-   typical calendar query, migrate `canModify` / `firstDate` /
-   `lastDate` / `appointments` / `allocations` from `@SchemaMapping` to
-   `LightDataFetcher` singletons via `StructuralTypeFetchers`, mirroring
-   `ALLOCATABLE_DISPLAY_NAME` and `allocatableOwner(...)`. Add the new
-   interfaces (`Reservation`, `Appointment`, `Allocation`,
-   `AppointmentBlock`, `RepeatingRule`) to
-   `HotSwappableGraphQlSource.validateInterfaceCoverage`'s loop if any
-   of them gain interface fields. Same caveat on
-   `ClassificationImpl.getType()` caching — DON'T (rapla-core invalidation
-   missing).
+   **v2 (Tier-1 perf round) — SHIPPED 2026-05-29.** All per-row
+   `Reservation` + `Appointment` fields migrated off `@SchemaMapping`
+   onto `LightDataFetcher` singletons in `StructuralTypeFetchers`,
+   mirroring `ALLOCATABLE_DISPLAY_NAME` / `allocatableOwner(...)`:
+   - `Reservation.firstDate / lastDate / canModify / owner / createdAt /
+     lastModifiedAt / appointments / allocations / classification`
+   - `Appointment.allDay / repeating / allocatables / blocks(from:, to:)`
+     (the args-bearing `blocks` field materializes the env lazily via
+     `envSupplier.get()`; the natural caller pattern — calendar query
+     with one window per appointment — amortizes the materialization.)
+
+   §12-gated fields (`canModify`, `allocations`,
+   `appointment.allocatables`) read the per-query caller from
+   `RequestContextInstrumentation`'s cached `RequestCtx` rather than
+   re-resolving `SecurityContextHolder` per dispatch. PRD 035 §11 lock
+   (Classification exposes `typeKey` only, no `typeId`) means
+   `validateInterfaceCoverage`'s existing three-interface loop covers
+   the read-side without extension. Same caveat preserved:
+   `ClassificationImpl.getType()` caching is still NOT safe (rapla-core
+   invalidation walker missing — see `docs/graphql.md`).
 
 7. **Tier-3 tests** — MockMvc + `HttpGraphQlTester`, fixtures via testdefault.xml:
    - §12 leak: non-admin can't see admin-only reservations
@@ -577,7 +533,7 @@ Implementation steps:
    - Default limit applied when none specified
    - Restriction model round-trip: split case (10 appointments, mixed lecturers)
      surfaces correctly through both `Reservation.allocations` (editor) and
-     `Appointment.allocatables` (listview)
+     `Appointment.allocatables` (listview) — **deferred** (see Deferred section)
    - Generated typed-classification: `... on LehrveranstaltungClassification { ... }`
      pulls real DHBW lecture attributes
 
@@ -605,15 +561,22 @@ closest analogue.
 
 ## Deferred / next PRDs
 
+- **Restriction round-trip tier-3 test (follow-up)** — the split-case
+  assertion above (Tests §"Restriction resolution") is the one remaining
+  piece from this PRD. The resolver code is shipped and correct under
+  manual probing; needs a `ReservationGraphQLControllerTest` spec that
+  builds a split reservation via `FacadeTestSupport`, queries both
+  shapes, and asserts the join equation across the three sub-cases
+  (wide allocation, restricted allocation, §12-dropped allocatable).
 - **Reservation mutations** (`createReservation`, `updateReservation`,
-  `bulkCreateReservations`, etc.) — PRD 035 §6 has the design; needs its
-  own PRD for the implementation cuts.
+  `bulkCreateReservations`, etc.) — [PRD 056](../056-graphql-events-write-api.md)
+  owns the implementation cuts.
 - **Conflicts** — `conflicts(reservationId:)` + `Reservation.conflicts`
   field. Derived data; non-trivial perf considerations.
 - **Templates** — `rapla:template` is currently filtered out by the
   rapla-internal SDL filter. Adding templates means special-casing them
   back in or designing a separate `templates: [Template!]!` query root
-  per PRD 035 §"New query roots" (line 254).
+  per PRD 035 §"New query roots".
 - **`renderedBlocks`** — server-side calendar/table projection per PRD 030.
   Different surface (HTML/JSON projections), not raw GraphQL.
 
@@ -642,8 +605,12 @@ closest analogue.
   query construction via introspection + the typed
   `<TypeKey>Classification` types; descriptor data lives in the schema
   itself (field types) + custom directives (`@expectedType`,
-  `@multiplicity`, etc.). One source of truth. Implementation refactor
-  pending — design locked.
+  `@multiplicity`, etc.). One source of truth.
 - **2026-05-28 — symmetric β² (writes mirror reads)**: PRD 056 adopts
   typed per-DynamicType classification inputs; same hot-swap surface,
   same one-schema-two-modes consumption pattern in both directions.
+- **2026-05-29 — read resolvers shipped**: `ReservationGraphQLController`
+  + `Appointment.allocatables` restriction resolver + `Appointment.blocks`
+  materializer + §12 inline filtering + window enforcement landed.
+  Restriction round-trip tier-3 test deferred — see Deferred section.
+  PRD archived to `docs/prd/done/`.

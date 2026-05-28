@@ -142,7 +142,7 @@ failure that the caller retries.
 
 - [`docs/architecture/locking.md`](../architecture/locking.md) — the
   three lock layers and the validate-before-lock gotcha.
-- [PRD 035](035-rapla-mcp-server.md) — OQ#10; this issue was surfaced
+- [PRD 035 (done) — GraphQL foundations](done/035-graphql-foundations.md) — OQ#10; this issue was surfaced
   during that design review.
 - `docs/architecture/conflicts-and-events.md` — what `check()`
   validates.

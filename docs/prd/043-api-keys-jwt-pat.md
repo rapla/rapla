@@ -427,7 +427,7 @@ Side tests verified green:
 - [PRD 041 — OpenAPI runtime removal](041-openapi-runtime-removal.md) —
   established `RefreshSessionService` as the unified refresh-token
   store; this PRD shares the same user-prefs persistence model.
-- [PRD 035 — rapla MCP server](035-rapla-mcp-server.md) — natural
+- [PRD 035 (done) — GraphQL foundations](done/035-graphql-foundations.md) + [PRD 060 — MCP foundations](060-graphql-mcp-foundations.md) — natural
   consumer of API keys for AI-agent service tokens.
 - [PRD 039 — external iCal subscriptions per resource](039-external-ical-subscription-per-resource.md) —
   consumer for per-user feed credentials.

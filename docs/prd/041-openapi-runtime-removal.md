@@ -297,7 +297,7 @@ design discussion so it can be carried out in its own session.
 
 - [PRD 031 — API namespace redesign](031-api-namespace-redesign.md) — the four
   SpringDoc groups, `SpringDocGroupsConfig`, `ApiPrefixArchitectureTest`.
-- [PRD 035 — External integration API + MCP](035-rapla-mcp-server.md) —
+- [PRD 035 (done) — GraphQL foundations](done/035-graphql-foundations.md) —
   GraphQL becoming the external API (narrowing the REST surface); the
   OpenAPI-vs-GraphQL "two transports" analysis that spun this PRD out.
 - [PRD 009 — Server bulk-storage REST API](009-server-bulk-storage-rest-api.md)

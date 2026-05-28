@@ -590,7 +590,7 @@ scalar Date
 #   2. Bulk transforms — named intent verbs for admin workflows
 #   3. applyChanges — generic atomic batch (cross-type compound + concurrency-checked delete)
 #
-# ATOMIC-only in v1 (PRD 058 defers PARTIAL + heavier robustness patterns).
+# ATOMIC-only in v1 (PRD 062 defers PARTIAL + heavier robustness patterns).
 # `@oneOf` on ChangeOp enforces exactly-one-variant at parse time.
 
 scalar Duration
@@ -748,7 +748,7 @@ type BulkResult {
   results:       [ChangeResult!]!
 }
 
-"PARTIAL_SUCCESS is reserved for the future PARTIAL mode (PRD 058)."
+"PARTIAL_SUCCESS is reserved for the future PARTIAL mode (PRD 062)."
 enum BulkStatus { SUCCESS  REJECTED }
 
 """
@@ -761,9 +761,9 @@ type ChangeResult {
   index:        Int!
   "Populated for create/update Reservation ops."
   reservation:  Reservation
-  "Populated for create/update Allocatable ops (future PRD 057-allocatables)."
+  "Populated for create/update Allocatable ops (future allocatables-write PRD)."
   allocatable:  Allocatable
-  "Populated for create/update User ops (future PRD 058-users)."
+  "Populated for create/update User ops (future users-write PRD)."
   user:         User
   "Populated for any delete op."
   deletedKind:  EntityKind
@@ -793,7 +793,7 @@ type ValidationError {
 """
 A single operation in an applyChanges batch. Exactly one variant must be
 set per op (engine-enforced by `@oneOf`). New entity types grow via
-additive variants (PRD 057-allocatables, PRD 058-users, etc.).
+additive variants for future allocatables-write / users-write PRDs.
 """
 input ChangeOp @oneOf {
   createReservation: CreateReservationInput

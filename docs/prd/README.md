@@ -44,7 +44,11 @@
 
 | File | Title | Status |
 |---|---|---|
-| [035-rapla-mcp-server.md](035-rapla-mcp-server.md) | External integration API + MCP server (GraphQL + MCP transports) | draft 2026-05-13; scope broadened 2026-05-15 |
+| [done/035-graphql-foundations.md](done/035-graphql-foundations.md) | GraphQL foundations (architecture + classification gen + filter language + LocalDateTime/typeKey + auth) | done 2026-05-29; active work split into PRDs 056/059/060/061 |
+| [056-graphql-events-write-api.md](056-graphql-events-write-api.md) | GraphQL events write API (reservation mutations) | in-progress (design) |
+| [059-graphql-typed-where-predicates.md](059-graphql-typed-where-predicates.md) | GraphQL typed `<TypeKey>Where` predicates on `allocatables(filter:)` | in-progress (Phase 1 landed; Phases 2–5 pending) |
+| [060-graphql-mcp-foundations.md](060-graphql-mcp-foundations.md) | GraphQL discovery + compute operations + MCP transport | draft 2026-05-29 |
+| [061-graphql-dt-mutations-v2.md](061-graphql-dt-mutations-v2.md) | GraphQL DynamicType mutations v2 (deferred follow-ups) | draft 2026-05-29 |
 | [038-graph-calendar-sync.md](038-graph-calendar-sync.md) | Microsoft Graph calendar sync (Exchange Online / M365) — write-only push | draft 2026-05-15 |
 | [039-external-ical-subscription-per-resource.md](039-external-ical-subscription-per-resource.md) | Per-resource external iCal subscriptions for conflict awareness | draft 2026-05-15 |
 

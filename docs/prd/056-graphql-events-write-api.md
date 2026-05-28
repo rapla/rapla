@@ -1,15 +1,14 @@
-# PRD 056 — GraphQL Events Mutation API
+# PRD 056 — GraphQL Events Write API (Reservation Mutations)
 
-**Status:** in-progress (design)
+**Status:** in-progress — v1 controller + schema landed 2026-05-29 (`ReservationMutationController` covering all 7 mutations: `createReservation`, `updateReservation`, `changeReservationOwner`, `moveReservations`, `copyReservations`, `deleteReservations`, `applyChanges`; `@oneOf ChangeOp`; per-DynamicType typed classification inputs (β²); `MutationExceptionResolver`; 9 tier-3 tests including happy-path create-then-read-back + restriction round-trip). Design refinements deferred per PRD body's open questions; happy-path coverage closes the gap that previously caught the `typeId`/`typeKey` asymmetry + appointment-id-not-honored bug.
 
-**Parent:** PRD 035 §6 "Bulk mutations" (line 161+) — supersedes that section per the
-2026-05-28 design discussion. **Sibling:** PRD 055 (events read — locked & implemented
-for resolvers).
+**Parent:** [PRD 035 (done) — Foundations](done/035-graphql-foundations.md) — supersedes the former §6 "Bulk mutations" per the 2026-05-28 design discussion. **Sibling:** [PRD 055 — Events Read API](055-graphql-events-read-api.md) (reopened 2026-05-29 for Tier-1 perf migration).
 
 **Related cross-PRDs:**
-- PRD 040 — lock-set requirement for bulk operations
-- Future PRD 057 — allocatables write (extends `applyChanges`)
-- Future PRD 058 — users / permissions write (extends `applyChanges`)
+- [PRD 040 — dispatch validate before lock](040-dispatch-validate-before-lock.md) — lock-set requirement for bulk operations
+- [PRD 057 (done) — DT Mutations v1](done/057-graphql-dt-mutations-v1.md) + [PRD 061 — DT Mutations v2](061-graphql-dt-mutations-v2.md) — schema-editor mutation surface
+- Future PRD — allocatables write (extends `applyChanges`)
+- Future PRD — users / permissions write (extends `applyChanges`)
 - Future PRD — templates (defers `instantiateFromTemplate` bulk verb)
 
 ## Goal
@@ -219,7 +218,7 @@ type ChangeResult {
   index:        Int!
   reservation:  Reservation             # for create/update of Reservation
   allocatable:  Allocatable             # future (PRD 057)
-  user:         User                    # future (PRD 058)
+  user:         User                    # future (users-write PRD, TBD)
   deletedKind:  EntityKind              # for delete
   deletedId:    ID
   errors:       [ValidationError!]!
@@ -514,7 +513,7 @@ supplied UUID. If present, build the "would-be-created" entity from the
 input and compare to stored. Cost: one extra storage lookup on the rare
 collision path; negligible on the happy path (UUID not present).
 
-**Not in scope for PRD 056** (parked in [PRD 058 — API Robustness](058-graphql-api-robustness.md)):
+**Not in scope for PRD 056** (parked in [PRD 062 — API Robustness](062-graphql-api-robustness.md), renumbered from 058):
 in-flight lock for concurrent retries arriving while the original is
 still committing; idempotency TTL + cache eviction; rate limiting;
 query complexity caps; distributed tracing. Rapla's current usage
@@ -608,7 +607,7 @@ ATOMIC locked. PARTIAL deferred. No more open questions on mode.
   - Future allocatable/user/permission delete reject with `REFERENCE_EXISTS`
     + referrer list. `applyChanges` is dependency-aware (excludes same-batch
     deletes from the referrer check) for atomic clean-up workflows.
-- **2026-05-28 — PRD 058 (API Robustness) opened** as a parking lot for
+- **2026-05-28 — PRD 062 (API Robustness, originally 058) opened** as a parking lot for
   heavy-infrastructure patterns (in-flight idempotency lock, TTL cache,
   rate limiting, query complexity caps, distributed tracing). Not in PRD
   056 scope; revived when rapla scale / multi-tenant deployment changes

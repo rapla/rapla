@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -58,8 +59,16 @@ public class ClassificationGraphQLController
     // === Query roots ==========================================================
 
     @QueryMapping
-    public List<Allocatable> allocatables(@Argument("filter") AllocatableFilter filter) throws RaplaException
+    public List<Allocatable> allocatables(@Argument("filter") Map<String, Object> filterMap) throws RaplaException
     {
+        // PRD 035 §5d Phase 2 — argument is the raw input map (not the
+        // AllocatableFilter record). The record can't carry the dynamic
+        // `where<TypeKey>` fields that the SDL extension adds per
+        // resource/person DynamicType. The map carries everything: legacy
+        // scalar predicates (typeKeyEq/typeKeyIn/...) AND the per-type
+        // whereXxx blocks consumed by the (Phase 3+) WhereEvaluator.
+        AllocatableFilter filter = fromMap(filterMap);
+
         User caller = resolveCaller();
         // Operator-level pre-filter when typeKeyEq is set — avoids materializing
         // every allocatable across all types just to narrow to one type.
@@ -77,12 +86,44 @@ public class ClassificationGraphQLController
             // canRead can be a permission-graph walk for non-admins. Filtering
             // first short-circuits the expensive check for non-matching entries.
             if (!matches(a, filter)) continue;
+            // Phase 2: where evaluator is a no-op. Phase 3 wires real predicate
+            // evaluation against the per-type where blocks in filterMap.
+            if (!evaluateWhere(a, filterMap)) continue;
             if (caller != null && !pc.canRead(a, caller)) continue;
             if (caller == null && !isWorldReadable(a)) continue;
             visible.add(a);
             if (visible.size() >= cap) break;
         }
         return visible;
+    }
+
+    /**
+     * Adapt the raw input map (post-§5d Phase 2 resolver shape) to the
+     * existing {@link AllocatableFilter} record. The map carries both legacy
+     * scalar fields (extracted here) and per-type `where<TypeKey>` blocks
+     * (consumed separately by the evaluator).
+     */
+    @SuppressWarnings("unchecked")
+    private static AllocatableFilter fromMap(Map<String, Object> m)
+    {
+        if (m == null) return null;
+        return new AllocatableFilter(
+                (String) m.get("typeKeyEq"),
+                (List<String>) m.get("typeKeyIn"),
+                (Boolean) m.get("isPersonEq"),
+                (String) m.get("nameContains"),
+                (String) m.get("ownerEq"),
+                (Integer) m.get("limit"));
+    }
+
+    /**
+     * §5d Phase 2 — no-op stub. Phase 3 wires per-attribute predicate
+     * evaluation walking the map's `where<TypeKey>` blocks.
+     */
+    @SuppressWarnings("unused")
+    private static boolean evaluateWhere(Allocatable a, Map<String, Object> filterMap)
+    {
+        return true;
     }
 
     /**

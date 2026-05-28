@@ -37,7 +37,7 @@ Out of scope:
 - The reservation-edit flow itself (PRD 026 Phase 2+).
 - Admin views, plugin UIs, user / category administration.
 - Server-side search endpoint design — **specified in
-  [PRD 035 §"2026-05-24 design refinement" §9](035-rapla-mcp-server.md)**
+  [PRD 060 — Discovery, Compute, MCP Transport](060-graphql-mcp-foundations.md)**
   as the GraphQL `search` root + per-type `searchText` args. Phase 2
   consumes that. Until those land, the SPA can stub against
   `/storage/queryAppointments` + `/storage/resources` while the
@@ -210,7 +210,7 @@ To be drafted once open questions are decided. Likely shape:
   allocatable cache. No server changes. Tier A1/A2/A3 work end-to-end;
   E-tiers stubbed as "search reservations →" CTA.
 - **Phase 2** — add reservation search. Consumes
-  [PRD 035 §"2026-05-24 design refinement" §9](035-rapla-mcp-server.md):
+  [PRD 060 — Discovery, Compute, MCP Transport](060-graphql-mcp-foundations.md):
   GraphQL `reservations(allocatableIds, from, to, searchText)` for
   E1/E2 + `search(text, scope, from, to)` for E3/E4 + `conflicts`
   scope for conflict rows. Tier composition is client-side via

@@ -1,10 +1,10 @@
-# PRD 057 — GraphQL DynamicType Schema Editor Mutations
+# PRD 057 — GraphQL DynamicType Mutations v1 (create / replace / delete)
 
-**Status:** in-progress — v1 controller shipped 2026-05-29 (create + replace + delete, admin gate, key collision, multiplicity validation, REFERENCE_NOT_FOUND on unknown id; 9 tier-3 tests). Deferred: valueType-change-with-data migration, DefaultValueInput coercion, full annotation allow-list, hot-swap UX tightening, reservation-side referrer enumeration in `deleteDynamicTypes`.
+**Status:** done — v1 controller shipped 2026-05-29; deferred items spun out to PRD 061
 
-**Parent:** PRD 035 §"Schema design — structural-static + classification-generated"
-+ §"Rebuild on admin change". **Siblings:** PRD 055 (events read), PRD 056
-(events mutations).
+**Parent:** [PRD 035 §"Schema design — structural-static + classification-generated"](035-graphql-foundations.md)
++ §"Rebuild on admin change". **Siblings:** [PRD 055](../055-graphql-events-read-api.md) (events read),
+[PRD 056](../056-graphql-events-write-api.md) (events mutations), [PRD 061](../061-graphql-dt-mutations-v2.md) (DynamicType mutations v2 — deferred items).
 
 **Triggered by:** the eventual Angular SPA gaining a schema editor for
 DynamicTypes (data-model administration). Server side is unblocked; SPA UI
@@ -13,7 +13,7 @@ is the work that prompts implementation.
 ## Goal
 
 Land the **write-side mutation surface for DynamicTypes themselves** —
-admin operations that change the deployment's data model (create/update/
+admin operations that change the deployment's data model (create/replace/
 delete DynamicTypes and their Attributes). Distinct from PRD 056 which
 mutates *data within* DynamicTypes (reservations, allocatables) using the
 existing schema as a fixed contract.
@@ -26,7 +26,7 @@ When an admin saves a DynamicType change:
 
 ## Scope
 
-In:
+In (shipped):
 - `saveDynamicType(input: DynamicTypeInput!, expectedLastChanged: LocalDateTime): DynamicType!`
   — upsert (id null = create; id supplied = update)
 - `deleteDynamicTypes(ids: [ID!]!): BulkResult!`
@@ -46,7 +46,7 @@ Out:
   or on a SPA reload. Skew matches existing rapla operational model.
 - **Migration tooling** for existing data when an attribute is removed
   or its valueType changes — rapla's storage layer handles drop / coerce
-  per existing semantics; we don't add new policies.
+  per existing semantics; we don't add new policies in v1.
 - **Multi-locale name editing** in the first cut — single-locale string
   on `AttributeInput.name` / `DynamicTypeInput.name`. Multi-locale comes
   later when the SPA's i18n admin UI is in scope.
@@ -56,9 +56,7 @@ Out:
   well-known set (`classification-type`, `name-format`, etc.); arbitrary
   admin annotations come later.
 
-## Locked design intent (subject to revision when implemented)
-
-### Surface (locked 2026-05-28 — minimal consolidated)
+## Locked design — Surface
 
 ```graphql
 type Mutation {
@@ -75,7 +73,7 @@ delete consolidation lesson). **No `ChangeOp` extension in v1** — admin
 doesn't need atomic cross-type schema + data workflows that often; if
 needed later, ChangeOp gains additive variants.
 
-### Inputs
+## Inputs
 
 ```graphql
 input DynamicTypeInput {
@@ -135,7 +133,7 @@ input KeyValueInput {
 }
 ```
 
-### Multiplicity expansion (locked 2026-05-28)
+## Multiplicity expansion
 
 The rapla "Multiselect" admin dropdown actually exposes 4 values, all
 mutually exclusive per the rapla constraint model. They consolidate into
@@ -166,7 +164,7 @@ directive on the generated field. SPA's renderer reads the directive
 to pick the appropriate widget (single picker vs multi-list vs
 belongs-to-tree).
 
-### §12 invariants
+## §12 invariants
 
 1. **Admin only.** `caller.isAdmin == false` → all DynamicType mutations
    reject with `PERMISSION_DENIED`. No group-admin path — DynamicType is
@@ -176,7 +174,7 @@ belongs-to-tree).
 3. **No leak.** Standard §12 — unknown id and unreadable id fail
    identically.
 
-### Validation
+## Validation
 
 | Check | Error code |
 |---|---|
@@ -184,54 +182,42 @@ belongs-to-tree).
 | `key` not unique across DynamicTypes (create) | `KEY_COLLISION` |
 | `key` is a rapla-internal name (`rapla:*`) | `INVALID_VALUE` |
 | Attribute `key` not unique within DynamicType | `KEY_COLLISION` |
-| Attribute `valueType` change incompatible with existing data | `INVALID_VALUE` (with detail) |
 | `rootCategoryId` doesn't resolve | `REFERENCE_NOT_FOUND` |
 | `expectedTypeId` doesn't resolve | `REFERENCE_NOT_FOUND` |
 | `expectedLastChanged` mismatch on update | `CONCURRENT_MODIFICATION` |
-| Delete with existing instances of this type | `REFERENCE_EXISTS` (with `referrers: [ID!]` capped) |
+| Delete with existing instances of this type | `REFERENCE_EXISTS` (with `referrers: [ID!]` capped at 50) |
 | `classificationType` change with existing instances | `REFERENCE_EXISTS` or `INVALID_VALUE` |
+| BELONGS_TO / PACKAGE on non-ALLOCATABLE valueType | `INVALID_VALUE` |
 
-### Hot-swap visibility
+Note: `valueType` change with incompatible existing data is deferred to PRD 061.
+
+## Hot-swap visibility
 
 The mutation response returns the updated `DynamicType` — guaranteed
-consistent with the storage state at the moment of dispatch.
+consistent with the storage state at the moment of dispatch. The
+**generated `<TypeKey>Classification` GraphQL type** may not yet be
+in the runtime schema at the moment the response is sent: rebuild runs
+on the next `GraphQlSchemaRebuilder` poll (within ~10s). SPA workarounds:
+poll `__type(name: "RaumClassification")` until the new shape is live,
+or wait a fixed ~15s safety margin before typed-narrow reads. Tightening
+the poll rate (from 10s to ~2s) is deferred to PRD 061 (OQ1).
 
-The **generated `<TypeKey>Classification` GraphQL type** may not yet be
-in the runtime schema at the moment the response is sent: the rebuild
-runs on the next `GraphQlSchemaRebuilder` poll (within ~10s). Documented
-behavior:
-- Admin's SPA queries `__type(name: "RaumClassification")` to detect
-  when the new shape is live, OR
-- Admin's SPA waits a fixed delay (~15s safety margin) before
-  attempting typed-narrow reads, OR
-- Admin's SPA polls the read schema via introspection until the new
-  fields appear
-
-The PRD 055 Cut C poll interval may need to be tightened (e.g., 2s) for
-the schema-editor UX — admin saving + waiting for typed types to
-appear should feel responsive, not a 10s pause. Implementation note for
-when this lands.
-
-### Reordering attributes
+## Reordering attributes
 
 `attributes: [AttributeInput!]!` is order-significant. Rapla preserves
 attribute order; SPA's drag-reorder UI submits the new order; server
-stores it. No special "reorder" verb — just submit with desired order.
+stores it. No special "reorder" verb.
 
-### Deletion behavior
+## Deletion behavior
 
-`deleteDynamicTypes(ids: [id])` rejects if any data instance uses the type:
-- For reservation types: rejected if any Reservation has this type
-- For resource/person types: rejected if any Allocatable has this type
+`deleteDynamicTypes(ids: [id])` rejects with `REFERENCE_EXISTS` (first 50
+referring ids in the extension) if any data instance uses the type — any
+Reservation for reservation types, any Allocatable for resource/person
+types. Admin must delete instances first (PRD 056 mutations) before
+removing the type. Per-type referrer breakdown is deferred to PRD 061.
+Soft-delete / "deprecation" semantics are out of scope.
 
-`REFERENCE_EXISTS` error with first 50 referring ids in the extension.
-Admin must delete instances (via bulk delete or reassign-type via
-reshape) before removing the type.
-
-Soft-delete / "deprecation" semantics — out of scope; consider in a
-follow-up if real consumer demand emerges.
-
-## CategoryKind cascade (from parallel-session work)
+## CategoryKind cascade
 
 PRD 035 §5b's CategoryKind discrimination locked 2026-05-28 — Categories
 are classified as `VALUE_LIST` (flat picklist), `ORGANIZATION` (hierarchical
@@ -247,18 +233,12 @@ Category's `kind`:**
 | `ORGANIZATION` (e.g., `Standorte`) | `Category` — full typed pointer with `children` walkable |
 | `SYSTEM` | Filtered out — rapla-internal subtrees aren't writable / referenceable via the schema editor |
 
-Schema editor implications:
-- Admin picking `rootCategoryId` for a CATEGORY attribute → server validates
-  the Category exists AND its kind is not `SYSTEM` (else `INVALID_VALUE`).
-- After save, the hot-swap regenerates the classification SDL — if the
-  referenced root is VALUE_LIST and no enum-type-name collision happens, a new
-  enum type appears in `__schema`.
-- VALUE_LIST root with **no children** → generated enum has no values →
-  GraphQL spec rejects empty enums → save rejected with `INVALID_VALUE`
-  ("root category must have ≥1 child").
-- Changing a Category's kind (via the future Category editor PRD —
-  separate from this one) **cascades to every DynamicType referencing it**:
-  attribute fields flip between enum and `Category` typed shape.
+Schema editor implications: admin picks `rootCategoryId` for a CATEGORY
+attribute, server validates kind ≠ `SYSTEM` (else `INVALID_VALUE`); after
+save the hot-swap regenerates the classification SDL; VALUE_LIST root with
+no children → empty enum → `INVALID_VALUE`. Changing a Category's kind
+(future Category editor PRD) **cascades to every DynamicType referencing
+it** — attribute fields flip between enum and `Category` typed shape.
 
 ## Examples — worked admin scenarios
 
@@ -271,27 +251,17 @@ mutation AddFloorNumberToRaum {
   saveDynamicType(
     expectedLastChanged: "2026-05-28T10:00:00",
     input: {
-      id: "dt-raum-uuid",
-      key: "Raum",
-      name: "Room",
-      classificationType: RESOURCE
+      id: "dt-raum-uuid", key: "Raum", name: "Room", classificationType: RESOURCE,
       attributes: [
         # ... all existing attributes echoed back (full-state per PRD 056 update style) ...
-        { id: "attr-raumname-uuid",     key: "Raumname",         name: "Room name",          valueType: STRING,  multiplicity: SINGLE, required: false },
-        { id: "attr-grundflaeche-uuid", key: "Grundflaeche",     name: "Floor area [m²]",    valueType: INT,     multiplicity: SINGLE, required: false },
-        # ... etc ...
-        # NEW:
-        { id: null,                     key: "floorNumber",      name: "Floor number",       valueType: INT,     multiplicity: SINGLE, required: false }
+        { id: null, key: "floorNumber", name: "Floor number", valueType: INT, multiplicity: SINGLE, required: false }   # NEW
       ]
     }
-  ) {
-    id key
-    attributes { key valueType }
-  }
+  ) { id key attributes { key valueType } }
 }
 ```
 
-After save (within ~10s, see OQ1):
+After save (within ~10s):
 - `RaumClassification.floorNumber: Int` appears in `__schema`
 - Existing Raum allocatables have `floorNumber: null` (no migration needed for nullable add)
 - SPA's old descriptor is stale; refetch picks up `floorNumber`
@@ -310,9 +280,9 @@ mutation CreateStehtischType {
     attributes: [
       { key: "name",       name: "Name",                valueType: STRING,  multiplicity: SINGLE, required: true },
       { key: "lager",      name: "Stored in",           valueType: ALLOCATABLE, multiplicity: SINGLE, required: false,
-        constraints: { expectedTypeId: "dt-raum-uuid" } },
+        expectedTypeId: "dt-raum-uuid" },
       { key: "ausstattung",name: "Equipment",           valueType: CATEGORY, multiplicity: LIST, required: false,
-        constraints: { rootCategoryId: "cat-ausstattungen-uuid" } }
+        rootCategoryId: "cat-ausstattungen-uuid" }
     ],
     annotations: [
       { key: "name-format", value: "{name}" }
@@ -367,7 +337,7 @@ mutation RenameRaumnameToRoomName {
 Server preserves the underlying attribute (id stable) and renames its key.
 Existing Raum data: the stored value for the now-renamed attribute survives
 (rapla's storage indexes attribute values by attribute id internally, not by
-key — confirm via tier-3 test).
+key — confirmed via tier-3 test).
 
 Hot-swap consequences:
 - `RaumClassification.Raumname` deleted from schema
@@ -393,14 +363,14 @@ If 42 allocatables exist of this type, server rejects:
     "message": "Cannot delete DynamicType — 42 entities still reference it",
     "extensions": {
       "code": "REFERENCE_EXISTS",
-      "referrers": ["alloc-1", "alloc-2", ..., "alloc-50"]   # capped at 50
+      "referrers": ["alloc-1", "alloc-2", "...", "alloc-50"]
     }
   }]
 }
 ```
 
 Admin must reassign or delete the instances first (via reservation/allocatable
-mutations from PRD 056 / 057-future).
+mutations from PRD 056).
 
 ### Example 5 — Create DynamicType then first instance (two roundtrips)
 
@@ -421,178 +391,86 @@ Admin's workflow becomes:
    mutation { createAllocatable(input: { typeId: "Stehtisch", classification: { stehtisch: { name: "HS-FB-1" } } }) { id } }
    ```
 
-The original atomic-batch sketch (preserved for design-history context):
+The original atomic-batch sketch (preserved for design-history): a single
+`applyChanges([{ createDynamicType: {...} }, { createAllocatable: { typeId:
+"<new-dt-uuid>", ... } }])` call with the same-batch reference from
+operation #1 to operation #0 using the client-assigned UUID — exactly the
+pattern PRD 056 locked. Both succeed or both reject. Dropped from v1 in
+favor of two roundtrips.
 
-```graphql
-mutation CreateTypeAndFirstInstance {
-  applyChanges(operations: [
-    {
-      createDynamicType: {
-        id: "00000000-1111-2222-3333-stehtisch01",
-        key: "Stehtisch",
-        name: "Standing desk",
-        classificationType: RESOURCE,
-        attributes: [
-          { key: "name", name: "Name", valueType: STRING, multiplicity: SINGLE, required: true }
-        ]
-      }
-    },
-    {
-      createAllocatable: {                                # PRD 057-allocatables variant
-        id: "00000000-1111-2222-3333-firstdesk01",
-        typeId: "00000000-1111-2222-3333-stehtisch01",     # same-batch ref to the new DynamicType
-        classification: {
-          typeId: "Stehtisch",
-          attributes: [
-            { key: "name", value: { stringValue: "Stehtisch HS-FB-1" } }
-          ]
-        }
-      }
-    }
-  ]) {
-    overallStatus
-    results {
-      index
-      reservation { id }
-      allocatable  { id displayName }
-      errors { code message }
-    }
-  }
-}
-```
+**Hot-swap caveat:** between the mutation's response and the rebuild, the
+SPA can't query `... on StehtischClassification { name }`. Workaround:
+SPA polls `__type(name: "StehtischClassification")` every 1-2s after
+save, proceeds when it appears (or falls back to generic interface
+fields). Hot-swap UX tightening deferred to PRD 061.
 
-Both succeed or both reject. The same-batch reference from operation #1 to
-operation #0 uses the client-assigned UUID — exactly the pattern PRD 056
-locked.
-
-**Hot-swap caveat:** the schema rebuild that adds `StehtischClassification`
-doesn't fire DURING the mutation — it fires on the next poll (~10s). So
-between the mutation's response and the rebuild, the SPA can't query
-`... on StehtischClassification { name }`. Workaround: SPA queries
-`__type(name: "StehtischClassification")` after save, polls every 1-2s,
-proceeds when it appears (or fall back to the generic interface fields).
-See OQ1 — tightening the schema-rebuild poll rate.
-
-### Example 6 — Change attribute valueType (STRING → INT)
+### Example 6 — Change attribute valueType (STRING → INT) — DEFERRED to PRD 061
 
 The hard case: existing data has string values that may not parse as INT.
+v1 does not handle this — rapla's existing `AttributeImpl.commitChange`
+silently drops unparseable values, which is a documented footgun. Per-type
+coercion semantics, the documented behavior contract, and a tier-3 test
+that locks the behavior land in PRD 061.
 
-```graphql
-mutation MigrateCapacityToInt {
-  saveDynamicType(
-    expectedLastChanged: "2026-05-28T12:00:00",
-    input: {
-      id: "dt-raum-uuid",
-      # ... other fields unchanged ...
-      attributes: [
-        # AnzahlPlaetzeInsgesamt changes from STRING → INT:
-        { id: "attr-platze-uuid", key: "AnzahlPlaetzeInsgesamt",
-          name: "Total seats", valueType: INT, multiplicity: SINGLE,
-          required: false }
-      ]
-    }
-  ) { id }
-}
-```
-
-Server behavior (matches rapla's existing `AttributeImpl.commitChange`
-semantics, which we'd test against in tier-3):
-- For each existing Raum: try to parse the stored string as Int
-- Parseable → coerced to Int
-- Unparseable ("approx. 50") → value silently dropped (or rejected — see OQ?)
-
-If rapla's storage rejects on unparseable, the mutation fails with
-`INVALID_VALUE` including the count of affected entities. Admin must clean
-data first. The behavior must be **documented loudly** and tested at tier 3
-since "silently drops data on type change" is a footgun.
-
-### Example 7 — Delete an attribute (forces data drop)
-
-```graphql
-mutation RemoveDeprecatedField {
-  saveDynamicType(
-    expectedLastChanged: "...",
-    input: {
-      id: "dt-raum-uuid",
-      # ... other fields unchanged ...
-      # AttributeInput list omits "OeffnungszeitenBemerkung" — that means delete it
-      attributes: [
-        # ... all attributes EXCEPT the one being deleted ...
-      ]
-    }
-  ) { id }
-}
-```
+### Example 7 — Delete an attribute (forces data drop) — DEFERRED to PRD 061
 
 Full-state semantics from PRD 056 update style: an attribute absent from
 the input list is **deleted**. All existing classifications drop their value
-for that attribute (matches rapla's `commitChange` semantics).
+for that attribute. The "absence = deletion" rule is dangerous if the SPA
+accidentally submits an incomplete list (stale form state); mitigations
+(SPA-side defensive build from current descriptor, server-side warning logs
+with affected-entity counts, dry-run preview) are deferred to PRD 061.
 
-The "absence = deletion" rule is dangerous if the SPA accidentally submits
-an incomplete list (stale form state). Mitigations:
-- SPA always builds the attributes list from the current descriptor at
-  save time (defensive)
-- Server logs warnings on attribute deletion with affected-entity counts
-- Future: dry-run mode could preview the data-loss before committing
+## Plan (shipped)
 
-## Plan
-
-When this lands (TBD — after the Angular schema editor UI work
-prompts it):
-
-1. **Schema additions** — input types listed above
+1. **Schema additions** — input types listed above (shipped)
 2. **DynamicTypeMutationController** in `rapla-app` —
-   `@MutationMapping` for the three roots; goes through `operator.dispatch`
-3. **Extend ChangeOp + applyChanges** — additive; existing `@oneOf` rule
-   keeps validation guarantees
-4. **Validation logic** — referential integrity, key collision, classification-
-   type change rules, valueType-change-vs-existing-data
+   `@MutationMapping` for `saveDynamicType` + `deleteDynamicTypes` (shipped)
+3. *(skipped — no ChangeOp extension in v1)*
+4. **Validation logic** — referential integrity, key collision,
+   admin gate, multiplicity-vs-valueType (shipped)
 5. **`AttributeImpl.commitChange(DynamicType)` integration** — rapla's
-   existing storage-layer migration of classifications when an attribute's
-   type changes; tested via tier-3
-6. **Hot-swap poll-rate tuning** — consider dropping from 10s to ~2s when
-   schema-editor mutations land, to make UX responsive
-7. **Tier-3 tests** — admin-only gate; create/update/delete round-trip;
-   delete-with-instances rejection; valueType change with existing data;
-   hot-swap visibility window
+   existing storage-layer integration (shipped; basic round-trip; valueType-change
+   migration deferred to PRD 061)
+6. *(deferred — hot-swap poll-rate tuning → PRD 061 OQ1)*
+7. **Tier-3 tests** — 9 tests shipped (see below)
 
-## Tests (tier-3 spec)
+## Tests (tier-3 spec — shipped)
 
 Same patterns as PRD 056 — `@SpringBootTest` + `@AutoConfigureMockMvc(addFilters
 = false)` + `@WithMockUser(roles = "ADMIN")` for happy path; non-admin
 variants for §12 rejection tests.
 
-Add:
+Shipped:
 - `saveDynamicType_create_nonAdmin_rejected`
 - `saveDynamicType_create_keyCollision_rejected`
-- `saveDynamicType_update_attributesValueTypeChange_propagatesToExistingData`
+- `saveDynamicType_update_unknownId_rejected` (REFERENCE_NOT_FOUND)
 - `saveDynamicType_update_concurrent_rejected` (expectedLastChanged mismatch)
 - `saveDynamicType_create_belongsToOnStringAttribute_rejected` (Multiplicity expansion validation)
 - `saveDynamicType_create_categoryRootIsSystemKind_rejected`
 - `deleteDynamicTypes_withInstances_rejected`
+- `deleteDynamicTypes_unknown_id_silentlyDropped` (no-leak invariant)
 - `deleteDynamicTypes_empty_succeeds`
-- Hot-swap round-trip: save → poll until typed input type appears → use it to create instance
 
 ## Open questions
 
-### OQ1 — Hot-swap poll-rate adjustment
+### OQ1 — Hot-swap poll-rate adjustment — DEFERRED to PRD 061
 
 PRD 055 Cut C ships with 10s polling. Schema-editor UX wants ~2s for
 admin feedback responsiveness. Open: lower it globally, or add a
 faster post-mutation poll trigger?
 
-### OQ2 — Multi-locale name editing
+### OQ2 — Multi-locale name editing — DEFERRED to PRD 061
 
 Single-locale `name: String!` in v1. When multi-locale becomes a real
-need, switch to `name: LocalizedNameInput!`. Backward-incompat —
+need, switch to `name: MultiLanguageStringInput!`. Backward-incompat —
 deserves its own design pass.
 
-### OQ3 — Annotation surface
+### OQ3 — Annotation allow-list — DEFERRED to PRD 061
 
-Limit v1 to well-known annotations (`name-format`, `classification-type`,
-…) or accept arbitrary `[AnnotationInput!]`? Permissive accepts anything;
-strict validates against a known list. **Lean: strict v1** — known set
-only; expand as new admin features need them.
+Limit to well-known annotations (`name-format`, `classification-type`, …)
+or accept arbitrary `[KeyValueInput!]`? Lean: strict v1 known-set;
+expand as new admin features need them.
 
 ### OQ4 — Constraint shape for ALLOCATABLE attributes — RESOLVED 2026-05-29
 
@@ -612,6 +490,14 @@ read/write naming wins.
 DynamicType + first instance) is uncommon enough that two roundtrips +
 ~10s hot-swap wait between them are acceptable. If demand emerges,
 extending `ChangeOp` later is additive.
+
+## Deferred / next (→ PRD 061)
+
+- valueType-change-with-data migration (Example 6 footgun) — deferred to PRD 061
+- DefaultValueInput per-type coercion semantics (input shape in v1, behavior contract not) — deferred to PRD 061
+- Full annotation allow-list (OQ3) — deferred to PRD 061
+- Hot-swap UX tightening — drop poll from 10s to ~2s for schema-editor responsiveness (OQ1) — deferred to PRD 061
+- Per-type referrer breakdown in `deleteDynamicTypes` (today: flat 50-cap list) — deferred to PRD 061
 
 ## Decision log
 
@@ -637,7 +523,11 @@ extending `ChangeOp` later is additive.
   rapla's `KEY_BELONGS_TO` and `KEY_PACKAGE` constraints into the
   multiplicity discriminator, matching the rapla admin UI's "Multiselect"
   dropdown. BELONGS_TO/PACKAGE are ALLOCATABLE-only; server validates.
-- **OQ2, OQ3, OQ5 resolved** — generic `extraConstraints` not needed
-  (Multiplicity expansion covers belongsTo/package); `expectedTypeId`
-  (not key) for ALLOCATABLE constraint stability; no ChangeOp extension
-  in v1.
+- **2026-05-29** — OQ4 resolved: `expectedTypeKey` over `expectedTypeId`
+  (symmetric with the read-side `@expectedType(key:)` directive).
+- **2026-05-29** — v1 controller shipped: `saveDynamicType` (create + replace)
+  + `deleteDynamicTypes` with admin gate, key-collision check, multiplicity
+  validation, REFERENCE_NOT_FOUND on unknown id, 9 tier-3 tests. Five
+  deferred items (valueType migration, DefaultValueInput coercion semantics,
+  annotation allow-list, hot-swap UX tightening, per-type referrer
+  breakdown) spun out to PRD 061. PRD archived to `docs/prd/done/`.

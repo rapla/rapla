@@ -355,6 +355,71 @@ class ClassificationGraphQLControllerTest
     }
 
     /**
+     * §5d Phase 2 — `AllocatableFilter` gains one `where<TypeKey>` field per
+     * resource/person DT (generated SDL type-extension). Resolver accepts
+     * a where-shape and (Phase 2 only) treats it as a no-op — query returns
+     * the same set as without the where. Verifies the binder doesn't reject
+     * the unknown-by-record field after the resolver switch.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void whereRoomFieldIsAcceptedAsNoOpInPhase2()
+    {
+        // Baseline — all rooms.
+        List<Map<String, Object>> baseline = tester.document("""
+                { allocatables(filter: { typeKeyEq: "room" }) { displayName } }
+                """)
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        // With a where-predicate (which would semantically filter to none in Phase 3+):
+        List<Map<String, Object>> withWhere = tester.document("""
+                {
+                  allocatables(filter: {
+                    typeKeyEq: "room"
+                    whereRoom: { name: { eq: "nope-no-room-named-this" } }
+                  }) { displayName }
+                }
+                """)
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        // Phase 2 is no-op: where doesn't actually filter; should equal baseline.
+        assertEquals(baseline.size(), withWhere.size(),
+                () -> "Phase 2 evaluator is no-op; whereRoom should not filter. baseline=" + baseline + " withWhere=" + withWhere);
+    }
+
+    /**
+     * §5d Phase 2 — confirm `AllocatableFilter.whereRoom` is in the schema,
+     * typed `roomWhere`. Introspection on `AllocatableFilter`'s inputFields.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void allocatableFilterCarriesWherePerResourcePersonType()
+    {
+        Map<String, Object> filter = tester.document("""
+                {
+                  __type(name: "AllocatableFilter") {
+                    inputFields { name type { name kind ofType { name } } }
+                  }
+                }
+                """)
+                .execute()
+                .path("__type")
+                .entity(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> fs = (List<Map<String, Object>>) filter.get("inputFields");
+        Map<String, String> byName = new java.util.HashMap<>();
+        for (Map<String, Object> f : fs) byName.put((String) f.get("name"), leafTypeName(f.get("type")));
+        assertEquals("roomWhere",     byName.get("whereRoom"),     () -> "got: " + byName);
+        assertEquals("lecturerWhere", byName.get("whereLecturer"), () -> "got: " + byName);
+        assertFalse(byName.containsKey("whereEvent"),              () -> "reservation DT should not appear; got: " + byName);
+    }
+
+    /**
      * Phase 1 — multi-select allocatable attribute. testdefault.xml resource2.a1
      * is multi-select=true allocatable → predicate type is `AllocatableListWhere`
      * (added alongside the existing static AllocatableWhere for symmetry with

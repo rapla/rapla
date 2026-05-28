@@ -72,7 +72,7 @@ queries) live alongside that deployment — see for example
 
 For the schema design, the `Classification` interface split (§540 lock-in),
 and the SPA-on-interface contract see
-[PRD 035 §"2026-05-24 design refinement"](prd/035-rapla-mcp-server.md).
+[PRD 035 (done) — GraphQL foundations](prd/done/035-graphql-foundations.md).
 
 ## Testing the queries in this doc
 

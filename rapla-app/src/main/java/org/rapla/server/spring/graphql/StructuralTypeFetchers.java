@@ -313,6 +313,270 @@ public final class StructuralTypeFetchers
         return rc.permissionController().canRead(a, rc.caller());
     }
 
+    // === Reservation field fetchers (PRD 055 Tier-1 perf migration, 2026-05-29) ===
+    //
+    // Moved off @SchemaMapping in ReservationGraphQLController to follow the
+    // Cut C pattern (Pattern 1 in docs/graphql.md). For Reservation reads at
+    // calendar scale (500 reservations × 3 appts avg × 9 derived fields per
+    // reservation × 4 fields per appt = ~21k dispatches per query), the
+    // per-dispatch Spring HandlerMethod + Micrometer wrap cost dominated.
+
+    static final LightDataFetcher<LocalDateTime> RESERVATION_FIRST_DATE =
+            new LightSourceFetcher<org.rapla.entities.domain.Reservation, LocalDateTime>(
+                    org.rapla.entities.domain.Reservation.class)
+            {
+                @Override protected LocalDateTime read(org.rapla.entities.domain.Reservation r,
+                        Supplier<DataFetchingEnvironment> env)
+                {
+                    return r.getFirstDate();
+                }
+            };
+
+    static final LightDataFetcher<LocalDateTime> RESERVATION_LAST_DATE =
+            new LightSourceFetcher<org.rapla.entities.domain.Reservation, LocalDateTime>(
+                    org.rapla.entities.domain.Reservation.class)
+            {
+                @Override protected LocalDateTime read(org.rapla.entities.domain.Reservation r,
+                        Supplier<DataFetchingEnvironment> env)
+                {
+                    return r.getMaxEnd();
+                }
+            };
+
+    static final LightDataFetcher<OffsetDateTime> RESERVATION_CREATED_AT =
+            new LightSourceFetcher<org.rapla.entities.domain.Reservation, OffsetDateTime>(
+                    org.rapla.entities.domain.Reservation.class)
+            {
+                @Override protected OffsetDateTime read(org.rapla.entities.domain.Reservation r,
+                        Supplier<DataFetchingEnvironment> env)
+                {
+                    LocalDateTime ts = r.getCreateDate();
+                    return ts == null ? null : ts.atOffset(ZoneOffset.UTC);
+                }
+            };
+
+    static final LightDataFetcher<OffsetDateTime> RESERVATION_LAST_MODIFIED_AT =
+            new LightSourceFetcher<org.rapla.entities.domain.Reservation, OffsetDateTime>(
+                    org.rapla.entities.domain.Reservation.class)
+            {
+                @Override protected OffsetDateTime read(org.rapla.entities.domain.Reservation r,
+                        Supplier<DataFetchingEnvironment> env)
+                {
+                    LocalDateTime ts = r.getLastChanged();
+                    return ts == null ? null : ts.atOffset(ZoneOffset.UTC);
+                }
+            };
+
+    static final LightDataFetcher<List<org.rapla.entities.domain.Appointment>> RESERVATION_APPOINTMENTS =
+            new LightSourceFetcher<org.rapla.entities.domain.Reservation,
+                    List<org.rapla.entities.domain.Appointment>>(
+                    org.rapla.entities.domain.Reservation.class)
+            {
+                @Override protected List<org.rapla.entities.domain.Appointment> read(
+                        org.rapla.entities.domain.Reservation r,
+                        Supplier<DataFetchingEnvironment> env)
+                {
+                    org.rapla.entities.domain.Appointment[] arr = r.getAppointments();
+                    return arr == null ? List.of() : java.util.Arrays.asList(arr);
+                }
+            };
+
+    static final LightDataFetcher<Classification> RESERVATION_CLASSIFICATION =
+            new LightSourceFetcher<org.rapla.entities.domain.Reservation, Classification>(
+                    org.rapla.entities.domain.Reservation.class)
+            {
+                @Override protected Classification read(org.rapla.entities.domain.Reservation r,
+                        Supplier<DataFetchingEnvironment> env)
+                {
+                    return r.getClassification();
+                }
+            };
+
+    static LightDataFetcher<User> reservationOwner(StorageOperator operator)
+    {
+        return new LightSourceFetcher<org.rapla.entities.domain.Reservation, User>(
+                org.rapla.entities.domain.Reservation.class)
+        {
+            @Override protected User read(org.rapla.entities.domain.Reservation r,
+                    Supplier<DataFetchingEnvironment> env) throws RaplaException
+            {
+                ReferenceInfo<User> ref = r.getOwnerRef();
+                return ref == null ? null : operator.tryResolve(ref);
+            }
+        };
+    }
+
+    /** Per-row hot field — §12 read of canModify. envSupplier materialization
+     *  is unavoidable here (need the per-query caller from RequestCtx). */
+    static final LightDataFetcher<Boolean> RESERVATION_CAN_MODIFY =
+            new LightSourceFetcher<org.rapla.entities.domain.Reservation, Boolean>(
+                    org.rapla.entities.domain.Reservation.class)
+            {
+                @Override protected Boolean read(org.rapla.entities.domain.Reservation r,
+                        Supplier<DataFetchingEnvironment> env)
+                {
+                    var rc = ctxFrom(env);
+                    User caller = rc.caller();
+                    if (caller == null) return false;
+                    if (caller.isAdmin()) return true;
+                    return rc.permissionController() != null
+                            && rc.permissionController().canModify(r, caller);
+                }
+            };
+
+    /**
+     * Restriction-aware editor view of allocations. Drops per-allocatable
+     * entries the caller can't read (§12 rule 4).
+     */
+    static LightDataFetcher<List<ReservationGraphQLController.AllocationDto>> reservationAllocations(
+            StorageOperator operator)
+    {
+        return new LightSourceFetcher<org.rapla.entities.domain.Reservation,
+                List<ReservationGraphQLController.AllocationDto>>(
+                org.rapla.entities.domain.Reservation.class)
+        {
+            @Override protected List<ReservationGraphQLController.AllocationDto> read(
+                    org.rapla.entities.domain.Reservation r,
+                    Supplier<DataFetchingEnvironment> env)
+            {
+                var rc = ctxFrom(env);
+                User caller = rc.caller();
+                PermissionController pc = rc.permissionController() != null
+                        ? rc.permissionController() : operator.getPermissionController();
+                List<ReservationGraphQLController.AllocationDto> out = new ArrayList<>();
+                Allocatable[] allocatables = r.getAllocatables();
+                if (allocatables == null) return List.of();
+                for (Allocatable a : allocatables)
+                {
+                    if (a == null) continue;
+                    if (caller != null && !pc.canRead(a, caller)) continue;
+                    org.rapla.entities.domain.Appointment[] restriction = r.getRestriction(a);
+                    List<String> appointmentIds = null;
+                    if (restriction != null && restriction.length > 0)
+                    {
+                        appointmentIds = new ArrayList<>(restriction.length);
+                        for (org.rapla.entities.domain.Appointment appt : restriction)
+                        {
+                            if (appt != null && appt.getId() != null)
+                            {
+                                appointmentIds.add(appt.getId());
+                            }
+                        }
+                    }
+                    out.add(new ReservationGraphQLController.AllocationDto(a, appointmentIds));
+                }
+                return out;
+            }
+        };
+    }
+
+    // === Appointment field fetchers ===========================================
+
+    /** Wall-time all-day heuristic — start/end at 00:00, end > start. */
+    static final LightDataFetcher<Boolean> APPOINTMENT_ALL_DAY =
+            new LightSourceFetcher<org.rapla.entities.domain.Appointment, Boolean>(
+                    org.rapla.entities.domain.Appointment.class)
+            {
+                @Override protected Boolean read(org.rapla.entities.domain.Appointment a,
+                        Supplier<DataFetchingEnvironment> env)
+                {
+                    LocalDateTime start = a.getStart();
+                    LocalDateTime end = a.getEnd();
+                    if (start == null || end == null) return false;
+                    return start.getHour() == 0 && start.getMinute() == 0
+                            && end.getHour() == 0 && end.getMinute() == 0
+                            && !end.isEqual(start);
+                }
+            };
+
+    static final LightDataFetcher<ReservationGraphQLController.RepeatingRuleDto> APPOINTMENT_REPEATING =
+            new LightSourceFetcher<org.rapla.entities.domain.Appointment,
+                    ReservationGraphQLController.RepeatingRuleDto>(
+                    org.rapla.entities.domain.Appointment.class)
+            {
+                @Override protected ReservationGraphQLController.RepeatingRuleDto read(
+                        org.rapla.entities.domain.Appointment a,
+                        Supplier<DataFetchingEnvironment> env)
+                {
+                    org.rapla.entities.domain.Repeating r = a.getRepeating();
+                    return r == null ? null : ReservationGraphQLController.RepeatingRuleDto.from(r);
+                }
+            };
+
+    /** Per-appointment pre-resolved allocatables (PRD 055 Q4). §12-gated. */
+    static LightDataFetcher<List<Allocatable>> appointmentAllocatables(StorageOperator operator)
+    {
+        return new LightSourceFetcher<org.rapla.entities.domain.Appointment, List<Allocatable>>(
+                org.rapla.entities.domain.Appointment.class)
+        {
+            @Override protected List<Allocatable> read(org.rapla.entities.domain.Appointment a,
+                    Supplier<DataFetchingEnvironment> env)
+            {
+                org.rapla.entities.domain.Reservation r = a.getReservation();
+                if (r == null) return List.of();
+                var rc = ctxFrom(env);
+                User caller = rc.caller();
+                PermissionController pc = rc.permissionController() != null
+                        ? rc.permissionController() : operator.getPermissionController();
+                List<Allocatable> out = new ArrayList<>();
+                Allocatable[] all = r.getAllocatables();
+                if (all == null) return List.of();
+                for (Allocatable alloc : all)
+                {
+                    if (alloc == null) continue;
+                    if (caller != null && !pc.canRead(alloc, caller)) continue;
+                    org.rapla.entities.domain.Appointment[] restriction = r.getRestriction(alloc);
+                    if (restriction == null || restriction.length == 0)
+                    {
+                        out.add(alloc);
+                        continue;
+                    }
+                    for (org.rapla.entities.domain.Appointment ra : restriction)
+                    {
+                        if (ra != null && ra.getId() != null && ra.getId().equals(a.getId()))
+                        {
+                            out.add(alloc);
+                            break;
+                        }
+                    }
+                }
+                return out;
+            }
+        };
+    }
+
+    /**
+     * Materialize recurrence blocks within a window. Arguments (from, to)
+     * come from the env; this fetcher needs envSupplier.get() — but the
+     * field's natural caller pattern (calendar query: once per appointment
+     * with a single window) makes the env materialization amortize.
+     */
+    static final LightDataFetcher<List<ReservationGraphQLController.AppointmentBlockDto>> APPOINTMENT_BLOCKS =
+            new LightSourceFetcher<org.rapla.entities.domain.Appointment,
+                    List<ReservationGraphQLController.AppointmentBlockDto>>(
+                    org.rapla.entities.domain.Appointment.class)
+            {
+                @Override protected List<ReservationGraphQLController.AppointmentBlockDto> read(
+                        org.rapla.entities.domain.Appointment a,
+                        Supplier<DataFetchingEnvironment> envSupplier)
+                {
+                    DataFetchingEnvironment env = envSupplier.get();
+                    LocalDateTime from = env.getArgument("from");
+                    LocalDateTime to   = env.getArgument("to");
+                    if (from == null || to == null) return List.of();
+                    List<org.rapla.entities.domain.AppointmentBlock> blocks = new ArrayList<>();
+                    a.createBlocks(from, to, blocks);
+                    List<ReservationGraphQLController.AppointmentBlockDto> out =
+                            new ArrayList<>(blocks.size());
+                    for (org.rapla.entities.domain.AppointmentBlock b : blocks)
+                    {
+                        out.add(new ReservationGraphQLController.AppointmentBlockDto(
+                                b.getStartDateTime(), b.getEndDateTime(), b.isException()));
+                    }
+                    return out;
+                }
+            };
+
     // === wiring ==============================================================
 
     /**
@@ -346,6 +610,21 @@ public final class StructuralTypeFetchers
                 .dataFetcher("parent",   categoryParent(operator))
                 .dataFetcher("children", CATEGORY_CHILDREN)
                 .dataFetcher("kind",     categoryKind(operator)));
+        b.type("Reservation", t -> t
+                .dataFetcher("firstDate",      RESERVATION_FIRST_DATE)
+                .dataFetcher("lastDate",       RESERVATION_LAST_DATE)
+                .dataFetcher("canModify",      RESERVATION_CAN_MODIFY)
+                .dataFetcher("owner",          reservationOwner(operator))
+                .dataFetcher("createdAt",      RESERVATION_CREATED_AT)
+                .dataFetcher("lastModifiedAt", RESERVATION_LAST_MODIFIED_AT)
+                .dataFetcher("appointments",   RESERVATION_APPOINTMENTS)
+                .dataFetcher("allocations",    reservationAllocations(operator))
+                .dataFetcher("classification", RESERVATION_CLASSIFICATION));
+        b.type("Appointment", t -> t
+                .dataFetcher("allDay",       APPOINTMENT_ALL_DAY)
+                .dataFetcher("repeating",    APPOINTMENT_REPEATING)
+                .dataFetcher("allocatables", appointmentAllocatables(operator))
+                .dataFetcher("blocks",       APPOINTMENT_BLOCKS));
         // The Classification interface's fields are inherited by the
         // AllocatableClassification + ReservationClassification interfaces
         // automatically per the GraphQL spec — no separate wiring needed.

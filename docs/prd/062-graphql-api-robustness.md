@@ -1,9 +1,8 @@
-# PRD 058 — GraphQL API Robustness Patterns
+# PRD 062 — GraphQL API Robustness Patterns
 
-**Status:** draft (placeholder — not slated for implementation)
+**Status:** draft (placeholder — not slated for implementation; renumbered from 058 → 062 on 2026-05-29 due to a number collision with [PRD 058 — GraphQL key-spec migration](058-graphql-key-spec-migration.md))
 
-**Parent:** PRD 035 (GraphQL/MCP API architecture). **Siblings:** PRD 056
-(events mutations), PRD 057 (DynamicType schema editor mutations).
+**Parent:** [PRD 035 (done) — GraphQL foundations](done/035-graphql-foundations.md). **Siblings:** [PRD 056 — events write API](056-graphql-events-write-api.md), [PRD 057 (done) — DynamicType mutations v1](done/057-graphql-dt-mutations-v1.md), [PRD 061 — DT mutations v2](061-graphql-dt-mutations-v2.md).
 
 **Triggered by:** PRD 056 OQ5 (idempotency on retry) — the basic
 same-UUID-content-match semantic ships in 056 because it's a few lines
