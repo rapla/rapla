@@ -38,6 +38,12 @@ module.exports = [
       '/error',
       '/server',
       '/index',
+      '/graphiql',         // Same-origin GraphiQL in dev so its
+                           // localStorage('access_token') read sees the SPA's
+                           // token. Without this entry, GraphiQL on :8051
+                           // can't see :4200's localStorage and stays
+                           // anonymous. See graphiql/index.html comment block.
+                           // (POSTs go to /api/graphql which is already proxied.)
     ],
     target: TARGET,
     secure: false,

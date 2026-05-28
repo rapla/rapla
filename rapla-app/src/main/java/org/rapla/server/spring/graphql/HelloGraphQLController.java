@@ -204,15 +204,17 @@ public class HelloGraphQLController
             cur = cur.getCategory(segment);
             if (cur == null) return null;
         }
-        return cur == operator.getSuperCategory() ? null : cur;
+        if (cur == operator.getSuperCategory()) return null;
+        // PRD 035 §5a: user-groups subtree is filtered out — surfaces only via Group.
+        if (CategoryKindClassifier.isUnderUserGroups(cur, operator.getSuperCategory())) return null;
+        return cur;
     }
 
     /**
      * Immediate children of a root category — super by default, or the named
      * subtree if {@code rootKey} is given. Empty list if the named root doesn't
-     * exist. Children are returned shallowly; the {@code Category.children}
-     * field is a {@link SchemaMapping} resolver, so client field selection
-     * drives traversal depth.
+     * exist OR if the rootKey targets the user-groups subtree (PRD 035 §5a —
+     * permission groups surface via {@code type Group}, not Category).
      */
     @QueryMapping
     public List<Category> categories(@Argument("rootKey") String rootKey)
@@ -221,12 +223,24 @@ public class HelloGraphQLController
         if (root == null) return List.of();
         if (rootKey != null && !rootKey.isBlank())
         {
+            // PRD 035 §5a — user-groups subtree is not addressable via Category API.
+            if (CategoryKindClassifier.USER_GROUPS_KEY.equals(rootKey)) return List.of();
             Category sub = root.getCategory(rootKey);
             if (sub == null) return List.of();
             root = sub;
         }
         Category[] children = root.getCategories();
-        return children == null ? List.of() : Arrays.asList(children);
+        if (children == null) return List.of();
+        // When rootKey is null we return super's immediate children; filter
+        // user-groups out of that top-level list so it never surfaces.
+        List<Category> out = new ArrayList<>(children.length);
+        for (Category c : children)
+        {
+            if (c == null) continue;
+            if (CategoryKindClassifier.USER_GROUPS_KEY.equals(c.getKey())) continue;
+            out.add(c);
+        }
+        return out;
     }
 
     // Category.name/path/parent/children resolvers were @SchemaMapping methods

@@ -698,12 +698,27 @@ class LockStorage extends AbstractTableStorage
             final ResultSet result = stmt.executeQuery();
             if (result.next())
             {
-                throw new RaplaException("Global lock set");
+                // Surface enough context to distinguish stale-from-SIGTERM vs
+                // genuine contention. VALID_UNTIL column drives the periodic
+                // cleanup query (line 575); a past timestamp here means a
+                // previous holder died before releasing — admin can clear it
+                // manually by setting ACTIVE=2 in the WRITE_LOCK table.
+                final java.sql.Timestamp lastChanged  = result.getTimestamp("LAST_CHANGED");
+                final java.sql.Timestamp validUntil   = result.getTimestamp("VALID_UNTIL");
+                final boolean expired = validUntil != null
+                        && validUntil.toInstant().isBefore(java.time.Instant.now());
+                final String suffix = expired
+                        ? " (already expired " + validUntil
+                          + " — previous holder likely died without releasing; wait for the periodic cleanup or set ACTIVE=2 manually)"
+                        : " (held since " + lastChanged
+                          + ", valid until " + validUntil
+                          + " — another process is currently writing; wait for release)";
+                throw new RaplaException("Global lock already taken" + suffix);
             }
         }
         catch (SQLException e)
         {
-            throw new RaplaException("Global lock set", e);
+            throw new RaplaException("Global lock check failed", e);
         }
     }
 

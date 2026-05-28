@@ -158,7 +158,443 @@ integrity, business rules) against the merged full object on every save.
 validation") maps back to form fields for display. No client-side
 revalidation layer; widget pre-validation is UX convenience only.
 
+### 5a. Category kind discriminator + concrete descriptor schema (2026-05-28)
+
+§5's widget table references abstract `constraints.rootCategory`,
+`constraints.maxLength`, `constraints.expectedType` etc. This section
+pins down what those look like concretely on the wire, plus adds an
+explicit category-kind discriminator so consumers can render any
+CATEGORY-typed attribute correctly without deployment-specific knowledge.
+
+**Two structural observations driving this:**
+
+1. **Categories bifurcate into value-list vs organization-tree.** Most
+   rapla deployments use category roots in two modes — flat picklists
+   (Raumart, Ausstattung, SyncStatus, Akteurtyp) and hierarchical trees
+   (departments, location-hierarchies). Consumers need to render these
+   differently (dropdown vs drill-down). The distinction must be
+   **explicit and generic**, not inferred per-deployment.
+
+2. **Descriptor today is half-typed.** `rootCategoryPath: String` lets
+   the consumer name the root, but to learn anything else (kind, value
+   space, constraints on children) requires a second query. Pre-flight
+   validation needs the constraints inline.
+
+**Permission groups are a separate API surface.** Internally rapla stores
+them under the `user-groups` category subtree, but **this is not exposed
+through the Category API.** A first-class `type Group { ... }` covers
+permission-group reads (see §5c). The Category API exposes only true
+value-list and organization-tree categories. This keeps the Category
+contract simple and the API consumer's mental model clean. Whether
+`Group` carries hierarchy is decided in a separate PRD.
+
+**Category.kind: CategoryKind!**
+
+```graphql
+enum CategoryKind {
+  VALUE_LIST   # flat picklist, render as dropdown
+  ORGANIZATION # hierarchical tree, render as drill-down picker
+  SYSTEM       # rapla-internal subtrees (super-category, etc.) — not normally exposed
+}
+
+type Category {
+  id:       ID!
+  key:      String!
+  name:     String!
+  path:     String!
+  kind:     CategoryKind!     # ← NEW: how the consumer should render this Category
+  parent:   Category
+  children: [Category!]!
+}
+```
+
+(Permission groups had been considered a fourth `CategoryKind` value;
+moved to the separate `Group` type per §5c instead.)
+
+**Determination of `kind` is fully generic** (deployment-agnostic):
+
+1. **rapla-core hardcoded rules** — apply at every install:
+   - The super-category root → `SYSTEM`, never exposed
+   - The `user-groups` subtree is **filtered out** of every Category
+     query and resolver (`category(path:)` returns null for paths
+     starting with `user-groups`; `categories(rootKey:)` rejects
+     `user-groups` as the root). Groups surface only via §5c's
+     `type Group`.
+
+2. **Admin annotation** — `category-kind` on the category root:
+   `value-list` / `organization`. Wins if present. Lets admins override
+   edge cases.
+
+3. **Heuristic fallback** — when no annotation:
+   - Root with depth = 1 (root → leaves only, no grandchildren) →
+     `VALUE_LIST`
+   - Root with depth ≥ 2 → `ORGANIZATION`
+   - Pure tree-structure check; works regardless of root key naming
+
+Zero deployment-specific names in code. At dhbw (2026-05-28 audit),
+**all** CATEGORY-typed attribute references target flat depth-2 roots
+(`Raumtypen`, `Ausstattungen`, `Synchronisierungsstatus`,
+`Akteurtypen`, `Veranstaltungskategorien`) → VALUE_LIST; the only
+hierarchical category root (`user-groups`) is handled as a separate
+`type Group` (§5c) and never surfaces as a Category. The
+`ORGANIZATION` enum value is reserved for deployments that DO put
+genuine hierarchical category references behind attributes (e.g. a
+`departments/IT/security/network-admins` tree); the heuristic
+classifies these correctly without code change. dhbw's hierarchy
+needs are met via DynamicType + ALLOCATABLE references
+(`Raum.Gebaeude`, `Teilkurs.belongsTo Kurs`, `Kurs.Studiengang`),
+not via category trees.
+
+**`AttributeDescriptor` — concrete validation surface**
+
+```graphql
+type AttributeDescriptor {
+  key:              String!
+  name:             String!
+  valueType:        AttributeValueType!
+  multiplicity:     Multiplicity!
+  required:         Boolean!
+
+  # === CATEGORY constraints ===
+  rootCategoryPath: String                 # stable path string (cache key, identifier)
+  rootCategory:     Category               # NEW — typed pointer; .children = value space
+
+  # === ALLOCATABLE constraints ===
+  expectedTypeKey:  String                 # stable type-key string
+  expectedType:     DynamicType            # NEW — typed pointer to the expected DynamicType
+
+  # === STRING / INT constraints ===
+  maxLength:        Int                    # NEW — for STRING
+  minLength:        Int                    # NEW
+  pattern:          String                 # NEW — regex
+  minIntValue:      Int                    # NEW — for INT
+  maxIntValue:      Int                    # NEW
+
+  # === Widget hint (annotation-driven) ===
+  hint:             String                 # NEW — "email" / "url" / "phone" → <input type="…">
+}
+```
+
+All driven from existing `Attribute.getConstraint(ConstraintIds.KEY_*)`
+calls in rapla-core. Same data the Swing client already uses for its
+form widgets, surfaced through the GraphQL descriptor.
+
+**Read-side validation flow** (client pre-flight, descriptor-driven):
+
+```graphql
+query OpenEditForm($id: ID!) {
+  allocatable(id: $id) {
+    classification {
+      type {
+        attributes {
+          key
+          valueType
+          multiplicity
+          required
+          maxLength
+          pattern
+          hint
+          rootCategory {           # CATEGORY: walk children for value space
+            kind                   # render hint (dropdown vs tree)
+            children { id name }
+          }
+          expectedType {           # ALLOCATABLE: filter allocatable pickers
+            key
+            name
+          }
+        }
+      }
+      # ... current values
+    }
+  }
+}
+```
+
+One query carries everything a form needs: widget config, current
+values, value spaces. No second-round-trip to discover which categories
+are valid for the Raumart attribute.
+
+**Write-side validation flow** (server authoritative, lands with §6
+mutations):
+
+`ValidationError { path, code, message }` — already locked in §5 and
+§"Write-side validation". When mutations land, the server's L1 + L2
+chain produces these. Codes need to cover:
+
+- `REQUIRED` — required attribute missing
+- `OUT_OF_ROOT` — CATEGORY value not under expected root
+- `WRONG_ALLOCATABLE_TYPE` — ALLOCATABLE value of wrong DynamicType
+- `MAX_LENGTH_EXCEEDED` / `MIN_LENGTH_NOT_REACHED` — STRING constraints
+- `PATTERN_MISMATCH` — STRING regex fail
+- `OUT_OF_RANGE` — INT min/max
+- `TYPE_MISMATCH` — wrong AttributeType for the attribute
+- `PERMISSION_DENIED` — caller can't write this attribute
+- `CONFLICT` — concurrent edit / version mismatch
+- (extensible — future codes for cross-entity rules)
+
+**Generic across deployments:** the schema, the resolvers, the validation
+rules, the kind-determination mechanism are all rapla-the-framework
+concerns. The specific category roots and DynamicType attributes are
+deployment data. Generic rapla code + dhbw's data → dhbw's API surface.
+Same code + mosbach's data → mosbach's surface. No customer-specific
+hardcoding.
+
+**Implementation cost** (one batch, before reservation resolvers land):
+
+| Piece | LOC |
+|---|---:|
+| `Category.kind` field + resolver + 3-tier kind-determination logic | ~50 |
+| `AttributeDescriptor.rootCategory` typed pointer | ~30 |
+| `AttributeDescriptor.expectedType` typed pointer | ~20 |
+| `AttributeDescriptor` constraint fields (maxLength/pattern/hint/...) | ~40 |
+| Schema additions | ~30 |
+| Tier-3 tests per addition | ~50 |
+| **Total** | **~220** |
+
+**Implication for the reservation batch:** reservation classifications
+will have CATEGORY-typed attributes (Pruefungsart, Modul) and
+ALLOCATABLE-typed attributes (room reference). With this validation
+surface in place, the reservation resolvers don't need any
+reservation-specific category handling — same generic descriptor walk,
+same widget config story, same pre-flight validation. Reservation
+mutations (later) extend the `ValidationError` codes if new semantic
+rules emerge.
+
+### 5b. Enum generation for VALUE_LIST category roots (2026-05-28)
+
+For category roots whose `kind == VALUE_LIST`, the generator emits a
+GraphQL enum whose values mirror the root's children. The classification's
+typed field uses the enum directly instead of `Category`.
+
+```graphql
+"""Raumart — value-list root, dhbw"""
+enum Raumart {
+  """Büroräume allgemein"""
+  Bueroraeume
+  """Hörsaal"""
+  Hoersaal
+  """Labor"""
+  Labor
+  """Prüfungsraum"""
+  Pruefungsraum
+}
+
+enum Ausstattung {
+  Beamer
+  Pinwand
+  Touchscreen
+  Flipchart
+  # ...
+}
+
+type RaumClassification implements Classification & AllocatableClassification {
+  typeId: ID!
+  type: DynamicType!
+  attributes: [AttributeValue!]!
+  Raumart:          Raumart           # ← enum value, not Category
+  AusstattungListe: [Ausstattung!]
+  SyncStatus:       SyncStatus
+  # ORGANIZATION-kind attributes still return Category:
+  Gebaeude:         Allocatable
+}
+```
+
+**Why this is good for AI / GraphiQL discoverability:** `__type(name:
+"Raumart")` introspection returns the full value space. GraphiQL
+autocompletes enum values when typing predicates. AI consumers see the
+typed enum in the schema introspection chain — no separate descriptor
+query needed for VALUE_LIST attributes.
+
+**Naming convention** (locked 2026-05-28, **revised twice 2026-05-28 after PRD 058 + dhbw deploy**):
+
+**One rule for everything: emit the admin-authored rapla key VERBATIM.** No
+PascalCase, no SCREAMING_SNAKE, no case folding, no transformation. Both
+enum type names (joined-path) and enum values (leaf keys) come straight
+from the rapla key with `_` as the path separator for nested roots.
+
+PRD 058 guarantees the key is already GraphQL-spec-compliant
+(`[A-Za-z_][A-Za-z0-9_]*`), so the generator's only job is to verify and
+pass through. The check lives in `ClassificationSdlGenerator.checkGraphQlCompliantName`
+— non-spec input throws `IllegalStateException` (migration should have
+prevented it).
+
+| rootCategory path | Enum type name |
+|---|---|
+| `Root/raumtyp` | `raumtyp` |
+| `Root/ausstattungen` | `ausstattungen` |
+| `Root/Veranstaltungsattribute/Veranstaltungskategorien` | `Veranstaltungsattribute_Veranstaltungskategorien` |
+| `Root/akteurtyp` | `akteurtyp` |
+
+(The path-segment join uses `_` because slash isn't a valid GraphQL identifier char; the segments themselves are verbatim.)
+
+| Leaf child key | Enum value | Notes |
+|---|---|---|
+| `hoersaal` | `hoersaal` | spec-clean, emitted verbatim |
+| `HOERSAAL` | `HOERSAAL` | admin chose SCREAMING_SNAKE; preserved |
+| `springfield_powerplant` | `springfield_powerplant` | post-migration (was `springfield-powerplant`) |
+| `DIN_5_2_3_11` | `DIN_5_2_3_11` | underscores preserved — they're semantic separators |
+| `DIN_5_2_31_1` | `DIN_5_2_31_1` | distinct from sibling, no collision |
+| `Hörsaal` | n/a — migration renames to `Hoersaal` before this code path |
+
+**Why the change.** The original convention PascalCased everything via
+`sanitizeTypeName` (now removed). On dhbw's `raumtyp` category, leaf keys
+are DIN room-type references like `DIN_5_2_3_11`, `DIN_5_2_31_1`,
+`DIN_52_3_11` — all distinct values where underscores carry meaning.
+PascalCase collapsed them all to `DIN52311` and the generator silently
+dropped 2 of every 3 leaves with a WARN. The fix that landed verbatim
+emission for enum values was then extended to type names too, on the
+same principle (admin owns convention).
+
+**Concerns cleanly separated:** **PRD 058 owns syntax** (enforce GraphQL
+identifier shape), **the admin owns convention** (case style). Rapla doesn't
+impose anything — the admin's chosen key IS the GraphQL name. If they
+keyed a DT `Room`, the generated type is `RoomClassification`. If they
+keyed `room`, it's `roomClassification`. Both are spec-valid GraphQL.
+
+The SPA may **auto-suggest** GraphQL convention (PascalCase types,
+SCREAMING_SNAKE enum values, camelCase attributes) at key-creation
+time — "Convention: PascalCase, click to apply" hint — but never enforces
+or silently rewrites. Tracked as a big TODO in `docs/graphql.md`.
+
+**Why depth-1 only:** admins cannot annotate a depth ≥ 2 subtree as
+VALUE_LIST today; the kind annotation only locks an already-flat tree
+or forces ORGANIZATION onto a flat tree. If a category root's children
+have grandchildren, the schema falls back to `Category` (ORGANIZATION).
+The `_`-joined enum type name accommodates rootCategories that are
+themselves nested under super (e.g. `Veranstaltungsattribute/Veranstaltungskategorien`),
+not deep VALUE_LIST internal structure.
+
+**Locale-resolved name** carried via the enum value's `description`
+(single-locale; multi-locale deployments need a sibling `_label`
+resolver — separate PRD).
+
+The verbatim rule is documented + permanent. Changing it later breaks
+consumers.
+
+**Identity stability across admin edits:**
+
+- Admin renames a category leaf → schema rebuild emits a new enum value
+  name → consumers regenerate (codegen) or rediscover (introspection).
+  **Same model as attribute key renames** in classifications, which we
+  already accept. Per the discussion 2026-05-28: category renames are
+  rare admin operations in practice, same frequency as attribute key
+  renames. Sanitize-and-rebuild is an acceptable contract.
+- Admin adds a category leaf → schema rebuild emits a new enum value.
+  Safe addition (existing queries unaffected).
+- Admin deletes a category leaf → enum value disappears. Queries
+  referencing it fail validation. Document as "rebuild window may
+  invalidate in-flight queries referencing the removed value;
+  hot-swap is bounded by the existing rebuilder cadence (~10 s)."
+
+**What stays as `Category` (not enum):**
+
+- ORGANIZATION-kind roots — depth ≥ 2; hierarchical reading matters
+- Heuristic-flip protection: admin annotation `category-kind: value-list`
+  locks the kind so accidental depth growth doesn't break consumers
+  (grandchildren on a value-list root simply aren't enum values)
+- Cross-cutting `category(path:)` / `categories(rootKey:)` query roots
+  still return `Category` for any root including VALUE_LIST roots
+  (admin tooling, debugging, descriptor exploration)
+
+**Generation lifecycle:** alongside `<TypeKey>Classification` per
+DynamicType, the generator now also walks VALUE_LIST category roots and
+emits enum + description. Hot-swap on DynamicType admin change OR
+category leaf change. SHA-256 hash short-circuit unchanged. Schema
+rebuilds when either the DynamicType set or the VALUE_LIST category
+contents change.
+
+**Adapter at the resolver boundary:** the underlying `Classification.getValue`
+still returns a `Category` instance. When the schema's typed field
+declares an enum, the data fetcher coerces Category → enum value name
+(via sanitized child key). On the save side (when mutations land), the
+adapter reverses: enum value name → Category UUID lookup → storage.
+
+### 5c. Permission Group — separate API type (2026-05-28)
+
+Internally rapla stores user permission groups under the `user-groups`
+category subtree. **The GraphQL API does NOT expose this as a Category.**
+A first-class `type Group { ... }` covers all group reads. This keeps
+the Category surface focused on its actual semantic role (typed values
+or organization trees) and gives the API a clean affordance for
+permission-group operations.
+
+```graphql
+type Group {
+  id:   ID!
+  key:  String!
+  name: String!
+  # Hierarchical extensions deferred to a separate PRD —
+  # `parent: Group` and `children: [Group!]!` may or may not appear.
+}
+
+type User {
+  id:        ID!
+  username:  String!
+  name:      String!
+  email:     String
+  isAdmin:   Boolean!
+  authSource: String
+  groups:    [Group!]!   # ← NEW: replaces any prior implicit category-typed group access
+}
+
+type Query {
+  groups: [Group!]!                       # all visible groups
+  group(id: ID!): Group                   # by id
+}
+```
+
+**Why a separate type, not a flavored Category:**
+
+- **Semantic clarity** — Categories represent classification values
+  (Raumart, Studiengang, …); Groups represent permission grants.
+  Conflating them blurs the API contract for consumers.
+- **Future extensibility** — Groups may grow operations Categories
+  don't (e.g. `membersCount`, `permissions: [Permission!]!`,
+  hierarchical structure). Keeping them on their own type lets them
+  evolve without touching Category.
+- **Internal-storage independence** — if rapla ever moves permission
+  groups out of the category tree (separate storage entity), the API
+  contract doesn't change. Today's category-based implementation is
+  hidden behind the Group resolvers.
+- **Filtering hygiene** — admin/MCP exploration of `categories(rootKey:
+  ...)` doesn't accidentally surface security-sensitive group data
+  mixed with rendering categories. §12 still applies to Groups, but
+  surfacing them through a dedicated type makes the boundary explicit.
+
+**Resolver implementation:** `groups` reads the `user-groups`
+sub-categories from `operator.getSuperCategory()`, surfaces them as
+Group instances. `User.groups` reads the per-user group membership
+(today: `user.getCategoryRefs()` or whatever the existing API is)
+and maps to Group references.
+
+**Hierarchical vs flat — deferred to a separate PRD.** Initial shipping
+is flat (`id, key, name` only). If a future PRD adds tree support, it
+appears here as `parent: Group` / `children: [Group!]!` without
+breaking existing queries.
+
 ### 6. Bulk mutations — type-agnostic
+
+> **Superseded 2026-05-28 by [PRD 056](056-graphql-events-mutations.md).**
+> Multi-step pivot, captured below for design-history context:
+>
+> **(a)** Surface: named bulk-transform verbs (`changeReservationOwner`,
+> `moveReservations`, `copyReservations`, `deleteReservations`) +
+> single-entity full-state CRUD (`createReservation`, `updateReservation`)
+> + a generic `applyChanges(operations: [ChangeOp!]!)` escape hatch
+> with `ChangeOp @oneOf` (spec-level exactly-one-set; no runtime validator).
+>
+> **(b)** Further refinement (symmetric β², same date): generic
+> `ClassificationInput` + `AttributeValueInput` + `AttributeValuePayload`
+> envelope is **also dropped**. Writes go through typed per-DynamicType
+> classification inputs (`<TypeKey>ClassificationInput`, generated +
+> hot-swapped alongside `<TypeKey>Classification` outputs) +
+> `AllocatableClassificationInput @oneOf` / `ReservationClassificationInput @oneOf`
+> polymorphic dispatch. PRD 035 §"One schema, two consumption modes"
+> (line 580) applies to writes too — SPA does dynamic mutation construction;
+> codegen consumers get typed access. PRD 056 captures the locked design +
+> remaining input-shape open questions.
+>
+> Sketch below preserved for design-history context.
 
 Three new top-level mutations, one consistent shape:
 
@@ -347,14 +783,22 @@ These each have their own API surface:
 
 ### Cross-PRD impact
 
-- **PRD 055** (child / implementation) — events-side resolver batch.
+- **PRD 055** (child / implementation) — events-side READ resolver batch.
   Covers the Reservation / Appointment / Allocation read surface
   (locked 2026-05-27 — single + list queries, restriction-aware
   `Reservation.allocations` + pre-resolved `Appointment.allocatables`,
   `blocks(from:, to:)` materializer). Inherits the architectural
   decisions from §"Consumer-driven read surfaces" + §"Per-type shape"
-  above. Mutations / conflicts / templates remain in PRD 055's deferred
-  list (their own implementation PRDs).
+  above.
+- **PRD 056** (child / implementation) — events-side WRITE / mutation
+  surface. **Supersedes §6 above** (typed-per-entity bulk mutations) with
+  Approach-2 named verbs (`changeReservationOwner`, `moveReservations`,
+  `copyReservations`, `deleteReservations`) + Option-C `applyChanges`
+  escape hatch (typed ChangeOp, atomic cross-type batches). Locked
+  2026-05-28: ATOMIC-only v1, full-state on update, delete consolidated
+  to bulk-only, `expectedLastChanged` on update only, same-batch refs
+  via client UUIDs. Templates / conflicts / reshape remain in their
+  own deferred PRDs.
 - **PRD 028** — substrate is §9 above; OQ#3 + OQ#10 resolved. PRD 028
   Plan Phase 2's `/search/reservations?q=` becomes the GraphQL `search`
   root.
@@ -525,14 +969,14 @@ selecting deeper fields.
 - **Appointment** — `{ id, start, end, allDay, repeating:{ type, interval,
   end|count, exceptions[] }, allocatables:[<stub>] }`. start/end are
   `LocalDateTime` (PRD 014). Recurrence two ways: the raw `repeating` rule by
-  default, or materialized instances for a window via an
-  `occurrences(from:,to:)` field. **`allocatables` is the per-appointment
-  pre-resolved view** — restrictions already applied. This is the workhorse
-  field for listviews ("all my reservations, with what's booked at each
-  appointment"), iCal-shaped consumers, and conflict UI. Restrictions are
-  appointment-level (see [domain-model.md §Reservation](../architecture/domain-model.md#reservation)),
-  so blocks inherit allocatables from their parent appointment with no
-  duplication.
+  default, or materialized instances for a window via the sub-resolver
+  `blocks(from:, to:): [AppointmentBlock!]!`. **`allocatables` is the
+  per-appointment pre-resolved view** — restrictions already applied. This is
+  the workhorse field for listviews ("all my reservations, with what's booked
+  at each appointment"), iCal-shaped consumers, and conflict UI. Restrictions
+  are appointment-level (see [domain-model.md §Reservation](../architecture/domain-model.md#reservation)),
+  so blocks inherit allocatables from their parent appointment via traversal
+  (`block.appointment.allocatables`) with no field duplication.
 - **Allocation** — `{ allocatable: <stub>, appointmentIds: [...] | null }`.
   Restriction structure exposed: `appointmentIds` is an **intra-document
   id list** (the appointments are components of the same event, already
@@ -1333,6 +1777,28 @@ All three share the same surface → Phases 1–4 deliver it.
 2. Rebuild + hot-swap on the `DynamicType` save path.
 3. Introspection tested as both data (runtime) and codegen source.
 4. Cursor pagination on list fields; custom date/time scalars.
+5. **β read simplification (locked 2026-05-28, PRD 055 decision log):**
+   drop `attributes: [AttributeValue!]!` from the `Classification`
+   interface and `AttributeDescriptor` from `DynamicType.attributes`.
+   Schema becomes the **one source of truth** for both values and
+   descriptor metadata — values via the typed
+   `<TypeKey>Classification` fields (typed access on edit + listview);
+   descriptor metadata (expected value type, multiplicity, required,
+   enum domain) via custom directives on those generated fields.
+6. Custom directives: `@expectedType(name: String!)`,
+   `@multiplicity(min: Int!, max: Int)`, `@required`,
+   `@enumDomain(values: [String!]!)`. Emitted by the SDL generator
+   on each `<TypeKey>Classification` field. SPA + codegen consumers
+   read them via introspection.
+7. SPA dynamic query construction via `__type(name: ...)`
+   introspection at app start — discover `<TypeKey>Classification`
+   fields + their directives, build editor/listview queries on the
+   fly. Affects every consumer that selected `classification.attributes`
+   pre-β (PRD 055 example queries 1 + 9 need updating in the same
+   change).
+8. Symmetric β² (write side, PRD 056 dependency): typed per-DynamicType
+   input types (`Create<TypeKey>ClassificationInput`) mirror the read
+   types — same hot-swap, same introspection-driven SPA construction.
 
 ### Phase 3 — Write side + validation
 

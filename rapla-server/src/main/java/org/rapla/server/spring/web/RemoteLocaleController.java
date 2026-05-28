@@ -11,6 +11,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.internal.ResourceBundleList;
+import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.RemoteLocaleService;
 import org.rapla.storage.StorageOperator;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -53,7 +54,10 @@ public class RemoteLocaleController implements RemoteLocaleService
         {
             if (localeString == null)
             {
-                if (session.isAuthentified(request))
+                // PRD 050 Phase 7a: single resolveJwtOrThrow per request — the
+                // previous isAuthentified() + checkAndGetUser() pair fired the
+                // JWT resolve (and pre-Phase-7b the IdP sync write) twice.
+                try
                 {
                     final User validUser = session.checkAndGetUser(request);
                     final Preferences preferences = operator.getPreferences(validUser, true);
@@ -62,6 +66,10 @@ public class RemoteLocaleController implements RemoteLocaleService
                     {
                         localeString = new Locale(entry).toString();
                     }
+                }
+                catch (RaplaSecurityException unauthenticated)
+                {
+                    // Anonymous request — fall through to server default.
                 }
                 if (localeString == null)
                 {

@@ -74,6 +74,7 @@ import org.slf4j.LoggerFactory;
 import org.rapla.plugin.jndi.JNDIPlugin;
 import org.rapla.plugin.jndi.internal.JNDIConf;
 import org.rapla.server.AuthenticationStore;
+import org.rapla.server.IdentityClaims;
 import org.rapla.storage.RaplaSecurityException;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -363,52 +364,23 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
         return true;
     }
     
-    /** queries the user and initialize the name and the email field. */
-    public boolean initUser( org.rapla.entities.User user, String username, String password, Category userGroupCategory) 
-       throws RaplaException 
+    /**
+     * Pull the directory attributes the provisioner needs to materialize a
+     * rapla User. Side-effect-free per PRD 050 Phase 8 / AGENTS.md §16 —
+     * caller (RaplaAuthentificationService) hands the result to
+     * {@link org.rapla.server.UserProvisioner}, which owns the per-field
+     * write rules. {@code groupKeys} is left null so the default provisioner
+     * falls back to {@link JNDIPlugin#USERGROUP_CONFIG} (today's behaviour).
+     */
+    @Override
+    public IdentityClaims extractClaims(String username, String password) throws RaplaException
     {
-        boolean modified = false;
-        JNDIUser intUser = authenticateUser( username, password );
-        if ( intUser == null )
-            throw new RaplaSecurityException("Can't authenticate user " + username);
-        String oldUsername = user.getUsername();
-        if ( oldUsername == null || !oldUsername.equals( username ) ) {
-            user.setUsername( username );
-            modified = true;
-        }
-        String oldEmail = user.getEmail();
-        if ( intUser.mail != null && (oldEmail == null || !oldEmail.equalsIgnoreCase( intUser.mail ))) {
-            user.setEmail( intUser.mail );
-            modified = true;
-        }
-        String oldName = user.getName();
-        if ( intUser.cn != null && (oldName == null || !oldName.equals( intUser.cn )) ) {
-            user.setName( intUser.cn );
-            modified = true;
-        } 
-        /*
-         * Adds the default user groups if the user doesnt already have a group*/
-        if (facade != null && user.getGroupList().size() == 0)
+        JNDIUser intUser = authenticateUser(username, password);
+        if (intUser == null)
         {
-            Preferences preferences = facade.getSystemPreferences();
-        	
-        	RaplaMap<Category> groupList = preferences.getEntry(JNDIPlugin.USERGROUP_CONFIG);
-        	Collection<Category> groups;
-        	if (groupList == null)
-        	{
-        	    groups = new ArrayList<>();
-        	}
-        	else
-        	{
-        	    groups = Arrays.asList(groupList.values().toArray(Category.CATEGORY_ARRAY));
-        	}
-        	for (Category group:groups)
-        	{
-            	 user.addGroup( group);
-        	}
-        	modified = true;
+            throw new RaplaSecurityException("Can't authenticate user " + username);
         }
-        return modified;
+        return new IdentityClaims(username, intUser.cn, intUser.mail, "ldap", null);
     }
 
     /**

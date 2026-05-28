@@ -78,6 +78,14 @@ type Query {
 
   # DynamicType by key (e.g. "room", "lecturer", "event"). Null if unknown.
   type(key: String!): DynamicType
+
+  # Permission groups visible to the caller (PRD 035 §5c). Internally backed
+  # by the user-groups category subtree; surfaced as Group so the API doesn't
+  # leak the storage representation. Anonymous → empty list.
+  groups: [Group!]!
+
+  # Permission group by id, or null if unknown / anonymous caller.
+  group(id: ID!): Group
 }
 
 """
@@ -100,6 +108,10 @@ input UserFilter {
 Narrowing predicates for `allocatables(filter:)`. All fields optional;
 null = unconstrained. Multiple predicates AND together. Filter runs over
 the §12-visible subset.
+
+For typed per-attribute filtering, see the GENERATED `where<TypeKey>`
+fields (PRD 035 §5d). They appear on this input alongside the scalar
+fields below — one per resource/person DynamicType in the deployment.
 """
 input AllocatableFilter {
   "Exact-match on the DynamicType key (e.g. \"room\", \"lecturer\"). When set, pre-filters at the storage layer (skips full-table scan)."
@@ -119,6 +131,95 @@ input AllocatableFilter {
   limit:        Int
 }
 
+# === PRD 035 §5d — Generic Where input types ===
+# Predicate inputs reused by every generated <TypeKey>Where input. All
+# operators are optional (null = unconstrained); when multiple non-null
+# operators are passed inside one *Where they AND together.
+
+"Predicates for STRING-valued attributes."
+input StringWhere {
+  eq:         String
+  ne:         String
+  in:         [String!]
+  "Case-insensitive substring contains."
+  contains:   String
+  startsWith: String
+  endsWith:   String
+  isNull:     Boolean
+}
+
+"Predicates for INT-valued attributes (rapla stores as Long)."
+input IntWhere {
+  eq:     Int
+  ne:     Int
+  in:     [Int!]
+  gt:     Int
+  gte:    Int
+  lt:     Int
+  lte:    Int
+  isNull: Boolean
+}
+
+"Predicates for BOOLEAN-valued attributes."
+input BooleanWhere {
+  eq:     Boolean
+  isNull: Boolean
+}
+
+"Predicates for DATE-valued attributes (rapla stores as LocalDateTime)."
+input LocalDateTimeWhere {
+  eq:      LocalDateTime
+  ne:      LocalDateTime
+  gt:      LocalDateTime
+  gte:     LocalDateTime
+  lt:      LocalDateTime
+  lte:     LocalDateTime
+  "Inclusive between — [from, to]."
+  between: [LocalDateTime!]
+  isNull:  Boolean
+}
+
+"""
+Predicates for CATEGORY-valued attributes targeting ORGANIZATION-kind roots
+(hierarchical trees). For VALUE_LIST roots, use the generated `<EnumName>Where`
+input instead (typed enum predicates, autocomplete-friendly).
+"""
+input CategoryWhere {
+  eq:           ID
+  ne:           ID
+  in:           [ID!]
+  "Match by slash-separated KEY path (e.g. \"Standort/Karlsruhe\")."
+  path:         String
+  "Match any descendant of the given category id — useful for ORGANIZATION trees."
+  descendantOf: ID
+  isNull:       Boolean
+}
+
+"""
+Predicates for multi-select CATEGORY (list) attributes targeting
+ORGANIZATION-kind roots. For VALUE_LIST multi-select, use the generated
+`<EnumName>ListWhere` instead.
+"""
+input CategoryListWhere {
+  contains:    ID
+  containsAny: [ID!]
+  containsAll: [ID!]
+  isEmpty:     Boolean
+  isNull:      Boolean
+}
+
+"""
+Predicates for ALLOCATABLE-valued attributes. Currently supports id-equality
+predicates. Future extension (deferred PRD): nested sub-where on the referenced
+allocatable's own classification.
+"""
+input AllocatableWhere {
+  eq:     ID
+  ne:     ID
+  in:     [ID!]
+  isNull: Boolean
+}
+
 type User {
   id:         ID!
   username:   String!
@@ -129,6 +230,23 @@ type User {
   # password), "microsoft", "google", "keycloak". Null for legacy / locally-
   # created users with no recorded source.
   authSource: String
+  # Permission groups the user is a member of (PRD 035 §5c). Internally
+  # backed by the user-groups category subtree; surfaced as the dedicated
+  # Group type so the API doesn't leak the storage representation.
+  groups:     [Group!]!
+}
+
+"""
+Permission group (PRD 035 §5c). Internally rapla stores these as categories
+under the user-groups subtree, but the GraphQL API treats them as a first-
+class type so the contract stays clean if the storage representation ever
+moves. Currently flat; hierarchical fields (parent / children) deferred
+to a separate PRD if real consumer demand emerges.
+"""
+type Group {
+  id:   ID!
+  key:  String!
+  name: String!
 }
 
 type Period {
@@ -138,17 +256,35 @@ type Period {
   end:   LocalDateTime!
 }
 
-# rapla Category — a node in the hierarchical metadata tree (user groups,
-# department trees, semester groupings, etc.). Returned by the category(path)
-# and categories(rootKey) queries; children/parent traversal is lazy (only
-# fetched when selected — Spring for GraphQL's per-field SchemaMapping).
+# rapla Category — a node in the hierarchical metadata tree (value-list roots,
+# organization trees, semester groupings, etc.). Returned by the category(path)
+# and categories(rootKey) queries; children/parent traversal is lazy.
+#
+# The `user-groups` subtree is filtered out of every Category resolver — it
+# surfaces only via the dedicated `Group` type (see permission group section).
+# PRD 035 §5a.
 type Category {
   id:       ID!
   key:      String!
-  name:     String!      # default-locale resolved
-  path:     String!      # slash-separated, relative to the super-category root
-  parent:   Category     # null at the top-level (super-category is hidden)
+  name:     String!         # default-locale resolved
+  path:     String!         # slash-separated, relative to the super-category root
+  kind:     CategoryKind!   # how the consumer should render this Category
+  parent:   Category        # null at the top-level (super-category is hidden)
   children: [Category!]!
+}
+
+"""
+Render-discrimination for Categories. Determined per category root (deployment-
+agnostic): explicit `category-kind` admin annotation > heuristic on tree depth
+> default. See PRD 035 §5a for the determination rules.
+"""
+enum CategoryKind {
+  "Flat picklist (root → leaves only). Render as a dropdown / chip selector."
+  VALUE_LIST
+  "Hierarchical tree (depth ≥ 2). Render as a drill-down / tree picker."
+  ORGANIZATION
+  "rapla-internal subtrees (super-category root etc.). Not normally exposed; flagged for completeness."
+  SYSTEM
 }
 
 # === Allocatables + classifications =========================================
@@ -214,29 +350,19 @@ the current rapla data model.
 enum Multiplicity {
   SINGLE
   LIST
-}
-
-"""
-A single attribute slot on a DynamicType — name, type, constraints. Drives
-SPA form widget configuration on edit-open (PRD 035 §5). Stable across
-GraphQL schema rebuilds: re-fetched per edit-open per PRD 035 §4.
-"""
-type AttributeDescriptor {
-  key:          String!
-  "Locale-resolved attribute name (e.g. \"Number of seats\" for the \"seats\" key)."
-  name:         String!
-  valueType:    AttributeValueType!
-  multiplicity: Multiplicity!
-  required:     Boolean!
-  "For CATEGORY attributes: slash-separated path of the allowed root, or null."
-  rootCategoryPath: String
-  "For ALLOCATABLE attributes: required DynamicType key (e.g. \"room\"), or null."
-  expectedTypeKey:  String
+  BELONGS_TO
+  PACKAGE
 }
 
 """
 A deployment-defined classification (event type, resource type, person type).
 The shape of values an `Allocatable` or `Reservation` of this type carries.
+
+Per-attribute structure (name, valueType, constraints) is exposed via
+**introspection of the generated `<TypeKey>Classification` type** + custom
+directives — NOT via a parallel `attributes: [AttributeDescriptor!]!`
+surface (β refactor 2026-05-28, PRD 055 decision log). The schema-as-data
+path is the single source of truth.
 """
 type DynamicType {
   id:                 ID!
@@ -244,7 +370,6 @@ type DynamicType {
   "Locale-resolved name (e.g. \"Lecture room\")."
   name:               String!
   classificationType: ClassificationType!
-  attributes:         [AttributeDescriptor!]!
 }
 
 # === Classification — interface + AttributeValue =============================
@@ -270,9 +395,8 @@ Three-way interface split:
   types whose DynamicType has classification-type = reservation.
 """
 interface Classification {
-  typeId:     ID!
-  type:       DynamicType!
-  attributes: [AttributeValue!]!
+  typeId: ID!
+  type:   DynamicType!
 }
 
 """
@@ -282,9 +406,8 @@ targets this interface so a typed-narrow fragment like
 validation up-front instead of resolving to null at runtime.
 """
 interface AllocatableClassification implements Classification {
-  typeId:     ID!
-  type:       DynamicType!
-  attributes: [AttributeValue!]!
+  typeId: ID!
+  type:   DynamicType!
 }
 
 """
@@ -293,30 +416,45 @@ the reservation resolvers land next batch. Same split rationale as
 `AllocatableClassification`.
 """
 interface ReservationClassification implements Classification {
-  typeId:     ID!
-  type:       DynamicType!
-  attributes: [AttributeValue!]!
+  typeId: ID!
+  type:   DynamicType!
 }
 
+# === Custom directives on generated classification fields (PRD 055 β refactor) ===
+# These replace the AttributeDescriptor + AttributeValue parallel surface.
+# The schema's typed field types ARE the descriptor; directives carry the
+# bits introspection doesn't natively expose (display names, expected
+# allocatable target type, category root, multiplicity flavor).
+
 """
-A single attribute value, keyed by attribute key. Exactly one *Value or *Values
-field is populated per record per the descriptor's valueType + multiplicity
-(STRING + SINGLE → stringValue; CATEGORY + LIST → categoryValues; etc.).
-Reference values (Category, Allocatable) are full typed objects, §12-filtered
-through the resolver chain. PRD 035 §3-A dropped the value-wrapping union in
-favor of optional-variant fields — descriptors carry type info, this carries
-just the value.
+The locale-resolved human-readable name for a generated classification
+field. Default-locale string baked at SDL generation time.
 """
-type AttributeValue {
-  key:               String!
-  # === singular variants ===
-  stringValue:       String
-  intValue:          Int
-  boolValue:         Boolean
-  dateValue:         LocalDateTime
-  categoryValue:     Category
-  allocatableValue:  Allocatable
-  # === multi-valued variants (only CATEGORY + ALLOCATABLE in the current data model) ===
-  categoryValues:    [Category!]
-  allocatableValues: [Allocatable!]
-}
+directive @displayName(value: String!) on FIELD_DEFINITION
+
+"""
+For ALLOCATABLE-typed attributes: which DynamicType the referenced
+allocatable must belong to. Renders the SPA's allocatable picker filter.
+"""
+directive @expectedType(key: String!) on FIELD_DEFINITION
+
+"""
+For CATEGORY-typed attributes: slash-separated key path of the allowed
+root category. Renders the SPA's category picker root.
+"""
+directive @rootCategory(path: String!) on FIELD_DEFINITION
+
+"""
+The multiplicity flavor on multi-valued attribute fields. SINGLE fields
+do not carry this directive (they're emitted without a list wrapper).
+LIST is the default for `[X!]` types and may be omitted too. BELONGS_TO
+and PACKAGE are explicit markers that drive widget choice in the SPA.
+"""
+directive @multiplicity(value: Multiplicity!) on FIELD_DEFINITION
+
+"""
+Marker on required attribute fields. The field type stays nullable
+(existing pre-required-flag data may carry null), but new saves must
+populate.
+"""
+directive @required on FIELD_DEFINITION

@@ -39,15 +39,20 @@ In:
 - `reservations(filter: ReservationFilter!): [Reservation!]!` — list,
   time-bounded
 - Structural types: `Reservation`, `Appointment`, `RepeatingRule`,
-  `AppointmentBlock`, `Allocation`
+  `AppointmentBlock` (no `allocatables` field — inherited via
+  `block.appointment.allocatables`; restrictions are appointment-level),
+  `Allocation`
 - §12 filtering at the reservation boundary + nested allocatable boundary
 - Generated typed-classification access for reservation types
   (`... on LehrveranstaltungClassification { ... }`)
 - Mandatory window arg + default limit + window-size cap
 
 Out (future PRDs):
-- Mutations (create/update/delete/bulk) — PRD 035 §6 design exists; needs
-  its own implementation PRD
+- **Mutations (create/update/delete/bulk)** — covered by [PRD 056](056-graphql-events-mutations.md)
+  (sibling). Supersedes PRD 035 §6 with named-verbs + `applyChanges` design.
+  Symmetric β² (2026-05-28): write side gets typed per-DynamicType
+  classification inputs mirroring this PRD's typed reads — same
+  hot-swap, same one-schema-two-modes consumption pattern.
 - Conflicts derivation (`conflicts: [Conflict!]!`)
 - Templates (`rapla:template` is currently filtered out per PRD 055-Cut-C policy)
 - `Reservation.canModify` — defer with mutations
@@ -262,6 +267,16 @@ testdefault.xml).
 The only consumer that selects `allocations` (lossless restriction
 shape, needed to round-trip on save).
 
+Post-β (locked 2026-05-28, see decision log): the editor reads
+attribute *values* via the typed `... on <ResTypeKey>Classification`
+fragment and discovers attribute *metadata* (expected type,
+multiplicity, required, enum domain) via a one-shot introspection
+query at SPA start (`__type(name: "<ResTypeKey>Classification")
+{ fields { name type { ... } } }` plus the `@expectedType` /
+`@multiplicity` / `@required` / `@enumDomain` directives). The
+schema is the one source of truth — no parallel `attributes:
+[AttributeDescriptor!]!` field on `DynamicType`.
+
 ```graphql
 query EditorOpen($id: ID!) {
   reservation(id: $id) {
@@ -269,9 +284,10 @@ query EditorOpen($id: ID!) {
     canModify
     classification {
       typeId
-      type { key name attributes { key name valueType multiplicity required } }
-      ... on <ResTypeKey>Classification {           # typed access on edit
-        # deployment-specific typed fields
+      type { key name }                              # metadata via introspection, not via .attributes
+      ... on <ResTypeKey>Classification {           # typed value access
+        # deployment-specific typed fields, built dynamically
+        # from introspection + directives at SPA build time
       }
     }
     appointments {
@@ -475,10 +491,28 @@ The `appointments[].allocatables` is server-side derived from
 
 ## Plan
 
-Once OQ1 is settled, the implementation steps:
+All design questions resolved (see Locked decisions + Open questions
+sections above).
+
+**Cross-PRD dependency:** the **β read simplification** (drop
+`Classification.attributes` + `DynamicType.attributes`, introspection
++ directives in place of descriptor data) is owned by
+[PRD 035 Phase 2](035-rapla-mcp-server.md#phase-2--classification-schema-generation)
+items 5-7. It is not gated on the 055 Reservation surface and can ship
+independently — but the example queries in this PRD (specifically
+query 1, editor open) reflect the post-β shape, so a pre-β
+implementation must use the pre-β `classification.type.attributes`
+selection if shipping before β lands. After β lands, the typed
+`<ResTypeKey>Classification` fragment + introspection are the only
+attribute-shape consumer paths.
+
+Implementation steps:
 
 1. **Schema additions** in `schema.graphqls` — `Reservation`, `Appointment`,
-   `RepeatingRule`, `AppointmentBlock`, `Allocation` (shape per OQ1).
+   `RepeatingRule`, `AppointmentBlock`, `Allocation` per the Q4 lock:
+   `Reservation.allocations[]` (restriction-aware), `Appointment.allocatables[]`
+   (pre-resolved per-appointment view — workhorse), `Appointment.blocks(from:, to:)`
+   sub-resolver, `AppointmentBlock` without `allocatables` field.
 2. **ReservationFilter input** with mandatory window, default + hard-cap
    limits (lessons from allocatables perf round — PRD 055-Cut-C).
 3. **`ReservationGraphQLController`** in `rapla-app/src/main/java/org/rapla/server/spring/graphql/`:
@@ -488,37 +522,47 @@ Once OQ1 is settled, the implementation steps:
    - §12 inline filter: `PermissionController.canRead(reservation, user)` at
      output boundary; per-allocation `canRead(allocatable, user)` filter (drop,
      not stub — AGENTS.md §12 rule 4)
-   - `@SchemaMapping` resolvers for derived fields (`displayName`,
-     `firstDate`, `lastDate`, `Appointment.allocatables`)
-4. **Recurrence resolver** — `Appointment.occurrences(from:, to:)` materializes
+   - `@SchemaMapping` resolvers for simple derived fields (`displayName`,
+     `firstDate`, `lastDate`, `canModify`)
+4. **`Appointment.allocatables` resolver** — the per-appointment view, server-side
+   restriction resolution. For each appointment, walk parent
+   `Reservation.allocations` and return allocatables where
+   `appointmentIds == null || appointmentIds.contains(this.id)`. Per-allocatable
+   `canRead` filter applied here too (§12 rule 4 — drop unreadable). This is the
+   workhorse resolver for listview / iCal / calendar queries; the only
+   `Reservation.allocations` consumer is the editor.
+5. **Recurrence resolver** — `Appointment.blocks(from:, to:)` materializes
    block list via existing `Appointment.createBlocks(...)` (TableViewController
-   line 159-163).
-5. **Tier-3 tests** — MockMvc + `HttpGraphQlTester`, fixtures via testdefault.xml:
+   line 159-163). `AppointmentBlock` carries `{ appointment, start, end, isException }`
+   only — no `allocatables` (consumers traverse `block.appointment.allocatables`).
+6. **Tier-3 tests** — MockMvc + `HttpGraphQlTester`, fixtures via testdefault.xml:
    - §12 leak: non-admin can't see admin-only reservations
    - Window enforcement: query without `from`/`to` → error
    - Window cap: query with span >365 days → error
    - Default limit applied when none specified
    - Restriction model round-trip: split case (10 appointments, mixed lecturers)
-     surfaces correctly through both `Reservation.allocations` and (if C)
-     `Appointment.allocatables`
+     surfaces correctly through both `Reservation.allocations` (editor) and
+     `Appointment.allocatables` (listview)
    - Generated typed-classification: `... on LehrveranstaltungClassification { ... }`
      pulls real DHBW lecture attributes
 
 ## Tests (tier-3 MockMvc spec)
 
 Per AGENTS.md §10, this surface is tier-3 (`@SpringBootTest` +
-`@AutoConfigureMockMvc(addFilters=false)` + `@WithMockUser`). Specific
-assertions per OQ1's choice:
+`@AutoConfigureMockMvc(addFilters=false)` + `@WithMockUser`).
 
-- **If C**: assert `Appointment.allocatables` equals the join of
-  `Reservation.allocations` where `appointmentIds == null ||
-  appointmentIds.contains(this.id)`. Specifically test:
-  1. Reservation-wide allocation (`appointmentIds: null`) appears in
-     every appointment's `allocatables` list.
-  2. Restricted allocation (`appointmentIds: ["appt3"]`) appears ONLY in
-     appointment "appt3"'s list.
-- **If A only**: assert the client-side join semantics are documented
-  + provide a code recipe.
+**Restriction resolution (the workhorse assertion):** assert
+`Appointment.allocatables` equals the join of `Reservation.allocations`
+where `appointmentIds == null || appointmentIds.contains(this.id)`.
+Specifically:
+
+1. Reservation-wide allocation (`appointmentIds: null`) appears in
+   every appointment's `allocatables` list.
+2. Restricted allocation (`appointmentIds: ["appt3"]`) appears ONLY in
+   appointment "appt3"'s list.
+3. Per-allocatable §12: an allocatable the user can't read is dropped
+   from `Appointment.allocatables` AND from `Reservation.allocations`
+   (both output boundaries).
 
 The TableViewController tier-3 tests at
 `rapla-app/src/test/java/.../TableViewControllerTest.java` (if any) are the
@@ -557,3 +601,14 @@ closest analogue.
   ships eager; `firstDate`/`lastDate` ship as convenience fields;
   conflicts deferred to a separate `checkConflicts(...)` top-level
   query (its own PRD).
+- **2026-05-28 — β read simplification (further than Q4)**: drop
+  `attributes: [AttributeValue!]!` from `Classification` interface and
+  `AttributeDescriptor` from `DynamicType.attributes`. SPA uses dynamic
+  query construction via introspection + the typed
+  `<TypeKey>Classification` types; descriptor data lives in the schema
+  itself (field types) + custom directives (`@expectedType`,
+  `@multiplicity`, etc.). One source of truth. Implementation refactor
+  pending — design locked.
+- **2026-05-28 — symmetric β² (writes mirror reads)**: PRD 056 adopts
+  typed per-DynamicType classification inputs; same hot-swap surface,
+  same one-schema-two-modes consumption pattern in both directions.

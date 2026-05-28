@@ -1,28 +1,19 @@
 package org.rapla.server.internal;
 
 import org.rapla.RaplaResources;
-import org.rapla.entities.Category;
-import org.rapla.entities.Entity;
 import org.rapla.entities.User;
-import org.rapla.entities.domain.Permission;
-import org.rapla.entities.internal.UserImpl;
-import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.rapla.server.AuthenticationStore;
+import org.rapla.server.IdentityClaims;
 import org.rapla.server.RemoteSession;
+import org.rapla.server.UserProvisioner;
 import org.rapla.storage.CachableStorageOperator;
-import org.rapla.storage.PermissionController;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.LoginCredentials;
 
 import jakarta.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 public class RaplaAuthentificationService
 {
@@ -37,6 +28,11 @@ public class RaplaAuthentificationService
      *  — see {@link ServerServiceConfig#raplaAuthentificationService}. */
     final AuthenticationStore authenticationStore;
     final CachableStorageOperator operator;
+    /** PRD 050 Phase 8 — provisioning lives behind an SPI bean.
+     *  {@link org.rapla.server.internal.DefaultUserProvisioner} ships as the
+     *  {@code @ConditionalOnMissingBean} default; plugins (dhbwrapla today)
+     *  contribute their own to swap field-policy / group-resolution. */
+    final UserProvisioner userProvisioner;
 
     /** PRD 054 (2026-05-25) — standalone trial install: skip password verification
      *  entirely (single-user, no auth). Bound from the Spring property
@@ -47,12 +43,14 @@ public class RaplaAuthentificationService
     public RaplaAuthentificationService(RaplaResources i18n,
                                         TokenHandler tokenHandler,
                                         CachableStorageOperator operator,
+                                        UserProvisioner userProvisioner,
                                         AuthenticationStore authenticationStore,
                                         @org.springframework.beans.factory.annotation.Value("${rapla.password-check-disabled:false}") boolean passwordCheckDisabled)
     {
         this.i18n = i18n;
         this.tokenHandler = tokenHandler;
         this.operator = operator;
+        this.userProvisioner = userProvisioner;
         this.authenticationStore = authenticationStore;
         this.passwordCheckDisabled = passwordCheckDisabled;
     }
@@ -97,7 +95,6 @@ public class RaplaAuthentificationService
         // PRD 029 Phase 5 (2026-05-25): dropped the legacy connectAs parameter.
         // Admin "switch to user" is now its own server endpoint
         // (/api/auth/impersonate, PRD 051) — not piggybacked on password login.
-        User user = null;
         LOGGER.info("User '{}' is requesting login.", username);
         AuthenticationStore authenticationStoreSuccessfull = null;
         if (authenticationStore != null && authenticationStore.isEnabled())
@@ -118,61 +115,22 @@ public class RaplaAuthentificationService
 
         if (authenticationStoreSuccessfull != null)
         {
-            //@SuppressWarnings("unchecked")
-            user = operator.getUser(username);
-            if (user == null)
-            {
-                LOGGER.info("Successfull for User {}.Creating new Rapla user.", username);
-                java.time.LocalDateTime now = operator.getCurrentTimestamp();
-                UserImpl newUser = new UserImpl(now, now);
-                final ReferenceInfo<User> userReferenceInfo = operator.createIdentifier(User.class, 1).get(0);
-                newUser.setId(userReferenceInfo.getId());
-                newUser.setResolver( operator);
-                user = newUser;
-            }
-            else
-            {
-                Set<Entity> singleton = Collections.singleton(user);
-                Map<Entity,Entity> editList = operator.editObjects(singleton, null);
-                user = (User) editList.values().iterator().next();
-            }
-
-            boolean initUser;
+            // PRD 050 Phase 8: extract claims (read-only) → hand to provisioner
+            // (single write). Replaces the previous inline find-or-create +
+            // initUser mutation + hardcoded "ldap" stamp block. The auth store
+            // owns the source label now (via IdentityClaims.sourceId) — fixes
+            // the pre-Phase-8 mislabel where DHBW users got stamped "ldap"
+            // regardless of which store ran.
+            IdentityClaims claims;
             try
             {
-                Category groupCategory = operator.getSuperCategory().getCategory(Permission.GROUP_CATEGORY_KEY);
-                LOGGER.debug("Looking for update for rapla user '{}' from external source.", username);
-                initUser = authenticationStoreSuccessfull.initUser(user, username, password, groupCategory);
+                claims = authenticationStoreSuccessfull.extractClaims(username, password);
             }
             catch (RaplaSecurityException ex)
             {
-                throw new RaplaSecurityException( i18n.getString("error.login")+ex.getMessage());
+                throw new RaplaSecurityException(i18n.getString("error.login") + ex.getMessage());
             }
-            // PRD 050: stamp the authentication source so the user is gated
-            // from self-changing password / name / email locally. Format
-            // mirrors the OAuth path: "ldap" today (single-store deployments);
-            // multi-LDAP-store setups can append the store id later if needed.
-            // Don't overwrite an existing marker — once set (e.g. by an
-            // earlier OAuth login), the source is sticky until admin
-            // disconnects.
-            if (user.getAuthenticationSource() == null)
-            {
-                user.setAuthenticationSource("ldap");
-                initUser = true;
-            }
-            if (initUser)
-            {
-                LOGGER.info("Udating rapla user '{}' from external source.", username);
-                List<Entity<?>> storeList = new ArrayList<>(1);
-                storeList.add(user);
-                List<ReferenceInfo<Entity<?>>> removeList = Collections.emptyList();
-
-                operator.storeAndRemove(storeList, removeList, null);
-            }
-            else
-            {
-                LOGGER.info("User '{}' already up to date", username);
-            }
+            userProvisioner.provision(claims);
         }
         else
         {
@@ -188,7 +146,7 @@ public class RaplaAuthentificationService
         }
 
         LOGGER.info("Successfull login for '{}'", username);
-        user = operator.getUser(username);
+        User user = operator.getUser(username);
 
         if (user == null)
         {

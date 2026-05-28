@@ -12,8 +12,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.util;
 
+ import java.text.Normalizer;
  import java.util.ArrayList;
  import java.util.List;
+ import java.util.Set;
 
 /** miscellaneous util methods.*/
 public abstract class Tools
@@ -40,63 +42,109 @@ public abstract class Tools
         return bMatch;
     }
 
-    private static boolean validStart(char c)
+    private static boolean isAsciiLetter(char c)
     {
-        return c == '_' || c == '-' || Character.isLetter(c);
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
     }
 
-    private static boolean validLetter(char c) {
-        return (validStart(c) || Character.isDigit(c));
+    private static boolean isAsciiDigit(char c)
+    {
+        return c >= '0' && c <= '9';
     }
 
-    /** Rudimentary tests if the string is a valid xml-tag.*/
-    public static boolean isKey(String key) {
-        if ( key.equals( "true") || key.equals("false"))
+    /**
+     * GraphQL identifier spec: {@code [A-Za-z_][A-Za-z0-9_]*}. Used by
+     * rapla as the universal key-shape rule for DynamicType keys,
+     * Attribute keys, and Category keys — every key surfaced via the
+     * generated GraphQL schema must match this pattern. PRD 058.
+     */
+    public static boolean isSpecCompliant(String key)
+    {
+        if (key == null || key.isEmpty()) return false;
+        if (key.equals("true") || key.equals("false")) return false;
+        char first = key.charAt(0);
+        if (!isAsciiLetter(first) && first != '_') return false;
+        for (int i = 1; i < key.length(); i++)
         {
-            return false;
-        }
-    	// A tag name must start with a letter (a-z, A-Z) or an underscore (_) and can contain letters, digits 0-9, the period (.), the underscore (_) or the hyphen (-). 
-        char[] c = key.toCharArray();
-        if (c.length == 0)
-            return false;
-        if (!validStart(c[0]))
-            return false;
-        for (int i=0;i<c.length;i++) {
-            if (!validLetter(c[i]))
-                return false;
+            char c = key.charAt(i);
+            if (!(isAsciiLetter(c) || isAsciiDigit(c) || c == '_')) return false;
         }
         return true;
     }
 
+    /**
+     * PRD 058 — fold a candidate string into a deterministic GraphQL-spec
+     * key. Pipeline:
+     * <ol>
+     *   <li>NFKD-normalize and drop combining marks (decomposes most diacritics)</li>
+     *   <li>Explicit German fold (NFKD doesn't decompose ß / umlauts on every JVM)</li>
+     *   <li>Replace every char outside {@code [A-Za-z0-9_]} with {@code _}</li>
+     *   <li>If first char is not {@code [A-Za-z_]}, prefix with {@code _}</li>
+     *   <li>If empty after step 3, return {@code "_"}</li>
+     *   <li>If the result collides with {@code taken}, append {@code _2}, {@code _3}, … until unique</li>
+     * </ol>
+     * Callers that don't care about uniqueness pass {@link java.util.Collections#emptySet()}.
+     */
+    public static String toSpecKey(String input, Set<String> taken)
+    {
+        String candidate = toSpecKeyCore(input);
+        if (taken == null || taken.isEmpty() || !taken.contains(candidate)) return candidate;
+        for (int suffix = 2; ; suffix++)
+        {
+            String c = candidate + "_" + suffix;
+            if (!taken.contains(c)) return c;
+        }
+    }
+
+    private static String toSpecKeyCore(String input)
+    {
+        if (input == null || input.isEmpty()) return "_";
+        // 1. Explicit German fold first — NFKD would otherwise decompose 'ü' to
+        // 'u' + combining diaeresis, which we'd then drop as a combining mark,
+        // turning "Prüfer" into "Prufer" instead of "Pruefer".
+        StringBuilder germanFolded = new StringBuilder(input.length());
+        for (int i = 0; i < input.length(); i++)
+        {
+            char c = input.charAt(i);
+            switch (c)
+            {
+                case 'ä': germanFolded.append("ae"); break;
+                case 'ö': germanFolded.append("oe"); break;
+                case 'ü': germanFolded.append("ue"); break;
+                case 'Ä': germanFolded.append("Ae"); break;
+                case 'Ö': germanFolded.append("Oe"); break;
+                case 'Ü': germanFolded.append("Ue"); break;
+                case 'ß': germanFolded.append("ss"); break;
+                default:  germanFolded.append(c);
+            }
+        }
+        // 2. NFKD for other diacritics — decomposes café → cafe + combining acute,
+        // we drop the combining mark below.
+        String decomposed = Normalizer.normalize(germanFolded.toString(), Normalizer.Form.NFKD);
+        StringBuilder ascii = new StringBuilder(decomposed.length());
+        for (int i = 0; i < decomposed.length(); i++)
+        {
+            char c = decomposed.charAt(i);
+            if (isAsciiLetter(c) || isAsciiDigit(c) || c == '_') ascii.append(c);
+            else if (Character.getType(c) == Character.NON_SPACING_MARK) continue;
+            else ascii.append('_');
+        }
+        if (ascii.length() == 0) return "_";
+        char first = ascii.charAt(0);
+        if (!isAsciiLetter(first) && first != '_') ascii.insert(0, '_');
+        return ascii.toString();
+    }
+
+    /** Pre-PRD-057 behaviour for callers that want the legacy (looser) check. */
+    @Deprecated
+    public static boolean isKey(String key)
+    {
+        return isSpecCompliant(key);
+    }
+
     public static String makeValidKey(String key)
     {
-
-        StringBuilder validKey = new StringBuilder();
-        if ( key.isEmpty())
-        {
-            return "_";
-        }
-
-        for (int i=0;i<key.length();i++)
-        {
-            char c = key.charAt( i);
-            if (!validLetter( c))
-            {
-                validKey.append("_");
-            }
-            //if it start with a number
-            else if ( i== 0 && !validStart( c) )
-            {
-                validKey.append("_");
-                validKey.append(c);
-            }
-            else
-            {
-                validKey.append(c);
-            }
-        }
-        return validKey.toString();
-
+        return toSpecKey(key, java.util.Collections.emptySet());
     }
 
     /** same as substring(0,width-1) except that it will not

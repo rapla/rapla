@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
  *       {@link Classification} entity to its concrete generated GraphQL type
  *       ({@code RoomClassification}, {@code LectureClassification}, ...) by
  *       reading {@code classification.getType().getKey()} and sanitizing
- *       per {@link ClassificationSdlGenerator#sanitizeTypeName(String)}.</li>
+ *       per {@link ClassificationSdlGenerator#checkGraphQlCompliantName(String)}.</li>
  *   <li><b>Per-attribute DataFetchers</b> on each generated type — one
  *       closure per (typeKey, attributeKey) pair that reads the value from
  *       the source Classification. Reference values (ALLOCATABLE) are
@@ -78,20 +78,20 @@ public final class GeneratedClassificationWiring
         for (DynamicType dt : dynamicTypes)
         {
             if (dt == null || dt.getKey() == null || dt.getKey().isBlank()) continue;
-            String typeName = ClassificationSdlGenerator.sanitizeTypeName(dt.getKey()) + "Classification";
+            if (ClassificationSdlGenerator.isRaplaInternal(dt)) continue;
+            String typeName = ClassificationSdlGenerator.checkGraphQlCompliantName(dt.getKey()) + "Classification";
             wiringBuilder.type(typeName, builder -> {
                 // graphql-java doesn't auto-propagate interface-level DataFetchers
                 // to concrete types (unlike Spring's @SchemaMapping walker), so we
                 // re-register the inherited Classification interface fields on
                 // each generated implementation explicitly.
-                builder.dataFetcher("typeId",     StructuralTypeFetchers.CLASSIFICATION_TYPE_ID);
-                builder.dataFetcher("type",       StructuralTypeFetchers.CLASSIFICATION_TYPE);
-                builder.dataFetcher("attributes", StructuralTypeFetchers.CLASSIFICATION_ATTRIBUTES);
+                builder.dataFetcher("typeId", StructuralTypeFetchers.CLASSIFICATION_TYPE_ID);
+                builder.dataFetcher("type",   StructuralTypeFetchers.CLASSIFICATION_TYPE);
                 // Then the typed per-attribute fields generated for this DynamicType.
                 for (Attribute attr : dt.getAttributes())
                 {
                     if (attr == null || attr.getKey() == null || attr.getKey().isBlank()) continue;
-                    String fieldName = ClassificationSdlGenerator.sanitizeFieldName(attr.getKey());
+                    String fieldName = ClassificationSdlGenerator.checkGraphQlCompliantName(attr.getKey());
                     builder.dataFetcher(fieldName, attributeFetcher(attr));
                 }
                 return builder;
@@ -115,7 +115,7 @@ public final class GeneratedClassificationWiring
             }
             DynamicType dt = c.getType();
             if (dt == null || dt.getKey() == null) return null;
-            String typeName = ClassificationSdlGenerator.sanitizeTypeName(dt.getKey()) + "Classification";
+            String typeName = ClassificationSdlGenerator.checkGraphQlCompliantName(dt.getKey()) + "Classification";
             GraphQLSchema schema = env.getSchema();
             GraphQLObjectType objectType = schema.getObjectType(typeName);
             if (objectType == null)

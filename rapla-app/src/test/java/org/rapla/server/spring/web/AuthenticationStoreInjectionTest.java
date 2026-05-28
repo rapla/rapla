@@ -3,10 +3,9 @@ package org.rapla.server.spring.web;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.rapla.entities.Category;
-import org.rapla.entities.User;
 import org.rapla.framework.RaplaException;
 import org.rapla.server.AuthenticationStore;
+import org.rapla.server.IdentityClaims;
 import org.rapla.server.internal.RaplaAuthentificationService;
 import org.rapla.server.spring.RaplaSpringBootApplication;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,7 +62,10 @@ class AuthenticationStoreInjectionTest
             {
                 @Override public boolean isEnabled() { return false; }
                 @Override public boolean authenticate(String u, String p) { return false; }
-                @Override public boolean initUser(User user, String username, String password, Category groupRoot) { return false; }
+                @Override public IdentityClaims extractClaims(String u, String p) throws RaplaException
+                {
+                    throw new RaplaException("stub — never called (isEnabled=false)");
+                }
             };
         }
     }

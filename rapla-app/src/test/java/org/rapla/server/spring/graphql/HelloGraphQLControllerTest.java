@@ -24,8 +24,10 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.client.MockMvcWebTestClient;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * PRD 035 testbed — tier-3 GraphQL resolver tests via MockMvc-bound
@@ -346,5 +348,151 @@ class HelloGraphQLControllerTest
         tester.document("{ category(path: \"definitely/not/a/real/path\") { key } }")
               .execute()
               .path("category").valueIsNull();
+    }
+
+    /**
+     * PRD 035 §5a: every returned Category carries a {@code kind} discriminator
+     * (VALUE_LIST / ORGANIZATION / SYSTEM). The fixture's user-groups root is
+     * filtered out of the Category surface and surfaces only via {@code type
+     * Group} — so we never see kind=SYSTEM under categories anyway, but the
+     * field must be non-null for every Category we get back.
+     */
+    @Test
+    void categoriesReturnKindDiscriminator()
+    {
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        List<Map<String, Object>> cats =
+                (List<Map<String, Object>>) (List) tester
+                        .document("{ categories { key kind } }")
+                        .execute()
+                        .path("categories").entityList(Map.class).get();
+        cats.forEach(c -> {
+            Object kind = c.get("kind");
+            assertFalse(kind == null, "category " + c.get("key") + " kind must not be null");
+            assertFalse("SYSTEM".equals(kind), "SYSTEM-kind categories should not surface in categories() — got " + c);
+            assertTrue("VALUE_LIST".equals(kind) || "ORGANIZATION".equals(kind),
+                    "category " + c.get("key") + " kind must be VALUE_LIST or ORGANIZATION, got " + kind);
+        });
+    }
+
+    /**
+     * PRD 035 §5a: user-groups subtree is filtered out of categories() —
+     * permission groups surface via the separate Group type. testdefault.xml's
+     * user-groups root must not appear in the top-level categories() response.
+     */
+    @Test
+    void userGroupsRootIsHiddenFromCategoriesQuery()
+    {
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        List<Map<String, Object>> cats =
+                (List<Map<String, Object>>) (List) tester
+                        .document("{ categories { key } }")
+                        .execute()
+                        .path("categories").entityList(Map.class).get();
+        cats.forEach(c -> {
+            assertFalse("user-groups".equals(c.get("key")),
+                    "user-groups subtree must not surface through categories()");
+        });
+    }
+
+    /**
+     * categories(rootKey: "user-groups") must return empty list — the subtree
+     * isn't addressable through the Category surface.
+     */
+    @Test
+    void categoriesByUserGroupsRootKeyReturnsEmpty()
+    {
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        List<Map<String, Object>> cats =
+                (List<Map<String, Object>>) (List) tester
+                        .document("{ categories(rootKey: \"user-groups\") { key } }")
+                        .execute()
+                        .path("categories").entityList(Map.class).get();
+        assertTrue(cats.isEmpty(), "user-groups rootKey must return empty list, got " + cats);
+    }
+
+    /**
+     * Any path under user-groups via category(path:) returns null —
+     * the subtree is fully filtered out, paths under it not resolvable.
+     */
+    @Test
+    void categoryByPathUnderUserGroupsReturnsNull()
+    {
+        tester.document("{ category(path: \"user-groups\") { key } }")
+              .execute()
+              .path("category").valueIsNull();
+        tester.document("{ category(path: \"user-groups/staff\") { key } }")
+              .execute()
+              .path("category").valueIsNull();
+    }
+
+    // --- groups (PRD 035 §5c) ------------------------------------------------
+
+    /**
+     * §5c: groups query returns ALL categories under the user-groups subtree
+     * (recursive), surfaced as Group instances. testdefault.xml has 8 groups
+     * spread across nested levels (my-group, powerplant, powerplant-admins,
+     * powerplant-staff, registerer, modify-preferences, read-events-from-others,
+     * create-events).
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void groupsReturnsAllPermissionGroups()
+    {
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        List<Map<String, Object>> gs = (List<Map<String, Object>>) (List) tester
+                .document("{ groups { id key name } }")
+                .execute()
+                .path("groups").entityList(Map.class).get();
+        List<String> keys = gs.stream().map(g -> (String) g.get("key")).toList();
+        assertTrue(keys.contains("my-group"),                  () -> "expected my-group in " + keys);
+        assertTrue(keys.contains("powerplant"),                () -> "expected powerplant in " + keys);
+        assertTrue(keys.contains("powerplant-admins"),         () -> "expected powerplant-admins in " + keys);
+        assertTrue(keys.contains("registerer"),                () -> "expected registerer in " + keys);
+        assertTrue(keys.contains("create-events"),             () -> "expected create-events in " + keys);
+    }
+
+    /** §5c §12: anonymous callers see no groups. */
+    @Test
+    @WithAnonymousUser
+    void groupsAnonymousReturnsEmpty()
+    {
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        List<Map<String, Object>> gs = (List<Map<String, Object>>) (List) tester
+                .document("{ groups { key } }")
+                .execute()
+                .path("groups").entityList(Map.class).get();
+        assertTrue(gs.isEmpty(), "anonymous must see no groups, got " + gs);
+    }
+
+    /** group(id) lookup with an unknown id returns null. */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void groupByUnknownIdReturnsNull()
+    {
+        tester.document("{ group(id: \"does-not-exist\") { key } }")
+              .execute()
+              .path("group").valueIsNull();
+    }
+
+    /**
+     * §5c: User.groups field resolves through the GroupGraphQLController
+     * SchemaMapping. monty is in 3 groups in testdefault.xml: my-group,
+     * powerplant, powerplant-admins.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void userGroupsExposesMembership()
+    {
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        List<Map<String, Object>> gs = (List<Map<String, Object>>) (List) tester
+                .document("{ user(username: \"monty\") { username groups { key } } }")
+                .execute()
+                .path("user.groups").entityList(Map.class).get();
+        List<String> keys = gs.stream().map(g -> (String) g.get("key")).toList();
+        assertTrue(keys.contains("my-group"),          () -> "monty missing my-group in " + keys);
+        assertTrue(keys.contains("powerplant"),        () -> "monty missing powerplant in " + keys);
+        assertTrue(keys.contains("powerplant-admins"), () -> "monty missing powerplant-admins in " + keys);
+        assertEquals(3, keys.size(), () -> "monty should be in exactly 3 groups, got " + keys);
     }
 }

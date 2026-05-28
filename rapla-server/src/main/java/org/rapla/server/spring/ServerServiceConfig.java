@@ -13,7 +13,9 @@ import org.rapla.server.RemoteSession;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.framework.TimeZoneConverter;
 import org.rapla.server.AuthenticationStore;
+import org.rapla.server.UserProvisioner;
 import org.rapla.server.extensionpoints.ServletRequestPreprocessor;
+import org.rapla.server.internal.DefaultUserProvisioner;
 import org.rapla.server.internal.RaplaAuthentificationService;
 import org.rapla.server.internal.RaplaKeyStorageImpl;
 import org.rapla.server.internal.ReloadService;
@@ -24,6 +26,7 @@ import org.rapla.server.internal.TokenHandler;
 import org.rapla.storage.CachableStorageOperator;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -46,6 +49,10 @@ public class ServerServiceConfig
         // by ServerServiceImpl's constructor first" ordering.
         CachableStorageOperator operator = selector.get();
         operator.connect();
+        // PRD 058 — one-shot startup migration of any non-GraphQL-spec keys in
+        // the loaded cache. Runs before HotSwappableGraphQlSource builds the SDL.
+        // Marker-guarded; a failure here is a fatal startup error.
+        operator.migrateGraphqlKeysIfNeeded();
         return operator;
     }
 
@@ -90,6 +97,7 @@ public class ServerServiceConfig
             RaplaResources i18n,
             TokenHandler tokenHandler,
             CachableStorageOperator operator,
+            UserProvisioner userProvisioner,
             ObjectProvider<AuthenticationStore> authenticationStoreProvider,
             @org.springframework.beans.factory.annotation.Value("${rapla.password-check-disabled:false}") boolean passwordCheckDisabled)
     {
@@ -101,7 +109,20 @@ public class ServerServiceConfig
         // legacy JNDI/LDAP, or a future Keycloak adapter each register one).
         // See AuthenticationStoreInjectionTest for the regression check.
         return new RaplaAuthentificationService(i18n, tokenHandler, operator,
+                userProvisioner,
                 authenticationStoreProvider.getIfAvailable(), passwordCheckDisabled);
+    }
+
+    /**
+     * PRD 050 Phase 8 — common provisioner core. Plugins (dhbwrapla today)
+     * replace this by registering their own {@link UserProvisioner} bean;
+     * Spring drops the default via {@code @ConditionalOnMissingBean}.
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public UserProvisioner defaultUserProvisioner(CachableStorageOperator operator)
+    {
+        return new DefaultUserProvisioner(operator);
     }
 
     /** PRD 009: empty default so the constructor of {@code RemoteStorageController}
@@ -132,9 +153,9 @@ public class ServerServiceConfig
 
     @Bean
     public org.rapla.server.spring.oauth.external.ExternalUserResolver externalUserResolver(
-            RaplaFacade facade)
+            CachableStorageOperator operator)
     {
-        return new org.rapla.server.spring.oauth.external.ExternalUserResolver(facade);
+        return new org.rapla.server.spring.oauth.external.ExternalUserResolver(operator);
     }
 
     @Bean

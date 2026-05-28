@@ -443,6 +443,52 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
     }
 
+    /**
+     * PRD 058 — one-shot startup migration that renames every DynamicType,
+     * Attribute, and Category key with a non-GraphQL-spec character to a
+     * deterministic spec-compliant key, and propagates the rename through
+     * {@code nameformat*} annotations.
+     *
+     * <p>Idempotent: marker preference {@code org.rapla.server.graphql-key-migration.applied}
+     * causes subsequent boots to skip-fast (cache assertion still runs).
+     * Multi-pod safe: holds the operator's global write lock for the whole
+     * planning + write phase; pod B either pre-empts on the marker or blocks
+     * on the lock and finds the marker on re-check.
+     *
+     * <p>Called from {@code ServerServiceConfig.cachableStorageOperator()}
+     * immediately after {@link #connect()} returns, before any other bean
+     * sees the operator. Failure to migrate is a fatal startup error.
+     */
+    public void migrateGraphqlKeysIfNeeded() throws RaplaException
+    {
+        if (GraphqlKeyMigration.markerSet(this))
+        {
+            LOGGER.debug("PRD 058 — graphql key spec migration marker present; skipping plan/apply");
+            GraphqlKeyMigration.assertCacheSpecCompliant(this);
+            return;
+        }
+
+        RaplaLock.WriteLock writeLock = writeLockIfLoaded("graphql key spec migration");
+        try
+        {
+            // Re-check the marker inside the lock — another pod may have
+            // completed while we waited.
+            if (GraphqlKeyMigration.markerSet(this))
+            {
+                LOGGER.debug("PRD 058 — marker appeared while waiting on lock; skipping migration");
+                return;
+            }
+            String summary = GraphqlKeyMigration.runUnderLock(this);
+            LOGGER.info("PRD 058 — graphql key spec migration: {}", summary);
+        }
+        finally
+        {
+            lockManager.unlock(writeLock);
+        }
+
+        GraphqlKeyMigration.assertCacheSpecCompliant(this);
+    }
+
     protected abstract Collection<ExternalSyncEntity> getAllExternalSyncEntities() throws RaplaException;
 
     /**
@@ -1021,10 +1067,67 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         Set<Entity> storeObjects = new HashSet<>(evt.getStoreObjects());
         //Set<Entity> removeObjects = new HashSet<Entity>(evt.getRemoveObjects());
         setResolverAndCheckReferences(evt, store);
+        checkGraphqlKeySpecCompliance(storeObjects);
         checkConsistency(evt, store);
         checkUnique(evt, store);
         checkNoDependencies(evt, store);
         checkVersions(storeObjects);
+    }
+
+    /**
+     * PRD 058 — dispatch-side guard: reject any incoming UpdateEvent that
+     * carries a DynamicType, Attribute, or Category whose key fails the
+     * GraphQL identifier spec ({@link Tools#isSpecCompliant}).
+     *
+     * <p>This is a belt-and-suspenders defence in front of
+     * {@link DynamicTypeImpl#validate} / {@link DynamicTypeImpl#checkKey}
+     * (which also call into the same predicate today via the deprecated
+     * {@code Tools.isKey} alias) — making the check an explicit, named
+     * step in {@link #check} guarantees it can't be silently bypassed by
+     * a future refactor of those validators. Any non-spec key reaching
+     * this point originated client-side (Swing admin write, REST/GraphQL
+     * mutation, plugin import) and would otherwise corrupt the cache
+     * invariant the GraphQL SDL generator depends on.
+     */
+    private void checkGraphqlKeySpecCompliance(Set<Entity> storeObjects) throws RaplaException
+    {
+        for (Entity entity : storeObjects)
+        {
+            Class<? extends Entity> raplaType = entity.getTypeClass();
+            if (DynamicType.class == raplaType)
+            {
+                DynamicType dt = (DynamicType) entity;
+                if (DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE
+                        .equals(dt.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE)))
+                {
+                    continue;  // rapla-internal types (rapla:period, rapla:template)
+                }
+                if (!Tools.isSpecCompliant(dt.getKey()))
+                {
+                    throw new RaplaException(i18n.format("error.invalid_key",
+                            new Object[] { dt.getKey(), "'_'", "'_'" }));
+                }
+                for (Attribute a : dt.getAttributes())
+                {
+                    if (a == null) continue;
+                    if (!Tools.isSpecCompliant(a.getKey()))
+                    {
+                        throw new RaplaException(i18n.format("error.invalid_key",
+                                new Object[] { a.getKey(), "'_'", "'_'" }));
+                    }
+                }
+            }
+            else if (Category.class == raplaType)
+            {
+                Category cat = (Category) entity;
+                if (cat.getKey() == null) continue;  // super-category check is elsewhere
+                if (!Tools.isSpecCompliant(cat.getKey()))
+                {
+                    throw new RaplaException(i18n.format("error.invalid_key",
+                            new Object[] { cat.getKey(), "'_'", "'_'" }));
+                }
+            }
+        }
     }
 
     protected void initIndizes() throws RaplaException

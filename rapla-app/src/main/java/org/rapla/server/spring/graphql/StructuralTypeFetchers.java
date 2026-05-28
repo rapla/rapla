@@ -25,8 +25,6 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.server.spring.graphql.ClassificationGraphQLController.AttributeDescriptorDto;
-import org.rapla.server.spring.graphql.ClassificationGraphQLController.AttributeValueDto;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.StorageOperator;
 
@@ -199,23 +197,11 @@ public final class StructuralTypeFetchers
                 }
             };
 
-    static final LightDataFetcher<List<AttributeDescriptorDto>> DYNAMIC_TYPE_ATTRIBUTES =
-            new LightSourceFetcher<DynamicType, List<AttributeDescriptorDto>>(DynamicType.class)
-            {
-                @Override protected List<AttributeDescriptorDto> read(DynamicType dt,
-                        Supplier<DataFetchingEnvironment> env)
-                {
-                    Attribute[] attrs = dt.getAttributes();
-                    if (attrs == null) return List.of();
-                    List<AttributeDescriptorDto> out = new ArrayList<>(attrs.length);
-                    for (Attribute attr : attrs)
-                    {
-                        if (attr == null) continue;
-                        out.add(AttributeDescriptorDto.from(attr));
-                    }
-                    return out;
-                }
-            };
+    // DYNAMIC_TYPE_ATTRIBUTES fetcher dropped 2026-05-28 (PRD 055 β refactor)
+    // — the `attributes: [AttributeDescriptor!]!` field is removed from
+    // DynamicType. SPA reads attribute metadata via introspection of the
+    // generated <TypeKey>Classification types + custom directives
+    // (@displayName, @expectedType, @rootCategory, @multiplicity, @required).
 
     // === Category field fetchers ==============================================
     //
@@ -235,8 +221,10 @@ public final class StructuralTypeFetchers
             };
 
     /**
-     * Category path is slash-separated from the super-category root. Needs
-     * the operator to resolve the root, so it's a factory not a singleton.
+     * Category path is slash-separated KEY path from the super-category
+     * root (per PRD 035 §5a — Category API uses keys, not localized names).
+     * Localized rendering is a separate consumer concern handled via the
+     * {@code name} field.
      */
     static LightDataFetcher<String> categoryPath(StorageOperator operator)
     {
@@ -244,7 +232,7 @@ public final class StructuralTypeFetchers
         {
             @Override protected String read(Category c, Supplier<DataFetchingEnvironment> env)
             {
-                return c.getPath(operator.getSuperCategory(), localeFrom(env));
+                return CategoryKindClassifier.keyPath(c);
             }
         };
     }
@@ -275,6 +263,21 @@ public final class StructuralTypeFetchers
                 }
             };
 
+    /**
+     * Resolves {@code Category.kind} via the PRD 035 §5a deployment-agnostic
+     * three-tier rule: rapla-core hardcoded → admin annotation → depth heuristic.
+     */
+    static LightDataFetcher<String> categoryKind(StorageOperator operator)
+    {
+        return new LightSourceFetcher<Category, String>(Category.class)
+        {
+            @Override protected String read(Category c, Supplier<DataFetchingEnvironment> env)
+            {
+                return CategoryKindClassifier.kindOf(c, operator.getSuperCategory()).name();
+            }
+        };
+    }
+
     // === Classification interface fetchers ====================================
 
     static final LightDataFetcher<String> CLASSIFICATION_TYPE_ID =
@@ -296,79 +299,11 @@ public final class StructuralTypeFetchers
                 }
             };
 
-    static final LightDataFetcher<List<AttributeValueDto>> CLASSIFICATION_ATTRIBUTES =
-            new LightSourceFetcher<Classification, List<AttributeValueDto>>(Classification.class)
-            {
-                @Override protected List<AttributeValueDto> read(Classification c,
-                        Supplier<DataFetchingEnvironment> env)
-                {
-                    DynamicType dt = c.getType();
-                    if (dt == null) return List.of();
-                    RequestContextInstrumentation.RequestCtx rc = ctxFrom(env);
-                    List<AttributeValueDto> out = new ArrayList<>();
-                    for (Attribute attr : dt.getAttributes())
-                    {
-                        if (attr == null) continue;
-                        AttributeValueDto dto = buildAttributeValue(c, attr, rc);
-                        if (dto != null) out.add(dto);
-                    }
-                    return out;
-                }
-            };
-
-    /** Build an {@link AttributeValueDto} for a single attribute on the
-     *  interface path. §12 applies to ALLOCATABLE values (Category passes
-     *  through — global metadata). */
-    private static AttributeValueDto buildAttributeValue(Classification c, Attribute attr,
-            RequestContextInstrumentation.RequestCtx rc)
-    {
-        String key = attr.getKey();
-        AttributeType t = attr.getType();
-        if (t == null) return null;
-        boolean multi = isMultiSelect(attr);
-
-        if (multi)
-        {
-            Collection<Object> values = c.getValues(attr);
-            if (values == null || values.isEmpty()) return AttributeValueDto.bare(key);
-            if (t == AttributeType.CATEGORY)
-            {
-                List<Category> out = new ArrayList<>(values.size());
-                for (Object v : values) if (v instanceof Category cat) out.add(cat);
-                return AttributeValueDto.categoryList(key, out);
-            }
-            if (t == AttributeType.ALLOCATABLE)
-            {
-                List<Allocatable> out = new ArrayList<>(values.size());
-                for (Object v : values)
-                {
-                    if (!(v instanceof Allocatable a)) continue;
-                    if (!canReadAllocatable(a, rc)) continue;
-                    out.add(a);
-                }
-                return AttributeValueDto.allocatableList(key, out);
-            }
-            return AttributeValueDto.bare(key);
-        }
-
-        Object v = c.getValueForAttribute(attr);
-        if (v == null) return AttributeValueDto.bare(key);
-
-        return switch (t)
-        {
-            case STRING      -> AttributeValueDto.stringV(key, v.toString());
-            case INT         -> AttributeValueDto.intV(key,
-                    v instanceof Number n ? n.longValue() : null);
-            case BOOLEAN     -> AttributeValueDto.boolV(key, v instanceof Boolean b ? b : null);
-            case DATE        -> AttributeValueDto.dateV(key, v instanceof LocalDateTime ldt ? ldt : null);
-            case CATEGORY    -> AttributeValueDto.categoryV(key, v instanceof Category cat ? cat : null);
-            case ALLOCATABLE -> {
-                if (!(v instanceof Allocatable a)) yield AttributeValueDto.bare(key);
-                yield canReadAllocatable(a, rc) ? AttributeValueDto.allocatableV(key, a)
-                                                : AttributeValueDto.bare(key);
-            }
-        };
-    }
+    // CLASSIFICATION_ATTRIBUTES fetcher + buildAttributeValue helper dropped
+    // 2026-05-28 (PRD 055 β refactor) — the `attributes: [AttributeValue!]!`
+    // field is removed from the Classification interface. Typed-narrow
+    // fragments on generated `<TypeKey>Classification` types are the read
+    // path; descriptors carried via custom directives on those fields.
 
     /** §12 read gate for ALLOCATABLE references. Anonymous = no access;
      *  authenticated = canRead via the cached PermissionController. */
@@ -401,17 +336,16 @@ public final class StructuralTypeFetchers
                 .dataFetcher("owner",          allocatableOwner(operator)));
         b.type("DynamicType", t -> t
                 .dataFetcher("name",               DYNAMIC_TYPE_NAME)
-                .dataFetcher("classificationType", DYNAMIC_TYPE_CLASSIFICATION_TYPE)
-                .dataFetcher("attributes",         DYNAMIC_TYPE_ATTRIBUTES));
+                .dataFetcher("classificationType", DYNAMIC_TYPE_CLASSIFICATION_TYPE));
         b.type("Classification", t -> t
-                .dataFetcher("typeId",     CLASSIFICATION_TYPE_ID)
-                .dataFetcher("type",       CLASSIFICATION_TYPE)
-                .dataFetcher("attributes", CLASSIFICATION_ATTRIBUTES));
+                .dataFetcher("typeId", CLASSIFICATION_TYPE_ID)
+                .dataFetcher("type",   CLASSIFICATION_TYPE));
         b.type("Category", t -> t
                 .dataFetcher("name",     CATEGORY_NAME)
                 .dataFetcher("path",     categoryPath(operator))
                 .dataFetcher("parent",   categoryParent(operator))
-                .dataFetcher("children", CATEGORY_CHILDREN));
+                .dataFetcher("children", CATEGORY_CHILDREN)
+                .dataFetcher("kind",     categoryKind(operator)));
         // The Classification interface's fields are inherited by the
         // AllocatableClassification + ReservationClassification interfaces
         // automatically per the GraphQL spec — no separate wiring needed.

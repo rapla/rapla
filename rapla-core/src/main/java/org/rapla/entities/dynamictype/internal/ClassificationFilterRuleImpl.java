@@ -133,20 +133,19 @@ public final class ClassificationFilterRuleImpl extends ReferenceHandler
 
     public Attribute getAttribute() {
         DynamicType dynamicType = getDynamicType();
-        Attribute attribute;
+        // Prefer id-based resolution: the id is immutable, so a rule referencing
+        // a renamed attribute still resolves correctly. Fall back to key for
+        // legacy rules persisted before attributeId was added.
         if ( attributeId != null)
         {
-            attribute = findAttributeById(dynamicType, attributeId);
+            Attribute found = findAttributeById(dynamicType, attributeId);
+            if (found != null) return found;
         }
         if ( attributeKey != null)
         {
-            attribute = findAttributeByKey( dynamicType, attributeKey);
+            return findAttributeByKey( dynamicType, attributeKey);
         }
-        else
-        {
-            throw new IllegalStateException("neither attribute Key nor Attribute Id is set in filter rule "+ this);
-        }
-		return attribute;
+        throw new IllegalStateException("neither attribute Key nor Attribute Id is set in filter rule "+ this);
     }
     
     public DynamicType getDynamicType() {

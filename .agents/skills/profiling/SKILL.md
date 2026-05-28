@@ -100,30 +100,35 @@ grep -oE "[a-z]+/[a-z]+/[a-z]+" /tmp/profile.collapsed \
 
 async-profiler's collapsed format is `caller;...;callee`. The LAST frame on the line is the leaf (where the CPU was sampled). graphql-java's `ExecutionStrategy.fetchField` appearing as a leaf means the CPU is spinning inside graphql-java's per-field dispatch machinery, NOT in our resolver bodies.
 
-## Known findings — PRD 035 Cut C GraphQL slow query (2026-05-27)
+## Known findings — PRD 035 Cut C GraphQL slow query (2026-05-27, fixed)
 
-The Person query `{ allocatables(filter: {typeKeyEq: "Person"}) { displayName classification { ... on PersonClassification { firstname … 11 fields … } } } }` took **15s** for 42k rows under the dhbw admin user. Profile breakdown (3259 samples at 5ms intervals):
+The Person query `{ allocatables(filter: {typeKeyEq: "Person"}) { displayName classification { ... on PersonClassification { firstname … 11 fields … } } } }` took **15.0 s** for 42k rows under the dhbw admin user, dropping to **6.35 s** after the fix set below (58% reduction).
+
+### Initial profile (3259 samples at 5 ms)
 
 | Top leaf method | Samples | Root cause |
 |---|---:|---|
-| `ExecutionStrategy.lambda$fetchField$8` | 33 | graphql-java's per-field dispatch state machine — unavoidable framework |
-| `Method.toGenericString` (via `Executable.sharedToGenericString`) | 24 | Reflection metadata reconstruction by Spring's `DataFetcherHandlerMethodSupport.<init>` — **per dispatch** |
+| `ExecutionStrategy.lambda$fetchField$8` | 33 | graphql-java per-field dispatch — framework floor |
+| `Method.toGenericString` (via `Executable.sharedToGenericString`) | 24 | Spring's `DataFetcherHandlerMethodSupport.<init>` allocates a HandlerMethod **per dispatch** |
 | `ExecutionStrategy.fetchField` | 25 | framework |
 | `ExecutionStepInfoFactory.createExecutionStepInfo` | 18 | framework |
-| `DefaultContextSnapshotFactory.captureFromContext` | 16 | **Micrometer Context Propagation** captures thread-local state per field — observability hook we don't use |
-| `DataFetcherHandlerMethodSupport.<init>` | 10 | **Spring constructs a new HandlerMethod per dispatch** — `@SchemaMapping` allocates per call instead of caching |
-| `Logger.isTraceEnabled` (logback) | 12 | Trace-level check is hot at 462k field invocations |
-| `ClassificationImpl.getType` | 21 | **Our code** — `resolver.tryResolve(parentId, DynamicType.class)` per `getValue` call instead of caching |
+| `DefaultContextSnapshotFactory.captureFromContext` | 16 | **Micrometer Context Propagation** — Spring's `ContextDataFetcherDecorator` captures thread-locals per field |
+| `DataFetcherHandlerMethodSupport.<init>` | 10 | Same as line 2 |
+| `Logger.isTraceEnabled` (logback) | 12 | Trace-level check at 462k field invocations |
 
-**Three concrete fixes the profile justified** (none of which we'd have found by guessing):
+### Fixes applied (documented in `docs/graphql.md` § "Performance patterns")
 
-1. **Disable Micrometer GraphQL context-snapshot propagation.** Spring auto-installs `ContextDataFetcherDecorator` which calls `DefaultContextSnapshotFactory.captureFromContext` per field. If we don't observability-trace GraphQL fields, this is pure overhead.
+1. **`LightDataFetcher` singletons** for per-row fields — the `TrivialDataFetcher` marker tells Spring's `ContextTypeVisitor` to skip the Micrometer wrap AND tells graphql-java's `ExecutionStrategy` to skip heavy instrumentation hooks. Replaces `@SchemaMapping` methods on the hot path. Mechanism + code template in `docs/graphql.md`.
+2. **Per-attribute `LightDataFetcher` class** for typed classification fields — one instance per `(DynamicType, Attribute)`, allocated once at schema build, reused for every row.
+3. **`RequestContextInstrumentation`** — caches caller / PermissionController / RaplaLocale once at `beginExecution` in the per-query `GraphQLContext`. Fetchers read from there instead of re-resolving per field.
+4. **`HotSwappableGraphQlSource.validateInterfaceCoverage`** — boot-time check that every interface field has an explicit DataFetcher on every implementation. Catches the "forgot to re-wire on a new generated type" silent-null bug.
+5. **`-Dspring-boot.run.optimizedLaunch=false`** — removes the dev-mode `-XX:TieredStopAtLevel=1` that limits JIT to tier 1. Saves ~1 s on hot-path queries.
 
-2. **Make our generated DataFetchers `TrivialDataFetcher`** to bypass Spring's per-dispatch `HandlerMethod` construction. Saves the `Method.toGenericString` + reflection metadata cost.
+**Result:** 15.0 s → 6.35 s (Tier 1 floor). Below that requires Tier 2 architectural changes (batched/projected GraphQL fields). The remaining 6.35 s is graphql-java's framework floor (~3 s) + Jackson serialization of the 14 MB response (~3 s) + our resolver bodies (~0.5 s).
 
-3. **Cache `Classification.getType()`** per Classification instance (the parent DynamicType doesn't change after construction). Currently fires `resolver.tryResolve` per attribute access.
+### Don't try
 
-Pre-fix baseline: 15s for 42k × 11 fields. Estimated combined gain from the three above: 4-7s.
+**`ClassificationImpl.getType()` caching was considered and rejected.** The candidate fix (cache `resolver.tryResolve` result on the Classification instance) only saves ~25-70 ms, and breaks correctness on DynamicType admin updates — the operator's update path does NOT walk referencing Classifications to invalidate held DynamicTypeImpl references, so a cached pointer goes stale until something forces a new lookup. Not worth the correctness risk for the small win.
 
 ## Common pitfalls
 

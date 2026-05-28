@@ -5,6 +5,65 @@ covering allocatables (resources + persons), classifications, and dynamic
 types. Live UIs: GraphiQL at `/graphiql/`, Scalar at `/scalar/`,
 schema-as-data via introspection.
 
+---
+
+## TODO — Angular SPA admin convention helper (PRD 035 §5b follow-up)
+
+> **Big TODO, not yet implemented.** Land alongside the schema-editor
+> work or as a separate small PRD.
+
+**Problem.** Rapla keys go into the GraphQL schema verbatim — no
+PascalCase, no SCREAMING_SNAKE, no automatic transformation
+(PRD 058 + PRD 035 §5b revision 2026-05-28). That's the right
+boundary: PRD 058 owns syntax (the GraphQL identifier regex),
+admins own convention (case style). But it means an admin who keys a
+DynamicType `room` and category leaves `seminar_raum` / `hoersaal`
+gets a schema like:
+
+```graphql
+type roomClassification implements Classification { ... }
+enum raumtyp { seminar_raum hoersaal }
+```
+
+That's **spec-valid GraphQL** — graphql-java loads it, queries work,
+introspection returns it as-is. But it deviates from convention
+(PascalCase type names, SCREAMING_SNAKE enum values), and some
+codegen / lint tooling will warn or auto-rename downstream.
+
+**What we should NOT do.** Imposing the convention server-side (e.g.
+having the SDL generator PascalCase type names or uppercase enum
+values) re-introduces the same class of bug PRD 058 just removed:
+silent transformations destroy information. Concrete burn 2026-05-28
+on dhbw: `DIN_5_2_3_11` / `DIN_5_2_31_1` / `DIN_52_3_11` all collapsed
+to `DIN52311`; SDL generator silently dropped 2 of every 3 leaves
+with a WARN. Verbatim emission was the fix.
+
+**What we should do.** The Angular schema-editor screens should
+**auto-suggest** the GraphQL convention at key-creation time:
+
+- DynamicType key field — show a soft hint "Convention: PascalCase
+  (e.g. `Room` instead of `room`)" and offer a one-click
+  "Apply convention" button that rewrites the input
+- Category leaf key field (when the parent root is VALUE_LIST) —
+  same hint pattern with SCREAMING_SNAKE_CASE suggestion
+  (e.g. `HOERSAAL` instead of `hoersaal`)
+- Attribute key — camelCase (matches GraphQL field convention)
+- Never enforce; never silently rewrite on save. The admin's
+  explicit choice always wins. The hint is education, not policy.
+
+This lives in the SPA's schema-editor forms (PRD 057
+`createDynamicType` / `updateDynamicType` mutation consumers when
+those ship). Server-side, the existing PRD 058 spec check is the only
+gate — same as today.
+
+**Why this is fine to defer.** Existing dhbw deploys already have keys
+in mixed conventions; the verbatim emission preserves whatever the
+admin chose. Schema convention deviation is cosmetic and tool-handled
+(graphql-codegen normalizes for target-language types). No urgency
+from the server side. The hint UX lands when the schema editor lands.
+
+---
+
 This doc is a deployment-agnostic tour. **Deployment-specific examples**
 (real type keys like `Raum`/`Gebaeude`/`Lehrveranstaltung`, role
 walkthroughs against actual users, capacity / building / equipment
@@ -72,6 +131,174 @@ Classification (interface, base — shape: typeId, type, attributes)
 The SPA must query the **interface** path only — never the typed
 implementations. Typed implementations are for codegen consumers (plugin
 authors, MCP integrators with a fixed deployment).
+
+---
+
+## Categories, enums, and groups — design model
+
+rapla's category tree serves three distinct purposes that look the same
+in storage but should look different at the API boundary. The GraphQL
+schema makes this split explicit (PRD 035 §5a-c).
+
+### Three category modes
+
+| Mode | API surface | When schema rebuilds |
+|---|---|---|
+| **Value-list** (flat picklist — e.g. an attribute's allowed values) | Generated enum, one per root | On category leaf add/remove/rename in that root |
+| **Hierarchical organization tree** (e.g. department/location hierarchies) | Generic `Category` with `kind: ORGANIZATION` | Never — runtime tree-walk, schema-stable |
+| **Permission groups** (the `user-groups` subtree internally) | Separate `type Group` | Internal-only changes don't affect the schema |
+
+Determination is per category root, deployment-agnostic:
+
+1. **rapla-core rule** — the `user-groups` subtree is filtered out of every
+   Category resolver and surfaces only via `type Group`. Categories under
+   the super-category that match rapla-internal names are SYSTEM-kind
+   (hidden).
+2. **Admin annotation** — `category-kind: value-list` / `organization` on
+   the category root wins if present.
+3. **Heuristic** — root with depth = 1 (no grandchildren) → `VALUE_LIST`;
+   depth ≥ 2 → `ORGANIZATION`. Stable structure-based check; no
+   deployment-specific root names baked into rapla code.
+
+The deployment data (which roots are which) is purely the admin's call;
+the mechanism is the same at every install.
+
+### `Category` and `CategoryKind`
+
+For ORGANIZATION-kind and SYSTEM-kind categories (plus generic admin/MCP
+exploration of any category including the trees backing VALUE_LIST
+roots), the generic Category type:
+
+```graphql
+enum CategoryKind {
+  VALUE_LIST     # flat picklist — also surfaces as a generated enum (see below)
+  ORGANIZATION   # hierarchical tree — render as drill-down picker
+  SYSTEM         # rapla-internal (super-category etc.) — not normally exposed
+}
+
+type Category {
+  id:       ID!
+  key:      String!
+  name:     String!       # locale-resolved
+  path:     String!       # slash-separated keys from root
+  kind:     CategoryKind!
+  parent:   Category
+  children: [Category!]!
+}
+```
+
+The `kind` field lets a generic consumer (SPA renderer, MCP tool, admin
+explorer) render any Category appropriately without prior deployment
+knowledge — flat dropdown vs tree breadcrumb. Discovery in GraphiQL is
+one query:
+
+```graphql
+{ categories { name kind } }
+```
+
+### Generated enums per VALUE_LIST root
+
+For every root with `kind: VALUE_LIST`, the schema also generates a
+GraphQL enum whose values mirror the root's children. Classification
+typed fields targeting those roots use the enum directly:
+
+```graphql
+enum Raumart {
+  """Büroräume allgemein"""
+  Bueroraeume
+  """Hörsaal"""
+  Hoersaal
+  """Labor"""
+  Labor
+  """Prüfungsraum"""
+  Pruefungsraum
+}
+
+type RaumClassification implements Classification & AllocatableClassification {
+  typeId: ID!
+  type: DynamicType!
+  attributes: [AttributeValue!]!
+  Raumart:          Raumart           # ← enum, not Category
+  AusstattungListe: [Ausstattung!]    # ← enum list (multi-select)
+  SyncStatus:       SyncStatus
+  Gebaeude:         Allocatable       # ALLOCATABLE attrs unchanged
+}
+```
+
+Sanitization rule for enum value names (mandatory because GraphQL
+enums must match `[_A-Za-z][_0-9A-Za-z]*`):
+
+- Umlauts ASCII-folded: `ä` → `ae`, `ö` → `oe`, `ü` → `ue`, `ß` → `ss`
+- Spaces / dashes / dots / colons → `_`, then collapse repeats
+- Non-identifier characters dropped or replaced
+- Result must start with a letter or underscore
+- Locale-resolved name carried via the enum value's `description`
+
+**Identity stability across admin edits:** category rename → schema
+rebuild emits a new enum value → consumers regenerate (codegen) or
+rediscover (introspection). Same model as DynamicType attribute key
+renames (which we already accept). Category renames are admin-rare;
+the rebuild churn is acceptable. Admin-add is safe (existing queries
+unaffected, new value visible after rebuild). Admin-delete invalidates
+in-flight queries referencing the removed value during the ~10 s
+hot-swap window.
+
+**Why enums for VALUE_LIST roots specifically:**
+
+- AI / GraphiQL discoverability — `__type(name: "Raumart")` introspection
+  returns the full value space; autocomplete shows values inline when
+  typing predicates. No separate descriptor query for value discovery.
+- Type-safe filtering — `{ Raumart: { eq: Bueroraeume } }` is validated
+  at parse time; UUID-typed predicates aren't.
+- Smaller wire payload — enum value names vs full Category objects
+- Codegen consumers get typed enum types in TypeScript / Java.
+
+**What stays as `Category` (not enum):**
+
+- ORGANIZATION-kind roots — schema rebuild on every leaf change would
+  be too churn-prone; hierarchical walks need the parent/children API.
+- Cross-cutting `category(path:)` / `categories(rootKey:)` query roots
+  return `Category` for any root including VALUE_LIST (admin tooling
+  and debugging benefit from the generic shape).
+- Heuristic-flip protection: admin annotation
+  `category-kind: value-list` locks the kind so accidental depth growth
+  doesn't break consumers (grandchildren on a value-list root simply
+  aren't enum values).
+
+### Permission groups — separate `type Group`
+
+Internally rapla stores permission groups under the `user-groups`
+category subtree. **The GraphQL API does NOT expose this as a Category.**
+A first-class `type Group` covers all group reads. This keeps the
+Category contract focused and gives the API a clean affordance for
+permission-group operations:
+
+```graphql
+type Group {
+  id:   ID!
+  key:  String!
+  name: String!
+  # Hierarchical extensions deferred to a separate PRD —
+  # `parent: Group` and `children: [Group!]!` may or may not appear.
+}
+
+type User {
+  ...
+  groups: [Group!]!
+}
+
+type Query {
+  groups: [Group!]!
+  group(id: ID!): Group
+}
+```
+
+`categories(rootKey: "user-groups")` returns null / empty — the subtree
+is not addressable through the Category surface. Admin tooling that
+needs the underlying tree must use the Group queries.
+
+The Group type may grow hierarchical fields (`parent` / `children`) in
+a future PRD if real consumer needs surface. Initial shipping is flat.
 
 ---
 
@@ -305,6 +532,292 @@ boundary — see AGENTS.md §12 and PRD 035 line 491-500. The contract:
   unreadable entries are silently dropped. Existence not leaked.
 - **Mixed-id requests**: a query like `allocatable(id: X)` returns the
   same `null` for "doesn't exist" and "exists but you can't see it".
+
+---
+
+## Performance patterns
+
+The Cut C work hit a 15 s ceiling on a 42 k × 11-typed-field admin query, then dropped to 6.35 s (58 % faster) by moving the hot-path resolvers off `@SchemaMapping` onto `LightDataFetcher` singletons and caching request-scoped state. Every pattern below is documented here so the next batch of resolvers (reservations, conflicts, search) can follow the same playbook.
+
+**Apply these rules to any per-row resolver.** Top-level `@QueryMapping` (runs once per request) is fine on the annotation path; only the per-row stuff matters.
+
+### Why `@SchemaMapping` is slow per-row
+
+Profiling at 42k rows × 11 fields = 462k dispatches surfaced two structural costs:
+
+| Layer | What happens per dispatch | Why it adds up |
+|---|---|---|
+| Spring `SchemaMappingDataFetcher.get(env)` | Allocates a new `DataFetcherHandlerMethod`, walks the arg-resolver chain, reflects via `Method.toGenericString` | ~5–8 µs/call × 462 k = ~3 s |
+| Spring `ContextDataFetcherDecorator.get(env)` | Calls `DefaultContextSnapshotFactory.captureFromContext` (Micrometer thread-local capture) before delegating | ~3–5 µs/call × 462 k = ~2 s |
+| graphql-java `ExecutionStrategy.invokeDataFetcher` | Constructs the full `DataFetchingEnvironment` even if your fetcher only needs `env.getSource()` | ~3–5 µs/call |
+
+Total: **~8 s of pure framework overhead** for resolvers that just need `source` and return a getter result. The fix is to bypass both layers for hot-path fields by registering `LightDataFetcher` singletons via `RuntimeWiringConfigurer`.
+
+### What `LightDataFetcher` does
+
+`LightDataFetcher` extends `TrivialDataFetcher` (graphql-java's marker interface) and adds a fast `get(fieldDef, source, envSupplier)` signature. Two distinct fast paths fire:
+
+1. **Spring's `ContextDataFetcherDecorator$ContextTypeVisitor`** does `instanceof TrivialDataFetcher` and SKIPS wrapping the fetcher in the Micrometer-context-capturing decorator. Verified by bytecode: `ifeq` branch returns false → no wrap.
+
+2. **graphql-java's `ExecutionStrategy.invokeDataFetcher`** does `instanceof LightDataFetcher` and calls `lightDataFetcher.get(fieldDef, source, envSupplier)` directly. The `envSupplier` is lazy (an `IntraThreadMemoizedSupplier`) — `env.getSource()`, args, context aren't materialized unless the body calls `envSupplier.get()`.
+
+**Net: per-field cost drops from ~25-30 µs to ~5-10 µs.**
+
+### Pattern 1 — base class for source-typed fetchers
+
+`StructuralTypeFetchers.LightSourceFetcher<S, T>` is the boilerplate trimmer. New fetchers extend it:
+
+```java
+private abstract static class LightSourceFetcher<S, T> implements LightDataFetcher<T> {
+    private final Class<S> sourceType;
+
+    protected LightSourceFetcher(Class<S> sourceType) { this.sourceType = sourceType; }
+
+    @Override
+    public final T get(GraphQLFieldDefinition fieldDef, Object source,
+            Supplier<DataFetchingEnvironment> envSupplier) throws Exception {
+        return sourceType.isInstance(source)
+                ? read(sourceType.cast(source), envSupplier)
+                : null;
+    }
+
+    @Override
+    public final T get(DataFetchingEnvironment env) throws Exception {
+        // Cold fallback for callers not on the Light fast path.
+        return get(env.getFieldDefinition(), env.getSource(), () -> env);
+    }
+
+    protected abstract T read(S source, Supplier<DataFetchingEnvironment> envSupplier) throws Exception;
+}
+```
+
+Per-field fetchers become tight singletons (one allocation at schema build, reused for every row):
+
+```java
+static final LightDataFetcher<String> ALLOCATABLE_DISPLAY_NAME =
+        new LightSourceFetcher<Allocatable, String>(Allocatable.class)
+        {
+            @Override protected String read(Allocatable a, Supplier<DataFetchingEnvironment> env)
+            {
+                return a.getName(localeFrom(env));
+            }
+        };
+```
+
+When the fetcher needs an operator-injected dependency, return a factory instead of a static field:
+
+```java
+static LightDataFetcher<User> allocatableOwner(StorageOperator operator)
+{
+    return new LightSourceFetcher<Allocatable, User>(Allocatable.class) {
+        @Override protected User read(Allocatable a, Supplier<DataFetchingEnvironment> env)
+                throws RaplaException {
+            ReferenceInfo<User> ref = a.getOwnerRef();
+            return ref == null ? null : operator.tryResolve(ref);
+        }
+    };
+}
+```
+
+### Pattern 2 — per-attribute LightDataFetcher class for generated types
+
+When fetchers are parameterized (e.g. one per `(DynamicType, Attribute)` for typed classification fields), use a concrete class with `final` fields captured at construction. **Avoid lambdas** — they allocate per-call closure state and don't always get JIT-promoted out of allocation hot paths.
+
+`AttributeDataFetcher` is the template:
+
+```java
+final class AttributeDataFetcher implements LightDataFetcher<Object> {
+    private final Attribute     attribute;
+    private final String        key;
+    private final AttributeType type;
+    private final boolean       multi;
+
+    AttributeDataFetcher(Attribute attribute) {
+        this.attribute = attribute;
+        this.key       = attribute.getKey();
+        this.type      = attribute.getType();
+        this.multi     = isMultiSelect(attribute);
+    }
+
+    @Override
+    public Object get(GraphQLFieldDefinition fieldDef, Object source,
+                      Supplier<DataFetchingEnvironment> envSupplier) {
+        if (!(source instanceof Classification c)) return null;
+        return multi ? readMulti(c, envSupplier) : readSingle(c, envSupplier);
+    }
+
+    @Override
+    public Object get(DataFetchingEnvironment env) throws Exception {
+        return get(env.getFieldDefinition(), env.getSource(), () -> env);
+    }
+    // ...readSingle, readMulti...
+}
+```
+
+One instance per (DynamicType, Attribute). 22 dhbw types × ~15 attrs avg = ~330 instances total, allocated once at schema build.
+
+### Pattern 3 — `RequestContextInstrumentation` for query-scoped state
+
+DataFetchers must NOT re-resolve `SecurityContextHolder` / `operator.getUser` / `LocaleContextHolder` per dispatch. Resolve once at `beginExecution`, store in `GraphQLContext`:
+
+```java
+@Component
+public class RequestContextInstrumentation extends SimplePerformantInstrumentation
+{
+    private final StorageOperator operator;
+
+    @Override
+    public InstrumentationContext<ExecutionResult> beginExecution(
+            InstrumentationExecutionParameters parameters,
+            InstrumentationState state)
+    {
+        GraphQLContext ctx = parameters.getGraphQLContext();
+        ctx.put(RequestCtx.KEY, new RequestCtx(
+                resolveCallerFromSecurityContext(),
+                operator.getPermissionController(),
+                LocaleContextHolder.getLocale()));
+        return SimpleInstrumentationContext.noOp();
+    }
+
+    public record RequestCtx(User caller, PermissionController permissionController, Locale locale) {
+        static final String KEY = "rapla.requestCtx";
+    }
+}
+```
+
+Fetchers read it cheaply:
+
+```java
+private static boolean canReadAllocatable(Allocatable a, Supplier<DataFetchingEnvironment> envSupplier)
+{
+    DataFetchingEnvironment env = envSupplier.get();
+    RequestCtx rc = RequestContextInstrumentation.from(env.getGraphQlContext());
+    if (rc.caller() == null || rc.permissionController() == null) return false;
+    return rc.permissionController().canRead(a, rc.caller());
+}
+```
+
+**Caveat — env materialization cost:** calling `envSupplier.get()` materializes the full `DataFetchingEnvironment`. For fields that always need it (ALLOCATABLE attrs needing §12), unavoidable. For fields that don't (locale-aware names), cache the value at wire time instead.
+
+### Pattern 4 — cache `RaplaLocale` at wire time, not per request
+
+For locale-aware field reads (`Allocatable.displayName`, `Category.name`, `DynamicType.name`), reading from `RequestCtx` requires `envSupplier.get()` — ~25 µs of env materialization that dominates if you have many locale-aware fields per row. Instead snapshot the configured locale at schema build:
+
+```java
+public final class StructuralTypeFetchers
+{
+    private static volatile Locale serverLocale = Locale.getDefault();
+
+    public static void wire(RuntimeWiring.Builder b, StorageOperator operator, RaplaLocale raplaLocale)
+    {
+        if (raplaLocale != null) {
+            Locale l = raplaLocale.getLocale();
+            if (l != null) serverLocale = l;
+        }
+        b.type("Allocatable", t -> t.dataFetcher("displayName", ALLOCATABLE_DISPLAY_NAME));
+        // ...
+    }
+
+    private static Locale localeFrom(Supplier<DataFetchingEnvironment> envSupplier) {
+        return serverLocale;  // single memory load; no env materialization
+    }
+}
+```
+
+Per-request `Accept-Language` is sacrificed for ~25 µs/call × N per row × M rows. Single-locale deployments lose nothing; multi-locale deployments need a real design (ThreadLocal mirror, or a per-request invalidation path).
+
+### Pattern 5 — graphql-java doesn't propagate interface fetchers — re-register on every implementation
+
+Spring's `@SchemaMapping(typeName = "Classification", field = "X")` walked the schema and registered against every implementation. `RuntimeWiringConfigurer.type("Classification").dataFetcher("X", ...)` does NOT — registering on the interface alone doesn't propagate.
+
+**Every generated concrete type must explicitly register every inherited interface field's fetcher.** In `GeneratedClassificationWiring.configure`:
+
+```java
+wiringBuilder.type(typeName, builder -> {
+    // Re-register inherited Classification interface fields
+    builder.dataFetcher("typeId",     StructuralTypeFetchers.CLASSIFICATION_TYPE_ID);
+    builder.dataFetcher("type",       StructuralTypeFetchers.CLASSIFICATION_TYPE);
+    builder.dataFetcher("attributes", StructuralTypeFetchers.CLASSIFICATION_ATTRIBUTES);
+    // Plus per-attribute generated fields
+    for (Attribute attr : dt.getAttributes()) { ... }
+    return builder;
+});
+```
+
+Forgetting this lets graphql-java fall back to `PropertyDataFetcher` (the JavaBean getter walker), which **returns null silently** for our entity-backed types. That's a production bug with no log scream.
+
+### Pattern 6 — startup validation catches forgotten interface re-registration
+
+The "silent null on forgotten interface re-registration" bug deserves a boot-time check. In `HotSwappableGraphQlSource.buildSource()` after the source is built:
+
+```java
+private static void validateInterfaceCoverage(GraphQLSchema schema)
+{
+    for (String interfaceName : new String[] {
+            "Classification", "AllocatableClassification", "ReservationClassification" })
+    {
+        GraphQLType t = schema.getType(interfaceName);
+        if (!(t instanceof GraphQLInterfaceType iface)) continue;
+        List<GraphQLFieldDefinition> ifaceFields = iface.getFields();
+        GraphQLCodeRegistry codeRegistry = schema.getCodeRegistry();
+        for (GraphQLObjectType impl : schema.getImplementations(iface))
+        {
+            for (GraphQLFieldDefinition field : ifaceFields)
+            {
+                DataFetcher<?> fetcher = codeRegistry.getDataFetcher(impl, field);
+                if (isPropertyFallback(fetcher))
+                {
+                    throw new IllegalStateException(
+                            "GraphQL wiring incomplete: '" + interfaceName + "." + field.getName()
+                            + "' has no explicit DataFetcher on '" + impl.getName()
+                            + "' — falling back to PropertyDataFetcher returns null silently.");
+                }
+            }
+        }
+    }
+}
+
+private static boolean isPropertyFallback(DataFetcher<?> fetcher)
+{
+    return fetcher == null
+            || fetcher instanceof PropertyDataFetcher<?>
+            || fetcher instanceof SingletonPropertyDataFetcher<?>;
+}
+```
+
+Boot fails loudly with the exact missing field. Add new interfaces (e.g. group interfaces for reservation types) to the loop when they land.
+
+### Pattern 7 — JVM tuning: `optimizedLaunch=false` for `spring-boot:run`
+
+Spring Boot's `spring-boot-maven-plugin` adds `-XX:TieredStopAtLevel=1` to JVM args by default — limits JIT compilation to tier 1 (interpreter + C1) for faster startup. For perf-testing or steady-state work, override:
+
+```bash
+mvn ... spring-boot:run \
+    -Dspring-boot.run.optimizedLaunch=false \
+    ...
+```
+
+That single flag saved ~1 s on the 42k Person query in measurement (~14 % wall-clock). For production deploys (`java -jar`, not `spring-boot:run`), the flag doesn't apply — full JIT is the default.
+
+### What was tried and rejected
+
+**`ClassificationImpl.getType()` caching in rapla-core.** Tempting (saves ~25-70 ms on the slow query by avoiding `resolver.tryResolve` per `getValue` call), but the operator's update path does NOT invalidate cached `DynamicTypeImpl` references on referencing Classifications. A cached pointer goes stale after an admin DynamicType edit, producing wrong attribute reads until the Classification is reloaded. Not safe without an operator-side invalidation walker (rapla-core change requiring careful verification). Skipped.
+
+**Schema-level skip-null on Jackson side.** GraphQL spec mandates `null` for nullable fields that resolve to null. Adding `@JsonInclude(NON_NULL)` on the DTOs doesn't help because graphql-java's response is a `Map<String, Object>` (not the records); Jackson serializes the Map. Schema-skip-nulls would violate the spec.
+
+**`-Xms2g -Xmx2g -Xtune:throughput` OpenJ9 tuning.** Caused OOM during boot — rapla's data cache + connection pool needs more headroom. Default heap (~4 GB) works; OpenJ9 perf tuning is a config knob, not a code change.
+
+### Final perf numbers (post-Tier-1, dhbw admin × 42 250 Persons × 11 typed fields)
+
+| Stage | Time | Notes |
+|---|---:|---|
+| Pre-perf-work baseline | 15.0 s | initial Cut C |
+| + Tier 1 (Patterns 1–6 above) | 7.0 s | code changes only |
+| + Pattern 7 (`optimizedLaunch=false`) | **6.35 s** | JVM flag only |
+| Realistic Tier 1 floor with all known tweaks | ~5.5-5.7 s | adds rapla-core change + JVM heap tuning (deferred) |
+| Tier 2 (`Classification.values: JSON` or `allocatablesPage`) | <1 s | schema change, deferred until real consumer |
+
+5 measured runs at 6.35 s mean had stddev 0.05 s — predictable.
 
 ---
 

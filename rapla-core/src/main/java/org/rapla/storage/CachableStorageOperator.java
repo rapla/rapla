@@ -37,6 +37,16 @@ public interface CachableStorageOperator extends StorageOperator {
 
     void connect() throws RaplaException;
 
+    /** PRD 058: one-shot startup migration that renames every DynamicType /
+     *  Attribute / Category key with a non-GraphQL-spec character to a
+     *  deterministic spec-compliant key. Called once from the operator's
+     *  bean factory after {@link #connect()} returns, before any consumer
+     *  (in particular the GraphQL SDL generator) sees the operator. Marker-
+     *  guarded; subsequent boots skip-fast. Cache-side assertion runs whether
+     *  or not the migration plan was empty; a non-spec key surviving in the
+     *  cache is a fatal startup error. */
+    void migrateGraphqlKeysIfNeeded() throws RaplaException;
+
     /** PRD 048: logical restart — reloads all data from the store, clears and
      *  rebuilds the caches and re-arms the operator's scheduled tasks, without
      *  a JVM/Spring restart. Reloads only the serving pod; other pods re-sync

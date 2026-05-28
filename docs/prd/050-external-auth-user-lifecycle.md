@@ -1,8 +1,19 @@
 # PRD 050 — External-auth user lifecycle (passwords, names, emails, disconnect)
 
-**Status:** done (Phases 1–4 + 6 landed 2026-05-21; Phase 5 cut; dispatch-path audit follow-up open)
-**Date:** 2026-05-21
-**Related:** PRD 036 (external IdP OAuth login), PRD 037 (native SAML / Shibboleth), PRD 049 (controller interface dedup — where the wire shape changes land), JNDI plugin (LDAP auth)
+**Status:** in-progress (Phases 1–4 + 6 landed 2026-05-21; Phase 5 cut; dispatch-path audit follow-up open; re-opened 2026-05-28 for Phases 7+8 — provisioning extraction)
+**Date:** 2026-05-21 (re-opened 2026-05-28)
+**Related:** PRD 036 (external IdP OAuth login), PRD 037 (native SAML / Shibboleth), PRD 049 (controller interface dedup — where the wire shape changes land), PRD 053 (plugin coordination pattern for cross-repo refactors), JNDI plugin (LDAP auth), AGENTS.md §16 (read APIs don't mutate — the rule that motivates Phase 7)
+
+## 2026-05-28 — Re-opened for provisioning extraction (Phases 7+8)
+
+Phase 2 ("stamp at auth time") landed the source marker on every successful external-auth match by writing through `ExternalUserResolver.syncFromIdp` (`facade.store(...)`) on the resource-server request path. That placement turned out to be wrong on two axes:
+
+1. **Read-path-with-side-effects.** `ExternalUserResolver.resolve(jwt, provider)` is called from `SpringSecurityRemoteSession.resolveJwtOrThrow` on every authenticated request bearing an external-IdP JWT. Each call may issue a `storeAndRemove` against the User row. AGENTS.md §16 (added 2026-05-28) forbids this — anything shaped as a read (`resolve*`, auth-filter identity resolution) must be side-effect-free. Provisioning belongs at a write/lifecycle seam, not the per-request read.
+2. **Two-writer churn for deployments with both stores enabled (DHBW).** When `JNDIAuthenticationStore` / `DhbwNtlmAuthStore` write `name`/`email` in one canonical form and `ExternalUserResolver` rewrites them in the JWT-claim form (case-sensitive `.equals` on name, equalsIgnoreCase on email — also inconsistent), the row oscillates on every login burst. Concurrent SPA bootstrap requests hit `RaplaNewVersionException` on the optimistic version check; an exception-wrapping bug in `SpringSecurityRemoteSession.resolveJwtOrThrow` (catches `RaplaException` and rethrows as `RaplaSecurityException`) surfaced this as a 401 "Sign-in rejected" modal in the SPA. Symptom observed 2026-05-28 against the DHBW Keycloak realm with a Swing client also open under the same identity.
+
+Phase 7 moves provisioning to the at-login seam. Phase 8 extracts a common provisioner core with a single plugin override bean so DHBW's deployment-specific behaviour (AD-role-mapped groups, "email only when empty", no name overwrite) lives in one class in dhbwrapla instead of three half-overlapping ones across rapla + dhbwrapla.
+
+The exception-wrap bug in `SpringSecurityRemoteSession.resolveJwtOrThrow` (catches `RaplaException` → rethrows as `RaplaSecurityException` → 401) is the symptom path. It's not in scope of this PRD because Phase 7 makes the underlying `RaplaNewVersionException` unreachable from `resolve` by construction (resolve becomes pure). If a future change reintroduces a write into resolve, this exception-wrap will re-surface the same misleading 401; the rule-16 audit + the architecture test under Phase 7 catches that.
 
 ## Goal
 
@@ -96,6 +107,92 @@ The block + disconnect endpoints respect AGENTS.md §15 — declared on `RemoteS
 - [ ] Phase 4 — Swing UI: capability probe in `UserOption`, "managed by" hint, admin badge + disconnect button.
 - [ ] Phase 5 — Angular SPA: same shape on the user-settings page. Defer until SPA page lands (PRD 026 follow-up).
 - [ ] Phase 6 — Cleanup: remove old `canChangePassword()` boolean once one Swing release has shipped with the capabilities struct.
+- [ ] Phase 7 — Move provisioning off the resource-server resolve path. `ExternalUserResolver.resolve(jwt, provider)` shrinks to pure identity translation (username/email lookup, returns User or throws). Sync + auto-provision called only from the at-login seams: `OAuthExchangeController.exchange` (after decoding the IdP token returned by Keycloak/Google/Microsoft) and `RaplaAuthentificationService.authenticate` (already at-login — password grant + form-login + JNDI/DHBW direct-Bearer path). Resource-server access becomes side-effect-free per AGENTS.md §16.
+- [ ] Phase 8 — Extract common `UserProvisioner` interface + `DefaultUserProvisioner` core. Consolidate the three current write sites (`ExternalUserResolver.syncFromIdp` + `.autoProvisionUser`, `JNDIAuthenticationStore.initUser`, dhbwrapla's `DhbwNtlmAuthStore.initUser`) onto the common provisioner. Single canonical equals/equalsIgnoreCase rules (fixes the name-case-sensitivity inconsistency). Single `authenticationSource` stamp site (fixes DHBW users being mislabeled `"ldap"` because the stamp lives outside `initUser` in `RaplaAuthentificationService.authenticate`). Operator-not-facade (fixes the workingUser-leak risk on the server-singleton FacadeImpl).
+
+## Phase 7 + 8 detail — Provisioning extraction
+
+### What ExternalUserResolver becomes (Phase 7)
+
+`resolve(jwt, provider) → User` becomes pure:
+
+- Lookup by `upn` → `preferred_username` → `email`, case-insensitively against `user.getUsername()`.
+- Email-as-username fallback when `email_verified` (Google guard) / claim absent (Entra).
+- Returns the matched User from cache. **Does not write. Does not auto-provision.**
+- Throws `RaplaSecurityException("No rapla user matched …")` when no match.
+
+`syncFromIdp` and `autoProvisionUser` move out. `applyConfiguredGroupsIfPresent` moves out (it's part of provisioning).
+
+### Where provisioning runs (Phase 7)
+
+| Login seam | Caller | What it does |
+|---|---|---|
+| `OAuthExchangeController.exchange` (`POST /api/auth/oauth/exchange/{provider}`) — SPA Keycloak/Google/Microsoft | After Keycloak returns 200, decode the access token using `IssuerAwareJwtDecoder`, build `IdentityClaims` from the JWT, call `provisioner.provision(claims)`. Returns the original Keycloak token to the SPA unchanged. | Runs once per `authorization_code` exchange and once per `refresh_token` exchange. |
+| `RaplaAuthentificationService.authenticate(...)` — password grant + form-login + JNDI/DHBW direct-Bearer | After `authenticationStore.authenticate(username, password)` returns true, build `IdentityClaims` via the auth store's new `extractClaims(...)` method, call `provisioner.provision(claims)`. | Already at-login. Today's `initUser` body inlined into the provisioner. |
+| `SpringSecurityRemoteSession.resolveJwtOrThrow` (resource-server) | **No provisioning.** Calls only `externalUserResolver.resolve` (pure) or `operator.resolve(sub)` for rapla-SAS tokens. | Side-effect-free per AGENTS.md §16. |
+
+Direct-Bearer clients hitting `/api/*` with a Keycloak token they obtained themselves (no exchange) get `No rapla user matched …` until either an admin provisions them or they re-enter via `/api/auth/oauth/exchange`. Documented as the intentional policy (provisioning is tied to a deliberate sign-in event, not "any Keycloak token I happened to acquire").
+
+### IdentityClaims + UserProvisioner (Phase 8)
+
+```java
+public record IdentityClaims(
+    String username,                      // rapla username key — never null
+    String displayName,                   // null = "no info, don't touch"
+    String email,                         // null = "no info, don't touch"
+    String sourceId,                      // e.g. "keycloak", "ldap", "dhbw-ntlm" — never null
+    Collection<String> groupKeys          // null = use provisioner's default group resolution
+) {}
+
+public interface UserProvisioner {
+    User provision(IdentityClaims claims) throws RaplaException;
+}
+```
+
+`DefaultUserProvisioner`:
+
+- Find by `claims.username()` via `operator.getUser(...)`; if absent, allocate UserImpl + `operator.createIdentifier(User.class, 1)` + add default groups via `resolveGroups(claims)`.
+- Edit clone via `operator.editObjects(singleton, null)` (operator-not-facade — explicit null actor, no workingUser leak).
+- Apply universal field rules:
+  - `setUsername` if differs.
+  - `setName` if `displayName != null && !displayName.equalsIgnoreCase(getName())` (consistent with email — fixes the existing case-sensitivity bug).
+  - `setEmail` if `email != null && !email.equalsIgnoreCase(getEmail())`.
+  - `setAuthenticationSource(claims.sourceId())` if differs.
+- `operator.storeAndRemove(singleton, emptyList, null)`.
+- `protected Collection<Category> resolveGroups(IdentityClaims claims) throws RaplaException` — default reads `JNDIPlugin.USERGROUP_CONFIG` system pref (today's `ConfiguredGroupResolver` behaviour). Subclasses override for AD-role-mapped groups, JWT-claim-derived groups, etc.
+
+Registered as `@Bean @ConditionalOnMissingBean` in core so plugins replace by contributing their own `UserProvisioner` bean.
+
+### Plugin override (dhbwrapla)
+
+dhbwrapla ships `DhbwUserProvisioner extends DefaultUserProvisioner` in its `@AutoConfiguration` (same pattern as `DhbwNtlmAuthStore` today):
+
+- Override `resolveGroups(claims)` — wraps `DhbwLdapGroupMapper` to map username → group keys via `DhbwAuthPreferences.CONFIG`'s `RoleMapping`.
+- Override the per-field policy where DHBW differs: email **only when empty** (don't overwrite user-set values from AD), name **never touched** (DHBW doesn't sync display name today).
+
+`DhbwNtlmAuthStore.initUser(...)` body deletes; replaced by `extractClaims(username, password) → IdentityClaims` (with `sourceId = "dhbw-ntlm"`, fixing today's mislabel where `RaplaAuthentificationService` stamps `"ldap"` for DHBW users regardless of which auth store ran). The provisioning side is the responsibility of the shared `UserProvisioner` bean (DHBW's override).
+
+### AuthenticationStore interface change
+
+```java
+public interface AuthenticationStore {
+    boolean authenticate(String username, String password) throws RaplaException;
+    IdentityClaims extractClaims(String username, String password) throws RaplaException;
+    // initUser(...) deleted — provisioning moves to UserProvisioner
+}
+```
+
+Existing impls: `JNDIAuthenticationStore` (`sourceId = "ldap"`), `DhbwNtlmAuthStore` (`sourceId = "dhbw-ntlm"`). Both shrink to the two-method shape. The `boolean modified` return goes away — the provisioner decides.
+
+### Cross-repo coordination
+
+Same pattern as PRD 053 (logger refactor): land rapla-side first with the new SPI + a temporary keep-alive of the old `AuthenticationStore.initUser` default method (no-op) so dhbwrapla builds during the gap, then dhbwrapla lands its `DhbwUserProvisioner` + the new `extractClaims` method, then rapla removes the keep-alive default. Tracked as a paired-PRD note in dhbwrapla's CLAUDE.md / AGENTS.md.
+
+### Smallest related fix — RemoteLocaleController single-call
+
+`RemoteLocaleController.locale(...)` (`rapla-server/.../RemoteLocaleController.java:56-58`) today calls both `session.isAuthentified(request)` and `session.checkAndGetUser(request)` in sequence. Each call invokes `SpringSecurityRemoteSession.resolveJwtOrThrow` → `externalUserResolver.resolve` → (today) `syncFromIdp` → write. So one locale fetch fires the IdP sync **twice** per request, in sequence. Even after Phase 7 makes `resolve` pure, the double cache-lookup + double user-resolution is wasted work.
+
+Fix: collapse to a single `checkAndGetUser` inside a `try`/`catch (RaplaSecurityException)`. Anonymous callers (no Bearer attached) get caught; rest falls through. Lands as the first deliverable in Phase 7 — independent of the bigger refactor, no PRD-coordination needed.
 
 ## Tests
 
@@ -107,6 +204,13 @@ The block + disconnect endpoints respect AGENTS.md §15 — declared on `RemoteS
   - Admin call → 403 (no fallback).
 - **Tier-3 (disconnect)** — non-admin POST → 403. Admin POST → 200, target's `authenticationSource` is null, subsequent `changePassword` for target succeeds.
 - **Tier-3 (capabilities)** — local user: all three booleans true, label null. Keycloak user: all false, label = `"Keycloak (realm-vrz)"`.
+- **Tier-3 (Phase 7 — pure resolve)** — `SpringSecurityRemoteSession.checkAndGetUser` with an external-IdP JWT, where the rapla user's `name`/`email`/`authenticationSource` disagree with the JWT claims, must **not** write to the User row. Assert `getLastChanged()` and the field values are unchanged after the call. (Negative test that fails today, passes after Phase 7.)
+- **Tier-3 (Phase 7 — RemoteLocaleController)** — `GET /api/locale` with an external-IdP JWT triggers `externalUserResolver.resolve` exactly once. Spy or instrumented counter; assert N=1 after one HTTP call (today: N=2).
+- **Tier-3 (Phase 7 — provisioning at exchange)** — `POST /api/auth/oauth/exchange/{provider}` with a Keycloak token whose claims describe a brand-new user → after the call, the user exists in rapla with `authenticationSource = "keycloak"`, claimed name/email, configured groups. Without going through `/exchange`, the same Keycloak token presented as Bearer to `/api/...` gets 401 `No rapla user matched`.
+- **Tier-2 (Phase 8 — DefaultUserProvisioner)** — pure-Java unit test against `FacadeTestSupport`. Construct claims, call `provision(...)`, assert exactly the right fields written and `equalsIgnoreCase` applied to both name and email.
+- **Tier-2 (Phase 8 — sourceId stamp)** — claims with `sourceId = "dhbw-ntlm"` produce a user with `authenticationSource = "dhbw-ntlm"`, not `"ldap"`. (Fixes the existing mislabel.)
+- **Tier-3 (Phase 8 — dhbwrapla plugin override)** — with `DhbwUserProvisioner` registered, `provision(claims)` invokes the role-mapping group resolver, applies "email only when empty", does not touch name. Lives in dhbwrapla repo, runs against rapla's `DefaultUserProvisioner` via Spring `@AutoConfiguration`.
+- **Architecture test** — `ApiResolveSideEffectArchitectureTest` (new): scan `ExternalUserResolver.resolve` + every public method on `RemoteSession` for transitive calls to `operator.storeAndRemove*` / `facade.store*` / `editObjects` followed by a store. Fails CI if a write reappears on the resolve path. Cements AGENTS.md §16 for this specific surface.
 
 ## Open questions
 
@@ -137,3 +241,30 @@ The Swing UI's `UserEditUI` correctly only exposes the disconnect button to admi
 - [x] ~~Phase 5 — Angular SPA~~ **Cut from scope 2026-05-21** — no SPA user-settings page in current plan.
 - [x] Phase 6 — `RemoteStorage.canChangePassword()` REST endpoint removed; controller impl deleted; `RemoteOperator.canChangePassword()` now routes through `getProfileEditCapabilities().canChangePassword()` so the local `ClientFacade.canChangePassword()` call site (used by `UserAction`) keeps working without code changes. New test `legacyCanChangePasswordEndpoint_is404_afterPrd050Removal` pins the removal.
 - [ ] **Follow-up audit** — close the dispatch-path bypass (a non-admin can in principle clear their own `authenticationSource` via `dispatch(UpdateEvent)`). Same shape applies to `isAdmin` and any other server-side-only User field. Tracked separately; not blocking PRD 050.
+
+## Phase status (2026-05-28 re-open)
+
+Landed in a single coordinated rapla + dhbwrapla session 2026-05-28 (no
+prod traffic on the spring-boot branch, so Pattern B clean — no
+`initUser` keep-alive shim).
+
+- [x] **Phase 7** — Provisioning moved off the resource-server resolve path.
+  - [x] 7a. `RemoteLocaleController.locale(...)` — single `checkAndGetUser` inside try/catch. One `resolveJwtOrThrow` per locale request (was two).
+  - [x] 7b. `ExternalUserResolver.resolve` is pure: lookup → User or `RaplaSecurityException`. `syncFromIdp` / `autoProvisionUser` / `applyConfiguredGroupsIfPresent` removed. New `claimsFor(jwt, provider) → IdentityClaims` is the read-side translator the exchange seam consumes. Constructor takes `CachableStorageOperator`, not `RaplaFacade` (no workingUser leak).
+  - [x] 7c. `OAuthExchangeController.exchange` — after Keycloak returns 2xx, decode `id_token` (or JWT-shaped `access_token`) via the configured `JwtDecoder`, build claims via `ExternalUserResolver.claimsFor`, call `provisioner.provision`. Provisioning failures logged + swallowed; the IdP token still returns to the SPA. Opaque tokens (Google access_token without `openid` scope) skipped — log + no-op.
+  - [ ] 7d. `ApiResolveSideEffectArchitectureTest` — deferred. The tier-2 test `resolveDoesNotWriteEvenWhenClaimsDiffer` in `ExternalUserResolverTest` covers the resolve-no-write invariant. CI-level architecture sweep can land when the rule is generalised beyond this surface.
+- [x] **Phase 8** — Common provisioner core + plugin SPI.
+  - [x] 8a. `IdentityClaims` record (`org.rapla.server.IdentityClaims` — rapla-server, not rapla-core; the type is only used at the server-auth seam).
+  - [x] 8b. `UserProvisioner` interface (`org.rapla.server.UserProvisioner`) + `DefaultUserProvisioner` impl (`org.rapla.server.internal.DefaultUserProvisioner`). Registered as `@Bean @ConditionalOnMissingBean defaultUserProvisioner` in `ServerServiceConfig`. `operator` field is `protected` so subclasses can do their own pre-provision lookups without holding a duplicate reference.
+  - [x] 8c. `AuthenticationStore` interface — `initUser(...)` deleted; `extractClaims(username, password) → IdentityClaims` added. No keep-alive default (clean break; no prod traffic on spring-boot branch).
+  - [x] 8d. `JNDIAuthenticationStore.extractClaims` returns `sourceId = "ldap"`; `groupKeys = null` so the default provisioner falls back to `JNDIPlugin.USERGROUP_CONFIG`. `initUser` body removed.
+  - [x] 8e. `RaplaAuthentificationService.authenticate` — calls `authStore.authenticate` → `authStore.extractClaims` → `provisioner.provision`. The old in-line find-or-create block + the hardcoded `"ldap"` stamp at lines 158-162 deleted. `sourceId` now comes from the auth store via `IdentityClaims`.
+  - [x] 8f. dhbwrapla — `DhbwNtlmAuthStore.extractClaims` returning `sourceId = "dhbw-ntlm"` + `DhbwUserProvisioner extends DefaultUserProvisioner` (registered as `@Component @ConditionalOnBean(DhbwNtlmAuthStore.class)`). DHBW per-field policy: name never overwritten, email only when local is empty, groups exclusively from `DhbwLdapGroupMapper` (no JNDI-pref fallback). The "kein Standort zugeordnet" Standort-required guard moved into `DhbwUserProvisioner.provision` (uses the `groupKeys=null` signal from `extractClaims`). Existing DHBW users keep `authenticationSource = "ldap"` until their next login, when the provisioner re-stamps to `"dhbw-ntlm"`.
+  - [ ] 8g. PRD 050 Phase 6's `canChangePassword()` boolean removal — orthogonal to Phases 7/8 and tracked in its existing checkbox. No additional cleanup needed under the new shape.
+
+### Verified tests this session (2026-05-28)
+
+- `ExternalUserResolverTest` — 18/18 pass after rewrite (split resolve-pure tests from claims-extraction + provisioner tests).
+- dhbwrapla suite via aggregator — 36/36 pass (10 skipped tagged `db`/`e2e` per the standard exclusion).
+- `mvn clean test-compile` clean for rapla-bom/core/client/server and dhbwrapla.
+- rapla-app test suite not run in this session due to **parallel-session in-flight edits** in `rapla-app/src/main/java/org/rapla/server/spring/graphql/` (mtime 20:17–20:19, AGENTS.md §7: never fix/revert work in files another session is editing). The auth-side test `AuthenticationStoreInjectionTest` was updated for the new interface shape; test-compile clean.

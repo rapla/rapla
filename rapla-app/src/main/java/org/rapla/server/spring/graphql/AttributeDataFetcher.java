@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
+import org.rapla.entities.Category;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
@@ -48,6 +49,14 @@ final class AttributeDataFetcher implements LightDataFetcher<Object>
     private final String        key;
     private final AttributeType type;
     private final boolean       multi;
+    /**
+     * True if the attribute targets a VALUE_LIST root (PRD 035 §5a). When
+     * set, the fetcher coerces each Category value to its enum-value-name
+     * (sanitized leaf key) so the wire format matches the generated enum
+     * type in the schema. False → return raw Category (ORGANIZATION /
+     * unknown roots stay typed as {@code Category}).
+     */
+    private final boolean       coerceToEnum;
 
     AttributeDataFetcher(Attribute attribute)
     {
@@ -55,6 +64,22 @@ final class AttributeDataFetcher implements LightDataFetcher<Object>
         this.key       = attribute.getKey();
         this.type      = attribute.getType();
         this.multi     = isMultiSelect(attribute);
+        this.coerceToEnum = isValueListCategory(attribute);
+    }
+
+    /**
+     * True iff this attribute is CATEGORY-typed with a VALUE_LIST-kind root.
+     * Matches {@link ClassificationSdlGenerator#graphqlTypeFor}'s decision
+     * — when the SDL emits {@code Raumart} (enum) for the field, this
+     * fetcher coerces values to enum-name strings; otherwise it returns
+     * raw Categories.
+     */
+    private static boolean isValueListCategory(Attribute attr)
+    {
+        if (attr.getType() != AttributeType.CATEGORY) return false;
+        Object root = attr.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
+        if (!(root instanceof Category cat)) return false;
+        return CategoryKindClassifier.kindOf(cat, null) == CategoryKindClassifier.Kind.VALUE_LIST;
     }
 
     @Override
@@ -83,7 +108,7 @@ final class AttributeDataFetcher implements LightDataFetcher<Object>
             case INT         -> v instanceof Number n ? n.longValue() : null;
             case BOOLEAN     -> v instanceof Boolean b ? b : null;
             case DATE        -> v;
-            case CATEGORY    -> v;
+            case CATEGORY    -> coerceCategory(v);
             case ALLOCATABLE -> {
                 if (!(v instanceof Allocatable a)) yield null;
                 yield canReadAllocatable(a, envSupplier) ? a : null;
@@ -97,7 +122,18 @@ final class AttributeDataFetcher implements LightDataFetcher<Object>
         if (values == null || values.isEmpty()) return List.of();
         if (type == AttributeType.CATEGORY)
         {
-            return new ArrayList<>(values);
+            if (!coerceToEnum) return new ArrayList<>(values);
+            // VALUE_LIST → coerce each Category to its sanitized enum value name
+            List<String> out = new ArrayList<>(values.size());
+            for (Object v : values)
+            {
+                if (v instanceof Category cat)
+                {
+                    String name = ClassificationSdlGenerator.enumValueFor(cat);
+                    if (!name.isEmpty()) out.add(name);
+                }
+            }
+            return out;
         }
         if (type == AttributeType.ALLOCATABLE)
         {
@@ -110,6 +146,17 @@ final class AttributeDataFetcher implements LightDataFetcher<Object>
         }
         // No multi-select for STRING / INT / BOOLEAN / DATE in current data model.
         return List.of();
+    }
+
+    /** Coerce a CATEGORY value to either an enum value name (VALUE_LIST) or
+     *  the raw Category instance (ORGANIZATION). Returns null for unexpected
+     *  non-Category inputs or unsanitizable keys. */
+    private Object coerceCategory(Object v)
+    {
+        if (!(v instanceof Category cat)) return null;
+        if (!coerceToEnum) return cat;
+        String name = ClassificationSdlGenerator.enumValueFor(cat);
+        return name.isEmpty() ? null : name;
     }
 
     /**
