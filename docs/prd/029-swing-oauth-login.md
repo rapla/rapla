@@ -1,54 +1,36 @@
 # PRD 029: Swing Login via OAuth 2.0 (Browser-based, PKCE Loopback)
 
-**Status:** in-progress — phase 1 done (2026-05-12), phase 2 mostly landed (2026-05-12, awaits e2e verification 2026-05-13). Phase 1 shipped: discovery endpoint, single `rapla-client` RegisteredClient covering both Swing and (planned) Angular, `SwingOAuthLoginFlow`, `ConnectInfo` token path, UI button wired end-to-end, custom redirect URI validator with WSL bridge (172.16.0.0/12 dev convenience) and same-origin (zero-config Angular) allowances. **Token unification**: `/auth/login` now signs with the same RSA JWKSource as `/oauth2/token` — composite HMAC+RSA decoder collapsed to a single RSA decoder, both login paths produce structurally identical tokens. **Persistent JWK**: RSA keypair read from `RaplaKeyStorage` (rapla preferences, persisted to data file) instead of being regenerated each startup — tokens survive server restart.
+**Status:** in-progress — phase 1 done (2026-05-12), phase 2 mostly landed (2026-05-12). Phase 1 shipped discovery endpoint, single `rapla-client` RegisteredClient (Swing + planned Angular), `SwingOAuthLoginFlow`, `ConnectInfo` token path, UI button, custom redirect URI validator (WSL-bridge 172.16.0.0/12 + same-origin allowances), token unification (`/auth/login` + `/oauth2/token` both sign via single RSA JWKSource), persistent JWK via `RaplaKeyStorage` (tokens survive server restart).
 
-**2026-05-24 — paste-URL fallback removed.** The paste-callback dialog, the server-driven `rapla.oauth.show-paste-fallback` toggle, the `OAuthCallbackPasteDialog`, and `SwingOAuthLoginFlow.Session.deliverPasted(...)` were all removed: the fallback wasn't practical (when the loopback isn't reachable, the WSL-bridge IP path is the real fix, not asking the user to copy a URL that contains an authorization code). Discovery JSON no longer carries `showPasteFallback`; the German/English `login.oauth.paste.*` resource keys are gone.
+**2026-05-24 — paste-URL fallback removed.** Paste-callback dialog, `rapla.oauth.show-paste-fallback` toggle, `OAuthCallbackPasteDialog`, `SwingOAuthLoginFlow.Session.deliverPasted(...)` and German/English `login.oauth.paste.*` keys all removed: WSL-bridge IP path is the real fix when loopback isn't reachable. Discovery JSON no longer carries `showPasteFallback`.
 
-Phase 2 shipped 2026-05-12 (awaits e2e verification 2026-05-13):
-- **Auto-OAuth on client launch.** `RaplaClientServiceImpl.startLogin` probes discovery; if `enabled==true`, fires `runOauthLogin` directly. Login dialog only opens when discovery is unreachable or returns `enabled==false`.
-- **Refresh-token bootstrapping.** `MyCustomConnector.refreshUsingToken` reads `connectionInfo.refreshUrl` (added) and POSTs cached refresh JWT to `/api/auth/refresh`. Falls through to password-reauth only if refresh fails.
-- **Hybrid `TokenStore`** for refresh-token caching: JNLP `PersistenceService` → `~/.rapla/tokens.json` (0600) → NoOp. All operations are `catch(Throwable)`; never surface storage errors as login failures.
-- **In-JVM relaunch on logout.** `RaplaClientServiceImpl.logout()` POSTs `/api/auth/logout` (Bearer), opens browser tab to discovery's `logoutUrl`, clears `TokenStore`, then `SwingUtilities.invokeLater(start(null))`. Menu's "Logout / Restart" delegates to `logout()`.
-- **"Waiting for browser sign-in" mode** on `LoginDialog` (`setBrowserLoginInProgress(msg)` hides fields/login/oauth buttons, keeps Exit) shown after logout while OAuth re-runs.
-- **`prompt=login` race-defeater.** After logout, next `runOauthLogin` adds `prompt=login` to authorize URL so Spring SAS re-prompts even if the browser raced ahead of the server's session clear.
-- **Server-side single-token-per-user**, rotate-when-stale (7-day renewal of 30-day TTL). `AuthController` stores `sha256(refreshToken)` under `user.preferences["org.rapla.auth.session"]`. `/api/auth/logout` clears the entry. Bounds DB writes to ~1/user/week.
-- **REST path migration to `/api/`**. `RaplaSpringBootApplication` context-path dropped; all REST under `/api/`. Discovery's `refreshUrl` points at `/api/auth/refresh`; client's `serverURL` is `baseUrl + "api"`.
-- **Functional "Remember me" checkbox** on `LoginPageController` HTML (browser `/login` page). NOT in Swing dialog — Swing has its own refresh-token cache via `TokenStore`.
-- **`raplaUserDetailsService` bean** (`AuthorizationServerConfig`) adapting `RaplaFacade` — UUID-first (form-login stores `user.getId()` as auth name), username fallback. Returns `UserDetails` with placeholder password (`PersistentTokenBased…` doesn't use it).
-- **`PersistentTokenBasedRememberMeServices` + `RaplaTokenRepository`** (`rapla-server/.../internal/`). Stores `{series → {username, tokenValue, lastUsed}}` as JSON under system preferences `org.rapla.auth.rememberMeTokens` — cookies survive server restart (matches persistent-JWK pattern).
+Phase 2 shipped 2026-05-12:
+- **Auto-OAuth on launch** — `startLogin` probes discovery; if `enabled==true`, fires `runOauthLogin` directly. Dialog only opens when discovery unreachable or `enabled==false`.
+- **Refresh-token bootstrapping** — `MyCustomConnector.refreshUsingToken` reads `connectionInfo.refreshUrl`, POSTs to `/api/auth/refresh`, falls through to password-reauth on failure.
+- **Hybrid `TokenStore`** — JNLP `PersistenceService` → `~/.rapla/tokens.json` (0600) → NoOp; all ops `catch(Throwable)`.
+- **In-JVM relaunch on logout** — POST `/api/auth/logout` (Bearer), browser tab to `logoutUrl`, clear `TokenStore`, `SwingUtilities.invokeLater(start(null))`.
+- **"Waiting for browser sign-in" mode** — `LoginDialog.setBrowserLoginInProgress(msg)` hides fields/buttons, keeps Exit.
+- **`prompt=login` race-defeater** — appended to authorize URL after logout so Spring SAS re-prompts even if browser races ahead of session clear.
+- **Server-side single-token-per-user**, rotate-when-stale (7-day renewal of 30-day TTL); `AuthController` stores `sha256(refreshToken)` under `user.preferences["org.rapla.auth.session"]`. Bounds DB writes to ~1/user/week.
+- **REST path migration to `/api/`** — context-path dropped; discovery's `refreshUrl` → `/api/auth/refresh`; client `serverURL` is `baseUrl + "api"`.
+- **"Remember me" checkbox** on `LoginPageController` HTML (browser only; Swing uses `TokenStore`).
+- **`raplaUserDetailsService` bean** adapting `RaplaFacade` — UUID-first, username fallback. Placeholder password (`PersistentTokenBased…` doesn't use it).
+- **`PersistentTokenBasedRememberMeServices` + `RaplaTokenRepository`** — `{series → {username, tokenValue, lastUsed}}` as JSON under system preferences; cookies survive server restart.
 
-Landed 2026-05-13 (signout bug fixes — both clients):
-- **`/connect/logout` now clears the remember-me cookie.** Spring SAS's `OidcLogoutAuthenticationSuccessHandler` only clears HttpSession + SecurityContext by default — it never consults `RememberMeServices`, so `/connect/logout` was leaving `rapla-remember-me` alive and the next `/oauth2/authorize` silently re-authenticated via the surviving cookie ("sign out → instantly signed back in"). Fix: `SecurityConfig` promoted `RememberMeServices` to an explicit `@Bean` (PersistentTokenBasedRememberMeServices); `AuthorizationServerConfig.authorizationServerSecurityFilterChain` injects it and attaches a custom `OidcLogoutAuthenticationSuccessHandler` whose `logoutHandler = CompositeLogoutHandler(SecurityContextLogoutHandler, rememberMeServices)`. Verified live: after `/connect/logout` succeeds, the cookie is gone (`Set-Cookie: rapla-remember-me=; Max-Age=0`) and the persistent token row in `RaplaTokenRepository` is removed; next `/oauth2/authorize` requires fresh login.
-- **`logoutUrl` in discovery flipped from `/logout` to `/connect/logout`** (`OAuthConfigController`). Both Swing and Angular now go through the OIDC RP-initiated logout endpoint; the prior split (`logoutUrl` form-logout + `endSessionUrl` OIDC) is collapsed.
-- **Swing client plumbs `id_token` through to logout.** OIDC RP-initiated logout requires an `id_token_hint` parameter — without it Spring SAS returns 404 and the success handler (the one that clears the remember-me cookie) never runs, reintroducing the "signed back in" bug for Swing even though Angular was fixed. Fix: `OAuthTokens` gained an `idToken` field; `SwingOAuthLoginFlow.exchangeCodeForTokens` parses `id_token` from the token-endpoint response (scope=openid already enabled); `RaplaClientServiceImpl.finishOauthLogin` stores it in `RemoteConnectionInfo.idToken`; `logout()` appends `?id_token_hint=<urlencoded>` to the discovery `logoutUrl` before opening the browser tab. `RemoteConnectionInfo` gained `idToken` field + setter/getter. Log line `logout: opened browser ... (with id_token_hint)` confirms the hint is being sent.
+Landed 2026-05-13 (signout bug fixes):
+- **`/connect/logout` now clears the remember-me cookie.** Spring SAS's `OidcLogoutAuthenticationSuccessHandler` only clears HttpSession + SecurityContext by default, so the surviving `rapla-remember-me` cookie silently re-authed the next `/oauth2/authorize` ("sign out → instantly signed back in"). Fix: promote `RememberMeServices` to `@Bean`; `authorizationServerSecurityFilterChain` attaches a custom success handler whose `logoutHandler = CompositeLogoutHandler(SecurityContextLogoutHandler, rememberMeServices)`. Verified live: `Set-Cookie: rapla-remember-me=; Max-Age=0` and the persistent row is removed.
+- **`logoutUrl` in discovery flipped from `/logout` to `/connect/logout`** — both clients now use OIDC RP-initiated logout; the prior split is collapsed.
+- **Swing plumbs `id_token` through to logout.** OIDC RP-initiated logout requires `id_token_hint`; without it Spring SAS returns 404 and the cookie-clearing handler never runs. Fix: `OAuthTokens` + `RemoteConnectionInfo` gained `idToken`; `SwingOAuthLoginFlow.exchangeCodeForTokens` parses it (scope=openid already enabled); `logout()` appends `?id_token_hint=<urlencoded>` before opening the browser tab.
 
-Awaits e2e verification of remaining items: (a) `prompt=login` forces fresh form even with a surviving remember-me cookie (now moot for OIDC logout since the cookie is cleared, but still relevant for the Swing menu's "Logout / Restart" path that uses the in-JVM relaunch), (b) full Swing round-trip after `/api/` migration. Setup doc at `docs/authentication.md`. PRD 031 covers refresh-token mechanics (now mostly shipped); PRD 032 (future) handles external IdP.
+Setup doc: `docs/authentication.md`. PRD 031 covers refresh-token mechanics; PRD 032 handles external IdP.
 
-**Known gotcha — server-restart invalidates id_token `sid` claims.** Spring SAS's `OidcSessionRegistry` is in-memory (the only built-in implementation). On every restart the registry is empty, so id_tokens minted before the restart have a `sid` that no longer matches any tracked session — `OidcLogoutAuthenticationProvider` rejects them with "OpenID Connect 1.0 Logout Request Parameter: id_token_hint" and `/connect/logout` returns 404 (Spring SAS doesn't expose authentication-failure responses on this endpoint per OIDC spec). Workaround for users: refresh the page (re-login → fresh id_token with currently-tracked `sid`). Proper fix: persistent `OidcSessionRegistry` backed by `RaplaFacade` system preferences, same pattern as `RaplaKeyStorage` (JWK) and `RaplaTokenRepository` (remember-me). Deferred — non-urgent in dev where restarts are explicit; users get a 404 once and re-login fixes it.
+**Known gotcha — server-restart invalidates id_token `sid` claims.** Spring SAS's `OidcSessionRegistry` is in-memory only. After restart the registry is empty, so pre-restart id_tokens have a `sid` no longer tracked; `/connect/logout` returns 404. Workaround: re-login. Proper fix: persistent `OidcSessionRegistry` over `RaplaFacade` system preferences (same pattern as `RaplaKeyStorage` / `RaplaTokenRepository`). Deferred — non-urgent in dev.
 
 **Date:** 2026-05-12 (last updated 2026-05-13)
 
 ## Goal
 
-Add a second sign-in path to the Swing login dialog: a **"Sign in with
-browser…"** button that runs the RFC 8252 Authorization Code + PKCE flow
-against the rapla-app Spring Authorization Server, captures the access
-token via a localhost loopback redirect, and uses it as `Authorization:
-Bearer …` against the rapla REST endpoints — same surface the existing
-JWT-handling `AuthController` / `TokenHandler` already understand.
-
-The existing username/password form stays — this is an additional path,
-not a replacement. The motivation is twofold:
-
-1. **SSO**. Today end-users have to type a rapla-local password. With the
-   OAuth path, rapla can delegate authentication to whatever identity
-   provider the deployment configures (the embedded Spring Authorization
-   Server in the default deployment; an external IdP like Keycloak, Azure
-   AD, or Google Workspace in custom deployments).
-2. **No shared-secret on the wire/disk**. PKCE is designed for public
-   clients that can't keep a `client_secret`. JNLP-shipped Swing is
-   exactly such a client. The user's browser cookie does the heavy
-   lifting; rapla holds only a short-lived access token in memory.
+Add a second sign-in path to `LoginDialog`: a **"Sign in with browser…"** button that runs RFC 8252 Authorization Code + PKCE against the rapla-app Spring Authorization Server, captures the access token via a localhost loopback redirect, and uses it as `Authorization: Bearer …` against rapla REST (same surface `AuthController`/`TokenHandler` already understand). The username/password form stays — this is additive. Motivation: (1) SSO — delegate to whatever IdP the deployment configures (embedded SAS by default; Keycloak/Azure AD/Google in custom deployments); (2) no shared-secret on the wire/disk — PKCE is designed for public clients (JNLP-shipped Swing is one); rapla holds only a short-lived access token in memory.
 
 ## Scope
 
@@ -181,35 +163,13 @@ WSL detection: `System.getenv("WSL_DISTRO_NAME") != null
 
 ### JNLP / OWS permissions
 
-The flow needs:
-- `SocketPermission("127.0.0.1:1024-", "listen,accept,resolve")` — already
-  covered by `<all-permissions/>`.
-- `RuntimePermission("exec")` for `ProcessBuilder` fallbacks — covered.
-- `AWTPermission("showWindowWithoutWarningBanner")` for `Desktop.browse` —
-  covered.
-
-Every signed jar on the OWS classpath needs `Permissions: all-permissions`
-in its manifest (see `project_jnlp_signing_pitfalls.md`). No JNLP schema
-change required; the existing webclient/ assembly already sets the right
-attributes.
+All needed perms (`SocketPermission` for loopback bind, `RuntimePermission("exec")` for `ProcessBuilder`, `AWTPermission("showWindowWithoutWarningBanner")` for `Desktop.browse`) covered by `<all-permissions/>`. Signed jars need `Permissions: all-permissions` in manifest (see `project_jnlp_signing_pitfalls.md`); existing webclient/ assembly already sets them. No JNLP schema change.
 
 ## Plan
 
-1. **Server: discovery endpoint + registered client.**
-   - Add `OAuthConfigController` in rapla-server. Tier-3 MockMvc test
-     covers both `enabled: true` and `enabled: false`.
-   - Add `rapla-swing` `RegisteredClient` to `application.yml`.
-   - Verify the existing `AuthController` / `TokenHandler` accept the
-     access token minted by the auth server (one tier-3 test: get a
-     token via the auth-server programmatically, call
-     `/rapla/storage/resources` with it, assert 200).
+1. **Server: discovery + registered client.** `OAuthConfigController` + tier-3 MockMvc test (enabled/disabled). `rapla-swing` `RegisteredClient` in `application.yml`. Verify `AuthController`/`TokenHandler` accept the SAS-minted token via one tier-3 test.
 
-2. **Client: SwingOAuthLoginFlow (no UI yet).**
-   - `SwingOAuthLoginFlow` + browser-launch helper + WSL detection.
-   - Tier-1/2 tests with `HttpClient` driving the callback — no real
-     browser needed. Tests that the loopback handler extracts `code`
-     and `state`, rejects mismatched `state`, exchanges the code with
-     the right PKCE verifier.
+2. **Client: SwingOAuthLoginFlow (no UI yet).** Flow + browser-launch helper + WSL detection. Tier-1/2 tests drive the loopback with `HttpClient` (no real browser): extract code+state, reject state-mismatch, exchange with correct PKCE verifier.
 
 3. **Client: ConnectInfo + RaplaClientServiceImpl wiring.**
    - Add `accessToken` field to `ConnectInfo` + constructor.
@@ -244,150 +204,40 @@ attributes.
 
 ## Phase 2 — Browser-OAuth as the primary login
 
-Phase 1 (above) added "Sign in with browser…" as one of three buttons on a
-Swing dialog where username/password is still the default. Phase 2 inverts
-this: the browser flow becomes the **primary login UX**, the Swing
-username/password form becomes a fallback used only when (a) no external
-IdP is configured *and* (b) the browser flow couldn't reach the auth
-server.
+Inverts Phase 1: browser flow becomes the **primary login UX**; username/password is a fallback only when (a) no external IdP configured *and* (b) browser flow can't reach the auth server.
 
 ### Vision
 
-- **Startup**: the Swing client probes discovery, then immediately starts
-  the OAuth flow if enabled. It does NOT show the Swing login dialog
-  unless the OAuth flow can't proceed (auth server unreachable, browser
-  launch failed and paste fallback disabled, etc.).
-- **Browser-side**: rapla's `/rapla/login` form (and Keycloak's, when it's
-  the IdP) supports **"remember me"**. Once a user logs in once and ticks
-  remember-me, the browser cookie keeps them signed in. Subsequent rapla
-  launches drive the OAuth flow silently through the browser — the browser
-  hits the SSO cookie, the auth server immediately redirects back with a
-  code, the loopback handler catches it, the Swing client gets a token,
-  the main view opens. **The user never sees a login dialog.**
-- **Mid-session 401**: when the access token expires and refresh-token
-  reauth (PRD 031) also fails, the Swing client transparently re-runs the
-  OAuth flow. With the SSO cookie still valid, this is silent. Without
-  it, the browser pops the login form for one round-trip.
-- **Logout** / **rapla client restart**: clears the local tokens and
-  refresh URL cache, then drops back to "trigger OAuth flow on next
-  action". The user can sign in with whatever flow the IdP exposes
-  (different account, password reset, federated SSO, etc.).
-- **Swing username/password form**: hidden by default in Phase 2. Only
-  surfaces in the narrow case "no external IdP configured AND OAuth flow
-  cannot start". Effectively an **emergency-only fallback**: the auth
-  server is unreachable, the browser launch failed, or it's a first-time
-  setup before SSO is configured — situations where the user couldn't get
-  in any other way. Accessed via an "Other options" expander on the
-  login dialog. When external IdP is configured (Keycloak), this form is
-  hidden unconditionally — there's no local user store to authenticate
-  against anyway.
+- **Startup**: client probes discovery, fires OAuth flow if enabled. Login dialog only shows when OAuth can't proceed.
+- **Browser-side "remember me"** on rapla's `/rapla/login` (and Keycloak's, when IdP) keeps the SSO cookie. Subsequent launches → silent redirect → token → main view. **User never sees a login dialog.**
+- **Mid-session 401**: when access-token + refresh-token reauth both fail, re-run OAuth flow. Silent with SSO cookie; one round-trip via browser without.
+- **Logout / restart**: clears tokens + refresh-URL cache; next action triggers OAuth flow afresh.
+- **Username/password form hidden by default**. Surfaces only when "no external IdP AND OAuth can't start" — emergency-only fallback (auth server unreachable, browser failed, first-time setup). Reached via "Other options" expander. Hidden unconditionally under external IdP (no local user store).
 
 ### Why this is the right direction
 
-1. **Matches modern desktop OAuth UX.** Every modern desktop app that
-   uses SSO (Slack, Zoom, GitHub Desktop, the JetBrains IDEs, the
-   Microsoft Teams native client) does exactly this — the local
-   application doesn't render a credentials form; it bounces the user
-   into the system browser, which already knows them.
-2. **Forces all authentication through one funnel.** The auth server
-   (or Keycloak) handles password validation, MFA, lockouts, audit
-   logs, password reset flows. The Swing client never sees a password
-   in memory. Cleaner security boundary.
-3. **Plays nicely with external IdPs.** A Keycloak deployment expects
-   the user to land on Keycloak's login page. Today's Swing dialog
-   undermines that by trying to validate passwords locally against
-   `/auth/login`. Phase 2 removes that conflict.
-4. **Closes the regression introduced by OAuth.** Phase 1's
-   `MyCustomConnector.reauth` had to learn about "OAuth session has no
-   password to re-submit." Phase 2 makes mid-session reauth re-run the
-   OAuth flow instead — symmetric with the initial login, no fallback
-   logic needed.
+Matches modern desktop OAuth UX (Slack/Zoom/GitHub Desktop/JetBrains/Teams all bounce to system browser). Forces all auth through one funnel — auth server handles password validation, MFA, lockouts, audit, reset; Swing never sees a password. Plays nicely with external IdPs (Keycloak expects users on its login page; today's dialog undermines that). Closes the Phase 1 regression where `MyCustomConnector.reauth` had to special-case "OAuth session has no password to re-submit" — Phase 2 makes mid-session reauth re-run OAuth, symmetric with initial login.
 
 ### Scope
 
 #### In scope
 
-- **`/rapla/login` "remember me"**: extend Spring Security's form-login
-  config with `RememberMeServices` (persistent token, default 30 d).
-  Add a checkbox to `LoginPageController`'s HTML form. Configurable
-  TTL via `rapla.auth.remember-me-days`.
-- **Auto-start OAuth flow on Swing client launch**: in
-  `RaplaClientServiceImpl.startLogin`, when discovery reports OAuth is
-  enabled, skip showing the login dialog and run `runOauthLogin()`
-  immediately. Show the dialog only if (a) discovery fails or
-  (b) `cfg.isEnabled() == false`.
-- **OAuth retry on 401 after refresh fails**: when
-  `MyCustomConnector.reauth`'s refresh path fails and there's no
-  cached password (OAuth-only session), trigger a new OAuth flow via
-  a small callback registered by `RaplaClientServiceImpl`. UX: the
-  busy spinner reactivates and the browser opens for ~1 second
-  (silent if cookie present, prompts if not).
-- **Hide password fields by default**: `LoginDialog` no longer shows
-  the username/password fields unless explicitly toggled. The fallback
-  path renders just an "Other login options" link that expands the
-  fields if the user wants to. Visually similar to how Slack hides
-  email-password login behind "Try another way", or JetBrains IDEs
-  put license-server login two clicks deep — the primary path
-  visually dominates, the emergency path is reachable but unobtrusive.
-- **Hide password path entirely under external IdP**: the discovery
-  endpoint reports a new boolean `localAccountsEnabled`. When `false`
-  (typical Keycloak deployment), `LoginDialog` never offers the
-  password fields, even on fallback.
-- **Logout / restart returns to clean OAuth start**: the existing
-  logout path clears `RemoteConnectionInfo`. Add: clear cached
-  `refreshUrl`, clear the persisted refresh token (see below), clear
-  any browser session cookie that the auth server remembers (Spring
-  `RememberMeServices.logout()`). On next rapla launch, the user gets
-  a fresh OAuth flow.
+- **`/rapla/login` "remember me"** — Spring Security `RememberMeServices` (persistent token, default 30 d), checkbox in HTML form, TTL via `rapla.auth.remember-me-days`.
+- **Auto-start OAuth flow on launch** — `startLogin` skips dialog and runs `runOauthLogin()` when discovery `enabled`; dialog only on discovery failure.
+- **OAuth retry on 401 after refresh fails** — for OAuth-only sessions (no cached password), trigger a new OAuth flow via callback registered by `RaplaClientServiceImpl`. Browser opens ~1s (silent if cookie present).
+- **Hide password fields by default** — `LoginDialog` shows only "Other login options" link that expands fields. Modeled on Slack's "Try another way" / JetBrains' license-server login depth.
+- **Hide password path entirely under external IdP** — discovery's `localAccountsEnabled=false` (typical Keycloak) hides fields even on fallback.
+- **Logout / restart returns to clean OAuth start** — also clear `refreshUrl`, persisted refresh token, server-side remember-me cookie via `RememberMeServices.logout()`.
+- **Persist the refresh token client-side** — store per-user in rapla profile dir (or OS keychain — OQ 10). On launch, read it, hit `refreshUrl` directly — zero browser tab. The "zero-browser-on-launch" property; only the refresh token's ~30-day idle expiry forces a browser. Three-layer fallback: cached refresh → cookie-based silent OAuth → form login.
 
-- **Persist the refresh token client-side**: on a successful login,
-  store the refresh token in a per-user file in the rapla profile
-  directory (or OS keychain — see Open Question 10). On next launch:
-  read it, hit `refreshUrl` directly, mint a fresh access token. No
-  browser tab opens at all. **This is the "zero-browser-on-launch"
-  property**: with a cached refresh token, the cookie-based silent
-  OAuth flow above is unnecessary — we skip the browser entirely
-  until the refresh token itself expires (~30 days idle). Fallback:
-  if the cached refresh token doesn't work (expired, revoked, server
-  refuses), drop back to the cookie-based silent OAuth flow, which
-  drops back to the form-login UX. Three layers of "try the cheapest
-  thing first" before showing the user anything.
-
-- **Token store is best-effort, never blocks login**. The persistence
-  backend (JNLP `PersistenceService`, dotfile, or future OS keychain)
-  can fail for many reasons: read-only filesystem, missing
-  permissions, sandbox restrictions, corrupted store, missing
-  library at runtime, disk full. Every `TokenStore` operation must
-  be wrapped in `catch (Throwable)` (not just `Exception` — we also
-  want to swallow `LinkageError`, `NoClassDefFoundError`, etc., that
-  might come from optional dependencies like a keychain library)
-  and degrade gracefully:
-  - **Read failure** → treat as "no token cached" → fall through to
-    cookie-based silent OAuth flow → falls through to form login if
-    needed. User sees a normal login, not an error.
-  - **Write failure** → log a warning, proceed without persistence.
-    The user is logged in for the current session; next launch will
-    just re-trigger the OAuth flow. Don't surface the warning to the
-    user — it's not their problem to solve.
-  - **Delete failure on logout** → log a warning, complete logout
-    anyway. The stale token in the store will fail validation on
-    next attempt (server-side refresh-token state, JWT signature
-    rotation, or just normal expiry), so the worst case is a
-    one-time silent-fail-then-prompt, not a security regression.
-  Catch-Throwable is intentional here because the *purpose of the
-  token store is to skip the login prompt*, and failure of that
-  goal should always degrade to "show the login prompt", never to
-  "error out the entire application launch".
+- **Token store is best-effort, never blocks login**. Every backend (JNLP `PersistenceService`, dotfile, future keychain) can fail (read-only fs, sandbox, corruption, missing library, disk full). All `TokenStore` ops wrap `catch (Throwable)` — also swallows `LinkageError` / `NoClassDefFoundError` from optional deps. Degradation: **read failure** → "no token cached" → cookie-based silent OAuth → form login; **write failure** → log warning, session continues; **delete failure on logout** → log warning, complete logout (stale token will fail validation on next use). Failure of "skip the login prompt" should always degrade to "show the login prompt", never error out the launch.
 
 #### Out of scope (Phase 2)
 
-- External IdP wiring itself. That's PRD 032. Phase 2 is the
-  client-side UX shift; IdP swap is a separate concern.
-- Federated identity reconciliation (mapping Keycloak `sub` → rapla
-  user UUID). Belongs in PRD 032.
-- Persistent token revocation / "log me out everywhere" admin
-  surface. Future PRD.
-- API key UI from PRD 031 §6. Different surface; tracked there.
+- External IdP wiring itself (PRD 032) — Phase 2 is client UX shift.
+- Federated identity reconciliation (Keycloak `sub` → rapla UUID) — PRD 032.
+- Persistent token revocation / "log out everywhere" admin surface — future PRD.
+- API key UI from PRD 031 §6 — tracked there.
 
 ### Plan
 
@@ -434,44 +284,7 @@ server.
    user a way to retry. Today's "Exit" button is fine; consider also
    a "Retry connection" button on the failure screen.
 
-10. ✅ **Refresh-token storage backend?** *Resolved 2026-05-12.* Shipped hybrid `TokenStore`: JNLP `PersistenceService` → `~/.rapla/tokens.json` (0600) → NoOp fallback. Plain bytes, no app-level encryption (matches AWS CLI / GitHub CLI convention). Constructor-time lookup chain in `TokenStores`. Original analysis below kept for context.
-
-    **Encryption note**: refresh tokens are not passwords. They are
-    signed JWTs (~700 bytes) with claims `sub`, `typ=refresh`, `exp`.
-    The threat model — other users on the same machine, malware
-    running as the user, disk forensics — is either solved by
-    file permissions (0600) or unsolvable by app-level encryption
-    (a same-user attacker can derive any system-property-based
-    encryption key). Custom AES with a system-derived key is
-    [snake-oil cryptography](https://en.wikipedia.org/wiki/Snake_oil_\(cryptography\))
-    — it adds code complexity for negligible security gain and risks
-    giving operators a false sense of security. AWS CLI, GitHub CLI,
-    Slack, Discord, JetBrains tools, and `~/.netrc` all store
-    refresh-token-equivalent credentials in plain text — that's the
-    industry standard for this data class.
-    Three real options:
-    (a) **plain file at `~/.rapla/tokens.json` with `0600` perms** —
-    matches `~/.aws/credentials` security model, trivial to implement,
-    fine for an internal scheduling tool. The boring right answer for
-    rapla today;
-    (b) **JNLP `PersistenceService`** (JSR-56, implemented by
-    IcedTea-Web / OpenWebStart) — sandbox-scoped to the rapla
-    codebase URL so other JNLP apps can't read it, requires no
-    `all-permissions`, only works when launched via JNLP. Better
-    scoping than (a) when running under OWS;
-    (c) **OS keychain** via `java-keyring` or similar — Windows
-    Credential Manager, macOS Keychain, Linux libsecret — actually
-    meaningful security improvement (covers stolen-laptop disk
-    forensics if FDE isn't on), platform-specific code paths, adds a
-    small dependency. Skip until a deployment specifically asks.
-    **Recommendation**: ship a hybrid: `PersistenceService` when
-    `ServiceManager.lookup` succeeds (production OWS launches),
-    `~/.rapla/tokens.json` fallback otherwise (dev runs, non-JNLP
-    deployments). Same TokenStore interface, both backends ~50 LOC
-    each. Plain bytes in both cases. **All backends wrap every
-    operation in `catch (Throwable)` and degrade silently to "no
-    cached token" — never surface storage errors to the user as
-    login failures.** Sketch:
+10. ✅ **Refresh-token storage backend?** *Resolved 2026-05-12.* Shipped hybrid `TokenStore`: JNLP `PersistenceService` → `~/.rapla/tokens.json` (0600) → NoOp. Plain bytes, no app-level encryption (matches AWS CLI / GitHub CLI / `~/.netrc`). Refresh tokens are signed JWTs (~700 B); threat model is solved by file perms (0600) or unsolvable by app-level encryption (same-user attacker derives any system-property key). Custom AES is snake-oil. Backends ~50 LOC each; all wrap `catch (Throwable)` → silent "no cached token". Interface:
     ```java
     interface TokenStore {
         Optional<String> read();      // never throws; returns empty on any failure
@@ -479,51 +292,20 @@ server.
         void tryClear();              // never throws; logs warning on failure
     }
     ```
-    The runtime returns the first store that succeeds at construction
-    (e.g. `JnlpTokenStore` calls `ServiceManager.lookup` in its
-    constructor, throws `UnavailableServiceException` if not under JNLP,
-    factory falls through to `FileTokenStore`). If both fail —
-    `~/.rapla/` is read-only, sandbox blocks file access, both
-    backends throw — return a `NoOpTokenStore` that always reports
-    "no token cached" on read and silently drops writes. The OAuth
-    flow then runs every launch as if persistence didn't exist, which
-    is the Phase-1 behaviour. Worst-case degradation is "we never
-    persist", not "the app crashes on startup".
+    Construction tries `JnlpTokenStore` (succeeds under OWS) → `FileTokenStore` → `NoOpTokenStore`. Worst case: "we never persist", not "app crashes". OS keychain (`java-keyring`) skipped until asked.
 
 ## Phase 3 — Admin-selectable legacy Swing login
 
 **Status:** in-progress (2026-05-18).
 
-Phase 2 made the browser-OAuth flow the *only* Swing login UX when
-discovery reports `enabled: true` — the username/password dialog never
-shows. This is the right default, but two deployment situations need the
-old dialog back:
-
-1. **Rollout / pilot.** An admin wants to keep end-users on the familiar
-   password dialog while OAuth is being validated, then flip the whole
-   estate over once confident.
-2. **Letting users opt into testing SSO.** While still defaulting to the
-   password dialog, the admin wants a *"Sign in with browser…"* button
-   on that dialog so willing users can try the new flow without it being
-   forced on everyone.
-
-This resolves Open Question 8 (below) with two server-side booleans,
-delivered to the Swing client through the existing
-`GET /api/auth/oauth/config` discovery endpoint (no new endpoint, no JNLP
-change — the client already probes discovery at startup):
+Phase 2 forced OAuth-only when discovery `enabled: true`. Two deployment situations need the old dialog back: (1) **rollout/pilot** — keep users on password while OAuth is validated; (2) **opt-in SSO** — default to password but expose a "Sign in with browser…" button for willing users. Resolved with two server-side booleans on the existing discovery endpoint (no new endpoint, no JNLP change):
 
 | Property | Env var | Default | Effect |
 |---|---|---|---|
 | `rapla.oauth.swing-legacy-login` | `RAPLA_OAUTH_SWING_LEGACY_LOGIN` | `false` | `false` → Phase-2 behaviour: auto-fire the browser OAuth flow, no dialog. `true` → show the legacy username/password dialog instead. |
 | `rapla.oauth.swing-legacy-show-sso-button` | `RAPLA_OAUTH_SWING_LEGACY_SHOW_SSO_BUTTON` | `false` | Only effective when `swing-legacy-login=true`. `true` → also render the "Sign in with browser…" button on the legacy dialog so users can try SSO. `false` → password fields only. |
 
-Both default `false`, so an unconfigured deployment keeps today's
-OAuth-first behaviour exactly. The flags are independent of
-`rapla.oauth.enabled`: when OAuth is disabled entirely, the legacy dialog
-shows with no SSO button regardless of these flags (an SSO button would
-have nothing to talk to). When discovery is unreachable, the client falls
-back to the legacy dialog with no SSO button — discovery failure means
-OAuth support can't be confirmed.
+Both default `false` (preserves OAuth-first). Independent of `rapla.oauth.enabled`: when OAuth disabled or discovery unreachable, legacy dialog shows without SSO button.
 
 Decision matrix the Swing client applies in `startLoginInThread`:
 
@@ -537,61 +319,27 @@ Decision matrix the Swing client applies in `startLoginInThread`:
 
 ### Scope (Phase 3)
 
-- **Server**: two `@Value` props on `OAuthConfigController`; two boolean
-  fields (`swingLegacyLogin`, `swingLegacyShowSsoButton`) on the
-  `OAuthConfig` discovery DTO; `application.yml` documentation. Both
-  fields emitted on the wire even when `enabled: false` (as `false`).
-- **Client**: `OAuthConfig` (rapla-client) gains the two flags;
-  `fetchOauthConfig` parses them; `startLoginInThread` applies the
-  decision matrix above. The legacy dialog's SSO button is hidden via
-  the existing `LoginDialog.setOauthAction(null)`.
-- **Abort button on the browser-login wait.** While the browser OAuth
-  flow runs, the dialog's "waiting for browser sign-in" state previously
-  offered only **Exit** (which quits the whole app). Added an **Abort**
-  button (`LoginDialog.setAbortAction`, i18n key `abort`) that cancels
-  the `SwingOAuthLoginFlow` session future — `CancellationException`
-  propagates, the loopback listener is stopped, and the existing
-  exceptionally branch in `runOauthLogin` restores the credential
-  dialog. `runOauthLogin` now drives the wait via
-  `setBrowserLoginInProgress` (Exit + Abort row) instead of the
-  glass-pane `busy()` overlay, which would have covered the new button.
-  Applies to both the auto-OAuth (Phase 2) and SSO-button (Phase 3)
-  paths.
-- **Tests**: tier-3 MockMvc — discovery emits both fields `false` by
-  default (`OAuthConfigControllerTest`), and both `true` when the
-  properties are set (`OAuthConfigControllerSwingLegacyLoginTest`).
+- **Server**: two `@Value` props on `OAuthConfigController`; two `boolean` fields on the `OAuthConfig` DTO (emitted even when `enabled: false`); `application.yml` docs.
+- **Client**: `OAuthConfig` gains both flags; `fetchOauthConfig` parses them; `startLoginInThread` applies the matrix above; SSO button hidden via existing `setOauthAction(null)`.
+- **Abort button on the browser-login wait.** Previously only Exit (kills app). Added Abort (`setAbortAction`, i18n `abort`) — cancels `SwingOAuthLoginFlow` session future, propagates `CancellationException`, stops loopback listener, exceptionally branch in `runOauthLogin` restores credential dialog. `runOauthLogin` now drives the wait via `setBrowserLoginInProgress` (Exit + Abort row) instead of glass-pane `busy()` overlay which would have covered the new button. Applies to Phase 2 + 3 paths.
+- **Tests**: tier-3 MockMvc — `OAuthConfigControllerTest` (both false default), `OAuthConfigControllerSwingLegacyLoginTest` (both true when set).
 
 ### Out of scope (Phase 3)
 
-- Unit-testing the EDT-bound `startLoginInThread` decision branch — no
-  test harness exists for it (Phase 2's planned `AutoStartOauthFlowTest`
-  was never written); covered by manual smoke under `test-jnlp-launch`.
-- Per-user / per-group selection of the login mode — this is a
-  deployment-wide toggle.
+- Unit-testing the EDT-bound `startLoginInThread` decision branch — no harness; manual smoke under `test-jnlp-launch`.
+- Per-user / per-group login mode — deployment-wide toggle only.
 
 ## Phase 4 — Sign-in method dropdown (Swing + Keycloak)
 
 **Status:** in-progress (2026-05-18).
 
-Phase 3 gave the legacy dialog a single "Sign in with browser…" button for
-the rapla SAS. Phase 4 replaces that button with a **sign-in method
-dropdown** so the Swing client can offer multiple providers — starting
-with **Keycloak** alongside the rapla SAS and the local password.
+Replaces Phase 3's single SSO button with a **sign-in method dropdown** so Swing can offer multiple providers — starting with **Keycloak** alongside rapla SAS and local password.
 
 ### UX
 
-- A **method dropdown** sits above the username/password fields. Entry 0
-  is **Password** (local `grant_type=password`, typed credentials); the
-  remaining entries are the browser-based OAuth providers from discovery's
-  `providers[]` (rapla SAS, Keycloak, …), labelled by capitalised provider
-  id (`Rapla`, `Keycloak`).
-- Picking a browser provider **greys out the username/password fields**
-  (they don't apply); the **Login** button runs that provider's PKCE
-  browser flow. Picking Password re-enables them.
-- The dropdown only appears when `swing-legacy-login=true` **and**
-  `swing-legacy-show-sso-button=true` — it supersedes the Phase-3 SSO
-  button. Without the SSO flag, or when OAuth is unavailable / discovery
-  fails, only the plain password form shows (no dropdown).
+- **Method dropdown** above username/password. Entry 0 is **Password** (local `grant_type=password`); remaining entries are browser providers from discovery's `providers[]` (`Rapla`, `Keycloak`).
+- Picking a browser provider greys out username/password; Login runs that PKCE flow. Picking Password re-enables fields.
+- Appears only when `swing-legacy-login=true` AND `swing-legacy-show-sso-button=true` (supersedes Phase-3 button). Without SSO flag or with OAuth unavailable, plain password form (no dropdown).
 
 ### Scope (Phase 4) — Keycloak only
 
@@ -637,15 +385,7 @@ with **Keycloak** alongside the rapla SAS and the local password.
 
 ### Why Keycloak first
 
-Keycloak's `providers[]` discovery entry is **directly usable by Swing**:
-it's a public PKCE client, no `client_secret`, so `tokenUrl` points at
-Keycloak's real token endpoint (no BFF), and loopback redirects just need
-a realm redirect-URI entry. Microsoft and Google can't reuse their SPA
-discovery entries — Entra's registration is SPA-platform (rejects desktop
-loopback) and Google's routes through the BFF. Bringing them to Swing
-needs separate **native/desktop** OAuth client registrations at each IdP;
-deferred until asked. This is the part PRD 036 deferred ("Swing always
-uses the embedded SAS") — Phase 4 reopens it for Keycloak only.
+Keycloak's `providers[]` entry is directly Swing-usable: public PKCE client (no `client_secret`), `tokenUrl` is real Keycloak endpoint (no BFF), loopback redirects need only a realm redirect-URI entry. Microsoft/Google can't reuse SPA discovery — Entra rejects desktop loopback (SPA-platform), Google routes through BFF. Both need separate native/desktop OAuth client registrations; deferred until asked. Reopens what PRD 036 deferred ("Swing always uses embedded SAS") for Keycloak only.
 
 ### Out of scope (Phase 4)
 
@@ -657,47 +397,13 @@ uses the embedded SAS") — Phase 4 reopens it for Keycloak only.
 
 ### Deadlock fix found during Phase 4 testing (2026-05-18)
 
-Phase 4 testing surfaced a hang — the Swing client froze on "loading
-data" after login. Root cause is a **pre-existing lock-order inversion
-in `RemoteOperator`, unrelated to OAuth**: it held its intrinsic
-`synchronized` monitor while calling `fireStorageUpdated`, whose
-listeners re-enter Spring bean creation. A concurrent GUI-bean
-constructor holding the Spring singleton lock and calling back into a
-`synchronized` `RemoteOperator` method (`isRestartPossible` from
-`RaplaMenuBar.<init>`) deadlocks against it.
+Hang on "loading data" after login. **Pre-existing lock-order inversion in `RemoteOperator`, unrelated to OAuth**: it held its `synchronized` monitor while calling `fireStorageUpdated`, whose listeners re-enter Spring bean creation. Concurrent GUI-bean ctor holding Spring singleton lock + calling back into `synchronized` `isRestartPossible` (from `RaplaMenuBar.<init>`) deadlocks. Most easily triggered by switching UI language at login (persists `org.rapla.language` → client-side store's `refresh` continuation fires storage-update concurrently with `Application.start`). Not Keycloak-specific.
 
-It is a timing race, most easily triggered by **switching the UI
-language at login** — that persists `org.rapla.language` to the user's
-preferences, a client-side store whose `refresh` continuation fires the
-storage-update event concurrently with `Application.start`. (Not
-Keycloak-specific; not the multi-pod refresh poll.)
-
-Fix: `RemoteOperator.refresh(UpdateEvent)` / `refreshAll()` compute the
-`UpdateResult` under `synchronized (this)` and call `fireStorageUpdated`
-*outside* the monitor, ordered by a dedicated `fireLock`; the no-arg
-`refresh()` is de-`synchronized`. Full write-up of the rule —
-"never fire listener events under a lock" — added to
-[`docs/architecture/locking.md`](../architecture/locking.md). No unit
-test: `RemoteOperator` is not unit-instantiable without a connected
-server; verified by reproducing the exact repro (login + language
-switch) live. `rapla-core` test suite (512 tests) stays green.
+Fix: `RemoteOperator.refresh(UpdateEvent)` / `refreshAll()` compute `UpdateResult` under `synchronized (this)` then call `fireStorageUpdated` outside the monitor, ordered by a dedicated `fireLock`; no-arg `refresh()` de-`synchronized`. Rule "never fire listener events under a lock" added to [`docs/architecture/locking.md`](../architecture/locking.md). No unit test (`RemoteOperator` not unit-instantiable); verified live (login + language switch). `rapla-core` 512 tests green.
 
 ## Phase 5 — Keycloak refresh fix + credentials cleanup (2026-05-25)
 
-**Status:** in-progress. Triggered by a live-Keycloak bug report: with
-`dhbwrapla` + Keycloak federation, the Swing client showed
-`session_expired: access + refresh tokens both rejected` exactly 10 min
-after every login (Keycloak's access-token TTL). Investigation revealed
-the HTTP-interface-proxy interceptor was refreshing every session
-against rapla's own `/oauth2/token` with `client_id=rapla-client`,
-ignoring the provider-specific endpoint + client_id stashed at login
-time by `SwingOAuthLoginFlow`. Keycloak's RSA-signed refresh JWT can't
-be validated by rapla SAS — 400 every time → auth-dead hook → re-login
-dialog.
-
-The fix grew into a wider cleanup of the credentials lifecycle and the
-client-side auth seam, because the audit kept turning up sibling bugs
-and dead code in the same area.
+**Status:** in-progress. Triggered by live-Keycloak bug: `dhbwrapla` + Keycloak Swing sessions showed `session_expired: access + refresh tokens both rejected` exactly 10 min after every login (Keycloak access-token TTL). Root cause: HTTP-interface-proxy interceptor refreshed against rapla's own `/oauth2/token` with `client_id=rapla-client`, ignoring the per-provider endpoint stashed at login by `SwingOAuthLoginFlow`. Keycloak's RSA-signed refresh JWT can't be validated by rapla SAS → 400 → auth-dead → re-login. Fix grew into a wider cleanup of the credentials lifecycle as audit turned up sibling bugs.
 
 ### Scope (Phase 5)
 
@@ -771,25 +477,10 @@ and dead code in the same area.
    String↔`char[]` at the in-server seam — the request-scoped String
    was already short-lived there.
 
-7. **Slim `ConnectInfo` to tokens + provider routing; localize password
-   handling; wire dual-slot impersonation correctly.**
-   `ConnectInfo` historically carried both `(username, password)` and
-   `(accessToken, refreshToken)` in the same class, with a runtime
-   `if (getAccessToken() != null)` switch at every dispatch site.
-   That polymorphism made "password might be in this ConnectInfo" a
-   live concern at every signature the type appeared in.
+7. **Slim `ConnectInfo` to tokens + provider routing; localize password handling; wire dual-slot impersonation correctly.**
+   `ConnectInfo` historically carried `(username, password)` + `(accessToken, refreshToken)` with an `if (getAccessToken() != null)` switch at every dispatch site — making "password might be here" a live concern at every signature.
 
-   Phase 5 drops the password fields from `ConnectInfo` entirely and
-   adds the provider routing alongside the tokens. The class now
-   carries `(accessToken, refreshToken, refreshUrl, oauthClientId)`
-   — the full session needed to reach the right provider after a
-   close+recreate context boundary. The password flow is *localized
-   to the user-input boundary*: the legacy Swing dialog Login button
-   converts password→tokens inline via
-   `RemoteAuthentificationService.login()`, zeros the `char[]`, and
-   from then on only token-bearing `ConnectInfo` flows. After this
-   change `ConnectInfo` truly means "info to connect to the server"
-   — tokens + which provider to refresh against.
+   Phase 5 drops password fields entirely; class now carries `(accessToken, refreshToken, refreshUrl, oauthClientId)` — the full session needed across a close+recreate context boundary. Password flow is *localized to the user-input boundary*: legacy Swing Login button converts password→tokens inline via `RemoteAuthentificationService.login()`, zeros the `char[]`, then only token-bearing `ConnectInfo` flows.
 
    ```java
    public class ConnectInfo {
@@ -799,18 +490,9 @@ and dead code in the same area.
    }
    ```
 
-   **Considered and rejected**: a sealed-type hierarchy
-   (`Credentials` / `PasswordCredentials` / `TokenCredentials`).
-   Cost (10-file migration, dispatch site rewrites, Java 21 source
-   bump for `switch` patterns OR `instanceof` chains) outweighed the
-   payoff. With only 2 dispatch sites and the password flow already
-   structurally contained to "input boundary → auth seam → discard",
-   the simpler "slim ConnectInfo" approach gives the same end-state
-   security property (no password references survive past login)
-   with smaller diff and no Java version commitment.
+   **Rejected:** sealed-type hierarchy (`Credentials` / `PasswordCredentials` / `TokenCredentials`) — cost (10-file migration, Java 21 bump for switch patterns) outweighed payoff for only 2 dispatch sites already structurally contained.
 
-   Password handling end-state — three live sites only, all
-   explicitly named:
+   Password handling end-state — three live sites only:
    - `OAuth2PasswordLogin.login(LoginCredentials)` (rapla-core) —
      the HTTP seam itself; POSTs OAuth2 `grant_type=password` to
      `/oauth2/token`. Takes a password by definition. PRD 029
@@ -868,77 +550,11 @@ and dead code in the same area.
    `-Dexec.args="$RAPLA_DEV_TOKEN"`. No password handling in the
    launcher.
 
-   Touchpoints (~20 files): `ConnectInfo` (slimmed to 4-tuple
-   tokens + provider routing, no password fields), `LoginCredentials`
-   (`password: String → char[]`, dropped `connectAs`),
-   `RemoteAuthentificationService` (interface deleted),
-   `OAuth2PasswordLogin` (new top-level class in rapla-core, replaces
-   the nested `OAuth2RemoteAuthentificationService` and the dropped
-   interface), `RemoteConnectionInfo` (harmonization renames +
-   cross-reference comment to Angular AuthService),
-   `RemoteOperator.connect()` (token-only, drop auth seam +
-   `RemoteAuthentificationService` constructor param),
-   `RemoteSessionImpl` (drop dead `?username=...&password=...`
-   request-param branch + `RaplaAuthentificationService` constructor
-   param), `RaplaAuthentificationService` (simplify
-   `authenticate(...)` from 3-arg to 2-arg, drop
-   `getUserWithPassword` + `checkConnectAsRights`),
-   `ClientFacade` / `ClientFacadeImpl` (replace `login(String, char[])`
-   with `connect(ConnectInfo)`; no more password handling in the
-   facade), `RaplaClientServiceImpl.startLoginInThread` (rewrite
-   Login button to do password→tokens conversion inline + drop
-   `" su "` parsing), `login(ConnectInfo)` (slim to token-only +
-   restore 4-tuple), `switchTo()` (capture admin's 4-tuple + pass
-   impersonation token separately via NextSession),
-   `setImpersonation()` (new), `finishOauthLogin` (build 4-tuple),
-   `tryRestoreFromCachedRefreshToken` (build 4-tuple),
-   `SpringRaplaClient.parseConnectInfo()` (CLI takes JWT only),
-   `SpringRaplaClient.main()` (apply impersonation override after
-   start), `stop()` (drop placeholder password `ConnectInfo`),
-   `NextSession` (carry impersonation token + target separately),
-   `ClientService.setImpersonation` (new default method),
-   `ClientConfig` / `ClientProxyConfig` / `ServerServiceConfig`
-   (drop dead constructor params from bean factories),
-   `MyCustomConnector` / `ClientProxyConfig` / `ApplicationViewSwing`
-   (rename callers: `hasImpersonationToken` → `isImpersonating`,
-   `setImpersonationToken` → `setImpersonationAccessToken`,
-   `getAccessToken` → `adminToken` at the impersonation-renewal
-   call site), `AuthorizationServerConfig` /
-   `RaplaAuthentificationService` (bridge String↔`char[]` at the
-   request-scope boundary). Tests:
-   `LogoutSignalTest` (switchTo signature),
-   `SwingClientStartIntegrationTest` /
-   `HeadlessClientNameResolutionIntegrationTest` (mint via
-   `RefreshSessionService.issueAndPersist` + `facade.connect`),
-   `BadLoginErrorMessageTest` (use `OAuth2PasswordLogin` directly,
-   expect `RaplaSecurityException` carrying server body),
-   `OAuth2PasswordLoginTest` (renamed + moved to rapla-core).
+   Touchpoints (~20 files): `ConnectInfo` (slim 4-tuple), `LoginCredentials` (`password: char[]`, dropped `connectAs`), `RemoteAuthentificationService` (interface deleted), `OAuth2PasswordLogin` (new top-level in rapla-core, replaces nested impl + deleted interface), `RemoteConnectionInfo` (harmonization renames + Angular cross-reference Javadoc), `RemoteOperator.connect()` (token-only, drop auth-seam ctor param), `RemoteSessionImpl` (drop dead `?username=...&password=...` request-param branch + ctor param), `RaplaAuthentificationService` (3-arg → 2-arg `authenticate`, drop `getUserWithPassword` + `checkConnectAsRights`), `ClientFacade` / `ClientFacadeImpl` (`login(String, char[])` → `connect(ConnectInfo)`), `RaplaClientServiceImpl.startLoginInThread` (inline password→tokens; drop `" su "` parsing), `login(ConnectInfo)` (token-only + 4-tuple), `switchTo()` (admin 4-tuple + impersonation token via `NextSession`), `setImpersonation()` (new), `finishOauthLogin` + `tryRestoreFromCachedRefreshToken` (build 4-tuple), `SpringRaplaClient.parseConnectInfo()` (CLI takes JWT only), `.main()` (apply impersonation post-start), `stop()` (drop placeholder password), `NextSession` (carry impersonation separately), `ClientService.setImpersonation` (new default), `ClientConfig` / `ClientProxyConfig` / `ServerServiceConfig` (drop dead ctor params), caller renames: `hasImpersonationToken` → `isImpersonating`, `setImpersonationToken` → `setImpersonationAccessToken`, `getAccessToken` → `adminToken` at impersonation-renewal call site (`MyCustomConnector` / `ClientProxyConfig` / `ApplicationViewSwing`), `AuthorizationServerConfig` / `RaplaAuthentificationService` (bridge String↔`char[]` at request-scope boundary). Tests: `LogoutSignalTest` (switchTo signature), `SwingClientStartIntegrationTest` / `HeadlessClientNameResolutionIntegrationTest` (mint via `RefreshSessionService.issueAndPersist` + `facade.connect`), `BadLoginErrorMessageTest` (use `OAuth2PasswordLogin` directly, expect `RaplaSecurityException` carrying server body), `OAuth2PasswordLoginTest` (renamed + moved to rapla-core).
 
-   **Dual-slot impersonation correctness**: pre-Phase-5, PRD 052
-   Phase 2's close+recreate context model put the impersonation token
-   in the regular `accessToken` slot of the new context, leaving
-   `RemoteConnectionInfo.impersonationAccessToken` unused. The
-   interceptor's `tryRenewImpersonation()` is gated on
-   `isImpersonating()` which always returned false → renewal never
-   fired → admin was kicked back to the login dialog after 1h. Worse:
-   admin's Keycloak refresh URL was not carried across the context
-   boundary, so switch-back-after-token-expiry also failed. Phase 5
-   fixes both by carrying admin's full 4-tuple via `NextSession` and
-   applying the impersonation token via the dedicated slot
-   post-start. Mirrors the Angular SPA's two-slot model
-   (`oauth.getAccessToken()` for admin in `localStorage` +
-   `AuthService.impersonationOverride` in `sessionStorage` under key
-   `rapla.impersonationOverride`).
+   **Dual-slot impersonation correctness**: pre-Phase-5, PRD 052 Phase 2's close+recreate context model put the impersonation token in the regular `accessToken` slot of the new context, leaving `impersonationAccessToken` unused. `tryRenewImpersonation()` gated on `isImpersonating()` → always false → renewal never fired → admin kicked back to login dialog after 1h. Worse, admin's Keycloak refresh URL wasn't carried across the context boundary, so switch-back-after-expiry also failed. Phase 5 carries admin's full 4-tuple via `NextSession` and applies the impersonation token to its dedicated slot post-start. Mirrors the Angular SPA's two-slot model (`oauth.getAccessToken()` admin in `localStorage` + `AuthService.impersonationOverride` in `sessionStorage`).
 
-   **Harmonization renames for cross-client vocabulary parity**:
-   `impersonationToken` → `impersonationAccessToken` (matches
-   Angular's `override.accessToken`), `hasImpersonationToken()` →
-   `isImpersonating()` (matches `AuthService.isImpersonating()`),
-   added `RemoteConnectionInfo.adminToken()` as an alias for
-   `getAccessToken()` (matches `AuthService.adminToken()`). The
-   `RemoteConnectionInfo` Javadoc cross-references the Angular file
-   so the next maintainer sees both clients implement the same
-   two-slot model.
+   **Harmonization renames for cross-client parity**: `impersonationToken` → `impersonationAccessToken` (matches Angular `override.accessToken`), `hasImpersonationToken()` → `isImpersonating()`, added `adminToken()` alias for `getAccessToken()`. `RemoteConnectionInfo` Javadoc cross-references the Angular file.
 
 ### Out of scope (Phase 5)
 
@@ -1009,34 +625,8 @@ in-app path. (See `logs/rapla-client.log`, 18:42:41 entry, 2026-05-25.)
 
 ## Open Questions
 
-1. **Multiple IdPs.** Does any rapla deployment today need to offer the
-   user a *choice* of IdPs (e.g. "Sign in with Google" vs "Sign in with
-   corporate SSO")? If yes, the discovery endpoint becomes a list and
-   the button becomes a dropdown. Default assumption: single IdP per
-   deployment, plain button.
-
-2. **OIDC vs OAuth.** Do we want the `id_token` (OIDC) to surface user
-   profile info (display name, email) into the Swing UI, or just the
-   `access_token` (pure OAuth) and let the existing `getUser` REST call
-   carry that? Simpler: skip OIDC for now, single scope `rapla`.
-
-3. **Token expiry mid-session.** ~~Phase 2 — out of scope here.~~
-   **Addressed in Phase 2 above + PRD 031**: refresh-token reauth
-   (PRD 031) handles the common case; Phase 2's "OAuth retry on 401
-   when refresh fails" handles the rest by re-running the OAuth
-   flow silently against the SSO cookie.
-
-4. **External IdP allow-list.** When a deployment configures an external
-   IdP (Phase 2), does rapla need to validate that the issuer's
-   public key matches a pinned set, or is "configured in
-   `application.yml`" trust enough? Likely the latter — same trust model
-   as any other Spring Security `jwk-set-uri`.
-
-5. **Hide the username/password path entirely?** ~~Stretch goal for
-   Phase 2~~ **Now in scope as Phase 2 (above)**: the discovery
-   endpoint reports `localAccountsEnabled`, the Swing client hides
-   the form when it's `false`, and even with local accounts enabled
-   the form is collapsed behind an "Other options" expander —
-   browser-OAuth is the primary path, password fields are reserved
-   as an emergency-only fallback for offline / misconfigured
-   deployments.
+1. **Multiple IdPs.** Single IdP per deployment is the default; if a choice is needed, discovery returns a list and the button becomes a dropdown (now implemented in Phase 4).
+2. **OIDC vs OAuth.** Skip OIDC for now; the existing `getUser` REST call carries profile info. Single scope `rapla`.
+3. ✅ **Token expiry mid-session.** Addressed via PRD 031 refresh + Phase 2's "OAuth retry on 401 when refresh fails" (silent SSO-cookie re-auth).
+4. **External IdP allow-list.** "Configured in `application.yml`" is trust enough — same model as any Spring Security `jwk-set-uri`.
+5. ✅ **Hide the username/password path entirely?** Now in scope as Phase 2: discovery `localAccountsEnabled` hides the form; even with locals enabled it lives behind an "Other options" expander.

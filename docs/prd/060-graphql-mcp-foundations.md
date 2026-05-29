@@ -74,21 +74,21 @@ type Period   { id: ID!  name: String!  start: DateTime!  end: DateTime! }
 
 All §12-filtered; all paginated where lists can grow.
 
-## Search & discovery — substrate for PRD 028
+## Search & discovery — top-level global search
 
-Substrate for [PRD 028](028-angular-power-search.md) (Angular power
-search). Single root for cross-type discovery + `searchText` arg on
-per-type roots for typed flows:
+The cross-domain `search` root is the MCP-agent-friendly primitive
+("find anything matching X"). For the SPA's per-type / per-group tier
+model — `searchText` + `matchKind` args on the existing query roots —
+ownership moved to
+[PRD 028 §"GraphQL substrate augmentations"](028-angular-power-search.md#graphql-substrate-augmentations-added-2026-05-29)
+on 2026-05-29 (closer to the consumer that drives the requirements).
+The `MatchKind` enum is defined once and shared by both surfaces.
 
 ```graphql
 type Query {
   search(text: String!, scope: [SearchScope!],
          from: DateTime, to: DateTime,             # reservation/conflict window — bounded by default
          first: Int = 20, after: String): SearchConnection!
-
-  # Existing per-type roots gain a searchText arg
-  reservations(searchText: String, ... existing args ...): ReservationConnection!
-  resources(searchText: String,    ... existing args ...): AllocatableConnection!
 }
 
 enum SearchScope { RESERVATIONS  ALLOCATABLES  USERS  CATEGORIES  CONFLICTS }
@@ -101,7 +101,7 @@ type SearchConnection {
 type SearchEdge {
   node:         SearchHit!
   matchedField: String                          # for client highlighting
-  matchKind:    MatchKind!                      # PRD 028 ranking (prefix > substring > fuzzy)
+  matchKind:    MatchKind!                      # shared enum (also used by PRD 028 per-type args)
   cursor:       String!
 }
 type SearchCounts { reservations: Int!  allocatables: Int!  users: Int!  categories: Int!  conflicts: Int! }
@@ -113,15 +113,15 @@ enum MatchKind  { PREFIX  SUBSTRING  FUZZY }
   today, just exposed via GraphQL). Full-text indexing is follow-on.
 - §12: drop hits where the matched field is unreadable; entity-level §12
   also applies (a hit's entity must be readable).
-- `MatchKind` enum supports PRD 028's prefix/substring/fuzzy bucketing
-  within tiers.
 - The PRD 028 tier model (A1/A2/A3 for allocatables, E1–E4 for
   reservations) is **client-side** — depends on calendar selection +
   viewport + recency, all client state. PRD 028 composes tiers from
-  multiple aliased queries in one GraphQL request.
+  multiple aliased calls to the per-type `searchText` roots (now
+  documented in PRD 028 itself).
 
-PRD 028 OQ#3 (bounded window) and OQ#10 (§12) are resolved by this
-substrate.
+PRD 028 OQ#3 (bounded window) and OQ#10 (§12) are resolved by the
+cross-domain root above + the per-type augmentations specified in PRD
+028.
 
 ## Compute operations
 

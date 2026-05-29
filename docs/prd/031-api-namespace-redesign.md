@@ -22,60 +22,21 @@ Adopt a clean top-level URL layout that separates concerns:
 
 ## Why
 
-Three reasons it's worth doing now, before the Angular SPA grows
-load-bearing dependencies on the current URL shape:
+Before the Angular SPA grows load-bearing deps on the current URL shape:
 
-1. **`/rapla/` is historical baggage.** It was the servlet path in the
-   WAR-deployment days, not the application root. The Spring Boot
-   migration preserved it as `server.servlet.context-path: /rapla`,
-   which over-prefixes every URL.
-2. **`/api/` is the modern convention** for REST consumed by SPAs.
-   Frontend devs / future contributors expect it. Also supports
-   `/api/v2/...` versioning when the time comes.
-3. **The SPA mount belongs at root**, not nested inside what was a
-   REST servlet. Peer mount keeps URLs short and the mental model
-   honest.
+1. **`/rapla/` is historical baggage** — servlet path from WAR days, preserved as `server.servlet.context-path: /rapla`, over-prefixes every URL.
+2. **`/api/` is the modern convention** for SPA REST; supports future `/api/v2/...` versioning.
+3. **SPA belongs at root**, not nested inside a REST servlet. Peer mount keeps URLs short.
 
 ## Scope
 
 ### Target URL layout
 
-| Today | Proposed | Notes |
-|---|---|---|
-| (context-path `/rapla/`) | **(dropped)** | Stops over-prefixing |
-| `/rapla/` (no path) | **`/`** | Chooser landing page |
-| `/rapla/index` | **`/index`** | Same chooser, alias |
-| `/rapla/spa/**` | **`/app/**`** | SPA peer mount |
-| `/rapla/auth/**` | **`/api/auth/**`** | Login/logout/refresh/token |
-| `/rapla/storage/**` | **`/api/storage/**`** | Reservation+resource storage |
-| `/rapla/edit/**` | **`/api/edit/**`** | Edit-time validation services |
-| `/rapla/locale/{id}` | **`/api/locale/{id}`** | i18n bundles |
-| `/rapla/settings/**` | **`/api/settings/**`** | Settings REST |
-| `/rapla/plugins/**` | **`/api/plugins/**`** | Plugin enable/disable |
-| `/rapla/eventtimecalculator/**` | **`/api/eventtimecalculator/**`** | Plugin config |
-| `/rapla/exchange/**` | **`/api/exchange/**`** | Exchange connector config |
-| `/rapla/ical/config/**` | **`/api/ical/config/**`** | iCal export *config* (not the feed) |
-| `/rapla/ical/timezones/**` | **`/api/ical/timezones/**`** | Timezone catalog |
-| `/rapla/v3/api-docs` | **`/api/v3/api-docs`** | OpenAPI spec |
-| `/rapla/swagger-ui/**` | **`/swagger-ui/**`** | SpringDoc UI |
-| `/rapla/oauth2/**` | **`/oauth2/**`** | RFC 6749 |
-| `/rapla/.well-known/**` | **`/.well-known/**`** | RFC 8615 OIDC discovery |
-| `/rapla/login` | **`/login`** | Spring form login HTML |
-| `/rapla/error` | **`/error`** | Spring error |
-| `/rapla/logger/**` | **`/api/logger/**`** ❓ | Internal — TBD |
-| `/rapla/server` | **`/api/server`** ❓ | Status — TBD |
-| `/rapla/dhbw/**` | **`/dhbw/**`** | Deployment-specific |
-| `/rapla/webclient/**` | **`/webclient/**`** | JNLP jar bundle |
-| `/rapla/raplaclient.jnlp` | **`/raplaclient.jnlp`** | JNLP launcher entry |
-| `/rapla/raplaclient` | **`/raplaclient`** | JNLP launcher alias |
-| `/rapla/images/**` | **`/images/**`** | Static (favicon, button.gif) |
-| `/rapla/*.css` | **`/*.css`** | Static CSS |
-| **`/rapla/calendar`** | **`/rapla/calendar`** | 🔒 KEEP — external iCal subscribers |
-| **`/rapla/calendar.csv`** | **`/rapla/calendar.csv`** | 🔒 KEEP |
-| **`/rapla/internal_calendar`** | **`/rapla/internal_calendar`** | 🔒 KEEP |
-| **`/rapla/internal_calendar.csv`** | **`/rapla/internal_calendar.csv`** | 🔒 KEEP |
-| **`/rapla/ical`** | **`/rapla/ical`** | 🔒 KEEP — Outlook/iOS subscriptions |
-| **`/rapla/internal_ical`** | **`/rapla/internal_ical`** | 🔒 KEEP |
+Context-path `/rapla/` dropped. Three groups:
+
+- **Drop prefix entirely** (move to root): `/`, `/index`, `/app/**` (SPA), `/swagger-ui/**`, `/oauth2/**`, `/.well-known/**`, `/login`, `/error`, `/webclient/**`, `/raplaclient.jnlp`, `/raplaclient`, `/images/**`, `/*.css`, `/dhbw/**`.
+- **Move to `/api/` prefix**: `/api/auth/**` (login/logout/refresh/token), `/api/storage/**`, `/api/edit/**`, `/api/locale/{id}`, `/api/settings/**`, `/api/plugins/**`, `/api/eventtimecalculator/**`, `/api/exchange/**`, `/api/ical/config/**` (export *config*, not feed), `/api/ical/timezones/**`, `/api/v3/api-docs`, `/api/logger/**`, `/api/server`.
+- **🔒 KEEP under `/rapla/`** (external iCal/Outlook/iOS subscribers depend on these): `/rapla/calendar(.csv)?`, `/rapla/internal_calendar(.csv)?`, `/rapla/ical`, `/rapla/internal_ical`.
 
 ### Already removed (prerequisite cleanup, 2026-05-12)
 
@@ -108,25 +69,7 @@ Two changes:
 
 ## Dev workflow implication
 
-Once Phases 1+2 land, the Angular SPA's dev workflow becomes
-`ng serve` with a proxy — URL-symmetric with prod:
-
-| | Dev (`ng serve` :4200) | Prod (Spring :8051) |
-|---|---|---|
-| SPA | `:4200/app/` | `:8051/app/` |
-| REST | `:4200/api/auth/login` | `:8051/api/auth/login` |
-| OAuth2 | `:4200/oauth2/...` (proxied) | `:8051/oauth2/...` |
-| Legacy iCal | `:4200/rapla/ical` (proxied) | `:8051/rapla/ical` |
-
-`ng serve` flags: `--serve-path /app/ --base-href /app/`.
-`proxy.conf.json` forwards everything NOT under `/app/`:
-`/api/**`, `/oauth2/**`, `/.well-known/**`, `/swagger-ui/**`,
-`/rapla/{calendar,ical}/**`, `/login`, `/error` → `:8051`.
-
-Until Phase 1 lands, the SPA stays on the `ng build --watch` +
-Spring static handler pattern (PRD 026 §Phase 0 prototype). Wiring
-`ng serve` before the URL space is normalized would mean wiring it
-twice — not worth it.
+Post-Phase 1+2, Angular SPA dev becomes `ng serve --serve-path /app/ --base-href /app/` URL-symmetric with prod. `proxy.conf.json` forwards everything not under `/app/` (`/api/**`, `/oauth2/**`, `/.well-known/**`, `/swagger-ui/**`, `/rapla/{calendar,ical}/**`, `/login`, `/error`) to `:8051`. Until then SPA stays on `ng build --watch` + Spring static handler (PRD 026 §Phase 0).
 
 ## Plan
 
@@ -159,62 +102,33 @@ The `auth` group is intentionally **also a subset of `client`**: SpringDoc allow
 
 ### Outstanding follow-ups
 
-- **`.rememberMe(...)` block in `SecurityConfig`** temporarily disabled (commented) to unblock Phase 1+2 testing — `RememberMeConfigurer` requires a `UserDetailsService` bean that PRD 029 was meant to add. Re-enable once that wiring lands.
-- **MockMvc test fallout** beyond the bulk-rename: any tests that hit OAuth2 endpoints or have assertions on full URLs may still need touch-ups. Full `mvn test` pass owed.
-- **JNLP `getContextPath()`** uses `request.getContextPath()` which is now empty; the generator's existing logic handles the empty case automatically (verified) but the unit test `RaplaJNLPPageGeneratorTest` still mocks `/rapla` context-path for regression coverage — keep.
+- **`.rememberMe(...)` in `SecurityConfig`** disabled to unblock Phase 1+2 (`RememberMeConfigurer` needs `UserDetailsService` from PRD 029). Re-enable when wiring lands.
+- **MockMvc test fallout** beyond bulk-rename: OAuth2 endpoints / full-URL assertions may need touch-ups. Full `mvn test` pass owed.
+- **JNLP `getContextPath()`** now empty; generator handles empty case; `RaplaJNLPPageGeneratorTest` keeps mocked `/rapla` for regression coverage.
 
-### Phase 1 — Drop context-path, no API rename yet
+### Phase 1 — Drop context-path
 
-Foundation that everything else builds on. Smallest possible diff to
-prove the core mechanics work.
+- Remove `server.servlet.context-path: /rapla`. URLs `/rapla/X` → `/X`.
+- `SecurityConfig` permit list: drop `/rapla/` prefix; explicit entries for legacy `/rapla/calendar`, `/rapla/ical`.
+- Six legacy controllers (Calendar, iCal feeds) — `@GetMapping` includes `/rapla/calendar` etc. explicitly (anchored, not context-pathed).
+- `application.yml` OAuth2 redirect URIs: drop `/rapla/` literals (e.g. `swagger-ui` redirect → `http://localhost:8051/swagger-ui/oauth2-redirect.html`).
+- `RaplaJNLPPageGenerator` `<codebase>` → `http://host:8051/`.
+- Swing `RemoteConnectionInfo.serverURL` default updated.
+- MockMvc tests: global `/rapla/` → `` rename.
 
-- Remove `server.servlet.context-path: /rapla` from `application.yml`.
-- Every URL that *was* under `/rapla/X` is now `/X`.
-- `SecurityConfig` permit list: drop the `/rapla/` prefix from every
-  entry; the new `/rapla/calendar`, `/rapla/ical`, etc. entries are
-  explicit.
-- Six legacy controllers — `CalendarPageController`, the iCal
-  feed controllers — change their `@GetMapping` paths to include
-  `/rapla/calendar`, `/rapla/ical`, etc. explicitly (anchored under
-  `/rapla/` namespace, NOT under context-path).
-- `application.yml` OAuth2 redirect URIs: drop `/rapla/` literals.
-  Affected lines:
-  - `swagger-ui` client `redirect-uris: http://localhost:8051/swagger-ui/oauth2-redirect.html`
-- JNLP descriptor generator (`RaplaJNLPPageGenerator`): `<codebase>` URL
-  becomes `http://host:8051/` (no `/rapla/`).
-- Swing client `RemoteConnectionInfo.serverURL` default + any
-  hardcoded literals.
-- MockMvc integration tests: global `/rapla/` → `` rename.
-- Test deployment + Swing client launch end-to-end.
+### Phase 2 — Add `/api/` prefix
 
-### Phase 2 — Add `/api/` prefix to MVC controllers
+- `WebMvcConfigurer.configurePathMatch().addPathPrefix("/api", predicate)`; `predicate` excludes IndexPage, CalendarPage, iCal feeds (anchored `/rapla/`), LoginPage / error (root by convention), RaplaJNLP (root `/raplaclient.jnlp`, `/webclient/**`), static handlers.
+- SPA `BASE_PATH` → `/api`; regenerate TS client.
+- Swing REST proxies → `/api/auth`, `/api/storage`, etc.
 
-Pure config + a few annotations. Doesn't affect the calendar/iCal
-controllers (they're anchored to `/rapla/`).
+### Phase 3 — SPA entry on index
 
-- Add `WebMvcConfigurer.configurePathMatch().addPathPrefix("/api", predicate)`
-  where `predicate` excludes:
-  - `IndexPageController` (renders `/` and `/index`)
-  - `CalendarPageController`, iCal feed controllers (anchored to `/rapla/`)
-  - `LoginPageController`, error page handlers (root by convention)
-  - `RaplaJNLPController` (root: `/raplaclient.jnlp`, `/webclient/**`)
-  - Static resource handlers (`SpaResourceConfig` etc.)
-- SPA: `BASE_PATH` from `/` (post-Phase 1) to `/api`.
-- Regenerate TS client via `npm run gen:api`.
-- Swing client REST proxies: update to call `/api/auth`, `/api/storage`, etc.
-
-### Phase 3 — Add SPA entry to index page
-
-- Add `RaplaSpaEntry` + `@Bean` registration. ~15 LOC.
-- Test: visit `/`, confirm "Open web app" link appears, click → SPA loads.
+`RaplaSpaEntry` + `@Bean` (~15 LOC). Verify chooser link → SPA loads.
 
 ### Phase 4 — Cleanup
 
-- Delete `static/redirect.html`.
-- Update PRDs that quote example URLs (PRD 026 mainly).
-- Audit remaining static CSS for orphans (`bootstrap.min.css`,
-  `calendar.css`, `export.css`, `login.css`, `rapla.css` — verify
-  which are still used).
+Delete `static/redirect.html`; update example URLs in cross-referenced PRDs; audit static CSS for orphans.
 
 ## Tests
 
@@ -240,22 +154,10 @@ controllers (they're anchored to `/rapla/`).
 
 ## Open questions
 
-1. **Phasing.** Sequential (Phase 1 → 2 → 3 → 4) or big-bang (one PR)?
-   Recommendation: phased — smaller blast radius per merge, easier to
-   bisect failures.
-2. **`/v3/api-docs` placement.** `/api/v3/api-docs` (under the SPA's
-   REST namespace) or `/v3/api-docs` (root, SpringDoc's default)?
-   Lean: `/api/v3/api-docs` for consistency.
-3. **`/logger` and `/server` placement.** Move under `/api/` (consumed
-   by code, including the Swing client's remote logger) or stay at
-   root (root is fine; consistency argues `/api/`)? Lean: `/api/` for
-   consistency.
-4. **Backwards-compat redirects.** Do any moving paths need a 308
-   redirect from the old `/rapla/...` URL for a transition period
-   (e.g. `/rapla/auth/login` → 308 → `/api/auth/login` for two
-   releases)? Only matters if there are external consumers of the
-   internal endpoints. Default: hard cutover, since the load-bearing
-   external URLs (calendar/iCal) are explicitly preserved.
+1. **Phasing** — phased (1→2→3→4), not big-bang. Smaller blast radius per merge.
+2. **`/v3/api-docs` placement** — `/api/v3/api-docs` for consistency.
+3. **`/logger` and `/server` placement** — `/api/` for consistency.
+4. **Backwards-compat redirects** — hard cutover; external load-bearing URLs (calendar/iCal) explicitly preserved.
 
 ## Cross-references
 

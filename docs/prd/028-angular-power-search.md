@@ -1,6 +1,6 @@
 # PRD 028 — Angular power search (single-calendar shell)
 
-**Status:** draft (research / scoping only — no implementation)
+**Status:** in-progress — GraphQL substrate Phase 1 SHIPPED 2026-05-29 (see §"GraphQL substrate augmentations"). SPA-side consumption (Apollo client, codegen, calendar shell, tier composition, hasConflicts badge UX) NOT STARTED — it's a multi-day delivery slot, schedule when ready.
 **Author:** Christopher Kohlhaas (with AI assistance)
 **Created:** 2026-05-11
 
@@ -36,12 +36,14 @@ Out of scope:
 
 - The reservation-edit flow itself (PRD 026 Phase 2+).
 - Admin views, plugin UIs, user / category administration.
-- Server-side search endpoint design — **specified in
-  [PRD 060 — Discovery, Compute, MCP Transport](060-graphql-mcp-foundations.md)**
-  as the GraphQL `search` root + per-type `searchText` args. Phase 2
-  consumes that. Until those land, the SPA can stub against
-  `/storage/queryAppointments` + `/storage/resources` while the
-  GraphQL substrate is built.
+- The top-level cross-domain `Query.search(text:, scope:)` root + MCP
+  search tool — those stay in
+  [PRD 060 — Discovery, Compute, MCP Transport](060-graphql-mcp-foundations.md)
+  because they serve a different consumer (AI agents).
+- (Server-side search augmentations for the SPA's tier model — the
+  per-type / per-group `searchText` + `matchKind` args — moved INTO
+  scope per the 2026-05-29 consolidation. See §"GraphQL substrate
+  augmentations" below.)
 - Conflict detail UI; this PRD only ranks conflicts as a result
   type, clicking one defers to a future conflict-detail view.
 
@@ -145,6 +147,182 @@ Three candidate behaviours; **pick one before Phase 1**:
 
 Recommendation pending user input — annotate decision here once
 made.
+
+## GraphQL substrate augmentations (added 2026-05-29)
+
+The SPA's tier model composes 3-5 aliased queries per keystroke (A1
+selected + A2 recent + A3 deployment-wide; E1-E4 the same shape for
+reservations). For that pattern to work without N round-trips per
+keystroke, the existing query roots need `searchText` + `matchKind`
+args and a few companion fields. None of this needs a new top-level
+query root — existing roots grow new args additively.
+
+**Phased so Phase 1 ships without any of the harder typed-schema work.**
+
+### Phase 1 — name-only search (NO group / classification dependencies) — SHIPPED 2026-05-29
+
+Goal: ship the working power-search GraphQL surface against the
+structural `name` field today. No PRD 065 (declared groups), no
+per-attribute typed match, no introspection of generated
+`<TypeKey>Classification`s. Just the rapla-resolved name string that
+already drives the existing `nameContains` filter on
+`AllocatableFilter` and `ReservationFilter`.
+
+**What shipped 2026-05-29 (GraphQL substrate only — SPA consumption still pending):**
+- `enum MatchKind { PREFIX SUBSTRING FUZZY }` in `schema.graphqls`
+- `searchText: String` + `matchKind: MatchKind = SUBSTRING` on
+  `AllocatableFilter` and `ReservationFilter`
+- `Reservation.hasConflicts: Boolean!` field
+- `SearchMatcher.java` — case-insensitive PREFIX / SUBSTRING / FUZZY
+  (Levenshtein ≤ 1 with length+/-1 windows) + `rank()` for server-side
+  ordering (kind weight × 10000 + match position)
+- `ReservationGraphQLController` + `ClassificationGraphQLController`
+  apply the new args in `matches()` and post-filter sort by
+  `SearchMatcher.rank` → id tiebreak when `searchText` is set
+- `Reservation.hasConflicts` wired as a `LightDataFetcher` singleton
+  in `StructuralTypeFetchers` using
+  `SyncStorageOperator.getConflictsSync(r)` — §12-gated (caller must
+  read both sides + allocatable for a conflict to count)
+- Sync-refactor cleanup: 3 server-side resolver sites that wrapped
+  sync work in CountDownLatch around `Promise` switched to
+  `SyncStorageOperator`'s synchronous variants (`getConflictsSync`,
+  `queryAppointmentsSync`); ~90 LOC of helpers deleted
+- 8 new tier-3 tests; 126 GraphQL tests total green
+
+What ships (the unchanged design — what the resolvers expose):
+
+1. **`searchText: String` + `matchKind: MatchKind` args on existing
+   roots:**
+   - `Query.allocatables(filter:, searchText:, matchKind:)` —
+     match against `Allocatable.getName(locale)` (= `displayName`).
+     Same value `AllocatableFilter.nameContains` matches today.
+   - `Query.reservations(filter:, searchText:, matchKind:)` —
+     match against `Reservation.getName(locale)` (rapla-resolved per
+     the `nameformat` annotation; same value the existing
+     `ReservationFilter.nameContains` queries).
+
+   When both `searchText` and `nameContains` are set the server ANDs
+   them (`nameContains` stays for legacy callers; new SPA flows pass
+   `searchText` exclusively).
+
+2. **`MatchKind` enum:**
+   ```graphql
+   enum MatchKind {
+     PREFIX     # "Sm" matches "Smith" but not "Cosmo"
+     SUBSTRING  # "mit" matches "Smith" (default — current `nameContains` behavior)
+     FUZZY      # Levenshtein-1 or similar; "Smyth" matches "Smith"
+   }
+   ```
+   Tier-to-kind mapping: A1/E1 → PREFIX, A2/E2 → SUBSTRING, A3/E3 → FUZZY.
+
+3. **Server-side row ranking** within each `searchText`-bearing call:
+   1. Match strength (PREFIX > SUBSTRING > FUZZY)
+   2. Match position (earlier in field = higher rank)
+   3. Stable tie-break by id
+
+   Tier composition stays client-side; per-call internal order is
+   server-authoritative.
+
+4. **`Reservation.hasConflicts: Boolean!`** — picks up the PRD 064
+   deferred field. Power search needs the badge; the calendar view
+   may later too. Implementation: `LightDataFetcher` reading the
+   per-query `RequestContextInstrumentation` cache + per-row
+   `operator.getConflicts(r)` filtered by §12 (caller must read both
+   sides + allocatable, else "no visible conflicts").
+
+5. **`Allocatable.displayName`** — already exists; no change.
+
+6. **Tier composition example (Phase 1):**
+   ```graphql
+   query SearchPhase1($text: String!, $from: LocalDateTime!, $to: LocalDateTime!) {
+     # E1-E3 — reservations
+     e1: reservations(
+       filter: { from: $from, to: $to, allocatableIdsIn: [...] },
+       searchText: $text, matchKind: PREFIX
+     ) { id firstDate lastDate hasConflicts }
+
+     e2: reservations(
+       filter: { from: $from, to: $to, ownerEq: "..." },
+       searchText: $text, matchKind: SUBSTRING, limit: 20
+     ) { id firstDate lastDate hasConflicts }
+
+     e3: reservations(
+       filter: { from: $from, to: $to },
+       searchText: $text, matchKind: FUZZY, limit: 50
+     ) { id hasConflicts }
+
+     # A1-A3 — allocatables
+     a1: allocatables(filter: { ... }, searchText: $text, matchKind: PREFIX) { id displayName }
+     a2: allocatables(filter: { ... }, searchText: $text, matchKind: SUBSTRING) { id displayName }
+     a3: allocatables(filter: { ... }, searchText: $text, matchKind: FUZZY) { id displayName }
+   }
+   ```
+
+   One round-trip per keystroke, six aliased queries, all §12-filtered,
+   all ranked.
+
+Phase 1 requirements:
+| Augmentation | Requires |
+|---|---|
+| `searchText` + `matchKind` on `allocatables` / `reservations` | None (additive on PRDs 055 + 059) |
+| `MatchKind` enum | None |
+| Server-side row ranking | None (resolver-internal) |
+| `Reservation.hasConflicts` | PRD 064 v1's `operator.getConflicts(r)` (shipped) |
+
+Phase 1 ships everything power search needs **for the dominant case**
+("find me the room/person/booking named ..."). It deliberately doesn't
+yet handle "search across non-name attributes" (e.g. find a lecture by
+course-number, find a person by email) — that's Phase 2.
+
+### Phase 2 — classification-attribute search
+
+Goal: extend `searchText` to also match the SAME-VALUE-TYPE STRING
+attribute fields on the target type's typed classification (course
+number, email, room number, etc.).
+
+Two ways to expose this:
+
+- **Server-side fanout (preferred):** `searchText` continues to be a
+  single arg; the resolver, on Phase 2 deployment, also matches against
+  all STRING-valued attribute fields the type has — discovered at
+  schema-build time from the DynamicType definition, no SPA changes.
+  Wire shape unchanged from Phase 1; the field set just widens.
+- **Client-driven via PRD 059 typed where:** the SPA composes
+  `whereRoom: { Raumnummer: { contains: $text } }` for the per-type
+  tier — no new substrate, but the SPA must know per-DT attribute
+  names. Lean: server-side fanout — keeps the SPA polymorphic.
+
+Phase 2 requirements:
+| Augmentation | Requires |
+|---|---|
+| Extended `searchText` field set discovery | None — derives from already-generated `<TypeKey>Classification` SDL |
+| Per-attribute match weighting | None (resolver-internal) |
+
+### Phase 3 — declared-group search
+
+Goal: typed cross-type results via the declared-group surface from
+PRD 065. The SPA's E1/E2 tier model can return `[CourseEvent!]!`
+(typed-on-shared-attributes) instead of `[Reservation!]!` (structural
+only), avoiding per-type inline fragments and giving codegen consumers
+typed shared fields.
+
+Phase 3 requirements:
+| Augmentation | Requires |
+|---|---|
+| `searchText` + `matchKind` on per-group roots | [PRD 065 — Declared Type Groups](065-graphql-declared-type-groups.md) |
+
+Phase 3 is purely additive — Phase 1 (name) and Phase 2
+(classification-attribute) keep working against the structural roots.
+Groups expose a new typed cross-type surface for consumers that want
+the typed shared fields.
+
+### Hot-swap awareness
+
+The Phase 2 searchable field set comes from the generated
+`<TypeKey>Classification` SDL — admin adds a new STRING attribute,
+schema rebuild picks it up within ~10s, search picks it up on the
+next SPA query. Phase 1 (name-only) is hot-swap-trivial (already on
+`getName`).
 
 ## Open questions
 

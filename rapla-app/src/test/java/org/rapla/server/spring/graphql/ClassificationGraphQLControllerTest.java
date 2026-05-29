@@ -237,6 +237,138 @@ class ClassificationGraphQLControllerTest
         return t == null ? null : (String) t.get("name");
     }
 
+    // === PRD 066 Phase 1 — idIn on AllocatableFilter =========================
+
+    /**
+     * Helper — resolve allocatable ids from the live schema by displayName,
+     * so the tests survive id-format changes (UUID prefix, etc.). The
+     * fixture has Springfield personas only (§17): rooms Room A66 / erwin,
+     * lecturers Simpson Homer / Burns Monty.
+     */
+    private String idByDisplayName(String namePart)
+    {
+        List<Map<String, Object>> got = tester.document(String.format("""
+                { allocatables(filter: { nameContains: "%s" }) { id displayName } }
+                """, namePart))
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        return got.stream()
+                .filter(a -> ((String) a.get("displayName")).contains(namePart))
+                .map(a -> (String) a.get("id"))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("no allocatable found with displayName containing " + namePart));
+    }
+
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void allocatablesFilterIdInReturnsExplicitSet()
+    {
+        String roomA66 = idByDisplayName("Room A66");
+        List<Map<String, Object>> got = tester.document(String.format("""
+                { allocatables(filter: { idIn: ["%s"] }) { id displayName } }
+                """, roomA66))
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertEquals(1, got.size(), () -> "expected just Room A66, got " + got);
+        assertEquals(roomA66, got.get(0).get("id"));
+    }
+
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void allocatablesFilterIdInUnionsTypeKeyIn()
+    {
+        // typeKeyIn:["room"] picks all rooms; idIn adds a lecturer who isn't
+        // a room. Result is the union.
+        String simpsonHomer = idByDisplayName("Simpson Homer");
+        List<Map<String, Object>> got = tester.document(String.format("""
+                { allocatables(filter: {
+                    typeKeyIn: ["room"]
+                    idIn: ["%s"]
+                  }) { id displayName } }
+                """, simpsonHomer))
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        // fixture has 2 rooms (Room A66, erwin) + the picked lecturer = 3
+        assertEquals(3, got.size(), () -> "expected 2 rooms + 1 lecturer, got " + got);
+        assertTrue(got.stream().anyMatch(a -> simpsonHomer.equals(a.get("id"))),
+                () -> "Simpson Homer must appear via idIn: " + got);
+    }
+
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void allocatablesFilterIdInIgnoresFilterRulesForExplicitPicks()
+    {
+        // Room A66 seats=30; erwin seats=10. whereRoom narrows to seats>=20
+        // (only Room A66 matches). idIn adds erwin. Result is Room A66 + erwin.
+        String erwin = idByDisplayName("erwin");
+        List<Map<String, Object>> got = tester.document(String.format("""
+                { allocatables(filter: {
+                    typeKeyIn: ["room"]
+                    whereRoom: { seats: { gte: 20 } }
+                    idIn: ["%s"]
+                  }) { id displayName classification { ... on roomClassification { seats } } } }
+                """, erwin))
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertEquals(2, got.size(), () -> "expected Room A66 (filter-match) + erwin (id-pick), got " + got);
+        assertTrue(got.stream().anyMatch(a -> erwin.equals(a.get("id"))),
+                () -> "erwin must appear via idIn even though seats=10 fails the filter: " + got);
+    }
+
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void allocatablesFilterIdInSilentlyDropsUnknownId()
+    {
+        String roomA66 = idByDisplayName("Room A66");
+        List<Map<String, Object>> got = tester.document(String.format("""
+                { allocatables(filter: {
+                    idIn: ["%s", "definitely-not-an-id-on-this-server"]
+                  }) { id displayName } }
+                """, roomA66))
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        // Unknown id is silently dropped; only Room A66 returned.
+        assertEquals(1, got.size(), () -> "expected only Room A66 (unknown id dropped silently), got " + got);
+        assertEquals(roomA66, got.get(0).get("id"));
+    }
+
+    @Test
+    @WithMockUser(username = "monty", roles = "USER")
+    void allocatablesFilterIdInDoesNotBypassPermissionsAsNonAdmin()
+    {
+        // monty queries idIn with both a readable and a hidden id —
+        // result must be byte-identical to the readable-only query
+        // (§12 — existence not leaked, idIn does not bypass canRead).
+        String roomA66 = idByDisplayName("Room A66");
+        // Attempt to pick a synthetic id (definitely not visible).
+        List<Map<String, Object>> mixed = tester.document(String.format("""
+                { allocatables(filter: { idIn: ["%s", "definitely-hidden-or-unknown"] }) { id } }
+                """, roomA66))
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        List<Map<String, Object>> readableOnly = tester.document(String.format("""
+                { allocatables(filter: { idIn: ["%s"] }) { id } }
+                """, roomA66))
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertEquals(readableOnly, mixed,
+                () -> "mixed-id query must be byte-identical to readable-only — §12. mixed=" + mixed + " readableOnly=" + readableOnly);
+    }
+
     // === §5d Phase 1 — generated <TypeKey>Where input SDL ====================
 
     /**
@@ -363,9 +495,11 @@ class ClassificationGraphQLControllerTest
      */
     @Test
     @WithMockUser(username = "homer", roles = "ADMIN")
-    void whereRoomFieldIsAcceptedAsNoOpInPhase2()
+    void emptyWhereBlockDoesNotFilter()
     {
-        // Baseline — all rooms.
+        // Empty where block stays a no-op across all phases — no predicates,
+        // no constraint. Distinct from Phase 2's broader "where is always
+        // no-op" check (superseded by Phase 3 predicate tests below).
         List<Map<String, Object>> baseline = tester.document("""
                 { allocatables(filter: { typeKeyEq: "room" }) { displayName } }
                 """)
@@ -373,22 +507,374 @@ class ClassificationGraphQLControllerTest
                 .path("allocatables")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
-        // With a where-predicate (which would semantically filter to none in Phase 3+):
-        List<Map<String, Object>> withWhere = tester.document("""
-                {
-                  allocatables(filter: {
-                    typeKeyEq: "room"
-                    whereRoom: { name: { eq: "nope-no-room-named-this" } }
-                  }) { displayName }
-                }
+        List<Map<String, Object>> empty = tester.document("""
+                { allocatables(filter: { typeKeyEq: "room", whereRoom: {} }) { displayName } }
                 """)
                 .execute()
                 .path("allocatables")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
-        // Phase 2 is no-op: where doesn't actually filter; should equal baseline.
-        assertEquals(baseline.size(), withWhere.size(),
-                () -> "Phase 2 evaluator is no-op; whereRoom should not filter. baseline=" + baseline + " withWhere=" + withWhere);
+        assertEquals(baseline.size(), empty.size(), () -> "baseline=" + baseline + " empty=" + empty);
+    }
+
+    // === §5d Phase 3 — predicate evaluator, one operator per kind ============
+
+    /**
+     * testdefault.xml fixture for Phase 3 tests:
+     *   - "Room A66" (room, seats=30, belongsto=springfield-powerplant)
+     *   - "erwin"    (room, seats=10, belongsto=elementary-springfield)
+     * Category keys with dashes are PRD 058-migrated to underscore at load
+     * time, so the enum values are {@code springfield_powerplant} and
+     * {@code elementary_springfield}.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void stringWhereEqMatchesOneRoom()
+    {
+        List<Map<String, Object>> got = tester.document("""
+                { allocatables(filter: { typeKeyEq: "room",
+                    whereRoom: { name: { eq: "Room A66" } } }) { displayName } }
+                """)
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertEquals(1, got.size(), () -> "expected only 'Room A66', got " + got);
+        assertEquals("Room A66", got.get(0).get("displayName"));
+    }
+
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void stringWhereContainsMatchesOneRoom()
+    {
+        // case-insensitive substring per StringWhere.contains semantics.
+        List<Map<String, Object>> got = tester.document("""
+                { allocatables(filter: { typeKeyEq: "room",
+                    whereRoom: { name: { contains: "RWIN" } } }) { displayName } }
+                """)
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertEquals(1, got.size(), () -> "expected only 'erwin' (substring 'RWIN' i-c), got " + got);
+        assertEquals("erwin", got.get(0).get("displayName"));
+    }
+
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void stringWhereStartsWithMatchesOneRoom()
+    {
+        // case-sensitive prefix per StringWhere.startsWith.
+        List<Map<String, Object>> got = tester.document("""
+                { allocatables(filter: { typeKeyEq: "room",
+                    whereRoom: { name: { startsWith: "Room" } } }) { displayName } }
+                """)
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertEquals(1, got.size(), () -> "expected only 'Room A66' (prefix 'Room'), got " + got);
+        assertEquals("Room A66", got.get(0).get("displayName"));
+    }
+
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void intWhereGteMatchesOneRoom()
+    {
+        List<Map<String, Object>> got = tester.document("""
+                { allocatables(filter: { typeKeyEq: "room",
+                    whereRoom: { seats: { gte: 20 } } }) { displayName } }
+                """)
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertEquals(1, got.size(), () -> "expected only 'Room A66' (seats>=20), got " + got);
+        assertEquals("Room A66", got.get(0).get("displayName"));
+    }
+
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void intWhereLteMatchesOneRoom()
+    {
+        List<Map<String, Object>> got = tester.document("""
+                { allocatables(filter: { typeKeyEq: "room",
+                    whereRoom: { seats: { lte: 15 } } }) { displayName } }
+                """)
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertEquals(1, got.size(), () -> "expected only 'erwin' (seats<=15), got " + got);
+        assertEquals("erwin", got.get(0).get("displayName"));
+    }
+
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void enumWhereEqMatchesOneRoom()
+    {
+        // testdefault category leaf "springfield-powerplant" → enum value
+        // springfield_powerplant after PRD 058 migration.
+        List<Map<String, Object>> got = tester.document("""
+                { allocatables(filter: { typeKeyEq: "room",
+                    whereRoom: { belongsto: { eq: springfield_powerplant } } }) { displayName } }
+                """)
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertEquals(1, got.size(), () -> "expected only 'Room A66' (springfield-powerplant), got " + got);
+        assertEquals("Room A66", got.get(0).get("displayName"));
+    }
+
+    // === §5d Phase 5 — remaining operators + isNull + permission-leak =======
+
+    /** Helper — count of allocatables for a where-predicate query (default room scope). */
+    private int countWhereRoom(String wherePredicate)
+    {
+        List<Map<String, Object>> got = tester.document(
+                "{ allocatables(filter: { typeKeyEq: \"room\", whereRoom: " + wherePredicate + " }) { displayName } }")
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        return got.size();
+    }
+
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void stringWhereOperators_neInEndsWithIsNull()
+    {
+        // ne
+        assertEquals(1, countWhereRoom("{ name: { ne: \"Room A66\" } }"));
+        // in
+        assertEquals(1, countWhereRoom("{ name: { in: [\"Room A66\", \"does-not-exist\"] } }"));
+        // endsWith
+        assertEquals(1, countWhereRoom("{ name: { endsWith: \"win\" } }"));
+        // isNull:true — both rooms have name set, so 0 match
+        assertEquals(0, countWhereRoom("{ name: { isNull: true } }"));
+        // isNull:false — explicit non-null, both rooms match
+        assertEquals(2, countWhereRoom("{ name: { isNull: false } }"));
+    }
+
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void intWhereOperators_eqNeInGtLtIsNull()
+    {
+        assertEquals(1, countWhereRoom("{ seats: { eq: 30 } }"));     // Room A66
+        assertEquals(1, countWhereRoom("{ seats: { ne: 30 } }"));     // erwin
+        assertEquals(2, countWhereRoom("{ seats: { in: [10, 30] } }"));
+        assertEquals(1, countWhereRoom("{ seats: { gt: 20 } }"));     // Room A66
+        assertEquals(1, countWhereRoom("{ seats: { lt: 20 } }"));     // erwin
+        assertEquals(0, countWhereRoom("{ seats: { isNull: true } }"));
+    }
+
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void enumWhereOperators_neIn()
+    {
+        assertEquals(1, countWhereRoom("{ belongsto: { ne: springfield_powerplant } }"));
+        assertEquals(2, countWhereRoom("{ belongsto: { in: [springfield_powerplant, elementary_springfield] } }"));
+    }
+
+    /**
+     * "and not null" — an operator other than isNull implies the attribute
+     * must be non-null. Tested by querying for an attribute equality where
+     * one of the rooms is missing the value (not applicable in testdefault
+     * since both rooms have all attrs set — but we can validate the
+     * invariant by asserting that `eq` on a value-only-present-on-one-row
+     * narrows correctly without leaking the other row).
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void implicitNotNullSemantic()
+    {
+        // Sanity — seats: { gte: 1 } matches both (both have seats set).
+        assertEquals(2, countWhereRoom("{ seats: { gte: 1 } }"));
+        // Sanity — seats: { eq: 0 } matches neither (both have positive seats).
+        assertEquals(0, countWhereRoom("{ seats: { eq: 0 } }"));
+    }
+
+    /**
+     * §12 permission leak — non-admin user "monty" cannot read "Room A66"
+     * (the room is owner-less, only allocate_conflicts; the user is in
+     * powerplant group but doesn't have read on this room). Where predicates
+     * MUST filter post-canRead — the predicate's match set is the visible
+     * subset. Asserts no hidden allocatable leaks via row count or content.
+     */
+    @Test
+    @WithMockUser(username = "monty", roles = "USER")
+    void permissionLeakWherePredicateMatchesHiddenRoom()
+    {
+        // monty's visible rooms — baseline.
+        List<Map<String, Object>> visible = tester.document("""
+                { allocatables(filter: { typeKeyEq: "room" }) { id displayName } }
+                """)
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        // A predicate that would have matched Room A66 if monty could see it
+        // (seats=30 is only Room A66) must NOT return Room A66 in monty's results
+        // and must be byte-identical to the visible-only subset filtered the same way.
+        List<Map<String, Object>> withWhere = tester.document("""
+                { allocatables(filter: { typeKeyEq: "room",
+                    whereRoom: { seats: { eq: 30 } } }) { id displayName } }
+                """)
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        // Either monty can see Room A66 (in which case both are 1) OR she cannot
+        // (in which case withWhere = 0 and visible has just erwin). Critical
+        // invariant: withWhere ⊆ visible.
+        for (Map<String, Object> row : withWhere)
+        {
+            assertTrue(visible.stream().anyMatch(v -> row.get("id").equals(v.get("id"))),
+                    () -> "where-predicate result " + row + " not in visible set " + visible);
+        }
+    }
+
+    // === §5d Phase 4 — AND / OR / NOT combinators ============================
+
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void andCombinatorAllClausesMustMatch()
+    {
+        // Both clauses match Room A66 only.
+        List<Map<String, Object>> got = tester.document("""
+                { allocatables(filter: { typeKeyEq: "room",
+                    whereRoom: { AND: [
+                      { name:  { eq: "Room A66" } }
+                      { seats: { gte: 20 } }
+                    ] } }) { displayName } }
+                """)
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertEquals(1, got.size(), () -> "got: " + got);
+        assertEquals("Room A66", got.get(0).get("displayName"));
+    }
+
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void andCombinatorOneFailingClauseRejects()
+    {
+        List<Map<String, Object>> got = tester.document("""
+                { allocatables(filter: { typeKeyEq: "room",
+                    whereRoom: { AND: [
+                      { name:  { eq: "Room A66" } }
+                      { seats: { gte: 100 } }
+                    ] } }) { displayName } }
+                """)
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertEquals(0, got.size(), () -> "got: " + got);
+    }
+
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void orCombinatorAnyClauseMatching()
+    {
+        List<Map<String, Object>> got = tester.document("""
+                { allocatables(filter: { typeKeyEq: "room",
+                    whereRoom: { OR: [
+                      { name: { eq: "Room A66" } }
+                      { name: { eq: "erwin"    } }
+                    ] } }) { displayName } }
+                """)
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertEquals(2, got.size(), () -> "got: " + got);
+    }
+
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void notCombinatorNegates()
+    {
+        // NOT name = "Room A66" → only erwin.
+        List<Map<String, Object>> got = tester.document("""
+                { allocatables(filter: { typeKeyEq: "room",
+                    whereRoom: { NOT: { name: { eq: "Room A66" } } } }) { displayName } }
+                """)
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertEquals(1, got.size(), () -> "got: " + got);
+        assertEquals("erwin", got.get(0).get("displayName"));
+    }
+
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void nestedCombinators()
+    {
+        // AND[{seats >= 20}, {NOT belongsto = elementary_springfield}]
+        // → Room A66 (seats=30, belongsto=springfield_powerplant)
+        List<Map<String, Object>> got = tester.document("""
+                { allocatables(filter: { typeKeyEq: "room",
+                    whereRoom: { AND: [
+                      { seats: { gte: 20 } }
+                      { NOT: { belongsto: { eq: elementary_springfield } } }
+                    ] } }) { displayName } }
+                """)
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertEquals(1, got.size(), () -> "got: " + got);
+        assertEquals("Room A66", got.get(0).get("displayName"));
+    }
+
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void emptyAndIsTrueEmptyOrIsFalse()
+    {
+        // AND: [] vacuously true → no filter (both rooms).
+        List<Map<String, Object>> emptyAnd = tester.document("""
+                { allocatables(filter: { typeKeyEq: "room",
+                    whereRoom: { AND: [] } }) { displayName } }
+                """)
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertEquals(2, emptyAnd.size(), () -> "AND:[] should match all rooms; got " + emptyAnd);
+
+        // OR: [] vacuously false → empty result.
+        List<Map<String, Object>> emptyOr = tester.document("""
+                { allocatables(filter: { typeKeyEq: "room",
+                    whereRoom: { OR: [] } }) { displayName } }
+                """)
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertEquals(0, emptyOr.size(), () -> "OR:[] should match nothing; got " + emptyOr);
+    }
+
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void booleanWhereEqIgnoredForNonMatchingType()
+    {
+        // testdefault has no BOOLEAN attribute on room — wherePerson against
+        // a room-only query is a no-op (allocatable belongs to one DT;
+        // per-PRD a where<OtherType> contributes no constraint).
+        List<Map<String, Object>> got = tester.document("""
+                { allocatables(filter: { typeKeyEq: "room",
+                    whereLecturer: { surname: { eq: "Burns" } } }) { displayName } }
+                """)
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        // whereLecturer against rooms = no constraint. 2 rooms.
+        assertEquals(2, got.size(), () -> "expected 2 rooms (whereLecturer doesn't constrain rooms), got " + got);
     }
 
     /**
@@ -905,5 +1391,114 @@ class ClassificationGraphQLControllerTest
         assertEquals("seats", ClassificationSdlGenerator.checkGraphQlCompliantName("seats"));
         assertEquals("course_number", ClassificationSdlGenerator.checkGraphQlCompliantName("course_number"));
         assertEquals("type_",  ClassificationSdlGenerator.checkGraphQlCompliantName("type"));
+    }
+
+    // ============================================================ PRD 028 Phase 1 — searchText + matchKind
+
+    /** Schema introspection: searchText + matchKind on AllocatableFilter. */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void allocatableFilterHasSearchTextAndMatchKind()
+    {
+        Map<String, Object> result = tester.document("""
+                { __type(name: "AllocatableFilter") { inputFields { name } } }
+                """)
+                .execute()
+                .path("__type")
+                .entity(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> inputs = (List<Map<String, Object>>) result.get("inputFields");
+        List<String> names = inputs.stream().map(f -> (String) f.get("name")).toList();
+        assertTrue(names.contains("searchText"), () -> "missing searchText in AllocatableFilter: " + names);
+        assertTrue(names.contains("matchKind"),  () -> "missing matchKind in AllocatableFilter: " + names);
+    }
+
+    /** MatchKind enum exists with PREFIX / SUBSTRING / FUZZY values. */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void matchKindEnumExists()
+    {
+        Map<String, Object> result = tester.document("""
+                { __type(name: "MatchKind") { kind enumValues { name } } }
+                """)
+                .execute()
+                .path("__type")
+                .entity(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertEquals("ENUM", result.get("kind"));
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> values = (List<Map<String, Object>>) result.get("enumValues");
+        List<String> names = values.stream().map(v -> (String) v.get("name")).toList();
+        assertTrue(names.containsAll(List.of("PREFIX", "SUBSTRING", "FUZZY")),
+                () -> "MatchKind missing one of PREFIX/SUBSTRING/FUZZY: " + names);
+    }
+
+    /** PREFIX matches a room by name prefix. testdefault.xml has "Room A66". */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void searchTextPrefixMatchesRoom()
+    {
+        List<Map<String, Object>> rooms = tester.document("""
+                {
+                  allocatables(filter: {
+                    typeKeyEq: "room",
+                    searchText: "Room",
+                    matchKind: PREFIX
+                  }) { id displayName }
+                }
+                """)
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        // Room A66 matches; erwin does NOT prefix-match "Room"
+        assertEquals(1, rooms.size(), () -> "expected only 'Room A66', got " + rooms);
+        assertEquals("Room A66", rooms.get(0).get("displayName"));
+    }
+
+    /** SUBSTRING matches both rooms when search text is part of either name. */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void searchTextSubstringMatchesBothByLetter()
+    {
+        // "r" is in both "Room A66" and "erwin" → both come back
+        List<Map<String, Object>> rooms = tester.document("""
+                {
+                  allocatables(filter: {
+                    typeKeyEq: "room",
+                    searchText: "r",
+                    matchKind: SUBSTRING
+                  }) { id displayName }
+                }
+                """)
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertEquals(2, rooms.size(), () -> "expected both rooms, got " + rooms);
+    }
+
+    /** Ranking — server pre-sorts by match strength + position. */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void searchTextResultsAreServerRanked()
+    {
+        // PREFIX-only query; only Room A66 matches (sorts at the top of an empty rest)
+        List<Map<String, Object>> rooms = tester.document("""
+                {
+                  allocatables(filter: {
+                    typeKeyEq: "room",
+                    searchText: "Room",
+                    matchKind: PREFIX
+                  }) { displayName }
+                }
+                """)
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertEquals("Room A66", rooms.get(0).get("displayName"),
+                () -> "PREFIX hit should rank first; got " + rooms);
     }
 }

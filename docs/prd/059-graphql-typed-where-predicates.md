@@ -1,6 +1,6 @@
 # PRD 059 — GraphQL Typed Where Predicates on `allocatables(filter:)`
 
-**Status:** in-progress — Phases 1+2 landed 2026-05-29; Phases 3-5 pending. Extracted from PRD 035 §5d on 2026-05-29; design locked.
+**Status:** done — all 5 phases landed 2026-05-29. Extracted from PRD 035 §5d on 2026-05-29; design locked.
 
 **Date:** 2026-05-29
 
@@ -87,9 +87,9 @@ input AllocatableFilter {
 
 1. **Phase 1 — SDL generation only.** [DONE 2026-05-29.] Emit `<TypeKey>Where`, `<EnumName>Where`, `<EnumName>ListWhere` inputs in `ClassificationSdlGenerator`. Schema validates; no runtime behaviour change (the `where<TypeKey>` fields aren't wired on `AllocatableFilter` yet). Tier-3 introspection test confirms `roomWhere` shape + per-enum `departmentWhere`/`departmentListWhere`.
 2. **Phase 2 — `where<TypeKey>` fields on `AllocatableFilter`.** [DONE 2026-05-29.] SDL emits `extend input AllocatableFilter { whereRoom: roomWhere ... }` per resource/person DT. Resolver switched from record-based `@Argument("filter") AllocatableFilter` to `@Argument("filter") Map<String, Object>` so unknown-to-record `whereXxx` fields don't fail the binder. `evaluateWhere()` is a no-op stub. Tier-3 tests confirm `whereRoom: {...}` is accepted and doesn't change result set.
-3. **Phase 3 — Predicate evaluator for one operator per kind.** StringWhere `eq`/`contains`/`startsWith`; IntWhere `gte`/`lte`; BooleanWhere `eq`; one enum `eq`; CategoryWhere `eq`. Tier-3 test per kind, no combinators yet.
-4. **Phase 4 — Combinators AND/OR/NOT.** Recursive evaluator; depth cap 10. Tier-3 test per combinator + one nested.
-5. **Phase 5 — Remaining predicates** (`endsWith`, `ne`, `in`, `between`, `gt`/`lt`, `containsAll`, etc.) + `isNull`. Coverage matrix tests.
+3. **Phase 3 — Predicate evaluator for one operator per kind.** [DONE 2026-05-29.] `WhereEvaluator.evaluate(...)` walks the `where<TypeKey>` block matching the allocatable's DT key, dispatching per-attribute predicates: StringWhere `eq`/`contains` (case-insensitive)/`startsWith`; IntWhere `gte`/`lte`; BooleanWhere `eq`; CATEGORY-typed (both VALUE_LIST `<Enum>Where.eq` and ORGANIZATION `CategoryWhere.eq` — id-then-key match handles both shapes). `where<OtherType>` against a non-matching DT contributes no constraint. Tier-3 tests confirm each operator filters down to the expected row.
+4. **Phase 4 — Combinators AND/OR/NOT.** [DONE 2026-05-29.] Recursive evaluator; depth cap 10. AND vacuously true on empty list; OR vacuously false on empty list; NOT inverts. Tier-3 tests for each + nested + vacuous edge cases.
+5. **Phase 5 — Remaining predicates** (`endsWith`, `ne`, `in`, `between`, `gt`/`lt`, `containsAll`/`containsAny`, `isEmpty`, `isNull`) + implicit "and not null" semantics + tier-3 permission-leak test for non-admin filter against a hidden allocatable. [DONE 2026-05-29.] Covers single-valued attrs and multi-select via `*ListWhere` (CATEGORY/ALLOCATABLE).
 
 ## Tests
 

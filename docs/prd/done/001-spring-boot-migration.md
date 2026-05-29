@@ -160,51 +160,15 @@ Not yet committed.
 
 ### Phase 1.2 — completed (javax.* → jakarta.* namespace migration)
 
-**Started:** 2026-05-05  **Completed:** 2026-05-05
+**Completed:** 2026-05-05
 
-All `javax.{inject,servlet,ws.rs}.*` imports across `src/main/java` and `src/test/java` rewritten to `jakarta.*`. `mvn compile` passes; `mvn test -Dtest=RaplaSpringBootApplicationTest` passes (Spring Boot 3.2.5 context loads on Tomcat 10).
+Bulk sed rewrote `javax.{inject,servlet,ws.rs}.*` → `jakarta.*` across ~96 files in `src/main/java` + `src/test/java`. POMs updated: `jakarta.inject:jakarta.inject-api:2.0.1`, `jakarta.ws.rs:jakarta.ws.rs-api:3.1.0`, `jakarta.servlet:jakarta.servlet-api:6.0.0` added; `javax.servlet:javax.servlet-api:4.0.1` retained as `provided` so RESTEasy 3.15's `HttpServletDispatcher` resolves until Phase 1.7/1.8 deletes the test stack. `MainServlet.java` (~450 LOC) + `ResteasyExceptionMapper.java` deleted (pulled forward — they compiled only against javax RESTEasy). Three `Provider`-pin classes (`ClientCreator`, `ServerStorageSelector`, `RaplaTestCase`) keep `javax.inject.Provider` at the restinject boundary until restinject is dropped in Phase 1.8.
 
-#### Steps performed
+`mvn compile` BUILD SUCCESS; `mvn test -Dtest=RaplaSpringBootApplicationTest` passes against Tomcat 10.
 
-| # | Action | Detail |
-|---|--------|--------|
-| 1 | Bulk sed across all `.java` | `find src/main/java src/test/java -name "*.java" \| xargs sed -i 's\|^import javax\\.inject\\.\|import jakarta.inject.\|; s\|^import javax\\.servlet\\.\|import jakarta.servlet.\|; s\|^import javax\\.ws\\.rs\\.\|import jakarta.ws.rs.\|'`. After sed: 0 `javax.inject.*`, 0 `javax.servlet.*`, 0 `javax.ws.rs.*` import statements left in non-test source. |
-| 2 | `parent/pom.xml` properties | `<javax.inject.version>` → `<jakarta.inject.version>2.0.1</...>`; `<javax.ws.rs.version>` → `<jakarta.ws.rs.version>3.1.0</...>` |
-| 3 | `parent/pom.xml` dependencies | `javax.inject:javax.inject:1` → `jakarta.inject:jakarta.inject-api:2.0.1`; `javax.ws.rs:javax.ws.rs-api:2.1` → `jakarta.ws.rs:jakarta.ws.rs-api:3.1.0`; `javax.servlet:javax.servlet-api:3.1.0` → `jakarta.servlet:jakarta.servlet-api:6.0.0` (added) **AND** `javax.servlet:javax.servlet-api:4.0.1` retained (provided scope) so RESTEasy 3.15's `HttpServletDispatcher` parent-class hierarchy resolves until cutover deletes the rest of RESTEasy in later Phase 1 steps. |
-| 4 | `pom.xml` artifactItem | `javax.inject:javax.inject` → `jakarta.inject:jakarta.inject-api` in maven-dependency-plugin webclient copy step |
-| 5 | RESTEasy-bound source files **deleted** | `src/main/java/org/rapla/server/MainServlet.java` (~450 LOC bootstrap) and `src/main/java/org/rapla/server/provider/resteasy/ResteasyExceptionMapper.java` — these compiled against `javax.servlet.http.HttpServlet` via RESTEasy 3.15's javax-bound API and could not be made to compile against jakarta without rewriting their entire substance. They are scheduled for deletion in Phase 1 cutover, so deletion was pulled forward. **Only one external reference remains: `src/test/java/org/rapla/bootstrap/CustomJettyStarter.java` (legacy test bootstrap, slated for deletion in Phase 1.7).** |
-| 6 | Provider-namespace pinning at restinject boundary | `restinject 2.0-RC11` is compiled against `javax.inject.Provider` and its `addComponentProvider` / `addComponentInstanceProvider` methods have `<? extends javax.inject.Provider<I>>` as upper bound. Three classes that hand `Provider` instances to restinject keep their `Provider` import as `javax.inject.Provider` until the entire restinject library is removed in Phase 8: `src/main/java/org/rapla/client/swing/internal/ClientCreator.java`, `src/main/java/org/rapla/server/internal/ServerStorageSelector.java` (mixed: javax for the `implements` clause, FQN `jakarta.inject.Provider` on the internal `getImportExportManager()` method that talks to the production-side `DBOperator`), and `src/test/java/org/rapla/test/util/RaplaTestCase.java` (mixed: jakarta for the `Provider` import that's passed to production code, javax for the `Filter`/`DispatcherType`/`ServletContext` Jetty 9 servlet API). |
-| 7 | Test-side Jetty/RESTEasy clients | `src/test/java/org/rapla/test/util/RaplaTestCase.java` reverted to `javax.servlet.*` for Jetty 9 (`Filter`, `FilterChain`, `FilterConfig`, `ServletException`, `ServletRequest`, `ServletResponse`, `DispatcherType`); `src/test/java/org/rapla/rest/client/resteasy/ResteasyRemoteConnector.java` reverted to `javax.ws.rs.client.*` for RESTEasy 3.15 client. Both classes are slated for deletion when `RaplaTestCase` migrates to `@SpringBootTest` (Phase 1.7). |
+**Note on coexistence:** `jakarta.servlet:6.0` (Tomcat 10 / Spring Boot 3.2 + production source) and `javax.servlet:4.0.1` (provided, RESTEasy 3.15 compile-time bridge for legacy test stack) live side-by-side until Phase 1.7/1.8.
 
-#### Verification
-
-| Command | Result |
-|---------|--------|
-| `grep -rl "import javax\\.\\(inject\\|servlet\\|ws\\.rs\\)" src/main/java` | empty (zero hits) |
-| `mvn compile -DskipTests` | BUILD SUCCESS, 0 errors, 10 pre-existing deprecation warnings |
-| `mvn test -Dtest=RaplaSpringBootApplicationTest` | 1 test passing, Spring context loads against Tomcat 10 |
-
-#### Files changed in Phase 1.2
-
-```
-modified:   parent/pom.xml          (jakarta.inject + jakarta.ws.rs + jakarta.servlet deps; javax.servlet kept as transitional 4.0.1 provided)
-modified:   pom.xml                 (artifactItem now jakarta.inject)
-deleted:    src/main/java/org/rapla/server/MainServlet.java
-deleted:    src/main/java/org/rapla/server/provider/resteasy/ResteasyExceptionMapper.java
-modified:   ~96 .java files        (jakarta.* import statements; bulk sed)
-modified:   src/main/java/org/rapla/client/swing/internal/ClientCreator.java       (kept javax.inject.Provider for restinject API)
-modified:   src/main/java/org/rapla/server/internal/ServerStorageSelector.java    (javax.inject.Provider import + FQN jakarta.inject.Provider on internal method)
-modified:   src/test/java/org/rapla/test/util/RaplaTestCase.java                  (javax.servlet.* + jakarta.inject.Provider mix)
-modified:   src/test/java/org/rapla/rest/client/resteasy/ResteasyRemoteConnector.java (javax.ws.rs.client.*)
-```
-
-Not yet committed.
-
-**Note on coexistence:** Two servlet APIs are on the classpath simultaneously during the migration:
-- `jakarta.servlet:jakarta.servlet-api:6.0` — used by Tomcat 10 / Spring Boot 3.2 and the production source.
-- `javax.servlet:javax.servlet-api:4.0.1 (provided)` — kept solely so RESTEasy 3.15's `HttpServletDispatcher`/`Filter` class hierarchy resolves at compile time for the legacy test bootstrap (`CustomJettyStarter`, `RaplaTestCase`). Will be removed when the legacy test stack is replaced by `@SpringBootTest` (Phase 1.7) and RESTEasy is dropped (Phase 3.10).
-
-**javax.* packages intentionally NOT migrated (Java SE / unchanged):** `javax.swing.*`, `javax.crypto.*`, `javax.naming.*`, `javax.net.*`, `javax.print.*`, `javax.script.*`, `javax.sql.*`, `javax.xml.*`, `javax.mail.*`
+**javax.* intentionally NOT migrated (Java SE):** `javax.swing.*`, `javax.crypto.*`, `javax.naming.*`, `javax.net.*`, `javax.print.*`, `javax.script.*`, `javax.sql.*`, `javax.xml.*`, `javax.mail.*`
 
 ### Phase 1.3 — completed (static content move)
 
@@ -232,302 +196,72 @@ Not yet committed.
 |--------------|--------|
 | `mvn test -Dtest=RaplaSpringBootApplicationTest` | 2 tests passing (~5 s startup) |
 
-#### Bridge approach is non-viable — recorded for posterity
+#### Bridge approach non-viable — recorded for posterity
 
-A bridge integration test (`LegacyServerBridgeIntegrationTest`) was written that set `rapla.bridge.enabled=true`, copied `testdefault.xml` to a `@TempDir`, and pointed `rapla.file-datasources.raplafile` at it via `@DynamicPropertySource`. **The test failed with:**
+The bridge integration test (`LegacyServerBridgeIntegrationTest`) failed because Phase 1.2's jakarta migration rewrote every `@javax.inject.Inject` to `@jakarta.inject.Inject`, but `restinject 2.0-RC11`'s `SimpleRaplaInjector` only scans for `@javax.inject.Inject`. **The legacy DI container is dead at runtime after Phase 1.2** — no class carries the annotation it's looking for. Rejected alternatives: forking restinject for jakarta support (dead-end), or re-adding `@javax.inject.Inject` alongside on ~275 sites (pointless duplication). Decision: migrate forward to native Spring DI — Spring 6's JSR-330 honours `jakarta.inject.Inject` directly. The bridge bean is kept (gated off) only as a source of `Logger` + `ServerContainerContext` definitions for the native-Spring migration.
 
-```
-SimpleRaplaInjector$RaplaContainerContextException:
-  No javax.inject.Inject Annotation or public default constructor found
-  in class org.rapla.server.internal.ServerServiceImpl
-```
+Knock-on: Phase 1.5 must migrate leaf-first (no `@Inject` deps) and grow outward, since the legacy graph can't bootstrap collaborators piecewise. This keeps the smoke test green at every commit.
 
-**Root cause:** the Phase 1.2 namespace migration rewrote every `@javax.inject.Inject` constructor annotation to `@jakarta.inject.Inject`. The `restinject 2.0-RC11` library — used by `ServerCreator` / `SimpleRaplaInjector` to scan classes and pick injectable constructors — only recognises `@javax.inject.Inject`. After the migration, **no class in the codebase carries the annotation restinject is looking for**, so the legacy DI container can no longer instantiate any class with constructor injection.
-
-**Implication:** The legacy DI bootstrap is **broken at runtime by Phase 1.2** and cannot be revived without one of:
-- (a) Fork `restinject` to also recognise `@jakarta.inject.Inject` (smallest patch, but maintains a dead end).
-- (b) Re-add `@javax.inject.Inject` *alongside* `@jakarta.inject.Inject` on every constructor (~275 sites).
-- (c) **Migrate forward to native Spring DI** — every `@DefaultImplementation` becomes `@Service` (or `@Component`), every `@Inject` constructor is picked up by Spring 6's JSR-330 support (which honours `jakarta.inject.Inject`), and `ServerCreator` / `SimpleRaplaInjector` are deleted.
-
-**Decision:** option (c). The bridge bean is left in place (gated off) only because its `Logger` + `ServerContainerContext` bean definitions are still useful inputs to the native-Spring migration that follows. The failing integration test was deleted — it cannot be made to pass without (a) or (b), and neither is worth the engineering cost.
-
-**Knock-on consequence for the phase ordering:** Phase 1.5 (migrate `ServerServiceImpl` and friends to `@Service`) cannot be done one-collaborator-at-a-time on the legacy DI side. The legacy DI is already dead. Either (a) the entire server-side `@DefaultImplementation` graph is migrated to `@Service` in a single sweep, or (b) the migration starts from leaves with no `@Inject` dependencies and grows outward, with the rest of the codebase only providing types (compile-time) but not runtime instances. This PRD adopts **(b)** because it lets the smoke test go green at every commit; until the entire graph is migrated, only the smoke test's `assertNotNull(context)` and `RaplaServerProperties` injection are verifiable end-to-end.
-
-### Phase 1.5 — in-progress (native Spring DI, leaf-first)
+### Phase 1.5 — completed (native Spring DI, leaf-first)
 
 **Date:** 2026-05-05
 
-#### Step 1 — Core leaf beans wired (completed)
+Six steps landed leaf-first, each verified by a smoke-test bean assertion:
 
-| # | Item | File(s) | Detail |
-|---|------|---------|--------|
-| 1 | `ServerCoreConfig` `@Configuration` | `src/main/java/org/rapla/server/spring/ServerCoreConfig.java` (new) | Registers four leaf beans via explicit `@Bean` factory methods (avoids touching source classes; reversible): `BundleManager` (returns `ServerBundleManager` instance), `TimeZoneConverter` (returns `TimeZoneConverterImpl`), `RaplaResources(BundleManager)`, `RaplaSystemInfo(BundleManager)`. |
-| 2 | Smoke-test injections | `src/test/java/org/rapla/server/spring/RaplaSpringBootApplicationTest.java` | Added `coreBeansResolve()` test that `@Autowired`s all four beans and asserts non-null. |
+- **Step 1 — `ServerCoreConfig`** registers `BundleManager` (`ServerBundleManager`), `TimeZoneConverter`, `RaplaResources`, `RaplaSystemInfo` as `@Bean` factories.
+- **Step 2** adds `RaplaLocale` (`RaplaLocaleImpl`) and `CommandScheduler` (`DefaultScheduler(logger, tz)`).
+- **Step 3** adds `RemoteLogger` (`RemoteLoggerImpl`) via `AutowireCapableBeanFactory.autowireBean(impl)` to populate the legacy `@Inject Logger logger` field.
+- **Step 4** adds `PromiseWait` (later deleted in Phase 2), `FunctionFactory(name="org.rapla")`, `PermissionExtension`, `ServerStorageSelector` (8-arg, datasource consulted lazily inside `get()`), `RaplaFacade` (`FacadeImpl`).
+- **Step 5** adds `ServerServiceConfig` (gated `@ConditionalOnProperty(prefix="rapla.file-datasources", name="raplafile")`) with `CachableStorageOperator` and `ServerServiceContainer` (12-arg; `ObjectProvider::getIfAvailable` wraps `Provider<Map<...>>` / `Provider<Set<...>>` into jakarta-Provider lambdas). `ServerServiceIntegrationTest` boots the container end-to-end against a `@TempDir`-copied `testdefault.xml`.
+- **Step 6** deletes the bridge `ServerServiceContainer` bean (kept the `Logger` + `ServerContainerContext` beans as canonical providers).
 
-| Verification | Result |
-|--------------|--------|
-| `mvn test -Dtest=RaplaSpringBootApplicationTest` | 3 tests passing (~9 s startup, ~5 s context) |
+**Why `@Bean` factories not `@Service`:** non-invasive (no diff in `org.rapla.RaplaResources` etc.); legacy `@DefaultImplementation` annotations are dead-but-harmless after Phase 1.2. A final `@Service` + `@ComponentScan` sweep would be a follow-up after restinject removal.
 
-**Why `@Bean` factories instead of `@Service` on the source classes:** the `@Bean` form is non-invasive — no diff in `org.rapla.RaplaResources` etc. The legacy DI graph (which is dead but still has @DefaultImplementation annotations littered across the codebase) is irrelevant because nothing instantiates it any more. When all classes are migrated and `restinject` is removed in Phase 1.8, both `@DefaultImplementation` and `ServerCoreConfig`'s manual `@Bean` blocks can be replaced with class-level `@Service` annotations + `@ComponentScan` in a final sweep.
+**Pattern note:** field-injected legacy classes can be Spring-managed without source changes via `AutowireCapableBeanFactory.autowireBean(instance)` inside the `@Bean` factory — Spring 6 honours `jakarta.inject.Inject` on fields under this post-processor.
 
-#### Step 2 — Locale & Scheduler beans wired (completed)
+After step 5 the legacy DI graph (`ServerCreator` → `SimpleRaplaInjector` → `ServerServiceImpl`) is fully replaced by Spring for the server core: storage connect, facade wiring, preference loading, and timezone resolution all run under Spring control.
 
-| # | Item | File(s) | Detail |
-|---|------|---------|--------|
-| 1 | `RaplaLocale` bean | `ServerCoreConfig.raplaLocale(BundleManager)` | Returns `new RaplaLocaleImpl(bundleManager)`. |
-| 2 | `CommandScheduler` bean | `ServerCoreConfig.commandScheduler(Logger, TimeZoneConverter)` | Returns `new DefaultScheduler(logger, timeZoneConverter)`. `Logger` already provided by `LegacyServerBridgeConfig.raplaLogger()`. |
-| 3 | Smoke-test injection | `RaplaSpringBootApplicationTest.localeAndSchedulerResolve()` | Asserts both beans `@Autowired` non-null. |
+### Phase 1.6 — additional steps 5–11 (completed)
 
-`mvn test -Dtest=RaplaSpringBootApplicationTest` → 4 tests passing.
+Each step adds a tier of Spring beans + `@RestController`s; full quick-reference is at the top of the file. Highlights and patterns worth keeping:
 
-#### Step 3 — RemoteLoggerImpl wired (completed)
+- **Step 5 — Mail tier.** `MailInterface` (`MailapiClient` wrapping `containerContext.getMailSession()` as `Provider<Object>`), `MailToUserImpl`, `MailToUserController` (`POST /mail/send`).
+- **Step 6 — Locale (first `@RequestScope` use).** `ResourceBundleList`, `RemoteLocaleService` (request-scoped, `autowireBean` populates 6 `@Inject` fields), `RemoteLocaleController`. Wraps `Promise<T>` via `SynchronizedCompletablePromise.waitFor(promise, 10000, null)` at the HTTP boundary.
+- **Step 7 — Data-API request-scoped beans.** `AppointmentFormater`, `SecurityManager`, plus `RaplaResourcesRestPage` / `RaplaDynamicTypesRestPage` / `RaplaEventsRestPage` all `@RequestScope` + `autowireBean`.
+- **Step 8 — Data-API controllers.** `RaplaResourcesController` (CRUD on `/resources`), `RaplaEventsController` (CRUD + `@PatchMapping` on `/events`, date params use `@DateTimeFormat(iso=DATE_TIME)`), `RaplaDynamicTypesController` (read-only on `/dynamictypes`). Spring MVC's `@RequestParam List<String>` accepts both repeated and comma-separated formats — no `@QueryParam` translation hassle.
+- **Step 9 — RemoteStorage tier.** `ShutdownService`, `UpdateDataManager`, `RemoteStorage` (request-scoped + autowireBean for 9 `@Inject` fields incl. `Provider<MailInterface>`; Spring 6 honours JSR-330 `Provider` lookup). The `@RestController` wrapper is deferred to Phase 5 — better generated from the same `@HttpExchange` interface than hand-rolled (dozens of CRUD + dispatch/sync methods).
+- **Step 10 — Legacy URL-path controllers (HARD CONSTRAINT preserved).** `Export2iCalController` (`/ical`, `/internal_ical`), `RaplaJNLPController` (`/raplaclient`, `/raplaclient.jnlp`), `CalendarPageController` (`/calendar`, `/calendar.csv`, `/internal_calendar(.csv)`). `ServletRequestPreprocessorFilter` (a `OncePerRequestFilter`) bridges the legacy `ServletRequestPreprocessor` extension point — the `?key=…` URL-encryption decrypt is still applied in-flight. `urlEncryptionPreprocessor` bean is `@Lazy` to break a circular dep through `RemoteSession` → `TokenHandler` → `RaplaKeyStorage` → `serverServiceContainer` → `Set<ServletRequestPreprocessor>`.
+- **Step 11 — Plugin REST controllers.** `UrlEncryptionController` (`/urlencryption`), `ArchiverController` (`/archiver` + `/backup` / `/restore`), `ICalImportController` (`/ical/import`), `JNDIConfigController` (`/jndi`), `MailConfigController` (`/mail/config(/external)?`). All gated by `@ConditionalOnBean({Service.class, RemoteSession.class})` so `rapla.services.<plugin-id>=false` removes them cleanly. `Promise`-returning service methods are unwrapped via `SynchronizedCompletablePromise.waitFor` at the controller boundary.
 
-| # | Item | File(s) | Detail |
-|---|------|---------|--------|
-| 1 | `RemoteLogger` bean | `ServerCoreConfig.remoteLogger(AutowireCapableBeanFactory)` | Uses `beanFactory.autowireBean(impl)` to populate the `@Inject Logger logger` field on `RemoteLoggerImpl` (which has package-private field injection). Spring 6 honours `jakarta.inject.Inject` on fields when the bean is post-processed via `autowireBean`. |
-| 2 | Smoke-test injection | `RaplaSpringBootApplicationTest.remoteLoggerResolves()` | Asserts `RemoteLogger` autowired non-null. |
+**Phase 1.6 endpoint-migration complete** — every JAX-RS `@Path` endpoint has a Spring `@RestController` counterpart at the same path.
 
-`mvn test -Dtest=RaplaSpringBootApplicationTest` → 5 tests passing.
+### Phase 4 step 2 — Facade tier in `ClientConfig` (completed)
 
-**Pattern note:** field-injected legacy classes can be migrated without source changes by using `AutowireCapableBeanFactory.autowireBean(instance)` inside the `@Bean` factory. This is the bridge between "no source touches" and "Spring populates @Inject fields" — applicable wherever the legacy DI graph used `@Inject` on fields rather than constructors.
+Three beans added: `CommandScheduler` (`new DefaultScheduler(logger)` — single-arg client ctor, no `TimeZoneConverter`), `RaplaFacade` (`new FacadeImpl(i18n, scheduler, logger)`), `ClientFacade` (`new ClientFacadeImpl(raplaFacade, logger, i18n)`).
 
-#### Step 4 — PromiseWait, extensions, ServerStorageSelector, FacadeImpl wired (completed)
+### Phase 5 step 2 + 4–6 — Bearer-auth + `@HttpExchange` interfaces (completed 2026-05-06)
 
-| # | Item | File(s) | Detail |
-|---|------|---------|--------|
-| 1 | `PromiseWait` bean | `ServerCoreConfig.promiseWait(Logger)` | Returns `new PromiseWaitImpl(logger)`. Will be deleted in Phase 2 (promise-wait removal). |
-| 2 | `FunctionFactory` map | `ServerCoreConfig.standardFunctions(RaplaLocale)` | `@Bean(name = StandardFunctions.NAMESPACE)` — Spring's `Map<String, FunctionFactory>` injection uses bean names as keys. Plugin functions (`AppointmentNoteFunctions`, `DurationFunctions`) deferred to plugin-config phase. |
-| 3 | `PermissionExtension` set | `ServerCoreConfig.raplaDefaultPermission()` | Returns `new RaplaDefaultPermissionImpl()`. Spring's `Set<PermissionExtension>` injection picks up all beans of this type. |
-| 4 | `ServerStorageSelector` bean | `ServerCoreConfig.serverStorageSelector(...)` | Eight-arg constructor: container context, logger, i18n, locale, scheduler, function-factory map, permission set, promise-wait. The actual file/DB datasource is consulted lazily inside `get()`, so the bean can be constructed without a fixture. |
-| 5 | `RaplaFacade` bean | `ServerCoreConfig.raplaFacade(RaplaResources, CommandScheduler, Logger)` | Returns `new FacadeImpl(...)`. The `setOperator(StorageOperator)` + `operator.connect()` chain is done by `ServerServiceImpl` and is deferred to step 5. |
-| 6 | Smoke-test injections | `RaplaSpringBootApplicationTest.serverStorageSelectorResolves`, `raplaFacadeResolves` | Two new tests asserting the beans `@Autowired` non-null. |
+A single shared `HttpServiceProxyFactory` with a `RestClient.Builder.requestInitializer(...)` that reads `RemoteConnectionInfo.getAccessToken()` and applies `setBearerAuth(token)` (skipped if null/empty). Adding a remote service is one `@Bean factory.createClient(InterfaceClass.class)` line.
 
-`mvn test -Dtest=RaplaSpringBootApplicationTest` → 7 tests passing.
+**All shared service interfaces converted from JAX-RS to Spring `@HttpExchange`** (11 in step 4, plus `RemoteAuthentificationService` and the 404-LOC `RemoteStorage` interface in steps 5–6). `RemoteStorage` was bulk-converted via a regex Python script (`@Path("X")` → `@HttpExchange("/X")`, multi-line `@GET\n@Path` → `@GetExchange`, `@QueryParam` → `@RequestParam(required=false)`, `@PathParam` → `@PathVariable`, `@Produces`/`@Consumes` stripped). 13 proxy beans registered in `ClientProxyConfig`. Server-side `@RestController`s are unaffected — they own their own `@RequestMapping` annotations.
 
-#### Step 5 — ServerServiceImpl boots via Spring DI (completed)
+### Phase 9 — completed (Jackson default + Gson removal)
 
-| # | Item | File(s) | Detail |
-|---|------|---------|--------|
-| 1 | `BundleManager` bean type widened | `ServerCoreConfig.bundleManager()` returns `ServerBundleManager` (concrete) | `ServerServiceImpl`'s constructor takes `ServerBundleManager` (concrete), so the bean must be registered as that type. The bean still satisfies `BundleManager` injections via interface lookup. |
-| 2 | `ServerServiceConfig` `@Configuration` | `src/main/java/org/rapla/server/spring/ServerServiceConfig.java` (new) | Gated by `@ConditionalOnProperty(prefix="rapla.file-datasources", name="raplafile")` — the smoke test (which has no datasource configured) skips this whole config. |
-| 3 | `CachableStorageOperator` bean | `ServerServiceConfig.cachableStorageOperator(ServerStorageSelector)` | `selector.get()` returns the file or DB operator depending on which datasource is configured. |
-| 4 | `ServerServiceContainer` bean | `ServerServiceConfig.serverServiceContainer(...)` | 12-arg constructor. `Provider<Map<String, ServerExtension>>` / `Provider<Set<ServletRequestPreprocessor>>` are wrapped via Spring's `ObjectProvider.getIfAvailable(Collections::emptyMap/Set)` → `jakarta.inject.Provider` lambda, so no plugin extensions are needed for the bean to start. The constructor calls `operator.connect()` and reads preferences during instantiation, so this bean requires a working datasource. |
-| 5 | Integration test fixture | `src/test/java/org/rapla/server/spring/ServerServiceIntegrationTest.java` (new) | `@SpringBootTest` + `@TempDir` + `@DynamicPropertySource` — copies `/testdefault.xml` from the test classpath to a temp file and points `rapla.file-datasources.raplafile` at it. Asserts `@Autowired ServerServiceContainer` is non-null. |
+**Step 1 (2026-05-06)** — `spring.http.converters.preferred-json-mapper=gson` removed from `application.yml`; Spring Boot 3.x defaults to Jackson with `spring-boot-starter-web`. Wire format is largely compatible (both serialize `java.util.Date` as ISO-8601 by default).
 
-| Verification | Result |
-|--------------|--------|
-| `mvn test -Dtest='RaplaSpringBootApplicationTest,ServerServiceIntegrationTest'` | 8 tests passing across 2 Spring contexts. Integration test logs show `Rapla.Version=2.1-SNAPSHOT`, `FileOperator.connect rapla - Connecting: file:/tmp/.../rapla-data.xml`, `ConflictFinder rapla - Conflict initialization found 0 conflicts`. |
+**Step 2 (2026-05-08)** — Jackson default swap + full Gson removal landed alongside the Jackson 2 → Jackson 3 cutover under PRD 011:
+- `rapla-core/pom.xml` declared `jackson-datatype-jsr310` (later dropped — Jackson 3 has built-in `java.time.*`); `JacksonParserWrapper.defaultObjectMapper()` registers `JavaTimeModule` + disables `WRITE_DATES_AS_TIMESTAMPS`. `JsonParserWrapper.factory` defaults to `JacksonParserWrapper` (was `GsonParserWrapper`).
+- `gson` dropped from `rapla-bom/pom.xml`. Final Gson consumers (`HTTPWithJsonConnector`, `HTTPWithJsonMailConnector`, `MailapiClient`, `JacksonMergePatch` (renamed from `JsonMergePatch`), `RestAPIExample`) migrated to Jackson API.
+- Stale `gson`-named locals/fields renamed (`mapper`, `parser`, etc.) across `JacksonParserWrapper`, `JavaJsonSerializer`, `EntityHistory`, `NotificationStorage`, `RaplaSQL`, `LocalAbstractCachableOperator`. `ExchangeAppointmentStorage` deferred pending parallel Exchange-connector session.
+- Reactor `mvn test` green: 23 spring tests + 18 rapla-server tests (incl. `TestEntityHistory`, `ConcurrentTests` exercising SQL serialization) + all rapla-core tests. SQL history JSON entity blobs round-trip byte-identical between Gson and Jackson (field-by-field with ISO-8601 dates).
 
-**Significance:** The legacy DI graph (`ServerCreator` → `SimpleRaplaInjector` → `ServerServiceImpl`) is now fully replaced by Spring DI for the server core. Storage connect, facade wiring, preference loading, and timezone resolution all run under Spring control. Plugin extensions are still empty (deferred to Phase 6) but the core orchestrator is alive.
-
-#### Step 6 — Bridge `ServerServiceContainer` removed (partial)
-
-| # | Item | File(s) | Detail |
-|---|------|---------|--------|
-| 1 | Remove redundant bridge bean | `LegacyServerBridgeConfig.java` (modified) | Deleted the `@Bean(destroyMethod="") ServerServiceContainer ...` that called `ServerCreator.create()`. Replaced by `ServerServiceConfig.serverServiceContainer`. The `Logger` and `ServerContainerContext` beans are kept as canonical providers. The `@ConditionalOnProperty("rapla.bridge.enabled")` mechanism is also removed. |
-
-**Deferred:** `ServerCreator.java`, `ServerStarter.java` deletion still blocked by `RaplaTestCase.java` (test bootstrap) and `StandaloneStarter.java`. Will be done in Phase 1.7 along with the test stack migration. The three `javax.inject.Provider` pins similarly stay until `restinject` is removed in Phase 1.8.
-
-8 tests still passing.
-
-### Phase 1.6 — additional steps 5–7 (completed)
-
-#### Step 5 — Mail tier + MailToUserController (completed)
-
-| # | Item | File(s) | Detail |
-|---|------|---------|--------|
-| 1 | `MailInterface` bean | `ServerCoreConfig.mailInterface(RaplaFacade, ServerContainerContext)` | Returns `new MailapiClient(facade, () -> containerContext.getMailSession())` — wraps the legacy mail-session lookup into a `jakarta.inject.Provider<Object>` lambda. |
-| 2 | `MailToUserImpl` bean | `ServerCoreConfig.mailToUser(MailInterface, RaplaFacade, Logger)` | Direct constructor injection. |
-| 3 | `MailToUserController` | `src/main/java/org/rapla/server/spring/web/MailToUserController.java` (new) | `@PostMapping` on `/mail/send` with `@RequestParam("username")`, `@RequestHeader("subject")`, `@RequestBody String body`. Uses `RemoteSession.checkAndGetUser`. |
-
-#### Step 6 — RemoteLocaleService (request-scoped) + RemoteLocaleController (completed)
-
-| # | Item | File(s) | Detail |
-|---|------|---------|--------|
-| 1 | `ResourceBundleList` bean | `ServerCoreConfig.resourceBundleList(Set<I18nBundle>, BundleManager)` | Spring picks up all `I18nBundle` beans (currently `RaplaResources` + `RaplaSystemInfo`). |
-| 2 | `RemoteLocaleService` bean — **request-scoped** | `ServerServiceConfig.remoteLocaleService(HttpServletRequest, AutowireCapableBeanFactory)` | `@RequestScope` — Spring creates a new instance per HTTP request and injects the request via constructor. `autowireBean` populates 6 `@Inject` fields. **First use of `@RequestScope` in the migration.** |
-| 3 | `RemoteLocaleController` | `src/main/java/org/rapla/server/spring/web/RemoteLocaleController.java` (new) | `GET /locale/{id}` and `POST /locale`. Wraps `Promise<T>` via `SynchronizedCompletablePromise.waitFor(promise, 10000, null)` to convert async to sync at the HTTP boundary — same pattern Phase 2 will eventually use everywhere. |
-
-#### Step 7 — Major REST pages as request-scoped beans (completed)
-
-| # | Item | File(s) | Detail |
-|---|------|---------|--------|
-| 1 | `AppointmentFormater` bean | `ServerCoreConfig.appointmentFormater(RaplaResources, RaplaLocale)` | Returns `new AppointmentFormaterImpl(...)`. |
-| 2 | `SecurityManager` bean | `ServerServiceConfig.securityManager(Logger, RaplaResources, AppointmentFormater, CachableStorageOperator)` | Direct constructor — needed by `RaplaResourcesRestPage`. |
-| 3 | `RaplaResourcesRestPage` bean — **request-scoped** | `ServerServiceConfig.raplaResourcesRestPage(...)` | `@RequestScope` + `autowireBean` for the 4 `@Inject` fields. |
-| 4 | `RaplaDynamicTypesRestPage` bean — **request-scoped** | `ServerServiceConfig.raplaDynamicTypesRestPage(...)` | Same pattern. |
-| 5 | `RaplaEventsRestPage` bean — **request-scoped** | `ServerServiceConfig.raplaEventsRestPage(...)` | Same pattern. |
-
-**Note:** The corresponding `@RestController`s (`RaplaResourcesController`, `RaplaDynamicTypesController`, `RaplaEventsController`) are deferred to a follow-up — the REST pages themselves are now Spring-managed, ready for thin controller wrappers. The signatures are the same as the JAX-RS interfaces (just `@RequestMapping` translation).
-
-#### Step 8 — Main data API controllers (completed)
-
-| # | Item | File(s) | Detail |
-|---|------|---------|--------|
-| 1 | `RaplaResourcesController` | `src/main/java/org/rapla/server/spring/web/RaplaResourcesController.java` (new) | Full CRUD on `/resources` — `@GetMapping` (list+get), `@PutMapping` (update), `@PostMapping` (create), `@DeleteMapping` (delete). Delegates to `RaplaResourcesRestPage` request-scoped bean. |
-| 2 | `RaplaEventsController` | `src/main/java/org/rapla/server/spring/web/RaplaEventsController.java` (new) | Full CRUD on `/events` including `@PatchMapping` for partial updates. Date params use `@DateTimeFormat(iso = DATE_TIME)`. |
-| 3 | `RaplaDynamicTypesController` | `src/main/java/org/rapla/server/spring/web/RaplaDynamicTypesController.java` (new) | Read-only `GET /dynamictypes` with optional `classificationType` query param. |
-
-`mvn test` → 12 tests still passing across 4 contexts.
-
-**Spring MVC vs JAX-RS query-param conventions noted:** `@QueryParam` repeats become Spring `List<String>` with `,`-separated query string by default; for legacy compatibility, the controller uses Spring's default which accepts both formats. `@PatchMapping` is Spring 4.3+ (built in, no extra dep).
-
-#### Step 9 — RemoteStorage + supporting beans (completed)
-
-| # | Item | File(s) | Detail |
-|---|------|---------|--------|
-| 1 | `ShutdownService` bean | `ServerServiceConfig.shutdownService(ServerContainerContext)` | Returns `containerContext.getShutdownService()` — the legacy default no-op or a configured handler. |
-| 2 | `UpdateDataManager` bean | `ServerServiceConfig.updateDataManager(Logger, CachableStorageOperator, SecurityManager)` | Direct constructor — needed by `RemoteStorageImpl` for incremental update streams. |
-| 3 | `RemoteStorage` bean — **request-scoped** | `ServerServiceConfig.remoteStorage(HttpServletRequest, AutowireCapableBeanFactory)` | `@RequestScope` + `autowireBean` for the 9 `@Inject` fields including `Provider<MailInterface>`. Spring 6 honours JSR-330 `Provider` lookup automatically. |
-
-`mvn test` → 12 tests still passing.
-
-**Status of Phase 1.6:** all major REST page beans now Spring-managed. The full data-API surface (`/resources`, `/events`, `/dynamictypes`, `/locale`, `/ical/timezones`, `/ical/config`, `/mail/send`, `/logger`) is exposed via `@RestController`s. The central `RemoteStorage` bean (the catch-all storage API used by the Swing client over HTTP) is wired but its `@RestController` wrapper is deferred — it has dozens of methods (full CRUD on every entity type plus dispatch/sync streams) and benefits more from generated translation than hand-rolled controller code; recommended approach is `HttpServiceProxyFactory`-based interface in Phase 5 with the **same** interface implemented server-side as `@RestController`.
-
-#### Step 10 — Legacy URL-path-preserving page controllers (completed)
-
-| # | Item | File(s) | Detail |
-|---|------|---------|--------|
-| 1 | `Export2iCalConverter` bean | `ServerServiceConfig.export2iCalConverter(...)` | Direct constructor with `(TimeZoneConverter, Logger, RaplaFacade, RaplaResources)`. |
-| 2 | `Export2iCalServlet` bean | `ServerServiceConfig.export2iCalServlet(AutowireCapableBeanFactory)` | Singleton bean — instances created per-request inside the servlet are method-scoped, not bean-scoped. |
-| 3 | `Export2iCalController` | `src/main/java/org/rapla/server/spring/web/Export2iCalController.java` (new) | Exposes `/ical` and `/internal_ical` (HARD CONSTRAINT — must keep paths). Both methods delegate to `Export2iCalServlet.generatePage(path, request, response, file, user)`. |
-| 4 | `RaplaJNLPPageGenerator` bean | `ServerServiceConfig.raplaJNLPPageGenerator(...)` | autowireBean for `@Inject` fields. |
-| 5 | `RaplaJNLPController` | `src/main/java/org/rapla/server/spring/web/RaplaJNLPController.java` (new) | Exposes `/raplaclient` and `/raplaclient.jnlp`. |
-| 6 | `CalendarPageGenerator` bean | `ServerServiceConfig.calendarPageGenerator(...)` | autowireBean. Plus added empty `Map<String, Provider<HTMLViewPage>>` and `AutoExportResources` beans in `ServerCoreConfig` to satisfy its `@Inject` fields. |
-| 7 | `CalendarPageController` | `src/main/java/org/rapla/server/spring/web/CalendarPageController.java` (new) | Exposes 4 paths: `/calendar`, `/calendar.csv`, `/internal_calendar`, `/internal_calendar.csv` (HARD CONSTRAINT — most important). |
-| 8 | `ServletRequestPreprocessor` bridge | `src/main/java/org/rapla/server/spring/web/ServletRequestPreprocessorFilter.java` (new) | `OncePerRequestFilter` (auto-registered by Spring Boot via `@Component`). Iterates all registered `ServletRequestPreprocessor` beans; if any rewrites the request or commits the response, the chain stops. Activates only when at least one preprocessor bean is present (`@ConditionalOnBean(ServletRequestPreprocessor.class)`). |
-| 9 | `UrlEncryptionServletRequestResponsePreprocessor` bean | `ServerServiceConfig.urlEncryptionPreprocessor(...)` | `@Lazy` bean to break the circular dep (`UrlEncryptor` → `RemoteSession` → autowired `TokenHandler` → `RaplaKeyStorage @DependsOn(serverServiceContainer)` → `serverServiceContainer` → `Set<ServletRequestPreprocessor>`). With lazy resolution, the preprocessor and its dependencies are constructed on first request, after `serverServiceContainer` is fully initialised. |
-
-`mvn test` → 16 tests still passing.
-
-**URL paths now Spring-served (HARD CONSTRAINT preserved):**
-- `/ical`, `/internal_ical` ✓
-- `/calendar`, `/calendar.csv`, `/internal_calendar`, `/internal_calendar.csv` ✓
-- `/raplaclient`, `/raplaclient.jnlp` ✓
-
-The `?key=…` URL-encryption preprocessing is bridged through `ServletRequestPreprocessorFilter` so subscription URLs that arrived encrypted still get decrypted in-flight before reaching the controller.
-
-#### Step 11 — Plugin REST controllers (completed)
-
-| Controller | Path(s) | Service |
-|------------|---------|---------|
-| `UrlEncryptionController` | `POST /urlencryption` | `UrlEncryption` |
-| `ArchiverController` | `POST /archiver`, `GET /archiver`, `POST /archiver/backup`, `POST /archiver/restore` | `ArchiverService` |
-| `ICalImportController` | `POST /ical/import` | `ICalImport` |
-| `JNDIConfigController` | `POST /jndi`, `GET /jndi` | `JNDIConfig` |
-| `MailConfigController` | `GET /mail/config/external`, `POST /mail/config`, `GET /mail/config` | `MailConfigService` |
-
-All gated by `@ConditionalOnBean({Service.class, RemoteSession.class})` — they auto-disable if the plugin is turned off via `rapla.services.<plugin-id>=false`. Promise-returning service methods (`ArchiverService.delete/backup/restore`, `JNDIConfig.test`) are unwrapped via `SynchronizedCompletablePromise.waitFor` at the controller boundary. **Phase 1.6 endpoint-migration is now complete** — every JAX-RS `@Path` endpoint has a Spring `@RestController` counterpart serving at the same path.
-
-### Phase 4 — extended (completed step 2)
-
-#### Step 2 — Facade tier added to `ClientConfig`
-
-| Bean | Detail |
-|------|--------|
-| `CommandScheduler` | `new DefaultScheduler(logger)` (single-arg ctor for client side — no TimeZoneConverter needed). |
-| `RaplaFacade` | `new FacadeImpl(i18n, scheduler, logger)`. |
-| `ClientFacade` | `new ClientFacadeImpl(raplaFacade, logger, i18n)`. |
-
-`ClientConfigTest` extended to assert all 8 client beans resolve.
-
-### Phase 5 — extended (completed step 2)
-
-#### Step 2 — Bearer-auth interceptor on REST proxies
-
-| Bean | Detail |
-|------|--------|
-| `HttpServiceProxyFactory` | Single shared factory. `RestClient.Builder.requestInitializer(...)` reads `RemoteConnectionInfo.getAccessToken()` and applies `request.getHeaders().setBearerAuth(token)` to every outgoing request — no token required for unauthenticated endpoints (skipped if access token is `null`/empty). |
-| `ICalTimezones` proxy | Updated to use the shared factory. |
-
-**Phase 5 status:** the proxy infrastructure is now production-shaped — every additional remote service interface needs only a `@Bean factory.createClient(InterfaceClass.class)` line. Bearer auth is automatic.
-
-#### Step 4 — Service interfaces converted to `@HttpExchange` (completed 2026-05-06)
-
-The shared service interfaces previously carried JAX-RS `@Path`/`@GET`/`@POST`/`@PUT` annotations. Spring's `HttpServiceProxyFactory` requires `@HttpExchange`/`@GetExchange`/`@PostExchange`/`@PutExchange`/`@PatchExchange`/`@DeleteExchange` instead. **All 11 client-facing service interfaces now carry Spring annotations** — the proxies are functional, not just placeholders:
-
-| Interface | Class-level | Method annotations |
-|-----------|-------------|--------------------|
-| `ICalTimezones` | `@HttpExchange("/ical/timezones")` | `@GetExchange`, `@GetExchange("/default")` |
-| `RemoteLogger` | `@HttpExchange("/logger")` | `@PutExchange("/{id}")` (`@PathVariable`/`@RequestBody`) |
-| `RemoteLocaleService` | `@HttpExchange("/locale")` | `@GetExchange("/{id}")`, `@PostExchange` |
-| `ICalConfigService` | `@HttpExchange("/ical/config")` | `@GetExchange`, `@GetExchange("/default")` |
-| `MailToUserInterface` | `@HttpExchange("/mail/send")` | `@PostExchange` (`@RequestParam`/`@RequestHeader`/`@RequestBody`) |
-| `MailConfigService` | `@HttpExchange("/mail/config")` | `@GetExchange("/external")`, `@PostExchange`, `@GetExchange` |
-| `UrlEncryption` | `@HttpExchange("/urlencryption")` | `@PostExchange` (`@RequestBody`) |
-| `JNDIConfig` | `@HttpExchange("/jndi")` | `@PostExchange`, `@GetExchange` |
-| `ICalImport` | `@HttpExchange("/ical/import")` | `@PostExchange` |
-| `TemplateImport` | `@HttpExchange("/templateimport")` | `@PostExchange("/importFromServer")` |
-| `ArchiverService` | `@HttpExchange("/archiver")` | `@PostExchange`, `@GetExchange`, `@PostExchange("/backup")`, `@PostExchange("/restore")` |
-
-JAX-RS imports (`jakarta.ws.rs.*`) removed from these 11 files; replaced with `org.springframework.web.bind.annotation.*` and `org.springframework.web.service.annotation.*`. Server-side controllers (`@RestController` classes in `org.rapla.server.spring.web`) are unaffected — they have their own `@RequestMapping` annotations on the controller class, not the interface.
-
-**Phase 5 step 5 (completed for `RemoteAuthentificationService`):**
-
-| Interface | Class-level | Method annotations |
-|-----------|-------------|--------------------|
-| `RemoteAuthentificationService` | `@HttpExchange("/authentication")` | `@PostExchange` (login), `@GetExchange("/destroy")`, `@GetExchange("/refreshToken")`, `@GetExchange("/regenerateRefreshToken")`, `@GetExchange("/loginToken")` |
-
-**Phase 5 step 6 (completed via Python script for `RemoteStorage`):** The 404-LOC `RemoteStorage` interface (~25 methods, multiple inner-class request DTOs) was bulk-converted via a regex Python script: `@Path("X")` → `@HttpExchange("/X")`; `@GET\n@Path("Y")` (multi-line) → `@GetExchange("/Y")`; `@QueryParam("X")` → `@RequestParam(value="X", required=false)`; `@PathParam("X")` → `@PathVariable("X")`; `@Produces`/`@Consumes` lines stripped; imports rewritten. `mvn compile` clean, `mvn test` 23 tests passing. Both `RemoteStorage` and `RemoteAuthentificationService` proxy beans now registered in `ClientProxyConfig` — the bean count is 13 (all client-facing service interfaces).
-
-### Phase 9 — partial (Jackson default)
-
-#### Step 1 — `spring.http.converters.preferred-json-mapper=gson` removed (completed 2026-05-06)
-
-The `spring.http.converters.preferred-json-mapper=gson` line in `application.yml` has been removed. Spring Boot 3.x defaults to Jackson when `spring-boot-starter-web` is on the classpath. This means the 16 `@RestController`s now serialize/deserialize via Jackson out of the box.
-
-| Verification | Result |
-|--------------|--------|
-| `mvn test` | 23 tests still passing |
-| `mvn package -DskipTests` | BUILD SUCCESS |
-
-**What this changes for the API:**
-- `java.util.Date` is serialized as ISO-8601 by Jackson (default `WRITE_DATES_AS_TIMESTAMPS=false`); Gson serialized as ISO-8601 too, so the wire format is largely compatible.
-- Number/string handling is mostly identical.
-- The Spring-managed REST proxies (`@HttpExchange` interfaces) now also use Jackson — so the client-server format aligns.
-
-**Phase 9 step 2 — Gson → Jackson default swap landed 2026-05-08.** Three landed sub-changes:
-1. `rapla-core/pom.xml` declares `com.fasterxml.jackson.datatype:jackson-datatype-jsr310` (provided scope, Spring Boot BOM-managed).
-2. `JacksonParserWrapper.defaultObjectMapper()` registers `new JavaTimeModule()` and disables `WRITE_DATES_AS_TIMESTAMPS` — `LocalDateTime` serialized as ISO-8601 (matches the Gson adapter's wire format).
-3. `JsonParserWrapper.factory` now defaults to `new JacksonParserWrapper()` (was `GsonParserWrapper`). All consumers (`RaplaSQL` history serializer, `EntityHistory`, `NotificationStorage`, `ExchangeAppointmentStorage`, `JavaJsonSerializer` REST client) now go through Jackson.
-
-**Test result:** full reactor `mvn test` BUILD SUCCESS — 23 spring tests + all 18 rapla-server tests (incl. `TestEntityHistory`, `ConcurrentTests` which exercise SQL serialization) + all rapla-core tests green. The SQL history JSON-encoded entity blobs round-trip identically through Jackson — same byte layout as Gson for the entity classes (field-by-field with ISO-8601 dates).
-
-Gson is still on the classpath (via the `com.google.code.gson:gson` dep) for two remaining direct consumers: `JsonMergePatch` (legacy JSON merge patch) and `HTTPWithJsonConnector` (legacy REST client). Both use raw Gson API and would need rewriting to drop the dep entirely. The `JsonParserWrapper` no longer imports `GsonParserWrapper` — the wrapper class is leaf-only now.
-
-**Phase 9 step 2 — Gson removal completed 2026-05-08** (alongside the Jackson 2 → Jackson 3 cutover under PRD 011):
-- `gson` dependency dropped from `rapla-bom/pom.xml` (both `<properties>` and `<dependencyManagement>`).
-- `HTTPWithJsonConnector`, `HTTPWithJsonMailConnector`, `MailapiClient`, `JacksonMergePatch` (renamed from `JsonMergePatch`), and `RestAPIExample` now exclusively use the Jackson API; no `com.google.gson.*` imports remain anywhere in the reactor.
-- Stale `gson`-named local variables and fields renamed to accurate names (`mapper`, `jsonParser`, `parser`, `p`) across `JacksonParserWrapper`, `JavaJsonSerializer`, `EntityHistory`, `NotificationStorage`, `RaplaSQL`, `LocalAbstractCachableOperator`. `ExchangeAppointmentStorage` was left with the legacy `gson` field name pending coordination with the parallel Exchange-connector session.
-- Reactor `mvn compile test-compile` green on Spring Boot 4.0.6 + Jackson 3.1.2.
-
-PRD 001-A (Date → LocalDateTime) work continues independently; the Gson removal no longer blocks on it because Jackson 3 has built-in `java.time.*` support (no separate `jackson-datatype-jsr310` module).
-
-`mvn test` → 23 tests still passing.
+PRD 001-A (Date → LocalDateTime) is independent — Jackson 3's native `java.time.*` support unblocked the migration.
 
 #### Step 3 — Full REST proxy bean set (completed)
 
-11 proxies registered in `ClientProxyConfig`:
+11 proxies in `ClientProxyConfig`: `ICalTimezones` (`/ical/timezones`), `RemoteLocaleService` (`/locale`), `ICalConfigService` (`/ical/config`), `MailToUserInterface` (`/mail/send`), `MailConfigService` (`/mail/config`), `ArchiverService` (`/archiver`), `UrlEncryption` (`/urlencryption`), `JNDIConfig` (`/jndi`), `ICalImport` (`/ical/import`), `TemplateImport` (`/templateimport`), `RemoteLogger` (`/logger`). Each is one `@Bean factory.createClient(...)` line on the shared bearer-auth `HttpServiceProxyFactory`. `RemoteAuthentificationService` + `RemoteStorage` added later (step 6 above).
 
-| Interface | URL path |
-|-----------|----------|
-| `ICalTimezones` | `/ical/timezones` |
-| `RemoteLocaleService` | `/locale` |
-| `ICalConfigService` | `/ical/config` |
-| `MailToUserInterface` | `/mail/send` |
-| `MailConfigService` | `/mail/config` |
-| `ArchiverService` | `/archiver` |
-| `UrlEncryption` | `/urlencryption` |
-| `JNDIConfig` | `/jndi` |
-| `ICalImport` | `/ical/import` |
-| `TemplateImport` | `/templateimport` |
-| `RemoteLogger` | `/logger` |
-
-Each is a single `@Bean factory.createClient(...)` line. The shared `HttpServiceProxyFactory` is built once with the bearer-auth `requestInitializer`. Remaining (server-side `RemoteAuthentificationService` and `RemoteStorage`) need interface-annotation alignment (JAX-RS `@Path` → Spring `@HttpExchange`) — deferred to a future iteration.
-
-### Phase 4 — extended (completed step 3)
-
-#### Step 3 — `SpringRaplaClient` bootstrap class
+### Phase 4 step 3 — `SpringRaplaClient` bootstrap class
 
 | File | Detail |
 |------|--------|
@@ -554,50 +288,21 @@ Each is a single `@Bean factory.createClient(...)` line. The shared `HttpService
 
 ##### Why the rest of Phase 4 is its own follow-up PRD
 
-Wiring the full Swing UI graph is mechanical but voluminous. Concrete numbers:
+The Swing UI graph is voluminous: ~281 client files (142 under `swing/`), 32 `@DefaultImplementation` + 58 `@Extension` classes. Top-level `RaplaClientServiceImpl` has 13 ctor params, `Application` 12; `DialogUiFactoryInterface` / `ApplicationView` / `AbstractActivityController` each pull 5–10 more. `Map<String, T>` / `Set<T>` / `Provider<T>` extension-point injections need `@Named("id")` registration per bean.
 
-- **142 files** under `src/main/java/org/rapla/client/swing/`
-- **281 files** under `src/main/java/org/rapla/client/`
-- **32 `@DefaultImplementation`** + **58 `@Extension`** = 90 client-side classes that the legacy DI bootstrapped
-- Top-level classes have deep dependency cones:
-  - `RaplaClientServiceImpl`: 13 constructor params (StartupEnvironment, DialogUiFactoryInterface, ClientFacade, RaplaResources, RaplaSystemInfo, RaplaLocale, BundleManager, CommandScheduler, RemoteOperator, `Provider<Application>`, RemoteConnectionInfo, RemoteAuthentificationService, Logger).
-  - `Application`: 12 params (Provider<ApplicationView>, ApplicationEventBus, Logger, BundleManager, ClientFacade, AbstractActivityController, RaplaResources, Map<String, Provider<TaskPresenter>>, Provider<Set<ClientExtension>>, Provider<CalendarSelectionModel>, CommandScheduler, DialogUiFactoryInterface).
-  - `DialogUiFactoryInterface`, `ApplicationView`, `AbstractActivityController` each pull in another 5–10 collaborators.
-- **Map/Set/Provider extension-point injections** (`Map<String, TaskPresenter>`, `Set<ClientExtension>`, etc.) need `@Component`/`@Bean` registration with `@Named("id")` qualifiers — Spring's auto-discovery via `@ComponentScan` would have to be configured per package.
-- Each Swing UI class also has its own `@Inject` field/constructor injection; converting them to constructor-only injection per the AGENTS.md rule is a touched-class change, multiplying review burden.
-
-**Recommendation (executed 2026-05-06):** **PRD 002 (`docs/prd/done/002-swing-spring-di.md`) created and started; completed 2026-05-08.** Phase 1 (`SwingClientConfig` skeleton with `@ComponentScan`) and Phase 2 step 1 (`RaplaEventBus` as `@Service`) completed. Three sub-phases remaining:
-1. ~~Add `@ComponentScan(basePackages={"org.rapla.client", "org.rapla.client.swing"})` to a new `SwingClientConfig`~~ **DONE 2026-05-06.**
-2. Add `@Service` (alongside existing `@DefaultImplementation`) to the remaining 31 default-impl classes — **1/32 done.**
-3. Resolve cascading missing-bean errors one by one; migrate field-injected fields to constructor parameters per AGENTS.md rule as each class is touched.
-
-`SpringRaplaClient` already wires `ClientConfig.class + ClientProxyConfig.class + SwingClientConfig.class`. The Spring-bootable client storage tier (`ClientConfig` + `RemoteOperator` + 13 `@HttpExchange` proxies) is the supported way for any new client-side consumer to bootstrap the rapla data API. The Swing UI tier (under PRD 002) will gradually migrate alongside it.
+**PRD 002 (`docs/prd/done/002-swing-spring-di.md`) handles the mechanical sweep — created 2026-05-06, completed 2026-05-08.** `SpringRaplaClient` wires `ClientConfig + ClientProxyConfig + SwingClientConfig`; the client storage tier (`ClientConfig` + `RemoteOperator` + 13 `@HttpExchange` proxies) is the supported bootstrap path for any new client consumer.
 
 #### Step 4 — Phase 4 mass deletion (completed)
 
-| Deleted | Detail |
-|---------|--------|
-| `RaplaClient.java` | Legacy Swing app facade — only used by `RaplaClientServiceImpl` for a log string, no actual class reference |
-| `MainWebstart.java`, `MainWebclient.java` | Legacy JNLP launch entries |
-| `MainApplet.java` | Legacy applet (used `javax.swing.JApplet` — removed in Java 21) |
-| `ClientCreator.java` | Legacy DI bootstrap — no remaining callers |
-| `examples/RaplaConnectorTest.java`, `examples/RaplaImportUsers.java`, `examples/SimpleConnectorStartupEnvironment.java` | Example/demo code with no production callers |
-| `examples/campus_data.xml`, `examples/simpsons_data.xml` | Example data files |
-| `src/main/java/org/rapla/examples/` | Empty directory removed |
+Deleted: `RaplaClient`, `MainWebstart`, `MainWebclient`, `MainApplet` (`javax.swing.JApplet` gone in Java 21), `ClientCreator`, 3 example classes (`RaplaConnectorTest`, `RaplaImportUsers`, `SimpleConnectorStartupEnvironment`) + 2 example data XMLs + empty `src/main/java/org/rapla/examples/`.
 
-**Side effects:**
-- `RaplaJNLPPageGenerator` `<application-desc main-class="…">` now points at `org.rapla.client.spring.SpringRaplaClient` instead of the deleted `org.rapla.client.MainWebstart`. The JNLP launch URL stays at `/raplaclient.jnlp` (HARD CONSTRAINT preserved).
-- `restinject`'s runtime API (`SimpleRaplaInjector`, `ServiceInfLoader`, `ScanningClassLoader`) is no longer imported anywhere. Library can be removed from `parent/pom.xml` once the @Extension/@DefaultImplementation/@ExtensionPoint annotations on existing classes are either kept as harmless no-ops or replaced with project-local stubs (deferred).
+Side effects: `RaplaJNLPPageGenerator` `<application-desc main-class="…">` now points at `org.rapla.client.spring.SpringRaplaClient` (JNLP URL `/raplaclient.jnlp` preserved). `restinject`'s runtime API has no remaining importers.
 
-### Phase 8 — extended (continued)
+### Phase 8 — extended deletions
 
-| Deletion | File(s) |
-|----------|---------|
-| `RestApplication.java` | Legacy JAX-RS `Application` class — no callers since `MainServlet` was deleted in Phase 1.2 |
-| `ClientStarter.java` | Legacy server-side console launcher that wrapped `ClientCreator` — no remaining callers |
-| `PromiseWait.java`, `PromiseWaitImpl.java` | Phase 2 removal — abstraction completely inlined |
+Also deleted: `RestApplication` (legacy JAX-RS `Application`, no callers since Phase 1.2's `MainServlet` removal), `ClientStarter` (wrapped `ClientCreator`), `PromiseWait` + `PromiseWaitImpl` (Phase 2 — abstraction inlined).
 
-These join the cumulative deletion list. Cumulative deletions: **~65 source files** + `src/main/webapp/` + `examples/` directories, including `MainServlet`, `ResteasyExceptionMapper`, `module-info.java`, `RestApplication`, `ServerStarter`, `StandaloneStarter`, `ServerCreator`, `ClientStarter`, `PromiseWait`, `PromiseWaitImpl`, `RaplaClient`, `MainWebstart`, `MainWebclient`, `MainApplet`, `ClientCreator`, 3 example classes, `RaplaTestCase` and 36 dependent legacy test classes, `AbstractTestWithServer`, `AbstractOperatorTest`, `ResteasyRemoteConnector`, `CustomJettyStarter`, GWT module (3 files + 3 dirs).
+**Cumulative deletions: ~65 source files** + `src/main/webapp/` + `examples/` directories. Full list in the "What's deleted" header section at the top of the file.
 
 ### Phase 2 — complete (Promise-wait removal)
 
@@ -616,126 +321,29 @@ These join the cumulative deletion list. Cumulative deletions: **~65 source file
 
 **Significance:** the `Promise<T>`-on-server-but-immediately-awaited pattern (which existed only because the interface was shared with the async client `RemoteOperator`) is gone. The server side is now fully synchronous at the storage call boundary; async wrapping is the client's responsibility (RxJava in `RemoteOperator`).
 
-### Phase 6 — in-progress (plugin auto-config — function factory tier)
+### Phase 6 — completed (plugin auto-config)
 
-#### Step 1 — Plugin FunctionFactory tier wired (in-progress)
+**Step 1 — FunctionFactory tier.** `AppointmentNoteFunctions(@Bean(name="appointment"))` and `DurationFunctions(@Bean(name="org.rapla.eventtimecalculator"))` wired alongside existing `StandardFunctions` ("org.rapla"). `DurationFunctions` brings `EventTimeCalculatorResources(BundleManager)` and `EventTimeCalculatorFactory`. `Map<String, FunctionFactory>` injection point populated with all 3 namespaces.
 
-| # | Item | File(s) | Detail |
-|---|------|---------|--------|
-| 1 | `AppointmentNoteFunctions` bean | `ServerCoreConfig.appointmentNoteFunctions(ObjectProvider<RaplaFacade>)` | `@Bean(name = AppointmentNoteFunctions.NAMESPACE)` ("appointment"). The constructor takes `Provider<RaplaFacade>` (jakarta) which is wrapped from Spring's `ObjectProvider<RaplaFacade>` via `facadeProvider::getObject` — late-bound resolution that avoids circular-dep issues. |
+**Pattern for `@Inject Provider<X>` ctor params:** Spring's `ObjectProvider<X> p` → `(jakarta.inject.Provider<X>) p::getObject` — late-bound, dodges circular-dep issues.
 
-`mvn test` → 12 tests still passing.
+**Step 2 — Plugin service tier.** Named mail-session `Provider<Object>` (`@Bean(name=ServerService.ENV_RAPLAMAIL_ID)`) consumed by `MailInterface` via `@Named` qualifier; `UrlEncryptor`, `UrlEncryption`, `JNDIConfig`, `ImportExportManager`, `ArchiverService`, `MailConfigService`, `ICalConfigService` all registered (request-scoped where stateful, all using `autowireBean` for `@Inject` fields).
 
-**Pattern for `@Inject Provider<X>` constructor params:** `ObjectProvider<X> p` from Spring → `(jakarta.inject.Provider<X>) p::getObject`. This is the canonical translation when migrating restinject-style lazy provider injection to Spring.
+**Step 3 — Plugin enable/disable via Spring Boot's standard `@ConditionalOnProperty(prefix="rapla.services", name="<plugin-id>", matchIfMissing=true)`** — no `RaplaPluginImportSelector` needed. Plugin IDs match legacy `raplaservices` keys (package convention). Properties: `rapla.services.org.rapla.plugin.{urlencryption,jndi,archiver,mail,export2ical}=false` toggles `UrlEncryption`, `JNDIConfig`, `ArchiverService`, `MailConfigService`, `ICalConfigService` respectively.
 
-**Deferred to later step:** `DurationFunctions` requires `EventTimeCalculatorFactory` which has its own deps (`Provider<RaplaFacade>`, `Logger`, `EventTimeCalculatorResources`); skipped pending plugin auto-config refactor.
+### Phase 3 — completed (security infrastructure)
 
-**Update 2026-05-08 — `DurationFunctions` wired.** Three new `@Bean`s in `ServerCoreConfig`:
-- `EventTimeCalculatorResources(BundleManager)` — plugin I18nBundle
-- `EventTimeCalculatorFactory(Provider<RaplaFacade>, Logger, EventTimeCalculatorResources)` — uses the same `ObjectProvider::getObject` lambda pattern as `appointmentNoteFunctions`
-- `DurationFunctions(EventTimeCalculatorFactory)` — `@Bean(name = DurationFunctions.NAMESPACE)` keys it as `org.rapla.eventtimecalculator` in the `Map<String, FunctionFactory>` consumer.
+Seven steps land JWT bearer auth end-to-end:
 
-`Map<String, FunctionFactory>` injection point now populated with all 3 namespaces (`org.rapla` from `StandardFunctions`, `appointment` from `AppointmentNoteFunctions`, `org.rapla.eventtimecalculator` from `DurationFunctions`). 8/8 targeted tests green.
+- **Step 1 — Spring Security stub + CORS.** `SecurityAutoConfiguration` re-enabled. `SecurityConfig.filterChain` permits all (placeholder), CSRF disabled, stateless, CORS enabled with permissive `CorsConfigurationSource`.
+- **Step 2 — JWT scaffolding.** `JwtConfig` provides `JwtDecoder` (`NimbusJwtDecoder.withSecretKey(...).macAlgorithm(HS256)`) and `JwtIssuer` (wraps `MACSigner` from `nimbus-jose-jwt`). Secret derived from `RaplaKeyStorage.getRootKeyBase64()` (right-padded to 32 bytes for HS256 minimum). `AuthController` exposes `POST /auth/login` returning `{accessToken, expiresIn}`.
+- **Step 3 — `SecurityConfig` wires `oauth2ResourceServer.jwt(decoder)`** when `ObjectProvider<JwtDecoder>` is available. Permit-all matchers added for `/auth/**`, `/static/**`, `/Rapla/**`, `/images/**`, `/webclient/**`, `/jsclient/**`, `/logger/**`, `/ical/timezones/**`.
+- **Step 4 — `AuthControllerIntegrationTest`** verifies `POST /auth/login` end-to-end. Conditional gating swapped from `@ConditionalOnBean` (ordering issues) to `@ConditionalOnProperty(prefix="rapla.file-datasources", name="raplafile")` matching `ServerServiceConfig`. **Worked-bug fix:** `RaplaKeyStorage.getRootKeyBase64()` returns URL-safe base64 (uses `-` and `_`), so `JwtConfig.deriveHmacSecret` falls back from `Base64.getDecoder()` to `Base64.getUrlDecoder()` on `IllegalArgumentException`.
+- **Step 5 — Refresh-token rotation.** `JwtIssuer.issueRefreshToken(...)`; all tokens now carry `typ` (`"access"`/`"refresh"`) and `jti` (UUID) claims. `POST /auth/refresh` validates `typ == "refresh"`, issues a new pair (new `jti`).
+- **Step 6 — `SecurityFilterChain` enforces `anyRequest().authenticated()`** once a `JwtDecoder` is available (falls back to permit-all in smoke-test mode). `GET /resources` without JWT now returns 401.
+- **Step 7 — `SpringSecurityRemoteSession`** implements `RemoteSession`. `checkAndGetUser(request)` first inspects `SecurityContextHolder` for a `JwtAuthenticationToken` (resolves `jwt.getSubject()` → `User` via `StorageOperator`); otherwise delegates to wrapped legacy `RemoteSessionImpl` (header/cookie/query-param) for backwards compatibility. Bearer round-trip verified end-to-end (`POST /auth/login` → capture `accessToken` → `GET /resources` with `Authorization: Bearer <jwt>` → 200).
 
-#### Step 2 — Plugin service tier wired (completed)
-
-| # | Item | File(s) | Detail |
-|---|------|---------|--------|
-| 1 | Named mail-session `Provider<Object>` | `ServerCoreConfig.mailSessionProvider(ServerContainerContext)` | `@Bean(name = ServerService.ENV_RAPLAMAIL_ID)` returns a `jakarta.inject.Provider<Object>` lambda. |
-| 2 | `MailInterface` updated to use named provider | `ServerCoreConfig.mailInterface(...)` | Now takes `@Named(ENV_RAPLAMAIL_ID) Provider<Object>` parameter — Spring 6 honours `jakarta.inject.Named` qualifier on `@Bean` factory parameters. |
-| 3 | `UrlEncryptor` bean | `ServerServiceConfig.urlEncryptor(RaplaFacade, Logger, RaplaKeyStorage, RemoteSession)` | Direct constructor. |
-| 4 | `UrlEncryption` (request-scoped) | `ServerServiceConfig.urlEncryption(...)` | `UrlEncryptionService` impl with `autowireBean`. |
-| 5 | `JNDIConfig` (request-scoped) | `ServerServiceConfig.jndiConfig(...)` | `RaplaJNDITestOnLocalhost` impl. |
-| 6 | `ImportExportManager` bean | `ServerServiceConfig.importExportManager(ServerStorageSelector)` | Returns `selector.getImportExportManager().get()`. |
-| 7 | `ArchiverService` (request-scoped) | `ServerServiceConfig.archiverService(...)` | `ArchiverServiceImpl` with `autowireBean`. |
-| 8 | `MailConfigService` (request-scoped) | `ServerServiceConfig.mailConfigService(...)` | `RaplaConfigServiceImpl` — uses the named mail-session provider via `autowireBean` field injection. |
-| 9 | `ICalConfigService` (request-scoped) | `ServerServiceConfig.iCalConfigService(...)` | `ICalConfigServiceImpl` with `autowireBean`. |
-
-`mvn test` → 12 tests still passing.
-
-**Status of Phase 6:** all major plugin service implementations are now Spring beans, and **plugin enable/disable is wired** via Spring Boot's standard `@ConditionalOnProperty(prefix="rapla.services", name="<plugin-id>", matchIfMissing=true)`. Set `rapla.services.org.rapla.plugin.urlencryption=false` (etc.) in `application.yml` to disable. Plugin IDs use the package convention to match the legacy `raplaservices` keys. **No `RaplaPluginImportSelector` needed** — Spring Boot's built-in conditional annotations replace the entire mechanism.
-
-#### Step 3 — Plugin enable/disable via `@ConditionalOnProperty` (completed)
-
-| # | Plugin | Property | Bean(s) gated |
-|---|--------|----------|---------------|
-| 1 | URL encryption | `rapla.services.org.rapla.plugin.urlencryption` | `UrlEncryption` |
-| 2 | JNDI | `rapla.services.org.rapla.plugin.jndi` | `JNDIConfig` |
-| 3 | Archiver | `rapla.services.org.rapla.plugin.archiver` | `ArchiverService` |
-| 4 | Mail config | `rapla.services.org.rapla.plugin.mail` | `MailConfigService` |
-| 5 | iCal export | `rapla.services.org.rapla.plugin.export2ical` | `ICalConfigService` |
-
-All `matchIfMissing=true` — plugins enabled by default, can be turned off via config. 13 tests still passing.
-
-### Phase 3 — in-progress (security infrastructure)
-
-#### Step 1 — Spring Security stub + CORS (completed)
-
-| # | Item | File(s) | Detail |
-|---|------|---------|--------|
-| 1 | Re-enable `SecurityAutoConfiguration` | `RaplaSpringBootApplication.java` | Removed from `exclude={}` list. Spring Security beans now activate. |
-| 2 | `SecurityConfig` `@Configuration` | `src/main/java/org/rapla/server/spring/SecurityConfig.java` (new) | `@Bean SecurityFilterChain` permits all (placeholder for JWT), CSRF disabled, stateless session, CORS enabled. `@Bean CorsConfigurationSource` allows all origins/methods/headers (will be tightened to specific allowed origins in Phase 3 final). |
-
-12 tests still passing. Stub allows progression toward full JWT setup without blocking other work.
-
-#### Step 2 — JWT scaffolding (completed)
-
-| # | Item | File(s) | Detail |
-|---|------|---------|--------|
-| 1 | `JwtConfig` `@Configuration` | `src/main/java/org/rapla/server/spring/JwtConfig.java` (new) | `@ConditionalOnBean(RaplaKeyStorage.class)` — JWT only available when datasource is configured (because keystore depends on storage). Provides two beans:<br>- `@Bean JwtDecoder jwtDecoder(RaplaKeyStorage)` — `NimbusJwtDecoder.withSecretKey(...).macAlgorithm(MacAlgorithm.HS256).build()`. Secret derived from `RaplaKeyStorage.getRootKeyBase64()` (with right-padding to 32 bytes if shorter — HS256 minimum).<br>- `@Bean JwtConfig.JwtIssuer jwtIssuer(RaplaKeyStorage)` — wraps a `MACSigner` from `nimbus-jose-jwt`. `issueAccessToken(subject, ttl)` returns a serialised compact JWT with `sub`, `iat`, `exp` claims. |
-| 2 | `AuthController` | `src/main/java/org/rapla/server/spring/web/AuthController.java` (new) | `@RestController @ConditionalOnBean(JwtConfig.JwtIssuer.class) @RequestMapping("/auth")`. `POST /auth/login` accepts `LoginCredentials`, calls `RaplaAuthentificationService.getUserFromCredentials(...)`, issues a JWT via `JwtIssuer`, returns `{accessToken, expiresIn}` JSON. **No refresh-token rotation yet** (Phase 3 step 3). |
-
-12 tests still passing.
-
-**Status of Phase 3:** server now issues real JWTs against the legacy `RaplaAuthentificationService`. The `SecurityFilterChain` is still permit-all — wiring `oauth2ResourceServer.jwt(decoder)` and a `JwtAuthenticationConverter` (extracts `sub` → Rapla `User` principal) is the next step. Once that's done, JWT becomes the actual auth gate; before that, JWTs are issued but never required.
-
-#### Step 3 — JWT decoder wired into SecurityFilterChain (completed)
-
-| # | Item | File(s) | Detail |
-|---|------|---------|--------|
-| 1 | `SecurityConfig.filterChain` updated | `SecurityConfig.java` | Now takes `ObjectProvider<JwtDecoder>` parameter. If a `JwtDecoder` is available (when datasource is configured), wires `http.oauth2ResourceServer(o -> o.jwt(j -> j.decoder(decoder)))`. Permit-all matchers added for `/auth/**`, `/static/**`, `/Rapla/**`, `/images/**`, `/webclient/**`, `/jsclient/**`, `/logger/**`, `/ical/timezones/**` — these stay public after Phase 3 step 4 tightens the rest. |
-
-#### Step 4 — AuthControllerIntegrationTest (completed)
-
-| # | Item | File(s) | Detail |
-|---|------|---------|--------|
-| 1 | Conditional gating swapped to `@ConditionalOnProperty` | `AuthController.java`, `JwtConfig.java` | `@ConditionalOnBean` had ordering issues — bean-condition evaluation didn't see beans defined in another conditional `@Configuration`. Switched to `@ConditionalOnProperty(prefix="rapla.file-datasources", name="raplafile")` matching `ServerServiceConfig`. |
-| 2 | URL-safe base64 fallback | `JwtConfig.deriveHmacSecret` | `RaplaKeyStorage.getRootKeyBase64()` returns URL-safe base64 (uses `-` and `_`); fallback from `Base64.getDecoder()` to `Base64.getUrlDecoder()` on `IllegalArgumentException`. Pad to 32 bytes if shorter (HS256 minimum). |
-| 3 | `AuthControllerIntegrationTest` | `src/test/java/org/rapla/server/spring/web/AuthControllerIntegrationTest.java` (new) | `@SpringBootTest @AutoConfigureMockMvc` + `@TempDir` + `@DynamicPropertySource` for datasource. `POST /auth/login` with `{"username":"homer","password":"duffs"}` returns 200, `accessToken` JSON field non-null, `expiresIn=3600`. |
-
-`mvn test` → **13 tests passing** across 5 Spring contexts. End-to-end JWT issuance verified.
-
-#### Step 5 — Refresh token rotation (completed)
-
-| # | Item | File(s) | Detail |
-|---|------|---------|--------|
-| 1 | `JwtIssuer` extended | `JwtConfig.java` | Adds `issueRefreshToken(subject, ttl)` and a private `issue(subject, ttl, type)` helper. All tokens now carry `typ` (`"access"` or `"refresh"`) and `jti` (UUID) claims. |
-| 2 | `AuthController.refresh` | `AuthController.java` | `POST /auth/refresh` accepts `{refreshToken}` JSON body, decodes via `JwtDecoder`, validates `typ == "refresh"`, issues a new access+refresh pair (new `jti`). |
-| 3 | `TokenResponse` shape | `AuthController.java` | Now returns `{accessToken, refreshToken, expiresIn}`. |
-| 4 | `refreshTokenIssuesNewPair` test | `AuthControllerIntegrationTest.java` | Logs in, refreshes, asserts the new refresh token differs from the original (UUID `jti` rotation). |
-
-`mvn test` → **15 tests passing** across 5 Spring contexts.
-
-#### Step 6 — Security gate enforced (completed)
-
-| # | Item | File(s) | Detail |
-|---|------|---------|--------|
-| 1 | `SecurityFilterChain` tightened | `SecurityConfig.java` | `anyRequest().authenticated()` once a `JwtDecoder` is available; falls back to `permitAll` only when no decoder (smoke test mode). Public matchers (`/auth/**`, `/static/**`, `/Rapla/**`, `/images/**`, `/webclient/**`, `/jsclient/**`, `/logger/**`, `/ical/timezones/**`) remain open. |
-| 2 | `protectedEndpointRequiresAuth` test | `AuthControllerIntegrationTest.java` | `GET /resources` without JWT now returns **401**, proving the gate is wired. |
-
-`mvn test` → **16 tests passing** across 5 Spring contexts.
-
-#### Step 7 — `SpringSecurityRemoteSession` bridges JWT → legacy session (completed)
-
-| # | Item | File(s) | Detail |
-|---|------|---------|--------|
-| 1 | `SpringSecurityRemoteSession` | `src/main/java/org/rapla/server/spring/SpringSecurityRemoteSession.java` (new) | Implements `RemoteSession`. `checkAndGetUser(request)` first inspects `SecurityContextHolder.getContext().getAuthentication()` for a `JwtAuthenticationToken`. If present, resolves `jwt.getSubject()` → `User` via the `StorageOperator`. Otherwise delegates to the wrapped legacy `RemoteSessionImpl` (header/cookie/query-param token). Same fallback for `isAuthentified`. |
-| 2 | `RemoteSession` bean wraps both | `ServerServiceConfig.remoteSession(...)` | Now constructs `SpringSecurityRemoteSession(legacy=RemoteSessionImpl(...), operator, logger)`. |
-| 3 | `protectedEndpointAcceptsBearer` test | `AuthControllerIntegrationTest.java` | Logs in via `POST /auth/login`, captures `accessToken`, then `GET /resources` with `Authorization: Bearer <jwt>` returns **200**. Verifies the full bearer-flow round-trip end-to-end. |
-
-`mvn test` → **17 tests passing** across 5 Spring contexts.
-
-**Phase 3 status:** authentication is now **end-to-end functional**. JWT bearer tokens issued by `/auth/login` are accepted as authentication for protected endpoints. Refresh-token rotation works. The legacy header/cookie/query-param token formats remain accepted for backwards compatibility (the SpringSecurityRemoteSession only intercepts when JWT is present in the Spring Security context). The `@RestController`s still call `RemoteSession.checkAndGetUser(request)` — eventually they should switch to `@AuthenticationPrincipal User user` via a `JwtAuthenticationConverter`, but that's a code-tidiness pass not a functional change.
+Eventual cleanup: `@RestController`s should switch from `RemoteSession.checkAndGetUser(request)` to `@AuthenticationPrincipal User user` via a `JwtAuthenticationConverter` — code tidiness, not functional.
 
 ### Phase 4 — partial (client-side Spring DI skeleton)
 
@@ -846,183 +454,41 @@ This unblocks Phase 1.6 step 4+ — endpoints that depend on `RemoteSession` (mo
 
 **Endpoint migration pattern established:** create a Spring `@RestController` in `org.rapla.server.spring.web` that delegates to the existing service interface bean. The JAX-RS interface (`@Path`/`@PUT` etc.) stays untouched — eventually it'll be removed in the cleanup pass. This keeps RESTEasy 3.15 + Spring MVC coexisting on the same classpath; only Spring's `DispatcherServlet` is wired into the Spring Boot servlet container, so RESTEasy routes are dead at runtime even though they still compile.
 
-### Next up — Phase 1.6 step 2+
+### Major milestone — Phase 1 complete
 
-Migrate the remaining REST endpoints to `@RestController` delegating to existing service beans:
-
-| # | Endpoint | Source service | Priority |
-|---|----------|----------------|----------|
-| 2 | `/locale` | `RemoteLocaleService` / `RemoteLocaleServiceImpl` | high (used by client) |
-| 3 | `/auth` | `RemoteAuthentificationService` | high (JWT migration) |
-| 4 | `/events`, `/resources`, `/dynamictypes` | `RaplaEventsRestPage`, `RaplaResourcesRestPage`, `RaplaDynamicTypesRestPage` | high (main data API) |
-| 5 | `/storage` | `RemoteStorageImpl` | high (full-state sync, central API) |
-| 6 | Plugin endpoints (`/ical`, `/mail`, `/exchange`, `/archiver`, `/jndi`, `/eventimport`, `/urlencryption`) | various plugin services | medium — defer unless tests need them |
-| 7 | `RaplaIndexPageGenerator`, `RaplaJNLPPageGenerator`, `CalendarPageGenerator` (HTML page generators) | server-side servlet pages | medium — these emit HTML, not REST JSON; map to `Controller` returning `String` or move to Spring view layer |
-
-### Major milestone — Phase 1 substantially complete
-
-The Spring Boot migration's structural goal is achieved: the legacy `MainServlet` + RESTEasy + Jetty 9 stack is fully removed; the server core boots under Spring Boot + Tomcat 10 with Spring DI; the build still produces a clean artifact set; legacy test code that wasn't running anyway has been deleted. Test surface is small (11 tests across 4 contexts) but every test exercises Spring-managed code end-to-end including a real `FileOperator.connect()` and MockMvc dispatch.
-
-**What still needs work in Phase 1:** rest of Phase 1.6 (~18 more `@RestController`s — mechanical pattern). All other Phase 1 sub-phases (1.7, 1.8, 1.9) are complete or substantially complete (orphaned but compiling client-bootstrap classes will be removed in Phase 4).
-
-### Stopping point — handover state for Phase 1.6 step 3 onwards
-
-The codebase is in a clean compilable + testable + packageable state — **11 tests passing across 4 Spring contexts**, **`mvn package` BUILD SUCCESS** — and **all of Phase 1 except the rest of the REST-endpoint migration is complete**.
-
-**What's done (high level):**
-- Phase 1.2: jakarta migration (~96 files) and POMs updated
-- Phase 1.3: Static content mirrored to `resources/static/`, original `webapp/` later deleted in Phase 1.9
-- Phase 1.4: `RaplaServerProperties` `@ConfigurationProperties` wired
-- Phase 1.5: **14 `@Bean` factories cover the entire server core**: `ServerBundleManager`, `TimeZoneConverter`, `RaplaResources`, `RaplaSystemInfo`, `RaplaLocale`, `CommandScheduler`, `RemoteLogger`, `PromiseWait`, `FunctionFactory(name="org.rapla")`, `PermissionExtension`, `RaplaFacade`, `ICalTimezones`, `ServerStorageSelector`. `ServerServiceConfig` adds `CachableStorageOperator` and `ServerServiceContainer` gated behind `@ConditionalOnProperty("rapla.file-datasources.raplafile")`. `ServerServiceContainer` boots end-to-end via `ServerServiceIntegrationTest` with `FileOperator.connect()` against a temp file.
-- Phase 1.6 steps 1–2: **2 `@RestController`s** proven via MockMvc — `RemoteLoggerController` (`PUT /logger/{id}`), `ICalTimezonesController` (`GET /ical/timezones`, `/default`)
-- Phase 1.7: **Legacy test stack deleted aggressively** — 36 broken JUnit 4 test files + `RaplaTestCase` + `AbstractTestWithServer` + `AbstractOperatorTest` + `ResteasyRemoteConnector` + `CustomJettyStarter` + `ServerStarter` + `StandaloneStarter` + `ServerCreator`. The legacy tests never ran since Phase 1.2 anyway (broken by `restinject`'s `@javax.inject.Inject` scanning).
-- Phase 1.8: **RESTEasy 3.15 + Jetty 9 dropped from POMs** — `org.jboss.resteasy:resteasy-jaxrs`, `org.jboss.resteasy:resteasy-servlet-initializer`, all 11 `org.eclipse.jetty:jetty-*` artifacts, transitional `javax.servlet:javax.servlet-api:4.0.1`, `compile-java-9` execution + `<release>9</release>`, `restinject` annotation processor binding from `maven-compiler-plugin`. Added `org.apache.httpcomponents:httpclient:4.5.14` (was transitive of RESTEasy; needed by `EWSConnector`). `@GZIP` annotations stripped from `RemoteStorage`. `restinject` library kept as runtime dep — provides `org.rapla.scheduler` / `org.rapla.logger` packages used at runtime. `ServerStorageSelector` `Provider` import reverted from `javax.inject.Provider` back to `jakarta.inject.Provider`.
-- Phase 1.9: **`src/main/webapp/` deleted entirely** + `maven-war-plugin` removed from `pom.xml` + war-file entry removed from `src/assembly/rapla.distribution.xml`. `mvn package` now produces only the Spring Boot jar + the assembly tar.gz/zip.
-- Phase 7: **GWT module removed** entirely — 3 `.java` files + 3 empty `gwt/` directories deleted, `CalendarPlugin` `@ExtensionPoint` rebound to `InjectionContext.client`.
-
-**What's NOT done (carries forward as future work):**
-- Phase 1.6 steps 3–7: convert remaining ~16 JAX-RS endpoints to Spring `@RestController`s. Pattern is established — each is a small mechanical change. The remaining ones in priority order: `RemoteLocaleService`, `RemoteAuthentificationService` (will be replaced by `AuthController` for JWT), `RaplaResourcesRestPage`, `RaplaEventsRestPage`, `RaplaDynamicTypesRestPage`, `RemoteStorageImpl`, then plugin endpoints (`ICalConfigService`, `MailConfigService`, `MailToUserInterface`, `JNDIConfig`, `ArchiverService`, `UrlEncryption`, `ICalImport`, `TemplateImport`, `ExchangeConnectorConfigRemote`, plus HTML page generators `RaplaJNLPPageGenerator`, `CalendarPageGenerator`). Index page + status page generators are done (step 8).
-- Phase 2 (Promise-wait removal): ~12 server call sites + interfaces — `RaplaEventsRestPage`, `RemoteStorageImpl`, `Export2iCalServlet` (×2), `AbstractHTMLCalendarPage`, `RaplaICalImport`, `AppointmentTableViewPage`, `ReservationTableViewPage`, `AppointmentPerDayViewPage`, `SecurityManager` (×2). Plus `CachableStorageOperator` / `RaplaFacade` interface methods. Add sync variants, update callers, delete `PromiseWait` + `PromiseWaitImpl` + `LocalAbstractCachableOperator.waitForWithRaplaException`.
-- Phase 3: JWT auth setup (replace `RaplaAuthRestPage` with `AuthController`, `JwtDecoder` bean, `SecurityFilterChain`), CORS via `WebMvcConfigurer`, `LocaleResolver`, `HandlerInterceptor` for `ServletRequestPreprocessor`, exception mappers as `@ControllerAdvice`. **All gated by Phase 1.6 completion** (auth needs the auth endpoint + at least one protected endpoint to verify).
-- Phase 4–5: client-side DI migration. `ClientCreator` + `RaplaClient` + `MainWebclient` are still on `restinject` and broken at runtime. Need to introduce a Swing-side Spring `AnnotationConfigApplicationContext` and replace `MyCustomConnector` + `HTTPJsonConnector` + generated `_JavaJsonProxy` classes with `HttpServiceProxyFactory` + `RestClient`.
-- Phase 6: Plugin system. `@DefaultImplementation`/`@Extension` annotations still litter the codebase but no scanner reads them; plugins need `@Component` + `@RaplaPluginImportSelector` reading the `raplaservices=name=true/false` CSV.
-- Phase 8: Final cleanup — once Phase 4 is done and `ClientCreator` can be deleted, drop `restinject` library entirely from POMs. Delete `META-INF/services` generation and `ServiceInfLoader` (still referenced by `ClientCreator`). Strip `@DefaultImplementation` and `@Extension` annotations across the codebase.
-- Phase 9: Switch Gson → Jackson — gated by PRD 001-A: Date → LocalDateTime.
-
-**Counters (cumulative across all session iterations):**
-- Spring config files: 6 in `org.rapla.server.spring` — `RaplaSpringBootApplication`, `RaplaServerProperties`, `LegacyServerBridgeConfig` (2 beans), `ServerCoreConfig` (19 `@Bean` methods), `ServerServiceConfig` (22 `@Bean` methods), `SecurityConfig` (2 beans)
-- Spring controllers: 10 in `org.rapla.server.spring.web` — `RemoteLoggerController`, `ICalTimezonesController`, `ICalConfigController`, `MailToUserController`, `RemoteLocaleController`, `RaplaResourcesController`, `RaplaEventsController`, `RaplaDynamicTypesController`, `IndexPageController`, `StatusPageController`
-- Spring beans registered: **~50** explicit `@Bean` factory methods, plus 10 controllers, plus `RaplaServerProperties`. Coverage:
-  - **Server core (always-on)**: BundleManager, RaplaResources, RaplaSystemInfo, RaplaLocale, TimeZoneConverter, CommandScheduler, RemoteLogger, PromiseWait, RaplaFacade, ServerStorageSelector, AppointmentFormater, ResourceBundleList, MailInterface, MailToUserImpl, ICalTimezones, FunctionFactories (StandardFunctions, AppointmentNoteFunctions), PermissionExtension, mail-session named provider — 19 beans.
-  - **Server service tier (gated by datasource)**: CachableStorageOperator, ServerServiceContainer, RaplaKeyStorage, TokenHandler, RaplaAuthentificationService, AuthenticationStores, RemoteSession, RemoteLocaleService (request-scoped), SecurityManager, RaplaResourcesRestPage / RaplaDynamicTypesRestPage / RaplaEventsRestPage (request-scoped), ShutdownService, UpdateDataManager, RemoteStorage (request-scoped), JNDIConfig, UrlEncryptor, UrlEncryption (request-scoped), ImportExportManager, ArchiverService, MailConfigService, ICalConfigService, RaplaIndexPageGenerator, RaplaStatusPageGenerator, HtmlMainMenu extensions (1_jnlp/RaplaJnlpEntry, 3_status/RaplaStatusEntry, exportedcalendars/ExportMenuEntry) — 27 beans.
-  - **Security**: SecurityFilterChain, CorsConfigurationSource — 2 beans.
-- Tests: 12 across 4 Spring contexts (full `mvn test` BUILD SUCCESS, full `mvn package` BUILD SUCCESS)
-- Source files deleted (cumulative): **49** — `MainServlet`, `ResteasyExceptionMapper`, `module-info.java`, `GwtRaplaLock`, `GwtURLCopyService`, `GwtBundleManager`, `ServerStarter`, `StandaloneStarter`, `ServerCreator`, plus 36 broken legacy test files, plus `RaplaTestCase`, `AbstractTestWithServer`, `AbstractOperatorTest`, `ResteasyRemoteConnector`, `CustomJettyStarter`
-- Directories deleted: 4 (`gwt/` ×3, `src/main/webapp/`)
-- `parent/pom.xml` size reduced: 13 dependency entries removed (RESTEasy ×2, Jetty 9 ×11, transitional javax.servlet ×1) + `compile-java-9` execution + restinject annotation processor binding
-- `pom.xml` size reduced: `maven-war-plugin` block removed (~30 lines)
-- `src/assembly/rapla.distribution.xml`: war-file entry removed
-- Imports rewritten by sed (Phase 1.2): ~96 files
-- Source files revised for dual-namespace at Provider boundary (cumulative): only `ClientCreator` remains pinned to `javax.inject.Provider` — will be lifted in Phase 4.
+Structural goal achieved: legacy `MainServlet` + RESTEasy + Jetty 9 stack fully removed; server core boots on Spring Boot + Tomcat 10 with Spring DI; build produces clean artifact set. Every test exercises Spring-managed code end-to-end including a real `FileOperator.connect()` and MockMvc dispatch.
 
 ### Phase 1.6 step 8 — Index & Status page controllers (completed)
 
-Migrated the HTML index page (`/`) and status page (`/server`) to Spring `@RestController`s, wired `HtmlMainMenu` extension beans, and configured the file datasource.
-
-| # | Item | File(s) | Detail |
-|---|------|---------|--------|
-| 1 | File datasource config | `src/main/resources/application.yml` | Added `rapla.file-datasources.raplafile: data/data.xml` — enables `CachableStorageOperator` + `ServerServiceContainer` beans. |
-| 2 | `IndexPageController` | `src/main/java/org/rapla/server/spring/web/IndexPageController.java` (new) | `@RestController @ConditionalOnBean(RemoteSession.class)`. `@GetMapping` on `/` and `/index`. Delegates to `RaplaIndexPageGenerator` bean. |
-| 3 | `StatusPageController` | `src/main/java/org/rapla/server/spring/web/StatusPageController.java` (new) | `@RestController @ConditionalOnBean(RemoteSession.class)`. `@GetMapping` on `/server`. Delegates to `RaplaStatusPageGenerator` bean. |
-| 4 | Page generator beans | `ServerServiceConfig` | Added `raplaIndexPageGenerator` and `raplaStatusPageGenerator` `@Bean` methods, using `autowireBean` for `@Inject` field resolution (including `Map<String, HtmlMainMenu>` collection). |
-| 5 | HtmlMainMenu extension beans | `ServerServiceConfig` | Added 3 `HtmlMainMenu` beans with names matching legacy extension IDs: `1_jnlp` (`RaplaJnlpEntry`), `3_status` (`RaplaStatusEntry`), `exportedcalendars` (`ExportMenuEntry`, gated by `@ConditionalOnProperty`). |
-| 6 | Security permitAll | `SecurityConfig` | Expanded permitAll list to include `/index`, `/server`, plus legacy URL paths (`/calendar`, `/calendar.csv`, `/ical`, `/raplaclient`, etc.). |
-
-`mvn compile` → BUILD SUCCESS.
-
-**Design decisions:**
-- Page generators wired in `ServerServiceConfig` (gated by `@ConditionalOnProperty` datasource) because `RaplaIndexPageGenerator` needs `RaplaFacade` with a connected operator.
-- `HtmlMainMenu` extension bean names (`1_jnlp`, `3_status`, `exportedcalendars`) match legacy extension IDs so `ServerContainerContext.isServiceEnabled(key)` checks still work.
-- Controllers follow existing delegation pattern (same as `Export2iCalController` → `Export2iCalServlet`).
-
-### Phase 1.5 — Native Spring DI for `ServerServiceImpl` and friends (plan)
-
-Because the legacy DI bootstrap is dead (Phase 1.4's bridge finding), every `@DefaultImplementation` server-side class needs to be `@Service`-annotated and instantiated by Spring directly. Constructor injection via `@jakarta.inject.Inject` is honoured natively by Spring 6 — no annotation changes required on the class bodies, only the class-level `@Service` / `@Component`.
-
-Migration order (leaf-first, fewest dependencies first — at every step the smoke test must remain green):
-
-1. `RaplaResources` (i18n bundle wrapper), `RaplaSystemInfo` (build info), `TimeZoneConverterImpl`
-2. `RaplaLocaleImpl`, `DefaultScheduler` (scheduler with RxJava backend)
-3. `ServerBundleManager`, `RemoteLoggerImpl`
-4. `ServerStorageSelector` (the storage-flavour switch — file vs. SQL), `FacadeImpl`, `RemoteSessionImpl`
-5. `ServerServiceImpl` (uses all of the above) — at this point `ServerCreator` and `SimpleRaplaInjector` have no remaining callers and are deleted in step 6.
-6. Delete `ServerCreator`, `SimpleRaplaInjector` callers, the three `javax.inject.Provider` pins from Phase 1.2 step 6.
-
-**Per-class checklist:**
-- Add `@Service` (or `@Component`/`@Repository` if more apt) at class level.
-- Keep `@DefaultImplementation` annotation in place during the migration — the classpath retains both `restinject` and Spring during Phase 1.5; only Spring acts on the `@Service`. After Phase 1.8 (`restinject` removed), `@DefaultImplementation` is deleted in a follow-up sweep.
-- Verify the bean resolves via a smoke-test assertion (`@Autowired ClassUnderMigration x` plus `assertNotNull(x)`).
-- For classes with `@Named("id")` qualifiers (extensions), use Spring's `@Component @Named("id")` — Spring honours `jakarta.inject.Named` for qualifier-based injection of `Map<String, Bean>`.
-
-**Test datasource for Phase 1.5 step 4 onwards:** `ServerStorageSelector` requires `ServerContainerContext` to point at a real datasource. Set it up via:
-- `application-test.yml` with `rapla.file-datasources.raplafile=target/test-data/rapla-data.xml`
-- `@TestConfiguration` `@BeforeAll` that copies `/testdefault.xml` from the test classpath to that path (same fixture pattern the deleted bridge integration test used — the fixture itself is reusable; only the `ServerCreator.create()` call inside it broke).
-
-#### Phase 1.6 — REST endpoints to Spring MVC
-
-After `ServerServiceImpl` is a Spring bean, convert the REST page handlers (`RaplaEventsRestPage`, `RaplaResourcesRestPage`, `RaplaAuthRestPage`, etc.) from JAX-RS to `@RestController`. They already import `jakarta.ws.rs.*` so the cutover is annotation swap + path mapping. Once they're all `@RestController`, RESTEasy can be removed.
-
-#### Phase 1.7 — Remove legacy bootstrap & test stack
-
-1. Delete `ServerStarter`, `ServerCreator`, `CustomJettyStarter`, `jetty.xml`, `src/main/webapp/WEB-INF/web.xml`.
-2. Replace `StandaloneStarter` — standalone mode bypasses HTTP; inject `RemoteStorage` directly.
-3. Migrate `RaplaTestCase` and `AbstractTestWithServer` to `@SpringBootTest`. Delete `ResteasyRemoteConnector`.
-4. Delete `src/test/java/org/rapla/bootstrap/CustomJettyStarter.java`.
-
-#### Phase 1.8 — Drop RESTEasy + Jetty 9 + restinject
-
-1. Remove RESTEasy (`org.jboss.resteasy:resteasy-jaxrs`, `resteasy-servlet-initializer`) and Jetty 9 (`org.eclipse.jetty:jetty-server`, `jetty-webapp`) dependencies from `parent/pom.xml`.
-2. Remove the transitional `javax.servlet:javax.servlet-api:4.0.1 (provided)` dependency.
-3. Remove the `restinject` artifact + `META-INF/services` generation + `ServiceInfLoader`.
-4. Revert the three `javax.inject.Provider` pins from Phase 1.2 step 6 (`ClientCreator.java`, `ServerStorageSelector.java`, `RaplaTestCase.java` — the latter is gone after Phase 1.7) to `jakarta.inject.Provider`.
-
-#### Phase 1.9 — Distribution & static cleanup
-
-1. Remove `maven-war-plugin` from `pom.xml`.
-2. Delete `src/main/webapp/` (static content already mirrored to `src/main/resources/static/` in Phase 1.3; `WEB-INF/web.xml` already removed in Phase 1.7).
-3. Update `src/assembly/rapla.distribution.xml` to package the Spring Boot fat JAR instead of `rapla-*-war.war`.
-4. Update `Dockerfile` and `docker-compose.yml` to run the fat JAR.
-5. Run full `mvn test` — all tests pass.
-
+`IndexPageController` (`/`, `/index`) and `StatusPageController` (`/server`) — both `@RestController @ConditionalOnBean(RemoteSession.class)`, delegating to `RaplaIndexPageGenerator` / `RaplaStatusPageGenerator` (`@Bean` factories with `autowireBean` for `@Inject` fields incl. `Map<String, HtmlMainMenu>`). Three `HtmlMainMenu` beans registered with names matching legacy extension IDs (`1_jnlp`, `3_status`, `exportedcalendars`) so `ServerContainerContext.isServiceEnabled(key)` checks still work. Datasource wired via `rapla.file-datasources.raplafile: data/data.xml`. `SecurityConfig` permit-all list expanded.
 
 ## Future Constraints (deferred to a later phase)
 
 ### Constructor injection only — no field injection
 
-**Status:** **deferred** — codified in `AGENTS.md` as a project-wide rule, but the migration plan does not require porting existing field-injected legacy classes ahead of time.
+**Status: deferred** — codified in `AGENTS.md` as a project-wide rule. All new `@Component`/`@Service`/`@Bean` use constructor injection. Existing field-injected legacy classes wrapped via `AutowireCapableBeanFactory.autowireBean(legacyImpl)` keep field injection until individually rewritten; the rule applies when each class is otherwise touched (Phase 8 cleanup, ~232 legacy classes — not part of this PRD's scope).
 
-**Rule:** All new Spring `@Component` / `@Service` / `@Bean` definitions must use constructor injection (`@Inject` or `@Autowired` on a constructor) rather than field injection. The migration code added so far follows this rule for top-level config classes (`ServerCoreConfig`, `ServerServiceConfig`, etc. — every `@Bean` factory takes its dependencies as method parameters). The exception is the wrapper pattern that uses `AutowireCapableBeanFactory.autowireBean(legacyImpl)` to populate `@Inject` fields on legacy classes — those classes still need field injection until they are individually rewritten.
-
-**When this constraint takes effect for the legacy code:** during Phase 8 cleanup, when each legacy `@DefaultImplementation` / `@Extension` class is touched for the final `@Service` / `@Component` annotation pass and its `@Inject` fields are removed from the autowireBean wrapper, field injection should be replaced by constructor injection in the same change. Until then, the existing field-injected classes are left alone.
-
-**Goal of the deferred enforcement:**
-- Every class is instantiable with `new` (constructor takes its deps), so unit tests can stub dependencies without a DI container.
-- All fields can be `final`, eliminating mutability bugs.
-- Dependencies are explicit at the call-site (you see the entire constructor list); field injection hides them inside the class body.
-
-**Out of scope:** mass-rewriting the ~232 existing field-injected classes in this migration is out of scope. The constraint is enforced on new code and on classes touched during Phase 8 cleanup; it will be applied to the rest of the codebase incrementally as those files are otherwise modified.
+Goal: every class instantiable with `new`, final fields, explicit dependencies at the call site.
 
 ## Hard Constraints
 
 ### URL path preservation for calendar/iCal/JNLP endpoints
 
-**Status:** **HARD CONSTRAINT — non-negotiable** (recorded 2026-05-05; refined 2026-05-05 — paths only, query strings and response shapes can evolve)
+**Status: HARD CONSTRAINT — non-negotiable** (recorded 2026-05-05; refined 2026-05-05 — paths only, query strings and response shapes can evolve)
 
-**The URL paths for calendar/iCal/JNLP endpoints must not change during the Spring Boot migration.** Query-string parameter names and response body shapes are allowed to evolve as long as the **path itself** stays valid for existing client expectations. Breaking the path would invalidate:
-
-- User-distributed iCal subscription links (calendar feeds embedded in Outlook, Apple Calendar, Google Calendar, Thunderbird, etc.) — these have been distributed by users and live in third-party calendar clients indefinitely.
-- Embedded calendar widgets — HTML iframes/scripts on third-party sites that point at specific Rapla calendar URLs.
-- JNLP launch links — webstart deployment URLs that users have bookmarked or distributed.
+The URL paths for calendar/iCal/JNLP endpoints must not change. Breaking them would invalidate user-distributed iCal subscription links (Outlook/Apple/Google/Thunderbird), embedded calendar widgets, and JNLP launch links that live in third-party calendar clients indefinitely.
 
 **Critical paths (must keep their exact value):**
 
 | Legacy URL path | Current handler | Migration target |
 |-----------------|-----------------|------------------|
-| `/rapla/ical` (and `/rapla/internal_ical`) | `Export2iCalServlet` (JAX-RS) | Spring `@RestController` at **the same path**. **CRITICAL — most important.** Query params + response body may be modernised; path stays. |
+| `/rapla/ical` (and `/rapla/internal_ical`) | `Export2iCalServlet` (JAX-RS) | Spring `@RestController` at the same path. **CRITICAL — most important.** |
 | `/rapla/calendar` (and `.csv` / `internal_` variants) | `CalendarPageGenerator` | Spring controller at the same paths. **CRITICAL — most important.** |
-| `/rapla/raplaclient` and `/rapla/raplaclient.jnlp` | `RaplaJNLPPageGenerator` | Spring controller at the same path (lower-priority — `Rapla/` static webclient path is allowed to evolve). |
+| `/rapla/raplaclient` and `/rapla/raplaclient.jnlp` | `RaplaJNLPPageGenerator` | Spring controller at the same path. |
 
-**Paths that MAY be reorganised:** `/rapla/Rapla/` (the static webclient + JAR distribution tree) and `/rapla/index` are NOT bound by the constraint — they can be moved or replaced as part of the Angular-frontend transition.
+**MAY be reorganised:** `/rapla/Rapla/` (static webclient/JAR distribution tree) and `/rapla/index` — not bound by the constraint.
 
-**What this hard-constrains:**
-
-- Phase 1.6 step 7 (`RaplaJNLPPageGenerator`, `CalendarPageGenerator`) must respond at identical paths.
-- The `ServletRequestPreprocessor` migration (used by `UrlEncryption` plugin to pre-decrypt `?key=…` query strings) must hook the same paths via Spring `HandlerInterceptor` / `OncePerRequestFilter`.
-- Any test for these endpoints must verify path resolution.
-
-**What is allowed:** internal refactoring, dependency cleanup, replacing JAX-RS annotations with Spring annotations on the same paths, switching servlet container, **and modernising the query-string parameter names or response-body fields**.
-
-**What is not allowed:** path renames, redirects to new paths, or any change that would cause an existing iCal/JNLP/widget URL path to fail to route.
+Allowed: internal refactoring, JAX-RS → Spring annotation swap on same paths, servlet container switch, query-param and response-body modernisation. Not allowed: path renames or redirects. `ServletRequestPreprocessor` migration (used by `UrlEncryption` plugin to pre-decrypt `?key=…`) must hook the same paths via Spring `HandlerInterceptor` / `OncePerRequestFilter`.
 
 ## Decisions
 
@@ -1455,142 +921,37 @@ Gson — kept temporarily during migration (Jackson switch after PRD 001-A)
 iCal4j, EWS Java API — unchanged
 ```
 
-## Plan
+## Plan (original — historical reference; see Implementation Status above for what actually shipped)
 
-### Phase 0: Preparations (additive only — no existing code touched)
+### Phase 0: Preparations (additive — existing code untouched)
+Java 17 target (delete `src/main/java9/module-info.java`); Spring Boot 3.2+ BOM in `parent/pom.xml`; add `spring-boot-starter-{web,security,oauth2-resource-server}` + `nimbus-jose-jwt` (server) and `spring-context`/`spring-web` (client); `maven-dependency-plugin:copy-dependencies` for JNLP `lib/`; `application.yml` (port 8051, compression); `RaplaServerProperties @ConfigurationProperties`; `RaplaSpringBootApplication`; `logback-spring.xml`; `@SpringBootTest` smoke test in a separate Surefire fork.
 
-Phase 0 establishes the Spring Boot infrastructure as new files. The existing `MainServlet` / RESTEasy stack continues to run. The Spring Boot main class compiles but is not the runtime entry point until Phase 1 cutover.
-
-1. **Java target bump** — set `<maven.compiler.release>17</maven.compiler.release>` in both `pom.xml` and `parent/pom.xml`. Existing source compiles fine under Java 17, but `src/main/java9/module-info.java` must be **deleted** — its filename-based automodule references (`requires javax.servlet.api`, `requires resteasy.jaxrs`, etc.) no longer resolve under Java 17's stricter module rules, and Spring Boot fat JARs don't use JPMS. The multi-release JAR `compile-java-9` execution in `parent/pom.xml` becomes a no-op and can be removed.
-2. Add Spring Boot 3.2+ BOM to `parent/pom.xml` `<dependencyManagement>` (does not pull artifacts on its own)
-3. Add `spring-boot-starter-web`, `spring-boot-starter-security`, `spring-boot-starter-oauth2-resource-server`, `nimbus-jose-jwt` to `pom.xml`
-4. Add `spring-context`, `spring-web` to `pom.xml` (client)
-5. Configure `maven-dependency-plugin:copy-dependencies` for client JNLP `lib/` output
-6. Create `application.yml` with server port (default 8051 to differ from current 8052), datasource config, logging, `server.compression.enabled=true`
-7. Create `RaplaServerProperties` `@ConfigurationProperties` class to replace JNDI/`ServerContainerContext`, including a `Map<String, DataSourceProperties>` for the multi-datasource case
-8. Create `RaplaSpringBootApplication` (`@SpringBootApplication`) with a minimal `main()` — no `@ComponentScan` of legacy packages yet
-9. Copy existing `logback.xml` from `src/test/resources/` to `src/main/resources/logback-spring.xml` (Spring Boot auto-detects)
-10. Write test (`@SpringBootTest`) that loads `RaplaSpringBootApplication` and verifies the context starts. **Run in a separate Surefire fork** so it doesn't conflict with the existing `RaplaTestCase` Jetty 9 setup running in the same `mvn test` invocation.
-
-### Phase 1: Cutover — Server Bootstrap, Jakarta migration, MainServlet removal
-
-This phase is intentionally large because it cannot be subdivided without leaving the build broken. Done on a feature branch, merged when fully green.
-
-1. **Move `src/main/webapp/` static content** to `src/main/resources/static/` — verify all relative URLs in HTML still resolve (`Rapla/`, `images/`, `webclient/`, `jsclient/`, JNLP descriptors)
-2. **Jakarta namespace migration** — replace `javax.inject`, `javax.servlet`, `javax.ws.rs` imports with `jakarta.*` across the codebase. (Removes the only obstacle to embedded Tomcat 10 starting up.)
-3. Migrate `ServerServiceImpl` to `@Service` with constructor injection
-4. Wire `ServerConfig` `@Configuration` with `@ComponentScan` over server packages, register core beans (Logger, storage, facade, locale, timezone)
-5. Delete `MainServlet`, `ServerStarter`, `ServerCreator`, `web.xml`, `CustomJettyStarter`, `jetty.xml`
-6. Replace `StandaloneStarter` — standalone mode bypasses HTTP entirely; inject `RemoteStorage` bean directly
-7. Migrate `RaplaTestCase` and `AbstractTestWithServer` to `@SpringBootTest`
-8. Remove RESTEasy + Jetty 9 dependencies from `pom.xml`
-9. Verify `mvn test` passes (existing tests now run against Spring Boot context)
+### Phase 1: Cutover — Bootstrap, Jakarta, MainServlet removal
+Single-PR cutover: move `webapp/` → `resources/static/`; rewrite `javax.{inject,servlet,ws.rs}` → `jakarta.*`; `ServerServiceImpl` → `@Service`; `ServerConfig` with `@ComponentScan`; delete `MainServlet`, `ServerStarter`, `ServerCreator`, `web.xml`, `CustomJettyStarter`, `jetty.xml`; replace `StandaloneStarter` with direct `RemoteStorage` injection; migrate `RaplaTestCase`/`AbstractTestWithServer` to `@SpringBootTest`; drop RESTEasy + Jetty 9.
 
 ### Phase 2: Server DI Migration + Promise-wait removal
+`@Service` + `@Profile("server")` on `@DefaultImplementation` classes; constructor `@Inject`; `Map<String, ServerExtension>` via `@Named`; `Set<T>` → `List<T>`; audit compound `InjectionContext` → `@Profile({"server","client"})` (array form — missing context = silent bean-not-found). Promise-wait: sync variants on `CachableStorageOperator`/`RaplaFacade` for the ~12 awaited methods; update callers; delete `PromiseWait`/`PromiseWaitImpl`/`LocalAbstractCachableOperator.waitForWithRaplaException`; client wraps in RxJava at call site.
 
-1. Annotate all server-side `@DefaultImplementation` classes with `@Service` + `@Profile("server")`
-2. Replace `@Inject` (jakarta) with constructor injection
-3. Replace `Map<String, ServerExtension>` with Spring `@Named` bean maps
-4. Replace `Set<T>` extension point injection with `List<T>`
-5. Replace `@Extension(provides=X, id="...")` with `@Component` + `@Named("id")`
-6. **Audit compound contexts** — classes annotated for multiple `InjectionContext` values get `@Profile({"server","client"})` (array form). Missing a context here causes silent bean-not-found failures at runtime.
-7. **Promise-wait removal** — see Promise-wait Removal section above:
-   - Add sync variants on `CachableStorageOperator` and `RaplaFacade` for the ~12 server-awaited methods
-   - Update each caller (REST endpoints, servlets, view pages, `SecurityManager`) to call sync variants
-   - Delete `PromiseWait`, `PromiseWaitImpl`, `LocalAbstractCachableOperator.waitForWithRaplaException`
-   - Update `RemoteOperator` (client) to call sync HTTP proxies and wrap in RxJava at the call site
-8. Write test: all server beans resolve from `ApplicationContext`; no remaining references to `PromiseWait` in `src/main/java`
-
-### Phase 3: Server REST Endpoints, Security, Filters
-
-1. Convert JAX-RS `@Path` + `@GET`/`@POST` to `@RestController` + `@RequestMapping`
-2. Migrate core endpoints: `RemoteStorageImpl`, `RemoteAuthentificationServiceImpl`, `RemoteLocaleServiceImpl`, `RemoteLoggerImpl`
-3. Migrate new REST pages: `RaplaEventsRestPage`, `RaplaResourcesRestPage`, `RaplaAuthRestPage`, `RaplaDynamicTypesRestPage`
-4. Migrate plugin endpoints: `CalendarPageGenerator`, `Export2iCalServlet`, `UrlEncryptionService`, etc.
-5. Migrate exception mappers to `@ControllerAdvice`
-6. **JWT authentication setup** — see Authentication section above:
-   - Add `spring-boot-starter-security`, `spring-boot-starter-oauth2-resource-server`, `nimbus-jose-jwt`
-   - `RaplaKeyStorage` exposes the HMAC secret (generated on first start, persisted in keystore)
-   - `JwtDecoder` bean using `NimbusJwtDecoder.withSecretKey(...).macAlgorithm(HS256)`
-   - Custom `JwtAuthenticationConverter` mapping `sub` claim to the Rapla `User` principal
-   - `SecurityFilterChain` permitting `/auth/**` and static resource paths, requiring auth on everything else, stateless session, CSRF disabled
-   - Replace `RaplaAuthRestPage` with `AuthController` (`/auth/login`, `/auth/refresh`) that issues JWTs via `nimbus-jose-jwt`
-   - Delete `TokenHandler`, `SignedToken`, `RemoteSessionImpl.extractUser`, `LoginTokens.fromString/toString`
-7. **CORS configuration** via `WebMvcConfigurer.addCorsMappings()` — allowed origins driven by `rapla.cors.allowed-origins` property
-8. **Migrate `ServletRequestPreprocessor` extensions** to Spring `HandlerInterceptor` beans, registered with their existing ordering
-9. **Locale resolution** — implement `LocaleResolver` that reads user preferences from the authenticated principal, falls back to `Accept-Language`
-10. Remove RESTEasy dependency (including `GZIPEncodingInterceptor` — replaced by `server.compression`)
-11. Write test: all endpoints via `MockMvc` / `TestRestTemplate`; valid JWT grants access, expired/invalid JWT returns 401; refresh endpoint rotates tokens; CORS preflight returns expected headers
+### Phase 3: REST Endpoints + Security + Filters
+JAX-RS → `@RestController`. Core: `RemoteStorageImpl`, `RemoteAuthentificationServiceImpl`, `RemoteLocaleServiceImpl`, `RemoteLoggerImpl`. REST pages: `RaplaEvents/Resources/Auth/DynamicTypesRestPage`. Plugins: `CalendarPageGenerator`, `Export2iCalServlet`, `UrlEncryptionService`, etc. Exception mappers → `@ControllerAdvice`. **JWT setup** (see Authentication §): `JwtDecoder` via `NimbusJwtDecoder.withSecretKey(...).macAlgorithm(HS256)`; custom `JwtAuthenticationConverter`; `SecurityFilterChain` (permit `/auth/**` + statics, auth elsewhere, stateless, CSRF off); `AuthController` issues JWTs via `nimbus-jose-jwt`; delete `TokenHandler`/`SignedToken`/`RemoteSessionImpl.extractUser`/`LoginTokens.fromString-toString`. CORS via `WebMvcConfigurer.addCorsMappings()` driven by `rapla.cors.allowed-origins`. `ServletRequestPreprocessor` → Spring `HandlerInterceptor`. `LocaleResolver` from authenticated principal with `Accept-Language` fallback. Drop RESTEasy (and `GZIPEncodingInterceptor` — replaced by `server.compression`).
 
 ### Phase 4: Client DI Migration
-
-1. Create `ClientConfig` `@Configuration` with `@ComponentScan` for client packages
-   - `excludeFilters = @ComponentScan.Filter(type=ASSIGNABLE_TYPE, classes={server packages})`
-2. Migrate `ClientCreator` to `AnnotationConfigApplicationContext`
-3. Annotate client classes:
-   - `@Component` + `@Profile("swing")` for Swing UI (`ApplicationViewSwing`, `DialogUI`, editors, views)
-   - `@Component` + `@Profile("client")` for shared client logic (`ClientFacadeImpl`, `RemoteOperator`, `ReservationControllerImpl`)
-4. Replace `@Extension(provides=X, id="...")` with `@Component` + `@Named("id")` for ~60 client extensions
-5. **Audit compound contexts** — same as Phase 2, step 6, for client-side classes
-6. Migrate `SwingSchedulerImpl` to `@Component` (EDT-aware scheduler)
-7. Write test: client `ApplicationContext` starts, all client beans resolve
+`ClientConfig @Configuration` with `@ComponentScan` (excludeFilters for server packages); migrate `ClientCreator` to `AnnotationConfigApplicationContext`; `@Component` + `@Profile("swing"|"client")` on Swing UI / shared client logic; `@Named("id")` on ~60 extensions; audit compound contexts; `SwingSchedulerImpl` as `@Component`.
 
 ### Phase 5: REST Client Proxies
-
-1. Convert shared JAX-RS interfaces to Spring HTTP interfaces:
-   ```java
-   public interface RemoteStorage {
-       @GetExchange("/resources")
-       ResourcesResponse getResourcesSync();
-   }
-   ```
-2. Create `ClientProxyConfig` `@Configuration`:
-   - `RestClient.Builder` with auth interceptor and error mapping
-   - `HttpServiceProxyFactory` for each service interface
-3. Update `RemoteOperator` to use injected proxies (synchronous calls)
-4. Wrap proxy calls in RxJava3 in `RemoteOperator` for async:
-   ```java
-   return Completable.fromAction(() -> remoteStorage.getResourcesSync())
-       .subscribeOn(Schedulers.io());
-   ```
-5. Remove `MyCustomConnector`, `HTTPJsonConnector`, `AbstractJsonProxy` usage
-6. Remove `AnnotationInjectionProcessor` proxy generation from build
-7. Write test: proxies call mock server, RxJava wrapping works correctly
+JAX-RS interfaces → `@HttpExchange`/`@GetExchange`; `ClientProxyConfig` with `RestClient.Builder` (auth interceptor + error mapping) + `HttpServiceProxyFactory`; `RemoteOperator` calls injected proxies, wraps in RxJava (`Completable.fromAction(...).subscribeOn(Schedulers.io())`); delete `MyCustomConnector`/`HTTPJsonConnector`/`AbstractJsonProxy` and the `AnnotationInjectionProcessor` proxy generation.
 
 ### Phase 6: Plugin System
-
-1. Create `PluginAutoConfiguration` for server plugins
-2. Create `ClientPluginAutoConfiguration` for client plugins
-3. **Plugin enable/disable via `ImportSelector`** — `@ConditionalOnProperty` does not map onto the existing `raplaservices=name=true/false` CSV config. Implement a `RaplaPluginImportSelector` that reads the `raplaservices` property and programmatically registers only enabled plugin `@Configuration` classes. This preserves the existing config format.
-4. Migrate each plugin's `@Extension` to `@Component` with appropriate `@Profile`
-5. Write test: all server + client plugins load and start; disabling a plugin via `raplaservices` excludes its beans
+`PluginAutoConfiguration` (server) + `ClientPluginAutoConfiguration`. **Actual implementation** used `@ConditionalOnProperty(prefix="rapla.services", name="<plugin-id>", matchIfMissing=true)` rather than the originally-planned `RaplaPluginImportSelector` — Spring Boot's standard conditional annotations covered the existing config format with no custom selector needed.
 
 ### Phase 7: Remove GWT
-
-1. Delete `src/main/java/org/rapla/components/i18n/client/gwt/GwtBundleManager.java`
-2. Delete GWT module descriptor and GWT frontend code
-3. Remove `InjectionContext.gwt` usage from all annotations
-4. Remove GWT-related `@Extension` implementations
-5. Clean up GWT-specific dependencies from `pom.xml`
+Delete `GwtBundleManager`, GWT module descriptor, GWT frontend code, `InjectionContext.gwt`, GWT-specific deps.
 
 ### Phase 8: Cleanup
+Remove `restinject` artifact, `META-INF/services` generation, `ServiceInfLoader`, `CustomJettyStarter`, `jetty.xml`, `web.xml`, `AnnotationInjectionProcessor` config; update `Dockerfile`/`docker-compose.yml` for fat JAR + exploded `lib/`.
 
-1. Remove `restinject` artifact entirely from `parent/pom.xml`
-2. Remove `META-INF/services` generation and `ServiceInfLoader`
-3. Remove `CustomJettyStarter`, `jetty.xml`, old bootstrap classes
-4. Remove `web.xml`
-5. Remove `AnnotationInjectionProcessor` configuration from `maven-compiler-plugin`
-6. Update `Dockerfile` and `docker-compose.yml` for Spring Boot fat JAR (server) and exploded `lib/` (client)
-7. Run full test suite (`mvn test`) — all tests pass
-
-### Phase 9: Switch Gson → Jackson (after PRD 001-A Date→LocalDateTime)
-
-1. Remove `spring.http.converters.preferred-json-mapper=gson` from `application.yml`
-2. Add `jackson-datatype-jsr310` module for `LocalDateTime` serialization
-3. Remove Gson dependency from `pom.xml`
-4. Remove custom `JavaJsonSerializer` and Gson-specific code
-5. Verify REST API JSON output matches expected format (for Angular frontend)
-6. Run full test suite (`mvn test`) — all tests pass
+### Phase 9: Switch Gson → Jackson (after PRD 001-A Date → LocalDateTime)
+Remove `spring.http.converters.preferred-json-mapper=gson`; add `jackson-datatype-jsr310` (later dropped — Jackson 3 has built-in `java.time.*`); drop Gson; remove custom `JavaJsonSerializer`.
 
 ## Tests
 
@@ -1615,15 +976,11 @@ This phase is intentionally large because it cannot be subdivided without leavin
 |-----|-------------|
 | **001-A: Date → LocalDateTime** | **Prerequisite for Phase 9** (Jackson switch). Phases 0-8 proceed independently with Gson. |
 
-## Open Questions
+## Open Questions (all resolved — historical record)
 
-1. **Shared interface design?** The current JAX-RS interfaces (`RemoteStorage`, etc.) use JAX-RS annotations (`@Path`, `@GET`, `@POST`). Spring's `HttpServiceProxyFactory` uses `@HttpExchange` annotations. Options: (a) Replace JAX-RS annotations with Spring annotations on the shared interface, server `@RestController` implements the same interface. (b) Keep separate interface + impl annotations. **Recommendation: (a)** — single source of truth.
-
-2. **Gson JSON format compatibility?** When using Gson via Spring Boot, need to verify the JSON output format matches what the Angular frontend (and existing clients) expect. Write integration tests comparing Gson output vs current `JavaJsonSerializer` output.
-
-3. **Migration strategy: big bang or incremental?** Can we run both DI systems side by side during migration? **Recommendation: Incremental** — Phase 1-3 (server) can ship independently. Phase 4-6 (client) can follow.
-
-4. **JNLP download size?** Adding `spring-context` + `spring-web` JARs increases the JNLP download (~5 MB). The client does NOT include spring-boot itself, only the two library JARs. Measure actual size impact; consider ProGuard shading only if autoupdate latency becomes a user complaint.
-
-5. **`raplaservices` config drives core services too, not just plugins?** The CSV format toggles both core services and plugins. The `RaplaPluginImportSelector` from Phase 6 must filter both sets, or the toggle for core services needs a separate mechanism. Audit the existing `raplaservices` keys before implementing the import selector.
+1. **Shared interface design?** **Chose (a)** — single source of truth. JAX-RS annotations on shared interfaces replaced with Spring `@HttpExchange`; server `@RestController` implements the same interface.
+2. **Gson JSON format compatibility?** Verified compatible during transition; Phase 9 cutover to Jackson preserved wire format (both default to ISO-8601 dates).
+3. **Big bang or incremental?** **Incremental** — server Phases 1–3 shipped before client Phases 4–6.
+4. **JNLP download size?** Adding `spring-context` + `spring-web` JARs adds ~6.8 MB to the client classpath (51 → 60 JARs, 15.1 → 21.9 MB, +45%). First-load penalty only; OpenWebStart caches after.
+5. **`raplaservices` config drives core services too?** Spring Boot's `@ConditionalOnProperty(prefix="rapla.services", name="<plugin-id>", matchIfMissing=true)` covered both core services and plugins — no custom `RaplaPluginImportSelector` needed.
    

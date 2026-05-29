@@ -12,15 +12,7 @@ UIs are out of scope for v1.
 
 ## Why
 
-The Swing client is the long-tail technology debt:
-
-- WSL2 / display-server / JNLP launch is fragile and gates new
-  contributors (see PRD `done/jnlp-signing-pitfalls` follow-ups).
-- The reservation-edit UI is the part users touch most, and the
-  Swing implementation has ~1800 lines of edge-case glue in
-  `AppointmentController` alone.
-- The REST surface has been hardened enough (PRDs 009, 020, 024,
-  025) that a browser client is now realistic.
+Swing is the long-tail debt: WSL2/JNLP launch is fragile (gates new contributors — see PRD `done/jnlp-signing-pitfalls`); reservation-edit UI has ~1800 lines of edge-case glue in `AppointmentController` alone; REST surface is now hardened enough (PRDs 009, 020, 024, 025) for a browser client.
 
 ## Scope
 
@@ -56,6 +48,23 @@ domain and the wire model is in the architecture docs:
   — what ConflictFinder considers an overlap.
 - [`permissions.md`](../architecture/permissions.md) — what the
   server enforces on dispatch.
+
+### Calendar read substrate — GraphQL (PRDs 055/059/066)
+
+The SPA calendar's main read query — "show me the events for the
+resources selected in the tree" — is GraphQL, not REST. Use
+[`reservations(filter:)`](../graphql.md#11-reservations--the-calendar-query-prd-055--prd-066)
+with `allocatableMatching: AllocatableFilter` to encode the tree
+selection in one round-trip:
+
+- Type checkboxes → `typeKeyIn`
+- Per-type filter rules → `whereRaum` / `wherePerson` / `where<TypeKey>` (PRD 059)
+- Individual ticks → `idIn`
+
+Semantic: result is the union of (type-bucket narrowed by `whereXxx`)
+and (`idIn` picks). §12 always applies — explicit picks do not bypass
+`canRead`. REST `/storage/*` endpoints remain available for edit /
+hot-cache paths; the calendar read path uses GraphQL.
 
 ## Swing-concern → Angular-equivalent mapping
 
@@ -173,64 +182,11 @@ expected impact on the SPA team, not by dependency.
 
 ### High value, not strictly blocking
 
-5. **OpenAPI / SpringDoc** — **DONE 2026-05-11.** `springdoc-openapi-starter-webmvc-ui:3.0.0`
-   added to `rapla-app` (runtime scope) with `spring-boot-validation`
-   excluded; `/v3/api-docs` and `/swagger-ui/index.html` permitted
-   in `SecurityConfig`. Auto-discovers all `@RestController` classes —
-   **65 paths, 63 schemas** on first boot, no controller annotations
-   required. The SPA team can run `openapi-generator-cli` against
-   the live server to get a typed TS client.
+5. **OpenAPI / SpringDoc** — **DONE 2026-05-11.** `springdoc-openapi-starter-webmvc-ui:3.0.0` (runtime, `spring-boot-validation` excluded). `/v3/api-docs` and `/swagger-ui/index.html` permitted in `SecurityConfig`. Auto-discovers all `@RestController` — **65 paths, 63 schemas** on first boot, no annotations required.
 
-   **Fat-JAR size impact: +4.73 MiB (+12.0%)** — 14 new BOOT-INF/lib
-   jars (measured against a true no-SpringDoc clean rebuild; baseline
-   39.55 MiB → 44.29 MiB):
+   **Fat-JAR size impact: +4.73 MiB (+12.0%)** — 14 new BOOT-INF/lib jars (39.55 → 44.29 MiB). Half is Jackson 2.x (~2.50 MiB, upstream-locked — swagger-core hasn't migrated to Jackson 3); next biggest is swagger-ui (1.10 MiB, droppable by switching to `springdoc-openapi-starter-webmvc-api` if the explorer isn't wanted). Bean-validation engine excluded (hibernate-validator etc.) — saves ~2.54 MiB; safe because Rapla has zero `@Valid` usage.
 
-   | Bytes | Jar | Why |
-   |---:|---|---|
-   | 1,702,030 | jackson-databind-2.21.2 | Jackson 2.x — swagger-core hasn't migrated to Jackson 3 |
-   | 1,157,800 | swagger-ui-5.30.1 | Interactive `/swagger-ui/index.html` explorer |
-   | 595,659 | jackson-core-2.21.2 | Jackson 2.x core |
-   | 552,032 | springdoc-openapi-starter-common-3.0.0 | SpringDoc core (`OperationCustomizer`, model converters) |
-   | 251,736 | swagger-core-jakarta-2.2.38 | OpenAPI model builders |
-   | 140,065 | swagger-models-jakarta-2.2.38 | `OpenAPI`, `Schema`, `PathItem` POJOs |
-   | 136,578 | jackson-datatype-jsr310-2.21.2 | Jackson 2.x time module |
-   | 131,188 | jakarta.xml.bind-api-4.0.4 | JAXB API (swagger transitive) |
-   | 106,136 | jakarta.validation-api-3.1.1 | Annotation classes (kept for schema reflection) |
-   | 60,604 | jackson-dataformat-yaml-2.21.2 | Jackson 2.x YAML support |
-   | 50,578 | swagger-annotations-jakarta-2.2.38 | `@Schema`, `@Operation`, etc. |
-   | 44,622 | springdoc-openapi-starter-webmvc-api-3.0.0 | SpringDoc MVC binding |
-   | 23,608 | springdoc-openapi-starter-webmvc-ui-3.0.0 | UI binding |
-   | 8,676 | webjars-locator-lite-1.1.3 | Webjar URL resolver for swagger-ui |
-   | **4,961,312** | **TOTAL** (4.73 MiB) | |
-
-   **Bean-validation engine excluded** (`<exclusion>` on
-   `org.springframework.boot:spring-boot-validation`): drops
-   hibernate-validator (1.30 MiB), classmate (67 KiB), jboss-logging
-   (61 KiB), spring-boot-validation (15 KiB). Saves ~2.54 MiB vs.
-   the default SpringDoc dep cone. Safe because Rapla has zero
-   `@Valid`/`@Validated` usage; SpringDoc only reflects on the
-   annotation classes in `jakarta.validation-api`, which stay via
-   `swagger-core-jakarta`'s independent pull. Re-add the engine
-   (remove the exclusion) if/when bean validation is adopted.
-
-   **Where the cost concentrates** — half of the cost is Jackson 2.x
-   (~2.50 MiB), which is upstream-locked: Smartbear's swagger-core
-   hasn't migrated to Jackson 3 yet, so SpringDoc 3.0.x for Spring
-   Boot 4 still pulls Jackson 2.x for its OpenAPI model serialization.
-   No swagger-core 3.x on Maven Central. The other big single item
-   is swagger-ui (1.10 MiB) — droppable by switching artifact to
-   `springdoc-openapi-starter-webmvc-api` if the interactive
-   explorer isn't wanted; `/v3/api-docs` JSON still works without it.
-
-   Follow-up — annotations on controllers. **Recommendation:**
-   skip the full `@Tag` / `@Operation` / `@Parameter` sweep (mostly
-   cosmetic — better Swagger UI grouping and prettier generated TS
-   filenames, but the spec already works). Do the **leaner version**
-   instead: just `@ApiResponse` for the documented error paths.
-
-   The 200 path is fine from auto-discovery. The non-200 paths
-   aren't — they're invisible to the SPA's generated client unless
-   declared. Three concrete cases worth annotating today:
+   Follow-up — annotations on controllers. **Recommendation:** skip the full `@Tag`/`@Operation`/`@Parameter` sweep (cosmetic). Do the leaner `@ApiResponse` for documented error paths only — non-200 paths are invisible to the generated client unless declared:
 
    ```java
    @PostExchange("/foo")
@@ -243,37 +199,9 @@ expected impact on the SPA team, not by dependency.
    FooResult foo(@RequestBody FooReq req) throws RaplaException;
    ```
 
-   The 409 row directly exposes the `RaplaNewVersionException` →
-   HTTP 409 mapping from §B2 to the generated SPA client. Without
-   it, the OpenAPI spec says "200 OK" only and the SPA author has
-   to read the `RaplaExceptionHandler` source to learn about 409 /
-   401 / 400. With it, the generated TypeScript client surfaces the
-   error codes as discriminated union variants.
+   The 409 row exposes `RaplaNewVersionException`→409 from §B2 to the generated client. **Cost:** one new compile-scope dep on rapla-server (`swagger-annotations-jakarta`, ~50 KiB). **Annotate first:** the new endpoints from PRDs 024 + 026 §B2/§B4 (`/edit/check-conflicts`, `/edit/validate-recurrence`, `/edit/expand-blocks`, `/calendar/view`). Skip legacy `/storage/*` — not part of the new Angular surface.
 
-   **Cost:** one new compile-scope dep on rapla-server
-   (`io.swagger.core.v3:swagger-annotations-jakarta`, ~50 KiB —
-   today only on runtime classpath via springdoc). 3–5 annotations
-   per endpoint that can return non-200 — verbose but stable.
-
-   **What to annotate first:** the three new endpoints from PRDs
-   024 + 026 §B2/§B4: `/edit/check-conflicts`, `/edit/validate-recurrence`,
-   `/edit/expand-blocks`, `/calendar/view`. All have at least 401
-   and 400 paths; the conflict-check + draft-save endpoints can also
-   hit 409. **Skip the legacy endpoints** (`/storage/*`) — they're
-   not part of the new Angular surface and annotating them adds
-   noise without benefit.
-
-   **Not recommended:** the broader `@Tag` / `@Operation` /
-   `@Parameter` sweep. The auto-derived spec already gives Angular
-   typed clients; the cost (boilerplate × every endpoint, drift
-   risk between annotation text and behaviour) outweighs the
-   payoff (slightly nicer file/method names in the generated TS).
-   Revisit when the SPA team actually imports the generated client
-   and the auto-derived names bite.
-
-   Property `springdoc.api-docs.enabled=false` disables endpoints
-   in prod (jars still ship). To strip from prod entirely, gate the
-   dependency on a Maven profile.
+   `springdoc.api-docs.enabled=false` disables endpoints in prod (jars still ship); gate the dep on a Maven profile to strip entirely.
 
 6. **Per-entity computed permission flags.** Today
    `PermissionController.canModify`/`canDelete`/`canAllocateSlot`
@@ -384,108 +312,22 @@ the Swing client and opening the corresponding options dialog.
 
 ### Session handoff TODOs (2026-05-12)
 
-State at session end: **all read-only-migratable panels are done.**
-Server controllers exist, client panels call them, smoke-tested via
-clean build + `mvn spring-boot:run` + `mvn exec:java`. Each migrated
-`show()` has a temporary INFO log line to verify the path fires.
+All read-only-migratable panels done; server controllers exist, client panels call them, smoke-tested. Each migrated `show()` has a temporary INFO log line.
 
-**Verification still owed by the user (open in the running Swing client):**
+**Verification owed (Edit → Settings, then `grep "fetching" logs/rapla-client.log`):** `RaplaStartOption`, `UserOption`, `Export2iCalUserOption`, `ExchangeConnectorUserOptions`. (`WarningsOption`, `EventTimeCalculatorUserOption` migrated without log lines — verify via `/settings/me` and `/eventtimecalculator/*-config` GETs in `logs/rapla.log`.)
 
-Edit → Settings → click through each tab, then `grep "fetching" logs/rapla-client.log`. Expected matches:
+**Cleanup once verified:** remove the four temporary INFO log lines in `RaplaStartOption`, `UserOption`, `Export2iCalUserOption`, `ExchangeConnectorUserOptions`.
 
-- `RaplaStartOption.show(): fetching /settings/system via REST`
-- `UserOption.show(): fetching /settings/me via REST`
-- `Export2iCalUserOption.show(): fetching /ical/config/{default,user} via REST`
-- `ExchangeConnectorUserOptions.setValuesToJComponents(): fetching /exchange/config/user via REST`
+**Coverage gaps:**
+- Tier-3 MockMvc tests for the six new endpoints (`SettingsController.getSystem/getMe`, `EventTimeCalculatorConfigController.{system,user}Config`, `ICalConfigController.getUserSettings`, `ExchangeConnectorConfigController.getUserSettings`) — 200 + 401 per endpoint; admin-only 403 on `/settings/system` PUT.
+- No `@ApiResponse` annotations on the new endpoints (per §item 5).
+- Permission-leak audit per §Rule 12 missing — all use `session.checkAndGetUser(request)` and read for that same user (shape correct, test absent).
 
-(`WarningsOption` + `EventTimeCalculatorUserOption` were migrated
-without log lines — verify by inspecting `logs/rapla.log` for
-`/settings/me` and `/eventtimecalculator/*-config` GETs instead.)
+**Panels remaining (no work):** `CalendarOption`, `NotificationOption`, `TableviewOption` (deferred for Angular replacement); `view-factory option panels`, `ImportTemplateMenu` (no behaviour win).
 
-**Cleanup once verified:**
+**Next pre-migration items:** items 1 (blocking — PRD 024 phases 1+2), 3 (blocking — `POST /storage/draft`), 6 (computed permission flags), 7 (DTO consolidation), 8 (`/locale/{id}` audit).
 
-1. **Remove the four temporary INFO log lines** added during session:
-   - `rapla-client/.../swing/internal/RaplaStartOption.java` in `show()`
-   - `rapla-client/.../swing/internal/UserOption.java` in `show()`
-   - `rapla-client/.../export2ical/client/swing/Export2iCalUserOption.java` in `show()`
-   - `rapla-client/.../exchangeconnector/client/swing/ExchangeConnectorUserOptions.java` in `setValuesToJComponents()`
-
-   They're INFO-level and only fire when the dialog opens — leaving
-   them costs nothing but they are debug code, not load-bearing.
-
-**Coverage gaps to close in a follow-up session:**
-
-2. **Tier-3 MockMvc tests for the new endpoints.** Per PRD 017, every
-   new controller method needs MockMvc coverage. This session shipped
-   six endpoints with **zero new tests**:
-   - `SettingsController.getSystem` / `getMe` (the `/me` PUT path was
-     unchanged but the GET is new)
-   - `EventTimeCalculatorConfigController.getSystemConfig` / `getUserConfig`
-   - `ICalConfigController.getUserSettings` (new `/user` method)
-   - `ExchangeConnectorConfigController.getUserSettings` (new `/user` method)
-
-   Minimum per endpoint: 200-path JSON-shape assertion + 401 path (no JWT).
-   `/settings/system` PUT also needs the admin-only 403 path.
-
-3. **No `@Tag` / `@Operation` annotations on the new endpoints.** Per
-   §High-value item 5, the recommendation is the leaner `@ApiResponse`
-   sweep, not full annotation. Not done for any of the six new
-   endpoints — fine for internal use, will matter when the SPA
-   generates a TypeScript client off `/v3/api-docs`.
-
-4. **Permission-leak audit per §Rule 12** — none of the new
-   per-user endpoints were tested with a non-admin user requesting a
-   different user's data. The endpoints all use
-   `session.checkAndGetUser(request)` and read
-   `facade.getPreferences(user)` for that same user, so the shape is
-   correct — but the test that proves it is missing.
-
-**Panels remaining (no work planned, listed for completeness):**
-
-- `CalendarOption`, `NotificationOption`, `TableviewOption` —
-  deferred to be replaced by Angular components rather than migrated.
-- `view-factory option panels`, `ImportTemplateMenu` — not migrated,
-  no behaviour win (save path already goes via REST).
-
-**Next pre-migration item to pick up** (per §Pre-migration above):
-
-After this session the option-panel slice is complete. The remaining
-high-impact pre-migration work is:
-
-- **Item 1 (blocking)** — PRD 024 phases 1+2 (edit-time business
-  logic to REST). Largest piece of work; SPA Phase 1 is gated on it.
-- **Item 3 (blocking)** — `POST /storage/draft` new-reservation
-  endpoint.
-- **Item 6** — per-entity computed permission flags
-  (`canEdit`/`canDelete`/`canSeeAllocator`) on JSON responses.
-- **Item 7** — DTO consolidation (`ExternalEventImportMetadata` etc.
-  move into `rapla-core/.../rest/dto/`).
-- **Item 8** — `/locale/{id}` completeness audit.
-
-**Git state at session end:** new/modified files this session, not yet committed:
-
-- New files:
-  - `rapla-core/.../rest/dto/SystemSettings.java`
-  - `rapla-core/.../plugin/export2ical/UserICalSettings.java`
-  - `rapla-core/.../plugin/exchangeconnector/ExchangeUserSettings.java`
-- Modified:
-  - `rapla-core/.../rest/SettingsService.java` (added `getSystem`)
-  - `rapla-core/.../plugin/export2ical/ICalConfigService.java` (added `getUserSettings`)
-  - `rapla-core/.../plugin/exchangeconnector/ExchangeConnectorConfigRemote.java` (added `getUserSettings`)
-  - `rapla-server/.../web/SettingsController.java` (moved `SystemSettings` record to rapla-core)
-  - `rapla-server/.../web/EventTimeCalculatorConfigController.java` (`/user-config` null on no override)
-  - `rapla-server/.../web/ICalConfigController.java` (new `/user` endpoint)
-  - `rapla-server/.../web/ExchangeConnectorConfigController.java` (new `/user` endpoint)
-  - `rapla-client/.../swing/internal/RaplaStartOption.java`
-  - `rapla-client/.../swing/internal/UserOption.java`
-  - `rapla-client/.../swing/internal/WarningsOption.java`
-  - `rapla-client/.../export2ical/client/swing/Export2iCalUserOption.java`
-  - `rapla-client/.../exchangeconnector/client/swing/ExchangeConnectorUserOptions.java`
-  - `rapla-client/.../eventtimecalculator/client/swing/EventTimeCalculatorUserOption.java`
-  - `rapla-client/.../client/spring/ClientProxyConfig.java` (3 new proxy beans this session sequence)
-  - This PRD
-
-User has **not** asked for a commit yet — branch is `spring-boot`.
+Git state at session end: new DTOs (`SystemSettings`, `UserICalSettings`, `ExchangeUserSettings`) and modifications across `rapla-core/.../rest/`, `rapla-server/.../web/`, `rapla-client/.../swing/internal/`, plus 3 new proxy beans in `ClientProxyConfig`. Not committed (branch `spring-boot`).
 
 ## Phase 0 — first prototype (decisions + plan)
 
@@ -541,35 +383,9 @@ prototype graduates from manual `ng build`.
 
 ### Project layout
 
-Top-level sibling directory `rapla-angular/`, **not** a Maven module —
-parallel to the existing reactor modules but with its own toolchain.
+Top-level sibling directory `rapla-angular/`, **not** a Maven module — parallel to the reactor modules with its own toolchain. Standard layout: `angular.json`, `package.json`, `.nvmrc`, `src/app/{auth,api,reservations}/`. The `api/` dir is the gitignored generated TS client.
 
-```
-rapla/
-├── rapla-bom/                          # (Maven)
-├── rapla-core/                         # (Maven)
-├── rapla-client/                       # (Maven — Swing UI; "client" is overloaded but kept for history)
-├── rapla-server/                       # (Maven)
-├── rapla-app/                          # (Maven — Spring Boot fat JAR)
-│   ├── src/main/java/...               # incl. DevSpaResourceConfig (@Profile("dev"))
-│   └── src/main/resources/static/app/  # ONLY populated in distribution builds; gitignored
-└── rapla-angular/                          # NEW — Angular source tree (gitignore node_modules + dist)
-    ├── angular.json                    # default outputPath: dist/rapla-angular
-    ├── package.json
-    ├── .nvmrc
-    ├── README.md
-    └── src/app/
-        ├── auth/                       # login + JWT interceptor
-        ├── api/                        # generated TS client (gitignored)
-        └── reservations/               # read-only list
-```
-
-Rationale: clean separation of toolchains; frontend contributors
-can open just `rapla-angular/` in their IDE without Java tooling;
-easier to extract later if the team splits. No cross-module
-`outputPath` write — `ng build` stays inside `rapla-angular/`, and
-Spring picks up the result by configuration (dev) or by Maven copy
-(distribution).
+Rationale: clean toolchain separation; frontend contributors can open just `rapla-angular/`; `ng build` stays inside that dir, Spring picks up the result via dev config or Maven copy (distribution).
 
 ### Dev-mode vs. distribution-mode wiring
 
@@ -740,74 +556,15 @@ Discussed and documented here for traceability; **execution lives in
 
 ### OAuth2 / OIDC wired into the SPA (2026-05-12)
 
-The Phase 0 prototype's raw `/api/auth/login` (username/password)
-flow has been replaced with the proper OAuth2 Authorization Code +
-PKCE flow. Implementation is **IdP-agnostic** — bundled Spring
-Authorization Server today, ready to swap to Keycloak / Auth0 / etc.
-by changing server-side properties only (no SPA rebuild needed).
+Prototype's raw `/api/auth/login` replaced with OAuth2 Authorization Code + PKCE. **IdP-agnostic** — bundled Spring Authorization Server today, swappable to Keycloak/Auth0 via server-side property overrides only (no SPA rebuild).
 
-**Client side:**
+**Client (`angular-oauth2-oidc` ^20.0.2):** `AuthService` is a thin wrapper around `OAuthService`. `app.config.ts` initializer fetches the endpoint set from `/api/auth/oauth/config` at boot, then configures the library — no OIDC `.well-known` discovery (the library's unconditional `doc.issuer === this.issuer` check fails in the dev-proxy non-matching-origin case). JWKS fetched manually from `cfg.jwksUrl`; `skipIssuerCheck: true` bypasses `iss` claim comparison. `/app/auth/callback` → `CallbackComponent` navigates to `/reservations` post-exchange. `authInterceptor` reads `OAuthService.getAccessToken()`; 401 outside auth paths → sign out + `/login`.
 
-- **`angular-oauth2-oidc` ^20.0.2** added as runtime dependency.
-- `AuthService` reduced to a thin wrapper around `OAuthService` —
-  `signIn()` calls `initCodeFlow()`, `signOut()` calls `logOut()`,
-  `token()` returns the access token.
-- `app.config.ts` initializer **fetches the endpoint set from
-  `/api/auth/oauth/config`** at boot, then configures the library
-  with those URLs. No use of OIDC discovery (`/.well-known/...`)
-  because angular-oauth2-oidc's `loadDiscoveryDocument` does an
-  unconditional `doc.issuer === this.issuer` check that fails in
-  the dev-proxy + non-matching-origin case.
-- JWKS is fetched manually from `cfg.jwksUrl` and assigned to
-  `oauthService.jwks` for ID-token signature verification.
-- `skipIssuerCheck: true` bypasses ID-token `iss` claim comparison
-  (the AS issues tokens with its own server hostname, which
-  doesn't match `window.location.origin` in dev-proxy mode).
-- New `/app/auth/callback` route → `CallbackComponent` (thin
-  "Signing in…" view) navigates to `/reservations` once the
-  library has exchanged the code for tokens.
-- `LoginComponent` is a single "Sign in" button.
-- `authInterceptor` reads `OAuthService.getAccessToken()`; on 401
-  outside auth/OIDC paths, signs out and bounces to `/login`.
+**Server:** `server.forward-headers-strategy: FRAMEWORK` honours `X-Forwarded-*` (paired with proxy `xfwd: true` → returns `:4200` URLs in dev, real public origin in prod). `OAuthConfigController` at `GET /api/auth/oauth/config` returns full endpoint set (`issuer`, `authorizeUrl`, `tokenUrl`, `refreshUrl`, `logoutUrl`, `jwksUrl`, `userinfoUrl`, `endSessionUrl`, `clientId`, `scopes`); each has a `rapla.oauth.*-url` override. Loopback `/app/auth/callback` redirect URIs registered for `rapla-client`: `localhost`, `127.0.0.1`, `localhost:4200`, `127.0.0.1:4200` (explicit `:4200` needed since spring-security-oauth2-authorization-server 7.0.5's default loopback any-port matching doesn't always apply on issuer side).
 
-**Server side:**
+**Dev proxy (`proxy.conf.js`):** forwards `/api`, `/oauth2`, `/.well-known`, `/userinfo`, `/connect`, `/swagger-ui`, `/v3`, `/rapla`, `/raplaclient`, `/webclient`, `/login`, `/logout`, `/error`, `/server`, `/index` to `:8051`. `xfwd: true` + `cookieDomainRewrite: 'localhost'` + `onProxyRes` rewriting absolute `localhost:8051` URLs in `Location`/`CSP` headers back to `:4200`.
 
-- **`server.forward-headers-strategy: FRAMEWORK`** in
-  `application.yml` — Spring honours `X-Forwarded-{Host,Port,Proto}`
-  on incoming requests. Combined with `proxy.conf.js`'s `xfwd: true`
-  this makes the dev server return `:4200` URLs in dev (proxy
-  origin) and the real public origin in prod.
-- **`OAuthConfigController`** at `GET /api/auth/oauth/config`
-  returns a complete endpoint set: `issuer`, `authorizeUrl`,
-  `tokenUrl`, `refreshUrl`, `logoutUrl`, `jwksUrl`, `userinfoUrl`,
-  `endSessionUrl`, `clientId`, `scopes`. Each URL has a
-  corresponding `rapla.oauth.*-url` property override — Keycloak
-  swap is `rapla.oauth.authorize-url=...`, `rapla.oauth.token-url=...`,
-  etc. in `application.yml` (or env vars in CI/prod), no code change.
-- **Loopback `/app/auth/callback` redirect URIs** registered for
-  `rapla-client`: `localhost`, `127.0.0.1`, `localhost:4200`,
-  `127.0.0.1:4200` (the explicit `:4200` entries cover dev mode
-  since spring-security-oauth2-authorization-server 7.0.5's default
-  loopback any-port matching doesn't always apply on the issuer
-  side).
-
-**Dev proxy (`proxy.conf.js`):**
-
-- Forwards `/api`, `/oauth2`, `/.well-known`, `/userinfo`, `/connect`,
-  `/swagger-ui`, `/v3`, `/rapla`, `/raplaclient`, `/webclient`,
-  `/login`, `/logout`, `/error`, `/server`, `/index` to `:8051`.
-- `xfwd: true` sets `X-Forwarded-*` headers so Spring's
-  `forward-headers-strategy` knows the proxy origin.
-- `cookieDomainRewrite: 'localhost'` keeps Spring's `JSESSIONID`
-  cookie scoped correctly.
-- `onProxyRes` rewrites any absolute `http://localhost:8051` in
-  `Location` / `Content-Security-Policy` response headers back to
-  `http://localhost:4200` (belt-and-suspenders alongside the
-  forward-headers strategy).
-
-**Outcome:** all OAuth traffic from the SPA flows through the proxy
-in dev (no CORS), no `localhost:8051` URLs in the browser's address
-bar during sign-in, and the IdP is swappable via property overrides.
+**Outcome:** all OAuth traffic flows through the proxy in dev (no CORS), no `:8051` URLs in browser address bar during sign-in, IdP swappable via property overrides.
 
 ### What the prototype proved (and now sticks)
 

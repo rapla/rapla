@@ -8,11 +8,9 @@ Add a minimal GitHub Actions workflow that runs on every PR to `master` and on e
 
 ## Why now
 
-Three things this branch made urgent:
-
-1. **`spring-boot` is the working trunk** (PRDs 005, 011, 029, 031, 026 all land here). When it eventually merges to `master`, the diff is +84 k / −55 k LOC. Catching regressions at merge time, by re-reading 64 commits, is the wrong tool.
-2. **External contributors exist** (`@stephenBDT`, `@floxdeveloper` merged PRs in Q1/Q4 2025). They get no CI feedback today — only Dependabot does.
-3. **The test pyramid is real** (PRD 017 Phases 1–4 done, ~150 tests; PRDs 023 + 030 added 84 more). Running it locally before every push is fragile; CI as a forcing function makes the pyramid actually load-bearing.
+1. **`spring-boot` is the working trunk** (PRDs 005, 011, 029, 031, 026 land here). Merge-back diff is +84 k / −55 k LOC; catching regressions by re-reading 64 commits is the wrong tool.
+2. **External contributors exist** (`@stephenBDT`, `@floxdeveloper` merged PRs in 2025); they get no CI feedback today.
+3. **The test pyramid is real** (PRD 017 Phases 1–4 done, ~150 tests; PRDs 023 + 030 added 84 more). CI as forcing function makes it load-bearing.
 
 ## Scope
 
@@ -63,11 +61,11 @@ If/when we adopt browser e2e as a CI gate. Out of scope for the initial PRD.
 
 ## Open questions
 
-1. **Concurrency cap.** GitHub-hosted runners are free for public repos but rate-limited per-org. Should we add `concurrency: { group: ci-${{ github.ref }}, cancel-in-progress: true }` to cancel stale runs on rapid pushes? Recommendation: yes — saves runner minutes and Dependabot's PRs benefit.
-2. **`mvn -B` vs `mvn -ntp`.** Both quiet the noise. `-B` is the legacy "batch mode"; `-ntp` ("no transfer progress") is newer. Pick `-B` for consistency with most rapla docs.
-3. **JDK distribution.** Temurin is the safe default; the local dev setup uses Semeru (`21.0.11-sem` per `docs/development.md`). They're both JDK 21 — should pass the same code. Use Temurin in CI (the GitHub Actions `setup-java` cache hit rate is better).
-4. **Caching key.** `setup-java`'s built-in Maven cache works for `~/.m2/repository`; combine with `actions/cache@v4` keyed on `pom.xml` hashes. Standard pattern.
-5. **Should `push` to `spring-boot` trigger CI, or only `pull_request`?** Recommendation: both — `spring-boot` is the working trunk and rebuilding it on every push catches drift earlier than waiting for the merge-back PR.
+1. **Concurrency cap** — add `concurrency: { group: ci-${{ github.ref }}, cancel-in-progress: true }` to cancel stale runs on rapid pushes. Recommendation: yes.
+2. **`mvn -B` vs `mvn -ntp`** — pick `-B` (legacy batch mode) for consistency with rapla docs.
+3. **JDK distribution** — local dev uses Semeru (`21.0.11-sem`); use Temurin in CI (better `setup-java` cache hit rate).
+4. **Caching key** — `setup-java` built-in Maven cache + `actions/cache@v4` keyed on `pom.xml` hashes. Standard.
+5. **`push` to `spring-boot` or only `pull_request`?** Both — catches drift earlier than waiting for merge-back PR.
 
 ## Risks
 

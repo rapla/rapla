@@ -4,135 +4,116 @@
 **Date:** 2026-05-14
 
 > **Progress (2026-05-21):** v1 (Microsoft + Google) and Phase 2.1 (Keycloak)
-> are landed and exercised end-to-end against the DHBW Mosbach realm
-> `dhbwmos-lehre`. Two design pivots from the original draft, both
-> reflected throughout this PRD now:
+> landed, exercised end-to-end against DHBW Mosbach realm
+> `dhbwmos-lehre`. Two design pivots from the original draft:
 >
-> 1. **Identity is keyed on rapla username**, not on a per-provider
+> 1. **Identity keyed on rapla username**, not per-provider
 >    `external-id.<provider>` preference. Lookup: token's
 >    `upn` → `preferred_username` → `email` claims, case-insensitively
 >    against `user.getUsername()`, with email-against-`user.getEmail()`
->    as a tier-2 fallback. Auto-provision creates a user with the
->    lowercased UPN/preferred_username/email as the username. The
->    `org.rapla.auth.external-id.<provider>` and
->    `org.rapla.auth.provider` preferences are no longer written or
->    read. Reason: the external-id design broke first-login for any
->    user not provisioned via the IdP (CSV-imported, hand-created,
->    LDAP-migrated) and silently broke on realm rotation. Tradeoff:
->    IdP-side username rename produces an orphaned rapla user that an
->    admin renames manually — same operator burden as the legacy LDAP
->    path.
+>    as a tier-2 fallback. Auto-provision uses lowercased
+>    upn/preferred_username/email as the username. The
+>    `org.rapla.auth.external-id.<provider>` and `.provider`
+>    preferences are no longer written or read. Reason: external-id
+>    broke first-login for any user not provisioned via the IdP
+>    (CSV-imported, hand-created, LDAP-migrated) and silently broke on
+>    realm rotation. Tradeoff: IdP-side username rename produces an
+>    orphaned rapla user that an admin renames manually — same operator
+>    burden as the legacy LDAP path.
 > 2. **SPA 401 handling pops a blocking dialog** showing the actual
 >    server reason instead of silently rerouting to `/login`. The
->    interceptor also tries `oauth.refreshToken()` once before showing
->    the dialog, and `setupAutomaticSilentRefresh()` is wired at boot
->    for proactive refresh. Details in `docs/authentication.md` §
->    "401 handling on the SPA".
+>    interceptor tries `oauth.refreshToken()` once before showing the
+>    dialog; `setupAutomaticSilentRefresh()` wired at boot.
+>    Details in `docs/authentication.md` § "401 handling on the SPA".
 >
-> Phase 2.2 (Shibboleth-via-Keycloak docs) remains the only open work.
+> Phase 2.2 (Shibboleth-via-Keycloak docs) is the only open work.
 
 ## Goal
 
 Let a rapla deployment delegate authentication to an **external OIDC
-identity provider** instead of validating passwords against rapla's
-local user store. v1 ships two production-ready providers:
+identity provider** instead of validating passwords against the local
+user store. v1 ships two production-ready providers:
 
-- **Microsoft Entra ID** (formerly Azure Active Directory) — for the
-  Microsoft 365 / DHBW / German university audience.
-- **Google** (consumer accounts + Google Workspace) — for the
-  Workspace-based deployments and as a low-friction option for
-  evaluators who already have a Google account handy.
+- **Microsoft Entra ID** — for the Microsoft 365 / DHBW / German
+  university audience.
+- **Google** (consumer + Workspace) — for Workspace-based deployments
+  and as a low-friction option for evaluators.
 
-Configurability is the design center. A deployment can enable any
-combination of providers simultaneously — embedded Spring Authorization
-Server (today's default), Microsoft Entra ID, and/or Google. Each
-provider is an independent config block (`rapla.oauth.external.microsoft.*`,
-`rapla.oauth.external.google.*`); enabling one doesn't affect the others.
+A deployment can enable any combination of providers simultaneously
+(embedded Spring AS, Microsoft, Google). Each is an independent config
+block (`rapla.oauth.external.microsoft.*`,
+`rapla.oauth.external.google.*`); enabling one doesn't affect others.
 
 **Web (Angular) — user-facing IdP picker, configurable.** Discovery
-emits a `providers[]` array and a `picker` config block. The Angular
-login screen renders behaviour driven by `picker.mode`:
+emits a `providers[]` array + `picker` block. The Angular login is
+driven by `picker.mode`:
 
 | `picker.mode` | Behaviour |
 |---|---|
-| `auto` (default) | Show picker buttons when ≥2 providers enabled; auto-fire the primary provider when only 1 is enabled. Sensible default for most deployments. |
-| `always` | Always show the picker, even with a single provider. Useful when an admin wants the user to see an explicit "Sign in" affirmation before being redirected. |
-| `never` | Never show a picker. Auto-fire the primary provider; ignore the others (still useful if other providers were enabled for API clients but the web SPA should be single-IdP). |
+| `auto` (default) | Show picker when ≥2 providers; auto-fire primary when only 1 |
+| `always` | Always show, even with one provider |
+| `never` | Auto-fire primary; ignore others (useful when other providers exist for API but web should be single-IdP) |
 
-Each enabled provider declares its own `display-name` ("Sign in with
-Microsoft"), `icon` (well-known string: `microsoft`, `google`, `rapla`,
-or custom URL), and `order` (sort key, lower first). The SPA needs no
-per-deployment build config — buttons, labels, and order all come from
-the server's `application.yml`. A deployment with three providers can
-hide one from the web picker by setting `web-picker-visible: false` on
-that provider (the provider still validates tokens — useful e.g. for
-keeping rapla-local password for API/Swing use while only showing SSO
-buttons on the web).
+Each provider declares `display-name`, `icon` (well-known: `microsoft`,
+`google`, `rapla`, or URL), and `order`. No per-deployment build
+config — buttons/labels/order come from `application.yml`.
+`web-picker-visible: false` hides a provider from the web picker while
+keeping its token validation (useful e.g. keep rapla-local password for
+API/Swing while only showing SSO on web).
 
-**Swing — rapla embedded SAS only, no external IdP support.** The
-Swing client is being deprecated in favour of the Angular SPA
-(PRD 026). Wiring Microsoft/Google into Swing would mean a new picker
-dialog state, browser-launch handling for Google's `access_type=offline`
-extra param, and more test surface — all work that ages out the moment
-Swing is removed. Swing keeps its current PRD 029 Phase 2 behaviour:
-probe discovery, auto-fire the rapla embedded SAS flow. External IdPs
-are **web-only**. The discovery endpoint's flat top-level fields
-therefore always point at the embedded SAS (regardless of which
-providers are enabled or what the picker primary is), so Swing's
-discovery probe sees today's URLs unchanged. A Swing-using deployment
-that needs SSO before Swing is removed can configure rapla SAS to
-federate to their IdP server-side (Spring SAS supports an upstream
-`oauth2Login` configurer — separate small effort, out of scope here)
-or move to the Angular SPA.
+**Swing — rapla embedded SAS only, no external IdP support.** Swing is
+being deprecated in favour of the Angular SPA (PRD 026). Wiring
+Microsoft/Google into Swing means a new picker dialog state,
+browser-launch handling for Google's `access_type=offline`, more test
+surface — all work that ages out when Swing is removed. Swing keeps
+PRD 029 Phase 2 behaviour: probe discovery, auto-fire rapla embedded
+SAS. The discovery endpoint's flat top-level fields always point at
+the embedded SAS regardless of which providers are enabled, so Swing's
+probe sees today's URLs unchanged. Deployments needing SSO from Swing
+before removal can (a) federate rapla SAS to an upstream IdP via
+Spring SAS's `oauth2Login` configurer, or (b) move users to the SPA.
 
-The architecture is provider-pluggable: Entra and Google are the two
-shipped implementations, but adding a third (Keycloak, Okta, Auth0) is
-a small follow-up because everything provider-specific lives behind one
+The architecture is provider-pluggable: Entra and Google are the
+shipped implementations; adding a third (Keycloak, Okta, Auth0) is a
+small follow-up because provider-specific logic lives behind one
 interface (`ExternalUserResolver`).
 
 ## Why this is needed
 
-1. **Corporate SSO is the most-requested missing feature** from rapla
-   deployments at universities and DHBW. Today an admin has to provision
-   rapla-local users that mirror the corp directory — duplicate password
-   policy, separate offboarding, no MFA.
-2. **The plumbing is already in place.** `OAuthConfigController` exposes
-   `authorize-url`, `token-url`, `jwks-url`, `userinfo-url`,
-   `end-session-url`, and `issuer` overrides (the class Javadoc explicitly
-   mentions "deployments that delegate auth to Keycloak / Auth0 / Okta /
-   etc."). PRD 029 Phase 1 + PRD 031 unified the client view of refresh
-   and logout. What's missing is (a) wiring rapla's JWT decoder to validate
-   externally-issued tokens, (b) mapping the external `sub` /
-   `preferred_username` / `email` claim to a rapla user, and (c) a setup
-   recipe an admin can follow.
+1. **Corporate SSO is the most-requested missing feature** at
+   universities and DHBW. Today an admin provisions rapla-local users
+   mirroring the corp directory — duplicate password policy, separate
+   offboarding, no MFA.
+2. **The plumbing is already in place.** `OAuthConfigController`
+   exposes `authorize-url`, `token-url`, `jwks-url`, `userinfo-url`,
+   `end-session-url`, `issuer` overrides (class Javadoc mentions
+   "deployments that delegate auth to Keycloak / Auth0 / Okta / etc.").
+   PRD 029 Phase 1 + PRD 031 unified the client view of refresh and
+   logout. Missing: (a) wiring JWT decoder to validate externally-issued
+   tokens, (b) mapping external claims to a rapla user, (c) setup recipe.
 3. **Microsoft + Google cover the bulk of the addressable audience.**
-   DHBW, most German universities, and a large fraction of municipal
-   deployments are Microsoft 365 shops; smaller orgs and many education
-   deployments are on Google Workspace. Keycloak (the placeholder
-   external IdP in PRD 029 Phase 2) is a self-hosted intermediate step
-   that few deployments will actually run if they can point at
-   Entra/Google directly. Shipping both at once means the same internal
-   plumbing — `ExternalUserResolver`, multi-issuer JWT decoder,
-   discovery-endpoint re-pointing — is exercised by two real providers
-   from day one, so the abstraction is proven before a third is added.
-4. **Same shape as PRD 029.** This is not a redesign — it's a
-   configuration recipe plus a multi-issuer JWT decoder and a
-   provider-pluggable user-mapping component. The discovery endpoint
-   stays the same shape; the Swing/Angular clients stay unchanged.
+   DHBW, most German universities, and many municipal deployments are
+   M365 shops; smaller orgs and education deployments are on Google
+   Workspace. Keycloak (PRD 029 Phase 2 placeholder) is a self-hosted
+   intermediate step few deployments will run if they can point at
+   Entra/Google directly. Shipping both means the abstraction
+   (`ExternalUserResolver`, multi-issuer decoder, discovery re-pointing)
+   is exercised by two real providers from day one.
+4. **Same shape as PRD 029.** Configuration recipe + multi-issuer JWT
+   decoder + provider-pluggable user-mapping. Discovery endpoint shape
+   stays; Swing/Angular clients stay unchanged.
 
 ## Scope
 
 ### In scope
 
-- **Multi-issuer JWT decoder.** `JwtConfig` learns to validate tokens
-  signed by rapla's own JWKS, Microsoft's
-  (`https://login.microsoftonline.com/{tenant}/discovery/v2.0/keys`), or
-  Google's (`https://www.googleapis.com/oauth2/v3/certs`). Selection is
-  per-token, by `iss` claim, against the set of issuers configured at
-  startup. Any combination of {local, microsoft, google} can be enabled
-  simultaneously — not a global mode switch.
-- **Per-provider config blocks** in `application.yml`, each independently
-  enable-able:
+- **Multi-issuer JWT decoder.** `JwtConfig` validates tokens signed by
+  rapla's own JWKS, Microsoft's
+  (`https://login.microsoftonline.com/{tenant}/discovery/v2.0/keys`),
+  or Google's (`https://www.googleapis.com/oauth2/v3/certs`). Selection
+  per-token by `iss`. Any combination of {local, microsoft, google}
+  can be enabled simultaneously.
+- **Per-provider config blocks** in `application.yml`, each independently enable-able:
   ```yaml
   rapla:
     oauth:
@@ -193,147 +174,112 @@ interface (`ExternalUserResolver`).
           primary: rapla                 # id of the auto-fire provider for
                                           # mode=auto (single) and mode=never
   ```
-  All fields are settable via the matching `RAPLA_OAUTH_*` env vars.
-  No `client-secret` field anywhere: rapla stays a public PKCE client
-  against both providers.
-- **Discovery endpoint emits a `providers[]` array.** Backwards-compatible
-  with PRD 029: today's flat `authorizeUrl` / `tokenUrl` / `clientId` /
-  `issuer` / `endSessionUrl` fields remain at the top level and
-  **always reflect the rapla embedded SAS**, regardless of which
-  external providers are enabled. This keeps the Swing client's
-  discovery probe seeing today's values — Swing stays on rapla SAS,
-  external IdPs are web-only. New `providers[]` field lists every
-  enabled provider (including rapla); each entry carries its own URLs,
-  display metadata, and `webPickerVisible` flag. New `picker` block
-  carries `{ mode, primary }`. Angular reads `providers` + `picker`
-  and ignores the flat top-level OAuth fields.
-- **External-user mapping.** A single `ExternalUserResolver` (no
-  per-provider subclasses — the algorithm is identical; per-provider
-  behaviour like the `email_verified` guard flows through the
-  `ProviderConfig` passed in). Input: a validated JWT + the resolved
-  provider. Output: a rapla `User`, either looked up or auto-provisioned.
-  **Identity is the rapla username.** Lookup:
+  All fields settable via `RAPLA_OAUTH_*` env vars. No `client-secret`:
+  rapla stays a public PKCE client against both providers.
+- **Discovery endpoint emits `providers[]` array.** Backwards-compatible
+  with PRD 029: flat `authorizeUrl`/`tokenUrl`/`clientId`/`issuer`/`endSessionUrl`
+  remain at the top level and **always reflect rapla embedded SAS**
+  regardless of which external providers are enabled. Swing's
+  discovery probe sees today's values; external IdPs are web-only. New
+  `providers[]` lists every enabled provider (including rapla); each
+  carries its own URLs, display metadata, `webPickerVisible` flag.
+  New `picker` carries `{ mode, primary }`. Angular reads `providers` +
+  `picker` and ignores the flat top-level OAuth fields.
+- **External-user mapping.** Single `ExternalUserResolver` (no
+  per-provider subclasses — algorithm identical; per-provider behaviour
+  like the `email_verified` guard flows through `ProviderConfig`).
+  Input: validated JWT + resolved provider. Output: rapla `User`,
+  either looked up or auto-provisioned. **Identity is the rapla username.** Lookup:
   1. Match `user.getUsername()` (case-insensitive via `LocalCache.getUser`'s
      `equalsIgnoreCase` fallback) against the token's `upn` claim.
      `upn` first because AD-federated Keycloak emits both `upn` (the
      AD UserPrincipalName, e.g. `Pat.Test@adcorp.example.org`) and
      `preferred_username` (the bare login, `pat.test`); existing rapla
      deployments key on the UPN form.
-  2. Same lookup against the token's `preferred_username` claim (or
-     whatever the provider's `usernameClaim` is set to).
-  3. Same lookup against the token's `email` claim. For Google this
-     step requires `email_verified=true`; Entra often omits the claim
-     so we trust the email when it's absent (Entra controls the
-     directory).
-  4. Tier-2 fallback: match `user.getEmail()` case-insensitively
-     against the token's `email` claim. Catches deployments where the
-     stored username is unrelated to the IdP form (CSV-imported users
-     with bare names) but the email matches.
-  5. If still no match and `auto-provision: true`, create a new rapla
+  2. Same lookup against `preferred_username` (or provider's `usernameClaim`).
+  3. Same lookup against `email`. Google requires `email_verified=true`;
+     Entra often omits the claim so we trust email when absent (Entra
+     controls the directory).
+  4. Tier-2 fallback: `user.getEmail()` case-insensitively against
+     token's `email`. Catches deployments where stored username is
+     unrelated to the IdP form (CSV-imported bare names) but email matches.
+  5. If still no match and `auto-provision: true`, create new rapla
      `User`. Username = lowercased(`upn` ?? `preferred_username` ??
      `email`). Display name from `name`/`given_name`/`family_name`.
-     Email from the token. Groups from the JNDI-plugin "default
-     external user groups" preference if configured, otherwise
-     `facade.newUser()` defaults. Default `auto-provision`: `true` —
-     the LDAP-era precedent.
+     Groups from JNDI-plugin "default external user groups" preference
+     if configured, otherwise `facade.newUser()` defaults. Default
+     `auto-provision`: `true` — LDAP-era precedent.
   6. Else throw `RaplaSecurityException`; `SpringSecurityRemoteSession`
      propagates the message into the 401 response body so the SPA
-     dialog (PRD 036 § "SPA 401 handling") shows the real reason
-     (e.g. `"The name 'X' is already taken"` when an auto-provision
-     name collides).
-- **Account merging across providers** is implicit, not explicit: a
-  human whose Microsoft `upn` and Google `email` both match the same
-  rapla username naturally resolves to the same `User` from either
-  provider. No per-provider preference, no merge ceremony.
+     dialog (PRD 036 § "SPA 401 handling") shows the real reason.
+- **Account merging across providers** is implicit: a human whose
+  Microsoft `upn` and Google `email` both match the same rapla
+  username resolves to the same `User` from either provider. No
+  per-provider preference, no merge ceremony.
 - **Provider-specific authorize-URL parameters (web only).** Standard
-  PKCE parameters (`response_type`, `client_id`, `redirect_uri`,
-  `scope`, `state`, `code_challenge`, `code_challenge_method`) work
-  identically for all providers, **but**:
-  - **Google** requires `access_type=offline` and `prompt=consent` on
-    the authorize request to issue a refresh token. The `offline_access`
-    scope used by Entra / Spring SAS doesn't apply.
-  - **Entra** can take an optional `domain_hint` to skip the
-    "Work or school / Personal" account picker.
-  These are encoded in discovery as a per-provider
-  `extraAuthorizeParams` map. The Angular login flow appends every
-  key=value pair from this map to the authorize URL. Swing ignores
-  it — Swing only uses the rapla-SAS entry, whose `extraAuthorizeParams`
-  is always empty.
-- **Angular login-screen picker UI.** New `LoginPickerComponent`
-  renders one button per provider in `providers[]` (filtered to
-  `webPickerVisible: true`), sorted by `order`. Each button kicks off
-  the existing `angular-oauth2-oidc` flow with that provider's URLs.
-  `picker.mode` drives whether the picker renders at all (`auto` shows
-  the picker when ≥2 providers; `always` always; `never` auto-fires
-  `picker.primary`). Routes use `angular-oauth2-oidc`'s multi-config
-  support — `OAuthService` is reconfigured with the chosen provider's
-  endpoints before each `initLoginFlow()`.
-- **`AuthController` / `TokenHandler` integration.** When an incoming
-  `Authorization: Bearer ...` carries an external-issuer JWT,
-  `TokenHandler.validate` decodes via the matching JWKS, dispatches to
-  the right `ExternalUserResolver`, and proceeds with the resulting
-  rapla `User` — same downstream code paths as today's local-issuer
-  case.
+  PKCE params identical across providers, **but**:
+  - **Google** requires `access_type=offline` and `prompt=consent` to
+    issue a refresh token. `offline_access` scope doesn't apply.
+  - **Entra** can take optional `domain_hint` to skip the
+    "Work or school / Personal" picker.
+  Encoded in discovery as per-provider `extraAuthorizeParams` map.
+  Angular appends every key=value. Swing ignores (only uses rapla-SAS
+  entry, whose map is always empty).
+- **Angular login-screen picker UI.** `LoginPickerComponent` renders
+  one button per `providers[]` entry (filtered to `webPickerVisible: true`),
+  sorted by `order`. Each kicks off the `angular-oauth2-oidc` flow
+  with that provider's URLs. `picker.mode` drives whether the picker
+  renders at all. `OAuthService` is reconfigured before each
+  `initLoginFlow()`.
+- **`AuthController` / `TokenHandler` integration.** When inbound
+  `Authorization: Bearer` carries an external-issuer JWT,
+  `TokenHandler.validate` decodes via matching JWKS, dispatches to the
+  right `ExternalUserResolver`, proceeds with the resulting rapla
+  `User` — same downstream paths as local-issuer.
 - **Setup recipes** in `docs/authentication.md`: one section per
-  provider. Microsoft: register an App in Entra, find
-  tenant/client IDs, whitelist redirect URIs, scopes
-  (`openid profile email offline_access`). Google: create an OAuth 2.0
-  Client ID in Google Cloud Console (project setup, OAuth consent
-  screen, "Web application" credential, authorized redirect URIs,
-  scopes `openid profile email`). ~80 + 80 lines of admin copy.
-- **Tests** — see Tests section below; all tier-3 MockMvc or tier-1
-  unit, plus one tier-6 Angular component test for the picker, plus
-  one manual e2e per provider.
+  provider. Microsoft: register an App in Entra, find tenant/client
+  IDs, whitelist redirects, scopes (`openid profile email offline_access`).
+  Google: create OAuth 2.0 Client ID in Cloud Console, OAuth consent
+  screen, "Web application" credential, scopes (`openid profile email`).
+  ~80 + 80 lines admin copy.
+- **Tests** — see below; tier-3 MockMvc or tier-1 unit, plus one
+  tier-6 Angular picker test, plus one manual e2e per provider.
 
 ### Out of scope
 
-- **Keycloak, Auth0, Okta, generic OIDC.** The `ExternalUserResolver`
-  interface and decoder logic are generic enough that adding a third
-  resolver is a small follow-up. Shipping Microsoft + Google in v1
-  exercises the abstraction enough to lock it in; later providers are
-  config + 50-LOC resolver each. **Keycloak is in scope for Phase 2 —
-  see "Phase 2: Keycloak + Shibboleth federation" below.**
-- **Shibboleth / SAML 2.0.** v1 is OIDC-only. Native Shibboleth /
-  SAML support in rapla would be a substantial separate effort. For
-  Phase 2 we plan to integrate Shibboleth via Keycloak SAML brokering
-  (Keycloak speaks SAML to the upstream Shibboleth IdP, rapla speaks
-  OIDC to Keycloak) — zero rapla code beyond the Keycloak provider.
-  Native SAML in rapla is deferred to a future PRD if Keycloak
-  brokering ever proves insufficient for a real deployment.
-- **Swing-side IdP picker.** Swing keeps its current "auto-fire the
-  primary provider" behaviour for v1. A Swing picker is a clean UX
-  problem but adds a new dialog state machine; defer to OQ §1 unless
-  a deployment asks for it.
+- **Keycloak, Auth0, Okta, generic OIDC** — abstraction is generic
+  enough that adding a resolver is a small follow-up. Microsoft +
+  Google in v1 exercises the abstraction; later providers are config
+  + 50-LOC resolver each. **Keycloak is in scope for Phase 2 below.**
+- **Shibboleth / SAML 2.0.** v1 is OIDC-only. Native SAML in rapla
+  would be substantial. Phase 2 brokers Shibboleth through Keycloak
+  (Keycloak speaks SAML upstream, rapla speaks OIDC to Keycloak) —
+  zero rapla code beyond the Keycloak provider. Native SAML deferred
+  to a future PRD if Keycloak brokering proves insufficient.
+- **Swing-side IdP picker.** Swing keeps auto-fire-primary for v1.
+  Defer unless asked.
 - **Token revocation pushed from the IdP.** When an admin disables a
   user in Entra/Google, rapla won't know until the user's refresh token
   expires (Entra default: 90 days idle; Google: 6 months idle for
   consumer accounts, indefinite for Workspace until revoked). Future
   PRD if needed.
-- **Group / role sync.** v1 maps to a single rapla `Role.USER`; admin
-  promotion stays a rapla-internal preference. Group sync is a
-  follow-up PRD (likely tied to multi-tenancy work in PRD 002).
-- **Microsoft Graph / Google Workspace API calls.** We use only the
-  OIDC `id_token` / `userinfo` endpoint claims. No Graph or Directory
-  API calls — those need different scopes and confidential clients.
-- **Cross-provider account *merging* by user action.** A user signing
-  in via Microsoft and Google with different usernames AND different
-  emails ends up with two rapla `User` records. v1 has no in-app "link
-  these accounts" flow; an admin can manually rename one rapla user to
-  match the other if needed, after which the resolver returns the same
-  `User` from either IdP. Future PRD if there's demand.
-- **Migrating existing rapla-local users.** Existing users continue to
-  log in with their rapla password until an admin disables the local
-  account *or* sets `rapla.oauth.external.local-accounts-enabled: false`.
-  Migration is "log in once via the external provider — the resolver
-  matches an existing rapla `User` by username (`upn` →
-  `preferred_username` → `email` against `user.getUsername()`,
-  case-insensitive) or by email (`token.email` against
-  `user.getEmail()`)." No preference is written; the next login takes
-  the same path. If the rapla username doesn't match what the IdP emits
-  (e.g. stored as bare `pat.test`, IdP emits the UPN
-  `Pat.Test@adcorp.example.org`), the admin renames the rapla user to
-  match — same one-time operator task the legacy LDAP path has always
-  required. Setup recipe lives in `docs/authentication.md` §
+- **Group / role sync.** v1 maps to single rapla `Role.USER`; admin
+  promotion stays a rapla preference. Follow-up PRD (likely tied to
+  PRD 002 multi-tenancy).
+- **Microsoft Graph / Google Workspace API calls.** OIDC `id_token` /
+  userinfo claims only.
+- **Cross-provider account *merging* by user action.** Different
+  username AND different email → two rapla `User` records. No in-app
+  "link these accounts" flow; admin can manually rename to merge.
+  Future PRD if there's demand.
+- **Migrating existing rapla-local users.** They continue to log in
+  with their rapla password until an admin disables the local account
+  *or* sets `rapla.oauth.external.local-accounts-enabled: false`.
+  Migration is "log in once via external — resolver matches existing
+  rapla `User` by username (case-insensitive) or by email." No
+  preference is written. If rapla username doesn't match what the IdP
+  emits, admin renames the rapla user — same one-time task the legacy
+  LDAP path always required. Recipe in `docs/authentication.md` §
   "Migrating existing rapla-local users".
 
 ## Architecture
@@ -370,17 +316,14 @@ interface (`ExternalUserResolver`).
   └─────────────────┘    └─────────────────────────────┘
 ```
 
-The clients only know about discovery. PKCE works identically across
-all three providers. The Bearer token a request carries is signed by
-whichever IdP issued it; the server's multi-issuer decoder routes by
-`iss` — Swing-issued tokens (from rapla SAS) and Angular-issued tokens
-(from any of the three) all flow through the same validation path.
+Clients only know about discovery. PKCE works identically across all
+three. Token signed by issuing IdP; server's multi-issuer decoder
+routes by `iss` — Swing-issued (rapla SAS) and Angular-issued (any)
+flow through the same validation.
 
 ### Token validation: multi-issuer decoder
 
-`JwtConfig` today wires a single `JwtDecoder` against the embedded
-JWKS. The change builds a map of `iss → JwtDecoder` at startup, one
-entry per enabled issuer:
+`JwtConfig` builds a map of `iss → JwtDecoder` at startup, one entry per enabled issuer:
 
 ```java
 @Bean
@@ -403,71 +346,56 @@ JwtDecoder jwtDecoder(
 }
 ```
 
-`IssuerAwareJwtDecoder.decode(token)` peeks the unverified `iss`
-claim, routes to the matching decoder, and rejects unknown issuers.
-Each decoder fully validates signature + standard claims, so a typo'd
-issuer can't sneak a token through.
+`IssuerAwareJwtDecoder.decode(token)` peeks the unverified `iss`,
+routes to the matching decoder, rejects unknown issuers. Each decoder
+fully validates signature + standard claims so a typo'd issuer can't
+sneak through.
 
 ### Why we keep the rapla `User` for externally-authed identities
 
-External authentication answers "who is this person?" — it does not
-answer "what can they do in rapla?" The latter is rapla domain state
-that has to live server-side regardless of the IdP:
+External auth answers "who is this person?" — not "what can they do in
+rapla?" The latter is rapla domain state that must live server-side:
 
-- **Groups are `Category` entities, not strings.**
-  `User.getGroupList()` returns real `Category` references that the
-  permission system walks (`PermissionController.canRead` etc.). Even
-  if a token claim carried `groups: ["staff", "students"]`, we'd still
-  have to resolve those names to rapla `Category` entities. That
-  mapping has to live somewhere.
+- **Groups are `Category` entities, not strings.** `User.getGroupList()`
+  returns real `Category` references the permission system walks.
+  Even if a token carried `groups: [...]`, we'd still resolve names
+  to `Category` entities — that mapping has to live somewhere.
 - **Every domain entity references a `User`.** `Reservation.getOwner()`,
   `Allocatable.getLastChangedBy()`, audit trails, per-user preferences,
-  per-user filter state, calendar configs — all point at a rapla `User`
-  UUID. If externally-authed identities had no rapla-side record,
-  references would dangle on every entity they touch.
+  filter state, calendar configs — all point at a rapla `User` UUID.
 - **Neither provider reliably puts groups in tokens.** Entra has a
-  `groups` claim with a ~150-group cap (overflow → Microsoft Graph
-  URL); values are GUIDs, not human-readable names. Google's OIDC
-  tokens carry no group memberships at all (would need a Directory
-  API call with extra scopes and a confidential client).
+  `groups` claim with ~150-group cap (overflow → Graph URL), GUIDs not
+  names. Google's OIDC carries no group memberships (needs Directory
+  API + extra scopes + confidential client).
 
-So the architecture: every authenticated identity — local or external —
-resolves to a rapla `User` entity. For externally-authed identities,
-that `User` is a "shadow" record automatically created (or matched by
-email) on first login. The token tells us who; the rapla `User` stores
-what they can do.
+Architecture: every authenticated identity — local or external —
+resolves to a rapla `User`. For external, the `User` is a "shadow"
+record auto-created on first login. Token tells us who; rapla `User`
+stores what they can do.
 
-What *does* differ for an externally-authed `User`:
+What differs for externally-authed `User`:
 
-- **Password is unused.** `User.password` stays empty / placeholder;
-  rapla never validates against it. Admin UI should disable the
-  password field on these users (visual cue: badge with provider icon).
-- **No server-side provider attribution.** The 2026-05-21 refactor
-  dropped the `user.preferences["org.rapla.auth.provider"]` write —
-  rapla can't tell from looking at a stored `User` which IdP they last
-  authenticated through. The SPA tracks its OWN active-provider key in
-  `localStorage` for client-side concerns (sign-out URL routing,
-  display tweaks). If a future admin-UI surface needs "this user signs
-  in via Microsoft", we'd re-introduce the pref or derive it from the
-  token's `iss` at login time — neither is wired today.
-- **Group sync from token claims** — deferred to a follow-up PRD.
-  Mechanism would be: on each login, pull a configured claim (e.g.
-  `groups` for Entra), map each value through an admin-maintained
-  `entra-group-guid → rapla-category-id` lookup, replace the user's
-  group list. Skipped from v1 because (a) the mapping table is admin
-  UX work and (b) it's orthogonal to the auth flow itself. v1 sets
-  groups manually after auto-provision; admins can tweak in the user
-  editor afterwards.
+- **Password unused.** `User.password` stays empty; rapla never validates.
+  Admin UI should disable the field (visual cue: provider-icon badge).
+- **No server-side provider attribution.** 2026-05-21 refactor dropped
+  the `user.preferences["org.rapla.auth.provider"]` write. SPA tracks
+  its OWN active-provider key in `localStorage` for sign-out URL
+  routing and display tweaks. If a future admin-UI needs "this user
+  signs in via Microsoft", re-introduce the pref or derive from token
+  `iss` at login — neither is wired today.
+- **Group sync from token claims** — deferred. Would pull a configured
+  claim, map via admin-maintained `entra-group-guid → rapla-category-id`,
+  replace user's group list. Skipped from v1 because admin UX work and
+  orthogonal to auth flow. v1 sets groups manually after auto-provision.
 
 ### Resolving the rapla User
 
-`SpringSecurityRemoteSession.resolveJwtOrThrow(Jwt)` is the dispatch
-point. If the JWT's `iss` matches an enabled external provider, it
-hands off to `ExternalUserResolver`; otherwise it falls back to a
-local-issuer UUID lookup (`operator.resolve(ReferenceInfo<User>)`).
-Resolver failures throw `RaplaSecurityException` with the original
-message — propagated unwrapped into the 401 response body so the SPA
-dialog surfaces the actual cause:
+`SpringSecurityRemoteSession.resolveJwtOrThrow(Jwt)` dispatches. If
+the JWT's `iss` matches an enabled external provider, hands to
+`ExternalUserResolver`; otherwise a local-issuer UUID lookup.
+Resolver failures throw `RaplaSecurityException` with original
+message — propagated unwrapped into the 401 body so SPA dialog shows
+the actual cause:
 
 ```java
 private User resolveJwtOrThrow(Jwt jwt) throws RaplaSecurityException {
@@ -490,35 +418,29 @@ private User resolveJwtOrThrow(Jwt jwt) throws RaplaSecurityException {
 }
 ```
 
-`ExternalUserResolver.resolve(jwt, provider)` then runs the
-username-keyed algorithm described in § "External-user mapping" above.
-A single resolver class covers Entra, Google, and Keycloak — there are
-no per-provider subclasses. Per-provider behaviour (`email_verified`
-guard for Google, hosted-domain enforcement for Entra/Keycloak,
-configurable `usernameClaim`/`emailClaim`) flows through the
-`ProviderConfig` passed in.
+`ExternalUserResolver.resolve(jwt, provider)` runs the username-keyed
+algorithm from § "External-user mapping". One resolver covers Entra,
+Google, and Keycloak — per-provider behaviour (`email_verified` for
+Google, hosted-domain for Entra/Keycloak, `usernameClaim`/`emailClaim`)
+flows through `ProviderConfig`.
 
-**Why no per-provider stable-id mapping (e.g. Entra `oid`, Google
-`sub`)?** The original design (pre-2026-05-21) keyed identity on a
-per-provider `external-id.<provider>` preference holding the IdP's
-stable identifier. It had two failure modes that bit the DHBW pilot:
-(a) first-login lookups missed any user not provisioned via the IdP
-(CSV-imported, hand-created, LDAP-migrated rapla accounts) because they
-had no preference set, and the email-match fallback was fragile when
-the IdP's emitted email differed from the stored one (different
-domain forms, mail-routable vs. UPN-style); (b) when a Keycloak realm
-was reset or swapped, all existing users' stored `sub` values became
-meaningless but the prefs lingered, silently blocking login. The
-username-as-identity model removes both classes of failure. Cost is
-that an IdP-side username rename produces an orphaned rapla user that
-an admin must rename manually — accepted, same as the legacy LDAP path
-has always required.
+**Why no per-provider stable-id mapping (e.g. Entra `oid`, Google `sub`)?**
+The original design (pre-2026-05-21) keyed identity on a per-provider
+`external-id.<provider>` pref. Two failure modes bit DHBW pilot: (a)
+first-login lookups missed any user not provisioned via the IdP
+(CSV-imported, hand-created, LDAP-migrated) because they had no
+preference set, and email-match fallback was fragile when the IdP's
+emitted email differed from the stored one; (b) when a Keycloak realm
+was reset/swapped, stored `sub` values became meaningless but prefs
+lingered, silently blocking login. Username-as-identity removes both.
+Cost: IdP-side username rename produces an orphaned rapla user — admin
+renames manually, same as the legacy LDAP path.
 
 ### Discovery shape
 
-Top-level fields **always reflect the rapla embedded SAS** (Swing's
-target). The `providers[]` array carries the per-provider config that
-Angular renders the picker from.
+Top-level fields **always reflect rapla embedded SAS** (Swing's
+target). `providers[]` carries the per-provider config Angular renders
+the picker from.
 
 ```json
 {
@@ -590,245 +512,201 @@ Angular renders the picker from.
 }
 ```
 
-The flat top-level fields are the **primary provider's** values, kept
-for Swing backwards-compat. Angular reads `providers[]` + `picker` and
-ignores the top-level OAuth fields.
+Flat top-level fields are the **primary provider's** values, kept for
+Swing backwards-compat. Angular reads `providers[]` + `picker`.
 
 ### Refresh path
 
-Both Entra (`/oauth2/v2.0/token`) and Google (`/token`) and Keycloak
-(`/protocol/openid-connect/token`) accept `grant_type=refresh_token`
-and return a fresh access + refresh token. The SPA POSTs the refresh
-request to the **provider's `tokenUrl` from discovery**, which for
-confidential clients routes via the BFF
+Entra (`/oauth2/v2.0/token`), Google (`/token`), Keycloak
+(`/protocol/openid-connect/token`) all accept `grant_type=refresh_token`
+and return fresh tokens. SPA POSTs to the **provider's `tokenUrl`
+from discovery**, which for confidential clients routes via the BFF
 (`/api/auth/oauth/exchange/{providerId}`) so the server-held
-`client_secret` is added before forwarding to the IdP — same shape as
-the initial code-exchange. PRD 041 removed the standalone
-`/api/auth/refresh` endpoint; there's no rapla-specific refresh route
-anymore.
+`client_secret` is added before forwarding — same shape as initial
+code-exchange. PRD 041 removed standalone `/api/auth/refresh`; no
+rapla-specific refresh route.
 
-The refresh-token rotation policy is the provider's, not rapla's: the
-"single-token-per-user, rotate-when-stale" logic that rapla applies to
-its own embedded-SAS refresh tokens doesn't apply when external is
-active. Rapla can't force-revoke an externally-issued refresh token;
-revocation happens IdP-side (admin disables user, token blacklist) and
-rapla learns at the next refresh-fails → reauth cycle.
+Refresh-token rotation policy is the provider's, not rapla's: the
+single-token-per-user logic rapla applies to its own embedded-SAS
+refreshes doesn't apply when external is active. Rapla can't
+force-revoke an externally-issued refresh token; revocation happens
+IdP-side and rapla learns at next refresh-fails → reauth cycle.
 
 **SPA refresh wiring** (`rapla-angular`):
 
 - `app.config.ts` calls `oauth.setupAutomaticSilentRefresh({}, 'access_token')`
-  at boot when a valid token is present, so the OAuth library
-  proactively refreshes before access-token expiry. Most users never
-  see a 401 from token expiry.
-- `auth.interceptor.ts` runs a 401-with-Bearer recovery: try
-  `oauth.refreshToken()` once, replay the original request on success,
-  open `AuthErrorDialogComponent` on failure (with the server's
-  `error_description` from body or `WWW-Authenticate`). The dialog
-  blocks until acknowledged; closing it bumps `oauthFailures` so
-  LoginComponent's auto-fire guard prevents an immediate re-loop.
+  at boot when a valid token is present — most users never see a 401
+  from token expiry.
+- `auth.interceptor.ts` runs 401-with-Bearer recovery: try
+  `oauth.refreshToken()` once, replay on success, open
+  `AuthErrorDialogComponent` on failure (with server's `error_description`
+  from body or `WWW-Authenticate`). Dialog blocks until acknowledged;
+  closing bumps `oauthFailures` so LoginComponent's auto-fire guard
+  prevents an immediate re-loop.
 
 **Keycloak refresh-token nuance.** Keycloak issues refresh tokens
-**by default without `offline_access`**, but those refresh tokens are
-SSO-session-bound and expire when the realm's SSO Session Max elapses
-(typically ~8 h sliding). True offline tokens (months-long, survive
-logout) require requesting `offline_access` AND the client must allow
-it (Keycloak rejects with `error=invalid_scope` otherwise — login
-fails entirely, no graceful degradation). Rapla's default scopes are
-`["openid","profile","email"]` — SSO-session refresh is enough for
-interactive SPA use. See `docs/authentication.md` § "Refresh tokens
-and `offline_access` — the distinction".
+**by default without `offline_access`**, but those are SSO-session-bound
+and expire when the realm's SSO Session Max elapses (typically ~8 h
+sliding). True offline tokens (months-long, survive logout) require
+`offline_access` AND the client must allow it (Keycloak rejects with
+`error=invalid_scope` otherwise — login fails entirely, no graceful
+degradation). Rapla defaults to `["openid","profile","email"]` —
+SSO-session refresh is enough for interactive SPA use. See
+`docs/authentication.md` § "Refresh tokens and `offline_access`".
 
 **Google refresh quirk.** Google issues a refresh token *only on the
-first consent* unless `prompt=consent` is passed every time. The
-provider's discovery entry carries
-`extraAuthorizeParams: { "access_type": "offline", "prompt": "consent" }`
-so the SPA's `initCodeFlow()` appends them on every authorize.
+first consent* unless `prompt=consent` is passed every time. Google's
+discovery entry carries `extraAuthorizeParams: { access_type: offline, prompt: consent }`.
 
 ### Logout
 
 Entra has a proper OIDC RP-initiated logout endpoint:
-`https://login.microsoftonline.com/{tenant}/oauth2/v2.0/logout`. Swing
-and Angular redirect to it; `id_token_hint` is recommended (already
-plumbed by the Swing client per PRD 029 Phase 2 2026-05-13 fix).
+`https://login.microsoftonline.com/{tenant}/oauth2/v2.0/logout`. Both
+Swing and Angular redirect to it; `id_token_hint` is recommended
+(plumbed by Swing per PRD 029 Phase 2 2026-05-13 fix).
 
 Google **has no proper RP-initiated OIDC logout**. The
-`https://accounts.google.com/Logout` URL exists but logs the user out
-of *every* Google product (Gmail, Drive, YouTube) — almost never the
-desired UX. Behaviour when the active provider is Google:
-1. Clear the local rapla access/refresh tokens (TokenStore + memory).
-2. Optionally POST to `https://oauth2.googleapis.com/revoke` with the
-   refresh token to revoke the grant server-side (configurable via
-   `rapla.oauth.external.google.revoke-on-logout: true`; default off
-   because users typically expect "log out of rapla", not "uncouple
-   the OAuth grant").
-3. Do **not** open a browser tab. The user's Google session in the
-   browser stays untouched (their choice — they're still signed in to
-   other Google services).
+`https://accounts.google.com/Logout` URL logs the user out of *every*
+Google product — almost never desired. When active provider is Google:
+
+1. Clear local rapla tokens (TokenStore + memory).
+2. Optionally POST to `https://oauth2.googleapis.com/revoke` to revoke
+   server-side (configurable via
+   `rapla.oauth.external.google.revoke-on-logout: true`; default off —
+   users typically expect "log out of rapla", not "uncouple the OAuth grant").
+3. Do **not** open a browser tab. The user's Google session stays untouched.
 
 Rapla's local remember-me cookie + `/connect/logout` flow is bypassed
-entirely when external IdP is active: there's no rapla session to
-clear because the user never authenticated against rapla's form login.
+when external IdP is active: no rapla session to clear.
 
 ### Why configurable multi-provider is the right shape
 
-A flag-based "single external IdP" design would have been simpler
-internally but worse for deployments:
-
-- Most universities have *both* Microsoft and Google identities for
-  different user groups (staff vs students; permanent staff vs guests).
-  Forcing them to pick one freezes out the other.
-- A migration from "embedded SAS" to "Microsoft only" has no rollback —
-  if the Entra config has a typo, every user is locked out. With
-  multi-provider, the rapla password path stays as the emergency lane.
-- The added complexity over single-external-IdP is bounded: a `Map<iss,
-  JwtDecoder>` instead of a single decoder, a registry of resolvers
-  instead of one resolver, a `providers[]` array instead of flat
-  fields in discovery. All linear in the number of providers, all
-  exercised by the two shipped providers from day one.
+A flag-based "single external IdP" design would be simpler internally
+but worse for deployments: most universities have *both* Microsoft and
+Google identities for different user groups (staff vs students;
+permanent vs guests); a migration from embedded SAS to "Microsoft only"
+has no rollback (config typo = everyone locked out). Added complexity
+over single-external-IdP is bounded — `Map<iss, JwtDecoder>` instead
+of a single decoder, a registry of resolvers, a `providers[]` array
+— all linear in provider count, all exercised by two shipped providers from day one.
 
 ## Plan
 
 1. **Server: provider config + multi-issuer JWT decoder.**
    - Add `ExternalProvidersProperties` (`@ConfigurationProperties`,
-     `rapla-server`, package `org.rapla.server.spring`) with nested
+     `rapla-server`, `org.rapla.server.spring`) with nested
      `Microsoft` and `Google` blocks, each with its own `enabled` flag.
    - Add `IssuerAwareJwtDecoder` keyed by `iss`.
-   - Wire both in `JwtConfig`. When no external provider is enabled,
-     behaviour is byte-identical to today.
-   - Tier-1 + tier-3 tests as in Tests section below.
+   - Wire both in `JwtConfig`. When no external is enabled, behaviour
+     is byte-identical to today.
 
 2. **Server: `ExternalUserResolver` (single class — landed).**
-   - Plain Java in `rapla-server`, takes a validated `Jwt` plus the
-     resolved `ProviderConfig`, returns a rapla `User`. No per-provider
-     subclasses — the algorithm is identical; per-provider behaviour
-     (`email_verified` guard for Google, hosted-domain check, claim
-     names) flows through `ProviderConfig`.
-   - Lookup order: token's `upn` → `preferred_username` → `email`
-     against `user.getUsername()` (case-insensitive); then email
-     against `user.getEmail()`; auto-provision on miss.
-   - **No state in user preferences.** The 2026-05-21 refactor dropped
-     the per-provider `external-id.<provider>` and `provider`
-     preferences — see § "Resolving the rapla User" for the rationale.
-   - Tier-2 tests live in `rapla-server/.../oauth/external/ExternalUserResolverTest`
+   - Plain Java in `rapla-server`; takes validated `Jwt` + `ProviderConfig`,
+     returns rapla `User`. No subclasses — algorithm identical;
+     per-provider behaviour flows through `ProviderConfig`.
+   - Lookup order: `upn` → `preferred_username` → `email` against
+     `user.getUsername()` (case-insensitive); then email-against-email;
+     auto-provision on miss.
+   - **No state in user preferences.** 2026-05-21 refactor dropped
+     the per-provider prefs.
+   - Tier-2 tests in `rapla-server/.../oauth/external/ExternalUserResolverTest`
      (16 tests covering each lookup branch, lowercase normalization,
-     hosted-domain enforcement, auto-provision fallback chain, and the
-     returning-user-via-username scenario).
+     hosted-domain enforcement, auto-provision fallback chain,
+     returning-user-via-username).
 
-3. **Server: `TokenHandler` integration.**
-   - Dispatch on `iss` claim, route through the resolver registry.
-   - `/api/auth/logout` becomes a no-op when the resolved provider is
-     external (nothing to revoke server-side).
-   - Tier-3 MockMvc tests for both providers.
+3. **Server: `TokenHandler` integration.** Dispatch on `iss`, route
+   through resolver registry. `/api/auth/logout` becomes no-op when
+   resolved provider is external. Tier-3 MockMvc for both providers.
 
 4. **Server: discovery endpoint emits `providers[]` + `picker`.**
-   - Extend `OAuthConfigController` to read
-     `ExternalProvidersProperties` and emit the `providers[]` array.
-   - Flat top-level fields **always reflect the rapla embedded SAS**,
-     regardless of which external providers are enabled — Swing's
-     discovery probe stays unchanged.
-   - `picker.primary` defaults to `rapla` (changeable for Angular
-     auto-fire behaviour).
-   - Tier-3 MockMvc tests: each combination of (microsoft-enabled,
-     google-enabled, picker.mode) emits the right shape and the
-     top-level fields stay rapla-SAS across all combinations.
+   - Extend `OAuthConfigController` to read `ExternalProvidersProperties`.
+   - Flat top-level fields **always reflect rapla embedded SAS** —
+     Swing's discovery probe stays unchanged.
+   - `picker.primary` defaults to `rapla`.
+   - Tier-3 MockMvc: each (microsoft-enabled, google-enabled,
+     picker.mode) combination emits right shape; top-level stays
+     rapla-SAS across all combinations.
 
-5. **Server: provider-specific authorize-URL parameters.**
-   - Each `ProviderConfig` carries an `extraAuthorizeParams` map.
-   - Google's defaults: `{ access_type: "offline", prompt: "consent" }`.
-   - Tier-1 test: serialized into discovery correctly.
+5. **Server: provider-specific authorize-URL parameters.** Each
+   `ProviderConfig` carries `extraAuthorizeParams` map. Google
+   defaults: `{ access_type: offline, prompt: consent }`. Tier-1 test:
+   serialized correctly.
 
-6. **Swing client: no changes.** External IdPs are web-only (Swing
-   deprecation context — see Goal). Swing's existing PRD 029 Phase 2
-   discovery probe + auto-fire-rapla-SAS flow stays as-is. Confirm by
-   running existing Swing OAuth tests against a server config with
-   Microsoft + Google enabled — Swing should ignore them and use the
-   flat top-level rapla-SAS fields.
+6. **Swing client: no changes.** External IdPs are web-only. Existing
+   PRD 029 Phase 2 discovery probe + auto-fire-rapla-SAS flow stays.
+   Confirm by running existing Swing OAuth tests against a server
+   config with Microsoft + Google enabled.
 
 7. **Angular client: `LoginPickerComponent` + multi-config OAuth.**
-   - New `LoginPickerComponent` reads `providers[]` + `picker` from the
-     discovery response, renders one button per `webPickerVisible:true`
-     entry sorted by `order`, with `icon` + `displayName`.
+   - Reads `providers[]` + `picker`; renders one button per
+     `webPickerVisible:true` entry sorted by `order`.
    - On click: reconfigure `OAuthService` with the chosen provider's
      endpoints + `extraAuthorizeParams` and call `initLoginFlow()`.
-   - `picker.mode = auto` auto-fires when there's only one provider;
-     `always` always shows the picker; `never` auto-fires
-     `picker.primary`.
-   - Tier-6 Angular component test (Vitest + TestBed): renders the
-     right number of buttons per mode, clicking a button initiates the
-     right `OAuthService` flow (mocked).
+   - `picker.mode = auto` auto-fires when single provider; `always`
+     always shows; `never` auto-fires `picker.primary`.
+   - Tier-6 Angular component test.
 
-8. **Documentation.**
-   - New `docs/authentication.md` sections:
-     - "External IdP — Microsoft Entra ID": Entra App Registration
-       steps (tenant ID, client ID, redirect URI whitelist, scopes
-       `openid profile email offline_access`).
-     - "External IdP — Google": Google Cloud Console setup (project,
-       OAuth consent screen, "Web application" credential, authorized
-       redirect URIs, scopes `openid profile email`).
-     - "Multi-provider deployments": the `web.picker` knobs, what a
-       login screen with three buttons looks like, hidden-from-web
-       providers (`webPickerVisible:false`).
+8. **Documentation.** New `docs/authentication.md` sections:
+   - "External IdP — Microsoft Entra ID": Entra App Registration
+     (tenant, client ID, redirects, scopes `openid profile email offline_access`).
+   - "External IdP — Google": Cloud Console setup (project, consent
+     screen, "Web application" credential, scopes `openid profile email`).
+   - "Multi-provider deployments": `web.picker` knobs, login screen
+     with three buttons, hidden-from-web providers.
    - Cross-link from PRD 029 Phase 2 and PRD 031.
 
-9. **Manual smoke**:
+9. **Manual smoke:**
    - Entra test tenant: Angular login → main view.
-   - Google OAuth test client (Chris's personal or a project test
-     client): Angular login → main view. Verify refresh after token
-     expiry uses the stored Google refresh token (no second consent
-     screen).
-   - Multi-provider (both enabled + rapla): Angular picker shows three
-     buttons in the right order; each one ends up signed in.
-   - Swing regression: with all three providers enabled server-side,
-     Swing still launches into the rapla SAS flow and signs in
-     unchanged. Tagged `e2e`, manual only.
+   - Google OAuth test client: Angular login → main view; verify
+     refresh after token expiry uses stored refresh (no second consent).
+   - Multi-provider: Angular picker shows three buttons in right order;
+     each ends up signed in.
+   - Swing regression: with all three providers enabled, Swing still
+     launches rapla SAS flow unchanged. Tagged `e2e`, manual.
 
-10. **PRD close**: when all phases done, `git mv` to `docs/prd/done/`.
-    Update PRD 029 Phase 2 OQ §5 ("Hide the username/password path
-    entirely?") — `localAccountsEnabled=false` becomes meaningful once
-    one or more external providers are configured.
+10. **PRD close:** when all phases done, `git mv` to `docs/prd/done/`.
+    Update PRD 029 Phase 2 OQ §5 — `localAccountsEnabled=false`
+    becomes meaningful once external is configured.
 
 ## Tests
 
 | Tier | Test | What it locks in |
 |------|------|------------------|
 | 1 | `IssuerAwareJwtDecoderTest` | Routes by `iss`, rejects unknown issuer, rejects malformed JWT, coexists with 3 issuers active |
-| 2 | `ExternalUserResolverTest` (tier-2, real `FacadeTestSupport`) | Each lookup branch (`upn` / `preferred_username` / `email` against username, then email-against-email); case-insensitive matching; `auto-provision` chain (upn → usernameClaim → emailClaim); lowercase normalization on store; `email_verified=false` blocks the email branch for Google; `hosted-domain` (`hd`) check; returning-user resolution without a stored external-id pref |
-| 1 | `ExternalProvidersPropertiesTest` | Env-var binding (`RAPLA_OAUTH_EXTERNAL_MICROSOFT_TENANT` etc.), default values, `enabledProviders()` reflects per-provider `enabled` flags |
-| 3 | `EntraTokenIntegrationTest` (MockMvc + stubbed Entra JWKS) | Entra Bearer unlocks rapla REST, resolved user is correct, scoped to the right `oid` |
-| 3 | `GoogleTokenIntegrationTest` (MockMvc + stubbed Google JWKS) | Google Bearer unlocks rapla REST, resolved user is correct, scoped to the right `sub` |
-| 3 | `MultiProviderCoexistenceIntegrationTest` | With local + Microsoft + Google all enabled, all three token kinds validate against the same `JwtDecoder` |
-| 3 | `DiscoveryWithoutExternalProvidersTest` | Default config: discovery byte-identical to today's output, `providers[]` contains only rapla (regression guard) |
-| 3 | `DiscoveryWithMicrosoftOnlyTest` | Microsoft enabled: `providers[]` has rapla + microsoft; primary=microsoft; picker.mode=auto; flat top-level fields point at Entra |
-| 3 | `DiscoveryWithGoogleOnlyTest` | Symmetric for Google; verifies `extraAuthorizeParams` carries `{access_type, prompt}` |
-| 3 | `DiscoveryWithAllThreeTest` | All three providers in `providers[]`, ordered by `order`; `webPickerVisible` flag honoured |
-| 3 | `DiscoveryPickerModesTest` | Each `picker.mode` value (auto/always/never) round-trips through discovery correctly |
-| 3 | `ExternalTokenRefreshTest` | `oauth.refreshToken()` against stubbed Entra/Google/Keycloak token endpoints succeeds via the discovery-emitted `tokenUrl` (BFF-routed for confidential clients, direct for public PKCE) |
-| 3 | `ApiKeyWorksWithExternalProviderConfiguredTest` | A rapla-issued API key (PRD 031) keeps working when external providers are enabled — multi-issuer decoder doesn't break the local path |
-| 2 | `SwingDiscoveryIgnoresExternalProvidersTest` | With Microsoft + Google enabled server-side, the Swing client's existing discovery-probe + auto-fire-rapla-SAS path is unchanged; the flat top-level fields still point at rapla SAS |
-| 6 | `LoginPickerComponent.spec.ts` (Angular Vitest + TestBed) | `picker.mode=auto + 1 provider` → no picker, auto-fire; `auto + 2 providers` → picker visible; `always` → always picker; `never` → no picker; click on a button reconfigures `OAuthService` and calls `initLoginFlow()` |
+| 2 | `ExternalUserResolverTest` (real `FacadeTestSupport`) | Each lookup branch (`upn` / `preferred_username` / `email` against username, then email-against-email); case-insensitive; `auto-provision` chain; lowercase normalization on store; `email_verified=false` blocks email branch for Google; `hosted-domain` (`hd`) check; returning-user without stored external-id pref |
+| 1 | `ExternalProvidersPropertiesTest` | Env-var binding, default values, `enabledProviders()` reflects per-provider `enabled` flags |
+| 3 | `EntraTokenIntegrationTest` (MockMvc + stubbed Entra JWKS) | Entra Bearer unlocks rapla REST, resolved user correct, scoped to right `oid` |
+| 3 | `GoogleTokenIntegrationTest` (MockMvc + stubbed Google JWKS) | Google Bearer unlocks rapla REST, resolved user correct, scoped to right `sub` |
+| 3 | `MultiProviderCoexistenceIntegrationTest` | With local + Microsoft + Google all enabled, all three token kinds validate against the same decoder |
+| 3 | `DiscoveryWithoutExternalProvidersTest` | Default config: discovery byte-identical to today; `providers[]` contains only rapla (regression guard) |
+| 3 | `DiscoveryWithMicrosoftOnlyTest` | Microsoft enabled: `providers[]` has rapla + microsoft; primary=microsoft; picker.mode=auto; flat top-level points at Entra |
+| 3 | `DiscoveryWithGoogleOnlyTest` | Symmetric for Google; `extraAuthorizeParams` carries `{access_type, prompt}` |
+| 3 | `DiscoveryWithAllThreeTest` | All three in `providers[]`, ordered by `order`; `webPickerVisible` honoured |
+| 3 | `DiscoveryPickerModesTest` | Each `picker.mode` value round-trips correctly |
+| 3 | `ExternalTokenRefreshTest` | `oauth.refreshToken()` against stubbed Entra/Google/Keycloak token endpoints succeeds via discovery-emitted `tokenUrl` (BFF-routed for confidential, direct for public PKCE) |
+| 3 | `ApiKeyWorksWithExternalProviderConfiguredTest` | Rapla-issued API key (PRD 031) keeps working when external is enabled |
+| 2 | `SwingDiscoveryIgnoresExternalProvidersTest` | With Microsoft + Google enabled, Swing's probe + auto-fire-rapla-SAS path is unchanged |
+| 6 | `LoginPickerComponent.spec.ts` (Angular Vitest + TestBed) | `picker.mode=auto + 1 provider` → no picker, auto-fire; `auto + 2 providers` → picker visible; `always` → always picker; `never` → no picker; click reconfigures `OAuthService` and calls `initLoginFlow()` |
 | 5 | `OAuthProviderConfig.spec.ts` (Angular Vitest, no TestBed) | Sorting by `order`, filtering by `webPickerVisible`, icon → image mapping |
-| e2e (manual) | Real Entra tenant, Angular login | Full stack via Microsoft (web-only — Swing not exercised) |
+| e2e (manual) | Real Entra tenant, Angular login | Full stack via Microsoft (web-only) |
 | e2e (manual) | Real Google client, Angular login | Full stack via Google, including refresh after token expiry |
-| e2e (manual) | Both providers enabled, Angular picker | Three-button picker renders, each button leads to a valid signed-in state |
-| e2e (manual) | Both providers enabled, Swing login | Swing ignores them and signs in via rapla SAS unchanged (regression guard for the deprecation-window) |
+| e2e (manual) | Both providers enabled, Angular picker | Three-button picker renders, each button signs in |
+| e2e (manual) | Both providers enabled, Swing login | Swing ignores them and signs in via rapla SAS unchanged (regression guard) |
 
 ## Phase 2: Keycloak + Shibboleth federation
 
-The v1 architecture (multi-issuer `JwtDecoder`, provider-pluggable
-`ExternalUserResolver`, BFF token-exchange, picker UI) was designed
-provider-agnostic. Adding Keycloak is a small extension of the same
-shape. Shibboleth (SAML 2.0) is not OIDC and won't fit the existing
-framework — but the standard deployment pattern is to broker
-Shibboleth through Keycloak (Keycloak speaks SAML to the upstream
-Shibboleth IdP, rapla speaks OIDC to Keycloak). That keeps SAML out
-of rapla entirely.
+The v1 architecture (multi-issuer decoder, provider-pluggable resolver,
+BFF token-exchange, picker UI) was designed provider-agnostic. Adding
+Keycloak is a small extension of the same shape. Shibboleth (SAML 2.0)
+won't fit OIDC framework — standard deployment is brokering through
+Keycloak (Keycloak speaks SAML to upstream Shibboleth IdP, rapla
+speaks OIDC to Keycloak). That keeps SAML out of rapla entirely.
 
 ### 2.1 Keycloak as a first-class provider
 
-Keycloak is an open-source OIDC provider with realm-based isolation
-(one Keycloak server can host multiple "realms", each acting as a
-separate IdP). For rapla's purposes, one rapla deployment integrates
-with one Keycloak realm — same model as the Microsoft/Google blocks.
+Keycloak is open-source OIDC with realm-based isolation (one server
+hosts multiple "realms", each a separate IdP). One rapla deployment
+integrates with one realm — same model as Microsoft/Google.
 
 #### In scope
 
@@ -863,75 +741,63 @@ with one Keycloak realm — same model as the Microsoft/Google blocks.
   endSessionUrl = {base-url}/realms/{realm}/protocol/openid-connect/logout
   ```
 - **New `ExternalProviderId.KEYCLOAK`** + populate `enabledProviders()`.
-- **`ExternalUserResolver`** — no new resolver class needed. Keycloak's
+- **`ExternalUserResolver`** — no new resolver class. Keycloak's
   default claims (`sub`, `preferred_username`, `email`, `name`,
-  `given_name`, `family_name`) are exactly what the existing generic
-  resolver already handles. Pass `ProviderConfig` with Keycloak's
-  claim names (which are the OIDC defaults).
-- **Confidential vs public client**:
-  - Keycloak "public" client (PKCE, no secret) → direct route, no BFF.
-    Default for SPAs.
-  - Keycloak "confidential" client (secret required) → BFF route,
-    same per-secret routing as Google Web app.
-  Detection is identical to existing logic — `clientSecret` empty →
-  direct, set → BFF.
+  `given_name`, `family_name`) are exactly what the generic resolver
+  handles. Pass `ProviderConfig` with Keycloak's claim names (OIDC defaults).
+- **Confidential vs public client**: public (PKCE, no secret) → direct
+  route; confidential → BFF route. Default for SPAs is public.
+  Detection: `clientSecret` empty → direct, set → BFF.
 - **OIDC RP-initiated logout** at
   `{base-url}/realms/{realm}/protocol/openid-connect/logout` — works
-  out of the box with the existing `AuthService.signOut()` logic.
-- **Multi-tenant**: out of scope for Keycloak. A Keycloak realm is
-  already a tenant; if a deployment needs multiple realms behind one
-  rapla, that's a future PRD (likely requires a list-based config
-  shape, similar to repeatable `redirect-uris` in Spring).
+  out of the box with existing `AuthService.signOut()`.
+- **Multi-tenant**: out of scope. A Keycloak realm is already a tenant;
+  multiple realms behind one rapla is a future PRD.
 
 #### Out of scope (Phase 2)
 
-- **Group / role sync** from Keycloak's `realm_access.roles` claim.
-  Stays deferred (same as for Entra/Google).
-- **Keycloak SPI / Admin REST API integration** — rapla only consumes
-  OIDC; managing Keycloak itself (creating users, assigning roles)
-  is the Keycloak admin's job.
+- **Group / role sync** from `realm_access.roles`. Stays deferred.
+- **Keycloak SPI / Admin REST API integration** — rapla only consumes OIDC.
 - **Multi-realm rapla** — one realm per deployment.
 
 #### Implementation tasks
 
 1. ✅ **Server: Keycloak provider class.** `ExternalProvidersProperties.Keycloak`
    nested POJO; `toProviderConfig()` derives every OIDC URL from
-   `base-url + realm`; validation requires `base-url`, `realm`, and
-   `client-id` when `enabled=true`.
+   `base-url + realm`; validation requires `base-url`, `realm`, `client-id` when enabled.
 2. ✅ **Server: `ExternalProviderId.KEYCLOAK` enum entry.**
-3. ✅ **Server: `enabledProviders()` updated** to include the Keycloak block.
-   No `JwtConfig` / `OAuthConfigController` change needed — both already
-   iterate `enabledProviders()` generically, so Keycloak slots into the
-   multi-issuer decoder and the discovery `providers[]` array automatically.
+3. ✅ **Server: `enabledProviders()` updated** to include the Keycloak
+   block. No `JwtConfig` / `OAuthConfigController` change needed —
+   both iterate `enabledProviders()` generically, so Keycloak slots
+   into the multi-issuer decoder + discovery `providers[]` automatically.
 4. **Tests:**
-   - ✅ Tier-1 `ExternalProvidersPropertiesKeycloakTest` — URL derivation,
-     trailing-slash strip, required-field validation, default OIDC claims,
-     `enabledProviders()` inclusion.
-   - ✅ Tier-3 `OAuthConfigControllerKeycloakTest` — Keycloak alone: discovery
-     emits a rapla + keycloak `providers[]`, URLs derived from `base-url +
-     realm`, top-level fields stay rapla SAS, no `clientSecret` on the wire.
-   - ⏳ `KeycloakUserResolverTest` not added separately — Keycloak uses the
-     standard OIDC claims, so the generic `ExternalUserResolver` (already
-     covered by `ExternalUserResolverTest`) handles it with no new code.
-   - ⏳ `DiscoveryWithAllFourTest`, `KeycloakTokenIntegrationTest` — deferred;
-     not blocking the local-dev use case.
-5. ✅ **Angular: login picker icon for Keycloak.** `keycloak` → `shield`
-   Material glyph in `LoginComponent.iconNameFor()`; tier-6 spec covers it.
-6. ✅ **Setup recipe** — `docs/authentication.md` "External IdP — Keycloak"
-   section + `tools/keycloak/README.md` for the local-dev path.
-7. ⏳ **Manual e2e**: local Keycloak (`tools/keycloak/keycloak.sh start`) —
-   Angular login → main view; verify `Authorization: Bearer
+   - ✅ Tier-1 `ExternalProvidersPropertiesKeycloakTest` — URL
+     derivation, trailing-slash strip, required-field validation,
+     default OIDC claims, `enabledProviders()` inclusion.
+   - ✅ Tier-3 `OAuthConfigControllerKeycloakTest` — Keycloak alone:
+     discovery emits rapla + keycloak `providers[]`, URLs derived
+     from `base-url + realm`, top-level stays rapla SAS, no
+     `clientSecret` on the wire.
+   - ⏳ `KeycloakUserResolverTest` not added — Keycloak uses standard
+     OIDC claims so the generic `ExternalUserResolver` (already
+     covered) handles it with no new code.
+   - ⏳ `DiscoveryWithAllFourTest`, `KeycloakTokenIntegrationTest` —
+     deferred; not blocking local-dev use case.
+5. ✅ **Angular: login picker icon for Keycloak.** `keycloak` →
+   `shield` Material glyph in `LoginComponent.iconNameFor()`.
+6. ✅ **Setup recipe** — `docs/authentication.md` "External IdP —
+   Keycloak" section + `tools/keycloak/README.md`.
+7. ⏳ **Manual e2e**: local Keycloak (`tools/keycloak/keycloak.sh start`)
+   — Angular login → main view; verify `Authorization: Bearer
    <keycloak-id-token>` validates server-side.
 
-**Estimated total work:** ~400 LOC server + ~50 LOC test setup +
-~100 lines docs. Smaller than the Microsoft+Google initial work
-because the framework is already in place — most code is plumbing
-the new provider config through `enabledProviders()` and the resolver.
+**Estimated total:** ~400 LOC server + ~50 LOC test setup + ~100 lines
+docs. Smaller than Microsoft+Google because the framework is in place.
 
 ### 2.2 Shibboleth via Keycloak SAML brokering
 
-Shibboleth is SAML 2.0. The federation pattern used by the academic
-community (DFN-AAI, eduGAIN, InCommon) is:
+Shibboleth is SAML 2.0. The academic federation pattern (DFN-AAI,
+eduGAIN, InCommon) is:
 
 ```
 Browser → rapla SPA
@@ -942,25 +808,21 @@ Browser → rapla SPA
         → Token flows back to rapla
 ```
 
-For rapla this is **transparent — rapla only sees the OIDC flow
-between itself and Keycloak**. The SAML leg lives entirely inside
-Keycloak. Zero rapla code changes beyond what the Keycloak provider
-(2.1) needs.
+For rapla this is **transparent — rapla only sees OIDC between itself
+and Keycloak**. SAML lives entirely inside Keycloak. Zero rapla code
+beyond Phase 2.1.
 
 #### In scope
 
 - **Documentation recipe** in `docs/authentication.md`:
-  - Configure Keycloak as a SAML 2.0 service provider in your
-    Shibboleth IdP's metadata.
-  - In Keycloak admin: Realm settings → Identity providers → Add
-    SAML 2.0 → IdP entity ID, single sign-on service URL, SAML
-    signing certificate.
-  - Configure Keycloak SAML attribute mappers: `eduPersonPrincipalName`
-    → `preferred_username`, `mail` → `email`, etc.
-  - Federate with eduGAIN / DFN-AAI by importing the federation
-    metadata aggregate (one-line Keycloak admin operation).
-- **No rapla code** beyond the Phase 2.1 Keycloak provider.
-- **Recipe references** to standard documentation:
+  - Configure Keycloak as a SAML 2.0 SP in your Shibboleth IdP's metadata.
+  - Keycloak admin: Realm settings → Identity providers → Add SAML 2.0
+    → IdP entity ID, SSO service URL, signing certificate.
+  - SAML attribute mappers: `eduPersonPrincipalName` → `preferred_username`,
+    `mail` → `email`, etc.
+  - Federate with eduGAIN / DFN-AAI by importing federation metadata aggregate.
+- **No rapla code** beyond Phase 2.1.
+- **Recipe references:**
   - Keycloak: <https://www.keycloak.org/docs/latest/server_admin/#_saml>
   - DFN-AAI: <https://www.aai.dfn.de/>
   - eduGAIN: <https://edugain.org/>
@@ -968,151 +830,119 @@ Keycloak. Zero rapla code changes beyond what the Keycloak provider
 #### Out of scope
 
 - **Native SAML in rapla.** Would require Spring Security SAML2 SP,
-  metadata management, SAML message signing, assertion consumer
-  service, single logout, attribute mapping. ~1500-2000 LOC + tests.
-  Deferred indefinitely — Keycloak brokering covers 100% of realistic
-  HE/academic deployments. Open as a future PRD only if a deployment
-  needs SAML without a Keycloak hop and has a strong reason.
-- **Discovery service / WAYF.** If multiple Shibboleth IdPs need
-  to be offered through one rapla, configure them in Keycloak (one
-  Identity Provider per upstream Shibboleth), then Keycloak shows
-  its built-in IdP-discovery screen on Keycloak's login page. Rapla
-  sees a single Keycloak entry in its picker.
+  metadata management, message signing, assertion consumer service,
+  single logout, attribute mapping (~1500–2000 LOC + tests). Deferred
+  indefinitely — Keycloak brokering covers 100% of realistic HE/academic
+  deployments. Open as future PRD only with a strong reason.
+- **Discovery service / WAYF.** Multiple Shibboleth IdPs → configure
+  in Keycloak; Keycloak shows its built-in IdP discovery on its login
+  page. Rapla sees a single Keycloak entry.
 
 #### Implementation tasks
 
-1. **Verify Phase 2.1 Keycloak provider works.** Sets up the rapla
-   side of the equation.
-2. **Add a "Federate with Shibboleth via Keycloak" section** to
-   `docs/authentication.md`. Step-by-step Keycloak admin recipe,
-   typical SAML attribute mapping for `eduPersonPrincipalName` /
-   `mail` / `cn` → OIDC claims, and pointers to the upstream
-   Shibboleth IdP metadata.
-3. **Manual e2e** against a real Shibboleth IdP if one is available
-   (DFN-AAI Test, eduGAIN sandbox, or a local Shibboleth IdP). Tagged
-   `e2e`, manual only.
+1. **Verify Phase 2.1 Keycloak provider works.**
+2. **Add "Federate with Shibboleth via Keycloak" section** to
+   `docs/authentication.md` — Keycloak admin recipe + typical attribute
+   mapping (`eduPersonPrincipalName` / `mail` / `cn` → OIDC claims) +
+   pointers to upstream Shibboleth metadata.
+3. **Manual e2e** against a real Shibboleth IdP if available (DFN-AAI
+   Test, eduGAIN sandbox, or local). Tagged `e2e`, manual.
 
-**Estimated total work for Shibboleth via Keycloak:** ~100 lines of
-documentation. Zero rapla code beyond Phase 2.1.
+**Estimated total:** ~100 lines docs. Zero rapla code beyond Phase 2.1.
 
 ### 2.3 Sequencing
 
-The recommended sequence is:
-1. **Land Phase 2.1 (Keycloak provider)** as a follow-up PR to PRD 036.
-2. **Add the Shibboleth-via-Keycloak documentation** in the same PR
-   or a small follow-up.
-3. If a real deployment ever needs native SAML in rapla, open a new
-   PRD then — it's a separate scope and should not be folded into
-   PRD 036.
+1. **Land Phase 2.1 (Keycloak provider)** as follow-up PR to PRD 036.
+2. **Add Shibboleth-via-Keycloak docs** in same PR or small follow-up.
+3. If a real deployment needs native SAML, open a new PRD then —
+   separate scope, not folded into PRD 036.
 
 ## Open Questions
 
-1. **Swing SSO during the deprecation window.** Resolved: not in
-   scope. External IdPs are web-only. Swing keeps using the rapla
-   embedded SAS until the Swing client is removed (PRD 026 roadmap).
-   Deployments that need SSO from Swing before then have two options
-   neither of which require changes to this PRD: (a) federate rapla
-   SAS to an upstream IdP server-side via Spring SAS's `oauth2Login`
-   configurer (a separate small effort — rapla SAS itself becomes the
-   relying party to Entra/Google, Swing still talks to rapla SAS),
-   or (b) move the affected users to the Angular SPA. Not a
-   future-PRD item.
+1. **Swing SSO during deprecation window.** Resolved: not in scope.
+   External IdPs are web-only. Deployments needing Swing SSO can (a)
+   federate rapla SAS to an upstream IdP via Spring SAS's `oauth2Login`
+   (rapla SAS becomes RP to Entra/Google, Swing still talks to rapla
+   SAS), or (b) move users to the SPA.
 
 2. ✅ **Auto-provisioning default per provider.** *Resolved 2026-05-14.*
-   Defaults to **on** for both providers, matching the rapla LDAP
-   precedent (`RaplaAuthentificationService.authenticate()` auto-creates
-   a rapla `User` on successful external auth — no opt-in flag in the
-   LDAP path). For Entra, single-tenant config (default) already scopes
-   the IdP to the deployment's directory. For Google, document that
-   `hosted-domain` is the practical scope guard — without it, every
-   verified Google account on Earth becomes a rapla user, so deployments
-   without a Workspace should explicitly set `auto-provision: false`.
-   Default groups: shared with the LDAP path via
-   `JNDIPlugin.USERGROUP_CONFIG` system preference (rename pending).
+   Defaults **on** for both, matching LDAP precedent
+   (`RaplaAuthentificationService.authenticate()` auto-creates on
+   successful external auth — no opt-in in the LDAP path). Entra
+   single-tenant (default) scopes to deployment's directory. Google:
+   document that `hosted-domain` is the practical scope guard — without
+   it, every verified Google account becomes a rapla user, so
+   deployments without a Workspace should explicitly set
+   `auto-provision: false`. Default groups: shared with LDAP via
+   `JNDIPlugin.USERGROUP_CONFIG` system preference.
 
-3. **Cross-provider account collisions.** Resolved by the
-   username-as-identity model (2026-05-21): same human signing in via
-   Microsoft *and* Google resolves to the same rapla `User` iff their
-   stored username matches one of the token's username-bearing claims
-   from either provider. In practice that's usually the case
-   (`alice@example.org` is the same string in both tokens). When the
-   IdPs emit different usernames AND the resolver falls back to email
-   match, they still converge if the email is the same. When tokens
-   from both IdPs share neither a username nor an email match, two
-   separate rapla users get auto-provisioned — admin can rename one to
-   merge. The previous "silently merge by email-with-different-usernames"
-   risk is gone; the new failure mode is "silently DON'T merge when the
-   IdPs disagree on identity claims", which is the safer default.
+3. **Cross-provider account collisions.** Resolved by username-as-identity
+   (2026-05-21): same human via Microsoft *and* Google resolves to the
+   same rapla `User` iff stored username matches one of the token's
+   username-bearing claims from either provider (usually the case —
+   `alice@example.org` is identical in both). Email fallback still
+   converges if email matches. When IdPs disagree on both username
+   AND email, two separate users get auto-provisioned — admin can
+   rename one to merge. Previous "silently merge by email-with-different-usernames"
+   risk is gone; new failure mode is "silently DON'T merge when IdPs
+   disagree" — safer default.
 
-4. **Single-tenant vs multi-tenant Entra.** Single-tenant is the right
-   default — restricts logins to the deployment's own Entra tenant.
-   `tenant` config field takes a GUID/domain (single) or `common`
-   (multi). Document both; sample config uses single-tenant placeholder.
+4. **Single-tenant vs multi-tenant Entra.** Single-tenant is right
+   default — restricts logins to deployment's own Entra tenant.
+   `tenant` config takes GUID/domain (single) or `common` (multi).
+   Sample config uses single-tenant placeholder.
 
-5. **Google `hosted-domain` enforcement.** The `hd` claim on a Google
-   token tells us which Workspace domain the user signed in from.
-   Enforcing `hd == configured-domain` server-side prevents personal
-   `@gmail.com` accounts from logging into a Workspace-only rapla
-   deployment. Default: enforce when `hosted-domain` is set, allow
-   any when blank. Note the `hd` claim is not signed on the
-   authorize-URL side (`hd` query param), so server-side check is
-   mandatory.
+5. **Google `hosted-domain` enforcement.** `hd` claim tells which
+   Workspace domain the user signed in from. Enforcing
+   `hd == configured-domain` prevents personal `@gmail.com` accounts
+   into a Workspace-only deployment. Default: enforce when set, allow
+   any when blank. The `hd` query param isn't signed, so server-side
+   check is mandatory.
 
 6. **What happens to existing rapla-local users when external is on?**
-   They keep logging in via the legacy password form *unless*
+   Keep logging in via legacy password form unless
    `rapla.oauth.local-accounts-enabled: false`. With external + local
-   both on, the Angular picker shows a "Sign in with rapla password"
-   button alongside the SSO buttons. Some deployments will want that;
-   some will want to forbid the legacy path entirely after migration.
-   Configurable via the same flag PRD 029 OQ §5 had.
+   both on, Angular picker shows "Sign in with rapla password"
+   alongside SSO buttons. Configurable via the flag PRD 029 OQ §5 had.
 
 7. **`oid` vs `sub` for Entra; `sub` for Google.** Microsoft documents
-   `oid` as stable per (tenant, user) and `sub` as a pairwise
-   pseudonym that varies per-application — we want `oid`. Google's
-   `sub` is stable per (Google account, OAuth client), which is what
-   we want there. Document the asymmetry, default per provider.
+   `oid` as stable per (tenant, user) and `sub` as pairwise pseudonym
+   varying per-application — we want `oid`. Google's `sub` is stable
+   per (account, OAuth client) — what we want. Document the asymmetry.
 
-8. **API keys + external providers.** API keys are rapla-issued bearer
-   tokens (PRD 031) stored in user preferences. They work today
-   against the local JWT decoder. With multi-issuer decoder, API keys
-   keep working because they're locally signed and carry the local
-   `iss`. **Answer**: yes, no extra work, lock in with
+8. **API keys + external providers.** API keys (PRD 031) are
+   rapla-issued bearers in user prefs. They work today against local
+   decoder. With multi-issuer, API keys keep working — locally signed,
+   carry local `iss`. **Answer**: yes, no extra work, lock in with
    `ApiKeyWorksWithExternalProviderConfiguredTest`.
 
 9. **Scopes.** Entra: `openid profile email offline_access`
-   (`offline_access` gets the refresh token). Google: `openid profile
-   email` + `access_type=offline` as authorize param (Google doesn't
-   use `offline_access` scope). Defaults live in the per-provider
-   config block; admins shouldn't usually need to override.
+   (`offline_access` → refresh token). Google: `openid profile email`
+   + `access_type=offline` as authorize param (no `offline_access`
+   scope). Defaults in per-provider block; admins shouldn't usually override.
 
 10. **Confidential vs public client.** Both Entra and Google support
-    public PKCE clients — no `client-secret`. Stay public. If a future
-    requirement forces confidential (e.g. Microsoft Graph calls for
-    group sync), that's a different PRD with its own threat model.
+    public PKCE. Stay public. Confidential would be a different PRD
+    with its own threat model.
 
 11. **`post_logout_redirect_uri` for Entra.** Yes — without it Entra
-    shows a generic "you're signed out" page; with it, the user lands
-    back on the rapla SPA. Configurable via
+    shows generic "you're signed out"; with it, user lands back on
+    rapla SPA. Configurable via
     `rapla.oauth.external.microsoft.post-logout-redirect-uri`; default
-    to the deployment's public base URL. Entra requires the URI to be
-    pre-registered on the Application; cover in the setup recipe.
+    to deployment's public base URL. Entra requires the URI to be
+    pre-registered. Cover in the setup recipe.
 
 12. **Token revocation on Google logout.** Default off — typical user
     expectation of "log out of rapla" is to clear the rapla session,
-    not to uncouple the Google grant (next login would re-trigger the
-    consent screen). Enable
+    not to uncouple the Google grant (next login would re-trigger
+    consent). Enable
     `rapla.oauth.external.google.revoke-on-logout: true` for
-    deployments where revocation is preferred (high-security or
-    compliance contexts).
+    high-security or compliance contexts.
 
-13. **Group sync from token claims.** Out of v1 scope; called out in
-    the "Why we keep the rapla `User`" section. A follow-up PRD would
-    add an admin-maintained `external-group-id → rapla-category-id`
-    table and on-login group reconciliation. Decision: ship v1 without
-    it, gather real-deployment demand first.
+13. **Group sync from token claims.** Out of v1 scope. Follow-up PRD
+    would add admin-maintained `external-group-id → rapla-category-id`
+    + on-login reconciliation. Ship v1 without, gather demand first.
 
 14. **Provider icons.** v1 ships hardcoded icons for `microsoft`,
-    `google`, `rapla` (SVGs bundled with the Angular app). Custom
-    icons via `icon: "https://..."` resolve to image URLs the admin
-    hosts. Acceptable for v1 — a more elaborate "upload your logo via
-    the admin UI" is overkill before there's demand.
+    `google`, `rapla` (SVGs bundled with Angular app). Custom icons
+    via `icon: "https://..."` resolve to URLs. Acceptable for v1.

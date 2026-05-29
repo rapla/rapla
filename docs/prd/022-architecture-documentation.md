@@ -6,25 +6,9 @@
 
 ## Goal
 
-Produce a stable **reference** for Rapla's architecture that:
+A stable **reference** for Rapla's architecture that (a) lets a new/returning contributor build a correct mental model in an afternoon without `git grep` archaeology, (b) pins down load-bearing-but-under-documented parts (dynamic-type schema, reservation-edit clone semantics, permission resolution, Spring-DI plugin wiring), and (c) primes future AI agent sessions so they don't rediscover layering each time.
 
-1. Helps a new contributor (or returning contributor) build a correct mental
-   model in an afternoon, without having to reverse-engineer the codebase from
-   `git grep`.
-2. Pins down the parts of the system that are **load-bearing but
-   under-documented today** — the dynamic-type schema, the
-   reservation-edit dance with clone semantics, the permission
-   resolution algorithm, the Spring-DI plugin wiring.
-3. Serves as durable **context for future AI agent sessions** so they don't
-   have to rediscover the layering, package conventions, and key integration
-   seams every time.
-
-This is **reference**, not a tutorial — readers can pick a topic, jump in,
-and come out with file:line pointers into the live code. PRD 005
-(multi-module split), PRD 008 (server sync / client async), PRD 011
-(Spring Boot 4 / Jackson 3) and `docs/conflict-detection.md` already
-cover their narrow slices in depth; this set links to those rather
-than duplicating them.
+**Reference, not tutorial** — pick a topic, jump in, leave with file:line pointers. PRDs 005 / 008 / 011 and `docs/conflict-detection.md` cover their narrow slices in depth; this set links rather than duplicates.
 
 ## Scope
 
@@ -51,66 +35,31 @@ Out of scope (covered elsewhere):
 
 ## Non-goals
 
-- **Not** a user-facing administrator manual. UI screenshots, click-paths,
-  and admin how-tos belong in a separate user manual (currently the
-  `attic/` site).
-- **Not** an API/Javadoc replacement. We give signposts — file:line
-  pointers — and trust readers to follow them.
-- **Not** ADRs. Architectural decisions that need preserving go into
-  PRDs (`docs/prd/`); this set documents *what is*, not *why we chose it*.
+- **Not** a user-facing administrator manual (UI screenshots / how-tos belong in the `attic/` site).
+- **Not** an API/Javadoc replacement — file:line signposts, follow them.
+- **Not** ADRs. Architectural decisions go in PRDs; this set documents *what is*, not *why we chose it*.
 
 ## Audience
 
-1. **A new contributor** picking up Rapla for the first time. They get a
-   layered map: module → domain object → flow.
-2. **A returning maintainer** who wrote some of this code 18 months ago
-   and needs to remember where the seams are.
-3. **An AI agent** invoked on a task that crosses a subsystem boundary
-   (e.g. "add a column to the reservation list view"). The doc set
-   primes the agent's context with the right packages, classes, and
-   patterns.
+New contributors (layered map: module → domain object → flow); returning maintainers (where are the seams?); AI agents invoked on cross-subsystem tasks (primes context with the right packages/classes/patterns).
 
 ## Plan
 
-1. Write the eight topic docs + index in one pass, using the ASCII /
-   Markdown conventions already established in `docs/conflict-detection.md`:
-   - File:line references render as `path/to/File.java:NNN` (clickable in
-     most IDEs and in GitHub).
-   - Use tables for catalogs (entities, plugins, extension points).
-   - Use fenced code blocks for stack traces and call chains.
-   - No screenshots; no embedded images.
+1. Write eight topic docs + index in one pass, using `docs/conflict-detection.md` conventions: `path/to/File.java:NNN` refs, tables for catalogs, fenced blocks for traces, no images.
 2. Cross-link liberally — each doc has a "See also" footer.
-3. Land all files in one commit so the index is never broken.
+3. Land all files in one commit.
 
 ## Tests / verification
 
-Documentation has no automated tests, but each doc is reviewed for:
-
-- Every `path:line` reference is checkable by Read tool / IDE jump.
-- No claim about a class or method that has been deleted, renamed,
-  or moved (cross-checked with `grep -n` while writing).
-- No duplication of content already in `AGENTS.md`, `docs/conflict-detection.md`,
-  or done PRDs — instead, link.
+No automated tests. Per-doc review: every `path:line` checkable by IDE jump; no claim about deleted/renamed/moved classes (cross-check with `grep -n`); no duplication of `AGENTS.md` / `docs/conflict-detection.md` / done PRDs — link instead.
 
 ## Maintenance
 
-Architecture docs **decay**. To slow the rot:
-
-- When a PRD lands a structural change (module split, facade rewrite,
-  permission rule change), the closing checklist includes "update
-  affected `docs/architecture/*.md`".
-- This PRD itself moves to `docs/prd/done/` once the eight docs are
-  in tree. Updates to individual docs do not need a new PRD; they
-  go in directly.
+Architecture docs decay. To slow the rot: when a PRD lands a structural change, its closing checklist includes "update affected `docs/architecture/*.md`". This PRD moves to `docs/prd/done/` once the eight docs land; per-doc updates do not need new PRDs.
 
 ## Open questions
 
-None blocking. Two items to revisit later:
+None blocking. Revisit later:
 
-- **Diagrams.** Pure-Markdown ASCII art works but is limited. If the
-  team adopts a diagram tool (Mermaid is the obvious candidate; GitHub
-  renders it natively), the overview and flow diagrams would benefit.
-  Left out of v1 to keep the docs editor-agnostic.
-- **Generated content.** The plugin catalog and extension-point table
-  could be auto-generated from `@Service` / extension-point interfaces.
-  Worth doing once the Spring DI migration is fully complete.
+- **Diagrams.** Mermaid (GitHub-native) would help overview/flow diagrams. Left out of v1 to stay editor-agnostic.
+- **Generated content.** Plugin catalog + extension-point table could be auto-generated from `@Service`/extension-point interfaces once Spring DI migration is complete.

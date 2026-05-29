@@ -5,18 +5,16 @@
 
 ## Goal
 
-Drive `rapla-client` to zero compile errors so the reactor builds cleanly. After the recovery work in this session, **rapla-core compiles**, **rapla-client compiles**, and only **rapla-server has remaining errors** (handled by another session per user direction).
+Drive `rapla-client` to zero compile errors so the reactor builds cleanly. rapla-core + rapla-client compile after this work; rapla-server handled by another session.
 
 ## Update 2026-05-09 (later in session)
 
-`rapla-client` now compiles green. Semantic flips applied:
-- `DateField` → `LocalDate` (date-only widget API)
-- `TimeField` → `LocalTime` (time-of-day widget API)
-- `DateModel` (package-private) → `LocalDate` internally; `RaplaCalendar` keeps `LocalDateTime` public API and converts at boundary
-- `TimeModel` (package-private) → `LocalTime` internally; `RaplaTime` keeps `LocalDateTime` public API and converts at boundary
-- `DateChooserPanel`: `today()` is `LocalDate`, callers add `.atStartOfDay()` at the LDT boundary
+`rapla-client` compiles green. Semantic flips:
+- `DateField` → `LocalDate`; `TimeField` → `LocalTime`.
+- `DateModel`/`TimeModel` (package-private) → `LocalDate`/`LocalTime` internally; `RaplaCalendar`/`RaplaTime` keep `LocalDateTime` public API, convert at boundary.
+- `DateChooserPanel.today()` is `LocalDate`; callers add `.atStartOfDay()`.
 
-Reasoning: the widgets' semantic types match `java.time` directly, but the `DateChangeEvent` event wire and the public `getDate()/getTime()` APIs of `RaplaCalendar` and `RaplaTime` stay LDT to avoid touching all 18 listener consumers in this scope. A future Phase 5 can flip the event chain (`DateChangeEvent`, `DateChangeListener`, fireTimeChanged) to `LocalDate`/`LocalTime` if desired.
+The `DateChangeEvent` wire and public `getDate()/getTime()` stay LDT to avoid touching 18 listener consumers; a future Phase 5 can flip the event chain end-to-end.
 
 ## Current state vs HEAD
 
@@ -63,46 +61,26 @@ Three phases, each with a focused script + a manual cleanup.
 
 ### Phase 1 — Fix `x.getTime()` on LocalDateTime (~63 errors)
 
-Mechanical: every site of `x.getTime()` where `x` is `LocalDateTime` → `DateTools.toMilli(x)`. The existing `.agents/scripts/fix-ldt-orphans.py` already does this using compiler error positions; it's been verified to work but missed a follow-up pass when new `getTime()` errors surfaced after other fixes.
+Mechanical: `x.getTime()` where `x` is `LocalDateTime` → `DateTools.toMilli(x)`. `.agents/scripts/fix-ldt-orphans.py` uses compiler error positions; iterate until stable.
 
 ```bash
-# Iterate until stable:
 python3 .agents/scripts/fix-ldt-orphans.py    # parses mvn output, fixes pinpoint
 mvn compile -q | grep -c "method getTime()"   # repeat until 0
 ```
 
 Expected drop: 200 → ~140 errors.
 
-### Phase 2 — Flip Swing date-widget APIs (Custom calendar components)
+### Phase 2 — Flip Swing date-widget APIs
 
-The custom Swing widgets `RaplaTime`, `RaplaCalendar`, `TimeField`, `DateField`, `TimeModel`, `DateModel`, `DateRendererAdapter` still expose `Date getValue()` / `setValue(Date)` APIs. Callers now pass `LocalDateTime`, causing the 58 "incompatible types" errors.
+`RaplaTime`, `RaplaCalendar`, `TimeField`, `DateField`, `TimeModel`, `DateModel`, `DateRendererAdapter` still expose `Date getValue()`/`setValue(Date)`. Callers now pass `LocalDateTime` (58 "incompatible types" errors).
 
-Each widget needs:
-- `Date getDate()` → `LocalDateTime getDate()`
-- `setDate(Date)` → `setDate(LocalDateTime)`
-- `Date getValue()` / `setValue(Date)` → flip
-- `DateChangeEvent.getDate()` → returns `LocalDateTime`
-- Internal `java.util.Calendar` calls — preserve, but convert to LDT at the API boundary
-
-Likely script-flippable for the bulk (signature changes), then ~30 min manual cleanup for internal Calendar bridges.
-
-```bash
-# After files are flipped, callers should resolve:
-# - TimeField.setValue(LDT)  ← AppointmentController.startTimeField.setValue(start)
-# - DateModel.getDate() returns LDT  ← SwingCompactCalendar uses returned value as LDT
-```
+Each widget: flip `getDate`/`setDate`/`getValue`/`setValue` + `DateChangeEvent.getDate()` to LDT. Preserve internal `java.util.Calendar`, convert at API boundary. Script-flippable for bulk signatures, ~30 min manual cleanup for Calendar bridges.
 
 Expected drop: 140 → ~30 errors.
 
-### Phase 3 — Manual surgical fixes for residual
+### Phase 3 — Manual surgical fixes for residual (~30)
 
-After phases 1 & 2, the remaining ~30 errors are hand-edits:
-- Missing `import DateTools;` (4 sites)
-- Two `getYCoord` overloads → keep one
-- Stale references in commented or restored code paths
-- Cross-module conversion sites (interface → impl boundary)
-
-Estimated 20-30 min.
+Missing `import DateTools;` (4 sites); two `getYCoord` overloads → keep one; stale references in restored code paths; cross-module conversion sites. ~20–30 min.
 
 ### Phase 4 — Verify
 
@@ -129,9 +107,9 @@ mvn test -pl rapla-core -Dtest=DateToolsLocalDateTimeTest  # smoke test
 
 ## Open Questions
 
-1. **Should `DateChangeEvent.getDate()` flip to `LocalDate`/`LocalTime`?** — Currently kept as `LocalDateTime` to avoid touching the 18 listener consumers; the `RaplaCalendar`/`RaplaTime` public `getDate()`/`getTime()` APIs convert at the boundary. Phase 5 can flip the event chain end-to-end if a coordinated refactor is desired.
-2. **`Permission.start/end` semantically date-only** — Permission entity API still typed as `LocalDateTime`; PermissionField uses `today.atStartOfDay()` boundary conversion. Phase 5 candidate: flip Permission.getStart/setStart to `LocalDate` (touches storage XML reader/writer too).
-3. **Custom widget `Calendar` internals** — `RaplaTime`/`RaplaCalendar` etc. still use `java.util.Calendar` for date arithmetic. Keep as-is (UI rendering concern); a future PRD can replace with `java.time` arithmetic.
+1. **`DateChangeEvent.getDate()` flip to `LocalDate`/`LocalTime`?** — Kept as LDT; boundary conversion in `RaplaCalendar`/`RaplaTime`. Phase 5 can flip end-to-end.
+2. **`Permission.start/end` semantically date-only** — Entity API still LDT; PermissionField uses `today.atStartOfDay()`. Phase 5 candidate: flip to `LocalDate` (touches storage XML I/O).
+3. **Custom widget `Calendar` internals** — `RaplaTime`/`RaplaCalendar` still use `java.util.Calendar`. Keep as-is; future PRD for `java.time` arithmetic.
 
 ## Related PRDs
 

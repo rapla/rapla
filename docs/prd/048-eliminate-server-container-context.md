@@ -21,55 +21,33 @@ JVM / Spring context**.
 
 ### `ServerContainerContext` — what it is
 
-A mutable plain-Java bag from pre-Spring rapla. Before the Spring Boot
-migration rapla had its own hand-rolled DI container; `ServerContainerContext`
-carried server bootstrap config into it. `LegacyServerBridgeConfig` was named
-for a *bridge bean* (`ServerServiceContainer` via `ServerCreator.create()`)
-that PRD 001 found non-viable and deleted — the class kept the name but now
-only produces `raplaLogger()` and `serverContainerContext()`.
+A mutable plain-Java bag from pre-Spring rapla's hand-rolled DI container, carrying server bootstrap config. `LegacyServerBridgeConfig` was named for a bridge bean that PRD 001 found non-viable and deleted; the class kept the name but now only produces `raplaLogger()` and `serverContainerContext()`.
 
 ### Facet inventory
 
-| Facet | State today | Replacement |
+| Facet | State | Replacement |
 |---|---|---|
-| `Map<String,DataSource>` | the only real content; built by `LegacyServerBridgeConfig` (PRD 045 Phase 3) | proper `@Bean DataSource`(s) |
-| `shutdownService` | **dead** — nothing calls `setShutdownService`; default throws `"Restart not implemented"` | real `ReloadService` (this PRD) |
-| `shutdownCommand` | **dead** — never set | dropped |
-| `mailSession` (`Object`) | **dead** — never set; `mailSessionProvider` returns null | `@Bean Supplier<Object>` returning null (or a real mail `Session` later) |
-| `services` (`Map<String,Boolean>`) | plain config — **already** in `RaplaServerProperties` | consumers read `RaplaServerProperties` |
-| `patchScript` | plain config — **already** in `RaplaServerProperties` | consumers read `RaplaServerProperties` |
+| `Map<String,DataSource>` | real content; built by `LegacyServerBridgeConfig` (PRD 045 Phase 3) | proper `@Bean DataSource`(s) |
+| `shutdownService` | dead — default throws `"Restart not implemented"` | real `ReloadService` |
+| `shutdownCommand` | dead — never set | dropped |
+| `mailSession` (`Object`) | dead — `mailSessionProvider` returns null | `@Bean Supplier<Object>` → null |
+| `services`, `patchScript` | already in `RaplaServerProperties` | consumers read it directly |
 
-### Restart-from-client is currently dead
+### Restart-from-client is dead
 
-The chain exists end-to-end — Swing admin menu → `RestartServerAction` →
-`RemoteOperator.restartServer()` → `RemoteStorage.restartServer()` →
-`RemoteStorageController` → `RemoteStorageImpl.restartServer()` (admin check) →
-`shutdownService.shutdown(true)` — but the terminal call hits the default
-`ShutdownService` whose `shutdown(true)` throws
-`IllegalStateException("Restart not implemented")`. Nothing installs a real
-implementation; no class `implements ShutdownService`. The feature has been
-non-functional since the Spring Boot migration.
+Chain: Swing menu → `RestartServerAction` → `RemoteOperator.restartServer` → `RemoteStorageController` → `shutdownService.shutdown(true)` — but the default `ShutdownService` throws. No class `implements ShutdownService`. Non-functional since the Spring Boot migration.
 
 ### What "restart" should do (decided 2026-05-18)
 
-Not a JVM/Spring restart — a logical **reload** of the rapla server state:
-reload all data from the store, clear + rebuild the caches, re-arm the
-schedulers. This maps almost exactly onto an operator
-`disconnect()` + `connect()` cycle: `CachableStorageOperator.connect()` →
-`loadData()` does `cache.clearAll()`, reloads from the store, and
-`scheduleConnectedTasks(...)` re-arms the operator's periodic tasks.
-`FacadeImpl` holds no cache of its own (it delegates every query to the
-operator), so clearing the operator's `LocalCache` is the whole job.
+Logical **reload**, not JVM restart: reload data, clear/rebuild caches, re-arm schedulers. Maps to operator `disconnect()` + `connect()`: `loadData()` calls `cache.clearAll()` + reloads + `scheduleConnectedTasks` re-arms. `FacadeImpl` holds no own cache (delegates to operator), so clearing `LocalCache` is the whole job.
 
 ### Cross-repo exposure — dhbwrapla
 
-`ServerContainerContext` is `public` and **dhbwrapla** (`~/git/dhbwrapla`,
-branch `spring-boot`) depends on it in 3 files — so removal is a coordinated
-two-repo change:
+`ServerContainerContext` is `public` and dhbwrapla (`spring-boot`) depends on it in 3 files — coordinated two-repo change:
 
 | dhbwrapla file | Uses |
 |---|---|
-| `DualisViewLoader` | `scc.getDbDatasource("jdbc/dualisdb")` — its Dualis secondary database |
+| `DualisViewLoader` | `scc.getDbDatasource("jdbc/dualisdb")` |
 | `DhbwNtlmAuthStore` | `serverContainerContext.isServiceEnabled(ID)` |
 | `RaplaPruefungen` | `@Inject ServerContainerContext` field |
 
@@ -93,83 +71,29 @@ Out of scope:
 
 ### Implementation status (2026-05-18)
 
-- **Phase 1 — done.** `ServerContainerContext` + `LegacyServerBridgeConfig`
-  deleted. `ServerCoreConfig` now owns `raplaLogger()`, a `@Primary`
-  `@ConditionalOnProperty` `raplaDataSource` `@Bean` (built from
-  `rapla.db-datasources.rapladb`), and a null-returning `mailSessionProvider`.
-  `ServerStorageSelector` takes a nullable `DataSource` + `RaplaServerProperties`
-  (`getMainFilesource()`). `RaplaServerProperties` gained `isServiceEnabled()` /
-  `getMainFilesource()` / the `MAIN_DB_DATASOURCE` + `MAIN_FILE_DATASOURCE`
-  constants. `RaplaStatusPageGenerator`, `RaplaIndexPageGenerator`,
-  `JavascriptPatcher`, `ServerServiceImpl` re-pointed.
-- **Phase 2 — done.** `CachableStorageOperator.reload()` added, implemented in
-  `LocalAbstractCachableOperator` as a `synchronized` `disconnect()` +
-  `connect()` (no external lock — see the caveat below; `LockOrderingAuditTest`
-  still green). `disconnect()` now clears `scheduledTasks` after cancelling.
-  `ShutdownService` renamed/replaced by the concrete `ReloadService`;
-  `RemoteStorageImpl.restartServer()` calls `reloadService.reload()`.
-- **Phase 3 — source migration done (dhbwrapla, branch `spring-boot`).**
-  `DualisViewLoader` now takes `@Qualifier("dualisDataSource") DataSource`
-  (the existing `DhbwDatasourceConfig` bean) instead of `scc.getDbDatasource`.
-  `DhbwNtlmAuthStore` migrated to constructor injection of
-  `RaplaServerProperties` (`isServiceEnabled`). `RaplaPruefungen`'s unused
-  `ServerContainerContext` field dropped. **Not yet compile/test-verified** —
-  dhbwrapla resolves `rapla-core`/`rapla-server`/`rapla-app` from `~/.m2`, so
-  it can only build once the updated rapla artifacts are published there
-  (`mvn install` of rapla, or a CI publish). That step is left to the
-  coordinated build per AGENTS.md build discipline.
-- **rapla-server qualifier hardening.** The `raplaDataSource` bean is named
-  `raplaDataSource` and `serverStorageSelector` injects it via a
-  `@Qualifier("raplaDataSource")`-narrowed `ObjectProvider` — so a
-  deployment-private secondary `DataSource` (dhbwrapla's `dualisDataSource`)
-  is never mistaken for the rapla store in file-backed deployments.
+- **Phase 1 done.** `ServerContainerContext` + `LegacyServerBridgeConfig` deleted. `ServerCoreConfig` owns `raplaLogger()`, a `@Primary @ConditionalOnProperty raplaDataSource` `@Bean` (from `rapla.db-datasources.rapladb`), null `mailSessionProvider`. `ServerStorageSelector` takes nullable `DataSource` + `RaplaServerProperties`. `RaplaServerProperties` gained `isServiceEnabled()` / `getMainFilesource()` / constants. Re-pointed: `RaplaStatusPageGenerator`, `RaplaIndexPageGenerator`, `JavascriptPatcher`, `ServerServiceImpl`.
+- **Phase 2 done.** `CachableStorageOperator.reload()` added — `synchronized disconnect() + connect()` in `LocalAbstractCachableOperator` (no external lock — caveat below; `LockOrderingAuditTest` green). `disconnect()` clears `scheduledTasks` after cancelling. `ShutdownService` → concrete `ReloadService`; `RemoteStorageImpl.restartServer()` calls `reloadService.reload()`.
+- **Phase 3 — source migration done in dhbwrapla.** `DualisViewLoader` takes `@Qualifier("dualisDataSource") DataSource`. `DhbwNtlmAuthStore` migrated to constructor-injected `RaplaServerProperties`. `RaplaPruefungen` unused field dropped. **Not yet compile/test-verified** — dhbwrapla resolves rapla from `~/.m2`; awaiting coordinated build per AGENTS.md.
+- **Qualifier hardening.** `serverStorageSelector` injects `raplaDataSource` via `@Qualifier("raplaDataSource")`-narrowed `ObjectProvider` so deployment-private secondaries (dhbwrapla's `dualisDataSource`) can't be mistaken for the rapla store.
 
-**Phase 1 — rapla-server: replace the facets, delete the type.**
-- Expose the database `DataSource`(s) as proper `@Bean`s (built from
-  `RaplaServerProperties.getDbDatasources()` as PRD 045 Phase 3 already does in
-  `LegacyServerBridgeConfig` — move that logic into a `@Bean` factory).
-- `ServerStorageSelector` constructor takes the primary `DataSource` (nullable)
-  + the file-datasource path + `RaplaServerProperties`, instead of
-  `ServerContainerContext`.
-- `mailSessionProvider` (`ServerCoreConfig`) → returns `() -> null` (mail
-  session is dead today; no behaviour change).
-- `RaplaStatusPageGenerator`, `RaplaIndexPageGenerator`, `JavascriptPatcher` →
-  inject `RaplaServerProperties`; `isServiceEnabled(key)` becomes a lookup in
-  `getServices()` (absent ⇒ `true`, matching the old default), `getPatchScript()`
-  reads the property.
-- `ServerServiceImpl` → drop the `ServerContainerContext` constructor parameter
-  (its only use — the mail session — is already commented out).
-- Move `raplaLogger()` to `ServerCoreConfig` (or a small dedicated `@Bean`).
-- Delete `ServerContainerContext` and `LegacyServerBridgeConfig`.
+**Phase 1 — rapla-server: replace facets, delete the type.**
+- Expose `DataSource`(s) as `@Bean`s (move PRD 045 Phase 3 logic from `LegacyServerBridgeConfig`).
+- `ServerStorageSelector` ctor takes nullable primary `DataSource` + file path + `RaplaServerProperties`.
+- `mailSessionProvider` → `() -> null` (no behaviour change).
+- `RaplaStatusPageGenerator`, `RaplaIndexPageGenerator`, `JavascriptPatcher` → inject `RaplaServerProperties`; `isServiceEnabled(key)` looks up `getServices()` (absent ⇒ true).
+- `ServerServiceImpl` → drop `ServerContainerContext` parameter (only use was already commented out).
+- Move `raplaLogger()` to `ServerCoreConfig`.
+- Delete both types.
 
-**Phase 2 — `ReloadService` (the real restart).**
-- Add `CachableStorageOperator.reload()` — disconnect + reconnect (OQ1).
-  **Lock-correctness caveat — read before implementing:**
-  `LocalAbstractCachableOperator.disconnect()` carries an *audited* lock-ordering
-  contract — it takes `lockManager.write` **then** `disconnectLock.write`, the
-  inverse of what scheduled tasks do, and the inversion is only deadlock-safe
-  because of timeouts (`LockOrderingAuditTest` is the contract). `disconnect()`
-  and `connect()` are each `synchronized` and each acquire **and release**
-  `lockManager.write` internally. So `reload()` must **not** hold
-  `lockManager.write` across both calls (re-entrant deadlock unless
-  `DefaultRaplaLock`'s write lock is verified reentrant). Recommended shape:
-  a `synchronized reload()` that calls `disconnect()` then `connect()` in
-  sequence — `synchronized` serialises it against other operator mutations; the
-  brief `Disconnected` window is acceptable (a concurrent read during it fails
-  cleanly, same as any disconnect). Run `LockOrderingAuditTest` after.
-- New `ReloadService` `@Bean` injected with `CachableStorageOperator`;
-  `reload()` calls `operator.reload()`.
-- Rename `ShutdownService` → `ReloadService`, `shutdown(boolean restart)` →
-  `reload()`. `RemoteStorageImpl` autowires `ReloadService` and
-  `restartServer()` calls `reloadService.reload()` (admin check unchanged).
+**Phase 2 — `ReloadService`.**
+- Add `CachableStorageOperator.reload()` — disconnect + reconnect (OQ1). **Lock-correctness caveat:** `disconnect()` takes `lockManager.write` then `disconnectLock.write` (inverse of scheduled tasks; safe only via timeouts — `LockOrderingAuditTest` is the contract). Both `disconnect()` and `connect()` are `synchronized` and acquire+release `lockManager.write` internally. So `reload()` must **not** hold `lockManager.write` across both calls (re-entrant deadlock risk). Recommended: `synchronized reload()` calling `disconnect()` then `connect()` in sequence — serialises against other mutations; the brief `Disconnected` window fails concurrent reads cleanly. Run `LockOrderingAuditTest` after.
+- New `ReloadService` `@Bean` injected with `CachableStorageOperator`.
+- Rename `ShutdownService` → `ReloadService`, `shutdown(boolean)` → `reload()`. `RemoteStorageImpl` autowires it.
 
-**Phase 3 — dhbwrapla migration (separate repo, lockstep with Phase 1).**
-- `DualisViewLoader` — obtain the Dualis `DataSource` from a qualified `@Bean`
-  / `DhbwProperties` instead of `scc.getDbDatasource("jdbc/dualisdb")` (OQ4).
-- `DhbwNtlmAuthStore` — `isServiceEnabled` → `RaplaServerProperties.getServices()`.
-- `RaplaPruefungen` — drop the injected `ServerContainerContext` field (verify
-  it is unused first).
-- Compile + test dhbwrapla against the rapla-server change.
+**Phase 3 — dhbwrapla (lockstep with Phase 1).**
+- `DualisViewLoader` — qualified `@Bean` from `DhbwProperties` (OQ4).
+- `DhbwNtlmAuthStore` — `RaplaServerProperties.getServices()`.
+- `RaplaPruefungen` — drop unused field.
 
 ## Tests
 
@@ -186,85 +110,31 @@ Out of scope:
 
 ## Open Questions
 
-All resolved 2026-05-18 — design complete, ready to implement.
+All resolved 2026-05-18:
 
-1. ~~Atomic `reload()` placement.~~ **Resolved.** Add `reload()` to the
-   `CachableStorageOperator` interface, implemented in
-   `LocalAbstractCachableOperator` — disconnect + reconnect under the operator's
-   existing `disconnectLock` write lock, so the disconnect/connect gap is never
-   visible to concurrent requests. `ReloadService` just calls
-   `operator.reload()`; no external lock.
-2. ~~"All the schedulers" inventory.~~ **Resolved — investigated.** Every
-   `CommandScheduler` periodic task is operator-owned, scheduled via
-   `LocalAbstractCachableOperator.scheduleConnectedTasks(...)` (conflict
-   cleanup, lock cleanup, history cleanup) and re-armed by `connect()`. The
-   Spring `@Scheduled` server tasks (`ArchiverServiceTask`, `NotificationService`,
-   `SynchronisationManager`, …) are tied to Spring's `TaskScheduler`, operator-
-   independent, and keep ticking — they must **not** be restarted. So
-   `operator.reload()` re-arms exactly the right set; `ReloadService` needs no
-   separate scheduler logic.
-3. ~~Multi-pod restart semantics.~~ **Resolved.** `reload()` reloads only the
-   pod that served the request; document that. No fan-out — other pods re-sync
-   via the update history regardless.
-4. ~~dhbwrapla Dualis datasource.~~ **Resolved (recommendation — overridable).**
-   Keep the Dualis DB a dhbwrapla-private `@Bean DataSource` with a
-   `@Qualifier`, *not* in vanilla rapla's `rapla.db-datasources` map — dualis is
-   dhbw-specific and shouldn't surface in vanilla rapla's config namespace.
-   `DhbwProperties` already owns dhbw config; `DualisViewLoader` takes the
-   qualified bean.
-5. ~~`raplaLogger()` new home.~~ **Resolved.** Move to `ServerCoreConfig`.
-6. ~~Sequencing vs PRD 003.~~ **Resolved.** Phases 1 + 3 must land **together**
-   — deleting `ServerContainerContext` breaks dhbwrapla's compile immediately,
-   so the dhbwrapla migration is part of the same coordinated change. Phase 2
-   (`ReloadService`) lands with or just after Phase 1. Cross-reference from
-   PRD 003 D2, but this PRD does not block on PRD 003's other work.
+1. **Atomic `reload()` placement** — on `CachableStorageOperator` interface, impl in `LocalAbstractCachableOperator`. `ReloadService` just calls `operator.reload()`.
+2. **Scheduler inventory** — investigated: operator-owned tasks (conflict/lock/history cleanup) re-arm via `scheduleConnectedTasks` in `connect()`. Spring `@Scheduled` tasks (`ArchiverServiceTask`, `NotificationService`, `SynchronisationManager`) are operator-independent and keep ticking — must NOT restart. `operator.reload()` re-arms exactly the right set.
+3. **Multi-pod** — `reload()` reloads only the serving pod; other pods re-sync via update history.
+4. **dhbwrapla Dualis datasource** — keep dhbw-private `@Bean DataSource` with `@Qualifier`, not in vanilla rapla's `rapla.db-datasources` map.
+5. **`raplaLogger()` home** — `ServerCoreConfig`.
+6. **Sequencing vs PRD 003** — Phases 1+3 land together (delete breaks dhbwrapla compile immediately). Phase 2 with or just after.
 
 ## Adjacent cleanup — commons-collections4 → in-tree helpers (2026-05-24)
 
-Not in this PRD's main goal; folded in because it touches the same file
-(`LocalAbstractCachableOperator`) and removes pre-Spring scaffolding in the
-same spirit. Apache `commons-collections4` had exactly two consumers in the
-whole reactor, both private fields of `LocalAbstractCachableOperator`:
+Folded in because it touches `LocalAbstractCachableOperator` and removes pre-Spring scaffolding in the same spirit. `commons-collections4` had two consumers, both private fields:
 
-- `DualHashBidiMap<String, ReferenceInfo> externalIds` — bidirectional
-  external-id ↔ entity-reference map (Dualis import, KEY_EXTERNALID
-  annotation, ExchangeWebServices UIDs).
-- `DualTreeBidiMap<String, DeleteUpdateEntry> deleteUpdateSet` — the
-  change-feed structure that powers `getEntities(user, since=T)` and the
-  ~10 s update-history polling that drives multi-pod cache invalidation
-  (`docs/architecture/locking.md`). Needs replace-by-key **and**
-  range-scan-by-value, which is why a plain `TreeMap` couldn't do it.
+- `DualHashBidiMap<String, ReferenceInfo> externalIds` — external-id ↔ entity (Dualis, KEY_EXTERNALID, EWS UIDs).
+- `DualTreeBidiMap<String, DeleteUpdateEntry> deleteUpdateSet` — change-feed powering `getEntities(user, since=T)` and ~10s update-history polling for multi-pod cache invalidation. Needs replace-by-key **and** range-scan-by-value (plain `TreeMap` insufficient).
 
-Both replaced with package-private helpers in `rapla-server`:
+Both replaced with `rapla-server` package-private helpers:
 
 | Helper | Backing | Methods | Replaces |
 |---|---|---|---|
-| `TwoWayMap<K,V>` | two `HashMap`s kept in sync | `put`, `get`, `getKey`, `remove` | `DualHashBidiMap` |
-| `IndexedSortedMap<K,V>` | `HashMap<K,V>` + `TreeSet<V>` with external `Comparator` | `put` (replaces & evicts old from sorted view), `get`, `remove` (returns prev), `tailSetByValue` | `DualTreeBidiMap` |
+| `TwoWayMap<K,V>` | two `HashMap`s | `put`, `get`, `getKey`, `remove` | `DualHashBidiMap` |
+| `IndexedSortedMap<K,V>` | `HashMap` + `TreeSet` with external `Comparator` | `put` (replaces+evicts), `get`, `remove` (returns prev), `tailSetByValue` | `DualTreeBidiMap` |
 
-12 tier-1 unit tests cover the load-bearing invariants:
+12 tier-1 tests cover load-bearing invariants: equal-timestamp tie-break preserves entries (`DeleteUpdateEntry.compareTo` ties on id); `put(k, new)` evicts old from sorted view (else dup change-feed entries); `remove(k)` returns prev (used by `addToDeleteUpdate:1551` warning log); `TwoWayMap.put` evicts both directions on collision.
 
-- Equal-timestamp tie-break in the `Comparator` does not collapse same-timestamp
-  entries in the `TreeSet` (`DeleteUpdateEntry.compareTo` tie-breaks on id —
-  removing the tie-break would silently lose change-feed entries).
-- `put(k, newValue)` removes the old value from the sorted view (otherwise a
-  second update to the same id would leave two entries in the change feed).
-- `remove(k)` returns the previous value (`addToDeleteUpdate` at
-  `LocalAbstractCachableOperator.java:1551` uses the return for a warning log).
-- `TwoWayMap.put` evicts both directions when the new key or value collides.
+Dropped from poms: `commons-collections4` dep + dependencyManagement entry + version property; dead `guava.version` + `requestfactory.version` properties (residue from pre-Spring-Boot era).
 
-Dropped from poms:
-
-- `commons-collections4` dependency in `rapla-server/pom.xml`.
-- `commons-collections4` dependencyManagement entry + `commons-collections.version`
-  property in `rapla-bom/pom.xml`.
-- Dead `guava.version` and `requestfactory.version` properties in
-  `rapla-bom/pom.xml` — neither artifact appears in any `<dependency>` block
-  nor in `mvn dependency:tree` (residue from the pre-Spring-Boot era).
-
-Net delta: 4 dep/property lines removed, ~115 LOC of focused in-tree code
-added (helpers + tests), one transitive third-party library out of the
-reactor. Verified by full reactor `mvn clean compile` + `mvn test`
-(rapla-core, rapla-client, rapla-server all green; rapla-app reds are
-unrelated parallel auth/SPA WIP — see memory
-`project_spring_boot_auth_wip_failures`).
+Net: 4 lines removed, ~115 LOC in-tree (helpers + tests), one transitive library out. Verified by full reactor `mvn clean compile` + `mvn test` (core/client/server green; rapla-app reds are unrelated parallel auth/SPA WIP).

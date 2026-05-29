@@ -20,46 +20,40 @@ Packages were classified into proposed modules as:
 
 ### 0. `rapla-server → rapla-client` Maven edge — **RESOLVED 2026-05-07**
 
-`rapla-server/pom.xml` declared a runtime dependency on `rapla-client` for HTML calendar rendering (the `RaplaBlock` / `RaplaBuilder` family plus `components.calendarview.html.*`). The pom comment flagged this as a deferred compromise and noted Swing/AWT was being pulled into every server-only deployment.
+`rapla-server/pom.xml` had a runtime dep on `rapla-client` for HTML calendar rendering (`RaplaBlock`/`RaplaBuilder` + `components.calendarview.html.*`), pulling Swing/AWT into server-only deployments.
 
-The "compromise" turned out to be smaller than feared. Verified with grep: every shared class either (a) had zero Swing/AWT imports already or (b) only imported other classes in the same shared subset. Concretely, 27 source files were moved from `rapla-client` to `rapla-core`:
+Verified with grep: every shared class either had zero Swing/AWT imports or only imported other classes in the same shared subset. 27 files moved from `rapla-client` to `rapla-core`:
 
-- `org.rapla.components.calendarview.*` (12 top-level: `AbstractCalendar`, `Block`, `Builder`, `CalendarView`, `WeekdayMapper`, etc.) — **the `swing/` subpackage stays in `rapla-client`.**
-- `org.rapla.components.calendarview.html.*` (5 files: `AbstractHTMLView`, `HTMLBlock`, `HTMLWeekView`, `HTMLMonthView`, `HTMLCompactWeekView`).
-- `org.rapla.plugin.abstractcalendar.{RaplaBlock, RaplaBuilder, HTMLRaplaBlock, HTMLRaplaBuilder, GroupAllocatablesStrategy}` — the toolkit-agnostic + HTML pieces. The Swing pieces (`DateChooserPanel`, `RaplaCalendarViewListener`, `client/swing/*`) stay in `rapla-client`.
-- `org.rapla.client.internal.{HTMLInfo, ClassificationInfoUI, ReservationInfoUI, AppointmentInfoUI, RaplaColors, LinkController}` — six "UI-named-but-actually-HTML-text" helpers. None had Swing/AWT imports despite the package and class names suggesting otherwise.
+- `org.rapla.components.calendarview.*` (12 top-level: `AbstractCalendar`, `Block`, `Builder`, `CalendarView`, `WeekdayMapper`, …) — `swing/` subpackage stays in `rapla-client`.
+- `org.rapla.components.calendarview.html.*` (5: `AbstractHTMLView`, `HTMLBlock`, `HTMLWeekView`, `HTMLMonthView`, `HTMLCompactWeekView`).
+- `org.rapla.plugin.abstractcalendar.{RaplaBlock, RaplaBuilder, HTMLRaplaBlock, HTMLRaplaBuilder, GroupAllocatablesStrategy}` — toolkit-agnostic + HTML pieces. Swing pieces (`DateChooserPanel`, `RaplaCalendarViewListener`, `client/swing/*`) stay in `rapla-client`.
+- `org.rapla.client.internal.{HTMLInfo, ClassificationInfoUI, ReservationInfoUI, AppointmentInfoUI, RaplaColors, LinkController}` — six "UI-named-but-actually-HTML-text" helpers, no Swing/AWT imports despite the names.
 
-Then deleted the `rapla-client` dependency block from `rapla-server/pom.xml`.
+Deleted the `rapla-client` dep from `rapla-server/pom.xml`. `mvn compile` SUCCESS; `mvn test` 94/0/0/2-skipped; `dependency:tree` confirms only `rapla-core` remains. **No Swing/AWT in server classpath; dhbwrapla-server-only loses ~5 MB.**
 
-`mvn compile` BUILD SUCCESS; `mvn test` passes 94 tests (0 failures, 0 errors, 2 skipped). `mvn -pl rapla-server dependency:tree` confirms only `rapla-core` remains. **No more Swing/AWT in the server classpath; dhbwrapla-server-only deployments lose ~5 MB of unused dependencies.**
-
-Test footprint: `WeekdayMapperTest` was originally located in `rapla-app` (where it has access to `rapla-server`'s `ServerBundleManager` for i18n setup); kept there since the test needs the server-side bundle manager.
+`WeekdayMapperTest` stays in `rapla-app` (needs `rapla-server`'s `ServerBundleManager` for i18n setup).
 
 ### 1. `core/framework.internal` ↔ `server/server.internal` — **RESOLVED in Phase B4 (2026-05-07)**
 
-**Single class-level offender:** `org.rapla.framework.internal.DefaultScheduler` imports `org.rapla.server.internal.TimeZoneConverterImpl` (lines 15, 41, 76 in `DefaultScheduler.java`):
+Single offender: `org.rapla.framework.internal.DefaultScheduler` imports `org.rapla.server.internal.TimeZoneConverterImpl`:
 
 ```java
 this(logger, new TimeZoneConverterImpl());                    // line 41
 TimeZoneConverterImpl converter = new TimeZoneConverterImpl();  // line 76
 ```
 
-The reverse direction (`server.internal` → `framework.internal`) is the legitimate "server depends on core" flow — that one stays.
-
-**Fix:** `TimeZoneConverter` (interface, in `org.rapla.server`) and `TimeZoneConverterImpl` (in `org.rapla.server.internal`) are **pure-Java** classes with zero server-specific imports — no servlet API, no Spring, no JDBC. They're framework-shaped, not server-shaped, and were misplaced in the `server.*` package from the start.
-
-Move both to `org.rapla.framework[.internal]`:
+`TimeZoneConverter` + `TimeZoneConverterImpl` are pure-Java (no servlet/Spring/JDBC) — framework-shaped, misplaced in `server.*` from the start. Moved:
 
 | File | Move to |
 |---|---|
 | `org.rapla.server.TimeZoneConverter` | `org.rapla.framework.TimeZoneConverter` |
 | `org.rapla.server.internal.TimeZoneConverterImpl` | `org.rapla.framework.internal.TimeZoneConverterImpl` |
 
-**Importer fan-out** (8 files): `server.internal.{ServerServiceImpl, RemoteStorageImpl, UpdateDataManagerImpl, console/ImportExportManagerContainerImpl}`, `server.spring.ServerCoreConfig`, `plugin.exchangeconnector.server.exchange.AppointmentSynchronizer`, `storage.dbsql.AbstractTableStorage`, `storage.dbrm.RemoteOperator`, `storage.impl.server.LocalAbstractCachableOperator`. All updates are mechanical import-line changes — no logic touched.
+Importer fan-out: 8 files, mechanical import-line changes.
 
-**Action:** added as **Phase B4** and executed 2026-05-07. Two `git mv` operations, 14 import-line updates across 13 files (one each in: ServerCoreConfig, ServerServiceConfig, ServerServiceImpl, RemoteSpringBootApplicationTest, RaplaTemplateImport, Export2iCalConverter, SynchronisationManager, AppointmentSynchronizer, RaplaICalImport, RaplaICalTimezones, AbstractTableStorage, LocalAbstractCachableOperator, DefaultScheduler), one FQN replacement in `ServerServiceConfig.java:263`, and two missing-import additions caught by `mvn clean compile` (`ServerServiceImpl` and `UpdateDataManagerImpl` used the impl as an unqualified token via same-package resolution). After fix: `mvn clean compile` BUILD SUCCESS; targeted tests `RaplaSpringBootApplicationTest, ServerServiceIntegrationTest, UrlPreservationTest` — 14 pass, 0 fail; jdeps re-run confirms `framework.* → server.*` is **0 edges**.
+**Phase B4 executed 2026-05-07:** 2 `git mv`, 14 import updates across 13 files, 1 FQN at `ServerServiceConfig.java:263`, 2 missing-import additions caught by `mvn clean compile` (same-package unqualified token resolution). After fix: `mvn clean compile` SUCCESS; 14 targeted tests pass; jdeps re-run confirms `framework.* → server.*` is **0 edges**.
 
-**Lesson recorded:** mass-rename refactors require `mvn clean compile`, not just `mvn compile`. Maven incremental compile happily uses cached `.class` files for source files it didn't notice as dirty, hiding broken unqualified-name resolution. Add to Phase D plan: run `mvn clean compile` at the end of each D-step, not just incremental.
+**Lesson:** mass-rename refactors require `mvn clean compile` — incremental compile reuses cached `.class` files, hiding broken unqualified-name resolution. Run `mvn clean compile` at the end of each D-step.
 
 ### 2. `server/plugin.exchangeconnector.server` ↔ `core/plugin.exchangeconnector.server.exchange`
 
@@ -71,7 +65,7 @@ Move both to `org.rapla.framework[.internal]`:
 
 ## Unidirectional edges flagged "illegal" (92)
 
-Almost all are plugin-classification questions, not architectural problems. The audit pessimistically classified some plugin packages (e.g., `plugin.<name>.client` without further sub-tree, plugin bare roots that contain only descriptors) as `core`, which then made every `core → client` edge from those packages look illegal.
+Almost all are plugin-classification questions, not architectural problems — the audit pessimistically classified some plugin packages as `core`, making every `core → client` edge from them look illegal.
 
 Categorisation by source pattern:
 

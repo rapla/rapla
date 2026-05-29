@@ -555,6 +555,81 @@ Fragment cannot be spread here as objects of type 'AllocatableClassification'
 can never be of type '<ReservationKey>Classification'
 ```
 
+### 11. reservations + the calendar query (PRD 055 + PRD 066)
+
+`reservations(filter:)` requires a mandatory time window and supports
+three orthogonal ways to select which allocatables drive the result —
+mirroring the calendar UI's tree-selection model (type checkboxes,
+per-type filter rules, explicit ticks). The combined input shape is:
+
+```graphqls
+input ReservationFilter {
+  from:                LocalDateTime!     # inclusive
+  to:                  LocalDateTime!     # exclusive
+  typeKeyEq:           String             # narrow to one reservation DT
+  ownerEq:             ID                 # who created it
+  allocatableIdsIn:    [ID!]              # PRD 055 — uses ANY of these ids
+  allocatableMatching: AllocatableFilter  # PRD 066 — uses ANY allocatable matching this filter
+  nameContains:        String
+  limit:               Int                # default 500, hard cap 5000
+}
+```
+
+`allocatableMatching` reuses the full `AllocatableFilter` shape — the
+same `typeKeyIn` + per-type `whereXxx` (PRD 059) + `idIn` the calendar
+sidebar produces. Semantic: result is the union of the type-bucket
+predicate set and `idIn`; per-type filter rules apply only to the
+type-bucket; `idIn` is additive and ignores filter rules.
+
+```graphql
+# Calendar query — "show me events in this building over the semester"
+{
+  reservations(filter: {
+    from: "2026-04-01T00:00:00"
+    to:   "2026-09-30T00:00:00"
+    allocatableMatching: {
+      typeKeyEq: "<ResourceKey>"
+      where<ResourceKey>: { <RefAttribute>: { eq: "<reference-id>" } }
+    }
+  }) {
+    firstDate
+    classification {
+      typeKey
+      ... on <ReservationKey>Classification { displayField1 displayField2 }
+    }
+  }
+}
+```
+
+```graphql
+# Mixed tree-selection — type bucket + explicit picks
+{
+  reservations(filter: {
+    from: "..."
+    to:   "..."
+    allocatableMatching: {
+      typeKeyIn: ["<TypeA>", "<TypeB>"]      # type checkboxes
+      where<TypeA>: { ... }                  # per-type filter rule
+      idIn: ["<id-1>", "<id-2>"]             # additive ticks (any types)
+    }
+  }) { firstDate classification { typeKey } }
+}
+```
+
+§12 invariants on `reservations(filter:)`:
+
+- Anonymous caller → `[]` unconditionally
+- Each reservation passes `pc.canRead(r, caller)` post-loop
+- Each allocatable in `idIn` / `allocatableMatching` passes `pc.canRead(a, caller)` at resolution time — unreadable ids drop silently (existence not leaked)
+- Both `idIn` and `allocatableIdsIn` are subject to §12; explicit picks do NOT bypass `canRead`
+
+Window cap is configurable via Spring Boot property
+`rapla.graphql.max-query-window-days` (default null = no cap). Result
+size caps at 5000 entries (default 500). Per-deployment example
+queries with real dataset numbers live in
+[`dhbwrapla/docs/graphql.md`](../../dhbwrapla/docs/graphql.md)
+§"Reservation queries".
+
 ---
 
 ## Hot-swap probe

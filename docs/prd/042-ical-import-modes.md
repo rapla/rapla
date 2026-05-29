@@ -14,16 +14,9 @@ Both modes share parsing infrastructure: the `IcalFeedParser` service introduced
 
 ## Background — current state
 
-`RaplaICalImport.java` has been **silently broken since the Date→LocalDateTime migration** (`670219d9f`, ~6 months ago). The entire VEVENT-parsing block (~200 lines) is commented out. The handler returns `[0, 0, 0, 0]` (parsed 0, imported 0, present 0, skipped 0) on every call, with no error. A user invoking import via the Swing `ImportFromICalMenu` sees "imported 0 events" and assumes their file was empty.
+`RaplaICalImport.java` silently broken since Date→LocalDateTime migration (`670219d9f`, ~6 months ago). VEVENT-parsing block (~200 lines) commented out. Handler returns `[0,0,0,0]` on every call with no error — users see "imported 0 events" and assume empty file.
 
-Auxiliary state:
-- `POST /api/ical/import` endpoint exists and accepts requests.
-- Angular OpenAPI codegen exists (`rapla-angular/src/app/api/api/i-cal-import-controller.service.ts`) but no SPA UI consumes it.
-- Swing `ImportFromICalMenu` dialog still works as a user-facing dialog (file/URL picker, allocatable selector, event-type mapping) — but submits to the dead handler.
-- `calcRepeating()` helper exists and works for COUNT-bounded RRULEs but throws `UnsupportedOperationException` on UNTIL-bounded RRULEs.
-- Zero tests on this entire surface.
-
-The user has accepted breaking the current wire shape, so the rewrite is freed from API-compat constraints.
+State: endpoint `POST /api/ical/import` exists; Angular OpenAPI codegen exists but no SPA UI; Swing `ImportFromICalMenu` still presents the dialog (file/URL, allocatable, event-type mapping) but submits to dead handler; `calcRepeating()` works for COUNT-bounded RRULEs but throws on UNTIL; zero tests on this surface. User accepts breaking the wire shape.
 
 ## The two modes
 
@@ -43,89 +36,57 @@ A given allocatable can have any combination: PRD 038 writes (rapla → Exchange
 
 ## Three-way comparison — Mode 1 vs Mode 2 vs PRD 039
 
-PRD 039 is an alternative path for "external iCal → rapla" that produces something *different* from a Reservation. The three options together cover the spectrum:
+PRD 039 produces something *different* from a Reservation; the three together cover the spectrum:
 
-| | **PRD 039** — busy-marker subscription | **Mode 1** — one-time import | **Mode 2** — read-only sync |
+| | **PRD 039** busy-marker | **Mode 1** one-time | **Mode 2** read-only sync |
 |---|---|---|---|
-| **What rapla creates** | `ExternalAppointment` (sidecar entity, NOT a Reservation) + optionally `AvailabilityWindow` | Normal `Reservation` | Managed `Reservation` (read-only flag) |
-| **Visible where?** | Conflict detection only — gray busy block on the resource's row | Everywhere Reservations appear (lists, schedule grid, reports, search) | Same as Mode 1 |
-| **Searchable / listable?** | No | Yes | Yes |
-| **Title visible?** | Owner sees title; others see "busy" only (built-in `BusyOnlyProjection`) | Yes, to anyone with read on the Reservation | Yes (same) |
-| **Editable?** | N/A — not a Reservation | Yes | No (admin can "break the sync") |
-| **Auto-refetch?** | Yes (subscription scheduler) | No (one-shot) | Yes (sync scheduler) |
-| **Vanish on source delete?** | Yes | No | Yes |
-| **Source authority** | Live (for conflict awareness) | None after import | Live (rapla mirrors) |
-| **Privacy default** | `BUSY_ONLY` — titles stripped for non-owners | Full detail visible | Full detail visible |
-| **Storage marker** | `ExternalCalendarSubscription` → `ExternalAppointment` | `KEY_EXTERNALID = UID` on the Reservation | `KEY_EXTERNALID = UID` + `KEY_EXTERNAL_SYNC_SOURCE = source-id` on the Reservation |
+| Creates | `ExternalAppointment` sidecar (+ `AvailabilityWindow`) | Normal `Reservation` | Managed `Reservation` (read-only flag) |
+| Visible | Conflict detection only — gray busy block | Lists, grid, reports, search | Same as Mode 1 |
+| Searchable | No | Yes | Yes |
+| Title visible | Owner only (`BusyOnlyProjection`) | All with read | All with read |
+| Editable | N/A | Yes | No (admin can break the sync) |
+| Auto-refetch | Yes | No | Yes |
+| Vanish on source delete | Yes | No | Yes |
+| Privacy default | `BUSY_ONLY` (titles stripped) | Full detail | Full detail |
+| Marker | `ExternalCalendarSubscription` → `ExternalAppointment` | `KEY_EXTERNALID = UID` | `KEY_EXTERNALID` + `KEY_EXTERNAL_SYNC_SOURCE` |
 
 ### The fundamental axis
 
-**Reservation or sidecar?**
-
-- **Sidecar** (PRD 039) — events exist only as constraints; invisible outside conflict detection. For "this person's availability matters to my planning, but their events aren't rapla business."
-- **Reservation** (PRD 042 either mode) — events ARE rapla business; listed, searchable, attached to allocatables, participating in everything reservations do.
-
-Once you pick Reservation, the secondary axis is one-shot vs ongoing:
-
-- **Mode 1** — rapla takes ownership after import; source is forgotten as authoritative.
-- **Mode 2** — source keeps ownership; rapla mirrors and re-fetches.
+**Sidecar vs Reservation.** Sidecar (PRD 039) for "availability matters but events aren't rapla business." Reservation (PRD 042) for events that ARE rapla business. Then one-shot (Mode 1, rapla owns) vs ongoing (Mode 2, source owns).
 
 ### Decision tree
 
 ```
-"Do I want these events to be real rapla entries
- (in lists, in reports, with titles, attached to allocatables)?"
-   │
-   ├── No, just for conflict awareness ──► PRD 039 subscription
-   │       (BUSY_TIMES / AVAILABILITY_TIMES / MIXED interpretation)
-   │
-   └── Yes, they should be Reservations
-           │
-           ├── "Do I want rapla to keep them in sync with the source?"
-           │       │
-           │       ├── No, one-shot ──► PRD 042 Mode 1
-           │       └── Yes, ongoing ──► PRD 042 Mode 2
+Real rapla entries (lists/reports/titles/allocatables)?
+  No  → PRD 039 subscription (BUSY/AVAIL/MIXED)
+  Yes → Sync with source?
+          No  → Mode 1 (one-shot)
+          Yes → Mode 2 (ongoing read-only)
 ```
 
-### Same source, three different choices — concrete example
+### Same source, three different choices
 
-Dr. Schmidt's published Outlook iCal URL:
+Dr. Schmidt's Outlook iCal:
+- **PRD 039 (BUSY_TIMES)** — gray busy blocks on her row; no titles for others; blocks rapla bookings on top.
+- **Mode 1** — Outlook events become editable Reservations with her as allocatable. Outlook changes tomorrow → rapla doesn't notice.
+- **Mode 2** — events appear as read-only managed Reservations; badge "Managed by sync from …"; Outlook changes propagate; Outlook delete removes from rapla.
 
-| Choice | What appears in rapla |
-|---|---|
-| **PRD 039 (BUSY_TIMES)** | Her row in the schedule grid shows gray hatched blocks at the times she's busy in Outlook. No titles to other users. Not in any reservation list. Blocks future rapla bookings from being scheduled on top. |
-| **Mode 1** (one-time) | Click "import" → her Outlook events become editable Reservations in rapla with her as the allocatable. Titles visible. Searchable. If she moves an event in Outlook tomorrow, rapla doesn't notice. |
-| **Mode 2** (ongoing read-only) | Her Outlook events appear as Reservations with her as the allocatable. Titles visible. Searchable. Badge says "Managed by sync from Dr. Schmidt's Outlook." Read-only — no one in rapla can edit. When she moves an event in Outlook, the next sync updates the Reservation. Removing the event in Outlook removes it from rapla. |
+### Privacy distinction
 
-### Privacy distinction worth noting
+PRD 039 is privacy-aware by default (BUSY_ONLY) — right for personal calendars. PRD 042 has no built-in privacy stripping — titles visible to anyone with read. So personal calendars → PRD 039; administrative/organisational calendars (dean's office, central room schedule, official course calendar) → PRD 042.
 
-PRD 039 is **privacy-aware by default**: `BUSY_ONLY` strips titles for non-owners — appropriate for personal calendars where "Therapy session" shouldn't be visible to a course coordinator.
+### Coexistence
 
-PRD 042 (both modes) has **no built-in privacy stripping**: the Reservation's title is visible to anyone with read on the Reservation, same as any normal Reservation. So:
+OK with care. Mode 2 of admin schedule + PRD 039 of personal Outlook on the same allocatable composes well. **Don't wire both to the same source** — duplicate conflict signals.
 
-- **Personal calendars** → PRD 039 (BUSY_ONLY default protects titles).
-- **Administrative/organizational calendars** where titles SHOULD be visible (dean's office holidays, central room schedule, official course calendar) → PRD 042 (Mode 1 or 2 depending on whether ongoing sync is wanted).
+### Why "true dual sync" isn't a v1 goal
 
-Mirroring a personal calendar via Mode 2 would expose the person's appointment titles to everyone with read on the resource — usually not what you want.
+Decomposes into three one-way flows:
+- rapla bookings in Outlook → PRD 038
+- Personal calendar blocks rapla → PRD 039
+- External schedule as rapla bookings → PRD 042 Mode 2
 
-### Can they coexist?
-
-Yes — with care. Different sources for the same allocatable is fine and useful:
-
-- Mode 2 syncs the dean's master schedule into Dr. Schmidt's row as managed Reservations (administrative — titles visible by design).
-- PRD 039 subscription to her personal Outlook for busy-marker awareness (personal — titles hidden).
-
-Both contribute to her availability picture from different angles. **Don't wire both to the *same* source for the same allocatable** — that would create duplicate conflict signals (each event appears once as a managed Reservation via Mode 2 and once as a busy marker via PRD 039). Functionally redundant; cosmetically noisy.
-
-### When dual sync would be desired — and isn't supported
-
-The three options together also explain why "true dual sync" (bidirectional, with conflict resolution between both sides) isn't a v1 goal. The pattern people usually want when they say "dual sync" decomposes into independent one-way flows:
-
-- "I want rapla bookings in my Outlook calendar too" → PRD 038 (rapla → Exchange writes). One way.
-- "I want my personal calendar to block rapla bookings" → PRD 039 subscription. One way.
-- "I want my external schedule to appear as bookings in rapla" → PRD 042 Mode 2. One way.
-
-Three needs, three one-way solutions. Combining them gets bidirectional behaviour for the *user's* purposes without rapla having to solve the bidirectional-sync conflict-resolution problem.
+Three needs, three one-way solutions. Combining yields bidirectional behaviour without rapla solving bidirectional-sync conflict resolution.
 
 ## Scope
 
@@ -143,38 +104,37 @@ Three needs, three one-way solutions. Combining them gets bidirectional behaviou
 
 **In scope (Mode 1 specifics):**
 
-- Request body: file content (multipart upload) OR URL + classification mapping config + target allocatable list + update strategy (`SKIP_EXISTING` default / `UPDATE_EXISTING` / `RECREATE_ALL`).
-- Classification mapping: which rapla event type the imported Reservations get, plus a per-attribute mapping (`SUMMARY → name`, optionally `DESCRIPTION → description-attribute`, `LOCATION → location-attribute`).
-- UID dedup via existing `RaplaObjectAnnotations.KEY_EXTERNALID` annotation. Strategy controls collision behaviour.
-- Reservations created with `owner = the importing admin user`.
+- Request: file (multipart) or URL + classification mapping + target allocatables + update strategy (`SKIP_EXISTING` default / `UPDATE_EXISTING` / `RECREATE_ALL`).
+- Mapping: event type + per-attribute (`SUMMARY → name`, optionally `DESCRIPTION/LOCATION` → attribute).
+- UID dedup via `KEY_EXTERNALID`. Reservations owned by importing admin.
 
 **In scope (Mode 2 specifics):**
 
-- New entity `IcalSyncSource`: `url`, `displayName`, `enabled`, `refreshIntervalMinutes` (default 60), classification mapping, allocatable mapping, `lastFetched`, `lastError`, `managedReservationCount`, `etag` / `lastModified` for conditional GETs. Persisted via the existing storage operators (XML reader/writer + JDBC DDL Liquibase changelog).
-- New annotation `RaplaObjectAnnotations.KEY_EXTERNAL_SYNC_SOURCE` on Reservations created by Mode 2 sync — value is the `IcalSyncSource.id`. Combined with the existing `KEY_EXTERNALID` (UID), this uniquely identifies an external-managed reservation.
-- Read-only enforcement: every controller that mutates Reservations (`POST/PUT/DELETE /api/reservations` etc.) checks for `KEY_EXTERNAL_SYNC_SOURCE`; if present, non-admin users get 403 with explanatory message ("This reservation is externally managed by sync source X and cannot be edited directly. Edit it at the source.").
-- Admin "break the sync" action: admin can disable the sync source's coverage of a specific Reservation, which strips the `KEY_EXTERNAL_SYNC_SOURCE` annotation; the reservation becomes ordinary and editable. Audit-logged. Reverse not supported (an ordinary reservation can't be retroactively "claimed" by a sync source).
-- Scheduled fetcher (same scheduler pattern as PRD 039): fetches enabled sync sources at their refresh interval. Parses via `IcalFeedParser`. Diffs against existing managed Reservations for this source: create new, update changed (start/end/name/etc.), delete vanished. Logs counts per fetch.
-- Conflict handling on sync: if a managed Reservation's update would create a conflict with another Reservation (managed or otherwise), the update **proceeds anyway** — the sync source is authoritative and conflicts should surface in rapla's conflict UI for the planner to investigate. Don't silently reject the update; rapla's conflict model is advisory, not blocking.
-- Body-marker symmetry with PRD 038: managed Reservations get a description attribute (or annotation) noting "Externally managed by sync from `<URL>`. Edits will be overwritten on next sync." Visible to anyone who can see the reservation.
+- New entity `IcalSyncSource`: `url`, `displayName`, `enabled`, `refreshIntervalMinutes` (default 60), classification + allocatable mapping, `lastFetched`, `lastError`, `managedReservationCount`, `etag`/`lastModified`. Persisted via XML reader/writer + Liquibase JDBC DDL.
+- New `KEY_EXTERNAL_SYNC_SOURCE` annotation = `IcalSyncSource.id`. Combined with `KEY_EXTERNALID` uniquely identifies external-managed.
+- Read-only enforcement: reservation mutation controllers check the annotation; non-admin → 403 with explanatory message naming the source.
+- Admin "break the sync": strips the annotation; reservation becomes editable. Audit-logged. One-way (no re-attach).
+- Scheduled fetcher (PRD 039 pattern): fetch enabled sources, parse via `IcalFeedParser`, diff against managed Reservations (create/update/delete-vanished), log counts.
+- Sync conflict handling: update proceeds even when it creates conflicts (source is authoritative; rapla conflict UI is advisory).
+- Body-marker symmetry with PRD 038: description note "Externally managed by sync from `<URL>`. Edits will be overwritten."
 
 **Out of scope:**
 
-- Modifying the legacy `POST /api/ical/import` URL or `Import` record format. The endpoint goes away; the new endpoints are at `/api/ical-import/*`. Angular codegen regenerates against the new shape. The Swing menu (`ImportFromICalMenu`) is rewritten to call the new endpoints.
-- Angular UI for either mode. The new endpoints are codegen-ready; an SPA-side UI is a follow-up (track as PRD 043 if/when a customer asks).
-- Two-way sync (rapla → external). That's PRD 038's territory. Mode 2 is strictly external→rapla.
-- Mode-conversion ("turn a Mode 1 import into a Mode 2 managed sync after the fact"). One-time imports are one-time; if a user wants ongoing sync, they create a Mode 2 source and accept that the initial state may diverge from their previous Mode 1 result.
-- Conflict-of-managed-Reservations resolution UI. If two sync sources both try to create reservations for the same allocatable at the same time, both are created and rapla's normal conflict detection surfaces them. Multi-sync coordination is a Phase-6 polish.
-- Authentication for sync source feeds (HTTP Basic, OAuth). v1 supports public/secret-URL feeds only, same as PRD 039.
+- Legacy `POST /api/ical/import` shape — endpoint removed; new at `/api/ical-import/*`. Codegen + Swing menu regenerate.
+- Angular UI — codegen-ready, but UI is follow-up (PRD 043 if asked).
+- Two-way sync (PRD 038 territory).
+- Mode-conversion (Mode 1 → Mode 2 after the fact).
+- Multi-sync coordination — two sources for same allocatable both create; conflict UI surfaces it.
+- Auth on feed URLs (Basic/OAuth) — public/secret-URL only, same as PRD 039.
 
 ## Sequencing & dependencies
 
-PRD 042 is the **furthest downstream** in the iCal/Exchange family and has hard dependencies on both siblings:
+PRD 042 is **furthest downstream** in the iCal/Exchange family:
 
-- **Hard dependency on PRD 039** — uses the `IcalFeedParser` service for all parsing (strict-mode config, size caps, recurrence expansion, `BUSYSTATUS`/`TRANSP` filtering, timezone normalisation). PRD 042 cannot ship without PRD 039's parser in place. Phase 1 step 1 explicitly gates on this.
-- **Soft dependency on PRD 038** — Mode 2's loopback handling needs the same `RaplaExportedEvent`-based logic PRD 039's loopback filter uses (a sync source pointing at a calendar rapla also writes to via PRD 038 would otherwise import rapla's own writes back as managed Reservations). Same fail-safe: degrades to no-loopback-filter when `RaplaExportedEvent` is absent, accepting that an admin who wires both 038 and 042 Mode 2 against the same target before PRD 038 lands will see duplicates until the table exists.
+- **Hard dep on PRD 039** — `IcalFeedParser` for all parsing (strict-mode, size caps, recurrence expansion, `BUSYSTATUS`/`TRANSP` filtering, tz normalisation). Phase 1 step 1 gates on it.
+- **Soft dep on PRD 038** — Mode 2's loopback uses `RaplaExportedEvent`-based logic; degrades to no-filter when absent (admin wiring both 038 + Mode 2 against same target before 038 lands sees duplicates).
 
-**Implementation order**: PRD 039 must land first (or at minimum its `IcalFeedParser` service must be merged). PRD 038 can land before or after PRD 042 — if before, Mode 2's loopback is robust from day one; if after, Mode 2 ships with the "all FOREIGN" fail-safe and tightens once PRD 038 lands.
+PRD 039 must land first (or at least `IcalFeedParser` merged). PRD 038 can land before or after.
 
 ## Plan
 
@@ -186,64 +146,50 @@ PRD 042 is the **furthest downstream** in the iCal/Exchange family and has hard 
 
 ### Phase 2 — Mode 1 (one-time import)
 
-1. New endpoint `POST /api/ical-import/preview`. Accepts file (multipart) or URL + classification mapping + target allocatable ids. Calls `IcalFeedParser`, applies the classification mapping in memory (no DB writes), returns:
-   - Per-event preview (parsed start/end/name/recurrence summary, mapping result, would-be-skipped reason if any)
-   - Aggregate counts (parsed, would-import, would-update, would-skip, parse errors)
-   - Conflict-detection preview against existing rapla Reservations
-   - Idempotency token (UUID, valid 15 min, stored in a server-side preview cache)
-2. New endpoint `POST /api/ical-import/commit`. Accepts the idempotency token from preview + update strategy (`SKIP_EXISTING` | `UPDATE_EXISTING` | `RECREATE_ALL`). Re-parses the cached preview and writes Reservations. Returns the same shape as preview but with actual counts.
-3. Rewrite Swing `ImportFromICalMenu` to use the preview→commit flow: dialog shows preview results before committing.
-4. Tier-1/2 tests for the mapping and recurrence handling.
+1. `POST /api/ical-import/preview` — file/URL + mapping + allocatable ids. Calls `IcalFeedParser`, applies mapping in-memory. Returns per-event preview, aggregate counts (parsed/would-import/-update/-skip/errors), conflict preview, idempotency token (UUID, 15 min cache).
+2. `POST /api/ical-import/commit` — token + strategy. Re-parses cached preview, writes Reservations.
+3. Rewrite Swing `ImportFromICalMenu` for preview→commit flow.
+4. Tier-1/2 tests for mapping + recurrence.
 
 ### Phase 3 — Mode 2 (read-only sync)
 
-1. New entity `IcalSyncSource` in `rapla-core`. Persistence: XML reader/writer + Liquibase JDBC DDL.
-2. Admin UI for sync sources (Swing first; Angular later). CRUD operations + "Test fetch now" + per-source health view.
-3. New annotation `KEY_EXTERNAL_SYNC_SOURCE` on `Reservation`. Add to `RaplaObjectAnnotations`.
-4. Read-only enforcement: extend the existing reservation mutation controllers with a check on this annotation. Non-admin → 403 with explanatory message. Admin gets a warning but can proceed (with audit-log entry).
-5. Scheduled `IcalSyncFetcher`: fetches enabled sources, parses via `IcalFeedParser`, diffs and writes. Uses the same `@Scheduled` pattern as `SynchronisationManager`.
-6. "Break the sync" admin action — endpoint `POST /api/reservations/{id}/break-sync` strips the `KEY_EXTERNAL_SYNC_SOURCE` annotation. Audit-logged.
+1. New `IcalSyncSource` entity in `rapla-core` (XML + Liquibase JDBC DDL).
+2. Admin UI for sync sources (Swing first, Angular later) + "Test fetch now" + health view.
+3. Add `KEY_EXTERNAL_SYNC_SOURCE` to `RaplaObjectAnnotations`.
+4. Read-only enforcement on reservation mutation controllers; non-admin → 403. Admin proceeds with audit-log warning.
+5. `IcalSyncFetcher` `@Scheduled` (same pattern as `SynchronisationManager`): fetch → parse → diff → write.
+6. `POST /api/reservations/{id}/break-sync` — admin strips annotation. Audit-logged.
 
 ### Phase 4 — Tests + privacy review
 
-1. Per AGENTS.md §10 pyramid:
-   - Tier 1 (pure unit): per-event mapping, recurrence handling, classification application.
-   - Tier 2 (facade): preview→commit idempotency, dedup behaviour per update strategy, sync fetcher (initial + delta + delete-on-vanish), `WireMock` against recorded ICS payloads.
-   - Tier 3 (Spring slice MockMvc): admin-only gate on every endpoint (non-admin → 403), read-only enforcement on managed Reservations (the AGENTS.md §12 leak test specifically for `KEY_EXTERNAL_SYNC_SOURCE` annotations — non-admin GET on a managed Reservation can still see it but can't mutate; PUT returns 403; existence of the sync-source URL itself never leaks to non-admin).
-2. Privacy: sync source URLs can contain secrets (Google Calendar's "secret ICS URL"). The URL must never appear in API responses to non-admin users, in error messages to non-admin users, or in audit logs (log the source's `displayName` or `id`, never the URL).
+1. Per §10 pyramid: tier 1 mapping/recurrence; tier 2 preview→commit idempotency + strategies + fetcher (initial/delta/delete-vanished) WireMock; tier 3 admin-only gates + §12 leak test on `KEY_EXTERNAL_SYNC_SOURCE` (non-admin sees but can't mutate; URL never leaks).
+2. Privacy: sync URLs may carry secrets (Google "secret ICS URL"). Never appear in API responses to non-admin, error messages to non-admin, or audit logs (log `displayName`/`id`).
 
 ### Phase 5 — Docs
 
-1. `docs/configuration.md` — new section on Mode 2 sync sources: setup, mapping config, allocatable mapping, "what 'externally managed' means for end users."
-2. User-facing notice: when a user opens a managed Reservation, the read-only state is surfaced ("Managed by sync source 'University Master Schedule'; edits will be overwritten") — same pattern as PRD 038's body marker for the opposite direction.
-3. Migration note: the legacy `POST /api/ical/import` endpoint is removed; callers must move to `/api/ical-import/preview` + `/api/ical-import/commit`. Document any external integrators (likely none — the endpoint was broken).
+1. `docs/configuration.md` — Mode 2 setup, mapping, allocatable mapping, "what externally managed means."
+2. User-facing read-only notice when opening managed Reservation (mirror PRD 038 body marker).
+3. Migration: `/api/ical/import` removed; callers → `/api/ical-import/preview`+`commit`.
 
 ## Tests
 
-Per AGENTS.md §10 pyramid (details in Plan Phase 4 above). Key invariants:
+Per §10 pyramid (details in Phase 4 above). Key invariants:
 
-- Tier 1 covers the parsing/mapping/recurrence math (lots of edge cases — empty SUMMARY, all-day events, RRULE with UNTIL, RRULE with COUNT, EXDATE, RECURRENCE-ID overrides, cross-DST timestamps).
-- Tier 2 covers fetcher behaviour (WireMock-backed): preview→commit idempotency, three update strategies, vanish-on-delete, conflict-on-update doesn't abort, malformed-ICS rejected gracefully.
-- Tier 3 covers permission boundaries: admin-only on all endpoints, AGENTS.md §12 leak test for sync-source URL secrecy, read-only enforcement on managed Reservations including the "existence is information" rule on `KEY_EXTERNAL_SYNC_SOURCE`.
-- No tier-4 unless real customer integration testing surfaces an unhappy path.
+- **Tier 1** — parsing/mapping/recurrence (empty SUMMARY, all-day, RRULE UNTIL/COUNT, EXDATE, RECURRENCE-ID, cross-DST).
+- **Tier 2** — fetcher (WireMock): preview→commit idempotency, three strategies, vanish-on-delete, conflict-on-update doesn't abort, malformed-ICS graceful.
+- **Tier 3** — admin-only gates, §12 leak test for URL secrecy + `KEY_EXTERNAL_SYNC_SOURCE` "existence is information".
+- No tier-4 unless real-customer integration surfaces an unhappy path.
 
 ## Open Questions
 
-- **Re-import update strategy default.** Currently the broken code "skips" existing UIDs. Should the rewrite default to `SKIP_EXISTING` (preserves existing reservations) or `UPDATE_EXISTING` (refreshes from the source)? *Resolution candidate: `SKIP_EXISTING` for Mode 1 (the canonical use case is "one-time bootstrap, then leave alone"); irrelevant for Mode 2 (sync always upserts).*
-
-- **Allocatable mapping in Mode 2.** Each managed Reservation needs to be attached to one or more rapla allocatables. Two options: (a) flat — every Reservation from this sync source gets attached to the same admin-configured list of allocatables; (b) per-event — derive the allocatable from VEVENT properties (e.g. `LOCATION` → match a room allocatable by name, or `ORGANIZER` → match a Person allocatable by email). (b) is more flexible but adds matching rules to admin config; (a) is simpler. *Resolution candidate: (a) for v1; per-event derivation as Phase 6.*
-
-- **Recurring events in Mode 2.** A managed Reservation with `RRULE` expands locally on rapla's side. When the source feed changes the RRULE (e.g. extends the series), how does rapla represent that — modify the existing reservation's repeating definition, or delete + recreate? Modifying preserves the rapla id (used by external references like exchange-connector exports); recreate is cleaner but loses identity. *Resolution candidate: modify when possible (same RRULE type), recreate when the recurrence pattern fundamentally changes (e.g., DAILY → WEEKLY).*
-
-- **Mode 2 sync failure handling.** If the source feed becomes unreachable for a long time, what happens to existing managed Reservations? Options: (a) keep them as-is until the feed recovers (stale data; user trusts last-known); (b) mark them all "stale" with a UI badge but keep them visible; (c) eventually delete them after some grace period (drastic; risks deleting reservations the source still considers valid). *Resolution candidate: (b) — keep visible with a "sync stale, last successful fetch X hours ago" badge; never auto-delete based on source unreachability.*
-
-- **Per-Reservation drift detection.** If an admin uses "break the sync" to make a managed Reservation editable, then edits it, then later wants to re-attach to the sync — currently out of scope. v1 doesn't support "unbreak". This means a one-way door; admins should be sure before using it.
-
-- **Conflict between two sync sources for the same target.** If two `IcalSyncSource`s both try to create Reservations for the same allocatables at overlapping times, both create their own Reservations. No multi-sync coordination. This is intentional for v1 — rapla's conflict UI surfaces it, admin investigates. Worth flagging as a known limit.
-
-- **Sync-source secret URL leak in error messages.** Per the Privacy section, sync source URLs may contain secrets (Google "secret ICS URL" pattern). The fetcher's error paths must scrub URLs from logs and from API responses to non-admin users. This needs an explicit Tier-2 test: assert that no log line contains the URL when the fetch fails with a parse error or network error.
-
-- **Concurrent imports / syncs.** What happens if two admins call `/api/ical-import/commit` simultaneously with overlapping content, or if a Mode 2 sync fires while a Mode 1 import is mid-write for overlapping UIDs? Rapla's existing storage operator handles concurrent writes via the existing lock mechanism (`requestLock` used by `SynchronisationManager`). v1: serialise via the same lock; concurrent calls queue.
+- **Re-import update strategy default** — candidate `SKIP_EXISTING` for Mode 1 (canonical "one-time bootstrap"); irrelevant for Mode 2 (sync upserts).
+- **Allocatable mapping in Mode 2** — candidate (a) flat admin-configured list for v1; (b) per-event derivation from `LOCATION`/`ORGANIZER` as Phase 6.
+- **Recurring events in Mode 2** — candidate: modify when same RRULE type (preserves id used by exchange-connector exports); recreate on fundamental pattern change (DAILY → WEEKLY).
+- **Sync failure handling** — candidate (b): "sync stale, last fetch X hours ago" badge, keep visible, never auto-delete on unreachability.
+- **Per-Reservation drift detection** — "break the sync" is one-way door; v1 doesn't support unbreak.
+- **Two sync sources, same target** — both create; conflict UI surfaces it. Known limit, intentional.
+- **Secret-URL leak in errors** — scrub URLs from logs + non-admin responses; explicit Tier-2 test on error paths.
+- **Concurrent imports/syncs** — serialise via existing storage-operator `requestLock` (same mechanism `SynchronisationManager` uses); concurrent calls queue.
 
 ## References
 

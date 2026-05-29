@@ -322,3 +322,18 @@ Anything shaped as a read — `get*`, `find*`, `resolve*`, `lookup*`, `is*`, `ha
 **Exception:** opaque internal caching that doesn't change observable state — memoize a pure derived value, populate a soft-ref cache, lazy-init a transform. Test: "would a concurrent caller see different observable state because of this call?" — if yes, it's a write, and it belongs somewhere else.
 
 **Worked example (motivated this rule, 2026-05-28):** `ExternalUserResolver.resolve(jwt, provider)` — called from the resource-server auth-filter pipeline on every authenticated request — was calling `facade.store(...)` to sync the rapla `User`'s `authenticationSource`/`name`/`email` to the IdP's JWT claims. Every API call became a write transaction; concurrent requests hit `RaplaNewVersionException` on the in-memory version check; an exception-handler bug surfaced it as a 401 "Sign-in rejected" modal in the SPA. The right seam is once-per-token at the OAuth exchange/refresh boundary, not per-request on the read path.
+
+### 17. No real personal information in tests, docs, or PRDs
+
+Never put real names, real email addresses, real phone numbers, real user ids that map to real people, or any other identifying real-person data into tests, docs, PRDs, fixtures, schema examples, log snippets, or commit messages. Even when a screenshot or live probe surfaces a real name (e.g. a lecturer's name from a dhbw query), **strip it before it lands in checked-in artefacts**.
+
+**Allowed:** obvious dummy data that no real person would mistake for themselves —
+- Generic placeholders: `<user-id>`, `<lecturer-id>`, `Prof X`, `Dr. A`, `lecturer-1`
+- Long-standing fixture personas: `homer` / `monty` / `Simpson Homer` / `Burns Monty` (Springfield characters in `testdefault.xml`), `John Doe`, `Alice` / `Bob`
+- Self-identifying maintainer accounts only when the maintainer chose to put their own name in the doc (e.g. the maintainer's own admin credentials in `authtest.md`)
+
+**Forbidden:** real names captured from production-shaped data, even in a worked example. If a live probe returns "Prof Dr Maier-Schmidt" against the dhbw dataset, the example must read `<lecturer-id>` or "Prof X" — not the live name.
+
+**Worked example (motivated this rule, 2026-05-29):** a draft PRD pulled a real DHBW professor's name out of a live `allocatables` probe into the example query body. Stripping it caught it before commit; the rule now fires on every doc/PRD/test edit.
+
+**How to apply:** when you copy a live probe result into an artefact, scan for: names with capital letters that aren't reserved keywords / dummy personas; email addresses that aren't `*@example.*` or `*@dummy.*`; phone numbers; addresses; ids paired with a real name in the same paragraph (the id itself is opaque, but the pairing leaks the binding). Replace with placeholders before saving.

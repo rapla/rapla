@@ -89,10 +89,35 @@ type Query {
 
   # PRD 055 reservation reads.
   # §12: anonymous → empty / null. Authenticated → canRead-filtered.
-  # `reservations` requires a mandatory time window (from + to); the server
-  # caps the window at 365 days and the result size at 5000 entries (default 500).
+  # `reservations` requires a mandatory time window (from + to). The window
+  # cap is configurable via rapla.graphql.max-query-window-days (default null
+  # = no cap). Result size caps at 5000 entries (default 500).
   reservation(id: ID!): Reservation
   reservations(filter: ReservationFilter!): [Reservation!]!
+
+  # PRD 064 — conflicts touching this reservation. §12: caller must be able
+  # to read BOTH sides of each conflict + the allocatable; unreadable
+  # conflicts are silently dropped.
+  conflicts(reservationId: ID!): [Conflict!]!
+}
+
+"""
+A scheduling conflict — two appointments allocating the same Allocatable at
+overlapping times. The two-reservation symmetry is preserved on the wire;
+consumers showing "the OTHER side" should compare against the reservation
+they queried with. (PRD 064)
+
+`id` is derived from the involved reservation/appointment ids and is
+session-scoped — treat as opaque, do not persist.
+"""
+type Conflict {
+  id:            ID!
+  allocatable:   Allocatable!
+  reservation1:  Reservation!
+  reservation2:  Reservation!
+  appointment1:  Appointment!
+  appointment2:  Appointment!
+  startDate:     LocalDateTime!
 }
 
 """
@@ -100,11 +125,14 @@ PRD 055 — mandatory time window + optional narrowing predicates for
 `reservations(filter:)`. Window is mandatory because the un-windowed query
 is "scan every reservation in the deployment" — at admin scale that's many
 seconds of CPU per call. Default limit 500; hard cap 5000.
+
+PRD 028 power search: `searchText` + `matchKind` (on this filter) +
+ranking are documented at PRD 028 §"GraphQL substrate augmentations".
 """
 input ReservationFilter {
   "Mandatory lower bound (inclusive)."
   from:              LocalDateTime!
-  "Mandatory upper bound (exclusive). Window must be ≤ 365 days."
+  "Mandatory upper bound (exclusive). Window cap (if any) is set via rapla.graphql.max-query-window-days; default = no cap."
   to:                LocalDateTime!
   "Exact-match on reservation DynamicType key (e.g. \"event\")."
   typeKeyEq:         String
@@ -112,10 +140,37 @@ input ReservationFilter {
   ownerEq:           ID
   "Reservations using ANY of the listed allocatable ids."
   allocatableIdsIn:  [ID!]
-  "Case-insensitive substring match on default-locale name."
+  """
+  PRD 066 — reservations using ANY allocatable matching this
+  AllocatableFilter. Lets the SPA pass its tree-selection
+  (`typeKeyIn` + per-type `whereXxx` + `idIn`) in one shot instead of
+  resolving allocatable ids in a separate roundtrip. UNIONed with
+  `allocatableIdsIn` when both are set.
+  """
+  allocatableMatching: AllocatableFilter
+  "Case-insensitive substring match on default-locale name (legacy — prefer `searchText` + `matchKind` for new flows). ANDs with `searchText` if both are set."
   nameContains:      String
+  "PRD 028 Phase 1 — match against the rapla-resolved name (same value as `nameContains`); paired with `matchKind` for prefix/substring/fuzzy."
+  searchText:        String
+  "PRD 028 Phase 1 — algorithm choice for `searchText`. Defaults to SUBSTRING (matches the legacy `nameContains` behavior)."
+  matchKind:         MatchKind = SUBSTRING
   "Cap result size. Default 500, hard cap 5000."
   limit:             Int
+}
+
+"""
+PRD 028 Phase 1 — string-match algorithm for power search.
+Shared between `ReservationFilter.matchKind`, `AllocatableFilter.matchKind`,
+and the future top-level `Query.search` (PRD 060). Server-side ranking
+respects this ordering: PREFIX > SUBSTRING > FUZZY.
+"""
+enum MatchKind {
+  "Field value must START with the query (case-insensitive). Cheap, narrow."
+  PREFIX
+  "Field value must CONTAIN the query (case-insensitive). Default."
+  SUBSTRING
+  "Approximate match — small edit distance from the query. Broad fallback."
+  FUZZY
 }
 
 """
@@ -155,10 +210,24 @@ input AllocatableFilter {
   typeKeyIn:    [String!]
   "True → only persons. False → only resources. null → both."
   isPersonEq:   Boolean
-  "Case-insensitive substring match on displayName."
+  "Case-insensitive substring match on displayName (legacy — prefer `searchText` + `matchKind` for new flows). ANDs with `searchText` if both are set."
   nameContains: String
+  "PRD 028 Phase 1 — match against `Allocatable.displayName`; paired with `matchKind` for prefix/substring/fuzzy."
+  searchText:   String
+  "PRD 028 Phase 1 — algorithm choice for `searchText`. Defaults to SUBSTRING (matches the legacy `nameContains` behavior)."
+  matchKind:    MatchKind = SUBSTRING
   "Exact-match on owner id."
   ownerEq:      ID
+  """
+  PRD 066 — additive id-selection that ALWAYS appears in the result
+  (subject only to §12 canRead). Ids matching the type-bucket
+  (`typeKeyEq` / `typeKeyIn` + `whereXxx`) and ids in `idIn` are
+  UNIONed. The per-type filter rules do NOT apply to `idIn` picks —
+  the caller has explicitly named them. Empty filter (all fields null)
+  still means "everything readable"; `idIn` alone means "exactly these
+  ids" (no type-bucket contribution).
+  """
+  idIn:         [ID!]
   """
   Cap the result size. Iteration stops as soon as `limit` visible matches
   have accumulated. Strongly recommended on large deployments — at admin
@@ -530,6 +599,14 @@ type Reservation {
   lastDate:       LocalDateTime!
   "Server-derived per caller — controls edit-button gating in the SPA without a second roundtrip."
   canModify:      Boolean!
+  """
+  PRD 028 Phase 1 — true if any visible conflict touches this reservation
+  (allows the SPA's power-search badge UX without a second roundtrip).
+  Visibility-filtered: conflicts where the caller can't read the other
+  side OR the allocatable do not count. The full conflict list lives on
+  `Query.conflicts(reservationId:)` (PRD 064).
+  """
+  hasConflicts:   Boolean!
 }
 
 """
@@ -624,6 +701,33 @@ type Mutation {
 
   "Delete N reservations. No per-id concurrency check — accepts the race. For concurrency-checked delete use applyChanges with DeleteInput.expectedLastChanged."
   deleteReservations(ids: [ID!]!): BulkResult!
+
+  # ===== PRD 063 — Allocatable (resource / person) mutations =====
+
+  """
+  Create a new Allocatable (resource or person). Owner defaults to the
+  caller; admins may override via `input.ownerId`. The classification's
+  @oneOf variant must match `input.typeKey`. Same β² typed-input pattern
+  as PRD 056 reservations.
+  """
+  createAllocatable(input: CreateAllocatableInput!): Allocatable!
+
+  """
+  Update an existing Allocatable's content (classification only). Type
+  changes rejected (future reshape verb); owner immutable here (future
+  `changeAllocatableOwner` if real demand). `expectedLastChanged`
+  enables optimistic concurrency.
+  """
+  updateAllocatable(id: ID!, input: UpdateAllocatableInput!,
+                    expectedLastChanged: LocalDateTime): Allocatable!
+
+  """
+  Delete N Allocatables. No per-id concurrency check. Rejected with
+  STORAGE_ERROR if any reservation references the allocatable (rapla's
+  storage layer enforces this; admin must delete dependent reservations
+  first or reassign).
+  """
+  deleteAllocatables(ids: [ID!]!): BulkResult!
 
   # ===== applyChanges (escape hatch) =====
 
@@ -799,6 +903,9 @@ input ChangeOp @oneOf {
   createReservation: CreateReservationInput
   updateReservation: ChangeOpUpdateReservation
   deleteReservation: DeleteInput
+  createAllocatable: CreateAllocatableInput
+  updateAllocatable: ChangeOpUpdateAllocatable
+  deleteAllocatable: DeleteInput
 }
 
 "Update variant wrapped with the id since update-by-id can't piggyback on a mutation-level argument inside ChangeOp."
@@ -878,4 +985,39 @@ input AllocationInput {
   "References an existing allocatable, or a same-batch UUID for create."
   allocatableId:  ID!
   appointmentIds: [ID!]
+}
+
+# === PRD 063 — Allocatable mutation inputs ===
+
+"""
+Create an Allocatable. typeKey is the discriminator; the @oneOf variant
+in classification must match it. Owner defaults to the caller; admins
+may set `ownerId` to assign a different owner.
+"""
+input CreateAllocatableInput {
+  "Client-supplied UUID for retry safety + same-batch refs. Null = server generates."
+  id:             ID
+  "Discriminator — must match the @oneOf variant in classification (the DynamicType key, e.g. \"room\")."
+  typeKey:        String!
+  classification: AllocatableClassificationInput!
+  "Optional. Null = caller becomes owner. Admin-only when non-null."
+  ownerId:        ID
+}
+
+"""
+Update an Allocatable's content. Server validates typeKey matches stored
+(in-place type changes rejected — analogous to PRD 056 OQ1.c). Owner
+immutable here.
+"""
+input UpdateAllocatableInput {
+  "Defensive cross-check — must equal the stored allocatable's typeKey."
+  typeKey:        String!
+  classification: AllocatableClassificationInput!
+}
+
+"Update variant wrapped with the id for applyChanges."
+input ChangeOpUpdateAllocatable {
+  id:                  ID!
+  input:               UpdateAllocatableInput!
+  expectedLastChanged: LocalDateTime
 }

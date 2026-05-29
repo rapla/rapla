@@ -4,11 +4,9 @@
 
 ## Goal
 
-Use **Jackson with field-based introspection + `transient`-honoring + JSR-310 dates** as the *single, shared* JSON wire format between the Spring Boot server and the Swing client. Replace Gson on both sides of the Spring HTTP machinery.
+Use **Jackson with field-based introspection + `transient`-honoring + JSR-310 dates** as the single, shared JSON wire format between Spring Boot server and Swing client. Replaces Gson on both sides of the Spring HTTP machinery.
 
-**Why this matters (read this first if you're tempted to "just switch one method to getters"):**
-
-Rapla entities are not POJOs. They are graph nodes with bidirectional references stored in a per-entity `ReferenceHandler.links: Map<String,List<String>>` table and resolved through a `transient EntityResolver`. The typed accessor `Category.getParent()` does not return a stored field — it walks the resolver and may cycle. Naïve Jackson defaults (getter-based) blow up with `StackOverflowError` mid-serialization, then commit a partial response, leaving the client with truncated JSON and no error code. Naïve Gson defaults (field-based but no JSR-310 module) blow up with `InaccessibleObjectException` because the JDK module system blocks reflection into `java.time.LocalDateTime` internals. **Both failure modes have happened in this codebase during PRD 009 implementation.** This PRD freezes the configuration that solved them.
+**Why this matters (read before switching anything to getters):** Rapla entities are not POJOs — they're graph nodes with bidirectional references stored in a per-entity `ReferenceHandler.links: Map<String,List<String>>` and resolved through a `transient EntityResolver`. `Category.getParent()` walks the resolver and may cycle. Naïve Jackson defaults (getter-based) → `StackOverflowError` mid-serialization with truncated JSON, no error code. Naïve Gson defaults (field-based, no JSR-310 module) → `InaccessibleObjectException` because JDK modules block reflection into `java.time` internals. **Both modes hit PRD 009 implementation.** This PRD freezes the config that solved them.
 
 ## Scope
 
@@ -57,12 +55,12 @@ The four key knobs and *why each one is load-bearing*:
 
 ## What NOT to do
 
-- **Don't reach for `@JsonIgnore` on individual entity getters.** That's how we tried to fix the cycle the first time. Adds noise to entity classes; misses cycles in classes you didn't think to annotate; gets out of sync as the model evolves. Field-based introspection makes the cycles structurally impossible — that's stronger than annotating around them.
-- **Don't reach for `@JsonIdentityInfo` mixins.** Considered — works for cycles, but produces a polymorphic wire shape (object first time, scalar id subsequent times) that complicates client decoding. Not needed once we're field-based.
-- **Don't add getters/setters to entities to make Jackson happy.** We don't need them; field reflection sees the fields directly. Audited — no entity getters/setters were added during this PRD; the existing 30 net new accessors across 101 entity files vs `origin/master` are from unrelated refactoring.
-- **Don't `--add-opens java.base/java.time=ALL-UNNAMED`.** That's the brittle JVM-flag escape hatch from the Gson-`LocalDateTime` failure. `JavaTimeModule` is the right answer.
-- **Don't switch one side back to Gson for "compat".** Asymmetric serializers across the wire cause invisible drift bugs; the symptoms emerge weeks later as a single field that round-trips on one path and not another. Both sides through the same `JacksonObjectMapperFactory`, full stop.
-- **Don't put `Promise<X>` return types on the `RemoteStorage` HTTP interface.** The proxy factory tries to instantiate the return type for deserialization; `Promise` is an interface and the JSON has no Promise wrapper — only the raw value. Keep wire methods returning the raw `X`; wrap in `commandQueue.supply(() -> serv.foo())` at the call-site (already done in `RemoteOperator.java` as part of this PRD).
+- **Don't `@JsonIgnore` individual entity getters.** That was the first failed fix — noisy, misses cycles you didn't annotate, drifts as the model evolves. Field-based makes cycles structurally impossible.
+- **Don't reach for `@JsonIdentityInfo` mixins.** Works for cycles but produces a polymorphic wire shape (object first time, scalar id later) that complicates the client. Not needed once we're field-based.
+- **Don't add getters/setters to entities for Jackson.** Field reflection already sees them; audited — no entity getters/setters added in this PRD.
+- **Don't `--add-opens java.base/java.time=ALL-UNNAMED`.** That's the brittle JVM-flag escape hatch — `JavaTimeModule` is the right answer.
+- **Don't switch one side back to Gson for "compat".** Asymmetric serializers cause invisible drift bugs that surface weeks later as one-path-only field corruption. Both sides through `JacksonObjectMapperFactory`, full stop.
+- **Don't put `Promise<X>` on the `RemoteStorage` HTTP interface.** Proxy factory tries to instantiate the return type for deserialization; `Promise` is an interface and JSON has no Promise wrapper — only the raw value. Wire returns raw `X`; wrap in `commandQueue.supply(() -> serv.foo())` at the call-site (done in `RemoteOperator.java`).
 
 ## Tests
 
@@ -82,8 +80,8 @@ These are smoke-level checks; promote them to a `@SpringBootTest`-style round-tr
 3. ✅ Slim `RaplaJacksonConfig` (server) to delegate to the shared factory.
 4. ✅ Wire `MappingJackson2HttpMessageConverter` into `ClientProxyConfig` (client).
 5. ✅ Drop `Promise<X>` return types from `RemoteStorage` interface; wrap at call sites in `RemoteOperator`.
-6. ✅ Verify acceptance criteria 1–4 above with a fresh server + client launch. `SwingClientStartIntegrationTest` boots `RaplaSpringBootApplication` on a random port, boots `SpringRaplaClient` pointed at that port via the `rapla.download.url` system property, calls `facade.login("homer", "duffs")` and asserts `isSessionActive()`. Test runs in 14s and is green — confirms criteria 1 (server returns valid JSON), 2 (no infinite recursion / HttpMessageNotWritableException in the auth → operator-connect → JSON-deserialize round-trip), 3 (full Swing-client end-to-end), 4 (`LocalDateTime` ISO-8601 round-trips through Jackson, the auth response has `expiresIn`/`expiresAt` fields that flow correctly).
-7. ✅ Fold the smoke check into a `@SpringBootTest` — `SwingClientStartIntegrationTest` is that test (in `rapla-app/src/test/java/org/rapla/client/spring/`). Now active in the reactor; runs as part of `mvn test`. Locks in the wire format against future drift.
+6. ✅ Verify criteria 1–4 with fresh server + client launch. `SwingClientStartIntegrationTest` boots `RaplaSpringBootApplication` on random port, boots `SpringRaplaClient` via `rapla.download.url`, calls `facade.login("homer", "duffs")`, asserts `isSessionActive()`. 14 s, green — confirms all four criteria including LDT ISO-8601 round-trip via `expiresIn`/`expiresAt`.
+7. ✅ Fold smoke check into `@SpringBootTest` — `SwingClientStartIntegrationTest` (in `rapla-app/src/test/java/org/rapla/client/spring/`); runs as part of `mvn test`; locks the wire format against future drift.
 
 ## Open Questions
 

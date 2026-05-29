@@ -5,209 +5,115 @@
 
 ## Goal
 
-Move rapla off its bespoke `ServerExtension` start()/stop() lifecycle (driven by
-`ServerServiceImpl` iterating a `Map<String, ServerExtension>`) to Spring Boot's
-native bean lifecycle:
+Move rapla off its bespoke `ServerExtension` start()/stop() lifecycle (driven by `ServerServiceImpl` iterating a `Map<String, ServerExtension>`) to Spring Boot's native bean lifecycle:
 
-- `@Scheduled` for recurring tasks (replaces the removed
-  `CommandScheduler.scheduleAtGivenTime`)
-- `@EventListener(ApplicationReadyEvent.class)` for one-shot startup tasks that
-  need the storage to be loaded
+- `@Scheduled` for recurring tasks (replaces the removed `CommandScheduler.scheduleAtGivenTime`)
+- `@EventListener(ApplicationReadyEvent.class)` for one-shot startup tasks needing loaded storage
 - `@PostConstruct` / `@PreDestroy` for per-bean init/teardown
-- `SmartLifecycle` only for the rare cases that genuinely need symmetric
-  phased start/stop across many beans
+- `SmartLifecycle` only for rare cases needing symmetric phased start/stop across many beans
 
 ## Why this is needed now
 
-1. **The cron API was removed without a replacement.**
-   `CommandScheduler.scheduleAtGivenTime(action, hour, minute)` is gone (last
-   appeared up to commit `5098019e`, removed in the `4f50a558 big ai assisted
-   refactoring` window). The two known callers in dhbwrapla
-   (`DualisSyncJobStarter`, `MoradaSyncJobStarter`) used it for a 3×daily
-   cadence (8:11, 12:11, 16:11). The 2026-05-10 dhbw migration session
-   collapsed both to once-daily as a temporary workaround. PRD 019 restores
-   the original cadence on the Spring-native pathway.
+1. **Cron API was removed without a replacement.** `CommandScheduler.scheduleAtGivenTime(action, hour, minute)` is gone (removed in the `4f50a558 big ai assisted refactoring` window). The two dhbwrapla callers (`DualisSyncJobStarter`, `MoradaSyncJobStarter`) used it for 3×daily cadence (8:11, 12:11, 16:11). The 2026-05-10 dhbw session collapsed both to once-daily as a workaround; this PRD restores the original cadence Spring-native.
 
-2. **Storage-up ordering currently leaks an implementation detail.**
-   `ServerServiceImpl`'s constructor calls `operator.connect()` *before*
-   iterating `ServerExtension.start()`. That guarantee is what
-   `ServerExtension`s depend on. The same guarantee is exposed today as
-   `@DependsOn("serverServiceContainer")` (used by `RaplaKeyStorage`,
-   `ServerServiceConfig.java:72`) — i.e. consumers that need the storage
-   connected hard-code the bean name of an unrelated infra class.
+2. **Storage-up ordering leaks an implementation detail.** `ServerServiceImpl`'s constructor calls `operator.connect()` *before* iterating `ServerExtension.start()` — and that's the guarantee extensions depend on. Same guarantee is exposed today as `@DependsOn("serverServiceContainer")` (used by `RaplaKeyStorage`) — consumers needing connected storage hard-code an unrelated infra bean name. In clean Spring Boot, `operator.connect()` belongs in `@PostConstruct` on the operator bean; Spring's dep graph then implicitly guarantees any injector of `RaplaFacade`/`CachableStorageOperator` gets a connected one.
 
-   In a clean Spring Boot world, `operator.connect()` belongs in a
-   `@PostConstruct` on the operator bean itself. Then Spring's bean
-   dependency graph implicitly guarantees that any bean injecting
-   `RaplaFacade`/`CachableStorageOperator` gets a connected one — no
-   `@DependsOn` needed.
-
-3. **`ServerExtension` is a relic of pre-Spring rapla.**
-   6 implementors today, 5 of which use it for scheduling
-   (`NotificationService`, `SynchronisationManager`, `ArchiverServiceTask`,
-   plus the two dhbw sync starters). 1 (`JavascriptPatcher`) uses it for
-   one-shot init/teardown. Spring Boot's `@Scheduled` + `@EventListener` cover
-   both shapes idiomatically.
+3. **`ServerExtension` is a pre-Spring relic.** 6 implementors today; 5 use it for scheduling, 1 (`JavascriptPatcher`) for one-shot init/teardown. Spring Boot's `@Scheduled` + `@EventListener` cover both idiomatically.
 
 ## Scope
 
 ### In scope
 
-- `org.rapla.scheduler.CommandScheduler` interface — keeps
-  `delay`/`schedule`/`run`/`supply`/`scheduleSynchronized`. No
-  `scheduleAtGivenTime` resurrection.
-- `org.rapla.server.extensionpoints.ServerExtension` — deprecate, then delete
-  once all consumers move off.
-- 6 `ServerExtension` implementors — each migrated per case (see Plan §3).
-- `org.rapla.server.internal.ServerServiceImpl` — remove the
-  `Map<String, ServerExtension>` iteration and the `operator.connect()` call
-  from its constructor. Storage connection moves to `@PostConstruct` on the
-  operator bean.
+- `org.rapla.scheduler.CommandScheduler` — keeps `delay`/`schedule`/`run`/`supply`/`scheduleSynchronized`. No `scheduleAtGivenTime` resurrection.
+- `org.rapla.server.extensionpoints.ServerExtension` — deprecate, then delete.
+- 6 `ServerExtension` implementors — migrated per case.
+- `ServerServiceImpl` — remove `Map<String, ServerExtension>` iteration and `operator.connect()` from its constructor. Connection moves to operator bean's `@PostConstruct`.
 - `RaplaServerAutoConfiguration` — add `@EnableScheduling`.
 - `@DependsOn("serverServiceContainer")` callsites — drop after Phase 1.
 
 ### Out of scope
 
-- Rapla's `Promise<T>` / `CommandScheduler` async API — stays as is. This PRD
-  only covers the *lifecycle* (start-up scheduling registration), not the
-  scheduler internals.
-- Migrating in-Reservation appointment scheduling (`Repeating`, etc.) — that's
-  the data model, not lifecycle.
-- Replacing rapla's `Action` interface with `Runnable` — possible follow-up
-  but separate concern.
+- Rapla's `Promise<T>` / `CommandScheduler` async API — only lifecycle (start-up scheduling) changes, not scheduler internals.
+- In-Reservation appointment scheduling (`Repeating`, etc.) — data model, not lifecycle.
+- Replacing rapla's `Action` with `Runnable` — possible follow-up.
 
 ## Plan
 
 ### Phase 1 — Move `operator.connect()` to `@PostConstruct` (rapla-server)
 
-1. Add `@PostConstruct void connect()` (or rename existing) to
-   `LocalAbstractCachableOperator` or its concrete subclasses
-   (`FileOperator`, `DBOperator`). Since these aren't Spring beans directly
-   (they're built by `ServerStorageSelector.get()`), wire it via
-   `ServerStorageSelector` calling `connect()` before returning. **Or**
-   convert the operator into a proper `@Bean` via `ServerCoreConfig` and let
-   Spring fire `@PostConstruct`.
+1. Add `@PostConstruct void connect()` to `LocalAbstractCachableOperator` or concrete subclasses (`FileOperator`, `DBOperator`). Since these aren't direct Spring beans (built by `ServerStorageSelector.get()`), either wire via `ServerStorageSelector` calling `connect()` before returning, **or** convert the operator into a proper `@Bean` via `ServerCoreConfig` and let Spring fire `@PostConstruct`.
 2. Remove `operator.connect()` from `ServerServiceImpl`'s constructor.
-3. Verify `RaplaSpringBootApplicationTest` still passes (the existing
-   `@SpringBootTest` exercises a connected facade).
-4. Drop `@DependsOn("serverServiceContainer")` on `RaplaKeyStorage`
-   (`ServerServiceConfig.java:72`). Verify the key storage test still passes.
+3. Verify `RaplaSpringBootApplicationTest` still passes.
+4. Drop `@DependsOn("serverServiceContainer")` on `RaplaKeyStorage`.
 
 ### Phase 2 — `@EnableScheduling` (rapla-server)
 
-1. Add `@EnableScheduling` to `RaplaServerAutoConfiguration`. Every deployment
-   that pulls in rapla-server (rapla-app, dhbwrapla, future deployments) gets
-   Spring's `TaskScheduler` registered automatically.
-2. Optional: configure pool size via
-   `spring.task.scheduling.pool.size=N` in `application.yml`. Default is 1.
+1. Add `@EnableScheduling` to `RaplaServerAutoConfiguration`. Every deployment pulling rapla-server gets Spring's `TaskScheduler` automatically.
+2. Optional: configure pool size via `spring.task.scheduling.pool.size=N` (default 1).
 
 ### Phase 3 — Migrate the 6 `ServerExtension` impls
 
 | Impl | Where | Replacement |
 |---|---|---|
-| `NotificationService` | rapla-server / `plugin.notification` | Two `@Scheduled` methods (`sentUpdateMails` at `fixedRate=30000`, `retryMails` at `initialDelay=45000, fixedRate=...`). Cancellation handled by Spring on shutdown. |
-| `SynchronisationManager` | rapla-server / `plugin.exchangeconnector` | Same — two `@Scheduled` methods with the existing periods (`SCHEDULE_PERIOD`, `SCHEDULE_PERIOD_REFRESH_MAILBOXES`). |
-| `ArchiverServiceTask` | rapla-server / `plugin.archiver` | `@Scheduled` with the archive task's existing cadence. |
-| `JavascriptPatcher` | rapla-server / `plugin.javasciptpatch` | `@EventListener(ApplicationReadyEvent.class)` — runs once at startup, no recurring. Pair with `@PreDestroy` if it has teardown work. |
-| `DualisSyncJobStarter` | dhbwrapla / `dhbw.sync.dualis.server` | `@Scheduled(cron = "0 11 8,12,16 * * *", zone = "Europe/Berlin")` on a method that calls `dualisImportJob.run()`. **Restores the lost 3×daily cadence.** |
-| `MoradaSyncJobStarter` | dhbwrapla / `dhbw.sync.morada.server` | Same with Morada's 8:21/12:21/16:21 schedule. |
+| `NotificationService` | rapla-server / `plugin.notification` | Two `@Scheduled` methods (`sentUpdateMails` at `fixedRate=30000`, `retryMails` at `initialDelay=45000, fixedRate=...`). |
+| `SynchronisationManager` | rapla-server / `plugin.exchangeconnector` | Two `@Scheduled` with existing periods. |
+| `ArchiverServiceTask` | rapla-server / `plugin.archiver` | `@Scheduled` with existing cadence. |
+| `JavascriptPatcher` | rapla-server / `plugin.javasciptpatch` | `@EventListener(ApplicationReadyEvent.class)` — one-shot. Pair with `@PreDestroy` if teardown needed. |
+| `DualisSyncJobStarter` | dhbwrapla / `dhbw.sync.dualis.server` | `@Scheduled(cron = "0 11 8,12,16 * * *", zone = "Europe/Berlin")` calling `dualisImportJob.run()`. **Restores 3×daily.** |
+| `MoradaSyncJobStarter` | dhbwrapla / `dhbw.sync.morada.server` | Same with 8:21/12:21/16:21. |
 
-For each migration:
-- Drop `implements ServerExtension`.
-- Drop the `start()`/`stop()` methods.
-- Drop the `List<Cancellation> schedules` field.
-- Move the scheduling logic to `@Scheduled` annotations on cleanly-named
-  methods (e.g. `runHourly()`, `runDaily()`).
+For each: drop `implements ServerExtension`, drop `start()`/`stop()`, drop `List<Cancellation> schedules`, move scheduling to `@Scheduled` on cleanly-named methods.
 
 ### Phase 4 — Delete `ServerExtension`
 
-After all 6 impls are off it:
+After all 6 impls are off:
 
-1. Delete the iteration in `ServerServiceImpl` constructor (lines 175–182).
-2. Delete the iteration in `ServerServiceImpl.stop()` (lines 236–...).
-3. Drop the `Map<String, ServerExtension>` field + constructor arg.
-4. Drop the `Supplier<Map<String, ServerExtension>>` arg from
-   `ServerServiceConfig.serverServiceContainer(...)`.
-5. Delete `org.rapla.server.extensionpoints.ServerExtension`.
-6. Update PRD 003 §"Scheduled Background Jobs" — remove Option 1
-   (`@Component implements ServerExtension`); make `@Scheduled` the
-   canonical answer.
-7. Update PRD 003 §"Extension Point Preservation Checklist" — remove
-   `ServerExtension` from the list.
+1. Delete iteration in `ServerServiceImpl` constructor (lines 175–182) and in `stop()` (lines 236–...).
+2. Drop the `Map<String, ServerExtension>` field + constructor arg.
+3. Drop the `Supplier<Map<String, ServerExtension>>` arg from `ServerServiceConfig.serverServiceContainer(...)`.
+4. Delete `org.rapla.server.extensionpoints.ServerExtension`.
+5. Update PRD 003 §"Scheduled Background Jobs" — remove Option 1 (`@Component implements ServerExtension`); make `@Scheduled` canonical.
+6. Update PRD 003 §"Extension Point Preservation Checklist" — remove `ServerExtension`.
 
 ## Storage-up ordering invariant (post-Phase 1)
 
 Documented for downstream deployments:
 
-> After Phase 1, any Spring bean that injects `RaplaFacade` or
-> `CachableStorageOperator` is guaranteed to receive a **connected** operator
-> before its own `@PostConstruct` runs. `@Scheduled` tasks fire after context
-> refresh, which is after every `@PostConstruct`. So storage is always
-> available in `@Scheduled` methods, in `@EventListener(ApplicationReadyEvent.class)`,
-> and in any `@PostConstruct` that depends on the facade — no `@DependsOn`
-> required.
+> After Phase 1, any Spring bean injecting `RaplaFacade` or `CachableStorageOperator` is guaranteed to receive a **connected** operator before its own `@PostConstruct` runs. `@Scheduled` tasks fire after context refresh, which is after every `@PostConstruct`. So storage is always available in `@Scheduled`, `@EventListener(ApplicationReadyEvent.class)`, and any `@PostConstruct` depending on the facade — no `@DependsOn` required.
 
-This is the contract custom deployments (dhbwrapla, future deployments)
-depend on for their own startup tasks.
+This is the contract dhbwrapla and future deployments depend on.
 
 ## Tests
 
 | Phase | Test |
 |---|---|
-| 1 | `OperatorConnectInPostConstructTest` — verify `operator.isConnected()` is true at the time a downstream bean's `@PostConstruct` runs. |
+| 1 | `OperatorConnectInPostConstructTest` — `operator.isConnected()` true at downstream bean's `@PostConstruct`. |
 | 1 | `RaplaSpringBootApplicationTest` — must still boot green. |
-| 2 | `SchedulingEnabledTest` — verify a `@Scheduled` test bean's method runs at least once during a `@SpringBootTest`. |
-| 3 | Per-impl: a smoke test confirming the recurring cadence still triggers (e.g. `MoradaSyncSchedulingTest` with a 100ms `fixedRate` test override). |
-| 4 | Compile-only check: `grep -r ServerExtension` returns zero hits across both repos. |
+| 2 | `SchedulingEnabledTest` — a `@Scheduled` test bean's method runs at least once during a `@SpringBootTest`. |
+| 3 | Per-impl smoke test confirming recurring cadence triggers (e.g. `MoradaSyncSchedulingTest` with 100ms `fixedRate` override). |
+| 4 | Compile-only: `grep -r ServerExtension` returns zero across both repos. |
 
 ## Risks
 
-1. **`@Scheduled` initial-delay race with storage connect.** Mitigated by
-   Phase 1: with `operator.connect()` in `@PostConstruct`, every bean's
-   `@PostConstruct` (including the bean carrying `@Scheduled` annotations)
-   sees a connected operator. The first `@Scheduled` invocation only happens
-   after Spring's `TaskScheduler` activates at end-of-context-refresh, which
-   is after all `@PostConstruct`s. So storage is reliably ready.
+1. **`@Scheduled` initial-delay race with storage connect.** Mitigated by Phase 1: every bean's `@PostConstruct` (including the bean carrying `@Scheduled`) sees connected operator. First `@Scheduled` only fires after `TaskScheduler` activates at end-of-context-refresh, after all `@PostConstruct`s.
 
-2. **`scheduler.run(action)` vs `@Scheduled` thread pool.** `CommandScheduler`
-   uses rapla's own executor; `@Scheduled` uses Spring's `TaskScheduler`. If
-   any code paths were assuming "recurring task and one-shot supplied task
-   share a thread pool / FIFO ordering" that's now broken. Mitigation: review
-   each migration for inter-task ordering assumptions; if any, move to
-   `SmartLifecycle` rather than `@Scheduled`.
+2. **`scheduler.run(action)` vs `@Scheduled` thread pool.** `CommandScheduler` uses rapla's own executor; `@Scheduled` uses Spring's. If any path assumed shared pool / FIFO ordering between recurring and one-shot tasks, that's broken. Mitigation: review each migration for inter-task ordering; if any, move to `SmartLifecycle` instead.
 
-3. **dhbwrapla cron timezone.** The legacy `scheduleAtGivenTime(action, h, m)`
-   fired in the JVM default time zone. Spring's `@Scheduled(cron=...)` defaults
-   to the JVM default zone unless `zone="..."` is specified. To preserve
-   behaviour we set `zone = "Europe/Berlin"` explicitly — matching DHBW's
-   operating zone. Worth verifying with deployment.
+3. **dhbwrapla cron timezone.** Legacy `scheduleAtGivenTime(action, h, m)` fired in JVM default zone. Spring's `@Scheduled(cron=...)` defaults to JVM default unless `zone="..."`. Set `zone = "Europe/Berlin"` explicitly to match DHBW.
 
-4. **Spring `TaskScheduler` pool size.** Default is 1. If two `@Scheduled`
-   methods on different beans want to fire concurrently, the second one
-   queues. For dhbw + notification + sync, that's fine (none are
-   long-running). If we ever schedule heavy I/O work, bump the pool via
-   `spring.task.scheduling.pool.size`.
+4. **Spring `TaskScheduler` pool size.** Default 1. If two `@Scheduled` on different beans fire concurrently, second queues. For dhbw + notification + sync, that's fine. Bump via `spring.task.scheduling.pool.size` if heavy I/O scheduled.
 
 ## Open Questions
 
-1. **Should we delete `ServerExtension` entirely or `@Deprecated` it for one
-   release?** Recommendation: delete after Phase 4 — there are zero external
-   consumers (it's a server-internal plugin point), so deprecation provides
-   no migration buffer to anyone.
-2. **dhbw cron cadence configurability.** The legacy 8:11/12:11/16:11 schedule
-   was hardcoded. Should we expose it via `DhbwProperties` (e.g.
-   `rapla.dhbw.dualis.cron`) so deployments can tune without recompile?
-   Recommendation: yes for production hygiene, but it's a follow-up — the
-   initial migration uses the hardcoded cadence to match legacy behaviour.
-3. **Does any consumer rely on `ServerExtension.start()` ordering (the Map
-   iteration order in `ServerServiceImpl`)?** If yes, those move to
-   `SmartLifecycle`'s `getPhase()` for explicit ordering. Audit during Phase 3.
+1. **Delete `ServerExtension` outright or `@Deprecated` for one release?** Delete — zero external consumers (server-internal plugin point), so deprecation buffers no one.
+2. **dhbw cron cadence configurability.** Legacy 8:11/12:11/16:11 was hardcoded. Expose via `DhbwProperties` (e.g. `rapla.dhbw.dualis.cron`) so deployments can tune. Yes for production hygiene, but follow-up — initial migration uses hardcoded to match legacy.
+3. **Does any consumer rely on `ServerExtension.start()` ordering?** If yes, move to `SmartLifecycle`'s `getPhase()`. Audit during Phase 3.
 
 ## Cross-references
 
 | PRD | Relationship |
 |---|---|
-| **001** spring-boot-migration (done) | Establishes the `@SpringBootApplication` context that this PRD finishes leveraging. |
-| **003** custom-deployments-after-spring-migration | Currently has §"Scheduled Background Jobs" recommending `ServerExtension`. **Amend** to point at PRD 019 once Phase 4 lands. |
-| **012** dhbwrapla-client-migration | The dhbw cron-cadence regression noted in the 2026-05-10 implementation snapshot is the most concrete example of why this PRD is needed. |
-| **AGENTS.md §11** | "Never delete code to fix compile errors — unless removal is part of the plan." This PRD is the plan that authorises the `ServerExtension` deletion in Phase 4. |
+| **001** spring-boot-migration (done) | Establishes the `@SpringBootApplication` context this PRD leverages. |
+| **003** custom-deployments-after-spring-migration | Currently recommends `ServerExtension`. **Amend** to point at PRD 019 once Phase 4 lands. |
+| **012** dhbwrapla-client-migration | dhbw cron-cadence regression is the most concrete motivator. |
+| **AGENTS.md §11** | "Never delete code to fix compile errors — unless removal is part of the plan." This PRD is that plan. |

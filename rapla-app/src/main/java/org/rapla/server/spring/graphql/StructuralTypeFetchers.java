@@ -406,6 +406,43 @@ public final class StructuralTypeFetchers
         };
     }
 
+    /** PRD 028 Phase 1 — `Reservation.hasConflicts: Boolean!`. Per-row;
+     *  uses the existing operator.getConflicts(r) call. §12-gated: a
+     *  conflict only "counts" if the caller can read both sides + the
+     *  allocatable (mirrors {@link ConflictGraphQLController}). */
+    static LightDataFetcher<Boolean> reservationHasConflicts(StorageOperator operator)
+    {
+        return new LightSourceFetcher<org.rapla.entities.domain.Reservation, Boolean>(
+                org.rapla.entities.domain.Reservation.class)
+        {
+            @Override protected Boolean read(org.rapla.entities.domain.Reservation r,
+                    java.util.function.Supplier<DataFetchingEnvironment> env) throws Exception
+            {
+                var rc = ctxFrom(env);
+                User caller = rc.caller();
+                if (caller == null) return false;
+                PermissionController pc = rc.permissionController() != null
+                        ? rc.permissionController() : operator.getPermissionController();
+                java.util.Collection<org.rapla.facade.Conflict> raw =
+                        ((org.rapla.storage.SyncStorageOperator) operator).getConflictsSync(r);
+                if (raw == null || raw.isEmpty()) return false;
+                for (org.rapla.facade.Conflict c : raw)
+                {
+                    if (c == null) continue;
+                    var r1 = operator.tryResolve(c.getReservation1());
+                    var r2 = operator.tryResolve(c.getReservation2());
+                    var alloc = c.getAllocatable();
+                    if (r1 == null || r2 == null || alloc == null) continue;
+                    if (!pc.canRead(r1, caller)) continue;
+                    if (!pc.canRead(r2, caller)) continue;
+                    if (!pc.canRead(alloc, caller)) continue;
+                    return true;        // first visible conflict wins
+                }
+                return false;
+            }
+        };
+    }
+
     /** Per-row hot field — §12 read of canModify. envSupplier materialization
      *  is unavoidable here (need the per-query caller from RequestCtx). */
     static final LightDataFetcher<Boolean> RESERVATION_CAN_MODIFY =
@@ -614,6 +651,7 @@ public final class StructuralTypeFetchers
                 .dataFetcher("firstDate",      RESERVATION_FIRST_DATE)
                 .dataFetcher("lastDate",       RESERVATION_LAST_DATE)
                 .dataFetcher("canModify",      RESERVATION_CAN_MODIFY)
+                .dataFetcher("hasConflicts",   reservationHasConflicts(operator))
                 .dataFetcher("owner",          reservationOwner(operator))
                 .dataFetcher("createdAt",      RESERVATION_CREATED_AT)
                 .dataFetcher("lastModifiedAt", RESERVATION_LAST_MODIFIED_AT)
@@ -661,4 +699,5 @@ public final class StructuralTypeFetchers
         if (c instanceof Boolean b) return b;
         return "true".equalsIgnoreCase(c.toString());
     }
+
 }

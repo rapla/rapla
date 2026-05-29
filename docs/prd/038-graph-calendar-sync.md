@@ -17,93 +17,65 @@ After this PRD, a rapla deployment can sync allocatable bookings into:
 
 ## How rapla's existing sync model works (read first)
 
-This PRD slots into the existing `org.rapla.plugin.exchangeconnector` plugin without re-architecting it. The key code-level facts that shape the design:
+This PRD slots into `org.rapla.plugin.exchangeconnector` without re-architecting it:
 
-- **The target mailbox is intrinsic to the allocatable.** `SynchronisationManager.getMailbox(Allocatable)` already extracts the mailbox email from classification attributes — `exchangeMailbox` first, then any attribute annotated `KEY_EMAIL`, then `email`. No new mailbox-pointer field is needed; existing rapla deployments already populate this on allocatables that should sync.
-- **Sync is keyed per-allocatable, per-mailbox.** `synchronizationBoxMap : Map<ReferenceInfo<Allocatable>, SynchronizationBox>` tracks sync state per allocatable. The reverse `allocatablesPerMailbox : Map<String, Allocatable>` is built at sync time. No per-user backend state.
-- **Credentials live in `RaplaKeyStorage`, keyed by rapla user.** A small pool (typically 1–10) of rapla users hold Exchange credentials in `RaplaKeyStorage` under `EXCHANGE_USER_STORAGE`. These are **credential-carrier users**, not end users. Each carrier's underlying Exchange account has been granted delegate access to a set of shared mailboxes via Exchange's `ApplicationImpersonation` role or shared-mailbox delegation. This pool model is more centralised than per-end-user OAuth — admins manage the few credential-carrier accounts; ordinary rapla users never see auth prompts.
-- **The current sync loop** (`SynchronisationManager.synchronizeMailboxes`, lines ~138–242):
+- **Target mailbox is intrinsic to the allocatable** — `SynchronisationManager.getMailbox(Allocatable)` extracts mailbox email from classification attributes (`exchangeMailbox` first, then `KEY_EMAIL`-annotated, then `email`).
+- **Sync keyed per-allocatable per-mailbox** — `synchronizationBoxMap` tracks state; reverse `allocatablesPerMailbox` built at sync time.
+- **Credentials in `RaplaKeyStorage` under `EXCHANGE_USER_STORAGE`**, keyed by rapla user. Small pool (1–10) of credential-carrier users (not end users); each carrier's Exchange account has delegate/`ApplicationImpersonation` access to shared mailboxes. Centralised — admins manage carriers, end users see no prompts.
+- **Current sync loop** (`synchronizeMailboxes` ~138–242): for each carrier → connect to EWS → enumerate shared mailboxes → for each `(mailbox, allocatable)` pair, sync appointments via that connection.
 
-  ```
-  for each rapla user with stored EWS credentials:
-      connect to EWS as that user
-      enumerate shared mailboxes the connection can reach
-      for each (mailbox, allocatable) pair where allocatable.exchangeMailbox == mailbox:
-          sync rapla appointments → that mailbox's calendar via this connection
-  ```
-
-This PRD adds a parallel Graph path that targets the same `(allocatable, mailbox)` set but writes via Graph instead of EWS. The credential-pool model stays the same — `RaplaKeyStorage` gains a sibling key (`GRAPH_USER_STORAGE`) for rapla users holding Graph credentials.
+This PRD adds a parallel Graph path against the same `(allocatable, mailbox)` set. Credential pool stays the same; new sibling key `GRAPH_USER_STORAGE`.
 
 ## Why now
 
-Microsoft has set a hard deadline:
+Microsoft hard deadlines: **Oct 1 2026** — EWS disabled-by-default in Exchange Online (allow-list required); **Apr 1 2027** — EWS in Exchange Online fully shut off. [Microsoft retirement announcement](https://techcommunity.microsoft.com/blog/exchange/retirement-of-exchange-web-services-in-exchange-online/3924440).
 
-- **Oct 1 2026** — EWS becomes *disabled-by-default* in Exchange Online. Tenants must explicitly allow-list to keep it alive.
-- **Apr 1 2027** — EWS in Exchange Online is fully shut off. No exceptions.
-
-Sources: [Microsoft retirement announcement](https://techcommunity.microsoft.com/blog/exchange/retirement-of-exchange-web-services-in-exchange-online/3924440), [Microsoft Learn deprecation page](https://learn.microsoft.com/en-us/exchange/clients-and-mobile-in-exchange-online/deprecation-of-ews-exchange-online).
-
-Independent of the deadline, rapla's current Exchange connector is already partially broken for cloud customers: the underlying `com.microsoft.ews-java-api:2.0` library was archived by Microsoft, doesn't support modern OAuth2 well, and basic auth was removed from Exchange Online in October 2022. Cloud customers using rapla's Exchange plugin today either run a kludge or have already given up.
-
-The on-prem side is **not** affected: Exchange Server SE keeps EWS indefinitely ([Microsoft Learn](https://learn.microsoft.com/en-us/exchange/client-developer/exchange-server-development)). So this is genuinely about *adding* a second backend, not migrating one.
+Rapla's current Exchange connector already partially broken for cloud: `com.microsoft.ews-java-api:2.0` is archived, no modern OAuth2; basic auth removed from Exchange Online Oct 2022. Exchange Server SE keeps EWS indefinitely — so this is *adding* a second backend, not migrating.
 
 ## Scope
 
 **In scope:**
 
-- Extract a write-only `CalendarBackend` SPI from the existing `org.rapla.plugin.exchangeconnector.server.exchange.*` code (`AppointmentSynchronizer`, `EWSConnector`, `ExchangeAppointment`). The current EWS code becomes `EwsCalendarBackend`, an implementation behind the SPI. No behaviour change to the EWS path.
-- Implement `GraphCalendarBackend` against the Graph v1.0 REST API. Three endpoints carry the entire write surface:
-  - `POST /users/{mailbox}/events` — create
-  - `PATCH /users/{mailbox}/events/{id}` — update
-  - `DELETE /users/{mailbox}/events/{id}` — delete
-
-  Note `/users/{mailbox}/...` not `/me/...` — rapla writes as an app-only principal acting on the target mailbox, not as the end user. `{mailbox}` is the same value `getMailbox(Allocatable)` returns today.
-- All Graph POSTs/PATCHes send `Prefer: IdType="ImmutableId"` so the returned `id` is stable across calendar-move operations ([Microsoft docs](https://learn.microsoft.com/en-us/graph/outlook-immutable-id)).
-- Capture both `id` (immutable form) and `iCalUId` from the Graph response into `RaplaExportedEvent`.
-- A new entity `RaplaExportedEvent` recording every event rapla writes to an external calendar. **One row per rapla `Appointment`, regardless of recurrence** — recurring series get a single row storing the *master* event's identifiers, not per-occurrence rows. Fields: `appointmentId` (the rapla Appointment), `targetMailbox`, `backendType` (`EWS` | `GRAPH`), `credentialCarrierUserId` (informational — which carrier wrote it), `externalImmutableId` (master's immutable Graph `id` or EWS `ItemId`), `iCalUId` (master's iCalUId), `lastSyncedAt`, `deletedAt` (tombstone). **Indexed on `(targetMailbox, iCalUId)` and `(targetMailbox, externalImmutableId)`** — these are the keys PRD 039's loopback filter looks up by.
-  - Why one row per Appointment, not per occurrence: the published iCal feed emits one master VEVENT per series with `RRULE` (RFC 5545-conformant); iCal4j expands occurrences locally in PRD 039's storage. PRD 039's loopback Pass 1 matches at the *wire* level (one master VEVENT ↔ one `RaplaExportedEvent` row); the expansion is downstream. Graph's per-occurrence `iCalUId` quirk is an API-side artifact rapla never has to deal with — at write time the POST response gives us the master's `iCalUId`, which is what survives into the iCal export.
-  - Exception occurrences in iCal (VEVENTs with `RECURRENCE-ID`) share the master's UID per RFC 5545 — so they match the same `RaplaExportedEvent` row in Pass 1. PRD 039's row-consumption invariant allows multiple VEVENTs to match a single row when they share its `iCalUId`. Storage stays one-row-per-Appointment regardless.
-  - Tombstone semantics: when the underlying rapla reservation is deleted, the row's `deletedAt` is set and the row is kept for a tombstone window — default `2 × max(refreshIntervalMinutes across subscriptions to this mailbox)` or 2 hours, whichever is greater. A background sweep hard-deletes rows past the tombstone. Reason: PRD 039's iCal subscription may still be serving the now-deleted event from its cache; without the tombstone the loopback filter would let it through as a phantom external constraint.
-- **Per-allocatable backend selection** via a new classification attribute `exchangeBackend` (values `EWS` | `GRAPH` | omitted). When omitted, falls back to the deployment-level default (`rapla.exchange.default-backend` in `application.yml`, defaults to `EWS` for backwards compatibility). Admins set this per allocatable via the existing classification editor, or via classification-template defaults so all allocatables of a given type inherit the right choice. No new UI panel; this is data on the allocatable, not on the user.
-- **Credential pool reuses `RaplaKeyStorage`.** EWS credential carriers stay in `EXCHANGE_USER_STORAGE` unchanged. Graph credential carriers store `(tenant-id, client-id, client-secret-or-cert-thumbprint)` under a new key `GRAPH_USER_STORAGE`. Same pool-of-rapla-users model, just two backends. Typical deployment: 1–3 EWS carriers + 1 Graph carrier (since one Azure AD app with `Calendars.ReadWrite.All` covers an entire tenant). ≤10 carriers total across both backends matches existing customer sizing.
-- Graph throttling resilience: respect `Retry-After` headers; exponential backoff on 429; idempotency via Graph's `transactionId` field so retries don't double-create.
-- A new section in `docs/configuration.md` covering Azure AD app registration steps (tenant id, client id, application permissions, admin consent) and the per-allocatable `exchangeBackend` attribute, plus the recommendation that mailbox owners publish their calendars at **"Full details"** if they intend to subscribe to those calendars in rapla (so PRD 039's UID-based loopback filter — see PRD 039 — works robustly).
-- Empirical spike (Phase 1): write events via Graph, publish the same calendar at each of the three detail levels ("Full details" / "Limited details" / "Availability only"), confirm whether the returned `iCalUId` appears as `UID:` in the published iCal feed. Record the matrix in this PRD so PRD 039 knows which detail levels its UID-match path supports.
+- Extract write-only `CalendarBackend` SPI from `org.rapla.plugin.exchangeconnector.server.exchange.*` (`AppointmentSynchronizer`, `EWSConnector`, `ExchangeAppointment`). Existing EWS code becomes `EwsCalendarBackend`. No behaviour change.
+- `GraphCalendarBackend` against Graph v1.0 — three endpoints:
+  - `POST /users/{mailbox}/events` / `PATCH /users/{mailbox}/events/{id}` / `DELETE /users/{mailbox}/events/{id}`. `/users/{mailbox}/...` not `/me/...` (app-only principal).
+- All POST/PATCH send `Prefer: IdType="ImmutableId"` ([docs](https://learn.microsoft.com/en-us/graph/outlook-immutable-id)) — `id` stable across calendar-move.
+- Capture `id` (immutable) + `iCalUId` from Graph response into `RaplaExportedEvent`.
+- **New entity `RaplaExportedEvent`** — one row per rapla `Appointment` regardless of recurrence (master identifiers only). Fields: `appointmentId`, `targetMailbox`, `backendType` (`EWS`|`GRAPH`), `credentialCarrierUserId`, `externalImmutableId`, `iCalUId`, `lastSyncedAt`, `deletedAt`. Indexed on `(targetMailbox, iCalUId)` and `(targetMailbox, externalImmutableId)` — PRD 039's loopback keys.
+  - One-row-per-Appointment because the published iCal feed emits one master VEVENT per series with `RRULE`; iCal4j expands locally in PRD 039. Loopback Pass 1 matches at wire level. Graph's per-occurrence `iCalUId` quirk is API-side; POST response gives the master's, which survives into iCal.
+  - Exception occurrences (`RECURRENCE-ID`) share master UID per RFC 5545 — match same row in Pass 1 (PRD 039 allows multi-VEVENT-per-row when sharing `iCalUId`).
+  - Tombstone: on reservation delete, set `deletedAt`; keep for `2 × max(refreshIntervalMinutes)` or 2 h floor. Background sweep hard-deletes past window. Reason: PRD 039 sub cache may still serve deleted event; loopback would let it through as phantom constraint.
+- **Per-allocatable backend** via `exchangeBackend` classification attribute (`EWS`/`GRAPH`/omitted → `rapla.exchange.default-backend`, defaults `EWS`). Set via existing classification editor or template default. No new UI panel.
+- **Credential pool reuses `RaplaKeyStorage`** — EWS in `EXCHANGE_USER_STORAGE` (unchanged); Graph in new `GRAPH_USER_STORAGE` (`tenant-id`, `client-id`, secret-or-cert). Typical: 1–3 EWS + 1 Graph carrier (one Azure AD app with `Calendars.ReadWrite.All` covers a tenant). ≤10 total.
+- Graph throttling: `Retry-After`, exponential backoff on 429, `transactionId` idempotency.
+- `docs/configuration.md`: Azure AD registration (tenant, client, app perms, admin consent), per-allocatable attribute, "Full details" recommendation for loopback-filter robustness.
+- Phase 1 empirical spike: write via Graph, publish at three detail levels, record whether `iCalUId` appears as `UID:` in iCal feed. Tells PRD 039 which detail levels Tier-1 supports.
 
 **Out of scope:**
 
-- **Reading external events back into rapla.** Covered by PRD 039 (read-only iCal subscriptions per resource). The PRDs are deliberately split — Graph for write, iCal for read. Avoids delta-sync state machines, free/busy probing, and most of the complexity bidirectional Graph integration would have required.
-- Replacing the on-prem EWS backend. The existing `EWSConnector` keeps working; modern-auth (OAuth2) on the EWS side is a separate concern (track in a follow-up if a hybrid customer needs it before Exchange SE customers get Graph hybrid coverage).
-- Replacing `com.microsoft.ews-java-api:2.0` with a maintained alternative. The archived library still works for SOAP-over-basic-auth and NTLM, which is what on-prem customers use. Migration is independent of this PRD.
-- The official Microsoft Graph Java SDK (`com.microsoft.graph:6.64.0`). Measured at **87 MB total with transitives** — would nearly double rapla's 45 MB fat JAR. Hand-rolled `RestClient` calls are the right shape for rapla's narrow needs (3 endpoints).
-- Per-end-user OAuth flow (delegated auth-code with PKCE). The credential-pool model already used for EWS scales fine to Graph and avoids prompting every rapla user for tenant consent. If a future customer specifically wants delegated auth (e.g. so audit logs attribute writes to the actual user rather than the service principal), add it as a Phase-6 follow-up.
-- `AUTO` backend auto-detection by probing. With no read endpoints to probe with, auto-detection would have to call something like `GET /users/{mailbox}` for membership — viable but more moving parts than the explicit `exchangeBackend` attribute. Track as future polish.
-- Google Calendar, CalDAV, JMAP write backends. The SPI extracted here is shaped to admit them later but no implementation in this PRD. `RaplaExportedEvent` is shared infrastructure for any future write backend.
-- Microsoft Places API (room mirroring — push rapla allocatables into Exchange as bookable resource mailboxes). Different problem (pull-from-rapla vs push-into-mailbox); track as future **PRD 043 (Microsoft Places mirror)** if a customer asks.
-- Multi-tenant rapla (PRD 002). A multi-tenant deployment would need multiple Graph credential carriers, one per Azure tenant, but that's already supported by the pool model — no extra design work.
+- **Reading external events back into rapla** — that's PRD 039 (per-resource iCal subscriptions). Avoids delta-sync state machines + free/busy probing.
+- Replacing the on-prem EWS backend; modern-auth OAuth2 on EWS — separate follow-up.
+- Replacing `ews-java-api:2.0` — archived but works for SOAP/NTLM on-prem.
+- Official Microsoft Graph Java SDK (`com.microsoft.graph:6.64.0`, 87 MB with transitives — would nearly double rapla's 45 MB fat JAR). Hand-rolled `RestClient` is right for 3 endpoints.
+- Per-end-user delegated OAuth (PKCE) — credential-pool scales fine. Future PRD 044 if customer needs per-user audit attribution.
+- `AUTO` backend probing — viable but more moving parts than explicit `exchangeBackend` attribute.
+- Google Calendar / CalDAV / JMAP write backends — SPI shaped to admit them; no impl this PRD.
+- Microsoft Places API (room mirroring) — different problem; future PRD 043 if asked.
+- Multi-tenant (PRD 002) — pool model already supports multiple carriers per tenant.
 
 ## Dependency weight — measured
 
-Already on rapla's Spring Boot 4.0.6 classpath; **zero new MB for the core path**:
+Already on Spring Boot 4.0.6 classpath; **zero new MB for core**: `spring-web` (`RestClient`), `spring-security-oauth2-client` (client-credentials against Azure AD), `jackson-databind` 3.x.
 
-- `spring-web` (`RestClient`) — HTTP calls to `graph.microsoft.com`
-- `spring-security-oauth2-client` — token acquisition (client-credentials flow against Azure AD)
-- `jackson-databind` 3.x — Graph response DTOs
+Optional: `com.azure:azure-identity:1.13.3` (~3 MB) for `TokenCredential` polish if PRD 002 lands on Azure.
 
-**Optional**: `com.azure:azure-identity:1.13.3` for polished `TokenCredential` abstractions (chained credential, managed identity if rapla runs on Azure). ~3 MB transitive. Worth adding if PRD 002 (multi-tenant) ever lands on Azure; not needed for v1.
-
-**Avoided**: the official `com.microsoft.graph:microsoft-graph:6.64.0` SDK — 87 MB total (the SDK jar alone is 59 MB of Kiota-generated bindings for thousands of Graph endpoints we don't use).
+Avoided: official `microsoft-graph:6.64.0` SDK — 87 MB (59 MB SDK jar of Kiota-generated bindings for thousands of endpoints we don't use).
 
 ## Sequencing & dependencies
 
-PRD 038 is the **upstream definer** of `RaplaExportedEvent`, the identity-bridge table consumed by two downstream PRDs:
+PRD 038 is **upstream definer** of `RaplaExportedEvent`. Downstream consumers PRD 039 + PRD 042 (Mode 2) both use it for loopback filtering; both degrade to "everything FOREIGN" / no-filter when absent, so PRD 038 can ship before or after them.
 
-- **PRD 039** (per-resource iCal subscriptions) — uses `RaplaExportedEvent` rows for its loopback filter to identify rapla's own writes coming back through subscribed feeds. PRD 039 degrades to "everything is `FOREIGN`" when `RaplaExportedEvent` is missing or empty, so it can ship before PRD 038 lands without breaking.
-- **PRD 042** (iCal import — Mode 2 read-only sync) — needs the same loopback logic when admins sync from a calendar rapla also writes to. Same fail-safe: degrades to no-loopback-filter if `RaplaExportedEvent` is absent.
-
-PRD 038 itself has no upstream dependency on any of the 039/042 family — its EWS path is the existing `org.rapla.plugin.exchangeconnector.server.*` code, and its Graph path is purely additive. It can ship first if the schedule favours it; or after PRD 039 if the loopback consumer wants to land first.
-
-**Implementation order within PRD 038**: Phase 1 (SPI extraction + UID survival spike) is the gate — the spike's output determines which detail levels of Exchange publish PRD 039's Tier-1 (UID match) works at, which then informs PRD 039's documentation but doesn't block its code.
+**Within PRD 038**: Phase 1 (SPI extraction + UID survival spike) is the gate — spike's output informs PRD 039's docs but doesn't block its code.
 
 ## Plan
 
@@ -127,125 +99,90 @@ PRD 038 itself has no upstream dependency on any of the 039/042 family — its E
 
 3. Tier-2 facade test confirms EWS path still produces identical wire calls against a recorded fixture (use `WireMock` against the existing EWS SOAP envelopes).
 
-4. **UID survival empirical spike** (half a day, against a Microsoft developer test tenant):
-   - Create an event via Graph POST with `Prefer: IdType="ImmutableId"`; record the returned `id` and `iCalUId`.
-   - Publish the containing calendar at "Full details" → fetch the published iCal URL → grep for `UID:` → does it match the returned `iCalUId`?
-   - Repeat at "Limited details" and "Availability only".
-   - Record the matrix in this PRD; the result tells PRD 039 which detail levels its UID-match path (Tier 1) supports. Microsoft's docs imply Full details preserves UID; the other two levels are unknown until tested.
+4. **UID survival empirical spike** (half a day, Microsoft developer test tenant): Graph POST with `Prefer: IdType="ImmutableId"`; record returned `id`/`iCalUId`. Publish at "Full details" / "Limited details" / "Availability only" → check `UID:` in published iCal vs `iCalUId`. Result tells PRD 039 which detail levels support Tier-1 (UID match).
 
-   **What is *already* settled** (does not need spiking — known from public sources):
-   - **Component type is always `VEVENT`**, never `VFREEBUSY`. [Slipstick documents this](https://www.slipstick.com/outlook/calendar/publishing-outlook-free-busy/): "Outlook does not export VFREEBUSY components and ignores them on import." Holds at every detail level including "Availability only" — events are published as VEVENTs with the privacy-stripped fields just empty or generic.
-   - **`DTSTART` and `DTEND` are always present** — RFC 5545-required for any valid VEVENT, and they're the entire purpose of publishing busy time. The privacy redaction at "Availability only" strips subject/description/location, never times.
-   - **Therefore** PRD 039's Tier 2 (time-window match) works at every Exchange publish detail level regardless of the spike outcome. The spike only determines *whether Tier 1 (UID match) is also available* at the lower detail levels — it does not affect whether the filter works at all. Worst case at "Availability only": filter operates in Tier-2-only mode, still correct.
+   **Already settled** (no spike needed): Outlook publishes VEVENT (never VFREEBUSY) at every detail level; `DTSTART`/`DTEND` always present (RFC 5545). So PRD 039 Tier 2 (time-window match) works regardless of spike outcome — the spike only determines whether Tier 1 *also* works at lower detail levels.
 
 ### Phase 2 — `GraphCalendarBackend` skeleton
 
-1. New class `org.rapla.plugin.exchangeconnector.server.graph.GraphCalendarBackend` in `rapla-server`.
-2. `GraphCredentialPool` reads carrier credentials from `RaplaKeyStorage` under the new `GRAPH_USER_STORAGE` key. Each entry: `(rapla-user, tenant-id, client-id, client-secret-or-cert)`. Acquires app-only access tokens via Spring Security's `OAuth2AuthorizedClientManager` configured for the client-credentials flow. Caches tokens per `(tenant-id, client-id)`; refreshes ~5 min before expiry.
-3. Routing: for a given `targetMailbox`, pick a credential carrier whose tenant covers that mailbox. v1 keeps it simple: first carrier wins (single-tenant deployments have one Graph carrier; multi-tenant deployments need an additional "which tenant for this mailbox?" rule — Phase 6 if/when needed).
-4. Jackson POJOs for the Graph `event` resource subset rapla uses: `event`, `dateTimeTimeZone`, `recurrence/patternedRecurrence`, `location`, `attendee`. Hand-written (Graph's OpenAPI is too large; we want the ~6 properties we actually use).
-5. Tier-2 test against `WireMock` stubbing the Graph endpoints (recorded payloads from a real test tenant): happy-path create/update/delete, 429 throttling backoff, 412 conflict handling.
+1. New `org.rapla.plugin.exchangeconnector.server.graph.GraphCalendarBackend`.
+2. `GraphCredentialPool` reads from `GRAPH_USER_STORAGE` (`rapla-user`, `tenant-id`, `client-id`, secret-or-cert). App-only tokens via Spring Security `OAuth2AuthorizedClientManager` (client-credentials), cached per `(tenant-id, client-id)`, refresh ~5 min before expiry.
+3. Routing v1: first matching carrier wins (multi-tenant `tenant-domain` mapping → Phase 6).
+4. Hand-written Jackson POJOs for the `event` subset rapla uses (Graph OpenAPI is too large).
+5. Tier-2 WireMock test with real-tenant recorded payloads: happy-path CRUD, 429 backoff, 412 conflict.
 
 ### Phase 3 — Write-side implementation + `RaplaExportedEvent`
 
-1. New entity `RaplaExportedEvent` in `rapla-core`. Storage: new JDBC table + Liquibase changelog, follow existing storage-operator pattern. Indices: `(targetMailbox, iCalUId)`, `(targetMailbox, externalImmutableId)`, `(deletedAt)` for the tombstone sweep.
-2. Implement `createEvent` / `updateEvent` / `deleteEvent`:
-   - All POST/PATCH calls send `Prefer: IdType="ImmutableId"`. Capture `id` + `iCalUId` from the response into `RaplaExportedEvent` (one row per rapla Appointment, storing the master's identifiers).
-   - For recurring rapla appointments: write the whole series as one Graph event with `event.recurrence` set; PATCH the master's id when any part of the series changes. Graph re-derives occurrences internally. Don't issue per-occurrence Graph PATCHes — the single-row `RaplaExportedEvent` model assumes one external identity per rapla Appointment.
-   - Use Graph's `transactionId` (set to a stable hash of `appointmentId + epoch-of-write`) as the idempotency key so retries on network failure don't double-create.
-   - Reservation ↔ Graph `event` field mapping (Jackson POJOs in `rapla-core`):
-     - `Appointment.start/end` → `event.start/end.dateTime` + timezone
-     - `Reservation.name` → `event.subject`
-     - `Reservation.allocatableNames` → `event.location.displayName` (room) + `event.attendees[]` (resources)
-     - Recurrence: `Appointment.repeating` → `event.recurrence.pattern/range`
-     - `event.body` is always written with a one-line "managed by rapla" header (see step 6 below).
-3. On reservation delete: issue Graph `DELETE`, then mark the `RaplaExportedEvent` row with `deletedAt = now()`. The row survives until the tombstone sweep removes it.
-4. On reservation update (start/end change): issue Graph `PATCH`, update the `RaplaExportedEvent` row's `lastSyncedAt`.
-5. **Read-only contract — rapla wins on every conflict.** Events written by rapla are *informationally* read-only from the user's perspective; users may edit them in Outlook, but rapla overwrites those edits on the next sync. There is no merge logic, no notification queue, no UI for divergence in v1. Two failure paths fall out of this policy:
-   - **`412 Precondition Failed` on PATCH** (user edited the event in Outlook between rapla's write and the next sync): refetch the event to get a fresh etag, re-PATCH with rapla's view. No retry beyond that single refetch. User's edits are lost — by design, per the contract.
-   - **`404 Not Found` on PATCH** (user deleted the event in Outlook): treat as event-vanished. Re-create via Graph POST (new `id`, new `iCalUId`); update `RaplaExportedEvent` with the new identifiers. The event reappears in the user's Outlook with the "managed by rapla" body marker visible — clear signal that deleting from Outlook isn't how to remove a rapla booking.
-6. **Body-text marker on every exported event.** Every POST/PATCH writes `event.body` with the localized equivalent of:
+1. New entity `RaplaExportedEvent` in `rapla-core`. New JDBC table + Liquibase changelog. Indices: `(targetMailbox, iCalUId)`, `(targetMailbox, externalImmutableId)`, `(deletedAt)`.
+2. Implement create/update/delete:
+   - All POST/PATCH send `Prefer: IdType="ImmutableId"`. Capture `id` + `iCalUId` (one row per rapla Appointment, master identifiers).
+   - Recurring: one Graph event with `event.recurrence`; PATCH master on series changes. No per-occurrence PATCHes.
+   - `transactionId` = stable hash(`appointmentId + epoch-of-write`) for idempotency.
+   - Field mapping: `Appointment.start/end` → `event.start/end.dateTime`+tz; `Reservation.name` → `event.subject`; `Reservation.allocatableNames` → `event.location.displayName` (room) + `event.attendees[]`; `Appointment.repeating` → `event.recurrence.pattern/range`; `event.body` carries the "managed by rapla" marker (step 6).
+3. Delete: Graph `DELETE` → mark row `deletedAt = now()`; tombstone sweep removes later.
+4. Update (start/end change): Graph `PATCH` → update `lastSyncedAt`.
+5. **Read-only contract — rapla wins on every conflict.** Outlook-side edits are overwritten on next sync. No merge logic / notification / divergence UI in v1.
+   - **`412 Precondition Failed` on PATCH**: refetch for fresh etag, re-PATCH with rapla's view. One refetch, no further retries. User edits lost by design.
+   - **`404 Not Found` on PATCH**: event-vanished. Re-POST (new `id`/`iCalUId`); update row. Event reappears in Outlook with body marker — clear signal that Outlook-delete isn't how to remove a rapla booking.
+6. **Body-text marker** on every POST/PATCH:
 
    ```
    Managed by rapla. Edits in Outlook will be overwritten on the next rapla sync.
    See: <link to rapla deployment, optionally a deep link to the underlying reservation>
    ```
 
-   Users editing the event in Outlook see this header in their own view — the warning is in front of them when they make the choice. Body is preserved verbatim at "Full Details" publish (where it would leak to feed subscribers), so the body text is intentionally minimal — just the policy notice and a link.
-7. Throttling: read `Retry-After` header on 429, exponential backoff up to 60 s, surface `CalendarSyncException` on persistent failure.
-8. Tombstone sweep: scheduled job, runs every 10 minutes, hard-deletes `RaplaExportedEvent` rows where `deletedAt` is older than the per-mailbox tombstone window.
+   Visible to the editing user. Body preserved at "Full Details" publish (leaks to feed subscribers) — kept minimal.
+7. Throttling: read `Retry-After` on 429, exponential backoff up to 60s, surface `CalendarSyncException` on persistent failure.
+8. Tombstone sweep: scheduled every 10 min, hard-deletes rows past the per-mailbox window.
 
 ### Phase 4 — Routing + carrier pool wiring
 
-1. Per-allocatable `exchangeBackend` classification attribute (values `EWS` / `GRAPH` / omitted). Read via the existing classification-attribute mechanism in `getMailbox()`-adjacent code; default to `rapla.exchange.default-backend` from `application.yml` when omitted.
-2. `BackendRouter` in `rapla-server`: given an `Allocatable`, returns the right `CalendarBackend` instance — `EwsCalendarBackend` or `GraphCalendarBackend`. Lookup is O(1) by attribute. Misconfiguration (e.g. `GRAPH` set on an allocatable but no Graph credentials configured) → log warning + skip sync for that allocatable; don't crash the whole sweep.
-3. Modify the existing `SynchronisationManager.synchronizeMailboxes()` loop to dispatch through `BackendRouter`. EWS-tagged allocatables follow the existing per-credential-carrier loop (shared mailbox enumeration). GRAPH-tagged allocatables take a simpler path: enumerate `allocatablesPerMailbox` for `exchangeBackend=GRAPH` entries, write each directly via Graph using the credential carrier's app-only token. No `getSharedMailboxes()` enumeration needed for Graph — `Calendars.ReadWrite.All` reaches every mailbox in the tenant by default.
-4. Document the hybrid pattern: an admin tags allocatables whose mailboxes live on-prem with `exchangeBackend=EWS`, allocatables whose mailboxes live in M365 with `exchangeBackend=GRAPH`. Migration from EWS → Graph for an individual mailbox is just an attribute flip plus ensuring the Graph carrier has access.
-5. Tier-3 MockMvc test exercises the routing: same allocatable with attribute `EWS` routes to `EwsCalendarBackend`; same allocatable with attribute `GRAPH` routes to `GraphCalendarBackend`; misconfigured allocatable logs warning + skips.
+1. Per-allocatable `exchangeBackend` attribute (`EWS` / `GRAPH` / omitted). Default `rapla.exchange.default-backend` from `application.yml`.
+2. `BackendRouter` in `rapla-server`: O(1) lookup, returns `EwsCalendarBackend` or `GraphCalendarBackend`. Misconfig → log warning + skip allocatable; don't crash sweep.
+3. Modify `synchronizeMailboxes()` to dispatch through router. EWS-tagged: existing per-carrier loop. GRAPH-tagged: simpler path — enumerate `allocatablesPerMailbox`, write directly via Graph (`Calendars.ReadWrite.All` reaches every mailbox; no `getSharedMailboxes()` needed).
+4. Document hybrid pattern (on-prem `EWS` / M365 `GRAPH`, attribute flip for migration).
+5. Tier-3 MockMvc routing test (EWS/GRAPH/misconfig).
 
 ### Phase 5 — Azure AD setup + docs
 
-1. Document Azure AD app-registration steps in `docs/configuration.md`:
-   - Create app in Entra portal, capture tenant id + client id.
-   - Generate a client secret or upload a certificate (cert preferred for production).
-   - Grant **application** permission `Calendars.ReadWrite` (not delegated). Admin must consent at the tenant level.
-   - Optional: scope the app's access via Application Access Policy if the deployment should only write to a subset of mailboxes.
-   - In rapla: admin signs in as the chosen credential-carrier user, configures Graph credentials via the existing exchange-connector admin panel — same UI workflow as configuring EWS credentials today, just for the Graph backend.
-2. Per-allocatable setup: document setting `exchangeBackend=GRAPH` on the classification (or template default), and how `getMailbox()` extracts the target email.
-3. **Loopback-handling note in the user setup docs**: if a mailbox owner wants both PRD 038 (rapla writes to their Outlook calendar) AND a PRD 039 subscription to that same calendar (so rapla sees their other appointments), they should publish at **"Full details"** so PRD 039's UID-based loopback filter can identify rapla's own writes. At lower detail levels the filter falls back to time-window matching (still correct, less robust). Simpler alternative: don't subscribe to the same calendar rapla writes to.
-4. **Read-only contract in user-facing docs.** The setup flow includes: "rapla writes scheduled bookings to your Outlook calendar. Treat these events as read-only — any edits you make in Outlook (title, time, location, attendees) will be overwritten the next time rapla syncs. If you need to change a booking, change it in rapla." This contract is also written into every exported event's body so users see it again at the point of editing.
-5. End-to-end smoke test against a Microsoft test tenant (developer subscription, free).
+1. `docs/configuration.md` Azure AD steps: register app in Entra (capture tenant + client id); secret or cert (cert preferred prod); **application** permission `Calendars.ReadWrite` (not delegated, tenant-level admin consent); optional Application Access Policy to scope mailboxes. In rapla: admin configures Graph credentials via the existing exchange-connector panel.
+2. Per-allocatable: `exchangeBackend=GRAPH` on classification / template default; `getMailbox()` extracts email.
+3. **Loopback note**: mailbox owners who want both PRD 038 write + PRD 039 subscription to the same calendar should publish at "Full details" so PRD 039's UID-based loopback filter works robustly. Lower detail levels fall back to time-window matching.
+4. **Read-only contract in user docs**: edits in Outlook are overwritten on next sync; change bookings in rapla.
+5. End-to-end smoke test against Microsoft test tenant.
 
 ## Tests
 
-Per AGENTS.md §10 pyramid — push every test to the cheapest tier that exercises the path.
+Per AGENTS.md §10 pyramid.
 
 **Tier 1 (pure unit, `rapla-core`):**
+- `GraphEventMapperTest` — `Appointment` ↔ `event` round-trip (all-day, recurring with exceptions, multi-day DST, non-default tz).
+- `GraphRecurrenceConversionTest` — every `repeating` mode → `recurrence.pattern.type` + edge cases (MONTHLY same-weekday, custom yearly, count vs end-date).
+- `RaplaExportedEventTombstoneTest` — tombstone expiry + sweep behaviour.
 
-- `GraphEventMapperTest` — rapla `Appointment` ↔ Graph `event` round-trip. All-day events, recurring events with exceptions, multi-day events crossing DST, events with timezones other than the deployment's default.
-- `GraphRecurrenceConversionTest` — every supported `Appointment.repeating` mode → Graph `recurrence.pattern.type` + edge cases (MONTHLY same-weekday-of-month, custom yearly, terminating count vs end-date).
-- `RaplaExportedEventTombstoneTest` — given a deleted reservation, the row is marked tombstoned with the correct expiry timestamp; sweep removes it only after expiry.
-
-**Tier 2 (facade-level, no Spring, WireMock):**
-
-- `EwsCalendarBackendTest` — confirms existing EWS path still produces identical SOAP wire calls against a fixture set (regression gate for the SPI extraction); captures `ItemId`+`iCalUid` into `ExportResult`.
-- `GraphCalendarBackendTest` — drives a `WireMock` server stubbed with real Graph response payloads. Covers:
-  - Create/update/delete happy path against `/users/{mailbox}/events`, with `Prefer: IdType="ImmutableId"` header asserted on every request, `id`+`iCalUId` captured into `ExportResult`.
-  - **Body marker**: every POST/PATCH request body includes the "Managed by rapla" header line.
-  - 429 throttling backoff with `Retry-After`.
-  - Idempotency via `transactionId` (assert no double-create on retried POST).
-  - **412 Precondition Failed on PATCH**: rapla refetches the event to get a fresh etag, re-PATCHes with rapla's view (overwriting any user edits). Assert exactly one refetch + one re-PATCH, no further retries; final state is rapla's view.
-  - **404 Not Found on PATCH**: rapla re-creates via POST with a fresh `transactionId`; `RaplaExportedEvent` row is updated with the new `id` and `iCalUId`.
+**Tier 2 (facade, WireMock):**
+- `EwsCalendarBackendTest` — existing EWS path still produces identical SOAP wire calls (SPI extraction regression gate); captures `ItemId`+`iCalUid`.
+- `GraphCalendarBackendTest` — happy-path create/update/delete with `Prefer: IdType="ImmutableId"` asserted on every request; **body marker** on every POST/PATCH; 429 backoff via `Retry-After`; idempotency via `transactionId` (no double-create on retry); **412**: exactly one refetch + one re-PATCH, rapla's view wins; **404**: re-POST with fresh `transactionId`, row updated.
 
 **Tier 3 (Spring slice, `rapla-app`):**
+- `BackendRouterTest` — `@SpringBootTest`; EWS/GRAPH/omitted/misconfig routing.
+- `GraphCarrierAuthTest` — credentials from `GRAPH_USER_STORAGE`; non-admin can't read others' (§12).
+- `RaplaExportedEventPersistenceTest` — JDBC round-trip; assert indices `(targetMailbox, iCalUId)` and `(targetMailbox, externalImmutableId)` exist.
 
-- `BackendRouterTest` — `@SpringBootTest`. Allocatables with `exchangeBackend=EWS`, `GRAPH`, and omitted (deployment default). Verifies router picks the right backend; misconfiguration (`GRAPH` set but no Graph carrier configured) logs warning and skips that allocatable without aborting the sweep.
-- `GraphCarrierAuthTest` — credentials are loaded from `RaplaKeyStorage` under `GRAPH_USER_STORAGE`; the carrier-rapla-user concept survives round-trips; non-admin users cannot read another carrier's credentials (AGENTS.md §12 data-leak invariants).
-- `RaplaExportedEventPersistenceTest` — round-trip the table through the JDBC operator; assert indices on `(targetMailbox, iCalUId)` and `(targetMailbox, externalImmutableId)` exist (the keys PRD 039's loopback filter looks up by).
+**Tier 4 (opt-in):**
+- `GraphLiveTenantTest` `@Tag("e2e-graph")` — real MS developer-tenant via env vars `RAPLA_GRAPH_TEST_TENANT`/`_CLIENT_ID`/`_USER_MAILBOX`. Runs the UID-survival spike in release-prep CI to catch silent MS-side changes.
 
-**Tier 4 (full E2E, optional, opt-in only):**
-
-- `GraphLiveTenantTest` — `@Tag("e2e-graph")`. Runs against a real Microsoft developer-tenant via env vars `RAPLA_GRAPH_TEST_TENANT`, `RAPLA_GRAPH_TEST_CLIENT_ID`, `RAPLA_GRAPH_TEST_USER_MAILBOX`. Excluded from default `mvn test`. **Also runs the UID-survival spike** from Phase 1 as part of CI release-prep so we catch silent Microsoft-side changes.
-
-**Manual smoke (Phase 5 demo):**
-
-- Fresh rapla dev server, fresh Microsoft test tenant, register Azure AD app per docs, configure a rapla user as Graph credential carrier, tag a test allocatable with `exchangeBackend=GRAPH` and a target mailbox in the tenant, book that allocatable, confirm the event appears in `https://outlook.office.com/calendar` at that mailbox within sync interval. Confirm the event's iCalUId in Graph matches the `iCalUId` in `RaplaExportedEvent`.
+**Manual smoke (Phase 5):** dev server + test tenant + Azure AD app, configure carrier, tag allocatable `GRAPH`+mailbox, book → confirm event in `outlook.office.com/calendar` and `iCalUId` matches `RaplaExportedEvent`.
 
 ## Open Questions
 
-- **Tombstone window length.** Default is `2 × max(refreshIntervalMinutes across PRD 039 subscriptions to this mailbox)` or 2 hours, whichever is greater. Rationale: a stale subscription cache can still serve a now-deleted event up to one refresh interval after the source feed update; doubling gives safety margin. *Edge case: a mailbox with no PRD 039 subscriptions has `max=0` → falls back to the 2-hour floor.*
-
-- **Empirical UID-survival matrix.** Phase 1's spike answers this — whether `iCalUId` appears as `UID:` in the published iCal feed at each of the three detail levels. The result is what PRD 039's loopback filter relies on for its UID-match path. If "Limited details" turns out to preserve UID, PRD 039's UID match works for the typical Outlook personal-calendar publish too; if not, the time-window fallback carries that case.
-
-- **Calendar selection within a target mailbox.** Default writes to the mailbox's primary calendar (`/users/{mailbox}/events` aliases `/users/{mailbox}/calendar/events`). A future need is "write to *this* named calendar inside the mailbox" — Graph supports `/users/{mailbox}/calendars/{calendarId}/events`. v1 writes only to primary; per-allocatable calendar id is a Phase-6 follow-up if customers ask.
-
-- **Multi-tenant credential routing.** v1 picks the first Graph credential carrier whose tenant config matches. With multiple tenants and overlapping mailbox domains, this could route wrong. Phase-6: add a `tenant-domain` mapping on each carrier ("this carrier handles `*@contoso.com`") and route by mailbox domain.
-
-- **Audit attribution (app-only loses per-user trail in Microsoft's logs).** App-only auth attributes all Graph writes to the service principal in Microsoft's Unified Audit Log and mailbox audit log — the rapla planner who triggered the write is not visible in Microsoft's logs. rapla's own audit log preserves the per-planner trail; cross-correlation via `reservationId` in the event body marker recovers the human chain offline. For most customers (typical universities, mid-size orgs) this is fine — rapla's logs are the system-of-record for who-triggered-what. For compliance-sensitive deployments (some EU public sector, regulated healthcare/financial) whose audit regime requires per-user attribution *inside Microsoft's logs*, a future delegated-auth flow is the right escape valve: each planner consents to `Calendars.ReadWrite` once via auth-code + PKCE; tokens stored per-rapla-user in the PRD 030 OAuth token store; writes use the planner's delegated token so Microsoft logs the planner as the auditable actor. Most of the OAuth plumbing already exists from PRDs 029 / 030 / 036; new work is the consent UI for the Graph-write scope (distinct from login scope) and a per-planner credential dispatch path in `GraphCalendarBackend`. Track as future **PRD 044: Delegated-auth Graph writes** when a real customer requests it. v1's architecture admits this cleanly: `RaplaExportedEvent.credentialCarrierUserId` is already a per-row field, and the `CalendarBackend` SPI's per-mailbox dispatch shape doesn't need to change to support per-planner credential selection — it's a backend-internal lookup.
-
-- **`exchangeBackend` classification attribute key.** Conventional? Reuse an existing rapla classification attribute scheme? v1 introduces it as a new well-known attribute key. Worth confirming naming consistency with existing attribute keys (`exchangeMailbox`, etc.) before locking it in.
-
-- **Allocatable as Exchange resource mailbox.** Out of scope here, but worth noting: if customer X wants their rapla allocatables to *also* be bookable Exchange resource mailboxes (so M365 users can book them from Outlook directly), that's a separate "push rapla → Places API" PRD. Microsoft Places gives us `room` / `roomList` CRUD on Graph; the integration would be one-way (rapla as source of truth) and bidirectional conflict resolution is non-trivial. Track as **PRD 043 (Microsoft Places mirror): Mirror rapla allocatables to Microsoft Places**.
+- **Tombstone window length** — default `2 × max(refreshIntervalMinutes across PRD 039 subs to this mailbox)` or 2 hours floor. Doubles the stale-cache risk window. Edge case: no PRD 039 subs → 2-hour floor.
+- **UID-survival matrix** — Phase 1 spike answers; determines whether PRD 039 Tier-1 (UID match) works at "Limited" / "Availability only" detail levels. Tier-2 time-window match always works.
+- **Calendar selection within mailbox** — v1 writes to primary calendar only. Per-allocatable named-calendar (`/users/{mailbox}/calendars/{id}/events`) → Phase 6 if asked.
+- **Multi-tenant credential routing** — v1 first-matching-carrier. Future: `tenant-domain` mapping per carrier, route by mailbox domain.
+- **Audit attribution** — app-only auth loses per-user trail in Microsoft's logs (writes attributed to service principal). rapla's own audit log preserves planner trail; cross-correlation via `reservationId` in body marker recovers the chain offline. Fine for typical customers. Compliance-sensitive deployments needing per-user attribution inside MS logs → future **PRD 044: Delegated-auth Graph writes** (planner consents via PKCE, tokens in PRD 030 store, writes use delegated token). v1 architecture admits this: `RaplaExportedEvent.credentialCarrierUserId` is per-row, SPI shape unchanged.
+- **`exchangeBackend` attribute key naming** — confirm consistency with `exchangeMailbox` etc.
+- **Allocatables as Exchange resource mailboxes** — separate "push rapla → Places API" concern; bidirectional non-trivial. Track as **PRD 043 (Microsoft Places mirror)** if asked.
 
 ## References
 

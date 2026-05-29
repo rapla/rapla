@@ -70,31 +70,102 @@ public class ClassificationGraphQLController
         AllocatableFilter filter = fromMap(filterMap);
 
         User caller = resolveCaller();
-        // Operator-level pre-filter when typeKeyEq is set — avoids materializing
-        // every allocatable across all types just to narrow to one type.
-        ClassificationFilter[] storageFilter = buildStorageFilter(filter);
-        Collection<Allocatable> all = operator.getAllocatables(storageFilter);
-        if (all == null) return List.of();
         PermissionController pc = operator.getPermissionController();
-        int cap = (filter != null && filter.limit() != null) ? filter.limit() : Integer.MAX_VALUE;
-        List<Allocatable> visible = new ArrayList<>(Math.min(cap, 256));
-        for (Allocatable a : all)
+        // PRD 066 — dedup by id across the two union arms.
+        java.util.LinkedHashMap<String, Allocatable> resultById = new java.util.LinkedHashMap<>();
+
+        // PRD 066 — when idIn is the ONLY selector populated, skip the
+        // type-bucket pass entirely (the empty-filter "return everything"
+        // semantic doesn't apply when the caller has explicitly named ids).
+        boolean hasIdIn = filter != null && filter.idIn() != null && !filter.idIn().isEmpty();
+        boolean runTypeBucket = !hasIdIn || hasTypeBucketSelector(filter, filterMap);
+
+        if (runTypeBucket)
         {
-            if (a == null) continue;
-            if (isInternalAllocatable(a)) continue;   // skip rapla-internal (template/period/etc.)
-            // Match-then-canRead — matches() is microseconds on hash-compare;
-            // canRead can be a permission-graph walk for non-admins. Filtering
-            // first short-circuits the expensive check for non-matching entries.
-            if (!matches(a, filter)) continue;
-            // Phase 2: where evaluator is a no-op. Phase 3 wires real predicate
-            // evaluation against the per-type where blocks in filterMap.
-            if (!evaluateWhere(a, filterMap)) continue;
-            if (caller != null && !pc.canRead(a, caller)) continue;
-            if (caller == null && !isWorldReadable(a)) continue;
-            visible.add(a);
-            if (visible.size() >= cap) break;
+            // Operator-level pre-filter when typeKeyEq is set — avoids materializing
+            // every allocatable across all types just to narrow to one type.
+            ClassificationFilter[] storageFilter = buildStorageFilter(filter);
+            Collection<Allocatable> all = operator.getAllocatables(storageFilter);
+            if (all == null) all = List.of();
+            int cap = (filter != null && filter.limit() != null) ? filter.limit() : Integer.MAX_VALUE;
+            for (Allocatable a : all)
+            {
+                if (a == null) continue;
+                if (isInternalAllocatable(a)) continue;   // skip rapla-internal (template/period/etc.)
+                // Match-then-canRead — matches() is microseconds on hash-compare;
+                // canRead can be a permission-graph walk for non-admins. Filtering
+                // first short-circuits the expensive check for non-matching entries.
+                if (!matches(a, filter)) continue;
+                if (!evaluateWhere(a, filterMap)) continue;
+                if (caller != null && !pc.canRead(a, caller)) continue;
+                if (caller == null && !isWorldReadable(a)) continue;
+                resultById.putIfAbsent(a.getId(), a);
+                if (resultById.size() >= cap) break;
+            }
+        }
+
+        // PRD 066 — idIn pass. Each id is resolved + §12-gated; filter rules
+        // do NOT apply (the caller picked these explicitly). Cap doesn't
+        // apply either — explicit picks always come back.
+        if (hasIdIn)
+        {
+            for (String id : filter.idIn())
+            {
+                if (id == null || id.isBlank()) continue;
+                if (resultById.containsKey(id)) continue;       // already in type-bucket
+                Allocatable a;
+                try { a = operator.tryResolve(new ReferenceInfo<>(id, Allocatable.class)); }
+                catch (RuntimeException e) { continue; }
+                if (a == null) continue;
+                if (isInternalAllocatable(a)) continue;
+                if (caller != null && !pc.canRead(a, caller)) continue;
+                if (caller == null && !isWorldReadable(a)) continue;
+                resultById.put(id, a);
+            }
+        }
+
+        List<Allocatable> visible = new ArrayList<>(resultById.values());
+        // PRD 028 Phase 1 — server-side rank when searchText is set.
+        if (filter != null && filter.searchText() != null && !filter.searchText().isBlank())
+        {
+            SearchMatcher.MatchKind kind = filter.matchKind() != null
+                    ? filter.matchKind() : SearchMatcher.MatchKind.SUBSTRING;
+            String needle = filter.searchText();
+            visible.sort((x, y) -> {
+                int rx = SearchMatcher.rank(x.getName(Locale.getDefault()), needle, kind);
+                int ry = SearchMatcher.rank(y.getName(Locale.getDefault()), needle, kind);
+                if (rx != ry) return Integer.compare(rx, ry);
+                String ix = x.getId();
+                String iy = y.getId();
+                return (ix == null ? "" : ix).compareTo(iy == null ? "" : iy);
+            });
         }
         return visible;
+    }
+
+    /**
+     * PRD 066 — does the filter narrow the type-bucket pass via any selector
+     * other than {@code idIn}? Used to decide whether to run the bucket
+     * pass when only {@code idIn} is set (otherwise we'd return everything
+     * union idIn, which isn't the intended "idIn = exactly these" semantic).
+     */
+    private static boolean hasTypeBucketSelector(AllocatableFilter f, Map<String, Object> filterMap)
+    {
+        if (f == null) return false;
+        if (f.typeKeyEq() != null && !f.typeKeyEq().isBlank()) return true;
+        if (f.typeKeyIn() != null && !f.typeKeyIn().isEmpty()) return true;
+        if (f.isPersonEq() != null) return true;
+        if (f.nameContains() != null && !f.nameContains().isBlank()) return true;
+        if (f.searchText() != null && !f.searchText().isBlank()) return true;
+        if (f.ownerEq() != null && !f.ownerEq().isBlank()) return true;
+        if (filterMap != null)
+        {
+            for (Map.Entry<String, Object> e : filterMap.entrySet())
+            {
+                if (e.getKey() != null && e.getKey().startsWith("where") && e.getValue() != null) return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -107,23 +178,34 @@ public class ClassificationGraphQLController
     private static AllocatableFilter fromMap(Map<String, Object> m)
     {
         if (m == null) return null;
+        SearchMatcher.MatchKind matchKind = null;
+        Object mk = m.get("matchKind");
+        if (mk instanceof String s) {
+            try { matchKind = SearchMatcher.MatchKind.valueOf(s); }
+            catch (IllegalArgumentException ignored) {}
+        } else if (mk instanceof SearchMatcher.MatchKind k) {
+            matchKind = k;
+        }
         return new AllocatableFilter(
                 (String) m.get("typeKeyEq"),
                 (List<String>) m.get("typeKeyIn"),
                 (Boolean) m.get("isPersonEq"),
                 (String) m.get("nameContains"),
+                (String) m.get("searchText"),
+                matchKind,
                 (String) m.get("ownerEq"),
+                (List<String>) m.get("idIn"),       // PRD 066
                 (Integer) m.get("limit"));
     }
 
     /**
-     * §5d Phase 2 — no-op stub. Phase 3 wires per-attribute predicate
-     * evaluation walking the map's `where<TypeKey>` blocks.
+     * §5d Phase 3 — delegates to {@link WhereEvaluator} which dispatches
+     * one operator per predicate kind. Combinators + remaining operators
+     * land in Phases 4–5.
      */
-    @SuppressWarnings("unused")
     private static boolean evaluateWhere(Allocatable a, Map<String, Object> filterMap)
     {
-        return true;
+        return WhereEvaluator.evaluate(a, filterMap);
     }
 
     /**
@@ -244,6 +326,13 @@ public class ClassificationGraphQLController
             if (hay == null) return false;
             if (!hay.toLowerCase().contains(f.nameContains().toLowerCase())) return false;
         }
+        if (f.searchText() != null && !f.searchText().isBlank())
+        {
+            String hay = a.getName(Locale.getDefault());
+            SearchMatcher.MatchKind kind = f.matchKind() != null
+                    ? f.matchKind() : SearchMatcher.MatchKind.SUBSTRING;
+            if (!SearchMatcher.matches(hay, f.searchText(), kind)) return false;
+        }
         if (f.ownerEq() != null && !f.ownerEq().isBlank())
         {
             ReferenceInfo<User> ref = a.getOwnerRef();
@@ -286,12 +375,15 @@ public class ClassificationGraphQLController
 
     /** Mirror of the {@code AllocatableFilter} GraphQL input. */
     public record AllocatableFilter(
-            String       typeKeyEq,
-            List<String> typeKeyIn,
-            Boolean      isPersonEq,
-            String       nameContains,
-            String       ownerEq,
-            Integer      limit) {}
+            String                   typeKeyEq,
+            List<String>             typeKeyIn,
+            Boolean                  isPersonEq,
+            String                   nameContains,
+            String                   searchText,
+            SearchMatcher.MatchKind  matchKind,
+            String                   ownerEq,
+            List<String>             idIn,             // PRD 066 — additive id-selection
+            Integer                  limit) {}
 
     // AttributeDescriptorDto and AttributeValueDto records dropped 2026-05-28
     // (PRD 055 β refactor). Descriptor data is now exposed via introspection

@@ -22,6 +22,7 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.StorageOperator;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.graphql.data.method.annotation.SchemaMapping;
@@ -53,13 +54,20 @@ import org.springframework.stereotype.Controller;
  * </ul>
  */
 @Controller
+@EnableConfigurationProperties(RaplaGraphqlProperties.class)
 public class ReservationGraphQLController
 {
     private final StorageOperator operator;
+    private final RaplaGraphqlProperties graphqlProps;
+    private final ClassificationGraphQLController classificationController;
 
-    public ReservationGraphQLController(StorageOperator operator)
+    public ReservationGraphQLController(StorageOperator operator,
+            RaplaGraphqlProperties graphqlProps,
+            ClassificationGraphQLController classificationController)
     {
         this.operator = operator;
+        this.graphqlProps = graphqlProps;
+        this.classificationController = classificationController;
     }
 
     // ============================================================ query roots
@@ -100,12 +108,18 @@ public class ReservationGraphQLController
             throw new IllegalArgumentException(
                     "reservations(filter:) requires a mandatory time window (from + to)");
         }
-        // Hard window cap — PRD 055 §"Mandatory query bounds"
-        long windowDays = java.time.temporal.ChronoUnit.DAYS.between(filter.from(), filter.to());
-        if (windowDays > 365)
+        // Optional window cap — configurable via rapla.graphql.max-query-window-days.
+        // Default is null (no cap); deployers opt in. Small deployments leave it off.
+        Integer cap = graphqlProps.getMaxQueryWindowDays();
+        if (cap != null)
         {
-            throw new IllegalArgumentException(
-                    "Time window > 365 days; reduce the range or paginate");
+            long windowDays = java.time.temporal.ChronoUnit.DAYS.between(filter.from(), filter.to());
+            if (windowDays > cap)
+            {
+                throw new IllegalArgumentException(
+                        "Time window > " + cap + " days; reduce the range or paginate "
+                                + "(configured via rapla.graphql.max-query-window-days)");
+            }
         }
         int limit = filter.limit() != null && filter.limit() > 0
                 ? Math.min(filter.limit(), 5000)
@@ -122,9 +136,33 @@ public class ReservationGraphQLController
                 ? rc.permissionController() : operator.getPermissionController();
         Collection<Allocatable> allocatables = operator.getAllocatables(null);
         Collection<Allocatable> visibleAllocatables;
-        if (filter.allocatableIdsIn() != null && !filter.allocatableIdsIn().isEmpty())
+
+        // PRD 066 — collect ids from BOTH `allocatableIdsIn` (explicit list)
+        // and `allocatableMatching` (predicate-driven). Union is the visible
+        // allocatable set for the storage query. If neither is set, fall
+        // back to "everything the caller can read."
+        boolean hasIdsIn = filter.allocatableIdsIn() != null && !filter.allocatableIdsIn().isEmpty();
+        boolean hasMatching = filter.allocatableMatching() != null && !filter.allocatableMatching().isEmpty();
+
+        if (hasIdsIn || hasMatching)
         {
-            Set<String> wanted = new HashSet<>(filter.allocatableIdsIn());
+            Set<String> wanted = new HashSet<>();
+            if (hasIdsIn) wanted.addAll(filter.allocatableIdsIn());
+            if (hasMatching)
+            {
+                // Resolve the inner AllocatableFilter via the existing
+                // resolver — gets us §12 + idIn + typeKeyIn + whereXxx in
+                // one call. ClassificationGraphQLController already runs
+                // canRead, so we only need the ids.
+                try
+                {
+                    for (Allocatable matched : classificationController.allocatables(filter.allocatableMatching()))
+                    {
+                        if (matched != null && matched.getId() != null) wanted.add(matched.getId());
+                    }
+                }
+                catch (RaplaException e) { /* fall through — empty match set */ }
+            }
             visibleAllocatables = allocatables.stream()
                     .filter(a -> a != null && a.getId() != null && wanted.contains(a.getId()))
                     .filter(a -> pc.canRead(a, caller))
@@ -136,8 +174,18 @@ public class ReservationGraphQLController
                     .filter(a -> pc.canRead(a, caller))
                     .collect(Collectors.toList());
         }
-        Collection<Reservation> all = waitFor(operator.queryAppointmentsByLocalDateTime(
-                caller, visibleAllocatables, null, filter.from(), filter.to(), null, null, false))
+        // Pass `null` as the user — NOT the caller. The storage-layer
+        // {@code AppointmentImpl.getAppointments(user, ...)} filters by
+        // appointment-OWNER when user is non-null (it's used by
+        // "my events" queries elsewhere). For a read query we want every
+        // appointment in the window; §12 is enforced by the post-loop
+        // {@code pc.canRead(r, caller)} check below. Pre-fix this resolver
+        // returned only the caller-owned subset — exactly the bug the
+        // legacy REST {@link RemoteStorageController#queryAppointments}
+        // also avoids by passing null.
+        Collection<Reservation> all = ((org.rapla.storage.SyncStorageOperator) operator)
+                .queryAppointmentsSync(null, visibleAllocatables, null,
+                        filter.from(), filter.to(), null, null, false)
                 .getAllReservations();
 
         List<Reservation> visible = new ArrayList<>(Math.min(limit, 256));
@@ -148,6 +196,21 @@ public class ReservationGraphQLController
             if (!matches(r, filter)) continue;
             visible.add(r);
             if (visible.size() >= limit) break;
+        }
+        // PRD 028 Phase 1 — server-side rank when searchText is set.
+        if (filter.searchText() != null && !filter.searchText().isBlank())
+        {
+            SearchMatcher.MatchKind kind = filter.matchKind() != null
+                    ? filter.matchKind() : SearchMatcher.MatchKind.SUBSTRING;
+            String needle = filter.searchText();
+            visible.sort((a, b) -> {
+                int ra = SearchMatcher.rank(a.getName(java.util.Locale.getDefault()), needle, kind);
+                int rb = SearchMatcher.rank(b.getName(java.util.Locale.getDefault()), needle, kind);
+                if (ra != rb) return Integer.compare(ra, rb);
+                String ia = a.getId();
+                String ib = b.getId();
+                return (ia == null ? "" : ia).compareTo(ib == null ? "" : ib);
+            });
         }
         return visible;
     }
@@ -169,6 +232,13 @@ public class ReservationGraphQLController
             String hay = r.getName(java.util.Locale.getDefault());
             if (hay == null || !hay.toLowerCase().contains(f.nameContains().toLowerCase())) return false;
         }
+        if (f.searchText() != null && !f.searchText().isBlank())
+        {
+            String hay = r.getName(java.util.Locale.getDefault());
+            SearchMatcher.MatchKind kind = f.matchKind() != null
+                    ? f.matchKind() : SearchMatcher.MatchKind.SUBSTRING;
+            if (!SearchMatcher.matches(hay, f.searchText(), kind)) return false;
+        }
         return true;
     }
 
@@ -177,39 +247,6 @@ public class ReservationGraphQLController
     // perf migration, 2026-05-29). See StructuralTypeFetchers.wire() for
     // the registration; ReservationGraphQLController now only carries the
     // @QueryMapping roots.
-
-    // ============================================================ helpers
-
-    /** Synchronous-wait on a rapla {@code Promise}. Used for the query path
-     *  since GraphQL resolvers are sync. ~30 LOC bridge; same shape as
-     *  TableViewController.waitFor. */
-    private static <T> T waitFor(org.rapla.scheduler.Promise<T> promise) throws RaplaException
-    {
-        java.util.concurrent.atomic.AtomicReference<T> result = new java.util.concurrent.atomic.AtomicReference<>();
-        java.util.concurrent.atomic.AtomicReference<Throwable> err = new java.util.concurrent.atomic.AtomicReference<>();
-        java.util.concurrent.CountDownLatch done = new java.util.concurrent.CountDownLatch(1);
-        promise.thenAccept(v -> { result.set((T) v); done.countDown(); })
-                .exceptionally(t -> { err.set(t); done.countDown(); });
-        try
-        {
-            if (!done.await(30, java.util.concurrent.TimeUnit.SECONDS))
-            {
-                throw new RaplaException("reservation query timed out");
-            }
-        }
-        catch (InterruptedException ie)
-        {
-            Thread.currentThread().interrupt();
-            throw new RaplaException("reservation query interrupted", ie);
-        }
-        if (err.get() != null)
-        {
-            Throwable t = err.get();
-            if (t instanceof RaplaException re) throw re;
-            throw new RaplaException(t.getMessage(), t);
-        }
-        return result.get();
-    }
 
     // ============================================================ DTOs
 
@@ -220,7 +257,10 @@ public class ReservationGraphQLController
             String typeKeyEq,
             String ownerEq,
             List<String> allocatableIdsIn,
+            java.util.Map<String, Object> allocatableMatching,    // PRD 066 — raw AllocatableFilter map
             String nameContains,
+            String searchText,
+            SearchMatcher.MatchKind matchKind,
             Integer limit) {}
 
     /** Mirror of {@code Allocation} output type. */
