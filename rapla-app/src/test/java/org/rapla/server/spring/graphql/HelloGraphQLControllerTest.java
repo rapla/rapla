@@ -142,12 +142,17 @@ class HelloGraphQLControllerTest
 
     @Test
     @WithAnonymousUser
-    void anonymousUsersReturnsEmpty()
+    void anonymousUsersRejected()
     {
-        // §12: no caller → can't admin anyone → empty list.
+        // No caller → UNAUTHENTICATED error, not a silent empty list.
         tester.document("{ users { username } }")
               .execute()
-              .path("users").entityList(Map.class).hasSize(0);
+              .errors()
+              .satisfy(errs -> {
+                  assertFalse(errs.isEmpty(), "anonymous users query must error");
+                  assertTrue(errs.toString().contains("UNAUTHENTICATED"),
+                          () -> "expected UNAUTHENTICATED; got " + errs);
+              });
     }
 
     @Test
@@ -167,11 +172,16 @@ class HelloGraphQLControllerTest
 
     @Test
     @WithAnonymousUser
-    void anonymousUserByUsernameReturnsNull()
+    void anonymousUserByUsernameRejected()
     {
         tester.document("{ user(username: \"homer\") { username } }")
               .execute()
-              .path("user").valueIsNull();
+              .errors()
+              .satisfy(errs -> {
+                  assertFalse(errs.isEmpty(), "anonymous user query must error");
+                  assertTrue(errs.toString().contains("UNAUTHENTICATED"),
+                          () -> "expected UNAUTHENTICATED; got " + errs);
+              });
     }
 
     @Test
@@ -186,11 +196,18 @@ class HelloGraphQLControllerTest
 
     @Test
     @WithAnonymousUser
-    void anonymousUserByUnknownUsernameReturnsNull()
+    void anonymousUserByUnknownUsernameRejected()
     {
+        // Auth is checked before existence — anonymous always errors, never
+        // leaks "no such user" vs "exists but hidden".
         tester.document("{ user(username: \"definitely-not-a-real-user\") { username } }")
               .execute()
-              .path("user").valueIsNull();
+              .errors()
+              .satisfy(errs -> {
+                  assertFalse(errs.isEmpty(), "anonymous user query must error");
+                  assertTrue(errs.toString().contains("UNAUTHENTICATED"),
+                          () -> "expected UNAUTHENTICATED; got " + errs);
+              });
     }
 
     // --- §12: non-admin caller always sees themselves -----------------------
@@ -452,17 +469,19 @@ class HelloGraphQLControllerTest
         assertTrue(keys.contains("create-events"),             () -> "expected create-events in " + keys);
     }
 
-    /** §5c §12: anonymous callers see no groups. */
+    /** §5c §12: anonymous group queries are rejected, not silently empty. */
     @Test
     @WithAnonymousUser
-    void groupsAnonymousReturnsEmpty()
+    void groupsAnonymousRejected()
     {
-        @SuppressWarnings({"rawtypes", "unchecked"})
-        List<Map<String, Object>> gs = (List<Map<String, Object>>) (List) tester
-                .document("{ groups { key } }")
+        tester.document("{ groups { key } }")
                 .execute()
-                .path("groups").entityList(Map.class).get();
-        assertTrue(gs.isEmpty(), "anonymous must see no groups, got " + gs);
+                .errors()
+                .satisfy(errs -> {
+                    assertFalse(errs.isEmpty(), "anonymous groups query must error");
+                    assertTrue(errs.toString().contains("UNAUTHENTICATED"),
+                            () -> "expected UNAUTHENTICATED; got " + errs);
+                });
     }
 
     /** group(id) lookup with an unknown id returns null. */

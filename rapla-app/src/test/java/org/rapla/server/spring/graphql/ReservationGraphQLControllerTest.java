@@ -197,9 +197,9 @@ class ReservationGraphQLControllerTest
      */
     @Test
     @WithAnonymousUser
-    void anonymousReservationsReturnsEmpty()
+    void anonymousReservationsRejected()
     {
-        List<Map<String, Object>> result = tester.document("""
+        tester.document("""
                 query {
                   reservations(filter: {
                     from: "2020-01-01T00:00:00",
@@ -208,11 +208,14 @@ class ReservationGraphQLControllerTest
                 }
                 """)
                 .execute()
-                .path("reservations")
-                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
-                .get();
-        assertTrue(result.isEmpty(),
-                () -> "anonymous caller must get [] not " + result);
+                .errors()
+                .satisfy(errs -> {
+                    assertFalse(errs.isEmpty(), "anonymous data query must error, not return []");
+                    String joined = errs.toString();
+                    assertTrue(joined.contains("UNAUTHENTICATED")
+                                    || joined.toLowerCase().contains("authentication"),
+                            () -> "expected UNAUTHENTICATED-style error; got " + joined);
+                });
     }
 
     /**

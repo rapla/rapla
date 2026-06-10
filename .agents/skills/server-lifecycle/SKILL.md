@@ -1,6 +1,6 @@
 ---
 name: server-lifecycle
-description: Use when stopping, restarting, status-probing, or log-inspecting the running rapla dev server. The minimal start recipe + hard rules stay in AGENTS.md §8 because every session needs them; this skill carries the longer snippets (stop with graceful-shutdown window, restart procedure, HTTP/JVM status checks, log streaming, conventions). Skip during a fresh session where you just need to start the server — that's a few lines in AGENTS.md.
+description: Use whenever the user asks to start, stop, restart, status-check, or inspect the logs of the rapla dev (Spring Boot) server — including plain-chat phrasing like "start the server", "restart rapla", "stop the server", "is the server up/running?", "bounce the server", "show/tail the server logs", "bring the server up with the dhbw plugin". Carries — graceful-shutdown stop (10 s window, never kill -9 first), the restart procedure (separate stop + background-start Bash calls), jps/HTTP status probes, tail -F log streaming + the wait-for-"Started Rapla"-marker recipe, the external-plugin (dhbwrapla) run recipe, and the lifecycle conventions (one server per checkout, worktree port offsets, never start during a package build). The minimal vanilla start command + the never-`mvn install` hard rules also live always-on in AGENTS.md §8 — load this skill for anything past a plain fresh-checkout start.
 ---
 
 # Server lifecycle — stop, restart, status, inspect
@@ -71,6 +71,33 @@ timeout 30 sh -c 'until grep -q "Started.*in [0-9.]+ seconds" logs/rapla.log; do
 ```
 
 **Stream every new log line as a tool event:** start `tail -F logs/rapla.log` with `run_in_background=true`, then attach `Monitor` to the shell ID with an until-loop or content matcher. `-F` follows across log rotation.
+
+## Testing an external plugin (e.g. dhbwrapla)
+
+Run `spring-boot:run` **through the plugin's aggregator pom** AND pin the working directory to
+the plugin checkout root. Custom plugins reference their dataset / yaml files by **relative
+path** (`./data/rapla-hsqldb`, `./local/`, …) keyed off the plugin repo root. `spring-boot:run`'s
+default `workingDirectory` is the rapla-app module dir, so those relative paths land in
+rapla-app's vanilla dev DB instead of the plugin's dataset — boot then fails the moment a plugin
+bean looks up a plugin-seeded resource (e.g. `EntityNotFoundException: No dynamictype with
+elementKey X`). Canonical recipe, `<PLUGIN_ROOT>` = the plugin checkout root (e.g. `~/git/dhbwrapla`):
+
+```
+mvn -f <PLUGIN_ROOT>/aggregator-pom.xml -pl ../rapla/rapla-app -am -P<plugin-id> \
+    spring-boot:run \
+    -Dspring-boot.run.fork=false \
+    -Dspring-boot.run.workingDirectory=<PLUGIN_ROOT> \
+    -Dspring-boot.run.profiles=local \
+    -Dspring-boot.run.arguments="--spring.config.additional-location=file:<PLUGIN_ROOT>/local/"
+```
+
+The aggregator's reactor pulls the plugin's `target/classes` onto rapla-app's classpath; the
+`-P<plugin-id>` profile in `rapla-app/pom.xml` declares the plugin as a `runtime`-scope dep, so
+the plugin's `@AutoConfiguration` actually fires. Running rapla's pom in isolation silently leaves
+the plugin off the classpath and its beans (auth stores, sync services, …) never get created.
+Never `java -jar` the packaged fat JAR for routine dev — that's deployment testing only (see the
+`test-deployment` skill). And read the plugin repo's own `AGENTS.md` first — it carries the
+plugin-specific knobs (workingDirectory, additional config locations, conditional beans).
 
 ## Conventions
 

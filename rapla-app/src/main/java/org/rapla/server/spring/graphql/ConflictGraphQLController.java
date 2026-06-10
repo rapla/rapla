@@ -49,8 +49,7 @@ public class ConflictGraphQLController
             graphql.schema.DataFetchingEnvironment env) throws RaplaException
     {
         var rc = RequestContextInstrumentation.from(env.getGraphQlContext());
-        User caller = rc.caller();
-        if (caller == null) return List.of();
+        User caller = UnauthenticatedException.require(rc.caller());
         if (reservationId == null || reservationId.isBlank()) return List.of();
 
         PermissionController pc = rc.permissionController() != null

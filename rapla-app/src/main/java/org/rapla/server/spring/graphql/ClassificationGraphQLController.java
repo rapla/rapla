@@ -50,10 +50,13 @@ import org.springframework.stereotype.Controller;
 public class ClassificationGraphQLController
 {
     private final StorageOperator operator;
+    private final org.rapla.server.spring.JwtUserResolver jwtUserResolver;
 
-    public ClassificationGraphQLController(StorageOperator operator)
+    public ClassificationGraphQLController(StorageOperator operator,
+            org.rapla.server.spring.JwtUserResolver jwtUserResolver)
     {
         this.operator = operator;
+        this.jwtUserResolver = jwtUserResolver;
     }
 
     // === Query roots ==========================================================
@@ -69,7 +72,7 @@ public class ClassificationGraphQLController
         // whereXxx blocks consumed by the (Phase 3+) WhereEvaluator.
         AllocatableFilter filter = fromMap(filterMap);
 
-        User caller = resolveCaller();
+        User caller = UnauthenticatedException.require(resolveCaller());
         PermissionController pc = operator.getPermissionController();
         // PRD 066 — dedup by id across the two union arms.
         java.util.LinkedHashMap<String, Allocatable> resultById = new java.util.LinkedHashMap<>();
@@ -97,8 +100,7 @@ public class ClassificationGraphQLController
                 // first short-circuits the expensive check for non-matching entries.
                 if (!matches(a, filter)) continue;
                 if (!evaluateWhere(a, filterMap)) continue;
-                if (caller != null && !pc.canRead(a, caller)) continue;
-                if (caller == null && !isWorldReadable(a)) continue;
+                if (!pc.canRead(a, caller)) continue;
                 resultById.putIfAbsent(a.getId(), a);
                 if (resultById.size() >= cap) break;
             }
@@ -118,8 +120,7 @@ public class ClassificationGraphQLController
                 catch (RuntimeException e) { continue; }
                 if (a == null) continue;
                 if (isInternalAllocatable(a)) continue;
-                if (caller != null && !pc.canRead(a, caller)) continue;
-                if (caller == null && !isWorldReadable(a)) continue;
+                if (!pc.canRead(a, caller)) continue;
                 resultById.put(id, a);
             }
         }
@@ -238,7 +239,7 @@ public class ClassificationGraphQLController
     public Allocatable allocatable(@Argument("id") String id) throws RaplaException
     {
         if (id == null || id.isBlank()) return null;
-        User caller = resolveCaller();
+        User caller = UnauthenticatedException.require(resolveCaller());
         Allocatable a;
         try
         {
@@ -251,8 +252,7 @@ public class ClassificationGraphQLController
         if (a == null) return null;
         if (isInternalAllocatable(a)) return null;   // rapla-internal — never surface
         PermissionController pc = operator.getPermissionController();
-        if (caller == null && !isWorldReadable(a)) return null;
-        if (caller != null && !pc.canRead(a, caller)) return null;
+        if (!pc.canRead(a, caller)) return null;
         return a;
     }
 
@@ -341,34 +341,11 @@ public class ClassificationGraphQLController
         return true;
     }
 
-    /**
-     * Anonymous-caller read gate. For now nothing is world-readable through
-     * GraphQL — anonymous callers see empty results everywhere. SecurityConfig
-     * still permits unauthenticated requests to {@code /api/graphql} so the
-     * schema and trivial queries (hello/serverTime/version) can be probed
-     * without a token. Once we add explicit world-readable allocatables /
-     * resources, replace this with a real check.
-     */
-    private static boolean isWorldReadable(Allocatable a)
-    {
-        return false;
-    }
-
     // === auth helpers =========================================================
 
     private User resolveCaller()
     {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) return null;
-        String username = null;
-        if (auth.getPrincipal() instanceof Jwt jwt)
-        {
-            username = jwt.getClaimAsString("preferred_username");
-        }
-        if (username == null || username.isBlank()) username = auth.getName();
-        if (username == null || username.isBlank() || "anonymousUser".equals(username)) return null;
-        try { return operator.getUser(username); }
-        catch (RaplaException e) { return null; }
+        return jwtUserResolver.resolveCurrentUserOrNull();
     }
 
     // === DTOs =================================================================

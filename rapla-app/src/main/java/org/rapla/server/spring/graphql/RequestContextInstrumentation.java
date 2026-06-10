@@ -8,13 +8,9 @@ import graphql.execution.instrumentation.SimplePerformantInstrumentation;
 import graphql.execution.instrumentation.parameters.InstrumentationExecutionParameters;
 import java.util.Locale;
 import org.rapla.entities.User;
-import org.rapla.framework.RaplaException;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.StorageOperator;
 import org.springframework.context.i18n.LocaleContextHolder;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 
 /**
@@ -40,10 +36,13 @@ import org.springframework.stereotype.Component;
 public class RequestContextInstrumentation extends SimplePerformantInstrumentation
 {
     private final StorageOperator operator;
+    private final org.rapla.server.spring.JwtUserResolver jwtUserResolver;
 
-    public RequestContextInstrumentation(StorageOperator operator)
+    public RequestContextInstrumentation(StorageOperator operator,
+            org.rapla.server.spring.JwtUserResolver jwtUserResolver)
     {
         this.operator = operator;
+        this.jwtUserResolver = jwtUserResolver;
     }
 
     @Override
@@ -54,26 +53,11 @@ public class RequestContextInstrumentation extends SimplePerformantInstrumentati
         // SecurityContextHolder is still bound to the request thread at this
         // point (Spring's filter chain ran first); LocaleContextHolder too.
         GraphQLContext ctx = parameters.getGraphQLContext();
-        User caller = resolveCallerFromSecurityContext();
+        User caller = jwtUserResolver.resolveCurrentUserOrNull();
         PermissionController pc = operator.getPermissionController();
         Locale locale = LocaleContextHolder.getLocale();
         ctx.put(RequestCtx.KEY, new RequestCtx(caller, pc, locale));
         return SimpleInstrumentationContext.noOp();
-    }
-
-    private User resolveCallerFromSecurityContext()
-    {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) return null;
-        String username = null;
-        if (auth.getPrincipal() instanceof Jwt jwt)
-        {
-            username = jwt.getClaimAsString("preferred_username");
-        }
-        if (username == null || username.isBlank()) username = auth.getName();
-        if (username == null || username.isBlank() || "anonymousUser".equals(username)) return null;
-        try { return operator.getUser(username); }
-        catch (RaplaException e) { return null; }
     }
 
     /**

@@ -54,10 +54,13 @@ import org.springframework.stereotype.Controller;
 public class HelloGraphQLController
 {
     private final StorageOperator operator;
+    private final org.rapla.server.spring.JwtUserResolver jwtUserResolver;
 
-    public HelloGraphQLController(StorageOperator operator)
+    public HelloGraphQLController(StorageOperator operator,
+            org.rapla.server.spring.JwtUserResolver jwtUserResolver)
     {
         this.operator = operator;
+        this.jwtUserResolver = jwtUserResolver;
     }
 
     // --- trivial probes --------------------------------------------------------
@@ -110,8 +113,7 @@ public class HelloGraphQLController
     @QueryMapping
     public List<UserDto> users(@Argument("filter") UserFilter filter) throws RaplaException
     {
-        User caller = resolveCaller();
-        if (caller == null) return List.of();
+        User caller = UnauthenticatedException.require(resolveCaller());
         Collection<User> all = operator.getUsers();
         List<UserDto> visible = new ArrayList<>();
         for (User candidate : all)
@@ -151,8 +153,7 @@ public class HelloGraphQLController
     public UserDto user(@Argument("username") String username) throws RaplaException
     {
         if (username == null || username.isBlank()) return null;
-        User caller = resolveCaller();
-        if (caller == null) return null;
+        User caller = UnauthenticatedException.require(resolveCaller());
         User target = operator.getUser(username);
         if (target == null) return null;
         if (!isSelf(caller, target) && !PermissionController.canAdminUser(caller, target)) return null;
@@ -261,26 +262,7 @@ public class HelloGraphQLController
      */
     private User resolveCaller()
     {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) return null;
-        String username = null;
-        if (auth.getPrincipal() instanceof Jwt jwt)
-        {
-            username = jwt.getClaimAsString("preferred_username");
-        }
-        if (username == null || username.isBlank())
-        {
-            username = auth.getName();
-        }
-        if (username == null || username.isBlank() || "anonymousUser".equals(username)) return null;
-        try
-        {
-            return operator.getUser(username);
-        }
-        catch (RaplaException e)
-        {
-            return null;
-        }
+        return jwtUserResolver.resolveCurrentUserOrNull();
     }
 
     // --- DTOs -----------------------------------------------------------------

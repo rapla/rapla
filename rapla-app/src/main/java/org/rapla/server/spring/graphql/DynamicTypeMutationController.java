@@ -76,10 +76,13 @@ public class DynamicTypeMutationController
             "color");
 
     private final StorageOperator operator;
+    private final org.rapla.server.spring.JwtUserResolver jwtUserResolver;
 
-    public DynamicTypeMutationController(StorageOperator operator)
+    public DynamicTypeMutationController(StorageOperator operator,
+            org.rapla.server.spring.JwtUserResolver jwtUserResolver)
     {
         this.operator = operator;
+        this.jwtUserResolver = jwtUserResolver;
     }
 
     @MutationMapping
@@ -286,17 +289,7 @@ public class DynamicTypeMutationController
 
     private User resolveCaller() throws RaplaException
     {
-        var auth = org.springframework.security.core.context.SecurityContextHolder
-                .getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) return null;
-        String username = null;
-        if (auth.getPrincipal() instanceof org.springframework.security.oauth2.jwt.Jwt jwt)
-        {
-            username = jwt.getClaimAsString("preferred_username");
-        }
-        if (username == null || username.isBlank()) username = auth.getName();
-        if (username == null || username.isBlank() || "anonymousUser".equals(username)) return null;
-        return operator.getUser(username);
+        return jwtUserResolver.resolveCurrentUserOrNull();
     }
 
     private static void applyMultiLanguageName(Map<String, Object> nameInput,

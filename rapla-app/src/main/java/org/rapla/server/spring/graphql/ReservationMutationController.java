@@ -63,8 +63,10 @@ public class ReservationMutationController
     private static final Logger LOGGER = LoggerFactory.getLogger(ReservationMutationController.class);
 
     private final CachableStorageOperator operator;
+    private final org.rapla.server.spring.JwtUserResolver jwtUserResolver;
 
-    public ReservationMutationController(StorageOperator operator)
+    public ReservationMutationController(StorageOperator operator,
+            org.rapla.server.spring.JwtUserResolver jwtUserResolver)
     {
         if (!(operator instanceof CachableStorageOperator c))
         {
@@ -73,6 +75,7 @@ public class ReservationMutationController
                             + (operator == null ? "null" : operator.getClass().getName()));
         }
         this.operator = c;
+        this.jwtUserResolver = jwtUserResolver;
     }
 
     private Reservation editObject(Reservation source)
@@ -699,17 +702,7 @@ public class ReservationMutationController
 
     private User resolveCaller()
     {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) return null;
-        String username = null;
-        if (auth.getPrincipal() instanceof Jwt jwt)
-        {
-            username = jwt.getClaimAsString("preferred_username");
-        }
-        if (username == null || username.isBlank()) username = auth.getName();
-        if (username == null || username.isBlank() || "anonymousUser".equals(username)) return null;
-        try { return operator.getUser(username); }
-        catch (RaplaException e) { return null; }
+        return jwtUserResolver.resolveCurrentUserOrNull();
     }
 
     private void requireCanCreate(DynamicType dt, User caller)

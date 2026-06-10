@@ -26,6 +26,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.client.MockMvcWebTestClient;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -116,16 +117,18 @@ class ConflictGraphQLControllerTest
 
     @Test
     @WithAnonymousUser
-    void anonymousConflictsReturnsEmpty()
+    void anonymousConflictsRejected()
     {
-        List<Map<String, Object>> result = tester.document("""
+        tester.document("""
                 query { conflicts(reservationId: "any-id") { id } }
                 """)
                 .execute()
-                .path("conflicts")
-                .entityList(new ParameterizedTypeReference<Map<String, Object>>() {})
-                .get();
-        assertTrue(result.isEmpty(), "anonymous must get [] not " + result);
+                .errors()
+                .satisfy(errs -> {
+                    assertFalse(errs.isEmpty(), "anonymous conflicts query must error");
+                    assertTrue(errs.toString().contains("UNAUTHENTICATED"),
+                            () -> "expected UNAUTHENTICATED; got " + errs);
+                });
     }
 
     @Test

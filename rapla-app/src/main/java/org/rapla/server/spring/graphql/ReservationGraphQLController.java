@@ -78,7 +78,7 @@ public class ReservationGraphQLController
     {
         if (id == null || id.isBlank()) return null;
         var rc = RequestContextInstrumentation.from(env.getGraphQlContext());
-        User caller = rc.caller();
+        User caller = UnauthenticatedException.require(rc.caller());
         Reservation r;
         try
         {
@@ -89,7 +89,6 @@ public class ReservationGraphQLController
             return null;
         }
         if (r == null) return null;
-        if (caller == null) return null;       // anonymous → §12 hide
         PermissionController pc = rc.permissionController() != null
                 ? rc.permissionController() : operator.getPermissionController();
         if (!pc.canRead(r, caller)) return null;
@@ -101,8 +100,7 @@ public class ReservationGraphQLController
             graphql.schema.DataFetchingEnvironment env) throws RaplaException
     {
         var rc = RequestContextInstrumentation.from(env.getGraphQlContext());
-        User caller = rc.caller();
-        if (caller == null) return List.of();        // anonymous
+        User caller = UnauthenticatedException.require(rc.caller());
         if (filter == null || filter.from() == null || filter.to() == null)
         {
             throw new IllegalArgumentException(

@@ -35,9 +35,7 @@ public class SpringSecurityRemoteSession implements RemoteSession
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(SpringSecurityRemoteSession.class);
 
     private final RemoteSession fallback;
-    private final StorageOperator operator;
-    private final ExternalProvidersProperties externalProviders;
-    private final ExternalUserResolver externalUserResolver;
+    private final JwtUserResolver jwtUserResolver;
 
     public SpringSecurityRemoteSession(RemoteSession fallback, StorageOperator operator)
     {
@@ -49,10 +47,13 @@ public class SpringSecurityRemoteSession implements RemoteSession
                                        ExternalProvidersProperties externalProviders,
                                        ExternalUserResolver externalUserResolver)
     {
+        this(fallback, new JwtUserResolver(operator, externalProviders, externalUserResolver));
+    }
+
+    public SpringSecurityRemoteSession(RemoteSession fallback, JwtUserResolver jwtUserResolver)
+    {
         this.fallback = fallback;
-        this.operator = operator;
-        this.externalProviders = externalProviders;
-        this.externalUserResolver = externalUserResolver;
+        this.jwtUserResolver = jwtUserResolver;
     }
 
     @Override
@@ -101,53 +102,12 @@ public class SpringSecurityRemoteSession implements RemoteSession
 
     /**
      * Resolve the JWT to a rapla User, or throw a {@link RaplaSecurityException}
-     * whose message names the actual reason (e.g. "name already taken",
-     * "auto-provision is disabled"). Callers receive the concrete failure
-     * cause instead of a generic 401 message.
+     * whose message names the actual reason. Delegates to the shared
+     * {@link JwtUserResolver} so the REST and GraphQL transports resolve
+     * identity identically.
      */
     private User resolveJwtOrThrow(Jwt jwt) throws RaplaSecurityException
     {
-        // External-issuer dispatch (PRD 036). If `iss` matches an enabled
-        // external provider, the JWT's claims describe an external identity
-        // that must be mapped to a rapla User via ExternalUserResolver — the
-        // `sub` claim is the IdP's user identifier, NOT a rapla UUID.
-        if (externalProviders != null && externalUserResolver != null)
-        {
-            String issuer = jwt.getClaimAsString("iss");
-            ProviderConfig provider = externalProviders.byIssuer(issuer).orElse(null);
-            if (provider != null)
-            {
-                try
-                {
-                    return externalUserResolver.resolve(jwt, provider);
-                }
-                catch (RaplaSecurityException ex)
-                {
-                    LOGGER.warn("External JWT (iss={}) could not be resolved to a Rapla user: {}", issuer, ex.getMessage());
-                    throw ex;
-                }
-                catch (RaplaException ex)
-                {
-                    LOGGER.warn("External JWT (iss={}) could not be resolved to a Rapla user: {}", issuer, ex.getMessage());
-                    throw new RaplaSecurityException(ex.getMessage(), ex);
-                }
-            }
-        }
-
-        String subject = jwt.getSubject();
-        if (subject == null)
-        {
-            throw new RaplaSecurityException("JWT has no subject and no matching external provider for issuer "
-                    + jwt.getClaimAsString("iss"));
-        }
-        try
-        {
-            return operator.resolve(new ReferenceInfo<>(subject, User.class));
-        }
-        catch (RaplaException ex)
-        {
-            LOGGER.warn("JWT subject {} could not be resolved to a Rapla user: {}", subject, ex.getMessage());
-            throw new RaplaSecurityException("JWT subject '" + subject + "' could not be resolved: " + ex.getMessage(), ex);
-        }
+        return jwtUserResolver.resolveJwtOrThrow(jwt);
     }
 }

@@ -134,21 +134,34 @@ public class ServerServiceConfig
         return Collections.emptySet();
     }
 
+    /**
+     * Shared JWT → rapla User resolver. One instance used by BOTH the REST
+     * resource-server path ({@link org.rapla.server.spring.SpringSecurityRemoteSession})
+     * and the GraphQL resolvers, so external-IdP (Keycloak/Entra/Google)
+     * identity resolution can't drift between transports.
+     */
+    @Bean
+    public org.rapla.server.spring.JwtUserResolver jwtUserResolver(
+            org.rapla.storage.CachableStorageOperator operator,
+            ObjectProvider<org.rapla.server.spring.oauth.external.ExternalProvidersProperties> externalProvidersProvider,
+            ObjectProvider<org.rapla.server.spring.oauth.external.ExternalUserResolver> externalUserResolverProvider)
+    {
+        return new org.rapla.server.spring.JwtUserResolver(
+                operator,
+                externalProvidersProvider.getIfAvailable(),
+                externalUserResolverProvider.getIfAvailable());
+    }
+
     @Bean
     public RemoteSession remoteSession(TokenHandler tokenHandler,
-                                        org.rapla.storage.CachableStorageOperator operator,
-                                        ObjectProvider<org.rapla.server.spring.oauth.external.ExternalProvidersProperties> externalProvidersProvider,
-                                        ObjectProvider<org.rapla.server.spring.oauth.external.ExternalUserResolver> externalUserResolverProvider)
+                                        org.rapla.server.spring.JwtUserResolver jwtUserResolver)
     {
         // PRD 029 Phase 5 (2026-05-25): RaplaAuthentificationService no longer
         // injected here — the legacy session's username/password request-param
         // branch (which was the only consumer) is gone. The fallback now only
         // handles Bearer header / ?access_token= / raplaLoginToken cookie.
         RemoteSession legacy = new RemoteSessionImpl(tokenHandler);
-        return new org.rapla.server.spring.SpringSecurityRemoteSession(
-                legacy, operator,
-                externalProvidersProvider.getIfAvailable(),
-                externalUserResolverProvider.getIfAvailable());
+        return new org.rapla.server.spring.SpringSecurityRemoteSession(legacy, jwtUserResolver);
     }
 
     @Bean

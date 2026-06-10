@@ -24,6 +24,35 @@ never edit anything inside it. Everything site-specific lives *outside* the JAR
 **Requirements:** Java 21 (the JAR targets Java 17 bytecode but runs on 21).
 A JDBC database is optional — Rapla ships with an embedded store.
 
+## Building the deployable JAR
+
+Always `clean` before `package` (stale `target/` shadows the assembly inputs
+and ships a broken artifact), and skip tests on packaging builds:
+
+```sh
+mvn -pl rapla-app -am clean package -DskipTests -Psign-pkcs11
+```
+
+The bundled Java Web Start webclient jars **must be signed** or the JNLP client
+won't launch. Two signing profiles:
+
+| Profile | Signs with | For |
+|---|---|---|
+| `-Psign-pkcs11` | a hardware token (YubiKey, PKCS#11) | the maintainer's release builds |
+| `-Psign-jks`    | a self-signed keystore (`raplaselfsigned.ks`) | other developers / CI test builds |
+
+Full signing setup (keystore config, PKCS#11 cfg, troubleshooting) is in
+[`signing.md`](signing.md).
+
+> **WSL2 + YubiKey gotcha.** The `sign-pkcs11` build fails at
+> `sign-webclient-pkcs11` with `ProviderException: slotListIndex is 0 but token
+> only has 0 slots` when the YubiKey isn't forwarded into WSL — the attach does
+> not survive a `wsl --shutdown`. Fix from inside WSL (`usbipd.exe` is on the
+> PATH): `usbipd.exe list` to find the Yubico busid, then
+> `usbipd.exe attach --wsl --busid <busid>`; confirm with
+> `pkcs11-tool --list-slots` before rebuilding. The batch signer prints an
+> 8-second countdown, then signs all webclient jars on a single key touch.
+
 ## Install layout
 
 Rapla resolves `data/`, `config/`, and `lib/` **relative to the working

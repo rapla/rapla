@@ -91,6 +91,10 @@ public class SecurityConfig
                             // land — every read/write field is §12-gated
                             // server-side regardless of transport auth.
                             "/api/graphql",
+                            // GraphQL schema printer (spring.graphql.schema.printer.enabled)
+                            // — the SDL pendant to the public /v3/api-docs above. API
+                            // shape metadata only, no entity data; public to match Swagger.
+                            "/api/graphql/schema",
                             "/oauth2/**", "/.well-known/**", "/login", "/error",
                             // dhbwrapla plugin endpoints. /dhbw/status is the
                             // dhbw-specific health probe; /api/dhbw/stele is

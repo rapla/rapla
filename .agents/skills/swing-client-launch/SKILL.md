@@ -131,6 +131,20 @@ has a matching auth-failure entry server-side.
 - **JNLP launch is a separate concern** — for that, load the
   `test-jnlp-launch` skill instead. This skill covers the dev-loop
   `mvn exec:java` path only.
+- **Login window never appears under WSLg (taskbar icon but no window).**
+  The log shows `showing legacy Swing login dialog` and `xdotool search
+  --name "Rapla Login"` finds the window — so the app is fine; WSLg's
+  `msrdc` render session is wedged and isn't compositing *any* Linux GUI
+  window onto the Windows desktop. Confirm with `xeyes` (also only a
+  taskbar entry, no eyes). **Fix:** `wsl --shutdown` from a Windows
+  terminal, reopen WSL, re-test with `xeyes` — eyes appear ⇒ the Swing
+  login will too. Moving the window with `xdotool windowmove` does *not*
+  help (it's a render-transport failure, not an off-screen position).
+  Full root cause + the domain-GPO fallback (unsigned `wslg.rdp` blocked
+  by *"Allow .rdp files from unknown publishers"*) is in `docs/development.md`
+  § "Headed windows don't display under WSLg". Alternative that skips WSLg
+  entirely: run the client from IntelliJ on Windows against the WSL server
+  at `localhost:8051` (WSL2 mirrors localhost).
 
 ## Two clients in parallel
 

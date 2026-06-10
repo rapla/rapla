@@ -19,7 +19,7 @@ The codebase is a **5-module Maven reactor** (PRD 005, 2026-05-07) plus a **sepa
 | `rapla-app` | Runnable Spring Boot application: `RaplaSpringBootApplication`, `application.yml`, `src/assembly/`, `src/main/distribution/`, signing profiles, JNLP webclient/ staging. Produces `rapla-2.1-SNAPSHOT.jar` (Spring Boot fat JAR). |
 | `rapla-angular/` | Angular 21 SPA — separate tree, **not in the Maven reactor**. Built with `npm`, served at `/app/` in dev (via `ng serve` proxy on :4200) and prod (via Spring Boot static handler). Talks to the rapla-app REST API at `/api/*`. Has its own `package.json`, generated OpenAPI client at `src/app/api/`, Vitest tests. See AGENTS.md §14 + the `angular-frontend` skill. |
 
-The repo-root `pom.xml` is the reactor aggregator (artifactId `rapla-aggregator`, packaging=pom, lists the five Maven modules).
+The repo-root `pom.xml` is the reactor aggregator (artifactId `rapla-aggregator`, packaging=pom, lists the five Maven modules); running `mvn` from the repo root walks the whole reactor.
 `custom/` is intentionally NOT in the reactor (its WAR-overlay shape is being rethought; future PRD).
 `rapla-angular/` lives outside the reactor entirely — it's an Angular project, not a Maven module; build/test commands are `npm`, not `mvn`.
 
@@ -35,7 +35,9 @@ The repo-root `pom.xml` is the reactor aggregator (artifactId `rapla-aggregator`
 - Probe the running server's REST API directly (login, getResources, queryAppointments, etc.) — load the **`api-testing`** skill
 - Requires SDKMAN (Java 21 + Maven) on WSL2 Ubuntu
 
-The reactor aggregator (`pom.xml` at the repo root, packaging=pom, artifactId=`rapla-aggregator`) lists the 5 module siblings. Running `mvn` from the repo root walks the whole reactor.
+## Skills
+
+Detailed how-tos live as **Agent Skills** (the cross-engine `SKILL.md` standard) under `.agents/skills/<name>/SKILL.md`, kept out of this always-on file so it stays rule-dense. Every engine that reads this repo — Claude Code, opencode, Copilot/VS Code, Codex, Gemini CLI — **auto-discovers them by `name` + `description` and loads the body on demand** (progressive disclosure); there is no manual index to maintain, and you never need to `cat` a SKILL.md to "enable" it. The numbered rules below name the relevant skill at the point it applies (*"load the X skill"*) — that contextual pointer **is** the reference. If your engine doesn't auto-surface skills (e.g. Cursor), they're plain Markdown at the path above. Restructuring this file or its skills: load the **`agents-cleanup`** skill.
 
 ## Rules
 
@@ -54,7 +56,7 @@ The order is **(a) understand → (b) write failing test → (c) fix → (d) ver
 - **Diagnostics-first is fine when** you're still locating the root cause — curl probes, log inspection, exploratory println/diagnostic dumps in a test, integration-test bisects, reading code. Once you can name the broken function/field/method, switch to test-first for the fix.
 - **No exception for "trivial" fixes.** A removed `final` keyword, a missing null-check, a typo'd config key — all bug fixes get a regression test. The point isn't to verify the fix works; it's to lock the fix in so the next refactor doesn't reopen the bug. The Jackson-3 `final`-field bugs (PRD 011 follow-up, 2026-05-09) reopened the same pattern five times across different fields — a per-bug regression test would have caught the second one immediately.
 - **Verifying the test would catch the bug:** After writing the fix and seeing the test go green, briefly revert the fix and re-run the test to confirm it goes red for the right reason. Re-apply the fix. This costs one extra test run and prevents tests that pass for the wrong reason (e.g. asserting on a field that gets initialized in setUp regardless of the bug).
-- **Audit for sibling occurrences before declaring done.** Once you've named the root cause (a wrong API shape, a missing guard, a buggy `setTimestamp` binding, a `final`-field Jackson trap), grep the codebase for the same antipattern elsewhere — bugs of a kind cluster, and "one site is broken" usually means 2–5 sites are broken. **List the siblings for the user and ASK whether to extend the fix.** Don't silently fan out — superficially-similar sites can need different handling, or the user may prefer the targeted fix shipped today and the sweep on its own PR. PRD 054 (2026-05-25) is the worked example: the cache-drift bug lived in *one* of five `setTimestamp(...)` call sites in the dbsql layer; surfacing all five let us see that the other four were already self-consistent for different reasons, and a silent sweep would have been wrong.
+- **Audit for sibling occurrences before declaring done.** Once you've named the root cause (a wrong API shape, a missing guard, a buggy `setTimestamp` binding, a `final`-field Jackson trap), grep the codebase for the same antipattern elsewhere — bugs of a kind cluster, and "one site is broken" usually means 2–5 sites are broken. **List the siblings for the user and ASK whether to extend the fix.** Don't silently fan out — superficially-similar sites can need different handling, or the user may prefer the targeted fix today and the sweep on its own PR. Worked example: PRD 054 (2026-05-25) — the cache-drift bug lived in *one* of five dbsql `setTimestamp(...)` sites; the other four were self-consistent for different reasons, so a silent sweep would have been wrong.
 
 ### 2. PRD-Driven Development
 - Before implementing anything, check **both `docs/prd/` AND `docs/prd/done/`** for an existing PRD. The `done/` subfolder holds completed PRDs — read them too; they capture decisions and alternatives already considered.
@@ -91,8 +93,8 @@ The order is **(a) understand → (b) write failing test → (c) fix → (d) ver
 - If a targeted test fails in a way that suggests a wider regression, *then* expand to the full suite — as investigation, not routine.
 - **Cross-module test gotcha:** if `mvn -pl rapla-app -am test -Dtest=Foo` test-compiles an upstream module with broken test sources, you get a spurious red. Add `-Dsurefire.failIfNoSpecifiedTests=false` so per-module surefire skips modules where no test matches; or explicitly list modules: `mvn -pl rapla-bom,rapla-core,rapla-server,rapla-app test -Dtest=Foo -Dsurefire.failIfNoSpecifiedTests=false`.
 - **Don't `mvn clean` routinely** — incremental compile is reliable.
-- **ALWAYS `mvn clean compile` after deleting, renaming, or moving a class.** Stale `.class` files for the old name linger in `target/` and make broken references resolve successfully ("the compile passes"), then blow up at runtime — or worse, the running JVM keeps executing the deleted code because the bytecode is still on the classpath. The 2026-05-21 PRD 049 verification caught this: ~25 classes deleted across the session, server restart picked up the stale `.class` files unchanged, Swing's `changeName` call hit the deleted `RemoteStorageImpl` instead of the new controller-as-impl and NPE'd. **No exceptions; this rule fires even for a single-class delete.**
-- **ALWAYS `mvn clean` before `mvn package` / packaging.** Skip-clean for `mvn compile` and `mvn test` (incremental compile is fine, fast iteration matters) — but the moment the goal is `package` (fat JAR, distribution archive, JNLP webclient bundling, signed jars), stale `target/` artefacts shadow the assembly inputs and you ship a broken artifact. Worked example 2026-05-22: PRD 052 deployable build packaged a fat JAR with only 2 of the 22 expected jars in `static/webclient/` because `target/webclient/` had leftover state from a prior aborted (pkcs11-failed) build. **Recipe:** `mvn -pl rapla-app -am clean package -DskipTests [-Psign-pkcs11|-Psign-jks]` — clean always, `-DskipTests` per the user's CLAUDE.md preference for packaging builds.
+- **ALWAYS `mvn clean compile` after deleting, renaming, or moving a class.** Stale `.class` files for the old name linger in `target/`, make broken references resolve ("the compile passes"), then blow up at runtime — or the JVM keeps executing the deleted bytecode. Worked example: PRD 049 verification (2026-05-21) — ~25 deleted classes left stale `.class` files a server restart kept running, NPE'ing on a deleted `RemoteStorageImpl`. **No exceptions; fires even for a single-class delete.**
+- **ALWAYS `mvn clean` before `mvn package` / packaging.** Skip-clean is fine for `mvn compile`/`mvn test` (incremental, fast) — but for `package` (fat JAR, distribution archive, JNLP webclient bundling, signed jars), stale `target/` artefacts shadow the assembly inputs and you ship a broken artifact. Worked example: PRD 052 (2026-05-22) shipped a fat JAR with only 2 of 22 expected jars in `static/webclient/` from leftover `target/webclient/` state. **Recipe:** `mvn -pl rapla-app -am clean package -DskipTests [-Psign-pkcs11|-Psign-jks]` — clean always, `-DskipTests` per CLAUDE.md for packaging builds.
 
 ### 6. Git
 - Never commit unless explicitly asked.
@@ -129,7 +131,7 @@ If a parallel-session change broke your build: confirm via the mtime check above
 
 The dev server is a Spring Boot application started via `mvn spring-boot:run` (no package step needed — runs from `target/classes`). Per §7 port convention, the canonical checkout binds **8051**; worktree N uses `8051 + 10·N`. PID/log file paths below assume the canonical checkout — substitute `logs/rapla-N.{pid,log}` in worktrees so multiple servers don't fight for the same files.
 
-**Hard rules:** never `mvn install`; never run rapla JARs from `~/.m2/repository/` (both shadow in-reactor `target/classes` with stale code — see §5). Always run from the repo root with `-pl rapla-app -am`, never `cd rapla-app`.
+**Hard rules (§5):** never `mvn install`, never run from `~/.m2/repository/`, always `-pl rapla-app -am` from the repo root — never `cd rapla-app`.
 
 > **Testing the deployable fat JAR (`mvn package` + signed JNLP webclient/) is a separate concern** — see the **`test-deployment`** skill at `.agents/skills/test-deployment/SKILL.md`. AGENTS.md only covers the dev server.
 
@@ -137,20 +139,9 @@ The dev server is a Spring Boot application started via `mvn spring-boot:run` (n
 
 The Bash tool waits for the spawned process to exit. A long-running server started in the foreground hangs the agent forever. **The right pattern is `run_in_background=true` on the Bash tool call** — the tool spawns the process, returns a shell ID immediately, and the agent keeps working.
 
-**Reliable recipe (lessons learned 2026-05-13):**
+**Reliable recipe (lessons learned 2026-05-13)** — three gotchas baked in: **absolute paths** (the Bash tool's CWD can drift after an earlier `cd`), **separate stop from start** (never chain `pkill … ; mvn … &` in one call — the pkill SIGTERMs the new server), **absolute log path** (so the startup-wait grep finds it regardless of CWD):
 
 ```bash
-# 1. ABSOLUTE PATHS — the Bash tool's CWD persists between calls but can shift
-#    if any earlier command `cd`-ed elsewhere. Don't rely on relative paths
-#    here; use either `-f /home/chris/git/rapla/pom.xml` or explicitly
-#    `cd /home/chris/git/rapla &&` at the start of THIS command.
-# 2. SEPARATE STOP FROM START — never chain `pkill … ; sleep … ; mvn … &` in
-#    the same Bash invocation. The pkill races with the new spring-boot:run
-#    inside the same backgrounded shell — the new server gets SIGTERM'd
-#    right after startup.
-# 3. ABSOLUTE log path — `> /home/chris/git/rapla/logs/rapla.log` so the
-#    grep-wait pattern below finds the log regardless of CWD drift.
-
 > /home/chris/git/rapla/logs/rapla.log    # truncate so stale "Started" lines don't match
 mvn -f /home/chris/git/rapla/pom.xml -pl rapla-app -am spring-boot:run \
     -Dspring-boot.run.fork=false \
@@ -160,40 +151,17 @@ mvn -f /home/chris/git/rapla/pom.xml -pl rapla-app -am spring-boot:run \
 echo "spawned"
 ```
 
-Run with `run_in_background=true` on the Bash tool call. The `-agentlib:jdwp=…` arg makes the JVM debugger-attachable on `localhost:5005` — idle when nothing's attached, lets the `jdwp` MCP server step-debug on demand (see `java-debugger` skill). Loopback-only bind: never include `address=*:5005` outside dev, and never run a production rapla with `-agentlib:jdwp`.
+Run with `run_in_background=true`. The flags, briefly: `fork=false` keeps the classpath in-reactor (`rapla-*/target/classes`) instead of `~/.m2`; `-pl rapla-app -am` is mandatory; `profiles=local` loads the gitignored `application-local.yml` dev overrides (content in `docs/development.md`; its absence in a fresh checkout is harmless); `-agentlib:jdwp=…` makes the JVM debugger-attachable on loopback `localhost:5005` for the `jdwp` MCP server (`java-debugger` skill) — **never** `address=*:5005`, and never jdwp in production.
 
-`-Dspring-boot.run.fork=false` runs the app in the Maven JVM so the
-classpath stays in-reactor (`rapla-{core,client,server,app}/target/classes`)
-rather than dropping back to `~/.m2/repository`.
-`-pl rapla-app -am` is mandatory.
-
-`-Dspring-boot.run.profiles=local` activates the `local` Spring profile so
-`application-local.yml` loads — dev overrides (verbose Spring Security logging,
-`rapla.oauth.public-base-url=http://localhost:8051` for the `ng serve` proxy,
-external-IdP test config). The file is gitignored; a fresh checkout without it
-just runs on the production `application.yml` defaults, which is harmless.
-See `docs/development.md` for the dev `application-local.yml` content.
-
-If you're a shell user (not the Bash tool), use `nohup ... < /dev/null &` + `disown` instead — same effect.
-
-**Confirm startup before issuing requests.** Use the EXACT `Started Rapla`
-marker — `Started.*in [0-9.]+ seconds` alone matches older Spring lines or
-stale log entries from a previous run:
+**Confirm startup before issuing requests** with the EXACT `Started Rapla` marker — `Started.*in [0-9.]+ seconds` alone matches older/stale log lines:
 
 ```bash
 # In a separate Bash call (NOT chained to the start above):
 timeout 120 sh -c 'until grep -q "Started Rapla.*in [0-9.]\+ seconds" \
     /home/chris/git/rapla/logs/rapla.log 2>/dev/null; do sleep 1; done' \
   && echo READY || echo TIMEOUT
-jps -l | grep RaplaSpringBoot   # find the actual JVM PID
+jps -l | grep RaplaSpringBoot   # the JVM PID — don't trust logs/rapla.pid (it's the Maven wrapper PID under fork=false). To stop: `pkill -f RaplaSpringBootApplication`.
 ```
-
-**Don't rely on `logs/rapla.pid`** for the Bash-tool flow. With
-`-Dspring-boot.run.fork=false`, `$!` from a backgrounded `mvn` is the
-Maven wrapper PID, not the JVM. The reliable PID source is
-`jps -l | grep RaplaSpringBoot`. The PID file pattern in the snippets
-below is kept for compatibility with the shell-user case, but for
-agents `pkill -f RaplaSpringBootApplication` is simpler and equivalent.
 
 #### Stop / restart / status / log inspection — see the `server-lifecycle` skill
 
@@ -203,17 +171,7 @@ Quick essentials that stay inline:
 - Stop: `pkill -f RaplaSpringBootApplication` (10 s graceful window — never `kill -9` first).
 - One server per checkout (port 8051 binds once); use a worktree per §7 for parallel work.
 - Never start the server during a `mvn package` build (`spring-boot:repackage` rewrites the same JAR).
-- **Testing an external plugin: run `spring-boot:run` through the plugin's aggregator pom** AND pin the working directory to the plugin checkout root. Custom plugins typically reference their dataset / yaml files by **relative path** (`./data/rapla-hsqldb`, `./local/`, etc.) keyed off the plugin repo root. `spring-boot:run`'s default `workingDirectory` is the rapla-app module dir, so those relative paths land in rapla-app's vanilla dev DB instead of the plugin's dataset — boot then fails the moment a plugin bean looks up a plugin-seeded resource (e.g. `EntityNotFoundException: No dynamictype with elementKey X`). Canonical recipe, with `<PLUGIN_ROOT>` = the plugin checkout root (e.g. `~/git/dhbwrapla`):
-  ```
-  mvn -f <PLUGIN_ROOT>/aggregator-pom.xml -pl ../rapla/rapla-app -am -P<plugin-id> \
-      spring-boot:run \
-      -Dspring-boot.run.fork=false \
-      -Dspring-boot.run.workingDirectory=<PLUGIN_ROOT> \
-      -Dspring-boot.run.profiles=local \
-      -Dspring-boot.run.arguments="--spring.config.additional-location=file:<PLUGIN_ROOT>/local/"
-  ```
-  The aggregator's reactor pulls the plugin's `target/classes` onto rapla-app's classpath; the `-P<plugin-id>` profile in `rapla-app/pom.xml` declares the plugin as a `runtime`-scope dep, so the plugin's `@AutoConfiguration` actually fires. Running rapla's pom in isolation will silently leave the plugin off the classpath and the plugin's beans (auth stores, sync services, etc.) will never be created. Never `java -jar` the packaged fat JAR for routine dev — that's deployment testing only (see `test-deployment` skill).
-- **Working inside an external-plugin checkout (e.g. `~/git/dhbwrapla/`): read that repo's `AGENTS.md` first.** It has the canonical dev recipe + plugin-specific knobs (workingDirectory, additional config locations, conditional beans) that rapla's AGENTS.md doesn't know about.
+- **Testing an external plugin (e.g. dhbwrapla):** run `spring-boot:run` through the *plugin's* aggregator pom with `workingDirectory` pinned to the plugin checkout root — otherwise the plugin's relative-path dataset (`./data`, `./local`) resolves against rapla-app and boot fails on a missing plugin-seeded resource. Full recipe + the `-P<plugin-id>` runtime-dep wiring: `server-lifecycle` skill. Working inside a plugin checkout, read **that repo's `AGENTS.md` first** — it has plugin-specific knobs rapla's doesn't.
 
 #### Default credentials + REST probing — see the `api-testing` skill
 

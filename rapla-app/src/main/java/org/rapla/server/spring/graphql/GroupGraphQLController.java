@@ -33,18 +33,20 @@ import org.springframework.stereotype.Controller;
 public class GroupGraphQLController
 {
     private final StorageOperator operator;
+    private final org.rapla.server.spring.JwtUserResolver jwtUserResolver;
 
-    public GroupGraphQLController(StorageOperator operator)
+    public GroupGraphQLController(StorageOperator operator,
+            org.rapla.server.spring.JwtUserResolver jwtUserResolver)
     {
         this.operator = operator;
+        this.jwtUserResolver = jwtUserResolver;
     }
 
     /** All permission groups (children of the user-groups subtree). */
     @QueryMapping
     public List<GroupDto> groups()
     {
-        User caller = resolveCaller();
-        if (caller == null) return List.of();
+        UnauthenticatedException.require(resolveCaller());
         Category userGroupsRoot = userGroupsRoot();
         if (userGroupsRoot == null) return List.of();
         return collectGroups(userGroupsRoot);
@@ -55,8 +57,7 @@ public class GroupGraphQLController
     public GroupDto group(@Argument("id") String id)
     {
         if (id == null || id.isBlank()) return null;
-        User caller = resolveCaller();
-        if (caller == null) return null;
+        UnauthenticatedException.require(resolveCaller());
         Category userGroupsRoot = userGroupsRoot();
         if (userGroupsRoot == null) return null;
         // Walk the subtree looking for a Category with matching id.
@@ -135,17 +136,7 @@ public class GroupGraphQLController
 
     private User resolveCaller()
     {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) return null;
-        String username = null;
-        if (auth.getPrincipal() instanceof Jwt jwt)
-        {
-            username = jwt.getClaimAsString("preferred_username");
-        }
-        if (username == null || username.isBlank()) username = auth.getName();
-        if (username == null || username.isBlank() || "anonymousUser".equals(username)) return null;
-        try { return operator.getUser(username); }
-        catch (RaplaException e) { return null; }
+        return jwtUserResolver.resolveCurrentUserOrNull();
     }
 
     /**

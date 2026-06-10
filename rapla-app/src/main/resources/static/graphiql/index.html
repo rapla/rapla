@@ -38,6 +38,8 @@
         .auth-bar a:hover, .auth-bar button:hover { background: #1d4ed8; }
         .auth-bar button.secondary { background: #6b7280; }
         .auth-bar button.secondary:hover { background: #4b5563; }
+        .auth-bar .schema-link { margin-left: auto; background: #374151; }
+        .auth-bar .schema-link:hover { background: #4b5563; }
         #graphiql { flex: 1; min-height: 0; }
         .loading { height: 100%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #6b7280; }
     </style>
@@ -126,6 +128,16 @@
             loginLink.textContent = 'Log in via rapla SPA';
             bar.append(label, loginLink);
         }
+
+        // Always-visible link to the full SDL schema dump (the GraphQL pendant
+        // to Swagger's /v3/api-docs). Public, UTF-8. Opens in a new tab.
+        const schemaLink = document.createElement('a');
+        schemaLink.className = 'schema-link';
+        schemaLink.href = '/api/graphql/schema';
+        schemaLink.target = '_blank';
+        schemaLink.rel = 'noopener';
+        schemaLink.textContent = 'Schema (SDL) ↗';
+        bar.append(schemaLink);
     }
 
     // Auth-aware fetcher with three properties:

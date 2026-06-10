@@ -941,14 +941,16 @@ class ClassificationGraphQLControllerTest
 
     @Test
     @WithAnonymousUser
-    void anonymousSeesEmptyAllocatables()
+    void anonymousAllocatablesRejected()
     {
-        List<?> result = tester.document("{ allocatables { id } }")
+        tester.document("{ allocatables { id } }")
                 .execute()
-                .path("allocatables")
-                .entityList(Object.class)
-                .get();
-        assertTrue(result.isEmpty(), () -> "anonymous should see no allocatables, got " + result);
+                .errors()
+                .satisfy(errs -> {
+                    assertFalse(errs.isEmpty(), "anonymous allocatables query must error");
+                    assertTrue(errs.toString().contains("UNAUTHENTICATED"),
+                            () -> "expected UNAUTHENTICATED; got " + errs);
+                });
     }
 
     @Test

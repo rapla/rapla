@@ -33,6 +33,19 @@ public class MutationExceptionResolver extends DataFetcherExceptionResolverAdapt
     @Override
     protected GraphQLError resolveToSingleError(Throwable ex, DataFetchingEnvironment env)
     {
+        if (ex instanceof UnauthenticatedException ue)
+        {
+            // Anonymous caller on a data query — surface a loud, typed error
+            // instead of the old silent-empty 200. See UnauthenticatedException.
+            Map<String, Object> extensions = new LinkedHashMap<>();
+            extensions.put("code", "UNAUTHENTICATED");
+            extensions.put("path", "");
+            return GraphqlErrorBuilder.newError(env)
+                    .message(ue.getMessage())
+                    .errorType(org.springframework.graphql.execution.ErrorType.UNAUTHORIZED)
+                    .extensions(extensions)
+                    .build();
+        }
         if (ex instanceof ReservationMutationException rme)
         {
             Map<String, Object> extensions = new LinkedHashMap<>();
