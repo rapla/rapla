@@ -1,10 +1,15 @@
 package org.rapla.server.spring.web;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import org.junit.jupiter.api.Test;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.RaplaNewVersionException;
 import org.rapla.storage.RaplaSecurityException;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -12,6 +17,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -88,6 +94,53 @@ class RaplaExceptionHandlerTest
                 new RaplaException("operator unavailable"));
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.value(), response.getStatusCode().value());
         assertBodyShape(response.getBody(), 500, "Internal Server Error", "operator unavailable");
+    }
+
+    @Test
+    void genericRaplaException_isLoggedAtErrorWithStackTrace()
+    {
+        // A 500 is an unexpected server fault — the wrapped cause must hit the server log
+        // with its stack trace, or the failure is undiagnosable in production. The wrapper
+        // message alone (which is all the client sees) is not enough.
+        Logger logbackLogger = (Logger) LoggerFactory.getLogger(RaplaExceptionHandler.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logbackLogger.addAppender(appender);
+        try
+        {
+            handler.handleRapla(new RaplaException("Failed to create reservations from Dualis import",
+                    new IllegalStateException("underlying cause")));
+        }
+        finally
+        {
+            logbackLogger.detachAppender(appender);
+        }
+        assertEquals(1, appender.list.size(), "exactly one log event expected");
+        ILoggingEvent event = appender.list.get(0);
+        assertEquals(Level.ERROR, event.getLevel());
+        assertNotNull(event.getThrowableProxy(), "the exception (with its cause/stack) must be logged");
+    }
+
+    @Test
+    void clientFaultExceptions_areNotLoggedAtError()
+    {
+        // 4xx are expected client faults — logging them at ERROR would be noise.
+        Logger logbackLogger = (Logger) LoggerFactory.getLogger(RaplaExceptionHandler.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logbackLogger.addAppender(appender);
+        try
+        {
+            handler.handleSecurity(new RaplaSecurityException("forbidden"));
+            handler.handleNotFound(new EntityNotFoundException("ghost"));
+            handler.handleBadRequest(new IllegalArgumentException("bad"));
+        }
+        finally
+        {
+            logbackLogger.detachAppender(appender);
+        }
+        assertFalse(appender.list.stream().anyMatch(e -> e.getLevel() == Level.ERROR),
+                "client-fault (4xx) exceptions must not be logged at ERROR");
     }
 
     @Test

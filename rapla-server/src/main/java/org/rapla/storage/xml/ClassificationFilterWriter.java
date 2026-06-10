@@ -41,7 +41,7 @@ class ClassificationFilterWriter extends RaplaXMLWriter {
 
     private void printClassificationFilterRule(ClassificationFilterRule rule) throws IOException,RaplaException {
         Attribute attribute = rule.getAttribute();
-        Assert.notNull( attribute );
+        if ( attribute == null ) return;
         String[] operators = rule.getOperators();
         Object[] values = rule.getValues();
         openTag("rapla:rule");

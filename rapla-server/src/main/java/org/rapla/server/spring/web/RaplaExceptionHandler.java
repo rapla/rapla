@@ -4,6 +4,8 @@ import org.rapla.entities.EntityNotFoundException;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.RaplaNewVersionException;
 import org.rapla.storage.RaplaSecurityException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -38,6 +40,8 @@ import java.util.Map;
 @RestControllerAdvice
 public class RaplaExceptionHandler
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RaplaExceptionHandler.class);
+
     /**
      * Both bad-credentials-on-login and permission-denied throw
      * {@link RaplaSecurityException} in this codebase — there's no separate type
@@ -85,6 +89,9 @@ public class RaplaExceptionHandler
     @ExceptionHandler(RaplaException.class)
     public ResponseEntity<Map<String, Object>> handleRapla(RaplaException ex)
     {
+        // 500 = unexpected server fault. Log the full exception (and its cause) so the
+        // failure is diagnosable server-side — the client only receives the wrapper message.
+        LOGGER.error("Unhandled server fault mapped to 500: {}", ex.getMessage(), ex);
         return body(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
     }
 

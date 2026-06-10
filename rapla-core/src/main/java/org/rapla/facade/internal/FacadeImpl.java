@@ -377,7 +377,7 @@ public class FacadeImpl implements RaplaFacade {
 	public Preferences getPreferences(User user) throws RaplaException {
 		return operator.getPreferences(user, true);
 	}
-	
+
 	public Category getSuperCategory() {
 	    return  operator.getSuperCategory();
 	}
@@ -390,7 +390,7 @@ public class FacadeImpl implements RaplaFacade {
 		}
 		return userGroups;
 	}
-	
+
 	public Collection<Allocatable> getTemplates() throws RaplaException
 	{
 	    DynamicType dynamicType = getDynamicType(StorageOperator.RAPLA_TEMPLATE);
@@ -398,7 +398,7 @@ public class FacadeImpl implements RaplaFacade {
 	    Collection<Allocatable> allocatables = operator.getAllocatables( array);
 		return allocatables;
 	}
-	
+
 	public Promise<Collection<Reservation>> getTemplateReservations(Allocatable template)
 	{
 		User user = null;
@@ -418,13 +418,13 @@ public class FacadeImpl implements RaplaFacade {
         });
         return reservationPromise;
 	}
-	
+
 	public Promise<Collection<Reservation>> getReservations(User user, LocalDateTime start, LocalDateTime end,ClassificationFilter[] reservationFilters) {
         User[] users = user != null ? new User[] {user} : User.USER_ARRAY;
 		Promise<Collection<Reservation>>collection = getReservationsAsync(user, null,users,start, end, reservationFilters);
         return collection;
 	}
-	
+
 	public Promise<Collection<Reservation>> getReservationsForAllocatable(Allocatable[] allocatables, LocalDateTime start, LocalDateTime end,ClassificationFilter[] reservationFilters) {
         Promise<Collection<Reservation>> collection = getReservationsAsync(null, allocatables,null,start, end, reservationFilters);
         return collection;
@@ -472,7 +472,7 @@ public class FacadeImpl implements RaplaFacade {
 				+ elementKey);
 		}
 		return dynamicType;
-		
+
 	}
 
 	public User[] getUsers() throws RaplaException {
@@ -560,7 +560,7 @@ public class FacadeImpl implements RaplaFacade {
 //		return result.toArray(Allocatable.ALLOCATABLE_ARRAY);
 //
 //	}
-	
+
 	public Promise<Map<ReferenceInfo<Allocatable>,Collection<Appointment>>> getAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments)  {
 		Collection<Reservation> ignoreList = new HashSet<>();
 		if ( appointments != null)
@@ -594,8 +594,8 @@ public class FacadeImpl implements RaplaFacade {
 		});
 		return result;
 	}
-	
-	
+
+
 	public Promise<LocalDateTime> getNextAllocatableDate(Collection<Allocatable> allocatables,	Appointment appointment, CalendarOptions options)  {
 		int worktimeStartMinutes = options.getWorktimeStartMinutes();
 		int worktimeEndMinutes = options.getWorktimeEndMinutes();
@@ -603,17 +603,17 @@ public class FacadeImpl implements RaplaFacade {
 		int rowsPerHour = options.getRowsPerHour();
 		Reservation reservation = appointment.getReservation();
 		Collection<Reservation> ignoreList;
-		if (reservation != null) 
+		if (reservation != null)
 		{
 			ignoreList = Collections.singleton( reservation);
-		} 
+		}
 		else
 		{
 			ignoreList = Collections.emptyList();
 		}
 		return operator.getNextAllocatableDate(allocatables, appointment,ignoreList, worktimeStartMinutes, worktimeEndMinutes, excludeDays, rowsPerHour);
 	}
-	
+
 
 	/******************************
 	 * Modification-module *
@@ -678,7 +678,7 @@ public class FacadeImpl implements RaplaFacade {
         return facade.newAllocatable(classification, user);
     }
 
-	public Reservation newReservation(Classification classification,User user) throws RaplaException 
+	public Reservation newReservation(Classification classification,User user) throws RaplaException
     {
 		List<ReferenceInfo<Reservation>> ids = operator.createIdentifier( Reservation.class, 1);
 		return newReservation(classification, user, ids.iterator());
@@ -870,7 +870,7 @@ public class FacadeImpl implements RaplaFacade {
 		for ( String groupKey: defaultGroups)
 		{
 			Category group = getUserGroupsCategory().getCategory( groupKey);
-			if (group != null) 
+			if (group != null)
 			{
 				user.addGroup(group);
 			}
@@ -926,7 +926,7 @@ public class FacadeImpl implements RaplaFacade {
 	private void setNew(Entity entity) throws RaplaException {
 		setNew(entity, null);
 	}
-	
+
 	private void setNew(Entity entity,User user) throws RaplaException {
 	    setNew(Collections.singletonList( entity), entity.getTypeClass(), user);
 	}
@@ -1243,7 +1243,7 @@ public class FacadeImpl implements RaplaFacade {
 			clone.removeAppointment(clonedAppointment);
 		}
 		setNew(Arrays.asList(clonedAppointments),appoimtmentIds, user);
-		
+
 
 
 		// and now a new id for the reservation
@@ -1491,7 +1491,7 @@ public class FacadeImpl implements RaplaFacade {
 	{
 		return operator.resolve(info);
 	}
-	
+
 	@Override
 	public Promise<Allocatable> doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds, User user)
 	{

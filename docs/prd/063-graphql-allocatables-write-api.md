@@ -19,7 +19,7 @@ Combined with PRD 056 (events writes) + PRD 057 (DynamicType mutations), this cl
 ## Scope
 
 In v1 (this PRD):
-- `createAllocatable(input: CreateAllocatableInput!): Allocatable!` — owner = caller by default; admins may override.
+- `createAllocatable(input: CreateAllocatableInput!): Allocatable!` — owner = caller, **always**. ~~admins may override~~ **AMENDED by [PRD 067](067-server-mutation-unification.md) D10 (2026-06-10): the `ownerId` create-override is removed** — owner-at-create is audit erasure (the entity appears to belong to X "from birth" with no transfer record); the sanctioned flow is create + explicit changeOwner mutation (two audited change records, new owner notified). Drop `ownerId` from `CreateAllocatableInput`, drop the admin-override test, remove the implemented `ownerId` block in `AllocatableMutationController` (lands with PRD 067 phase 2).
 - `updateAllocatable(id: ID!, input: UpdateAllocatableInput!, expectedLastChanged: LocalDateTime): Allocatable!` — full-state replace with optimistic concurrency. Owner immutable here (future `changeAllocatableOwner` verb if demand).
 - `deleteAllocatables(ids: [ID!]!): BulkResult!` — bulk, no per-id concurrency check (use `applyChanges` for concurrency-checked delete).
 - `ChangeOp` extension — additive `createAllocatable` / `updateAllocatable` / `deleteAllocatable` variants for atomic cross-type batches.

@@ -276,7 +276,7 @@
                         <goals><goal>install-node-and-npm</goal></goals>
                         <phase>prepare-package</phase>
                         <configuration>
-                            <nodeVersion>v22.13.0</nodeVersion>
+                            <nodeVersion>v22.22.3</nodeVersion>
                         </configuration>
                     </execution>
                     <execution>

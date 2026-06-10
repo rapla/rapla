@@ -132,7 +132,7 @@ class ClassificationFilterReader extends RaplaXMLReader {
         throws RaplaSAXParseException
     {
 
-        if (localName.equals("rule") && filter != null)
+        if (localName.equals("rule") && filter != null && attribute != null)
         {
             final Object[][] array = conditions.toArray(new Object[][] {}  );
             filter.setRule(ruleCount ++

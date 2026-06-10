@@ -418,7 +418,7 @@ describe('AuthService.applyProviderToOAuthService — requireHttps follows page 
     userinfoUrl: 'https://login.mosbach.dhbw.de/realms/dhbwmos-lehre/protocol/openid-connect/userinfo',
   };
 
-  let configureCalls: Array<Record<string, unknown>>;
+  let configureCalls: Record<string, unknown>[];
   let originalLocation: Location;
 
   function setProtocol(p: 'http:' | 'https:') {

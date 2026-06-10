@@ -84,8 +84,8 @@ describe('authInterceptor', () => {
 
   it('does NOT open dialog or trigger handleUnauthenticated on 401 from a pre-auth path', () => {
     http.post('/api/auth/oauth/exchange/keycloak', 'code=abc').subscribe({
-      next: () => {},
-      error: () => {},
+      next: vi.fn(),
+      error: vi.fn(),
     });
     httpMock
       .expectOne('/api/auth/oauth/exchange/keycloak')
@@ -100,8 +100,8 @@ describe('authInterceptor', () => {
     authStub.token.mockReturnValue(null);
 
     http.get('/api/reservations').subscribe({
-      next: () => {},
-      error: () => {},
+      next: vi.fn(),
+      error: vi.fn(),
     });
     httpMock
       .expectOne('/api/reservations')
@@ -156,8 +156,8 @@ describe('authInterceptor', () => {
     });
 
     http.get('/api/reservations').subscribe({
-      next: () => {},
-      error: () => {},
+      next: vi.fn(),
+      error: vi.fn(),
     });
 
     httpMock
@@ -184,8 +184,8 @@ describe('authInterceptor', () => {
     authStub.refreshAccessToken.mockResolvedValue(false);
 
     http.get('/api/reservations').subscribe({
-      next: () => {},
-      error: () => {},
+      next: vi.fn(),
+      error: vi.fn(),
     });
 
     httpMock
@@ -207,8 +207,8 @@ describe('authInterceptor', () => {
     authStub.refreshAccessToken.mockResolvedValue(false);
 
     http.get('/api/reservations').subscribe({
-      next: () => {},
-      error: () => {},
+      next: vi.fn(),
+      error: vi.fn(),
     });
     httpMock.expectOne('/api/reservations').flush(null, {
       status: 401,
@@ -227,8 +227,8 @@ describe('authInterceptor', () => {
     authStub.refreshAccessToken.mockResolvedValue(false);
 
     http.get('/api/reservations').subscribe({
-      next: () => {},
-      error: () => {},
+      next: vi.fn(),
+      error: vi.fn(),
     });
     httpMock.expectOne('/api/reservations').flush(null, {
       status: 401,
@@ -312,8 +312,8 @@ describe('authInterceptor', () => {
     authStub.refreshAccessToken.mockResolvedValue(false);
 
     http.get('/api/reservations').subscribe({
-      next: () => {},
-      error: () => {},
+      next: vi.fn(),
+      error: vi.fn(),
     });
 
     httpMock
@@ -332,8 +332,8 @@ describe('authInterceptor', () => {
 
   it('does not fire dialog/redirect on non-401 errors', () => {
     http.get('/api/reservations').subscribe({
-      next: () => {},
-      error: () => {},
+      next: vi.fn(),
+      error: vi.fn(),
     });
     httpMock
       .expectOne('/api/reservations')

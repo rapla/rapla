@@ -15,6 +15,8 @@ import org.rapla.plugin.externaleventimport.client.ExternalEventImportController
 import org.rapla.plugin.externaleventimport.client.ExternalEventImportResources;
 import org.rapla.scheduler.Promise;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Service;
 
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -30,6 +32,8 @@ import java.util.List;
  * Renders a tree of allocatables of the type declared by {@code metadata.selectableAllocatableTypeKey}.
  * No domain knowledge — the type key and label come from server metadata.
  */
+@Service
+@Scope("prototype")
 public class ExternalEventImportAllocatableSelectionDialog
 {
     private final DialogUiFactoryInterface dialogUiFactory;

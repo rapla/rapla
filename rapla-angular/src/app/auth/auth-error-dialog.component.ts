@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -61,8 +61,6 @@ export interface AuthErrorDialogData {
   ],
 })
 export class AuthErrorDialogComponent {
-  constructor(
-    public ref: MatDialogRef<AuthErrorDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: AuthErrorDialogData,
-  ) {}
+  readonly ref = inject<MatDialogRef<AuthErrorDialogComponent>>(MatDialogRef);
+  readonly data = inject<AuthErrorDialogData>(MAT_DIALOG_DATA);
 }

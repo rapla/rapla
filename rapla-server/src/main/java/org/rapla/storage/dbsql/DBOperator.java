@@ -20,6 +20,7 @@ import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.Timestamp;
 import org.rapla.entities.User;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
@@ -351,6 +352,25 @@ import java.time.LocalDateTime;
             return null;
         }
         refreshObject.allIds = raplaSQLInput.update(c, lastUpdated, connectionTime);
+        // Read-ordering invariant from the full load (RaplaSQL registers
+        // Category, User, DynamicType, Allocatable BEFORE Preferences): the
+        // patch parse below resolves types/attributes/categories by key, so
+        // this cycle's changed pre-preference entities must be visible to the
+        // parse store — otherwise a key rename resolves against the stale
+        // cache and the dependent filter rules are dropped.
+        for (ReferenceInfo ref : refreshObject.allIds)
+        {
+            final Class<? extends Entity> type = ref.getType();
+            if (type == Category.class || type == User.class || type == DynamicType.class
+                    || type == Allocatable.class)
+            {
+                final HistoryEntry latest = history.getLatest(ref);
+                if (latest != null && !latest.isDelete())
+                {
+                    entityStore.put(history.getEntity(latest));
+                }
+            }
+        }
         refreshObject.patches = raplaSQLInput.getPatches(c, lastUpdated);
         refreshObject.connectionTime = connectionTime;
         refreshObject.lastUpdated = lastUpdated;
