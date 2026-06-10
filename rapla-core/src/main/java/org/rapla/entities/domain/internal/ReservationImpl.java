@@ -15,7 +15,6 @@ package org.rapla.entities.domain.internal;
 import java.time.LocalDateTime;
 /** The default Implementation of the <code>Reservation</code>
  *  @see ModificationEvent
- *  @see org.rapla.facade.RaplaFacade
  */
 
 import org.jetbrains.annotations.NotNull;
