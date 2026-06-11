@@ -189,7 +189,7 @@ public class ExternalEventImportController
                 dialogUiFactory.showWarning(msg, popupContext);
                 return;
             }
-            ExternalEventImportSubmitCallback callback = createCallback(popupContext, picked, template);
+            ExternalEventImportSubmitCallback callback = createCallback(popupContext, picked, template, result);
             DialogInterface di = dialog.createImportDialog(popupContext, selectionModel, metadata, result, callback, false);
             di.start(false);
         }).exceptionally(ex -> {
@@ -198,20 +198,28 @@ public class ExternalEventImportController
         });
     }
 
-    private ExternalEventImportSubmitCallback createCallback(PopupContext popupContext, Collection<Allocatable> picked, Allocatable template)
+    private ExternalEventImportSubmitCallback createCallback(PopupContext popupContext, Collection<Allocatable> picked,
+            Allocatable template, ExternalEventImportResult result)
     {
         return new ExternalEventImportSubmitCallback()
         {
             @Override
             public void submit(List<String> sourceItemIds)
             {
+                // relay the selected rows (with their sourceData) back to the server, which maps + builds
+                List<org.rapla.plugin.externaleventimport.ImportItem> selectedItems = new ArrayList<>();
+                for (org.rapla.plugin.externaleventimport.ImportItem item : result.getItems())
+                {
+                    if (sourceItemIds.contains(item.getSourceItemId())) selectedItems.add(item);
+                }
                 CreateReservationsRequest req = new CreateReservationsRequest();
+                req.setSelectedItems(selectedItems);
                 req.setSourceItemIds(sourceItemIds);
                 if (template != null) req.setTemplateAllocatableId(template.getId());
                 req.setAdditionalAllocatableIds(otherAllocatableIds(picked));
                 fillCalendarInterval(req);
                 scheduler.supply(() -> service.createReservations(req))
-                        .thenAccept(reservationIds -> openEditor(reservationIds, popupContext))
+                        .thenAccept(reservations -> openEditor(reservations, popupContext))
                         .exceptionally(ex -> { dialogUiFactory.showException(ex, popupContext); });
             }
 
@@ -223,19 +231,22 @@ public class ExternalEventImportController
         };
     }
 
-    private void openEditor(List<String> reservationIds, PopupContext popupContext)
+    /** The server returns un-persisted reservations; the REST deserialization (unlike the storage query
+     *  path) doesn't resolve them, so wire them to the client operator before the editor accepts them. */
+    private void openEditor(List<Reservation> reservations, PopupContext popupContext)
     {
-        if (reservationIds == null || reservationIds.isEmpty()) return;
+        if (reservations == null || reservations.isEmpty()) return;
         try
         {
-            List<Reservation> resolved = new ArrayList<>();
-            for (String id : reservationIds)
+            org.rapla.storage.StorageOperator operator = raplaFacade.getOperator();
+            for (Reservation r : reservations)
             {
-                ReferenceInfo<Reservation> ref = new ReferenceInfo<>(id, Reservation.class);
-                Reservation r = raplaFacade.tryResolve(ref);
-                if (r != null) resolved.add(r);
+                if (r instanceof org.rapla.entities.storage.EntityReferencer)
+                {
+                    ((org.rapla.entities.storage.EntityReferencer) r).setResolver(operator);
+                }
             }
-            if (!resolved.isEmpty()) editController.edit(resolved, popupContext);
+            editController.edit(reservations, popupContext);
         }
         catch (Exception e)
         {

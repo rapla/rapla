@@ -1,8 +1,11 @@
 package org.rapla.rest;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.internal.ReservationImpl;
 import tools.jackson.databind.MapperFeature;
 import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
 
 /**
  * Shared Jackson {@link JsonMapper} configuration for client and server.
@@ -49,6 +52,10 @@ public final class JacksonObjectMapperFactory
     public static JsonMapper.Builder configure(JsonMapper.Builder builder)
     {
         return builder
+                // Deserialize the Reservation interface to its concrete impl. Reservations normally
+                // travel inside UpdateEvent (concrete-typed fields); the external-event import returns
+                // List<Reservation> directly, where Jackson hits the abstract type otherwise.
+                .addModule(new SimpleModule().addAbstractTypeMapping(Reservation.class, ReservationImpl.class))
                 .enable(MapperFeature.PROPAGATE_TRANSIENT_MARKER)
                 // Belt-and-suspenders: Jackson 3 flipped the default of
                 // ALLOW_FINAL_FIELDS_AS_MUTATORS to false (PR jackson-databind#4552).

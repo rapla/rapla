@@ -93,6 +93,10 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
     protected final JLabel hiddenSelectionStatus = new JLabel(" ");
     protected final JPanel topPanel = new JPanel();
     private String nameSearchTerm = "";
+    /** Search term the current tree model was generated with — a state refresh
+     *  only needs the expensive full rebuild when this differs (search prunes
+     *  nodes); pure selection changes reuse the existing model. */
+    private String appliedSearchTerm = null;
     private int hiddenSelectedCount = 0;
     private ClassificationFilter[] lastFilter;
     private Collection<Object> lastSelectedObjects = Collections.emptyList();
@@ -220,8 +224,26 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
         {
             try
             {
-                updateTree(lastFilter, canonical);
-                updateSelection(canonical);
+                if (!nameSearchTerm.equals(appliedSearchTerm))
+                {
+                    // search term changed — the model must be regenerated (pruning)
+                    updateTree(lastFilter, canonical);
+                }
+                else
+                {
+                    // pure selection change — reuse the tree model (a full rebuild is
+                    // O(resource count)) and don't expand collapsed branches, so the
+                    // tree stays exactly where the user clicked
+                    try
+                    {
+                        selectionFromProgram = true;
+                        treeSelection.select(canonical, false);
+                    }
+                    finally
+                    {
+                        selectionFromProgram = false;
+                    }
+                }
             }
             catch (RaplaException ex)
             {
@@ -334,6 +356,7 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
         final JTree tree = treeSelection.getTree();
         tree.setShowsRootHandles(true);
         DefaultTreeModel treeModel = generateTree(filter);
+        appliedSearchTerm = nameSearchTerm;
         try
         {
             treeListenersEnabled = false;

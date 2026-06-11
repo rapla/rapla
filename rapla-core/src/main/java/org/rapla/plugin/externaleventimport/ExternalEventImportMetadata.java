@@ -20,6 +20,9 @@ public class ExternalEventImportMetadata
     private String sourceName;
     private List<HierarchyLevel> hierarchyLevels = List.of();
     private List<ResultColumn> resultColumns = List.of();
+    /** Column keys (subset of {@link #resultColumns}) the wizard renders a value-filter dropdown for,
+     *  letting the user narrow the result table (e.g. by Studiengang / Semester / Kurs). */
+    private List<String> filterColumns = List.of();
     private boolean supportsCsvImport;
     private String csvFileFilterLabel;
     private Map<String, String> uiMessageOverrides = new LinkedHashMap<>();
@@ -78,6 +81,16 @@ public class ExternalEventImportMetadata
     public void setResultColumns(List<ResultColumn> resultColumns)
     {
         this.resultColumns = resultColumns;
+    }
+
+    public List<String> getFilterColumns()
+    {
+        return filterColumns;
+    }
+
+    public void setFilterColumns(List<String> filterColumns)
+    {
+        this.filterColumns = filterColumns;
     }
 
     public boolean isSupportsCsvImport()

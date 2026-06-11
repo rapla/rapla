@@ -18,8 +18,14 @@ import java.util.List;
 public class CreateReservationsRequest
 {
     private List<String> sourceItemIds = new ArrayList<>();
+    /** The full rows the user selected (with their {@code sourceData}), relayed back so the server
+     *  maps them without re-querying the source system. */
+    private List<ImportItem> selectedItems = new ArrayList<>();
     private String templateAllocatableId;
     private List<String> additionalAllocatableIds = new ArrayList<>();
+    /** The source allocatables the user loaded events from (e.g. the selected Kurse). The server
+     *  needs them to re-resolve the picked source items into their full domain rows for mapping. */
+    private List<String> sourceAllocatableIds = new ArrayList<>();
     private LocalDateTime calendarStart;
     private LocalDateTime calendarEnd;
     private boolean updateExistingReservation;
@@ -27,6 +33,16 @@ public class CreateReservationsRequest
 
     public CreateReservationsRequest()
     {
+    }
+
+    public List<ImportItem> getSelectedItems()
+    {
+        return selectedItems;
+    }
+
+    public void setSelectedItems(List<ImportItem> selectedItems)
+    {
+        this.selectedItems = selectedItems;
     }
 
     public List<String> getSourceItemIds()
@@ -57,6 +73,16 @@ public class CreateReservationsRequest
     public void setAdditionalAllocatableIds(List<String> additionalAllocatableIds)
     {
         this.additionalAllocatableIds = additionalAllocatableIds;
+    }
+
+    public List<String> getSourceAllocatableIds()
+    {
+        return sourceAllocatableIds;
+    }
+
+    public void setSourceAllocatableIds(List<String> sourceAllocatableIds)
+    {
+        this.sourceAllocatableIds = sourceAllocatableIds;
     }
 
     public LocalDateTime getCalendarStart()

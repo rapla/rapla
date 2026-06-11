@@ -25,22 +25,30 @@ import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.RowFilter;
 import javax.swing.SwingUtilities;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableModel;
+import javax.swing.table.TableRowSorter;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.io.File;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeSet;
+import java.util.regex.Pattern;
 
 /**
  * Generic table panel for the import wizard. Columns and labels come from
@@ -67,6 +75,14 @@ class ExternalEventImportPanel extends RaplaComponent implements RaplaWidget<JCo
 
     /** Source IDs, one per visible row, parallel to the table model. */
     private List<String> rowSourceIds = new ArrayList<>();
+
+    /** Source IDs of already-imported items (generic flag from {@link ImportItem#isImported()}).
+     *  Create is disabled when every selected item is in this set. */
+    private final java.util.Set<String> importedSourceIds = new java.util.HashSet<>();
+
+    /** One value-filter combo per {@code metadata.filterColumns} key (e.g. Studiengang/Semester/Kurs). */
+    private final Map<String, JComboBox<String>> filterCombos = new LinkedHashMap<>();
+    private boolean populatingFilters;
 
     public ExternalEventImportPanel(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, CalendarModel model,
             DialogUiFactoryInterface dialogUiFactory, ExternalEventImportResources resources, ExternalEventImportMetadata metadata,
@@ -96,8 +112,82 @@ class ExternalEventImportPanel extends RaplaComponent implements RaplaWidget<JCo
         JScrollPane scrollPane = new JScrollPane(table);
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createEmptyBorder(0, 0, 11, 0));
-        panel.add(scrollPane);
+        JPanel filterPanel = createFilterPanel();
+        if (filterPanel != null) panel.add(filterPanel, BorderLayout.NORTH);
+        panel.add(scrollPane, BorderLayout.CENTER);
         return panel;
+    }
+
+    /** A "no filter" combo entry per filter column — shown as the column label, like the old dialog. */
+    private JPanel createFilterPanel()
+    {
+        List<String> filterColumns = metadata.getFilterColumns();
+        if (filterColumns == null || filterColumns.isEmpty()) return null;
+        JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        p.setBorder(BorderFactory.createTitledBorder("Filter"));
+        for (String colKey : filterColumns)
+        {
+            String label = labelForColumn(colKey);
+            JComboBox<String> combo = new JComboBox<>();
+            combo.addActionListener(e -> applyFilters());
+            filterCombos.put(colKey, combo);
+            p.add(new JLabel(label));
+            p.add(combo);
+        }
+        return p;
+    }
+
+    private void populateFilterCombos(ExternalEventImportResult result)
+    {
+        populatingFilters = true;
+        for (Map.Entry<String, JComboBox<String>> e : filterCombos.entrySet())
+        {
+            String colKey = e.getKey();
+            TreeSet<String> values = new TreeSet<>();
+            for (ImportItem item : result.getItems())
+            {
+                Object v = item.getColumns().get(colKey);
+                if (v != null && !v.toString().isEmpty()) values.add(v.toString());
+            }
+            JComboBox<String> combo = e.getValue();
+            combo.removeAllItems();
+            combo.addItem(labelForColumn(colKey));   // first entry = "no filter"
+            for (String v : values) combo.addItem(v);
+            combo.setSelectedIndex(0);
+        }
+        populatingFilters = false;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void applyFilters()
+    {
+        if (populatingFilters) return;
+        TableRowSorter<TableModel> sorter = (TableRowSorter<TableModel>) table.getRowSorter();
+        if (sorter == null) return;
+        List<RowFilter<Object, Object>> filters = new ArrayList<>();
+        for (Map.Entry<String, JComboBox<String>> e : filterCombos.entrySet())
+        {
+            int idx = e.getValue().getSelectedIndex();
+            if (idx <= 0) continue;   // 0 = the "no filter" label entry
+            String sel = (String) e.getValue().getSelectedItem();
+            int col = columnIndex(e.getKey());
+            if (col < 0 || sel == null) continue;
+            filters.add(RowFilter.regexFilter("^" + Pattern.quote(sel) + "$", col));
+        }
+        sorter.setRowFilter(filters.isEmpty() ? null : RowFilter.andFilter(filters));
+    }
+
+    private int columnIndex(String colKey)
+    {
+        List<ResultColumn> cols = metadata.getResultColumns();
+        for (int i = 0; i < cols.size(); i++) if (cols.get(i).key().equals(colKey)) return i;
+        return -1;
+    }
+
+    private String labelForColumn(String colKey)
+    {
+        for (ResultColumn c : metadata.getResultColumns()) if (c.key().equals(colKey)) return c.label();
+        return colKey;
     }
 
     private JTable createTable()
@@ -170,9 +260,11 @@ class ExternalEventImportPanel extends RaplaComponent implements RaplaWidget<JCo
         Object[][] data = new Object[result.getItems().size()][columns.size()];
         rowSourceIds = new ArrayList<>(result.getItems().size());
         int r = 0;
+        importedSourceIds.clear();
         for (ImportItem item : result.getItems())
         {
             rowSourceIds.add(item.getSourceItemId());
+            if (item.isImported()) importedSourceIds.add(item.getSourceItemId());
             for (int c = 0; c < columns.size(); c++)
             {
                 Object v = item.getColumns().get(columns.get(c).key());
@@ -183,6 +275,7 @@ class ExternalEventImportPanel extends RaplaComponent implements RaplaWidget<JCo
         table.setModel(new DefaultTableModel(data, headers));
         table.setColumnModel(new XTableColumnModel());
         table.createDefaultColumnsFromModel();
+        populateFilterCombos(result);
     }
 
     private void importFromFile()
@@ -208,9 +301,21 @@ class ExternalEventImportPanel extends RaplaComponent implements RaplaWidget<JCo
 
     private void updateComponentStates()
     {
-        boolean valid = callback.isValidSelection(getSelectedSourceItemIds());
+        List<String> selected = getSelectedSourceItemIds();
+        // Generic rule: create is enabled only when the selection contains at least one
+        // not-yet-imported item — selecting only already-imported items would create duplicates.
+        boolean valid = callback.isValidSelection(selected) && hasUnimportedSelected(selected);
         if (createReservationAction != null) createReservationAction.setEnabled(valid);
         updateTimeIntervalLabel();
+    }
+
+    private boolean hasUnimportedSelected(List<String> selected)
+    {
+        for (String id : selected)
+        {
+            if (!importedSourceIds.contains(id)) return true;
+        }
+        return false;
     }
 
     private void updateTimeIntervalLabel()
@@ -218,9 +323,10 @@ class ExternalEventImportPanel extends RaplaComponent implements RaplaWidget<JCo
         SwingUtilities.invokeLater(() -> {
             java.time.LocalDateTime start = model.getStartDate();
             java.time.LocalDateTime end = model.getEndDate();
-            String startStr = start == null ? "" : start.toString();
-            String endStr = end == null ? "" : end.toString();
-            dateContainerLabel.setText(startStr + " — " + endStr);
+            RaplaLocale loc = getRaplaLocale();
+            String startStr = start == null ? "" : loc.formatDate(start) + ", " + loc.formatTime(start);
+            String endStr = end == null ? "" : loc.formatDate(end) + ", " + loc.formatTime(end);
+            dateContainerLabel.setText(resources.getString("selected.interval") + ": " + startStr + " - " + endStr);
         });
     }
 

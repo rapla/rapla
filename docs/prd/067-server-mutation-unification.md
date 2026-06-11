@@ -28,8 +28,19 @@ facade impl itself), three buckets:
    `DefaultRaplaTableColumn`, `ExchangeConnectorConfig`,
    `EventTimeCalculatorFactory`, `AppointmentNoteFunctions`,
    `TimeslotProvider`, `PeriodModel`, `RaplaComponent`.
-3. *Audit — suspicious references*: `ReservationImpl` (entity → facade!),
-   `SyncStorageOperator` (storage interface → facade!).
+3. ~~*Audit — suspicious references*~~ **CLOSED (2026-06-10):** both were
+   javadoc-only — `ReservationImpl`'s stale `@see` removed same day;
+   `SyncStorageOperator`'s prose mentions get reworded during migration.
+
+D9 final calls (2026-06-10, "fastest" criterion):
+- **Keep the `org.rapla.facade` package name** — classes move to rapla-client
+  module without repackaging (zero import churn; split package is fine on
+  classpath/fat-JAR — revisit only if rapla ever adopts JPMS).
+- **Bucket 2 migrates incrementally** inside the phase-3 changes that touch
+  each class's callers anyway — no dedicated sweep. The migrations are
+  pebbles, not icebergs: `RaplaBuilder` — the biggest — uses the facade for
+  exactly `getPermissionController()` + two `getPreferences` tooltip flags,
+  all operator pass-throughs (constructor swap + 3 call edits).
 
 Test note: `FacadeTestSupport` (rapla-server + dhbwrapla tests) constructs
 `FacadeImpl` — keep via **test-scoped** rapla-client dependency or migrate the

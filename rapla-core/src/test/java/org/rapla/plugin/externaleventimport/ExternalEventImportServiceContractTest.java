@@ -58,22 +58,6 @@ class ExternalEventImportServiceContractTest
     }
 
     @Test
-    void uploadCsvExposed()
-    {
-        Method m = methodNamed("uploadCsv");
-        PostExchange pe = m.getAnnotation(PostExchange.class);
-        assertNotNull(pe, "uploadCsv must be POST");
-        assertEquals("/uploadCsv", pe.value());
-        assertEquals(ExternalEventImportResult.class, m.getReturnType());
-        assertEquals(1, m.getParameterCount());
-        Parameter p = m.getParameters()[0];
-        assertEquals(MultipartFile.class, p.getType());
-        RequestPart rp = p.getAnnotation(RequestPart.class);
-        assertNotNull(rp, "uploadCsv file must be @RequestPart");
-        assertEquals("file", rp.value());
-    }
-
-    @Test
     void createReservationsExposed()
     {
         Method m = methodNamed("createReservations");

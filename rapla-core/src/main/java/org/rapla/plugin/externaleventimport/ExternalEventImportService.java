@@ -1,21 +1,18 @@
 package org.rapla.plugin.externaleventimport;
 
+import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaException;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.service.annotation.GetExchange;
 import org.springframework.web.service.annotation.HttpExchange;
 import org.springframework.web.service.annotation.PostExchange;
+
+import java.util.List;
 
 /**
  * Generic external-event-import contract. Any deployment that integrates with an
  * external event source (Dualis, SAP HR, etc.) provides one impl; the rapla wizard
  * is fully driven by the metadata returned from {@link #getMetadata()}.
- *
- * <p>{@link #uploadCsv(MultipartFile)} is optional — it must be implemented if
- * {@code metadata.supportsCsvImport == true}, otherwise the impl may throw
- * {@link UnsupportedOperationException}.
  */
 @HttpExchange("/api/externaleventimport")
 public interface ExternalEventImportService
@@ -26,18 +23,16 @@ public interface ExternalEventImportService
     @PostExchange("/loadEvents")
     ExternalEventImportResult loadEvents(@RequestBody ImportCriteria criteria) throws RaplaException;
 
-    @PostExchange("/uploadCsv")
-    ExternalEventImportResult uploadCsv(@RequestPart("file") MultipartFile file) throws RaplaException;
-
     /**
-     * Creates (or updates, in sync mode) {@code Reservation} entities from the IDs of
-     * source items the user picked from a previous {@code loadEvents} / {@code uploadCsv}
-     * result. All deployment-specific mapping (Dualis row → Reservation classification +
-     * appointment, etc.) happens here on the server, so the client wizard carries no
-     * domain logic.
+     * Builds (but does not store) {@code Reservation} objects for the rows the user selected
+     * from a previous {@code loadEvents} result. The request carries the selected
+     * {@link ImportItem}s (with their {@code sourceData}) + the chosen template + the calendar
+     * interval; all deployment-specific mapping (source row → classification + allocations,
+     * template copy) happens here on the server, so the client carries no domain logic.
      *
-     * @return list of created/updated Reservation IDs the client can open an editor on
+     * @return the un-persisted reservations; the client resolves them against its operator,
+     *         opens them in the editor, and the user saves (which persists them).
      */
     @PostExchange("/createReservations")
-    java.util.List<String> createReservations(@RequestBody CreateReservationsRequest request) throws RaplaException;
+    List<Reservation> createReservations(@RequestBody CreateReservationsRequest request) throws RaplaException;
 }

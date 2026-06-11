@@ -1,5 +1,6 @@
 package org.rapla.server.spring.web;
 
+import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaException;
 import org.rapla.plugin.externaleventimport.CreateReservationsRequest;
 import org.rapla.plugin.externaleventimport.ExternalEventImportMetadata;
@@ -12,9 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -55,14 +54,8 @@ public class ExternalEventImportController
         return service.loadEvents(criteria);
     }
 
-    @PostMapping("/uploadCsv")
-    public ExternalEventImportResult uploadCsv(@RequestPart("file") MultipartFile file) throws RaplaException
-    {
-        return service.uploadCsv(file);
-    }
-
     @PostMapping("/createReservations")
-    public List<String> createReservations(@RequestBody CreateReservationsRequest request) throws RaplaException
+    public List<Reservation> createReservations(@RequestBody CreateReservationsRequest request) throws RaplaException
     {
         return service.createReservations(request);
     }
