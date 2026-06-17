@@ -85,7 +85,27 @@ final public class RaplaTree extends JScrollPane {
         public Point getToolTipLocation(MouseEvent evt) {
             return new Point(getWidth(), 0);
           }
-        
+
+        // A shift-press is an additive range gesture. BasicTreeUI resolves the
+        // selection from its own MouseListener, which fires before ours, so we must
+        // capture the modifier here — before super.processMouseEvent notifies the
+        // listeners — to have it available when the resulting selection event reaches
+        // mirrorSelectionAcrossDuplicates. Reset afterwards so a later programmatic
+        // selection never inherits a stale gesture flag.
+        @Override
+        protected void processMouseEvent(MouseEvent e) {
+            if (e.getID() == MouseEvent.MOUSE_PRESSED && e.isShiftDown()) {
+                rangeSelectGesture = true;
+                try {
+                    super.processMouseEvent(e);
+                } finally {
+                    rangeSelectGesture = false;
+                }
+            } else {
+                super.processMouseEvent(e);
+            }
+        }
+
         /**
          * Overwrite the standard method for performance reasons.
          *
@@ -100,6 +120,10 @@ final public class RaplaTree extends JScrollPane {
     Listener listener = new Listener();
 
     private boolean treeSelectionListenerBlocked = false;
+    /** True only while a shift mouse-press (an additive range gesture) is being
+     *  processed — lets the duplicate mirror tell a shift-extend that merely drops an
+     *  off-range twin apart from a genuine ctrl-click deselect. */
+    private boolean rangeSelectGesture = false;
     private boolean bMultiSelect = false;
     TreePath selectedPath = null;
     TreeToolTipRenderer toolTipRenderer;
@@ -334,6 +358,18 @@ final public class RaplaTree extends JScrollPane {
         }
         // a click that moves the selection both removes and adds the same object — keep it
         deselected.removeAll(selected);
+        // Deselecting one occurrence cascades to all occurrences (the symmetric twin of
+        // select-one-selects-all) — but only for a pure deselect gesture (ctrl-click
+        // toggle-off). An additive range select (shift-click) does setSelectionInterval,
+        // which reports an off-range twin as removed; cascading that would wrongly drop
+        // the in-range occurrence of the same object too. The added-path check covers a
+        // range that grows the selection; rangeSelectGesture covers a shift-click whose
+        // interval adds nothing new (e.g. re-clicking the already-selected occurrence)
+        // yet still drops the collapsed twin — a TreeSelectionEvent indistinguishable
+        // from a ctrl-click deselect without the originating mouse modifier.
+        if (rangeSelectGesture || !selected.isEmpty()) {
+            deselected.clear();
+        }
         Collection<Object> desired = new LinkedHashSet<>(selected);
         TreePath[] currentPaths = jTree.getSelectionPaths();
         if (currentPaths != null) {
@@ -350,6 +386,16 @@ final public class RaplaTree extends JScrollPane {
             Object obj = getObject(node);
             if (obj != null && desired.contains(obj))
                 target.add(getPath(node));
+        }
+        // setSelectionPaths makes the LAST path the selection model's lead, and
+        // BasicTreeUI mirrors its anchor from that lead. A duplicate twin (often inside
+        // a collapsed branch) left last puts the anchor on an off-screen row (-1), and
+        // BasicTreeUI then degrades a shift-click to single-selection — the "shift-select
+        // stopped working" symptom. Keep the node the user actually clicked last so the
+        // anchor stays on a visible row and range-select keeps working.
+        TreePath userLead = event.getNewLeadSelectionPath();
+        if (userLead != null && target.remove(userLead)) {
+            target.add(userLead);
         }
         Collection<TreePath> current = currentPaths == null ? Collections.emptySet() : new LinkedHashSet<>(Arrays.asList(currentPaths));
         if (!current.equals(new LinkedHashSet<>(target))) {

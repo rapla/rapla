@@ -1,14 +1,22 @@
 package org.rapla.client.swing.internal.adminpanels;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.rapla.plugin.adminpanels.Field;
 import org.rapla.plugin.adminpanels.FieldType;
 
+import javax.swing.JButton;
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.GraphicsEnvironment;
+import java.awt.Toolkit;
+import java.awt.datatransfer.DataFlavor;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 /** Round-trips wire values through each {@link FieldRenderer}: the value
@@ -123,5 +131,46 @@ class FieldRendererTest
         FieldRenderer r = FieldRendererFactory.create(of(FieldType.JSON_EDITOR));
         r.setValue(null);
         assertNull(r.getValue());
+    }
+
+    @Test
+    void copyableTextStillRoundTripsAndRendersCopyButton()
+    {
+        FieldRenderer r = FieldRendererFactory.create(of(FieldType.TEXT, Map.of("copyable", true)));
+        r.setValue("https://host/api/dhbw/stele?key=abc");
+        assertEquals("https://host/api/dhbw/stele?key=abc", r.getValue());   // value round-trip unaffected
+        assertNotNull(findButton(r.getEditor()), "copyable TEXT field must render a copy button");
+    }
+
+    @Test
+    void plainTextHasNoCopyButton()
+    {
+        FieldRenderer r = FieldRendererFactory.create(of(FieldType.TEXT));    // no copyable flag
+        assertNull(findButton(r.getEditor()), "non-copyable TEXT field must not render a button");
+    }
+
+    @Test
+    void copyButtonPutsCurrentFieldValueOnClipboard() throws Exception
+    {
+        Assumptions.assumeFalse(GraphicsEnvironment.isHeadless(), "clipboard needs a display");
+        FieldRenderer r = FieldRendererFactory.create(of(FieldType.TEXT, Map.of("copyable", true)));
+        r.setValue("copy-me-123");
+        findButton(r.getEditor()).doClick();
+        String clip = (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
+        assertEquals("copy-me-123", clip);
+    }
+
+    private static JButton findButton(Container c)
+    {
+        for (Component comp : c.getComponents())
+        {
+            if (comp instanceof JButton b) return b;
+            if (comp instanceof Container child)
+            {
+                JButton found = findButton(child);
+                if (found != null) return found;
+            }
+        }
+        return null;
     }
 }
