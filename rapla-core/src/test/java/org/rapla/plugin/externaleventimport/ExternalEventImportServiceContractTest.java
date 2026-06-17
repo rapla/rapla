@@ -65,9 +65,27 @@ class ExternalEventImportServiceContractTest
         assertNotNull(pe, "createReservations must be POST");
         assertEquals("/createReservations", pe.value());
         assertEquals(java.util.List.class, m.getReturnType());
+        java.lang.reflect.ParameterizedType returnType = (java.lang.reflect.ParameterizedType) m.getGenericReturnType();
+        assertEquals(org.rapla.entities.domain.internal.ReservationImpl.class, returnType.getActualTypeArguments()[0],
+                "wire type must be the concrete impl — springdoc reflects the signature, the Jackson "
+                        + "abstract-type mapping never reaches the OpenAPI doc");
         assertEquals(1, m.getParameterCount());
         Parameter p = m.getParameters()[0];
         assertEquals(CreateReservationsRequest.class, p.getType());
+        assertNotNull(p.getAnnotation(RequestBody.class), "request must be @RequestBody");
+    }
+
+    @Test
+    void syncClassificationExposed()
+    {
+        Method m = methodNamed("syncClassification");
+        PostExchange pe = m.getAnnotation(PostExchange.class);
+        assertNotNull(pe, "syncClassification must be POST");
+        assertEquals("/syncClassification", pe.value());
+        assertEquals(SyncClassificationResult.class, m.getReturnType());
+        assertEquals(1, m.getParameterCount());
+        Parameter p = m.getParameters()[0];
+        assertEquals(SyncClassificationRequest.class, p.getType());
         assertNotNull(p.getAnnotation(RequestBody.class), "request must be @RequestBody");
     }
 
@@ -77,13 +95,39 @@ class ExternalEventImportServiceContractTest
         CreateReservationsRequest req = new CreateReservationsRequest();
         req.setSourceItemIds(java.util.List.of("a", "b"));
         req.setTemplateAllocatableId("template-1");
-        req.setUpdateExistingReservation(true);
-        req.setExistingReservationId("res-9");
         assertEquals(2, req.getSourceItemIds().size());
         assertEquals("template-1", req.getTemplateAllocatableId());
-        assertTrue(req.isUpdateExistingReservation());
-        assertEquals("res-9", req.getExistingReservationId());
         assertNotNull(req.getAdditionalAllocatableIds(), "additionalAllocatableIds default must not be null");
+    }
+
+    /** The sync flow moved to {@code syncClassification} (PRD 068) — the old piggyback flags on the
+     *  create request must stay deleted, or the silent-no-op sync path can come back. */
+    @Test
+    void createReservationsRequestCarriesNoSyncFlags()
+    {
+        for (Method m : CreateReservationsRequest.class.getDeclaredMethods())
+        {
+            assertTrue(!m.getName().equals("setUpdateExistingReservation")
+                    && !m.getName().equals("isUpdateExistingReservation")
+                    && !m.getName().equals("setExistingReservationId")
+                    && !m.getName().equals("getExistingReservationId"),
+                    "sync flag leaked back into CreateReservationsRequest: " + m.getName());
+        }
+    }
+
+    @Test
+    void syncDtosAreBeanShaped()
+    {
+        SyncClassificationRequest req = new SyncClassificationRequest();
+        ImportItem item = new ImportItem();
+        item.setSourceItemId("v:42");
+        req.setSelectedItem(item);
+        assertEquals("v:42", req.getSelectedItem().getSourceItemId());
+
+        SyncClassificationResult result = new SyncClassificationResult();
+        result.setAllocatableIds(java.util.List.of("a1", "a2"));
+        assertEquals(2, result.getAllocatableIds().size());
+        assertNotNull(new SyncClassificationResult().getAllocatableIds(), "allocatableIds default must not be null");
     }
 
     @Test

@@ -1,6 +1,6 @@
 package org.rapla.plugin.externaleventimport;
 
-import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.framework.RaplaException;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.service.annotation.GetExchange;
@@ -31,8 +31,21 @@ public interface ExternalEventImportService
      * template copy) happens here on the server, so the client carries no domain logic.
      *
      * @return the un-persisted reservations; the client resolves them against its operator,
-     *         opens them in the editor, and the user saves (which persists them).
+     *         opens them in the editor, and the user saves (which persists them). The wire type
+     *         is the concrete {@link ReservationImpl} (the {@code UpdateEvent} convention) so
+     *         Jackson deserializes without an abstract-type mapping and springdoc emits a real
+     *         OpenAPI model.
      */
     @PostExchange("/createReservations")
-    List<Reservation> createReservations(@RequestBody CreateReservationsRequest request) throws RaplaException;
+    List<ReservationImpl> createReservations(@RequestBody CreateReservationsRequest request) throws RaplaException;
+
+    /**
+     * Sync flow (PRD 068): merges the data of exactly one not-yet-imported source row into the
+     * classification of a reservation already open in the editor. The server seeds from the
+     * shipped classification ({@code newClassificationFrom}), applies the source values, and
+     * resolves the row's referenced allocatables to rapla ids — it stores nothing and reads no
+     * persisted reservation state; saving stays with the editor.
+     */
+    @PostExchange("/syncClassification")
+    SyncClassificationResult syncClassification(@RequestBody SyncClassificationRequest request) throws RaplaException;
 }

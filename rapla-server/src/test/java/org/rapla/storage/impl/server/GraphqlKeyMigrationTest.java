@@ -82,6 +82,10 @@ class GraphqlKeyMigrationTest extends FacadeTestSupport
         {
             String classKind = dt.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
             if (DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE.equals(classKind)) continue;
+            // rapla-internal DTs use `rapla:*` keys (e.g. rapla:anonymousEvent) that
+            // production's GraphqlKeyMigration.isRaplaInternal exempts by key prefix,
+            // not by classification kind — mirror that here.
+            if (dt.getKey() != null && dt.getKey().startsWith("rapla:")) continue;
             assertTrue(Tools.isSpecCompliant(dt.getKey()), "DT key non-spec: " + dt.getKey());
             for (Attribute a : dt.getAttributes())
             {

@@ -138,6 +138,18 @@ public class ReservationInfoEdit extends RaplaGUIComponent
 //        return false;
 //    }
     JScrollPane scrollPane;
+
+    /** Applies the given classification as an undoable command on the editor's history —
+     *  same machinery (and same history entry) as a type change via the type-selector dropdown. */
+    public Promise<Void> changeClassificationUndoable(Classification newClassification)
+    {
+        Classification oldClassification = ((ClassificationImpl) classification).clone();
+        DynamicType oldDynamicType = classification.getType();
+        DynamicType newDynamicType = newClassification.getType();
+        UndoReservationTypeChange command = new UndoReservationTypeChange(oldClassification, newClassification, oldDynamicType, newDynamicType);
+        return commandHistory.storeAndExecute(command);
+    }
+
     public void setReservation(Classifiable classifiable) throws RaplaException {
         content.removeAll();
         this.classifiable = classifiable;

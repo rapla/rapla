@@ -9,6 +9,7 @@ import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
+import org.rapla.entities.dynamictype.internal.ClassificationImpl;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarSelectionModel;
@@ -21,6 +22,9 @@ import org.rapla.plugin.externaleventimport.ExternalEventImportPlugin;
 import org.rapla.plugin.externaleventimport.ExternalEventImportResult;
 import org.rapla.plugin.externaleventimport.ExternalEventImportService;
 import org.rapla.plugin.externaleventimport.ImportCriteria;
+import org.rapla.plugin.externaleventimport.ImportItem;
+import org.rapla.plugin.externaleventimport.SyncClassificationRequest;
+import org.rapla.plugin.externaleventimport.SyncClassificationResult;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -105,7 +109,7 @@ public class ExternalEventImportController
         }).exceptionally(ex -> { dialogUiFactory.showException(ex, popupContext); });
     }
 
-    public void syncReservation(ReservationEdit reservationEdit, PopupContext popupContext)
+    public void syncReservation(ReservationEdit<?> reservationEdit, PopupContext popupContext)
     {
         getMetadata().thenAccept(metadata -> {
             Reservation reservation = reservationEdit.getReservation();
@@ -116,9 +120,9 @@ public class ExternalEventImportController
                 return;
             }
             ImportCriteria criteria = new ImportCriteria(null, idsOf(matched));
-            dialog.busy();
+            dialog.busy(popupContext);
             scheduler.supply(() -> service.loadEvents(criteria)).thenAccept(result -> {
-                dialog.idle();
+                dialog.idle(popupContext);
                 if (result.getItems().isEmpty())
                 {
                     String msg = uiOverride(metadata, "no.events.found", "No events found for the selected items.");
@@ -130,33 +134,66 @@ public class ExternalEventImportController
                     @Override
                     public void submit(List<String> sourceItemIds)
                     {
-                        if (sourceItemIds.size() != 1)
+                        ImportItem selected = findSingleSyncableItem(result, sourceItemIds);
+                        if (selected == null)
                         {
-                            dialogUiFactory.showWarning("Sync requires exactly one selected item.", popupContext);
+                            dialogUiFactory.showWarning("Sync requires exactly one not-yet-imported item.", popupContext);
                             return;
                         }
-                        CreateReservationsRequest req = new CreateReservationsRequest();
-                        req.setSourceItemIds(sourceItemIds);
-                        req.setUpdateExistingReservation(true);
-                        req.setExistingReservationId(reservation.getId());
-                        scheduler.supply(() -> service.createReservations(req)).thenAccept(ids -> {
-                            reservationEdit.setHasChanged(true);
-                        }).exceptionally(ex -> { dialogUiFactory.showException(ex, popupContext); });
+                        SyncClassificationRequest req = new SyncClassificationRequest();
+                        req.setSelectedItem(selected);
+                        req.setClassification((ClassificationImpl) reservationEdit.getReservation().getClassification());
+                        scheduler.supply(() -> service.syncClassification(req))
+                                .thenAccept(syncResult -> applySyncResult(reservationEdit, syncResult, popupContext))
+                                .exceptionally(ex -> { dialogUiFactory.showException(ex, popupContext); });
                     }
 
                     @Override
                     public boolean isValidSelection(List<String> sourceItemIds)
                     {
-                        return sourceItemIds.size() == 1;
+                        return findSingleSyncableItem(result, sourceItemIds) != null;
                     }
                 };
                 DialogInterface di = dialog.createImportDialog(popupContext, selectionModel, metadata, result, callback, true);
                 di.start(false);
             }).exceptionally(ex -> {
-                dialog.idle();
+                dialog.idle(popupContext);
                 dialogUiFactory.showException(ex, popupContext);
             });
         }).exceptionally(ex -> { dialogUiFactory.showException(ex, popupContext); });
+    }
+
+    /** Sync accepts exactly one row, and only one that isn't already imported — sync *binds* an
+     *  unbound reservation to a source event; refreshing imported ones is not supported. */
+    static ImportItem findSingleSyncableItem(ExternalEventImportResult result, List<String> sourceItemIds)
+    {
+        if (sourceItemIds == null || sourceItemIds.size() != 1) return null;
+        for (ImportItem item : result.getItems())
+        {
+            if (sourceItemIds.get(0).equals(item.getSourceItemId()))
+            {
+                return item.isImported() ? null : item;
+            }
+        }
+        return null;
+    }
+
+    /** Sync applies the server-merged classification ONLY — as an undoable command on the
+     *  editor's history, same entry as a type change via the dropdown. The returned
+     *  allocatableIds stay on the wire for future UIs but are deliberately not applied here
+     *  (PRD 068: allocations are a create-flow concern; the planner curates them manually). */
+    private void applySyncResult(ReservationEdit<?> reservationEdit, SyncClassificationResult syncResult, PopupContext popupContext)
+    {
+        try
+        {
+            syncResult.getClassification().setResolver(raplaFacade.getOperator());
+            reservationEdit.changeClassificationUndoable(syncResult.getClassification())
+                    .exceptionally(ex -> { dialogUiFactory.showException(ex, popupContext); });
+        }
+        catch (Exception e)
+        {
+            dialogUiFactory.showException(e, popupContext);
+        }
     }
 
     private void loadAndShow(PopupContext popupContext, ExternalEventImportMetadata metadata, Collection<Allocatable> picked, Allocatable template)
@@ -180,9 +217,9 @@ public class ExternalEventImportController
             return;
         }
         ImportCriteria criteria = new ImportCriteria(null, idsOf(picked));
-        dialog.busy();
+        dialog.busy(popupContext);
         scheduler.supply(() -> service.loadEvents(criteria)).thenAccept(result -> {
-            dialog.idle();
+            dialog.idle(popupContext);
             if (result.getItems().isEmpty())
             {
                 String msg = uiOverride(metadata, "no.events.found", "No events found for the selected items.");
@@ -193,7 +230,7 @@ public class ExternalEventImportController
             DialogInterface di = dialog.createImportDialog(popupContext, selectionModel, metadata, result, callback, false);
             di.start(false);
         }).exceptionally(ex -> {
-            dialog.idle();
+            dialog.idle(popupContext);
             dialogUiFactory.showException(ex, popupContext);
         });
     }
@@ -233,7 +270,7 @@ public class ExternalEventImportController
 
     /** The server returns un-persisted reservations; the REST deserialization (unlike the storage query
      *  path) doesn't resolve them, so wire them to the client operator before the editor accepts them. */
-    private void openEditor(List<Reservation> reservations, PopupContext popupContext)
+    private void openEditor(List<? extends Reservation> reservations, PopupContext popupContext)
     {
         if (reservations == null || reservations.isEmpty()) return;
         try

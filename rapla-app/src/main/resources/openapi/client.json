@@ -1983,6 +1983,9 @@
             "items" : {
               "type" : "string"
             }
+          },
+          "tableName" : {
+            "type" : "string"
           }
         }
       },

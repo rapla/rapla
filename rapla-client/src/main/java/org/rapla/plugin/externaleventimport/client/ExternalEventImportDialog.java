@@ -21,7 +21,9 @@ public interface ExternalEventImportDialog
     DialogInterface createImportDialog(PopupContext popupContext, CalendarModel model, ExternalEventImportMetadata metadata, ExternalEventImportResult result,
             ExternalEventImportSubmitCallback callback, boolean closeAfterSubmit);
 
-    void busy();
+    /** Blocks the window the action originated from (per {@code popupContext}) while loading —
+     *  e.g. the reservation edit window for the sync flow, the main window for the import wizard. */
+    void busy(PopupContext popupContext);
 
-    void idle();
+    void idle(PopupContext popupContext);
 }

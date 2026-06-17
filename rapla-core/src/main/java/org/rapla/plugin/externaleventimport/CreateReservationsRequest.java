@@ -11,9 +11,8 @@ import java.util.List;
  * stores them via the facade, and returns the new reservation IDs so the client can open
  * an editor on them.
  *
- * <p>{@link #updateExistingReservation}/{@link #existingReservationId} cover the
- * sync-an-existing-reservation flow: only one source item is allowed, and its data is
- * folded into the named reservation rather than creating a new one.
+ * <p>The sync-an-existing-reservation flow has its own contract —
+ * {@code syncClassification(SyncClassificationRequest)} — and no longer piggybacks here.
  */
 public class CreateReservationsRequest
 {
@@ -28,8 +27,6 @@ public class CreateReservationsRequest
     private List<String> sourceAllocatableIds = new ArrayList<>();
     private LocalDateTime calendarStart;
     private LocalDateTime calendarEnd;
-    private boolean updateExistingReservation;
-    private String existingReservationId;
 
     public CreateReservationsRequest()
     {
@@ -103,25 +100,5 @@ public class CreateReservationsRequest
     public void setCalendarEnd(LocalDateTime calendarEnd)
     {
         this.calendarEnd = calendarEnd;
-    }
-
-    public boolean isUpdateExistingReservation()
-    {
-        return updateExistingReservation;
-    }
-
-    public void setUpdateExistingReservation(boolean updateExistingReservation)
-    {
-        this.updateExistingReservation = updateExistingReservation;
-    }
-
-    public String getExistingReservationId()
-    {
-        return existingReservationId;
-    }
-
-    public void setExistingReservationId(String existingReservationId)
-    {
-        this.existingReservationId = existingReservationId;
     }
 }

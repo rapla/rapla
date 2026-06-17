@@ -84,7 +84,7 @@ class TableViewServiceContractTest
     {
         assertRecordComponents(TableQueryRequest.class,
                 List.of("from", "to", "allocatables", "types", "owners",
-                        "reservationFilter", "columns", "sort"));
+                        "reservationFilter", "columns", "sort", "tableName"));
     }
 
     @Test

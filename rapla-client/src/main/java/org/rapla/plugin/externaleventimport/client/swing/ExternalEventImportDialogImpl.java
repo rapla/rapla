@@ -4,6 +4,8 @@ import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.dialog.swing.DialogUI;
+import org.rapla.client.swing.toolkit.RaplaFrame;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.client.ClientFacade;
@@ -111,14 +113,50 @@ public class ExternalEventImportDialogImpl implements ExternalEventImportDialog
     }
 
     @Override
-    public void busy()
+    public void busy(PopupContext popupContext)
     {
-        dialogUiFactory.busy(raplaResources.getString("load"));
+        String message = raplaResources.getString("load");
+        java.awt.Component owner = ownerWindow(popupContext);
+        if (owner instanceof RaplaFrame)
+        {
+            ((RaplaFrame) owner).busy(message);
+        }
+        else if (owner instanceof DialogUI)
+        {
+            ((DialogUI) owner).busy(message);
+        }
+        else
+        {
+            dialogUiFactory.busy(message);
+        }
     }
 
     @Override
-    public void idle()
+    public void idle(PopupContext popupContext)
     {
-        dialogUiFactory.idle();
+        java.awt.Component owner = ownerWindow(popupContext);
+        if (owner instanceof RaplaFrame)
+        {
+            ((RaplaFrame) owner).idle();
+        }
+        else if (owner instanceof DialogUI)
+        {
+            ((DialogUI) owner).idle();
+        }
+        else
+        {
+            dialogUiFactory.idle();
+        }
+    }
+
+    /** The window owning the component the action came from — the main RaplaFrame, or a
+     *  DialogUI child window (reservation edit windows are DialogUIs, see ApplicationViewSwing).
+     *  The factory fallback always glasspanes the MAIN window, which is wrong when loading was
+     *  triggered from e.g. the reservation edit window. */
+    static java.awt.Component ownerWindow(PopupContext popupContext)
+    {
+        java.awt.Component parent = org.rapla.client.swing.internal.SwingPopupContext.extractParent(popupContext);
+        if (parent == null) return null;
+        return DialogUI.getOwnerWindow(parent);
     }
 }

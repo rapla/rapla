@@ -1,6 +1,6 @@
 package org.rapla.server.spring.web;
 
-import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.plugin.externaleventimport.CreateReservationsRequest;
 import org.rapla.plugin.externaleventimport.ExternalEventImportMetadata;
@@ -8,6 +8,8 @@ import org.rapla.plugin.externaleventimport.ExternalEventImportPlugin;
 import org.rapla.plugin.externaleventimport.ExternalEventImportResult;
 import org.rapla.plugin.externaleventimport.ExternalEventImportService;
 import org.rapla.plugin.externaleventimport.ImportCriteria;
+import org.rapla.plugin.externaleventimport.SyncClassificationRequest;
+import org.rapla.plugin.externaleventimport.SyncClassificationResult;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -55,8 +57,14 @@ public class ExternalEventImportController
     }
 
     @PostMapping("/createReservations")
-    public List<Reservation> createReservations(@RequestBody CreateReservationsRequest request) throws RaplaException
+    public List<ReservationImpl> createReservations(@RequestBody CreateReservationsRequest request) throws RaplaException
     {
         return service.createReservations(request);
+    }
+
+    @PostMapping("/syncClassification")
+    public SyncClassificationResult syncClassification(@RequestBody SyncClassificationRequest request) throws RaplaException
+    {
+        return service.syncClassification(request);
     }
 }

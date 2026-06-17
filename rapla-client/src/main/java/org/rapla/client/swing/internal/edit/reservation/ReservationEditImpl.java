@@ -33,6 +33,7 @@ import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.undo.CommandHistory;
+import org.rapla.entities.dynamictype.Classification;
 import org.rapla.components.i18n.I18nIcon;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
@@ -451,6 +452,12 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
     public boolean isNew()
     {
         return bNew;
+    }
+
+    @Override
+    public Promise<Void> changeClassificationUndoable(Classification newClassification)
+    {
+        return reservationInfo.changeClassificationUndoable(newClassification);
     }
 
     public void setReservation(Reservation newReservation, Appointment mutableAppointment) throws RaplaException

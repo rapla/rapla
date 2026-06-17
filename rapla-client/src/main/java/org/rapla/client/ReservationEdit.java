@@ -34,6 +34,11 @@ public interface ReservationEdit<T> extends EditTaskPresenter.EditTaskView<Reser
     void addExceptionsToCurrentAppointment(List<TimeInterval> exceptions);
 
     void setReservation(Reservation reservation, Appointment appointment) throws RaplaException;
+
+    /** Applies the classification to the working copy as an undoable command on this editor's
+     *  undo history — same machinery and history entry as a type change via the type-selector
+     *  dropdown; the classification panel repaints itself, everything else stays untouched. */
+    Promise<Void> changeClassificationUndoable(org.rapla.entities.dynamictype.Classification newClassification);
     //void updateReservation(Reservation persistent) throws RaplaException;
 
     //void deleteReservation() throws RaplaException;

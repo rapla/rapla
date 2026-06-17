@@ -1,7 +1,16 @@
 # PRD 068 — External-event (Dualis) import: server maps to classification, client uses the generic template flow
 
-**Status:** draft — opened 2026-06-10 (design resolved in a late-night session
-against the old productive dialog + the existing generic template wizard)
+**Status:** in-progress — opened 2026-06-10 (design resolved in a late-night session
+against the old productive dialog + the existing generic template wizard).
+Sync flow **implemented + verified live 2026-06-12** (Swing client against the
+dhbw dev server + campusnet tunnel: load, single-row sync, in-place classification
+update, undo/redo, edit-window-scoped busy glasspane all confirmed working): `syncClassification` contract + DTOs +
+controller endpoint + generic client apply (rapla), `mapSyncClassification` +
+`createReservations → List<ReservationImpl>` (dhbwrapla), Jackson abstract-type
+mapping deleted. Tests: `ExternalEventImportServiceContractTest`,
+`SyncClassificationWireTest`, `ExternalEventImportSyncApplyTest`,
+`DualisSyncClassificationTest` — all green. Create-flow polish (filters,
+ImportStatus column UX) still open.
 
 ## Goal
 
@@ -91,14 +100,98 @@ CLIENT: RESOLVE the reservations (setResolver vs client operator) BEFORE accepti
 | Server persists prematurely | server returns **un-persisted**; save is the client's |
 | second Dualis call | **gone** — `sourceData` relayed back; no re-query |
 
+## Sync flow (resolved 2026-06-11 — closes OQ 4)
+
+The "Synchronisieren" toolbar button in the reservation editor
+(`ExternalEventSyncButtonExtension` → `ExternalEventImportController.syncReservation`)
+binds an existing, not-yet-imported reservation to a Dualis event: same mapping as
+create, but folded into the reservation already open in the editor. Master did this
+client-side (`DualisServerLectureData.map` mutated the live editor object); the
+redesign keeps the mapping server-side and ships **only the classification** across
+the wire — never a reservation carrier, so nothing can be mistaken for storable
+state and the open editor's object identity is never disturbed.
+
+```
+CLIENT sync button → loadEvents(reservation's Kurs ids)          (unchanged)
+   ▼
+CLIENT dialog (sync mode): exactly ONE row, NOT yet imported     (master semantic)
+   │ syncClassification({ selectedItem (with sourceData),
+   │                      classification: editor working copy's ClassificationImpl })
+   ▼
+SERVER (dhbw impl) — NO store, NO read of persisted state:
+   • shipped.setResolver(operator)            (ClassificationImpl is an EntityReferencer)
+   • dt = getDynamicType(sourceData.typeKey)
+   • merged = dt.newClassificationFrom(shipped)   ← same seeding call as the template branch
+   • applyValues(merged, sourceData.values)
+   • resolve kursIds/personenIds via DUALIS_ID filter → rapla allocatable IDS (not entities)
+   • return { classification: merged, allocatableIds }
+   ▼
+CLIENT generic apply — classification ONLY, undoable (decided 2026-06-12):
+   • merged.setResolver(operator)
+   • reservationEdit.changeClassificationUndoable(merged)
+     → ReservationInfoEdit builds the SAME UndoReservationTypeChange command the
+       type-selector dropdown uses and storeAndExecute's it on the editor's own
+       undo history: one history entry, Ctrl-Z restores the pre-sync classification,
+       the command repaints the classification panel itself, and the editor's
+       change listener marks the window dirty. No setHasChanged, no refresh calls,
+       no editor re-init (NEVER reservationEdit.setReservation(...) — it rebinds
+       every panel mid-flight and clears the undo history; master did it, we don't).
+   • allocatableIds are deliberately NOT applied by the Swing client. Master's sync
+     added Kurs/Person allocations (same map() as create) — dropped on purpose:
+     allocations are a create-flow concern; the planner curates them manually.
+     The field STAYS on the wire so future UIs (SPA) can decide to use it.
+   ▼
+USER reviews in editor → SAVE (normal dispatch; processor stamps the external id)
+```
+
+**Why classification-only (decision trail):**
+- Merging server-side against the *shipped working copy* (not the persisted version)
+  preserves edits the user made before hitting sync.
+- A whole-reservation carrier in the response would need "ignore appointments/id/owner"
+  by convention and risks someone later persisting/opening it; a `Classification`
+  isn't storable on its own.
+- A fresh `dt.newClassification()` + client-side overlay was rejected: defaults filled
+  by `newClassification()` are indistinguishable from mapped values on the wire and
+  would clobber user-edited fields. `newClassificationFrom(shipped)` on the server
+  gets the merge for free.
+
+**Wire types are concrete impls** (the `UpdateEvent` convention — it ships
+`List<ReservationImpl>` etc. so Jackson never hits an abstract type, and springdoc
+can generate a real model):
+
+```
+SyncClassificationRequest  { ImportItem selectedItem; ClassificationImpl classification; }
+SyncClassificationResult   { ClassificationImpl classification; List<String> allocatableIds; }
+```
+
+New method on `ExternalEventImportService` (own `@PostExchange`); the
+`updateExistingReservation` / `existingReservationId` fields on
+`CreateReservationsRequest` are **deleted** — `createReservations` no longer doubles
+as the sync path. The current sync wiring is a silent no-op (client sends only
+`sourceItemIds`, server ignores the flags and early-returns on empty `selectedItems`,
+client marks the editor dirty regardless) — all three defects disappear with the
+dedicated contract.
+
+**Implementation-time spike (single):** round-trip `ClassificationImpl` as a DTO
+field through the `@HttpExchange` proxy + Spring MVC (serialize client-side,
+`setResolver` server-side, and back).
+
 ## Contract changes
 
 - **`ImportItem`**: `sourceItemId` + `columns` + `imported` + **`sourceData:
   Map<String,Object>`** (raw source fields). (Drop the `Classification` /
   `classificationValues` iterations — `sourceData` replaces them.)
 - **`createReservations`**: request carries the **selected `ImportItem`s** (with
-  `sourceData`) + `templateAllocatableId` + interval; returns **`List<Reservation>`**
-  (un-persisted) — changed from `List<String>`.
+  `sourceData`) + `templateAllocatableId` + interval; returns **`List<ReservationImpl>`**
+  (un-persisted) — changed from `List<String>`. The wire type is the **concrete impl**,
+  not the `Reservation` interface: the Jackson `addAbstractTypeMapping(Reservation,
+  ReservationImpl)` workaround in `JacksonObjectMapperFactory` fixed deserialization,
+  but springdoc still emits a broken abstract schema for the interface — typing the
+  signature `ReservationImpl` fixes the OpenAPI model AND lets the mapper workaround
+  be deleted.
+- **`syncClassification`**: new method — see the Sync flow section above;
+  `updateExistingReservation`/`existingReservationId` deleted from
+  `CreateReservationsRequest`.
 - **`getMetadata()` gains generic filter descriptors** (Studiengang / Semester /
   Kurs) for the table filters.
 - **ImportStatus** = server-computed column + `imported` flag (`DUALIS_ID` lookup).
@@ -136,5 +229,8 @@ responsibility is the classification mapper.
    decide whether the dhbw reservation type models them as attributes.
 3. **Template selection:** is there a single canonical Dualis template, or does
    the user pick (the generic wizard already supports pick-from-templates)?
-4. **ImportStatus update semantics:** does selecting an already-imported row
-   update the existing reservation, or is it just skipped/greyed?
+4. ~~**ImportStatus update semantics:** does selecting an already-imported row
+   update the existing reservation, or is it just skipped/greyed?~~ **Resolved
+   2026-06-11** — see the Sync flow section: sync is only valid for exactly one
+   **not-yet-imported** row (it *binds* an unbound reservation to a Dualis event);
+   already-imported rows are not syncable, matching master's `isValidSelection`.
