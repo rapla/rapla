@@ -165,6 +165,31 @@ import java.time.LocalDateTime;
         return true;
     }
 
+    @Override
+    protected void deletePersistedInternalTypesFromStore(java.util.Collection<String> ids) throws RaplaException
+    {
+        if (ids == null || ids.isEmpty())
+        {
+            return;
+        }
+        // Direct, store-only DELETE of exactly the found internal-type rows — NOT
+        // via storeAndRemove (that shares the id with the canonical cache type).
+        try (Connection con = createConnection(false);
+                PreparedStatement stmt = con.prepareStatement("DELETE FROM DYNAMIC_TYPE WHERE ID = ?"))
+        {
+            for (String id : ids)
+            {
+                stmt.setString(1, id);
+                stmt.addBatch();
+            }
+            stmt.executeBatch();
+        }
+        catch (SQLException ex)
+        {
+            throw new RaplaException("Failed to purge persisted internal DynamicType rows from DB: " + ex.getMessage(), ex);
+        }
+    }
+
     public String getConnectionName()
     {
         if (connectionName != null)
@@ -1092,6 +1117,7 @@ import java.time.LocalDateTime;
                 superCategory.setCreateDate(historyCategory.getCreateDate());
             }
         }
+        dropPersistedInternalTypes(list);   // never let a persisted internal type overwrite the canonical one
         cache.putAll(list);
         cache.getDynamicTypes().stream().map(t->(DynamicTypeImpl)t).forEach(DynamicTypeImpl::setReadOnly);
         resolveInitial(list, this);

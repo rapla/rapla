@@ -9,6 +9,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.io.IOException;
@@ -32,6 +33,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
  */
 @SpringBootTest(classes = RaplaSpringBootApplication.class)
 @AutoConfigureMockMvc
+// In test scope SpringDoc is on the classpath and owns the api-docs URL (its
+// OpenApiWebMvcResource, not StaticOpenApiController). Pin it to the prod path
+// /api/v3/api-docs so apiDocsRoutes() probes the same URL the production runtime
+// serves — same property the OpenApi spec-capture tests set.
+@TestPropertySource(properties = "springdoc.api-docs.path=/api/v3/api-docs")
 class UrlPreservationTest
 {
     @TempDir

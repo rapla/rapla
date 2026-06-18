@@ -296,6 +296,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
                     insertIntoImportExportCache(cast);
                 }
             }
+            dropPersistedInternalTypes(list);   // never let a persisted internal type overwrite the canonical one
             cache.putAll(list);
             Preferences preferences = cache.getPreferencesForUserId(null);
             if (preferences != null)
@@ -643,6 +644,16 @@ final public class FileOperator extends LocalAbstractCachableOperator
         {
             lockManager.unlock(writeLock);
         }
+    }
+
+    @Override
+    protected void deletePersistedInternalTypesFromStore(java.util.Collection<String> ids) throws RaplaException
+    {
+        // The cache already holds only the canonical internal types (the
+        // persisted copies were dropped on load); rewriting the file omits them
+        // (RaplaMainWriter skips internal types). ids is implicit. saveData
+        // re-acquires the write lock reentrantly — safe.
+        saveData();
     }
 
     @Override

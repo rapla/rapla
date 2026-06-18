@@ -356,6 +356,76 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
     }
 
+    /**
+     * Drop persisted internal {@link DynamicType}s from a freshly-loaded entity
+     * list before it is committed to the cache. Internal types
+     * ({@code rapla:anonymousEvent}, {@code rapla:unresolvedResource}, …) are
+     * recreated canonically by {@link #addInternalTypes} on every connect — and
+     * both storage writers skip them. A persisted copy can only be legacy data
+     * (written before that skip existed) or a copy whose key was sanitized to
+     * {@code rapla_…} by an old GraphqlKeyMigration. Either way it must NOT
+     * overwrite the canonical cache version: that would leave the in-memory key
+     * corrupted (breaking {@code getDynamicType(key)} lookups) and leak the type
+     * into the generated GraphQL SDL. Detection is by the immutable
+     * {@code rapla:} id (see {@link DynamicTypeImpl#isInternal()}).
+     */
+    /** Ids of persisted internal types found+dropped on the latest load — to be
+     *  physically purged from the store by {@link #purgePersistedInternalTypesIfNeeded}. */
+    private final java.util.List<String> persistedInternalTypeIdsToPurge = new ArrayList<>();
+
+    protected void dropPersistedInternalTypes(Collection<Entity> loaded)
+    {
+        persistedInternalTypeIdsToPurge.clear();
+        if (loaded == null)
+        {
+            return;
+        }
+        for (Iterator<Entity> it = loaded.iterator(); it.hasNext(); )
+        {
+            Entity entity = it.next();
+            if (entity instanceof DynamicType && ((DynamicTypeImpl) entity).isInternal())
+            {
+                LOGGER.warn("Dropping persisted internal DynamicType '{}' (id {}) on load — "
+                        + "recreated canonically by addInternalTypes; it will be purged from the store.",
+                        ((DynamicType) entity).getKey(), entity.getId());
+                persistedInternalTypeIdsToPurge.add(entity.getId());
+                it.remove();
+            }
+        }
+    }
+
+    /**
+     * Physically remove the persisted internal types found on load (the ones
+     * that triggered the drop-warning) from the backing store. Runs after
+     * {@link #connect()} (its load lock is already released) under a fresh write
+     * lock — the lock is reentrant, so a storage impl re-locking (e.g. File
+     * {@code saveData}) is safe. Idempotent: no-op once the store is clean.
+     * Deliberately NOT via {@code storeAndRemove} — that evicts the canonical
+     * type from the cache (same id); the storage impl deletes store-side only.
+     */
+    public void purgePersistedInternalTypesIfNeeded() throws RaplaException
+    {
+        if (persistedInternalTypeIdsToPurge.isEmpty())
+        {
+            return;
+        }
+        final Collection<String> ids = new ArrayList<>(persistedInternalTypeIdsToPurge);
+        persistedInternalTypeIdsToPurge.clear();
+        final RaplaLock.WriteLock writeLock = writeLockIfLoaded("purge persisted internal types");
+        try
+        {
+            deletePersistedInternalTypesFromStore(ids);
+            LOGGER.info("Purged {} persisted internal DynamicType(s) from the store: {}", ids.size(), ids);
+        }
+        finally
+        {
+            lockManager.unlock(writeLock);
+        }
+    }
+
+    /** Store-only delete of the given DynamicType ids (no cache mutation). */
+    protected abstract void deletePersistedInternalTypesFromStore(Collection<String> ids) throws RaplaException;
+
     @Override
     public String getUsername(ReferenceInfo<User> userId)
     {
@@ -461,6 +531,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
      */
     public void migrateGraphqlKeysIfNeeded() throws RaplaException
     {
+        // Heal any persisted internal types found on load — unconditional and
+        // idempotent, independent of the (marker-gated) graphql key migration.
+        purgePersistedInternalTypesIfNeeded();
         if (GraphqlKeyMigration.markerSet(this))
         {
             LOGGER.debug("PRD 058 — graphql key spec migration marker present; skipping plan/apply");

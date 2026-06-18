@@ -95,13 +95,16 @@ public class SecurityConfig
                             // — the SDL pendant to the public /v3/api-docs above. API
                             // shape metadata only, no entity data; public to match Swagger.
                             "/api/graphql/schema",
-                            "/oauth2/**", "/.well-known/**", "/login", "/error",
-                            // dhbwrapla plugin endpoints. /dhbw/status is the
-                            // dhbw-specific health probe; /api/dhbw/stele is
-                            // the terminal-display XML feed polled by
-                            // unauthenticated terminal hardware (scope is
-                            // server-side via rapla.dhbw.terminal.stele-user).
-                            "/dhbw/status", "/api/dhbw/stele").permitAll();
+                            "/oauth2/**", "/.well-known/**", "/login", "/error").permitAll();
+                    // Vanilla rapla carries no plugin-specific paths here. A plugin
+                    // that needs an unauthenticated endpoint (e.g. a health probe or
+                    // a kiosk display feed polled without a Bearer) contributes its
+                    // own higher-precedence SecurityFilterChain — @Order(1), ahead
+                    // of this catch-all (@Order 2) — with a narrow securityMatcher,
+                    // exactly like oauthHelperFilterChain above. First-match-wins:
+                    // any path the plugin chain does NOT match falls through here
+                    // and inherits the authenticated() gate below. Pattern + the
+                    // regression lock: PluginSecurityChainContributionTest.
                     if (decoder != null)
                     {
                         auth.anyRequest().authenticated();

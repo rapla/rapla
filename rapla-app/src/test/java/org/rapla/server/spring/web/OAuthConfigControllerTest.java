@@ -63,15 +63,18 @@ class OAuthConfigControllerTest
     }
 
     @Test
-    void discoveryReportsSwingLegacyLoginDisabledByDefault() throws Exception
+    void discoveryReportsSwingLegacyLoginEnabledByDefault() throws Exception
     {
-        // PRD 029 Phase 3: with neither rapla.oauth.swing-legacy-login nor
-        // rapla.oauth.swing-legacy-show-sso-button set, discovery reports both
-        // false — the Swing client keeps the Phase-2 OAuth-first behaviour.
+        // application.yml is the source of truth: rapla.oauth.swing-legacy-login
+        // and swing-legacy-show-sso-button both default to true
+        // (RAPLA_OAUTH_SWING_LEGACY_LOGIN:true) — the Swing client shows the
+        // legacy login dialog unless a deployment opts out. The @Value("...:false")
+        // fallbacks in OAuthConfigController only apply when the property is
+        // entirely absent, which the bundled application.yml never is.
         mockMvc.perform(get("/api/auth/oauth/config"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.swingLegacyLogin").value(false))
-                .andExpect(jsonPath("$.swingLegacyShowSsoButton").value(false));
+                .andExpect(jsonPath("$.swingLegacyLogin").value(true))
+                .andExpect(jsonPath("$.swingLegacyShowSsoButton").value(true));
     }
 
     @Test

@@ -114,7 +114,11 @@ public class EncryptedHttpServletRequest extends HttpServletRequestWrapper
 
 	@Override public String getRequestURI()
 	{
-		return newRequestUri;
+		// MUST return the path (e.g. /rapla/calendar), NOT the full URL — the
+		// DispatcherServlet maps the handler from getRequestURI(); returning the
+		// absolute URL here 404s every @Controller reached via ?key=. getRequestURL()
+		// above still returns the absolute URL, which is its correct contract.
+		return super.getRequestURI();
 	}
 
 	@Override

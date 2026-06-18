@@ -90,7 +90,7 @@ class UnifiedRefreshIntegrationTest
         String refreshToken = pair.refreshToken();
 
         // 2. First access token unlocks /resources (baseline)
-        mockMvc.perform(get("/api/resources").header("Authorization", "Bearer " + firstAccess))
+        mockMvc.perform(get("/api/storage/resources").header("Authorization", "Bearer " + firstAccess))
                 .andExpect(status().isOk());
 
         // 3. Redeem refresh token at /oauth2/token grant_type=refresh_token
@@ -111,7 +111,7 @@ class UnifiedRefreshIntegrationTest
         assertEquals(refreshToken, secondRefresh, "refresh token kept (never-rotate)");
 
         // 4. New access token also unlocks /resources
-        mockMvc.perform(get("/api/resources").header("Authorization", "Bearer " + secondAccess))
+        mockMvc.perform(get("/api/storage/resources").header("Authorization", "Bearer " + secondAccess))
                 .andExpect(status().isOk());
     }
 

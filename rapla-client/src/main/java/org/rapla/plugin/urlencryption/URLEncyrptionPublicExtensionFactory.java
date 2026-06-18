@@ -141,7 +141,11 @@ public class URLEncyrptionPublicExtensionFactory implements PublishExtensionFact
                 {
                     urlExtension = pageParameters;
                 }
-                return new URL(codeBase, generator + "?" + urlExtension).toExternalForm();
+                // Export controllers are routed under the "/rapla" prefix
+                // (CalendarPageController @RequestMapping("/rapla"), Export2iCalController
+                // /rapla/ical). codeBase is the app root (Spring Boot context "/"), so the
+                // bare generator name ("calendar"/"ical") would resolve to /calendar and 404.
+                return new URL(codeBase, "rapla/" + generator + "?" + urlExtension).toExternalForm();
             }
             catch (RaplaException ex)
             {

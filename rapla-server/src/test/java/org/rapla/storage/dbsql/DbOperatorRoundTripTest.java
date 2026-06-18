@@ -214,4 +214,43 @@ public class DbOperatorRoundTripTest
         }
         throw new IllegalStateException("fixture must include an admin user");
     }
+
+    // --- PRD 058 follow-up: store-only purge of persisted internal types ---
+
+    private int countTypeRows(String id) throws Exception
+    {
+        try (java.sql.Connection con = operator.createConnection(false);
+                java.sql.PreparedStatement sel = con.prepareStatement("SELECT COUNT(*) FROM DYNAMIC_TYPE WHERE ID = ?"))
+        {
+            sel.setString(1, id);
+            try (java.sql.ResultSet rs = sel.executeQuery()) { rs.next(); return rs.getInt(1); }
+        }
+    }
+
+    @Test
+    void purgeDeletesPersistedInternalTypeRowDirectlyWithoutEvictingCanonical() throws Exception
+    {
+        // A legacy/corrupted internal-type row in DYNAMIC_TYPE — id keeps the
+        // canonical 'rapla:' marker, key sanitized to 'rapla_…' by an old migration.
+        try (java.sql.Connection con = operator.createConnection(false);
+                java.sql.PreparedStatement ins = con.prepareStatement(
+                        "INSERT INTO DYNAMIC_TYPE (ID, TYPE_KEY, DEFINITION) VALUES (?,?,?)"))
+        {
+            ins.setString(1, "rapla:anonymousEvent");
+            ins.setString(2, "rapla_anonymousEvent");
+            ins.setString(3, "<dummy/>");
+            ins.executeUpdate();
+        }
+        assertEquals(1, countTypeRows("rapla:anonymousEvent"), "precondition: corrupted row inserted");
+
+        // direct, store-only SQL delete of exactly that id
+        operator.deletePersistedInternalTypesFromStore(java.util.List.of("rapla:anonymousEvent"));
+
+        assertEquals(0, countTypeRows("rapla:anonymousEvent"),
+                "direct SQL delete must remove the persisted internal-type row from the DB");
+        // the cache's canonical internal type (same id, created by addInternalTypes)
+        // must be untouched — the delete is store-only, never via storeAndRemove.
+        assertNotNull(operator.getDynamicType("rapla:anonymousEvent"),
+                "canonical internal type must still resolve (no cache eviction)");
+    }
 }

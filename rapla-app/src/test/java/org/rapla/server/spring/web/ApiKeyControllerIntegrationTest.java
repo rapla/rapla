@@ -126,7 +126,7 @@ class ApiKeyControllerIntegrationTest
         String jwt = createKey(access, "spa", 30L).get("key").asText();
 
         // Use the api-key JWT (NOT the access token) on a protected endpoint.
-        mockMvc.perform(get("/api/resources").header("Authorization", "Bearer " + jwt))
+        mockMvc.perform(get("/api/storage/resources").header("Authorization", "Bearer " + jwt))
                 .andExpect(status().isOk());
     }
 
@@ -138,14 +138,14 @@ class ApiKeyControllerIntegrationTest
         String jwt = created.get("key").asText();
         String id = created.get("id").asText();
 
-        mockMvc.perform(get("/api/resources").header("Authorization", "Bearer " + jwt))
+        mockMvc.perform(get("/api/storage/resources").header("Authorization", "Bearer " + jwt))
                 .andExpect(status().isOk());
 
         mockMvc.perform(delete("/api/auth/api-keys/" + id)
                         .header("Authorization", "Bearer " + access))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/resources").header("Authorization", "Bearer " + jwt))
+        mockMvc.perform(get("/api/storage/resources").header("Authorization", "Bearer " + jwt))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -158,7 +158,7 @@ class ApiKeyControllerIntegrationTest
 
         // Sleep briefly so exp is strictly in the past
         Thread.sleep(50);
-        mockMvc.perform(get("/api/resources").header("Authorization", "Bearer " + jwt))
+        mockMvc.perform(get("/api/storage/resources").header("Authorization", "Bearer " + jwt))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -169,7 +169,7 @@ class ApiKeyControllerIntegrationTest
         JsonNode created = createKey(access, "forever", null);
         assertTrue(created.get("expiresAt") == null || created.get("expiresAt").isNull(),
                 "expiresAt must be null for never-expiring keys");
-        mockMvc.perform(get("/api/resources").header("Authorization", "Bearer " + created.get("key").asText()))
+        mockMvc.perform(get("/api/storage/resources").header("Authorization", "Bearer " + created.get("key").asText()))
                 .andExpect(status().isOk());
     }
 
@@ -200,11 +200,11 @@ class ApiKeyControllerIntegrationTest
                         .header("Authorization", "Bearer " + access))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/resources").header("Authorization", "Bearer " + k1))
+        mockMvc.perform(get("/api/storage/resources").header("Authorization", "Bearer " + k1))
                 .andExpect(status().isOk());
-        mockMvc.perform(get("/api/resources").header("Authorization", "Bearer " + k2))
+        mockMvc.perform(get("/api/storage/resources").header("Authorization", "Bearer " + k2))
                 .andExpect(status().isUnauthorized());
-        mockMvc.perform(get("/api/resources").header("Authorization", "Bearer " + k3))
+        mockMvc.perform(get("/api/storage/resources").header("Authorization", "Bearer " + k3))
                 .andExpect(status().isOk());
     }
 
@@ -230,7 +230,7 @@ class ApiKeyControllerIntegrationTest
                         .build());
         forged.sign(new RSASSASigner(attacker.toRSAPrivateKey()));
 
-        mockMvc.perform(get("/api/resources").header("Authorization", "Bearer " + forged.serialize()))
+        mockMvc.perform(get("/api/storage/resources").header("Authorization", "Bearer " + forged.serialize()))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -247,9 +247,9 @@ class ApiKeyControllerIntegrationTest
 
         assertNotEquals(homerJwt, montyJwt);
 
-        mockMvc.perform(get("/api/resources").header("Authorization", "Bearer " + homerJwt))
+        mockMvc.perform(get("/api/storage/resources").header("Authorization", "Bearer " + homerJwt))
                 .andExpect(status().isOk());
-        mockMvc.perform(get("/api/resources").header("Authorization", "Bearer " + montyJwt))
+        mockMvc.perform(get("/api/storage/resources").header("Authorization", "Bearer " + montyJwt))
                 .andExpect(status().isOk());
     }
 

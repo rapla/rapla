@@ -46,7 +46,7 @@ public abstract class FacadeTestSupport
 {
     protected static final String DEFAULT_FIXTURE = "/testdefault.xml";
 
-    @TempDir Path tempDir;
+    @TempDir protected Path tempDir;
 
     protected FileOperator operator;
     protected RaplaFacade facade;

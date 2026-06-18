@@ -88,7 +88,7 @@ class RemoteStorageErrorMappingIntegrationTest
     @Test
     void getResources_withoutAuth_returns401() throws Exception
     {
-        mockMvc.perform(get("/api/resources"))
+        mockMvc.perform(get("/api/storage/resources"))
                 .andExpect(status().isUnauthorized());
     }
 

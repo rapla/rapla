@@ -73,14 +73,16 @@ public class PublishDialog extends RaplaGUIComponent
         {
             URL codeBase = environment.getDownloadURL();
 
-            String pageParameters = generator+"&user=" + getUser().getUsername();
+            String pageParameters = "user=" + getUser().getUsername();
             if ( filename != null)
             {
             	pageParameters = pageParameters + "&file=" + URLEncoder.encode( filename, "UTF-8" );
             }
             final String urlExtension = pageParameters;
 
-            return new URL( codeBase, urlExtension).toExternalForm();
+            // Export controllers live under the "/rapla" prefix (see CalendarPageController
+            // @RequestMapping("/rapla")); codeBase is the app root, so prefix the generator.
+            return new URL( codeBase, "rapla/" + generator + "?" + urlExtension).toExternalForm();
         } 
         catch (Exception ex)
         {

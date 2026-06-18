@@ -1,4 +1,4 @@
----
+ent---
 name: api-testing
 description: Use when the user wants to probe the running rapla server's REST API directly — login, fetch resources, query reservations/appointments, dispatch updates — bypassing the Swing client. Useful for confirming wire-format payloads (e.g. "the GUI shows empty names — is the data wrong on the wire, or is it a client-side deserialize bug?"), reproducing server bugs without booting the client, and quick smoke-testing endpoints after Spring controller changes. Assumes the dev server is running per AGENTS.md §8.
 ---
