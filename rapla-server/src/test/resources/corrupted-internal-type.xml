@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?><!--*- coding: utf-8 -*-->
+<rapla:data xmlns:rapla="http://rapla.sourceforge.net/rapla"
+ xmlns:relax="http://relaxng.org/ns/structure/1.0"
+ xmlns:dynatt="http://rapla.sourceforge.net/dynamictype"
+ xmlns:ext="http://rapla.sourceforge.net/extension"
+ xmlns:doc="http://rapla.sourceforge.net/annotation"
+ version="1.2">
+   <rapla:categories>
+      <rapla:category created-at="2026-05-28T16:17:10.589Z" last-changed="2026-05-28T16:17:10.589Z" id="ca803871-f482-4b55-a241-14363dce6655" key="user-groups">
+         <doc:name lang="en">user-groups</doc:name>
+         <rapla:category created-at="2026-05-28T16:17:10.589Z" last-changed="2026-05-28T16:17:10.589Z" id="c949c002-c68a-443a-9a41-ff191c05e8a5" key="read-events-from-others">
+            <doc:name lang="en">See events of other users</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2026-05-28T16:17:10.589Z" last-changed="2026-05-28T16:17:10.589Z" id="c9e93357-8d4b-4876-9468-6a27ecbb2898" key="create-events">
+            <doc:name lang="en">create events</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2026-05-28T16:17:10.589Z" last-changed="2026-05-28T16:17:10.589Z" id="c373ca42-e66f-4109-a9c0-4dbb0e6322ba" key="exchange-synchronization">
+            <doc:name lang="en">exchange-synchronization</doc:name>
+         </rapla:category>
+      </rapla:category>
+      <rapla:category created-at="2026-05-28T16:17:10.589Z" last-changed="2026-05-28T16:17:10.589Z" id="cf445cac-1fcb-4669-ba7f-2bea95986c5b" key="periods">
+         <doc:name lang="en">Periods</doc:name>
+         <rapla:category created-at="2026-05-28T16:17:10.589Z" last-changed="2026-05-28T16:17:10.589Z" id="c73a5564-67e4-4686-9fbc-f4ce74df21b6" key="holiday">
+            <doc:name lang="en">holiday</doc:name>
+         </rapla:category>
+      </rapla:category>
+   </rapla:categories>
+
+   <relax:grammar>
+      <relax:define name="rapla_anonymousEvent">
+         <relax:element name="dynatt:rapla_anonymousEvent" id="rapla:anonymousEvent" created-at="2026-05-28T18:17:10.588Z" last-changed="2026-05-28T16:17:10.625Z">
+            <doc:name lang="cs">neviditeně</doc:name>
+            <doc:name lang="de">nicht sichtbar</doc:name>
+            <doc:name lang="en">Not visible</doc:name>
+            <doc:name lang="es">no visible</doc:name>
+            <doc:name lang="fi">Ei näkyvä</doc:name>
+            <doc:name lang="fr">Non visible</doc:name>
+            <doc:name lang="nl">Onzichtbaar</doc:name>
+            <doc:name lang="pl">Uklkryty</doc:name>
+            <doc:name lang="pt">Invisível</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{p-&gt;type(p)}</rapla:annotation>
+               <rapla:annotation key="classification-type">reservation</rapla:annotation>
+            </doc:annotations>
+            <rapla:permission access="read_type"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:define name="event">
+         <relax:element name="dynatt:event" id="d2b2f66f-363b-4081-a4eb-af0defe909b5" created-at="2026-05-28T18:17:10.589Z" last-changed="2026-05-28T18:17:10.589Z">
+            <doc:name lang="en">Event</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{name}</rapla:annotation>
+               <rapla:annotation key="classification-type">reservation</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="name">
+                  <doc:name lang="en">eventname</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+            <rapla:permission group="category[key='read-events-from-others']" access="read"/>
+            <rapla:permission group="category[key='create-events']" access="create"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:define name="person">
+         <relax:element name="dynatt:person" id="d96b10a5-b19a-4712-84d0-6917e9a459c0" created-at="2026-05-28T18:17:10.589Z" last-changed="2026-05-28T18:17:10.589Z">
+            <doc:name lang="en">Person</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{surname} {firstname}</rapla:annotation>
+               <rapla:annotation key="classification-type">person</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="surname">
+                  <doc:name lang="en">surname</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="firstname">
+                  <doc:name lang="en">First name</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="email">
+                  <doc:name lang="en">Email</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+            <rapla:permission access="allocate_conflicts"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:define name="rapla_unresolvedResource">
+         <relax:element name="dynatt:rapla_unresolvedResource" id="rapla:unresolvedResource" created-at="2026-05-28T18:17:10.582Z" last-changed="2026-05-28T16:17:10.625Z">
+            <doc:name lang="cs">Not visible or deleted</doc:name>
+            <doc:name lang="de">nicht sichtbar oder gelöscht</doc:name>
+            <doc:name lang="en">Not visible or deleted</doc:name>
+            <doc:name lang="es">Not visible or deleted</doc:name>
+            <doc:name lang="fi">Not visible or deleted</doc:name>
+            <doc:name lang="fr">Not visible or deleted</doc:name>
+            <doc:name lang="nl">Not visible or deleted</doc:name>
+            <doc:name lang="pl">Not visible or deleted</doc:name>
+            <doc:name lang="pt">Not visible or deleted</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{p-&gt;type(p)}</rapla:annotation>
+               <rapla:annotation key="classification-type">resource</rapla:annotation>
+            </doc:annotations>
+            <rapla:permission access="read_type"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:define name="resource">
+         <relax:element name="dynatt:resource" id="dea7b72a-6fb6-4b9b-9bdf-12474adf2520" created-at="2026-05-28T18:17:10.589Z" last-changed="2026-05-28T18:17:10.589Z">
+            <doc:name lang="en">Resource</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{name}</rapla:annotation>
+               <rapla:annotation key="classification-type">resource</rapla:annotation>
+               <rapla:annotation key="colors">automatic</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="name">
+                  <doc:name lang="en">Name</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+            <rapla:permission access="allocate_conflicts"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:start>
+         <relax:choice>
+            <relax:ref name="rapla_anonymousEvent"/>
+            <relax:ref name="event"/>
+            <relax:ref name="person"/>
+            <relax:ref name="rapla_unresolvedResource"/>
+            <relax:ref name="resource"/>
+         </relax:choice>
+      </relax:start>
+   </relax:grammar>
+
+   <rapla:preferences>
+      <rapla:entry key="org.rapla.server.graphql-key-migration.applied" value="2026-05-28T16:17:10.624321112Z"/>
+      <rapla:entry key="org.rapla.crypto.server.privateKey" value="MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCl3kLzmxTtqzLDvh3mSUCzBumSCtd-6DXkcrxDKHcAn2bxr7r6SLl9LdcviVf44YU-c1MAe9K2vEHpoDh7Om4DTtBTvB1DlO9tQFfWowwU08GHCZ4XJH59vVIJ5pUkb-hXavP00XELVHCyAmv7mGrJ1vYoOUa7i2IL5PTWg9T_6iCh0t_BdTTXpRfSTp9MIxXdG2CRWea68Ab0-moZTb4jfojJ1rtTkhLP6_kuvMv1ND191vj-d1Tah9mCA5cN7BeehaPF6gpQW8wOlsBTh-wVuCkQK-pMPmQuOqrghxUjiyFoI0SqcJxhR3dvHwgENSfglU78DWpgUXBCbcskKk8lAgMBAAECggEAUNx9fEAu4DzVRzrwXZt5iK2GgbV6X_p5h3Dt2bmo5itPpuR6PVjl4KJP5PNKaWEcMZlMLhCvZXl6kpgS4PRXvJIYGrI6-_7oCDVVfSRImACxuJDWOscGSWtZyszYCYbq2G8iFkhimVjlhcqLdQDVkqeSooJlurlVJ6JLQCbN2KI0m8BVayt8mi76OvUMslWZKNKAjNeLljEK55TDVYbXP8-wRYmxSIdqLPQINJcBkyVxAkckWlOg8QpO_iso4qfztdHSlkM4ORaXliTrKQnC8ueu-2SKkA_g45ErmLkhKf9B3PoW4ZCYElEVzQuNxkQprV0oVpzevR1D6Ls11peykwKBgQDH_pJdSLXfQuI3fkCSrYfnfe71u_TaHvf4ySP9JVJegG4WqRVWXtXZz0WKldxsVESskHQo_AmclNcfPETboZXjIABSKqN9oPw_2HpyfW8Qvghn_zd-Q8rMegzOJ9w8Axy6N6fGp7Ei2lSOc2bvGKqkGPs-zKPZF2GvsMpfEkbPRwKBgQDUUTYDAKJ1Y9LINfcUbszlSPooteFWhR6wA38g5hIRMzEzakilLfjUI_K7LVM1nwM8ZWkCX4svJX9elXxUtef437viuQ5edzTBOJxHkh5SUB0QRk2CzdsEJbvffJAOBWnK_S-RzgNPBVGsuR-JvE2TNjrOqeRZuKoxu0RhLaLcMwKBgDoIY95Pv_6mANCLgR9O3XXN9C44OSel_tyhOSE22Dz11Xwb2kYyxKksXQiGzexdU4QjcqGF6SAXjIjSy0RUEhNS8OTm3IQS17-LCJT6UuUvz26l_ytTbqCA9gBITr7XRFnA1p1tgZgUdJ7VW9Qbe0CcwyMI7K6M-1qo2UBXJFb3AoGBAJvYyNbHXnjgv1YrFqSu-EPNn6LGbxO9P1tgFa8mclihxRnCiHSHHEFL6d6vVIblo9Bvd_c__sCqu6XIAK2FoTMzt4yi3gNFaTnzvfNjNFKjb9IEaNz9EiknMZLIsk04eAGCe6qBGDim5N7uPFI0IJVQlzYfyvh47qT2myjiAMu1AoGBAJGeV-aZ7Bl8F-snOK0zqOjFZVgK0IZjuavBr4LT9r90lEotJ6xDiGWQenWAYWFYn77uLpilaAg4G64L5Bejpv1SBjUlEgv5766QpuqSYDRpdHMmCDGYgADXyOBt-UR5TbAXypLkGLmOijDh5bHq0ow6clnAwYU-dZpPO72RmBfi"/>
+      <rapla:entry key="org.rapla.crypto.publicKey" value="MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApd5C85sU7asyw74d5klAswbpkgrXfug15HK8Qyh3AJ9m8a-6-ki5fS3XL4lX-OGFPnNTAHvStrxB6aA4ezpuA07QU7wdQ5TvbUBX1qMMFNPBhwmeFyR-fb1SCeaVJG_oV2rz9NFxC1RwsgJr-5hqydb2KDlGu4tiC-T01oPU_-ogodLfwXU016UX0k6fTCMV3RtgkVnmuvAG9PpqGU2-I36Iyda7U5ISz-v5LrzL9TQ9fdb4_ndU2ofZggOXDewXnoWjxeoKUFvMDpbAU4fsFbgpECvqTD5kLjqq4IcVI4shaCNEqnCcYUd3bx8IBDUn4JVO_A1qYFFwQm3LJCpPJQIDAQAB"/>
+   </rapla:preferences>
+
+   <rapla:users>
+      <!-- Users of the system -->
+      <rapla:user id="u55b864a-acc1-4bf3-a526-360744025a62" created-at="2026-05-28T16:17:10.589Z" last-changed="2026-05-28T16:17:10.589Z" username="admin" password="" name="" email="" isAdmin="true">
+         <rapla:preferences>
+            <rapla:entry key="org.rapla.auth.session" value="{&quot;token&quot;:&quot;eyJraWQiOiI5SFQzOHpPNE9seGF3SlVDTjdGMlVBIiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiJ1NTViODY0YS1hY2MxLTRiZjMtYTUyNi0zNjA3NDQwMjVhNjIiLCJ0eXAiOiJyZWZyZXNoIiwiZXhwIjoxNzgyNTc3MDMxLCJpYXQiOjE3Nzk5ODUwMzEsImp0aSI6IjAzZjk5NjdhLTg1OTUtNGNhNC1hMDgwLWE2ZTBiZTk3Nzc4YyJ9.GTDty_8CiPhk0KDCwdMW0bszwbOmfaVvYd4KJ-EWF3kNOionci0pqFW8QTWVKwGvnlLDGvcn3G3xDd2MjqZyEV2b33I7NsFSyiiWctXtSMg6-1Ah1Tmaof099PJ6qesUBGgrXQkrsL8qis4X5nwbTFjUa0Odg5E6fOquixD4jQ2Ngs2y62j1IctyFD1HdrSbm6TXH92K5M59bZuSOBu7PuiucGzaBDGUcE5hzYpANmqFqWRUVC5JvKgr80KcSOhrw1XLR9C_vG_oEZToi9yPPLvvepZxq3Jh9zBUgM3kWVqVa6kBKC4iFLndIzy625kZjT9VsiU52juQggcTPbIfew&quot;,&quot;issuedAt&quot;:&quot;2026-05-28T16:17:11.906439546Z&quot;}"/>
+         </rapla:preferences>
+      </rapla:user>
+   </rapla:users>
+
+   <rapla:resources>
+      <!-- resources -->
+      <rapla:resource id="rc70b08a-514b-400d-acb2-a9123c92463b" owner="u55b864a-acc1-4bf3-a526-360744025a62" created-at="2026-05-28T16:17:10.589Z" last-changed="2026-05-28T16:17:10.589Z">
+         <dynatt:resource>
+            <dynatt:name>test</dynatt:name>
+         </dynatt:resource>
+         <rapla:permission access="allocate_conflicts"/>
+      </rapla:resource>
+
+   </rapla:resources>
+
+   <rapla:reservations>
+   </rapla:reservations>
+
+   <rapla:importexports>
+   </rapla:importexports>
+</rapla:data>

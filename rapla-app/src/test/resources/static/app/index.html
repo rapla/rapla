@@ -1,0 +1,13 @@
+<!doctype html>
+<!--
+  Test-only SPA shell stub. The production /app/ shell is the Angular build
+  output deposited at classpath:/static/app/ (and the dev file: location) by
+  `ng build`; that artifact does not exist during `mvn test`. SpaResourceConfig's
+  resource handler serves this index.html for /app and /app/** so the
+  URL-preservation tests can prove the route resolves (non-404) without a full
+  Angular build. Mirrors the prod path layout, not the prod content.
+-->
+<html lang="en">
+<head><meta charset="utf-8"><title>rapla</title></head>
+<body><app-root></app-root></body>
+</html>
