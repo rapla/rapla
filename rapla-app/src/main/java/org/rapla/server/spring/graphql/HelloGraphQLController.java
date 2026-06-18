@@ -114,6 +114,9 @@ public class HelloGraphQLController
     public List<UserDto> users(@Argument("filter") UserFilter filter) throws RaplaException
     {
         User caller = UnauthenticatedException.require(resolveCaller());
+        // PRD 069 — resolve inGroup key-paths to Categories once (throws
+        // INVALID_VALUE on an unknown path). null = no group narrowing.
+        List<Category> inGroups = resolveInGroup(filter);
         Collection<User> all = operator.getUsers();
         List<UserDto> visible = new ArrayList<>();
         for (User candidate : all)
@@ -121,6 +124,7 @@ public class HelloGraphQLController
             if (candidate == null) continue;
             if (!isSelf(caller, candidate) && !PermissionController.canAdminUser(caller, candidate)) continue;
             if (!matches(candidate, filter)) continue;
+            if (inGroups != null && inGroups.stream().noneMatch(candidate::belongsTo)) continue;
             visible.add(UserDto.from(candidate));
         }
         return visible;
@@ -142,6 +146,53 @@ public class HelloGraphQLController
             if (!haystack.contains(f.usernameContains().toLowerCase())) return false;
         }
         return true;
+    }
+
+    /**
+     * PRD 069 — resolve {@code filter.inGroup} key-paths (relative to the
+     * {@code user-groups} root, no prefix) to {@link Category} groups. Returns
+     * {@code null} when no group narrowing is requested. An unknown path is a
+     * client error ({@code INVALID_VALUE}) — group existence is non-sensitive
+     * metadata (also exposed by the {@code groups} query), and the user result
+     * is already §12-scoped to admin-able users regardless.
+     */
+    private List<Category> resolveInGroup(UserFilter filter)
+    {
+        if (filter == null || filter.inGroup() == null || filter.inGroup().isEmpty())
+        {
+            return null;
+        }
+        Category superCategory = operator.getSuperCategory();
+        Category userGroups = superCategory != null
+                ? superCategory.getCategory(CategoryKindClassifier.USER_GROUPS_KEY) : null;
+        if (userGroups == null)
+        {
+            throw new IllegalArgumentException("no user-groups category in this deployment");
+        }
+        List<Category> result = new ArrayList<>();
+        for (String path : filter.inGroup())
+        {
+            if (path == null || path.isBlank())
+            {
+                throw new IllegalArgumentException("inGroup path must not be blank");
+            }
+            Category cur = userGroups;
+            for (String segment : path.split("/"))
+            {
+                if (segment.isBlank()) continue;
+                cur = cur.getCategory(segment);
+                if (cur == null)
+                {
+                    throw new IllegalArgumentException("unknown group path: " + path);
+                }
+            }
+            if (cur == userGroups)
+            {
+                throw new IllegalArgumentException("unknown group path: " + path);
+            }
+            result.add(cur);
+        }
+        return result;
     }
 
     /**
@@ -275,7 +326,8 @@ public class HelloGraphQLController
             Boolean hasAuthSource,
             String  authSourceEq,
             Boolean isAdmin,
-            String  usernameContains) {}
+            String  usernameContains,
+            java.util.List<String> inGroup) {}
 
     /** Mirror of the {@code User} GraphQL type. The §12 output boundary for users. */
     public record UserDto(

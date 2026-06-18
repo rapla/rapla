@@ -29,7 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(classes = RaplaSpringBootApplication.class)
 @AutoConfigureMockMvc
 @Import(InterfaceRoutingSmokeTest.SmokeTestController.class)
-class InterfaceRoutingSmokeTest
+class InterfaceRoutingSmokeTest extends IsolatedDefaultDatasetTest
 {
     @Autowired
     MockMvc mockMvc;

@@ -163,8 +163,13 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 
     public boolean isInternal()
     {
-    	boolean result =key.startsWith("rapla:");
-    	return result;
+        // The 'rapla:' marker lives on the immutable id; the key can be mutated
+        // (an old GraphqlKeyMigration sanitized 'rapla:anonymousEvent' →
+        // 'rapla_anonymousEvent'). Recognise either so a key-corrupted internal
+        // type is still excluded from persistence (RaplaMainWriter) and the API.
+        final String id = getId();
+        return (key != null && key.startsWith("rapla:"))
+                || (id != null && id.startsWith("rapla:"));
     }
     
     public Classification newClassification() {

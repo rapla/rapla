@@ -13,7 +13,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest(classes = RaplaSpringBootApplication.class)
 @AutoConfigureMockMvc
-class ICalTimezonesControllerTest
+class ICalTimezonesControllerTest extends IsolatedDefaultDatasetTest
 {
     @Autowired
     MockMvc mockMvc;

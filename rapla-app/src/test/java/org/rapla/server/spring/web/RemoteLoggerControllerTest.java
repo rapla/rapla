@@ -12,7 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest(classes = RaplaSpringBootApplication.class)
 @AutoConfigureMockMvc
-class RemoteLoggerControllerTest
+class RemoteLoggerControllerTest extends IsolatedDefaultDatasetTest
 {
     @Autowired
     MockMvc mockMvc;

@@ -33,6 +33,48 @@ If a facade setup feels awkward, the answer is usually "extend `FacadeTestSuppor
 - Controller behaviour, JSON shape, error mapping, JWT gate: tier 3 with `@AutoConfigureMockMvc`. MockMvc beats `RANDOM_PORT` ~5–10×.
 - The very few "does the bean graph wire end-to-end" smoke tests: tier 4. One per major surface is enough.
 
+## Isolate the dataset in full `@SpringBootTest` web tests
+
+A full-context `@SpringBootTest` (tier 3/4) that does NOT override the storage
+file boots with the production `application.yml` default
+`rapla.file-datasources.raplafile: data/data.xml` — a **relative** path. It
+resolves against the JVM working directory, which for `mvn … test` from the
+reactor root **is the reactor root**. So the test silently loads
+`<reactor-root>/data/data.xml`: a stray, gitignored dev data file left by a
+dev-server run. Tests then depend on whatever stale (possibly corrupted) data
+sits there — non-hermetic and surprising.
+
+**Worked scar (2026-06-18):** four web-slice tests (`InterfaceRoutingSmokeTest`,
+`ICalTimezonesControllerTest`, `RemoteLoggerControllerTest`,
+`ExchangeConnectorControllerTest`) ERROR'd on context load with
+`InvalidSchemaException: "rapla_anonymousEventClassificationInput" must define
+one or more fields`. Root cause: the stray reactor-root `data/data.xml` had its
+internal-type keys sanitized by an old GraphqlKeyMigration
+(`rapla:anonymousEvent` → `rapla_anonymousEvent`); the key-based `isInternal()`
+no longer recognised them, so they leaked into the generated GraphQL SDL as
+empty input types and the schema build failed. The data file — not the test
+code — was the variable. The same suite passed in a fresh worktree (no stray
+file) and failed in the canonical checkout.
+
+**Rule:** a full `@SpringBootTest` must **own its dataset**. Either:
+- copy `testdefault.xml` into a `@TempDir` and point `raplafile` at it (when you
+  need the homer/monty fixture — see `ClassificationGraphQLControllerTest`), or
+- point `raplafile` at a **non-existent** file in a `@TempDir` so the
+  `FileOperator` boots a clean default system (ships `admin`/empty-password) when
+  you need no specific data — extend
+  `org.rapla.server.spring.web.IsolatedDefaultDatasetTest`:
+
+```java
+@DynamicPropertySource
+static void isolateRaplaDataset(DynamicPropertyRegistry r) {
+    r.add("rapla.file-datasources.raplafile",
+          () -> raplaDataDir.resolve("rapla-data.xml").toAbsolutePath().toString());
+}
+```
+
+Never rely on the relative-default `data/data.xml`. If a full-context test fails
+only in one checkout, suspect a stray `<reactor-root>/data/`.
+
 ## Tagging — fast lane vs. full lane
 
 Slow / environment-dependent tests carry a JUnit 5 `@Tag`:

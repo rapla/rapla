@@ -138,8 +138,12 @@ public class SynchronisationManager
 
     /** Long-period sweep that re-pulls every shared mailbox and re-aligns all rapla
      *  appointments under it. {@link Scheduled#fixedRate} matches the legacy 60-minute
-     *  cadence of {@code SCHEDULE_PERIOD_REFRESH_MAILBOXES}. */
-    @Scheduled(fixedRate = SCHEDULE_PERIOD_REFRESH_MAILBOXES)
+     *  cadence of {@code SCHEDULE_PERIOD_REFRESH_MAILBOXES}.
+     *
+     *  <p>PRD 070: the {@code @Scheduled} trigger moved to
+     *  {@link ExchangeSchedulerTrigger} so scheduling is gated per deployment
+     *  ({@code rapla.exchange.enabled}) while this service stays
+     *  available everywhere for the GUI/connect endpoints. */
     public void synchronizeMailboxes()
     {
         if (!enabled) return;
@@ -246,8 +250,9 @@ public class SynchronisationManager
     }
 
     /** Short-period sweep that processes pending exchange queue updates. {@link Scheduled#fixedRate}
-     *  matches the legacy 6-second cadence of {@code SCHEDULE_PERIOD}. */
-    @Scheduled(fixedRate = SCHEDULE_PERIOD)
+     *  matches the legacy 6-second cadence of {@code SCHEDULE_PERIOD}.
+     *
+     *  <p>PRD 070: {@code @Scheduled} trigger moved to {@link ExchangeSchedulerTrigger}. */
     public void synchronizeQueue()
     {
         if (!enabled) return;

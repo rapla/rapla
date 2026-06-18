@@ -154,6 +154,25 @@ input ReservationFilter {
   searchText:        String
   "PRD 028 Phase 1 — algorithm choice for `searchText`. Defaults to SUBSTRING (matches the legacy `nameContains` behavior)."
   matchKind:         MatchKind = SUBSTRING
+  """
+  PRD 069 — restrict to events the named **user** may access (admin-scoped).
+  Username handle, like `user(username:)`. XOR with `accessibleByUserId` /
+  `accessibleByGroup`. The caller must be allowed to administer the user
+  (`canAdminUser`), else a uniform FORBIDDEN error (no existence leak).
+  """
+  accessibleByUsername: String
+  "PRD 069 — same as `accessibleByUsername` but by opaque user id. XOR with the other access selectors."
+  accessibleByUserId:   ID
+  """
+  PRD 069 — restrict to events any of these **groups** may access (admin-scoped).
+  Union over the list. Groups are key paths relative to the `user-groups` root —
+  no `user-groups/` prefix (e.g. `"staff"` or nested `"staff/leads"`). Group
+  access on events is type-level (the event type grants the group the right).
+  Caller must administer every group (`canAdminGroup`), else FORBIDDEN.
+  """
+  accessibleByGroup:    [String!]
+  "PRD 069 — minimum access level the target must hold (default READ = visible; EDIT = editable). Ignores time-window constraints in v1."
+  accessLevel:          AccessLevel = READ
   "Cap result size. Default 500, hard cap 5000."
   limit:             Int
 }
@@ -174,6 +193,26 @@ enum MatchKind {
 }
 
 """
+PRD 069 — permission access level, mirrors `org.rapla.entities.domain.Permission.AccessLevel`.
+Used by the `accessLevel` argument of the access-by-target filters
+(`accessibleByUsername` / `accessibleByUserId` / `accessibleByGroup`). Levels are
+ordered; a filter for level L matches when the target's effective level ≥ L.
+The two everyday values: `READ` ("what can they see"), `EDIT` ("what can they edit").
+"""
+enum AccessLevel {
+  DENIED
+  READ_TYPE
+  CREATE
+  READ_NO_ALLOCATION
+  READ
+  REQUEST
+  ALLOCATE
+  ALLOCATE_CONFLICTS
+  EDIT
+  ADMIN
+}
+
+"""
 PRD 035 Bucket 1 — narrowing predicates for `users(filter:)`. All fields
 optional; null = unconstrained. Multiple predicates AND together. Filter
 runs over the §12-visible subset, never over the raw user table.
@@ -187,6 +226,15 @@ input UserFilter {
   isAdmin:          Boolean
   "Case-insensitive substring match on username."
   usernameContains: String
+  """
+  PRD 069 — restrict to users that are members of **any** of these groups
+  (union), including membership via a sub-group. Groups are **key paths
+  relative to the `user-groups` root** — no `user-groups/` prefix, same handle
+  as `accessibleByGroup` (e.g. `"MOS"` or nested `"MOS/T/INF"`). This resolves
+  the bare-key ambiguity of `User.groups` (a Studiengang key like `"INF"` exists
+  at many campuses). Unknown path → INVALID_VALUE. ANDs with the other filters.
+  """
+  inGroup:          [String!]
 }
 
 """
@@ -228,6 +276,25 @@ input AllocatableFilter {
   ids" (no type-bucket contribution).
   """
   idIn:         [ID!]
+  """
+  PRD 069 — restrict to resources the named **user** may access (admin-scoped).
+  Username handle, like `user(username:)`. XOR with `accessibleByUserId` /
+  `accessibleByGroup`. The caller must be allowed to administer the user
+  (`canAdminUser`), else a uniform FORBIDDEN error (no existence leak).
+  """
+  accessibleByUsername: String
+  "PRD 069 — same as `accessibleByUsername` but by opaque user id. XOR with the other access selectors."
+  accessibleByUserId:   ID
+  """
+  PRD 069 — restrict to resources any of these **groups** may access
+  (admin-scoped). Union over the list. Groups are key paths relative to the
+  `user-groups` root — no `user-groups/` prefix (e.g. `"staff"` or nested
+  `"staff/leads"`). Caller must administer every group (`canAdminGroup`), else
+  FORBIDDEN.
+  """
+  accessibleByGroup:    [String!]
+  "PRD 069 — minimum access level the target must hold (default READ = visible; EDIT = editable). Ignores time-window constraints in v1."
+  accessLevel:          AccessLevel = READ
   """
   Cap the result size. Iteration stops as soon as `limit` visible matches
   have accumulated. Strongly recommended on large deployments — at admin

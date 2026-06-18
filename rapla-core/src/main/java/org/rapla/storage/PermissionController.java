@@ -669,6 +669,107 @@ public class PermissionController
         return canReadPrivate(allocatable, user);
     }
 
+    /**
+     * PRD 069 — does {@code user} hold at least {@code level} access on
+     * {@code entity}, owner-aware? Reuses the existing read/modify/admin checks
+     * (which already fold in owner + global-admin + the entity's permission
+     * list, and for reservations the event-type rights + read-events-from-others).
+     * Deliberately NOT a bare permission-list scan — that would miss entities the
+     * user owns but has no explicit permission on.
+     */
+    public boolean hasUserAccessAtLeast(Entity<?> entity, User user, AccessLevel level)
+    {
+        if (entity == null || user == null || level == null)
+        {
+            return false;
+        }
+        if (user.isAdmin())
+        {
+            return true;
+        }
+        if (entity instanceof Ownable && isOwner((Ownable) entity, user))
+        {
+            return true;
+        }
+        if (level == AccessLevel.ADMIN)
+        {
+            return canAdmin(entity, user);
+        }
+        if (level == AccessLevel.EDIT)
+        {
+            return canModify(entity, user);
+        }
+        if (level == AccessLevel.READ || level == AccessLevel.READ_TYPE
+                || level == AccessLevel.READ_NO_ALLOCATION)
+        {
+            if (entity instanceof Allocatable)
+            {
+                return canRead((Allocatable) entity, user);
+            }
+            if (entity instanceof Reservation)
+            {
+                return canRead((Reservation) entity, user);
+            }
+        }
+        // REQUEST / ALLOCATE / ALLOCATE_CONFLICTS / CREATE / DENIED
+        return hasAccess(entity, user, level);
+    }
+
+    /**
+     * PRD 069 — does a permission granted to any of {@code targetGroups} (the
+     * group itself, or an ancestor of it) confer at least {@code level} on
+     * {@code entity}? Groups never own anything, so there is no owner shortcut.
+     * For reservations the event type's permission list is consulted too — that
+     * is where a group gets event rights (type-level semantics).
+     */
+    public boolean hasGroupAccessAtLeast(Entity<?> entity, Collection<Category> targetGroups, AccessLevel level)
+    {
+        if (entity == null || targetGroups == null || targetGroups.isEmpty() || level == null)
+        {
+            return false;
+        }
+        if (entity instanceof PermissionContainer
+                && permissionsGrantToGroup(((PermissionContainer) entity).getPermissionList(), targetGroups, level))
+        {
+            return true;
+        }
+        if (entity instanceof Reservation)
+        {
+            final Classification classification = ((Reservation) entity).getClassification();
+            final DynamicType type = classification != null ? classification.getType() : null;
+            if (type != null && permissionsGrantToGroup(type.getPermissionList(), targetGroups, level))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean permissionsGrantToGroup(Collection<Permission> permissions,
+            Collection<Category> targetGroups, AccessLevel level)
+    {
+        if (permissions == null)
+        {
+            return false;
+        }
+        for (Permission p : permissions)
+        {
+            final Category group = p.getGroup();
+            if (group == null || !p.getAccessLevel().includes(level))
+            {
+                continue;
+            }
+            for (Category target : targetGroups)
+            {
+                if (target != null && (group.equals(target) || group.isAncestorOf(target)))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public boolean canWrite(Classification object, Attribute attribute, User user)
     {
         if(user.isAdmin())

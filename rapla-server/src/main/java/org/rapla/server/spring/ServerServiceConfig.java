@@ -290,9 +290,70 @@ public class ServerServiceConfig
 
     // --- ServerExtension impls registered with their @Extension id as bean name ---
     // Consumer is Map<String, ServerExtension> in ServerServiceImpl; bean name = map key.
-    // SynchronisationManager (exchange-connector) is intentionally NOT wired here — its
-    // ctor needs ConfigReader, ShowExchangeForUser, ExchangeAppointmentStorage,
-    // Set<ExchangeConfigExtensionPoint> which aren't currently in the bean graph.
+    // PRD 070: Exchange-connector server wiring restored (dropped in the PRD 005 reactor
+    // split / never ported in PRD 049). SynchronisationManager is a plain service @Bean on
+    // every deployment so the GUI/connect endpoints (ExchangeConnectorController) work
+    // everywhere; its @Scheduled sweeps moved to ExchangeSchedulerTrigger, gated per
+    // deployment via rapla.exchange.enabled.
+    @Bean
+    public org.rapla.plugin.exchangeconnector.ShowExchangeForUser showExchangeForUser(CachableStorageOperator operator)
+    {
+        return new org.rapla.plugin.exchangeconnector.ShowExchangeForUser(operator);
+    }
+
+    @Bean
+    public org.rapla.plugin.exchangeconnector.server.ExchangeAppointmentStorage exchangeAppointmentStorage(
+            RaplaFacade facade, CachableStorageOperator operator,
+            org.rapla.plugin.exchangeconnector.ShowExchangeForUser showExchangeForUser)
+    {
+        return new org.rapla.plugin.exchangeconnector.server.ExchangeAppointmentStorage(facade, operator, showExchangeForUser);
+    }
+
+    @Bean
+    public org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig.ConfigReader exchangeConnectorConfigReader(CachableStorageOperator operator)
+            throws RaplaInitializationException
+    {
+        return new org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig.ConfigReader(operator);
+    }
+
+    @Bean
+    public org.rapla.plugin.exchangeconnector.ExchangeConnectorResources exchangeConnectorResources(BundleManager bundleManager)
+    {
+        return new org.rapla.plugin.exchangeconnector.ExchangeConnectorResources(bundleManager);
+    }
+
+    @Bean
+    public org.rapla.plugin.exchangeconnector.server.SynchronisationManager synchronisationManager(
+            RaplaFacade facade, RaplaResources i18nRapla,
+            org.rapla.plugin.exchangeconnector.ExchangeConnectorResources i18nExchange,
+            TimeZoneConverter converter, org.rapla.entities.domain.AppointmentFormater appointmentFormater,
+            RaplaKeyStorage keyStorage,
+            org.rapla.plugin.exchangeconnector.server.ExchangeAppointmentStorage appointmentStorage,
+            org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig.ConfigReader config,
+            Set<org.rapla.plugin.exchangeconnector.extensionpoints.ExchangeConfigExtensionPoint> configExtensions,
+            org.rapla.plugin.mail.server.MailToUserImpl mailToUserInterface,
+            org.rapla.plugin.exchangeconnector.ShowExchangeForUser showExchangeForUser)
+            throws RaplaInitializationException
+    {
+        return new org.rapla.plugin.exchangeconnector.server.SynchronisationManager(
+                facade, i18nRapla, i18nExchange, converter, appointmentFormater, keyStorage,
+                appointmentStorage, config, configExtensions, mailToUserInterface, showExchangeForUser);
+    }
+
+    // PRD 070: the @Scheduled trigger. @ConditionalOnProperty binds the existing
+    // rapla.exchange.enabled flag (already set true only on the dhbw sync pod, false on
+    // web/test) — so the sweeps run only there; absent/false → no bean → no scheduling,
+    // no idle ticks. The service above stays available on all deployments regardless.
+    // This is the first real binding of rapla.exchange.enabled (was a dead property
+    // referenced only in ExchangeConnectorPreferencesPanel's docstring).
+    @Bean
+    @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
+            prefix = "rapla.exchange", name = "enabled", havingValue = "true")
+    public org.rapla.plugin.exchangeconnector.server.ExchangeSchedulerTrigger exchangeSchedulerTrigger(
+            org.rapla.plugin.exchangeconnector.server.SynchronisationManager manager)
+    {
+        return new org.rapla.plugin.exchangeconnector.server.ExchangeSchedulerTrigger(manager);
+    }
 
     // PRD 019 Phase 3d: JavascriptPatcher uses @EventListener(ApplicationReadyEvent) internally.
     @Bean(name = "org.rapla.plugin.javascriptpatch.server")

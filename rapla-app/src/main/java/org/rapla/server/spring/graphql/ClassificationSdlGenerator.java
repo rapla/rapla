@@ -111,6 +111,10 @@ public final class ClassificationSdlGenerator
         // annotated RESOURCE/RESERVATION but still rapla-internal).
         String key = dt.getKey();
         if (key != null && key.startsWith("rapla:")) return true;
+        // The id keeps the immutable 'rapla:' marker even when the key was
+        // sanitized to 'rapla_…' by an old migration — see DynamicTypeImpl.isInternal.
+        String id = dt.getId();
+        if (id != null && id.startsWith("rapla:")) return true;
         String kind = dt.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
         return DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE.equals(kind);
     }

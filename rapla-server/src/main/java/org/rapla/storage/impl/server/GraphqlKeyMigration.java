@@ -89,6 +89,10 @@ final class GraphqlKeyMigration
     {
         String key = dt.getKey();
         if (key != null && key.startsWith("rapla:")) return true;
+        // id keeps the immutable 'rapla:' marker even if the key was already
+        // sanitized — never (re)migrate an internal type.
+        String id = dt.getId();
+        if (id != null && id.startsWith("rapla:")) return true;
         String classKind = dt.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
         return DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE.equals(classKind);
     }

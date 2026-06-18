@@ -164,6 +164,8 @@ public class SpringDocGroupsConfig
                         "/api/ical/config/**",
                         "/api/exchange/config",
                         "/api/exchange/config/**",
+                        "/api/exchange/connect",
+                        "/api/exchange/connect/**",
                         "/api/jndi",
                         "/api/jndi/**",
                         "/api/eventtimecalculator",

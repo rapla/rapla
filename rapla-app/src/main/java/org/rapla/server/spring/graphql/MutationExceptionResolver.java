@@ -46,6 +46,20 @@ public class MutationExceptionResolver extends DataFetcherExceptionResolverAdapt
                     .extensions(extensions)
                     .build();
         }
+        if (ex instanceof ForbiddenException fe)
+        {
+            // PRD 069 — admin-scoped access query targeting a user/group the
+            // caller may not administer. Generic message + uniform shape so the
+            // existence of out-of-scope handles cannot be probed (§12).
+            Map<String, Object> extensions = new LinkedHashMap<>();
+            extensions.put("code", "FORBIDDEN");
+            extensions.put("path", "");
+            return GraphqlErrorBuilder.newError(env)
+                    .message(fe.getMessage())
+                    .errorType(org.springframework.graphql.execution.ErrorType.FORBIDDEN)
+                    .extensions(extensions)
+                    .build();
+        }
         if (ex instanceof ReservationMutationException rme)
         {
             Map<String, Object> extensions = new LinkedHashMap<>();

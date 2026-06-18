@@ -9,6 +9,7 @@ import java.util.Map;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Permission.AccessLevel;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.ClassificationFilter;
@@ -74,6 +75,14 @@ public class ClassificationGraphQLController
 
         User caller = UnauthenticatedException.require(resolveCaller());
         PermissionController pc = operator.getPermissionController();
+        // PRD 069 — admin-scoped access-by-target predicate (null if no access
+        // selector). Resolution enforces the caller's admin scope and throws a
+        // uniform FORBIDDEN for unknown/out-of-scope handles (§12).
+        AccessTargetFilter accessFilter = AccessTargetFilter.create(
+                stringArg(filterMap, "accessibleByUsername"),
+                stringArg(filterMap, "accessibleByUserId"),
+                stringListArg(filterMap, "accessibleByGroup"),
+                accessLevelArg(filterMap), caller, operator, pc);
         // PRD 066 — dedup by id across the two union arms.
         java.util.LinkedHashMap<String, Allocatable> resultById = new java.util.LinkedHashMap<>();
 
@@ -101,6 +110,7 @@ public class ClassificationGraphQLController
                 if (!matches(a, filter)) continue;
                 if (!evaluateWhere(a, filterMap)) continue;
                 if (!pc.canRead(a, caller)) continue;
+                if (accessFilter != null && !accessFilter.test(a)) continue;   // PRD 069
                 resultById.putIfAbsent(a.getId(), a);
                 if (resultById.size() >= cap) break;
             }
@@ -121,6 +131,7 @@ public class ClassificationGraphQLController
                 if (a == null) continue;
                 if (isInternalAllocatable(a)) continue;
                 if (!pc.canRead(a, caller)) continue;
+                if (accessFilter != null && !accessFilter.test(a)) continue;   // PRD 069
                 resultById.put(id, a);
             }
         }
@@ -346,6 +357,32 @@ public class ClassificationGraphQLController
     private User resolveCaller()
     {
         return jwtUserResolver.resolveCurrentUserOrNull();
+    }
+
+    // === PRD 069 access-by-target arg parsing =================================
+
+    private static String stringArg(Map<String, Object> m, String key)
+    {
+        return m == null ? null : (m.get(key) instanceof String s ? s : null);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<String> stringListArg(Map<String, Object> m, String key)
+    {
+        return m == null ? null : (m.get(key) instanceof List<?> l ? (List<String>) l : null);
+    }
+
+    private static AccessLevel accessLevelArg(Map<String, Object> m)
+    {
+        if (m == null) return null;
+        Object v = m.get("accessLevel");
+        if (v instanceof AccessLevel al) return al;
+        if (v instanceof String s && !s.isBlank())
+        {
+            try { return AccessLevel.valueOf(s); }
+            catch (IllegalArgumentException e) { throw new IllegalArgumentException("Unknown accessLevel: " + s); }
+        }
+        return null;
     }
 
     // === DTOs =================================================================

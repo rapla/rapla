@@ -132,6 +132,12 @@ public class ReservationGraphQLController
         // Filter narrowing on allocatableIdsIn is applied at this stage.
         PermissionController pc = rc.permissionController() != null
                 ? rc.permissionController() : operator.getPermissionController();
+        // PRD 069 — admin-scoped access-by-target predicate (null if no access
+        // selector). Throws uniform FORBIDDEN for unknown/out-of-scope handles.
+        AccessTargetFilter accessFilter = AccessTargetFilter.create(
+                filter.accessibleByUsername(), filter.accessibleByUserId(),
+                filter.accessibleByGroup(), parseAccessLevel(filter.accessLevel()),
+                caller, operator, pc);
         Collection<Allocatable> allocatables = operator.getAllocatables(null);
         Collection<Allocatable> visibleAllocatables;
 
@@ -192,6 +198,7 @@ public class ReservationGraphQLController
             if (r == null) continue;
             if (!pc.canRead(r, caller)) continue;
             if (!matches(r, filter)) continue;
+            if (accessFilter != null && !accessFilter.test(r)) continue;   // PRD 069
             visible.add(r);
             if (visible.size() >= limit) break;
         }
@@ -211,6 +218,13 @@ public class ReservationGraphQLController
             });
         }
         return visible;
+    }
+
+    private static org.rapla.entities.domain.Permission.AccessLevel parseAccessLevel(String s)
+    {
+        if (s == null || s.isBlank()) return null;
+        try { return org.rapla.entities.domain.Permission.AccessLevel.valueOf(s); }
+        catch (IllegalArgumentException e) { throw new IllegalArgumentException("Unknown accessLevel: " + s); }
     }
 
     private static boolean matches(Reservation r, ReservationFilter f)
@@ -259,6 +273,10 @@ public class ReservationGraphQLController
             String nameContains,
             String searchText,
             SearchMatcher.MatchKind matchKind,
+            String accessibleByUsername,        // PRD 069
+            String accessibleByUserId,          // PRD 069
+            List<String> accessibleByGroup,     // PRD 069
+            String accessLevel,                 // PRD 069 — AccessLevel enum name
             Integer limit) {}
 
     /** Mirror of {@code Allocation} output type. */
