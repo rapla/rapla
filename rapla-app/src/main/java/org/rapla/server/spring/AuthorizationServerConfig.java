@@ -352,55 +352,16 @@ public class AuthorizationServerConfig
         ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         if (attrs == null) return false;
         HttpServletRequest request = attrs.getRequest();
-        String scheme = headerOr(request, "X-Forwarded-Proto", request.getScheme());
-        String host;
-        int port;
-        String forwardedHost = request.getHeader("X-Forwarded-Host");
-        if (forwardedHost != null && !forwardedHost.isEmpty())
-        {
-            // X-Forwarded-Host can be "rapla.uni.de" or "rapla.uni.de:8080" or
-            // a comma-separated chain "rapla.uni.de, internal.lb:80". Take the
-            // first hop, which is the public-facing one.
-            String first = forwardedHost.split(",")[0].trim();
-            int colon = first.indexOf(':');
-            if (colon >= 0)
-            {
-                host = first.substring(0, colon);
-                try { port = Integer.parseInt(first.substring(colon + 1).trim()); }
-                catch (NumberFormatException e) { port = defaultPort(scheme); }
-            }
-            else
-            {
-                host = first;
-                String fp = request.getHeader("X-Forwarded-Port");
-                int parsed = -1;
-                if (fp != null && !fp.isEmpty())
-                {
-                    try { parsed = Integer.parseInt(fp.split(",")[0].trim()); }
-                    catch (NumberFormatException ignore) { /* fall through */ }
-                }
-                port = parsed > 0 ? parsed : defaultPort(scheme);
-            }
-        }
-        else
-        {
-            host = request.getServerName();
-            port = request.getServerPort();
-        }
+        // B5: `forward-headers-strategy=native` (Tomcat RemoteIpValve) has already
+        // rewritten scheme/host/port from X-Forwarded-* — but ONLY when the request
+        // arrived through a trusted internal proxy. Reading the raw X-Forwarded-*
+        // headers here would re-open the spoofing hole (a direct client could set
+        // X-Forwarded-Host: evil to make a redirect to its own host pass this check),
+        // so we use the servlet-API values the valve has sanitised instead.
+        String scheme = request.getScheme();
+        String host = request.getServerName();
+        int port = request.getServerPort();
         return SameOriginUriCheck.isSameOriginRedirect(redirectUri, scheme, host, port, allowedPaths);
-    }
-
-    private static String headerOr(HttpServletRequest request, String header, String fallback)
-    {
-        String v = request.getHeader(header);
-        if (v == null || v.isEmpty()) return fallback;
-        // X-Forwarded-* may be a chain; first hop is canonical
-        return v.split(",")[0].trim();
-    }
-
-    private static int defaultPort(String scheme)
-    {
-        return "https".equalsIgnoreCase(scheme) ? 443 : 80;
     }
 
     /**

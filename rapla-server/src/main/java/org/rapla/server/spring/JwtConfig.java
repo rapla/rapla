@@ -22,7 +22,11 @@ import org.rapla.server.spring.oauth.external.ProviderConfig;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.rapla.server.spring.web.ApiKeyController;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
@@ -74,11 +78,20 @@ public class JwtConfig
         return new ApiKeyJwtDecoder(base, keyStore, facade);
     }
 
-    private static JwtDecoder buildBaseDecoder(JWKSource<SecurityContext> jwkSource,
-                                               ExternalProvidersProperties externalProviders,
-                                               String localIssuerOverride)
+    static JwtDecoder buildBaseDecoder(JWKSource<SecurityContext> jwkSource,
+                                       ExternalProvidersProperties externalProviders,
+                                       String localIssuerOverride)
     {
         NimbusJwtDecoder local = NimbusJwtDecoder.withPublicKey(extractRsaPublicKey(jwkSource)).build();
+        // B1 (security): bar rapla-issued refresh / api_key tokens from the
+        // resource-server path. api_key is also intercepted earlier by
+        // ApiKeyJwtDecoder; refresh has no other gate, so without this validator
+        // a 30-day refresh token authorises every /api/** call (and survives
+        // /oauth2/revoke). External-IdP tokens are routed by `iss` to their own
+        // decoders and never carry typ=refresh, so they are unaffected.
+        OAuth2TokenValidator<Jwt> raplaTokenType = new RaplaTokenTypeValidator();
+        local.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
+                JwtValidators.createDefault(), raplaTokenType));
         List<ProviderConfig> enabled = externalProviders.enabledProviders();
         if (enabled.isEmpty())
         {
@@ -93,7 +106,8 @@ public class JwtConfig
                 ? null : localIssuerOverride;
         if (localIssuer != null)
         {
-            local.setJwtValidator(JwtValidators.createDefaultWithIssuer(localIssuer));
+            local.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
+                    JwtValidators.createDefaultWithIssuer(localIssuer), raplaTokenType));
             byIssuer.put(localIssuer, local);
         }
         else
@@ -185,6 +199,32 @@ public class JwtConfig
             {
                 return null;
             }
+        }
+    }
+
+    /**
+     * Rejects rapla-issued tokens whose {@code typ} claim is {@code refresh}
+     * or {@code api_key} on the resource-server path (B1). Tokens without a
+     * {@code typ} claim (or with any other value, e.g. an external IdP's
+     * {@code typ=Bearer}) pass — those are gated by issuer routing, not here.
+     */
+    private static final class RaplaTokenTypeValidator implements OAuth2TokenValidator<Jwt>
+    {
+        private static final java.util.Set<String> REJECTED_TYPES =
+                java.util.Set.of("refresh", ApiKeyController.API_KEY_TYP);
+
+        @Override
+        public OAuth2TokenValidatorResult validate(Jwt token)
+        {
+            Object typ = token.getClaims().get("typ");
+            if (typ instanceof String s && REJECTED_TYPES.contains(s))
+            {
+                return OAuth2TokenValidatorResult.failure(new OAuth2Error(
+                        "invalid_token",
+                        "Token type '" + s + "' is not accepted on the resource server",
+                        null));
+            }
+            return OAuth2TokenValidatorResult.success();
         }
     }
 

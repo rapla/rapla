@@ -99,8 +99,12 @@ public class ServerServiceConfig
             CachableStorageOperator operator,
             UserProvisioner userProvisioner,
             ObjectProvider<AuthenticationStore> authenticationStoreProvider,
-            @org.springframework.beans.factory.annotation.Value("${rapla.password-check-disabled:false}") boolean passwordCheckDisabled)
+            @org.springframework.beans.factory.annotation.Value("${rapla.password-check-disabled:false}") boolean passwordCheckDisabled,
+            @org.springframework.beans.factory.annotation.Value("${server.address:}") String serverAddress)
     {
+        // B4: refuse to boot if password verification is off while the connector
+        // is network-reachable — a credential-free admin login must stay loopback-only.
+        PasswordCheckBindingGuard.validate(passwordCheckDisabled, serverAddress);
         // ObjectProvider.getIfAvailable(): null when no AuthenticationStore bean
         // is published, the single bean when exactly one exists, throws
         // NoUniqueBeanDefinitionException at startup when two or more do —

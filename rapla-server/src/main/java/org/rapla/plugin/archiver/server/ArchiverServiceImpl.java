@@ -50,7 +50,7 @@ public class ArchiverServiceImpl  implements ArchiverService
 	protected void checkAccess() throws RaplaException
 	{
         User user = session.checkAndGetUser(request);
-        if ( user != null && !user.isAdmin())
+        if ( user == null || !user.isAdmin())
         {
             throw new RaplaSecurityException("ArchiverService can only be triggered by admin users");
         }

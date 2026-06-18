@@ -3,13 +3,19 @@ server:
   compression:
     enabled: true
     mime-types: application/json,application/xml,text/html,text/css,text/javascript,application/javascript
-  # Honour X-Forwarded-{Host,Port,Proto} on incoming requests. Lets the dev
-  # `ng serve` proxy (rapla-angular/proxy.conf.js with `xfwd: true`) tell Spring
-  # the request originally came from :4200, so OAuthConfigController returns
-  # :4200 URLs and the SPA can use them as same-origin (proxy-friendly).
-  # In prod behind a reverse proxy / load balancer this also produces correct
-  # absolute URLs when responses include the scheme/host/port.
-  forward-headers-strategy: FRAMEWORK
+  # Honour X-Forwarded-{Host,Port,Proto} — but only from a TRUSTED proxy (B5).
+  # `native` uses Tomcat's RemoteIpValve, which trusts forwarded headers only
+  # when the immediate peer is in `internalProxies` (built-in default: loopback
+  # + all RFC1918 private ranges 10/8, 172.16/12, 192.168/16, 169.254/16). A
+  # client connecting directly can no longer spoof X-Forwarded-Host to hijack
+  # the OAuth redirect-URI same-origin check. No proxy list to maintain.
+  #   - DHBW: LB 172.31.81.90 -> rapla-app (rapla-www1); the LB is in 172.16/12,
+  #     covered by the default -> zero extra config.
+  #   - dev `ng serve` proxy (xfwd:true) connects over loopback -> trusted ->
+  #     :4200 forwarded host still honoured, SPA same-origin login still works.
+  # Was `FRAMEWORK` (Spring ForwardedHeaderFilter), which trusted ANY caller's
+  # forwarded headers with no proxy check — that was the B5 vulnerability.
+  forward-headers-strategy: native
   # Context-path dropped 2026-05-12 per PRD 031 Phase 1. Historical /rapla/ prefix
   # was a servlet name carried forward from WAR-deployment days; new layout puts
   # the SPA at /app/, REST under /api/ (Phase 2), and anchors only the six

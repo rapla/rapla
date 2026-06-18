@@ -19,6 +19,10 @@ server:
   # from the Spring Boot startup log (or hits /api/health on a probe range)
   # before navigating the WebView2 window.
   port: 0
+  # Loopback-only: standalone disables password verification (below), so the
+  # server must NOT be reachable from the network. PasswordCheckBindingGuard
+  # refuses to boot if this is widened to a non-loopback address (B4).
+  address: 127.0.0.1
 
 spring:
   application:
