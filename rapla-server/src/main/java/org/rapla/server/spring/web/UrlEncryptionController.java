@@ -26,6 +26,16 @@ public class UrlEncryptionController implements UrlEncryption
     @Override
     public String encrypt(String plain) throws RaplaException
     {
-        return urlEncryptor.encrypt(plain, request);
+        // The Spring HTTP-interface proxy sends String bodies as application/json,
+        // wrapping the value in JSON quotes (e.g. "user=admin&file=Export" with
+        // literal "). Strip a single surrounding pair before encrypting so the
+        // ciphertext matches what text/plain callers (old client, direct API) produce.
+        String sanitized = plain;
+        if (sanitized != null && sanitized.length() >= 2
+                && sanitized.charAt(0) == '"' && sanitized.charAt(sanitized.length() - 1) == '"')
+        {
+            sanitized = sanitized.substring(1, sanitized.length() - 1);
+        }
+        return urlEncryptor.encrypt(sanitized, request);
     }
 }

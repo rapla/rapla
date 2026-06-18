@@ -29,7 +29,7 @@ public interface UrlEncryption
 	 * @return String Encrypted parameter string
 	 * @throws RaplaException In case the encryption fails
 	 */
-	@PostExchange
+	@PostExchange(contentType = "text/plain")
     String encrypt(@RequestBody String plain) throws RaplaException;
     
 }

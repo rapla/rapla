@@ -40,8 +40,12 @@ abstract public class TableViewPage<T>
             throws ServletException, IOException
     {
         this.model = model.clone();
-        final String pathTranslated = request.getPathTranslated();
-        csv = pathTranslated.endsWith(".csv");
+        // getPathTranslated() is null under Spring MVC controller routing (it was
+        // populated by the old servlet mapping). Detect CSV from the request URI,
+        // which getRequestURI() returns correctly for both plain and ?key=-decrypted
+        // (EncryptedHttpServletRequest) requests.
+        final String requestURI = request.getRequestURI();
+        csv = requestURI != null && requestURI.endsWith(".csv");
         String withId =request.getParameter("addIds");
         addIds =withId != null && withId.equals("true");
         if (csv)
@@ -85,7 +89,12 @@ abstract public class TableViewPage<T>
         response.setContentType("text/html; charset=" + raplaLocale.getCharsetForHtml());
         java.io.PrintWriter out = response.getWriter();
 
-        String linkPrefix = request.getPathTranslated() != null ? "../" : "";
+        // CSS/static assets are served at the app root (Spring Boot static/),
+        // e.g. /calendar.css — not under the page's /rapla/calendar path. Use an
+        // absolute root prefix so the stylesheets resolve (matches the working
+        // week/month views in AbstractHTMLCalendarPage). getPathTranslated() is
+        // null under controller routing, so the old relative logic broke this.
+        String linkPrefix = "/";
 
         out.println("<html>");
         out.println("<head>");

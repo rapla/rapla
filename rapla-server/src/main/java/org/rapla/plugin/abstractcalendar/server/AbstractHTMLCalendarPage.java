@@ -217,7 +217,12 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
 		out.println("<head>");
         final String title = getTitle(request);
         out.println("  <title>" + title + "</title>");
-        String formAction = getUrl(request,"calendar");
+        // The calendar export is routed at /rapla/calendar (legacy servlet path,
+        // kept by CalendarPageController @RequestMapping("/rapla")). getUrl prefixes
+        // the app root (context "/"), so the form must target "rapla/calendar" to
+        // hit the route — otherwise next/prev navigation posts to /calendar (404).
+        // Static assets (CSS/icon below) correctly stay at the root via getUrl.
+        String formAction = getUrl(request,"rapla/calendar");
 
         out.println("  " + getCssLine(request, "calendar.css"));
         out.println("  " + getCssLine(request, "default.css"));
