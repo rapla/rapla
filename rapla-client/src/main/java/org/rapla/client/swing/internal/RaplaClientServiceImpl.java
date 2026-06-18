@@ -382,6 +382,11 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             listeners[i].clientAborted();
     }
 
+    public void notifyLoginAborted()
+    {
+        logoutSignal.next(org.rapla.client.spring.NextSession.exit());
+    }
+
     private static Throwable rootCause(Throwable ex)
     {
         Throwable root = ex;
@@ -926,6 +931,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                     loginMutex.release();
                     stop();
                     fireClientAborted();
+                    notifyLoginAborted();
                 }
             };
             loginAction.putValue(Action.NAME, i18n.getString("login"));
