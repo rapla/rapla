@@ -392,6 +392,22 @@ filtered alias, e.g. `teilraum: allocatables(filter: { typeKeyIn: ["Teilraum"] }
 
 ### Worked query 2 — `Termine pro Tag` (aggregate-field convention)
 
+**① Authored spec:**
+```yaml
+view: Termine pro Tag
+filter: Lehrveranstaltung
+rows: blocks
+group: { by: day, bucket: DAY }       # closed dimension
+aggregate:
+  - { op: count,                    as: termine }
+  - { op: sum, of: durationMinutes, as: minuten }
+columns:
+  - { header: "Tag",         from: day }
+  - { header: "Termine",     from: termine }
+  - { header: "Dauer (min)", from: minuten }
+```
+
+**② Generated query:**
 ```graphql
 query TermineProTag($from: DateTime!, $to: DateTime!)
   @view(title: "Termine pro Tag")
