@@ -15,6 +15,8 @@ package org.rapla.components.util.xml;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 
+import javax.xml.XMLConstants;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParserFactory;
 
 final public class XMLReaderAdapter {
@@ -35,6 +37,7 @@ final public class XMLReaderAdapter {
 		SAXParserFactory spf = SAXParserFactory.newInstance();
     	spf.setNamespaceAware(true);
     	spf.setValidating(validating);
+    	harden(spf);
     	if ( validating)
     	{
     		spfvalidating = spf;
@@ -46,6 +49,28 @@ final public class XMLReaderAdapter {
     	return spf;
 	}
 	
+	/**
+	 * A9: harden the parser against XXE. rapla's XML never uses a DOCTYPE, so we
+	 * forbid them outright (the strongest mitigation — kills external entities,
+	 * parameter entities and entity-expansion bombs in one feature) plus disable
+	 * external entity / DTD resolution as defence in depth.
+	 */
+	private static void harden(SAXParserFactory spf)
+	{
+		try
+		{
+			spf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+			spf.setFeature("http://xml.org/sax/features/external-general-entities", false);
+			spf.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+			spf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+		}
+		catch (ParserConfigurationException | SAXException e)
+		{
+			// Fail loud: refusing to run an un-hardened XML parser is the safe choice.
+			throw new IllegalStateException("Could not harden SAX parser against XXE", e);
+		}
+	}
+
 	public static XMLReader createXMLReader(boolean validating) throws SAXException {
       try {
             SAXParserFactory spf = getFactory(validating);

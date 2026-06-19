@@ -304,6 +304,32 @@ input AllocatableFilter {
   limit:        Int
 }
 
+"""
+Narrowing predicates for the nested `Appointment.allocatables(filter:)` field.
+Subset of `AllocatableFilter` — only the v1 scalar predicates that the nested
+resolver actually honours. Omitting unsupported fields (`idIn`, `limit`,
+`accessibleBy*`, `accessLevel`, `where<TypeKey>`) prevents silent contract
+violations: passing them here is a GraphQL validation error, not a silent no-op.
+All fields optional; null = unconstrained. Multiple predicates AND together.
+Filter runs over the §12-canRead-gated per-appointment allocatable list.
+"""
+input AppointmentAllocatableFilter {
+  "Exact-match on the DynamicType key (e.g. \"room\", \"lecturer\"). Takes precedence over `typeKeyIn` when both are set."
+  typeKeyEq:    String
+  "Match any DynamicType key in the list (cross-type union). `typeKeyEq` takes precedence when both are set."
+  typeKeyIn:    [String!]
+  "True → only persons. False → only resources. null → both."
+  isPersonEq:   Boolean
+  "Case-insensitive substring match on displayName (legacy — prefer `searchText` + `matchKind` for new flows). ANDs with `searchText` if both are set."
+  nameContains: String
+  "PRD 028 Phase 1 — match against `Allocatable.displayName`; paired with `matchKind` for prefix/substring/fuzzy."
+  searchText:   String
+  "PRD 028 Phase 1 — algorithm choice for `searchText`. Defaults to SUBSTRING."
+  matchKind:    MatchKind = SUBSTRING
+  "Exact-match on owner id."
+  ownerEq:      ID
+}
+
 # === PRD 035 §5d — Generic Where input types ===
 # Predicate inputs reused by every generated <TypeKey>Where input. All
 # operators are optional (null = unconstrained); when multiple non-null
@@ -690,8 +716,16 @@ type Appointment {
   """
   Pre-resolved per-appointment allocatables (PRD 055 Q4 — restrictions
   applied). Restriction-aware editing reads parent Reservation.allocations.
+
+  PRD 073 — optional `filter` narrows the (already §12-canRead-gated) list.
+  Uses `AppointmentAllocatableFilter` (v1 scalar predicates only — `typeKeyIn`,
+  `isPersonEq`, `typeKeyEq`, `nameContains`, `searchText`, `matchKind`, `ownerEq`).
+  The canRead gate runs BEFORE the filter, so a hidden allocatable can never
+  leak even when it matches. `idIn`, `limit`, `accessibleBy*`, `where<TypeKey>`
+  are NOT available here — use `Query.allocatables(filter:)` for those.
+  Recursive `where<TypeKey>` and typeGroup deferred (PRD 059 / PRD 065).
   """
-  allocatables: [Allocatable!]!
+  allocatables(filter: AppointmentAllocatableFilter): [Allocatable!]!
   "Materialize blocks within a window. Server-side recurrence expansion."
   blocks(from: LocalDateTime!, to: LocalDateTime!): [AppointmentBlock!]!
 }

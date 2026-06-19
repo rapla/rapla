@@ -1,6 +1,13 @@
 package org.rapla.server.spring;
 
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.JWKMatcher;
+import com.nimbusds.jose.jwk.JWKSelector;
+import com.nimbusds.jose.jwk.KeyType;
+import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.jwk.source.JWKSource;
+import com.nimbusds.jose.proc.SecurityContext;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.RaplaFacade;
@@ -9,9 +16,12 @@ import org.rapla.framework.TypedComponentRole;
 import org.rapla.storage.RaplaSecurityException;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.stereotype.Service;
 
+import java.security.interfaces.RSAPublicKey;
 import java.time.Instant;
+import java.util.List;
 
 /**
  * Single-source-of-truth for rapla's refresh-token lifecycle. Used by
@@ -33,7 +43,7 @@ import java.time.Instant;
  *       {@code typ=refresh} claim + exact match against the prefs entry.
  *       No in-memory authorization state.</li>
  *   <li><b>Never rotate at refresh time.</b> {@code /oauth2/token grant_type=refresh_token}
- *       returns the SAME refresh token until it expires (30 d). At expiry
+ *       returns the SAME refresh token until it expires (21 d). At expiry
  *       the user re-Authorizes — predictable, all devices at once.
  *       Avoids the multi-tab "tab A wins rotation, tab B's stale token
  *       fails" problem.</li>
@@ -72,17 +82,50 @@ public class RefreshSessionService
             new TypedComponentRole<>("org.rapla.auth.session");
 
     public static final long ACCESS_TOKEN_TTL_SECONDS = 3600;
-    public static final long REFRESH_TOKEN_TTL_SECONDS = 30L * 24 * 3600;
+    /**
+     * Absolute, non-sliding refresh-token lifetime — the session cap. For
+     * IdP-brokered logins (model A, PRD 072 #7) rapla owns the session, so an
+     * IdP-side account disable is caught only at the next forced re-federation;
+     * this cap bounds that worst-case window. Lowered 30 d → 21 d (2026-06-19).
+     */
+    public static final long REFRESH_TOKEN_TTL_SECONDS = 21L * 24 * 3600;
 
     private final JwtConfig.JwtIssuer jwtIssuer;
     private final JwtDecoder jwtDecoder;
+    private final JwtDecoder refreshDecoder;
     private final RaplaFacade facade;
 
-    public RefreshSessionService(JwtConfig.JwtIssuer jwtIssuer, JwtDecoder jwtDecoder, RaplaFacade facade)
+    public RefreshSessionService(JwtConfig.JwtIssuer jwtIssuer, JwtDecoder jwtDecoder, RaplaFacade facade,
+                                 JWKSource<SecurityContext> jwkSource)
     {
         this.jwtIssuer = jwtIssuer;
         this.jwtDecoder = jwtDecoder;
         this.facade = facade;
+        // The resource-server jwtDecoder REJECTS typ=refresh tokens
+        // (RaplaTokenTypeValidator, JwtConfig) — that gate is correct for the
+        // /api path, but refresh-token VALIDATION here needs to decode exactly
+        // those tokens. Use a plain decoder over the same RSA public key that
+        // verifies signature + standard claims WITHOUT the typ-rejection; the
+        // typ=refresh requirement is enforced explicitly below.
+        this.refreshDecoder = NimbusJwtDecoder.withPublicKey(extractRsaPublicKey(jwkSource)).build();
+    }
+
+    private static RSAPublicKey extractRsaPublicKey(JWKSource<SecurityContext> jwkSource)
+    {
+        try
+        {
+            List<JWK> keys = jwkSource.get(
+                    new JWKSelector(new JWKMatcher.Builder().keyType(KeyType.RSA).build()), null);
+            if (keys.isEmpty())
+            {
+                throw new IllegalStateException("No RSA key in JWK set");
+            }
+            return ((RSAKey) keys.get(0)).toRSAPublicKey();
+        }
+        catch (Exception e)
+        {
+            throw new IllegalStateException("Failed to extract RSA public key for refresh decoder", e);
+        }
     }
 
     /**
@@ -136,7 +179,7 @@ public class RefreshSessionService
     {
         try
         {
-            Jwt parsed = jwtDecoder.decode(refreshToken);
+            Jwt parsed = refreshDecoder.decode(refreshToken);
             if (!"refresh".equals(parsed.getClaimAsString("typ"))) return false;
             Instant exp = parsed.getExpiresAt();
             return exp != null && exp.isAfter(Instant.now());
@@ -158,7 +201,7 @@ public class RefreshSessionService
         Jwt parsed;
         try
         {
-            parsed = jwtDecoder.decode(presentedRefreshToken);
+            parsed = refreshDecoder.decode(presentedRefreshToken);
         }
         catch (Exception e)
         {
@@ -194,6 +237,29 @@ public class RefreshSessionService
         // issueAndPersist; used by the custom refresh-grant provider.
         return jwtIssuer.issueAccessToken(
                 user.getId(), user.getUsername(), user.getName(), ACCESS_TOKEN_TTL_SECONDS);
+    }
+
+    /**
+     * Resolves the rapla {@link User} named by the {@code sub} of any
+     * rapla-issued token (access OR refresh), using the refresh-tolerant
+     * decoder so {@code typ=refresh} tokens decode here (the resource-server
+     * decoder rejects them). Returns {@code null} if the token can't be decoded
+     * or the user can't be resolved. Used by {@code /oauth2/revoke}, which must
+     * clear the slot for a presented refresh token (RFC 7009).
+     */
+    public User peekUser(String token)
+    {
+        try
+        {
+            Jwt parsed = refreshDecoder.decode(token);
+            String userId = parsed.getSubject();
+            if (userId == null) return null;
+            return facade.getOperator().tryResolve(userId, User.class);
+        }
+        catch (Exception e)
+        {
+            return null;
+        }
     }
 
     /**

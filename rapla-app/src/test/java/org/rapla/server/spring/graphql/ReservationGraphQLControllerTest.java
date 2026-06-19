@@ -633,6 +633,240 @@ class ReservationGraphQLControllerTest
         assertTrue(names.contains("hasConflicts"), () -> "missing Reservation.hasConflicts in " + names);
     }
 
+    // ===================================== PRD 073 — filterable Appointment.allocatables
+
+    /**
+     * Helper — query Reservation 2's appointment allocatables (display names),
+     * optionally passing a `filter:` arg to the nested field. Reservation 2
+     * (event "Reservation 2") allocates two rooms ("erwin", "Room A66") and one
+     * lecturer ("Burns Monty") on its 2006-repeating appointment, so the window
+     * 2006-01..2006-12 reaches it.
+     */
+    private List<String> reservation2AppointmentAllocatableNames(String filterArg)
+    {
+        String nested = filterArg == null
+                ? "allocatables { displayName }"
+                : "allocatables(filter: " + filterArg + ") { displayName }";
+        List<Map<String, Object>> result = tester.document(String.format("""
+                query {
+                  reservations(filter: {
+                    from: "2006-01-01T00:00:00",
+                    to:   "2006-12-31T00:00:00",
+                    searchText: "Reservation 2"
+                  }) {
+                    appointments { %s }
+                  }
+                }
+                """, nested))
+                .execute()
+                .path("reservations")
+                .entityList(new ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        java.util.List<String> names = new java.util.ArrayList<>();
+        for (Map<String, Object> r : result)
+        {
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> appts = (List<Map<String, Object>>) r.get("appointments");
+            for (Map<String, Object> a : appts)
+            {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> allocs = (List<Map<String, Object>>) a.get("allocatables");
+                if (allocs == null) continue;
+                for (Map<String, Object> al : allocs)
+                {
+                    names.add((String) al.get("displayName"));
+                }
+            }
+        }
+        return names;
+    }
+
+    /** Schema: Appointment.allocatables accepts a `filter` arg of type AppointmentAllocatableFilter. */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void appointmentAllocatablesHasFilterArgument()
+    {
+        Map<String, Object> result = tester.document("""
+                { __type(name: "Appointment") {
+                    fields { name args { name type { name ofType { name } } } }
+                } }
+                """)
+                .execute()
+                .path("__type")
+                .entity(new ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> fields = (List<Map<String, Object>>) result.get("fields");
+        Map<String, Object> allocField = fields.stream()
+                .filter(f -> "allocatables".equals(f.get("name")))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("missing Appointment.allocatables field"));
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> args = (List<Map<String, Object>>) allocField.get("args");
+        Map<String, Object> filterArg = args.stream()
+                .filter(a -> "filter".equals(a.get("name")))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Appointment.allocatables must accept a 'filter' arg; got "
+                        + args.stream().map(a -> (String) a.get("name")).toList()));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> type = (Map<String, Object>) filterArg.get("type");
+        String typeName = type.get("name") != null
+                ? (String) type.get("name")
+                : (String) ((Map<?, ?>) type.get("ofType")).get("name");
+        assertEquals("AppointmentAllocatableFilter", typeName,
+                "filter arg must use AppointmentAllocatableFilter, not " + typeName);
+    }
+
+    /**
+     * Contract enforcement — `idIn` is not part of `AppointmentAllocatableFilter`.
+     * Passing it must be a GraphQL validation error, not a silent no-op.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void appointmentAllocatablesIdInIsValidationError()
+    {
+        tester.document("""
+                query {
+                  reservations(filter: {
+                    from: "2006-01-01T00:00:00",
+                    to:   "2006-12-31T00:00:00"
+                  }) {
+                    appointments {
+                      allocatables(filter: { idIn: ["some-id"] }) { displayName }
+                    }
+                  }
+                }
+                """)
+                .execute()
+                .errors()
+                .satisfy(errs -> assertFalse(errs.isEmpty(),
+                        "idIn is not in AppointmentAllocatableFilter — expected a validation error"));
+    }
+
+    /**
+     * Contract enforcement — `limit` is not part of `AppointmentAllocatableFilter`.
+     * Passing it must be a GraphQL validation error, not a silent no-op.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void appointmentAllocatablesLimitIsValidationError()
+    {
+        tester.document("""
+                query {
+                  reservations(filter: {
+                    from: "2006-01-01T00:00:00",
+                    to:   "2006-12-31T00:00:00"
+                  }) {
+                    appointments {
+                      allocatables(filter: { limit: 1 }) { displayName }
+                    }
+                  }
+                }
+                """)
+                .execute()
+                .errors()
+                .satisfy(errs -> assertFalse(errs.isEmpty(),
+                        "limit is not in AppointmentAllocatableFilter — expected a validation error"));
+    }
+
+    /**
+     * Contract enforcement — `accessibleByUsername` is not part of `AppointmentAllocatableFilter`.
+     * Passing it must be a GraphQL validation error, not a silent no-op.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void appointmentAllocatablesAccessibleByUsernameIsValidationError()
+    {
+        tester.document("""
+                query {
+                  reservations(filter: {
+                    from: "2006-01-01T00:00:00",
+                    to:   "2006-12-31T00:00:00"
+                  }) {
+                    appointments {
+                      allocatables(filter: { accessibleByUsername: "homer" }) { displayName }
+                    }
+                  }
+                }
+                """)
+                .execute()
+                .errors()
+                .satisfy(errs -> assertFalse(errs.isEmpty(),
+                        "accessibleByUsername is not in AppointmentAllocatableFilter — expected a validation error"));
+    }
+
+    /** (a) typeKeyIn narrows the nested list to the named DynamicTypes (rooms only). */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void appointmentAllocatablesTypeKeyInNarrowsToRooms()
+    {
+        List<String> all = reservation2AppointmentAllocatableNames(null);
+        assertTrue(all.contains("erwin") && all.contains("Room A66") && all.contains("Burns Monty"),
+                () -> "fixture precondition: Reservation 2 should allocate erwin, Room A66, Burns Monty; got " + all);
+
+        List<String> rooms = reservation2AppointmentAllocatableNames("{ typeKeyIn: [\"room\"] }");
+        assertTrue(rooms.contains("erwin"), () -> "expected room erwin; got " + rooms);
+        assertTrue(rooms.contains("Room A66"), () -> "expected Room A66; got " + rooms);
+        assertFalse(rooms.contains("Burns Monty"),
+                () -> "lecturer must be filtered out by typeKeyIn:[room]; got " + rooms);
+    }
+
+    /** (b) isPersonEq:true returns persons only. */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void appointmentAllocatablesIsPersonEqTrueReturnsPersonsOnly()
+    {
+        List<String> persons = reservation2AppointmentAllocatableNames("{ isPersonEq: true }");
+        assertTrue(persons.contains("Burns Monty"),
+                () -> "expected the lecturer person; got " + persons);
+        assertFalse(persons.contains("erwin") || persons.contains("Room A66"),
+                () -> "rooms must be filtered out by isPersonEq:true; got " + persons);
+    }
+
+    /** (c) combined typeKeyIn + isPersonEq AND together → empty (rooms aren't persons). */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void appointmentAllocatablesCombinedFilterAnds()
+    {
+        List<String> combined = reservation2AppointmentAllocatableNames(
+                "{ typeKeyIn: [\"room\"], isPersonEq: true }");
+        assertTrue(combined.isEmpty(),
+                () -> "typeKeyIn:[room] AND isPersonEq:true must yield nothing (rooms aren't persons); got " + combined);
+
+        List<String> personRooms = reservation2AppointmentAllocatableNames(
+                "{ typeKeyIn: [\"room\"], isPersonEq: false }");
+        assertTrue(personRooms.contains("erwin") && personRooms.contains("Room A66"),
+                () -> "typeKeyIn:[room] AND isPersonEq:false must keep both rooms; got " + personRooms);
+        assertFalse(personRooms.contains("Burns Monty"),
+                () -> "lecturer must be excluded; got " + personRooms);
+    }
+
+    /**
+     * (d) §12 leak guard — the canRead gate runs BEFORE the filter. For a
+     * non-admin caller, the filtered nested list must equal (canRead-narrowed
+     * set ∩ filter): applying the filter client-side to the caller's UNfiltered
+     * (already canRead-gated) nested list must equal the server's filtered list.
+     * If the server applied the filter before canRead, a hidden-but-matching
+     * allocatable would slip into the filtered list and the two diverge.
+     */
+    @Test
+    @WithMockUser(username = "monty", roles = "USER")
+    void appointmentAllocatablesFilterRunsAfterCanReadGate()
+    {
+        List<String> unfilteredVisible = reservation2AppointmentAllocatableNames(null);
+        List<String> serverFilteredRooms = reservation2AppointmentAllocatableNames("{ typeKeyIn: [\"room\"] }");
+
+        // Client-side reference: rooms among the names monty can actually read.
+        java.util.Set<String> roomNames = java.util.Set.of("erwin", "Room A66");
+        java.util.List<String> expected = unfilteredVisible.stream()
+                .filter(roomNames::contains)
+                .toList();
+
+        assertEquals(new java.util.HashSet<>(expected), new java.util.HashSet<>(serverFilteredRooms),
+                () -> "filter must run over the canRead-narrowed subset only; "
+                        + "visible=" + unfilteredVisible + " serverFiltered=" + serverFilteredRooms);
+    }
+
     /** Happy path — searchText narrows results; hasConflicts resolves to false on no-conflict fixture. */
     @Test
     @WithMockUser(username = "homer", roles = "ADMIN")

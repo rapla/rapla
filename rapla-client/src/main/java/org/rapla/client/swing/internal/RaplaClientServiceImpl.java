@@ -479,18 +479,15 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             // ADMIN's full session as primary (so refresh + impersonation
             // renewal both work), then sets the impersonation token in the
             // dedicated impersonation slot via ClientService.setImpersonation().
-            // Admin Keycloak refresh continues to route through the saved
-            // provider URL even after the context restart.
+            // PRD 072 Phase 5: refresh always hits rapla's /oauth2/token, so the
+            // admin session is fully captured by its two tokens — no provider
+            // routing to carry across the context restart.
             String impersonationAccessToken = resp.getAccessToken();
             String targetUsername = user.getUsername();
-            // Capture admin's FULL session NOW — connectionInfo dies with
-            // the context. Carry tokens + provider routing so post-restart
-            // refresh hits the right provider.
+            // Capture admin's FULL session NOW — connectionInfo dies with the context.
             ConnectInfo adminFullInfo = new ConnectInfo(
                     connectionInfo.getAccessToken(),
-                    connectionInfo.getRefreshToken(),
-                    connectionInfo.getRefreshUrl(),
-                    connectionInfo.getOauthClientId());
+                    connectionInfo.getRefreshToken());
             logoutSignal.next(org.rapla.client.spring.NextSession.switchTo(
                     adminFullInfo, impersonationAccessToken, targetUsername));
         }
@@ -608,12 +605,9 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
      * if the user is now logged in; false to fall through to the login dialog.
      * Never throws — any failure falls through.
      *
-     * <p>PRD 029 Phase 4 + 2026-05-25: the refresh URL + client_id are persisted
-     * alongside the token at login time ({@link TokenStore#KEY_REFRESH_URL},
-     * {@link TokenStore#KEY_OAUTH_CLIENT_ID}). Empty prefs = rapla-SAS session →
-     * fall back to {@code serverURL + /oauth2/token} with {@code client_id=rapla-client}.
-     * A populated pref = the provider's token endpoint (Keycloak direct, or the
-     * rapla BFF for secret-backed providers).
+     * <p>PRD 072 Phase 5: rapla is Swing's single token endpoint, so the cached
+     * refresh token is always replayed against {@code serverURL + /oauth2/token}
+     * with {@code client_id=rapla-client} — no per-provider routing.
      */
     private boolean tryRestoreFromCachedRefreshToken()
     {
@@ -636,26 +630,15 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         LOGGER.info("startup: cached refresh token found — attempting silent reauth");
         try
         {
-            String savedRefreshUrl = readLoginPref(TokenStore.KEY_REFRESH_URL);
-            String savedClientId = readLoginPref(TokenStore.KEY_OAUTH_CLIENT_ID);
-            String tokenUrl;
-            if (savedRefreshUrl != null && !savedRefreshUrl.isEmpty())
+            String serverUrl = connectionInfo.getServerURL();
+            if (serverUrl == null || serverUrl.isEmpty())
             {
-                tokenUrl = savedRefreshUrl;
+                LOGGER.info("startup: server URL not yet set — falling back to login dialog");
+                return false;
             }
-            else
-            {
-                String serverUrl = connectionInfo.getServerURL();
-                if (serverUrl == null || serverUrl.isEmpty())
-                {
-                    LOGGER.info("startup: server URL not yet set — falling back to login dialog");
-                    return false;
-                }
-                String trimmed = serverUrl.endsWith("/") ? serverUrl.substring(0, serverUrl.length() - 1) : serverUrl;
-                tokenUrl = trimmed + "/oauth2/token";
-            }
-            String clientId = (savedClientId == null || savedClientId.isEmpty()) ? "rapla-client" : savedClientId;
-            SilentRefreshResult result = executeSilentRefresh(tokenUrl, clientId, cachedRefresh);
+            String trimmed = serverUrl.endsWith("/") ? serverUrl.substring(0, serverUrl.length() - 1) : serverUrl;
+            String tokenUrl = trimmed + "/oauth2/token";
+            SilentRefreshResult result = executeSilentRefresh(tokenUrl, "rapla-client", cachedRefresh);
             if (!result.succeeded())
             {
                 LOGGER.info("startup: cached refresh token rejected (HTTP {} from {}) — clearing cache and falling back to login dialog",
@@ -663,16 +646,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                 tokenStore.tryClear();
                 return false;
             }
-            // Restore the provider routing on connectionInfo so subsequent mid-session
-            // refreshes (RefreshOn401Interceptor.doRefresh, MyCustomConnector.refreshUsingToken)
-            // hit the same provider rather than rapla-SAS.
-            if (savedRefreshUrl != null && !savedRefreshUrl.isEmpty()) connectionInfo.setRefreshUrl(savedRefreshUrl);
-            if (savedClientId != null && !savedClientId.isEmpty()) connectionInfo.setOauthClientId(savedClientId);
-            // PRD 029 Phase 5 — restored ConnectInfo carries the full 4-tuple so a
-            // subsequent close+recreate context (e.g. switch-to-user) inherits the
-            // provider routing too.
-            ConnectInfo info = new ConnectInfo(result.accessToken, result.refreshToken,
-                    savedRefreshUrl, savedClientId);
+            ConnectInfo info = new ConnectInfo(result.accessToken, result.refreshToken);
             reconnectInfo = info;
             connectionInfo.setAccessToken(result.accessToken);
             if (result.refreshToken != null)
@@ -795,12 +769,13 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             final LanguageChooser languageChooser = new LanguageChooser(i18n, raplaLocale);
             activeLanguageChooser = languageChooser;
             final LoginDialog dlg = LoginDialog.create(env, i18n, localeSelector, raplaLocale, languageChooser.getComponent());
-            // Holds the OAuth providers offered in the method dropdown, in
-            // dropdown order (entry 0 = Password is not in this list), so the
-            // Login button's action can resolve the picked provider (PRD 029
-            // Phase 4).
-            final java.util.concurrent.atomic.AtomicReference<java.util.List<OAuthConfig>> dropdownProviders =
-                    new java.util.concurrent.atomic.AtomicReference<>(java.util.List.of());
+            // PRD 072 Phase 5: the per-provider menu is gone. In the legacy
+            // password dialog the user may optionally also be offered a single
+            // "SSO" method (the rapla SSO entry — index 1 in the method combo).
+            // When that method is present this holds the rapla SSO config; null
+            // means the dialog offers password only.
+            final java.util.concurrent.atomic.AtomicReference<OAuthConfig> ssoConfig =
+                    new java.util.concurrent.atomic.AtomicReference<>(null);
 
             Action languageChanged = new AbstractAction()
             {
@@ -842,16 +817,18 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
 
                 public void actionPerformed(ActionEvent evt)
                 {
-                    // PRD 029 Phase 4: the Login button is method-aware. Index 0
-                    // is the local username/password grant; any other index is a
-                    // browser-based OAuth provider from discovery.
+                    // PRD 072 Phase 5: the Login button is method-aware. Index 0
+                    // is the local username/password grant; index 1 (only present
+                    // in the legacy dialog when SSO is also offered) is the single
+                    // rapla SSO entry — rapla then federates the upstream IdP on
+                    // its /login chooser page.
                     int methodIndex = dlg.getSelectedMethodIndex();
                     if (methodIndex > 0)
                     {
-                        java.util.List<OAuthConfig> providers = dropdownProviders.get();
-                        if (methodIndex - 1 < providers.size())
+                        OAuthConfig sso = ssoConfig.get();
+                        if (sso != null)
                         {
-                            runOauthLogin(dlg, loginMutex, providers.get(methodIndex - 1));
+                            runOauthLogin(dlg, loginMutex, sso);
                         }
                         return;
                     }
@@ -941,37 +918,35 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             dlg.setExitAction(exitAction);
             centerWindowOnScreen(dlg);
 
-            // PRD 029 Phase 2/3/4: OAuth is the primary login path by default.
-            // When discovery says OAuth is enabled AND the admin has not opted
-            // into the legacy dialog (rapla.oauth.swing-legacy-login), show the
-            // dialog in "browser login in progress" mode and auto-launch the
-            // browser flow against the rapla SAS.
-            // Otherwise the legacy dialog is shown. When the admin also set
-            // rapla.oauth.swing-legacy-show-sso-button, the dialog offers a
-            // sign-in-method dropdown (Password + every discovery provider —
-            // rapla SAS, Keycloak, …); picking a browser provider greys out the
-            // username/password fields. Without that flag, or when OAuth is
-            // unavailable, only the plain password form is shown.
+            // PRD 072 Phase 5 (Swing A+Y): rapla is Swing's single federating
+            // Authorization Server. The DEFAULT login is the single "SSO" entry —
+            // when discovery says OAuth is enabled and the admin has NOT opted into
+            // the legacy dialog (rapla.oauth.swing-legacy-login), the dialog goes
+            // straight into "browser login in progress" mode and auto-launches the
+            // rapla SSO flow (/oauth2/authorize → /login, where the provider chooser
+            // now lives server-side). The rapla password / fallback path stays
+            // AVAILABLE but is no longer the default: it shows only when the admin
+            // sets swing-legacy-login (or OAuth is unavailable). The per-provider
+            // menu is removed — at most one extra "SSO" method appears in the legacy
+            // dialog (gated by swing-legacy-show-sso-button), pointing at the same
+            // rapla SSO entry.
             commandScheduler.supply(this::fetchOauthConfig).thenAccept(cfg -> SwingSafe.invokeLater(() -> {
                 boolean oauthEnabled = cfg != null && cfg.isEnabled();
                 boolean legacyLogin = cfg != null && cfg.isSwingLegacyLogin();
                 if (oauthEnabled && !legacyLogin)
                 {
-                    LOGGER.info("startup: discovery confirms OAuth enabled — auto-launching browser flow (Swing dialog stays in waiting mode)");
+                    LOGGER.info("startup: discovery confirms OAuth enabled — auto-launching rapla SSO flow (Swing dialog stays in waiting mode)");
                     dlg.setBrowserLoginInProgress(i18n.getString("login.oauth.waiting"));
                     dlg.setVisible(true);
                     runOauthLogin(dlg, loginMutex, cfg);
                 }
                 else
                 {
-                    boolean showProviders = oauthEnabled && legacyLogin && cfg.isSwingLegacyShowSsoButton();
-                    java.util.List<OAuthConfig> methodProviders = configureLoginMethods(dlg, showProviders ? cfg : null);
-                    dropdownProviders.set(methodProviders);
-                    // PRD 029 Phase 4: pre-select the method used at the last login.
-                    applySavedLoginMethod(dlg, methodProviders);
+                    boolean offerSso = oauthEnabled && legacyLogin && cfg.isSwingLegacyShowSsoButton();
+                    configureLegacyDialogMethods(dlg, offerSso ? cfg : null, ssoConfig);
                     LOGGER.info("startup: showing legacy Swing login dialog"
                             + (oauthEnabled ? " (admin set rapla.oauth.swing-legacy-login)" : " (OAuth disabled server-side)")
-                            + (showProviders ? " with the sign-in-method dropdown" : ""));
+                            + (offerSso ? " with the SSO method" : ""));
                     dlg.setVisible(true);
                 }
             })).exceptionally(ex -> {
@@ -985,7 +960,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                     LOGGER.info("startup: discovery failed ({}: {}) — showing legacy Swing login dialog as fallback", root.getClass().getSimpleName(), root.getMessage());
                     // Discovery failed — OAuth support can't be confirmed, so offer
                     // only the local password method.
-                    dropdownProviders.set(configureLoginMethods(dlg, null));
+                    configureLegacyDialogMethods(dlg, null, ssoConfig);
                     dlg.setVisible(true);
                 });
             });
@@ -1025,13 +1000,6 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             {
                 tokenStore.tryWritePref(TokenStore.KEY_LOGIN_METHOD, loginMethod);
             }
-            // Persist the refresh-token target (provider URL + client_id) alongside
-            // the token itself so cold-startup silent reauth knows where to POST.
-            // Empty = use rapla SAS defaults (serverURL + /oauth2/token, client_id=rapla-client).
-            String refreshUrl = connectionInfo.getRefreshUrl();
-            String oauthClientId = connectionInfo.getOauthClientId();
-            tokenStore.tryWritePref(TokenStore.KEY_REFRESH_URL, refreshUrl == null ? "" : refreshUrl);
-            tokenStore.tryWritePref(TokenStore.KEY_OAUTH_CLIENT_ID, oauthClientId == null ? "" : oauthClientId);
         }
         catch (Throwable t)
         {
@@ -1039,65 +1007,30 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         }
     }
 
-    /** Pre-selects the method dropdown to the provider used at the last login.
-     *  No-op for "password" / unknown / absent (index 0 is the default). */
-    private void applySavedLoginMethod(LoginDialog dlg, java.util.List<OAuthConfig> providers)
-    {
-        String saved = readLoginPref(TokenStore.KEY_LOGIN_METHOD);
-        if (saved.isEmpty() || "password".equals(saved)) return;
-        for (int i = 0; i < providers.size(); i++)
-        {
-            if (saved.equals(providers.get(i).getId()))
-            {
-                dlg.setSelectedMethodIndex(i + 1);
-                return;
-            }
-        }
-    }
-
-    // PRD 029 Phase 4 — providers that can complete the desktop loopback PKCE
-    // flow today. The rapla SAS and Keycloak are public PKCE clients with a
-    // loopback redirect registered. Microsoft (Entra SPA-platform) and Google
-    // (BFF/Web-app) can't reuse their SPA discovery entries — bringing them to
-    // Swing needs separate native-app registrations; deferred.
-    private static final java.util.Set<String> SWING_OAUTH_PROVIDERS = java.util.Set.of("rapla", "keycloak");
-
-    /** Populates the login-method dropdown: index 0 is the local username/password
-     *  grant, the rest are the Swing-capable discovery providers (rapla SAS,
-     *  Keycloak). When {@code cfg} is null only the password method is offered
-     *  (no dropdown). Returns the providers behind dropdown indices 1..N, in
-     *  order, so the Login button can resolve the selection. PRD 029 Phase 4. */
-    private java.util.List<OAuthConfig> configureLoginMethods(LoginDialog dlg, OAuthConfig cfg)
+    /**
+     * PRD 072 Phase 5: populate the legacy dialog's method combo. Index 0 is
+     * always the local username/password grant. When {@code sso} is non-null
+     * (the rapla SSO config, offered via swing-legacy-show-sso-button) a single
+     * "SSO" method is added at index 1 and stashed in {@code ssoConfig} so the
+     * Login button can launch it; picking it greys out the credential fields.
+     * When {@code sso} is null only the password method is shown.
+     */
+    private void configureLegacyDialogMethods(LoginDialog dlg, OAuthConfig sso,
+            java.util.concurrent.atomic.AtomicReference<OAuthConfig> ssoConfig)
     {
         java.util.List<String> labels = new java.util.ArrayList<>();
-        java.util.List<OAuthConfig> usable = new java.util.ArrayList<>();
         labels.add(i18n.getString("password"));
-        if (cfg != null)
+        if (sso != null)
         {
-            for (OAuthConfig provider : cfg.getProviders())
-            {
-                if (provider.getId() != null && SWING_OAUTH_PROVIDERS.contains(provider.getId()))
-                {
-                    labels.add(providerLabel(provider));
-                    usable.add(provider);
-                }
-            }
+            labels.add("SSO");
+            ssoConfig.set(sso);
+        }
+        else
+        {
+            ssoConfig.set(null);
         }
         dlg.setLoginMethods(labels);
-        // Greying the username/password fields whenever a browser provider is
-        // picked makes it obvious they don't apply to that method.
         dlg.setMethodChangeListener(e -> dlg.setCredentialsEnabled(dlg.getSelectedMethodIndex() == 0));
-        return usable;
-    }
-
-    private static String providerLabel(OAuthConfig provider)
-    {
-        String id = provider.getId();
-        if (id != null && !id.isEmpty())
-        {
-            return Character.toUpperCase(id.charAt(0)) + id.substring(1);
-        }
-        return provider.getDisplayName() != null ? provider.getDisplayName() : "OAuth";
     }
 
     private void runOauthLogin(LoginDialog dlg, Semaphore loginMutex, OAuthConfig provider)
@@ -1135,18 +1068,16 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         });
         dlg.setBrowserLoginInProgress(i18n.getString("login.oauth.waiting"));
         commandScheduler.supply(() -> {
-            LOGGER.info("OAuth login: starting browser flow for provider '"
-                    + (provider.getId() != null ? provider.getId() : "rapla") + "'");
+            // PRD 072 Phase 5: the single SSO entry always targets rapla's own
+            // Authorization Server (/oauth2/authorize → /login chooser). rapla
+            // brokers the upstream IdP and returns a rapla-issuer token; refresh
+            // therefore always hits rapla's /oauth2/token — no provider routing
+            // to stash on connectionInfo.
+            LOGGER.info("OAuth login: starting browser flow via rapla SSO");
             if (provider.getLogoutUrl() != null)
             {
                 connectionInfo.setLogoutUrl(provider.getLogoutUrl());
             }
-            // PRD 029 Phase 4: remember this provider's token endpoint + client_id
-            // so MyCustomConnector refreshes against the right place — the BFF
-            // (/api/auth/oauth/exchange/{id}) for a secret-backed provider like
-            // Keycloak, the rapla SAS /oauth2/token for the rapla provider.
-            connectionInfo.setRefreshUrl(provider.getTokenUrl());
-            connectionInfo.setOauthClientId(provider.getClientId());
             SwingOAuthLoginFlow flow = new SwingOAuthLoginFlow(provider);
             boolean force = nextOauthForcesLogin;
             nextOauthForcesLogin = false;
@@ -1196,14 +1127,10 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
 
     private void finishOauthLogin(LoginDialog dlg, Semaphore loginMutex, OAuthTokens tokens, OAuthConfig provider)
     {
-        // PRD 029 Phase 5 — carry provider routing alongside the tokens so a
-        // later switch-to-user / switch-back can rebuild the new context with
-        // the right refresh URL + client_id. Falls back to rapla-SAS defaults
-        // when provider is null.
-        String providerRefreshUrl = provider != null ? provider.getTokenUrl() : null;
-        String providerClientId = provider != null ? provider.getClientId() : null;
-        ConnectInfo info = new ConnectInfo(tokens.getAccessToken(), tokens.getRefreshToken(),
-                providerRefreshUrl, providerClientId);
+        // PRD 072 Phase 5: the SSO flow yields a rapla-issuer token and refresh
+        // always hits rapla's /oauth2/token, so the session is fully captured by
+        // its two tokens — no provider routing to carry across a switch-back.
+        ConnectInfo info = new ConnectInfo(tokens.getAccessToken(), tokens.getRefreshToken());
         reconnectInfo = info;
         // Capture the id_token for use as id_token_hint when the user signs out.
         // Without it, /connect/logout rejects the request (404) and the
@@ -1217,8 +1144,8 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                 dialogUiFactory.showWarning(i18n.getString("error.login"), new SwingPopupContext(dlg, null));
                 return;
             }
-            // PRD 029 Phase 4: remember the language + provider for next launch.
-            persistLoginPrefs(provider != null && provider.getId() != null ? provider.getId() : "rapla");
+            // Remember the language + SSO method for next launch.
+            persistLoginPrefs("sso");
             dlg.idle();
             loginMutex.release();
             dlg.busy(i18n.getString("load"));
@@ -1269,36 +1196,12 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         // servers — default false keeps the OAuth-first behaviour.
         boolean swingLegacyLogin = tree.path("swingLegacyLogin").asBoolean(false);
         boolean swingLegacyShowSsoButton = tree.path("swingLegacyShowSsoButton").asBoolean(false);
-        // PRD 029 Phase 4: parse the providers[] array so the Swing login dialog
-        // can offer a method dropdown (rapla SAS, Keycloak, …). Each entry is
-        // turned into a provider-level OAuthConfig that SwingOAuthLoginFlow can
-        // consume directly. Absent on older servers → empty list, no dropdown.
-        List<OAuthConfig> providers = new java.util.ArrayList<>();
-        if (tree.has("providers") && tree.get("providers").isArray())
-        {
-            for (tools.jackson.databind.JsonNode p : tree.get("providers"))
-            {
-                List<String> pScopes = new java.util.ArrayList<>();
-                if (p.has("scopes") && p.get("scopes").isArray())
-                {
-                    p.get("scopes").forEach(n -> pScopes.add(n.asString()));
-                }
-                String pEndSession = p.has("endSessionUrl") && !p.get("endSessionUrl").isNull()
-                        ? p.get("endSessionUrl").asString() : null;
-                providers.add(new OAuthConfig(
-                        true,
-                        p.path("clientId").asString(),
-                        p.path("authorizeUrl").asString(),
-                        p.path("tokenUrl").asString(),
-                        pEndSession,
-                        pScopes,
-                        false,
-                        false,
-                        p.path("id").asString(),
-                        p.path("displayName").asString(),
-                        List.of()));
-            }
-        }
+        // PRD 072 Phase 5: rapla is Swing's single federating Authorization
+        // Server. The Swing login no longer offers a per-provider menu — it has
+        // one SSO entry pointing at rapla's own /oauth2/authorize → /login, where
+        // the chooser now lives server-side. The discovery providers[] array is
+        // therefore not consumed by Swing anymore (the server still publishes it
+        // for the SPA / explorers); Swing only needs the top-level rapla config.
         return new OAuthConfig(
                 true,
                 tree.path("clientId").asString(),
@@ -1310,7 +1213,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                 swingLegacyShowSsoButton,
                 "rapla",
                 null,
-                providers);
+                List.of());
     }
 
     /** centers the window around the specified center */
@@ -1481,26 +1384,18 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     }
 
     /**
-     * Token-only session start. PRD 029 Phase 5: ConnectInfo carries access
-     * + refresh tokens AND provider routing (refreshUrl / oauthClientId), so
-     * a new context built after a switch-back (or any close+recreate boundary)
-     * restores admin's full session and mid-session refresh hits the right
-     * provider. The password→token conversion happens at the user-input
-     * boundary (legacy dialog, CLI bootstrap), never here.
+     * Token-only session start. PRD 072 Phase 5: ConnectInfo carries access
+     * + refresh tokens only — refresh always hits rapla's /oauth2/token, so a
+     * new context built after a switch-back (or any close+recreate boundary)
+     * restores admin's session from the two tokens alone. The password→token
+     * conversion happens at the user-input boundary (legacy dialog, CLI
+     * bootstrap), never here.
      */
     private Promise<Boolean> login(ConnectInfo connectInfo)
     {
         return commandScheduler.supply(() -> {
             this.connectionInfo.setAccessToken(connectInfo.getAccessToken());
             this.connectionInfo.setRefreshToken(connectInfo.getRefreshToken());
-            // Restore provider routing — without this, post-restart refresh
-            // falls back to rapla SAS even for Keycloak sessions.
-            if (connectInfo.getRefreshUrl() != null && !connectInfo.getRefreshUrl().isEmpty()) {
-                this.connectionInfo.setRefreshUrl(connectInfo.getRefreshUrl());
-            }
-            if (connectInfo.getOauthClientId() != null && !connectInfo.getOauthClientId().isEmpty()) {
-                this.connectionInfo.setOauthClientId(connectInfo.getOauthClientId());
-            }
             this.connectionInfo.setReconnectInfo(connectInfo);
             this.reconnectInfo = connectInfo;
             if (connectInfo.getRefreshToken() != null)

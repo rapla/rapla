@@ -5,7 +5,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
-import org.rapla.components.util.IOUtil;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
@@ -345,7 +344,8 @@ public class CalendarPageController
         }
         catch (Exception ex)
         {
-            out.println(IOUtil.getStackTraceAsString(ex));
+            // A6: log the cause server-side; don't leak the stack trace into the response.
+            NOT_FOUND_LOG.warn("error rendering calendar menu", ex);
             throw new ServletException(ex);
         }
         finally
@@ -376,30 +376,20 @@ public class CalendarPageController
         return AbstractHTMLCalendarPage.getUrl(request, "calendar");
     }
 
-    private void writeStacktrace(HttpServletResponse response, Exception ex) throws IOException
+    private void writeStacktrace(HttpServletResponse response, Exception ex)
     {
-        String charsetNonUtf = raplaLocale.getCharsetForHtml();
-        response.setContentType("text/html; charset=" + charsetNonUtf);
-        PrintWriter out = response.getWriter();
-        out.println(IOUtil.getStackTraceAsString(ex));
-        out.close();
+        // A6: never dump the stack trace to the response — log it, return a generic body.
+        SafePageError.write(response, 500, "Internal error generating the calendar view.", NOT_FOUND_LOG, ex);
     }
 
-    private void write404(HttpServletResponse response, String message) throws IOException
+    private void write404(HttpServletResponse response, String message)
     {
-        response.setStatus(404);
-        response.getWriter().print(message);
-        NOT_FOUND_LOG.warn(message);
-        response.getWriter().close();
+        SafePageError.write(response, 404, message, NOT_FOUND_LOG, null);
     }
 
-    private void writeError(HttpServletResponse response, String message) throws IOException
+    private void writeError(HttpServletResponse response, String message)
     {
-        response.setStatus(500);
-        response.setContentType("text/html; charset=" + raplaLocale.getCharsetForHtml());
-        PrintWriter out = response.getWriter();
-        out.println(message);
-        out.close();
+        SafePageError.write(response, 500, message, NOT_FOUND_LOG, null);
     }
 
     private class TitleComparator implements Comparator<String>

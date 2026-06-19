@@ -143,10 +143,7 @@ public class Export2iCalController
             }
             catch (EntityNotFoundException ex)
             {
-                response.getWriter().println(message);
-                response.getWriter().close();
-                NOT_FOUND_LOG.warn(message);
-                response.setStatus(404);
+                SafePageError.write(response, 404, message, NOT_FOUND_LOG, null);
                 return;
             }
             final Preferences preferences = facade.getPreferences(user);
@@ -154,10 +151,7 @@ public class Export2iCalController
 
             if (calModel == null)
             {
-                response.getWriter().println(message);
-                response.getWriter().close();
-                response.setStatus(404);
-                NOT_FOUND_LOG.warn(message);
+                SafePageError.write(response, 404, message, NOT_FOUND_LOG, null);
                 return;
             }
 
@@ -166,10 +160,7 @@ public class Export2iCalController
 
             if (isSet == null || isSet.equals("false"))
             {
-                response.getWriter().println(message);
-                response.getWriter().close();
-                NOT_FOUND_LOG.warn(message);
-                response.setStatus(404);
+                SafePageError.write(response, 404, message, NOT_FOUND_LOG, null);
                 return;
             }
 
@@ -184,11 +175,8 @@ public class Export2iCalController
         }
         catch (Exception e)
         {
-            response.getWriter().println("An error occured giving you the Calendarview for user " + username + " named " + filename);
-            response.getWriter().println();
-            e.printStackTrace(response.getWriter());
-            response.getWriter().close();
-            ICAL_LOG.error(e.getMessage(), e);
+            // A6: generic message (no reflected user/filename), never a stack trace in the body.
+            SafePageError.write(response, 500, "An error occurred while generating the calendar.", ICAL_LOG, e);
         }
         finally
         {
@@ -230,6 +218,17 @@ public class Export2iCalController
         }
     }
 
+    /**
+     * H5: build a safe {@code Content-Disposition} value from the user-controlled
+     * calendar name — strip CR/LF and quotes (header-injection / filename spoofing)
+     * and wrap in quotes per RFC 6266.
+     */
+    static String contentDispositionAttachment(String filename)
+    {
+        String safe = filename == null ? "" : filename.replaceAll("[\\r\\n\"]", "");
+        return "attachment; filename=\"" + safe + ".ics\"";
+    }
+
     private void write(final HttpServletResponse response, final Collection<Appointment> appointments, String filename, User user, final Preferences preferences) throws RaplaException, IOException
     {
         if (filename == null)
@@ -237,7 +236,7 @@ public class Export2iCalController
             filename = i18n.getString("default");
         }
         response.setContentType("text/calendar; charset=UTF-8");
-        response.setHeader("Content-Disposition", "attachment; filename=" + filename + ".ics");
+        response.setHeader("Content-Disposition", contentDispositionAttachment(filename));
         response.setCharacterEncoding("UTF-8");
         if (appointments == null)
         {

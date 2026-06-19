@@ -170,6 +170,7 @@ The longer snippets (graceful-shutdown stop, restart procedure, `jps`/HTTP statu
 Quick essentials that stay inline:
 - Stop: `pkill -f RaplaSpringBootApplication` (10 s graceful window — never `kill -9` first).
 - One server per checkout (port 8051 binds once); use a worktree per §7 for parallel work.
+- **Is the running server fresh (does it have your latest code)?** `curl -s localhost:8051/server | grep -o '[0-9-]\{10\} [0-9:]\{5\} GMT' | head -1` prints the build timestamp — compare against your last compile before assuming the process is stale; don't guess.
 - Never start the server during a `mvn package` build (`spring-boot:repackage` rewrites the same JAR).
 - **Testing an external plugin (e.g. dhbwrapla):** run `spring-boot:run` through the *plugin's* aggregator pom with `workingDirectory` pinned to the plugin checkout root — otherwise the plugin's relative-path dataset (`./data`, `./local`) resolves against rapla-app and boot fails on a missing plugin-seeded resource. Full recipe + the `-P<plugin-id>` runtime-dep wiring: `server-lifecycle` skill. Working inside a plugin checkout, read **that repo's `AGENTS.md` first** — it has plugin-specific knobs rapla's doesn't.
 

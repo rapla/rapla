@@ -316,6 +316,21 @@ public class ClassificationGraphQLController
 
     // === filter predicate =====================================================
 
+    /**
+     * PRD 073 — package-visible entry point for the scalar predicate, reused by
+     * {@code StructuralTypeFetchers.appointmentAllocatables} for the nested
+     * {@code Appointment.allocatables(filter: AppointmentAllocatableFilter)} field.
+     * {@code m} is the raw GraphQL input map (null = unconstrained → matches).
+     * Only the v1 scalar fields of {@link AllocatableFilter} are evaluated here;
+     * {@code AppointmentAllocatableFilter} is a strict subset that excludes {@code idIn},
+     * {@code limit}, {@code accessibleBy*}, and {@code where<TypeKey>} — so no
+     * unsupported field can reach this method via the nested path.
+     */
+    static boolean matchesMap(Allocatable a, Map<String, Object> m)
+    {
+        return matches(a, fromMap(m));
+    }
+
     private static boolean matches(Allocatable a, AllocatableFilter f)
     {
         if (f == null) return true;

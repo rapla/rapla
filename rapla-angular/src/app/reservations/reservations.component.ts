@@ -68,7 +68,7 @@ import { SwitchToUserDialogComponent } from '../auth/switch-to-user-dialog.compo
           Switch back
         </button>
       } @else {
-        <button matButton (click)="auth.signOut()">
+        <button matButton (click)="signOut()">
           <mat-icon>logout</mat-icon>
           Sign out
         </button>
@@ -191,19 +191,14 @@ export class ReservationsComponent implements OnInit {
   error = signal<string | null>(null);
   totalCount = signal(0);
   incomplete = signal(false);
-  username = signal('');
 
   /**
-   * PRD 051 — effective user shown in the toolbar chip. While
-   * impersonating, this is the target's username (from the
-   * impersonation override). Otherwise the admin's own preferred
-   * username from JWT identity claims (the {@code username()} signal
-   * set in {@link ngOnInit}). One source of truth so the badge,
-   * marker, and tooltip all agree.
+   * PRD 072 — effective user shown in the toolbar chip, from the identity
+   * loaded via {@code GET /api/auth/me}. While impersonating, the server
+   * reports the TARGET as {@code username}; otherwise it's the caller's own.
+   * One source of truth so the badge, marker, and tooltip all agree.
    */
-  readonly effectiveUsername = computed(
-    () => this.auth.impersonationOverride()?.targetUsername ?? this.username(),
-  );
+  readonly effectiveUsername = computed(() => this.auth.identity()?.username ?? '');
 
   /**
    * PRD 051 — `true` if the caller can {@code canAdminUser} over ≥1
@@ -216,27 +211,20 @@ export class ReservationsComponent implements OnInit {
    */
   readonly canImpersonate = signal(false);
 
-  /** The actor's username, decoded from the impersonation token's
-   *  `act.username` claim. Used in the tooltip on the badge. Empty
-   *  when no impersonation is active. */
-  readonly adminUsername = computed(() => {
-    const override = this.auth.impersonationOverride();
-    if (!override) return '';
-    const claim = decodeActUsername(override.accessToken);
-    return claim ?? '';
-  });
+  /** The admin actor's username while impersonating, from {@code /api/auth/me}'s
+   *  {@code actor} field. Empty when no impersonation is active. */
+  readonly adminUsername = computed(() => this.auth.actorUsername());
 
   constructor() {
-    // Re-fetch whenever the impersonation override flips — covers
-    // openSwitchToUser → confirm → impersonate, switchBack, and any
-    // other path that mutates auth.impersonationOverride. Tracks the
-    // current target by id (or null when not impersonating); only fires
-    // when that changes. ngOnInit's initial fetch isn't enough because
-    // the dialog-close subscription path was unreliable across the
-    // angular-zone / microtask boundary.
+    // Re-fetch whenever the impersonation state flips — covers
+    // openSwitchToUser → confirm → impersonate, switchBack, and any other
+    // path that reloads the identity. Tracks the effective username (or
+    // null when no identity); only fires when that changes. ngOnInit's
+    // initial fetch isn't enough because the dialog-close subscription
+    // path was unreliable across the angular-zone / microtask boundary.
     let lastTarget: string | null | undefined = undefined;
     effect(() => {
-      const target = this.auth.impersonationOverride()?.targetUsername ?? null;
+      const target = this.auth.identity()?.username ?? null;
       if (lastTarget === undefined) {
         lastTarget = target;
         return; // skip the initial run — ngOnInit fires the first fetch
@@ -249,8 +237,6 @@ export class ReservationsComponent implements OnInit {
   }
 
   ngOnInit() {
-    const claims = this.auth.identityClaims() ?? {};
-    this.username.set(String(claims['preferred_username'] ?? claims['name'] ?? ''));
     // PRD 051 — probe /api/users to decide whether the username chip
     // is clickable. Empty list = caller has no admin authority;
     // non-empty = chip becomes a "Switch to user" trigger.
@@ -306,14 +292,19 @@ export class ReservationsComponent implements OnInit {
   }
 
   /**
-   * PRD 051 — click handler on the "Impersonating X" badge. Clears
-   * the override in {@link AuthService}; next outbound request uses
-   * the admin's own Bearer. Reloads the table so the user sees their
-   * own (admin's) data again.
+   * PRD 072 — click handler on the "Impersonating X" badge. Calls the
+   * server {@code POST /api/auth/impersonate/end} (restores the admin
+   * {@code access_token} cookie) and reloads the identity. The impersonation
+   * effect then refires the table fetch; the user sees their own (admin's)
+   * data again.
    */
   switchBack(): void {
-    this.auth.endImpersonation();
-    this.fetchReservations();
+    void this.auth.endImpersonation();
+  }
+
+  /** Explicit user-driven sign-out (server logout + cookie clear). */
+  signOut(): void {
+    this.auth.signOut();
   }
 
   /**
@@ -341,29 +332,5 @@ export class ReservationsComponent implements OnInit {
       if (!isNaN(d.getTime())) return d.toLocaleString();
     }
     return String(v);
-  }
-}
-
-/**
- * Decode the {@code act.username} claim from a rapla-SAS-minted
- * impersonation token. Used for the tooltip on the
- * "Impersonating X" badge so admins can see whose authority is being
- * used. Signature isn't checked here — that's the resource server's
- * job; we just want to render the claim. Returns null on any parse
- * failure (don't fall back to noisy errors in the toolbar).
- */
-function decodeActUsername(jwt: string): string | null {
-  try {
-    const parts = jwt.split('.');
-    if (parts.length < 2) return null;
-    const padded = parts[1] + '='.repeat((4 - (parts[1].length % 4)) % 4);
-    const json = JSON.parse(atob(padded.replace(/-/g, '+').replace(/_/g, '/')));
-    const act = json.act;
-    if (act && typeof act === 'object' && typeof act.username === 'string') {
-      return act.username;
-    }
-    return null;
-  } catch {
-    return null;
   }
 }

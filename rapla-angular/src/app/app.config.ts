@@ -5,68 +5,40 @@ import {
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
 import { provideRouter } from '@angular/router';
-import { provideHttpClient, withInterceptors, withXhr } from '@angular/common/http';
+import {
+  provideHttpClient,
+  withInterceptors,
+  withXhr,
+  withXsrfConfiguration,
+} from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
-import { OAuthService, provideOAuthClient } from 'angular-oauth2-oidc';
 
 import { routes } from './app.routes';
 import { authInterceptor } from './auth/auth.interceptor';
-import { AuthService, OAuthDiscovery } from './auth/auth.service';
+import { AuthService } from './auth/auth.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideAnimationsAsync(),
     provideRouter(routes),
-    provideHttpClient(withXhr(), withInterceptors([authInterceptor])),
-    provideOAuthClient(),
+    // PRD 072 Phase 4 — cookie-credential model A. CSRF: the server materializes
+    // a JS-readable XSRF-TOKEN cookie on GETs; mutating cookie-auth requests must
+    // echo it back as X-XSRF-TOKEN. Angular's built-in XSRF interceptor does this
+    // automatically — but ONLY for relative / same-origin URLs (it no-ops on
+    // absolute cross-origin URLs), so all /api calls use relative paths.
+    provideHttpClient(
+      withXhr(),
+      withXsrfConfiguration({ cookieName: 'XSRF-TOKEN', headerName: 'X-XSRF-TOKEN' }),
+      withInterceptors([authInterceptor]),
+    ),
+    // Load the current identity once at startup from GET /api/auth/me (the SPA's
+    // source of login state — replaces the old client-side JWT decode). On a
+    // valid access_token cookie this populates AuthService.identity; on 401 it
+    // resolves null and the authGuard bounces to the server /login page.
     provideAppInitializer(() => {
-      const oauth = inject(OAuthService);
-      const authService = inject(AuthService);
-      // Persist tokens across page reloads (default is sessionStorage which
-      // clears on tab close; localStorage survives until explicit logout).
-      oauth.setStorage(localStorage);
-      // Endpoint set comes from /api/auth/oauth/config so the SPA is auth-server
-      // agnostic. The `providers[]` + `picker` fields (PRD 036) let the SPA
-      // render a multi-IdP picker on /login when more than one provider is
-      // enabled. Top-level flat fields always reflect the rapla embedded SAS.
-      const origin = window.location.origin;
-      return fetch(origin + '/api/auth/oauth/config')
-        .then((r) => (r.ok ? r.json() : Promise.reject(`oauth config http ${r.status}`)))
-        .then((cfg: OAuthDiscovery) => {
-          if (!cfg.enabled) return undefined;
-          authService.setDiscovery(cfg);
-          // Configure OAuthService with the user's most recent picker choice
-          // (persisted in localStorage), falling back to the primary provider.
-          // This is critical for the post-callback reload: when the browser
-          // comes back to /app/auth/callback?code=… after the IdP redirect,
-          // tryLoginCodeFlow() must exchange the code at the SAME token
-          // endpoint the authorize was issued against, not the default one.
-          const active = authService.activeProvider();
-          authService.applyProviderToOAuthService(active, cfg);
-          // Load the JWKS for the active provider so id_token signature
-          // verification uses the right keys.
-          const jwksUrl = active?.jwksUrl ?? cfg.jwksUrl;
-          return fetch(jwksUrl)
-            .then((r) => (r.ok ? r.json() : null))
-            .then((jwks) => {
-              if (jwks) (oauth as unknown as { jwks: unknown }).jwks = jwks;
-            })
-            .then(() => oauth.tryLoginCodeFlow())
-            .then(() => {
-              // Proactive refresh: if a valid token is present (either fresh
-              // from this callback or carried over from a prior tab),
-              // schedule the library's auto-silent-refresh so subsequent
-              // expiries are handled invisibly. No-op when no token is
-              // present (e.g. user hasn't signed in yet).
-              if (oauth.hasValidAccessToken()) {
-                authService.enableAutomaticSilentRefresh();
-              }
-            });
-        })
-        .catch((err) => {
-          console.warn('OAuth init failed; SPA will require manual auth via /login:', err);
-        });
+      const auth = inject(AuthService);
+      return auth.loadIdentity();
     }),
   ],
 };

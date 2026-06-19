@@ -15,12 +15,13 @@ import org.springframework.beans.factory.annotation.Autowired;
  * {@code rapla-angular/src/app/auth/auth.service.ts}, PRD 051):
  *
  * <ul>
- *   <li><b>Admin session</b> — {@link #accessToken} + {@link #refreshToken} +
- *       {@link #refreshUrl} + {@link #oauthClientId}. Persistent across the
- *       session. Refreshed by {@code MyCustomConnector.refreshUsingToken} and
- *       {@code RefreshOn401Interceptor.doRefresh} via the saved provider URL.
- *       Angular equivalent: {@code angular-oauth2-oidc} library state stored
- *       under {@code localStorage}.</li>
+ *   <li><b>Admin session</b> — {@link #accessToken} + {@link #refreshToken}.
+ *       Persistent across the session. Refreshed by
+ *       {@code MyCustomConnector.refreshUsingToken} and
+ *       {@code RefreshOn401Interceptor.doRefresh} against rapla's own
+ *       {@code /oauth2/token} (PRD 072 Phase 5 — rapla is Swing's single
+ *       token endpoint). Angular equivalent: {@code angular-oauth2-oidc}
+ *       library state stored under {@code localStorage}.</li>
  *   <li><b>Impersonation override</b> — {@link #impersonationAccessToken} +
  *       {@link #impersonationTargetUsername}. Sidecar that takes precedence for
  *       outbound bearers via {@link #getEffectiveAccessToken()}, but is
@@ -59,14 +60,6 @@ public class RemoteConnectionInfo
     // nature explicit and match Angular's `override.accessToken` naming.
     String impersonationAccessToken;
     String impersonationTargetUsername;
-    // PRD 029 Phase 4 — the token endpoint + client_id this session must use
-    // for refresh-token reauth. For a rapla-SAS / password session these stay
-    // null and MyCustomConnector falls back to serverURL + /oauth2/token with
-    // client_id=rapla-client. For a browser-OAuth provider login they hold the
-    // provider's token endpoint (the BFF URL for a secret-backed provider like
-    // Keycloak) and the provider's client_id.
-    String refreshUrl;
-    String oauthClientId;
     transient StatusUpdater statusUpdater;
     /** Fires when the auth seam discovers BOTH the access token AND the cached
      *  refresh token are dead (refresh request itself returned non-2xx). The
@@ -146,28 +139,6 @@ public class RemoteConnectionInfo
 
     public String getLogoutUrl() {
         return logoutUrl;
-    }
-
-    /** Token endpoint for refresh-token reauth (PRD 029 Phase 4). When a
-     *  browser-OAuth provider was used this is the provider's token endpoint —
-     *  the BFF URL for a secret-backed provider like Keycloak. Null for
-     *  rapla-SAS / password sessions (MyCustomConnector then falls back to
-     *  serverURL + /oauth2/token). */
-    public void setRefreshUrl(String refreshUrl) {
-        this.refreshUrl = refreshUrl;
-    }
-
-    public String getRefreshUrl() {
-        return refreshUrl;
-    }
-
-    /** OAuth client_id to send on the refresh request. Null → rapla-client. */
-    public void setOauthClientId(String oauthClientId) {
-        this.oauthClientId = oauthClientId;
-    }
-
-    public String getOauthClientId() {
-        return oauthClientId;
     }
 
     public String getServerURL() {

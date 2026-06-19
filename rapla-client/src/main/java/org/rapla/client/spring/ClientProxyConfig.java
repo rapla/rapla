@@ -292,22 +292,17 @@ public class ClientProxyConfig
             // PRD 041: refresh via OAuth2-standard /oauth2/token grant_type=refresh_token
             // (form-encoded body, snake_case response). Replaces the rapla-custom
             // JSON /api/auth/refresh path.
-            // PRD 029 Phase 4: when the session was started via a non-rapla OAuth
-            // provider (Keycloak, Entra, Google), SwingOAuthLoginFlow stashes that
-            // provider's token endpoint + client_id on RemoteConnectionInfo. We
-            // must route the refresh there, NOT to rapla's own /oauth2/token —
-            // rapla SAS cannot validate a Keycloak-signed refresh JWT. Same fallback
+            // PRD 072 Phase 5: rapla is Swing's single federating Authorization
+            // Server, so refresh ALWAYS targets rapla's own /oauth2/token with
+            // client_id=rapla-client — every Swing login (rapla-password or
+            // rapla-brokered Keycloak/Google/MS) yields a rapla-issuer token, so
+            // there is no external provider token endpoint to route to. Same
             // shape as MyCustomConnector.refreshUsingToken().
-            String tokenUrl = info.getRefreshUrl();
-            if (tokenUrl == null || tokenUrl.isEmpty())
-            {
-                String baseUrl = info.getServerURL();
-                if (baseUrl == null || baseUrl.isEmpty()) return false;
-                String trimmed = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
-                tokenUrl = trimmed + "/oauth2/token";
-            }
-            String clientId = info.getOauthClientId();
-            if (clientId == null || clientId.isEmpty()) clientId = "rapla-client";
+            String baseUrl = info.getServerURL();
+            if (baseUrl == null || baseUrl.isEmpty()) return false;
+            String trimmed = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+            String tokenUrl = trimmed + "/oauth2/token";
+            String clientId = "rapla-client";
             String encoded = java.net.URLEncoder.encode(refreshToken, java.nio.charset.StandardCharsets.UTF_8);
             String encodedClientId = java.net.URLEncoder.encode(clientId, java.nio.charset.StandardCharsets.UTF_8);
             byte[] reqBody = ("grant_type=refresh_token&refresh_token=" + encoded
@@ -413,12 +408,6 @@ public class ClientProxyConfig
     public org.rapla.plugin.export2ical.ICalConfigService iCalConfigServiceProxy(HttpServiceProxyFactory factory)
     {
         return factory.createClient(org.rapla.plugin.export2ical.ICalConfigService.class);
-    }
-
-    @Bean
-    public org.rapla.plugin.mail.MailToUserInterface mailToUserProxy(HttpServiceProxyFactory factory)
-    {
-        return factory.createClient(org.rapla.plugin.mail.MailToUserInterface.class);
     }
 
     @Bean

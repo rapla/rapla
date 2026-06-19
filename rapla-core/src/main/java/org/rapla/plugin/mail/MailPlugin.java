@@ -15,19 +15,11 @@ package org.rapla.plugin.mail;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.framework.TypedComponentRole;
 
-/** Provides the MailToUserInterface and the MailInterface for sending mails.
- * The MailInterface can only be used on a machine that can connect to the mailserver.
- * While the MailToUserInterface can be called from a client, it redirects the mail request to
- * the server, which must be able to connect to the mailserver.
- *
- * Example 1:
- *
- * <code>
- *  MailToUserInterface mail = getContext().loopup( MailToUserInterface.class );
- *  mail.sendMail( subject, body );
- * </code>
- *
- * @see MailToUserInterface
+/** Provides the MailInterface for sending mails.
+ * The MailInterface can only be used on a machine that can connect to the mailserver
+ * (server-side). Mails are sent from the server via the configured SMTP host —
+ * test mails (mail config), the email-change security code, and the Exchange-sync
+ * notification all go through {@code MailInterface} / {@code MailToUserImpl} server-side.
  */
 public class MailPlugin
 {
@@ -41,7 +33,6 @@ public class MailPlugin
 //        if ( !config.getAttributeAsBoolean("enabled", ENABLE_BY_DEFAULT) )
 //        	return;
 //
-//        container.addContainerProvidedComponent( MailToUserInterface.class, RaplaMailToUserOnServer.class);
 //    }
 
     

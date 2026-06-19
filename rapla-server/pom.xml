@@ -33,6 +33,14 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
         </dependency>
+        <!-- PRD 072 Phase 1: server-side oauth2Login() HEAD (authorize-redirect /
+             state / PKCE / nonce / id_token validation) + ClientRegistrationRepository.
+             Only oauth2-resource-server + oauth2-authorization-server were on the
+             classpath before; the login client side was missing. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-client</artifactId>
+        </dependency>
         <!-- Jackson 3 (transitively from spring-boot-starter-web; declared explicit per PRD 005 cleanup E1
              since MailapiClient / HTTPWithJsonMailConnector / TableConfigTest use Jackson directly). -->
         <dependency>

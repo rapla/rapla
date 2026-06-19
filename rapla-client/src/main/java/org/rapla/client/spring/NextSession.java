@@ -76,12 +76,13 @@ public final class NextSession
     public static NextSession reconnectAs(ConnectInfo info) { return new NextSession(info, null, null, null, false, false); }
     /**
      * Admin → user impersonation: launcher should use {@code adminFullInfo}
-     * for the next context (admin's tokens + provider routing as primary) AND
-     * apply the impersonation override on top.
+     * for the next context (admin's tokens as primary) AND apply the
+     * impersonation override on top.
      *
-     * @param adminFullInfo admin's full session info (tokens + refreshUrl +
-     *   oauthClientId) — restored as the primary session on the new context
-     *   AND remembered for the eventual switch-back
+     * @param adminFullInfo admin's session info (access + refresh tokens) —
+     *   restored as the primary session on the new context AND remembered for
+     *   the eventual switch-back (PRD 072 Phase 5: refresh always hits rapla,
+     *   so no provider routing to carry)
      * @param impersonationAccessToken the rapla-SAS-signed impersonation JWT
      *   returned from {@code POST /api/auth/impersonate}
      * @param impersonationTargetUsername the impersonated user's username

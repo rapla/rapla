@@ -68,7 +68,7 @@ public class ExternalUserResolver
      */
     public User resolve(Jwt jwt, ProviderConfig provider) throws RaplaException
     {
-        enforceHostedDomain(jwt, provider);
+        enforceHostedDomain(jwt.getClaims(), provider);
 
         String upn = jwt.getClaimAsString("upn");
         User byUsername = findUserByUsername(upn);
@@ -107,17 +107,28 @@ public class ExternalUserResolver
      */
     public IdentityClaims claimsFor(Jwt jwt, ProviderConfig provider) throws RaplaSecurityException
     {
-        enforceHostedDomain(jwt, provider);
+        return claimsFor(jwt.getClaims(), provider);
+    }
+
+    /**
+     * PRD 072 Phase 1 — {@link IdentityClaims} from a generic claims map. Used
+     * by the server-side {@code oauth2Login()} success-handler path, which holds
+     * an {@code OidcIdToken}/{@code OidcUser} (already verified by Spring's head)
+     * rather than a resource-server {@link Jwt}. Pure read; no storage writes.
+     */
+    public IdentityClaims claimsFor(java.util.Map<String, Object> claims, ProviderConfig provider) throws RaplaSecurityException
+    {
+        enforceHostedDomain(claims, provider);
 
         // upn → usernameClaim → emailClaim, matching the resolve() priority.
-        String username = jwt.getClaimAsString("upn");
+        String username = asString(claims, "upn");
         if (username == null || username.isEmpty())
         {
-            username = jwt.getClaimAsString(provider.usernameClaim());
+            username = asString(claims, provider.usernameClaim());
         }
         if (username == null || username.isEmpty())
         {
-            username = jwt.getClaimAsString(provider.emailClaim());
+            username = asString(claims, provider.emailClaim());
         }
         if (username == null || username.isEmpty())
         {
@@ -128,11 +139,11 @@ public class ExternalUserResolver
         }
         username = username.toLowerCase(Locale.ROOT);
 
-        String displayName = jwt.getClaimAsString("name");
+        String displayName = asString(claims, "name");
         if (displayName == null || displayName.isEmpty())
         {
-            String given = jwt.getClaimAsString("given_name");
-            String family = jwt.getClaimAsString("family_name");
+            String given = asString(claims, "given_name");
+            String family = asString(claims, "family_name");
             if (given != null || family != null)
             {
                 displayName = ((given == null ? "" : given) + " "
@@ -140,22 +151,29 @@ public class ExternalUserResolver
             }
         }
 
-        String email = jwt.getClaimAsString(provider.emailClaim());
+        String email = asString(claims, provider.emailClaim());
         if (email != null && email.isEmpty()) email = null;
 
         return new IdentityClaims(username, displayName, email, provider.id(), null);
     }
 
-    private void enforceHostedDomain(Jwt jwt, ProviderConfig provider) throws RaplaSecurityException
+    private static String asString(java.util.Map<String, Object> claims, String key)
+    {
+        if (claims == null || key == null) return null;
+        Object v = claims.get(key);
+        return v == null ? null : v.toString();
+    }
+
+    private void enforceHostedDomain(java.util.Map<String, Object> claims, ProviderConfig provider) throws RaplaSecurityException
     {
         String configured = provider.hostedDomain();
         if (configured == null || configured.isEmpty()) return;
-        String hd = jwt.getClaimAsString("hd");
+        String hd = asString(claims, "hd");
         if (hd == null)
         {
             // Some Entra deployments don't expose 'hd' even on single-tenant —
             // fall back to comparing the email domain.
-            String email = jwt.getClaimAsString(provider.emailClaim());
+            String email = asString(claims, provider.emailClaim());
             if (email == null || !email.toLowerCase(Locale.ROOT).endsWith(
                     "@" + configured.toLowerCase(Locale.ROOT)))
             {

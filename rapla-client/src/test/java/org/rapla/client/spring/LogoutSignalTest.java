@@ -93,8 +93,7 @@ class LogoutSignalTest
         // impersonation access token + target username separately. The launcher
         // starts the new context with admin's session, then applies the
         // impersonation override via ClientService.setImpersonation().
-        ConnectInfo adminFull = new ConnectInfo("admin-access", "admin-refresh",
-                "http://kc/realms/r/token", "rapla-app");
+        ConnectInfo adminFull = new ConnectInfo("admin-access", "admin-refresh");
         NextSession switchTo = NextSession.switchTo(adminFull, "imp-token", "alice");
         assertSame(adminFull, switchTo.info());
         assertSame(adminFull, switchTo.restoreInfo());

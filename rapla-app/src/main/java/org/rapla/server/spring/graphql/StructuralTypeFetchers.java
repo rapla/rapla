@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.function.Supplier;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
@@ -551,10 +552,16 @@ public final class StructuralTypeFetchers
             {
                 org.rapla.entities.domain.Reservation r = a.getReservation();
                 if (r == null) return List.of();
-                var rc = ctxFrom(env);
+                DataFetchingEnvironment dfe = env.get();
+                var rc = RequestContextInstrumentation.from(dfe.getGraphQlContext());
                 User caller = rc.caller();
                 PermissionController pc = rc.permissionController() != null
                         ? rc.permissionController() : operator.getPermissionController();
+                // PRD 073 — optional scalar filter, applied AFTER the §12
+                // canRead gate so a hidden matching allocatable can't leak.
+                @SuppressWarnings("unchecked")
+                Map<String, Object> filterArg = dfe.getArgument("filter") instanceof Map<?, ?> m
+                        ? (Map<String, Object>) m : null;
                 List<Allocatable> out = new ArrayList<>();
                 Allocatable[] all = r.getAllocatables();
                 if (all == null) return List.of();
@@ -562,6 +569,8 @@ public final class StructuralTypeFetchers
                 {
                     if (alloc == null) continue;
                     if (caller != null && !pc.canRead(alloc, caller)) continue;
+                    if (filterArg != null
+                            && !ClassificationGraphQLController.matchesMap(alloc, filterArg)) continue;
                     org.rapla.entities.domain.Appointment[] restriction = r.getRestriction(alloc);
                     if (restriction == null || restriction.length == 0)
                     {

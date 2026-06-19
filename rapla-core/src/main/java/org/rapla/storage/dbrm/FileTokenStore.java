@@ -19,7 +19,7 @@ import java.util.Optional;
  * <p>The file is a flat JSON object (see {@link TokenStoreCodec}) holding the
  * refresh token plus the non-secret login preferences (language, sign-in
  * method). No encryption: the contents are RSA-signed JWTs (~700 bytes) with
- * a 30-day TTL, not passwords. App-level encryption with a system-derived key
+ * a 21-day TTL, not passwords. App-level encryption with a system-derived key
  * would be defeated by any same-user attacker who can read the file AND
  * derive the same key, so it provides no real protection. OS-layer tools
  * (file permissions, full-disk encryption) handle the realistic threats.

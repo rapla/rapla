@@ -180,7 +180,7 @@ class OpenApiSpecCaptureTest
      *
      * <p><b>Strips the top-level {@code servers} block:</b> springdoc captures it as
      * {@code [{"url":"http://localhost"}]} during MockMvc tests (no real Tomcat
-     * → no port). At runtime both Scalar and Swagger UI would resolve the
+     * → no port). At runtime Swagger UI would resolve the
      * relative {@code /oauth2/authorize} against that, sending the browser to
      * {@code http://localhost:80} (port 80) instead of the actual server port,
      * causing ERR_CONNECTION_REFUSED on the OAuth flow. With {@code servers}

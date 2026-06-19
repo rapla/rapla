@@ -1,21 +1,20 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './auth/auth.guard';
 
+/**
+ * PRD 072 Phase 4 — the SPA no longer owns a login page or an OAuth callback
+ * route. Login is the SERVER-rendered {@code /login} page (outside the SPA);
+ * the authGuard redirects there (full navigation) when there is no valid
+ * {@code access_token} cookie. The catch-all lands on the guarded reservations
+ * view, which bounces to {@code /login} when unauthenticated.
+ */
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'reservations' },
-  {
-    path: 'login',
-    loadComponent: () => import('./auth/login.component').then((m) => m.LoginComponent),
-  },
-  {
-    path: 'auth/callback',
-    loadComponent: () => import('./auth/callback.component').then((m) => m.CallbackComponent),
-  },
   {
     path: 'reservations',
     canActivate: [authGuard],
     loadComponent: () =>
       import('./reservations/reservations.component').then((m) => m.ReservationsComponent),
   },
-  { path: '**', redirectTo: 'login' },
+  { path: '**', redirectTo: 'reservations' },
 ];

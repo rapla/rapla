@@ -1,0 +1,153 @@
+package org.rapla.server.spring.oauth;
+
+import com.nimbusds.jose.JOSEException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.rapla.entities.User;
+import org.rapla.framework.RaplaException;
+import org.rapla.server.IdentityClaims;
+import org.rapla.server.UserProvisioner;
+import org.rapla.server.spring.RefreshSessionService;
+import org.rapla.server.spring.oauth.external.ExternalProvidersProperties;
+import org.rapla.server.spring.oauth.external.ExternalUserResolver;
+import org.rapla.server.spring.oauth.external.ProviderConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+
+import java.io.IOException;
+import java.util.Map;
+
+/**
+ * PRD 072 Phase 1 — the success-handler TAIL of the server-side
+ * {@code oauth2Login()} flow. Spring's oauth2Login HEAD has already done the
+ * authorize-redirect / state / PKCE / nonce / id_token signature+claims
+ * validation, so by the time we run the external identity is verified-once.
+ *
+ * <p>This handler then:
+ * <ol>
+ *   <li>maps the {@code registrationId} ({@code keycloak}/{@code google}/
+ *       {@code microsoft}) back to its {@link ProviderConfig},</li>
+ *   <li>translates the verified {@link OidcUser} claims to an
+ *       {@link IdentityClaims} blob (pure read — AGENTS.md §16),</li>
+ *   <li>provisions / resolves the rapla {@link User} via {@link UserProvisioner}
+ *       (the single OIDC write seam — PRD 050),</li>
+ *   <li>mints a rapla access token (+ persists the refresh session) via
+ *       {@link RefreshSessionService#issueAndPersist},</li>
+ *   <li>sets the rapla {@code access_token} cookie (HttpOnly, Secure,
+ *       SameSite=Lax). The external IdP's tokens are discarded — rapla issues
+ *       its own session token.</li>
+ * </ol>
+ *
+ * <p>Phase 2 (separate PRD work) adds the reactive-401 cookie refresh,
+ * {@code /api/auth/me}, and cookie impersonation. This handler only sets the
+ * cookie.
+ */
+public class OidcLoginSuccessHandler implements AuthenticationSuccessHandler
+{
+    private static final Logger LOGGER = LoggerFactory.getLogger(OidcLoginSuccessHandler.class);
+
+    /** Phase 1 cookie name. Phase 2 consumes it for the reactive-401 refresh. */
+    public static final String ACCESS_TOKEN_COOKIE = "access_token";
+
+    private final ExternalProvidersProperties externalProviders;
+    private final ExternalUserResolver externalUserResolver;
+    private final UserProvisioner userProvisioner;
+    private final RefreshSessionService refreshSessionService;
+    private final org.rapla.server.spring.CookieAuthSupport cookies;
+    private final String redirectAfterLogin;
+
+    public OidcLoginSuccessHandler(ExternalProvidersProperties externalProviders,
+                                   ExternalUserResolver externalUserResolver,
+                                   UserProvisioner userProvisioner,
+                                   RefreshSessionService refreshSessionService,
+                                   org.rapla.server.spring.CookieAuthSupport cookies,
+                                   String redirectAfterLogin)
+    {
+        this.externalProviders = externalProviders;
+        this.externalUserResolver = externalUserResolver;
+        this.userProvisioner = userProvisioner;
+        this.refreshSessionService = refreshSessionService;
+        this.cookies = cookies;
+        this.redirectAfterLogin = (redirectAfterLogin == null || redirectAfterLogin.isEmpty())
+                ? "/app/" : redirectAfterLogin;
+    }
+
+    @Override
+    public void onAuthenticationSuccess(HttpServletRequest request,
+                                        HttpServletResponse response,
+                                        Authentication authentication) throws IOException
+    {
+        String registrationId = registrationIdOf(authentication);
+        Map<String, Object> claims = claimsOf(authentication);
+        if (registrationId == null || claims == null)
+        {
+            // Not an external OIDC login (e.g. a form-login that somehow routed
+            // here). Nothing to provision; fall through to the default redirect.
+            sendRedirect(response);
+            return;
+        }
+        ProviderConfig provider = externalProviders.byId(registrationId).orElse(null);
+        if (provider == null)
+        {
+            LOGGER.warn("oauth2Login succeeded for unknown provider registrationId '{}'; no rapla session issued", registrationId);
+            sendRedirect(response);
+            return;
+        }
+
+        try
+        {
+            IdentityClaims identity = externalUserResolver.claimsFor(claims, provider);
+            User user = userProvisioner.provision(identity);
+            RefreshSessionService.IssuedTokens tokens = refreshSessionService.issueAndPersist(user);
+            cookies.setAccessTokenCookie(response, tokens.accessToken(), tokens.expiresIn());
+            // PRD 072 Phase 2 — also set the path-scoped refresh_token cookie so
+            // the browser can do the reactive-401 refresh against /api/auth/refresh.
+            cookies.setRefreshTokenCookie(response, tokens.refreshToken(),
+                    RefreshSessionService.REFRESH_TOKEN_TTL_SECONDS);
+        }
+        catch (RaplaException | JOSEException e)
+        {
+            LOGGER.warn("Could not establish a rapla session after {} login: {}", registrationId, e.getMessage());
+            // No cookie set — the SPA's first /api call will 401 and bounce to /login.
+        }
+        sendRedirect(response);
+    }
+
+    private void sendRedirect(HttpServletResponse response) throws IOException
+    {
+        if (!response.isCommitted())
+        {
+            response.sendRedirect(redirectAfterLogin);
+        }
+    }
+
+    private static String registrationIdOf(Authentication authentication)
+    {
+        if (authentication instanceof OAuth2AuthenticationToken oauthToken)
+        {
+            return oauthToken.getAuthorizedClientRegistrationId();
+        }
+        return null;
+    }
+
+    private static Map<String, Object> claimsOf(Authentication authentication)
+    {
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof OidcUser oidcUser)
+        {
+            // OIDC only: the id_token's signature/iss/aud were verified by the
+            // oauth2Login HEAD, so these claims are trustworthy.
+            return oidcUser.getClaims();
+        }
+        // Review N2: NO non-OIDC OAuth2User fallback. Provisioning a rapla user
+        // off unverified userinfo attributes is a weaker-trust path; rapla is a
+        // broker that trusts a verified id_token only. A non-OIDC provider returns
+        // null here → no session, no cookie (fail-closed) until such a provider is
+        // deliberately supported with its own verification.
+        return null;
+    }
+}

@@ -214,7 +214,7 @@
         "operationId" : "encrypt",
         "requestBody" : {
           "content" : {
-            "application/json" : {
+            "text/plain" : {
               "schema" : {
                 "type" : "string"
               }
@@ -743,41 +743,6 @@
         }
       }
     },
-    "/api/mail/send" : {
-      "post" : {
-        "tags" : [ "mail-to-user-controller" ],
-        "operationId" : "sendMail",
-        "parameters" : [ {
-          "name" : "username",
-          "in" : "query",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "subject",
-          "in" : "header",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "type" : "string"
-              }
-            }
-          }
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK"
-          }
-        }
-      }
-    },
     "/api/mail/config" : {
       "get" : {
         "tags" : [ "mail-config-controller" ],
@@ -906,6 +871,114 @@
         }
       }
     },
+    "/api/exchange/connect" : {
+      "get" : {
+        "tags" : [ "exchange-connector-controller" ],
+        "operationId" : "getSynchronizationStatus",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SynchronizationStatus"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "exchange-connector-controller" ],
+        "operationId" : "changeUser",
+        "parameters" : [ {
+          "name" : "user",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "string"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "type" : "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/exchange/connect/synchronize" : {
+      "post" : {
+        "tags" : [ "exchange-connector-controller" ],
+        "operationId" : "synchronize",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "string"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/exchange/connect/remove" : {
+      "post" : {
+        "tags" : [ "exchange-connector-controller" ],
+        "operationId" : "removeUser",
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/exchange/connect/refreshMailboxes" : {
+      "post" : {
+        "tags" : [ "exchange-connector-controller" ],
+        "operationId" : "refreshMailboxes",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "type" : "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/edit/validate-recurrence" : {
       "post" : {
         "tags" : [ "reservation-edit-controller" ],
@@ -993,6 +1066,17 @@
         }
       }
     },
+    "/api/auth/refresh" : {
+      "post" : {
+        "tags" : [ "auth-cookie-controller" ],
+        "operationId" : "refresh_1",
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
     "/api/auth/oauth/exchange/{providerId}" : {
       "post" : {
         "tags" : [ "o-auth-exchange-controller" ],
@@ -1029,6 +1113,17 @@
         }
       }
     },
+    "/api/auth/logout" : {
+      "post" : {
+        "tags" : [ "auth-cookie-controller" ],
+        "operationId" : "logout",
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
     "/api/auth/impersonate" : {
       "post" : {
         "tags" : [ "impersonation-controller" ],
@@ -1054,6 +1149,36 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/auth/impersonate/switch" : {
+      "post" : {
+        "tags" : [ "auth-cookie-controller" ],
+        "operationId" : "impersonateSwitch",
+        "parameters" : [ {
+          "name" : "target_username",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/auth/impersonate/end" : {
+      "post" : {
+        "tags" : [ "auth-cookie-controller" ],
+        "operationId" : "impersonateEnd",
+        "responses" : {
+          "200" : {
+            "description" : "OK"
           }
         }
       }
@@ -1713,6 +1838,24 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/OAuthConfig"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/me" : {
+      "get" : {
+        "tags" : [ "auth-cookie-controller" ],
+        "operationId" : "me_1",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/IdentityResponse"
                 }
               }
             }
@@ -2996,6 +3139,31 @@
           }
         }
       },
+      "SynchronizationStatus" : {
+        "properties" : {
+          "username" : {
+            "type" : "string"
+          },
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "syncInterval" : {
+            "$ref" : "#/components/schemas/TimeInterval"
+          }
+        }
+      },
+      "TimeInterval" : {
+        "properties" : {
+          "start" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "end" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
       "ExchangeUserSettings" : {
         "properties" : {
           "sendInvitationAndCancellation" : {
@@ -3112,6 +3280,34 @@
             "additionalProperties" : {
               "type" : "string"
             }
+          }
+        }
+      },
+      "IdentityResponse" : {
+        "properties" : {
+          "username" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "admin" : {
+            "type" : "boolean"
+          },
+          "roles" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "impersonating" : {
+            "type" : "boolean"
+          },
+          "actor" : {
+            "type" : "string"
+          },
+          "target" : {
+            "type" : "string"
           }
         }
       },

@@ -145,7 +145,9 @@ public class AuthorizationServerConfig
                                                                       RefreshSessionService refreshSessionService,
                                                                       RaplaAuthentificationService raplaAuthService,
                                                                       RaplaFacade facade,
-                                                                      org.springframework.security.oauth2.jwt.JwtDecoder jwtDecoder) throws Exception
+                                                                      org.springframework.security.oauth2.jwt.JwtDecoder jwtDecoder,
+                                                                      LoginRateLimitFilter loginRateLimitFilter,
+                                                                      CookieAuthSupport cookieAuthSupport) throws Exception
     {
         OAuth2AuthorizationServerConfigurer authServerConfigurer =
                 new OAuth2AuthorizationServerConfigurer();
@@ -177,6 +179,16 @@ public class AuthorizationServerConfig
 
         http
                 .securityMatcher(endpointsMatcher)
+                // PRD 072 Phase 2: mirror the token JSON response (access_token +
+                // refresh_token) into the browser credential cookies so the SPA +
+                // explorer surfaces get the cookie credential from the SAS login
+                // path. Additive — the JSON body is untouched. Installed first so
+                // it wraps the response before the token endpoint writes it.
+                .addFilterBefore(new TokenResponseCookieFilter(cookieAuthSupport),
+                        org.springframework.security.web.context.SecurityContextHolderFilter.class)
+                // H2: throttle the password grant (POST /oauth2/token, grant_type=password)
+                .addFilterBefore(loginRateLimitFilter,
+                        org.springframework.security.web.context.SecurityContextHolderFilter.class)
                 .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
                 .csrf(csrf -> csrf.ignoringRequestMatchers(endpointsMatcher))
                 // CORS for cross-origin SPA → OAuth endpoint calls. In dev the
@@ -799,7 +811,7 @@ public class AuthorizationServerConfig
      * ANY {@code /oauth2/token} grant are accepted there and survive restart.
      *
      * <p>Honors {@link RefreshSessionService#shouldRotate} — most refreshes
-     * return the same refresh token (~1 prefs write per 30 days per active
+     * return the same refresh token (~1 prefs write per 21 days per active
      * session, see RefreshSessionService Javadoc).
      */
     private static final class RaplaRefreshTokenAuthenticationProvider implements AuthenticationProvider
@@ -1022,13 +1034,20 @@ public class AuthorizationServerConfig
             String token = revocationAuth.getToken();
             try
             {
-                org.springframework.security.oauth2.jwt.Jwt jwt = jwtDecoder.decode(token);
-                String userId = jwt.getSubject();
-                if (userId != null)
+                // Resolve via RefreshSessionService.peekUser so typ=refresh tokens
+                // decode (the resource-server jwtDecoder rejects them; a presented
+                // refresh token is the common revoke case). Falls back to the
+                // rejecting decoder for access tokens.
+                User user = refreshSessionService.peekUser(token);
+                if (user == null)
                 {
-                    User user = facade.getOperator().tryResolve(userId, User.class);
-                    if (user != null) refreshSessionService.clearSession(user);
+                    String userId = jwtDecoder.decode(token).getSubject();
+                    if (userId != null)
+                    {
+                        user = facade.getOperator().tryResolve(userId, User.class);
+                    }
                 }
+                if (user != null) refreshSessionService.clearSession(user);
             }
             catch (Exception ignore)
             {

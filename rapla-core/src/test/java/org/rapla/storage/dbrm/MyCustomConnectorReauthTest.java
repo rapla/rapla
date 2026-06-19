@@ -83,6 +83,10 @@ class MyCustomConnectorReauthTest
         assertNotNull(capturedBody.get());
         assertTrue(capturedBody.get().contains("grant_type=refresh_token"),
                 "body must be OAuth2 form-encoded: " + capturedBody.get());
+        // PRD 072 Phase 5: rapla is the single token endpoint — refresh always
+        // carries client_id=rapla-client against rapla's own /oauth2/token.
+        assertTrue(capturedBody.get().contains("client_id=rapla-client"),
+                "body must carry client_id=rapla-client: " + capturedBody.get());
     }
 
     @Test

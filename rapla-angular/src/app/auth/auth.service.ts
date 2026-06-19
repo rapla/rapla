@@ -1,564 +1,140 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
-import { OAuthErrorEvent, OAuthEvent, OAuthService } from 'angular-oauth2-oidc';
-
-export interface OAuthProviderEntry {
-  id: string;
-  displayName: string;
-  icon: string;
-  order: number;
-  webPickerVisible: boolean;
-  clientId: string;
-  issuer: string;
-  authorizeUrl: string;
-  /**
-   * For external providers (Microsoft, Google) this is rapla's BFF
-   * token-exchange endpoint (`/api/auth/oauth/exchange/{providerId}`), not
-   * the IdP's real token URL. The BFF adds the server-held `client_secret`
-   * before forwarding to the IdP — keeping the secret off the SPA wire.
-   * For the rapla embedded SAS entry, this is the SAS token endpoint
-   * (no BFF needed; no secret involved).
-   */
-  tokenUrl: string;
-  jwksUrl: string;
-  endSessionUrl: string;
-  scopes: string[];
-  extraAuthorizeParams: Record<string, string>;
-}
-
-export interface OAuthPicker {
-  mode: 'auto' | 'always' | 'never';
-  primary: string;
-}
-
-export interface OAuthDiscovery {
-  enabled: boolean;
-  clientId: string;
-  issuer: string;
-  authorizeUrl: string;
-  tokenUrl: string;
-  logoutUrl: string;
-  jwksUrl: string;
-  userinfoUrl: string;
-  endSessionUrl: string;
-  scopes: string[];
-  picker: OAuthPicker;
-  providers: OAuthProviderEntry[];
-}
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 
 /**
- * Thin wrapper around angular-oauth2-oidc's OAuthService.
+ * PRD 072 Phase 4 — cookie-credential (model A) identity for the SPA.
  *
- * The library handles the Authorization Code + PKCE flow against whichever
- * IdP the discovery endpoint nominates. PRD 036 lets a deployment enable
- * multiple providers (rapla embedded SAS, Microsoft Entra, Google) — the
- * picker UI on /login lets the user choose which to use.
+ * The browser carries the rapla JWT in an HttpOnly {@code access_token} cookie
+ * that the server sets at {@code /login} success. JS can NOT read it. The SPA
+ * therefore holds NO token: identity and login state come from
+ * {@code GET /api/auth/me}, and every API call relies on the cookie being
+ * auto-attached same-origin.
  *
- * `lastOAuthError` captures the most recent OAuthErrorEvent so the UI can
- * surface what `/oauth2/token` actually said (invalid_grant, redirect_uri
- * mismatch, etc.) rather than just "no token".
+ * No {@code angular-oauth2-oidc}, no {@code localStorage}/{@code sessionStorage}
+ * token handling — those are gone with H4.
  */
-@Injectable({ providedIn: 'root' })
-export class AuthService {
-  /**
-   * localStorage key tracking which provider the user signed in with. Survives
-   * the OAuth callback redirect (browser reload) and tab close. Must match the
-   * storage the OAuth library uses (`setStorage(localStorage)` in app.config)
-   * so a token refresh after page reload still hits the right token endpoint.
-   * Cleared on signOut().
-   */
-  private static readonly ACTIVE_PROVIDER_KEY = 'rapla.oauth.activeProvider';
-
-  /**
-   * sessionStorage key for the impersonation override. Tab-scoped so a
-   * new tab starts fresh as the admin (matching PRD 051's "explicit
-   * state-change moment" instinct) but a page reload in the same tab
-   * keeps the admin acting as the target. Cleared on every logout-style
-   * path AND on the OAuth callback (a fresh login mustn't inherit a
-   * stale override from a prior session).
-   */
-  private static readonly IMPERSONATION_KEY = 'rapla.impersonationOverride';
-
-  private readonly oauth = inject(OAuthService);
-  private readonly router = inject(Router);
-
-  private redirecting = false;
-
-  readonly lastOAuthError = signal<string | null>(null);
-  readonly discovery = signal<OAuthDiscovery | null>(null);
-
-  /**
-   * PRD 051 — admin "switch to user". Holds the impersonation access
-   * token returned by {@code POST /api/auth/impersonate}, alongside
-   * the target's username (for the renewal path that needs it as a
-   * form parameter). Set by {@link impersonate}, cleared by
-   * {@link endImpersonation} and every logout path (signOut,
-   * handleUnauthenticated, handleAuthRejection). Backed by tab-scoped
-   * sessionStorage so a page reload (F5) in the same tab keeps the
-   * admin acting as the target; a new tab starts fresh as admin.
-   */
-  readonly impersonationOverride = signal<{ accessToken: string; targetUsername: string } | null>(
-    AuthService.readPersistedOverride(),
-  );
-
-  /**
-   * Read and validate the persisted override at construction time.
-   * Malformed JSON, missing fields, or any read-time error → treat as
-   * no override and evict the bad entry so it can't trip up later code.
-   * Static so the field initializer above can use it without `this`.
-   */
-  private static readPersistedOverride(): { accessToken: string; targetUsername: string } | null {
-    try {
-      const raw = sessionStorage.getItem(AuthService.IMPERSONATION_KEY);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw) as Partial<{ accessToken: string; targetUsername: string }>;
-      if (
-        parsed &&
-        typeof parsed.accessToken === 'string' &&
-        typeof parsed.targetUsername === 'string'
-      ) {
-        return { accessToken: parsed.accessToken, targetUsername: parsed.targetUsername };
-      }
-      sessionStorage.removeItem(AuthService.IMPERSONATION_KEY);
-      return null;
-    } catch {
-      try {
-        sessionStorage.removeItem(AuthService.IMPERSONATION_KEY);
-      } catch {
-        /* ignore — quota or non-storage env */
-      }
-      return null;
-    }
-  }
-
-  /** True while an impersonation is active (admin acting as another user). */
-  readonly isImpersonating = computed(() => this.impersonationOverride() !== null);
-
-  /** Providers visible to the web picker, sorted by `order`. */
-  readonly pickerProviders = computed<OAuthProviderEntry[]>(() => {
-    const d = this.discovery();
-    if (!d) return [];
-    return d.providers
-      .filter((p) => p.webPickerVisible)
-      .slice()
-      .sort((a, b) => a.order - b.order);
-  });
-
-  /**
-   * Whether the picker UI should render. Driven by `picker.mode`:
-   *   auto   — render when ≥2 visible providers (or 0; that case prompts a
-   *            "no IdP configured" UX upstream).
-   *   always — render whenever any provider is visible.
-   *   never  — never render.
-   */
-  readonly shouldShowPicker = computed(() => {
-    const d = this.discovery();
-    if (!d) return false;
-    const count = this.pickerProviders().length;
-    switch (d.picker.mode) {
-      case 'always':
-        return count > 0;
-      case 'never':
-        return false;
-      case 'auto':
-      default:
-        return count >= 2;
-    }
-  });
-
-  constructor() {
-    this.oauth.events.subscribe((evt: OAuthEvent) => {
-      if (evt instanceof OAuthErrorEvent) {
-        const reason = describeOAuthError(evt);
-        this.lastOAuthError.set(reason);
-        console.error('[oauth]', evt.type, evt);
-      } else if (evt.type === 'token_received' || evt.type === 'token_refreshed') {
-        this.lastOAuthError.set(null);
-      }
-    });
-  }
-
-  setDiscovery(cfg: OAuthDiscovery): void {
-    this.discovery.set(cfg);
-  }
-
-  /** The provider entry the picker auto-fires when mode=auto+single or mode=never. */
-  primaryProvider(): OAuthProviderEntry | null {
-    const d = this.discovery();
-    if (!d) return null;
-    return d.providers.find((p) => p.id === d.picker.primary) ?? d.providers[0] ?? null;
-  }
-
-  /**
-   * The provider the user is currently signed in with (picker choice, persisted
-   * across the callback redirect via localStorage). Falls back to the primary
-   * provider when no choice was saved (e.g. first launch). Critical for the
-   * callback path: when the browser comes back to /app/auth/callback?code=…
-   * after the IdP redirect, the SPA fully reloads and the app initializer
-   * needs to reconfigure OAuthService with the same provider the user picked
-   * pre-redirect — otherwise the code is exchanged at the wrong token endpoint.
-   */
-  activeProvider(): OAuthProviderEntry | null {
-    const d = this.discovery();
-    if (!d) return null;
-    const stored = localStorage.getItem(AuthService.ACTIVE_PROVIDER_KEY);
-    if (stored) {
-      const p = d.providers.find((p) => p.id === stored);
-      if (p) return p;
-    }
-    return this.primaryProvider();
-  }
-
-  /**
-   * Reconfigure {@link OAuthService} for one of the discovery's providers and
-   * start a code flow. When `providerId` is null/unknown, falls back to the
-   * top-level flat fields (rapla embedded SAS).
-   */
-  signInWithProvider(providerId: string): void {
-    if (this.redirecting) return;
-    const d = this.discovery();
-    if (!d) {
-      console.warn('[oauth] signInWithProvider before discovery loaded');
-      return;
-    }
-    const provider = d.providers.find((p) => p.id === providerId) ?? null;
-    if (provider) {
-      // Persist BEFORE the redirect so the post-redirect appInitializer applies
-      // the matching provider and exchanges the code at the right token endpoint.
-      localStorage.setItem(AuthService.ACTIVE_PROVIDER_KEY, providerId);
-    }
-    this.applyProviderToOAuthService(provider, d);
-    this.lastOAuthError.set(null);
-    this.redirecting = true;
-    this.oauth.initCodeFlow(undefined, provider?.extraAuthorizeParams ?? {});
-  }
-
-  /**
-   * Apply a provider entry's URLs/clientId/scopes to {@link OAuthService}.
-   * Exposed so the app initializer can configure it once at startup with the
-   * primary provider.
-   */
-  applyProviderToOAuthService(provider: OAuthProviderEntry | null, cfg: OAuthDiscovery): void {
-    const origin = window.location.origin;
-    const useProvider = provider ?? this.legacyFallbackProvider(cfg);
-    this.oauth.configure({
-      issuer: useProvider.issuer,
-      clientId: useProvider.clientId,
-      redirectUri: origin + '/app/auth/callback',
-      responseType: 'code',
-      scope: (useProvider.scopes ?? cfg.scopes ?? ['openid', 'profile', 'offline_access']).join(
-        ' ',
-      ),
-      loginUrl: useProvider.authorizeUrl,
-      tokenEndpoint: useProvider.tokenUrl,
-      userinfoEndpoint: cfg.userinfoUrl,
-      logoutUrl: useProvider.endSessionUrl || cfg.endSessionUrl || cfg.logoutUrl,
-      postLogoutRedirectUri: origin + '/app/login',
-      showDebugInformation: false,
-      skipIssuerCheck: true,
-      strictDiscoveryDocumentValidation: false,
-      requireHttps: window.location.protocol === 'https:',
-    });
-  }
-
-  /**
-   * Synthesise a provider entry from the flat top-level fields when discovery
-   * arrived from a pre-PRD-036 server (no `providers[]`). The flat fields
-   * always describe the rapla embedded SAS.
-   */
-  private legacyFallbackProvider(cfg: OAuthDiscovery): OAuthProviderEntry {
-    return {
-      id: 'rapla',
-      displayName: 'Sign in with rapla password',
-      icon: 'rapla',
-      order: 0,
-      webPickerVisible: false,
-      clientId: cfg.clientId,
-      issuer: cfg.issuer,
-      authorizeUrl: cfg.authorizeUrl,
-      tokenUrl: cfg.tokenUrl,
-      jwksUrl: cfg.jwksUrl,
-      endSessionUrl: cfg.endSessionUrl,
-      scopes: cfg.scopes,
-      extraAuthorizeParams: {},
-    };
-  }
-
-  signIn(): void {
-    if (this.redirecting) return;
-    this.redirecting = true;
-    this.lastOAuthError.set(null);
-    const primary = this.primaryProvider();
-    this.oauth.initCodeFlow(undefined, primary?.extraAuthorizeParams ?? {});
-  }
-
-  /**
-   * Same as signIn() but adds `prompt=login` so the IdP forces a fresh
-   * credential prompt even if it has a valid session cookie. Use this to
-   * break out of "silent re-redirect issues codes that won't exchange" —
-   * e.g. stale Spring session.
-   */
-  signInPromptLogin(): void {
-    if (this.redirecting) return;
-    this.redirecting = true;
-    this.lastOAuthError.set(null);
-    const primary = this.primaryProvider();
-    this.oauth.initCodeFlow(undefined, {
-      ...(primary?.extraAuthorizeParams ?? {}),
-      prompt: 'login',
-    });
-  }
-
-  /**
-   * Explicit user-driven sign-out. Behaviour depends on the active provider:
-   *
-   * <ul>
-   *   <li><b>rapla SAS / Microsoft Entra</b> — both expose a proper OIDC
-   *       end-session endpoint (rapla's `/connect/logout`, Entra's
-   *       `/oauth2/v2.0/logout`). Call <code>oauth.logOut()</code> which
-   *       clears local tokens AND navigates to the IdP's end-session URL
-   *       with <code>id_token_hint</code> + <code>post_logout_redirect_uri</code>.
-   *       The IdP terminates its session and bounces back to <code>/app/</code>.</li>
-   *   <li><b>Google</b> — has no proper RP-initiated OIDC logout. Don't
-   *       redirect anywhere external; just clear local tokens and route to
-   *       <code>/login</code>. Hitting rapla's <code>/connect/logout</code>
-   *       with a Google id_token would 404 (rapla SAS doesn't recognise
-   *       externally-issued id_tokens).</li>
-   * </ul>
-   */
-  signOut(): void {
-    // PRD 051 — clear impersonation override before the IdP redirect.
-    // The new tab the IdP logout opens may take seconds to complete
-    // and we don't want a window where the override is still live.
-    this.endImpersonation();
-    const active = this.activeProvider();
-    const hasIdpLogout =
-      active != null && !!active.endSessionUrl && active.endSessionUrl.length > 0;
-    localStorage.removeItem(AuthService.ACTIVE_PROVIDER_KEY);
-    if (hasIdpLogout) {
-      this.oauth.logOut();
-    } else {
-      this.oauth.logOut(true);
-      this.router.navigateByUrl('/login');
-    }
-  }
-
-  /**
-   * Attempt a refresh_token grant if a refresh token is present. Returns true
-   * iff the OAuth library now reports a valid access token. The interceptor
-   * uses this on 401-with-Bearer to replay the failing request once before
-   * deciding to bounce the user back to /login.
-   *
-   * Resolves false (rather than rejecting) on any failure — the caller wants
-   * a boolean decision, not exception plumbing.
-   */
-  async refreshAccessToken(): Promise<boolean> {
-    if (!this.oauth.getRefreshToken()) return false;
-    try {
-      await this.oauth.refreshToken();
-      return this.oauth.hasValidAccessToken();
-    } catch (err) {
-      console.warn('[oauth] refreshToken failed:', err);
-      return false;
-    }
-  }
-
-  /**
-   * Wire the library's timer-based proactive refresh. Schedules a refresh
-   * before the access_token expiry, using the refresh_token grant when one is
-   * present (Keycloak with offline_access scope) and falling back to the
-   * iframe / prompt=none flow otherwise. Idempotent — safe to call from the
-   * app initializer after every page load.
-   */
-  enableAutomaticSilentRefresh(): void {
-    this.oauth.setupAutomaticSilentRefresh({}, 'access_token');
-  }
-
-  /**
-   * 401 path WITHOUT a Bearer attached — the user wasn't logged in yet
-   * (or local state was already cleared). Clear and route to /login
-   * silently; auto-redirect to /oauth2/authorize takes over there.
-   */
-  handleUnauthenticated(): void {
-    // PRD 051 — clear any active impersonation override; logout is a
-    // session boundary, surviving impersonation into the next login
-    // would be a privilege-escalation surprise.
-    this.endImpersonation();
-    localStorage.removeItem(AuthService.ACTIVE_PROVIDER_KEY);
-    this.oauth.logOut(true);
-    this.router.navigateByUrl('/login');
-  }
-
-  /**
-   * 401 path WITH a Bearer attached — the server actively rejected our
-   * credentials (resolver failure, account disabled, etc.). Same teardown
-   * as {@link handleUnauthenticated}, but ALSO bumps the {@code
-   * oauthFailures} counter that {@link LoginComponent} reads to suppress
-   * its auto-fire behavior. Without this, /login would silently restart
-   * the OAuth flow via the still-living IdP cookie and land us right back
-   * at the same rejected resource — an infinite loop.
-   */
-  handleAuthRejection(): void {
-    const prev = Number(sessionStorage.getItem('oauthFailures') ?? '0');
-    sessionStorage.setItem('oauthFailures', String(prev + 1));
-    this.handleUnauthenticated();
-  }
-
-  /**
-   * Returns the bearer token to send on rapla API calls. For external IdPs
-   * (Google, Microsoft) we send the OIDC {@code id_token} — a real signed
-   * JWT carrying the user's identity claims that rapla's
-   * {@code IssuerAwareJwtDecoder} can validate. Google's
-   * {@code access_token} is opaque (not a JWT) and would fail rapla's
-   * JWT decoder with "malformed token". For the rapla embedded SAS the
-   * access_token is itself a JWT (carrying the user UUID), so we keep
-   * that path unchanged.
-   */
-  token(): string | null {
-    // PRD 051: impersonation override takes precedence over the admin's
-    // own access token. The override is a rapla-SAS-signed JWT (`sub`
-    // = target's UUID, `act` = admin) and validates against rapla's
-    // resource server like any other access token.
-    const override = this.impersonationOverride();
-    if (override) return override.accessToken;
-
-    const activeProviderId = localStorage.getItem(AuthService.ACTIVE_PROVIDER_KEY);
-    if (activeProviderId && activeProviderId !== 'rapla') {
-      const idToken = this.oauth.getIdToken();
-      if (idToken) return idToken;
-    }
-    return this.oauth.getAccessToken() || null;
-  }
-
-  /**
-   * The admin's own access token, irrespective of any active
-   * impersonation. The interceptor uses this when calling
-   * {@code POST /api/auth/impersonate} for renewal — that endpoint
-   * needs the admin's Bearer to authenticate the actor, not the
-   * impersonation token (which would loop).
-   */
-  adminToken(): string | null {
-    const activeProviderId = localStorage.getItem(AuthService.ACTIVE_PROVIDER_KEY);
-    if (activeProviderId && activeProviderId !== 'rapla') {
-      const idToken = this.oauth.getIdToken();
-      if (idToken) return idToken;
-    }
-    return this.oauth.getAccessToken() || null;
-  }
-
-  /**
-   * PRD 051 — call {@code POST /api/auth/impersonate} with the
-   * admin's current Bearer, stash the returned access token as the
-   * impersonation override. Subsequent rapla API calls automatically
-   * carry the override (via {@link token}). Returns false on any
-   * failure; the caller surfaces the error and remains in admin mode.
-   */
-  async impersonate(targetUsername: string): Promise<boolean> {
-    // Self-target → end impersonation, don't mint a useless self-as-self
-    // token (wasted round-trip + audit-log noise). Compare against the
-    // admin's claims, not the override's targetUsername, so it works
-    // both for "switch back to me" from an active impersonation and for
-    // "I selected myself" with no impersonation active.
-    const claims = this.oauth.getIdentityClaims() as Record<string, unknown> | null;
-    const adminUsername =
-      typeof claims?.['preferred_username'] === 'string'
-        ? (claims['preferred_username'] as string)
-        : null;
-    if (adminUsername && adminUsername === targetUsername) {
-      this.endImpersonation();
-      return true;
-    }
-
-    const adminBearer = this.adminToken();
-    if (!adminBearer) return false;
-    try {
-      const resp = await fetch('/api/auth/impersonate', {
-        method: 'POST',
-        headers: {
-          Authorization: 'Bearer ' + adminBearer,
-          'Content-Type': 'application/x-www-form-urlencoded',
-          Accept: 'application/json',
-        },
-        body: 'target_username=' + encodeURIComponent(targetUsername),
-      });
-      if (!resp.ok) return false;
-      const body = (await resp.json()) as { access_token?: string };
-      if (!body.access_token) return false;
-      const override = { accessToken: body.access_token, targetUsername };
-      this.impersonationOverride.set(override);
-      try {
-        sessionStorage.setItem(AuthService.IMPERSONATION_KEY, JSON.stringify(override));
-      } catch {
-        /* quota / disabled storage — keep the in-memory override, just
-           lose the reload-persistence. Not worth failing the call for. */
-      }
-      return true;
-    } catch (err) {
-      console.warn('[impersonate] request failed:', err);
-      return false;
-    }
-  }
-
-  /**
-   * PRD 051 — call {@code POST /api/auth/impersonate} again with the
-   * admin's Bearer to refresh an expired impersonation token (same
-   * target). Used by the auth interceptor on 401 when the impersonation
-   * Bearer is the one that got rejected. Returns true iff the renewal
-   * produced a fresh token; on false the caller falls into the
-   * admin-refresh path before trying again.
-   */
-  async renewImpersonation(): Promise<boolean> {
-    const override = this.impersonationOverride();
-    if (!override) return false;
-    return this.impersonate(override.targetUsername);
-  }
-
-  /**
-   * Clear the impersonation override; admin's normal Bearer becomes
-   * the effective token again on the next outbound request. Called
-   * by switch-back UX, and (defensively) by every logout-style path
-   * so a stale override doesn't survive into the next login session.
-   */
-  endImpersonation(): void {
-    this.impersonationOverride.set(null);
-    try {
-      sessionStorage.removeItem(AuthService.IMPERSONATION_KEY);
-    } catch {
-      /* ignore — non-storage env */
-    }
-  }
-
-  isLoggedIn(): boolean {
-    return this.oauth.hasValidAccessToken();
-  }
-
-  /**
-   * True once the app initializer in app.config.ts has called oauth.configure().
-   * If the backend has rapla.oauth.enabled=false, this stays false and the
-   * /login page falls back to its manual button.
-   */
-  isOAuthConfigured(): boolean {
-    return Boolean(this.oauth.loginUrl);
-  }
-
-  identityClaims(): Record<string, unknown> | null {
-    return (this.oauth.getIdentityClaims() as Record<string, unknown>) ?? null;
-  }
+export interface Identity {
+  username: string;
+  name: string;
+  admin: boolean;
+  roles: string[];
+  impersonating: boolean;
+  /** The admin actor's username when {@code impersonating}; otherwise null. */
+  actor: string | null;
+  /** The impersonation target's username when {@code impersonating}; otherwise null. */
+  target: string | null;
 }
 
-function describeOAuthError(evt: OAuthErrorEvent): string {
-  const reason = (evt as unknown as { reason?: unknown }).reason;
-  let detail = '';
-  if (reason && typeof reason === 'object') {
-    const r = reason as Record<string, unknown>;
-    const err = r['error'] ?? r['error_description'];
-    const status = r['status'];
-    const url = r['url'];
-    if (err) detail += ` ${err}`;
-    if (status) detail += ` (HTTP ${status})`;
-    if (url) detail += ` from ${url}`;
-  } else if (typeof reason === 'string') {
-    detail = ` ${reason}`;
+@Injectable({ providedIn: 'root' })
+export class AuthService {
+  private readonly http = inject(HttpClient);
+
+  /**
+   * The current identity, or null when unauthenticated. Populated by
+   * {@link loadIdentity} (app initializer + after impersonation changes).
+   * `undefined` would mean "not yet loaded"; we collapse that to null —
+   * callers treat "no identity" uniformly.
+   */
+  readonly identity = signal<Identity | null>(null);
+
+  readonly isImpersonating = computed(() => this.identity()?.impersonating ?? false);
+
+  /** Effective username (impersonation target when impersonating, else self). */
+  readonly username = computed(() => this.identity()?.username ?? '');
+
+  /** The admin actor's username while impersonating, else ''. */
+  readonly actorUsername = computed(() => this.identity()?.actor ?? '');
+
+  /**
+   * Fetch the current identity from {@code GET /api/auth/me}. On 401 (no valid
+   * cookie) the identity is cleared and the method resolves null — it does NOT
+   * redirect; the caller (guard / interceptor) decides whether to bounce to
+   * {@code /login}. Resolves the loaded identity (or null) so callers can act
+   * on the result without subscribing to the signal.
+   */
+  async loadIdentity(): Promise<Identity | null> {
+    try {
+      const me = await firstValueFrom(this.http.get<Identity>('/api/auth/me'));
+      this.identity.set(me);
+      return me;
+    } catch {
+      this.identity.set(null);
+      return null;
+    }
   }
-  return `${evt.type}${detail}`.trim();
+
+  /** True iff an identity is currently loaded (a valid cookie was seen). */
+  isLoggedIn(): boolean {
+    return this.identity() !== null;
+  }
+
+  /**
+   * Redirect the BROWSER to the server-rendered {@code /login} page (combined
+   * chooser + optional password form). A full navigation — leaves the SPA
+   * shell — so the server can run the OAuth/login flow and set the cookies.
+   * Relative URL so the dev proxy keeps it on the proxy origin.
+   */
+  redirectToLogin(): void {
+    window.location.assign('/login');
+  }
+
+  /**
+   * Explicit user-driven sign-out: POST {@code /api/auth/logout} (cookie-auth;
+   * Angular's XSRF interceptor attaches X-XSRF-TOKEN), which EXPIRES both the
+   * access_token and refresh_token cookies server-side. Then clear local
+   * identity and land on {@code /login}. We deliberately do NOT navigate to
+   * Spring's {@code /logout} (a POST-only form-login filter that clears only
+   * JSESSIONID, not rapla's stateless auth cookies). The navigation runs even
+   * if the POST fails so the user is never stuck on a half-signed-out shell.
+   */
+  async signOut(): Promise<void> {
+    try {
+      await firstValueFrom(this.http.post('/api/auth/logout', null));
+    } catch {
+      // best-effort: still drop local identity and bounce to /login below.
+    }
+    this.identity.set(null);
+    window.location.assign('/login');
+  }
+
+  /**
+   * PRD 072 — start impersonation via the cookie-shaped endpoint
+   * {@code POST /api/auth/impersonate/switch?target_username=…}. The server
+   * validates {@code canAdminUser} and swaps the {@code access_token} cookie
+   * for an impersonation JWT. On success we reload the identity (now reflecting
+   * the target). Returns false on any failure; the caller stays as admin.
+   */
+  async impersonate(targetUsername: string): Promise<boolean> {
+    // Self-target → end impersonation rather than mint a self-as-self token.
+    if (this.identity()?.username === targetUsername && !this.isImpersonating()) {
+      return true;
+    }
+    try {
+      await firstValueFrom(
+        this.http.post('/api/auth/impersonate/switch', null, {
+          params: { target_username: targetUsername },
+        }),
+      );
+      await this.loadIdentity();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * PRD 072 — end impersonation via {@code POST /api/auth/impersonate/end}.
+   * The server restores the admin's {@code access_token} cookie. We reload the
+   * identity (back to the admin). Returns false on failure.
+   */
+  async endImpersonation(): Promise<boolean> {
+    try {
+      await firstValueFrom(this.http.post('/api/auth/impersonate/end', null));
+      await this.loadIdentity();
+      return true;
+    } catch {
+      return false;
+    }
+  }
 }

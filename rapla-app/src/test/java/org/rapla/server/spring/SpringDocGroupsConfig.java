@@ -113,8 +113,9 @@ public class SpringDocGroupsConfig
             - Mandatory flow: Authorization Code + PKCE. No implicit grant, no client-credentials for
               end-user logins.
             - Scopes: `openid` + `profile`. No custom scopes today.
-            - Access-token TTL: 1 h; refresh-token TTL: 30 d (`AuthController` constants).
-            - Refresh-token rotation kicks in when the remaining lifetime drops below 7 d.
+            - Access-token TTL: 1 h; refresh-token TTL: 21 d (`RefreshSessionService` constants).
+            - No refresh-token rotation: the same refresh token is returned until it expires
+              (single-slot model); at expiry the user re-authorizes.
 
             See `docs/architecture/rest-api.md` §1 for the full OIDC endpoint reference.
             """;
@@ -158,8 +159,6 @@ public class SpringDocGroupsConfig
                         // Plugin config screens
                         "/api/mail/config",
                         "/api/mail/config/**",
-                        "/api/mail/send",
-                        "/api/mail/send/**",
                         "/api/ical/config",
                         "/api/ical/config/**",
                         "/api/exchange/config",

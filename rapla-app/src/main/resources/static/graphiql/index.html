@@ -5,23 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Rapla GraphQL API — GraphiQL</title>
     <!--
-      PRD 035: GraphiQL with OAuth shared via the Angular SPA's /app/login.
-      Design: ONE OAuth callback URI per IdP (the SPA's /app/auth/callback,
-      already registered), not one per explorer. GraphiQL has no callback of
-      its own; it reads the access_token the SPA places in localStorage (via
-      angular-oauth2-oidc) after the user signs in via /app/login.
+      PRD 035: GraphiQL explorer for the rapla GraphQL API.
 
-      Trade-off: GraphiQL can't initiate its own OAuth flow, so signing in is
-      a 2-step ritual:
-        (1) click "Log in via rapla SPA" → opens /app/login in a new tab
-        (2) sign in there with whichever provider (rapla, Microsoft, Keycloak, Google)
-        (3) return to this tab + click reload (button on the auth bar)
-      The SPA already supports all four providers; GraphiQL inherits all four
-      for free with zero per-provider IdP-admin work.
+      PRD 071 Phase 3: this page itself requires an authenticated session —
+      reaching it at all means SecurityConfig let you through (an anonymous
+      browser GET is rejected 401). The same form-login / SPA-OAuth session
+      that gates this page is what authorises the queries below.
 
-      Same mechanism works for production: SPA at /app/login on the deployed
-      host, OAuth callback at /app/auth/callback (already registered in
-      every IdP), GraphiQL inherits authorization purely via localStorage.
+      PRD 072 Phase 3: GraphiQL no longer piggybacks on the SPA's
+      localStorage access_token Bearer. It relies on the HttpOnly
+      `access_token` cookie (Phase 2) that the browser sends automatically
+      with same-origin fetches. The fetcher does a plain same-origin fetch;
+      on a 401 it calls POST /api/auth/refresh (which reads the path-scoped
+      refresh_token cookie and sets a fresh access_token cookie) and replays
+      the request once; if the refresh itself 401s, it bounces to /login.
+
+      POST /api/graphql is a MUTATING cookie-auth request, so it must carry
+      the CSRF double-submit token: the X-XSRF-TOKEN header read from the
+      non-HttpOnly XSRF-TOKEN cookie that Spring's
+      CookieCsrfTokenRepository.withHttpOnlyFalse() sets (gated by
+      CookieAuthCsrfMatcher).
 
       Offline self-host fallback: npm install graphiql react react-dom + copy
       umd/min builds into this directory and switch import URLs to relative.
@@ -33,13 +36,9 @@
         #app { display: flex; flex-direction: column; height: 100vh; }
         .auth-bar { padding: 6px 12px; background: #1e2937; color: #fff; display: flex; gap: 12px; align-items: center; font-size: 13px; flex-wrap: wrap; }
         .auth-bar .label { opacity: 0.7; }
-        .auth-bar .principal { font-family: monospace; opacity: 0.9; }
-        .auth-bar a, .auth-bar button { background: #2563eb; color: #fff; border: 0; padding: 4px 10px; border-radius: 3px; cursor: pointer; font-size: 12px; text-decoration: none; display: inline-block; }
-        .auth-bar a:hover, .auth-bar button:hover { background: #1d4ed8; }
-        .auth-bar button.secondary { background: #6b7280; }
-        .auth-bar button.secondary:hover { background: #4b5563; }
-        .auth-bar .schema-link { margin-left: auto; background: #374151; }
-        .auth-bar .schema-link:hover { background: #4b5563; }
+        .auth-bar a { background: #374151; color: #fff; border: 0; padding: 4px 10px; border-radius: 3px; cursor: pointer; font-size: 12px; text-decoration: none; display: inline-block; }
+        .auth-bar a:hover { background: #4b5563; }
+        .auth-bar .schema-link { margin-left: auto; }
         #graphiql { flex: 1; min-height: 0; }
         .loading { height: 100%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #6b7280; }
     </style>
@@ -74,60 +73,24 @@
     import { explorerPlugin } from '@graphiql/plugin-explorer';
     import 'graphiql/setup-workers/esm.sh';
 
-    // angular-oauth2-oidc stores the access_token here after the SPA login
-    // completes (any provider — rapla, Microsoft, Keycloak, Google).
-    function getToken() {
-        return localStorage.getItem('access_token') || null;
-    }
-
-    function logout() {
-        // Don't clear other angular-oauth2-oidc keys (id_token, expires_at, …)
-        // — that would log the user out of the SPA too. Just drop the token
-        // for GraphiQL's purposes; the SPA's auto-refresh will reissue if
-        // it's still active in another tab.
-        localStorage.removeItem('access_token');
-        location.reload();
+    // Read the non-HttpOnly XSRF-TOKEN cookie that Spring's
+    // CookieCsrfTokenRepository.withHttpOnlyFalse() sets. POST /api/graphql is
+    // a mutating cookie-auth request, so CookieAuthCsrfMatcher requires the
+    // matching X-XSRF-TOKEN header (double-submit). The access_token cookie
+    // itself is HttpOnly and unreadable here — the browser attaches it
+    // automatically to same-origin fetches, which is the whole point.
+    function getXsrfToken() {
+        const m = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
+        return m ? decodeURIComponent(m[1]) : null;
     }
 
     function renderAuthBar() {
         const bar = document.getElementById('auth-bar');
         bar.innerHTML = '';
-        const token = getToken();
-        if (token) {
-            // Decode the JWT 'sub' / 'preferred_username' for display.
-            // No signature check; purely cosmetic — server validates every request.
-            let display = '(unknown)';
-            try {
-                const payload = JSON.parse(atob(token.split('.')[1]
-                    .replaceAll('-','+').replaceAll('_','/')));
-                display = payload.preferred_username || payload.sub || display;
-            } catch { /* ignore */ }
-
-            const label = document.createElement('span');
-            label.className = 'label';
-            label.textContent = 'authenticated as';
-            const principal = document.createElement('span');
-            principal.className = 'principal';
-            principal.textContent = display;
-            const out = document.createElement('button');
-            out.className = 'secondary';
-            out.textContent = 'Drop token';
-            out.onclick = logout;
-            bar.append(label, principal, out);
-        } else {
-            const label = document.createElement('span');
-            label.className = 'label';
-            label.textContent = 'anonymous — sign in via the SPA:';
-            // PRD 035: ?returnTo=graphiql routes the SPA back to /graphiql
-            // after the OAuth flow completes, via the LOGIN_RETURN_PATHS
-            // allowlist (rapla-angular/src/app/auth/login-return-to.ts).
-            // Same-tab navigation; the SPA's callback brings the browser
-            // back here automatically.
-            const loginLink = document.createElement('a');
-            loginLink.href = '/app/login?returnTo=graphiql';
-            loginLink.textContent = 'Log in via rapla SPA';
-            bar.append(label, loginLink);
-        }
+        const label = document.createElement('span');
+        label.className = 'label';
+        label.textContent = 'authenticated via access_token cookie';
+        bar.append(label);
 
         // Always-visible link to the full SDL schema dump (the GraphQL pendant
         // to Swagger's /v3/api-docs). Public, UTF-8. Opens in a new tab.
@@ -138,41 +101,69 @@
         schemaLink.rel = 'noopener';
         schemaLink.textContent = 'Schema (SDL) ↗';
         bar.append(schemaLink);
+
+        // PRD 072 Phase 4: cookie-model sign-out — the old "Drop token" button
+        // (which cleared the localStorage access_token) is meaningless now that the
+        // credential is an HttpOnly cookie JS can't touch. Instead POST the server
+        // logout (clears both cookies) with the double-submit XSRF header, then land
+        // on the combined /login page.
+        const signOut = document.createElement('a');
+        signOut.className = 'schema-link';
+        signOut.href = '#';
+        signOut.textContent = 'Sign out';
+        signOut.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const xsrf = getXsrfToken();
+            await fetch('/api/auth/logout', {
+                method: 'POST',
+                headers: xsrf ? { 'X-XSRF-TOKEN': xsrf } : {},
+            }).catch(() => {});
+            window.location.assign('/login');
+        });
+        bar.append(signOut);
     }
 
-    // Auth-aware fetcher with three properties:
-    //   1. Reads localStorage on EVERY request (not baked-in at page load) —
-    //      auto-picks-up SPA token refreshes without a GraphiQL reload.
-    //   2. On 401 with a present token: drop the stale token + bounce to
-    //      /app/login to re-auth. The returnTo brings the user back.
-    //      Skipped if the user is intentionally anonymous (no token).
-    //   3. Custom `fetch` keeps the rest of createGraphiQLFetcher's behavior
-    //      (subscriptions, multipart, etc.).
+    // Auth-aware fetcher (PRD 072 Phase 3):
+    //   1. Plain same-origin fetch — the HttpOnly access_token cookie is sent
+    //      automatically by the browser; no Bearer header needed.
+    //   2. POST /api/graphql is mutating cookie-auth → attach X-XSRF-TOKEN from
+    //      the XSRF-TOKEN cookie so CookieAuthCsrfMatcher is satisfied.
+    //   3. On 401: POST /api/auth/refresh (reads the path-scoped refresh_token
+    //      cookie, sets a fresh access_token cookie), then replay the request
+    //      once. If the refresh itself 401s, redirect to /login.
     const fetcher = createGraphiQLFetcher({
         url: '/api/graphql',
         fetch: async (input, init) => {
-            init = init || {};
-            init.headers = { ...(init.headers || {}) };
-            const token = getToken();
-            if (token) init.headers['Authorization'] = 'Bearer ' + token;
-            const response = await fetch(input, init);
-            if (response.status === 401 && token) {
-                localStorage.removeItem('access_token');
-                location.href = '/app/login?returnTo=graphiql';
-                throw new Error('Token expired — redirecting to login');
+            const doFetch = () => {
+                const opts = { ...(init || {}) };
+                opts.credentials = 'same-origin';
+                opts.headers = { ...((init && init.headers) || {}) };
+                const xsrf = getXsrfToken();
+                if (xsrf) opts.headers['X-XSRF-TOKEN'] = xsrf;
+                return fetch(input, opts);
+            };
+
+            let response = await doFetch();
+            if (response.status === 401) {
+                const refresh = await fetch('/api/auth/refresh', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: (() => {
+                        const x = getXsrfToken();
+                        return x ? { 'X-XSRF-TOKEN': x } : {};
+                    })()
+                });
+                if (refresh.status === 401) {
+                    location.href = '/login';
+                    throw new Error('Session expired — redirecting to login');
+                }
+                response = await doFetch();
             }
             return response;
         }
     });
 
     renderAuthBar();
-
-    // Cross-tab reactivity: when the SPA refreshes / drops the token in
-    // another tab, re-render the auth bar in this tab so the principal
-    // display stays current. The fetcher itself is already reactive.
-    window.addEventListener('storage', (e) => {
-        if (e.key === 'access_token') renderAuthBar();
-    });
 
     const explorer = explorerPlugin();
     ReactDOM.createRoot(document.getElementById('graphiql'))

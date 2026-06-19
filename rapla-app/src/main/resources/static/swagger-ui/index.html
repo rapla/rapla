@@ -8,66 +8,64 @@
       Scalar and GraphiQL). CDN-loaded from jsdelivr — no webjar in the fat
       JAR. Offline-fallback story: npm install swagger-ui-dist + copy to static/.
 
-      Auth: shared via the Angular SPA's /app/login (PRD 035). Swagger UI no
-      longer runs its own in-UI OAuth flow — instead a requestInterceptor
-      reads the access_token the SPA stored in localStorage (via
-      angular-oauth2-oidc) after the user signs in. This means:
-        - no /swagger-ui/oauth2-redirect.html callback URI to register per IdP
-        - all 4 providers (rapla, Microsoft, Keycloak, Google) work for free
-          via the SPA's already-registered /app/auth/callback
-        - Swagger UI's "Authorize" padlock UI is no longer functional (gone
-          alongside initOAuth); use the "Log in via rapla SPA" link below
+      PRD 071 Phase 3: this page requires an authenticated session — an
+      anonymous browser GET is rejected 401 by SecurityConfig.
+
+      PRD 072 Phase 3: Swagger UI no longer piggybacks on the SPA's
+      localStorage access_token Bearer. It relies on the HttpOnly
+      `access_token` cookie (Phase 2) the browser sends automatically with
+      same-origin requests. "Try it out" mutating calls (POST/PUT/PATCH/DELETE)
+      are cookie-auth, so the requestInterceptor attaches the X-XSRF-TOKEN
+      header from the non-HttpOnly XSRF-TOKEN cookie that Spring's
+      CookieCsrfTokenRepository.withHttpOnlyFalse() sets (gated by
+      CookieAuthCsrfMatcher). On a 401, the responseInterceptor calls
+      POST /api/auth/refresh to mint a fresh access_token cookie; if the
+      refresh itself fails, it bounces to /login.
     -->
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.30.1/swagger-ui.css">
     <link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.30.1/favicon-32x32.png" sizes="32x32">
-    <style>
-        html { box-sizing: border-box; overflow: -moz-scrollbars-vertical; overflow-y: scroll; }
-        *, *:before, *:after { box-sizing: inherit; }
-        body { margin: 0; background: #fafafa; }
-        .auth-bar { padding: 6px 12px; background: #1e2937; color: #fff; display: flex; gap: 12px; align-items: center; font-size: 13px; flex-wrap: wrap; font-family: system-ui, sans-serif; }
-        .auth-bar .label { opacity: 0.7; }
-        .auth-bar .principal { font-family: monospace; opacity: 0.9; }
-        .auth-bar a, .auth-bar button { background: #2563eb; color: #fff; border: 0; padding: 4px 10px; border-radius: 3px; cursor: pointer; font-size: 12px; text-decoration: none; display: inline-block; }
-        .auth-bar a:hover, .auth-bar button:hover { background: #1d4ed8; }
-        .auth-bar button.secondary { background: #6b7280; }
-        .auth-bar button.secondary:hover { background: #4b5563; }
-    </style>
 </head>
 <body>
-<div id="auth-bar" class="auth-bar"></div>
 <div id="swagger-ui"></div>
 <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.30.1/swagger-ui-bundle.js" charset="UTF-8"></script>
 <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.30.1/swagger-ui-standalone-preset.js" charset="UTF-8"></script>
 <script>
-    function getToken() { return localStorage.getItem('access_token') || null; }
-    function logout() { localStorage.removeItem('access_token'); location.reload(); }
-
-    function renderAuthBar() {
-        var bar = document.getElementById('auth-bar');
-        bar.innerHTML = '';
-        var token = getToken();
-        if (token) {
-            var display = '(unknown)';
-            try {
-                var payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-                display = payload.preferred_username || payload.sub || display;
-            } catch (e) { /* ignore */ }
-            var label = document.createElement('span'); label.className = 'label'; label.textContent = 'authenticated as';
-            var principal = document.createElement('span'); principal.className = 'principal'; principal.textContent = display;
-            var out = document.createElement('button'); out.className = 'secondary'; out.textContent = 'Drop token'; out.onclick = logout;
-            bar.append(label, principal, out);
-        } else {
-            var label = document.createElement('span'); label.className = 'label';
-            label.textContent = 'anonymous — sign in via the SPA:';
-            var loginLink = document.createElement('a');
-            loginLink.href = '/app/login?returnTo=swagger';
-            loginLink.textContent = 'Log in via rapla SPA';
-            bar.append(label, loginLink);
-        }
+    // Read the non-HttpOnly XSRF-TOKEN cookie Spring sets
+    // (CookieCsrfTokenRepository.withHttpOnlyFalse()). Mutating cookie-auth
+    // requests need the matching X-XSRF-TOKEN header (CookieAuthCsrfMatcher).
+    // The access_token cookie itself is HttpOnly and unreadable here — the
+    // browser attaches it automatically to same-origin requests.
+    function getXsrfToken() {
+        var m = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
+        return m ? decodeURIComponent(m[1]) : null;
     }
-    renderAuthBar();
+
+    // PRD 072 Phase 4: cookie-model sign-out. The old "Drop token" affordance is
+    // gone (the credential is an HttpOnly cookie JS can't clear); POST the server
+    // logout with the double-submit XSRF header, then land on /login.
+    function addSignOut() {
+        var a = document.createElement('a');
+        a.textContent = 'Sign out';
+        a.href = '#';
+        a.style.cssText = 'position:fixed;top:8px;right:16px;z-index:10000;'
+            + 'font:600 13px sans-serif;color:#fff;background:#3b4151;'
+            + 'padding:4px 12px;border-radius:4px;text-decoration:none';
+        a.addEventListener('click', function (e) {
+            e.preventDefault();
+            var xsrf = getXsrfToken();
+            fetch('/api/auth/logout', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: xsrf ? { 'X-XSRF-TOKEN': xsrf } : {}
+            }).catch(function () {}).finally(function () {
+                window.location.assign('/login');
+            });
+        });
+        document.body.appendChild(a);
+    }
 
     window.onload = function () {
+        addSignOut();
         window.ui = SwaggerUIBundle({
             // Loads the group inventory served by StaticOpenApiController; the dropdown
             // populates from its `urls` array (auth / client / rest / exports).
@@ -77,31 +75,34 @@
             presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
             plugins: [SwaggerUIBundle.plugins.DownloadUrl],
             layout: "StandaloneLayout",
-            // PRD 035: shared OAuth via SPA. Inject the SPA-stored JWT as
-            // Bearer on every request (reads localStorage per-call → auto
-            // picks up SPA refreshes). No in-UI OAuth, no callback URI.
+            // PRD 072 Phase 3: cookie credential. The HttpOnly access_token
+            // cookie is sent automatically with same-origin requests; for
+            // mutating calls attach the X-XSRF-TOKEN double-submit header.
             requestInterceptor: function (req) {
-                var token = getToken();
-                if (token) req.headers['Authorization'] = 'Bearer ' + token;
+                var xsrf = getXsrfToken();
+                if (xsrf) req.headers['X-XSRF-TOKEN'] = xsrf;
                 return req;
             },
-            // 401 with a present token = stale; drop it + bounce to login.
-            // Skipped if the user is intentionally anonymous (no token).
+            // On 401, mint a fresh access_token cookie via the refresh endpoint;
+            // if the refresh itself fails, bounce to login. (Swagger UI has no
+            // built-in replay, so the user re-clicks "Execute" after refresh.)
             responseInterceptor: function (res) {
-                if (res.status === 401 && getToken()) {
-                    localStorage.removeItem('access_token');
-                    location.href = '/app/login?returnTo=swagger';
+                if (res.status === 401) {
+                    var xsrf = getXsrfToken();
+                    fetch('/api/auth/refresh', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: xsrf ? { 'X-XSRF-TOKEN': xsrf } : {}
+                    }).then(function (r) {
+                        if (r.status === 401) {
+                            location.href = '/login';
+                        }
+                    });
                 }
                 return res;
             }
         });
     };
-
-    // Cross-tab reactivity: re-render the auth bar when SPA refreshes /
-    // drops the token in another tab.
-    window.addEventListener('storage', function (e) {
-        if (e.key === 'access_token') renderAuthBar();
-    });
 </script>
 </body>
 </html>

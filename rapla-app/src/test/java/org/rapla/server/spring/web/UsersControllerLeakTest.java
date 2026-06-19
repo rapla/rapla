@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -166,6 +167,37 @@ class UsersControllerLeakTest
                 "group admin sees self — got " + usernames);
         assertFalse(usernames.contains("homer"),
                 "group admin must NOT see the global admin (existence leak) — got " + usernames);
+    }
+
+    @Test
+    void usersListWhileImpersonatingUsesRealAdminNotEffectiveUser() throws Exception
+    {
+        // PRD 072 Phase-4 gate finding: while an admin is impersonating, the
+        // "switch to user" candidate list must be computed against the REAL admin
+        // (the act.sub on the impersonation token), NOT the effective impersonated
+        // user — otherwise a global admin who switched into a non-admin sees an
+        // empty/narrow list and can't switch back/onward via the dialog.
+        String adminToken = OAuthTestSupport.loginAs(mockMvc, "homer", "duffs");
+        MvcResult imp = mockMvc.perform(post("/api/auth/impersonate")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType("application/x-www-form-urlencoded")
+                        .content("target_username=monty"))
+                .andExpect(status().isOk())
+                .andReturn();
+        String impToken = JsonMapper.builder().build()
+                .readTree(imp.getResponse().getContentAsString()).get("access_token").asString();
+
+        MvcResult mvc = mockMvc.perform(get("/api/users")
+                        .header("Authorization", "Bearer " + impToken))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        List<String> usernames = extractUsernames(mvc);
+        // homer (global admin / self) is in HOMER's admin scope but NOT in monty's
+        // (a group admin can't admin the global admin). Its presence proves the
+        // list was computed against the real actor homer, not the effective monty.
+        assertTrue(usernames.contains("homer"),
+                "impersonating admin must still see their real-actor candidate list — got " + usernames);
     }
 
     @Test

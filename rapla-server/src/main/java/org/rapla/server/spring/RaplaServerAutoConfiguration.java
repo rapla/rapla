@@ -24,9 +24,11 @@ import org.springframework.scheduling.annotation.EnableScheduling;
         ServerServiceConfig.class,
         JwtConfig.class,
         SecurityConfig.class,
+        org.rapla.server.spring.oauth.RaplaClientRegistrationConfig.class,
         RaplaJacksonConfig.class,
         AdminPanelsScanConfig.class,
         RefreshSessionService.class,
+        CookieAuthSupport.class,
         PluginApiPathWarningListener.class
 })
 @ComponentScan("org.rapla.server.spring.web")

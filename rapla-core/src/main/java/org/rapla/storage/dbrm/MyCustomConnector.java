@@ -101,27 +101,20 @@ public class MyCustomConnector implements CustomConnector
      * stashes the resulting access + refresh tokens on {@link #remoteConnectionInfo}.
      *
      * <p>PRD 041: refresh uses the standard {@code grant_type=refresh_token}
-     * form-encoded body. PRD 029 Phase 4: the endpoint + client_id are taken
-     * from {@link RemoteConnectionInfo} when a browser-OAuth provider was used
-     * — for a secret-backed provider like Keycloak that is the BFF URL
-     * ({@code /api/auth/oauth/exchange/{id}}), which injects the server-held
-     * {@code client_secret}. For a rapla-SAS / password session those fields
-     * are null and we fall back to {@code serverURL + /oauth2/token} with
-     * {@code client_id=rapla-client}.
+     * form-encoded body. PRD 072 Phase 5: rapla is Swing's single federating
+     * Authorization Server, so refresh always targets rapla's own
+     * {@code serverURL + /oauth2/token} with {@code client_id=rapla-client} —
+     * there is no longer any external provider token endpoint to route to
+     * (every Swing login yields a rapla-issuer token).
      *
      * @return the new access token, or null if refresh isn't available
      */
     private String refreshUsingToken(String refreshToken) throws Exception
     {
-        String url = remoteConnectionInfo.getRefreshUrl();
-        if (url == null || url.isEmpty())
-        {
-            String serverUrl = remoteConnectionInfo.getServerURL();
-            if (serverUrl == null || serverUrl.isEmpty()) return null;
-            url = serverUrl + "/oauth2/token";
-        }
-        String clientId = remoteConnectionInfo.getOauthClientId();
-        if (clientId == null || clientId.isEmpty()) clientId = "rapla-client";
+        String serverUrl = remoteConnectionInfo.getServerURL();
+        if (serverUrl == null || serverUrl.isEmpty()) return null;
+        String url = serverUrl + "/oauth2/token";
+        String clientId = "rapla-client";
         String encodedRefresh = java.net.URLEncoder.encode(refreshToken, java.nio.charset.StandardCharsets.UTF_8);
         String body = "grant_type=refresh_token&refresh_token=" + encodedRefresh
                 + "&client_id=" + java.net.URLEncoder.encode(clientId, java.nio.charset.StandardCharsets.UTF_8);

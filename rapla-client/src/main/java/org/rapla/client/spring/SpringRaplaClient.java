@@ -155,7 +155,7 @@ public class SpringRaplaClient implements AutoCloseable
                 clientService.start(currentInfo);
 
                 // PRD 029 Phase 5 — dual-slot impersonation. The context started
-                // above with admin's full 4-tuple as primary; now apply the
+                // above with admin's tokens as primary; now apply the
                 // impersonation token as the override slot so outbound calls use
                 // it while renewal/refresh continue to use admin's tokens.
                 if (isImpersonationSession && next.impersonationAccessToken() != null)
@@ -187,7 +187,7 @@ public class SpringRaplaClient implements AutoCloseable
      * Parses CLI args into a bootstrap {@link ConnectInfo}. PRD 029 Phase 5
      * (2026-05-25): the CLI takes a long-lived API JWT as a single arg, not
      * username+password. Mint via {@code POST /api/auth/api-keys} (PRD 043)
-     * through the Scalar UI at {@code /scalar} once, then paste the JWT into
+     * through the Swagger UI at {@code /swagger-ui} once, then paste the JWT into
      * {@code -Dexec.args="$RAPLA_DEV_TOKEN"}.
      *
      * <p>Returns {@code null} for no-args → next iteration shows the login

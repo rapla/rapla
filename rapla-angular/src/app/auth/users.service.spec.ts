@@ -1,88 +1,46 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { firstValueFrom } from 'rxjs';
 
 import { UsersService } from './users.service';
-import { AuthService } from './auth.service';
 
 /**
- * PRD 051 — locks in the rule that {@code GET /api/users} is issued with the
- * admin's Bearer rather than the impersonation override, even while the user
- * is actively impersonating. The bug was: while impersonating, clicking the
- * chip to switch targets fetched the impersonated user's admin-scope (usually
- * empty) and the dialog showed no candidates. The fix bypasses {@code HttpClient}
- * (whose interceptor would attach {@code token()} — the override) and uses
- * raw {@code fetch} with {@code adminToken()}.
+ * PRD 072 Phase 4 — cookie-credential UsersService. GET /api/users goes through
+ * HttpClient (relative URL → browser auto-attaches the access_token cookie);
+ * the SPA holds no token. A non-2xx collapses to [] so the toolbar chip stays
+ * non-clickable.
  */
-describe('UsersService', () => {
-  let authStub: {
-    token: ReturnType<typeof vi.fn>;
-    adminToken: ReturnType<typeof vi.fn>;
-  };
-  let fetchSpy: ReturnType<typeof vi.fn>;
+describe('UsersService (cookie model)', () => {
+  let users: UsersService;
+  let httpMock: HttpTestingController;
 
   beforeEach(() => {
-    authStub = {
-      token: vi.fn(() => 'IMPERSONATION-OVERRIDE'),
-      adminToken: vi.fn(() => 'ADMIN-BEARER'),
-    };
     TestBed.configureTestingModule({
-      providers: [{ provide: AuthService, useValue: authStub }],
+      providers: [UsersService, provideHttpClient(), provideHttpClientTesting()],
     });
-    fetchSpy = vi.fn(async () =>
-      new Response(JSON.stringify([{ username: 'alice', displayName: 'Alice' }]), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }),
-    );
-    vi.stubGlobal('fetch', fetchSpy);
+    users = TestBed.inject(UsersService);
+    httpMock = TestBed.inject(HttpTestingController);
   });
 
   afterEach(() => {
-    vi.unstubAllGlobals();
+    httpMock.verify();
   });
 
-  it('uses adminToken() — NOT token() — for the Authorization header', async () => {
-    const users = TestBed.inject(UsersService);
-    const result = await firstValueFrom(users.list());
-
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
-    const [url, init] = fetchSpy.mock.calls[0];
-    expect(url).toBe('/api/users');
-    expect((init as RequestInit).headers).toMatchObject({
-      Authorization: 'Bearer ADMIN-BEARER',
-    });
-    expect(authStub.adminToken).toHaveBeenCalled();
-    // The interceptor-attached token (impersonation override when active)
-    // must never be queried by this service — that was the bug.
-    expect(authStub.token).not.toHaveBeenCalled();
-    expect(result).toEqual([{ username: 'alice', displayName: 'Alice' }]);
+  it('GETs /api/users (relative URL, no Authorization header — cookie carries auth)', async () => {
+    const p = firstValueFrom(users.list());
+    const req = httpMock.expectOne('/api/users');
+    expect(req.request.method).toBe('GET');
+    expect(req.request.headers.has('Authorization')).toBe(false);
+    req.flush([{ username: 'alice', displayName: 'Alice' }]);
+    expect(await p).toEqual([{ username: 'alice', displayName: 'Alice' }]);
   });
 
-  it('returns [] without calling fetch when adminToken() is null', async () => {
-    authStub.adminToken.mockReturnValue(null);
-    const users = TestBed.inject(UsersService);
-    const result = await firstValueFrom(users.list());
-    expect(fetchSpy).not.toHaveBeenCalled();
-    expect(result).toEqual([]);
-  });
-
-  it('returns [] on non-2xx responses (chip stays non-clickable)', async () => {
-    fetchSpy.mockResolvedValueOnce(
-      new Response('{"error":"forbidden"}', {
-        status: 403,
-        headers: { 'Content-Type': 'application/json' },
-      }),
-    );
-    const users = TestBed.inject(UsersService);
-    const result = await firstValueFrom(users.list());
-    expect(result).toEqual([]);
-  });
-
-  it('returns [] on network errors (does not surface to caller)', async () => {
-    fetchSpy.mockRejectedValueOnce(new TypeError('network down'));
-    const users = TestBed.inject(UsersService);
-    const result = await firstValueFrom(users.list());
-    expect(result).toEqual([]);
+  it('returns [] on a non-2xx response (chip stays non-clickable)', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const p = firstValueFrom(users.list());
+    httpMock.expectOne('/api/users').flush(null, { status: 403, statusText: 'Forbidden' });
+    expect(await p).toEqual([]);
   });
 });

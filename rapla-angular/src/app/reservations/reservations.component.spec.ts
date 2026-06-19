@@ -5,8 +5,10 @@ import { provideAnimationsAsync } from '@angular/platform-browser/animations/asy
 import { HttpClient } from '@angular/common/http';
 import { of } from 'rxjs';
 
+import { signal } from '@angular/core';
+
 import { ReservationsComponent } from './reservations.component';
-import { AuthService } from '../auth/auth.service';
+import { AuthService, Identity } from '../auth/auth.service';
 import { UsersService } from '../auth/users.service';
 
 describe('ReservationsComponent', () => {
@@ -40,15 +42,28 @@ describe('ReservationsComponent', () => {
         },
         {
           provide: AuthService,
-          useValue: {
-            signOut: vi.fn(),
-            identityClaims: () => ({ preferred_username: 'testadmin' }),
-            // PRD 051 — the toolbar reads these to decide whether to
-            // render the "Impersonating X" badge. Default: no
-            // impersonation; individual tests can override.
-            isImpersonating: () => false,
-            impersonationOverride: () => null,
-          },
+          useValue: ((): Partial<AuthService> => {
+            // PRD 072 — the toolbar reads the identity signal (from
+            // GET /api/auth/me) for the effective username + impersonation
+            // badge. Default: a logged-in, non-impersonating user.
+            const identity = signal<Identity | null>({
+              username: 'testadmin',
+              name: 'Test Admin',
+              admin: false,
+              roles: [],
+              impersonating: false,
+              actor: null,
+              target: null,
+            });
+            return {
+              identity,
+              isImpersonating: () => identity()?.impersonating ?? false,
+              actorUsername: () => identity()?.actor ?? '',
+              signOut: vi.fn(),
+              endImpersonation: vi.fn(async () => true),
+              impersonate: vi.fn(async () => true),
+            } as unknown as Partial<AuthService>;
+          })(),
         },
       ],
     });
