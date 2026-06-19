@@ -334,8 +334,32 @@ Two directive kinds: **fixed/closed structural** (`@view`/`@column`/`@flatten`/
 (deployment-specific, from the `FunctionFactory`-style op registry — *same generation
 pattern as `ClassificationSdlGenerator`*).
 
+### Authoring layer (readability)
+
+The stacked-directive query below is **machine-generated, never hand-written**. The
+admin authors a compact spec (layer ①); the system compiles it to the generated query
++ per-composition directives (layer ②); GraphQL returns §12-filtered data and the SPA
+renders the table (layer ③). This closes the readability gap **without** giving up the
+closed-directive wire form — the dense form is a machine artefact, not an authoring
+format. The raw composition (`concat(...)`) lives only in ①, compiled once to the
+`@timeRange` directive.
+
 ### Worked query 1 — `Termine` (corrected dhbw structure)
 
+**① Authored spec (what the admin writes):**
+```yaml
+view: Termine
+filter: Lehrveranstaltung
+rows: blocks                     # one row per AppointmentBlock
+columns:
+  - { header: "Termin", from: name }
+  - { header: "Zeit",   value: "concat(formatTime(start),'–',formatTime(end))" }
+  - { header: "Raum",   from: [Raum, Teilraum, virtuellerRaum], join: ", " }
+  - { header: "Kurs",   from: [Kurs, Teilkurs, Kursgruppe],     join: ", " }
+  - { header: "Dozent", from: persons, join: ", ", when: showLecturer }
+```
+
+**② Generated query (machine artefact — nobody hand-writes this):**
 ```graphql
 query Termine($from: DateTime!, $to: DateTime!, $showLecturer: Boolean!)
   @view(title: "Termine")
