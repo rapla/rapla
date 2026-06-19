@@ -300,6 +300,122 @@ parent fields down onto each row.
 (`org.rapla.eventtimecalculator`) — a compiled op referenced by name; authors never
 inject code.
 
+## Alternative under evaluation (2026-06-20) — GraphQL-native views, no expression engine
+
+Examining the two views above against the **real dhbw type model** surfaced a
+stronger, simpler option. The compositions they actually use are tiny —
+`concat`/`formatTime`/`formatDate`/`coalesce`/`durationMinutes` + path access + one
+comparison — **no free-form, Turing-ish expression**. That re-opens whether the
+whole A-CEL transform engine is needed, or whether the views decompose into **three
+CLOSED, engine-free building blocks**:
+
+- **Selection + filter → GraphQL** — `where` (PRD 059), the nested `allocatables`
+  filter (shipped 2026-06-19), access selectors (PRD 069). In the dhbw model
+  **rooms, courses and lecturers are referenced *allocatables*, not classification
+  attributes**: `Raum`/`Teilraum`/`virtuellerRaum`, `Kurs`/`Teilkurs`/`Kursgruppe`,
+  `Person` — split per column by `typeKeyIn`. Rows are **AppointmentBlocks**
+  (recurrence expansion) = the flatten unit.
+- **Aggregation → GraphQL aggregate-field convention** (Hasura/PostGraphile-style;
+  *convention, not spec* — same category as rapla's `where`). Closed `groupBy`
+  vocabulary (`DAY`/`WEEK`/`MONTH`, by-room, …) + closed ops (`count`/`sum`/`min`/
+  `max`/`avg`); **§12 enforced in the aggregate resolver** (a `count`/`sum` is
+  server-derived existence info — `canRead` must run *before* counting or the number
+  leaks unreadable rows). Server-side `sum { durationMinutes }` depends on the
+  `durationMinutes` field (**PRD 073 Phase 2**).
+- **Cell formatting / compositions → generated, closed directives.** Each
+  rarely-edited composition compiles **server-side, once** into a named directive
+  (`@timeRange`, `@room`, …) with the op-tree baked in. The wire carries only the
+  bare directive name — **no expression string, no client engine**, schema-validated,
+  GraphiQL-pasteable (server ignores the directives, returns plain data; the SPA
+  reads them from the query AST and builds the table).
+
+Two directive kinds: **fixed/closed structural** (`@view`/`@column`/`@flatten`/
+`@join`/`@when`/`@group`/`@aggregate`) hand-defined once; **generated-per-composition**
+(deployment-specific, from the `FunctionFactory`-style op registry — *same generation
+pattern as `ClassificationSdlGenerator`*).
+
+### Worked query 1 — `Termine` (corrected dhbw structure)
+
+```graphql
+query Termine($from: DateTime!, $to: DateTime!, $showLecturer: Boolean!)
+  @view(title: "Termine")
+{
+  reservations(filter: { typeKeyIn: ["Lehrveranstaltung"] }) {
+    name @column(header: "Termin", order: 1)
+
+    appointments {
+      raum:   allocatables(filter: { typeKeyIn: ["Raum","Teilraum","virtuellerRaum"] })
+              @column(header: "Raum", order: 3) @join(field: "displayName", separator: ", ") { displayName }
+      kurs:   allocatables(filter: { typeKeyIn: ["Kurs","Teilkurs","Kursgruppe"] })
+              @column(header: "Kurs", order: 4) @join(field: "displayName", separator: ", ") { displayName }
+      dozent: allocatables(filter: { isPersonEq: true })
+              @column(header: "Dozent", order: 5) @join(field: "displayName", separator: ", ")
+              @when(visibleIf: $showLecturer) { displayName }
+
+      blocks(from: $from, to: $to) @flatten(project: ["raum","kurs","dozent"])
+            @timeRange(header: "Zeit", order: 2)        # generated: concat(formatTime(start),'–',formatTime(end))
+      {
+        start
+        end
+      }
+    }
+  }
+}
+```
+
+(`Teilraum`/`Teilkurs` can be split into their own columns by giving each its own
+filtered alias, e.g. `teilraum: allocatables(filter: { typeKeyIn: ["Teilraum"] })`.)
+
+### Worked query 2 — `Termine pro Tag` (aggregate-field convention)
+
+```graphql
+query TermineProTag($from: DateTime!, $to: DateTime!)
+  @view(title: "Termine pro Tag")
+{
+  appointmentBlocksAggregate(
+    filter:  { reservationTypeKeyIn: ["Lehrveranstaltung"] }
+    from: $from, to: $to
+    groupBy: { dateBucket: DAY }              # closed dimension — not a free formatDate
+  ) {
+    groups {
+      key { day @column(header: "Tag", order: 1) }
+      count       @column(header: "Termine", order: 2)
+      sum { durationMinutes @column(header: "Dauer (min)", order: 3) }
+    }
+  }
+}
+```
+
+Returns valid GraphQL — the **server folds**, the SPA gets finished groups:
+```json
+{ "data": { "appointmentBlocksAggregate": { "groups": [
+  { "key": { "day": "2026-06-22" }, "count": 5, "sum": { "durationMinutes": 450 } } ] } } }
+```
+
+### Why this is attractive
+- **No expression engine anywhere** → no CEL lib, no JS port, no TS↔Java parity
+  corpus, no `eval`/XSS-via-expression surface. Directly serves the security-first stance.
+- **Result on the wire stays valid GraphQL** (data response unchanged; directives inert
+  server-side; aggregate is typed data).
+- **Reuses the nested-`allocatables` filter** for its intended purpose (split
+  rooms/courses/lecturers per column in one query).
+- **Admins keep authoring compositions in rapla syntax**; generation emits the closed directives.
+
+### Feasibility + open verdict
+- **Confirmed:** `ParsedText` already compiles an expression to a **walkable `Function`
+  tree** (name/namespace/args; `getRepresentation` proves recursive traversal) — so a
+  composition can be compiled to a bounded op-tree. Spike
+  `rapla-core/.../viewspec/CompositionDirectiveSpikeTest` proves a small **closed** op
+  registry evaluates the two real compositions and **rejects unknown functions** (the
+  no-eval property), and generates the closed directive from each.
+- **Aggregation** is convention not spec → we implement a bounded, §12-safe aggregate API.
+- **Verdict to lock:** do any real views need free cross-field arithmetic/predicates
+  beyond the closed op-set? If **no** (as both PRD views suggest) → this GraphQL-native
+  path **supersedes A-CEL**. If **yes** for some views → A-CEL (full engine) returns
+  *only* for those. A-CEL is hereby repositioned as the full-engine fallback; this
+  directive + aggregate path is the minimal, engine-free default, pending confirmation
+  against more real views.
+
 ## XSS / injection hardening (load-bearing)
 
 The saved view is **admin-authored, shared, transferred to every client**, and all
