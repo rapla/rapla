@@ -49,6 +49,14 @@ public final class CsrfCookieFilter extends OncePerRequestFilter
             token = repository.generateToken(request);
             repository.saveToken(token, request, response);
         }
+        // Publish THIS materialized token as the request attribute so anything that
+        // renders a CSRF field (the server-side /login form) reads the SAME value
+        // that's in the XSRF-TOKEN cookie. Without this the controller would pull
+        // the deferred CsrfToken, which generates its OWN value (a second, mismatched
+        // XSRF-TOKEN cookie) → the form's _csrf never matches → cookie-auth POST /login
+        // 403s whenever an access_token cookie is present (CookieAuthCsrfMatcher).
+        request.setAttribute(CsrfToken.class.getName(), token);
+        request.setAttribute(token.getParameterName(), token);
         chain.doFilter(request, response);
     }
 }

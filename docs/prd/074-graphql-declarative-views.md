@@ -178,6 +178,28 @@ by golden corpus); the corpus then only proves *pipeline-stage* parity.
 cross-runtime parity without shipping a JS engine into the server**, the exact heavy
 eval-capable surface A′ adds. **A-CEL is preferred over A′.**
 
+**Evidence — CEL × GraphQL is rare-but-validated, and we couple looser than the
+precedent (web check 2026-06-19):**
+- **CEL itself is high-standard**, but in the API/authz boundary, not in GraphQL:
+  Kubernetes (CRD validation, admission policies), Envoy, Confluent Cloud mTLS
+  filters, Firebase rules.
+- **CEL embedded *in* GraphQL has one clear production precedent — Twisp**, which
+  exposes CEL as a first-class GraphQL `Expression` scalar (wherever the schema's
+  `Expression` type appears, a CEL string is accepted and evaluated). So even the
+  *tight* fusion ships in production.
+- **GraphQL has no standard for an inline filter/expression language** — the spec
+  issue [graphql/graphql-spec#271](https://github.com/graphql/graphql-spec/issues/271)
+  has debated exactly this for years, unresolved. The dominant GraphQL pattern for
+  logic is `@auth`-style **directives backed by host-language (JS/Java) resolvers** —
+  i.e. developer code, not an embedded expression sublanguage.
+- **A-CEL couples *looser* than Twisp:** CEL is **not** inside our GraphQL document.
+  GraphQL does prediction/navigation → returns JSON → the bespoke pipeline shapes it
+  → CEL fills the per-cell formula slots. The two meet only at the data boundary
+  (query result → transform input). We invent **no** CEL-in-GraphQL fusion; each
+  tool does only what it is individually standard for. The missing GraphQL inline
+  standard (#271) is itself the reason a separate transform layer is needed —
+  confirming the layering, not contradicting it.
+
 ### DuckDB-SQL — strongest transform option, behind a constraint waiver
 
 `duckdb-wasm` (browser) + `duckdb_jdbc` (JVM) is the *same engine + same SQL* both
@@ -300,6 +322,37 @@ until parsed as HTML or run as code. The job is to guarantee non-execution:
   depth/node caps at parse time; reject unknown ops/functions.
 - **Permission boundary stays in GraphQL** — the transform runs on already
   `canRead`-filtered data and cannot widen scope (AGENTS.md §12).
+
+### Prior art — why a bounded language, not editable JS
+
+The view is **admin-authored at runtime** — the same risk class as BI / low-code /
+dashboard configuration, **not** the GraphQL `@auth`-directive pattern (those
+resolvers are *developer*-written, compiled, reviewed — not runtime-editable, so
+they're not this risk). Runtime-authored logic splits into two camps, and the
+historical record is one-sided:
+
+| Approach | Real-world examples | Outcome |
+|---|---|---|
+| Runtime-editable **general** scripting | Elasticsearch Groovy scripts; MongoDB `$where`/`mapReduce` JS; Retool `{{ JS }}` transformers; AG-Grid `valueGetter` expression strings (`new Function()`) | RCE CVE / stored-XSS / perpetual sandbox-hardening |
+| Runtime-editable **bounded** expression language | Elasticsearch **Painless**; Kubernetes / Envoy **CEL**; spreadsheet formulas | no `eval`, not Turing-complete, no RCE path |
+
+- **Elasticsearch Groovy → Painless is the textbook precedent.** `CVE-2015-1427`:
+  user-supplied Groovy in queries bypassed the sandbox via Java reflection → shell
+  execution as the ES process. Elastic's fix was **not** a better sandbox but a new
+  **bounded language (Painless)** — general scripting was removed. **A-CEL chooses
+  that endpoint up front instead of arriving via a CVE.**
+- **Retool shows sandboxing alone doesn't close XSS.** Admin `{{ JS }}` transformers
+  run in a sandboxed iframe, yet a transformer that builds an HTML string from
+  user-supplied data and renders it is internal stored-XSS to the next operator —
+  on a SOC-2/HIPAA-mature platform. The residual risk is the *admin-authored JS
+  itself*.
+- **AG-Grid `valueGetter` expression strings compile via `new Function()`** — which
+  is exactly why AG-Grid is rejected for the render layer (cdk-table instead).
+
+So for admin-authored views there are only two honest options: a bounded language
+(CEL — left-to-right of the table's safe column) or sandbox-plus-perpetual-hardening
+(Retool, which still ships XSS). CEL is the former by construction. A
+GraphQL-directive comparison is a category error: directives are developer code.
 
 ## Parity + security strategy (TS ≡ Java)
 

@@ -95,7 +95,8 @@ public class SecurityConfig
                                             LoginRateLimitFilter loginRateLimitFilter,
                                             ObjectProvider<org.springframework.security.oauth2.client.registration.ClientRegistrationRepository> clientRegistrationRepositoryProvider,
                                             ObjectProvider<org.rapla.server.spring.oauth.OidcLoginSuccessHandler> oidcSuccessHandlerProvider,
-                                            ObjectProvider<FormLoginSuccessHandler> formLoginSuccessHandlerProvider) throws Exception
+                                            ObjectProvider<FormLoginSuccessHandler> formLoginSuccessHandlerProvider,
+                                            @Value("${rapla.oauth.web.dhbw-legacy-callback:false}") boolean dhbwLegacyCallback) throws Exception
     {
         JwtDecoder decoder = jwtDecoderProvider.getIfAvailable();
         org.springframework.security.oauth2.client.registration.ClientRegistrationRepository clientRegistrations =
@@ -228,6 +229,16 @@ public class SecurityConfig
                 .addFilterAfter(new CsrfCookieFilter(csrfTokenRepository),
                         org.springframework.security.web.csrf.CsrfFilter.class)
                 .cors(Customizer.withDefaults());
+
+        // PRD 072 — TEMPORARY dev DHBW bridge (server-side, covers :8051 / the
+        // Swing-SSO browser, which hits the server directly with no ng-serve proxy).
+        // Redirects the registered legacy /app/auth/callback onto Spring's
+        // per-provider /login/oauth2/code/keycloak. Gated by the dev-only flag.
+        if (dhbwLegacyCallback)
+        {
+            http.addFilterBefore(new org.rapla.server.spring.oauth.LegacyKeycloakCallbackBridgeFilter(),
+                    UsernamePasswordAuthenticationFilter.class);
+        }
 
         // PRD 072 Phase 1 — server-side oauth2Login() HEAD. Only wired when at
         // least one external provider is configured (the ClientRegistrationRepository

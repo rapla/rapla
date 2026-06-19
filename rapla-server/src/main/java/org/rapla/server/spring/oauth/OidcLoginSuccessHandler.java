@@ -1,6 +1,7 @@
 package org.rapla.server.spring.oauth;
 
 import com.nimbusds.jose.JOSEException;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.rapla.entities.User;
@@ -13,12 +14,20 @@ import org.rapla.server.spring.oauth.external.ExternalUserResolver;
 import org.rapla.server.spring.oauth.external.ProviderConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.FactorGrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -46,7 +55,7 @@ import java.util.Map;
  * {@code /api/auth/me}, and cookie impersonation. This handler only sets the
  * cookie.
  */
-public class OidcLoginSuccessHandler implements AuthenticationSuccessHandler
+public class OidcLoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessHandler
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(OidcLoginSuccessHandler.class);
 
@@ -59,6 +68,7 @@ public class OidcLoginSuccessHandler implements AuthenticationSuccessHandler
     private final RefreshSessionService refreshSessionService;
     private final org.rapla.server.spring.CookieAuthSupport cookies;
     private final String redirectAfterLogin;
+    private final SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
 
     public OidcLoginSuccessHandler(ExternalProvidersProperties externalProviders,
                                    ExternalUserResolver externalUserResolver,
@@ -74,12 +84,18 @@ public class OidcLoginSuccessHandler implements AuthenticationSuccessHandler
         this.cookies = cookies;
         this.redirectAfterLogin = (redirectAfterLogin == null || redirectAfterLogin.isEmpty())
                 ? "/app/" : redirectAfterLogin;
+        // Browser logins (SPA/explorers) have no saved request → land on /app/.
+        // The Swing-SSO broker flow DOES have a saved request (the original
+        // /oauth2/authorize), which SavedRequestAwareAuthenticationSuccessHandler
+        // resumes so the loopback authorization_code is issued instead of dumping
+        // the browser into the Angular app.
+        setDefaultTargetUrl(this.redirectAfterLogin);
     }
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
                                         HttpServletResponse response,
-                                        Authentication authentication) throws IOException
+                                        Authentication authentication) throws IOException, ServletException
     {
         String registrationId = registrationIdOf(authentication);
         Map<String, Object> claims = claimsOf(authentication);
@@ -87,14 +103,14 @@ public class OidcLoginSuccessHandler implements AuthenticationSuccessHandler
         {
             // Not an external OIDC login (e.g. a form-login that somehow routed
             // here). Nothing to provision; fall through to the default redirect.
-            sendRedirect(response);
+            super.onAuthenticationSuccess(request, response, authentication);
             return;
         }
         ProviderConfig provider = externalProviders.byId(registrationId).orElse(null);
         if (provider == null)
         {
             LOGGER.warn("oauth2Login succeeded for unknown provider registrationId '{}'; no rapla session issued", registrationId);
-            sendRedirect(response);
+            super.onAuthenticationSuccess(request, response, authentication);
             return;
         }
 
@@ -102,6 +118,13 @@ public class OidcLoginSuccessHandler implements AuthenticationSuccessHandler
         {
             IdentityClaims identity = externalUserResolver.claimsFor(claims, provider);
             User user = userProvisioner.provision(identity);
+            // PRD 072 (Swing-SSO broker fix): re-establish the SecurityContext as the
+            // rapla user (UUID principal), matching the password-grant convention
+            // (raplaAuthenticationProvider). Otherwise the Authorization Server issues
+            // Swing's loopback authorization_code/tokens with sub = the external OIDC
+            // username, which the rapla token generators + /api (resolve sub as a rapla
+            // UUID) cannot resolve → invalid_grant on the loopback token exchange.
+            reAuthenticateAsRaplaUser(user, request, response);
             RefreshSessionService.IssuedTokens tokens = refreshSessionService.issueAndPersist(user);
             cookies.setAccessTokenCookie(response, tokens.accessToken(), tokens.expiresIn());
             // PRD 072 Phase 2 — also set the path-scoped refresh_token cookie so
@@ -114,15 +137,29 @@ public class OidcLoginSuccessHandler implements AuthenticationSuccessHandler
             LOGGER.warn("Could not establish a rapla session after {} login: {}", registrationId, e.getMessage());
             // No cookie set — the SPA's first /api call will 401 and bounce to /login.
         }
-        sendRedirect(response);
+        // Resume the saved request (Swing /oauth2/authorize) if present, else /app/.
+        super.onAuthenticationSuccess(request, response, authentication);
     }
 
-    private void sendRedirect(HttpServletResponse response) throws IOException
+    /**
+     * Replace the OIDC {@link Authentication} (whose name is the external
+     * username) with one whose principal name is the rapla user UUID, and
+     * persist it to the session — so the Authorization Server's subsequent
+     * loopback {@code authorization_code}/token issuance uses {@code sub = UUID}
+     * (mirrors {@code raplaAuthenticationProvider} for the password grant). Same
+     * authorities shape (the {@link FactorGrantedAuthority} supplies the
+     * {@code auth_time} the OIDC ID-token generator requires).
+     */
+    private void reAuthenticateAsRaplaUser(User user, HttpServletRequest request, HttpServletResponse response)
     {
-        if (!response.isCommitted())
-        {
-            response.sendRedirect(redirectAfterLogin);
-        }
+        UsernamePasswordAuthenticationToken raplaAuth = new UsernamePasswordAuthenticationToken(
+                user.getId(), null,
+                List.of(FactorGrantedAuthority.fromAuthority(FactorGrantedAuthority.PASSWORD_AUTHORITY),
+                        new SimpleGrantedAuthority(user.isAdmin() ? "ROLE_ADMIN" : "ROLE_USER")));
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(raplaAuth);
+        SecurityContextHolder.setContext(context);
+        securityContextRepository.saveContext(context, request, response);
     }
 
     private static String registrationIdOf(Authentication authentication)

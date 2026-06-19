@@ -1020,7 +1020,8 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     {
         java.util.List<String> labels = new java.util.ArrayList<>();
         labels.add(i18n.getString("password"));
-        if (sso != null)
+        boolean ssoOffered = sso != null;
+        if (ssoOffered)
         {
             labels.add("SSO");
             ssoConfig.set(sso);
@@ -1031,6 +1032,22 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         }
         dlg.setLoginMethods(labels);
         dlg.setMethodChangeListener(e -> dlg.setCredentialsEnabled(dlg.getSelectedMethodIndex() == 0));
+
+        // PRD 072 Phase 5: when SSO is offered it is the DEFAULT method, and the
+        // last-used method is remembered across launches (persistLoginPrefs writes
+        // "sso"/"password" on a successful login). Index 0 = password, index 1 = SSO.
+        String saved = tokenStore.readPref(TokenStore.KEY_LOGIN_METHOD).orElse("");
+        int selected;
+        if ("password".equals(saved) || !ssoOffered)
+        {
+            selected = 0;                  // explicit last choice, or SSO not available
+        }
+        else
+        {
+            selected = 1;                  // remembered "sso", or no preference yet → SSO default
+        }
+        dlg.setSelectedMethodIndex(selected);
+        dlg.setCredentialsEnabled(selected == 0);
     }
 
     private void runOauthLogin(LoginDialog dlg, Semaphore loginMutex, OAuthConfig provider)

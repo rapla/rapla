@@ -1,9 +1,11 @@
 package org.rapla.server.spring;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.rapla.server.spring.oauth.external.ExternalProvidersProperties;
 import org.rapla.server.spring.oauth.external.ProviderConfig;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -55,7 +57,8 @@ public class LoginPageController
     @GetMapping(produces = MediaType.TEXT_HTML_VALUE)
     @ResponseBody
     public String loginPage(@RequestParam(value = "error", required = false) String error,
-                            @RequestParam(value = "logout", required = false) String logout)
+                            @RequestParam(value = "logout", required = false) String logout,
+                            HttpServletRequest request)
     {
         String banner = "";
         if (error != null)
@@ -110,7 +113,7 @@ public class LoginPageController
                 """
                 .replace("%BANNER%", banner)
                 .replace("%SSO%", ssoButtonsHtml())
-                .replace("%PASSWORD%", passwordLoginEnabled ? passwordFormHtml() : "");
+                .replace("%PASSWORD%", passwordLoginEnabled ? passwordFormHtml(request) : "");
     }
 
     private String ssoButtonsHtml()
@@ -135,11 +138,23 @@ public class LoginPageController
         return sb.toString();
     }
 
-    private String passwordFormHtml()
+    private String passwordFormHtml(HttpServletRequest request)
     {
+        // CSRF hidden field — POST /login is gated by CookieAuthCsrfMatcher whenever
+        // an access_token cookie is present (e.g. a prior/partial login), so the form
+        // must carry the double-submit token or it 403s. CsrfCookieFilter has already
+        // materialized the matching XSRF-TOKEN cookie on this GET.
+        String csrfField = "";
+        CsrfToken token = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
+        if (token != null)
+        {
+            csrfField = "<input type=\"hidden\" name=\"" + HtmlUtils.htmlEscape(token.getParameterName())
+                    + "\" value=\"" + HtmlUtils.htmlEscape(token.getToken()) + "\">\n";
+        }
         return """
                 <div class="divider">— or —</div>
                 <form method="post" action="/login">
+                  %CSRF%
                   <label for="u">Username</label>
                   <input id="u" type="text" name="username" autofocus required>
                   <label for="p">Password</label>
@@ -151,6 +166,6 @@ public class LoginPageController
                   <button type="submit" id="btn">Sign in</button>
                 </form>
                 <p class="note">Dev default: <code>admin</code> with empty password.</p>
-                """;
+                """.replace("%CSRF%", csrfField);
     }
 }
