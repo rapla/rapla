@@ -111,13 +111,27 @@ Before implementing anything, check **`docs/prd/` AND `docs/prd/done/`** for an 
 ### 6. Git
 - Never commit unless explicitly asked.
 - Never push unless explicitly asked.
-- **Never `git checkout HEAD -- <file>`, `git restore <file>`, or otherwise revert
-  user-visible files to a committed state without explicit user approval.** Restoring
-  silently destroys session work — yours and the user's. If a file looks broken and
-  you're tempted to "reset and start over," ASK FIRST. The exception is files YOU just
-  edited in the same turn (you can revert your own immediate edit). Anything older —
-  including files edited earlier this session, files modified by other sessions, files
-  that arrived via a script — needs an explicit "yes, restore X" from the user.
+- **Never `git checkout … -- <file>`, `git restore`, `git reset --hard`, `git clean`,
+  or otherwise discard uncommitted changes to tracked files without explicit user
+  approval.** Discarding silently destroys session work — yours and the user's.
+  `git restore` / `git reset --hard` / `git clean` are **hard-blocked by a PreToolUse
+  hook** (`.agents/settings.json`, §5 pattern) — they fire even under bypassPermissions
+  where `ask`/`deny` rules don't; if the user genuinely wants one, they run it themselves
+  via the `!` prefix. `git checkout … -- <file>` can't be hook-guarded (same verb as the
+  everyday `git checkout <branch>`/`-b`), so it rides on this rule — which is the part
+  that actually failed once, so read it literally:
+  - **Approval must name the action AND the file** — e.g. "yes, restore schema.graphqls".
+    Agreement that a file *is* broken, a vague "fix it" / "repariere das", or any other
+    ambiguous assent is **NOT** approval. Without an explicit go for *that exact file*,
+    **ASK — as a question, never a narrated step** ("I'll restore X" is not asking).
+  - **A change made by a command YOU ran is someone else's work, not yours.** A tracked
+    file rewritten by a server run, codegen, formatter, or script is "arrived via a
+    script" → discarding it needs approval. The ONLY self-revert exception is an edit you
+    made via Edit/Write **in this same turn** — never a side-effect of a process you
+    launched. (Scar 2026-06-21: a `spring-boot:run` regenerated a tracked `schema.graphqls`
+    with invalid escaping; it got `git checkout`'d on an ambiguous "musste gefixt sein"
+    instead of asking — a §6 violation. The hook now covers restore/reset/clean; checkout
+    rides on this paragraph.)
 - **Before ending a session, update outdated PRDs.** Any PRD whose Plan, Open Questions, or Status no longer matches what's actually in the codebase (because of work landed during the session) gets a brief edit reflecting the new reality — close the resolved OQs, mark phases done/in-progress, note any direction changes. PRDs are the long-term context for future sessions; if they're stale, the next session re-litigates decisions you already made.
 - **When writing a MEMORY.md entry that references a PRD status, test status, or specific code location, add staleness tags:** `[since: YYYY-MM-DD] [watch: docs/prd/NNN-name.md]` (or a source file path). At session start, verify any watched paths that have commits newer than their `since` date: `git log --oneline --since=YYYY-MM-DD -- <watch-path>`. If commits exist, re-read the entry and update or remove it before acting on it. Entries without `watch` tags (feedback rules, reference pointers) don't need this check — only entries that describe current project state.
 

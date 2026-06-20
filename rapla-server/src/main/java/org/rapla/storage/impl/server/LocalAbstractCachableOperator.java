@@ -154,6 +154,44 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return fixAdminPassword && user != null && FIXED_ADMIN_USERNAME.equals(user.getUsername());
     }
 
+    /**
+     * B3: when {@code rapla.fix-admin-password} is set, the built-in admin account is fully
+     * locked — it can be neither deleted nor modified. Enforced in {@link #check} (the common
+     * integrity gate every {@code dispatch} runs for both store and remove), so REST/SPA/
+     * GraphQL/facade/force-delete callers are all covered. The admin's own preferences/session
+     * are separate Preferences entities (not the {@code User} entity), so login/session
+     * persistence is unaffected.
+     */
+    private void guardFixedAdmin(UpdateEvent evt) throws RaplaException
+    {
+        if (!fixAdminPassword)
+        {
+            return;
+        }
+        User admin = cache.getUser(FIXED_ADMIN_USERNAME);
+        if (admin == null)
+        {
+            return;
+        }
+        ReferenceInfo<User> adminRef = admin.getReference();
+        for (ReferenceInfo ref : evt.getRemoveIds())
+        {
+            if (adminRef.equals(ref))
+            {
+                throw new RaplaSecurityException(
+                        "The admin account is fixed by configuration (rapla.fix-admin-password) and cannot be deleted.");
+            }
+        }
+        for (Entity stored : evt.getStoreObjects())
+        {
+            if (stored instanceof User && adminRef.equals(stored.getReference()))
+            {
+                throw new RaplaSecurityException(
+                        "The admin account is fixed by configuration (rapla.fix-admin-password) and cannot be modified.");
+            }
+        }
+    }
+
     @Override
     public boolean isPasswordChangeRequired(User user) throws RaplaException
     {
@@ -250,22 +288,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         // get the Promise<Void> shape they expect. Was previously an empty
         // stub that silently dropped writes (PRD 017 round 4 finding).
         return scheduler.run(() -> storeAndRemove(storeObjects, removeObjects, user, forceRessourceDelete));
-    }
-
-    @Override
-    public <T extends Entity, S extends Entity> void storeAndRemove(final Collection<T> storeObjects,
-            final Collection<ReferenceInfo<S>> removeObjects, final User user, boolean forceRessourceDelete) throws RaplaException
-    {
-        if (fixAdminPassword && removeObjects != null && !removeObjects.isEmpty())
-        {
-            User admin = cache.getUser(FIXED_ADMIN_USERNAME);
-            if (admin != null && removeObjects.contains(admin.getReference()))
-            {
-                throw new RaplaSecurityException(
-                        "The admin account is fixed by configuration (rapla.fix-admin-password) and cannot be deleted.");
-            }
-        }
-        super.storeAndRemove(storeObjects, removeObjects, user, forceRessourceDelete);
     }
 
     @Override
@@ -1190,6 +1212,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     /** performs Integrity constraints check */
     protected void check(final UpdateEvent evt, final EntityStore store) throws RaplaException
     {
+        guardFixedAdmin(evt);
         Set<Entity> storeObjects = new HashSet<>(evt.getStoreObjects());
         //Set<Entity> removeObjects = new HashSet<Entity>(evt.getRemoveObjects());
         setResolverAndCheckReferences(evt, store);

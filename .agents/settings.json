@@ -7,6 +7,10 @@
           {
             "type": "command",
             "command": "input=$(cat); cmd=$(echo \"$input\" | jq -r '.tool_input.command // \"\"'); if echo \"$cmd\" | grep -qE '\\bmvn\\b[^|;&]*\\binstall\\b'; then echo 'BLOCKED by AGENTS.md §5: never `mvn install`. Use `-pl <module> -am compile/test` within rapla, or `mvn -f aggregator-pom.xml -pl org.rapla.dhbw:dhbwrapla -am compile` for cross-repo dhbwrapla.' >&2; exit 2; fi"
+          },
+          {
+            "type": "command",
+            "command": "input=$(cat); cmd=$(echo \"$input\" | jq -r '.tool_input.command // \"\"'); if echo \"$cmd\" | grep -qE '\\bgit\\b[^|;&]*\\b(restore|clean)\\b' || echo \"$cmd\" | grep -qE '\\bgit\\b[^|;&]*\\breset\\b[^|;&]*--hard'; then echo 'BLOCKED by AGENTS.md §6: `git restore` / `git reset --hard` / `git clean` discard uncommitted work in tracked files. Fires even under bypassPermissions. If the user explicitly approved THIS exact command for a named file, they run it themselves via the ! prefix.' >&2; exit 2; fi"
           }
         ]
       }

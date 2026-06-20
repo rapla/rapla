@@ -890,6 +890,28 @@ week/month calendar render-modes → PRD 077.**
 
 ## Plan — phased
 
+> **Implementation status (2026-06-21) — the block data layer is built + green** (tier-3 tests,
+> `ReservationGraphQLControllerTest`, 36 passing; each "Baustein" reviewed by an adversarial
+> multi-agent workflow). Done:
+> - **Baustein 1** — `Query.appointmentBlocks(filter: ReservationFilter!): [AppointmentBlock!]!`:
+>   block-rooted flat read, reuses `reservations()` (§12 + window + limit), **bounded top-N heap**
+>   (the limit-earliest blocks, O(limit) memory — not naive expand-all-then-truncate, which a
+>   review caught would also break the sort).
+> - **Baustein 2** — `Reservation.displayName` (nameformat composition, server-resolved) +
+>   `AppointmentBlock.reservation` (block → reservation navigation; DTO carries it).
+> - **Baustein 3** — `AppointmentBlock.allocatables(filter: AppointmentAllocatableFilter)`,
+>   reusing the shared §12-gated + per-appointment-restriction resolver from `Appointment.allocatables`.
+> - **Baustein 4** — `AppointmentBlock.duration` + `.times`, server-evaluated via the **rapla
+>   function bridge** (`evalBlockFunction`: factory-by-namespace → `createFunction` with an identity
+>   arg → `EvalContext` over the real block → `toString`). The bridge is the runtime half of PRD 073.
+>
+> **Remaining (server):** `name(variant:)` (model A — `displayName` stays as the DISPLAY default,
+> to be `@deprecated`); `compute(expr:)` (inline composition, reuses the bridge); **sort** (`$sort`
+> variable, server-applied, locale Collator, stable id tiebreaker); pagination `offset` +
+> `extensions.view.page`; the `@view` directive + `extensions.view` render-meta; the
+> `ComputeFunctions` SDL catalog (PRD 073 descriptor-SPI). **Deferred:** persistence / SavedView /
+> switching / week-month → PRD 077; the Angular table renderer.
+
 1. **Phase 1 — Generator + renderer.** Compile col annotations → server-evaluated
    composition fields (reuse `ParsedText`) + GraphQL filters; convention-driven
    `cdk-table` renderer (field order = columns, alias → header, join, format); render

@@ -95,6 +95,12 @@ type Query {
   reservation(id: ID!): Reservation
   reservations(filter: ReservationFilter!): [Reservation!]!
 
+  # PRD 074 — block-rooted read: materializes recurrence blocks across all
+  # caller-visible reservations in the window into a FLAT list (one row = one
+  # block), sorted ascending by start. Same §12 + window/limit semantics as
+  # `reservations`. Basis for the SPA table/calendar views.
+  appointmentBlocks(filter: ReservationFilter!): [AppointmentBlock!]!
+
   # PRD 064 — conflicts touching this reservation. §12: caller must be able
   # to read BOTH sides of each conflict + the allocatable; unreadable
   # conflicts are silently dropped.
@@ -674,12 +680,23 @@ directive @required on FIELD_DEFINITION
 # === PRD 055 Reservation read types (minimal — full resolver impl in PRD 055 later) ===
 # Added 2026-05-28 alongside PRD 056 mutations so create/update return Reservation.
 
+"PRD 074 — name composition variant selector. EXPORT/PLANNING fall back to DISPLAY when the type lacks that nameformat."
+enum NameVariant { DISPLAY  EXPORT  PLANNING }
+
 """
 Calendar event — the central booking entity. One or more Appointments
 (time slots) carry the booking against Allocatables (resources/persons).
 """
 type Reservation {
   id:             ID!
+  """
+  PRD 074 — the reservation's name composition, locale-resolved server-side. The `variant`
+  selects the nameformat family: DISPLAY (nameformat), EXPORT (nameformat_export), PLANNING
+  (nameformat_planning); EXPORT/PLANNING fall back to DISPLAY when the type lacks them.
+  """
+  name(variant: NameVariant = DISPLAY): String
+  "Deprecated alias for name(variant: DISPLAY)."
+  displayName:    String @deprecated(reason: "use name(variant: DISPLAY)")
   classification: ReservationClassification!
   appointments:   [Appointment!]!
   allocations:    [Allocation!]!
@@ -735,6 +752,16 @@ type AppointmentBlock {
   start:       LocalDateTime!
   end:         LocalDateTime!
   isException: Boolean!
+  "PRD 074 — the reservation this block belongs to (block → reservation → displayName)."
+  reservation: Reservation
+  "PRD 074 — the block's allocatables, §12-gated, with the same scalar filter as Appointment.allocatables (typeKeyIn/isPersonEq). Per-appointment restriction applied for this block's appointment."
+  allocatables(filter: AppointmentAllocatableFilter): [Allocatable!]!
+  "PRD 074 — server-evaluated event-time-calculator duration (e.g. 2 UE 0 Min), via the rapla function bridge. Null if the eventtimecalculator plugin is absent."
+  duration: String
+  "PRD 074 — server-evaluated formatted time range of the block (e.g. 10:00 - 11:30)."
+  times: String
+  "PRD 074 — inline composition column: evaluates an arbitrary rapla expression (same language as a nameformat; p = the block) against this block, e.g. {p->concat(substring(times(p),0,5),substring(times(p),8,13))}. Invalid expr returns null. Max 2000 chars."
+  compute(expr: String!): String
 }
 
 enum RepeatingType { DAILY  WEEKLY  MONTHLY  YEARLY }

@@ -220,6 +220,65 @@ public class ReservationGraphQLController
         return visible;
     }
 
+    /**
+     * PRD 074 — block-rooted read. Reuses {@link #reservations} (so the §12
+     * canRead gate, window cap, allocatable narrowing, and search ranking all
+     * apply identically), then flattens each visible reservation's appointments
+     * into recurrence blocks within the window via the same
+     * {@code Appointment.createBlocks} path the nested {@code blocks} field uses.
+     * Returns a FLAT list, ascending by start, capped at the same limit.
+     */
+    @QueryMapping
+    public List<AppointmentBlockDto> appointmentBlocks(@Argument("filter") ReservationFilter filter,
+            graphql.schema.DataFetchingEnvironment env) throws RaplaException
+    {
+        List<Reservation> visible = reservations(filter, env);
+        LocalDateTime from = filter.from();
+        LocalDateTime to = filter.to();
+        int limit = filter.limit() != null && filter.limit() > 0
+                ? Math.min(filter.limit(), 5000)
+                : 500;
+        // Bounded top-N: keep only the `limit` EARLIEST blocks via a max-heap
+        // (by start). Memory is O(limit) even when recurrence expansion across
+        // all visible reservations is huge — the window cap is opt-in, so a
+        // daily appointment over a multi-year window can expand to thousands of
+        // blocks each. Naive expand-all-then-truncate would allocate O(R×A×B);
+        // a plain early-exit would break the sorted-earliest-N contract (it'd
+        // return blocks in reservation-iteration order). The heap gives the
+        // exact earliest-N, sorted, bounded.
+        java.util.Comparator<AppointmentBlockDto> byStart =
+                java.util.Comparator.comparing(AppointmentBlockDto::start)
+                        .thenComparing(AppointmentBlockDto::end);
+        java.util.PriorityQueue<AppointmentBlockDto> heap =
+                new java.util.PriorityQueue<>(byStart.reversed());   // max by start
+        List<AppointmentBlock> blocks = new ArrayList<>();
+        for (Reservation r : visible)
+        {
+            for (org.rapla.entities.domain.Appointment a : r.getAppointments())
+            {
+                blocks.clear();
+                a.createBlocks(from, to, blocks);
+                for (AppointmentBlock b : blocks)
+                {
+                    AppointmentBlockDto dto = new AppointmentBlockDto(
+                            b.getStartDateTime(), b.getEndDateTime(), b.isException(), r, a, b);
+                    if (heap.size() < limit)
+                    {
+                        heap.offer(dto);
+                    }
+                    else if (byStart.compare(dto, heap.peek()) < 0)
+                    {
+                        heap.poll();
+                        heap.offer(dto);
+                    }
+                }
+            }
+        }
+        List<AppointmentBlockDto> out = new ArrayList<>(heap);
+        out.sort(byStart);
+        return out;
+    }
+
     private static org.rapla.entities.domain.Permission.AccessLevel parseAccessLevel(String s)
     {
         if (s == null || s.isBlank()) return null;
@@ -282,8 +341,13 @@ public class ReservationGraphQLController
     /** Mirror of {@code Allocation} output type. */
     public record AllocationDto(Allocatable allocatable, List<String> appointmentIds) {}
 
-    /** Mirror of {@code AppointmentBlock} output type. */
-    public record AppointmentBlockDto(LocalDateTime start, LocalDateTime end, boolean isException) {}
+    /** Mirror of {@code AppointmentBlock} output type. Carries the owning {@code reservation}
+     * (block → reservation → displayName, Baustein 2) and the source {@code appointment}
+     * (block → allocatables(filter:), Baustein 3 — the appointment is needed for the
+     * per-appointment allocatable restriction). */
+    public record AppointmentBlockDto(LocalDateTime start, LocalDateTime end, boolean isException,
+            Reservation reservation, org.rapla.entities.domain.Appointment appointment,
+            org.rapla.entities.domain.AppointmentBlock block) {}
 
     /** Mirror of {@code RepeatingRule} output type. Maps rapla {@link Repeating}. */
     public record RepeatingRuleDto(

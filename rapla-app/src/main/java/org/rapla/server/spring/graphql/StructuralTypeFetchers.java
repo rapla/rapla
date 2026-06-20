@@ -322,6 +322,63 @@ public final class StructuralTypeFetchers
     // reservation × 4 fields per appt = ~21k dispatches per query), the
     // per-dispatch Spring HandlerMethod + Micrometer wrap cost dominated.
 
+    static final LightDataFetcher<String> RESERVATION_DISPLAY_NAME =
+            new LightSourceFetcher<org.rapla.entities.domain.Reservation, String>(
+                    org.rapla.entities.domain.Reservation.class)
+            {
+                @Override protected String read(org.rapla.entities.domain.Reservation r,
+                        Supplier<DataFetchingEnvironment> env)
+                {
+                    // PRD 074 — the reservation's nameformat composition (DISPLAY variant),
+                    // server-resolved. getName(locale) runs the KEY_NAME_FORMAT ParsedText.
+                    return r.getName(localeFrom(env));
+                }
+            };
+
+    /**
+     * PRD 074 Baustein 5 (model A) — {@code Reservation.name(variant:)}. Reads the
+     * NameVariant arg → the nameformat-family annotation; EXPORT/PLANNING fall back to
+     * DISPLAY when the type lacks that variant. {@code displayName} stays as the
+     * (deprecated) DISPLAY alias.
+     */
+    static final LightDataFetcher<String> RESERVATION_NAME =
+            new LightSourceFetcher<org.rapla.entities.domain.Reservation, String>(
+                    org.rapla.entities.domain.Reservation.class)
+            {
+                @Override protected String read(org.rapla.entities.domain.Reservation r,
+                        Supplier<DataFetchingEnvironment> env)
+                {
+                    Object v = env.get().getArgument("variant");
+                    String variant = v == null ? "DISPLAY" : v.toString();
+                    String annotationName = switch (variant)
+                    {
+                        case "EXPORT" ->
+                                org.rapla.entities.dynamictype.DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT;
+                        case "PLANNING" ->
+                                org.rapla.entities.dynamictype.DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING;
+                        default ->
+                                org.rapla.entities.dynamictype.DynamicTypeAnnotations.KEY_NAME_FORMAT;
+                    };
+                    return resolveReservationName(r, annotationName);
+                }
+            };
+
+    private static String resolveReservationName(org.rapla.entities.domain.Reservation r,
+            String annotationName)
+    {
+        if (org.rapla.entities.dynamictype.DynamicTypeAnnotations.KEY_NAME_FORMAT.equals(annotationName))
+        {
+            return r.getName(serverLocale);            // DISPLAY = the plain nameformat
+        }
+        org.rapla.entities.dynamictype.Classification cls = r.getClassification();
+        // EXPORT/PLANNING only if the type defines it; otherwise fall back to DISPLAY.
+        if (cls != null && cls.getType().getAnnotation(annotationName) != null)
+        {
+            return cls.format(serverLocale, annotationName);
+        }
+        return r.getName(serverLocale);
+    }
+
     static final LightDataFetcher<LocalDateTime> RESERVATION_FIRST_DATE =
             new LightSourceFetcher<org.rapla.entities.domain.Reservation, LocalDateTime>(
                     org.rapla.entities.domain.Reservation.class)
@@ -550,45 +607,202 @@ public final class StructuralTypeFetchers
             @Override protected List<Allocatable> read(org.rapla.entities.domain.Appointment a,
                     Supplier<DataFetchingEnvironment> env)
             {
-                org.rapla.entities.domain.Reservation r = a.getReservation();
-                if (r == null) return List.of();
-                DataFetchingEnvironment dfe = env.get();
-                var rc = RequestContextInstrumentation.from(dfe.getGraphQlContext());
-                User caller = rc.caller();
-                PermissionController pc = rc.permissionController() != null
-                        ? rc.permissionController() : operator.getPermissionController();
-                // PRD 073 — optional scalar filter, applied AFTER the §12
-                // canRead gate so a hidden matching allocatable can't leak.
-                @SuppressWarnings("unchecked")
-                Map<String, Object> filterArg = dfe.getArgument("filter") instanceof Map<?, ?> m
-                        ? (Map<String, Object>) m : null;
-                List<Allocatable> out = new ArrayList<>();
-                Allocatable[] all = r.getAllocatables();
-                if (all == null) return List.of();
-                for (Allocatable alloc : all)
-                {
-                    if (alloc == null) continue;
-                    if (caller != null && !pc.canRead(alloc, caller)) continue;
-                    if (filterArg != null
-                            && !ClassificationGraphQLController.matchesMap(alloc, filterArg)) continue;
-                    org.rapla.entities.domain.Appointment[] restriction = r.getRestriction(alloc);
-                    if (restriction == null || restriction.length == 0)
-                    {
-                        out.add(alloc);
-                        continue;
-                    }
-                    for (org.rapla.entities.domain.Appointment ra : restriction)
-                    {
-                        if (ra != null && ra.getId() != null && ra.getId().equals(a.getId()))
-                        {
-                            out.add(alloc);
-                            break;
-                        }
-                    }
-                }
-                return out;
+                return resolveAppointmentAllocatables(a, env.get(), operator);
             }
         };
+    }
+
+    /**
+     * PRD 074 Baustein 3 — {@code AppointmentBlock.allocatables(filter:)}. Reuses the exact
+     * appointment-allocatable resolution (§12 canRead gate + scalar filter applied AFTER the
+     * gate + per-appointment restriction), sourced from the block's own appointment so the
+     * restriction matches the right appointment.
+     */
+    static LightDataFetcher<List<Allocatable>> appointmentBlockAllocatables(StorageOperator operator)
+    {
+        return new LightSourceFetcher<ReservationGraphQLController.AppointmentBlockDto, List<Allocatable>>(
+                ReservationGraphQLController.AppointmentBlockDto.class)
+        {
+            @Override protected List<Allocatable> read(ReservationGraphQLController.AppointmentBlockDto dto,
+                    Supplier<DataFetchingEnvironment> env)
+            {
+                if (dto == null || dto.appointment() == null) return List.of();
+                return resolveAppointmentAllocatables(dto.appointment(), env.get(), operator);
+            }
+        };
+    }
+
+    /** Shared core for Appointment.allocatables + AppointmentBlock.allocatables. */
+    private static List<Allocatable> resolveAppointmentAllocatables(
+            org.rapla.entities.domain.Appointment a, DataFetchingEnvironment dfe, StorageOperator operator)
+    {
+        org.rapla.entities.domain.Reservation r = a.getReservation();
+        if (r == null) return List.of();
+        var rc = RequestContextInstrumentation.from(dfe.getGraphQlContext());
+        User caller = rc.caller();
+        PermissionController pc = rc.permissionController() != null
+                ? rc.permissionController() : operator.getPermissionController();
+        // PRD 073 — optional scalar filter, applied AFTER the §12 canRead gate
+        // so a hidden matching allocatable can't leak.
+        @SuppressWarnings("unchecked")
+        Map<String, Object> filterArg = dfe.getArgument("filter") instanceof Map<?, ?> m
+                ? (Map<String, Object>) m : null;
+        List<Allocatable> out = new ArrayList<>();
+        Allocatable[] all = r.getAllocatables();
+        if (all == null) return List.of();
+        for (Allocatable alloc : all)
+        {
+            if (alloc == null) continue;
+            if (caller != null && !pc.canRead(alloc, caller)) continue;
+            if (filterArg != null
+                    && !ClassificationGraphQLController.matchesMap(alloc, filterArg)) continue;
+            org.rapla.entities.domain.Appointment[] restriction = r.getRestriction(alloc);
+            if (restriction == null || restriction.length == 0)
+            {
+                out.add(alloc);
+                continue;
+            }
+            for (org.rapla.entities.domain.Appointment ra : restriction)
+            {
+                if (ra != null && ra.getId() != null && ra.getId().equals(a.getId()))
+                {
+                    out.add(alloc);
+                    break;
+                }
+            }
+        }
+        return out;
+    }
+
+    // === PRD 074 Baustein 4 — server-evaluated block fields via the rapla function bridge ===
+
+    static LightDataFetcher<String> appointmentBlockDuration(StorageOperator operator)
+    {
+        return new LightSourceFetcher<ReservationGraphQLController.AppointmentBlockDto, String>(
+                ReservationGraphQLController.AppointmentBlockDto.class)
+        {
+            @Override protected String read(ReservationGraphQLController.AppointmentBlockDto dto,
+                    Supplier<DataFetchingEnvironment> env)
+            {
+                return dto == null ? null : evalBlockFunction(
+                        org.rapla.plugin.eventtimecalculator.DurationFunctions.NAMESPACE,
+                        "duration", dto, operator, env.get());
+            }
+        };
+    }
+
+    static LightDataFetcher<String> appointmentBlockTimes(StorageOperator operator)
+    {
+        return new LightSourceFetcher<ReservationGraphQLController.AppointmentBlockDto, String>(
+                ReservationGraphQLController.AppointmentBlockDto.class)
+        {
+            @Override protected String read(ReservationGraphQLController.AppointmentBlockDto dto,
+                    Supplier<DataFetchingEnvironment> env)
+            {
+                return dto == null ? null : evalBlockFunction(
+                        org.rapla.entities.dynamictype.internal.StandardFunctions.NAMESPACE,
+                        "times", dto, operator, env.get());
+            }
+        };
+    }
+
+    /**
+     * PRD 073/074 bridge — evaluate a rapla {@code Function} (by name) on the real
+     * AppointmentBlock via the existing {@code EvalContext} machinery. The factory is
+     * resolved by function name from the operator (plugin functions like
+     * {@code duration} included); an identity arg feeds the block as the single
+     * context object ({@code times} requires one arg, {@code duration} accepts 0..1).
+     * Both return String. Returns null on unknown function / parse error.
+     */
+    /**
+     * PRD 074 Baustein 6 — {@code AppointmentBlock.compute(expr:)}. An inline composition
+     * column: evaluates an arbitrary rapla ParsedText format string against the block, reusing
+     * the exact table-column machinery (`DefaultRaplaTableColumn.format`): guess the
+     * classification (block → reservation), parse against the type's ParseContext, eval with
+     * the type's EvalContext (which carries the §12 PermissionController + the internal_request
+     * environment). The `expr` is the same language as a nameformat / table column — e.g.
+     * {@code {p->concat(substring(times(p),0,5),"-",substring(times(p),8,13))}} (p = the block).
+     * Invalid/unknown expr → null (save-time validation lands with the view-store, PRD 074).
+     */
+    static final LightDataFetcher<String> APPOINTMENT_BLOCK_COMPUTE =
+            new LightSourceFetcher<ReservationGraphQLController.AppointmentBlockDto, String>(
+                    ReservationGraphQLController.AppointmentBlockDto.class)
+            {
+                @Override protected String read(ReservationGraphQLController.AppointmentBlockDto dto,
+                        Supplier<DataFetchingEnvironment> env)
+                {
+                    if (dto == null || dto.block() == null) return null;
+                    DataFetchingEnvironment dfe = env.get();
+                    String expr = dfe.getArgument("expr");
+                    if (expr == null || expr.isBlank()) return null;
+                    if (expr.length() > 2000)
+                    {
+                        throw new IllegalArgumentException("compute expr too long (max 2000 chars)");
+                    }
+                    org.rapla.entities.domain.AppointmentBlock block = dto.block();
+                    org.rapla.entities.dynamictype.Classification cls =
+                            org.rapla.entities.dynamictype.internal.ParsedText.guessClassification(block);
+                    if (cls == null) return null;
+                    org.rapla.entities.dynamictype.internal.DynamicTypeImpl type =
+                            (org.rapla.entities.dynamictype.internal.DynamicTypeImpl) cls.getType();
+                    var rc = RequestContextInstrumentation.from(dfe.getGraphQlContext());
+                    User user = rc.caller();
+                    try
+                    {
+                        org.rapla.entities.dynamictype.internal.ParsedText pt =
+                                new org.rapla.entities.dynamictype.internal.ParsedText(expr);
+                        pt.init(type.getParseContext());
+                        org.rapla.entities.dynamictype.internal.EvalContext ctx = type.createEvalContext(
+                                user, serverLocale,
+                                org.rapla.entities.dynamictype.DynamicTypeAnnotations.KEY_NAME_FORMAT,
+                                java.util.Collections.singletonList(block));
+                        return pt.formatName(ctx);
+                    }
+                    catch (org.rapla.entities.IllegalAnnotationException e)
+                    {
+                        return null;   // invalid expr — save-time validation will reject at view-store time
+                    }
+                }
+            };
+
+    private static String evalBlockFunction(String namespace, String fnName,
+            ReservationGraphQLController.AppointmentBlockDto dto, StorageOperator operator,
+            DataFetchingEnvironment dfe)
+    {
+        org.rapla.entities.domain.AppointmentBlock block = dto.block();
+        if (block == null) return null;
+        // The factory map is keyed by NAMESPACE (@Bean(name=NAMESPACE)); ParsedText
+        // resolves functions the same way. times → org.rapla, duration → the plugin ns.
+        org.rapla.entities.extensionpoints.FunctionFactory ff = operator.getFunctionFactory(namespace);
+        if (ff == null) return null;
+        var rc = RequestContextInstrumentation.from(dfe.getGraphQlContext());
+        User user = rc.caller();
+        PermissionController pc = rc.permissionController() != null
+                ? rc.permissionController() : operator.getPermissionController();
+        org.rapla.entities.extensionpoints.Function identity =
+                new org.rapla.entities.extensionpoints.Function("org.rapla", "this",
+                        java.util.List.<org.rapla.entities.extensionpoints.Function>of())
+                {
+                    @Override public Object eval(org.rapla.entities.dynamictype.internal.EvalContext c)
+                    {
+                        return c.getFirstContextObject();
+                    }
+                };
+        try
+        {
+            org.rapla.entities.extensionpoints.Function fn =
+                    ff.createFunction(fnName, java.util.List.of(identity));
+            org.rapla.entities.dynamictype.internal.EvalContext ctx =
+                    new org.rapla.entities.dynamictype.internal.EvalContext(
+                            serverLocale, null, pc, java.util.Map.of(), user,
+                            java.util.List.<Object>of(block));
+            Object res = fn.eval(ctx);
+            return res == null ? null : res.toString();
+        }
+        catch (org.rapla.entities.IllegalAnnotationException e)
+        {
+            return null;
+        }
     }
 
     /**
@@ -617,7 +831,8 @@ public final class StructuralTypeFetchers
                     for (org.rapla.entities.domain.AppointmentBlock b : blocks)
                     {
                         out.add(new ReservationGraphQLController.AppointmentBlockDto(
-                                b.getStartDateTime(), b.getEndDateTime(), b.isException()));
+                                b.getStartDateTime(), b.getEndDateTime(), b.isException(),
+                                a.getReservation(), a, b));
                     }
                     return out;
                 }
@@ -657,6 +872,8 @@ public final class StructuralTypeFetchers
                 .dataFetcher("children", CATEGORY_CHILDREN)
                 .dataFetcher("kind",     categoryKind(operator)));
         b.type("Reservation", t -> t
+                .dataFetcher("name",           RESERVATION_NAME)
+                .dataFetcher("displayName",    RESERVATION_DISPLAY_NAME)
                 .dataFetcher("firstDate",      RESERVATION_FIRST_DATE)
                 .dataFetcher("lastDate",       RESERVATION_LAST_DATE)
                 .dataFetcher("canModify",      RESERVATION_CAN_MODIFY)
@@ -672,6 +889,11 @@ public final class StructuralTypeFetchers
                 .dataFetcher("repeating",    APPOINTMENT_REPEATING)
                 .dataFetcher("allocatables", appointmentAllocatables(operator))
                 .dataFetcher("blocks",       APPOINTMENT_BLOCKS));
+        b.type("AppointmentBlock", t -> t
+                .dataFetcher("allocatables", appointmentBlockAllocatables(operator))
+                .dataFetcher("duration",     appointmentBlockDuration(operator))
+                .dataFetcher("times",        appointmentBlockTimes(operator))
+                .dataFetcher("compute",      APPOINTMENT_BLOCK_COMPUTE));
         // The Classification interface's fields are inherited by the
         // AllocatableClassification + ReservationClassification interfaces
         // automatically per the GraphQL spec — no separate wiring needed.

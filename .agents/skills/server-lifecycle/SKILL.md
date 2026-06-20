@@ -1,6 +1,6 @@
 ---
 name: server-lifecycle
-description: Use whenever the user asks to start, stop, restart, status-check, or inspect the logs of the rapla dev (Spring Boot) server — including plain-chat phrasing like "start the server", "restart rapla", "stop the server", "is the server up/running?", "bounce the server", "show/tail the server logs", "bring the server up with the dhbw plugin". Carries — graceful-shutdown stop (10 s window, never kill -9 first), the restart procedure (separate stop + background-start Bash calls), jps/HTTP status probes, tail -F log streaming + the wait-for-"Started Rapla"-marker recipe, the external-plugin (dhbwrapla) run recipe, and the lifecycle conventions (one server per checkout, worktree port offsets, never start during a package build). The minimal vanilla start command + the never-`mvn install` hard rules also live always-on in AGENTS.md §8 — load this skill for anything past a plain fresh-checkout start.
+description: Use whenever the user asks to start, stop, restart, status-check, or inspect the logs of the rapla dev (Spring Boot) server — including plain-chat phrasing like "start the server", "restart rapla", "stop the server", "is the server up/running?", "bounce the server", "show/tail the server logs", "bring the server up with the dhbw plugin". ALSO load it whenever YOU (the agent) are about to script any stop / restart / bounce cycle yourself — e.g. restarting to pick up a recompile, or passing run args / Spring flags like `-Dspring-boot.run.arguments=--rapla.foo=true` — not only when the user phrases it; a "plain fresh-checkout start" is the only case that stays inline per AGENTS.md §8, everything past that loads this skill. Carries — graceful-shutdown stop (10 s window, never kill -9 first), the restart procedure (separate stop + background-start Bash calls), the pkill self-match footgun, jps/HTTP status probes, tail -F log streaming + the wait-for-"Started Rapla"-marker recipe, the external-plugin (dhbwrapla) run recipe, and the lifecycle conventions (one server per checkout, worktree port offsets, never start during a package build). The minimal vanilla start command + the never-`mvn install` hard rules also live always-on in AGENTS.md §8.
 ---
 
 # Server lifecycle — stop, restart, status, inspect
@@ -37,6 +37,22 @@ For the agent flow where the PID file doesn't track the JVM (see §8), `pkill -f
 ## Restart
 
 Stop in one Bash call (returns immediately), then start in a separate Bash call with `run_in_background=true`. **Do not chain stop + start in one Bash call** — `kill ... ; sleep ; mvn spring-boot:run` makes the whole call a long-running process from the agent's perspective.
+
+> **pkill self-match footgun (cost a chain of exit-144 mysteries, 2026-06-21).**
+> `pkill -f <pattern>` matches against the FULL command line of every process —
+> **including the very shell running your `pkill`.** So a one-liner that both kills
+> and starts, like `pkill -f 'spring-boot:run'; mvn ... spring-boot:run ...`, makes
+> pkill match its own parent shell (whose argv contains `spring-boot:run`) and SIGTERM
+> it before `mvn` ever runs — the call dies with exit 144 (128+SIGTERM-ish) and an
+> **empty log**. Same trap if you `pkill -f RaplaSpringBootApplication` inside a script
+> whose later lines mention `RaplaSpringBootApplication`. Two fixes:
+> 1. Keep stop and start in **separate** Bash calls (the rule above already does this).
+> 2. When a kill pattern could appear in your own command, break the literal with a
+>    regex class so it can't self-match: `pkill -f 'RaplaSpringBoot[A]pplication'`
+>    (matches the JVM, never the shell line `…[A]…`). `pgrep -f` self-matches the same
+>    way — that's why a bare `pgrep -f RaplaSpringBootApplication` reports "still
+>    running" forever (it's seeing your own grep). Verify down via the **port**
+>    (`curl localhost:8051/server`) or `ps -eo args | grep` excluding bash, not pgrep.
 
 ## Status / health
 

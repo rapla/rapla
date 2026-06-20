@@ -3,6 +3,7 @@ package org.rapla.storage.impl.server;
 import org.junit.jupiter.api.Test;
 import org.rapla.entities.User;
 import org.rapla.storage.RaplaSecurityException;
+import org.rapla.storage.UpdateEvent;
 import org.rapla.test.util.FacadeTestSupport;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -40,6 +41,30 @@ public class FixAdminPasswordGuardTest extends FacadeTestSupport
         User admin = createAdmin();
         operator.setFixAdminPassword(true);
         assertThrows(RaplaSecurityException.class, () -> facade.remove(admin));
+    }
+
+    @Test
+    public void blocksAdminDeletionViaDispatchWhenFlagSet() throws Exception
+    {
+        // REST/SPA/GraphQL deletes go through operator.dispatch(UpdateEvent), NOT
+        // facade.remove → storeAndRemove. The guard must sit on the dispatch path too.
+        User admin = createAdmin();
+        operator.setFixAdminPassword(true);
+        UpdateEvent evt = new UpdateEvent();
+        evt.putRemoveId(admin.getReference());
+        // userId left null so the "can't delete himself" guard doesn't mask the fix-admin one
+        assertThrows(RaplaSecurityException.class, () -> operator.dispatch(evt));
+    }
+
+    @Test
+    public void blocksAdminModificationWhenFlagSet() throws Exception
+    {
+        // a fixed admin must be immutable, not just undeletable — no rename / re-permission / etc.
+        User admin = createAdmin();
+        operator.setFixAdminPassword(true);
+        User editable = facade.edit(admin);
+        editable.setName("hacked");
+        assertThrows(RaplaSecurityException.class, () -> facade.store(editable));
     }
 
     @Test

@@ -40,6 +40,31 @@ For settings format and adding new hooks, load the **`update-config`** skill. Th
 
 **How to verify it's live.** Run `mvn install` in a fresh shell — you should see `BLOCKED by AGENTS.md §5: never mvn install` on stderr, no Maven process started.
 
+### `PreToolUse: Bash` — block `git restore` / `git reset --hard` / `git clean`
+
+A second hook in the same `Bash` matcher (`.agents/settings.json`, `hooks.PreToolUse[0].hooks[1]`). Same shape as the `mvn install` guard: reads the pending command, greps it, `exit 2` to block.
+
+```
+... grep -qE '\bgit\b[^|;&]*\b(restore|clean)\b' || grep -qE '\bgit\b[^|;&]*\breset\b[^|;&]*--hard' ...
+```
+
+**What gets blocked / not blocked:**
+
+| Command | Result | Why |
+|---|---|---|
+| `git restore <file>` | BLOCKED | discards working-tree changes |
+| `git reset --hard [<ref>]` | BLOCKED | `reset` + `--hard` (mixed/soft NOT matched) |
+| `git clean -fd` | BLOCKED | deletes untracked files |
+| `git -C <dir> restore …` | BLOCKED | the loose `\bgit\b[^|;&]*` span catches the `-C` evasion form too |
+| `git checkout <branch>` / `-b` | OK | branch switch — common, safe |
+| `git checkout … -- <file>` | **OK (hook can't tell it apart)** | same verb as branch-switch → NOT hook-guarded; rides on the AGENTS.md §6 prose rule instead |
+| `git reset --soft` / `git reset` | OK | doesn't touch the working tree |
+| `git status` / `git diff` / `git add` | OK | no discard |
+
+**Why it exists.** AGENTS.md §6: never discard uncommitted work in tracked files without explicit per-file approval. **Crucially, this is a hook (not an `ask`/`deny` permission) because the maintainer runs with `bypassPermissions`, where `allow`/`deny`/`ask` rules are all ignored — only PreToolUse hooks still fire.** Scar (2026-06-21): a `spring-boot:run` regenerated a tracked `schema.graphqls` with bad escaping, and it got `git checkout`'d on an ambiguous "musste gefixt sein" instead of an explicit go — a §6 violation. The hook now hard-blocks the three unambiguous discard verbs; `git checkout … -- <file>` is unguardable (overloaded verb) and relies on §6 discipline. If a discard is genuinely wanted, the user runs it via the `!` prefix.
+
+**How to verify it's live.** Run `git restore .` (or `git reset --hard`) — you should see `BLOCKED by AGENTS.md §6:` on stderr, nothing discarded.
+
 ## User-level — `~/.claude/settings.json`
 
 These apply to every project, not just rapla. Documented here for completeness so you know what fires on session start/end.

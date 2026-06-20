@@ -594,6 +594,451 @@ class ReservationGraphQLControllerTest
         assertTrue(foundAnyBlock, "fixture should produce at least one materialized block in 2010");
     }
 
+    // ============================================================ PRD 074 Baustein 1 — appointmentBlocks query root
+
+    /** Schema smoke: the Query.appointmentBlocks root appears in introspection. */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void schemaExposesAppointmentBlocksRoot()
+    {
+        Map<String, Object> result = tester.document("""
+                { __type(name: "Query") { fields { name } } }
+                """)
+                .execute()
+                .path("__type")
+                .entity(new ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> fields = (List<Map<String, Object>>) result.get("fields");
+        List<String> names = fields.stream().map(f -> (String) f.get("name")).toList();
+        assertTrue(names.contains("appointmentBlocks"),
+                () -> "missing Query.appointmentBlocks in " + names);
+    }
+
+    /**
+     * PRD 074 — the block-rooted query root materializes recurrence blocks
+     * across all caller-visible reservations in the window (flat list). One row
+     * = one block. Mirrors {@link #appointmentBlocksMaterializeInWindow} but
+     * rooted at Query.appointmentBlocks instead of nested under appointments.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void appointmentBlocksRootMaterializesInWindow()
+    {
+        List<Map<String, Object>> blocks = tester.document("""
+                query {
+                  appointmentBlocks(filter: {
+                    from: "2006-01-01T00:00:00",
+                    to:   "2006-12-31T00:00:00"
+                  }) {
+                    start end isException
+                  }
+                }
+                """)
+                .execute()
+                .path("appointmentBlocks")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
+                .get();
+        assertNotNull(blocks, "appointmentBlocks must not be null");
+        assertFalse(blocks.isEmpty(), "fixture should produce blocks in the 2006 window");
+        // Flat list, sorted ascending by start; each block well-formed.
+        String prev = null;
+        for (Map<String, Object> b : blocks)
+        {
+            assertNotNull(b.get("start"), "block.start required");
+            assertNotNull(b.get("end"), "block.end required");
+            assertNotNull(b.get("isException"), "block.isException required");
+            String s = b.get("start").toString();
+            assertTrue(s.matches("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"),
+                    () -> "block.start must be ISO LocalDateTime, got: " + s);
+            if (prev != null)
+            {
+                assertTrue(prev.compareTo(s) <= 0,
+                        "blocks must be sorted ascending by start (" + prev + " > " + s + ")");
+            }
+            prev = s;
+        }
+    }
+
+    /**
+     * Recurrence expansion: the fixture's MONTHLY appointment (start 2006-09-04,
+     * end-date 2010-09-04) yields multiple blocks (Sep/Oct/Nov/Dec) within the
+     * 2006 window — proving createBlocks is invoked per appointment on the root
+     * path, not one-block-per-appointment.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void appointmentBlocksRootExpandsRecurrence()
+    {
+        List<Map<String, Object>> blocks = tester.document("""
+                query {
+                  appointmentBlocks(filter: {
+                    from: "2006-01-01T00:00:00",
+                    to:   "2006-12-31T00:00:00"
+                  }) { start }
+                }
+                """)
+                .execute()
+                .path("appointmentBlocks")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
+                .get();
+        assertTrue(blocks.size() >= 4,
+                () -> "MONTHLY recurrence should expand to ≥4 blocks in the 2006 window; got " + blocks.size());
+    }
+
+    /**
+     * Limit truncation returns the EARLIEST N blocks (bounded top-N), not an
+     * arbitrary subset. limit:2 → exactly the 2 earliest of the full set.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void appointmentBlocksRootLimitReturnsEarliest()
+    {
+        String window = "from: \"2006-01-01T00:00:00\", to: \"2006-12-31T00:00:00\"";
+        List<Map<String, Object>> all = tester.document(
+                "query { appointmentBlocks(filter: { " + window + " }) { start } }")
+                .execute().path("appointmentBlocks")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
+        assertTrue(all.size() > 2, () -> "precondition: window must have >2 blocks; got " + all.size());
+        List<Map<String, Object>> limited = tester.document(
+                "query { appointmentBlocks(filter: { " + window + ", limit: 2 }) { start } }")
+                .execute().path("appointmentBlocks")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
+        assertEquals(2, limited.size(), "limit:2 must return exactly 2 blocks");
+        // Must be the 2 globally-earliest, in ascending order.
+        assertEquals(all.get(0).get("start"), limited.get(0).get("start"), "earliest block first");
+        assertEquals(all.get(1).get("start"), limited.get(1).get("start"), "second-earliest second");
+    }
+
+    /**
+     * §12 positive — a non-admin caller (monty/USER) sees the readable subset
+     * of blocks (the fixture's `event` DT is read=everyone), mirroring
+     * {@link #monkeyCanReadReservationsSheDoesntOwn}. The block path delegates
+     * §12 wholly to {@code reservations()}.
+     */
+    @Test
+    @WithMockUser(username = "monty", roles = "USER")
+    void appointmentBlocksRootNonAdminSeesReadableSubset()
+    {
+        List<Map<String, Object>> blocks = tester.document("""
+                query {
+                  appointmentBlocks(filter: {
+                    from: "2006-01-01T00:00:00",
+                    to:   "2006-12-31T00:00:00"
+                  }) { start }
+                }
+                """)
+                .execute()
+                .path("appointmentBlocks")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
+                .get();
+        assertFalse(blocks.isEmpty(),
+                () -> "monty must see blocks of homer-owned readable reservations; got " + blocks);
+    }
+
+    /** PRD 074 Baustein 2 — schema: Reservation.displayName + AppointmentBlock.reservation. */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void schemaExposesBlockReservationAndDisplayName()
+    {
+        List<String> resFields = typeFieldNames("Reservation");
+        assertTrue(resFields.contains("name"),
+                () -> "missing Reservation.name in " + resFields);
+        // displayName is @deprecated → excluded from the default field list; visible with includeDeprecated.
+        Map<String, Object> withDep = tester.document(
+                "{ __type(name: \"Reservation\") { fields(includeDeprecated: true) { name isDeprecated } } }")
+                .execute().path("__type")
+                .entity(new ParameterizedTypeReference<Map<String, Object>>() {}).get();
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> depFields = (List<Map<String, Object>>) withDep.get("fields");
+        Map<String, Object> dn = depFields.stream()
+                .filter(f -> "displayName".equals(f.get("name"))).findFirst()
+                .orElseThrow(() -> new AssertionError("missing deprecated Reservation.displayName"));
+        assertEquals(Boolean.TRUE, dn.get("isDeprecated"), "displayName must be @deprecated");
+        List<String> blockFields = typeFieldNames("AppointmentBlock");
+        assertTrue(blockFields.contains("reservation"),
+                () -> "missing AppointmentBlock.reservation in " + blockFields);
+    }
+
+    private List<String> typeFieldNames(String typeName)
+    {
+        Map<String, Object> result = tester.document(
+                "{ __type(name: \"" + typeName + "\") { fields { name } } }")
+                .execute().path("__type")
+                .entity(new ParameterizedTypeReference<Map<String, Object>>() {}).get();
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> fields = (List<Map<String, Object>>) result.get("fields");
+        return fields.stream().map(f -> (String) f.get("name")).toList();
+    }
+
+    /**
+     * PRD 074 Baustein 2 — block → reservation → displayName resolves on the
+     * root path (the dhbw `name: reservation { displayName }` column).
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void appointmentBlocksRootExposesReservationDisplayName()
+    {
+        List<Map<String, Object>> blocks = tester.document("""
+                query {
+                  appointmentBlocks(filter: {
+                    from: "2006-01-01T00:00:00",
+                    to:   "2006-12-31T00:00:00"
+                  }) {
+                    start
+                    reservation { id displayName }
+                  }
+                }
+                """)
+                .execute()
+                .path("appointmentBlocks")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
+                .get();
+        assertFalse(blocks.isEmpty(), "fixture should produce blocks");
+        for (Map<String, Object> b : blocks)
+        {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> res = (Map<String, Object>) b.get("reservation");
+            assertNotNull(res, () -> "every block must carry its reservation; got " + b);
+            assertNotNull(res.get("id"), "reservation.id required");
+            assertNotNull(res.get("displayName"), () -> "reservation.displayName required; got " + res);
+            assertFalse(((String) res.get("displayName")).isBlank(), "displayName must be non-blank");
+        }
+    }
+
+    /**
+     * PRD 074 Baustein 3 — AppointmentBlock.allocatables(filter:) narrows the
+     * block's allocatables by type (Kurs/Person/Raum columns), reusing the
+     * Appointment.allocatables §12 + restriction logic. Schema + behaviour.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void appointmentBlocksRootAllocatablesFilterNarrows()
+    {
+        assertTrue(typeFieldNames("AppointmentBlock").contains("allocatables"),
+                () -> "missing AppointmentBlock.allocatables");
+
+        List<String> rooms = blockAllocatableNames("{ typeKeyIn: [\"room\"] }");
+        List<String> persons = blockAllocatableNames("{ isPersonEq: true }");
+        assertTrue(rooms.contains("Room A66"),
+                () -> "expected Room A66 among block rooms; got " + rooms);
+        assertFalse(rooms.contains("Burns Monty"),
+                () -> "person must be filtered out by typeKeyIn:[room]; got " + rooms);
+        assertTrue(persons.contains("Burns Monty"),
+                () -> "expected lecturer among block persons; got " + persons);
+        assertFalse(persons.contains("Room A66"),
+                () -> "room must be filtered out by isPersonEq:true; got " + persons);
+    }
+
+    private List<String> blockAllocatableNames(String filterArg)
+    {
+        String nested = filterArg == null
+                ? "allocatables { displayName }"
+                : "allocatables(filter: " + filterArg + ") { displayName }";
+        List<Map<String, Object>> blocks = tester.document(String.format("""
+                query {
+                  appointmentBlocks(filter: {
+                    from: "2006-01-01T00:00:00",
+                    to:   "2006-12-31T00:00:00"
+                  }) {
+                    %s
+                  }
+                }
+                """, nested))
+                .execute()
+                .path("appointmentBlocks")
+                .entityList(new ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        java.util.List<String> names = new java.util.ArrayList<>();
+        for (Map<String, Object> b : blocks)
+        {
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> allocs = (List<Map<String, Object>>) b.get("allocatables");
+            if (allocs == null) continue;
+            for (Map<String, Object> al : allocs) names.add((String) al.get("displayName"));
+        }
+        return names;
+    }
+
+    /**
+     * PRD 074 Baustein 4 — server-evaluated `times` (+ `duration`) on the block,
+     * via the rapla function bridge. `times` (StandardFunctions, always present)
+     * must resolve to a formatted time range; `duration` (eventtimecalculator
+     * plugin) resolves to a string or null (plugin-dependent), without error.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void appointmentBlocksRootServerEvaluatesTimesAndDuration()
+    {
+        List<String> blockFields = typeFieldNames("AppointmentBlock");
+        assertTrue(blockFields.contains("times"), () -> "missing AppointmentBlock.times in " + blockFields);
+        assertTrue(blockFields.contains("duration"), () -> "missing AppointmentBlock.duration in " + blockFields);
+
+        List<Map<String, Object>> blocks = tester.document("""
+                query {
+                  appointmentBlocks(filter: {
+                    from: "2006-01-01T00:00:00",
+                    to:   "2006-12-31T00:00:00"
+                  }) { times duration }
+                }
+                """)
+                .execute()
+                .path("appointmentBlocks")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
+                .get();
+        assertFalse(blocks.isEmpty(), "fixture should produce blocks");
+        boolean anyTimes = false;
+        boolean anyDuration = false;
+        for (Map<String, Object> b : blocks)
+        {
+            Object times = b.get("times");
+            if (times != null)
+            {
+                anyTimes = true;
+                assertTrue(times.toString().contains(":"),
+                        () -> "times should be a formatted time range; got " + times);
+            }
+            // duration: the eventtimecalculator plugin IS registered in the full
+            // @SpringBootTest context, so the bridge must resolve a non-null string
+            // for every block (EventTimeModel.format never returns null; worst case
+            // "" for zero/negative). A null here = the bridge regressed (factory
+            // lookup / createFunction / parse failure).
+            assertNotNull(b.get("duration"),
+                    () -> "duration must be non-null when the plugin is present; got block " + b);
+            if (!b.get("duration").toString().isBlank()) anyDuration = true;
+        }
+        assertTrue(anyTimes, "the times function bridge should resolve a formatted range for at least one block");
+        assertTrue(anyDuration, "the duration bridge should resolve a non-blank value for at least one normal block");
+    }
+
+    /**
+     * §12 — block.allocatables filter runs AFTER the canRead gate (no hidden-but-
+     * matching allocatable leaks), for a non-admin caller. Mirrors
+     * {@link #appointmentAllocatablesFilterRunsAfterCanReadGate} on the block path
+     * (which delegates to the same shared resolver).
+     */
+    @Test
+    @WithMockUser(username = "monty", roles = "USER")
+    void appointmentBlocksAllocatablesFilterRunsAfterCanReadGate()
+    {
+        List<String> unfilteredVisible = blockAllocatableNames(null);
+        List<String> serverFilteredRooms = blockAllocatableNames("{ typeKeyIn: [\"room\"] }");
+        java.util.Set<String> roomNames = java.util.Set.of("erwin", "Room A66");
+        java.util.Set<String> expected = unfilteredVisible.stream()
+                .filter(roomNames::contains)
+                .collect(java.util.stream.Collectors.toSet());
+        assertEquals(expected, new java.util.HashSet<>(serverFilteredRooms),
+                () -> "block.allocatables filter must run over the canRead-narrowed subset only; "
+                        + "visible=" + unfilteredVisible + " serverFiltered=" + serverFilteredRooms);
+    }
+
+    /**
+     * PRD 074 Baustein 5 (model A) — Reservation.name(variant:). DISPLAY equals the
+     * deprecated displayName; EXPORT/PLANNING fall back to DISPLAY when the fixture
+     * type lacks those nameformats. Schema exposes name(variant:) + NameVariant enum.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void reservationNameVariantResolvesWithFallback()
+    {
+        assertTrue(typeFieldNames("Reservation").contains("name"),
+                () -> "missing Reservation.name");
+        Map<String, Object> nv = tester.document("{ __type(name: \"NameVariant\") { enumValues { name } } }")
+                .execute().path("__type")
+                .entity(new ParameterizedTypeReference<Map<String, Object>>() {}).get();
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> ev = (List<Map<String, Object>>) nv.get("enumValues");
+        List<String> variants = ev.stream().map(e -> (String) e.get("name")).toList();
+        assertTrue(variants.containsAll(List.of("DISPLAY", "EXPORT", "PLANNING")),
+                () -> "NameVariant must have DISPLAY/EXPORT/PLANNING; got " + variants);
+
+        List<Map<String, Object>> rows = tester.document("""
+                query {
+                  appointmentBlocks(filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" }) {
+                    reservation {
+                      def: name
+                      disp: name(variant: DISPLAY)
+                      exp:  name(variant: EXPORT)
+                      legacy: displayName
+                    }
+                  }
+                }
+                """)
+                .execute().path("appointmentBlocks")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
+        assertFalse(rows.isEmpty(), "fixture should produce blocks");
+        for (Map<String, Object> b : rows)
+        {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> res = (Map<String, Object>) b.get("reservation");
+            assertNotNull(res.get("def"), "name (default) required");
+            assertEquals(res.get("disp"), res.get("def"), "name default must equal name(variant:DISPLAY)");
+            assertEquals(res.get("disp"), res.get("legacy"), "name(DISPLAY) must equal deprecated displayName");
+            assertEquals(res.get("disp"), res.get("exp"),
+                    () -> "EXPORT must fall back to DISPLAY when the type lacks nameformat_export; got " + res);
+        }
+    }
+
+    /**
+     * PRD 074 Baustein 6 — AppointmentBlock.compute(expr:) inline composition.
+     * `{p->times(p)}` must equal the `times` field; a concat composes; an unknown
+     * function returns null (not an error).
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void appointmentBlocksComputeEvaluatesExpression()
+    {
+        assertTrue(typeFieldNames("AppointmentBlock").contains("compute"),
+                () -> "missing AppointmentBlock.compute");
+        List<Map<String, Object>> rows = tester.document("""
+                query {
+                  appointmentBlocks(filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" }) {
+                    times
+                    viaCompute: compute(expr: "{p->times(p)}")
+                    doubled:    compute(expr: "{p->times(p)}-{p->times(p)}")
+                    broken:     compute(expr: "{p->nosuchfn(p)}")
+                  }
+                }
+                """)
+                .execute().path("appointmentBlocks")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
+        assertFalse(rows.isEmpty(), "fixture should produce blocks");
+        boolean anyTimes = false;
+        for (Map<String, Object> b : rows)
+        {
+            assertEquals(b.get("times"), b.get("viaCompute"),
+                    () -> "compute({p->times(p)}) must equal the times field; got " + b);
+            if (b.get("times") != null && !b.get("times").toString().isBlank())
+            {
+                anyTimes = true;
+                assertEquals(b.get("times") + "-" + b.get("times"), b.get("doubled"),
+                        () -> "two placeholders + literal text must compose; got " + b);
+            }
+            org.junit.jupiter.api.Assertions.assertNull(b.get("broken"),
+                    () -> "unknown function must yield null, not error; got " + b);
+        }
+        assertTrue(anyTimes, "at least one block should have a non-blank times for the composition check");
+    }
+
+    /** §12 — anonymous caller gets an error on the block root, not a list. */
+    @Test
+    @WithAnonymousUser
+    void anonymousAppointmentBlocksRejected()
+    {
+        tester.document("""
+                query {
+                  appointmentBlocks(filter: {
+                    from: "2006-01-01T00:00:00",
+                    to:   "2006-12-31T00:00:00"
+                  }) { start }
+                }
+                """)
+                .execute()
+                .errors()
+                .satisfy(errs -> assertFalse(errs.isEmpty(),
+                        "anonymous block query must error, not return []"));
+    }
+
     // ============================================================ PRD 028 Phase 1 — searchText + matchKind + hasConflicts
 
     /** Schema introspection: `searchText` + `matchKind` appear on the filter input. */

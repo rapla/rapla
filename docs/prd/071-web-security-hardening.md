@@ -204,9 +204,18 @@ redirect + refresh_token grant; no `silentRefreshRedirectUri`/`sessionChecksEnab
      (`isAdminPasswordUnset()`); it disappears once a real password is set. Shown even under
      fix-admin-password (it is the demo's login instruction).
   3. **`rapla.fix-admin-password` flag** (`RaplaServerProperties`) — locks the built-in
-     `admin`: its password cannot be changed and the account cannot be deleted (enforced in
-     the operator: `changePassword` + an override of `storeAndRemove`, so REST/GraphQL/SPA/
-     internal callers are all covered). Also **suppresses the nag** for the admin. Intended
+     `admin`: its password cannot be changed, AND the account can be neither **deleted nor
+     modified** (rename / re-permission / disable). Enforced at two operator chokepoints:
+     `changePassword` (password) and **`guardFixedAdmin(evt)` called from `check(evt,store)`**
+     — the universal write gate every `dispatch` runs via `preprocessEventStorage` on BOTH
+     backends (FileOperator + DBOperator), for store AND remove. **Seam history (caught by
+     live testing):** first put on `storeAndRemove` → bypassed by REST/SPA/GraphQL (they call
+     `dispatch` directly); moved to `checkNoDependencies` → covered delete only; finally
+     `check()` → covers store+remove + force-delete (force only ignores *allocatable*
+     dependencies, after the guard). The guard targets the `User` entity only, so the admin's
+     own Preferences/session writes (login persistence) are unaffected — verified live.
+     Regression tests: `blocksAdminDeletionViaDispatchWhenFlagSet`,
+     `blocksAdminModificationWhenFlagSet`. Also **suppresses the nag** for the admin. Intended
      for managed/demo deployments running `admin` with a fixed (e.g. empty) credential.
   - **Empty-password detection** is robust: `RaplaPasswordEncoder.isUnset(stored)` verifies
      the empty string against the stored value (literal `""`/blank, or a legacy `sha-1`/`md5`
