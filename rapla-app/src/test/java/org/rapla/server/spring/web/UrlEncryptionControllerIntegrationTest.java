@@ -19,6 +19,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -78,6 +80,32 @@ class UrlEncryptionControllerIntegrationTest
         String ciphertext = result.getResponse().getContentAsString();
         assertTrue(ciphertext.contains("&salt="), "ciphertext must contain the &salt= separator");
         assertTrue(ciphertext.length() > 20, "ciphertext must be non-trivial");
+    }
+
+    @Test
+    void v2AlgoProducesDeterministicGcmCiphertext() throws Exception
+    {
+        String token = OAuthTestSupport.loginAs(mockMvc, "homer", "duffs");
+
+        String first = encryptV2(token);
+        String second = encryptV2(token);
+
+        // PRD 071 H3: new exports use AES-256-GCM, marked with the v2: prefix, no legacy &salt=
+        assertTrue(first.startsWith("v2:"), "v2 ciphertext must carry the v2: marker: " + first);
+        assertFalse(first.contains("&salt="), "v2 ciphertext must not use the legacy salt param");
+        // deterministic → the export URL stays byte-stable across regenerations
+        assertEquals(first, second, "v2 ciphertext must be deterministic so the URL doesn't churn");
+    }
+
+    private String encryptV2(String token) throws Exception
+    {
+        return mockMvc.perform(post("/api/urlencryption")
+                        .param("algo", "v2")
+                        .contentType(MediaType.TEXT_PLAIN)
+                        .content("user=homer&file=Export")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
     }
 
     @Test

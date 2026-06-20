@@ -10,6 +10,7 @@ import org.rapla.framework.TypedComponentRole;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.rapla.plugin.urlencryption.UrlEncryption;
+import org.rapla.plugin.urlencryption.UrlEncryptionPlugin;
 import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.RemoteSession;
 
@@ -36,6 +37,7 @@ public class UrlEncryptor
 
     private Cipher encryptionCipher;
     private Cipher decryptionCipher;
+    private byte[] rootKeyBytes;   // raw system root key for the v2 (AES-256-GCM) key derivation
 
     private final RaplaFacade facade;
     private final RaplaKeyStorage keyStore;
@@ -56,17 +58,30 @@ public class UrlEncryptor
      * @param plain Plain text
      * @return String The encrypted result or null in case of an exception
      */
-    public synchronized String encrypt(String plain, HttpServletRequest request) throws RaplaException
+    public synchronized String encrypt(String plain, HttpServletRequest request, String algo) throws RaplaException
     {
         final User user = session.checkAndGetUser(request);
-        return encrypt(plain, user.getId());
+        return encrypt(plain, user.getId(), algo);
     }
 
     @NotNull
-    public synchronized String encrypt(String plain, String userId) throws RaplaException
+    public synchronized String encrypt(String plain, String userId, String algo) throws RaplaException
     {
-        final String salt = Integer.toString(userId.hashCode());
         final Base64 base64 = initForRequest();
+        if (UrlEncryptionPlugin.ALGO_V2.equals(algo))
+        {
+            // New export → authenticated, deterministic AES-256-GCM.
+            try
+            {
+                return UrlCipherV2.encrypt(UrlCipherV2.deriveKey(rootKeyBytes), plain);
+            }
+            catch (Exception e)
+            {
+                throw new RaplaException(e.getMessage(), e);
+            }
+        }
+        // Legacy AES/ECB — keeps existing export URLs byte-stable (algo "true"/null).
+        final String salt = Integer.toString(userId.hashCode());
         try
         {
             String valueToEnc = null;
@@ -100,6 +115,12 @@ public class UrlEncryptor
     public synchronized String decrypt(String encrypted, String salt) throws Exception
     {
         final Base64 base64 = initForRequest();
+        if (UrlCipherV2.isV2(encrypted))
+        {
+            // v2 (AES-256-GCM) — salt param is unused; the marker drives dispatch.
+            return UrlCipherV2.decrypt(UrlCipherV2.deriveKey(rootKeyBytes), encrypted);
+        }
+        // Legacy AES/ECB — kept forever: old subscriber URLs live in external clients.
         try
         {
             String dValue = null;
@@ -147,6 +168,7 @@ public class UrlEncryptor
             if (encryptionKey == null || encryptionKey.equals(""))
                 throw new InvalidKeyException("Empty key string found!");
 
+            this.rootKeyBytes = encryptionKey;
             this.initializeCiphers(encryptionKey);
             return base64;
         }

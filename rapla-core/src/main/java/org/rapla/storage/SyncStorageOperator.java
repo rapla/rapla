@@ -31,6 +31,21 @@ import java.util.Map;
  *  so there's exactly one source of truth for the work. */
 public interface SyncStorageOperator
 {
+    /**
+     * B3: true when this user should be nagged to set a password on login — i.e. their
+     * stored password is "unset" (empty/never set) AND they are not the
+     * {@code rapla.fix-admin-password}-locked admin (whose credential is intentionally fixed).
+     */
+    boolean isPasswordChangeRequired(User user) throws RaplaException;
+
+    /**
+     * B3: true when the built-in {@code admin} account exists and has an empty
+     * (login-with-empty) password. Drives the login-page "default admin / empty password"
+     * hint — shown <em>only</em> while that default is still in effect (also under
+     * {@code rapla.fix-admin-password}, where it is the demo's login instruction).
+     */
+    boolean isAdminPasswordUnset() throws RaplaException;
+
     /** Determines all conflicts the user can modify. If no user is passed, all conflicts are returned. */
     Collection<Conflict> getConflictsSync(User user) throws RaplaException;
 

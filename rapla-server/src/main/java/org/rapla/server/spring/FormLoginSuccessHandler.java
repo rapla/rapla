@@ -70,6 +70,14 @@ public class FormLoginSuccessHandler extends SavedRequestAwareAuthenticationSucc
             cookies.setAccessTokenCookie(response, tokens.accessToken(), tokens.expiresIn());
             cookies.setRefreshTokenCookie(response, tokens.refreshToken(),
                     RefreshSessionService.REFRESH_TOKEN_TTL_SECONDS);
+
+            // B3: nag a passwordless user to set a password (cookies are already set, so the
+            // /change-password page is reachable authenticated). Skippable, not disableable.
+            if (passwordChangeRequired(user))
+            {
+                getRedirectStrategy().sendRedirect(request, response, "/change-password");
+                return;
+            }
         }
         catch (RaplaException | JOSEException e)
         {
@@ -86,6 +94,19 @@ public class FormLoginSuccessHandler extends SavedRequestAwareAuthenticationSucc
      * UUID ({@code user.getId()}), so try the operator's id-resolve first, then
      * fall back to a login-name lookup (mirrors {@code raplaUserDetailsService}).
      */
+    private boolean passwordChangeRequired(User user)
+    {
+        try
+        {
+            return ((org.rapla.storage.SyncStorageOperator) facade.getOperator()).isPasswordChangeRequired(user);
+        }
+        catch (Exception e)
+        {
+            LOGGER.warn("Could not evaluate password-change requirement for '{}': {}", user.getUsername(), e.getMessage());
+            return false;
+        }
+    }
+
     private User resolveUser(String principalName) throws RaplaException
     {
         User user = facade.getOperator().tryResolve(principalName, User.class);

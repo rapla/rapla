@@ -55,6 +55,10 @@ public class ServerStorageSelector implements Supplier<CachableStorageOperator>
         {
             op.setBlockedMergeAttributeKeys(properties.getMerge().getBlockedSyncAttributes());
         }
+        if (properties != null)
+        {
+            op.setFixAdminPassword(properties.isFixAdminPassword());
+        }
     }
 
     @NotNull private FileOperator createFileOperator()

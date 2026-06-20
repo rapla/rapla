@@ -1,8 +1,6 @@
 # PRD 073 — Rapla Server Functions ↔ GraphQL Equivalence Map
 
-**Status:** draft — analysis only, 2026-06-19. No code yet; this PRD catalogues the
-rapla expression-language **Functions** and their GraphQL-API equivalents, then
-proposes which gaps are worth closing.
+**Status:** in-progress — Phase 0 (filterable nested `Appointment.allocatables`) done 2026-06-19; remaining phases are analysis + design, no code yet.
 
 ## Goal
 
@@ -172,6 +170,349 @@ arbitrary code).
 
 **D. Already fully covered — no action:** rows 1, 2, 4, 5, 6, 9, 12, 13, 15, 16,
 17, 21 (the filter + projection + navigation core).
+
+## Composition fields — keep rapla Functions, bridge them to GraphQL (2026-06-20, converged; discussion open)
+
+The display derivations (`nameformat` & co.) and computed table columns are rapla
+**Function compositions**. **Decision: keep rapla Functions as the composition engine** —
+they are already bounded (non-Turing, no `eval`), server-side, and evaluate the *existing*
+stored compositions in place. Since everything is server-side (no client engine, no
+TS↔Java parity), a *new* op-set buys little; rapla's own engine **is** the bounded
+composition language. (The op-set catalogued below is "something similar" — kept only as an
+*optional later* cleanup, **not** a build requirement; CEL / transform pipeline dropped,
+PRD 074.)
+
+**The one real GraphQL gap = the composition-field bridge.** GraphQL can't do composition
+natively; the bridge takes an (admin-configured) rapla-Function composition, **evaluates it
+server-side, and exposes it as a GraphQL field.** Two scopes + a governance split:
+
+| Scope | what | who defines | schema change? |
+|---|---|---|---|
+| **type-level — standard variants** | `displayName`/`exportName`/`planningName`/`exportDescription` from the four `nameformat*` annotations | **admin** (edits the annotation) | no (fields are standard) |
+| **type-level — custom composite field** | a new reusable Classification field (`Raum.effectiveRoomNumber`, `roomCode`) | **plugin** (extension point — fits `FunctionFactory`/`TableColumnDefinitionExtension`) | yes → controlled |
+| **view-level** | a one-off computed column in a view (`concat(substring(times,…))`) | **admin** (in the view spec, `value:`) | no (view-local, server-eval) |
+
+**Admins compose freely** — at view-level and by editing the standard variant annotations.
+Only **adding new reusable type-level schema fields** is plugin-gated (schema *stability*,
+not security — rapla Functions are bounded + server-side + output-escaped + §12-gated).
+
+**How `displayName` (and the variants) are defined — STILL UNDER DISCUSSION (2026-06-20).**
+Leading candidate: keep the existing `nameformat*` annotations (admin-editable, rapla
+syntax — **no migration**); the schema generator maps the four standard keys to four
+standard fields and generates a **server-evaluated** field each (≈ how `displayName`
+already works), with `@derivedFrom` introspection for explicitness:
+```graphql
+displayName: String @derivedFrom(fields: ["Name", "Beschreibung", "status", "note"])
+```
+Mapping: `nameformat → displayName` · `nameformat_export → exportName` ·
+`nameformat_planning → planningName` · `descriptionformat_export → exportDescription`.
+**Fallback chain:** a missing *variant* annotation **falls back to `displayName`**
+(`exportName`/`planningName`/`exportDescription` default to `displayName`); `displayName`
+itself falls back to `getName()` when there's no `nameformat`. So **all four always
+resolve** — variants only *override* `displayName` where set. *(This candidate is not
+locked — the storage/definition form is the open discussion.)*
+
+The op-set / catalog below is the **repertoire the bridge evaluates** (and the optional
+future clean re-implementation), derived from the *real* dhbw + wochenplan compositions.
+
+### Server mechanics — how the bridge evaluates (thin DataFetcher over `ParsedText`)
+
+Every GraphQL field has a **DataFetcher**; the composition resolvers just funnel the rapla
+composition through rapla's **existing `ParsedText` / `EvalContext`** engine — no new
+evaluator, no migration.
+
+- **Type-level field** (`displayName`/`exportName`/…): the DataFetcher evaluates the type's
+  `nameformat*` annotation against the **entity** — exactly what `classification.getName(locale)`
+  (internally `ParsedText.formatName(EvalContext)`) does today. ~already wired.
+- **View-level `compute(expr:)`**: the DataFetcher parses the `expr` argument and evaluates
+  it against the source entity:
+  ```java
+  Object entity = env.getSource();                  // current block / reservation / allocatable
+  ParsedText p  = ParsedText.parse(env.getArgument("expr"));
+  EvalContext c = new EvalContext(locale, annotationName, permissionController,
+                                  environment, user, List.of(entity), 0);
+  return ParsedText.evalToString(p.eval(c), c);
+  ```
+  rapla functions resolve `Gebaeude`/`Raumnummer`/`start`/… **themselves from the entity**
+  (via the classification) — so the query need **not** also select those raw fields.
+
+**The `EvalContext` is built by the GraphQL layer per evaluation.** Almost everything is
+already in the server context; **one** piece is genuinely new wiring:
+
+| `EvalContext` arg | source in the resolver |
+|---|---|
+| `locale` | request (`Accept-Language`) / user pref / variable |
+| `user` | auth context (JWT → rapla `User`) — already present (§12) |
+| `permissionController` | server bean |
+| `contextObjects` | `env.getSource()` (the entity) |
+| `annotationName`, `callStackDepth` | the field / `0` |
+| **`environment`** | **NEW bridge** — resolves `env(...)` from `operator.getThreadContextMap()` (the *same* map `CalendarPageController`/`Export2iCalController` populate today). **Server-set only**, never a client variable — see below. |
+
+- **`internal_request` is server-set, never a client argument (§12, load-bearing).** The flag is
+  put into `getThreadContextMap()` by the **request channel**: proxy-chosen `*_internal` URL
+  (intranet) or auth → `true`; unencrypted public export → `false`. The composition
+  `env("internal_request")` then renders person names on/off. A client must **never** be able to
+  set it (a GraphQL *variable* or field arg) — otherwise any caller flips it and exfiltrates names.
+  For unauthenticated public exports it is the **sole** name-privacy gate (no identity → no
+  `canRead`). The in-process export-execution path + the proxy-only-reachability invariant live in
+  **[PRD 074 §"Server-side rendering"](074-graphql-declarative-views.md)**; this bridge just *reads*
+  the map.
+- **§12 comes free:** `EvalContext` carries the `user` + `PermissionController`, and
+  `ParsedText.evalToString` already does the `canReadInformation` check (returns `"???"` for
+  unreadable) — same §12 path as Swing.
+- **Bounded + safe:** rapla functions are non-`eval`/non-Turing → an arbitrary `expr` can't
+  execute code, only the known functions over the entity; output is a String (GUI escapes
+  it). **Cap** parse depth/complexity (DoS) and **cache** the parsed `ParsedText` per `expr`.
+
+So "computes on the server" = **a thin GraphQL DataFetcher over rapla's existing `ParsedText`
+engine**; the only real integration is mapping the **request context → `EvalContext.environment`**
+(for `env(...)`).
+
+### Ground truth — the dhbw display derivations (four variants per type)
+
+| Type | variant | composition |
+|---|---|---|
+| Lehrveranstaltung | `nameformat` | `{if(not(status),"*","")} {Name} {Beschreibung} {format("<%s>",appointment:note())}` |
+| | `nameformat_export` / `descriptionformat_export` | …+ `{filter(event:allocatables, r->or(equals(key(type(r)),"Kurs"),"Teilkurs","Kursgruppe"))}` |
+| Pruefung | `nameformat` | `{if(not(status),"*","")} {Pruefungsart} {Name} {Beschreibung} {format("<%s>",note())}` |
+| Person | `nameformat` / `_planning` | `{surname}, {firstname}` · `{surname}, {firstname} - {campusnetId}: {hinweis_dualis}` |
+| | `nameformat_export` | `{if(env("internal_request"), concat(firstname," ",surname), concat())}` |
+| Raum | `nameformat` | `{if(or(equals(substring(Gebaeude,0,3),"MOS"),equals(substring(Gebaeude,0,2),"KA")), concat(Raumnummer," ",Raumname), concat(SekundaereRaumnummer," ",Raumname))}` |
+| Kurs / Gebaeude | `nameformat` | `{Kursname}` / `{Gebaeudename}` |
+
+### The name field — one parameterized field, variant resolved by context (decided 2026-06-20)
+
+The four composition annotations are **not four GraphQL fields**. Verified against the real
+callers (`NameFormatUtil` + the render/export sites), the variant is **chosen by whoever runs
+the query**, and the three name variants form a **fallback chain rooted at display** — they are
+not peers:
+
+| variant | annotation | who selects it (real callers) | fallback |
+|---|---|---|---|
+| **DISPLAY** | `KEY_NAME_FORMAT` | UI calendar block (`RaplaBlock`), info — the **root/default** | `getName()` |
+| **EXPORT** | `KEY_NAME_FORMAT_EXPORT` | all export services (Exchange subject, iCal summary, `HTMLRaplaBlock`) | → DISPLAY |
+| **PLANNING** | `KEY_NAME_FORMAT_PLANNING` | the resource **tree** only (`TreeItemFactorySwing`, `AllocatableSelection`) — Swing-only today | → DISPLAY |
+
+→ **One parameterized field**, variant = the `EvalContext.annotationName`, resolved:
+
+```
+name(variant: NameVariant = DISPLAY)        # NameVariant { DISPLAY EXPORT PLANNING }
+  1. explicit arg              (always wins)
+  2. else execution context    (export service sets EXPORT; SPA tree-view sets PLANNING) — graphQLContext
+  3. else DISPLAY              (the static default; visible in SDL)
+```
+
+- This is why **the same stored query yields DISPLAY in the UI and EXPORT when the export
+  service runs it in-process** (the service sets the context; see PRD 074 §"Server-side
+  rendering") — and the tree can force `name(variant: PLANNING)`.
+- The `NameVariant` enum **self-documents the three variants in the served SDL** — the
+  schema-file-only AI/author sees them natively.
+- The existing **`displayName`** field stays as `@deprecated(reason: "use name(variant: DISPLAY)")`
+  → resolves to `name(DISPLAY)`; no SPA break, migration is introspectable. (Unlike the *function*
+  catalog, which omits legacy names — GraphQL fields carry native `@deprecated`.)
+- **`description`** is a **separate** field (export **body**: `KEY_DESCRIPTION_FORMAT_EXPORT` —
+  Exchange body / iCal description, *not* the subject). Single-variant today; its fallback is the
+  export service's own (Exchange attendee-list / iCal `null`), **not** the name chain — so it is
+  not symmetric to `name`.
+- **`internal_request` is NOT this arg** — it is the server-only security gate (names appear at
+  all), carried in `environment`, never client-settable. The `variant` arg is presentational and
+  may be client/renderer-chosen.
+
+### Decomposition — most of it is already GraphQL; the residual is tiny
+
+| Part of a derivation | maps to |
+|---|---|
+| fields (`Name`, `Beschreibung`, `status`, `surname`, `Raumnummer`, …) | **raw typed GraphQL fields** (generated, already present) |
+| `appointment:note()` | **GraphQL field** `note` (Phase 1) |
+| `filter(allocatables, r->key(type(r))∈{Kurs,…})` | **GraphQL** `allocatables(filter:{ typeKeyIn:[…] })` (selection) |
+| `env("internal_request")` | **server-set execution context** (`environment`, never a client arg — §12) |
+| **`if` · `not` · `or` · `equals` · `concat` · `substring` · `format`** | **the op-set** (string/logic) |
+
+### Function inventory + the `FunctionDescriptor` — levels via arg-types, B-hard (decided 2026-06-20)
+
+Verified against the real `eval` bodies (`StandardFunctions` + plugins). **"Level" is not a
+separate tag — it is the function's *source-arg type*.** Validation (`saveView`) is a **type-check
+over the parsed tree**, context-aware through lambda bindings: `filter(resources(p), r->isPerson(r))`
+is valid because `resources()→[Allocatable]`, `filter` binds `r:Allocatable`, `isPerson` wants an
+Allocatable; `start()` on an Allocatable-rooted column is a **type error**. Navigation is
+**one-way: event → resources, never the inverse** (an Allocatable has no back-link to its events),
+so EVENT functions are invalid on Allocatable-rooted columns — exactly what B-hard rejects.
+
+**A (name field), B (levels), and I (return types) collapse into ONE descriptor per function:**
+```
+FunctionDescriptor { name, namespace, argTypes[] (+ arity), returnType, doc }
+```
+from which we generate (a) the served-SDL catalog, (b) return-type inference (`@derivedFrom` +
+typed field), (c) the `saveView` tree type-check (subsumes "levels"), **and (d) generated GraphQL
+fields for the scalar/derived accessors** (`AppointmentBlock.duration`, `…start`, `…times`,
+`Allocatable.isPerson`, …). The catalog/fields are generated from the live `FunctionFactory`
+registry at schema build (all plugins present).
+
+### How a (plugin) function becomes a GraphQL field — the descriptor SPI (decided 2026-06-20: option a)
+
+Today the `FunctionFactory` interface has **only `createFunction(name, args)`** — no enumeration, no
+signatures. So a plugin function like **`org.rapla.eventtimecalculator:duration` is reachable *only*
+via the EL** (`compute("…:duration(p)")`); it is **not** a GraphQL field, and the GraphQL generator
+has no knowledge of functions. To make scalar/derived accessors first-class **generated fields**, two
+mechanisms were weighed:
+
+- **(a) Descriptor SPI — chosen.** Extend `FunctionFactory` (or a companion SPI) so every factory —
+  core *and* plugin — **declares its functions as `FunctionDescriptor`s** in *rapla terms* (name,
+  source-arg level, return type, `fieldable`, doc), **knowing nothing about GraphQL**. One central
+  generator (`ClassificationSdlGenerator`) reads **all** descriptors and uniformly emits the fields
+  on their source types + wires the DataFetcher (→ `ParsedText(fn).eval(EvalContext)`). Fits rapla's
+  existing declarative plugin model (plugins already contribute `FunctionFactory` via `@Extension`;
+  this just adds metadata). Constrained to function-as-field.
+- **(b) Plugin wires GraphQL itself** (RuntimeWiring / SDL type-extension + DataFetcher) — rejected as
+  the default: each plugin must know GraphQL; distributed plumbing. Kept only as an **escalation** for
+  a plugin that needs arbitrary GraphQL beyond function-as-field.
+
+So **`duration` becomes `AppointmentBlock.duration: String`** because the eventtimecalculator plugin
+declares a descriptor (source EVENT → AppointmentBlock/Appointment, return String); the central
+generator emits the field. **Plugin-namespacing:** the GraphQL field uses the **local name**
+(`duration`); the namespace lives in the descriptor; a **collision rule** is needed if two plugins
+expose the same local name on the same source type. **Field-allowedness is then pure schema** — a
+consumer/AI sees `AppointmentBlock.duration` (and *not* `Allocatable.duration`) by introspection;
+GraphQL validates it. The "level" is only the generator's *placement rule* + the compute-EL check —
+it never surfaces to the consumer.
+
+**EVENT** — source resolves to `Block | Appointment | Reservation | CalendarModel`:
+
+| fn | signature |
+|---|---|
+| `start` `end` `lastchanged` | (event) → DateTime |
+| `date` (event) → Date · `intervall` (event) → TimeInterval | |
+| `times` `number` | (event) → String |
+| `appointments`(event?) → [Appointment] · `appointmentBlocks`(event?,from?,to?) → [AppointmentBlock] | |
+| `resources`(event?) → [Allocatable] · `events`(event?) → [Reservation] | |
+| `note` *(ns `appointment`)* (appt?) → String | |
+| `duration` *(ns `org.rapla.eventtimecalculator`)* (event?) → String · `durationCompare`(event?,Int) → Int | |
+
+**CLASSIFIABLE** — source `Allocatable | Reservation` (has a Classification):
+`attribute`(classifiable,key) → attr-value · `type`(classifiable) → DynamicType · `key`(category|attrVar) → String · `name`(named?) → String · `parent`(raplaObj) → Entity
+
+**ALLOCATABLE-only** — tests `KEY_CLASSIFICATION_TYPE` (only exists on allocatable types):
+`isPerson`(alloc?) → Boolean · `isLocation`(alloc?) → Boolean
+
+**ANY** — argument-based, source-agnostic:
+`not` `and` `or`(Bool…) → Bool · `if`(Bool,T,T) → T · `equals`(a,b) → Bool ·
+`concat`(String… **0..∞**) → String · `substring`(String,Int,Int) → String · `format`(String,…) → String ·
+`filter`([T], T→Bool) → [T] · `sort`([T],cmp) → [T] · `index`([T],Int) → T · `reverse` · `stringComparator` ·
+`env`(String) → String/Bool *(reads server-set `environment`; see §"Server mechanics")*
+
+**VIEW_TITLE-only** — source is the CalendarModel title context (`CalendarModelParseContext`, today `@Deprecated`):
+`allocatables` → [Allocatable] · `timeIntervall` → TimeInterval · `selectedDate` → Date
+
+**Flags — all resolved (2026-06-20):**
+- **`number`** (ID=`number`, `AppointmentBlockFunction`): the **block's sequence number within its
+  reservation** ("which appointment in the series" — 1-based). Expands all the reservation's
+  appointments to blocks from `getFirstDate()`, counts `headSet(block).size()+1`. Source =
+  AppointmentBlock (EVENT), returns String (semantically Int). Name/class consistent (class works
+  over the block; `number` = the block's number).
+- **Raum** `nameformat` `or(MOS,KA)` in the ground-truth table **is correct** (the wochenplan
+  dataset is older).
+- **`nameformat_planing`** (one-`n`) in wochenplan `personen` is **dead data** — the code constant
+  is `nameformat_planning` (two-`n`); the typo'd annotation is never read (harmless orphan).
+
+### The op-set (≈7 ops — the whole string/logic residual)
+
+> **Function-name standardization is investigated separately in
+> [PRD 075](075-expression-language-standardization.md)** — whether these op names align to a
+> standard vocabulary (common-intersection / CEL / minimal aliases), and whether one
+> expression vocabulary should be shared across views, filters, exports, validation, import
+> mapping, etc. The engine stays rapla's own (decided here); 075 only concerns naming + scope.
+
+```
+if(cond, then, else)   not(x)   or(a,b)   equals(a,b)
+concat(a, b, …)        substring(s, start, len)   format(pattern, x)
+```
+
+Everything else is GraphQL or a variable. This is "something similar to the rapla
+Functions" (per the maintainer), reimplemented cleanly, **bounded, non-`eval`,
+server-side** — no CEL, no client runtime, no TS↔Java parity.
+
+### Storage decision (corrected 2026-06-20)
+
+- **`nameformat` & co. STAY at the type** (annotation storage is fine — the canonical
+  display of a type, reused everywhere). They are evaluated **server-side via the op-set**
+  and exposed as **`displayName(variant: DISPLAY|EXPORT|PLANNING)`** (or named fields). The
+  "out of annotation" goal was **only for the table-column definitions**, not nameformat.
+- **Table-column definitions MOVE** from the legacy config into the **GraphQL view
+  definition** (view-level, explicit — PRD 074). The op-set serves both: nameformat at the
+  type, and any computed view column.
+- **No migration; legacy keeps its evaluation.** The `nameformat` annotations stay on the
+  types and serve **both** paths over the **same stored rapla syntax**:
+  - **Legacy Swing + old exports (iCal/CSV/TableView)** keep evaluating them via rapla's
+    existing `ParsedText` engine — **unchanged**.
+  - The **new GraphQL/SPA path is additive** — it reads the *same* nameformat annotations
+    to produce `displayName` (server-side); initially it can reuse `ParsedText`, with the
+    bounded op-set as the clean re-implementation over time. **No conversion of stored
+    strings, no disruption of legacy.**
+  Legacy column defs stay legacy; new GraphQL views are **greenfield** (PRD 074 — no
+  TableView migration). The op-set is mainly the bounded composition language for **new
+  view-level computed columns**; for nameformat the existing evaluation is reused
+  server-side (a clean op-set swap is optional, later).
+  - *Storage (corrected):* the legacy TableView config is **always a combination of two
+    complementary stores** — the per-type **`tablecolumn_*` annotations** (the column
+    *compositions*, `defaultValue` per column, incl. type-specific custom columns) **+** the
+    **`tableview.config`** preference (the *view configuration* — which views, which columns
+    each shows, ordering, sorting). Both are present in both datasets (wochenplan: 121
+    annotations + config; dhbw: 50 + config). They complement, not replace, each other.
+    Both predate the GraphQL views; the new views replace the **combination** — no migration.
+
+### Use-case catalog — display derivations (dhbw + wochenplan, verified 2026-06-20)
+
+Across both datasets the derivations fall into **five complexity tiers** — the first two
+are simple naming, the rest need the op-set:
+
+| Tier | Example | mechanism |
+|---|---|---|
+| 1 **single field** | `{name}` · `{title}` · `{Kursname}` | field |
+| 2 **field-list** | `{name} {title}` · `{title} {thema}` · `{name}: "{title}" - {hinweis}` | interpolation (simple naming) |
+| 3 **optional suffix** | `{name}{if(equals("",substring(ebene,0,1)),"",concat(":",ebene))}` | `if`+`substring`+`concat` (skip-if-empty) |
+| 4 **format + plugin** | `{zusatz} {title} {format("<%s>",appointment:note())}` | `format` + `note` |
+| 5 **marker chains** | `{angezeigter_name} {surname} {if(im_haus," # ","")}{if(equals(key(dispo-modus),"anfrage"),"*","")}…{if(ausdrucksstarke_yl,"+","")}` | `if`+`equals`+`key`+`<bool field>` |
+| (Raum) **conditional value** | `{if(or(equals(substring(Gebaeude,0,3),"MOS"),…"KA"), concat(Raumnummer," ",Raumname), concat(SekundaereRaumnummer," ",Raumname))}` | `if`+`or`+`equals`+`substring`+`concat` |
+
+**Consolidated op-set** (everything tiers 3–5 + Raum need):
+```
+if · not · or · equals          concat · substring · format
+key(enum) · type                <bool field> as condition
+plugin: note    context: env
+```
+Two **convenience helpers** for the recurring patterns (keep the op-set readable):
+```
+marker(cond, symbol)        # = if(cond, symbol, "")                              — tier 5
+optional(field, separator)  # = if(isEmpty(field), "", concat(separator, field))  — tier 3
+```
+
+**Placement** (per the reusability rule): tiers 1–2 → simple field-list naming
+(type-level); tiers 3–5 + the Raum conditional → op-set in a **named derived field**
+(type-level, reusable — e.g. `Raum.effectiveRoomNumber`, `Person.planningName`) or
+view-level for a one-off.
+
+### Worked example — the hardest case (`Raum`), factored
+
+The **real** `Raum` nameformat (today's `displayName`) packs everything into one rapla
+composition:
+```
+{if(or(equals(substring(Gebaeude,0,3),"MOS"),equals(substring(Gebaeude,0,2),"KA")),
+    concat(Raumnummer," ",Raumname),
+    concat(SekundaereRaumnummer," ",Raumname))}
+```
+The pattern — **factor the complex value selection into a named derived field, keep the
+display trivial** — stays in **rapla syntax** (no new format, no migration):
+```
+# derived field (reusable) — picks the right room number:
+effectiveRoomNumber = {if(or(equals(substring(Gebaeude,0,3),"MOS"),equals(substring(Gebaeude,0,2),"KA")),Raumnummer,SekundaereRaumnummer)}
+# displayName then just concatenates:
+displayName         = {concat(effectiveRoomNumber," ",Raumname)}
+```
+The logic lives in one named, bounded, reusable field; `displayName` stays trivial.
+(*How `displayName` is stored/defined is still under discussion — see below.*)
+(Data note: `substring(Gebaeude,…)` really derives the *campus* — missing structured data;
+a real `Campus` field shrinks it to
+`{if(or(equals(Campus,"KA"),equals(Campus,"MOS")),Raumnummer,SekundaereRaumnummer)}`.)
 
 ## Plan — phased (each phase is independently shippable)
 

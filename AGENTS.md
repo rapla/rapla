@@ -56,27 +56,39 @@ The order is **(a) understand → (b) write failing test → (c) fix → (d) ver
 - **Diagnostics-first is fine when** you're still locating the root cause — curl probes, log inspection, exploratory println/diagnostic dumps in a test, integration-test bisects, reading code. Once you can name the broken function/field/method, switch to test-first for the fix.
 - **No exception for "trivial" fixes.** A removed `final` keyword, a missing null-check, a typo'd config key — all bug fixes get a regression test. The point isn't to verify the fix works; it's to lock the fix in so the next refactor doesn't reopen the bug. The Jackson-3 `final`-field bugs (PRD 011 follow-up, 2026-05-09) reopened the same pattern five times across different fields — a per-bug regression test would have caught the second one immediately.
 - **Verifying the test would catch the bug:** After writing the fix and seeing the test go green, briefly revert the fix and re-run the test to confirm it goes red for the right reason. Re-apply the fix. This costs one extra test run and prevents tests that pass for the wrong reason (e.g. asserting on a field that gets initialized in setUp regardless of the bug).
+- **After applying a fix, verify it yourself before asking the user to retest.** Repeat the probe that surfaced the original symptom — curl the endpoint, run the affected test, diff the output. "Please retest" comes *after* your own verification, not instead of it.
 - **Audit for sibling occurrences before declaring done.** Once you've named the root cause (a wrong API shape, a missing guard, a buggy `setTimestamp` binding, a `final`-field Jackson trap), grep the codebase for the same antipattern elsewhere — bugs of a kind cluster, and "one site is broken" usually means 2–5 sites are broken. **List the siblings for the user and ASK whether to extend the fix.** Don't silently fan out — superficially-similar sites can need different handling, or the user may prefer the targeted fix today and the sweep on its own PR. Worked example: PRD 054 (2026-05-25) — the cache-drift bug lived in *one* of five dbsql `setTimestamp(...)` sites; the other four were self-consistent for different reasons, so a silent sweep would have been wrong.
 
-### 2. PRD-Driven Development
-- Before implementing anything, check **both `docs/prd/` AND `docs/prd/done/`** for an existing PRD. The `done/` subfolder holds completed PRDs — read them too; they capture decisions and alternatives already considered.
-- Matching PRD in `docs/prd/`: read, update, plan there.
-- Matching PRD in `docs/prd/done/`: `git mv` it back to `docs/prd/`, flip status to `in-progress`, then add new work. The move signals the PRD is reopened.
-- No matching PRD: create one in `docs/prd/` before writing code.
-- When a PRD is fully complete (status `done`, all phases shipped): `git mv` to `docs/prd/done/` and update cross-references in still-active PRDs.
+### 2. PRD-Driven Development — load the `prd-management` skill
 
-### 3. PRD Format
-- File naming: `docs/prd/NNN-short-name.md` (e.g., `001-spring-boot-migration.md`).
-- Required sections: Title, Status (draft / in-progress / done), Goal, Scope, Plan, Tests, Open Questions.
-- Keep PRDs concise. Update the status as work progresses.
+Before implementing anything, check **`docs/prd/` AND `docs/prd/done/`** for an existing PRD — `done/` holds completed PRDs with decisions and alternatives already considered. For when to create, reopen, or close one: load the **`prd-management`** skill.
 
-### 4. Code Style
+### 2a. Where knowledge lives
+
+| What you learned | Where it goes |
+|---|---|
+| A decision being made (rationale + scope + plan) | `docs/prd/NNN-*.md` (§2) |
+| Current project state that will change ("test X still fails", "PRD Y pending") | `memory/project_*.md` + MEMORY.md entry with `[since:]`/`[watch:]` tags |
+| How Claude should behave in this project | **`AGENTS.md`** — new bullet under the relevant section |
+| Rapla domain knowledge — concepts, entity relationships, module responsibilities | `docs/architecture/<topic>.md` (create if no existing file fits) |
+| Auth / login flow specifics | `docs/authentication.md` |
+| GraphQL schema / resolver specifics | `docs/graphql.md` |
+
+**Before diagnosing a problem or planning work in an unfamiliar area, check `docs/architecture/`, `docs/authentication.md`, `docs/graphql.md` first** — they may already document the invariant or design decision you're trying to reverse-engineer from code.
+
+**When in a session you learn something non-obvious about how Rapla works** — entity relationships, invariants, why a design decision was made — **propose to the user that it gets written down** in the appropriate `docs/` file. Don't leave domain knowledge only in session context where it disappears.
+
+**Never store stable domain knowledge only in MEMORY.md** — entries are 150-char pointers, not knowledge holders.
+
+### 3. Code Style
 - No comments unless explicitly requested.
 - Follow existing code conventions in the codebase.
 - **Use constructor injection, never field injection.** All `@Inject` / `@Autowired` should be on a constructor parameter list, not on a field. New code (including Spring `@Bean` factory methods, `@Component`/`@Service` classes, and ported legacy classes) must use constructor injection. Existing field-injected code may be left alone until it's touched, but any class you edit should be migrated to constructor injection in the same change. Rationale: constructor injection makes dependencies explicit, supports `final` fields, and lets the class be instantiated for tests without a DI container.
 - **Spring DI wiring patterns differ between client and server in this codebase.**
   - **Client (rapla-client)**: `SwingClientConfig` has `@ComponentScan(basePackages = {"org.rapla.client", "org.rapla.plugin"}, ...)`. `@Service`/`@Component` annotations on classes in those packages are picked up automatically. Add `@Service` (with optional `("id")` for `Map<String, T>` consumers) to `@DefaultImplementation` / `@Extension` classes when wiring them. This is the dominant pattern for the Swing tier.
   - **Server (rapla-server / rapla-app)**: `RaplaSpringBootApplication` uses the default `@SpringBootApplication` scan, which only covers its own package (`org.rapla.server.spring`). Server-internal classes (`org.rapla.server.internal.*`, `org.rapla.plugin.*.server.*`) are wired via explicit `@Bean` factory methods in `ServerCoreConfig` / `ServerServiceConfig` — most use `new XImpl(...)` + `beanFactory.autowireBean(impl)` for request-scoped or `new XImpl(deps...)` for singletons. Adding `@Service` to a server-internal class without extending the `@ComponentScan` is dead code (Spring won't see it). Extending the scan creates duplicate-bean conflicts with the existing `@Bean` factories. **Until a coordinated refactor flips server wiring to `@ComponentScan` + `@Service` (and removes the matching `@Bean` factories in one sweep), continue the explicit-`@Bean`-factory pattern on the server side.**
+- **No `System.err`/`System.out` in `src/main/java/`** — use SLF4J (`LoggerFactory.getLogger(...)`) throughout. Acceptable in tests when no logger is reachable.
+- **On the server, never wrap `Promise` in a `CountDownLatch` to make it sync** — cast to `SyncStorageOperator` and call the `*Sync` method directly (`getConflictsSync`, `queryAppointmentsSync`, …). Promise→latch wrappers add boilerplate, lose stack traces, and mask bugs as timeouts.
 - **Server-side code depends on `StorageOperator` / `CachableStorageOperator`, not `RaplaFacade`.** The facade is the Swing-client API; on the server it's a process-singleton with a mutable per-thread-leaky `workingUserId` field. Controllers, services, provisioners, auth stores — anything in `rapla-server` / `rapla-app` / plugin `*/server/*` — take the operator directly.
 
 ### 5. Build Discipline
@@ -88,13 +100,13 @@ The order is **(a) understand → (b) write failing test → (c) fix → (d) ver
 
 **Routine workflow:**
 - Use `mvn compile` for the post-edit type-check. The repo-root `pom.xml` is the reactor aggregator.
-- **Targeted tests only during a session.** `mvn -pl rapla-app -am test -Dtest=ClassName`. Pick tests that exercise the code you just touched (e.g. after editing an XML reader/writer, run XML round-trip tests, not the whole suite).
+- **Targeted tests only during a session.** Use `-pl <module-where-test-lives> -am` — not always `rapla-app`. A test in `rapla-server` runs faster as `mvn -pl rapla-server -am test -Dtest=ClassName` because `rapla-app` test-sources are never compiled. Use `-pl rapla-app -am` only for tests that genuinely live in `rapla-app` (Spring Boot slice / e2e). Pick tests that exercise the code you just touched.
 - **Full `mvn test` only at session end** or when the user asks for a green-build sign-off. Don't checkpoint between iterations — `mvn compile` + targeted tests already cover it. Full reactor takes ~60–120 s with Spring context overhead.
 - If a targeted test fails in a way that suggests a wider regression, *then* expand to the full suite — as investigation, not routine.
-- **Cross-module test gotcha:** if `mvn -pl rapla-app -am test -Dtest=Foo` test-compiles an upstream module with broken test sources, you get a spurious red. Add `-Dsurefire.failIfNoSpecifiedTests=false` so per-module surefire skips modules where no test matches; or explicitly list modules: `mvn -pl rapla-bom,rapla-core,rapla-server,rapla-app test -Dtest=Foo -Dsurefire.failIfNoSpecifiedTests=false`.
+- **Cross-module test gotcha:** if `mvn -pl rapla-app -am test -Dtest=Foo` test-compiles an upstream module with broken test sources, you get a spurious red. Add `-Dsurefire.failIfNoSpecifiedTests=false`: `mvn -pl rapla-app -am test -Dtest=Foo -Dsurefire.failIfNoSpecifiedTests=false`. **Never replace `-am` with an explicit module list** — explicit lists require knowing the full in-reactor dep graph by heart; missing one module silently resolves it from `~/.m2/repository` (stale or absent).
 - **Don't `mvn clean` routinely** — incremental compile is reliable.
-- **ALWAYS `mvn clean compile` after deleting, renaming, or moving a class.** Stale `.class` files for the old name linger in `target/`, make broken references resolve ("the compile passes"), then blow up at runtime — or the JVM keeps executing the deleted bytecode. Worked example: PRD 049 verification (2026-05-21) — ~25 deleted classes left stale `.class` files a server restart kept running, NPE'ing on a deleted `RemoteStorageImpl`. **No exceptions; fires even for a single-class delete.**
-- **ALWAYS `mvn clean` before `mvn package` / packaging.** Skip-clean is fine for `mvn compile`/`mvn test` (incremental, fast) — but for `package` (fat JAR, distribution archive, JNLP webclient bundling, signed jars), stale `target/` artefacts shadow the assembly inputs and you ship a broken artifact. Worked example: PRD 052 (2026-05-22) shipped a fat JAR with only 2 of 22 expected jars in `static/webclient/` from leftover `target/webclient/` state. **Recipe:** `mvn -pl rapla-app -am clean package -DskipTests [-Psign-pkcs11|-Psign-jks]` — clean always, `-DskipTests` per CLAUDE.md for packaging builds.
+- **ALWAYS `mvn clean compile` after deleting, renaming, or moving a class.** Stale `.class` files for the old name linger in `target/` and make broken references resolve at compile time but blow up at runtime. No exceptions; fires even for a single-class delete.
+- **ALWAYS `mvn clean` before `mvn package` / packaging.** Stale `target/` artefacts shadow assembly inputs — you ship a broken artifact. Recipe: `mvn -pl rapla-app -am clean package -DskipTests [-Psign-pkcs11|-Psign-jks]`.
 
 ### 6. Git
 - Never commit unless explicitly asked.
@@ -107,6 +119,7 @@ The order is **(a) understand → (b) write failing test → (c) fix → (d) ver
   including files edited earlier this session, files modified by other sessions, files
   that arrived via a script — needs an explicit "yes, restore X" from the user.
 - **Before ending a session, update outdated PRDs.** Any PRD whose Plan, Open Questions, or Status no longer matches what's actually in the codebase (because of work landed during the session) gets a brief edit reflecting the new reality — close the resolved OQs, mark phases done/in-progress, note any direction changes. PRDs are the long-term context for future sessions; if they're stale, the next session re-litigates decisions you already made.
+- **When writing a MEMORY.md entry that references a PRD status, test status, or specific code location, add staleness tags:** `[since: YYYY-MM-DD] [watch: docs/prd/NNN-name.md]` (or a source file path). At session start, verify any watched paths that have commits newer than their `since` date: `git log --oneline --since=YYYY-MM-DD -- <watch-path>`. If commits exist, re-read the entry and update or remove it before acting on it. Entries without `watch` tags (feedback rules, reference pointers) don't need this check — only entries that describe current project state.
 
 ### 6a. Bulk-refactor scripts — see the `bulk-refactor-scripts` skill
 
@@ -135,37 +148,7 @@ The dev server is a Spring Boot application started via `mvn spring-boot:run` (n
 
 > **Testing the deployable fat JAR (`mvn package` + signed JNLP webclient/) is a separate concern** — see the **`test-deployment`** skill at `.agents/skills/test-deployment/SKILL.md`. AGENTS.md only covers the dev server.
 
-#### How AI agents should start the server (avoiding stalls)
-
-The Bash tool waits for the spawned process to exit. A long-running server started in the foreground hangs the agent forever. **The right pattern is `run_in_background=true` on the Bash tool call** — the tool spawns the process, returns a shell ID immediately, and the agent keeps working.
-
-**Reliable recipe (lessons learned 2026-05-13)** — three gotchas baked in: **absolute paths** (the Bash tool's CWD can drift after an earlier `cd`), **separate stop from start** (never chain `pkill … ; mvn … &` in one call — the pkill SIGTERMs the new server), **absolute log path** (so the startup-wait grep finds it regardless of CWD):
-
-```bash
-> /home/chris/git/rapla/logs/rapla.log    # truncate so stale "Started" lines don't match
-mvn -f /home/chris/git/rapla/pom.xml -pl rapla-app -am spring-boot:run \
-    -Dspring-boot.run.fork=false \
-    -Dspring-boot.run.profiles=local \
-    -Dspring-boot.run.jvmArguments="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=localhost:5005" \
-    > /home/chris/git/rapla/logs/rapla.log 2>&1 &
-echo "spawned"
-```
-
-Run with `run_in_background=true`. The flags, briefly: `fork=false` keeps the classpath in-reactor (`rapla-*/target/classes`) instead of `~/.m2`; `-pl rapla-app -am` is mandatory; `profiles=local` loads the gitignored `application-local.yml` dev overrides (content in `docs/development.md`; its absence in a fresh checkout is harmless); `-agentlib:jdwp=…` makes the JVM debugger-attachable on loopback `localhost:5005` for the `jdwp` MCP server (`java-debugger` skill) — **never** `address=*:5005`, and never jdwp in production.
-
-**Confirm startup before issuing requests** with the EXACT `Started Rapla` marker — `Started.*in [0-9.]+ seconds` alone matches older/stale log lines:
-
-```bash
-# In a separate Bash call (NOT chained to the start above):
-timeout 120 sh -c 'until grep -q "Started Rapla.*in [0-9.]\+ seconds" \
-    /home/chris/git/rapla/logs/rapla.log 2>/dev/null; do sleep 1; done' \
-  && echo READY || echo TIMEOUT
-jps -l | grep RaplaSpringBoot   # the JVM PID — don't trust logs/rapla.pid (it's the Maven wrapper PID under fork=false). To stop: `pkill -f RaplaSpringBootApplication`.
-```
-
-#### Stop / restart / status / log inspection — see the `server-lifecycle` skill
-
-The longer snippets (graceful-shutdown stop, restart procedure, `jps`/HTTP status probes, `tail -F` log streaming, conventions) live in the `server-lifecycle` skill. Load it when managing server state.
+**Start recipe + startup-wait loop + JDWP + log truncation:** load the **`server-lifecycle`** skill — it carries the full `run_in_background=true` recipe with all gotchas (absolute paths, separate stop/start, `Started Rapla` marker). Load it for any server lifecycle work beyond a plain start.
 
 Quick essentials that stay inline:
 - Stop: `pkill -f RaplaSpringBootApplication` (10 s graceful window — never `kill -9` first).
@@ -280,7 +263,7 @@ Anything shaped as a read — `get*`, `find*`, `resolve*`, `lookup*`, `is*`, `ha
 
 **Exception:** opaque internal caching that doesn't change observable state — memoize a pure derived value, populate a soft-ref cache, lazy-init a transform. Test: "would a concurrent caller see different observable state because of this call?" — if yes, it's a write, and it belongs somewhere else.
 
-**Worked example (motivated this rule, 2026-05-28):** `ExternalUserResolver.resolve(jwt, provider)` — called from the resource-server auth-filter pipeline on every authenticated request — was calling `facade.store(...)` to sync the rapla `User`'s `authenticationSource`/`name`/`email` to the IdP's JWT claims. Every API call became a write transaction; concurrent requests hit `RaplaNewVersionException` on the in-memory version check; an exception-handler bug surfaced it as a 401 "Sign-in rejected" modal in the SPA. The right seam is once-per-token at the OAuth exchange/refresh boundary, not per-request on the read path.
+**Worked example:** `ExternalUserResolver.resolve()` called `facade.store(...)` on every authenticated request → concurrent `RaplaNewVersionException` → 401 modal in SPA. The right seam is once-per-token at OAuth exchange/refresh, not per-request on the read path.
 
 ### 17. No real personal information in tests, docs, or PRDs
 
@@ -291,8 +274,4 @@ Never put real names, real email addresses, real phone numbers, real user ids th
 - Long-standing fixture personas: `homer` / `monty` / `Simpson Homer` / `Burns Monty` (Springfield characters in `testdefault.xml`), `John Doe`, `Alice` / `Bob`
 - Self-identifying maintainer accounts only when the maintainer chose to put their own name in the doc (e.g. the maintainer's own admin credentials in `authtest.md`)
 
-**Forbidden:** real names captured from production-shaped data, even in a worked example. If a live probe returns "Prof Dr Maier-Schmidt" against the dhbw dataset, the example must read `<lecturer-id>` or "Prof X" — not the live name.
-
-**Worked example (motivated this rule, 2026-05-29):** a draft PRD pulled a real DHBW professor's name out of a live `allocatables` probe into the example query body. Stripping it caught it before commit; the rule now fires on every doc/PRD/test edit.
-
-**How to apply:** when you copy a live probe result into an artefact, scan for: names with capital letters that aren't reserved keywords / dummy personas; email addresses that aren't `*@example.*` or `*@dummy.*`; phone numbers; addresses; ids paired with a real name in the same paragraph (the id itself is opaque, but the pairing leaks the binding). Replace with placeholders before saving.
+**Forbidden:** real names captured from production-shaped data, even in a worked example — replace with `<lecturer-id>` / `Prof X` before saving. Scan for: capitalised names, non-`*@example.*` emails, phone numbers, id+name pairings.

@@ -63,15 +63,17 @@ subset (no other users' reservations) maintained from server pushes.
 ```
 client                                                 server
 ─────────────────────────────────────────────────────────────
-1. POST /auth/login {username, password}
-                                                       Spring Security
+1. POST /oauth2/token
+     grant_type=password&username=X&password=Y
+     &client_id=rapla-client&scope=openid+profile
+                                                       Spring Security / PasswordGrantProvider
                                                        AuthenticationStore.authenticate
                                                           (file / DB / LDAP via jndi)
-                                                       JwtConfig issues access + refresh
-2. ← {accessToken, refreshToken, expiresIn}
+                                                       RefreshSessionService issues access + refresh
+2. ← {access_token, refresh_token, expires_in, …}
 
 3. RemoteOperator.connect()
-   GET /storage/resources    Authorization: Bearer …
+   GET /api/storage/resources    Authorization: Bearer …
                                                        SpringSecurityRemoteSession resolves
                                                           JWT.sub → User
                                                        RemoteStorageImpl.getResources(user)
@@ -112,8 +114,8 @@ SwingWeekView is shown for [Mon, Sun]
          └── facade.queryAppointments(user, allocatables, interval, filters)
                └── RemoteOperator.queryAppointmentsAsync(...)
                      │  Promise<Map<Allocatable, Collection<Appointment>>>
-                     └── HTTP GET /storage/appointments?
-                                  start=…&end=…&allocatables=ids&filter=…
+                     └── HTTP POST /api/storage/queryAppointments
+                                  {start, end, resourceIds, ownerIds}
 
 server side:
    RemoteStorageImpl.queryAppointments
@@ -164,7 +166,7 @@ client                                                 server
                      • removeSet (just refs)
                      • userId
                      • invalidateInterval
-                └── HTTP POST /storage/dispatch  (UpdateEvent JSON)
+                └── HTTP POST /api/storage/dispatch  (UpdateEvent JSON)
 
 2.                                                   RemoteStorageImpl.dispatch(event)
                                                        └── SecurityManager.checkModifyPermissions
@@ -252,7 +254,7 @@ Rapla doesn't push from server to client. It polls.
 RemoteOperator's scheduler:
   every 30 s (configurable via rapla.refreshInterval)
      refreshAsync()
-       └── HTTP GET /storage/refresh?since=lastSeenTimestamp
+       └── HTTP POST /api/storage/refresh?lastValidated=lastSeenTimestamp
        ← UpdateEvent (only entities changed since `since`)
        └── refresh(serverEvent)
              • merge into LocalCache

@@ -30,10 +30,9 @@ aggregator is `pom.xml` at the repo root (`artifactId=rapla-aggregator`,
 | `rapla-server` | Server-side: storage, conflicts, REST handlers, Spring autoconfig, plugin server-side. | `org.rapla.server.*`, `org.rapla.storage.dbsql`, `org.rapla.storage.impl.server`, `org.rapla.plugin.*.server.*` |
 | `rapla-app` | The runnable Spring Boot app: `RaplaSpringBootApplication`, `application.yml`, distribution / signing / JNLP webclient. | `org.rapla.server.spring` (the entry-point package) |
 
-Dependency edges: `rapla-server → rapla-client → rapla-core → rapla-bom`.
-The server depends on the client because of one shared abstraction
-(`RaplaBuilder` and the `abstractcalendar` plugin) — see PRD 005 D3
-in `docs/prd/done/005-multi-module-split.md`. This is a known compromise.
+Dependency edges: `rapla-server → rapla-core → rapla-bom` and `rapla-client → rapla-core → rapla-bom`.
+`rapla-server` depends on `rapla-core` only (verified 2026-06-10 — the PRD 005 D3
+`rapla-client` compromise is resolved; `RaplaBuilder`/abstractcalendar now live in rapla-core).
 
 `custom/` is intentionally out of the reactor (its WAR-overlay shape
 is being rethought; future PRD).
@@ -45,7 +44,7 @@ is being rethought; future PRD).
 ```
    ┌──────────────────────────────┐         ┌────────────────────────────┐
    │  Swing client (rapla-client) │         │  rapla-app                 │
-   │  ─────────────────────────── │         │  Spring Boot 3.2 / Tomcat 10│
+   │  ─────────────────────────── │         │  Spring Boot 4.0 / Tomcat 11│
    │  AnnotationConfigContext     │         │  (rapla-server beans)       │
    │  RemoteOperator (REST proxy) │ ◀─────▶ │  RemoteStorageImpl          │
    │  LocalCache (subset)         │ HTTP/   │  LocalAbstractCachable…     │

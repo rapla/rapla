@@ -357,7 +357,7 @@ public class CalendarPageController
     private boolean isEncrypted(CalendarModelConfiguration conf)
     {
         String encyrptionSelected = conf.getOptionMap().get(UrlEncryptionPlugin.URL_ENCRYPTION);
-        return "true".equals(encyrptionSelected);
+        return UrlEncryptionPlugin.isEnabled(encyrptionSelected);
     }
 
     private String getTitle(String key, CalendarModelConfiguration conf)

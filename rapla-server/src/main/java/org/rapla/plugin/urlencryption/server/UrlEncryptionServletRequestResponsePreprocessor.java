@@ -122,7 +122,7 @@ public class UrlEncryptionServletRequestResponsePreprocessor  implements Servlet
         Object encryptionOption = model.getOption(UrlEncryptionPlugin.URL_ENCRYPTION);
         if (encryptionOption != null)
         {
-            encryptionEnabled = encryptionOption.equals("true");
+            encryptionEnabled = UrlEncryptionPlugin.isEnabled(encryptionOption.toString());
         }
         // check if the page was called via encrypted parameters
         boolean calledViaEncryptedParameter = false;

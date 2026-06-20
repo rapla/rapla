@@ -11,6 +11,7 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.storage.ReferenceInfo;
+import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.plugin.reservationedit.AllocationOutcomeDto;
@@ -23,9 +24,9 @@ import org.rapla.plugin.reservationedit.RecurrenceRule;
 import org.rapla.plugin.reservationedit.RecurrenceValidation;
 import org.rapla.plugin.reservationedit.ReservationEditService;
 import org.rapla.entities.domain.AppointmentBlock;
-import org.rapla.scheduler.Promise;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.PermissionController;
+import org.rapla.storage.SyncStorageOperator;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -33,11 +34,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -53,12 +53,15 @@ public class ReservationEditController implements ReservationEditService
     private final RemoteSession session;
     private final HttpServletRequest request;
     private final RaplaFacade facade;
+    private final SyncStorageOperator syncOperator;
 
-    public ReservationEditController(RemoteSession session, HttpServletRequest request, RaplaFacade facade)
+    public ReservationEditController(RemoteSession session, HttpServletRequest request,
+                                     RaplaFacade facade, SyncStorageOperator syncOperator)
     {
         this.session = session;
         this.request = request;
         this.facade = facade;
+        this.syncOperator = syncOperator;
     }
 
     @Override
@@ -109,11 +112,31 @@ public class ReservationEditController implements ReservationEditService
         // Build transient Appointment[] from the wire specs.
         Appointment[] candidateAppointments = buildCandidateAppointments(req.appointments());
 
-        // Ask the facade for the conflict map (existing-reservation overlap
-        // per allocatable). The facade implements the actual conflict math;
-        // we only re-shape the result.
-        Map<ReferenceInfo<Allocatable>, Collection<Appointment>> bindings =
-                waitFor(facade.getAllocatableBindings(allocatables, java.util.Arrays.asList(candidateAppointments)));
+        // Build ignore list from the candidate appointments' own reservations
+        // (same logic as FacadeImpl.getAllocatableBindings).
+        Collection<Reservation> ignoreList = new HashSet<>();
+        for (Appointment app : candidateAppointments)
+        {
+            Reservation r = app.getReservation();
+            if (r != null) ignoreList.add(r);
+        }
+
+        // Sync call — server operator is LocalAbstractCachableOperator which implements
+        // SyncStorageOperator; no Promise/latch needed.
+        Map<ReferenceInfo<Allocatable>, Map<Appointment, Collection<Appointment>>> nested =
+                syncOperator.getAllAllocatableBindingsSync(
+                        allocatables, java.util.Arrays.asList(candidateAppointments), ignoreList);
+
+        // Flatten: keep only allocatables that have at least one conflicting appointment.
+        Map<ReferenceInfo<Allocatable>, Collection<Appointment>> bindings = new HashMap<>();
+        for (Map.Entry<ReferenceInfo<Allocatable>, Map<Appointment, Collection<Appointment>>> e : nested.entrySet())
+        {
+            for (Map.Entry<Appointment, Collection<Appointment>> ae : e.getValue().entrySet())
+            {
+                if (!ae.getValue().isEmpty())
+                    bindings.computeIfAbsent(e.getKey(), k -> new HashSet<>()).add(ae.getKey());
+            }
+        }
 
         LocalDate today = req.today() != null ? req.today() : facade.today();
 
@@ -183,29 +206,4 @@ public class ReservationEditController implements ReservationEditService
         return out;
     }
 
-    private static <T> T waitFor(Promise<T> promise) throws RaplaException
-    {
-        AtomicReference<T> result = new AtomicReference<>();
-        AtomicReference<Throwable> err = new AtomicReference<>();
-        CountDownLatch done = new CountDownLatch(1);
-        promise.thenAccept(value -> { result.set(value); done.countDown(); })
-                .exceptionally(throwable -> { err.set(throwable); done.countDown(); });
-        try
-        {
-            if (!done.await(30, TimeUnit.SECONDS))
-                throw new RaplaException("conflict check timed out");
-        }
-        catch (InterruptedException e)
-        {
-            Thread.currentThread().interrupt();
-            throw new RaplaException("conflict check interrupted", e);
-        }
-        if (err.get() != null)
-        {
-            Throwable t = err.get();
-            if (t instanceof RaplaException re) throw re;
-            throw new RaplaException(t.getMessage(), t);
-        }
-        return result.get();
-    }
 }

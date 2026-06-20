@@ -49,13 +49,13 @@
 >
 > ### Rotation policy: never rotate
 >
-> Earlier design tried "rotate when within 7 d of expiry" (PRD 031 original). Rejected during this session in favor of never-rotate: multi-tab works trivially (tab A doesn't kick tab B off when it refreshes), all sessions re-Authorize together at refresh-token expiry (30 d). Theft detection lost, but `/oauth2/revoke` + the single-token-per-user store give clean explicit revocation. For per-session rotation + theft detection, deploy against Keycloak (PRD 031: IdP swap is env-var only).
+> Earlier design tried "rotate when within 7 d of expiry" (PRD 031 original). Rejected during this session in favor of never-rotate: multi-tab works trivially (tab A doesn't kick tab B off when it refreshes), all sessions re-Authorize together at refresh-token expiry (21 d). Theft detection lost, but `/oauth2/revoke` + the single-token-per-user store give clean explicit revocation. For per-session rotation + theft detection, deploy against Keycloak (PRD 031: IdP swap is env-var only).
 >
 > ### `application.yml` knob
 >
 > Only one new property under `spring.security.oauth2.authorizationserver.client.rapla-client.token`:
 >
-> - `access-token-time-to-live: 1h` — bumped from Spring AS's 5 min default so OAuth-aware explorers (Scalar, Swagger UI) don't re-Authorize every 5 minutes for dev workflows. Refresh-token TTL is hard-coded (`REFRESH_TOKEN_TTL_SECONDS = 30 d` in `RefreshSessionService`).
+> - `access-token-time-to-live: 1h` — bumped from Spring AS's 5 min default so OAuth-aware explorers (Scalar, Swagger UI) don't re-Authorize every 5 minutes for dev workflows. Refresh-token TTL is hard-coded (`REFRESH_TOKEN_TTL_SECONDS = 21 d` in `RefreshSessionService`).
 >
 > Plus `password` added to `rapla-client.authorization-grant-types` so the grant is allowed for that client.
 >

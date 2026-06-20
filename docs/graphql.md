@@ -1,9 +1,9 @@
 # GraphQL API — generic query catalog
 
-PRD 035 Cut C exposes a read-only GraphQL endpoint at `POST /api/graphql`
-covering allocatables (resources + persons), classifications, and dynamic
-types. Live UIs: GraphiQL at `/graphiql/`, Scalar at `/scalar/`,
-schema-as-data via introspection.
+PRD 035 exposes a GraphQL endpoint at `POST /api/graphql` covering
+allocatables (resources + persons), classifications, dynamic types, and
+reservations (PRD 055/066). Live UIs: GraphiQL at `/graphiql/`,
+Scalar at `/scalar/`, schema-as-data via introspection.
 
 ---
 
@@ -147,7 +147,7 @@ Query
 ├── types, type(key:)                              # DynamicType descriptors
 └── allocatables(filter:), allocatable(id:)        # resources + persons
 
-Classification (interface, base — shape: typeId, type only after β refactor)
+Classification (interface, base — shape: typeKey, type)
 ├── AllocatableClassification  (narrows resources + persons)
 │   ├── <typeKey>Classification  ← one per resource/person DynamicType, generated
 └── ReservationClassification  (narrows reservations)
@@ -258,11 +258,8 @@ enum Raumart {
 }
 
 type roomClassification implements Classification & AllocatableClassification {
-  typeId: ID!
+  typeKey: String!
   type: DynamicType!
-  # β refactor 2026-05-28: no `attributes: [AttributeValue!]!` field.
-  # Per-attribute typed fields below, with custom directives carrying
-  # the metadata the dropped AttributeDescriptor used to expose.
   Raumart:          Raumart                 @displayName(value: "Raumart")    @rootCategory(path: "Raumtypen")
   AusstattungListe: [Ausstattung!]          @displayName(value: "Ausstattung") @rootCategory(path: "Ausstattungen") @multiplicity(value: LIST)
   SyncStatus:       SyncStatus              @displayName(value: "Sync-Status")
@@ -630,6 +627,52 @@ queries with real dataset numbers live in
 [`dhbwrapla/docs/graphql.md`](../../dhbwrapla/docs/graphql.md)
 §"Reservation queries".
 
+#### Nested `Appointment.allocatables(filter:)` — PRD 073
+
+Each appointment exposes its pre-resolved allocatable list. An optional
+`filter` argument narrows it using `AppointmentAllocatableFilter` — a
+strict subset of `AllocatableFilter` containing only the v1 scalar
+predicates (`typeKeyEq`, `typeKeyIn`, `isPersonEq`, `nameContains`,
+`searchText`, `matchKind`, `ownerEq`). Fields like `idIn`, `limit`,
+`accessibleBy*`, and generated `where<TypeKey>` blocks are intentionally
+absent — passing them is a GraphQL validation error, not a silent no-op.
+
+The canRead gate runs **before** the filter, so a hidden allocatable can
+never leak even when it would match.
+
+```graphql
+# Split rooms and lecturers per appointment in one query
+{
+  reservations(filter: { from: "...", to: "..." }) {
+    appointments {
+      start end
+      rooms:     allocatables(filter: { isPersonEq: false }) { displayName }
+      lecturers: allocatables(filter: { isPersonEq: true  }) { displayName }
+    }
+  }
+}
+```
+
+```graphql
+# Narrow to a specific resource type key in the nested list
+{
+  reservations(filter: { from: "...", to: "..." }) {
+    appointments {
+      start end
+      allocatables(filter: { typeKeyIn: ["<TypeA>", "<TypeB>"] }) {
+        displayName
+        classification { typeKey }
+      }
+    }
+  }
+}
+```
+
+`AppointmentAllocatableFilter` does **not** support `idIn` / `limit` /
+`accessibleBy*` / `where<TypeKey>` — use `Query.allocatables(filter:)` for
+those. The nested filter is for structural column splitting (rooms vs.
+persons vs. a named type), not for cross-appointment id selection.
+
 ---
 
 ## Hot-swap probe
@@ -876,10 +919,9 @@ Spring's `@SchemaMapping(typeName = "Classification", field = "X")` walked the s
 
 ```java
 wiringBuilder.type(typeName, builder -> {
-    // Re-register inherited Classification interface fields
-    builder.dataFetcher("typeId",     StructuralTypeFetchers.CLASSIFICATION_TYPE_ID);
-    builder.dataFetcher("type",       StructuralTypeFetchers.CLASSIFICATION_TYPE);
-    builder.dataFetcher("attributes", StructuralTypeFetchers.CLASSIFICATION_ATTRIBUTES);
+    // Re-register inherited Classification interface fields on every concrete type
+    builder.dataFetcher("typeKey", StructuralTypeFetchers.CLASSIFICATION_TYPE_KEY);
+    builder.dataFetcher("type",    StructuralTypeFetchers.CLASSIFICATION_TYPE);
     // Plus per-attribute generated fields
     for (Attribute attr : dt.getAttributes()) { ... }
     return builder;
@@ -963,16 +1005,8 @@ That single flag saved ~1 s on the 42k Person query in measurement (~14 % wall-c
 
 ---
 
-## Limitations (Cut C)
+## Limitations
 
-- **No reservations yet.** `Reservation.classification:
-  ReservationClassification!` is in the schema but the resolver lands
-  next batch. Today you can only see reservation types via `types` and
-  introspect their generated implementations.
-- **No mutations.** Read-only. PRD 035 §6 bulk-mutation design is locked
-  but not implemented.
-- **No subscriptions.** Polling only (10 s) for schema changes; queries
-  themselves are request/response.
-- **Rapla-internal types fully hidden.** Templates, periods, default-user,
-  and anonymous-event don't appear in any GraphQL surface. Use the
-  dedicated query roots (`periods`, …) for those.
+- **No mutations yet.** PRD 035 §6 bulk-mutation design is locked but not implemented. Reads only.
+- **No subscriptions.** Polling only (10 s) for schema changes; queries themselves are request/response.
+- **Rapla-internal types fully hidden.** Templates, periods, default-user, and anonymous-event don't appear in any GraphQL surface. Use the dedicated query roots (`periods`, …) for those.

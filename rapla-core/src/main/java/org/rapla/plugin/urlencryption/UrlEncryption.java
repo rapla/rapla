@@ -2,6 +2,7 @@ package org.rapla.plugin.urlencryption;
 
 import org.rapla.framework.RaplaException;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.service.annotation.HttpExchange;
 import org.springframework.web.service.annotation.PostExchange;
 
@@ -30,6 +31,7 @@ public interface UrlEncryption
 	 * @throws RaplaException In case the encryption fails
 	 */
 	@PostExchange(contentType = "text/plain")
-    String encrypt(@RequestBody String plain) throws RaplaException;
+    String encrypt(@RequestBody String plain,
+                   @RequestParam(value = "algo", required = false) String algo) throws RaplaException;
     
 }

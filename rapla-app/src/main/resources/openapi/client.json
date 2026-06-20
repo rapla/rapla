@@ -212,6 +212,14 @@
       "post" : {
         "tags" : [ "url-encryption-controller" ],
         "operationId" : "encrypt",
+        "parameters" : [ {
+          "name" : "algo",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "requestBody" : {
           "content" : {
             "text/plain" : {
@@ -1073,6 +1081,47 @@
         "responses" : {
           "200" : {
             "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/auth/oauth/token-exchange/{providerId}" : {
+      "post" : {
+        "tags" : [ "o-auth-exchange-controller" ],
+        "operationId" : "tokenExchange",
+        "parameters" : [ {
+          "name" : "providerId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/x-www-form-urlencoded" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "id_token" : {
+                    "type" : "string"
+                  }
+                },
+                "required" : [ "id_token" ]
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
           }
         }
       }

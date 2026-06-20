@@ -25,6 +25,7 @@ public class RaplaServerProperties
     private String mailSession;
     private String patchScript;
     private Merge merge = new Merge();
+    private boolean fixAdminPassword = false;
 
     public Map<String, DataSourceProperties> getDbDatasources()
     {
@@ -34,6 +35,22 @@ public class RaplaServerProperties
     public void setDbDatasources(Map<String, DataSourceProperties> dbDatasources)
     {
         this.dbDatasources = dbDatasources;
+    }
+
+    /**
+     * {@code rapla.fix-admin-password} — when true, the built-in {@code admin} account
+     * is locked: its password cannot be changed and it cannot be deleted (B3). Also
+     * suppresses the empty-password change-password nag. Intended for managed/demo
+     * deployments that intentionally run {@code admin} with a fixed (e.g. empty) credential.
+     */
+    public boolean isFixAdminPassword()
+    {
+        return fixAdminPassword;
+    }
+
+    public void setFixAdminPassword(boolean fixAdminPassword)
+    {
+        this.fixAdminPassword = fixAdminPassword;
     }
 
     public Map<String, String> getFileDatasources()

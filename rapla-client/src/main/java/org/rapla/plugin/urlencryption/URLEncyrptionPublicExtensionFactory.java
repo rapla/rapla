@@ -75,7 +75,7 @@ public class URLEncyrptionPublicExtensionFactory implements PublishExtensionFact
 
             final String entry = model.getOption(UrlEncryptionPlugin.URL_ENCRYPTION);
 
-            boolean encryptionEnabled = entry != null && entry.equalsIgnoreCase("true");
+            boolean encryptionEnabled = UrlEncryptionPlugin.isEnabled(entry);
 
             encryptionCheck = new JCheckBox();
 
@@ -105,8 +105,23 @@ public class URLEncyrptionPublicExtensionFactory implements PublishExtensionFact
 
         public void mapOptionTo()
         {
-            final String icalSelected = encryptionCheck.isSelected() ? "true" : "false";
-            model.setOption(UrlEncryptionPlugin.URL_ENCRYPTION, icalSelected);
+            final String prev = model.getOption(UrlEncryptionPlugin.URL_ENCRYPTION);
+            final String tag;
+            if (!encryptionCheck.isSelected())
+            {
+                tag = UrlEncryptionPlugin.DISABLED;
+            }
+            else if (UrlEncryptionPlugin.ALGO_LEGACY.equalsIgnoreCase(prev))
+            {
+                // existing legacy export stays legacy → its URL never changes
+                tag = UrlEncryptionPlugin.ALGO_LEGACY;
+            }
+            else
+            {
+                // off→on (or already v2) → new export gets AES-256-GCM
+                tag = UrlEncryptionPlugin.ALGO_V2;
+            }
+            model.setOption(UrlEncryptionPlugin.URL_ENCRYPTION, tag);
         }
 
         public String getAddress(String filename, String generator)
@@ -134,7 +149,11 @@ public class URLEncyrptionPublicExtensionFactory implements PublishExtensionFact
 
                 if (encryptionEnabled)
                 {
-                    String encryptedParamters = webservice.encrypt(pageParameters);
+                    // existing legacy calendars keep ECB (stable URL); everything else → v2 GCM
+                    final String storedAlgo = model.getOption(UrlEncryptionPlugin.URL_ENCRYPTION);
+                    final String algo = UrlEncryptionPlugin.ALGO_LEGACY.equalsIgnoreCase(storedAlgo)
+                            ? UrlEncryptionPlugin.ALGO_LEGACY : UrlEncryptionPlugin.ALGO_V2;
+                    String encryptedParamters = webservice.encrypt(pageParameters, algo);
                     urlExtension = UrlEncryption.ENCRYPTED_PARAMETER_NAME + "=" + encryptedParamters;
                 }
                 else

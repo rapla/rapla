@@ -54,9 +54,31 @@ server-side by rapla's own engine, so no dual-runtime / client engine is needed 
    reusing rapla's engine — no client expression runtime, no TS↔Java parity surface.
    Server-rendered export reuses the same server-side evaluation.
 4. **Directives are optional overrides.** Field order = column order, alias = column key
-   → localized header, type → formatting, list → join; explicit
-   `@column(order:)`/`@flatten`/`@groupBy` only where nesting flattens *and* reorders
-   (the three worked tables). CEL is **not** used — see §"If a view ever needs more".
+   → localized header, type → formatting, list → join (`, ` default). Explicit directives
+   override *on demand* only: `@column(header:/order:)`, `@join(separator:)`, `@flatten`,
+   `@group`/`@hidden`. CEL is **not** used — see §"If a view ever needs more".
+5. **Views are stored as persisted-query *text*** (Preferences/`RaplaMap`, like
+   `tableview.config`; defaults shipped as code constants) — **no `idref` binding, no invented
+   format** (GraphQL is name-based by spec). Key currency is handled by **revalidate-and-mark**:
+   a type/attribute/category save triggers the existing `HotSwappableGraphQlSource.rebuild()`,
+   after which **all** stored views are re-validated against the new schema and marked
+   `valid`/`invalidReason`; invalid views keep their text, refuse execution, and the **admin
+   fixes** them (no auto-migrate, no silent prune). `saveView` validates the GraphQL document
+   **and** each `compute(...)` EL before persisting (parity with `setAnnotation`). See
+   §"Storage & lifecycle — persisted-query text + revalidate-on-change".
+6. **SPA views are independent — no `CalendarModel` re-implementation** (decided 2026-06-20). Each
+   view = its `@view` query + **its own** inputs + render-mode; a saved view = `{ view, inputs }`,
+   standalone. We deliberately **give up the legacy uniform "switch view, keep inputs"** (the
+   in-place table↔week↔month flip over one shared input set) — a genuinely *charming* rapla feature
+   — as a **simplification trade**. Consequences: **no** uniform per-domain input contract, **no**
+   `timeContext` cross-render-mode reconciliation (fixed/dynamic width-preservation/snapping), **no**
+   domain-switching/selection-transfer machinery. Each view declares only the inputs it needs
+   (table → `from/to`+filter; week → anchor+filter; allocatable list → type-filter, no date;
+   conflict → conflict-sourced selection); fixed/dynamic date stays **per view**. The flip-switch
+   **may return later as a pure client-side convenience** over views that happen to share inputs —
+   not as server input-contract/`timeContext` machinery. This **supersedes** the explored (U)
+   uniform-input-contract direction (never recorded — it was the legacy generality we chose not to
+   inherit).
 
 ## Inputs = query variables (controls inferred by convention)
 
@@ -66,12 +88,64 @@ navigation. No directive for the common cases:
 | Variable(s) | Inferred control |
 |---|---|
 | `from` + `to` (date/time) | date-range picker |
+| `reservationTypes: [String!]` | reservation-type checkboxes (Lehrveranstaltung / Prüfung / …) |
+| `allocatableIds: [ID!]` | resource-tree picker (rooms / courses / persons) |
 | `name` / search string | search combobox |
 | query is pageable (offset/cursor) | next / prev — *future* |
 
-Controls are state over variables: the control mutates a variable, the query
-re-runs. Non-conventional bindings use a `@control` client directive (override
-only).
+Controls are state over variables: the control mutates a variable, the query re-runs.
+Non-conventional bindings use a `@control` client directive (override only).
+
+**Filters live in variables, not the view definition** — and there are **two filter
+sources with two homes:**
+- **Annotation filters stay *inline* in the query** — they *are* the view definition. The
+  `Kurs` column's `allocatables(filter:{ typeKeyIn:["Kurs","Teilkurs","Kursgruppe"] })`,
+  the `Raum` column's room-type filter, etc. define *which allocatables each column shows*;
+  they come from the column annotation and **never** become variables. This is exactly the
+  shipped **`Appointment.allocatables(filter: AppointmentAllocatableFilter)`** field
+  (PRD 073 Phase 0, 2026-06-19) — `typeKeyIn`/`isPersonEq` are its v1 scalars.
+- **CalendarModel filters become *variables*** — all user state, carried in the root's
+  `filter: $filter` (`ReservationFilter`, SDL below):
+  - **reservation type** (checkbox) → `typeKeyEq`; per-type **classification rules**
+    (*neue Regel für*) → the generated `where<TypeKey>` predicates (AND/OR/NOT + attribute
+    comparisons, PRD 059) — richer than a flat type list
+  - **resource-tree selection** → `allocatableMatching` (PRD 066) or `allocatableIdsIn`
+  - **date range** (from/to control) → `from` / `to`
+
+```graphql
+query Termine($filter: ReservationFilter!) {
+  appointmentBlocks(filter: $filter) {    # $filter ← CalendarModel, e.g.
+        # { from, to, typeKeyEq:"Lehrveranstaltung",
+        #   whereLehrveranstaltung:{ AND:[{campus:{eq:"KA"}},{year:{eq:2024}}] },   # neue Regel für
+        #   allocatableMatching:{ typeKeyIn:["Raum","Teilraum"], idIn:["room-1"] } }  # resource tree
+    name: reservation { displayName }
+    kurs: allocatables(filter:{ typeKeyIn:["Kurs","Teilkurs","Kursgruppe"] }) { displayName }  # annotation filter — INLINE
+    # … start, end, person, raum, duration … (see Worked queries) …
+  }
+}
+```
+(`from`/`to` live **inside** `ReservationFilter`, so they're part of `$filter` — no
+separate args.)
+`reservations(filter:)` / `appointmentBlocks(filter:)` — type, `where` rules **and**
+`allocatableMatching` — is **all from the model** → `$filter`. The per-column
+`allocatables(filter:)` is **from the annotation** → inline.
+
+The variable's type is the **existing** schema input `ReservationFilter!`:
+```graphql
+input ReservationFilter {
+  from: LocalDateTime!   to: LocalDateTime!        # mandatory window (the date-range control)
+  typeKeyEq: String                                # reservation type (single; per-type rules below carry the type)
+  whereLehrveranstaltung: LehrveranstaltungWhere   # ← runtime-generated per type (PRD 059): the *neue Regel für* rules (AND/OR/NOT + attribute predicates)
+  allocatableMatching: AllocatableFilter           # PRD 066 — the resource-tree selection (typeKeyIn + per-type where + idIn) in one shot
+  allocatableIdsIn: [ID!]                          #   …or explicit ids
+  searchText: String   matchKind: MatchKind        # PRD 028 power search
+  accessibleByUsername: String   accessibleByGroup: [String!]   accessLevel: AccessLevel   # PRD 069 admin-scoped
+  ownerEq: ID   nameContains: String   limit: Int
+}
+```
+So the **CalendarModel** maps straight onto this input — the generated `where<TypeKey>`
+predicates carry the *neue Regel für* classification rules (far richer than a flat type
+list), and `allocatableMatching` carries the resource-tree selection.
 
 ## Data = GraphQL (prediction + navigation only)
 
@@ -129,109 +203,260 @@ Directive kinds: a small **fixed/closed structural** set (`@view`/`@column`/`@fl
 the server-evaluated composition fields generated from the col annotations (same
 generation pattern as `ClassificationSdlGenerator`).
 
-### Authoring layer (readability)
+### Authoring — the admin writes the GraphQL view directly
 
-The stacked-directive query below is **machine-generated, never hand-written**. The
-admin authors a compact spec (layer ①); the system compiles it to the generated query
-+ per-composition directives (layer ②); GraphQL returns §12-filtered data and the SPA
-renders the table (layer ③). This closes the readability gap **without** giving up the
-closed-directive wire form — the dense form is a machine artefact, not an authoring
-format. The raw composition (`concat(...)`) lives only in ①, compiled once to the
-`@timeRange` directive.
+**The admin authors the GraphQL query directly** (via a query builder / editor) — there is
+**no intermediate spec language** and no spec→query compilation. The view *is* the GraphQL
+query plus a few presentation directives; the worked queries below are exactly what is
+authored and stored (no hidden YAML layer).
 
-> **Open / unsettled (2026-06-20):** whether a *separate* authored spec is even
-> needed (the directive query may be authored directly via a form/builder instead),
-> and **exactly how ① maps to ②** — the spec→directive/query compilation is
-> unspecified. The ① YAML below is an **illustrative sketch, not a committed format**.
+This is **why** the queries are deliberately kept **flat, block-rooted and
+directive-light** — so they stay **readable and directly editable** by an admin. The
+simplicity *is* the authoring affordance: there's no need for an abstraction layer because
+the GraphQL itself is the editable artefact (incl. inline filters and `compute(...)` cells,
+see worked example 4).
+
+### Declaration format & the two paths (decided 2026-06-20)
+
+A view **is a named GraphQL operation + a `@view` directive** carrying the envelope:
+
+```graphql
+query appointments @view(title: "Termine", variant: DISPLAY) {   # operation name = view key
+  appointmentBlocks(filter: $filter) {                           # root field = legacy contentDefinition
+    name:  reservation { displayName }
+    start  @sort(ASC, priority: 1)                               # per-field sort (canonical, multi-key via priority)
+    raum:  allocatables(filter:{ typeKeyIn:["Raum","Teilraum"] }) { displayName } @join(separator: ", ")
+    day:   start @bucket(DAY) @group @hidden
+  }
+}
+```
+
+| Envelope part | where | notes |
+|---|---|---|
+| **key** | operation name | identifies the stored view |
+| **content-root** | the root field | one row = one root object |
+| **columns + order** | the (flat) selection | field order = column order |
+| **title** | `@view(title:)` — **literal *or* composition** | composition runs server-side at the VIEW_TITLE level (`allocatables`/`timeIntervall`/`selectedDate`); `ParsedText` passes literals through |
+| **sort** | per-field **`@sort(ASC\|DESC, priority:n)`** (canonical); `@view(sort:)` optional shorthand | legacy `sortingstring` maps to per-field |
+| **variant default** | `@view(variant:)`; per-field override via `name(variant:)` | both — view-wide default + per-column override |
+
+**Two paths, two needs:**
+
+1. **Consumer / render (the default)** — the client sends only **view name + input variables**
+   (`executeView(name, variables)`); the server holds the stored query and executes it with the
+   variables + execution context. The client **never holds the query text**. Benefits: small
+   payload, and — load-bearing — **only admin-vetted stored views run** (trusted/persisted
+   documents; no arbitrary-query surface for rendering — a §12 win). The export/in-process path
+   (§"Server-side rendering") is the **same** call: reference by name + variables + context.
+2. **Author / editor** — needs the full `@view` GraphQL text (the query builder) + `saveView`
+   validation. The only place the text is handled.
+
+**Response = `data` + `extensions.view`.** Because the generic SPA renderer works from name+input
+(it doesn't know the query), the server returns the resolved render metadata in `extensions.view`
+— **shipped on every view query, which is acceptable**:
+
+```json
+{ "data": { "appointmentBlocks": [ … ] },
+  "extensions": { "view": {
+    "key": "appointments",
+    "title": "Termine",                                  // resolved (TITLE-composition)
+    "columns": [
+      { "alias": "name",  "header": "Name",   "type": "String" },
+      { "alias": "start", "header": "Beginn", "type": "DateTime", "sort": "ASC" },
+      { "alias": "raum",  "header": "Raum",   "type": "[String]", "join": ", " },
+      { "alias": "day",   "hidden": true, "group": "DAY" } ] } } }
+```
+
+→ Name + input in; data + render-meta out. (Operation directives aren't returned in standard
+GraphQL responses, so the *resolved* envelope rides `extensions.view` — not `data` — keeping
+`data` clean.)
+
+### Two layers, orthogonal axes — `data` vs `extensions.view` (decided 2026-06-20)
+
+The API is **public GraphQL**, and we layer **SPA-view extensions** on top. The split:
+
+- **Public contract → `data`/schema.** Entities, fields, filters, and all **field compositions**
+  (`name(variant:)`, `compute`, `duration`, `times`, `note`) resolve **into `data`** — they are real
+  schema fields, usable by any client.
+- **Client-specific render chrome → `extensions.view`.** The resolved **title** (a VIEW_TITLE
+  composition), **column** render-hints, and **page** state ride `extensions.view` — *exactly* what
+  GraphQL `extensions` is for (non-contract, client metadata; public clients ignore it). My earlier
+  "public API ⇒ never extensions" was too absolute: contract data → `data`; client render-meta →
+  `extensions` is the textbook split.
+
+**`extensions.view` ⟺ the `@view` directive.** It is emitted **iff** the executed query carries
+`@view`; field directives (`@column`/`@hidden`/`@join`/`@group`) **feed** it but don't trigger it
+alone. No `@view` → plain `data`, no overhead.
+
+**Two orthogonal axes** (don't conflate):
+1. **Transport** — raw query text vs **name+input** (server holds a persisted/trusted document).
+   About payload/trust/storage; independent of render-meta.
+2. **Render-meta** — `@view` present or not. Independent of transport.
+
+So `extensions.view` depends only on `@view` (whoever holds the query), not on the transport. In
+practice it pairs with the stored-view path (the consumer runs an admin view it didn't author, so it
+*needs* the meta), but a raw client may add `@view` too.
+
+### Sort & pagination — inputs, server-applied (decided 2026-06-20)
+
+**Sort is an *input*, not a declaration.** Legacy stored `sortingstring` in the (legacy) CalendarModel
+`optionMap` — i.e. it is user/calendar state, parallel to the filter. So it maps to a **`$sort`
+variable** (`[{field, dir}]`, list order = multi-key priority), **server-applied** and **deterministic**
+(stable `id` tiebreaker — required for offset pagination). **No config default exists in rapla** (the
+`TableConfig` fallback is commented out). Three default sources, layered:
+
+1. **Attribute `sorting` annotation** (`ascending`/`descending`, `KEY_SORTING`) → the **type-level
+   default order of allocatables**, applied **server-side today** via `SortedClassifiableComparator`
+   (`CalendarModelImpl`/`RaplaBuilder`/HTML export/tree). Views over allocatables must respect it.
+2. **Admin view-seed** — the admin may seed an initial `$sort` for the rows (e.g. `start`; per-day =
+   `day` then `time`).
+3. **User override** — header click sets `$sort`, re-query.
+
+**Collation: locale-aware Collator** (rapla already uses `NamedComparator`'s `Collator` for entity
+sorting) — consistent + correct for German `ä/ö/ü`; a deliberate improvement over the legacy table's
+ASCII `String.CASE_INSENSITIVE_ORDER`.
+
+**Pagination — offset/limit, flat data, page-state in `extensions.view.page`:**
+- Offset/limit via the filter input; **root stays a flat list** (no Relay `nodes`/connection wrapper —
+  that would change the public shape and break the flat-row model). Cursor/Relay **deferred** (only if
+  strict concurrency stability is ever needed).
+- `extensions.view.page = { hasNext, offset, limit, total? }`. **`hasNext` cheap** (`limit+1` probe);
+  **`total` opt-in** (expensive). One mechanism serves **next/prev *and* infinite-scroll** (client UX
+  choice). **Export passes no limit** → full set (same view, different input).
+- **Grouping × pagination:** row-pagination; a group may **split across a page** (presentational);
+  server-side group-pagination deferred.
+- **Invariants:** a server **result-cap** (DoS, configurable default) even without a client limit;
+  the deterministic sort tiebreaker (above).
+- Offset-drift under concurrent mutation is acceptable for date-windowed views (cursor only if strict).
 
 ### Worked queries — the three real dhbw tables
 
 The three real views are `org.rapla.plugin.tableview.{events, appointments,
-appointments_per_day}`. Their **exact column sets** are the default `ViewDefinition`s in
-`TableConfig.java` (and persist in the dhbw `data.xml`) — documented here verbatim as an
-**existing table config** (ground truth, not invented):
+appointments_per_day}`. Their column sets + the GraphQL reproduction are the **capability
+benchmark** in [docs/architecture/tableview-and-graphql-views.md](../architecture/tableview-and-graphql-views.md)
+(ground truth, not invented — the legacy configs become legacy with the SPA; the doc
+proves GraphQL reproduces them). Summary:
 
 | View | `contentDefinition` (rows) | columns (in order) |
 |---|---|---|
-| `events` | `{p->events(p)}` — reservations | `name`, `start`, `lastchanged` |
-| `appointments` | `{p->appointmentBlocks(p)}` — blocks | `name`, `start`, `end`, `resources`, `persons` |
-| `appointments_per_day` | `{p->appointmentBlocks(p)}` — blocks, grouped per day | `times`, `name`, `resources`, `persons` |
+| `events` | `{p->events(p)}` — reservations | `Name`, `Beginn`, `zuletzt geändert` *(rapla default)* |
+| `appointments` (**dhbw-configured**) | `{p->appointmentBlocks(p)}` — blocks | `Name`, `Beginn`, `Ende`, `Kurs`, `Person`, `Raum`, `Dauer` |
+| `appointments_per_day` | `{p->appointmentBlocks(p)}` — blocks, grouped per day | `Zeiten`, `Name`, `Ressourcen`, `Personen` *(rapla default)* |
 
-(`duration` is a *defined* column in `tableview.config` but is in **none** of the three
-default views.) Each column's `defaultValue` maps to a GraphQL construct: selection →
-`allocatables(filter:)`; projection/derivation → a **server-evaluated field** (rapla's
-`ParsedText`; `displayName` is just the `name` composition).
+The `appointments` row is the dhbw deployment's **configured** Termine view (verified
+from its Tableview-Plugin dialog): the generic `resources` column is split into **`Kurs`**
+and **`Raum`** (non-person allocatables by type), **`Person`** is the person allocatables,
+and **`Dauer`** (eventtimecalculator duration, values like `"2 UE 0 Min"`) is added —
+appointments only. Each column maps to a GraphQL construct: selection →
+`allocatables(filter:{ typeKeyIn / isPersonEq })`; projection/derivation → a
+**server-evaluated field** (rapla's `ParsedText`; `displayName` = the `name` composition,
+`Dauer` = the duration composition). This per-type column split is exactly the
+nested-`allocatables` filter use case.
 
-**Directives are implicit by default, explicit only where the structure forces it.**
-GraphQL preserves field order (= column order); alias = column key → localized header;
-type drives formatting; a list is joined by convention. `@column(order:)`/`@flatten` are
-needed **only** when columns come from different nesting levels and the order interleaves
-them.
+**Each view roots its query at the level its `contentDefinition` names** — `reservations`
+for `events`, **`appointmentBlocks`** for `appointments` / `appointments_per_day`. Rooted
+correctly, **one row = one root object**, so the query is **flat**: field order = column
+order, alias = column key → localized header, type drives formatting, lists join by
+convention. **No `@flatten` / `@column(order:)` needed** — those were only an artifact of
+rooting block-row tables at `reservations`. The only structural directive left is
+`@groupBy` (per-day sectioning). Filter homes (above) still apply: the **model** filter is
+the root's `$filter` variable; per-column **annotation** `allocatables(filter:)` stays
+inline.
 
-**Table 1 — `events` · rows = reservations · columns `name`, `start`, `lastchanged` · flat → 0 directives:**
+**Table 1 — `events` · root `reservations` · columns Name, Beginn, zuletzt geändert · flat → 0 directives:**
 ```graphql
-query Termine_events {
-  reservations(filter: { typeKeyIn: ["Lehrveranstaltung"] }) {
-    name: displayName             # {p->name(p)}
-    start: firstDate              # {p->start(p)}        (reservation's first date)
-    lastchanged: lastModifiedAt   # {p->lastchanged(p)}
+query Termine_events($filter: ReservationFilter!) {
+  reservations(filter: $filter) {      # rows = reservations ({p->events(p)}); $filter ← CalendarModel
+    name:  displayName                  # {p->name(p)}
+    start: firstDate                    # {p->start(p)}        (reservation's first date)
+    lastchanged: lastModifiedAt         # {p->lastchanged(p)}
   }
 }
 ```
-Three reservation-level fields → flat: order implicit, header from alias, datetime
-formatted by convention. **No `end`, no resources/persons** — exactly the real config.
+Three reservation-level fields → flat: order implicit, header from alias, datetime by
+convention. **No `end`, no resources/persons** — exactly the real config.
 
-**Table 2 — `appointments` · rows = blocks · columns `name`, `start`, `end`, `resources`, `persons` · multi-level → `@flatten` + `@column(order:)`:**
+*Output* (dummy data, §17) → *GUI* (one row per reservation):
+```json
+{ "data": { "reservations": [
+  { "name": "Programmieren II", "start": "2026-06-22T10:00:00", "lastchanged": "2026-06-10T14:22:00Z" } ] } }
+```
+| Name | Beginn | Geändert |
+|---|---|---|
+| Programmieren II | 22.06.2026 10:00 | 10.06.2026 14:22 |
+
+**Table 2 — `appointments` (dhbw Termine) · root `appointmentBlocks` · headers Name, Beginn, Ende, Kurs, Person, Raum, Dauer · flat → 0 reorder directives:**
 ```graphql
-query Termine_appointments($from: DateTime!, $to: DateTime!) {
-  reservations(filter: { typeKeyIn: ["Lehrveranstaltung"] }) {
-    name: displayName @column(order: 1)                       # res level   {p->name(p)}
-    appointments {
-      resources: allocatables(filter: { isPersonEq: false }) @column(order: 4) { displayName }
-      persons:   allocatables(filter: { isPersonEq: true })  @column(order: 5) { displayName }
-      blocks(from: $from, to: $to) @flatten(project: ["name","resources","persons"]) {
-        start @column(order: 2)                               # block date+time   {p->start(p)}
-        end   @column(order: 3)                               # block date+time   {p->end(p)}
-      }
-    }
+query Termine_appointments($filter: ReservationFilter!) {
+  appointmentBlocks(filter: $filter) {   # rows = blocks ({p->appointmentBlocks(p)}); $filter ← CalendarModel (incl. from/to)
+    name:   reservation { displayName }                                             # Name    {p->name(p)}
+    start                                                                           # Beginn  {p->start(p)}
+    end                                                                             # Ende    {p->end(p)}
+    kurs:   allocatables(filter:{ typeKeyIn:["Kurs","Teilkurs","Kursgruppe"] })     { displayName }   # Kurs   (annotation → inline)
+    person: allocatables(filter:{ isPersonEq:true })                                { displayName }   # Person
+    raum:   allocatables(filter:{ typeKeyIn:["Raum","Teilraum","virtuellerRaum"] }) { displayName }   # Raum
+    duration                                                                        # Dauer   {p->…:duration(p)}
   }
 }
 ```
-`@column(order:)` because the nesting order (name, resources, persons, start, end) ≠ the
-column order (name, **start**, **end**, resources, persons) — `start`/`end` are block-deep
-but want columns 2–3, and the res > appt > block tree can't be reordered.
-`@flatten(project:)` pulls the res/appt fields onto each block row. `start`/`end` carry
-the **full date+time** (this is the table with the date per row). **No `times`, no
-`duration`** — exactly the real config.
+Rooted at the **blocks** (matching `{p->appointmentBlocks(p)}`), one row = one block →
+**flat**: field order = column order, so **no `@flatten`, no `@column(order:)`**. Headers
+`Name/Beginn/Ende/Kurs/Person/Raum/Dauer` verified from the deployment screenshot (optional
+`@column(header:)` overrides the localized label). `Kurs`/`Person`/`Raum` are **lists**
+(`allocatables(filter:)` → `[Allocatable!]!`): the cell **joins** the `displayName`s with
+`, ` **by convention — no directive**; an explicit **`@join(separator: "; ")`** on a list
+field overrides the separator *on demand*. The legacy generic `resources` column is
+**split by allocatable type** to get separate `Kurs` + `Raum`. (The archived snapshot has
+only the generic `resources`/`persons` `defaultValue`s; the live deployment splits them.)
 
-**Table 3 — `appointments_per_day` · rows = blocks, grouped per day · columns `times`, `name`, `resources`, `persons`:**
-Rows are appointment blocks (same `{p->appointmentBlocks(p)}` content as `appointments`);
-the **server page groups them per day** (`AppointmentPerDayViewPage`) and the row shows
-`times` (time-of-day) — there is **no** `start`/`end` date column (the date is the day
-grouping). `times` is column 1.
+*Output* (one block per row; `Kurs`/`Person`/`Raum` are lists) → *GUI* (list cells joined):
+```json
+{ "data": { "appointmentBlocks": [
+  { "name": { "displayName": "Programmieren II" }, "start": "2026-06-15T08:00:00", "end": "2026-06-15T09:30:00",
+    "kurs":   [ { "displayName": "FN-TEK23" }, { "displayName": "FN-TEN23" } ],
+    "person": [ { "displayName": "Prof. X" }, { "displayName": "Dr. A" } ],
+    "raum":   [ { "displayName": "H004 Seminarraum" }, { "displayName": "H005 Seminarraum" } ],
+    "duration": "2 UE 0 Min" } ] } }
+```
+| Name | Beginn | Ende | Kurs | Person | Raum | Dauer |
+|---|---|---|---|---|---|---|
+| Programmieren II | 15.06.2026 08:00 | 15.06.2026 09:30 | FN-TEK23, FN-TEN23 | Prof. X, Dr. A | H004 Seminarraum, H005 Seminarraum | 2 UE 0 Min |
+
+**Table 3 — `appointments_per_day` · root `appointmentBlocks` · flat, each row a block + a hidden `day` group/sort column:**
+Same flat block rows as `appointments`, plus a **`day` column derived from `start`** used
+to **sort + group** the rows but **not displayed**. Shown columns: Zeiten, Name,
+Ressourcen, Personen.
 ```graphql
-query Termine_perDay($from: DateTime!, $to: DateTime!) {
-  reservations(filter: { typeKeyIn: ["Lehrveranstaltung"] }) {
-    name: displayName @column(order: 2)                       # {p->name(p)}  (column 2 — times is 1)
-    appointments {
-      resources: allocatables(filter: { isPersonEq: false }) @column(order: 3) { displayName }
-      persons:   allocatables(filter: { isPersonEq: true })  @column(order: 4) { displayName }
-      blocks(from: $from, to: $to)
-            @flatten(project: ["name","resources","persons"])
-            @groupBy(field: "start", by: DAY)     # group block rows by the DAY of start (section header)
-      {
-        start                                      # selected only to derive the day (not a column)
-        times @column(order: 1)                    # {p->times(p)}  — time-of-day, column 1
-      }
-    }
+query Termine_perDay($filter: ReservationFilter!) {
+  appointmentBlocks(filter: $filter) {
+    day: start @bucket(DAY) @group @hidden     # DATE bucket of start (type Date, e.g. 2026-06-22) — group + sort key, NOT displayed
+    times                                       # Zeiten      {p->times(p)}
+    name:      reservation { displayName }      # Name        {p->name(p)}
+    resources: allocatables(filter:{ isPersonEq:false }) { displayName }   # Ressourcen
+    persons:   allocatables(filter:{ isPersonEq:true })  { displayName }   # Personen
   }
 }
 ```
-`start` is selected **only** so the SPA can derive the day for the section header — it is
-not a displayed column. Rows are per **block** (not per day); `@groupBy` clusters them by
-the day of `start`. There is **no split** (a block is one occurrence) and **no
-count/sum/collapse**. `times` is column 1, `name` column 2 → `@column(order:)` needed
-(`times` is block-deep but wants column 1). **No `duration`** — exactly the real config.
+**Flat** — each row is one block with all its columns. `day` is the **Date** bucket of
+`start` (a `Date` like `2026-06-22`, **not** the datetime) — a **hidden grouping/sort
+column**: it orders the rows and clusters them by day but is never shown. No aggregation
+(no count/sum/collapse), no `@flatten`, no `@column(order:)`.
+
+*Output* (flat block rows + hidden `day`) → *GUI* (rows sorted+grouped by `day`; `day` not shown):
+```json
+{ "data": { "appointmentBlocks": [
+  { "day": "2026-06-22", "times": "10:00–11:30", "name": { "displayName": "Programmieren II" },
+    "resources": [ { "displayName": "A474 Hörsaal" } ], "persons": [ { "displayName": "Prof. X" } ] },
+  { "day": "2026-06-22", "times": "14:00–15:30", "name": { "displayName": "Datenbanken" },
+    "resources": [ { "displayName": "B12" } ], "persons": [ { "displayName": "Dr. A" } ] },
+  { "day": "2026-06-23", "times": "09:00–10:30", "name": { "displayName": "Software Engineering" },
+    "resources": [ { "displayName": "A474 Hörsaal" } ], "persons": [ { "displayName": "Prof. X" } ] } ] } }
+```
+| *(Tag)* | Zeiten | Name | Ressourcen | Personen |
+|---|---|---|---|---|
+| **▸ 22.06.2026** | 10:00–11:30 | Programmieren II | A474 Hörsaal | Prof. X |
+|  | 14:00–15:30 | Datenbanken | B12 | Dr. A |
+| **▸ 23.06.2026** | 09:00–10:30 | Software Engineering | A474 Hörsaal | Prof. X |
 
 **None of the three real tables aggregate.** `@groupBy` is presentation sectioning,
 distinct from aggregation (count/sum/collapse). A GraphQL aggregate-field convention
@@ -240,88 +465,71 @@ standard dhbw tables.
 
 **The rule, on the real tables:**
 
-| View | rows | columns | directives needed |
+| View | query root | columns | directives needed |
 |---|---|---|---|
-| `events` | reservations | name, start, lastchanged | **none** (flat, all implicit) |
-| `appointments` | blocks | name, start, end, resources, persons | `@flatten(project:)`, `@column(order:)` |
-| `appointments_per_day` | blocks (grouped per day) | times, name, resources, persons | `@flatten(project:)`, `@groupBy(field: start, DAY)`, `@column(order:)` |
+| `events` | `reservations` | Name, Beginn, zuletzt geändert | **none** (flat) |
+| `appointments` (dhbw) | `appointmentBlocks` | Name, Beginn, Ende, Kurs, Person, Raum, Dauer | **none** (flat) |
+| `appointments_per_day` | `appointmentBlocks` | Zeiten, Name, Ressourcen, Personen (+ hidden `day`) | hidden `day` column: **`@group(by:DAY)` + `@hidden`** |
 
-So: **implicit by default; explicit only where nesting flattens *and* reorders** — both
-`appointments` and `appointments_per_day` pull columns across res/appt/block levels (so
-both need `@flatten` + `@column(order:)`); `events` is flat and needs nothing.
+So: **root each view at the level its `contentDefinition` names, and every table is
+flat** — field order = column order, no `@flatten`, no `@column(order:)`. The *only*
+structural directive across all three is `@groupBy` for the per-day sectioning. (Rooting
+block-row tables at `reservations` was what previously forced `@flatten`/`@column(order:)`
+— an artifact, now gone.)
 
-### Example outputs + GUI rendering (all three)
+### Worked example 4 — `Seminarplanung` (wochenplan / yoga domain) · the deliberate op-set case
 
-Dummy data (no real persons, AGENTS.md §17). Each shows the **GraphQL response** (plain
-typed data, server already evaluated the composition fields + §12-filtered) and **what
-the SPA renders**.
+The three dhbw tables above need **no** op-set. This fourth example — from the *other*
+real dataset (`wochenplan.xml`, a yoga/seminar-planning deployment) — shows where the
+op-set **is** used: a **view-level computed column** and a **type-level marker-derived
+field**. Compositions are the real wochenplan ones; dummy persons (§17).
 
-**Table 1 — `events` · columns name, start, lastchanged · GraphQL output:**
-```json
-{ "data": { "reservations": [
-  { "name": "Programmieren II",
-    "start": "2026-06-22T10:00:00",
-    "lastchanged": "2026-06-10T14:22:00Z" }
-] } }
+```graphql
+query Seminarplanung($filter: ReservationFilter!) {
+  appointmentBlocks(filter: $filter) {
+    seminar:    reservation { displayName }                # type-level naming: {name}: "{title}" - {hinweis}
+    zeitspanne: compute("concat(substring(times,0,5),'--',substring(times,8,13))")   # VIEW-LEVEL op-set column
+    leitung:    allocatables(filter:{ isPersonEq:true }) { planningName }             # type-level DERIVED field (marker chain)
+  }
+}
 ```
-**GUI** — one row per reservation; `start` = first date, `lastchanged` type-formatted:
+- **`leitung.planningName`** — the **meaningful** op-set case: a **type-level derived
+  field** with a **marker chain** (`im_haus → " # "`, `dispo-modus="anfrage" → "*"`,
+  `="selbstaendig" → "**"`, `ausdrucksstarke_yl → "+"`). Real conditional value selection
+  (`if`/`equals`/`key` + boolean fields) — status symbols by data; reusable wherever the
+  planning name is shown. **This is where the op-set earns its keep.**
+- **`zeitspanne`** — the **view-level** one-off column. The *real* `customColumn_1`
+  (`concat(substring(times,0,5),"--",substring(times,8,13))`) pulls the start/end out of
+  the `times` string and rejoins them **on one line** — most likely to **avoid the line
+  breaks** the raw `times` field introduces (ParsedText turns `\n` into real newlines),
+  which would otherwise leave **blank lines** in the cell. So it's a real (if fragile,
+  fixed-position) workaround that **tames a source field's formatting** — not pure
+  cosmetics. The cleaner fix is single-line `start`/`end` fields; the example shows admins
+  use the op-set to repair upstream formatting quirks.
+- `seminar` = the reservation's display name (type-level field-list/op-set naming).
 
-| Name | Beginn | Geändert |
+*Output* → *GUI*:
+```json
+{ "data": { "appointmentBlocks": [
+  { "seminar": { "displayName": "Hatha Basics: \"Grundlagen\" - Wochenende" },
+    "zeitspanne": "10:00--11:30",
+    "leitung": [ { "planningName": "Ananda B. # *" } ] } ] } }
+```
+| Seminar | Zeitspanne | Leitung |
 |---|---|---|
-| Programmieren II | 22.06.2026 10:00 | 10.06.2026 14:22 |
+| Hatha Basics: "Grundlagen" - Wochenende | 10:00--11:30 | Ananda B. # * |
 
-**Table 2 — `appointments` · columns name, start, end, resources, persons · GraphQL output**
-(nested; `start`/`end` are datetimes):
-```json
-{ "data": { "reservations": [
-  { "name": "Programmieren II",
-    "appointments": [
-      { "resources": [ { "displayName": "A474 Hörsaal" } ],
-        "persons":   [ { "displayName": "Prof. X" } ],
-        "blocks": [
-          { "start": "2026-06-22T10:00:00", "end": "2026-06-22T11:30:00" },
-          { "start": "2026-06-29T10:00:00", "end": "2026-06-29T11:30:00" } ] } ] }
-] } }
-```
-**GUI** — `@flatten(project:)` makes one row per block with `name`/`resources`/`persons`
-projected down; `@column(order:)` puts `Beginn`/`Ende` (block-level) into columns 2–3:
-
-| Name | Beginn | Ende | Ressourcen | Personen |
-|---|---|---|---|---|
-| Programmieren II | 22.06.2026 10:00 | 22.06.2026 11:30 | A474 Hörsaal | Prof. X |
-| Programmieren II | 29.06.2026 10:00 | 29.06.2026 11:30 | A474 Hörsaal | Prof. X |
-
-**Table 3 — `appointments_per_day` · columns times, name, resources, persons · GraphQL output**
-(`start` is selected only to derive the day; the SPA groups rows under day headers):
-```json
-{ "data": { "reservations": [
-  { "name": "Programmieren II",
-    "appointments": [ { "resources": [ { "displayName": "A474 Hörsaal" } ],
-                        "persons": [ { "displayName": "Prof. X" } ],
-                        "blocks": [ { "start": "2026-06-22T10:00:00", "times": "10:00–11:30" } ] } ] },
-  { "name": "Datenbanken",
-    "appointments": [ { "resources": [ { "displayName": "B12" } ],
-                        "persons": [ { "displayName": "Dr. A" } ],
-                        "blocks": [ { "start": "2026-06-22T14:00:00", "times": "14:00–15:30" } ] } ] }
-] } }
-```
-**GUI** — rows grouped under day section-headers (from `start`); columns `times`, `name`,
-`resources`, `persons` (times first); `start` itself is not shown:
-
-```
-▼ Mo 22.06.2026
-    10:00–11:30   Programmieren II       A474 Hörsaal   Prof. X
-    14:00–15:30   Datenbanken            B12            Dr. A
-▼ Di 23.06.2026
-    09:00–10:30   Software Engineering   A474 Hörsaal   Prof. X
-```
-No row is collapsed — the day is purely a section header.
+This closes the arc: **tables 1–3 (dhbw) = no op-set; table 4 (yoga) = the deliberate
+op-set** in its two homes — **view-level** (`zeitspanne`, one-off) and **type-level
+derived field** (`planningName`, reusable). The op-set language + catalog: [PRD 073 §
+Composition op-set](073-graphql-function-equivalents.md).
 
 ### Validated against the real dhbw tables (data.xml, 2026-06-20)
 
 The three real table views — `org.rapla.plugin.tableview.{events, appointments,
-appointments_per_day}` — use eight standard rapla columns (stored as `tableview.config`
-column `defaultValue` expressions). The **real** col annotations and their mapping:
+appointments_per_day}` — use eight standard rapla columns (column `defaultValue`
+expressions — stored across the two complementary legacy stores: per-type `tablecolumn_*`
+annotations + the `tableview.config` preference). The **real** col annotations and their mapping:
 
 | rapla column | col annotation (`defaultValue`) | GraphQL-native mapping | engine? |
 |---|---|---|---|
@@ -354,11 +562,11 @@ compositions are either (a) server-pre-computed nameformats → `displayName`, o
 selection → GraphQL filters — neither needs an engine.** This validates the no-engine
 verdict on real data, not invented examples.
 
-**`appointments_per_day` is grouping, not aggregation:** rows are appointment blocks
-(columns `times`, `name`, `resources`, `persons`); the SPA **groups the rows under day
-section-headers** derived from each block's `start`. No counting, no summing, no row
-collapse, no split — just `@groupBy(field: "start", by: DAY)` (presentation). **Not** an
-aggregate field. None of the three standard tables aggregate.
+**`appointments_per_day` is grouping, not aggregation:** the same flat block table as
+`appointments` (columns `Zeiten`, `Name`, `Ressourcen`, `Personen`) plus a **hidden `day`
+column** (`day: start @bucket(DAY) @group @hidden` — a **Date**, e.g. `2026-06-22`) that sorts + groups the rows. No counting,
+no summing, no row collapse, no split — pure presentation. **Not** an aggregate field.
+None of the three standard tables aggregate.
 
 ### Why this is attractive
 - **No expression engine anywhere** → no CEL lib, no JS port, no TS↔Java parity
@@ -401,6 +609,128 @@ only thing rapla's server-side engine doesn't give is *client-side* free evaluat
 (interactivity over already-loaded data without a roundtrip) — not a current
 requirement (charts use Vega-Lite's own client transform); revisit only if a concrete
 need appears.
+
+**The composition language (op-set) + its use-case catalog live in
+[PRD 073 § Composition op-set](073-graphql-function-equivalents.md).** Real **view-level**
+computed-column example (verified in `wochenplan.xml`):
+```
+customColumn = concat(substring(times, 0, 5), "--", substring(times, 8, 13))
+```
+— a one-off "time range" column reformatting the `times` string; this is the view-level
+op-set case (vs type-level **derived fields** like `displayName` / `Raum.effectiveRoomNumber`,
+which are reusable and stay on the type). Placement rule: **reusable → type-level derived
+field; one-off → view-level column.**
+
+**Governance + composition fields (converged 2026-06-20 — see PRD 073 § Composition
+fields):** rapla Functions are **kept** as the (bounded, server-side) composition engine;
+no new engine. The gap GraphQL closes is the **composition-field bridge** (admin rapla
+composition → server-evaluated GraphQL field):
+- **view-level computed columns** — written **directly in the admin's GraphQL query** as a
+  `compute(...)`-style field over the selected raw fields (see worked example 4:
+  `zeitspanne: compute("concat(substring(times,…))")`) → **admin**, no schema change
+  (server-eval over the query result). *Admins compose freely here, in the GraphQL itself.*
+- **type-level display fields** `displayName`/`exportName`/`planningName`/`exportDescription`
+  → generated from the four `nameformat*` annotations (**admin** edits the value); the
+  variants **fall back to `displayName`** when unset (all four always resolve).
+- **new reusable type-level Classification fields** → **plugin** extension point (schema
+  stability, not security).
+
+**Storage (corrected):** the legacy TableView config is **always a combination of two
+complementary stores** — per-type **`tablecolumn_*` annotations** (the column
+*compositions*) **+** the **`tableview.config`** preference (the *view configuration* —
+which views, which columns each shows, ordering/sorting). Both are present in both datasets
+(verified). They complement, not replace, each other; both predate the GraphQL views, which
+replace the combination (greenfield — no forced migration; legacy Swing/export keep the
+per-type nameformats).
+
+## Storage & lifecycle — persisted-query text + revalidate-on-change
+
+A saved view **is** its GraphQL query (+ a few presentation directives). The query embeds
+deployment keys in three positions — field selection `{ Raumnummer }` (attribute key),
+`typeKeyIn:["Raum"]` literal (type key), inline fragment `... on RaumClassification` (type
+key) — while structural names (`appointmentBlocks`, `reservation`, `allocatables`, `filter`,
+`displayName`) and admin aliases (`kurs:`, `name:`) are schema-stable / admin-chosen.
+
+### Storage = persisted-query text (the standard; no invented format)
+
+The **standard** way to persist a GraphQL operation is its **text** — a *persisted query*
+(graphql-java round-trips it with `Parser.parse` ↔ `AstPrinter.printAst`). **GraphQL has no
+stable-field-id binding** — fields and types are referenced **by name**, by spec. So there is
+**no standard "bound" form to store, and we do not invent one** (an earlier `idref`-AST draft
+was exactly such an invention — dropped).
+
+Views are stored as **query text in a Preferences/`RaplaMap` entry**, the same home
+`tableview.config` uses today (which is likewise plain strings). The **default views**
+(`events` / `appointments` / `appointments_per_day`) ship as **query-text constants in code**
+(as `TableConfig` ships default columns today) and are seeded into the store on first use —
+admin-editable from then on.
+
+### Rename / delete of a type / category → revalidate-and-mark all views
+
+GraphQL being name-based, a rename or delete **breaks the stored text** (the old name no
+longer resolves). We do **not** auto-migrate or auto-bind. Instead we use rapla's **existing**
+schema-rebuild hook to re-check every view **eagerly, in the same save**:
+
+1. A type / attribute / category edit is saved → `UpdateEvent` → **`HotSwappableGraphQlSource.rebuild()`**
+   regenerates the schema (the per-DynamicType Classification types; SDL-hash skip on no-op).
+   *This hook already exists* (PRD 035 §5b: "admin add/remove/rename of children triggers
+   schema rebuild").
+2. **Immediately after a successful rebuild** (schema must be current first), iterate **all
+   stored views** and validate each against the **new** `GraphQLSchema` with graphql-java's
+   `Validator` — the same check `saveView` runs, re-run. Renamed/deleted field/type/category →
+   that view becomes **invalid**.
+3. Persist a per-view **mark** (`valid` + `invalidReason` / error list) on each view.
+
+This is a **write path** (the type save), so writing the marks back is legitimate (§16) — and
+exactly parallel to `addChangedDynamicTypeDependant`, which already pulls dependent entities
+(reservations/allocatables) into the same `UpdateEvent`. Placement is **rapla-app** (where the
+`GraphQLSchema` lives — *not* rapla-core `commitChange`, which has no schema), in the same
+listener that calls `rebuild()`. Cost is negligible (a handful of views, cheap document
+validation, hash-skipped when the schema didn't change).
+
+### Admin fixes invalid views (visible, not magic)
+
+An invalid view **keeps its text**; execution is **refused with the error list**; the admin UI
+lists it as **"needs update"**. The admin adjusts the query. Nothing is auto-pruned,
+auto-emptied, or guessed — which matches rapla's existing string-config behaviour
+(`tableview.config` doesn't auto-migrate either) and is **GraphQL-conformant** (name-based).
+The deliberate trade: a rename does **not** self-heal — but a human edit to the dependent
+views is usually wanted at rename time anyway, and the breakage is **surfaced immediately**
+(eager mark at save), not discovered later at run time.
+
+### Why not auto-migrate (the road not taken)
+
+rapla's own `ParsedText` shows why binding wouldn't even cover the cases: it self-heals **only
+own-type bare-name renames** (`keyChanged` re-emit by id), **silently empties on delete**
+(`getRepresentation`→`""`), and **never migrates cross-type references** (the `attribute("k")`
+quoted-string escape is eval-time, name-based). `DynamicTypeImpl` isn't even a
+`DynamicTypeDependant`, so the `commitChange`/`commitRemove` walk never touches annotations.
+A view is **cross-type by nature** (block → reservation → allocatables of several types), so
+any binding scheme would have to out-do `ParsedText` *and* invent a non-standard stored
+format. Revalidate-and-mark gets correctness with **zero new format and zero new mechanism** —
+just the existing `rebuild()` hook plus the existing `Validator`.
+
+> **Embedded `compute(...)` cells** are revalidated the same way: their `ParsedText` is parsed
+> + type-checked against the catalog at `saveView`, and a deleted attribute inside a `compute`
+> makes the whole view invalid at the next rebuild (flagged for the admin) rather than silently
+> emptying that one cell — closing the annotation failure mode at the view layer.
+
+### Validation at save (two layers, parity with `setAnnotation`)
+
+`saveView` validates **before persisting** — so no invalid query/EL ever reaches eval-time
+(today's `DynamicTypeImpl.setAnnotation` already validates the composition at save; the view
+path must reach the same bar):
+
+1. **GraphQL document vs schema** — graphql-java `Validator`: fields exist, types match,
+   fragments valid, arguments well-typed. Catches a selection on a deleted/renamed field.
+2. **Each `compute(...)` EL** — `ParsedText.init` (brackets, parens, function exists,
+   attribute exists, arity via `assertArgs`) **+** the return-/arg-type check against the
+   curated function catalog (see PRD 073 — the one new type layer).
+
+The validation walks the query against the schema's own type structure (block → reservation →
+allocatable types), so cross-type selections are checked in their own scope for free — no
+separate per-selection binding context is needed (the schema already carries it). Each
+`compute(...)` EL parses against the type its column is rooted on.
 
 ## XSS / injection hardening (load-bearing)
 
@@ -459,6 +789,53 @@ server-evaluated) + **closed presentation directives**; no author string is ever
 code or rendered as HTML. (Even CEL would have been unnecessary — rapla's own engine is
 already the bounded-language answer.)
 
+## Server-side rendering — in-process GraphQL execution + request context (load-bearing)
+
+Once server-side exports (calendar / table / CSV / iCal) are **generated from GraphQL views**
+(the PRD 035/074 direction "exports go through GraphQL too"), the export endpoints must execute
+the stored view query **in-process via `GraphQlSource`** — **not** by proxying the public
+`POST /api/graphql`. This is load-bearing because the set of server-rendered exports includes the
+**unencrypted public exports**, where person-name privacy depends on a server-set context flag the
+client must never control.
+
+### Two parameter kinds — kept strictly separate
+
+| Kind | Examples | Source | Client may influence? |
+|---|---|---|---|
+| **Query variables** | `$filter`, `$from`, `$to` (which calendar, date range) | URL / request | ✅ yes — it's the *selection* |
+| **Execution context** | `internal_request`, `user`, `locale` | proxy path / auth | ❌ **no — server-set only** |
+
+```java
+// export endpoint (proxy already chose the public vs *_internal URL)
+threadContextMap.put("internal_request", pathIsInternal);          // CONTEXT — server-set
+ExecutionInput in = ExecutionInput.newExecutionInput()
+    .query(storedView.queryText())
+    .variables(Map.of("filter", calendarModelFilter, "from", from, "to", to))   // VARIABLES — selection
+    .graphQLContext(Map.of("user", user, "locale", locale))                     // CONTEXT — never a variable
+    .build();
+render(graphQlSource.graphQl().executeAsync(in).join().getData());  // → HTML / CSV / iCal
+```
+
+The composition `DataFetcher` reads `internal_request` (& siblings) from `getThreadContextMap()`
+into `EvalContext.environment` (the **environment bridge**, PRD 073 §"Server mechanics") — so
+`exportName`'s `env("internal_request")` renders person names on/off. **One** stored view query
+serves both internal and public export; the difference is **only** the server-set context.
+
+### §12 guard — the context flag is never a query variable
+
+- `internal_request` is set by the endpoint from the **proxy-chosen URL path** (intranet →
+  `*_internal` → `true`; public unencrypted → `false`), **never** from a GraphQL variable or any
+  client-supplied input. The public `POST /api/graphql` is a *different* path and is always the
+  authenticated/internal channel (§12 `canRead` filters per user there).
+- For the **unauthenticated** public export there is **no identity**, so `canRead` can't filter
+  per-user — the **server-set `internal_request` is the sole name-privacy gate**. Therefore the
+  `*_internal` URLs **must be reachable only via the intranet proxy**, never directly from the
+  public internet (deployment invariant the code assumes via `path.startsWith("internal")`).
+- A GraphQL-rendered public export that failed to set `internal_request=false` would leak exactly
+  the names the legacy HTML/iCal controllers suppress today — so the in-process execution path must
+  mirror the controllers' `threadContextMap` handling (`CalendarPageController` /
+  `Export2iCalController`).
+
 ## Companion use cases (client-only; share the GraphQL spine)
 
 - **Charts → Vega-Lite.** If a view wants a chart, render it client-side with
@@ -490,16 +867,26 @@ already the bounded-language answer.)
 
 ## Scope
 
-**In:** the GraphQL-native read-table view model — the generator that compiles each col
+> **Quick-breakthrough scope (2026-06-20): the SPA *table* views first.** This PRD ships the
+> **table** render layer — `@view`, the generated function fields (`name(variant:)`, `compute`,
+> `duration`, …), sort, pagination, `extensions.view` for tables, save-time validation, §12. The
+> **persistence model** (SavedView / CalendarModel replacement), **view-switching/conversion**, and
+> the **week/month calendar render-modes** are **carved out to
+> [PRD 077 — Calendar model & saved views over GraphQL](077-calendar-model-graphql.md)** so the
+> table win isn't blocked. For the first cut, standard table views may ship as **code-shipped
+> defaults** (full saved-view authoring/persistence comes with PRD 077).
+
+**In:** the GraphQL-native read-**table** view model — the generator that compiles each col
 annotation to a server-evaluated composition field (reusing rapla's `ParsedText`) or a
 GraphQL filter; GraphQL selection/filter; presentation directives
 (`@column`/`@flatten`/`@groupBy`) as optional overrides; variable→control inference;
-per-user §12 execution; save-time validation; XSS hardening.
+per-user §12 execution; save-time validation; XSS hardening; sort + pagination (decided).
 
 **Out:** any client expression engine / CEL / dual-runtime parity (evaluated and dropped
 — compositions run server-side); the rapla DSL / Swing-HTML TableView (deprecated, not
-migrated); GraphQL mutations / edit forms (companion / PRD 075); charts beyond the
-client-only Vega-Lite note; pagination + aggregate-field convention (future).
+migrated); GraphQL mutations / edit forms (companion); charts beyond the client-only
+Vega-Lite note; **SavedView persistence, CalendarModel replacement, view-switching/conversion,
+week/month calendar render-modes → PRD 077.**
 
 ## Plan — phased
 
@@ -508,9 +895,10 @@ client-only Vega-Lite note; pagination + aggregate-field convention (future).
    `cdk-table` renderer (field order = columns, alias → header, join, format); render
    `events` + `appointments`. Saved-view config entity (CRUD, admin-scoped). §12 via
    existing resolvers.
-2. **Phase 2 — Multi-level shaping + server export.** `@flatten`/`@column(order:)` for
-   the cross-level `appointments` order; `@groupBy(field: "start", by: DAY)` for
+2. **Phase 2 — Grouping + server export.** The `appointmentBlocks(filter:)` query root
+   (flat block rows); the hidden `day` group/sort column (`@group(by: DAY) @hidden`) for
    `appointments_per_day`; CSV/HTML/iCal export reuse the same **server-side** evaluation.
+   (`@flatten`/`@column(order:)` are *not* needed once each view roots at the right level.)
 3. **Phase 3 — Authoring + polish.** Override directives (`@column`/`@when`), component
    registry, `monaco-graphql` autocomplete over the query (no transform-spec editor).
 4. **Phase 4 — Authoring scope + shared views** (global vs group-admin; personal vs

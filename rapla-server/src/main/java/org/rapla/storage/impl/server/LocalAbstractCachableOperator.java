@@ -134,11 +134,42 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
      */
     public static final long HISTORY_DURATION = DateTools.MILLISECONDS_PER_WEEK;
 
-    /**
-     * set encryption if you want to enable password encryption. Possible values
-     * are "sha" or "md5".
-     */
-    private final String encryption = "sha-1";
+    /** rapla writes only bcrypt; legacy sha-1/md5 + plaintext are still verified and rehashed on login. */
+    private final RaplaPasswordEncoder passwordEncoder = new RaplaPasswordEncoder();
+
+    /** The built-in administrator account protected by {@code rapla.fix-admin-password} (B3). */
+    private static final String FIXED_ADMIN_USERNAME = "admin";
+
+    /** {@code rapla.fix-admin-password}: lock the admin account (no password change, no delete). */
+    private boolean fixAdminPassword = false;
+
+    public void setFixAdminPassword(boolean fixAdminPassword)
+    {
+        this.fixAdminPassword = fixAdminPassword;
+    }
+
+    /** True when this user is the built-in admin and the fix-admin-password lock is active. */
+    private boolean isFixedAdmin(User user)
+    {
+        return fixAdminPassword && user != null && FIXED_ADMIN_USERNAME.equals(user.getUsername());
+    }
+
+    @Override
+    public boolean isPasswordChangeRequired(User user) throws RaplaException
+    {
+        if (user == null || isFixedAdmin(user))
+        {
+            return false;
+        }
+        return passwordEncoder.isUnset(cache.getPassword(user.getReference()));
+    }
+
+    @Override
+    public boolean isAdminPasswordUnset() throws RaplaException
+    {
+        User admin = cache.getUser(FIXED_ADMIN_USERNAME);
+        return admin != null && passwordEncoder.isUnset(cache.getPassword(admin.getReference()));
+    }
     private ConflictFinder conflictFinder;
     //private SortedSet<LastChangedTimestamp> timestampSet;
     // we need a bidi to sort the values instead of the keys
@@ -219,6 +250,22 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         // get the Promise<Void> shape they expect. Was previously an empty
         // stub that silently dropped writes (PRD 017 round 4 finding).
         return scheduler.run(() -> storeAndRemove(storeObjects, removeObjects, user, forceRessourceDelete));
+    }
+
+    @Override
+    public <T extends Entity, S extends Entity> void storeAndRemove(final Collection<T> storeObjects,
+            final Collection<ReferenceInfo<S>> removeObjects, final User user, boolean forceRessourceDelete) throws RaplaException
+    {
+        if (fixAdminPassword && removeObjects != null && !removeObjects.isEmpty())
+        {
+            User admin = cache.getUser(FIXED_ADMIN_USERNAME);
+            if (admin != null && removeObjects.contains(admin.getReference()))
+            {
+                throw new RaplaSecurityException(
+                        "The admin account is fixed by configuration (rapla.fix-admin-password) and cannot be deleted.");
+            }
+        }
+        super.storeAndRemove(storeObjects, removeObjects, user, forceRessourceDelete);
     }
 
     @Override
@@ -794,6 +841,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             String userId = user.getId();
             if (checkPassword(user.getReference(), password))
             {
+                upgradePasswordHashIfNeeded(user, password);
                 return userId;
             }
         }
@@ -808,10 +856,15 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     public void changePassword(User user, char[] oldPassword, char[] newPassword) throws RaplaException
     {
+        if (isFixedAdmin(user))
+        {
+            throw new RaplaSecurityException("The admin password is fixed by configuration (rapla.fix-admin-password).");
+        }
         LOGGER.info("Change password for User {}", user.getUsername());
-        String password = new String(newPassword);
-        if (encryption != null)
-            password = encrypt(encryption, password);
+        String plain = new String(newPassword);
+        // Never hash an empty password — keep "" literal so it stays the readable,
+        // login-allowed "no password" state (B3). Real passwords → bcrypt.
+        String password = plain.isEmpty() ? "" : passwordEncoder.hash(plain);
         User editObject = editObject(user, null);
 
         changePassword( editObject, password);
@@ -3611,23 +3664,32 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             return false;
         }
+        return passwordEncoder.matches(password, correct_pw);
+    }
 
-        if (correct_pw.equals(password))
+    /**
+     * Rehash-on-login: a legacy sha-1/md5 hash or a plaintext reset value that just
+     * authenticated is rewritten as bcrypt on its next usage, so the store self-heals.
+     * Best-effort — never fail a login because the upgrade write failed. Empty passwords
+     * (the seed admin) are left untouched.
+     */
+    private void upgradePasswordHashIfNeeded(User user, String password)
+    {
+        try
         {
-            return true;
+            if (password == null || password.isEmpty())
+                return;
+            String stored = cache.getPassword(user.getReference());
+            if (!passwordEncoder.needsUpgrade(stored))
+                return;
+            User editObject = editObject(user, null);
+            changePassword(editObject, passwordEncoder.hash(password));
+            LOGGER.info("Upgraded password hash to bcrypt for user {}", user.getUsername());
         }
-
-        int columIndex = correct_pw.indexOf(":");
-        if (columIndex > 0 && correct_pw.length() > 20)
+        catch (Exception e)
         {
-            String encryptionGuess = correct_pw.substring(0, columIndex);
-            if (encryptionGuess.contains("sha") || encryptionGuess.contains("md5"))
-            {
-                password = encrypt(encryptionGuess, password);
-                return correct_pw.equals(password);
-            }
+            LOGGER.warn("Could not upgrade password hash for user {}: {}", user.getUsername(), e.getMessage());
         }
-        return false;
     }
 
     @Override

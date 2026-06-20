@@ -1,7 +1,6 @@
 # PRD 067 — Facade split: sync explicit-user core + Swing client facade
 
-**Status:** draft — opened 2026-06-10; design discussion in progress (decisions
-D1–D3 below locked, OQs open)
+**Status:** draft — opened 2026-06-10; design discussion in progress (D1–D10 locked — see "Decisions locked" section; OQs open)
 
 ## Goal
 

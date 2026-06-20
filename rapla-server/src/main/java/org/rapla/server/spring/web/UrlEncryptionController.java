@@ -24,8 +24,8 @@ public class UrlEncryptionController implements UrlEncryption
     }
 
     @Override
-    public String encrypt(String plain) throws RaplaException
+    public String encrypt(String plain, String algo) throws RaplaException
     {
-        return urlEncryptor.encrypt(plain, request);
+        return urlEncryptor.encrypt(plain, request, algo);
     }
 }

@@ -170,6 +170,10 @@ public class SecurityConfig
                             // authenticated() gate and bounce. "/oauth2/**" already
                             // covers the "/oauth2/authorization/<id>" kickoff.
                             "/login/oauth2/code/**",
+                            // B3 change-password nag page: GET renders a generic form; the POST
+                            // enforces auth itself via RemoteSession.checkAndGetUser (access_token
+                            // cookie set at login). Mirrors /login's permitAll.
+                            "/change-password",
                             "/oauth2/**", "/.well-known/**", "/login", "/error").permitAll();
                     // Vanilla rapla carries no plugin-specific paths here. A plugin
                     // that needs an unauthenticated endpoint (e.g. a health probe or

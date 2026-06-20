@@ -164,24 +164,114 @@ redirect + refresh_token grant; no `silentRefreshRedirectUri`/`sessionChecksEnab
   302→/login. The underlying public specs (`/v3/api-docs/**`, `/api/graphql/schema`)
   stay open — only the human-facing explorer UIs are gated. Test `ExplorerAuthGateTest`.
 
-**Remaining (not yet scheduled)**
-- **A7 [Med]** Local password store: unsalted MD5/SHA, accepts plaintext, non-const
-  compare → BCrypt/Argon2 via `DelegatingPasswordEncoder` + transparent rehash.
-- **B3 [Med]** Default admin credential (`admin` + empty password) ships in the seed
-  `data.xml` on **every** install — a known default credential that **must be changed
-  on every system**, not just network-exposed ones. The login page currently even
-  advertises it. Layered fix:
-  1. remove the credential hint from the login page (don't advertise defaults anywhere);
-  2. **timely reminder on every system** — a prominent startup log warning *and* a UI /
-     login banner while any admin still holds the default/empty password (so it gets
-     changed, not silently left);
-  3. force-change-on-first-admin-login;
-  4. **boot-refusal** (`PasswordCheckBindingGuard`-style, cf. B4) when an admin has an
-     empty password AND the connector binds a non-loopback address;
-  5. reject empty-password authentication outside the `local`/`standalone` profiles.
-- **H3** AES/ECB + SHA-1 key derivation (`CryptoHandler`, `UrlEncryptor`).
+**Shipped [2026-06-20]**
+- **A7 [Med] — local password store → BCrypt.** New `RaplaPasswordEncoder`
+  (`spring-security-crypto` BCrypt). rapla **only ever writes** `bcrypt:<hash>` (salted,
+  slow, constant-time `matches`). `LocalAbstractCachableOperator.checkPassword` dispatches
+  on the existing `algo:` prefix convention: `bcrypt:` → BCrypt; `sha-1:`/`md5:`/bare
+  plaintext → verify, then **rehash-on-login** to bcrypt (`upgradePasswordHashIfNeeded`,
+  best-effort, on the auth lifecycle seam — §16-safe). **Plaintext acceptance is kept on
+  purpose** as the admin hand-edits-a-reset-value hatch; non-empty plaintext is rehashed
+  on next login, empty (seed admin) is left untouched (B3 owns that). The static
+  `encrypt(algo,…)` stays (Exchange-sync content hash uses it). Tests:
+  `RaplaPasswordEncoderTest` (bcrypt/sha-1/md5/plaintext verify + needs-upgrade),
+  `PasswordRehashAuthenticateTest` (tier-2: plaintext login rewrites the on-disk store to
+  `bcrypt:`, not plaintext).
+- **H3 [Med] — AES/ECB + SHA-1 → AES-256-GCM** (see the detailed design below; both
+  `CryptoHandler` and `UrlEncryptor` wired, legacy decrypt retained). Tests:
+  `CryptoHandlerTest`, `UrlCipherV2Test`, `UrlEncryptionControllerIntegrationTest`
+  (v2 deterministic GCM via the `?algo=v2` endpoint param). Sibling fix: the
+  `URL_ENCRYPTION.equals("true")` checks in `CalendarPageController.isEncrypted` and
+  `UrlEncryptionServletRequestResponsePreprocessor` were widened to
+  `UrlEncryptionPlugin.isEnabled(...)` so a `"v2"` calendar still counts as encrypted
+  (the access-only-via-`?key=` guard would otherwise fail open for v2 exports).
+
+**Shipped [2026-06-20] (cont.)**
+- **B3 [Med] — default admin credential.** Reframed during implementation: **an empty
+  admin password stays allowed** (single-user/desktop/demo use it deliberately) — so the
+  fix is *awareness + a per-login nag*, not enforcement. No boot-refusal, no rejecting
+  empty-password auth (the originally-planned items 3–5 were dropped as incompatible with
+  "empty allowed"). What shipped:
+  1. **Change-password nag** — the Spring `/login` (browser/SPA SSO) flow redirects to a
+     new `/change-password` page whenever the logged-in user's password is *unset* (empty)
+     and they are not the fix-admin-password-locked admin. **Skippable but not disableable**
+     ("Later" continues; the nag returns next login until a real password is set). Seam:
+     `FormLoginSuccessHandler` → `SyncStorageOperator.isPasswordChangeRequired(user)` →
+     `ChangePasswordPageController`. **Swing login is deliberately untouched** (admins move
+     to SPA+GraphQL). Applies to *any* empty-password user, not just admin.
+  2. **Conditional login hint** — `LoginPageController` shows the "default admin / empty
+     password" hint **only while the admin password is actually empty**
+     (`isAdminPasswordUnset()`); it disappears once a real password is set. Shown even under
+     fix-admin-password (it is the demo's login instruction).
+  3. **`rapla.fix-admin-password` flag** (`RaplaServerProperties`) — locks the built-in
+     `admin`: its password cannot be changed and the account cannot be deleted (enforced in
+     the operator: `changePassword` + an override of `storeAndRemove`, so REST/GraphQL/SPA/
+     internal callers are all covered). Also **suppresses the nag** for the admin. Intended
+     for managed/demo deployments running `admin` with a fixed (e.g. empty) credential.
+  - **Empty-password detection** is robust: `RaplaPasswordEncoder.isUnset(stored)` verifies
+     the empty string against the stored value (literal `""`/blank, or a legacy `sha-1`/`md5`
+     hash of `""`). `null` is **not** unset (a null entry can't authenticate at all). bcrypt
+     is short-circuited to "not unset" — Spring 7's BCrypt can't verify an empty raw
+     password, and the **invariant "never hash `""`"** (`changePassword` keeps `""` literal)
+     guarantees `bcrypt("")` never exists.
+  - Tests: `RaplaPasswordEncoderTest` (isUnset across formats), `FixAdminPasswordGuardTest`
+     (lock + nag-required logic), `PasswordRehashAuthenticateTest` (empty stays literal),
+     `ChangePasswordNagFlowTest` (tier-3: empty login → `/change-password`, real login →
+     `/app/`, page renders), `LoginPageHintTest` (tier-3: hint shown only while empty).
+- **H3 [shipped 2026-06-20]** AES/ECB + SHA-1 key derivation
+  (`CryptoHandler`, `UrlEncryptor`). Both move to AES-256-GCM (authenticated) with a
+  **self-describing version marker** on the ciphertext; the **legacy ECB decrypt path
+  stays indefinitely** (we never control when a deployment updates, and old subscriber
+  URLs live in external clients forever). No big-bang migration.
+  - **`CryptoHandler`** (encrypts `login:secret` Exchange creds at rest via
+    `RaplaKeyStorageImpl`): reversible by necessity — the server replays the cleartext
+    to EWS, so it can't be hashed like a login password. `encrypt` → versioned
+    AES-256-GCM (random IV). `decrypt` → marker present = GCM, absent = legacy ECB.
+    **Lazy upgrade**: existing secrets keep decrypting via legacy; the next
+    `storeLoginInfo` (resync / credential re-entry) rewrites them as GCM. No boot sweep
+    (would be a §16 write-on-read or a startup iteration that the retained legacy path
+    makes unnecessary).
+  - **`UrlEncryptor`** (encrypts the `user=…&file=…` calendar-export URL): the URL is
+    computed on demand client-side and **never persisted**, so any change to the
+    *generation* cipher changes the string every existing calendar shows. Resolution:
+    **new exports get GCM, existing ones keep their URL.** `UrlEncryptionPlugin.URL_ENCRYPTION`
+    changes from a boolean to the **algorithm tag**:
+    | stored value | meaning |
+    |---|---|
+    | absent / `""` / `"false"` | encryption off |
+    | `"true"` | legacy export → **old algo (ECB)** — URL stays byte-stable |
+    | `"v2"` | new export → **deterministic AES-256-GCM** |
+    - **Assign the tag only on the off→on transition** (a genuinely new export). A
+      calendar already reading `"true"` and still enabled keeps `"true"` — never rewrite
+      it to `"v2"`, or its URL would change. Empty/unset counts as off, so enabling it
+      then is a new export → `"v2"`.
+    - **Deterministic GCM** (so a v2 URL is itself stable across views/re-saves): JDK has
+      no `AES/GCM-SIV`, so derive a synthetic IV from the plaintext —
+      `IV = HMAC-SHA256(key, plain)[0:12]` + `AES/GCM/NoPadding`. Same plaintext → same IV
+      → same URL; different plaintext → different IV → GCM stays safe.
+    - The v2 cipher lives in `UrlCipherV2` (server). `UrlEncryptor.encrypt(plain, userId,
+      algo)` picks the cipher; the endpoint gained a `?algo=` query param
+      (`UrlEncryption.encrypt(@RequestBody plain, @RequestParam("algo") algo)`), and the
+      Swing publish dialog (`URLEncyrptionPublicExtensionFactory`) reads the per-calendar
+      `URL_ENCRYPTION` tag and passes it, applying the off→on assignment rule in
+      `mapOptionTo`. Decrypt is version-detected (`UrlCipherV2.isV2`); legacy ECB kept
+      forever (old subscriber URLs always resolve).
+    - The homegrown `salt=userId.hashCode()` + double-shuffle is dropped for `v2` (GCM
+      supersedes it; the salt leaked in cleartext anyway) and retained only in the legacy
+      branch.
+  - Tests: `CryptoHandlerTest` (GCM round-trip; non-ECB; locked legacy-ECB-decrypt compat;
+    version marker), `UrlCipherV2Test` (deterministic round-trip; same plain → same URL;
+    marker detection; GCM tamper-reject), `UrlEncryptionControllerIntegrationTest`
+    (`?algo=v2` → deterministic `v2:` ciphertext, no legacy `&salt=`; no-algo default stays
+    legacy ECB). Key derivation locked at `SHA-256` (the root key is already high-entropy —
+    no slow KDF needed).
 - **H4** JWT in `localStorage` — mitigated by the Phase-2 CSP.
-- **H7** API-key no server-side max TTL.
+- **H7** API-key no server-side max TTL. **Reframed → PRD 076.** API keys are revocable
+  (membership check in `ApiKeyJwtDecoder`), unlike stateless access tokens, so a forced
+  max-TTL was rejected (breaks automation, little gain). Instead PRD 076 shrinks the leak
+  blast radius with **scoped API keys** (`read`/`write_events`/`write_resources`/`write_all`/
+  `rotate`, default `read`) + possession-/`rotate`-scoped **self-rotation**. Overlap
+  rotation already works today via create+delete (AWS/GCP model).
 
 ### Phase 4 — verify
 Per AGENTS.md §1 every fix lands test-first. Phase-2 CSP additionally needs a

@@ -287,12 +287,14 @@ this only if you build a stripped-down deployment.
 
 All token issuance, refresh, and revocation goes through Spring
 Authorization Server's `/oauth2/*` endpoints. The legacy rapla-custom
-`AuthController` (`/api/auth/login`, `/api/auth/refresh`,
-`/api/auth/logout`) is **deleted** — see PRD 041's adjacent-work
-section for the migration story. `/api/auth/oauth/config` (discovery),
-`/api/auth/oauth/exchange/{providerId}` (BFF for external IdPs),
-and `/api/auth/api-keys/*` (personal access tokens, PRD 043) remain
-under `/api/auth/`.
+`AuthController` (`/api/auth/login`) is **deleted** — see PRD 041's
+adjacent-work section for the migration story. `/api/auth/refresh` and
+`/api/auth/logout` exist as cookie-based endpoints on `AuthCookieController`
+(PRD 072 — SPA reactive-401 refresh + sign-out). `/api/auth/oauth/config`
+(discovery), `/api/auth/oauth/exchange/{providerId}` (BFF for external
+IdPs), `/api/auth/oauth/token-exchange/{providerId}` (external-id-token →
+rapla-token, PRD 072), and `/api/auth/api-keys/*` (personal access tokens,
+PRD 043) also remain under `/api/auth/`.
 
 ### Token endpoints (`/oauth2/*`)
 
@@ -560,11 +562,12 @@ iCal-aware editor.
 |---|---|---|---|
 | POST | `/api/edit/validate-recurrence` | `RecurrenceRule` | `RecurrenceValidation` |
 | POST | `/api/edit/check-conflicts` | `ConflictCheckRequest` | `ConflictReport` |
+| POST | `/api/edit/expand-blocks` | `ExpandBlocksRequest` | `List<AppointmentBlockDto>` |
 
-The SPA's `EventCheck` chain equivalent. Call these before
-dispatch to surface a confirm dialog rather than letting the
-server reject. Both are **advisory** — `dispatch` will succeed
-with conflicts; this just lets you ask first.
+`validate-recurrence` and `check-conflicts` are the SPA's `EventCheck`
+chain equivalent — advisory, call before dispatch to surface a confirm
+dialog. `expand-blocks` materialises a single appointment's blocks
+within a time window (same semantics as `Appointment.createBlocks`).
 
 See PRD 024 for the server-side edit-services rationale.
 
@@ -744,15 +747,16 @@ won't need the JNLP at all.
 ### Logout
 
 ```
-14. POST /api/auth/logout (Bearer <access>)          → clears server-side refresh-token session
+14. POST /oauth2/revoke  token=<refresh JWT>&token_type_hint=refresh_token&client_id=rapla-client
+                                                     → clears server-side refresh-token session (RFC 7009)
+    (SPA cookie path: POST /api/auth/logout  → AuthCookieController, PRD 072)
 15. drop tokens locally
 ```
 
 The access token stays nominally valid until its TTL expires (JWT
 is stateless), but the server-side refresh session is gone, so a
-later `/api/auth/refresh` will fail. Calling logout is optional
-but recommended — otherwise the refresh token lives on until its
-own TTL.
+later refresh will fail. Calling logout is optional but recommended
+— otherwise the refresh token lives on until its own TTL.
 
 ---
 

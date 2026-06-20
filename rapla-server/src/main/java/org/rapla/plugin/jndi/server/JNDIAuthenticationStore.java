@@ -1081,9 +1081,9 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
         aut.setUserSearch ("(uid={0})" );
         try {
             if ( aut.authenticate ( "admin", "admin" ) ) {
-                System.out.println( "Authentication succeeded." );
+                LOGGER.info( "Authentication succeeded." );
             } else {
-                System.out.println( "Authentication failed" );
+                LOGGER.info( "Authentication failed" );
             }
         } catch (Exception ex ) {
             LOGGER.error("JNDI authentication test failed", ex);

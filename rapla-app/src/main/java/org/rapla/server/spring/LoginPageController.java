@@ -1,8 +1,12 @@
 package org.rapla.server.spring;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.server.spring.oauth.external.ExternalProvidersProperties;
 import org.rapla.server.spring.oauth.external.ProviderConfig;
+import org.rapla.storage.SyncStorageOperator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.security.web.csrf.CsrfToken;
@@ -44,14 +48,33 @@ import java.util.List;
 @RequestMapping("/login")
 public class LoginPageController
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(LoginPageController.class);
+
     private final ExternalProvidersProperties externalProviders;
     private final boolean passwordLoginEnabled;
+    private final RaplaFacade facade;
 
     public LoginPageController(ExternalProvidersProperties externalProviders,
-                              @Value("${rapla.oauth.web.password-login:true}") boolean passwordLoginEnabled)
+                              @Value("${rapla.oauth.web.password-login:true}") boolean passwordLoginEnabled,
+                              RaplaFacade facade)
     {
         this.externalProviders = externalProviders;
         this.passwordLoginEnabled = passwordLoginEnabled;
+        this.facade = facade;
+    }
+
+    /** B3: only advertise the default admin/empty credential while it is actually in effect. */
+    private boolean showDefaultAdminHint()
+    {
+        try
+        {
+            return ((SyncStorageOperator) facade.getOperator()).isAdminPasswordUnset();
+        }
+        catch (Exception e)
+        {
+            LOGGER.warn("Could not evaluate admin-password hint: {}", e.getMessage());
+            return false;
+        }
     }
 
     @GetMapping(produces = MediaType.TEXT_HTML_VALUE)
@@ -165,7 +188,9 @@ public class LoginPageController
                   </label>
                   <button type="submit" id="btn">Sign in</button>
                 </form>
-                <p class="note">Dev default: <code>admin</code> with empty password.</p>
-                """.replace("%CSRF%", csrfField);
+                %HINT%
+                """.replace("%CSRF%", csrfField)
+                   .replace("%HINT%", showDefaultAdminHint()
+                           ? "<p class=\"note\">Dev default: <code>admin</code> with empty password.</p>" : "");
     }
 }
