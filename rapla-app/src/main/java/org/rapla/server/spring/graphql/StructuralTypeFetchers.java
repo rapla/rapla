@@ -359,24 +359,51 @@ public final class StructuralTypeFetchers
                         default ->
                                 org.rapla.entities.dynamictype.DynamicTypeAnnotations.KEY_NAME_FORMAT;
                     };
-                    return resolveReservationName(r, annotationName);
+                    return resolveVariantName(r, r, annotationName);
                 }
             };
 
-    private static String resolveReservationName(org.rapla.entities.domain.Reservation r,
-            String annotationName)
+    /**
+     * PRD 074 Baustein 7 — {@code Allocatable.name(variant:)}, mirroring Reservation.name.
+     * (Allocatable.displayName stays — broadly used by the SPA + AllocatableFilter.nameContains —
+     * its @deprecation is a coordinated later step.)
+     */
+    static final LightDataFetcher<String> ALLOCATABLE_NAME =
+            new LightSourceFetcher<Allocatable, String>(Allocatable.class)
+            {
+                @Override protected String read(Allocatable a, Supplier<DataFetchingEnvironment> env)
+                {
+                    Object v = env.get().getArgument("variant");
+                    String variant = v == null ? "DISPLAY" : v.toString();
+                    String annotationName = switch (variant)
+                    {
+                        case "EXPORT" ->
+                                org.rapla.entities.dynamictype.DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT;
+                        case "PLANNING" ->
+                                org.rapla.entities.dynamictype.DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING;
+                        default ->
+                                org.rapla.entities.dynamictype.DynamicTypeAnnotations.KEY_NAME_FORMAT;
+                    };
+                    return resolveVariantName(a, a, annotationName);
+                }
+            };
+
+    /** Shared name-variant resolution for Reservation + Allocatable (both Named + Classifiable):
+     * DISPLAY = the plain nameformat; EXPORT/PLANNING use the variant only if the type defines it,
+     * else fall back to DISPLAY. */
+    private static String resolveVariantName(org.rapla.entities.Named named,
+            org.rapla.entities.dynamictype.Classifiable classifiable, String annotationName)
     {
         if (org.rapla.entities.dynamictype.DynamicTypeAnnotations.KEY_NAME_FORMAT.equals(annotationName))
         {
-            return r.getName(serverLocale);            // DISPLAY = the plain nameformat
+            return named.getName(serverLocale);
         }
-        org.rapla.entities.dynamictype.Classification cls = r.getClassification();
-        // EXPORT/PLANNING only if the type defines it; otherwise fall back to DISPLAY.
+        org.rapla.entities.dynamictype.Classification cls = classifiable.getClassification();
         if (cls != null && cls.getType().getAnnotation(annotationName) != null)
         {
             return cls.format(serverLocale, annotationName);
         }
-        return r.getName(serverLocale);
+        return named.getName(serverLocale);
     }
 
     static final LightDataFetcher<LocalDateTime> RESERVATION_FIRST_DATE =
@@ -854,6 +881,7 @@ public final class StructuralTypeFetchers
         }
         b.type("Allocatable", t -> t
                 .dataFetcher("type",           ALLOCATABLE_TYPE)
+                .dataFetcher("name",           ALLOCATABLE_NAME)
                 .dataFetcher("displayName",    ALLOCATABLE_DISPLAY_NAME)
                 .dataFetcher("classification", ALLOCATABLE_CLASSIFICATION)
                 .dataFetcher("createdAt",      ALLOCATABLE_CREATED_AT)

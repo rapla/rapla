@@ -1020,6 +1020,60 @@ class ReservationGraphQLControllerTest
         assertTrue(anyTimes, "at least one block should have a non-blank times for the composition check");
     }
 
+    /**
+     * PRD 074 Baustein 7 — Allocatable.name(variant:) mirrors Reservation.name;
+     * Allocatable.displayName is now @deprecated (still queryable). name(DISPLAY)
+     * equals the legacy displayName; EXPORT falls back to DISPLAY in the fixture.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void allocatableNameVariantMirrorsReservation()
+    {
+        assertTrue(typeFieldNames("Allocatable").contains("name"),
+                () -> "missing Allocatable.name");
+        // displayName deprecated → not in default field list; present with includeDeprecated.
+        Map<String, Object> withDep = tester.document(
+                "{ __type(name: \"Allocatable\") { fields(includeDeprecated: true) { name isDeprecated } } }")
+                .execute().path("__type")
+                .entity(new ParameterizedTypeReference<Map<String, Object>>() {}).get();
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> depFields = (List<Map<String, Object>>) withDep.get("fields");
+        Map<String, Object> dn = depFields.stream()
+                .filter(f -> "displayName".equals(f.get("name"))).findFirst()
+                .orElseThrow(() -> new AssertionError("missing Allocatable.displayName"));
+        assertEquals(Boolean.TRUE, dn.get("isDeprecated"), "Allocatable.displayName must be @deprecated");
+
+        List<Map<String, Object>> rows = tester.document("""
+                query {
+                  appointmentBlocks(filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" }) {
+                    allocatables(filter: { isPersonEq: false }) {
+                      n:      name
+                      disp:   name(variant: DISPLAY)
+                      exp:    name(variant: EXPORT)
+                      legacy: displayName
+                    }
+                  }
+                }
+                """)
+                .execute().path("appointmentBlocks")
+                .entityList(new ParameterizedTypeReference<Map<String, Object>>() {}).get();
+        boolean sawAny = false;
+        for (Map<String, Object> b : rows)
+        {
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> allocs = (List<Map<String, Object>>) b.get("allocatables");
+            if (allocs == null) continue;
+            for (Map<String, Object> a : allocs)
+            {
+                sawAny = true;
+                assertEquals(a.get("legacy"), a.get("n"), () -> "name must equal deprecated displayName; got " + a);
+                assertEquals(a.get("disp"), a.get("n"), () -> "name default must equal name(DISPLAY); got " + a);
+                assertEquals(a.get("disp"), a.get("exp"), () -> "EXPORT falls back to DISPLAY; got " + a);
+            }
+        }
+        assertTrue(sawAny, "fixture should have non-person allocatables on a block");
+    }
+
     /** §12 — anonymous caller gets an error on the block root, not a list. */
     @Test
     @WithAnonymousUser

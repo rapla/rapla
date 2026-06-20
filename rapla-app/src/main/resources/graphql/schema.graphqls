@@ -526,8 +526,10 @@ fails GraphQL validation rather than silently returning null at runtime.
 type Allocatable {
   id:             ID!
   type:           AllocatableType!
-  "Locale-resolved name, classification-derived (PRD 035 §\"Stub fields\")."
-  displayName:    String!
+  "PRD 074 — the allocatable's name composition (nameformat), locale-resolved. variant selects DISPLAY/EXPORT/PLANNING (EXPORT/PLANNING fall back to DISPLAY when the type lacks them)."
+  name(variant: NameVariant = DISPLAY): String
+  "Deprecated alias for name(variant: DISPLAY). Locale-resolved, classification-derived."
+  displayName:    String! @deprecated(reason: "use name(variant: DISPLAY)")
   owner:          User
   createdAt:      DateTime
   lastModifiedAt: DateTime
