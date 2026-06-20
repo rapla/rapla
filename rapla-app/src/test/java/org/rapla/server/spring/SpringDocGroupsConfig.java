@@ -64,9 +64,13 @@ public class SpringDocGroupsConfig
             2. **OIDC discovery for the SPA picker** — `GET /api/auth/oauth/config` returns the
                provider list the Angular login screen shows (rapla's embedded SAS + any external
                IdPs configured via `rapla.oauth.external.providers[]`).
-            3. **BFF token-exchange for external IdPs** — `POST /api/auth/oauth/exchange/{providerId}`
+            3. **BFF code-grant for external IdPs** — `POST /api/auth/oauth/exchange/{providerId}`
                proxies the OAuth token call to Google / Microsoft Entra etc. so the SPA never holds
-               the confidential `client_secret` (PRD 036).
+               the confidential `client_secret` (PRD 036). Under the M2 identity-broker model (PRD 072)
+               it verifies the IdP `id_token` and returns a **rapla** token, not the raw IdP token.
+            4. **RFC 8693 token-exchange** — `POST /api/auth/oauth/token-exchange/{providerId}` takes a
+               finished external `id_token` (form param `id_token`) and mints a rapla access + refresh
+               token after verifying the id_token (signature + iss + exp + aud-pin to rapla's client_id).
 
             ## Not in this spec — Spring Authorization Server endpoints
 

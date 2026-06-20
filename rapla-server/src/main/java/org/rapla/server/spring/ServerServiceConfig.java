@@ -175,6 +175,19 @@ public class ServerServiceConfig
         return new org.rapla.server.spring.oauth.external.ExternalUserResolver(operator);
     }
 
+    /**
+     * PRD 072 Phase 6 — verifies an external IdP {@code id_token} on its own
+     * trust chain (JWKS signature + iss + exp + aud-pin), independent of the
+     * resource-server {@code jwtDecoder} (which after the single-issuer cutover
+     * trusts only rapla tokens). Used by both the BFF exchange and the RFC 8693
+     * token-exchange endpoint to validate the external token before re-minting.
+     */
+    @Bean
+    public org.rapla.server.spring.oauth.external.ExternalIdTokenVerifier externalIdTokenVerifier()
+    {
+        return new org.rapla.server.spring.oauth.external.ExternalIdTokenVerifier();
+    }
+
     @Bean
     public org.rapla.server.internal.SecurityManager securityManager(org.rapla.RaplaResources i18n,
                                                                       org.rapla.entities.domain.AppointmentFormater appointmentFormater,

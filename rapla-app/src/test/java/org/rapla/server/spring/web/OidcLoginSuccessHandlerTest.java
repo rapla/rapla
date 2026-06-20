@@ -4,12 +4,17 @@ import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.rapla.entities.User;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.server.spring.RaplaSpringBootApplication;
 import org.rapla.server.spring.oauth.OidcLoginSuccessHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.mock.web.MockHttpSession;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
@@ -17,6 +22,8 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,6 +35,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -73,6 +81,35 @@ class OidcLoginSuccessHandlerTest
 
     @Autowired
     OidcLoginSuccessHandler handler;
+
+    @Autowired
+    RaplaFacade raplaFacade;
+
+    private OAuth2AuthenticationToken homerOidcAuth()
+    {
+        Instant now = Instant.now();
+        OidcIdToken idToken = new OidcIdToken(
+                "header.payload.sig",
+                now,
+                now.plusSeconds(3600),
+                Map.of(
+                        "iss", "https://kc.example.com/realms/rapla-test",
+                        "sub", "kc-subject-homer",
+                        "preferred_username", "homer",
+                        "email", "homer@example.com",
+                        "name", "Homer Simpson"));
+        OidcUser oidcUser = new DefaultOidcUser(
+                AuthorityUtils.createAuthorityList("ROLE_USER"), idToken, "preferred_username");
+        return new OAuth2AuthenticationToken(oidcUser, oidcUser.getAuthorities(), "keycloak");
+    }
+
+    private static Authentication savedContextAuth(MockHttpSession session)
+    {
+        Object ctx = session.getAttribute(
+                HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY);
+        assertNotNull(ctx, "the handler must save a SecurityContext to the session");
+        return ((SecurityContext) ctx).getAuthentication();
+    }
 
     @Test
     void provisionsUserAndSetsAccessTokenCookie() throws Exception
@@ -146,5 +183,83 @@ class OidcLoginSuccessHandlerTest
 
         assertNull(response.getCookie("access_token"),
                 "a non-OIDC OAuth2User must NOT establish a rapla session (review N2)");
+    }
+
+    /**
+     * PRD 072 (Swing-SSO broker fix) — after provisioning, the handler replaces the
+     * OIDC {@link Authentication} (whose name is the external preferred_username
+     * "homer") with one whose principal name is the rapla user's UUID, and persists
+     * it to the session. This is what makes the Authorization Server's subsequent
+     * loopback authorization_code/token issuance use {@code sub = UUID} (resolvable
+     * as a rapla user) instead of the OIDC username (which the rapla token generators
+     * + /api cannot resolve → invalid_grant). Before the fix the session context kept
+     * the OIDC token, so the saved principal name was "homer".
+     */
+    @Test
+    void reAuthenticatesSessionAsRaplaUuidNotOidcUsername() throws Exception
+    {
+        OAuth2AuthenticationToken auth = homerOidcAuth();
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/login/oauth2/code/keycloak");
+        MockHttpSession session = new MockHttpSession();
+        request.setSession(session);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        handler.onAuthenticationSuccess(request, response, auth);
+
+        Authentication saved = savedContextAuth(session);
+        String expectedId = raplaFacade.getUser("homer").getId();
+        assertEquals(expectedId, saved.getName(),
+                "the saved SecurityContext principal must be the rapla UUID, not the OIDC username");
+        assertNotEquals("homer", saved.getName(),
+                "the saved principal must NOT be the external OIDC preferred_username");
+    }
+
+    /**
+     * PRD 072 — the handler extends {@link org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler}.
+     * The Swing-SSO broker flow saves the original {@code /oauth2/authorize} request
+     * before bouncing through the IdP; on success the handler must RESUME that saved
+     * request (so the loopback authorization_code is issued) rather than always
+     * dumping the browser at {@code /app/}. With a saved request present the redirect
+     * targets the saved URL; with none it falls back to the default {@code /app/}.
+     */
+    @Test
+    void resumesSavedRequestWhenPresent() throws Exception
+    {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/login/oauth2/code/keycloak");
+        MockHttpSession session = new MockHttpSession();
+        request.setSession(session);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // Stash a saved request (the Swing /oauth2/authorize the broker preserved).
+        MockHttpServletRequest original = new MockHttpServletRequest("GET", "/oauth2/authorize");
+        original.setServerName("localhost");
+        original.setServerPort(8051);
+        original.setScheme("http");
+        original.setQueryString("response_type=code&client_id=swing&redirect_uri=http://127.0.0.1:54321/callback");
+        original.setSession(session);
+        new HttpSessionRequestCache().saveRequest(original, response);
+
+        handler.onAuthenticationSuccess(request, response, homerOidcAuth());
+
+        String redirect = response.getRedirectedUrl();
+        assertNotNull(redirect, "a redirect must be issued");
+        assertTrue(redirect.contains("/oauth2/authorize"),
+                "with a saved request the handler must resume it, not redirect to /app/ — was: " + redirect);
+    }
+
+    @Test
+    void redirectsToDefaultAppWhenNoSavedRequest() throws Exception
+    {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/login/oauth2/code/keycloak");
+        MockHttpSession session = new MockHttpSession();
+        request.setSession(session);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        handler.onAuthenticationSuccess(request, response, homerOidcAuth());
+
+        String redirect = response.getRedirectedUrl();
+        assertNotNull(redirect, "a redirect must be issued");
+        assertTrue(redirect.endsWith("/app/"),
+                "with no saved request the handler falls back to the default /app/ — was: " + redirect);
     }
 }

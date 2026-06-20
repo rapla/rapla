@@ -63,9 +63,12 @@ env-var override of the discovery endpoint URLs).
 ### Access-token claim shape (rapla-SAS)
 
 Rapla's resource-server JWT decoder validates incoming Bearers against
-the JWKS published at `/oauth2/jwks` (the multi-issuer decoder also
-accepts external IdP tokens — see § "External IdP login"). Tokens
-minted by rapla-SAS itself carry:
+the JWKS published at `/oauth2/jwks`. Since PRD 072 (default
+`rapla.oauth.trust-external-issuers=false`) `/api` accepts **only
+rapla-issued tokens** — external IdP tokens are consumed at login and
+never reach `/api` (see § "Single-issuer `/api`"); set the flag `true`
+to restore the legacy multi-issuer decoder. Tokens minted by rapla-SAS
+itself carry:
 
 | Claim | Type | When emitted | Purpose |
 |---|---|---|---|
@@ -275,8 +278,10 @@ deliberately omits `required` on the password field.
 2. **Default — OAuth enabled, `swing-legacy-login=false`**: the dialog
    shows in "browser login in progress" mode (credential fields hidden)
    and auto-fires `SwingOAuthLoginFlow` — the standard authorization_code
-   + PKCE flow against `/oauth2/token` (PRD 029 Phase 2). The credential
-   fields are never shown.
+   + PKCE flow against rapla's `/oauth2/token` (PRD 029 Phase 2). Since
+   PRD 072 this is the **single "SSO" entry** — rapla brokers the upstream
+   IdP via the `/login` chooser (see § "Swing SSO flow" below); there is no
+   per-provider Swing menu. The credential fields are never shown.
 3. **Admin opted into the legacy dialog — OAuth enabled,
    `swing-legacy-login=true`**: the dialog is shown in full state with
    username/password fields (PRD 029 Phase 3). When
@@ -291,29 +296,42 @@ Token refresh for every client kind is OAuth-standard:
 `POST /oauth2/token grant_type=refresh_token` (`MyCustomConnector.java:129`,
 `ClientProxyConfig.java:159`, PRD 041).
 
-#### Provider-aware refresh routing (PRD 029 Phase 5)
+#### Swing SSO flow — rapla as the single federating IdP (PRD 072 Phase 5)
 
-When a Keycloak / Entra / Google session is active, the refresh request goes
-to the **provider's** token endpoint (or rapla's BFF for secret-backed providers),
-NOT to rapla's own `/oauth2/token`. `SwingOAuthLoginFlow` stashes the provider's
-token URL + `client_id` on `RemoteConnectionInfo` at login time
-(`refreshUrl` + `oauthClientId` fields); both refresh paths read them and fall
-back to rapla-SAS defaults only when null:
+Since PRD 072, Swing has **one** "SSO" login entry (the default) instead of
+the old per-provider menu — rapla is Swing's single federating Authorization
+Server (broker). The flow:
 
-| Refresh path | URL | client_id |
-|---|---|---|
-| Rapla-SAS / password session | `serverURL + /oauth2/token` | `rapla-client` |
-| Keycloak browser-OAuth session | the BFF URL (e.g. `/api/auth/oauth/exchange/keycloak`) | the Keycloak client id (e.g. `rapla-app`) |
+1. Swing opens the system browser to rapla `/oauth2/authorize` (its own
+   loopback `authorization_code` flow, unchanged).
+2. rapla renders the `/login` **chooser** (the per-provider buttons live on
+   the page now, not in the Swing menu); the user picks an upstream IdP.
+3. rapla federates that IdP **server-side** via `oauth2Login()`, then
+   completes its **own** `authorization_code` back to Swing's loopback as a
+   **rapla** Bearer (rapla-issuer, `sub=UUID`).
 
-Pre-Phase-5, both refresh paths hardcoded the rapla-SAS combination; Keycloak
-refresh tokens were rejected by rapla-SAS at every refresh, producing a
-`session_expired: access + refresh tokens both rejected` log line and a
-re-login dialog every ~10 min (Keycloak's default access TTL). Fixed in
-`ClientProxyConfig.RefreshOn401Interceptor.doRefresh()` to mirror
-`MyCustomConnector.refreshUsingToken()` (which was already correct).
+Because Swing now only ever talks to rapla, **all** refresh hits rapla's
+`/oauth2/token` with `client_id=rapla-client` — the per-provider refresh
+routing (`refreshUrl`/`oauthClientId` on `RemoteConnectionInfo`, the
+Keycloak-BFF branch in `RefreshOn401Interceptor.doRefresh` +
+`MyCustomConnector.refreshUsingToken`, `TokenStore.KEY_REFRESH_URL` /
+`KEY_OAUTH_CLIENT_ID`) was **removed** (significant net code deletion).
+`ConnectInfo` collapsed to the two-token form. The Swing login dialog
+defaults to SSO and remembers the last-used method via
+`TokenStore.KEY_LOGIN_METHOD`; the rapla password form stays available,
+gated by `rapla.oauth.swing-legacy-login`.
 
-Rotated refresh tokens (Keycloak's default) are persisted to `TokenStore` on
-both refresh paths so cold-restart silent reauth still works after rotation.
+Two bugs were fixed (verified PRD 072) to make rapla-brokered SSO work:
+
+- **`OidcLoginSuccessHandler` re-authenticates the `SecurityContext` as the
+  rapla user** (UUID principal, mirroring `raplaAuthenticationProvider`'s
+  password-grant convention) before the Authorization Server issues the
+  loopback code/tokens. Without it, the loopback `authorization_code` carried
+  `sub=` the external OIDC username, which the rapla token generators + `/api`
+  (which resolve `sub` as a rapla UUID) cannot resolve → `invalid_grant`.
+- **`OidcLoginSuccessHandler` is a `SavedRequestAwareAuthenticationSuccessHandler`**,
+  so the Swing `/oauth2/authorize` saved request is **resumed** after the
+  upstream federation completes — instead of dumping the browser into `/app`.
 
 #### CLI bootstrap (dev / CI)
 
@@ -1092,6 +1110,96 @@ state). A token issued before a JVM restart still validates after the
 restart — same key, same signature. The refresh-token hash is also in
 preferences, so refresh requests after a restart also succeed.
 
+## Single-issuer `/api` (PRD 072, default since 2026-06-20)
+
+rapla's `/api` resource server trusts **only rapla-issued tokens** by
+default. The flag **`rapla.oauth.trust-external-issuers`** (default
+`false`) gates this; setting it `true` restores the legacy multi-issuer
+decoder (`IssuerAwareJwtDecoder` routing by `iss` — rapla-SAS + Entra +
+Google + Keycloak JWKS) as an escape hatch. In the default state
+`JwtConfig.buildBaseDecoder` builds the bare local rapla
+`NimbusJwtDecoder` even with external providers enabled, and pins the
+configured `rapla.oauth.issuer` so a foreign-`iss` token can't pass.
+
+This is the **identity-broker** end-state (M2): rapla federates the
+upstream IdP at login via `oauth2Login()`, mints its **own** rapla JWT
+(`RefreshSessionService.issueAndPersist`), and the external IdP token is
+consumed server-side and never reaches `/api`. Three **non-circular**
+reasons drive the cutover (the "rapla discards IdP tokens" / "uniform
+refresh" properties are downstream *consequences*, not reasons):
+
+1. **Identity resolution/provisioning moves off the read path onto the
+   login write path (§16).** While `/api` accepted external tokens, every
+   call resolved the external identity (`JwtUserResolver.resolveExternal`
+   → `ExternalUserResolver`) and — with `auto-provision: true` —
+   *created* the user on the **read** path. That is the §16 violation
+   behind the 2026-05-28 `RaplaNewVersionException`→401 bug. Single-issuer:
+   the rapla token already carries `sub=<rapla UUID>` → a plain lookup;
+   provisioning happens once at login.
+2. **One trust anchor instead of N.** `/api` validates a single
+   signature/issuer (rapla's own key) instead of rapla-SAS + Entra +
+   Google + Keycloak JWKS — smaller attack surface, fewer JWKS
+   dependencies, no multi-tenant pattern-issuer edge cases.
+3. **Consistent token contract.** Every `/api` token carries `sub=UUID` +
+   rapla claims + the `act` impersonation model — no "which kind of token
+   is this" branching in resolvers/controllers.
+
+### What the rapla token IS — an access token, not an id_token
+
+The credential every rapla surface presents at `/api` is a rapla-minted
+**access token** (`typ=access`): rapla's own signature, `sub=<rapla UUID>`,
+`preferred_username` / `name` / (when impersonating) `act`. rapla is **both
+the Authorization Server and the Resource Server for itself**, so this access
+token carries the identity directly — it *looks* id_token-ish in content, but
+structurally it is an access token used as a Bearer.
+
+**After the IdP exchange, rapla's own clients (SPA, Swing, `/api`) need only the
+rapla access token (+ the rapla refresh token to renew it) — never an id_token:**
+
+- the external IdP **`id_token`** is needed exactly **once**, as the *input* of
+  the exchange/login — rapla verifies its signature / `iss` / `aud`=rapla / `exp`,
+  provisions, then **discards** it (#7=a). It never reaches `/api`.
+- rapla also issues a `typ=refresh` token (used only at `/oauth2/token` refresh +
+  `/api/auth/refresh`, never a `/api` Bearer) and, on `scope=openid` flows, its
+  **own** OIDC `id_token` — but that id_token is a standards artifact for OIDC
+  *relying parties*; rapla's own surfaces (SPA/Swing/`/api`) don't consume it.
+
+**Token-exchange shape:** external **`id_token`** (identity proof, `aud`=rapla)
+→ rapla **access token** (+ refresh). An external *access* token is the wrong
+input — its `aud` is the IdP's resource API (not rapla), and Google's is opaque
+— so the exchange (and at-login provisioning) consumes the **`id_token`**,
+verified against the provider's JWKS with an explicit `aud` pin.
+
+### Getting a rapla token when you hold an external token
+
+Since `/api` trusts only rapla-issued tokens, anyone holding an **external
+IdP `id_token`** (and no rapla token) gets a rapla token through the
+**identity-broker exchange**, then uses *that* at `/api`:
+
+- **`POST /api/auth/oauth/token-exchange/{providerId}`** (RFC 8693 token-exchange) —
+  form param `id_token`=the external IdP id_token. rapla verifies it on its **own**
+  trust chain — `ExternalIdTokenVerifier`: signature against the provider's JWKS,
+  `iss` (== `provider.issuer()` or the multi-tenant pattern), `exp`/`nbf`, and an
+  explicit **`aud` pin** (`aud` MUST contain rapla's `client_id` for that provider —
+  rejects a token minted for another audience) — provisions the rapla user (the §16
+  write seam), and returns `{access_token, refresh_token, token_type, expires_in}`
+  (rapla tokens). Verification failure → `401 invalid_token`/`invalid_grant`, no
+  claim leak.
+- **`POST /api/auth/oauth/exchange/{providerId}`** (the BFF code-exchange used by a
+  client-side-PKCE flow) now **mints + returns a rapla token** after the upstream
+  code exchange + provisioning — it no longer forwards the raw IdP token. Its
+  `grant_type=refresh_token` path is rejected with `400 unsupported_grant_type`
+  (rapla owns the session — #7=a — and does not relay IdP refresh tokens; refresh
+  via rapla's own `/api/auth/refresh` / `/oauth2/token`).
+
+**Replay caveat (token-exchange):** RFC 8693 has no authorization request, so the
+exchanged id_token carries **no `nonce` binding** — its replay window is bounded
+only by its own `exp` plus the `aud` pin. A caller who captures a valid id_token
+*for rapla's client_id* can replay it until expiry to mint a rapla session.
+Acceptable for the "I already hold a finished id_token for rapla" use case; if
+stricter replay protection is needed, add a one-time `jti` check or a fresh
+`auth_time` requirement.
+
 ## External IdP (Microsoft Entra ID + Google + Keycloak)
 
 Rapla can delegate authentication to **Microsoft Entra ID** (formerly
@@ -1143,6 +1251,14 @@ direct route). For Entra Web-platform clients (which support secrets),
 configure `client-secret` and the BFF takes over. Both work.
 
 ### Bearer token choice on rapla API calls
+
+> **Legacy multi-issuer model (`rapla.oauth.trust-external-issuers=true`).**
+> The table below describes the pre-PRD-072 SPA, which presented the IdP's
+> `id_token` directly to `/api` under the `IssuerAwareJwtDecoder`. The
+> default since PRD 072 is **single-issuer** (§ "Single-issuer `/api`"):
+> the SPA is cookie-based, every surface presents a **rapla** token, and
+> `/api` validates only rapla's issuer. This subsection applies only when
+> the escape-hatch flag is turned back on.
 
 The Angular SPA sends `Authorization: Bearer <token>` on every rapla
 API call. The token *value* depends on the active provider:
@@ -1248,47 +1364,90 @@ Entra (China, GovCloud) or other special cases.
 > and are added by the BFF on outbound token requests. The Angular SPA
 > never sees them. See "Managing secrets" below.
 
-### Recipe: Microsoft Entra ID (SPA platform — recommended)
+> **Redirect URIs are server-side now (PRD 072).** After the
+> `oauth2Login()` refactor rapla redeems the authorization code
+> **server-side**, so every external IdP registration uses rapla's
+> server-side callback **`{baseUrl}/login/oauth2/code/{registrationId}`**
+> — `registrationId` is `google` / `microsoft` / `keycloak`. The old SPA
+> redirect `/app/auth/callback` (and the Entra **SPA platform**) are
+> **gone**; do not register them. For each provider, dev registers both
+> `http://localhost:4200/login/oauth2/code/{id}` (the ng-serve proxy
+> origin) and `http://localhost:8051/login/oauth2/code/{id}`.
 
-This is the cleaner path: a true public PKCE client, no secret to
-manage. Works because the SPA POSTs to Entra directly (CORS).
+#### Per-provider vs single callback — why per-provider
+
+rapla keeps Spring's **per-provider** `/login/oauth2/code/{registrationId}`
+callback rather than one shared callback path. This is both Spring
+Security's framework default **and** an OAuth 2.0 Security BCP
+([RFC 9700](https://datatracker.ietf.org/doc/rfc9700/)) mitigation against
+**IdP mix-up attacks**: a distinct redirect URI per authorization server
+lets the client (here rapla, the relying party) tell which IdP a given
+callback belongs to, so an attacker can't splice a code issued by IdP A
+into a flow the client thinks is with IdP B. Other RP frameworks do the
+same — NextAuth (`/api/auth/callback/{provider}`), Passport
+(`/auth/{provider}/callback`), django-allauth, OmniAuth. A single shared
+callback is only appropriate when there is exactly one upstream broker;
+rapla is the broker-RP to *multiple* IdPs (Keycloak / Microsoft / Google),
+so per-provider is the correct shape.
+
+#### TEMPORARY DHBW dev bridge — `rapla.oauth.web.dhbw-legacy-callback`
+
+A dev-only workaround exists for the DHBW production Keycloak
+(`login.mosbach.dhbw.de`, realm `dhbwmos-lehre`, client `rapla-app`):
+that realm only whitelists the **legacy** `/app/auth/callback` redirect
+for localhost, and the maintainer has no admin on the prod realm to
+register the conformant `/login/oauth2/code/keycloak`. With
+**`rapla.oauth.web.dhbw-legacy-callback=true`** (default `false`; set
+only in the gitignored `application-local.yml`):
+
+- the keycloak `ClientRegistration` (built in `RaplaClientRegistrationConfig`)
+  **sends** the registered `/app/auth/callback` as its `redirect_uri`;
+- the callback is then routed back onto Spring's real
+  `/login/oauth2/code/keycloak` endpoint by **both** (a) the ng-serve
+  proxy on `:4200` (the SPA dev origin) and (b) a server-side
+  `LegacyKeycloakCallbackBridgeFilter` on `:8051` — the Swing-SSO browser
+  hits `:8051` directly, where there is no proxy, so the filter is what
+  bridges it there.
+
+Spring validates the OAuth `state` (not the request path) and uses the
+**saved** `redirect_uri` (`/app/auth/callback`) for the token call, so it
+still matches what DHBW issued the code for. The conceptual point: the
+**outgoing** `redirect_uri` rapla sends to the IdP is built server-side
+(`RaplaClientRegistrationConfig`), so a proxy rewrite alone can't fix it —
+the server-side flag is required to make rapla *send* the legacy URI.
+
+**Removal condition:** delete the flag, the `LegacyKeycloakCallbackBridgeFilter`,
+and the keycloak `redirectUri` override once DHBW IT registers the
+conformant `/login/oauth2/code/keycloak` redirect URI on the prod realm.
+
+### Recipe: Microsoft Entra ID (Web platform — required)
+
+Because rapla redeems the code server-side, the Entra registration must
+be the **Web platform** (a confidential client) **with a client secret**.
+The SPA platform fails with `AADSTS9002326` ("cross-origin token
+redemption is permitted only for the 'Single-Page Application' client
+type") — Entra refuses the server-side redemption an SPA-platform client
+makes (verified live, PRD 072).
 
 1. **Register the application** in Entra:
    - Azure portal → Microsoft Entra ID → App registrations → New registration.
    - Name: `rapla` (or anything you like).
    - Supported account types: **Accounts in this organizational directory only** (single-tenant — strongly recommended; multi-tenant requires `tenant=common` and accepts users from any Entra tenant).
-   - Redirect URI: select platform **Single-page application** from the dropdown, then enter `https://rapla.yourdomain.com/app/auth/callback`. For dev: `http://localhost:4200/app/auth/callback` (Angular dev server) and/or `http://localhost:8051/app/auth/callback` (rapla direct).
+   - Redirect URI: select platform **Web** from the dropdown, then enter `https://rapla.yourdomain.com/login/oauth2/code/microsoft`. For dev, add `http://localhost:4200/login/oauth2/code/microsoft` and `http://localhost:8051/login/oauth2/code/microsoft`.
    - Click **Register**.
 2. **Note the IDs** (Overview tab):
    - **Application (client) ID** → `RAPLA_OAUTH_EXTERNAL_MICROSOFT_CLIENT_ID`.
    - **Directory (tenant) ID** → `RAPLA_OAUTH_EXTERNAL_MICROSOFT_TENANT`.
-3. **API permissions**: the default delegated `User.Read` is fine. No admin consent needed.
-4. **Run rapla** with:
+3. **Generate a client secret**: App Registration → Certificates & secrets → New client secret → copy the **Value** field (not the Secret ID) → `RAPLA_OAUTH_EXTERNAL_MICROSOFT_CLIENT_SECRET`.
+4. **API permissions**: the default delegated `User.Read` is fine. No admin consent needed.
+5. **Run rapla** with:
    ```bash
    export RAPLA_OAUTH_EXTERNAL_MICROSOFT_ENABLED=true
    export RAPLA_OAUTH_EXTERNAL_MICROSOFT_TENANT=11111111-2222-3333-4444-555555555555
    export RAPLA_OAUTH_EXTERNAL_MICROSOFT_CLIENT_ID=66666666-7777-8888-9999-aaaaaaaaaaaa
-   java -jar rapla-2.1-SNAPSHOT.jar
-   ```
-
-### Recipe: Microsoft Entra ID (Web platform — secret-based)
-
-Use this when your security policy mandates confidential clients, or
-when integrating with a legacy Entra registration that's already on the
-Web platform.
-
-1. Same as SPA recipe step 1, **except**: pick platform **Web** instead of Single-page application.
-2. Note the IDs (same as above).
-3. **Generate a client secret**: App Registration → Certificates & secrets → New client secret → copy the **Value** field (not the Secret ID).
-4. **Run rapla** with the extra secret env var:
-   ```bash
-   export RAPLA_OAUTH_EXTERNAL_MICROSOFT_ENABLED=true
-   export RAPLA_OAUTH_EXTERNAL_MICROSOFT_TENANT=<tenant-guid>
-   export RAPLA_OAUTH_EXTERNAL_MICROSOFT_CLIENT_ID=<client-guid>
    export RAPLA_OAUTH_EXTERNAL_MICROSOFT_CLIENT_SECRET=<secret-value>
    java -jar rapla-2.1-SNAPSHOT.jar
    ```
-The BFF route is used automatically when `client-secret` is set.
 
 ### Recipe: Google (Web application — requires secret + BFF)
 
@@ -1299,7 +1458,7 @@ token endpoint even with PKCE. The BFF route handles this.
    - https://console.cloud.google.com → APIs & Services → Credentials → Create credentials → OAuth client ID.
    - Application type: **Web application**.
    - **Authorised JavaScript origins**: `https://rapla.yourdomain.com` (and `http://localhost:4200` for Angular dev, `http://localhost:8051` for rapla direct).
-   - **Authorised redirect URIs**: `https://rapla.yourdomain.com/app/auth/callback` (and matching localhost variants for dev).
+   - **Authorised redirect URIs**: `https://rapla.yourdomain.com/login/oauth2/code/google` (and for dev `http://localhost:4200/login/oauth2/code/google` + `http://localhost:8051/login/oauth2/code/google`). This is rapla's server-side callback — **not** the old `/app/auth/callback`. Verified live (PRD 072).
 2. **Configure the OAuth consent screen** (one-time): User type Internal (Workspace) or External (consumer Gmail). Scopes: `openid`, `profile`, `email`.
 3. **Copy both**:
    - **Client ID** → `RAPLA_OAUTH_EXTERNAL_GOOGLE_CLIENT_ID`.
@@ -1317,16 +1476,12 @@ token endpoint even with PKCE. The BFF route handles this.
    `@gmail.com` consumers) can authenticate. With it, the server
    rejects tokens whose `hd` claim doesn't match.
 
-### Recipe: Google (Desktop app — no secret, direct route)
-
-Alternative client type that avoids the secret entirely. Suitable for
-dev or smaller deployments; production may prefer Web application.
-
-1. Same as Web application recipe step 1, **except**:
-   - Application type: **Desktop app**.
-   - No JavaScript origins / redirect URIs to register — Desktop app allows any loopback URI by default.
-2. Copy the **Client ID** (no secret is generated for Desktop apps).
-3. **Run rapla** with `RAPLA_OAUTH_EXTERNAL_GOOGLE_CLIENT_ID` only — leave `RAPLA_OAUTH_EXTERNAL_GOOGLE_CLIENT_SECRET` unset. The direct (no-BFF) route is used automatically.
+> **No more Google "Desktop app" route (PRD 072).** Because rapla
+> redeems the code server-side, Google must be a **Web application**
+> client with a registered redirect URI + secret (above). The former
+> secret-less Desktop-app path relied on the SPA doing the loopback
+> redemption itself — that path is gone with the server-side
+> `oauth2Login()` flow.
 
 ### Recipe: Keycloak
 
@@ -1340,12 +1495,15 @@ realm. Unlike Microsoft/Google, rapla derives every OIDC endpoint from just
 2. **Create a client** in that realm: *Clients → Create client*.
    - Client type: **OpenID Connect**, Client ID e.g. `rapla-app`.
    - *Capability config*: **Standard flow** on. Leave **Client
-     authentication** OFF for a public PKCE client (recommended for the SPA);
-     turn it ON for a confidential client (then set `client-secret`).
+     authentication** OFF for a public PKCE client (rapla reuses the public
+     `rapla-app` client server-side with PKCE); turn it ON for a confidential
+     client (then set `client-secret`).
    - *Login settings*:
-     - **Valid redirect URIs**: `https://rapla.yourdomain.com/app/auth/callback`
-       (for dev also `http://localhost:4200/app/auth/callback` and
-       `http://localhost:8051/app/auth/callback`).
+     - **Valid redirect URIs**: `https://rapla.yourdomain.com/login/oauth2/code/keycloak`
+       (for dev also `http://localhost:4200/login/oauth2/code/keycloak` and
+       `http://localhost:8051/login/oauth2/code/keycloak`). This is rapla's
+       server-side callback — **not** `/app/auth/callback`. Verified live
+       against the DHBW Mosbach realm (PRD 072).
      - **Web origins**: the rapla origin(s), or `+` to reuse the redirect-URI
        origins (CORS).
 3. **Run rapla** with:

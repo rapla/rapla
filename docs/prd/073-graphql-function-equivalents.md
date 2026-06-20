@@ -110,6 +110,13 @@ appointment/reservation date accessors map across rows 9–13.)
 **B. Partial — close only if a concrete consumer needs it:**
 - Per-language `name(obj, lang)` (#8) — add a `displayName(locale: String)`
   argument / `names: [LocalizedName!]` field. Real for multi-locale deployments.
+- **Export nameformat (`nameformat_export`)** — the type's richer export-only
+  composition (e.g. the `Kurs`/`Teilkurs`/`Kursgruppe` filter + `{link}`). **Decision:
+  two plain fields `displayName` + `displayNameExport`** (not a `format:` argument) —
+  the format set is a fixed two, so two server-computed scalar fields are simpler than
+  an enum arg / query variable, stay introspectable, and are trivially selectable in
+  the column/directive model. (A `format: DISPLAY|EXPORT` variable would only pay off
+  if the format set grew.)
 - `intervall`/`times`/`date` (#10/#11) — presentation helpers; keep client-side
   unless a non-JS consumer (CSV/MCP) needs them server-rendered.
 - `index` (#20), server `sort` (#19), `stringComparator` (#3) — pagination &

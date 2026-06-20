@@ -1,57 +1,62 @@
 # PRD 074 — Declarative GraphQL View Definitions
 
-**Status:** draft — design resolved 2026-06-19 after a prior-art deep-dive
-(6-agent workflow + direct investigation). **Recommendation: Option A (assembled
-bounded spec), pending sign-off.** Data-layer feeder: [PRD 073](073-graphql-function-equivalents.md).
+**Status:** draft — 2026-06-20. **Preferred design: GraphQL-native views with NO
+expression engine** (server-evaluated composition fields + GraphQL selection +
+presentation directives — see §"Preferred design"). **No expression engine:** complex
+compositions are evaluated **server-side by rapla's own `ParsedText` engine**; CEL / a
+client transform pipeline were evaluated and **dropped** (no added capability over
+rapla's engine). Data-layer feeder: [PRD 073](073-graphql-function-equivalents.md).
 
 ## Goal
 
-A **saved view** lets an admin define a data view by storing two artifacts — a
-**GraphQL document** (inputs + data) and a **bounded transform spec** (the
-displayable shape) — with **no client redeploy and no server-side column config**.
-The Angular SPA is a generic renderer; the *same* transform also runs server-side
-for CSV/HTML/iCal export. Replaces TableView's per-deployment column config
-(`/table/*`, PRD 030 — deprecated, frozen, **no migration**; the new path is
+A **saved view** lets an admin define a data view by storing a **GraphQL document**
+(inputs + data selection) plus thin **presentation metadata** (column order/header where
+convention isn't enough) — with **no client redeploy and no server-side column config**.
+The Angular SPA is a generic renderer over the GraphQL response; server-rendered export
+(CSV/HTML/iCal) renders the *same* data. Replaces TableView's per-deployment column
+config (`/table/*`, PRD 030 — deprecated, frozen, **no migration**; the new path is
 greenfield).
 
 ## Architecture at a glance
 
-GraphQL (data + mutations) is the spine. Each rendering surface uses the best tool
-for *its* output; only **server-rendered table export** is constrained to a
-dual-runtime engine (it needs a JVM evaluator), which is why we build our own
-bounded spec there:
+GraphQL is the spine. Read tables need **no expression engine**: composition columns are
+**server-evaluated GraphQL fields** (rapla's existing `ParsedText` engine), selection is
+GraphQL, shaping is convention + a few presentation directives. Each surface uses the
+best tool for *its* output:
 
 | Surface | Renders | Engine | Status |
 |---|---|---|---|
-| **Read tables** (SPA + CSV/HTML/iCal) | client **and server** | **A-CEL** transform; rendered by **`cdk-table`** + `ngComponentOutlet` registry | this PRD |
+| **Read tables** (SPA + CSV/HTML/iCal) | server-eval fields + presentation | **none** — rapla `ParsedText`, server-side; `cdk-table` + `ngComponentOutlet` registry | this PRD |
 | **Charts** | client only | **Vega-Lite** (interpreter mode, CSP-safe) | companion |
 | **Edit forms** | client only | **ngx-formly** → GraphQL mutations | companion / future PRD 075 |
 
-The dual-runtime constraint bit **only** server-rendered tables. Charts and forms
-are client-only, so they adopt the best client-native option directly. **Adaptive
-Cards is dropped** (its only value was cross-host portability, which an Angular-only
-SPA doesn't need — ngx-formly replaces it for forms; CEL + the flatten
-parent-projection replace its templating role on the read side). **A′ (GraalJS) is
-withdrawn** — CEL gives cross-runtime parity without a server-side JS engine.
+**Adaptive Cards is dropped** (cross-host portability isn't needed for an Angular-only
+SPA — ngx-formly replaces it for forms; server-side `displayName`/composition fields +
+flatten parent-projection replace its templating role on the read side). **CEL and a
+client transform pipeline were evaluated and dropped** — composition is evaluated
+server-side by rapla's own engine, so no dual-runtime / client engine is needed (see
+§"If a view ever needs more").
 
 ## Locked decisions
 
-1. **Separation of concerns** — GraphQL owns **prediction (filtering) + navigation
-   (which data)**; the transform owns **formatting + grouping + aggregation**. The
-   rapla nameformat DSL (`ParsedText`) is **not** used here (stays in deprecated
-   Swing/HTML TableView).
-2. **Maximize GraphQL; keep the transform thin.** Filtering/partitioning/computed
-   scalars belong in the query. E.g. the room/course/lecturer split is **aliased,
-   filtered sub-selections** in the query, so the transform only joins:
+1. **Separation of concerns** — GraphQL owns **prediction (filter) + navigation (which
+   data)**; presentation owns **column layout / formatting / grouping**. Composition
+   columns (incl. nameformats) are evaluated **server-side via rapla's `ParsedText`
+   engine** and returned as plain GraphQL fields (`displayName`/`times`/`duration`).
+2. **Maximize GraphQL.** Filtering/partitioning/computed scalars belong in the query —
+   e.g. the room/course/lecturer split is **aliased, filtered sub-selections**:
    ```graphql
-   raum:   allocatables(typeKeyIn:["Raum","virtuellerRaum","Teilraum"]) { displayName }
-   dozent: allocatables(isPersonEq:true)                                 { displayName }
+   resources: allocatables(filter:{ isPersonEq:false }) { displayName }
+   persons:   allocatables(filter:{ isPersonEq:true })  { displayName }
    ```
    (Needs data-layer additions — see Dependencies.)
-3. **Client + server, one definition** — server-rendered HTML/CSV requires the
-   transform to evaluate on the JVM, so the engine must be dual-runtime.
-4. **Engine = Option A, a bounded spec we *assemble* from vetted prior art** (not a
-   Turing-complete language). See §Transform engine.
+3. **No expression engine; no dual-runtime.** Compositions evaluate **server-side only**,
+   reusing rapla's engine — no client expression runtime, no TS↔Java parity surface.
+   Server-rendered export reuses the same server-side evaluation.
+4. **Directives are optional overrides.** Field order = column order, alias = column key
+   → localized header, type → formatting, list → join; explicit
+   `@column(order:)`/`@flatten`/`@groupBy` only where nesting flattens *and* reorders
+   (the three worked tables). CEL is **not** used — see §"If a view ever needs more".
 
 ## Inputs = query variables (controls inferred by convention)
 
@@ -85,229 +90,18 @@ Hence views depend on the schema-hygiene guideline in
 [PRD 073 § Schema-design guideline](073-graphql-function-equivalents.md): focused
 filter inputs, shared matcher logic, one test per filter field.
 
-## Transform engine — recommended: Option A (assembled bounded spec)
+## Preferred design — GraphQL-native views (no expression engine)
 
-The decision rests on a residual analysis: after maximizing GraphQL, what the
-transform must still do is **flatten tree→rows, filter, derive/format, group,
-aggregate** — a small, **bounded, non-Turing-complete** set. No single existing
-spec can be adopted wholesale (each fails a non-negotiable), so we **assemble** one
-from vetted parts.
+This is the **preferred, default design.** Validated against the real dhbw tables
+(below), a view decomposes into **three CLOSED, engine-free building blocks** — no
+expression engine, no new library, no TS↔Java parity problem. The conditional/string
+logic the real views use lives in **nameformats that rapla already evaluates
+server-side**, and `filter(...)` compositions are **selection** → GraphQL — so nothing
+needs a client engine. (There is **no** expression engine; should a view ever need a
+complex composition, it is another rapla Function composition evaluated **server-side** —
+see §"If a view ever needs more". CEL was evaluated and dropped.)
 
-### Decision matrix
-
-| Criterion | **A. Own bounded spec** | B. Adaptive Cards + AEL | C. Vega-Lite | D. JSONata | E. Raw JS |
-|---|---|---|---|---|---|
-| Standard / ecosystem | 🟡 assembled from standard parts | ✅ MS spec | ✅ viz grammar | 🟡 niche | ✅ ECMAScript |
-| Bounded / total (not Turing-complete) | ✅ by construction | ✅ | ✅ | ❌ TC + `$eval` RCE + CVEs | ❌ |
-| Capability-confined (no DOM/net/host) | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Dual-runtime (TS **and** Java) | 🟡 we write both (small) | ❌ no JVM engine | ❌ no JVM engine | 🟡 2nd impl drifts | ✅ but heavy/unsafe |
-| Plugin-extensible (compiled, not author code) | ✅ rapla `FunctionFactory` | ✅ | 🟡 JS-only | 🟡 + `$eval` hole | ❌ |
-| CSP: no `unsafe-eval` | ✅ AST tree-walk | 🟡 | 🟡 default code-gens | ❌ | ❌ |
-| Authoring tooling | 🟡 Monaco + JSON Schema | ✅ designer | ✅ editor | 🟡 exerciser | 🟡 |
-| Fit to the residual | ✅ sized exactly | 🟡 no table/aggregate | ✅ near-1:1 transforms | ✅ overshoots | ✅ does anything |
-
-- **D JSONata — REMOVED from consideration (2026-06-19).** Turing-complete,
-  `$eval` RCE, CVE stream, `unsafe-eval`. Out.
-- **E raw JS — rejected** (no author/code boundary; forces `unsafe-eval`).
-- **B Adaptive Cards / C Vega-Lite — adapt the model, reject the *full* runtime**
-  (no first-party JVM engine; AC is card-shaped with no table/aggregate; Vega's
-  default needs `unsafe-eval`). **But see Alternative A′** — if we adopt their
-  *real* syntax we can reuse their real JS libs on the client and run them on the
-  JVM via GraalJS.
-- **A — build, assembled from vetted parts.** Weaknesses (no standard / we write
-  both interpreters) are mitigated: the **residual is tiny**, every semantic choice
-  **traces to a vetted source**, parity is enforced by a compliance corpus. Tiny,
-  eval-free, no big dependency — the **security floor**.
-
-### Alternative A′ — adopt real AC/Vega *syntax* and reuse the libraries
-
-If the spec **is** real Adaptive Cards templating + real Vega transforms (not
-"inspired by"), then the **client uses the actual `adaptivecards-templating` +
-`vega`/`vega-lite` JS libs** (free ecosystem, tooling, designer/editor), and only
-the **server table/CSV/HTML export** needs a JVM evaluator.
-
-**Parity crux:** if the client runs the full real lib but the server runs a Java
-*subset*, the client is more capable → an admin can author something that renders
-in the SPA but **breaks server export**. So both sides must run the *same*
-semantics. Options for the server:
-1. **GraalJS — run the real JS libs on the JVM** (confirmed: GraalJS runs npm via
-   the Context API). **Same code both sides → perfect parity, zero reimplementation,
-   fully standard syntax.** This is "find an implementation" = the library itself.
-   It runs **trusted library code over the author's declarative JSON (data), in
-   interpreter/CSP-safe mode** — *not* author JS, so it is not the rejected
-   eval-author-code risk. Cost: **GraalVM dependency** (heavy) + a server-side JS
-   engine (larger surface than a bounded Java interpreter); bound to external spec
-   churn; needs a feasibility spike (vega/AC may pull Node built-ins → bundle).
-2. **Reimplement the needed subset in Java** (transform + binding eval only) — but
-   chasing external full-spec semantics = drift risk + must lint the client to the
-   subset (partly defeats reuse).
-3. **Node sidecar** — real libs in a Node process the JVM calls; ops-heavy.
-
-**A vs A′ is the project's core tension:** *minimal-dependency + control + security*
-(A) vs *maximally-standard + reuse + same-code parity* (A′ via GraalJS).
-
-**Deciding step — a 1–2 day GraalJS feasibility spike**: do `vega` +
-`adaptivecards-templating` load and evaluate a transform/binding under a GraalJS
-`Context` (no Node built-ins, interpreter mode, CSP-safe)? **If yes → A′** (standard
-syntax, free client, same-code parity). **If messy → A** (bounded, eval-free, no big
-dep) is the floor. A′ is the upside bet; A is the safe fallback.
-
-### Amendment — CEL as the expression sublanguage (→ A-CEL). RECOMMENDED.
-
-A background candidate sweep (2026-06-19) found one decisive win: **CEL (Common
-Expression Language)** for A's expression slots (per-cell `calculate` + `filter`
-predicate).
-- **Non-Turing-complete by design** (the headline property, not a watchdog),
-  capability-confined, **CSP-clean with zero relaxation** (tree-walk, no `eval`, no
-  `wasm-unsafe-eval`).
-- **Mature, conformance-tested runtimes on both sides:** `dev.cel:cel` (Google,
-  JVM) + `@marcbachmann/cel-js` (TS, tree-walking). One spec drives both → real
-  parity. Vetted at Kubernetes/Envoy scale.
-- It is an *expression* language, **not** a pipeline: it fills `calculate`/`filter`;
-  **flatten/group/aggregate/format stay the bespoke pipeline shell** — no candidate
-  supplies a bounded, dual-runtime, CSP-clean *pipeline* language, which is itself
-  the argument the bespoke shell is right.
-
-**Effect: A → A-CEL** — the bespoke bounded pipeline (Vega-Lite transform vocab + AC
-templating + RFC 9535 path) with **CEL in the expression slots**, and
-`FunctionFactory` plugin ops exposed to CEL as host functions. This **deletes A's
-highest-risk component** (two hand-written expression interpreters kept bit-parity
-by golden corpus); the corpus then only proves *pipeline-stage* parity.
-
-**This deprioritizes A′.** A′'s whole pitch was GraalJS for parity — but **CEL gives
-cross-runtime parity without shipping a JS engine into the server**, the exact heavy
-eval-capable surface A′ adds. **A-CEL is preferred over A′.**
-
-**Evidence — CEL × GraphQL is rare-but-validated, and we couple looser than the
-precedent (web check 2026-06-19):**
-- **CEL itself is high-standard**, but in the API/authz boundary, not in GraphQL:
-  Kubernetes (CRD validation, admission policies), Envoy, Confluent Cloud mTLS
-  filters, Firebase rules.
-- **CEL embedded *in* GraphQL has one clear production precedent — Twisp**, which
-  exposes CEL as a first-class GraphQL `Expression` scalar (wherever the schema's
-  `Expression` type appears, a CEL string is accepted and evaluated). So even the
-  *tight* fusion ships in production.
-- **GraphQL has no standard for an inline filter/expression language** — the spec
-  issue [graphql/graphql-spec#271](https://github.com/graphql/graphql-spec/issues/271)
-  has debated exactly this for years, unresolved. The dominant GraphQL pattern for
-  logic is `@auth`-style **directives backed by host-language (JS/Java) resolvers** —
-  i.e. developer code, not an embedded expression sublanguage.
-- **A-CEL couples *looser* than Twisp:** CEL is **not** inside our GraphQL document.
-  GraphQL does prediction/navigation → returns JSON → the bespoke pipeline shapes it
-  → CEL fills the per-cell formula slots. The two meet only at the data boundary
-  (query result → transform input). We invent **no** CEL-in-GraphQL fusion; each
-  tool does only what it is individually standard for. The missing GraphQL inline
-  standard (#271) is itself the reason a separate transform layer is needed —
-  confirming the layering, not contradicting it.
-
-### DuckDB-SQL — strongest transform option, behind a constraint waiver
-
-`duckdb-wasm` (browser) + `duckdb_jdbc` (JVM) is the *same engine + same SQL* both
-sides — best-in-class fit-to-residual (`UNNEST` flatten, `WHERE`, `GROUP BY`/`ROLLUP`
-+ aggregates + window, `strftime`/`printf`); SQL is the most standard transform
-language. **But it breaks two hard constraints:** duckdb-wasm needs `wasm-unsafe-eval`
-in CSP, and `duckdb_jdbc` is JNI-native (not bytecode); capability-confinement is
-opt-in hardening (extensions off, no `httpfs`/`ATTACH`, statement allow-list).
-**Recorded as the strongest transform alternative *pending a written CSP/native-dep
-waiver* — not folded in by default.**
-
-### Whole-engine rivals — all rejected (no candidate beats A/A-CEL/A′)
-
-FINOS Perspective (**no JVM binding**; ExprTK TC; `wasm-unsafe-eval`), JSLT
-(Java-only), Pkl (single native runtime), json-rules-engine (JS-only), jq
-(Turing-complete + WASM CSP), AG-Grid (group/agg is paid Enterprise + no JVM render),
-TanStack/SDUI-DivKit (no server renderer), Cube/Grafana/Superset/Hasura (separate
-products), Apollo/Relay directives (arbitrary JS resolvers). None is a bounded,
-dual-runtime, CSP-clean *whole engine* — confirming the assembled bespoke pipeline.
-
-### What we assemble (each part = "what it solves → what we borrow")
-
-| Prior art | Solves (mostly not ours) | We borrow |
-|---|---|---|
-| **Vega-Lite** | interactive charts | the **transform pipeline** vocabulary: `flatten`/`filter`/`calculate`/`aggregate` (+`window` v2), `groupby`/`ops`/`fields`/`as` |
-| **Adaptive Cards** | cross-host UI / forms | the **templating sublayer**: `$data`/`$root`/`$index`/`$when`, `${}` binding, data/layout split, `registerFunction` extensibility seam |
-| **JSONPath (RFC 9535)** | JSON selection (IETF standard) | **downward path** access (hardened, no script-eval) |
-| **rapla `FunctionFactory`** | nameformat functions | the **plugin op** registry (`namespace:name(args)`), already server-side; mirrored in TS |
-| **JMESPath** | JSON query (formal grammar) | the **compliance-corpus** parity mechanism (`{given, cases:[…]}`) |
-
-### The spec shape (two layers)
-
-1. **`transform: [ {op, …}, … ]`** — ordered pipeline (Vega shape).
-2. **`columns: [ {header, value, when?}, … ]`** — bindings (AC `${}` + `$when`).
-
-Both share one bounded expression sublanguage (RFC 9535 path + Vega's operator
-allow-list: literals/arithmetic/comparison/logical/ternary/`if`/member-access;
-**forbidden**: assignment, `new`, loops, user functions, prototype reach) and one
-pure-function library via the `FunctionFactory` registry. **Parent access** uses
-AC's `$root` (no path family has a parent operator) — `flatten` projects named
-parent fields down onto each row.
-
-| Op | Semantics | Rapla use |
-|---|---|---|
-| `flatten` | array field → one row per element; **project parent fields onto each row** | reservation → one row per appointment block, carrying event/course/lecturer down |
-| `filter` | drop rows by bounded predicate | residual filters not pushed to GraphQL |
-| `calculate` | derive a field via bounded expr → `as` | formatted time range, room label |
-| `aggregate` | `groupby` + `ops`(`sum`/`count`/`min`/`max`/`mean`/`distinct`) + `fields` + `as` | "pro Tag": group by day, `sum(durationMinutes)` |
-| `window` *(v2)* | ordered running calcs (`row_number`, running sum) | deferred |
-
-### Worked examples (dhbw)
-
-**`Termine`** (rows = appointment blocks):
-```jsonc
-{
-  "transform": [
-    { "op": "flatten", "field": "$.reservations", "into": "appointments",
-      "project": { "eventName": "$root.name",
-                   "courseName": "$root.classification.course",
-                   "lecturerName": "$root.classification.lecturer" } },
-    { "op": "calculate", "as": "timeRange",
-      "expr": "concat(formatTime($data.start),'–',formatTime($data.end))" },
-    { "op": "calculate", "as": "room",
-      "expr": "coalesce($data.allocatables[0].room.number,'—')" }
-  ],
-  "columns": [
-    { "header": "Termin", "value": "$data.eventName" },
-    { "header": "Zeit",   "value": "$data.timeRange" },
-    { "header": "Raum",   "value": "$data.room" },
-    { "header": "Kurs",   "value": "$data.courseName" },
-    { "header": "Dozent", "value": "$data.lecturerName",
-      "when": "$root.showLecturer == true" }
-  ]
-}
-```
-
-**`Termine pro Tag`** (group + aggregate):
-```jsonc
-{
-  "transform": [
-    { "op": "flatten", "field": "$.reservations", "into": "appointments",
-      "project": { "eventName": "$root.name" } },
-    { "op": "calculate", "as": "day",
-      "expr": "formatDate($data.start,'yyyy-MM-dd')" },
-    { "op": "calculate", "as": "durationMinutes",
-      "expr": "org.rapla.eventtimecalculator:durationMinutes($data.start,$data.end)" },
-    { "op": "aggregate", "groupby": ["day"], "ops": ["count","sum"],
-      "fields": ["*","durationMinutes"], "as": ["blockCount","totalMinutes"] }
-  ],
-  "columns": [
-    { "header": "Tag",        "value": "$data.day" },
-    { "header": "Termine",    "value": "$data.blockCount" },
-    { "header": "Dauer (min)","value": "$data.totalMinutes" }
-  ]
-}
-```
-`durationMinutes` is supplied by the existing `DurationFunctions` plugin
-(`org.rapla.eventtimecalculator`) — a compiled op referenced by name; authors never
-inject code.
-
-## Alternative under evaluation (2026-06-20) — GraphQL-native views, no expression engine
-
-Examining the two views above against the **real dhbw type model** surfaced a
-stronger, simpler option. The compositions they actually use are tiny —
-`concat`/`formatTime`/`formatDate`/`coalesce`/`durationMinutes` + path access + one
-comparison — **no free-form, Turing-ish expression**. That re-opens whether the
-whole A-CEL transform engine is needed, or whether the views decompose into **three
-CLOSED, engine-free building blocks**:
+The three building blocks:
 
 - **Selection + filter → GraphQL** — `where` (PRD 059), the nested `allocatables`
   filter (shipped 2026-06-19), access selectors (PRD 069). In the dhbw model
@@ -315,24 +109,25 @@ CLOSED, engine-free building blocks**:
   attributes**: `Raum`/`Teilraum`/`virtuellerRaum`, `Kurs`/`Teilkurs`/`Kursgruppe`,
   `Person` — split per column by `typeKeyIn`. Rows are **AppointmentBlocks**
   (recurrence expansion) = the flatten unit.
-- **Aggregation → GraphQL aggregate-field convention** (Hasura/PostGraphile-style;
-  *convention, not spec* — same category as rapla's `where`). Closed `groupBy`
-  vocabulary (`DAY`/`WEEK`/`MONTH`, by-room, …) + closed ops (`count`/`sum`/`min`/
-  `max`/`avg`); **§12 enforced in the aggregate resolver** (a `count`/`sum` is
-  server-derived existence info — `canRead` must run *before* counting or the number
-  leaks unreadable rows). Server-side `sum { durationMinutes }` depends on the
-  `durationMinutes` field (**PRD 073 Phase 2**).
-- **Cell formatting / compositions → generated, closed directives.** Each
-  rarely-edited composition compiles **server-side, once** into a named directive
-  (`@timeRange`, `@room`, …) with the op-tree baked in. The wire carries only the
-  bare directive name — **no expression string, no client engine**, schema-validated,
-  GraphiQL-pasteable (server ignores the directives, returns plain data; the SPA
-  reads them from the query AST and builds the table).
+- **Composition cells → server-evaluated fields.** Each column's `defaultValue`
+  composition (and the type nameformats) is evaluated **server-side via rapla's existing
+  `ParsedText` engine** and exposed as a plain GraphQL field — `displayName` is just the
+  field for the `name`/nameformat composition; `times`/`duration` likewise. No client
+  engine, no expression string on the wire; the response stays plain typed data.
+- **Shaping → presentation, implicit by default.** GraphQL field order = column order,
+  alias = column key → localized header, field type → formatting, list → join. Explicit
+  directives (`@flatten`/`@column(order:)`/`@groupBy`/`@when`) appear **only** where the
+  structure forces it — cross-level flattening that reorders, or the per-day row
+  grouping (see the three worked tables).
 
-Two directive kinds: **fixed/closed structural** (`@view`/`@column`/`@flatten`/
-`@join`/`@when`/`@group`/`@aggregate`) hand-defined once; **generated-per-composition**
-(deployment-specific, from the `FunctionFactory`-style op registry — *same generation
-pattern as `ClassificationSdlGenerator`*).
+Aggregation (count/sum/groupBy *collapse*) is **not used by any of the three standard
+tables** — they flatten/split/group rows but never collapse them. A GraphQL
+aggregate-field convention is a *possible future* capability, off the critical path.
+
+Directive kinds: a small **fixed/closed structural** set (`@view`/`@column`/`@flatten`/
+`@join`/`@when`/`@groupBy`) — all **optional overrides** over the conventions above, plus
+the server-evaluated composition fields generated from the col annotations (same
+generation pattern as `ClassificationSdlGenerator`).
 
 ### Authoring layer (readability)
 
@@ -344,93 +139,226 @@ closed-directive wire form — the dense form is a machine artefact, not an auth
 format. The raw composition (`concat(...)`) lives only in ①, compiled once to the
 `@timeRange` directive.
 
-### Worked query 1 — `Termine` (corrected dhbw structure)
+> **Open / unsettled (2026-06-20):** whether a *separate* authored spec is even
+> needed (the directive query may be authored directly via a form/builder instead),
+> and **exactly how ① maps to ②** — the spec→directive/query compilation is
+> unspecified. The ① YAML below is an **illustrative sketch, not a committed format**.
 
-**① Authored spec (what the admin writes):**
-```yaml
-view: Termine
-filter: Lehrveranstaltung
-rows: blocks                     # one row per AppointmentBlock
-columns:
-  - { header: "Termin", from: name }
-  - { header: "Zeit",   value: "concat(formatTime(start),'–',formatTime(end))" }
-  - { header: "Raum",   from: [Raum, Teilraum, virtuellerRaum], join: ", " }
-  - { header: "Kurs",   from: [Kurs, Teilkurs, Kursgruppe],     join: ", " }
-  - { header: "Dozent", from: persons, join: ", ", when: showLecturer }
-```
+### Worked queries — the three real dhbw tables
 
-**② Generated query (machine artefact — nobody hand-writes this):**
+The three real views are `org.rapla.plugin.tableview.{events, appointments,
+appointments_per_day}`. Their **exact column sets** are the default `ViewDefinition`s in
+`TableConfig.java` (and persist in the dhbw `data.xml`) — documented here verbatim as an
+**existing table config** (ground truth, not invented):
+
+| View | `contentDefinition` (rows) | columns (in order) |
+|---|---|---|
+| `events` | `{p->events(p)}` — reservations | `name`, `start`, `lastchanged` |
+| `appointments` | `{p->appointmentBlocks(p)}` — blocks | `name`, `start`, `end`, `resources`, `persons` |
+| `appointments_per_day` | `{p->appointmentBlocks(p)}` — blocks, grouped per day | `times`, `name`, `resources`, `persons` |
+
+(`duration` is a *defined* column in `tableview.config` but is in **none** of the three
+default views.) Each column's `defaultValue` maps to a GraphQL construct: selection →
+`allocatables(filter:)`; projection/derivation → a **server-evaluated field** (rapla's
+`ParsedText`; `displayName` is just the `name` composition).
+
+**Directives are implicit by default, explicit only where the structure forces it.**
+GraphQL preserves field order (= column order); alias = column key → localized header;
+type drives formatting; a list is joined by convention. `@column(order:)`/`@flatten` are
+needed **only** when columns come from different nesting levels and the order interleaves
+them.
+
+**Table 1 — `events` · rows = reservations · columns `name`, `start`, `lastchanged` · flat → 0 directives:**
 ```graphql
-query Termine($from: DateTime!, $to: DateTime!, $showLecturer: Boolean!)
-  @view(title: "Termine")
-{
+query Termine_events {
   reservations(filter: { typeKeyIn: ["Lehrveranstaltung"] }) {
-    name @column(header: "Termin", order: 1)
+    name: displayName             # {p->name(p)}
+    start: firstDate              # {p->start(p)}        (reservation's first date)
+    lastchanged: lastModifiedAt   # {p->lastchanged(p)}
+  }
+}
+```
+Three reservation-level fields → flat: order implicit, header from alias, datetime
+formatted by convention. **No `end`, no resources/persons** — exactly the real config.
 
+**Table 2 — `appointments` · rows = blocks · columns `name`, `start`, `end`, `resources`, `persons` · multi-level → `@flatten` + `@column(order:)`:**
+```graphql
+query Termine_appointments($from: DateTime!, $to: DateTime!) {
+  reservations(filter: { typeKeyIn: ["Lehrveranstaltung"] }) {
+    name: displayName @column(order: 1)                       # res level   {p->name(p)}
     appointments {
-      raum:   allocatables(filter: { typeKeyIn: ["Raum","Teilraum","virtuellerRaum"] })
-              @column(header: "Raum", order: 3) @join(field: "displayName", separator: ", ") { displayName }
-      kurs:   allocatables(filter: { typeKeyIn: ["Kurs","Teilkurs","Kursgruppe"] })
-              @column(header: "Kurs", order: 4) @join(field: "displayName", separator: ", ") { displayName }
-      dozent: allocatables(filter: { isPersonEq: true })
-              @column(header: "Dozent", order: 5) @join(field: "displayName", separator: ", ")
-              @when(visibleIf: $showLecturer) { displayName }
-
-      blocks(from: $from, to: $to) @flatten(project: ["raum","kurs","dozent"])
-            @timeRange(header: "Zeit", order: 2)        # generated: concat(formatTime(start),'–',formatTime(end))
-      {
-        start
-        end
+      resources: allocatables(filter: { isPersonEq: false }) @column(order: 4) { displayName }
+      persons:   allocatables(filter: { isPersonEq: true })  @column(order: 5) { displayName }
+      blocks(from: $from, to: $to) @flatten(project: ["name","resources","persons"]) {
+        start @column(order: 2)                               # block date+time   {p->start(p)}
+        end   @column(order: 3)                               # block date+time   {p->end(p)}
       }
     }
   }
 }
 ```
+`@column(order:)` because the nesting order (name, resources, persons, start, end) ≠ the
+column order (name, **start**, **end**, resources, persons) — `start`/`end` are block-deep
+but want columns 2–3, and the res > appt > block tree can't be reordered.
+`@flatten(project:)` pulls the res/appt fields onto each block row. `start`/`end` carry
+the **full date+time** (this is the table with the date per row). **No `times`, no
+`duration`** — exactly the real config.
 
-(`Teilraum`/`Teilkurs` can be split into their own columns by giving each its own
-filtered alias, e.g. `teilraum: allocatables(filter: { typeKeyIn: ["Teilraum"] })`.)
-
-### Worked query 2 — `Termine pro Tag` (aggregate-field convention)
-
-**① Authored spec:**
-```yaml
-view: Termine pro Tag
-filter: Lehrveranstaltung
-rows: blocks
-group: { by: day, bucket: DAY }       # closed dimension
-aggregate:
-  - { op: count,                    as: termine }
-  - { op: sum, of: durationMinutes, as: minuten }
-columns:
-  - { header: "Tag",         from: day }
-  - { header: "Termine",     from: termine }
-  - { header: "Dauer (min)", from: minuten }
-```
-
-**② Generated query:**
+**Table 3 — `appointments_per_day` · rows = blocks, grouped per day · columns `times`, `name`, `resources`, `persons`:**
+Rows are appointment blocks (same `{p->appointmentBlocks(p)}` content as `appointments`);
+the **server page groups them per day** (`AppointmentPerDayViewPage`) and the row shows
+`times` (time-of-day) — there is **no** `start`/`end` date column (the date is the day
+grouping). `times` is column 1.
 ```graphql
-query TermineProTag($from: DateTime!, $to: DateTime!)
-  @view(title: "Termine pro Tag")
-{
-  appointmentBlocksAggregate(
-    filter:  { reservationTypeKeyIn: ["Lehrveranstaltung"] }
-    from: $from, to: $to
-    groupBy: { dateBucket: DAY }              # closed dimension — not a free formatDate
-  ) {
-    groups {
-      key { day @column(header: "Tag", order: 1) }
-      count       @column(header: "Termine", order: 2)
-      sum { durationMinutes @column(header: "Dauer (min)", order: 3) }
+query Termine_perDay($from: DateTime!, $to: DateTime!) {
+  reservations(filter: { typeKeyIn: ["Lehrveranstaltung"] }) {
+    name: displayName @column(order: 2)                       # {p->name(p)}  (column 2 — times is 1)
+    appointments {
+      resources: allocatables(filter: { isPersonEq: false }) @column(order: 3) { displayName }
+      persons:   allocatables(filter: { isPersonEq: true })  @column(order: 4) { displayName }
+      blocks(from: $from, to: $to)
+            @flatten(project: ["name","resources","persons"])
+            @groupBy(field: "start", by: DAY)     # group block rows by the DAY of start (section header)
+      {
+        start                                      # selected only to derive the day (not a column)
+        times @column(order: 1)                    # {p->times(p)}  — time-of-day, column 1
+      }
     }
   }
 }
 ```
+`start` is selected **only** so the SPA can derive the day for the section header — it is
+not a displayed column. Rows are per **block** (not per day); `@groupBy` clusters them by
+the day of `start`. There is **no split** (a block is one occurrence) and **no
+count/sum/collapse**. `times` is column 1, `name` column 2 → `@column(order:)` needed
+(`times` is block-deep but wants column 1). **No `duration`** — exactly the real config.
 
-Returns valid GraphQL — the **server folds**, the SPA gets finished groups:
+**None of the three real tables aggregate.** `@groupBy` is presentation sectioning,
+distinct from aggregation (count/sum/collapse). A GraphQL aggregate-field convention
+remains a *possible future* capability for explicit aggregate views, **not** used by the
+standard dhbw tables.
+
+**The rule, on the real tables:**
+
+| View | rows | columns | directives needed |
+|---|---|---|---|
+| `events` | reservations | name, start, lastchanged | **none** (flat, all implicit) |
+| `appointments` | blocks | name, start, end, resources, persons | `@flatten(project:)`, `@column(order:)` |
+| `appointments_per_day` | blocks (grouped per day) | times, name, resources, persons | `@flatten(project:)`, `@groupBy(field: start, DAY)`, `@column(order:)` |
+
+So: **implicit by default; explicit only where nesting flattens *and* reorders** — both
+`appointments` and `appointments_per_day` pull columns across res/appt/block levels (so
+both need `@flatten` + `@column(order:)`); `events` is flat and needs nothing.
+
+### Example outputs + GUI rendering (all three)
+
+Dummy data (no real persons, AGENTS.md §17). Each shows the **GraphQL response** (plain
+typed data, server already evaluated the composition fields + §12-filtered) and **what
+the SPA renders**.
+
+**Table 1 — `events` · columns name, start, lastchanged · GraphQL output:**
 ```json
-{ "data": { "appointmentBlocksAggregate": { "groups": [
-  { "key": { "day": "2026-06-22" }, "count": 5, "sum": { "durationMinutes": 450 } } ] } } }
+{ "data": { "reservations": [
+  { "name": "Programmieren II",
+    "start": "2026-06-22T10:00:00",
+    "lastchanged": "2026-06-10T14:22:00Z" }
+] } }
 ```
+**GUI** — one row per reservation; `start` = first date, `lastchanged` type-formatted:
+
+| Name | Beginn | Geändert |
+|---|---|---|
+| Programmieren II | 22.06.2026 10:00 | 10.06.2026 14:22 |
+
+**Table 2 — `appointments` · columns name, start, end, resources, persons · GraphQL output**
+(nested; `start`/`end` are datetimes):
+```json
+{ "data": { "reservations": [
+  { "name": "Programmieren II",
+    "appointments": [
+      { "resources": [ { "displayName": "A474 Hörsaal" } ],
+        "persons":   [ { "displayName": "Prof. X" } ],
+        "blocks": [
+          { "start": "2026-06-22T10:00:00", "end": "2026-06-22T11:30:00" },
+          { "start": "2026-06-29T10:00:00", "end": "2026-06-29T11:30:00" } ] } ] }
+] } }
+```
+**GUI** — `@flatten(project:)` makes one row per block with `name`/`resources`/`persons`
+projected down; `@column(order:)` puts `Beginn`/`Ende` (block-level) into columns 2–3:
+
+| Name | Beginn | Ende | Ressourcen | Personen |
+|---|---|---|---|---|
+| Programmieren II | 22.06.2026 10:00 | 22.06.2026 11:30 | A474 Hörsaal | Prof. X |
+| Programmieren II | 29.06.2026 10:00 | 29.06.2026 11:30 | A474 Hörsaal | Prof. X |
+
+**Table 3 — `appointments_per_day` · columns times, name, resources, persons · GraphQL output**
+(`start` is selected only to derive the day; the SPA groups rows under day headers):
+```json
+{ "data": { "reservations": [
+  { "name": "Programmieren II",
+    "appointments": [ { "resources": [ { "displayName": "A474 Hörsaal" } ],
+                        "persons": [ { "displayName": "Prof. X" } ],
+                        "blocks": [ { "start": "2026-06-22T10:00:00", "times": "10:00–11:30" } ] } ] },
+  { "name": "Datenbanken",
+    "appointments": [ { "resources": [ { "displayName": "B12" } ],
+                        "persons": [ { "displayName": "Dr. A" } ],
+                        "blocks": [ { "start": "2026-06-22T14:00:00", "times": "14:00–15:30" } ] } ] }
+] } }
+```
+**GUI** — rows grouped under day section-headers (from `start`); columns `times`, `name`,
+`resources`, `persons` (times first); `start` itself is not shown:
+
+```
+▼ Mo 22.06.2026
+    10:00–11:30   Programmieren II       A474 Hörsaal   Prof. X
+    14:00–15:30   Datenbanken            B12            Dr. A
+▼ Di 23.06.2026
+    09:00–10:30   Software Engineering   A474 Hörsaal   Prof. X
+```
+No row is collapsed — the day is purely a section header.
+
+### Validated against the real dhbw tables (data.xml, 2026-06-20)
+
+The three real table views — `org.rapla.plugin.tableview.{events, appointments,
+appointments_per_day}` — use eight standard rapla columns (stored as `tableview.config`
+column `defaultValue` expressions). The **real** col annotations and their mapping:
+
+| rapla column | col annotation (`defaultValue`) | GraphQL-native mapping | engine? |
+|---|---|---|---|
+| `name` | `{p->name(p)}` | `displayName` — event-type **nameformat already evaluated server-side** | **no** |
+| `start` / `end` | `{p->start(p)}` / `{p->end(p)}` | `start` / `end` + `@format(DATETIME)` | no |
+| `times` | `{p->times(p)}` | server-evaluated `times` field (rapla engine) | no |
+| `persons` | `{p->filter(resources(p),r->isPerson(r))}` | `allocatables(filter:{ isPersonEq:true })` (join by convention) | no |
+| `resources` | `{p->filter(resources(p),r->not(isPerson(r)))}` | `allocatables(filter:{ isPersonEq:false })` (join by convention) | no |
+| `duration` | `{p->org.rapla.eventtimecalculator:duration(p)}` | server-evaluated `duration` field; raw `durationMinutes` (PRD 073 Ph2) for aggregation | no |
+| `lastchanged` | `{p->lastchanged(p)}` | `lastModifiedAt` + `@format(DATETIME)` | no |
+
+**Decisive finding — no client engine is needed even for the *real* compositions.**
+The event-type nameformats are not trivial — they carry conditionals, predicates,
+printf and lambda-filters:
+```
+Lehrveranstaltung name:  {if(not(status),"*","")} {Name} {Beschreibung} {format("<%s>",appointment:note())}
+Pruefung export:         … {filter(event:allocatables, r->or(equals(key(type(r)),"Kurs"),
+                                                             equals(key(type(r)),"Teilkurs"),
+                                                             equals(key(type(r)),"Kursgruppe")))}
+Raum name:               {if(or(equals(substring(Gebaeude,0,3),"MOS"),equals(substring(Gebaeude,0,2),"KA")),
+                              concat(Raumnummer," ",Raumname), concat(SekundaereRaumnummer," ",Raumname))}
+```
+But these `if`/`or`/`equals`/`substring`/`concat`/`format`/`note` expressions live in
+**nameformats, which rapla already evaluates server-side** into `displayName` — the
+client gets a finished string, so the conditional/string logic **never runs
+client-side**. The `filter(...)` expressions are **selection** → GraphQL
+`allocatables(filter:{ isPersonEq } / { typeKeyIn:[…] })`. What remains for the table
+layer is closed formatting (`@format`/`@join`/`@times`). **The expressive real
+compositions are either (a) server-pre-computed nameformats → `displayName`, or (b)
+selection → GraphQL filters — neither needs an engine.** This validates the no-engine
+verdict on real data, not invented examples.
+
+**`appointments_per_day` is grouping, not aggregation:** rows are appointment blocks
+(columns `times`, `name`, `resources`, `persons`); the SPA **groups the rows under day
+section-headers** derived from each block's `start`. No counting, no summing, no row
+collapse, no split — just `@groupBy(field: "start", by: DAY)` (presentation). **Not** an
+aggregate field. None of the three standard tables aggregate.
 
 ### Why this is attractive
 - **No expression engine anywhere** → no CEL lib, no JS port, no TS↔Java parity
@@ -448,13 +376,31 @@ Returns valid GraphQL — the **server folds**, the SPA gets finished groups:
   `rapla-core/.../viewspec/CompositionDirectiveSpikeTest` proves a small **closed** op
   registry evaluates the two real compositions and **rejects unknown functions** (the
   no-eval property), and generates the closed directive from each.
-- **Aggregation** is convention not spec → we implement a bounded, §12-safe aggregate API.
-- **Verdict to lock:** do any real views need free cross-field arithmetic/predicates
-  beyond the closed op-set? If **no** (as both PRD views suggest) → this GraphQL-native
-  path **supersedes A-CEL**. If **yes** for some views → A-CEL (full engine) returns
-  *only* for those. A-CEL is hereby repositioned as the full-engine fallback; this
-  directive + aggregate path is the minimal, engine-free default, pending confirmation
-  against more real views.
+- **No aggregation needed** by the three standard tables (they flatten/split/group,
+  never collapse) — so even the aggregate-field convention is off the critical path.
+- **Verdict:** the three real views need **no** free cross-field arithmetic/predicates
+  beyond the closed blocks → this GraphQL-native path is the **preferred default**. Any
+  future complex composition is evaluated **server-side by rapla's own engine** (§"If a
+  view ever needs more") — no CEL, no client engine.
+
+### If a view ever needs more — rapla's own engine, server-side (no CEL)
+
+There is **no CEL**, and no new expression engine. Should a future view need a free
+cross-field expression the three closed blocks can't express, the answer is **another
+rapla Function composition, evaluated server-side via the existing `ParsedText`
+engine** — the *same* mechanism the preferred design already uses for `displayName` /
+`times` / `duration`. rapla's engine is itself a bounded, non-`eval`, non-Turing
+composition language (`if`/`concat`/`substring`/`filter`/lambda); evaluating it
+server-side covers any complex composition without a client runtime.
+
+CEL (and a Vega/AC-style client transform pipeline) was evaluated and **dropped**: its
+only unique value was client-side / dual-runtime evaluation, which the server-side model
+makes moot — it would add a dependency, a new language, a TS↔Java parity corpus, and a
+client expression runtime for **zero** added capability over rapla's own engine. The
+only thing rapla's server-side engine doesn't give is *client-side* free evaluation
+(interactivity over already-loaded data without a roundtrip) — not a current
+requirement (charts use Vega-Lite's own client transform); revisit only if a concrete
+need appears.
 
 ## XSS / injection hardening (load-bearing)
 
@@ -495,8 +441,9 @@ historical record is one-sided:
 - **Elasticsearch Groovy → Painless is the textbook precedent.** `CVE-2015-1427`:
   user-supplied Groovy in queries bypassed the sandbox via Java reflection → shell
   execution as the ES process. Elastic's fix was **not** a better sandbox but a new
-  **bounded language (Painless)** — general scripting was removed. **A-CEL chooses
-  that endpoint up front instead of arriving via a CVE.**
+  **bounded language (Painless)** — general scripting was removed. **rapla starts at
+  that endpoint:** the only expression language admins touch is rapla's own bounded
+  composition DSL, evaluated server-side — no editable JS, no `eval`, ever.
 - **Retool shows sandboxing alone doesn't close XSS.** Admin `{{ JS }}` transformers
   run in a sandboxed iframe, yet a transformer that builds an HTML string from
   user-supplied data and renders it is internal stored-XSS to the next operator —
@@ -505,38 +452,12 @@ historical record is one-sided:
 - **AG-Grid `valueGetter` expression strings compile via `new Function()`** — which
   is exactly why AG-Grid is rejected for the render layer (cdk-table instead).
 
-So for admin-authored views there are only two honest options: a bounded language
-(CEL — left-to-right of the table's safe column) or sandbox-plus-perpetual-hardening
-(Retool, which still ships XSS). CEL is the former by construction. A
-GraphQL-directive comparison is a category error: directives are developer code.
-
-## Parity + security strategy (TS ≡ Java)
-
-1. **Single golden corpus** (JMESPath/JSONPath-CTS schema: `{given, cases:[{expr,
-   result|results|invalid}]}`), generated into one `corpus.json`, loaded by **both**
-   Vitest (rapla-angular, tier 5) and JUnit (rapla-core, tier 1); CI fails on any
-   divergence. `results`-array convention for spec-permitted ordering
-   non-determinism.
-2. **Pin ONE numeric + ONE collation model** — the #1 silent-drift source (JS
-   IEEE-754 vs Java BigDecimal/long; JS locale sort vs Java `Collator`, incl. German
-   `ä/ö/ü`). Integer-minute durations sidestep most numeric drift. **Needs a written
-   decision, not a default.**
-3. **Differential fuzzing** — grammar-based generator; both runtimes are each
-   other's oracle; promote failing seeds into the corpus.
-4. **Consider ABNF code-gen** (APG) of both parsers from one grammar to remove
-   parser drift by construction; only the semantic walk stays hand-written + corpus-
-   guarded. (Open question — the grammar is tiny.)
-5. **Bounds enforced identically** (AST depth, node count at parse, eval step/output
-   caps) — an admin spec is still untrusted from a DoS standpoint.
-
-## Authoring (Monaco) — recovers Option A's main weakness
-
-The spec is **JSON**, so **Monaco's built-in JSON-Schema language service gives
-autocomplete + validation for free** (publish a JSON Schema). Add **`monaco-graphql`**
-for the query pane (GraphiQL is moving to Monaco) and a **small custom completion
-provider** for the expression strings (function library + fields derived from the
-GraphQL result schema — the query's shape powers the transform's autocomplete).
-This closes the "we lose AC's designer" gap cheaply.
+So for admin-authored views there are only two honest options: a bounded language (the
+safe column) or sandbox-plus-perpetual-hardening (Retool, which still ships XSS). rapla
+is the former by construction — admins author **closed compositions** (rapla DSL,
+server-evaluated) + **closed presentation directives**; no author string is ever run as
+code or rendered as HTML. (Even CEL would have been unnecessary — rapla's own engine is
+already the bounded-language answer.)
 
 ## Companion use cases (client-only; share the GraphQL spine)
 
@@ -569,43 +490,49 @@ This closes the "we lose AC's designer" gap cheaply.
 
 ## Scope
 
-**In:** the (GraphQL document + bounded transform spec) read-table view model;
-variable→control inference; the Option A transform engine (TS + Java interpreters,
-golden-corpus parity, plugin ops via FunctionFactory); XSS hardening; Monaco
-authoring; per-user §12 execution + save-time validation.
+**In:** the GraphQL-native read-table view model — the generator that compiles each col
+annotation to a server-evaluated composition field (reusing rapla's `ParsedText`) or a
+GraphQL filter; GraphQL selection/filter; presentation directives
+(`@column`/`@flatten`/`@groupBy`) as optional overrides; variable→control inference;
+per-user §12 execution; save-time validation; XSS hardening.
 
-**Out:** the rapla DSL / Swing-HTML TableView (deprecated, not migrated); GraphQL
-mutations / edit forms (companion / PRD 075); charts beyond the client-only Vega-Lite
-note; pagination + server `aggregate` (future); `window` op (v2).
+**Out:** any client expression engine / CEL / dual-runtime parity (evaluated and dropped
+— compositions run server-side); the rapla DSL / Swing-HTML TableView (deprecated, not
+migrated); GraphQL mutations / edit forms (companion / PRD 075); charts beyond the
+client-only Vega-Lite note; pagination + aggregate-field convention (future).
 
 ## Plan — phased
 
-1. **Phase 1 — Spec + dual interpreter + renderer.** JSON Schema for the spec;
-   TS + Java tree-walk interpreters (`flatten`/`calculate`/`columns`); golden
-   corpus in Vitest + JUnit; SPA renders `Termine`. Saved-view config entity (CRUD,
-   admin-scoped). §12 via existing resolvers.
-2. **Phase 2 — Grouping/aggregation + plugin ops + server export.** `aggregate`
-   (`Termine pro Tag`); `FunctionFactory` plugin-op SPI (dual-runtime); Java
-   interpreter wired to CSV/HTML export.
-3. **Phase 3 — Authoring (Monaco) + presentation directives** (`$when`, component
-   registry, JSON-Schema autocomplete + monaco-graphql + expression provider).
+1. **Phase 1 — Generator + renderer.** Compile col annotations → server-evaluated
+   composition fields (reuse `ParsedText`) + GraphQL filters; convention-driven
+   `cdk-table` renderer (field order = columns, alias → header, join, format); render
+   `events` + `appointments`. Saved-view config entity (CRUD, admin-scoped). §12 via
+   existing resolvers.
+2. **Phase 2 — Multi-level shaping + server export.** `@flatten`/`@column(order:)` for
+   the cross-level `appointments` order; `@groupBy(field: "start", by: DAY)` for
+   `appointments_per_day`; CSV/HTML/iCal export reuse the same **server-side** evaluation.
+3. **Phase 3 — Authoring + polish.** Override directives (`@column`/`@when`), component
+   registry, `monaco-graphql` autocomplete over the query (no transform-spec editor).
 4. **Phase 4 — Authoring scope + shared views** (global vs group-admin; personal vs
    shared).
-5. **Future — pagination/prev-next + server `aggregate`; `window` op; companion
+5. **Future — pagination/prev-next; optional aggregate-field convention; companion
    charts/forms PRDs.**
 
 ## Tests
 
-- **Tier 1/5 — golden corpus** run in JUnit (rapla-core) *and* Vitest
-  (rapla-angular): per-op semantics + cross-language parity; `results`-array for
-  ordering; named error categories.
-- **Differential fuzzing** in CI (both runtimes equal).
+- **Tier 1 — composition-field correctness** — each generated server-eval field
+  returns the same value as the rapla Function it compiled from (`name`/`times`/
+  `duration`/`persons`/`resources` over a fixture). No dual-runtime corpus needed —
+  one server-side evaluator.
 - **Tier 3 (MockMvc) §12 leak test** — two users run the same saved view; each sees
-  only their readable rows (byte-identical to visible-only subset); the transform
-  can't widen scope.
-- **Server/client parity** — same spec + result → identical rows in Java and TS
-  (locks SPA/CSV/HTML equivalence).
-- **Save-time validation** — invalid GraphQL / unknown op / over-deep AST rejected.
+  only their readable rows (byte-identical to visible-only subset); the view can't
+  widen scope.
+- **Renderer (tier 5/6)** — convention rendering (field order = columns, alias →
+  header, list join, type format) and the multi-level case (flatten + `@column(order:)`
+  → correct column order; `@groupBy(day)` → day section headers, no collapse).
+- **Server/client equivalence** — SPA render and CSV/HTML/iCal export over the *same*
+  GraphQL response produce the same rows.
+- **Save-time validation** — invalid GraphQL / unknown directive / over-deep query rejected.
 
 ## Open questions
 
@@ -623,9 +550,9 @@ note; pagination + server `aggregate` (future); `window` op (v2).
 7. **Server consumers** — confirm every server-rendered consumer (CSV, HTML, iCal)
    so parity covers the paths actually evaluated on the JVM.
 8. **Live-preview tooling** — v1 (validator + SPA preview) vs v2.
-9. **Engine: A vs A′ — gated on a GraalJS spike.** JSONata + raw JS are out. The
-   open call is **A** (own bounded spec — security floor) vs **A′** (real AC/Vega
-   syntax + libs on the client, GraalJS on the server — standard, same-code parity).
-   Run the 1–2 day GraalJS feasibility spike (does `vega` + `adaptivecards-templating`
-   evaluate under a GraalJS Context, no Node built-ins, interpreter mode) before
-   committing. A′ if it's clean; A is the fallback.
+9. **Generation mechanism spec** — how each col annotation compiles to its GraphQL
+   construct (selection → `allocatables(filter:)`; projection/derivation →
+   server-evaluated field), and how `@flatten` / `@groupBy(field:)` / `@column(order:)`
+   are defined as schema + render constructs. (The old A-vs-A′ engine question is moot —
+   the preferred design has no client engine; complex compositions evaluate server-side
+   via rapla's own engine, CEL dropped.)

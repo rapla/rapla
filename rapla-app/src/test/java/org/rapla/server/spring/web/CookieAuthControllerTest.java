@@ -491,6 +491,58 @@ class CookieAuthControllerTest
     // 6. Single-slot re-login overwrites the prior refresh slot (review S6).
     // ---------------------------------------------------------------------
 
+    // ---------------------------------------------------------------------
+    // 7. Form-login CSRF: the /login page's hidden _csrf field value MUST equal
+    //    the XSRF-TOKEN cookie value (CsrfCookieFilter publishes its materialized
+    //    token as the request attribute so the controller and the cookie agree).
+    // ---------------------------------------------------------------------
+
+    @Test
+    void loginPageCsrfFieldEqualsXsrfCookie() throws Exception
+    {
+        MvcResult get = mockMvc.perform(get("/login"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String html = get.getResponse().getContentAsString();
+        java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("name=\"_csrf\"\\s+value=\"([^\"]+)\"")
+                .matcher(html);
+        assertTrue(m.find(), "the /login form must render a hidden _csrf field");
+        String fieldValue = m.group(1);
+
+        Cookie xsrf = get.getResponse().getCookie("XSRF-TOKEN");
+        assertNotNull(xsrf, "GET /login must materialize the XSRF-TOKEN cookie");
+        assertEquals(xsrf.getValue(), fieldValue,
+                "the form's _csrf field value must equal the XSRF-TOKEN cookie value "
+                        + "(controller and cookie must agree on the SAME materialized token)");
+    }
+
+    @Test
+    void cookieAuthFormLoginWithoutCsrfIs403() throws Exception
+    {
+        // An access_token cookie present makes CookieAuthCsrfMatcher require CSRF on
+        // POST /login. Without the _csrf param / X-XSRF-TOKEN header → 403.
+        String access = login("homer", "duffs").accessToken();
+
+        mockMvc.perform(post("/login")
+                        .cookie(new Cookie("access_token", access))
+                        .param("username", "homer")
+                        .param("password", "duffs"))
+                .andExpect(status().isForbidden());
+    }
+
+    // NOTE — the POSITIVE form-login double-submit round-trip (cookie-auth POST /login
+    // WITH the matching _csrf/X-XSRF-TOKEN succeeding) is deliberately NOT asserted at
+    // this MockMvc tier. As documented on xsrfTokenCookieIsMaterializedOnSafeGet, the
+    // form-login chain leaves an HttpSession CSRF token in play across separate MockMvc
+    // requests (a test-harness artifact, not browser behaviour), so a supplied
+    // double-submit cookie+header still 403s here. The bug fix #2 actually guards
+    // against — the rendered _csrf field value NOT matching the XSRF-TOKEN cookie — is
+    // covered deterministically by loginPageCsrfFieldEqualsXsrfCookie above; the
+    // negative gate by cookieAuthFormLoginWithoutCsrfIs403. The full positive
+    // form-login round-trip is the PRD 072 Phase-4 browser e2e's job (residual gap).
+
     @Test
     void singleSlotReLoginSharesRefreshToken() throws Exception
     {

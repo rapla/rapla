@@ -1,6 +1,6 @@
 # PRD 072 — Server-side login dialog with provider chooser (SPA + secured pages)
 
-**Status:** draft (2026-06-19)
+**Status:** done (2026-06-20) — all 7 phases shipped; Phases 5 + 6 verified live 2026-06-19/20, docs (Phase 7) landed in `docs/authentication.md` 2026-06-20
 
 ## Goal
 
@@ -168,6 +168,21 @@ own tokens with its own signing key after an upstream provider), **AWS Cognito**
 "broker in front of a broker" legitimate — *verify the external token before re-issuing* — is met
 by construction. (Today's code already does this for rapla-SAS logins; M2 extends it to IdP logins,
 which today still pass the IdP `id_token` straight to `/api`.)
+
+**What the rapla token IS — an access token, NOT an id_token.** The credential a client presents at
+`/api` is a rapla-minted **access token** (`typ=access`): `iss` + signature = rapla's own key
+(`RaplaKeyStorage`), `sub` = the rapla user **UUID**, plus `preferred_username` / `name` / (when
+impersonating) the `act` claim. rapla is **both the Authorization Server and the Resource Server for
+itself** — it issues the token *and* validates it at `/api` — so this access token carries the
+identity directly (it *looks* id_token-ish in content, but structurally it is an access token used as
+a Bearer). rapla also mints, separately: a `typ=refresh` token (used at `/oauth2/token` refresh +
+`/api/auth/refresh`, **never** a `/api` Bearer), and — on `scope=openid` flows — a standard OIDC
+**id_token** (the identity assertion *for an OIDC relying party*, also **never** the `/api` Bearer).
+**Token-exchange shape:** an external **id_token** (identity proof, `aud`=rapla) → a rapla
+**access token** (+ refresh). Input = identity assertion; output = API credential. An external
+*access* token is the **wrong input** — its `aud` is the IdP's resource API (not rapla), and Google's
+is opaque — which is exactly why rapla consumes the `id_token`, not the access token (see "Why M2"
+below; the Google-opaque point is the second "Why M2" bullet).
 
 **Why M2 over M1 (keep the IdP token as the `/api` credential):**
 - **Multi-auth normalization.** rapla supports rapla-SAS (admin, API-keys, Swing default) **plus**
@@ -423,16 +438,56 @@ single-slot is also what couples to risk #1 above.
    `client_id=rapla-client`), `RefreshOn401InterceptorAuthDeadTest.refreshAlwaysHitsRaplaOauth2TokenWithRaplaClientId`.
    **Not yet live-verified in a running Swing client** (server/Swing held by the user testing live) — needs a manual
    rapla-brokered Keycloak SSO login + impersonation switch-back smoke test.
-6. **Single-issuer cutover (last).** Change `OAuthExchangeController` to mint + return a rapla token
-   (`RefreshSessionService.issueAndPersist`) after provisioning instead of forwarding the IdP token.
-   `/api` keeps multi-issuer trust through phases 4–5; once SPA + Swing + explorers all present rapla
-   tokens, **remove the external issuers from `IssuerAwareJwtDecoder`** → `/api` validates one issuer.
-   Tests: `/api` rejects a raw external-IdP token; accepts only rapla-issued tokens.
-7. **Deployment + docs.** Redirect-URI registration is **a no-op** for Keycloak (Mosbach client has a
-   host path-wildcard; dev has `172.24.157.92:*` — both verified to accept the server callback; reusing
-   the public `rapla-app` client means nothing changes at Keycloak). Only a *stricter* third-party
-   Keycloak that pins exact redirect URIs would need `…/login/oauth2/code/keycloak` added. **Then fully
-   document in `docs/authentication.md`**
+6. ✅ **DONE (2026-06-20). Single-issuer cutover (last).** `/api` now trusts **only** rapla-issued
+   tokens by default. External-issuer trust is gated behind a new flag
+   `rapla.oauth.trust-external-issuers` (**default `false`** = cutover is the default). In
+   `JwtConfig.buildBaseDecoder` (now 4-arg, `trustExternalIssuers`): when false the decoder is the
+   bare local rapla `NimbusJwtDecoder` even with providers enabled (no `IssuerAwareJwtDecoder` /
+   pattern routes wired); when true the legacy multi-issuer decoder is built (escape hatch). The
+   local-only path now also pins the configured `rapla.oauth.issuer` so a foreign-iss token can't pass
+   it. Rationale (non-circular, three points):
+   - **§16 — identity resolution/provisioning off the read path.** While `/api` accepted external
+     tokens, every call resolved the external identity (`JwtUserResolver.resolveExternal` →
+     `ExternalUserResolver`) and, with `auto-provision: true`, *created* the user on the read path —
+     the 2026-05-28 `RaplaNewVersionException`→401 bug. With single-issuer the rapla token already
+     carries `sub=<UUID>` → a plain lookup; provisioning happens once at login (write path).
+   - **One trust anchor instead of N** — validate one signature/issuer, not rapla-SAS + Entra + Google
+     + Keycloak (no multi-tenant pattern-issuer edge cases, smaller attack surface, fewer JWKS deps).
+   - **Consistent token contract** — every `/api` token has `sub=UUID` + rapla claims + the `act`
+     impersonation model; no "which kind of token" branching in resolvers/controllers.
+
+   **`OAuthExchangeController` — investigated, left untouched (no work invented).** It still forwards
+   the raw IdP token response to the caller (and provisions as a side effect, PRD 050). But the shipped
+   SPA (Phase 4) is fully cookie-based and dropped `angular-oauth2-oidc` + client-side PKCE, so **no
+   live client calls `/api/auth/oauth/exchange/*` anymore** (no Angular `.ts` reference; only docs,
+   `OAuthConfigController`'s legacy chooser config, and `OAuthExchangeStaleTokenAnonymousTest`).
+   Minting a rapla token there would be work for a dead path. The cutover invariant is upheld a
+   different way: nothing rapla *currently hands a client* is a raw IdP token — the SPA/explorers get
+   the rapla cookie, Swing re-mints to a rapla Bearer (Phase 5), iCal/API-keys are rapla tokens. The
+   only residual is that the *legacy* exchange endpoint, if a third party still POSTs to it, returns a
+   raw IdP token that now fails `/api` — see the risk note below; minting-or-removing it is a clean
+   follow-up, not a cutover blocker.
+
+   Tests: `JwtConfigSingleIssuerCutoverTest` (tier-1: default rejects external-iss + bare-local-decoder
+   identity, accepts rapla token incl. configured-issuer branch; opt-in wires the issuer-aware decoder)
+   and `SingleIssuerCutoverApiTest` (tier-3 MockMvc, Keycloak enabled + default flag: rapla token → 200,
+   foreign-iss Bearer → 401). `JwtConfigTokenTypeTest` updated to the 4-arg call.
+
+   **Risk note:** the legacy `OAuthExchangeController` (`/api/auth/oauth/exchange/{provider}`) and the
+   `tokenUrl` it advertises in `OAuthConfigController` for confidential providers still return a raw
+   IdP token. No first-party client uses them post-Phase-4, but a stale/3rd-party SPA doing client-side
+   PKCE would now get a token that 401s at `/api`. Follow-up (Phase 7 or a small PRD): mint a rapla
+   token there via `RefreshSessionService.issueAndPersist`, or retire the endpoint.
+7. ✅ **DONE (2026-06-20). Deployment + docs.** Redirect-URI registration is **NOT** a blanket no-op:
+   the **fremdverwaltete DHBW prod realm** (`login.mosbach.dhbw.de`, realm `dhbwmos-lehre`) only
+   whitelists the **legacy** `/app/auth/callback` for localhost and the maintainer has no admin to add
+   the conformant `/login/oauth2/code/keycloak` — so it needs the **TEMPORARY dev bridge**
+   (`rapla.oauth.web.dhbw-legacy-callback=true` → keycloak `ClientRegistration` sends the legacy URI, and
+   `LegacyKeycloakCallbackBridgeFilter` on `:8051` + the ng-serve proxy on `:4200` route it back onto
+   `/login/oauth2/code/keycloak`; remove once DHBW IT registers the conformant URI). The earlier "no-op"
+   assumption held only for the dev `172.24.157.92:*` host wildcard, **not** for the prod realm. Any
+   *stricter* third-party Keycloak that pins exact redirect URIs likewise needs `…/login/oauth2/code/keycloak`
+   added. **`docs/authentication.md` updated (2026-06-20)** with the full server-side model below:
    — this is a hard requirement, the whole server-side model must land there:
    - the **single login page** (`/login`) for all surfaces (SPA + explorers + Swing): SSO chooser
      always shown + optional legacy password form (the config flag, UI-only); rapla as Swing's single
@@ -450,6 +505,19 @@ single-slot is also what couples to risk #1 above.
      optional idle-timeout/rotation hardenings (cross-ref PRD 036 § "Refresh path");
    - which clients use what (SPA/explorers = cookie; Swing = re-minted rapla Bearer; iCal/API-keys = Bearer);
    - the **single-issuer cutover** (#6 step): `/api` drops external-issuer trust once all clients re-mint.
+
+   **Landed in `docs/authentication.md` (2026-06-20):** corrected the four provider recipes (Microsoft
+   Entra = **Web platform + secret**, SPA platform causes `AADSTS9002326`; Google = Web application;
+   Keycloak confidential/public) to register the server-side callback
+   **`{baseUrl}/login/oauth2/code/{registrationId}`** (not the old `/app/auth/callback`), with the dev
+   `:4200`/`:8051` pair; added the **"Per-provider vs single callback"** note (RFC 9700 mix-up-attack
+   mitigation — per-provider is the framework default + BCP); documented the **TEMPORARY DHBW dev bridge**
+   (`rapla.oauth.web.dhbw-legacy-callback` + `LegacyKeycloakCallbackBridgeFilter`, with the removal
+   condition); added the **single-issuer `/api`** section (`rapla.oauth.trust-external-issuers`, the three
+   non-circular reasons, and the `OAuthExchangeController` raw-token follow-up); rewrote the **Swing SSO
+   flow** (single SSO entry, rapla as the federating broker, the two `OidcLoginSuccessHandler` fixes —
+   UUID-principal re-auth + `SavedRequestAware` resume) and removed the now-stale per-provider Swing
+   refresh-routing subsection.
 
 ## Tests
 

@@ -35,7 +35,7 @@ class JwtConfigTokenTypeTest
         RSAKey rsaKey = new RSAKeyGenerator(2048).keyID("test-key").generate();
         JWKSource<SecurityContext> jwkSource = new ImmutableJWKSet<>(new JWKSet(rsaKey));
         // No external providers, no configured local issuer: the plain local decoder path.
-        decoder = JwtConfig.buildBaseDecoder(jwkSource, new ExternalProvidersProperties(), null);
+        decoder = JwtConfig.buildBaseDecoder(jwkSource, new ExternalProvidersProperties(), null, false);
         issuer = new JwtConfig.JwtIssuer(jwkSource);
     }
 

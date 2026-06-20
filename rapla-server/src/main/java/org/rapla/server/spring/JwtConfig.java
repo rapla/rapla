@@ -69,9 +69,11 @@ public class JwtConfig
                                  RaplaKeyStorage keyStore,
                                  RaplaFacade facade,
                                  @org.springframework.beans.factory.annotation.Value(
-                                         "${rapla.oauth.issuer:}") String localIssuerOverride)
+                                         "${rapla.oauth.issuer:}") String localIssuerOverride,
+                                 @org.springframework.beans.factory.annotation.Value(
+                                         "${rapla.oauth.trust-external-issuers:false}") boolean trustExternalIssuers)
     {
-        JwtDecoder base = buildBaseDecoder(jwkSource, externalProviders, localIssuerOverride);
+        JwtDecoder base = buildBaseDecoder(jwkSource, externalProviders, localIssuerOverride, trustExternalIssuers);
         // PRD 043: outer wrapper dispatches typ=api_key JWTs to their own
         // verification path (per-key public JWK embedded in the JWT header,
         // membership check against RaplaKeyStorage.getAPIKeys for revocation).
@@ -80,7 +82,8 @@ public class JwtConfig
 
     static JwtDecoder buildBaseDecoder(JWKSource<SecurityContext> jwkSource,
                                        ExternalProvidersProperties externalProviders,
-                                       String localIssuerOverride)
+                                       String localIssuerOverride,
+                                       boolean trustExternalIssuers)
     {
         NimbusJwtDecoder local = NimbusJwtDecoder.withPublicKey(extractRsaPublicKey(jwkSource)).build();
         // B1 (security): bar rapla-issued refresh / api_key tokens from the
@@ -92,8 +95,21 @@ public class JwtConfig
         OAuth2TokenValidator<Jwt> raplaTokenType = new RaplaTokenTypeValidator();
         local.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
                 JwtValidators.createDefault(), raplaTokenType));
+        if (localIssuerOverride != null && !localIssuerOverride.isEmpty())
+        {
+            // Pin the local decoder to the configured issuer even on the
+            // local-only path so a foreign-iss token can never pass it.
+            local.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
+                    JwtValidators.createDefaultWithIssuer(localIssuerOverride), raplaTokenType));
+        }
+        // PRD 072 Phase 6 — single-issuer cutover (default). The resource server
+        // trusts ONLY rapla-issued tokens; identity resolution/provisioning for
+        // external IdPs moves from the read path to the login write path (AGENTS.md
+        // §16), the trust anchor collapses from rapla-SAS+N-IdPs to one issuer, and
+        // every /api token carries sub=UUID + rapla claims (no "which kind of token"
+        // branching). External-issuer trust is an explicit opt-in escape hatch.
         List<ProviderConfig> enabled = externalProviders.enabledProviders();
-        if (enabled.isEmpty())
+        if (!trustExternalIssuers || enabled.isEmpty())
         {
             return local;
         }

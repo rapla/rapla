@@ -210,6 +210,17 @@ rapla:
     # External IdP: set to the IdP's origin, e.g. https://keycloak.example.com,
     # via the RAPLA_OAUTH_PUBLIC_BASE_URL env var.
     public-base-url: ${RAPLA_OAUTH_PUBLIC_BASE_URL:}
+    # PRD 072 Phase 6 — single-issuer cutover. The resource server (/api) trusts
+    # ONLY rapla-issued tokens; external IdP (Keycloak/Google/Microsoft) tokens
+    # are consumed once at login (server-side oauth2Login) and re-minted into a
+    # rapla token — they never authenticate /api directly. Three reasons:
+    #   1. identity resolution/provisioning moves off the read path onto the
+    #      login write path (AGENTS.md §16);
+    #   2. one trust anchor instead of rapla-SAS + N external JWKS;
+    #   3. every /api token carries sub=UUID + rapla claims (no per-token branching).
+    # Default false. Set true ONLY as a transitional escape hatch to restore the
+    # legacy multi-issuer acceptance (a client still presenting a raw IdP token).
+    # trust-external-issuers: ${RAPLA_OAUTH_TRUST_EXTERNAL_ISSUERS:false}
     # PRD 029 Phase 3 — admin-selectable legacy Swing login. Delivered to the
     # Swing desktop client via /api/auth/oauth/config (the client probes
     # discovery at startup; no JNLP change).
