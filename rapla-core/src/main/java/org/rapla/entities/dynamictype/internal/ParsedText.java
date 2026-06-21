@@ -137,6 +137,23 @@ public class ParsedText implements Serializable
         return buf.toString();
     }
 
+    /**
+     * PRD 080 item 5 — evaluate a single-variable ParsedText to its RAW object result instead of the
+     * {@link #formatName} string. Returns the eval of the sole <code>{…}</code> variable function —
+     * which may be an entity (Allocatable / Reservation / Category), a Collection of them, a String,
+     * etc. Returns null when this ParsedText has no exactly-one variable part (constant text or a
+     * multi-part format), so callers can fall back to {@link #formatName}. Used by entity-resolving
+     * group exprs (e.g. {@code attribute(item,"Gebaeude")} → the building entity).
+     */
+    public Object evalToObject(EvalContext context)
+    {
+        if (variablesList == null || variablesList.size() != 1)
+        {
+            return null;
+        }
+        return variablesList.get(0).eval(context);
+    }
+
     public String formatName(EvalContext context)
     {
         if (nonVariablesList == null && variablesList == null)

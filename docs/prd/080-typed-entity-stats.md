@@ -1,6 +1,6 @@
 # PRD 080 — Typed-entity stats across entity families
 
-**Status:** design (2026-06-21). Extends [PRD 079](079-graphql-grouped-aggregates.md) (generic grouped
+**Status:** implemented (2026-06-21) — all 8 items built + tested (item 4 verify-live-only; see Status block). Extends [PRD 079](079-graphql-grouped-aggregates.md) (generic grouped
 aggregates) with **typed, selectable group entities** and **per-family stats fields**. Carved out of a
 long design discussion: the generic `keys/values` bucket couldn't carry entity fields (e.g. room size),
 and aggregation existed only on `appointmentBlockStats`.
@@ -88,11 +88,18 @@ appointmentBlockStats(
   `self` carries the Reservation as `entity`. Shares `BlockStatBucket`. 2 tests. **59 GraphQL tests green.**
 - ✅ **expr generalized** — `StructuralTypeFetchers.computeEntityExpr(entity, expr, user)` now drives
   blocks/allocatables/reservations (via `ParsedText.guessClassification`); `computeBlockExpr` is a shim.
-- ⏳ **4 — category dimension** (group by a category attribute → Category entity). Not built.
-- ⏳ **5 — `expr → Entity`** (raw-object eval mode: `computeEntityExpr` returns `formatName` String;
-  navigated entity grouping like "rooms by their building object" needs an eval-to-object mode +
-  Allocatable/Reservation/Category detect + list fan-out). Not built — needs EL eval-to-object work.
-  Workaround today: group by the building **name string** via `allocatableStats(groupBy:[{expr:"…"}])`.
+- ✅ **5 — `expr → Entity`** — `ParsedText.evalToObject(ctx)` (new public eval-to-object) +
+  `StructuralTypeFetchers.computeEntityExprObject`; the controller's `exprDimVals` detects
+  Allocatable/Reservation/Category results (and Collections → fan-out), carries them as
+  `StatKey.entity`, and §12-canRead-gates each (hidden entity dropped, **no name leak** — no string
+  fallback on the entity path). Non-entity exprs keep the legacy `formatName` string key. Wired into
+  all three families (block/allocatable/reservation expr dimensions). Test: `expr:"resources(item)"`
+  → Allocatable entities. **61 GraphQL tests green.**
+- ✅ **4 — category dimension** — achieved via item 5 (no dedicated field, per the generic-X decision):
+  `expr:"attribute(item,\"<categoryAttr>\")"` returns a `CategoryProxy` (implements `Category`) →
+  `StatKey.entity` resolves to the `Category` GraphQL type, selectable (`... on Category { name key }`).
+  Multi-select category attrs fan out. (Not unit-tested: `testdefault.xml` has no category attribute;
+  verify live against a deployment that does.)
 
 ## Build order
 

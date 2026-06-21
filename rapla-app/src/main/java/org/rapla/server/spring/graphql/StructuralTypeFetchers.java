@@ -1001,6 +1001,42 @@ public final class StructuralTypeFetchers
         }
     }
 
+    /**
+     * PRD 080 item 5 — like {@link #computeEntityExpr} but returns the RAW evaluated object (entity /
+     * Collection / String) instead of the formatName string, so a group expr can resolve to a typed
+     * entity (e.g. {@code attribute(item,"Gebaeude")} → the building Allocatable). Returns null on
+     * blank/invalid expr or unresolvable classification; throws on over-long input.
+     */
+    static Object computeEntityExprObject(Object entity, String expr, User user)
+    {
+        if (entity == null || expr == null || expr.isBlank()) return null;
+        if (expr.length() > 2000)
+        {
+            throw new IllegalArgumentException("compute expr too long (max 2000 chars)");
+        }
+        String src = expr.trim().startsWith("{") ? expr : "{item->" + expr + "}";
+        org.rapla.entities.dynamictype.Classification cls =
+                org.rapla.entities.dynamictype.internal.ParsedText.guessClassification(entity);
+        if (cls == null) return null;
+        org.rapla.entities.dynamictype.internal.DynamicTypeImpl type =
+                (org.rapla.entities.dynamictype.internal.DynamicTypeImpl) cls.getType();
+        try
+        {
+            org.rapla.entities.dynamictype.internal.ParsedText pt =
+                    new org.rapla.entities.dynamictype.internal.ParsedText(src);
+            pt.init(type.getParseContext());
+            org.rapla.entities.dynamictype.internal.EvalContext ctx = type.createEvalContext(
+                    user, serverLocale,
+                    org.rapla.entities.dynamictype.DynamicTypeAnnotations.KEY_NAME_FORMAT,
+                    java.util.Collections.singletonList(entity));
+            return pt.evalToObject(ctx);
+        }
+        catch (org.rapla.entities.IllegalAnnotationException e)
+        {
+            return null;
+        }
+    }
+
     private static String evalBlockFunction(String namespace, String fnName,
             ReservationGraphQLController.AppointmentBlockDto dto, StorageOperator operator,
             DataFetchingEnvironment dfe)

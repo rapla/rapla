@@ -1735,6 +1735,40 @@ class ReservationGraphQLControllerTest
         assertTrue(sawPerson || sawNonPerson, "fixture blocks should allocate at least one allocatable");
     }
 
+    /**
+     * PRD 080 item 5 — an entity-returning group `expr` resolves to the typed entity (here
+     * {@code resources(item)} → the block's Allocatables) and fans out; StatKey.entity carries the
+     * Allocatable, selectable. Non-entity exprs keep the string key (covered by blockStatsGroupByComputeExpr).
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void blockStatsExprResolvingToEntityCarriesEntity()
+    {
+        List<Map<String, Object>> buckets = tester.document("""
+                query {
+                  appointmentBlockStats(
+                    filter:    { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" },
+                    groupBy:   [ { key: "res", expr: "resources(item)" } ],
+                    aggregate: [ { key: "n", field: DURATION_MINUTES, fn: COUNT } ]
+                  ) { keys { value entity { __typename ... on Allocatable { displayName } } } }
+                }
+                """)
+                .execute().path("appointmentBlockStats")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
+        assertFalse(buckets.isEmpty(), "fixture blocks allocate resources → expr→entity buckets");
+        for (Map<String, Object> bk : buckets)
+        {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> key0 = ((List<Map<String, Object>>) bk.get("keys")).get(0);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> entity = (Map<String, Object>) key0.get("entity");
+            assertNotNull(entity, () -> "entity-returning expr must carry entity; got " + bk);
+            assertEquals("Allocatable", entity.get("__typename"));
+            assertEquals(key0.get("value"), entity.get("displayName"),
+                    () -> "entity.displayName must equal the bucket key value; got " + bk);
+        }
+    }
+
     /** No @view → no extensions.view (zero overhead for plain queries). */
     @Test
     @WithMockUser(username = "homer", roles = "ADMIN")

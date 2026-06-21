@@ -439,6 +439,8 @@ public class ReservationGraphQLController
         }
         var rc = RequestContextInstrumentation.from(env.getGraphQlContext());
         User caller = rc.caller();
+        PermissionController pc = rc.permissionController() != null
+                ? rc.permissionController() : operator.getPermissionController();
         // §12-gated, filtered allocatable set (same resolver as Query.allocatables).
         List<Allocatable> visible = classificationController.allocatables(filter);
         int nAgg = aggs.size();
@@ -451,7 +453,7 @@ public class ReservationGraphQLController
             boolean skip = false;
             for (AllocatableGroupKey g : groups)
             {
-                List<Object> vals = allocGroupValues(g, alloc, caller);
+                List<Object> vals = allocGroupValues(g, alloc, caller, pc);
                 if (vals.isEmpty()) { skip = true; break; }
                 dims.add(vals);
             }
@@ -534,6 +536,8 @@ public class ReservationGraphQLController
         List<Reservation> visible = reservations(filter, env);
         var rc = RequestContextInstrumentation.from(env.getGraphQlContext());
         User caller = rc.caller();
+        PermissionController pc = rc.permissionController() != null
+                ? rc.permissionController() : operator.getPermissionController();
         int nAgg = aggs.size();
         final int maxBuckets = 5000;
         java.util.Map<String, StatBucketAcc> buckets = new java.util.LinkedHashMap<>();
@@ -544,7 +548,7 @@ public class ReservationGraphQLController
             boolean skip = false;
             for (ReservationGroupKey g : groups)
             {
-                List<Object> vals = reservationGroupValues(g, r, caller);
+                List<Object> vals = reservationGroupValues(g, r, caller, pc);
                 if (vals.isEmpty()) { skip = true; break; }
                 dims.add(vals);
             }
@@ -598,8 +602,9 @@ public class ReservationGraphQLController
         return out;
     }
 
-    /** PRD 080 — group-dimension values for an allocatable (type name / expr string / self entity). */
-    private static List<Object> allocGroupValues(AllocatableGroupKey g, Allocatable alloc, User caller)
+    /** PRD 080 — group-dimension values for an allocatable (type name / expr / self entity). */
+    private static List<Object> allocGroupValues(AllocatableGroupKey g, Allocatable alloc,
+            User caller, PermissionController pc)
     {
         if (Boolean.TRUE.equals(g.self()))
         {
@@ -607,8 +612,7 @@ public class ReservationGraphQLController
         }
         if (g.expr() != null && !g.expr().isBlank())
         {
-            String v = StructuralTypeFetchers.computeEntityExpr(alloc, g.expr(), caller);
-            return v == null ? List.of() : List.of(new DimVal(v, null));
+            return exprDimVals(g.expr(), alloc, caller, pc);   // PRD 080 item 5 — entity-aware
         }
         if (Boolean.TRUE.equals(g.type()))
         {
@@ -619,8 +623,9 @@ public class ReservationGraphQLController
         return List.of();
     }
 
-    /** PRD 080 — group-dimension values for a reservation (type name / expr string / self entity). */
-    private static List<Object> reservationGroupValues(ReservationGroupKey g, Reservation r, User caller)
+    /** PRD 080 — group-dimension values for a reservation (type name / expr / self entity). */
+    private static List<Object> reservationGroupValues(ReservationGroupKey g, Reservation r,
+            User caller, PermissionController pc)
     {
         if (Boolean.TRUE.equals(g.self()))
         {
@@ -628,8 +633,7 @@ public class ReservationGraphQLController
         }
         if (g.expr() != null && !g.expr().isBlank())
         {
-            String v = StructuralTypeFetchers.computeEntityExpr(r, g.expr(), caller);
-            return v == null ? List.of() : List.of(new DimVal(v, null));
+            return exprDimVals(g.expr(), r, caller, pc);   // PRD 080 item 5 — entity-aware
         }
         if (Boolean.TRUE.equals(g.type()))
         {
@@ -736,8 +740,9 @@ public class ReservationGraphQLController
         }
         if (g.expr() != null && !g.expr().isBlank())
         {
-            String v = StructuralTypeFetchers.computeBlockExpr(b, g.expr(), caller);
-            return v == null ? List.of() : List.of(new DimVal(v, null));
+            // PRD 080 item 5 — expr may resolve to a typed entity (e.g. attribute(item,"Gebaeude")
+            // → the building); §12-gated, list-fan-out. Non-entity results keep the legacy string key.
+            return exprDimVals(g.expr(), b, caller, pc);
         }
         if (g.date() != null)
         {
@@ -758,6 +763,63 @@ public class ReservationGraphQLController
             return out;
         }
         return List.of();
+    }
+
+    /**
+     * PRD 080 item 5 — resolve a group {@code expr} to dimension values. If the expr evaluates to a
+     * typed entity (Allocatable / Reservation / Category) or a collection of them, each readable one
+     * becomes an entity-carrying {@link DimVal} (fan-out; §12 canRead-gated so a hidden referenced
+     * entity is dropped, never name-leaked). Otherwise the legacy string key (formatName) is used.
+     */
+    private static List<Object> exprDimVals(String expr, Object subject, User caller, PermissionController pc)
+    {
+        Object o = StructuralTypeFetchers.computeEntityExprObject(subject, expr, caller);
+        if (isEntityResult(o))
+        {
+            List<Object> out = new ArrayList<>();
+            addEntityDimVals(o, caller, pc, out);
+            return out;   // entity path: §12-filtered; no string fallback → no name leak
+        }
+        String s = StructuralTypeFetchers.computeEntityExpr(subject, expr, caller);
+        return s == null ? List.of() : List.of(new DimVal(s, null));
+    }
+
+    private static boolean isEntityResult(Object o)
+    {
+        if (o == null) return false;
+        if (o instanceof Allocatable || o instanceof Reservation || o instanceof org.rapla.entities.Category)
+        {
+            return true;
+        }
+        if (o instanceof java.util.Collection<?> col)
+        {
+            for (Object e : col) if (isEntityResult(e)) return true;
+        }
+        return false;
+    }
+
+    private static void addEntityDimVals(Object o, User caller, PermissionController pc, List<Object> out)
+    {
+        if (o == null) return;
+        if (o instanceof java.util.Collection<?> col)
+        {
+            for (Object e : col) addEntityDimVals(e, caller, pc, out);
+            return;
+        }
+        java.util.Locale loc = StructuralTypeFetchers.serverLocale();
+        if (o instanceof Allocatable a)
+        {
+            if (caller == null || pc == null || pc.canRead(a, caller)) out.add(new DimVal(a.getName(loc), a));
+        }
+        else if (o instanceof Reservation r)
+        {
+            if (caller == null || pc == null || pc.canRead(r, caller)) out.add(new DimVal(r.getName(loc), r));
+        }
+        else if (o instanceof org.rapla.entities.Category c)
+        {
+            out.add(new DimVal(c.getName(loc), c));
+        }
+        // else: not an entity → ignored (handled by the string fallback in exprDimVals)
     }
 
     /** Date → bucket label per granularity. ISO_WEEK is ISO-8601 week-based. */

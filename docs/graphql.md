@@ -1011,6 +1011,78 @@ That single flag saved ~1 s on the 42k Person query in measurement (~14 % wall-c
 - **No subscriptions.** Polling only (10 s) for schema changes; queries themselves are request/response.
 - **Rapla-internal types fully hidden.** Templates, periods, default-user, and anonymous-event don't appear in any GraphQL surface. Use the dedicated query roots (`periods`, …) for those.
 
+## Wochenansicht — Grundlage für Wochenabfragen (`appointmentBlocks` + `@view`)
+
+Kanonische Vorlage für eine Wochen-/Tabellenansicht: `appointmentBlocks` liefert die flachen Blöcke,
+`@view`/`@column`/`@hidden`/`@join` erzeugen die Render-Metadaten (`extensions.view`), die gesamte
+Eingabe steckt im `$filter`-Objekt (`ReservationFilter`). **Instanz-neutral** — keine
+deployment-spezifischen Typ-Keys im Query-Text; die kommen nur als Variablen-Daten rein.
+
+```graphql
+query Wochenansicht(
+  $filter: ReservationFilter!,                     # Event-Fenster (+ optional allocatableMatching)
+  $sort:   [BlockSort!] = [{ field: START, dir: ASC }],
+  $offset: Int = 0
+) @view(title: "Wochenansicht") {
+  appointmentBlocks(filter: $filter, sort: $sort, offset: $offset) {
+    start  @column(header: "Von",   order: 1)      # LocalDateTime! → Grid-Position
+    end    @column(header: "Bis",   order: 2)      # LocalDateTime! → Block-Ende/-Höhe
+    times  @column(header: "Zeit",  order: 3)      # "10:00 - 11:30" (serverformatiert)
+    name   @column(header: "Titel", order: 4)      # block-aware (ehrt appointment-note overrides)
+
+    durationMinutes @hidden                        # Int Wall-Clock-Minuten (Block-Höhe; ≠ UE-Dauer)
+    isException     @hidden                         # Boolean! → Ausnahme-Styling
+    reservation { id @hidden  canModify @hidden }   # stabiler Editier-Handle (Block hat KEINE eigene id)
+
+    # Generische Ressourcen-Lanes — Trennung rein über isPersonEq, kein typeKey im Query:
+    personen: allocatables(filter: { isPersonEq: true })
+      @join(separator: ", ") @column(header: "Personen", order: 5) {
+      id  name  isLocation
+    }
+    nichtPersonen: allocatables(filter: { isPersonEq: false })
+      @join(separator: ", ") @column(header: "Nicht-Personen", order: 6) {
+      id  name  isLocation
+    }
+  }
+}
+```
+
+Variablen (mit `AllocatableFilter` in Aktion — schränkt die Termine auf passende Ressourcen ein):
+
+```json
+{
+  "filter": {
+    "from": "2026-06-15T00:00:00",
+    "to":   "2026-06-22T00:00:00",
+    "allocatableMatching": {
+      "typeKeyIn": ["Raum"],
+      "whereRaum": { "Gebaeude": { "where": { "Gebaeudename": { "startsWith": "MOS" } } } }
+    },
+    "limit": 2000
+  },
+  "offset": 0
+}
+```
+
+Erläuterung:
+
+- **Identität:** `AppointmentBlock` hat **keine eigene `id`** (synthetisch pro Expansion). Stabiler
+  Render-/Edit-Key = `reservation.id` + `start`; `canModify` gated den Edit-Button ohne 2. Request.
+- **Ressourcen-Lanes:** rein über `isPersonEq: true|false` getrennt (server-seitig, kein deployment-Key).
+  Innerhalb „Nicht-Personen" weiter über `isLocation` lanen (Raum/Ort vs. Sonstiges). `isPerson`/
+  `isLocation` sind universelle Felder (PRD 080): `isPerson` == `type: PERSON`, `isLocation` == die
+  DynamicType-Annotation `location=true` (derselbe Marker wie der iCal-Export).
+- **`@join`** macht aus der Ressourcen-Liste eine Zelle (`", "`-getrennt); die Daten bleiben verschachtelt.
+- **AllocatableFilter an drei Stellen, alle derselbe Typ:** `$filter.allocatableMatching` (welche
+  *Termine* erscheinen) und die zwei Lane-Filter (welche *Ressourcen pro Row*). Die GUI kann auf die
+  Lane-Filter `where<Type>`, `accessLevel: EDIT`, `idIn` … draufpacken, ohne den Query-Text zu ändern.
+- **Duration:** der UE-String (`duration`, eventtimecalculator) ist bewusst draußen. `durationMinutes`
+  (`@hidden`) ist reine Wall-Clock-Differenz für die Block-Höhe — weglassbar, da aus `start`/`end`
+  ableitbar. Wochentag pro Row: `tag: compute(expr: "format(\"%tA\", date(item))")`.
+- **Output:** `extensions.view.columns` enthält die nicht-`@hidden`-Felder (mit `header`, `order`, `type`,
+  `join`), `extensions.view.page` `{ offset, limit, returned, hasMore }`. `@hidden`-Felder liegen in
+  `data`, nicht in `columns`.
+
 ## The rapla expression (`expr`) — one language, several slots (PRD 074 V2)
 
 `expr` is the bounded rapla expression language (the `ParsedText` / nameformat engine), exposed in
