@@ -16,6 +16,8 @@ package org.rapla.storage.impl.server;
 import org.rapla.scheduler.Action;
 import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
+import org.rapla.server.ApiKeyScopeContext;
+import org.rapla.server.ApiKeyScopes;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.IOUtil;
@@ -190,6 +192,57 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                         "The admin account is fixed by configuration (rapla.fix-admin-password) and cannot be modified.");
             }
         }
+    }
+
+    /**
+     * PRD 076 Phase 2 — enforce the acting api-key's DATA scope at the write chokepoint (D6).
+     * The scope set comes from {@link ApiKeyScopeContext} ({@code null} ⇒ caller is not a scoped
+     * api-key ⇒ unrestricted: interactive session, internal/background thread, or a privileged
+     * {@code rotate_self} key-store inside {@code callUnrestricted}). Each stored/removed entity
+     * is mapped to the capability it needs; the first one the scope set does not grant rejects
+     * the whole event with {@link RaplaSecurityException} — the SAME type a permission denial
+     * throws, so a scoped rejection is indistinguishable from "not allowed to mutate this".
+     */
+    private void guardApiKeyScopes(UpdateEvent evt) throws RaplaException
+    {
+        Set<String> scopes = ApiKeyScopeContext.current();
+        if (scopes == null)
+        {
+            return;
+        }
+        for (Entity stored : evt.getStoreObjects())
+        {
+            if (!scopePermitsWrite(scopes, stored.getTypeClass()))
+            {
+                throw new RaplaSecurityException("api key scope does not permit this write");
+            }
+        }
+        for (ReferenceInfo ref : evt.getRemoveIds())
+        {
+            if (!scopePermitsWrite(scopes, ref.getType()))
+            {
+                throw new RaplaSecurityException("api key scope does not permit this write");
+            }
+        }
+    }
+
+    /**
+     * Maps an entity kind to the api-key data scope required to mutate it: events
+     * (Reservation/Appointment) need {@code write_events} or {@code write_all}; resources
+     * (Allocatable) need {@code write_resources} or {@code write_all}; everything else
+     * (User, DynamicType, Category, Preferences, …) needs {@code write_all}.
+     */
+    private static boolean scopePermitsWrite(Set<String> scopes, Class<? extends Entity> type)
+    {
+        if (Reservation.class == type || Appointment.class == type)
+        {
+            return ApiKeyScopes.canWriteEvents(scopes);
+        }
+        if (Allocatable.class == type)
+        {
+            return ApiKeyScopes.canWriteResources(scopes);
+        }
+        return scopes.contains(ApiKeyScopes.WRITE_ALL);
     }
 
     @Override
@@ -1213,6 +1266,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     protected void check(final UpdateEvent evt, final EntityStore store) throws RaplaException
     {
         guardFixedAdmin(evt);
+        guardApiKeyScopes(evt);
         Set<Entity> storeObjects = new HashSet<>(evt.getStoreObjects());
         //Set<Entity> removeObjects = new HashSet<Entity>(evt.getRemoveObjects());
         setResolverAndCheckReferences(evt, store);

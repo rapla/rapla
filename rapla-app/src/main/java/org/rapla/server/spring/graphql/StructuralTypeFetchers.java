@@ -783,7 +783,7 @@ public final class StructuralTypeFetchers
         @SuppressWarnings("unchecked")
         Map<String, Object> filterArg = dfe.getArgument("filter") instanceof Map<?, ?> m
                 ? (Map<String, Object>) m : null;
-        return filterAllocatables(a, rc.caller(), pc, filterArg);
+        return filterAllocatables(a, rc.caller(), pc, filterArg, operator);
     }
 
     /**
@@ -792,35 +792,70 @@ public final class StructuralTypeFetchers
      * and the {@code @group} room dimension (PRD 079) so both honor the exact same leak rules.
      */
     static List<Allocatable> filterAllocatables(org.rapla.entities.domain.Appointment a,
-            User caller, PermissionController pc, Map<String, Object> filterArg)
+            User caller, PermissionController pc, Map<String, Object> filterArg, StorageOperator operator)
     {
         org.rapla.entities.domain.Reservation r = a.getReservation();
         if (r == null) return List.of();
+        // PRD 074 A/Option 2 — the nested allocatables list honors the FULL AllocatableFilter,
+        // reusing the SAME helpers as Query.allocatables (no second filter path). §12: canRead runs
+        // FIRST, so every later predicate only narrows the already-readable set (cannot leak).
+        AccessTargetFilter accessFilter = null;
+        boolean hasAccessSel = filterArg != null && (filterArg.get("accessibleByUsername") != null
+                || filterArg.get("accessibleByUserId") != null
+                || filterArg.get("accessibleByGroup") != null
+                || filterArg.get("accessLevel") != null);
+        if (hasAccessSel)
+        {
+            try
+            {
+                accessFilter = AccessTargetFilter.create(
+                        ClassificationGraphQLController.stringArg(filterArg, "accessibleByUsername"),
+                        ClassificationGraphQLController.stringArg(filterArg, "accessibleByUserId"),
+                        ClassificationGraphQLController.stringListArg(filterArg, "accessibleByGroup"),
+                        ClassificationGraphQLController.accessLevelArg(filterArg), caller, operator, pc);
+            }
+            catch (org.rapla.framework.RaplaException e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+        List<String> idIn = filterArg == null ? null
+                : ClassificationGraphQLController.stringListArg(filterArg, "idIn");
+        Object limObj = filterArg == null ? null : filterArg.get("limit");
+        int limit = limObj instanceof Number num ? num.intValue() : 0;
         List<Allocatable> out = new ArrayList<>();
         Allocatable[] all = r.getAllocatables();
         if (all == null) return List.of();
         for (Allocatable alloc : all)
         {
             if (alloc == null) continue;
-            if (caller != null && !pc.canRead(alloc, caller)) continue;
-            if (filterArg != null
-                    && !ClassificationGraphQLController.matchesMap(alloc, filterArg)) continue;
-            org.rapla.entities.domain.Appointment[] restriction = r.getRestriction(alloc);
-            if (restriction == null || restriction.length == 0)
+            if (caller != null && !pc.canRead(alloc, caller)) continue;           // §12 FIRST
+            if (filterArg != null)
             {
-                out.add(alloc);
-                continue;
+                if (!ClassificationGraphQLController.matchesMap(alloc, filterArg)) continue;  // scalar
+                if (!WhereEvaluator.evaluate(alloc, filterArg)) continue;                      // where<TypeKey>
+                if (idIn != null && !idIn.isEmpty()
+                        && (alloc.getId() == null || !idIn.contains(alloc.getId()))) continue; // idIn
+                if (accessFilter != null && !accessFilter.test(alloc)) continue;              // PRD 069 access
             }
-            for (org.rapla.entities.domain.Appointment ra : restriction)
-            {
-                if (ra != null && ra.getId() != null && ra.getId().equals(a.getId()))
-                {
-                    out.add(alloc);
-                    break;
-                }
-            }
+            if (!appointmentBound(r, alloc, a)) continue;                          // per-appointment restriction
+            out.add(alloc);
+            if (limit > 0 && out.size() >= limit) break;                          // limit
         }
         return out;
+    }
+
+    /** True if {@code alloc} is bound to appointment {@code a} (no restriction = bound to all). */
+    private static boolean appointmentBound(org.rapla.entities.domain.Reservation r,
+            Allocatable alloc, org.rapla.entities.domain.Appointment a)
+    {
+        org.rapla.entities.domain.Appointment[] restriction = r.getRestriction(alloc);
+        if (restriction == null || restriction.length == 0) return true;
+        for (org.rapla.entities.domain.Appointment ra : restriction)
+        {
+            if (ra != null && ra.getId() != null && ra.getId().equals(a.getId())) return true;
+        }
+        return false;
     }
 
     // === PRD 074 Baustein 4 — server-evaluated block fields via the rapla function bridge ===
@@ -883,36 +918,49 @@ public final class StructuralTypeFetchers
                     if (dto == null || dto.block() == null) return null;
                     DataFetchingEnvironment dfe = env.get();
                     String expr = dfe.getArgument("expr");
-                    if (expr == null || expr.isBlank()) return null;
-                    if (expr.length() > 2000)
-                    {
-                        throw new IllegalArgumentException("compute expr too long (max 2000 chars)");
-                    }
-                    org.rapla.entities.domain.AppointmentBlock block = dto.block();
-                    org.rapla.entities.dynamictype.Classification cls =
-                            org.rapla.entities.dynamictype.internal.ParsedText.guessClassification(block);
-                    if (cls == null) return null;
-                    org.rapla.entities.dynamictype.internal.DynamicTypeImpl type =
-                            (org.rapla.entities.dynamictype.internal.DynamicTypeImpl) cls.getType();
                     var rc = RequestContextInstrumentation.from(dfe.getGraphQlContext());
-                    User user = rc.caller();
-                    try
-                    {
-                        org.rapla.entities.dynamictype.internal.ParsedText pt =
-                                new org.rapla.entities.dynamictype.internal.ParsedText(expr);
-                        pt.init(type.getParseContext());
-                        org.rapla.entities.dynamictype.internal.EvalContext ctx = type.createEvalContext(
-                                user, serverLocale,
-                                org.rapla.entities.dynamictype.DynamicTypeAnnotations.KEY_NAME_FORMAT,
-                                java.util.Collections.singletonList(block));
-                        return pt.formatName(ctx);
-                    }
-                    catch (org.rapla.entities.IllegalAnnotationException e)
-                    {
-                        return null;   // invalid expr — save-time validation will reject at view-store time
-                    }
+                    return computeBlockExpr(dto.block(), expr, rc.caller());
                 }
             };
+
+    /**
+     * Evaluate a rapla expression against a single block (the {@code compute(expr:)} engine),
+     * shared by the {@code compute} field and PRD 079 {@code appointmentBlockStats} expr group-keys.
+     * Reuses the block's DynamicType parse context + {@code createEvalContext} (which carries §12's
+     * PermissionController). Returns null on blank/invalid expr; throws on over-long input.
+     */
+    static String computeBlockExpr(org.rapla.entities.domain.AppointmentBlock block, String expr, User user)
+    {
+        if (block == null || expr == null || expr.isBlank()) return null;
+        if (expr.length() > 2000)
+        {
+            throw new IllegalArgumentException("compute expr too long (max 2000 chars)");
+        }
+        // PRD 074 V2 — the GraphQL expr surface is bare-body with subject `item`. If the author
+        // didn't write the lambda wrapper, wrap it as `{item -> … }` so ParsedText evaluates it
+        // (vs. treating it as literal text). A leading `{` means the author wrote the full form.
+        String src = expr.trim().startsWith("{") ? expr : "{item->" + expr + "}";
+        org.rapla.entities.dynamictype.Classification cls =
+                org.rapla.entities.dynamictype.internal.ParsedText.guessClassification(block);
+        if (cls == null) return null;
+        org.rapla.entities.dynamictype.internal.DynamicTypeImpl type =
+                (org.rapla.entities.dynamictype.internal.DynamicTypeImpl) cls.getType();
+        try
+        {
+            org.rapla.entities.dynamictype.internal.ParsedText pt =
+                    new org.rapla.entities.dynamictype.internal.ParsedText(src);
+            pt.init(type.getParseContext());
+            org.rapla.entities.dynamictype.internal.EvalContext ctx = type.createEvalContext(
+                    user, serverLocale,
+                    org.rapla.entities.dynamictype.DynamicTypeAnnotations.KEY_NAME_FORMAT,
+                    java.util.Collections.singletonList(block));
+            return pt.formatName(ctx);
+        }
+        catch (org.rapla.entities.IllegalAnnotationException e)
+        {
+            return null;   // invalid expr — save-time validation will reject at view-store time
+        }
+    }
 
     private static String evalBlockFunction(String namespace, String fnName,
             ReservationGraphQLController.AppointmentBlockDto dto, StorageOperator operator,

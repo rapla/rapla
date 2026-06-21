@@ -921,22 +921,17 @@ render-modes → PRD 077**; **the global unified/power-search across views → P
 
 #### `extensions.view` contract v1 (GUI consumer — PRD 078)
 
-**Two classes of directives — the load-bearing split (locked 2026-06-21):**
+**Directives are CLIENT/render-only (locked 2026-06-21).** `@column`/`@hidden`/`@join`/`@flatten`
+are pure presentation hints in `extensions.view.columns`; they never touch `data`. Server-side
+**evaluation** is NOT done via directives — it lives in **query args** (`filter`/`sort`/`offset` on
+the flat table) and in the **separate typed field `appointmentBlockStats`** (aggregation + grouping,
+PRD 079). The earlier `@aggregate`/`@group` directives + `extensions.view.totals`/`.groups` were
+**removed**: aggregates belong in typed `data` ("like compute"), not an untyped side-channel.
+Rationale (incl. the "footer in one pass" trade-off we accepted): PRD 079.
 
-| Class | Directives | Evaluated by | Effect |
-|---|---|---|---|
-| **Client / render** | `@column`, `@hidden`, `@join`, `@flatten` | **client (GUI)** | pure presentation hints in `extensions.view.columns`; never touch `data` |
-| **Server / evaluate** | `@aggregate` (+ future `@group`, PRD 079) | **server** | real computation over the **full matched set**, result in `extensions.view.totals` |
-
-The split mirrors the query args: **what is queried/evaluated** (`filter`, `sort`, `offset`,
-`@aggregate`, `@group`) is server-side; **how it's displayed** (`@column`/`@hidden`/`@join`/`@flatten`)
-is client-side. `@aggregate` *must* be server-side: the client only receives the **page** (e.g.
-1–20 rows under `limit`/`offset`), but a total spans **all** matched blocks — it cannot be derived
-client-side. The resolver accumulates in the same block loop (O(1) memory);
-`ViewMetaInstrumentation` only translates the render hints into meta.
-
-The render directives are **client-side presentation hints**: they shape `extensions.view` only and
-never alter `data`. A query without `@view` returns no `extensions.view` (zero overhead).
+The render directives shape `extensions.view` only and never alter `data`. A query without `@view`
+returns no `extensions.view` (zero overhead). `extensions.view.page` (pagination meta of the flat
+table) is the one non-column entry the server still emits.
 
 | Directive | On | Args | Effect on the column descriptor |
 |---|---|---|---|
@@ -1003,18 +998,36 @@ query Termine @view(title: "Termine KW") {
 > - **Baustein 11** — `@flatten(field:)` directive: meta-only hint adding `flatten: "<leaf>"` to
 >   the column descriptor (explicit arg, or auto-detected single sub-field) so the GUI projects a
 >   nested object/list column to a flat value. Data stays nested.
-> - **Baustein 12** — global aggregates: `extensions.view.totals = { count, minutes, unit }` over
->   the FULL matched set (O(1) accumulation in the block loop). `minutes` = Σ wall-clock (end−start;
->   GUI derives hours = /60). `unit` = the eventtimecalculator total formatted "whole,remainder"
->   (break-adjusted **and** ÷timeUnit → UE at 45 / hours at 60; identical to the per-row `duration`
->   column), present only when the plugin is. Raw break-adjusted minutes are NOT exposed (no consumer;
->   the GUI lacks `timeUnit` to convert — the formatted string carries the conversion). §12-safe
->   (built from the canRead-gated set). Answers "total duration of all queried blocks". **Grouped**
->   aggregates (hours/week/room) → **PRD 079**.
+> - **Baustein 12** — numeric per-block field `AppointmentBlock.durationMinutes` (wall-clock end−start),
+>   the aggregatable basis for analytics.
+> - **Aggregation/grouping → moved to PRD 079 (Shape A).** An interim `@aggregate`/`@group` directive
+>   pass (totals/groups in `extensions.view`) was built and then **reverted**: aggregates belong in
+>   typed `data`, delivered by the dedicated `appointmentBlockStats` field (global total = no-groupBy).
+>   074's directives are now render-only.
 >
-> **Remaining (server):** the `ComputeFunctions` SDL catalog (PRD 073 descriptor-SPI). **Deliberately
-> omitted:** `total` block count (would defeat bounded memory — `hasMore` covers paging); grouped
-> aggregates (own scope → PRD 079). **Deferred:** persistence / SavedView / switching / week-month →
+> **A + V2 + Stufe b (2026-06-21) — built + green** (53 GraphQL tests; legacy nameformat/tableview
+> EL tests still green — 6 + 26):
+> - **A — filter unification.** The 3 nested allocatable spots (`Appointment.allocatables`,
+>   `AppointmentBlock.allocatables`, `appointmentBlockStats.groupBy.allocatables`) now use the **full
+>   `AllocatableFilter`** (was the lean `AppointmentAllocatableFilter`, **removed**). `filterAllocatables`
+>   reuses the SAME helpers as `Query.allocatables` — `matchesMap` (scalar) + `WhereEvaluator` (`where<TypeKey>`)
+>   + `idIn` + `AccessTargetFilter` (`accessibleBy*`/`accessLevel`, e.g. "resources of this event I may edit")
+>   + `limit`. **Option 2** (apply everything; no ignored fields). §12: `canRead` runs FIRST → narrowing
+>   can't leak. The lean type was only a guardrail against silent no-ops; once every field is honored it's
+>   unneeded. → enables "Raumauslastung Standort Mosbach" server-side via `whereRaum.Gebaeude`.
+> - **V2 — one rapla-expression surface.** Subject **`item`**; **bare body** auto-wraps as `{item -> …}`
+>   in `computeBlockExpr`; **0-arg default** on unary subject functions (`start`/`times`/`end` extended,
+>   additive; `name`/`duration`/`resources` already supported it) → `times()`; arrow **`->` and `=>`**
+>   both accepted (ParsedText, `=>` is the externally-documented form). Explicit/n-param lambdas use the
+>   braced form `{(a,b) -> …}`. Legacy `{p->fn(p)}` unchanged. Applies to `compute`, group-`expr`, metric-`expr`.
+> - **Stufe b — expr metrics.** `BlockAggregate` gains `expr` (numeric; `field` now optional). `metricValue`
+>   evaluates the expr (`computeBlockExpr`) and coerces the result to a double (canonical `.`); non-numeric/
+>   formatted results are skipped → feeds the existing reduction. Constant/numeric exprs work now.
+>
+> **Remaining (server):** the `ComputeFunctions` SDL catalog (PRD 073 descriptor-SPI). **Deferred:**
+> **Stufe c** — in-expression arithmetic (`add/sub/mul/div`), the EL number-model (PRD 073), which then
+> serves all expr surfaces; Mosbach "filter referenced building by name" (nested where on the `Gebaeude`
+> reference — `AllocatableWhere` is id-only today); persistence / SavedView / switching / week-month →
 > PRD 077; the Angular table renderer → PRD 078.
 
 1. **Phase 1 — Generator + render-meta.** Compile col annotations → server-evaluated

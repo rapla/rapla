@@ -106,6 +106,18 @@ type Query {
   # `{ offset, limit, returned, hasMore }`. Default sort = START ASC.
   appointmentBlocks(filter: ReservationFilter!, sort: [BlockSort!], offset: Int): [AppointmentBlock!]!
 
+  # PRD 079 — grouped/bucketed analytics over the full matched set, as typed `data`
+  # (not extensions). `groupBy` = dimensions (date bucket / §12 allocatable / custom
+  # compute `expr`); `aggregate` = metrics (numeric block field × fn). Empty `groupBy`
+  # → one global bucket (= a plain total). Server-evaluated, §12-safe, window-bounded
+  # + bucket-capped. See PRD 079.
+  appointmentBlockStats(
+    filter: ReservationFilter!,
+    groupBy: [BlockGroupKey!],
+    aggregate: [BlockAggregate!]!,
+    limit: Int
+  ): [BlockStatBucket!]!
+
   # PRD 064 — conflicts touching this reservation. §12: caller must be able
   # to read BOTH sides of each conflict + the allocatable; unreadable
   # conflicts are silently dropped.
@@ -327,32 +339,6 @@ input AllocatableFilter {
   limit:        Int
 }
 
-"""
-Narrowing predicates for the nested `Appointment.allocatables(filter:)` field.
-Subset of `AllocatableFilter` — only the v1 scalar predicates that the nested
-resolver actually honours. Omitting unsupported fields (`idIn`, `limit`,
-`accessibleBy*`, `accessLevel`, `where<TypeKey>`) prevents silent contract
-violations: passing them here is a GraphQL validation error, not a silent no-op.
-All fields optional; null = unconstrained. Multiple predicates AND together.
-Filter runs over the §12-canRead-gated per-appointment allocatable list.
-"""
-input AppointmentAllocatableFilter {
-  "Exact-match on the DynamicType key (e.g. \"room\", \"lecturer\"). Takes precedence over `typeKeyIn` when both are set."
-  typeKeyEq:    String
-  "Match any DynamicType key in the list (cross-type union). `typeKeyEq` takes precedence when both are set."
-  typeKeyIn:    [String!]
-  "True → only persons. False → only resources. null → both."
-  isPersonEq:   Boolean
-  "Case-insensitive substring match on displayName (legacy — prefer `searchText` + `matchKind` for new flows). ANDs with `searchText` if both are set."
-  nameContains: String
-  "PRD 028 Phase 1 — match against `Allocatable.displayName`; paired with `matchKind` for prefix/substring/fuzzy."
-  searchText:   String
-  "PRD 028 Phase 1 — algorithm choice for `searchText`. Defaults to SUBSTRING."
-  matchKind:    MatchKind = SUBSTRING
-  "Exact-match on owner id."
-  ownerEq:      ID
-}
-
 # === PRD 035 §5d — Generic Where input types ===
 # Predicate inputs reused by every generated <TypeKey>Where input. All
 # operators are optional (null = unconstrained); when multiple non-null
@@ -439,6 +425,8 @@ input AllocatableWhere {
   eq:     ID
   ne:     ID
   in:     [ID!]
+  "PRD 074 — match the REFERENCED allocatable by its display name (case-insensitive substring). Lets you filter through a reference in ONE query, e.g. rooms whose building name contains \"MOS\" (Standort Mosbach) via Raum.whereRaum.Gebaeude.nameContains."
+  nameContains: String
   isNull: Boolean
 }
 
@@ -683,17 +671,60 @@ directive @hidden on FIELD
 directive @join(separator: String) on FIELD
 "PRD 074 — project a single leaf out of a nested object/list column so the GUI renders a flat value. `field` names the leaf; omitted = the column's single selected sub-field. Meta-only (data stays nested)."
 directive @flatten(field: String) on FIELD
-"PRD 074 — aggregate a numeric column over the FULL matched set (not just the page); the result lands in `extensions.view.totals` keyed by the column's alias. v1 applies to numeric block fields (e.g. `durationMinutes`)."
-directive @aggregate(fn: AggregateFn!) on FIELD
-
-"PRD 074 — aggregation function for @aggregate."
+"PRD 079 — aggregation function for appointmentBlockStats."
 enum AggregateFn { SUM  COUNT  MEAN  MIN  MAX }
 
-"PRD 079 — marks a column as a GROUPING dimension: @aggregate columns are then computed per bucket (not globally), emitted in `extensions.view.groups`. `by` buckets a date column (start/end); for an allocatable-list column (e.g. rooms) the block fans out to each §12-readable allocatable. Multiple @group = multi-dimensional buckets (e.g. week × room). Server-evaluated."
-directive @group(by: TimeBucket) on FIELD
-
-"PRD 079 — date bucket granularity for @group(by:). ISO_WEEK is ISO-8601 week-based (Mon-start)."
+"PRD 079 — date bucket granularity. ISO_WEEK is ISO-8601 week-based (Mon-start)."
 enum TimeBucket { DAY  ISO_WEEK  MONTH  YEAR }
+
+"PRD 079 — which block date a time-bucket dimension reads."
+enum BlockDateField { START  END }
+
+"PRD 079 — numeric metric source. DURATION_MINUTES = wall-clock (end−start); DURATION_UNIT = eventtimecalculator (break-adjusted, ÷timeUnit → UE/hours, formatted text)."
+enum BlockMetricField { DURATION_MINUTES  DURATION_UNIT }
+
+"""
+PRD 079 — one grouping dimension. Supply EXACTLY ONE of:
+- `date` (+ optional `by`) → time bucket of that block date,
+- `allocatables` → §12-readable allocatables (block fans out to each; e.g. rooms),
+- `expr` → a custom compute expression (same engine as `AppointmentBlock.compute`; the
+  string result is the bucket key — group by anything you can express).
+`key` names the dimension in the result bucket's `keys`.
+"""
+input BlockGroupKey {
+  key: String!
+  date: BlockDateField
+  by: TimeBucket
+  allocatables: AllocatableFilter
+  expr: String
+}
+
+"""
+PRD 079 — one metric aggregated by `fn`, named `key` in the bucket's `values`. Supply EXACTLY ONE of:
+- `field` (typed numeric source: DURATION_MINUTES / DURATION_UNIT), or
+- `expr` (PRD 074 Stufe b — a numeric rapla expression, same engine as `compute`; the result is
+  coerced to a number, canonical '.' decimal). Non-numeric/formatted results are skipped.
+In-expression arithmetic (add/sub/mul/div) needs the EL number-model (PRD 073) — deferred.
+"""
+input BlockAggregate {
+  key: String!
+  field: BlockMetricField
+  expr: String
+  fn: AggregateFn!
+}
+
+"PRD 079 — one grouped result row: the dimension keys, the aggregate values, and the block count."
+type BlockStatBucket {
+  keys:   [StatKey!]!
+  values: [StatValue!]!
+  count:  Int!
+}
+
+"PRD 079 — a bucket's dimension value (`key` = the BlockGroupKey.key, `value` = the bucket label)."
+type StatKey { key: String!  value: String! }
+
+"PRD 079 — an aggregate result. `number` is the numeric value; `text` is the plugin-formatted form for DURATION_UNIT (UE/hours), else null."
+type StatValue { key: String!  number: Float  text: String }
 
 """
 For ALLOCATABLE-typed attributes: which DynamicType the referenced
@@ -781,15 +812,13 @@ type Appointment {
   Pre-resolved per-appointment allocatables (PRD 055 Q4 — restrictions
   applied). Restriction-aware editing reads parent Reservation.allocations.
 
-  PRD 073 — optional `filter` narrows the (already §12-canRead-gated) list.
-  Uses `AppointmentAllocatableFilter` (v1 scalar predicates only — `typeKeyIn`,
-  `isPersonEq`, `typeKeyEq`, `nameContains`, `searchText`, `matchKind`, `ownerEq`).
-  The canRead gate runs BEFORE the filter, so a hidden allocatable can never
-  leak even when it matches. `idIn`, `limit`, `accessibleBy*`, `where<TypeKey>`
-  are NOT available here — use `Query.allocatables(filter:)` for those.
-  Recursive `where<TypeKey>` and typeGroup deferred (PRD 059 / PRD 065).
+  PRD 074 A — optional `filter` narrows the (already §12-canRead-gated) list using the
+  FULL `AllocatableFilter` (same type + same evaluators as `Query.allocatables`): scalar
+  predicates, `where<TypeKey>` attribute filters, `idIn`, `accessibleBy*`/`accessLevel`
+  (e.g. "resources of this event I may edit"), `limit`. The canRead gate runs BEFORE the
+  filter, so narrowing can never leak a hidden allocatable.
   """
-  allocatables(filter: AppointmentAllocatableFilter): [Allocatable!]!
+  allocatables(filter: AllocatableFilter): [Allocatable!]!
   "Materialize blocks within a window. Server-side recurrence expansion."
   blocks(from: LocalDateTime!, to: LocalDateTime!): [AppointmentBlock!]!
 }
@@ -803,8 +832,8 @@ type AppointmentBlock {
   name(variant: NameVariant = DISPLAY): String
   "PRD 074 — the reservation this block belongs to (block → reservation → displayName)."
   reservation: Reservation
-  "PRD 074 — the block's allocatables, §12-gated, with the same scalar filter as Appointment.allocatables (typeKeyIn/isPersonEq). Per-appointment restriction applied for this block's appointment."
-  allocatables(filter: AppointmentAllocatableFilter): [Allocatable!]!
+  "PRD 074 A — the block's allocatables, §12-gated, with the FULL AllocatableFilter (scalar + where<TypeKey> + idIn + accessibleBy*/accessLevel + limit; same evaluators as Query.allocatables). Per-appointment restriction applied for this block's appointment."
+  allocatables(filter: AllocatableFilter): [Allocatable!]!
   "PRD 074 — server-evaluated event-time-calculator duration (e.g. 2 UE 0 Min), via the rapla function bridge. Null if the eventtimecalculator plugin is absent."
   duration: String
   "PRD 074 — server-evaluated formatted time range of the block (e.g. 10:00 - 11:30)."

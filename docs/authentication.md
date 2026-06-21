@@ -570,14 +570,49 @@ key material is never trusted.
 
 | Verb | Path | Returns |
 |---|---|---|
-| `POST` | `/api/auth/api-keys` | `{id, label, alg, thumbprint, createdAt, expiresAt, key}` — `key` is the JWT, shown once |
-| `GET`  | `/api/auth/api-keys` | `[{id, label, alg, thumbprint, createdAt, expiresAt}, …]` — no key material |
+| `POST` | `/api/auth/api-keys` | `{id, label, alg, thumbprint, createdAt, expiresAt, scopes, key}` — `key` is the JWT, shown once. Body may carry `scopes` (default `["read"]`). **Rejected for api-key principals (D10).** |
+| `GET`  | `/api/auth/api-keys` | `[{id, label, alg, thumbprint, createdAt, expiresAt, scopes}, …]` — no key material |
+| `POST` | `/api/auth/api-keys/{id}/rotate` | `{…, scopes, key}` — same shape as create. Self-rotation; see below |
 | `DELETE` | `/api/auth/api-keys/{id}` | `204 No Content` (idempotent) |
 
-All three require a valid access-token `Bearer` (you must be logged
-in to manage your own keys). The API key itself becomes usable on
-**every** authenticated rapla endpoint (`/api/resources`, `/api/events`,
-`/api/auth/api-keys`, etc.) once minted.
+`POST`/`GET`/`DELETE` require a valid **access-token** `Bearer` (you must be logged
+in to manage your own keys) — an api-key principal is **not** allowed to mint keys
+via `POST` (D10). `rotate` is the exception: it is called **by the api-key itself**
+and is the only key-management action an api-key can perform (and only on itself).
+The API key itself becomes usable on **every** authenticated rapla endpoint once
+minted, subject to its data scope on writes (see below).
+
+### Scopes + self-rotation (PRD 076)
+
+Each key carries a **scope set** that bounds the blast radius of a leak. Two axes:
+
+| Kind | Scopes | Governs |
+|---|---|---|
+| **Data** | `read`, `write_events`, `write_resources`, `write_all` | what the key may read / mutate. `write_*` implies read |
+| **Management** | `rotate_self` | may the key rotate itself (issue a same-scope successor) |
+
+- **Default for a new key is `{read}`** (least privilege); any write/`rotate_self` scope is
+  explicit opt-in. An **existing** key minted before PRD 076 (no `scopes` field) resolves to
+  `write_all` — behaviour-identical to before, non-breaking.
+- **Write enforcement** is at the operator chokepoint (`LocalAbstractCachableOperator.check`),
+  so it covers REST and GraphQL uniformly: events (Reservation/Appointment) need `write_events`
+  or `write_all`; resources (Allocatable) need `write_resources` or `write_all`; anything else
+  (User, DynamicType, …) needs `write_all`. A denied write returns the SAME 401 a permission
+  denial does — indistinguishable.
+- **Self-rotation** (`POST /{id}/rotate`, gated by `rotate_self`): mints a **same-scope**
+  successor (never escalates), returns it once, and sets a short server-side **grace TTL** on the
+  old key (`?graceSeconds=`, default 300, `0` = immediate). The old key keeps working for the
+  grace window then expires — bounded overlap without an indefinite dual-key phase. A key may
+  rotate **only itself** (the `{id}` must equal the caller's `kid`).
+- **Server can only tighten expiry, never extend it (D9):** the effective expiry is
+  `min(jwt.exp, stored.exp)`. The signed JWT `exp` is the hard ceiling; shortening the stored
+  `exp` (what `rotate` does) can pull it earlier. A missing stored `exp` is ignored — a legacy
+  never-expiring key keeps working.
+
+> **Known gap:** api-key Bearer tokens can't drive GraphQL **mutations** yet — those resolvers
+> resolve the caller by `preferred_username`, which api-key JWTs don't carry (only `sub`). REST
+> writes work. The scope enforcement is already uniform at the operator seam, so it applies to
+> GraphQL automatically once caller-resolution there is fixed by subject.
 
 ### Storage layout
 
@@ -589,13 +624,16 @@ RFC 7638 thumbprint:
 ```json
 {
   "refreshToken": "<the user's session refresh JWT — single slot, see above>",
-  "<thumbprint-1>": "{\"kid\":\"…\",\"jwk\":\"…public-JWK…\",\"alg\":\"RS256\",\"label\":\"CI deploy\",\"iat\":…,\"exp\":…}",
+  "<thumbprint-1>": "{\"kid\":\"…\",\"jwk\":\"…public-JWK…\",\"alg\":\"RS256\",\"label\":\"CI deploy\",\"iat\":…,\"exp\":…,\"scopes\":[\"read\"]}",
   "<thumbprint-2>": "…"
 }
 ```
 
 Note what's **not** stored: the JWT itself, the signature, the private
-key. Only the public JWK plus listing metadata.
+key. Only the public JWK plus listing metadata. The `scopes` and `exp`
+fields in each entry are **authoritative** — the decoder reads them on
+every request (not the signed JWT's copy), which is what lets the server
+migrate scopes and shorten expiry (`rotate`) without re-minting the key.
 
 ### Current limits (v1)
 

@@ -260,19 +260,6 @@ public class ReservationGraphQLController
         int keep = (int) Math.min(keepL, 20_000);
         java.util.PriorityQueue<AppointmentBlockDto> heap =
                 new java.util.PriorityQueue<>(cmp.reversed());   // max by cmp
-        // Per-column @aggregate over the FULL matched set (not just the page), O(1) memory.
-        // §12-safe: `visible` is already canRead-gated. Nothing fixed is summed — the totals are
-        // whatever the query author declared with @aggregate on numeric columns.
-        org.rapla.plugin.eventtimecalculator.EventTimeModel etm = resolveEventTimeModel(env);
-        List<AggSpec> aggs = parseAggregates(env);
-        int n = aggs.size();
-        double[] sum = new double[n];
-        long[] cnt = new long[n];
-        double[] min = new double[n];
-        double[] max = new double[n];
-        java.util.Arrays.fill(min, Double.POSITIVE_INFINITY);
-        java.util.Arrays.fill(max, Double.NEGATIVE_INFINITY);
-        int totalCount = 0;
         List<AppointmentBlock> blocks = new ArrayList<>();
         for (Reservation r : visible)
         {
@@ -284,17 +271,6 @@ public class ReservationGraphQLController
                 {
                     AppointmentBlockDto dto = new AppointmentBlockDto(
                             b.getStartDateTime(), b.getEndDateTime(), b.isException(), r, a, b);
-                    totalCount++;
-                    for (int i = 0; i < n; i++)
-                    {
-                        Double v = aggValue(aggs.get(i).field(), dto, b, etm);
-                        if (v != null)
-                        {
-                            sum[i] += v; cnt[i]++;
-                            if (v < min[i]) min[i] = v;
-                            if (v > max[i]) max[i] = v;
-                        }
-                    }
                     if (heap.size() < keep)
                     {
                         heap.offer(dto);
@@ -314,90 +290,285 @@ public class ReservationGraphQLController
         int toIdx = Math.min(offset + limit, sorted.size());
         List<AppointmentBlockDto> page = new ArrayList<>(sorted.subList(fromIdx, toIdx));
 
-        // Page meta → GraphQLContext; ViewMetaInstrumentation nests it under
-        // extensions.view.page when the operation carries @view.
+        // Pagination meta → extensions.view.page (render hint for the flat table; with @view).
         java.util.Map<String, Object> pageMeta = new java.util.LinkedHashMap<>();
         pageMeta.put("offset", offset);
         pageMeta.put("limit", limit);
         pageMeta.put("returned", page.size());
         pageMeta.put("hasMore", hasMore);
         env.getGraphQlContext().put(ViewMetaInstrumentation.PAGE_CTX_KEY, pageMeta);
-
-        // Totals: count + each declared @aggregate, keyed by the column alias. Columns backed by
-        // the eventtimecalculator (`duration`) are formatted via timeUnit (UE/hours); raw numeric
-        // columns (`durationMinutes`) stay numbers.
-        java.util.Map<String, Object> totals = new java.util.LinkedHashMap<>();
-        totals.put("count", totalCount);
-        for (int i = 0; i < n; i++)
-        {
-            AggSpec s = aggs.get(i);
-            if ("COUNT".equals(s.fn())) { totals.put(s.alias(), cnt[i]); continue; }
-            if (cnt[i] == 0) continue;
-            double raw = switch (s.fn())
-            {
-                case "SUM"  -> sum[i];
-                case "MEAN" -> sum[i] / cnt[i];
-                case "MIN"  -> min[i];
-                case "MAX"  -> max[i];
-                default      -> Double.NaN;
-            };
-            if (Double.isNaN(raw)) continue;
-            long rounded = Math.round(raw);
-            if ("duration".equals(s.field()) && etm != null) totals.put(s.alias(), etm.format(rounded));
-            else totals.put(s.alias(), rounded);
-        }
-        env.getGraphQlContext().put(ViewMetaInstrumentation.TOTALS_CTX_KEY, totals);
         return page;
     }
 
-    /** A column's declared {@code @aggregate}: response alias, underlying field name, function. */
-    private record AggSpec(String alias, String field, String fn) {}
-
-    /** Parse {@code @aggregate(fn:)} directives off the appointmentBlocks selection set. */
-    private static List<AggSpec> parseAggregates(graphql.schema.DataFetchingEnvironment env)
+    /**
+     * PRD 079 — grouped/bucketed analytics over the FULL matched set. `groupBy` declares the
+     * dimensions (date bucket / §12 allocatable / custom compute `expr`); `aggregate` the metrics
+     * (numeric block fields × fn). Aggregate with empty `groupBy` = one global bucket. Result is
+     * normal typed `data` (no extensions side-channel). Server-evaluated; §12-safe (built from the
+     * canRead-gated reservation set). Cost-guarded by the mandatory window + a bucket cap.
+     */
+    @QueryMapping
+    public List<BlockStatBucket> appointmentBlockStats(@Argument("filter") ReservationFilter filter,
+            @Argument("groupBy") List<BlockGroupKey> groupBy,
+            @Argument("aggregate") List<BlockAggregate> aggregate,
+            @Argument("limit") Integer limit,
+            graphql.schema.DataFetchingEnvironment env) throws RaplaException
     {
-        List<AggSpec> out = new ArrayList<>();
-        graphql.language.Field root = env.getField();
-        if (root == null || root.getSelectionSet() == null) return out;
-        for (graphql.language.Selection<?> sel : root.getSelectionSet().getSelections())
+        List<BlockGroupKey> groups = groupBy == null ? List.of() : groupBy;
+        List<BlockAggregate> aggs = aggregate == null ? List.of() : aggregate;
+        for (BlockGroupKey g : groups)
         {
-            if (!(sel instanceof graphql.language.Field f)) continue;
-            graphql.language.Directive d = null;
-            for (graphql.language.Directive dir : f.getDirectives())
+            int dimCount = (g.date() != null ? 1 : 0) + (g.allocatables() != null ? 1 : 0)
+                    + (g.expr() != null && !g.expr().isBlank() ? 1 : 0);
+            if (dimCount != 1)
             {
-                if ("aggregate".equals(dir.getName())) { d = dir; break; }
+                throw new IllegalArgumentException(
+                        "groupBy entry needs exactly one of date/allocatables/expr (key=" + g.key() + ")");
             }
-            if (d == null) continue;
-            String fn = null;
-            for (graphql.language.Argument arg : d.getArguments())
+        }
+        List<Reservation> visible = reservations(filter, env);
+        LocalDateTime from = filter.from();
+        LocalDateTime to = filter.to();
+        org.rapla.plugin.eventtimecalculator.EventTimeModel etm = resolveEventTimeModel(env);
+        var rc = RequestContextInstrumentation.from(env.getGraphQlContext());
+        org.rapla.entities.User caller = rc.caller();
+        PermissionController pc = rc.permissionController() != null
+                ? rc.permissionController() : operator.getPermissionController();
+        int nAgg = aggs.size();
+        final int maxBuckets = 5000;
+        java.util.Map<String, StatBucketAcc> buckets = new java.util.LinkedHashMap<>();
+        List<AppointmentBlock> blocks = new ArrayList<>();
+        for (Reservation r : visible)
+        {
+            for (org.rapla.entities.domain.Appointment a : r.getAppointments())
             {
-                if ("fn".equals(arg.getName()) && arg.getValue() instanceof graphql.language.EnumValue ev)
+                blocks.clear();
+                a.createBlocks(from, to, blocks);
+                for (AppointmentBlock b : blocks)
                 {
-                    fn = ev.getName();
+                    AppointmentBlockDto dto = new AppointmentBlockDto(
+                            b.getStartDateTime(), b.getEndDateTime(), b.isException(), r, a, b);
+                    List<List<Object>> dims = new ArrayList<>(groups.size());
+                    boolean skip = false;
+                    for (BlockGroupKey g : groups)
+                    {
+                        List<Object> vals = statGroupValues(g, dto, b, caller, pc, operator);
+                        if (vals.isEmpty()) { skip = true; break; }   // can't attribute → drop
+                        dims.add(vals);
+                    }
+                    if (skip) continue;
+                    for (List<Object> combo : cartesian(dims))
+                    {
+                        StringBuilder keyStr = new StringBuilder();
+                        for (Object v : combo) keyStr.append(v).append('');
+                        StatBucketAcc acc = buckets.get(keyStr.toString());
+                        if (acc == null)
+                        {
+                            if (buckets.size() >= maxBuckets) continue;   // cost guard
+                            List<StatKey> keys = new ArrayList<>(groups.size());
+                            for (int gi = 0; gi < groups.size(); gi++)
+                            {
+                                keys.add(new StatKey(groups.get(gi).key(), String.valueOf(combo.get(gi))));
+                            }
+                            acc = new StatBucketAcc(keys, nAgg);
+                            buckets.put(keyStr.toString(), acc);
+                        }
+                        acc.count++;
+                        for (int i = 0; i < nAgg; i++)
+                        {
+                            Double v = metricValue(aggs.get(i), dto, b, etm, caller);
+                            if (v != null)
+                            {
+                                acc.sum[i] += v; acc.cnt[i]++;
+                                if (v < acc.min[i]) acc.min[i] = v;
+                                if (v > acc.max[i]) acc.max[i] = v;
+                            }
+                        }
+                    }
                 }
             }
-            if (fn == null) continue;
-            String alias = f.getAlias() != null ? f.getAlias() : f.getName();
-            out.add(new AggSpec(alias, f.getName(), fn));
+        }
+        List<BlockStatBucket> out = new ArrayList<>(buckets.size());
+        for (StatBucketAcc acc : buckets.values())
+        {
+            List<StatValue> values = new ArrayList<>(nAgg);
+            for (int i = 0; i < nAgg; i++)
+            {
+                values.add(statResult(aggs.get(i), acc.sum[i], acc.cnt[i], acc.min[i], acc.max[i], etm));
+            }
+            out.add(new BlockStatBucket(acc.keys, values, (int) acc.count));
+        }
+        out.sort(java.util.Comparator.comparing(bk -> bk.keys().toString()));
+        if (limit != null && limit > 0 && out.size() > limit)
+        {
+            out = new ArrayList<>(out.subList(0, limit));
         }
         return out;
     }
 
-    /** Numeric value of an aggregatable block column (minutes), or null if not aggregatable here. */
-    private static Double aggValue(String field, AppointmentBlockDto dto, AppointmentBlock b,
-            org.rapla.plugin.eventtimecalculator.EventTimeModel etm)
+    /**
+     * Numeric metric value of a block, or null if unavailable. PRD 074 Stufe b: a metric may be a
+     * typed {@code field} OR a numeric {@code expr} (same EL as compute) — the expr result is
+     * coerced to a double (canonical '.' decimal); non-numeric results (e.g. a formatted duration
+     * "2,45") yield null and are skipped. For break-adjusted/formatted UE use {@code field: DURATION_UNIT}.
+     */
+    private static Double metricValue(BlockAggregate s, AppointmentBlockDto dto, AppointmentBlock b,
+            org.rapla.plugin.eventtimecalculator.EventTimeModel etm, org.rapla.entities.User caller)
     {
+        if (s.expr() != null && !s.expr().isBlank())
+        {
+            String r = StructuralTypeFetchers.computeBlockExpr(b, s.expr(), caller);
+            if (r == null || r.isBlank()) return null;
+            try { return Double.valueOf(r.trim()); } catch (NumberFormatException e) { return null; }
+        }
+        BlockMetricField field = s.field();
+        if (field == null) return null;
         switch (field)
         {
-            case "durationMinutes":
+            case DURATION_MINUTES:
                 if (dto.start() == null || dto.end() == null) return null;
                 return (double) java.time.Duration.between(dto.start(), dto.end()).toMinutes();
-            case "duration":
+            case DURATION_UNIT:
                 if (etm == null) return null;
                 long m = etm.calcDuration(b);
                 return m > 0 ? (double) m : 0.0;
             default:
                 return null;
+        }
+    }
+
+    /** Apply a function to its accumulators → StatValue (number; +formatted text for DURATION_UNIT). */
+    private static StatValue statResult(BlockAggregate s, double sum, long cnt, double min, double max,
+            org.rapla.plugin.eventtimecalculator.EventTimeModel etm)
+    {
+        if (s.fn() == AggregateFn.COUNT) return new StatValue(s.key(), (double) cnt, null);
+        if (cnt == 0) return new StatValue(s.key(), null, null);
+        double raw = switch (s.fn())
+        {
+            case SUM  -> sum;
+            case MEAN -> sum / cnt;
+            case MIN  -> min;
+            case MAX  -> max;
+            default    -> Double.NaN;
+        };
+        if (Double.isNaN(raw)) return new StatValue(s.key(), null, null);
+        long rounded = Math.round(raw);
+        String text = (s.field() == BlockMetricField.DURATION_UNIT && etm != null) ? etm.format(rounded) : null;
+        return new StatValue(s.key(), (double) rounded, text);
+    }
+
+    /** Dimension values for one group key on one block: compute expr / time bucket / §12 allocatable names. */
+    private static List<Object> statGroupValues(BlockGroupKey g, AppointmentBlockDto dto, AppointmentBlock b,
+            org.rapla.entities.User caller, PermissionController pc, StorageOperator operator)
+    {
+        if (g.expr() != null && !g.expr().isBlank())
+        {
+            String v = StructuralTypeFetchers.computeBlockExpr(b, g.expr(), caller);
+            return v == null ? List.of() : List.of(v);
+        }
+        if (g.date() != null)
+        {
+            LocalDateTime t = g.date() == BlockDateField.END ? dto.end() : dto.start();
+            String bucket = timeBucket(t, g.by() == null ? null : g.by().name());
+            return bucket == null ? List.of() : List.of(bucket);
+        }
+        if (g.allocatables() != null)
+        {
+            List<Object> out = new ArrayList<>();
+            for (Allocatable alloc : StructuralTypeFetchers.filterAllocatables(
+                    dto.appointment(), caller, pc, g.allocatables(), operator))
+            {
+                out.add(alloc.getName(StructuralTypeFetchers.serverLocale()));
+            }
+            return out;
+        }
+        return List.of();
+    }
+
+    /** Date → bucket label per granularity. ISO_WEEK is ISO-8601 week-based. */
+    private static String timeBucket(LocalDateTime t, String by)
+    {
+        if (t == null) return null;
+        return switch (by == null ? "DAY" : by)
+        {
+            case "ISO_WEEK" -> t.get(java.time.temporal.IsoFields.WEEK_BASED_YEAR) + "-W"
+                    + String.format("%02d", t.get(java.time.temporal.IsoFields.WEEK_OF_WEEK_BASED_YEAR));
+            case "MONTH" -> String.format("%04d-%02d", t.getYear(), t.getMonthValue());
+            case "YEAR"  -> String.valueOf(t.getYear());
+            default       -> t.toLocalDate().toString();   // DAY
+        };
+    }
+
+    /** Cartesian product of per-dimension value lists. */
+    private static List<List<Object>> cartesian(List<List<Object>> dims)
+    {
+        List<List<Object>> res = new ArrayList<>();
+        res.add(new ArrayList<>());
+        for (List<Object> dim : dims)
+        {
+            List<List<Object>> next = new ArrayList<>();
+            for (List<Object> prefix : res)
+            {
+                for (Object v : dim)
+                {
+                    List<Object> c = new ArrayList<>(prefix);
+                    c.add(v);
+                    next.add(c);
+                }
+            }
+            res = next;
+        }
+        return res;
+    }
+
+    // ============================================================ PRD 079 stats types
+
+    /** Aggregation function, mirrors schema {@code AggregateFn}. */
+    public enum AggregateFn { SUM, COUNT, MEAN, MIN, MAX }
+
+    /** Date bucket granularity, mirrors schema {@code TimeBucket}. */
+    public enum TimeBucket { DAY, ISO_WEEK, MONTH, YEAR }
+
+    /** Which block date a time-bucket group uses, mirrors schema {@code BlockDateField}. */
+    public enum BlockDateField { START, END }
+
+    /** Numeric metric source, mirrors schema {@code BlockMetricField}. */
+    public enum BlockMetricField { DURATION_MINUTES, DURATION_UNIT }
+
+    /** One grouping dimension (exactly one of date/allocatables/expr), mirrors input {@code BlockGroupKey}. */
+    public record BlockGroupKey(String key, BlockDateField date, TimeBucket by,
+            java.util.Map<String, Object> allocatables, String expr) {}
+
+    /** One metric spec, mirrors input {@code BlockAggregate}. */
+    public record BlockAggregate(String key, BlockMetricField field, String expr, AggregateFn fn) {}
+
+    /** One bucket dimension key/value, mirrors output {@code StatKey}. */
+    public record StatKey(String key, String value) {}
+
+    /** One aggregate result: {@code number} always; {@code text} = plugin-formatted (DURATION_UNIT). */
+    public record StatValue(String key, Double number, String text) {}
+
+    /** A grouped bucket, mirrors output {@code BlockStatBucket}. */
+    public record BlockStatBucket(List<StatKey> keys, List<StatValue> values, int count) {}
+
+    /** Per-bucket accumulator (PRD 079): dimension keys + per-metric sum/count/min/max. */
+    private static final class StatBucketAcc
+    {
+        final List<StatKey> keys;
+        long count;
+        final double[] sum;
+        final long[] cnt;
+        final double[] min;
+        final double[] max;
+        StatBucketAcc(List<StatKey> keys, int n)
+        {
+            this.keys = keys;
+            this.sum = new double[n];
+            this.cnt = new long[n];
+            this.min = new double[n];
+            this.max = new double[n];
+            java.util.Arrays.fill(min, Double.POSITIVE_INFINITY);
+            java.util.Arrays.fill(max, Double.NEGATIVE_INFINITY);
         }
     }
 

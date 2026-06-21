@@ -1,9 +1,40 @@
 # PRD 079 — GraphQL grouped aggregates (utilization analytics)
 
-**Status:** draft (design). Carved out of the PRD 074 table-view work (2026-06-21) when global
-totals (`extensions.view.totals`) landed and the next ask was *grouped* analytics — "how many
-hours per week is a room utilized over a year". 074 owns the flat table + per-row fields + global
-totals; **this PRD owns group-by + bucketed aggregation.**
+**Status:** **Shape A chosen + v1 implemented (2026-06-21).** Carved out of the PRD 074 table-view
+work. After exploring directives-in-`extensions` (Shape B) vs a typed query field (Shape A), we chose
+**A**: aggregation/grouping belongs in typed `data` ("like compute"), not an untyped side-channel.
+The interim `@aggregate`/`@group` directives + `extensions.view.totals/groups` were **removed** in
+favour of one field `appointmentBlockStats`. 074 owns the flat table + per-row fields (incl. the
+numeric `durationMinutes`); **this PRD owns group-by + bucketed aggregation, global total = the
+no-`groupBy` case.**
+
+## Implemented (v1, 2026-06-21)
+
+`Query.appointmentBlockStats(filter, groupBy: [BlockGroupKey!], aggregate: [BlockAggregate!]!, limit): [BlockStatBucket!]!`
+
+- **`groupBy`** dimension = exactly one of: `date`(+`by`: DAY/ISO_WEEK/MONTH/YEAR) · `allocatables`
+  (§12-readable, block fans out, e.g. rooms) · **`expr`** (custom compute key — same
+  `StructuralTypeFetchers.computeBlockExpr` engine as `AppointmentBlock.compute`; the string result
+  is the bucket key → group by anything expressible, **no number-model needed**).
+- **`aggregate`** metric = numeric block field (`DURATION_MINUTES` wall-clock · `DURATION_UNIT`
+  eventtimecalculator) × `fn` (SUM/COUNT/MEAN/MIN/MAX). Result `StatValue{number, text}` — `text` is
+  the plugin-formatted UE/hours for `DURATION_UNIT`.
+- **No `groupBy`** → one global bucket (= a plain total).
+- Server-evaluated, **§12-safe** (built from the canRead-gated reservation set + `filterAllocatables`),
+  cost-guarded (mandatory window + 5000-bucket cap). Tier-3 tests: global sum, group-by-week
+  partition, custom-expr key. `ReservationGraphQLControllerTest`.
+
+**Update 2026-06-21 (PRD 074 A + Stufe b):**
+- The `groupBy.allocatables` dimension now takes the **full `AllocatableFilter`** (incl. `where<TypeKey>`)
+  via the unified nested filter (PRD 074 A) — so "Auslastung pro Raum, Standort Mosbach" filters
+  server-side through `whereRaum.Gebaeude` (no client join).
+- `BlockAggregate` gained **`expr`** (Stufe b): a *single numeric* metric expression, coerced to a
+  number. Covers most metric needs (e.g. `expr:"attribute(item,\"<num>\")"`, constants).
+
+**Deferred:** in-**expression** arithmetic for metrics (`div(a,b)`, `sum({…})`) needs the EL
+**number-model (PRD 073, Stufe c)** — group *keys* are fully flexible now (strings); single numeric
+metric values work (Stufe b); only *composing* numbers inside the expr is pending. Optimisation
+(per-request block-set cache / pre-aggregation) deferred — analytics run infrequently.
 
 ## Motivating use cases (from the user, 2026-06-21)
 

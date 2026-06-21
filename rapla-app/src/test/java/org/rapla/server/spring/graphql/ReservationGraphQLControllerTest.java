@@ -1113,6 +1113,66 @@ class ReservationGraphQLControllerTest
     }
 
     /**
+     * PRD 074 V2 — expr ergonomics: bare body auto-wraps as {item -> …}; subject `item` is implicit
+     * (0-arg `times()`) or explicit (`times(item)`); the braced explicit form accepts both arrows
+     * (`->` and `=>`). All four notations must equal the full `{p->times(p)}` form.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void appointmentBlockComputeExprErgonomics()
+    {
+        List<Map<String, Object>> rows = tester.document("""
+                query {
+                  appointmentBlocks(filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" }) {
+                    full:     compute(expr: "{p->times(p)}")
+                    bare:     compute(expr: "times()")
+                    itemArg:  compute(expr: "times(item)")
+                    arrowFat: compute(expr: "{item => times(item)}")
+                  }
+                }
+                """)
+                .execute().path("appointmentBlocks")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
+        assertFalse(rows.isEmpty(), "fixture should produce blocks");
+        for (Map<String, Object> b : rows)
+        {
+            Object full = b.get("full");
+            assertEquals(full, b.get("bare"),     () -> "bare body + 0-arg times() must equal full form; got " + b);
+            assertEquals(full, b.get("itemArg"),  () -> "explicit item must equal full form; got " + b);
+            assertEquals(full, b.get("arrowFat"), () -> "=> arrow must equal full form; got " + b);
+        }
+    }
+
+    /**
+     * PRD 074 Stufe b — aggregate by a numeric `expr` (coerced to a number). A constant `expr:"1"`
+     * summed equals the block count, proving expr-metric coercion feeds the (built) reduction.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void blockStatsExprMetricCoercion()
+    {
+        Map<String, Object> bucket = tester.document("""
+                query {
+                  appointmentBlockStats(
+                    filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" },
+                    aggregate: [ { key: "ones",  expr: "1",                  fn: SUM },
+                                 { key: "count", field: DURATION_MINUTES,    fn: COUNT } ]
+                  ) { count values { key number } }
+                }
+                """)
+                .execute().path("appointmentBlockStats[0]")
+                .entity(new ParameterizedTypeReference<Map<String, Object>>() {}).get();
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> values = (List<Map<String, Object>>) bucket.get("values");
+        long ones  = values.stream().filter(v -> v.get("key").equals("ones"))
+                .mapToLong(v -> ((Number) v.get("number")).longValue()).findFirst().orElse(-1);
+        long count = values.stream().filter(v -> v.get("key").equals("count"))
+                .mapToLong(v -> ((Number) v.get("number")).longValue()).findFirst().orElse(-2);
+        assertEquals(count, ones, "SUM(expr \"1\") must equal the block count (expr-metric coercion)");
+        assertEquals(((Number) bucket.get("count")).longValue(), ones, "and equal bucket.count");
+    }
+
+    /**
      * PRD 074 Baustein 7 — Allocatable.name(variant:) mirrors Reservation.name;
      * Allocatable.displayName is now @deprecated (still queryable). name(DISPLAY)
      * equals the legacy displayName; EXPORT falls back to DISPLAY in the fixture.
@@ -1335,15 +1395,14 @@ class ReservationGraphQLControllerTest
     }
 
     /**
-     * PRD 074 — totals are DECLARATIVE: count (default) + each column's @aggregate over the
-     * FULL matched set, keyed by alias. limit:1 must NOT shrink the aggregate — it spans all
-     * blocks. `durationMinutes @aggregate(SUM)` is numeric; the fixed minutes/unit are gone.
+     * PRD 079 — appointmentBlockStats with NO groupBy = one global bucket (= a total).
+     * SUM of durationMinutes over the full set equals the sum of the per-row values, and
+     * COUNT equals the block count. Typed `data`, not extensions.
      */
     @Test
     @WithMockUser(username = "homer", roles = "ADMIN")
-    void viewDeclaredAggregateSpansFullSet() throws Exception
+    void blockStatsGlobalBucketSumsFullSet()
     {
-        // full-set durationMinutes, to compare against the limited aggregate
         List<Map<String, Object>> all = tester.document(
                 "query { appointmentBlocks(filter: { from: \"2006-01-01T00:00:00\", to: \"2006-12-31T00:00:00\" }) { durationMinutes } }")
                 .execute().path("appointmentBlocks")
@@ -1352,20 +1411,97 @@ class ReservationGraphQLControllerTest
         assertTrue(fullCount >= 2, () -> "need ≥2 blocks; got " + fullCount);
         long expectedSum = all.stream().mapToLong(b -> ((Number) b.get("durationMinutes")).longValue()).sum();
 
-        String query = """
-                query Totals @view {
-                  appointmentBlocks(filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00", limit: 1 }) {
-                    std: durationMinutes @aggregate(fn: SUM) @column(header: "Minuten")
-                  }
+        Map<String, Object> bucket = tester.document("""
+                query {
+                  appointmentBlockStats(
+                    filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" },
+                    aggregate: [ { key: "minutes", field: DURATION_MINUTES, fn: SUM },
+                                 { key: "n",       field: DURATION_MINUTES, fn: COUNT } ]
+                  ) { count keys { key value } values { key number text } }
                 }
-                """;
-        mockMvc.perform(post("/api/graphql").contentType(MediaType.APPLICATION_JSON).content(gqlBody(query)))
-                .andExpect(jsonPath("$.extensions.view.page.returned").value(1))
-                .andExpect(jsonPath("$.extensions.view.totals.count").value(fullCount))
-                .andExpect(jsonPath("$.extensions.view.totals.std").value((int) expectedSum))
-                // fixed wall-clock/unit totals are gone — totals are author-declared
-                .andExpect(jsonPath("$.extensions.view.totals.minutes").doesNotExist())
-                .andExpect(jsonPath("$.extensions.view.totals.unit").doesNotExist());
+                """)
+                .execute().path("appointmentBlockStats[0]")
+                .entity(new ParameterizedTypeReference<Map<String, Object>>() {}).get();
+        assertEquals(fullCount, ((Number) bucket.get("count")).intValue(), "global bucket counts all blocks");
+        assertTrue(((List<?>) bucket.get("keys")).isEmpty(), "no groupBy → empty keys");
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> values = (List<Map<String, Object>>) bucket.get("values");
+        long sum = values.stream().filter(v -> v.get("key").equals("minutes"))
+                .mapToLong(v -> ((Number) v.get("number")).longValue()).findFirst().orElse(-1);
+        long n = values.stream().filter(v -> v.get("key").equals("n"))
+                .mapToLong(v -> ((Number) v.get("number")).longValue()).findFirst().orElse(-1);
+        assertEquals(expectedSum, sum, "SUM(durationMinutes) over full set");
+        assertEquals(fullCount, n, "COUNT equals block count");
+    }
+
+    /**
+     * PRD 079 — groupBy ISO_WEEK produces one bucket per week; the per-week SUMs add up to the
+     * global SUM and the per-week counts add up to the total. Proves bucketing partitions the set.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void blockStatsGroupByWeekPartitions()
+    {
+        List<Map<String, Object>> all = tester.document(
+                "query { appointmentBlocks(filter: { from: \"2006-01-01T00:00:00\", to: \"2006-12-31T00:00:00\" }) { durationMinutes } }")
+                .execute().path("appointmentBlocks")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
+        int fullCount = all.size();
+        long expectedSum = all.stream().mapToLong(b -> ((Number) b.get("durationMinutes")).longValue()).sum();
+
+        List<Map<String, Object>> buckets = tester.document("""
+                query {
+                  appointmentBlockStats(
+                    filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" },
+                    groupBy:   [ { key: "week", date: START, by: ISO_WEEK } ],
+                    aggregate: [ { key: "minutes", field: DURATION_MINUTES, fn: SUM } ]
+                  ) { count keys { key value } values { key number } }
+                }
+                """)
+                .execute().path("appointmentBlockStats")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
+        assertFalse(buckets.isEmpty(), "should produce week buckets");
+        int summedCount = 0; long summedMinutes = 0;
+        for (Map<String, Object> bk : buckets)
+        {
+            summedCount += ((Number) bk.get("count")).intValue();
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> keys = (List<Map<String, Object>>) bk.get("keys");
+            assertEquals("week", keys.get(0).get("key"), "key name carried through");
+            assertTrue(((String) keys.get(0).get("value")).matches("\\d{4}-W\\d{2}"),
+                    () -> "ISO week label, got " + keys.get(0).get("value"));
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> values = (List<Map<String, Object>>) bk.get("values");
+            summedMinutes += ((Number) values.get(0).get("number")).longValue();
+        }
+        assertEquals(fullCount, summedCount, "per-week counts sum to total");
+        assertEquals(expectedSum, summedMinutes, "per-week SUMs sum to global SUM");
+    }
+
+    /**
+     * PRD 079 — custom group key via `expr` (same engine as compute). Grouping by a constant
+     * expression collapses everything into a single bucket whose key is that constant.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void blockStatsGroupByComputeExpr()
+    {
+        List<Map<String, Object>> buckets = tester.document("""
+                query {
+                  appointmentBlockStats(
+                    filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" },
+                    groupBy:   [ { key: "k", expr: "{p->'all'}" } ],
+                    aggregate: [ { key: "n", field: DURATION_MINUTES, fn: COUNT } ]
+                  ) { count keys { key value } }
+                }
+                """)
+                .execute().path("appointmentBlockStats")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
+        assertEquals(1, buckets.size(), "constant expr → exactly one bucket");
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> keys = (List<Map<String, Object>>) buckets.get(0).get("keys");
+        assertEquals("k", keys.get(0).get("key"));
+        assertEquals("all", keys.get(0).get("value"), "bucket key = the constant expr result");
     }
 
     /** No @view → no extensions.view (zero overhead for plain queries). */
@@ -1489,7 +1625,7 @@ class ReservationGraphQLControllerTest
         return names;
     }
 
-    /** Schema: Appointment.allocatables accepts a `filter` arg of type AppointmentAllocatableFilter. */
+    /** PRD 074 A: Appointment.allocatables accepts a `filter` arg of the unified type AllocatableFilter. */
     @Test
     @WithMockUser(username = "homer", roles = "ADMIN")
     void appointmentAllocatablesHasFilterArgument()
@@ -1521,86 +1657,68 @@ class ReservationGraphQLControllerTest
         String typeName = type.get("name") != null
                 ? (String) type.get("name")
                 : (String) ((Map<?, ?>) type.get("ofType")).get("name");
-        assertEquals("AppointmentAllocatableFilter", typeName,
-                "filter arg must use AppointmentAllocatableFilter, not " + typeName);
+        assertEquals("AllocatableFilter", typeName,
+                "filter arg must use the unified AllocatableFilter, not " + typeName);
     }
 
     /**
-     * Contract enforcement — `idIn` is not part of `AppointmentAllocatableFilter`.
-     * Passing it must be a GraphQL validation error, not a silent no-op.
+     * PRD 074 A — `idIn` is now part of the unified filter on the nested path: ACCEPTED (no
+     * validation error) and applied (narrows the list to named ids).
      */
     @Test
     @WithMockUser(username = "homer", roles = "ADMIN")
-    void appointmentAllocatablesIdInIsValidationError()
+    void appointmentAllocatablesIdInAccepted()
     {
         tester.document("""
                 query {
-                  reservations(filter: {
-                    from: "2006-01-01T00:00:00",
-                    to:   "2006-12-31T00:00:00"
-                  }) {
-                    appointments {
-                      allocatables(filter: { idIn: ["some-id"] }) { displayName }
-                    }
+                  reservations(filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" }) {
+                    appointments { allocatables(filter: { idIn: ["some-id"] }) { displayName } }
                   }
                 }
                 """)
                 .execute()
                 .errors()
-                .satisfy(errs -> assertFalse(errs.isEmpty(),
-                        "idIn is not in AppointmentAllocatableFilter — expected a validation error"));
+                .satisfy(errs -> assertTrue(errs.isEmpty(),
+                        "idIn is part of the unified AllocatableFilter — must NOT be a validation error: " + errs));
     }
 
-    /**
-     * Contract enforcement — `limit` is not part of `AppointmentAllocatableFilter`.
-     * Passing it must be a GraphQL validation error, not a silent no-op.
-     */
+    /** PRD 074 A — `limit` accepted on the nested path (caps the list), no validation error. */
     @Test
     @WithMockUser(username = "homer", roles = "ADMIN")
-    void appointmentAllocatablesLimitIsValidationError()
+    void appointmentAllocatablesLimitAccepted()
     {
         tester.document("""
                 query {
-                  reservations(filter: {
-                    from: "2006-01-01T00:00:00",
-                    to:   "2006-12-31T00:00:00"
-                  }) {
-                    appointments {
-                      allocatables(filter: { limit: 1 }) { displayName }
-                    }
+                  reservations(filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" }) {
+                    appointments { allocatables(filter: { limit: 1 }) { displayName } }
                   }
                 }
                 """)
                 .execute()
                 .errors()
-                .satisfy(errs -> assertFalse(errs.isEmpty(),
-                        "limit is not in AppointmentAllocatableFilter — expected a validation error"));
+                .satisfy(errs -> assertTrue(errs.isEmpty(),
+                        "limit is part of the unified AllocatableFilter — must NOT be a validation error: " + errs));
     }
 
     /**
-     * Contract enforcement — `accessibleByUsername` is not part of `AppointmentAllocatableFilter`.
-     * Passing it must be a GraphQL validation error, not a silent no-op.
+     * PRD 074 A — `accessLevel` accepted on the nested path ("which of this event's resources may
+     * I edit"), no validation error.
      */
     @Test
     @WithMockUser(username = "homer", roles = "ADMIN")
-    void appointmentAllocatablesAccessibleByUsernameIsValidationError()
+    void appointmentAllocatablesAccessLevelAccepted()
     {
         tester.document("""
                 query {
-                  reservations(filter: {
-                    from: "2006-01-01T00:00:00",
-                    to:   "2006-12-31T00:00:00"
-                  }) {
-                    appointments {
-                      allocatables(filter: { accessibleByUsername: "homer" }) { displayName }
-                    }
+                  reservations(filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" }) {
+                    appointments { allocatables(filter: { accessLevel: EDIT }) { displayName } }
                   }
                 }
                 """)
                 .execute()
                 .errors()
-                .satisfy(errs -> assertFalse(errs.isEmpty(),
-                        "accessibleByUsername is not in AppointmentAllocatableFilter — expected a validation error"));
+                .satisfy(errs -> assertTrue(errs.isEmpty(),
+                        "accessLevel is part of the unified AllocatableFilter — must NOT be a validation error: " + errs));
     }
 
     /** (a) typeKeyIn narrows the nested list to the named DynamicTypes (rooms only). */

@@ -1,0 +1,14 @@
+/* PRD 078 — shell layout: toolbar on top, sidenav + content fill the rest. */
+.shell {
+  /* Fill the viewport below the ~64px Material toolbar. */
+  height: calc(100vh - 64px);
+}
+
+.nav {
+  width: 220px;
+}
+
+.active-link {
+  background: rgba(0, 0, 0, 0.06);
+  font-weight: 500;
+}

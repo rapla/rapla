@@ -7,11 +7,12 @@ import { GraphqlService, GqlResponse } from '../graphql/graphql.service';
 import { AppointmentsData } from './appointments-view';
 
 function stubGql(response: GqlResponse<AppointmentsData>): Partial<GraphqlService> {
-  return { query: () => of(response) };
+  // query<T> is generic; a fixed-type stub can't satisfy it directly — cast.
+  return { query: () => of(response) } as unknown as Partial<GraphqlService>;
 }
 
 function stubGqlError(status: number): Partial<GraphqlService> {
-  return { query: () => throwError(() => ({ status })) };
+  return { query: () => throwError(() => ({ status })) } as unknown as Partial<GraphqlService>;
 }
 
 const ONE_ROW: GqlResponse<AppointmentsData> = {

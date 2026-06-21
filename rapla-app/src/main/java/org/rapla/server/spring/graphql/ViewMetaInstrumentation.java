@@ -54,10 +54,6 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
     private static final String CTX_KEY = "rapla.view.meta";
     /** Resolver-written pagination meta ({@code appointmentBlocks}), nested under {@code view.page}. */
     public static final String PAGE_CTX_KEY = "rapla.view.page";
-    /** Resolver-written aggregate totals ({@code appointmentBlocks}), nested under {@code view.totals}. */
-    public static final String TOTALS_CTX_KEY = "rapla.view.totals";
-    /** Resolver-written grouped buckets ({@code appointmentBlocks} @group), nested under {@code view.groups}. */
-    public static final String GROUPS_CTX_KEY = "rapla.view.groups";
 
     @Override
     public InstrumentationContext<ExecutionResult> beginExecuteOperation(
@@ -96,8 +92,6 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
             Map<String, Object> mm = (Map<String, Object>) m;
             Object page = ctx.get(PAGE_CTX_KEY);
             if (page != null) mm.put("page", page);
-            Object totals = ctx.get(TOTALS_CTX_KEY);
-            if (totals != null) mm.put("totals", totals);
         }
         Map<Object, Object> ext = new LinkedHashMap<>();
         if (executionResult.getExtensions() != null) ext.putAll(executionResult.getExtensions());

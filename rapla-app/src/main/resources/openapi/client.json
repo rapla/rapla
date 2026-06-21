@@ -1279,6 +1279,40 @@
         }
       }
     },
+    "/api/auth/api-keys/{id}/rotate" : {
+      "post" : {
+        "tags" : [ "api-key-controller" ],
+        "operationId" : "rotate",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "graceSeconds",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CreateResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/archiver" : {
       "get" : {
         "tags" : [ "archiver-controller" ],
@@ -2857,6 +2891,12 @@
           "expiresInDays" : {
             "type" : "integer",
             "format" : "int64"
+          },
+          "scopes" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
           }
         }
       },
@@ -2879,6 +2919,12 @@
           },
           "expiresAt" : {
             "type" : "string"
+          },
+          "scopes" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
           },
           "key" : {
             "type" : "string"
@@ -3379,6 +3425,12 @@
           },
           "expiresAt" : {
             "type" : "string"
+          },
+          "scopes" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
           }
         }
       },

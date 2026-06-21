@@ -401,6 +401,16 @@ final class WhereEvaluator
         if (eq != null && !eq.toString().equals(a.getId())) return false;
         if (ne != null && ne.toString().equals(a.getId())) return false;
         if (in instanceof List<?> list && !containsAllocatableId(list, a)) return false;
+        // PRD 074 — match the referenced allocatable by its display name (one-query reference join,
+        // e.g. rooms whose Gebaeude.nameContains "MOS"). Typed by-attribute filtering of the
+        // referenced entity (whereGebaeude) is the recursive where, PRD 059/065.
+        Object nameContains = pred.get("nameContains");
+        if (nameContains != null)
+        {
+            String hay = a.getName(Locale.getDefault());
+            if (hay == null || !hay.toLowerCase(Locale.ROOT)
+                    .contains(nameContains.toString().toLowerCase(Locale.ROOT))) return false;
+        }
         return true;
     }
 

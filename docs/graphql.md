@@ -1010,3 +1010,36 @@ That single flag saved ~1 s on the 42k Person query in measurement (~14 % wall-c
 - **No mutations yet.** PRD 035 §6 bulk-mutation design is locked but not implemented. Reads only.
 - **No subscriptions.** Polling only (10 s) for schema changes; queries themselves are request/response.
 - **Rapla-internal types fully hidden.** Templates, periods, default-user, and anonymous-event don't appear in any GraphQL surface. Use the dedicated query roots (`periods`, …) for those.
+
+## The rapla expression (`expr`) — one language, several slots (PRD 074 V2)
+
+`expr` is the bounded rapla expression language (the `ParsedText` / nameformat engine), exposed in
+GraphQL wherever a **derived value** is produced — **one language, learned once**:
+
+| Slot | Shape | Produces |
+|---|---|---|
+| Column projection | `compute(expr: "…")` on `AppointmentBlock` | a per-row string cell |
+| Group key | `groupBy: [{ key, expr: "…" }]` (PRD 079) | a bucket key |
+| Metric value (Stufe b) | `aggregate: [{ key, expr: "…", fn }]` | a numeric value (coerced) |
+
+**Syntax (externally documented form):**
+- **Bare body** — no wrapper needed; the server wraps it as `{item -> … }`. `compute(expr: "concat(name(), times())")`.
+- **Subject `item`** — the current object (an `AppointmentBlock` in these slots). Mostly **implicit**
+  via 0-arg subject functions: `name()`, `times()`, `start()`, `end()`, `duration()`. Write `item`
+  explicitly only when you must pass the subject: `fn(item)`.
+- **Arrow** — `=>` (documented) or `->` (also accepted). The bare single-subject form needs no arrow;
+  the explicit/n-parameter lambda uses the braced form `{(a, b) => fn(a, b)}`.
+- **Functions** — `name`, `times`, `start`, `end`, `duration`, `concat`, `substring`, `if`, `equals`,
+  `attribute`, `key`, `type`, `resources`, … (the bridged rapla function set).
+
+Examples:
+```graphql
+compute(expr: "concat(substring(times(),0,5), \"–\", substring(times(),8,13))")   # "08:00–11:15"
+compute(expr: "if(equals(key(type()), \"Pruefung\"), \"📝\", \"Lehre\")")
+groupBy:   [{ key: "initial", expr: "substring(name(),0,1)" }]
+aggregate: [{ key: "sum",     expr: "attribute(item, \"<numericAttr>\")", fn: SUM }]
+```
+
+**Not yet (PRD 073 number-model / Stufe c):** in-expression arithmetic (`add/sub/mul/div`). Single
+numeric values work (Stufe b); composing numbers inside the expr needs a numeric type in the EL,
+which would then serve every `expr` slot.

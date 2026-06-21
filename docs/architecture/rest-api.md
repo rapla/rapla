@@ -362,9 +362,18 @@ copies it like a GitHub PAT and uses it as `Authorization: Bearer
 stored public key (lookup by `kid` thumbprint) and confirms the key
 hasn't been revoked. Backup leak yields useless public keys.
 
-See [PRD 043](../prd/043-api-keys-jwt-pat.md) for the full design
+**Scopes + self-rotation (PRD 076).** Each key carries a scope set
+(`read` default; `write_events`/`write_resources`/`write_all`;
+`rotate_self`) bounding a leak. Write enforcement lives at the operator
+chokepoint so REST + GraphQL are covered uniformly. `POST
+/api/auth/api-keys/{id}/rotate` (gated by `rotate_self`, `?graceSeconds=`)
+mints a same-scope successor and puts a short grace TTL on the old key;
+the generic `POST` create endpoint rejects api-key principals (D10).
+
+See [PRD 043](../prd/043-api-keys-jwt-pat.md) +
+[PRD 076](../prd/076-scoped-api-keys-self-rotation.md) for the full design
 + [`docs/authentication.md`](../authentication.md#api-keys-personal-access-tokens)
-for the user-facing curl flow.
+for the user-facing curl flow + scope/rotation details.
 
 ### OIDC / SSO endpoints (Spring Authorization Server)
 

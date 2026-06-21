@@ -394,13 +394,13 @@ public class StandardFunctions implements FunctionFactory
         AppointmentEndFunction(List<Function> args) throws IllegalAnnotationException
         {
             super(NAMESPACE,ID, args);
-            assertArgs(1);
-            subFunction = args.get(0);
+            assertArgs(0, 1);
+            subFunction = args.size() > 0 ? args.get(0) : null;
         }
 
         @Override public LocalDateTime eval(EvalContext context)
         {
-            Object object = subFunction.eval(context);
+            Object object = subFunction != null ? subFunction.eval(context) : context.getFirstContextObject();
             if (object == null)
             {
                 return null;
@@ -502,16 +502,13 @@ public class StandardFunctions implements FunctionFactory
         AppointmentStartFunction(List<Function> args) throws IllegalAnnotationException
         {
             super(NAMESPACE,ID, args);
-            if (args.size() != 1)
-            {
-                throw new IllegalAnnotationException("appointment function expects 1 argument!");
-            }
-            subFunction = args.get(0);
+            assertArgs(0, 1);
+            subFunction = args.size() > 0 ? args.get(0) : null;
         }
 
         @Override public LocalDateTime eval(EvalContext context)
         {
-            Object object = subFunction.eval(context);
+            Object object = subFunction != null ? subFunction.eval(context) : context.getFirstContextObject();
             if (object == null)
             {
                 return null;
@@ -552,16 +549,13 @@ public class StandardFunctions implements FunctionFactory
         {
             super(NAMESPACE,ID, args);
             this.raplaLocale = raplaLocale;
-            if (args.size() != 1)
-            {
-                throw new IllegalAnnotationException("appointment function expects 1 argument!");
-            }
-            subFunction = args.get(0);
+            assertArgs(0, 1);
+            subFunction = args.size() > 0 ? args.get(0) : null;
         }
 
         @Override public String eval(EvalContext context)
         {
-            Object object = subFunction.eval(context);
+            Object object = subFunction != null ? subFunction.eval(context) : context.getFirstContextObject();
             if (object == null)
             {
                 return null;

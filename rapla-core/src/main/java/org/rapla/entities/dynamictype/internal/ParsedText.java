@@ -183,7 +183,14 @@ public class ParsedText implements Serializable
         content = content.trim();
         StringBuffer parsed = new StringBuffer();
         final ArrayList<String> boundParameters = new ArrayList<>();
-        final int indexOfBoundOperator = content.indexOf("->");
+        // PRD 074 V2 — accept both the rapla-native `->` and the JS-style `=>` lambda operator
+        // (the latter is the externally-documented form for the GraphQL expr surface). The real
+        // operator is the first occurrence; a `->`/`=>` inside a later string body is not matched
+        // because the genuine operator precedes any function call / string literal.
+        final int arrowIdx = content.indexOf("->");
+        final int fatArrowIdx = content.indexOf("=>");
+        final int indexOfBoundOperator = arrowIdx < 0 ? fatArrowIdx
+                : (fatArrowIdx < 0 ? arrowIdx : Math.min(arrowIdx, fatArrowIdx));
         if (indexOfBoundOperator >= 0)
         {
             int indexOfFirstOpenPh = content.indexOf('(');

@@ -10,6 +10,7 @@ import com.nimbusds.jwt.SignedJWT;
 import org.rapla.entities.User;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.server.ApiKeyScopes;
 import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.spring.web.ApiKeyController;
 import org.springframework.security.oauth2.jwt.BadJwtException;
@@ -22,9 +23,11 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.text.ParseException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -123,10 +126,19 @@ public class ApiKeyJwtDecoder implements JwtDecoder
         {
             throw new BadJwtException("api key: not registered or revoked");
         }
-        JWK storedJwk = findStoredJwk(user, kid);
-        if (storedJwk == null)
+        JsonNode storedEntry = findStoredEntry(user, kid);
+        if (storedEntry == null)
         {
             throw new BadJwtException("api key: not registered or revoked");
+        }
+        JWK storedJwk;
+        try
+        {
+            storedJwk = JWK.parse(storedEntry.get("jwk").asText());
+        }
+        catch (Exception e)
+        {
+            throw new BadJwtException("api key: stored key unparseable", e);
         }
         if (!(storedJwk instanceof RSAKey rsaKey))
         {
@@ -144,13 +156,20 @@ public class ApiKeyJwtDecoder implements JwtDecoder
         {
             throw new BadJwtException("api key: signature verification failed", e);
         }
-        Date exp = claims.getExpirationTime();
+        // D9 — effective expiry is the EARLIEST present exp across the signed JWT and the stored
+        // entry. The server can only TIGHTEN (the JWT exp is the hard ceiling); a missing stored
+        // exp is ignored (a never-expiring legacy key must keep working, never read as expired).
+        Date exp = earliest(claims.getExpirationTime(), readStoredExp(storedEntry));
         if (exp != null && exp.toInstant().isBefore(Instant.now()))
         {
             throw new BadJwtException("api key: expired");
         }
+        // Scopes are authoritative from the STORED entry, NOT the signed JWT (D8). A missing
+        // "scopes" field means a pre-PRD-076 key ⇒ full write power (write_all), never read.
+        List<String> scopes = new ArrayList<>(ApiKeyScopes.resolveStored(readStoredScopes(storedEntry)));
         Map<String, Object> headers = new HashMap<>(parsed.getHeader().toJSONObject());
         Map<String, Object> claimsMap = new HashMap<>(claims.toJSONObject());
+        claimsMap.put("scopes", scopes);
         Instant iat = claims.getIssueTime() == null ? Instant.now() : claims.getIssueTime().toInstant();
         Instant expInstant = exp == null ? null : exp.toInstant();
         return Jwt.withTokenValue(token)
@@ -161,7 +180,8 @@ public class ApiKeyJwtDecoder implements JwtDecoder
                 .build();
     }
 
-    private JWK findStoredJwk(User user, String kid)
+    /** The full stored JSON entry whose {@code kid} matches, or {@code null} if none/revoked. */
+    private JsonNode findStoredEntry(User user, String kid)
     {
         Collection<String> entries;
         try
@@ -179,9 +199,8 @@ public class ApiKeyJwtDecoder implements JwtDecoder
                 JsonNode node = MAPPER.readTree(entry);
                 JsonNode kidNode = node.get("kid");
                 if (kidNode == null || !kid.equals(kidNode.asText())) continue;
-                JsonNode jwkNode = node.get("jwk");
-                if (jwkNode == null) continue;
-                return JWK.parse(jwkNode.asText());
+                if (node.get("jwk") == null) continue;
+                return node;
             }
             catch (Exception e)
             {
@@ -190,5 +209,34 @@ public class ApiKeyJwtDecoder implements JwtDecoder
             }
         }
         return null;
+    }
+
+    private static List<String> readStoredScopes(JsonNode node)
+    {
+        if (node == null || !node.has("scopes") || !node.get("scopes").isArray())
+        {
+            return null;
+        }
+        List<String> out = new ArrayList<>();
+        for (JsonNode s : node.get("scopes")) out.add(s.asText());
+        return out;
+    }
+
+    /** The stored entry's {@code exp} (epoch millis) as a {@link Date}, or {@code null} if absent. */
+    private static Date readStoredExp(JsonNode node)
+    {
+        if (node == null || !node.has("exp") || !node.get("exp").isNumber())
+        {
+            return null;
+        }
+        return new Date(node.get("exp").asLong());
+    }
+
+    /** The earlier of two expiry instants; {@code null} means "no limit" and is ignored. */
+    private static Date earliest(Date a, Date b)
+    {
+        if (a == null) return b;
+        if (b == null) return a;
+        return a.before(b) ? a : b;
     }
 }

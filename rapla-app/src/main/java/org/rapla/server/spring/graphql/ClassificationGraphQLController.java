@@ -317,14 +317,13 @@ public class ClassificationGraphQLController
     // === filter predicate =====================================================
 
     /**
-     * PRD 073 — package-visible entry point for the scalar predicate, reused by
-     * {@code StructuralTypeFetchers.appointmentAllocatables} for the nested
-     * {@code Appointment.allocatables(filter: AppointmentAllocatableFilter)} field.
-     * {@code m} is the raw GraphQL input map (null = unconstrained → matches).
-     * Only the v1 scalar fields of {@link AllocatableFilter} are evaluated here;
-     * {@code AppointmentAllocatableFilter} is a strict subset that excludes {@code idIn},
-     * {@code limit}, {@code accessibleBy*}, and {@code where<TypeKey>} — so no
-     * unsupported field can reach this method via the nested path.
+     * PRD 073/074 A — package-visible entry point for the SCALAR predicate, reused by
+     * {@code StructuralTypeFetchers.filterAllocatables} on the nested
+     * {@code Appointment.allocatables} / {@code AppointmentBlock.allocatables} path. {@code m} is
+     * the raw GraphQL input map (null = unconstrained → matches). Evaluates only the scalar fields;
+     * the nested path applies {@code where<TypeKey>} via {@link WhereEvaluator}, and {@code idIn} /
+     * {@code accessibleBy*} / {@code limit} alongside it — same unified {@code AllocatableFilter} as
+     * {@code Query.allocatables}.
      */
     static boolean matchesMap(Allocatable a, Map<String, Object> m)
     {
@@ -376,18 +375,18 @@ public class ClassificationGraphQLController
 
     // === PRD 069 access-by-target arg parsing =================================
 
-    private static String stringArg(Map<String, Object> m, String key)
+    static String stringArg(Map<String, Object> m, String key)
     {
         return m == null ? null : (m.get(key) instanceof String s ? s : null);
     }
 
     @SuppressWarnings("unchecked")
-    private static List<String> stringListArg(Map<String, Object> m, String key)
+    static List<String> stringListArg(Map<String, Object> m, String key)
     {
         return m == null ? null : (m.get(key) instanceof List<?> l ? (List<String>) l : null);
     }
 
-    private static AccessLevel accessLevelArg(Map<String, Object> m)
+    static AccessLevel accessLevelArg(Map<String, Object> m)
     {
         if (m == null) return null;
         Object v = m.get("accessLevel");
