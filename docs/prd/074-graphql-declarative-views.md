@@ -79,6 +79,23 @@ server-side by rapla's own engine, so no dual-runtime / client engine is needed 
    not as server input-contract/`timeContext` machinery. This **supersedes** the explored (U)
    uniform-input-contract direction (never recorded — it was the legacy generality we chose not to
    inherit).
+7. **Pre-made views are immutable code constants; the admin catalog is fork-only.** Rapla ships
+   three canonical view definitions (`Termine_events`, `Termine_appointments`, `Termine_perDay`) as
+   query-text constants in code. They are always available, never invalidated by model changes
+   (kept current with the schema — a breaking schema change is a developer/test responsibility),
+   and cannot be overwritten or deleted via the admin API. An admin forks a pre-made view by
+   loading its query text and saving it under a new name; the fork becomes a custom view subject
+   to the normal lifecycle (editable, deletable, revalidate-on-change). There is no "reset to
+   default" — the original is always reachable under its canonical name regardless of Preferences
+   state.
+8. **GraphiQL is the view authoring editor.** Rapla already ships `/api/graphiql` with schema
+   introspection, variable autocompletion, and full cookie-based auth (HttpOnly `access_token`
+   cookie + XSRF double-submit + 401→refresh→replay — PRD 072 Phase 3/4). The admin authors
+   views directly in GraphiQL (load query text, edit, validate, save under a name). No separate
+   view-editor is built. GraphiQL gains two toolbar actions — **Load view** (populate editor
+   from a stored view) and **Save view** (call `saveView` with the current query text + a name)
+   — both fire through the existing fetcher and inherit auth for free. The inline schema feedback
+   is the authoring affordance; the `invalidReason` from `listViews` is the fix signal.
 
 ## Inputs = query variables (controls inferred by convention)
 
@@ -732,6 +749,214 @@ allocatable types), so cross-type selections are checked in their own scope for 
 separate per-selection binding context is needed (the schema already carries it). Each
 `compute(...)` EL parses against the type its column is rooted on.
 
+## View catalog & admin authoring
+
+### Pre-made views (BUILTIN)
+
+Rapla ships three canonical views as query-text constants in code — the same pattern as
+`TableConfig` default columns today. They are available on every deployment regardless of
+Preferences state. Source tag `BUILTIN` distinguishes them from admin-saved (`CUSTOM`) views.
+
+| Name | Root | Columns | Notes |
+|---|---|---|---|
+| `Termine_events` | `reservations` | Name, Beginn, zuletzt geändert | rapla default |
+| `Termine_appointments` | `appointmentBlocks` | Name, Beginn, Ende, Kurs, Person, Raum, Dauer | dhbw-configured default |
+| `Termine_perDay` | `appointmentBlocks` | Zeiten, Name, Ressourcen, Personen (+ hidden `day`) | rapla default |
+
+The query texts for these views are the **worked queries in §"Worked queries"** — they are the
+canonical form, not an approximation. A deployment-specific view (e.g. a dhbw-specific Termine
+split) is created by an admin forking `Termine_appointments` and saving it under a custom name.
+
+### Admin authoring — GraphiQL + save/load (locked decision #8)
+
+The shipped `/api/graphiql` (schema-aware, variable autocompletion) is the authoring
+surface. No separate view-editor is built. The admin workflow:
+
+1. Open GraphiQL → **Load view** (dropdown over `listViews` result, populates editor).
+2. Edit the query (schema feedback inline — unknown fields, type mismatches highlighted).
+3. **Save view** (name prompt → calls `saveView`; two-layer validation runs server-side; error
+   displayed inline on failure).
+
+GraphiQL gains two thin toolbar extensions — a **Load** selector and a **Save** button backed
+by the mutations below. Both are optional progressive enhancements over the base GraphiQL build
+(the mutations are usable via any GraphQL client even without the toolbar).
+
+### Admin save/delete/list API (contract — persistence mechanics in PRD 077)
+
+```graphql
+type Mutation {
+  saveView(name: String!, query: String!,
+           public: Boolean = false, groups: [String!] = []): SaveViewResult!
+  deleteView(name: String!): Boolean!   # CUSTOM only; BUILTIN → SaveViewResult error
+}
+
+type Query {
+  listViews:               [ViewMeta!]!
+  getViewQuery(name: String!): String   # null if not found
+}
+
+type SaveViewResult {
+  ok:            Boolean!
+  invalidReason: [String!]   # non-empty on validation failure OR on BUILTIN-name collision
+}
+
+type ViewMeta {
+  name:          String!
+  title:         String       # resolved from @view(title:), null if not parseable
+  source:        ViewSource!  # BUILTIN | CUSTOM
+  valid:         Boolean!
+  invalidReason: [String!]
+  public:        Boolean!     # true → all authenticated users see this view
+  groups:        [String!]!   # group keys whose members see this view
+}
+
+enum ViewSource { BUILTIN CUSTOM }
+```
+
+**Name collision rules (locked 2026-06-21):**
+- `saveView` with a **BUILTIN name** → rejected; `ok: false`, `invalidReason: ["Cannot overwrite
+  a built-in view — fork it under a new name"]`. Disabling individual BUILTINs is a future
+  capability (Phase N), not in Phase 1.
+- `saveView` with an **existing CUSTOM name** → **silent overwrite** (the API always overwrites).
+  The GraphiQL "Save" toolbar action (re-saving the currently loaded view) calls this path
+  directly. The "Save as…" toolbar action checks `listViews` first and shows a confirmation
+  dialog if the name is taken — the warning lives in the UI, not the API.
+
+**View not found (locked 2026-06-21):** executing a named operation whose view doesn't exist
+returns HTTP 200 with `errors: [{ message: "View 'X' not found", extensions: { code:
+"VIEW_NOT_FOUND" } }]` — GraphQL convention (never HTTP 404 on `POST /api/graphql`).
+
+**Visibility (locked 2026-06-21):** each CUSTOM view carries `public` + `groups`.
+- `public: true` → every authenticated user sees it in `listViews` and can execute it.
+- `groups: ["dhbw-ka"]` → only members of listed groups (plus admins) see and execute it.
+- Both false/empty → admin-only (visible only to `isAdmin` users).
+- `listViews` returns only views the calling user is entitled to see; admins see all.
+
+Access control: only `isAdmin` users may call `saveView`/`deleteView` (Phase 1). Group-admin
+scope (a group-admin may manage views visible to their group) is Phase 4 — same authoring
+scope entry in §Plan.
+
+### Invalid view UX (locked 2026-06-21)
+
+- **SPA** — invalid views appear in `/app/views` marked as broken (e.g. `⚠ BrokenView`).
+  Navigating to `/app/views/BrokenView` shows the `invalidReason` list instead of the table,
+  with an "Edit in GraphiQL" link for admins. Non-admin users see the broken state but have no
+  fix action.
+- **GraphiQL toolbar** — the **Load view** dropdown includes broken views with the same `⚠`
+  marker. Loading one populates the editor with the stored query text and displays
+  `invalidReason` inline — the admin edits and re-saves. This is the fix surface.
+
+### Model-change lifecycle — addendum to §"Storage & lifecycle"
+
+The revalidate-and-mark pass (§"Rename / delete of a type / category") applies to **CUSTOM**
+views only. BUILTIN views are exempt — they are maintained alongside the schema in code and
+never written to Preferences.
+
+Fork flow (the canonical path for a deployment to customise a built-in view):
+1. Admin calls `getViewQuery("Termine_appointments")` → receives the canonical query text.
+2. Edits in GraphiQL (type-specific filters, additional columns, locale headers).
+3. Calls `saveView("MeineTermine", editedQuery)` → stored as CUSTOM, subject to
+   revalidate-on-change from here on.
+
+## View loading — execution transport (locked 2026-06-21)
+
+### Named-operation transport (trusted document)
+
+A stored view is executed by sending its name as `operationName` with **no `query` field** —
+the standard persisted / trusted-document pattern:
+
+```
+POST /api/graphql
+{ "operationName": "Termine_appointments",
+  "variables": { "filter": { "from": "2026-06-23T00:00:00", "to": "2026-06-29T23:59:59" } } }
+```
+
+The server intercepts requests where `operationName` is set and `query` is absent, looks up
+the view (BUILTIN catalog first, then CUSTOM Preferences store), and executes the stored query
+text. The client **never holds the query text** (locked decision path 1). When both
+`operationName` and `query` are present it is a regular client-supplied operation (GraphiQL
+authoring) — no conflict.
+
+**Lookup order and error (locked 2026-06-21):** BUILTIN catalog checked first, then CUSTOM
+store. CUSTOM views cannot shadow a BUILTIN name (`saveView` rejects it). If the name is not
+found in either: HTTP 200 + `errors: [{ message: "View 'X' not found", extensions: { code:
+"VIEW_NOT_FOUND" } }]` — GraphQL convention, never HTTP 404.
+
+### Server-side variable defaults
+
+`ReservationFilter.from/to` are `LocalDateTime!` (required). GraphQL validates variables
+before any resolver runs so the server cannot silently fill a missing required field on the
+normal `/api/graphql` path — but the named-operation path intercepts before validation. The
+server merges defaults into the variable map for **known optional-in-practice fields** before
+building `ExecutionInput`:
+
+| Missing variable | Server default |
+|---|---|
+| `filter.from` | start of current ISO week (`LocalDate.now().with(DayOfWeek.MONDAY).atStartOfDay()`) |
+| `filter.to` | end of same week (Monday + 7 days) |
+
+Only the above two are merged; all other absent variables surface as normal GraphQL validation
+errors. This resolves PRD 078's open question (server-merge, option 1).
+
+### `extensions.view.inputs` — input metadata for the SPA
+
+Because the SPA never sees the query text, the server reports the view's input-variable
+metadata in `extensions.view.inputs` (parallel to `columns`). Shape added to the v1 contract:
+
+```jsonc
+"extensions": {
+  "view": {
+    "inputs": [
+      { "name": "filter.from", "control": "DATE_RANGE_START",
+        "default": { "anchor": "TODAY", "offset": -14, "unit": "DAYS" } },
+      { "name": "filter.to",   "control": "DATE_RANGE_END",
+        "default": { "anchor": "TODAY", "offset": 28,  "unit": "DAYS" } }
+    ]
+  }
+}
+```
+
+**Default spec — anchor + offset (locked 2026-06-21):** date defaults are never absolute
+dates (would go stale). Instead a structured `{ anchor, offsetDays }` that the SPA resolves
+client-side at render time:
+
+| Anchor | Resolves to |
+|---|---|
+| `TODAY` | today at 00:00 |
+| `WEEK_START` | Monday of current week at 00:00 |
+| `MONTH_START` | first day of current month at 00:00 |
+
+`offset` is a signed integer (negative = past, positive = future, 0 = anchor itself);
+`unit` is `DAYS` | `WEEKS` | `MONTHS` — **Phase 1 implements `DAYS` only**; `WEEKS` and
+`MONTHS` are reserved for later. The SPA handles one general rule — no closed sentinel list,
+no SPA redeploy needed when a view wants a different window.
+
+Examples:
+- Current week: `{ anchor: WEEK_START, offset: 0, unit: DAYS }` / `{ anchor: WEEK_START, offset: 6, unit: DAYS }`
+- 2 weeks back, 4 forward: `{ anchor: TODAY, offset: -14, unit: DAYS }` / `{ anchor: TODAY, offset: 28, unit: DAYS }`
+- This month: `{ anchor: MONTH_START, offset: 0, unit: DAYS }` / `{ anchor: MONTH_START, offset: 30, unit: DAYS }`
+
+Static defaults (sort, limit) are concrete values, not anchor specs.
+
+### SPA routing — `/app/views/:viewName`
+
+Each view is addressable by name — the route is `/app/views/:viewName`. SPA routing details
+(URL param strategy, back/forward navigation, control-state sync) are a client concern →
+**PRD 078**. The server contract here is: `operationName` in the POST body identifies the
+view; server defaults fill missing variables. The URL is never parsed server-side.
+
+**SPA transport — two methods, one service (PRD 078):**
+
+```ts
+// Consumer path — named operation; client never holds query text
+executeView<T>(viewName: string, variables: Record<string, unknown>): Observable<GqlResponse<T>>
+// Authoring path — full query text (GraphiQL toolbar, `saveView` validation preview)
+query<T>(document: string, variables: Record<string, unknown>): Observable<GqlResponse<T>>
+```
+
+Both go to `POST /api/graphql`; the consumer path sends `{ operationName, variables }` (no
+`query`); the authoring path sends `{ query, variables }` as before.
+
 ## XSS / injection hardening (load-bearing)
 
 The saved view is **admin-authored, shared, transferred to every client**, and all
@@ -981,12 +1206,14 @@ query Termine @view(title: "Termine KW") {
 >   + `Appointment.name(variant:)` (appointment-aware via `formatAppointment`). Mirrors the three
 >   `NameFormatUtil` levels (block / appointment / classifiable).
 >
-> **Test debt (Baustein 9):** the green tests assert block/appointment `name` equals the reservation
-> name in the **note-free fixture** — which can't distinguish block-aware from reservation-level
-> (they coincide without a note). The fix is correct by construction (same `formatAppointmentBlock`
-> seam as `RaplaBlock`/`HTMLRaplaBlock`), but a true **divergence regression test** is still owed:
-> a fixture appointment carrying an appointmentnote whose override surfaces via the type's nameformat,
-> asserting `block.name != reservation.name`. Add before closing PRD 074.
+> **Test debt (Baustein 9) — RESOLVED 2026-06-21.** The divergence regression now exists:
+> `AppointmentBlockNoteNameTest` (tier-2, `rapla-server`, no GraphQL schema) gives the event type a
+> note-aware nameformat (`{name} {format("<%s>",appointment:note())}`), creates one reservation with
+> two appointments — note only on the second — and asserts the noted block's name carries
+> `<Klausureinsicht>` while the plain block and the reservation name do not (`block.name !=
+> reservation.name`). Backed by a live dhbw probe (reservation "Feedback Studiengangsleitung": only the
+> noted occurrence rendered the suffix). `FacadeTestSupport` now also wires the appointmentnote
+> FunctionFactory so `appointment:note()` resolves in tier-2.
 >
 > - **Baustein 10** — **sort** (`appointmentBlocks(sort: [BlockSort!])` — `BlockSortField`
 >   START/END/NAME × `SortDir` ASC/DESC, locale Collator for NAME, stable reservation-id tiebreaker)

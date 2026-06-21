@@ -143,10 +143,25 @@ type Query {
     limit: Int
   ): [BlockStatBucket!]!
 
+  # PRD 073 — catalog of the rapla expression-language functions available in `compute(expr:)`
+  # / stat `expr` / view columns. Drives editor autocomplete + view validation; aggregated from
+  # every registered FunctionFactory's declared FunctionDescriptors (core + active plugins).
+  computeFunctions: [ComputeFunction!]!
+
   # PRD 064 — conflicts touching this reservation. §12: caller must be able
   # to read BOTH sides of each conflict + the allocatable; unreadable
   # conflicts are silently dropped.
   conflicts(reservationId: ID!): [Conflict!]!
+
+  # PRD 081 — omnibox multisearch. Turns a free-text term into typed, ranked,
+  # §12-scoped result rows bucketed per kind. Phase 1 implements RESOURCE +
+  # EVENT; OCCURRENCE / GROUP are reserved in SearchKind for later phases and
+  # currently yield no bucket. `limit` caps PER KIND (default 20). The result
+  # is already kind-bucketed + each bucket internally score-ranked, so the SPA
+  # maps groups → SearchResultGroup[] without re-sorting. Existence never
+  # leaks: a term matching only hidden entities returns the SAME empty result
+  # as a no-match term.
+  search(query: String!, kinds: [SearchKind!], limit: Int = 20): SearchResults!
 }
 
 """
@@ -693,7 +708,7 @@ directive @displayName(value: String!) on FIELD_DEFINITION
 "PRD 074 — marks an operation as a renderable view; triggers extensions.view (key/title/columns)."
 directive @view(title: String) on QUERY
 "PRD 074 — column presentation override: explicit header and/or order."
-directive @column(header: String, order: Int) on FIELD
+directive @column(header: String, order: Int, group: Boolean, format: String) on FIELD
 "PRD 074 — column fetched but not displayed (e.g. a group/sort key)."
 directive @hidden on FIELD
 "PRD 074 — list-cell join separator (default \", \")."
@@ -810,6 +825,28 @@ type StatKey {
 
 "PRD 080 — the meaningful, selectable group entities a StatKey may resolve to."
 union StatEntity = Allocatable | Reservation | Category
+
+"""
+PRD 073 — one rapla expression-language function available to `compute(expr:)`, stat `expr`
+group-keys/metrics, and view computed columns. The catalog lets an editor offer autocomplete and a
+view validator type-check before save, without parsing engine source.
+"""
+type ComputeFunction {
+  "Function id as written in an expr, e.g. \"concat\", \"attribute\", \"duration\"."
+  name:        String!
+  "Provider namespace: \"org.rapla\" for core; the plugin namespace otherwise (e.g. \"org.rapla.eventtimecalculator\")."
+  namespace:   String!
+  "Minimum argument count."
+  minArgs:     Int!
+  "Maximum argument count; -1 = unbounded (variadic, e.g. concat)."
+  maxArgs:     Int!
+  "rapla-level result kind: String / Boolean / DateTime / Date / Int / TimeInterval / DynamicType / AttributeValue / Entity / list forms ([Allocatable]…) / generic T."
+  returnType:  String!
+  "Where the subject comes from: EVENT | CLASSIFIABLE | ALLOCATABLE | ANY | VIEW_TITLE."
+  sourceLevel: String!
+  "One-line human description."
+  doc:         String
+}
 
 "PRD 079 — an aggregate result. `number` is the numeric value; `text` is the plugin-formatted form for DURATION_UNIT (UE/hours), else null."
 type StatValue { key: String!  number: Float  text: String }
@@ -1317,3 +1354,101 @@ input ChangeOpUpdateAllocatable {
   input:               UpdateAllocatableInput!
   expectedLastChanged: LocalDateTime
 }
+
+# === PRD 074 — View catalog ===
+
+enum ViewSource { BUILTIN CUSTOM }
+
+type ViewMeta {
+    name:             String!
+    title:            String
+    source:           ViewSource!
+    valid:            Boolean!
+    invalidReason:    [String!]!
+    public:           Boolean!
+    groups:           [String!]!
+    "Default variable values as a JSON string (may be null for BUILTIN or views saved without defaults)."
+    defaultVariables: String
+}
+
+type SaveViewResult {
+    ok:            Boolean!
+    invalidReason: [String!]!
+}
+
+extend type Query {
+    "List all views visible to the caller (BUILTIN + permitted CUSTOM)."
+    listViews: [ViewMeta!]!
+    "Return stored query text for a view (admin-only for CUSTOM; readable for BUILTIN)."
+    getViewQuery(name: String!): String
+}
+
+extend type Mutation {
+    "Create or overwrite a CUSTOM view. Admin-only. Returns validation errors on bad query."
+    saveView(name: String!, query: String!, public: Boolean, groups: [String!], defaultVariables: String): SaveViewResult!
+    "Delete a CUSTOM view. Admin-only. Returns false when view is BUILTIN or not found."
+    deleteView(name: String!): Boolean!
+}
+
+# === PRD 081 — omnibox multisearch ==========================================
+# The find-half of the omnibox. The server returns kind + data; ACTIONS are a
+# CLIENT concern (the SPA derives the action buttons from `kind`). §12 applies
+# at the resolver boundary — every hit is canRead-gated; existence never leaks.
+
+"Entity kinds the omnibox can surface. Phase 1: RESOURCE + EVENT."
+enum SearchKind {
+  RESOURCE
+  EVENT
+  OCCURRENCE   # Phase 3 — not yet produced
+  GROUP        # Phase 2 — not yet produced
+}
+
+"Top-level multisearch result — already kind-bucketed and ordered."
+type SearchResults {
+  groups: [SearchGroup!]!
+}
+
+"One kind's bucket of hits, internally ranked by score desc."
+type SearchGroup {
+  kind: SearchKind!
+  "Localized section heading, e.g. \"Ressourcen\", \"Veranstaltungen\"."
+  heading: String!
+  hits: [SearchHit!]!
+}
+
+"Common shape every typed hit implements."
+interface SearchHit {
+  id: ID!
+  "Primary display text."
+  label: String!
+  "Type/context line under the label."
+  sublabel: String
+  "Relevance score — HIGHER is better (the resolver inverts SearchMatcher rank)."
+  score: Float!
+}
+
+"A resource/person hit → SPA derives filter-replace / filter-add actions."
+type ResourceHit implements SearchHit {
+  id: ID!
+  label: String!
+  sublabel: String
+  score: Float!
+  "Carries the id the chip rail filters by."
+  allocatable: Allocatable!
+}
+
+"""
+An event (reservation) hit → SPA derives navigate / filter-add / edit actions.
+Edit-gated: the EVENT bucket only contains events the caller can edit (canModify),
+which is stricter than §12 read — non-editable events are never surfaced.
+"""
+type EventHit implements SearchHit {
+  id: ID!
+  label: String!
+  sublabel: String
+  score: Float!
+  reservation: Reservation!
+  "Start of the earliest appointment — for navigate; null if the event has no appointments."
+  firstOccurrenceStart: LocalDateTime
+}
+

@@ -1,14 +1,47 @@
-/* PRD 078 — shell layout: toolbar on top, sidenav + content fill the rest. */
+/* Shell layout: toolbar (with the search) on top, sidenav + content fill the rest. */
 .shell {
   /* Fill the viewport below the ~64px Material toolbar. */
   height: calc(100vh - 64px);
 }
 
 .nav {
-  width: 220px;
+  width: 290px;
+}
+
+/* Make the Material drawer's inner container a flex column so the view nav pins
+   to the top and the stepping list fills + scrolls on its own (no page scroll). */
+.nav ::ng-deep .mat-drawer-inner-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.nav .view-switch {
+  flex: 0 0 auto;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.nav app-resource-selection {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
 }
 
 .active-link {
   background: rgba(0, 0, 0, 0.06);
   font-weight: 500;
+}
+
+/* Content column: control strip + chip rail above the scrolling view host. */
+.content-col {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.view-host {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
 }

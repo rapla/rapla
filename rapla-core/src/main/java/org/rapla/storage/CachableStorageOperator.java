@@ -19,6 +19,7 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.storage.ExternalSyncEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
@@ -58,6 +59,13 @@ public interface CachableStorageOperator extends StorageOperator {
     void saveData(LocalCache cache, Collection<ExternalSyncEntity> syncEntities, String version) throws RaplaException;
     
     Collection<Entity> getVisibleEntities(final User user) throws RaplaException;
+
+    /** PRD 081 — every reservation held in the operator's cache, UNFILTERED.
+     *  Windowless accessor for the omnibox event name-search (no from/to). The
+     *  caller MUST §12-gate every entry via {@code PermissionController.canRead}
+     *  before exposing it — this returns the raw store. The server keeps the
+     *  full model in memory, so this is an in-memory cache read. */
+    Collection<Reservation> getReservations() throws RaplaException;
     //Collection<Entity> getUpdatedEntities(final User user,LocalDateTime timestamp) throws RaplaException;
     //Collection<ReferenceInfo> getDeletedEntities(finaldf User user, final LocalDateTime timestamp) throws RaplaException;
 

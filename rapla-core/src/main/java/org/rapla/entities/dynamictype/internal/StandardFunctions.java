@@ -76,6 +76,53 @@ public class StandardFunctions implements FunctionFactory
         return null;
     }
 
+    @Override public java.util.Collection<org.rapla.entities.extensionpoints.FunctionDescriptor> getDescriptors()
+    {
+        // PRD 073 — declared in rapla terms; the GraphQL computeFunctions catalog reads these.
+        // sourceLevel: EVENT | CLASSIFIABLE | ALLOCATABLE | ANY. maxArgs < 0 = unbounded.
+        return java.util.List.of(
+            d(IsPerson.ID,                "Boolean",          "ALLOCATABLE", 1, 1,  "True if the allocatable is a person (vs a resource)."),
+            d(IsLocation.ID,              "Boolean",          "ALLOCATABLE", 1, 1,  "True if the allocatable's type is annotated as a location/room."),
+            d(NotFunction.ID,             "Boolean",          "ANY",         1, 1,  "Logical negation."),
+            d(AndFunction.ID,             "Boolean",          "ANY",         2, -1, "Logical AND of all arguments."),
+            d(OrFunction.ID,              "Boolean",          "ANY",         2, -1, "Logical OR of all arguments."),
+            d(AppointmentBlockFunction.ID,"Int",              "EVENT",       1, 1,  "1-based sequence number of the block within its reservation."),
+            d(AppointmentBlocksFunction.ID,"[AppointmentBlock]","EVENT",     0, 3,  "Materialized blocks of the event (optional from/to window)."),
+            d(AppointmentEndFunction.ID,  "DateTime",         "EVENT",       0, 1,  "End date-time of the event."),
+            d(AppointmentStartFunction.ID,"DateTime",         "EVENT",       0, 1,  "Start date-time of the event."),
+            d(AppointmentsFunction.ID,    "[Appointment]",    "EVENT",       0, 1,  "Appointments of the reservation."),
+            d(AppointmentTimesFunction.ID,"String",           "EVENT",       0, 1,  "Formatted time range, e.g. \"10:00 - 11:30\"."),
+            d(AttributeFunction.ID,       "AttributeValue",   "CLASSIFIABLE",2, 2,  "Value of the named attribute on the object."),
+            d(KeyFunction.ID,             "String",           "CLASSIFIABLE",1, 1,  "Key of a category or dynamic type."),
+            d(EnvironmentFunction.ID,     "String",           "ANY",         1, 1,  "Server-set request-context value (e.g. internal_request); never client-settable."),
+            d(NameFunction.ID,            "String",           "CLASSIFIABLE",0, 2,  "Localized name of the object (optional language)."),
+            d(ConcatFunction.ID,          "String",           "ANY",         0, -1, "Concatenate all arguments into one string."),
+            d(EqualsFunction.ID,          "Boolean",          "ANY",         2, 2,  "True if the two arguments are equal."),
+            d(FilterFunction.ID,          "[T]",              "ANY",         2, 2,  "Filter a list by a predicate lambda."),
+            d(DateFunction.ID,            "Date",             "EVENT",       1, 1,  "Date (time cut) of the event."),
+            d(IntervallFunction.ID,       "TimeInterval",     "EVENT",       1, 1,  "Time interval of the event."),
+            d(IfFunction.ID,              "T",                "ANY",         3, 3,  "if(condition, then, else)."),
+            d(SortFunction.ID,            "[T]",              "ANY",         2, 2,  "Sort a list by a comparator."),
+            d(IndexFunction.ID,           "T",                "ANY",         2, 2,  "Element of a list at the given index."),
+            d(FormatFunction.ID,          "String",           "ANY",         2, -1, "printf-style format(pattern, args...)."),
+            d(SubstringFunction.ID,       "String",           "ANY",         3, 3,  "substring(string, start, length)."),
+            d(ReverseFunction.ID,         "String",           "ANY",         1, 1,  "Reverse a string (or negate a number)."),
+            d(StringComparatorFunction.ID,"Int",              "ANY",         2, 2,  "Locale string comparator (for sort)."),
+            d(LastChangedFunction.ID,     "DateTime",         "EVENT",       1, 1,  "Last-changed timestamp of the object."),
+            d(EventsFunction.ID,          "[Reservation]",    "EVENT",       0, 1,  "Reservations referencing the object."),
+            d(ResourcesFunction.ID,       "[Allocatable]",    "EVENT",       0, 1,  "Allocatables of the event."),
+            d(ParentFunction.ID,          "Entity",           "CLASSIFIABLE",1, 1,  "Parent of a category / rapla object."),
+            d(TypeFunction.ID,            "DynamicType",      "CLASSIFIABLE",1, 1,  "Dynamic type of the object.")
+        );
+    }
+
+    private org.rapla.entities.extensionpoints.FunctionDescriptor d(String name, String returnType,
+            String sourceLevel, int minArgs, int maxArgs, String doc)
+    {
+        return new org.rapla.entities.extensionpoints.FunctionDescriptor(
+                name, NAMESPACE, minArgs, maxArgs, returnType, sourceLevel, doc);
+    }
+
     public static class IsPerson extends Function
     {
         public static final String ID = "isPerson";

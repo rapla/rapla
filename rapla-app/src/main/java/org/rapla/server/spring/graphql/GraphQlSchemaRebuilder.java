@@ -38,10 +38,12 @@ public class GraphQlSchemaRebuilder
     static final long POLL_INTERVAL_MS = 10_000L;
 
     private final HotSwappableGraphQlSource source;
+    private final ViewCatalogService viewCatalog;
 
-    public GraphQlSchemaRebuilder(HotSwappableGraphQlSource source)
+    public GraphQlSchemaRebuilder(HotSwappableGraphQlSource source, ViewCatalogService viewCatalog)
     {
         this.source = source;
+        this.viewCatalog = viewCatalog;
     }
 
     @Scheduled(fixedDelay = POLL_INTERVAL_MS, initialDelay = POLL_INTERVAL_MS)
@@ -50,7 +52,13 @@ public class GraphQlSchemaRebuilder
         try
         {
             boolean rebuilt = source.rebuild();
-            if (rebuilt) LOGGER.debug("GraphQL schema picked up DynamicType changes");
+            if (rebuilt)
+            {
+                LOGGER.debug("GraphQL schema picked up DynamicType changes");
+                // PRD 074 §"Revalidate-and-mark": after schema rebuild, recheck
+                // all stored views against the new schema.
+                viewCatalog.revalidateCustomViews(source.schema());
+            }
         }
         catch (Exception e)
         {

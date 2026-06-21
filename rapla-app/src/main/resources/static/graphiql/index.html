@@ -39,8 +39,24 @@
         .auth-bar a { background: #374151; color: #fff; border: 0; padding: 4px 10px; border-radius: 3px; cursor: pointer; font-size: 12px; text-decoration: none; display: inline-block; }
         .auth-bar a:hover { background: #4b5563; }
         .auth-bar .schema-link { margin-left: auto; }
+        .auth-bar select { background: #374151; color: #fff; border: 1px solid #4b5563; padding: 3px 6px; border-radius: 3px; font-size: 12px; cursor: pointer; }
+        .auth-bar select:hover { background: #4b5563; }
         #graphiql { flex: 1; min-height: 0; }
         .loading { height: 100%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #6b7280; }
+        /* Save-view dialog */
+        .sv-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:1000; align-items:center; justify-content:center; }
+        .sv-overlay.open { display:flex; }
+        .sv-dialog { background:#1e2937; color:#e5e7eb; border:1px solid #374151; border-radius:6px; padding:20px 24px; min-width:320px; max-width:420px; font-size:13px; display:flex; flex-direction:column; gap:12px; }
+        .sv-dialog h3 { margin:0; font-size:14px; color:#f9fafb; }
+        .sv-dialog label { display:flex; flex-direction:column; gap:4px; }
+        .sv-dialog .sv-name { font-family:monospace; background:#111827; color:#93c5fd; padding:4px 8px; border-radius:3px; border:1px solid #374151; }
+        .sv-dialog input[type=checkbox] { width:auto; margin-right:6px; }
+        .sv-dialog select[multiple] { background:#111827; color:#e5e7eb; border:1px solid #4b5563; border-radius:3px; padding:4px; width:100%; height:90px; font-size:12px; }
+        .sv-dialog .sv-hint { color:#9ca3af; font-size:11px; }
+        .sv-dialog .sv-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:4px; }
+        .sv-dialog button { background:#374151; color:#fff; border:0; padding:5px 14px; border-radius:3px; cursor:pointer; font-size:12px; }
+        .sv-dialog button.primary { background:#2563eb; }
+        .sv-dialog button:hover { opacity:.85; }
     </style>
     <script type="importmap">
         {
@@ -84,45 +100,6 @@
         return m ? decodeURIComponent(m[1]) : null;
     }
 
-    function renderAuthBar() {
-        const bar = document.getElementById('auth-bar');
-        bar.innerHTML = '';
-        const label = document.createElement('span');
-        label.className = 'label';
-        label.textContent = 'authenticated via access_token cookie';
-        bar.append(label);
-
-        // Always-visible link to the full SDL schema dump (the GraphQL pendant
-        // to Swagger's /v3/api-docs). Public, UTF-8. Opens in a new tab.
-        const schemaLink = document.createElement('a');
-        schemaLink.className = 'schema-link';
-        schemaLink.href = '/api/graphql/schema';
-        schemaLink.target = '_blank';
-        schemaLink.rel = 'noopener';
-        schemaLink.textContent = 'Schema (SDL) ↗';
-        bar.append(schemaLink);
-
-        // PRD 072 Phase 4: cookie-model sign-out — the old "Drop token" button
-        // (which cleared the localStorage access_token) is meaningless now that the
-        // credential is an HttpOnly cookie JS can't touch. Instead POST the server
-        // logout (clears both cookies) with the double-submit XSRF header, then land
-        // on the combined /login page.
-        const signOut = document.createElement('a');
-        signOut.className = 'schema-link';
-        signOut.href = '#';
-        signOut.textContent = 'Sign out';
-        signOut.addEventListener('click', async (e) => {
-            e.preventDefault();
-            const xsrf = getXsrfToken();
-            await fetch('/api/auth/logout', {
-                method: 'POST',
-                headers: xsrf ? { 'X-XSRF-TOKEN': xsrf } : {},
-            }).catch(() => {});
-            window.location.assign('/login');
-        });
-        bar.append(signOut);
-    }
-
     // Auth-aware fetcher (PRD 072 Phase 3):
     //   1. Plain same-origin fetch — the HttpOnly access_token cookie is sent
     //      automatically by the browser; no Bearer header needed.
@@ -131,6 +108,25 @@
     //   3. On 401: POST /api/auth/refresh (reads the path-scoped refresh_token
     //      cookie, sets a fresh access_token cookie), then replay the request
     //      once. If the refresh itself 401s, redirect to /login.
+    // Lightweight GraphQL helper for toolbar admin operations (listViews, saveView).
+    async function gqlFetch(query, variables) {
+        const body = { query };
+        if (variables) body.variables = variables;
+        const xsrf = getXsrfToken();
+        const resp = await fetch('/api/graphql', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: Object.assign(
+                { 'Content-Type': 'application/json' },
+                xsrf ? { 'X-XSRF-TOKEN': xsrf } : {}
+            ),
+            body: JSON.stringify(body)
+        });
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        return resp.json();
+    }
+    window._gqlFetch = gqlFetch;
+
     const fetcher = createGraphiQLFetcher({
         url: '/api/graphql',
         fetch: async (input, init) => {
@@ -163,11 +159,236 @@
         }
     });
 
-    renderAuthBar();
+    // PRD 074 — view Load/Save toolbar (admin).
+    // GraphiQL is remounted via root.unmount() + recreate to pick up updated localStorage query.
+    let graphiqlRoot = null;
+    function renderGraphiQL() {
+        const el = document.getElementById('graphiql');
+        if (graphiqlRoot) { graphiqlRoot.unmount(); }
+        graphiqlRoot = ReactDOM.createRoot(el);
+        const explorer = explorerPlugin();
+        graphiqlRoot.render(React.createElement(GraphiQL, { fetcher, plugins: [explorer] }));
+    }
 
-    const explorer = explorerPlugin();
-    ReactDOM.createRoot(document.getElementById('graphiql'))
-        .render(React.createElement(GraphiQL, { fetcher, plugins: [explorer] }));
+    // Cache for view metadata (name → {source, defaultVariables}) populated by populateViewSelect.
+    const viewMetaCache = {};
+
+    async function populateViewSelect(sel) {
+        sel.innerHTML = '<option value="">— Load view —</option>';
+        try {
+            const result = await gqlFetch('{ listViews { name title valid source defaultVariables } }');
+            const views = (result.data && result.data.listViews) || [];
+            const builtinGroup = document.createElement('optgroup');
+            builtinGroup.label = 'Built-in (read-only)';
+            const customGroup = document.createElement('optgroup');
+            customGroup.label = 'Custom';
+            let hasCustom = false;
+            for (const v of views) {
+                viewMetaCache[v.name] = { source: v.source, defaultVariables: v.defaultVariables };
+                const opt = document.createElement('option');
+                opt.value = v.name;
+                opt.textContent = (v.title || v.name) + (v.valid === false ? ' ⚠' : '');
+                if (v.source === 'BUILTIN') {
+                    builtinGroup.appendChild(opt);
+                } else {
+                    customGroup.appendChild(opt);
+                    hasCustom = true;
+                }
+            }
+            sel.appendChild(builtinGroup);
+            if (hasCustom) sel.appendChild(customGroup);
+        } catch (e) {
+            sel.innerHTML = '<option value="">Error loading views</option>';
+        }
+    }
+
+    async function loadViewIntoEditor(viewName) {
+        try {
+            const result = await gqlFetch('{ getViewQuery(name: ' + JSON.stringify(viewName) + ') }');
+            const text = result.data && result.data.getViewQuery;
+            if (!text) { alert('Cannot load query (admin required for custom views)'); return; }
+            localStorage.setItem('graphiql:query', text);
+            const meta = viewMetaCache[viewName];
+            if (meta && meta.defaultVariables) {
+                localStorage.setItem('graphiql:variables', meta.defaultVariables);
+            } else if (meta && meta.source === 'BUILTIN') {
+                // Built-in views with ReservationFilter need a date range — default to current week.
+                const monday = (() => {
+                    const d = new Date(); d.setHours(0,0,0,0);
+                    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+                    return d;
+                })();
+                const pad = n => String(n).padStart(2, '0');
+                const fmt = d => d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + 'T00:00:00';
+                const nextMonday = new Date(monday); nextMonday.setDate(monday.getDate() + 7);
+                if (/ReservationFilter/.test(text)) {
+                    localStorage.setItem('graphiql:variables',
+                        JSON.stringify({ filter: { from: fmt(monday), to: fmt(nextMonday) } }));
+                }
+            }
+            renderGraphiQL();
+        } catch (e) {
+            alert('Failed to load view: ' + e.message);
+        }
+    }
+
+    function extractOperationName(query) {
+        // Match: query <name> or mutation <name> — first identifier after the keyword.
+        const m = query && query.match(/^\s*(?:query|mutation|subscription)\s+([_A-Za-z][_0-9A-Za-z]*)/m);
+        return m ? m[1] : null;
+    }
+
+    async function saveCurrentView() {
+        const query = localStorage.getItem('graphiql:query') || '';
+        if (!query.trim()) { alert('Editor is empty — nothing to save.'); return; }
+        const name = extractOperationName(query);
+        if (!name) {
+            alert('The query must have a named operation (e.g. "query myView(...) { ... }") before saving.');
+            return;
+        }
+        const rawVars = localStorage.getItem('graphiql:variables') || '';
+        const defaultVariables = rawVars.trim() || null;
+
+        window._openSaveDialog(name, async ({ isPublic, groups }) => {
+            try {
+                const result = await gqlFetch(
+                    'mutation($name:String!,$q:String!,$pub:Boolean,$grp:[String!],$dv:String){'
+                    + 'saveView(name:$name,query:$q,public:$pub,groups:$grp,defaultVariables:$dv){ok invalidReason}}',
+                    { name, q: query, pub: isPublic, grp: groups.length ? groups : null, dv: defaultVariables }
+                );
+                const sv = result.data && result.data.saveView;
+                if (sv && sv.ok) {
+                    alert('View \'' + name + '\' saved.');
+                } else {
+                    const errors = (sv && sv.invalidReason) || ['Unknown error'];
+                    alert('Save failed:\n' + errors.join('\n'));
+                }
+            } catch (e) {
+                alert('Failed to save view: ' + e.message);
+            }
+        });
+    }
+
+    function addViewToolbar(bar) {
+        const sep = document.createElement('span');
+        sep.textContent = '|';
+        sep.style.opacity = '0.3';
+        bar.appendChild(sep);
+
+        const sel = document.createElement('select');
+        sel.title = 'Load a saved view into the editor';
+        sel.innerHTML = '<option value="">— Load view —</option>';
+        sel.addEventListener('focus', () => populateViewSelect(sel));
+        sel.addEventListener('change', () => {
+            if (sel.value) { loadViewIntoEditor(sel.value); sel.value = ''; }
+        });
+        bar.appendChild(sel);
+
+        const saveBtn = document.createElement('a');
+        saveBtn.href = '#';
+        saveBtn.textContent = 'Save view…';
+        saveBtn.title = 'Save current editor query as a named view (admin)';
+        saveBtn.addEventListener('click', (e) => { e.preventDefault(); saveCurrentView(); });
+        bar.appendChild(saveBtn);
+    }
+
+    function renderAuthBar() {
+        const bar = document.getElementById('auth-bar');
+        bar.innerHTML = '';
+        const label = document.createElement('span');
+        label.className = 'label';
+        label.textContent = 'authenticated via access_token cookie';
+        bar.append(label);
+
+        addViewToolbar(bar);
+
+        // Always-visible link to the full SDL schema dump (the GraphQL pendant
+        // to Swagger's /v3/api-docs). Public, UTF-8. Opens in a new tab.
+        const schemaLink = document.createElement('a');
+        schemaLink.className = 'schema-link';
+        schemaLink.href = '/api/graphql/schema';
+        schemaLink.target = '_blank';
+        schemaLink.rel = 'noopener';
+        schemaLink.textContent = 'Schema (SDL) ↗';
+        bar.append(schemaLink);
+
+        // PRD 072 Phase 4: cookie-model sign-out — the old "Drop token" button
+        // (which cleared the localStorage access_token) is meaningless now that the
+        // credential is an HttpOnly cookie JS can't touch. Instead POST the server
+        // logout (clears both cookies) with the double-submit XSRF header, then land
+        // on the combined /login page.
+        const signOut = document.createElement('a');
+        signOut.className = 'schema-link';
+        signOut.href = '#';
+        signOut.textContent = 'Sign out';
+        signOut.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const xsrf = getXsrfToken();
+            await fetch('/api/auth/logout', {
+                method: 'POST',
+                headers: xsrf ? { 'X-XSRF-TOKEN': xsrf } : {},
+            }).catch(() => {});
+            window.location.assign('/login');
+        });
+        bar.append(signOut);
+    }
+
+    renderAuthBar();
+    renderGraphiQL();
+</script>
+
+<!-- Save-view dialog (shown by saveCurrentView()) -->
+<div id="sv-overlay" class="sv-overlay" role="dialog" aria-modal="true" aria-labelledby="sv-title">
+    <div class="sv-dialog">
+        <h3 id="sv-title">Save view</h3>
+        <label>Name<span id="sv-name" class="sv-name"></span></label>
+        <label><input type="checkbox" id="sv-public" checked> Public (visible to all users)</label>
+        <label>
+            Restrict to groups
+            <select id="sv-groups" multiple></select>
+            <span class="sv-hint">Hold Ctrl / ⌘ to select multiple. Leave empty for no group restriction.</span>
+        </label>
+        <div class="sv-actions">
+            <button id="sv-cancel">Cancel</button>
+            <button id="sv-confirm" class="primary">Save</button>
+        </div>
+    </div>
+</div>
+<script>
+(function () {
+    const overlay = document.getElementById('sv-overlay');
+    const nameEl  = document.getElementById('sv-name');
+    const pubEl   = document.getElementById('sv-public');
+    const grpSel  = document.getElementById('sv-groups');
+    document.getElementById('sv-cancel').addEventListener('click', () => overlay.classList.remove('open'));
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+
+    async function loadGroups() {
+        grpSel.innerHTML = '';
+        try {
+            const r = await window._gqlFetch('{ groups { id name } }');
+            const groups = (r.data && r.data.groups) || [];
+            for (const g of groups) {
+                const opt = document.createElement('option');
+                opt.value = g.id;
+                opt.textContent = g.name;
+                grpSel.appendChild(opt);
+            }
+        } catch (_) { grpSel.innerHTML = '<option disabled>Error loading groups</option>'; }
+    }
+
+    window._openSaveDialog = async function(name, onConfirm) {
+        nameEl.textContent = name;
+        pubEl.checked = true;
+        await loadGroups();
+        overlay.classList.add('open');
+        document.getElementById('sv-confirm').onclick = () => {
+            overlay.classList.remove('open');
+            const selectedGroups = Array.from(grpSel.selectedOptions).map(o => o.value);
+            onConfirm({ isPublic: pubEl.checked, groups: selectedGroups });
+        };
+    };
+})();
 </script>
 </body>
 </html>

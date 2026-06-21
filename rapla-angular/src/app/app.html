@@ -1,16 +1,23 @@
 <app-toolbar />
 <mat-sidenav-container class="shell">
   <mat-sidenav mode="side" opened class="nav">
-    <mat-nav-list>
-      @for (item of navItems; track item.path) {
-        <a mat-list-item [routerLink]="item.path" routerLinkActive="active-link">
-          <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
-          <span matListItemTitle>{{ item.label }}</span>
+    <mat-nav-list class="view-switch">
+      @for (v of views(); track v.name) {
+        <a mat-list-item [routerLink]="['/views', v.name]" routerLinkActive="active-link">
+          <mat-icon matListItemIcon>calendar_view_week</mat-icon>
+          <span matListItemTitle>{{ v.title ?? v.name }}</span>
         </a>
       }
     </mat-nav-list>
+    <app-resource-selection />
   </mat-sidenav>
   <mat-sidenav-content>
-    <router-outlet />
+    <div class="content-col">
+      <app-view-control-strip />
+      <app-chip-rail />
+      <div class="view-host">
+        <router-outlet />
+      </div>
+    </div>
   </mat-sidenav-content>
 </mat-sidenav-container>

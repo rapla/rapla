@@ -1,6 +1,59 @@
 # PRD 073 — Rapla Server Functions ↔ GraphQL Equivalence Map
 
-**Status:** in-progress — Phase 0 (filterable nested `Appointment.allocatables`) done 2026-06-19; remaining phases are analysis + design, no code yet.
+**Status:** in-progress — Phase 0 (filterable nested `Appointment.allocatables`) done 2026-06-19; **descriptor SPI + `computeFunctions` catalog done 2026-06-21** (see Implementation status); remaining field-phases are design.
+
+## Implementation status (2026-06-21)
+
+- ✅ **Descriptor SPI (option a).** `FunctionFactory.getDescriptors()` (default empty) +
+  `FunctionDescriptor { name, namespace, minArgs, maxArgs, returnType, sourceLevel, doc }` in
+  `org.rapla.entities.extensionpoints` (rapla-core). Declared in rapla terms, **GraphQL-agnostic**.
+- ✅ **All three factories declare descriptors** — `StandardFunctions` (31 core fns), `DurationFunctions`
+  (`duration`/`durationCompare`), `AppointmentNoteFunctions` (`note`). Arities/return/sourceLevel
+  verified against the real `assertArgs`/`eval` bodies.
+- ✅ **`Query.computeFunctions: [ComputeFunction!]!`** (`ComputeFunctionsController`) aggregates every
+  registered `FunctionFactory`'s descriptors (core + active plugins), dedupes by `namespace:name`,
+  sorts. SDL type `ComputeFunction`. Tier-3 test asserts core fns + metadata (`concat` variadic,
+  `attribute` CLASSIFIABLE/2-arg, `start` EVENT). **62 GraphQL tests green.**
+- ✅ **`isLocation` / `isPerson`** surfaced as `Allocatable` fields (PRD 080 work) — closes row #22's
+  field gap (filter `isLocationEq` still open; `isPersonEq` already shipped).
+- ✅ **Descriptor-driven generated fields (first cut).** `FunctionFieldGenerator` derives eligible
+  fields from the same descriptors and emits them BOTH as `extend type … { }` SDL (appended in
+  `HotSwappableGraphQlSource`) AND as EL-backed DataFetchers (`GeneratedClassificationWiring`), so
+  schema + wiring can't drift. Scope: EVENT-source, String-return, name-not-already-present, onto
+  `AppointmentBlock` → today yields **`AppointmentBlock.note`** (from the appointmentnote plugin
+  descriptor; `times`/`duration` already exist statically). The fetcher evaluates the
+  (namespace-qualified) function via `StructuralTypeFetchers.computeEntityExpr` against the block;
+  §12 rides on the already-gated row set + the EL's `canReadInformation`. Test:
+  `appointmentBlocks { note }` resolves (blank when no note). **63 GraphQL tests green.**
+  Widening = extend `TARGET_TYPES` / `EXISTING_FIELDS` / `returnTypeToGraphql`.
+- ✅ **Int return mapping.** `returnTypeToGraphql` now maps `Int`→`Int`; the fetcher takes the RAW
+  eval result (`computeEntityExprObject`) and coerces via `FunctionFieldGenerator.coerceInt`
+  (Number or numeric String → Integer, blank/non-numeric → null) — avoids locale-formatting a
+  number through `formatName`. Yields **`AppointmentBlock.number: Int`** (core block sequence #,
+  1-based). Test asserts it's a real `Integer` ≥ 1. **64 GraphQL tests green.**
+- ✅ **Boolean / DateTime / Date scalar mapping.** `returnTypeToGraphql`: `Boolean`→`Boolean`,
+  `DateTime`→`LocalDateTime` (wall-time scalar, matching start/end), `Date`→`Date` (extended scalar).
+  `coerceScalar` turns the RAW eval result into the Java type each scalar expects (LocalDateTime
+  pass-through; Date ← `LocalDateTime.toLocalDate()`; Boolean/Int from value-or-string) — no
+  formatName stringify, so the scalar's `serialize` never sees a wrong type. New generated fields:
+  **`AppointmentBlock.date: Date`** + **`AppointmentBlock.lastchanged: LocalDateTime`** (both
+  block-aware). Test asserts the serialized shapes (yyyy-MM-dd / ISO). **65 GraphQL tests green.**
+  (No EVENT Boolean function today → Boolean mapping is future-proofing.)
+- ✅ **Four descriptor-generated fields live on AppointmentBlock:** `note: String`, `number: Int`,
+  `date: Date`, `lastchanged: LocalDateTime` — all from one pipeline, scalar-typed.
+- ✅ **Target type = Appointment added.** `TARGET_TYPES = [AppointmentBlock, Appointment]`. Generates
+  `note`/`date`/`lastchanged` (+ `times`/`duration`) on `Appointment`; `number` is `BLOCK_ONLY`
+  (undefined without a concrete occurrence) so it's excluded from non-block targets — test asserts
+  `Appointment.number` does NOT exist. **66 GraphQL tests green.**
+- **Target-type rationale (decided 2026-06-21):** sensible targets are the **EVENT** GraphQL types
+  `AppointmentBlock` (primary — the flat table/week row) and `Appointment` (secondary). NOT
+  `Reservation` (most EVENT fns are appointment/block-scoped → ambiguous on a multi-appointment
+  reservation, which already has `firstDate`/`lastDate`/`lastModifiedAt`); NOT CLASSIFIABLE/ALLOCATABLE
+  (projections already exist as generated attribute + structural fields, incl. `isPerson`/`isLocation`);
+  NOT ANY/VIEW_TITLE (argument-based, no subject-only field semantics).
+- ⏳ **Not built:** object/list returns (`[Allocatable]`, `DynamicType` — need GraphQL object types
+  + §12 + TypeResolver, overlaps existing typed fields); the `saveView` type-check that consumes the
+  catalog (**likely owned by another session**).
 
 ## Goal
 

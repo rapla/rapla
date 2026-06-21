@@ -3948,6 +3948,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return cache.getVisibleEntities(user);
     }
 
+    @Override
+    public Collection<Reservation> getReservations() throws RaplaException
+    {
+        checkLoaded();
+        return cache.getReservations();
+    }
+
     @SuppressWarnings("deprecation")
     private void addDefaultEventPermissions(DynamicTypeImpl dynamicType, Category userGroups)
     {

@@ -7,6 +7,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { AuthService } from '../auth/auth.service';
 import { UsersService } from '../auth/users.service';
 import { SwitchToUserDialogComponent } from '../auth/switch-to-user-dialog.component';
+import { OmniboxComponent } from './omnibox.component';
 
 /**
  * PRD 078 — the global app toolbar (account chrome). Lifted out of
@@ -22,10 +23,11 @@ import { SwitchToUserDialogComponent } from '../auth/switch-to-user-dialog.compo
  */
 @Component({
   selector: 'app-toolbar',
-  imports: [MatToolbarModule, MatButtonModule, MatIconModule],
+  imports: [MatToolbarModule, MatButtonModule, MatIconModule, OmniboxComponent],
   template: `
-    <mat-toolbar color="primary">
+    <mat-toolbar color="primary" class="appbar">
       <span class="app-title">Rapla</span>
+      <app-omnibox class="toolbar-search" />
       <span class="spacer"></span>
       @if (effectiveUsername()) {
         @if (canImpersonate() || auth.isImpersonating()) {
@@ -70,8 +72,19 @@ import { SwitchToUserDialogComponent } from '../auth/switch-to-user-dialog.compo
   `,
   styles: [
     `
+      .appbar {
+        /* let the omnibox dropdown escape the toolbar */
+        overflow: visible;
+        gap: 1.5rem;
+      }
       .app-title {
         font-weight: 500;
+        flex: 0 0 auto;
+      }
+      /* The big search sits left-flush after the brand (tool look), capped width. */
+      .toolbar-search {
+        flex: 0 1 640px;
+        margin: 0;
       }
       .spacer {
         flex: 1 1 auto;

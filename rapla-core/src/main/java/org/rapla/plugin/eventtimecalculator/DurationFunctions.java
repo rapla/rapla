@@ -41,6 +41,18 @@ public class DurationFunctions implements FunctionFactory
         return null;
     }
 
+    @Override public Collection<org.rapla.entities.extensionpoints.FunctionDescriptor> getDescriptors()
+    {
+        // PRD 073 — eventtimecalculator plugin functions, declared for the computeFunctions catalog.
+        return List.of(
+            new org.rapla.entities.extensionpoints.FunctionDescriptor(
+                DurationFunction.name, NAMESPACE, 0, 1, "String", "EVENT",
+                "Break-adjusted teaching duration of the event (e.g. \"2 UE 0 Min\")."),
+            new org.rapla.entities.extensionpoints.FunctionDescriptor(
+                DurationCompareFunction.name, NAMESPACE, 0, 2, "Int", "EVENT",
+                "Compare the event's duration against a target (sort/filter helper)."));
+    }
+
     private long calcDuration(EventTimeModel eventTimeModel, Object obj)
     {
         final long l;

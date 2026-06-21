@@ -4,7 +4,7 @@ import {
   provideAppInitializer,
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withComponentInputBinding } from '@angular/router';
 import {
   provideHttpClient,
   withInterceptors,
@@ -21,7 +21,9 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideAnimationsAsync(),
-    provideRouter(routes),
+    // withComponentInputBinding — binds route params (e.g. :viewName) straight to
+    // component input signals, so the generic ViewHost reads its view name as an input.
+    provideRouter(routes, withComponentInputBinding()),
     // PRD 072 Phase 4 — cookie-credential model A. CSRF: the server materializes
     // a JS-readable XSRF-TOKEN cookie on GETs; mutating cookie-auth requests must
     // echo it back as X-XSRF-TOKEN. Angular's built-in XSRF interceptor does this

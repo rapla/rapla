@@ -17,8 +17,15 @@ export const routes: Routes = [
       import('./reservations/reservations.component').then((m) => m.ReservationsComponent),
   },
   {
-    // PRD 078 — GraphQL-driven table view (appointments / blocks). Sits beside
-    // the legacy /api/table reservations view until it supersedes it.
+    // PRD 078 — the generic view host. One component renders EVERY declared view
+    // (Wochenansicht, Termine, …) by name; the :viewName param binds to its input
+    // via withComponentInputBinding. Supersedes the bespoke /appointments route.
+    path: 'views/:viewName',
+    canActivate: [authGuard],
+    loadComponent: () => import('./views/view-host.component').then((m) => m.ViewHostComponent),
+  },
+  {
+    // Legacy bespoke GraphQL table view — kept until the host fully supersedes it.
     path: 'appointments',
     canActivate: [authGuard],
     loadComponent: () =>

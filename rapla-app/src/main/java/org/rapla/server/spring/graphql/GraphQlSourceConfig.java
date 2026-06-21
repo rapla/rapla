@@ -37,7 +37,8 @@ public class GraphQlSourceConfig
             ObjectProvider<Instrumentation> instrumentations,
             ObjectProvider<GraphQlSourceBuilderCustomizer> sourceBuilderCustomizers,
             StorageOperator operator,
-            RaplaLocale raplaLocale)
+            RaplaLocale raplaLocale,
+            java.util.Map<String, org.rapla.entities.extensionpoints.FunctionFactory> functionFactories)
     {
         return new HotSwappableGraphQlSource(
                 resourceResolver,
@@ -47,6 +48,7 @@ public class GraphQlSourceConfig
                 instrumentations,
                 sourceBuilderCustomizers,
                 operator,
-                raplaLocale);
+                raplaLocale,
+                functionFactories);
     }
 }

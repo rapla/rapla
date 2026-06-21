@@ -45,11 +45,15 @@ public final class GeneratedClassificationWiring
 
     private final StorageOperator operator;
     private final RaplaLocale     raplaLocale;
+    /** PRD 073 — aggregated function descriptors used to generate function-fields (e.g. note). */
+    private final java.util.Collection<org.rapla.entities.extensionpoints.FunctionDescriptor> functionDescriptors;
 
-    public GeneratedClassificationWiring(StorageOperator operator, RaplaLocale raplaLocale)
+    public GeneratedClassificationWiring(StorageOperator operator, RaplaLocale raplaLocale,
+            java.util.Collection<org.rapla.entities.extensionpoints.FunctionDescriptor> functionDescriptors)
     {
         this.operator    = operator;
         this.raplaLocale = raplaLocale;
+        this.functionDescriptors = functionDescriptors == null ? java.util.List.of() : functionDescriptors;
     }
 
     /**
@@ -70,11 +74,25 @@ public final class GeneratedClassificationWiring
         wiringBuilder.type("ReservationClassification",       b -> b.typeResolver(classificationResolver));
         // PRD 080 — StatEntity union (typed group entity in StatKey).
         wiringBuilder.type("StatEntity", b -> b.typeResolver(statEntityResolver()));
+        // PRD 081 — SearchHit interface (omnibox multisearch result rows).
+        wiringBuilder.type("SearchHit", b -> b.typeResolver(searchHitResolver()));
 
         // Performance-critical structural type fields (Allocatable / DynamicType /
         // Classification interface) — programmatic LightDataFetcher singletons
         // bypass Spring's per-dispatch HandlerMethod construction.
         StructuralTypeFetchers.wire(wiringBuilder, operator, raplaLocale);
+
+        // PRD 073 — descriptor-driven function-fields (e.g. AppointmentBlock.note): one EL-backed
+        // DataFetcher per generated field, derived from the same rules as the generated SDL.
+        for (String type : FunctionFieldGenerator.TARGET_TYPES)
+        {
+            var fields = FunctionFieldGenerator.eligibleFor(type, functionDescriptors);
+            if (fields.isEmpty()) continue;
+            wiringBuilder.type(type, b -> {
+                for (var d : fields) b.dataFetcher(d.name(), functionFieldFetcher(d));
+                return b;
+            });
+        }
 
         if (dynamicTypes == null) return;
         for (DynamicType dt : dynamicTypes)
@@ -102,6 +120,32 @@ public final class GeneratedClassificationWiring
     }
 
     /**
+     * PRD 073 — DataFetcher for a descriptor-generated function-field: evaluate the function (as a
+     * rapla expression) against the row subject. The source is the block DTO (use its block) or the
+     * entity itself; §12 rides on the already-gated row set + the EL's {@code canReadInformation}.
+     */
+    private DataFetcher<Object> functionFieldFetcher(org.rapla.entities.extensionpoints.FunctionDescriptor d)
+    {
+        final String expr = FunctionFieldGenerator.exprFor(d);
+        final String gqlType = FunctionFieldGenerator.returnTypeToGraphql(d.returnType());
+        return env -> {
+            Object src = env.getSource();
+            Object subject = src instanceof ReservationGraphQLController.AppointmentBlockDto dto
+                    ? dto.block() : src;
+            var rc = RequestContextInstrumentation.from(env.getGraphQlContext());
+            org.rapla.entities.User user = rc == null ? null : rc.caller();
+            if (!"String".equals(gqlType))
+            {
+                // Non-String scalar: take the RAW eval result and coerce to the scalar's Java type
+                // (avoids locale-formatting a number/date through formatName).
+                Object raw = StructuralTypeFetchers.computeEntityExprObject(subject, expr, user);
+                return FunctionFieldGenerator.coerceScalar(gqlType, raw);
+            }
+            return StructuralTypeFetchers.computeEntityExpr(subject, expr, user);   // String
+        };
+    }
+
+    /**
      * PRD 080 — resolves the concrete GraphQL type for a {@code StatEntity} union value
      * (the typed group entity carried by {@code StatKey.entity}).
      */
@@ -118,6 +162,30 @@ public final class GeneratedClassificationWiring
             if (typeName == null)
             {
                 LOGGER.warn("StatEntity TypeResolver got unexpected source: {}",
+                        src == null ? "null" : src.getClass().getName());
+                return null;
+            }
+            return schema.getObjectType(typeName);
+        };
+    }
+
+    /**
+     * PRD 081 — resolves the concrete GraphQL type for a {@code SearchHit}
+     * interface value (omnibox multisearch row). One Java record per concrete
+     * type; dispatch by {@code instanceof}.
+     */
+    private TypeResolver searchHitResolver()
+    {
+        return env -> {
+            Object src = env.getObject();
+            graphql.schema.GraphQLSchema schema = env.getSchema();
+            String typeName =
+                    src instanceof SearchGraphQLController.ResourceHit ? "ResourceHit"
+                  : src instanceof SearchGraphQLController.EventHit    ? "EventHit"
+                  : null;
+            if (typeName == null)
+            {
+                LOGGER.warn("SearchHit TypeResolver got unexpected source: {}",
                         src == null ? "null" : src.getClass().getName());
                 return null;
             }

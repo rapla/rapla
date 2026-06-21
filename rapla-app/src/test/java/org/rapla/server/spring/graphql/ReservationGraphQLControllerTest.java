@@ -27,6 +27,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.client.MockMvcWebTestClient;
 
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasItems;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -34,6 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -1276,6 +1278,76 @@ class ReservationGraphQLControllerTest
      * render them left-to-right without re-sorting. Columns without order keep their
      * declaration index as the sort key (an explicit order slots into that position).
      */
+    /**
+     * PRD 074 — @column(group: true) marks the row-grouping column: emitted as columns[].group and
+     * surfaced as the top-level view.groupBy (the column alias) so a generic renderer groups
+     * client-side by row[view.groupBy] without per-view config.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void viewColumnGroupEmitsGroupByHint() throws Exception
+    {
+        String query = """
+                query Wochenansicht @view(title: "Wochenansicht") {
+                  appointmentBlocks(filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00", limit: 2 }) {
+                    date  @column(header: "Datum", order: 1, group: true, format: "EE dd.MM")
+                    times @column(header: "Zeit",  order: 2)
+                  }
+                }
+                """;
+        mockMvc.perform(post("/api/graphql").contentType(MediaType.APPLICATION_JSON).content(gqlBody(query)))
+                .andExpect(jsonPath("$.extensions.view.groupBy").value("date"))
+                .andExpect(jsonPath("$.extensions.view.groupFormat").value("EE dd.MM"))
+                .andExpect(jsonPath("$.extensions.view.columns[?(@.alias=='date')].group")
+                        .value(hasItem(true)))
+                .andExpect(jsonPath("$.extensions.view.columns[?(@.alias=='date')].format")
+                        .value(hasItem("EE dd.MM")))
+                // non-group columns must not carry the flags
+                .andExpect(jsonPath("$.extensions.view.columns[?(@.alias=='times')].group")
+                        .value(empty()));
+    }
+
+    /**
+     * PRD 079/080 — a @view over the stats root (BlockStatBucket) emits a FLAT column set derived
+     * from the groupBy keys (kind group, + selected entity leaf fields kind entity), the aggregate
+     * keys (kind value, + fn), and count — not the generic keys/values/count containers. Data shape
+     * stays untouched; columns tell the renderer how to flatten it.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void statsViewEmitsFlatColumnsFromGroupByAndAggregate() throws Exception
+    {
+        String query = """
+                query Raumauslastung @view(title: "Raumauslastung") {
+                  appointmentBlockStats(
+                    filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" },
+                    groupBy:   [ { key: "raum", allocatables: { typeKeyIn: ["room"] } } ],
+                    aggregate: [ { key: "minuten", field: DURATION_MINUTES, fn: SUM },
+                                 { key: "termine", field: DURATION_MINUTES, fn: COUNT } ]
+                  ) {
+                    keys { value entity { ... on Allocatable { id } } }
+                    values { key number }
+                    count
+                  }
+                }
+                """;
+        mockMvc.perform(post("/api/graphql").contentType(MediaType.APPLICATION_JSON).content(gqlBody(query)))
+                // group column from groupBy key, typed by the dimension
+                .andExpect(jsonPath("$.extensions.view.columns[?(@.alias=='raum')].kind").value(hasItem("group")))
+                .andExpect(jsonPath("$.extensions.view.columns[?(@.alias=='raum')].type").value(hasItem("Allocatable")))
+                // selected entity leaf field becomes an entity column hung off the group key
+                .andExpect(jsonPath("$.extensions.view.columns[?(@.alias=='id')].kind").value(hasItem("entity")))
+                .andExpect(jsonPath("$.extensions.view.columns[?(@.alias=='id')].group").value(hasItem("raum")))
+                // metric columns from aggregate keys, carrying fn
+                .andExpect(jsonPath("$.extensions.view.columns[?(@.alias=='minuten')].kind").value(hasItem("value")))
+                .andExpect(jsonPath("$.extensions.view.columns[?(@.alias=='minuten')].fn").value(hasItem("SUM")))
+                .andExpect(jsonPath("$.extensions.view.columns[?(@.alias=='termine')].fn").value(hasItem("COUNT")))
+                // count column; and NO generic container columns
+                .andExpect(jsonPath("$.extensions.view.columns[?(@.alias=='count')].kind").value(hasItem("count")))
+                .andExpect(jsonPath("$.extensions.view.columns[?(@.alias=='keys')]").value(empty()))
+                .andExpect(jsonPath("$.extensions.view.columns[?(@.alias=='values')]").value(empty()));
+    }
+
     @Test
     @WithMockUser(username = "homer", roles = "ADMIN")
     void viewColumnsSortedByOrder() throws Exception
@@ -1767,6 +1839,187 @@ class ReservationGraphQLControllerTest
             assertEquals(key0.get("value"), entity.get("displayName"),
                     () -> "entity.displayName must equal the bucket key value; got " + bk);
         }
+    }
+
+    /**
+     * PRD 073 — the computeFunctions catalog aggregates the registered FunctionFactory descriptors
+     * (here at least core StandardFunctions) with their rapla-level metadata, for editor autocomplete
+     * + view validation.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void computeFunctionsCatalogExposesCoreFunctions()
+    {
+        List<Map<String, Object>> fns = tester.document("""
+                query {
+                  computeFunctions { name namespace minArgs maxArgs returnType sourceLevel doc }
+                }
+                """)
+                .execute().path("computeFunctions")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
+        assertFalse(fns.isEmpty(), "catalog must list functions");
+
+        Map<String, Map<String, Object>> byName = new java.util.HashMap<>();
+        for (Map<String, Object> f : fns) byName.put((String) f.get("name"), f);
+
+        Map<String, Object> concat = byName.get("concat");
+        assertNotNull(concat, "concat must be in the catalog");
+        assertEquals("org.rapla", concat.get("namespace"));
+        assertEquals(-1, ((Number) concat.get("maxArgs")).intValue(), "concat is variadic (maxArgs -1)");
+        assertEquals("String", concat.get("returnType"));
+        assertEquals("ANY", concat.get("sourceLevel"));
+
+        Map<String, Object> attribute = byName.get("attribute");
+        assertNotNull(attribute, "attribute must be in the catalog");
+        assertEquals(2, ((Number) attribute.get("minArgs")).intValue());
+        assertEquals("AttributeValue", attribute.get("returnType"));
+        assertEquals("CLASSIFIABLE", attribute.get("sourceLevel"));
+
+        assertNotNull(byName.get("start"), "start must be in the catalog");
+        assertEquals("EVENT", byName.get("start").get("sourceLevel"));
+    }
+
+    /**
+     * PRD 073 — the appointmentnote plugin's `note` descriptor is auto-generated as a real typed
+     * field `AppointmentBlock.note: String` (EL-backed), not just a catalog entry. The query
+     * resolving at all proves the field is in the schema + wired; value is null here (fixture has no
+     * note annotations).
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void descriptorGeneratedNoteFieldResolvesOnBlock()
+    {
+        List<Map<String, Object>> blocks = tester.document("""
+                query {
+                  appointmentBlocks(filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00", limit: 3 }) {
+                    start
+                    note
+                  }
+                }
+                """)
+                .execute().path("appointmentBlocks")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
+        assertFalse(blocks.isEmpty(), "fixture should produce blocks");
+        for (Map<String, Object> b : blocks)
+        {
+            assertTrue(b.containsKey("note"), "generated note field must be selectable");
+            Object note = b.get("note");
+            assertTrue(note == null || ((String) note).isEmpty(),
+                    () -> "fixture has no appointment notes → blank; got " + note);
+        }
+    }
+
+    /**
+     * PRD 073 — Int return mapping: the core `number` descriptor (block sequence #, EVENT/Int) is
+     * auto-generated as `AppointmentBlock.number: Int` and coerced from the EL result to a real
+     * Integer (not a string). 1-based, so every block's number is >= 1.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void descriptorGeneratedNumberFieldIsInt()
+    {
+        List<Map<String, Object>> blocks = tester.document("""
+                query {
+                  appointmentBlocks(filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00", limit: 5 }) {
+                    start
+                    number
+                  }
+                }
+                """)
+                .execute().path("appointmentBlocks")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
+        assertFalse(blocks.isEmpty(), "fixture should produce blocks");
+        for (Map<String, Object> b : blocks)
+        {
+            Object n = b.get("number");
+            assertNotNull(n, "generated number field must resolve");
+            assertTrue(n instanceof Integer, () -> "number must be a GraphQL Int (Integer), got " + n.getClass());
+            assertTrue(((Integer) n) >= 1, () -> "block sequence number is 1-based; got " + n);
+        }
+    }
+
+    /**
+     * PRD 073 — DateTime/Date return mapping: the core `date` (Date) and `lastchanged` (DateTime →
+     * LocalDateTime scalar) descriptors are auto-generated as AppointmentBlock fields and the RAW
+     * LocalDateTime eval result is coerced to the scalar's Java type (Date → LocalDate). Proves the
+     * scalar serialization path (the PRD-flagged risk) works end-to-end.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void descriptorGeneratedDateAndDateTimeFields()
+    {
+        List<Map<String, Object>> blocks = tester.document("""
+                query {
+                  appointmentBlocks(filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00", limit: 3 }) {
+                    start
+                    date
+                    lastchanged
+                  }
+                }
+                """)
+                .execute().path("appointmentBlocks")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
+        assertFalse(blocks.isEmpty(), "fixture should produce blocks");
+        for (Map<String, Object> b : blocks)
+        {
+            Object date = b.get("date");
+            assertNotNull(date, "generated date field must resolve");
+            assertTrue(((String) date).matches("\\d{4}-\\d{2}-\\d{2}"),
+                    () -> "Date scalar serializes to yyyy-MM-dd; got " + date);
+            assertTrue(b.containsKey("lastchanged"), "generated lastchanged field must be selectable");
+            Object lc = b.get("lastchanged");
+            assertTrue(lc == null || ((String) lc).contains("T"),
+                    () -> "LocalDateTime scalar serializes to ISO (has 'T') or null; got " + lc);
+        }
+    }
+
+    /**
+     * PRD 073 — generated function-fields extend to the Appointment target type too (not just
+     * AppointmentBlock): `date`/`note` resolve on Appointment. `number` is block-only (excluded
+     * from Appointment), so it must NOT be a field here.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void descriptorGeneratedFieldsOnAppointment()
+    {
+        List<Map<String, Object>> reservations = tester.document("""
+                query {
+                  reservations(filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00", limit: 3 }) {
+                    appointments { date note }
+                  }
+                }
+                """)
+                .execute().path("reservations")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
+        assertFalse(reservations.isEmpty(), "fixture should produce reservations");
+        boolean sawAppointment = false;
+        for (Map<String, Object> r : reservations)
+        {
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> appts = (List<Map<String, Object>>) r.get("appointments");
+            for (Map<String, Object> a : appts)
+            {
+                sawAppointment = true;
+                Object date = a.get("date");
+                assertNotNull(date, "Appointment.date (generated) must resolve");
+                assertTrue(((String) date).matches("\\d{4}-\\d{2}-\\d{2}"),
+                        () -> "Appointment.date serializes as yyyy-MM-dd; got " + date);
+                assertTrue(a.containsKey("note"), "Appointment.note (generated) selectable");
+            }
+        }
+        assertTrue(sawAppointment, "fixture reservations should have appointments");
+
+        // number is block-only → must NOT be generated on Appointment (query references unknown field).
+        tester.document("""
+                query {
+                  reservations(filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" }) {
+                    appointments { number }
+                  }
+                }
+                """)
+                .execute().errors()
+                .satisfy(errs -> assertFalse(errs.isEmpty(),
+                        "Appointment.number must not exist (block-only function)"));
     }
 
     /** No @view → no extensions.view (zero overhead for plain queries). */

@@ -88,6 +88,9 @@ public class HotSwappableGraphQlSource implements GraphQlSource
     private final AtomicReference<GraphQlSource> delegate = new AtomicReference<>();
     /** SHA-256 of the most-recently-applied generated SDL. Empty until first build. */
     private volatile String lastGeneratedSdlHash = "";
+    /** PRD 073 — aggregated function descriptors + the generated function-field SDL (constant per process). */
+    private final java.util.Collection<org.rapla.entities.extensionpoints.FunctionDescriptor> functionDescriptors;
+    private final String functionFieldsSdl;
 
     public HotSwappableGraphQlSource(
             ResourcePatternResolver resourceResolver,
@@ -97,7 +100,8 @@ public class HotSwappableGraphQlSource implements GraphQlSource
             ObjectProvider<Instrumentation> instrumentations,
             ObjectProvider<GraphQlSourceBuilderCustomizer> sourceBuilderCustomizers,
             StorageOperator operator,
-            RaplaLocale raplaLocale)
+            RaplaLocale raplaLocale,
+            java.util.Map<String, org.rapla.entities.extensionpoints.FunctionFactory> functionFactories)
     {
         this.resourceResolver = resourceResolver;
         this.wiringConfigurers = wiringConfigurers;
@@ -106,7 +110,10 @@ public class HotSwappableGraphQlSource implements GraphQlSource
         this.instrumentations = instrumentations;
         this.sourceBuilderCustomizers = sourceBuilderCustomizers;
         this.operator = operator;
-        this.generatedWiring = new GeneratedClassificationWiring(operator, raplaLocale);
+        // PRD 073 — aggregate function descriptors once; drives generated function-fields (SDL + wiring).
+        this.functionDescriptors = FunctionFieldGenerator.aggregate(functionFactories);
+        this.functionFieldsSdl = FunctionFieldGenerator.generateSdl(this.functionDescriptors);
+        this.generatedWiring = new GeneratedClassificationWiring(operator, raplaLocale, this.functionDescriptors);
         // Build the initial source eagerly. The bean is consumed by
         // ExecutionGraphQlService; failure here = boot failure (correct).
         this.delegate.set(buildSource());
@@ -133,7 +140,7 @@ public class HotSwappableGraphQlSource implements GraphQlSource
     public boolean rebuild()
     {
         Collection<DynamicType> types = fetchDynamicTypes();
-        String newSdl = ClassificationSdlGenerator.generate(types);
+        String newSdl = ClassificationSdlGenerator.generate(types) + functionFieldsSdl;
         String newHash = sha256(newSdl);
         if (newHash.equals(lastGeneratedSdlHash))
         {
@@ -151,7 +158,7 @@ public class HotSwappableGraphQlSource implements GraphQlSource
     private GraphQlSource buildSource()
     {
         Collection<DynamicType> types = fetchDynamicTypes();
-        String generatedSdl = ClassificationSdlGenerator.generate(types);
+        String generatedSdl = ClassificationSdlGenerator.generate(types) + functionFieldsSdl;
         lastGeneratedSdlHash = sha256(generatedSdl);
         return buildSource(types, generatedSdl);
     }

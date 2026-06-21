@@ -72,6 +72,14 @@ public class AppointmentNoteFunctions implements FunctionFactory {
         return null;
     }
 
+    @Override public java.util.Collection<org.rapla.entities.extensionpoints.FunctionDescriptor> getDescriptors()
+    {
+        // PRD 073 — appointmentnote plugin function, declared for the computeFunctions catalog.
+        return List.of(new org.rapla.entities.extensionpoints.FunctionDescriptor(
+                AppointmentNoteFunction.name, NAMESPACE, 0, 1, "String", "EVENT",
+                "The appointment's note text (appointmentnote plugin)."));
+    }
+
     private String getNote(Object obj)
     {
         final Appointment appointment;

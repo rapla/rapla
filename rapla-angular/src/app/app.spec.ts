@@ -8,6 +8,12 @@ import { of } from 'rxjs';
 import { App } from './app';
 import { AuthService, Identity } from './auth/auth.service';
 import { UsersService } from './auth/users.service';
+import { ViewCatalogService, type ViewInfo } from './views/view-catalog.service';
+
+const VIEWS: ViewInfo[] = [
+  { name: 'Wochenansicht', title: 'Wochenansicht', source: 'CUSTOM' },
+  { name: 'rapla_appointments', title: 'Termine', source: 'BUILTIN' },
+];
 
 const IDENTITY: Identity = {
   username: 'testadmin',
@@ -30,6 +36,7 @@ describe('App', () => {
         provideRouter([]),
         provideAnimationsAsync(),
         { provide: UsersService, useValue: { list: () => of([]) } },
+        { provide: ViewCatalogService, useValue: { listViews: () => of(VIEWS) } },
         {
           provide: AuthService,
           useValue: {
@@ -55,12 +62,12 @@ describe('App', () => {
     expect((fixture.nativeElement as HTMLElement).querySelector('router-outlet')).toBeTruthy();
   });
 
-  it('renders the global toolbar and the sidenav nav items', () => {
+  it('renders the global toolbar and the server view catalog in the sidenav', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
     expect(text).toContain('Rapla');
+    expect(text).toContain('Wochenansicht');
     expect(text).toContain('Termine');
-    expect(text).toContain('Reservierungen');
   });
 });

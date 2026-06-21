@@ -2,6 +2,8 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
+import type { ViewInput } from '../views/view-inputs';
+
 /**
  * PRD 078 — the SPA's entire GraphQL transport. A plain {@link HttpClient}
  * POST to {@code /api/graphql}; the cookie-credential model (PRD 072 Phase 4)
@@ -35,14 +37,29 @@ export interface ViewColumn {
   /** List-cell join separator; defaults to {@code ', '}. */
   join?: string;
   hidden?: boolean;
-  /** Grouping bucket key (e.g. {@code DAY}) — Phase 3. */
-  group?: string;
+  /** Either the boolean grouping marker (flat views) OR the group alias an
+   *  {@code entity} column belongs to (aggregation/pivot views). */
+  group?: boolean | string;
+  /** Opaque, client-interpreted date-format token (e.g. {@code "EE dd.MM"}). */
+  format?: string;
+  /** Aggregation column kind: {@code group} | {@code entity} | {@code value} | {@code count}. */
+  kind?: string;
+  /** Entity attribute path within the group entity (e.g. {@code "Gebaeude.name"}). */
+  path?: string;
+  /** Aggregate function for a {@code value} column ({@code SUM} | {@code COUNT} | …). */
+  fn?: string;
 }
 
 export interface ViewMeta {
   key: string;
   title?: string;
   columns: ViewColumn[];
+  /** Alias of the column to group rows by (server render-info); absent → flat table. */
+  groupBy?: string;
+  /** Opaque date-format token for the GROUP header (client-interpreted, e.g. {@code "EE dd.MM"}). */
+  groupFormat?: string;
+  /** PRD 074 — input-control metadata (date-range anchor/offset defaults). */
+  inputs?: ViewInput[];
 }
 
 export interface GqlResponse<T> {
@@ -63,5 +80,24 @@ export class GraphqlService {
    */
   query<T>(document: string, variables: Record<string, unknown> = {}): Observable<GqlResponse<T>> {
     return this.http.post<GqlResponse<T>>('/api/graphql', { query: document, variables });
+  }
+
+  /**
+   * PRD 074/078 consumer path — execute a STORED view by name. The client holds
+   * NO query text: the {@code storedView} extension flag + {@code operationName}
+   * tell the server's StoredViewInterceptor to swap in the stored query and
+   * merge variable defaults. The dummy {@code query} satisfies GraphQL's
+   * required field; the interceptor replaces it.
+   */
+  executeView<T>(
+    viewName: string,
+    variables: Record<string, unknown> = {},
+  ): Observable<GqlResponse<T>> {
+    return this.http.post<GqlResponse<T>>('/api/graphql', {
+      operationName: viewName,
+      query: '{ __typename }',
+      variables,
+      extensions: { storedView: true },
+    });
   }
 }

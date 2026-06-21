@@ -1025,12 +1025,12 @@ query Wochenansicht(
   $offset: Int = 0
 ) @view(title: "Wochenansicht") {
   appointmentBlocks(filter: $filter, sort: $sort, offset: $offset) {
-    start  @column(header: "Von",   order: 1)      # LocalDateTime! → Grid-Position
-    end    @column(header: "Bis",   order: 2)      # LocalDateTime! → Block-Ende/-Höhe
-    times  @column(header: "Zeit",  order: 3)      # "10:00 - 11:30" (serverformatiert)
-    name   @column(header: "Titel", order: 4)      # block-aware (ehrt appointment-note overrides)
+    date   @column(header: "Datum", order: 1, group: true)  # Date (yyyy-MM-dd), Gruppen-Achse (PRD 073/074)
+    times  @column(header: "Zeit",  order: 2)      # "10:00 - 11:30" (serverformatiert)
+    name   @column(header: "Titel", order: 3)      # block-aware (ehrt appointment-note overrides)
 
-    durationMinutes @hidden                        # Int Wall-Clock-Minuten (Block-Höhe; ≠ UE-Dauer)
+    start @hidden  end @hidden                      # LocalDateTime! → exakte Grid-Positionierung/-Höhe
+    durationMinutes @hidden                        # Int Wall-Clock-Minuten (≠ UE-Dauer)
     isException     @hidden                         # Boolean! → Ausnahme-Styling
     reservation { id @hidden  canModify @hidden }   # stabiler Editier-Handle (Block hat KEINE eigene id)
 
@@ -1083,6 +1083,48 @@ Erläuterung:
   `join`), `extensions.view.page` `{ offset, limit, returned, hasMore }`. `@hidden`-Felder liegen in
   `data`, nicht in `columns`.
 
+### Gruppieren nach Tag (`@column(group: true, format: …)` → `view.groupBy` / `view.groupFormat`)
+
+Gruppieren ist **Render-Sache** (flache Zeilen + Hint); es gibt **kein** `@group`-Direktiv. Stattdessen
+markierst du **eine Spalte** als Gruppen-Achse mit `@column(group: true)` und gibst optional ein
+**Format-Token** für den Gruppen-Header mit (`format:`). Der Server emittiert:
+
+```jsonc
+"extensions": { "view": {
+  "groupBy":     "date",          // alias der group-Spalte (Top-Level-Hint)
+  "groupFormat": "EE dd.MM",      // optionales Format-Token der group-Spalte (Header)
+  "columns": [
+    { "alias": "date", "header": "Datum", "type": "Date", "order": 1, "group": true, "format": "EE dd.MM" },
+    { "alias": "times", … }, { "alias": "name", … }, …
+  ]
+}}
+```
+
+Query: `date @column(header: "Datum", order: 1, group: true, format: "EE dd.MM")`.
+
+Der Renderer gruppiert die (nach `START` sortierten) Flat-Rows nach `row[view.groupBy]` und formatiert
+den Header mit `view.groupFormat`:
+
+```ts
+const groupField = view.groupBy ?? view.columns.find(c => c.type === 'Date')?.alias;  // "date"; Fallback: Date-Spalte
+const d = new Date(sec.key);                                   // sec.key = "2026-06-15"
+const header = formatDate(d, view.groupFormat ?? 'EEEE, dd.MM.yyyy');   // "EE dd.MM" → "Mo 15.06"
+// Schnitt-bei-Wechsel über die sortierte Liste → eine Sektion pro Tag
+```
+
+- **Nach echtem Datum gruppieren, nicht nach Wochentag-Name** — sonst landen Montag 15.06. und Montag
+  22.06. in *einer* Sektion. Gruppen-Achse ist `date` (das echte Datum), nicht ein `format("%tA",…)`-Feld.
+- **`format` ist ein opakes Render-Token** (z. B. date-fns/ICU `EE dd.MM` → „Mo 15.06", `EEEE, dd.MM.yyyy`
+  → „Montag, 15.06.2026"). Der Server reicht es **unverändert** durch — er interpretiert/validiert es
+  nicht; der Client kennt seine Locale + Formatter-Lib.
+- **Drei Wege, den Tag/Label zu erzeugen** (von deklarativ → konkret): (C) `format` im View-Meta
+  (Renderer formatiert den Key — empfohlen), (B) Renderer leitet selbst aus dem `date`-Key ab,
+  (A) `tag: compute(expr:"concat(format(\"%tA\",date(item)),\" \",substring(date(item),0,10))") @hidden`
+  liefert den fertigen String in `data` (für Nicht-JS-Konsumenten wie CSV/Export). Die View-Meta selbst
+  **rechnet keine Werte** — sie trägt nur Struktur + das Format-Token.
+- **Die `date`-Spalte darf zusätzlich `@hidden`** sein (`group:true` + `format:` + `@hidden` zusammen ok):
+  sie steht dann nur im Header statt redundant in jeder Zeile; `view.groupBy`/`groupFormat` bleiben gesetzt.
+
 ## The rapla expression (`expr`) — one language, several slots (PRD 074 V2)
 
 `expr` is the bounded rapla expression language (the `ParsedText` / nameformat engine), exposed in
@@ -1111,6 +1153,19 @@ compute(expr: "if(equals(key(type()), \"Pruefung\"), \"📝\", \"Lehre\")")
 groupBy:   [{ key: "initial", expr: "substring(name(),0,1)" }]
 aggregate: [{ key: "sum",     expr: "attribute(item, \"<numericAttr>\")", fn: SUM }]
 ```
+
+**Welche Funktionen gibt es? → `computeFunctions` (PRD 073).** Der Katalog der verfügbaren
+expr-Funktionen ist abfragbar — für Editor-Autocomplete und View-Validierung:
+
+```graphql
+query { computeFunctions { name namespace minArgs maxArgs returnType sourceLevel doc } }
+```
+
+Aggregiert aus allen registrierten `FunctionFactory`s (Core `org.rapla` + aktive Plugins, z. B.
+`duration` aus eventtimecalculator, `note` aus appointmentnote). `sourceLevel` =
+`EVENT | CLASSIFIABLE | ALLOCATABLE | ANY | VIEW_TITLE` (auf welchem Subjekt die Funktion sinnvoll
+ist), `maxArgs: -1` = variadisch (`concat`). Der Katalog wird aus der Descriptor-SPI generiert
+(`FunctionFactory.getDescriptors()`), nicht aus geparstem Quellcode.
 
 **Not yet (PRD 073 number-model / Stufe c):** in-expression arithmetic (`add/sub/mul/div`). Single
 numeric values work (Stufe b); composing numbers inside the expr needs a numeric type in the EL,

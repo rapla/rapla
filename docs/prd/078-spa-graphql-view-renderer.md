@@ -21,6 +21,7 @@ over recurrence blocks.
 | **GraphQL transport** (`graphql.service.ts`), **generic table renderer** from `extensions.view`, **control inference/rendering** from `extensions.view.inputs`, component registry, sort/pagination UX, `monaco-graphql` authoring editor | **078** (this PRD — SPA) |
 | SavedView persistence, CalendarModel replacement, week/month render-modes, view-switching | **077** |
 | Global unified/power-search across views | **077 / 060** |
+| Omnibox multisearch (typed, ranked, §12-scoped search resolver) | **081** (server) — the omnibox's `SearchService.search` seam |
 | Reservation **editing** forms (mutations) | **026 / 075** |
 
 078 is **downstream of 074's `extensions.view` contract** and an **upstream dependency of
@@ -116,24 +117,30 @@ built. So:
   `allocatableIdsIn`, ✅ honored) — a *per-view* input (search-driven picker, the lightweight
   alternative to a tree).
 - **Global unified power-search across views** → **PRD 077 / 060**, not here.
+- **Omnibox multisearch (the GraphQL search resolver behind `SearchService`)** → **PRD 081**.
 
-## Open question — date-window pre-fill (the only blocking input decision)
+## Execution transport & routing (locked 2026-06-21 — see PRD 074 §"View loading")
 
-`ReservationFilter.from/to` are `LocalDateTime!` (required). GraphQL validates variables
-**before** any resolver runs, so the server cannot "fill in" a missing required field through
-plain `/api/graphql`, and a static SDL default can't express a *relative* window ("this
-week"). Two coherent models:
+**Open question resolved: server-merge (option 1).** Full design in PRD 074
+§"View loading — execution transport". SPA summary:
 
-1. **Server-merge (`executeView(name, overrides?)`)** — SPA sends only the view name +
-   optional overrides; a thin server layer merges defaults (`from/to` = current week, seed
-   `$sort`) into the variable map **before** building `ExecutionInput`. ➕ §12 trusted-document
-   path (only admin-vetted queries run); dynamic date defaults work. ➖ a new server endpoint.
-2. **SPA computes** — the SPA holds the query, computes the window ("this week") itself, and
-   sends a complete `$filter` to plain `/api/graphql`. ➕ no new server seam. ➖ default lives
-   client-side; not the trusted-document path.
+- **Consumer path** — `POST /api/graphql` with `{ operationName: viewName, variables }` (no
+  `query`). Server looks up stored view, merges `from`/`to` defaults if absent, executes.
+  Client never holds query text.
+- **Authoring path** — `POST /api/graphql` with `{ query: document, variables }` (unchanged).
 
-**Decision deferred** — pick before the first slice's selection lands. (Static inputs —
-`sort`/`matchKind`/`limit` — are trivial either way: SDL variable-default or descriptor.)
+```ts
+// graphql.service.ts — two methods, one HttpClient
+executeView<T>(viewName: string, variables: Record<string, unknown>): Observable<GqlResponse<T>>
+query<T>(document: string,      variables: Record<string, unknown>): Observable<GqlResponse<T>>
+```
+
+**Routing:** `/app/views` (lazy `listViews` → view list) and `/app/views/:viewName` (execute
++ render). Date controls (`from`/`to`) are synced to URL query params so browser back/forward
+moves through date windows (`pushState` on each navigation). Complex filters (resource tree,
+`searchText`, `where` predicates) stay in component state — lost on reload, which is
+acceptable. On first visit (no URL params) the SPA uses `default` sentinels from
+`extensions.view.inputs` to compute the initial window client-side (no extra round-trip).
 
 ## Plan — phased
 
@@ -143,9 +150,13 @@ week"). Two coherent models:
 2. **Phase 2 — control inference + per-view inputs.** Render controls from
    `extensions.view.inputs`; the resource-search picker (`allocatables(filter:{searchText})`
    → `allocatableIdsIn`) and the per-view name-search box; the date-window pre-fill decision.
-3. **Phase 3 — grouping + component registry.** `@group(by:DAY)` day sections
-   (`appointments_per_day`); `ngComponentOutlet` cell-component registry (safe allowlist, no
-   raw HTML); sort-on-header-click → `$sort`; pagination UX (next/prev / infinite scroll).
+3. **Phase 3 — grouping + component registry.** **Client-side** day/weekday sectioning —
+   the server has NO grouping directive (`@group`/`@aggregate` were removed from 074 on
+   2026-06-21 → PRD 079; render directives are `@column`/`@hidden`/`@join`/`@flatten` only).
+   Day-grouping is a pure SPA renderer concern: `groupByWeekday()` over the flat `start`
+   column (`graphql/weekday-grouping.ts`), buckets ordered Montag→Sonntag. `ngComponentOutlet`
+   cell-component registry (safe allowlist, no raw HTML); sort-on-header-click → `$sort`;
+   pagination UX (next/prev / infinite scroll).
 4. **Phase 4 — authoring.** `monaco-graphql` query editor + live SPA preview over the
    validator (server save-time validation is 074).
 
@@ -155,7 +166,8 @@ week"). Two coherent models:
   `extensions.view` → column-descriptor mapping; control inference from `inputs`; list-join
   + datetime formatting.
 - **Tier 6 (TestBed)** — the table component renders columns in `extensions.view` order,
-  joins list cells, hides `hidden` columns, renders day sections for `@group`.
+  joins list cells, hides `hidden` columns, renders day sections via client-side
+  `groupByWeekday` (no `@group` directive — see Phase 3).
 - **Tier 7 (Playwright, sparing)** — one end-to-end: log in → open the `appointments` view →
   rows render for the default window. Critical-path only.
 - **XSS (§"XSS hardening" in 074)** — never `[innerHTML]`/`bypassSecurityTrustHtml`; cells

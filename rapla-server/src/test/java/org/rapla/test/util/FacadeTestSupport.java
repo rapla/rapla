@@ -77,6 +77,11 @@ public abstract class FacadeTestSupport
 
         Map<String, FunctionFactory> functionFactoryMap = new LinkedHashMap<>();
         functionFactoryMap.put(StandardFunctions.NAMESPACE, new StandardFunctions(raplaLocale));
+        // appointmentnote plugin function (namespace "appointment") so nameformats using
+        // appointment:note() resolve in tier-2 tests. The read path (getNote) reads a reservation
+        // annotation and doesn't touch the facade, so a lazy `() -> facade` supplier is sufficient.
+        functionFactoryMap.put(org.rapla.plugin.appointmentnote.AppointmentNoteFunctions.NAMESPACE,
+                new org.rapla.plugin.appointmentnote.AppointmentNoteFunctions(() -> facade));
 
         operator = new FileOperator(i18n, raplaLocale, scheduler,
                 functionFactoryMap, dataFile.toAbsolutePath().toString(),
