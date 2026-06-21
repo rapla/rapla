@@ -4,7 +4,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import org.rapla.entities.Category;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
@@ -48,6 +50,12 @@ final class WhereEvaluator
      */
     static boolean evaluate(Allocatable a, Map<String, Object> filterMap)
     {
+        return evaluate(a, filterMap, null, null);
+    }
+
+    /** PRD 074 b — caller/pc enable §12-gated recursion into referenced allocatables' typed where. */
+    static boolean evaluate(Allocatable a, Map<String, Object> filterMap, User caller, PermissionController pc)
+    {
         if (filterMap == null || filterMap.isEmpty()) return true;
         Classification c = a.getClassification();
         if (c == null) return true;
@@ -60,11 +68,12 @@ final class WhereEvaluator
         if (!(block instanceof Map<?, ?> wb)) return true;
         @SuppressWarnings("unchecked")
         Map<String, Object> typed = (Map<String, Object>) wb;
-        return evaluateWhereBlock(c, dt, typed, 0);
+        return evaluateWhereBlock(c, dt, typed, 0, caller, pc);
     }
 
     @SuppressWarnings("unchecked")
-    private static boolean evaluateWhereBlock(Classification c, DynamicType dt, Map<String, Object> where, int depth)
+    private static boolean evaluateWhereBlock(Classification c, DynamicType dt, Map<String, Object> where, int depth,
+            User caller, PermissionController pc)
     {
         if (depth > DEPTH_CAP)
         {
@@ -84,7 +93,7 @@ final class WhereEvaluator
                 for (Object sub : list)
                 {
                     if (!(sub instanceof Map)) continue;
-                    if (!evaluateWhereBlock(c, dt, (Map<String, Object>) sub, depth + 1)) return false;
+                    if (!evaluateWhereBlock(c, dt, (Map<String, Object>) sub, depth + 1, caller, pc)) return false;
                 }
                 continue;
             }
@@ -96,7 +105,7 @@ final class WhereEvaluator
                 for (Object sub : list)
                 {
                     if (!(sub instanceof Map)) continue;
-                    if (evaluateWhereBlock(c, dt, (Map<String, Object>) sub, depth + 1))
+                    if (evaluateWhereBlock(c, dt, (Map<String, Object>) sub, depth + 1, caller, pc))
                     {
                         anyMatch = true;
                         break;
@@ -108,7 +117,7 @@ final class WhereEvaluator
             if ("NOT".equals(fieldName))
             {
                 if (!(predValue instanceof Map)) continue;
-                if (evaluateWhereBlock(c, dt, (Map<String, Object>) predValue, depth + 1)) return false;
+                if (evaluateWhereBlock(c, dt, (Map<String, Object>) predValue, depth + 1, caller, pc)) return false;
                 continue;
             }
             // Attribute predicate.
@@ -116,7 +125,7 @@ final class WhereEvaluator
             if (attr == null) continue;
             if (!(predValue instanceof Map)) continue;
             Map<String, Object> pred = (Map<String, Object>) predValue;
-            if (!evaluatePredicate(attr, c, pred)) return false;
+            if (!evaluatePredicate(attr, c, pred, depth, caller, pc)) return false;
         }
         return true;
     }
@@ -143,7 +152,8 @@ final class WhereEvaluator
         return null;
     }
 
-    private static boolean evaluatePredicate(Attribute attr, Classification c, Map<String, Object> pred)
+    private static boolean evaluatePredicate(Attribute attr, Classification c, Map<String, Object> pred,
+            int depth, User caller, PermissionController pc)
     {
         AttributeType t = attr.getType();
         if (t == null) return true;
@@ -191,7 +201,7 @@ final class WhereEvaluator
             case INT         -> matchInt(value, pred);
             case BOOLEAN     -> matchBoolean(value, pred);
             case CATEGORY    -> matchCategory(value, pred);
-            case ALLOCATABLE -> matchAllocatable(value, pred);
+            case ALLOCATABLE -> matchAllocatable(value, pred, depth, caller, pc);
             case DATE        -> matchDate(value, pred);
         };
     }
@@ -391,7 +401,8 @@ final class WhereEvaluator
 
     // === ALLOCATABLE — single / list ========================================
 
-    private static boolean matchAllocatable(Object value, Map<String, Object> pred)
+    private static boolean matchAllocatable(Object value, Map<String, Object> pred,
+            int depth, User caller, PermissionController pc)
     {
         if (value == null) return !hasAnyOperator(pred);
         if (!(value instanceof Allocatable a)) return false;
@@ -401,15 +412,27 @@ final class WhereEvaluator
         if (eq != null && !eq.toString().equals(a.getId())) return false;
         if (ne != null && ne.toString().equals(a.getId())) return false;
         if (in instanceof List<?> list && !containsAllocatableId(list, a)) return false;
-        // PRD 074 — match the referenced allocatable by its display name (one-query reference join,
-        // e.g. rooms whose Gebaeude.nameContains "MOS"). Typed by-attribute filtering of the
-        // referenced entity (whereGebaeude) is the recursive where, PRD 059/065.
+        // PRD 074 a — match the referenced allocatable by its display name (one-query reference join,
+        // e.g. rooms whose Gebaeude.nameContains "MOS").
         Object nameContains = pred.get("nameContains");
         if (nameContains != null)
         {
             String hay = a.getName(Locale.getDefault());
             if (hay == null || !hay.toLowerCase(Locale.ROOT)
                     .contains(nameContains.toString().toLowerCase(Locale.ROOT))) return false;
+        }
+        // PRD 074 b — typed recursive where on the referenced entity (e.g. filter rooms by the
+        // building's OWN attributes: Gebaeude.where { Standort: { eq: … } }). §12: the referenced
+        // allocatable must be canRead by the caller, else the room is dropped (no attribute leak).
+        Object nested = pred.get("where");
+        if (nested instanceof Map<?, ?> nm)
+        {
+            if (caller != null && pc != null && !pc.canRead(a, caller)) return false;
+            Classification rc = a.getClassification();
+            if (rc == null || rc.getType() == null) return false;
+            @SuppressWarnings("unchecked")
+            Map<String, Object> nestedWhere = (Map<String, Object>) nm;
+            if (!evaluateWhereBlock(rc, rc.getType(), nestedWhere, depth + 1, caller, pc)) return false;
         }
         return true;
     }

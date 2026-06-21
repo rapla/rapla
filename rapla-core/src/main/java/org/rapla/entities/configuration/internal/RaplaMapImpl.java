@@ -352,19 +352,19 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
         {
             links.setResolver(resolver);
         }
-        setResolver(calendars);
-        setResolver(maps);
+        applyResolverTo(calendars);
+        applyResolverTo(maps);
         map = null;
     }
 
-    // Private overload — internal helper used by setResolver(EntityResolver).
-    // Jackson 3 runtime never sees it (SETTER=NONE + FIELD=ANY). swagger-core 2.x's
-    // schema introspection would log a "Conflicting setter definitions for property
-    // 'resolver'" warning because both setResolver overloads claim the same property
-    // name. The warning is suppressed via a Jackson mixin registered on swagger-core's
-    // mapper in rapla-app's SwaggerJacksonConfig, so this class stays clean of
-    // Jackson annotations.
-    private void setResolver(Map<String, ? extends EntityReferencer> map)
+    // Internal helper — distinct NAME from the EntityReferencer interface method
+    // setResolver(EntityResolver) on purpose. When this was also named setResolver(Map),
+    // the two overloads claimed the same bean-property "resolver"; swagger-core / springdoc
+    // schema introspection (Jackson 2, setter-visible) couldn't disambiguate them and THREW
+    // "Conflicting setter definitions for property 'resolver'", aborting the schema build for
+    // every type reaching a RaplaMap (notably UpdateEvent → the whole /api/storage surface).
+    // A unique name removes the collision for ALL introspection paths — no mixin needed.
+    private void applyResolverTo(Map<String, ? extends EntityReferencer> map)
     {
         if (map == null)
         {

@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Rapla — Planungsfläche (Mockup)</title>
+<style>
+  :root{
+    --indigo:#3f51b5; --indigo-d:#303f9f; --bg:#f4f5f7; --card:#fff;
+    --line:#e0e0e0; --text:#1f2330; --muted:#6b7280; --chip:#eef0fb;
+    --c1:#c8e6c9; --c1b:#2e7d32; --c2:#bbdefb; --c2b:#1565c0;
+    --c3:#ffe0b2; --c3b:#e65100; --c4:#e1bee7; --c4b:#6a1b9a;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--text);background:var(--bg)}
+  .app{display:flex;flex-direction:column;height:100vh}
+
+  /* ── Top bar ───────────────────────────────────────── */
+  .topbar{display:flex;align-items:center;gap:16px;background:var(--indigo);color:#fff;padding:0 16px;height:56px;box-shadow:0 2px 4px rgba(0,0,0,.2);position:relative;z-index:30}
+  .brand{font-weight:600;font-size:18px;letter-spacing:.3px;white-space:nowrap}
+  .omni{position:relative;flex:1;max-width:620px}
+  .omni input{width:100%;height:38px;border:none;border-radius:6px;padding:0 12px 0 38px;font-size:14px;background:#fff}
+  .omni .mag{position:absolute;left:11px;top:9px;color:var(--muted);font-size:16px}
+  .user{margin-left:auto;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.15);padding:5px 10px;border-radius:18px;font-size:13px;cursor:pointer}
+  .user .av{width:24px;height:24px;border-radius:50%;background:#fff;color:var(--indigo);display:grid;place-items:center;font-weight:700;font-size:12px}
+
+  /* ── Omnibox dropdown ──────────────────────────────── */
+  .results{position:absolute;top:44px;left:0;right:0;background:#fff;color:var(--text);border-radius:8px;box-shadow:0 8px 28px rgba(0,0,0,.25);overflow:hidden}
+  .rgroup{font-size:11px;font-weight:700;letter-spacing:.6px;color:var(--muted);padding:8px 14px 4px;background:#fafafe}
+  .row{display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer}
+  .row:hover{background:#f3f4ff}
+  .badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--chip);color:var(--indigo-d)}
+  .rname{font-weight:500}
+  .rhint{margin-left:auto;font-size:11px;color:var(--muted)}
+  .addbtn{border:1px solid var(--indigo);color:var(--indigo);background:#fff;border-radius:5px;width:24px;height:24px;font-size:16px;font-weight:700;line-height:22px;text-align:center;cursor:pointer;padding:0}
+  .addbtn:hover{background:var(--indigo);color:#fff}
+
+  /* ── Body: sidebar + content ───────────────────────── */
+  .body{display:flex;flex:1;min-height:0}
+  .sidebar{width:232px;background:var(--card);border-right:1px solid var(--line);display:flex;flex-direction:column;overflow:auto}
+  .sbhead{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 6px;font-size:12px;font-weight:700;letter-spacing:.5px;color:var(--muted)}
+  .sbsearch{margin:0 12px 8px;height:30px;border:1px solid var(--line);border-radius:6px;padding:0 10px;font-size:12px;width:calc(100% - 24px)}
+  .sbgroup{font-size:10px;font-weight:700;color:var(--muted);padding:8px 16px 2px;letter-spacing:.5px}
+  .vitem{display:flex;align-items:center;gap:8px;padding:7px 16px;font-size:13px;cursor:pointer;border-left:3px solid transparent}
+  .vitem:hover{background:#f3f4ff}
+  .vitem.active{background:#eef0fb;border-left-color:var(--indigo);font-weight:600}
+  .vitem .dot{width:8px;height:8px;border-radius:50%}
+  .vmore{padding:8px 16px;font-size:12px;color:var(--indigo);cursor:pointer}
+
+  .content{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+
+  /* ── View control strip ────────────────────────────── */
+  .strip{display:flex;align-items:center;gap:14px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--card)}
+  .seg{display:flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+  .seg button{border:none;background:#fff;padding:7px 13px;font-size:13px;cursor:pointer;color:var(--muted)}
+  .seg button.on{background:var(--indigo);color:#fff;font-weight:600}
+  .datenav{display:flex;align-items:center;gap:6px}
+  .datenav button{border:1px solid var(--line);background:#fff;border-radius:6px;width:30px;height:30px;cursor:pointer;font-size:14px}
+  .datenav .today{width:auto;padding:0 12px;font-size:13px}
+  .kw{font-weight:600;font-size:14px;margin-left:4px}
+  .spacer{margin-left:auto;display:flex;gap:8px;color:var(--muted);font-size:13px;align-items:center}
+  .ghost{border:1px solid var(--line);background:#fff;border-radius:6px;padding:6px 11px;font-size:13px;cursor:pointer;color:var(--text)}
+
+  /* ── Chip rail ─────────────────────────────────────── */
+  .rail{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 16px;border-bottom:1px solid var(--line);background:#fbfbfe}
+  .rlabel{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.4px}
+  .chip{display:inline-flex;align-items:center;gap:7px;padding:5px 9px;border-radius:16px;font-size:13px;background:var(--chip);border:1px solid #d7dbf5}
+  .chip .cd{width:9px;height:9px;border-radius:50%}
+  .chip .x{cursor:pointer;color:var(--muted);font-weight:700}
+  .chip.anchor{outline:2px solid var(--indigo);outline-offset:0}
+  .railhint{font-size:11px;color:var(--muted);margin-left:auto}
+
+  /* ── Week grid ─────────────────────────────────────── */
+  .host{flex:1;overflow:auto;background:var(--card)}
+  .grid{display:grid;grid-template-columns:54px repeat(5,1fr);min-width:760px}
+  .ghead{position:sticky;top:0;background:#fff;border-bottom:2px solid var(--line);padding:8px 6px;text-align:center;font-size:12px;z-index:5}
+  .ghead .d{font-weight:700}.ghead .dt{color:var(--muted);font-size:11px}
+  .gutter{border-right:1px solid var(--line)}
+  .hour{height:64px;border-bottom:1px solid #f0f0f3;font-size:11px;color:var(--muted);text-align:right;padding:2px 6px 0 0}
+  .col{position:relative;border-right:1px solid #f0f0f3}
+  .col .hline{height:64px;border-bottom:1px solid #f4f4f7}
+  .ev{position:absolute;left:4px;right:4px;border-radius:6px;padding:5px 7px;font-size:11.5px;line-height:1.25;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.12);border-left:3px solid}
+  .ev b{display:block;font-weight:600;font-size:12px}
+  .ev .meta{color:rgba(0,0,0,.6);font-size:10.5px;margin-top:1px}
+  .legendnote{font-size:11px;color:var(--muted);padding:8px 16px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Top bar: brand · omnibox (open, demonstrating navigate vs +add) · user -->
+  <header class="topbar">
+    <div class="brand">Rapla</div>
+    <div class="omni">
+      <span class="mag">🔍</span>
+      <input value="TINF22" />
+      <div class="results">
+        <div class="rgroup">KOHORTEN</div>
+        <div class="row">
+          <span class="badge">Kohorte</span><span class="rname">TINF22</span>
+          <span class="rhint">↵ ankern → Woche</span>
+          <button class="addbtn" title="als Filter dazu">+</button>
+        </div>
+        <div class="row">
+          <span class="badge">Kohorte</span><span class="rname">TINF22-IPM</span>
+          <span class="rhint">↵ ankern → Woche</span>
+          <button class="addbtn">+</button>
+        </div>
+        <div class="rgroup">EVENTS</div>
+        <div class="row">
+          <span class="badge">Event</span><span class="rname">TINF22 · Datenbanken</span>
+          <span class="rhint">↵ springen</span>
+          <button class="addbtn">+</button>
+        </div>
+        <div class="rgroup">VIEWS</div>
+        <div class="row">
+          <span class="badge">View</span><span class="rname">TINF22 Wochenplan WS</span>
+          <span class="rhint">↵ öffnen</span>
+        </div>
+      </div>
+    </div>
+    <div class="user"><span class="av">A</span> admin ▾</div>
+  </header>
+
+  <div class="body">
+
+    <!-- Saved-View switcher: its OWN axis (separate from the omnibox) -->
+    <aside class="sidebar">
+      <div class="sbhead">GESPEICHERTE VIEWS <span class="vmore" style="padding:0">+</span></div>
+      <input class="sbsearch" placeholder="Views filtern…" />
+      <div class="sbgroup">ZULETZT</div>
+      <div class="vitem active"><span class="dot" style="background:var(--c1b)"></span>TINF22 — Woche</div>
+      <div class="vitem"><span class="dot" style="background:var(--c2b)"></span>Räume C-Bau</div>
+      <div class="vitem"><span class="dot" style="background:var(--c3b)"></span>Wochenprogramm</div>
+      <div class="sbgroup">MEINE</div>
+      <div class="vitem"><span class="dot" style="background:var(--c4b)"></span>WIB25 — Woche</div>
+      <div class="vitem"><span class="dot" style="background:var(--c2b)"></span>Prüfungen Januar</div>
+      <div class="vitem"><span class="dot" style="background:var(--c1b)"></span>Freie Räume KW25</div>
+      <div class="vmore">… 200 weitere</div>
+    </aside>
+
+    <main class="content">
+
+      <!-- View-specific controls: render-mode + date nav -->
+      <div class="strip">
+        <div class="seg">
+          <button class="on">Woche</button><button>Tabelle</button>
+          <button>Monat</button><button>Tag</button><button>Programm</button>
+        </div>
+        <div class="datenav">
+          <button>◀</button><button class="today">Heute</button><button>▶</button>
+          <span class="kw">KW 25 · 15.–19. Juni 2026</span>
+        </div>
+        <div class="spacer"><button class="ghost">Filter ⚙</button><button class="ghost">Export</button></div>
+      </div>
+
+      <!-- Chip rail: the chips ARE the live filter; anchor outlined -->
+      <div class="rail">
+        <span class="rlabel">ANSICHT:</span>
+        <span class="chip anchor"><span class="cd" style="background:var(--c1b)"></span>TINF22 <span class="x">✕</span></span>
+        <span class="chip"><span class="cd" style="background:var(--c2b)"></span>C348 <span class="x">✕</span></span>
+        <span class="chip"><span class="cd" style="background:var(--c4b)"></span>Prof. A <span class="x">✕</span></span>
+        <span class="railhint">Klick ↵ ersetzt (ankern) · + filtert dazu · „nur dieser" auf einem Chip</span>
+      </div>
+
+      <!-- View host: week grid -->
+      <div class="host">
+        <div class="grid">
+          <!-- header row -->
+          <div class="ghead"></div>
+          <div class="ghead"><div class="d">Mo</div><div class="dt">15.06.</div></div>
+          <div class="ghead"><div class="d">Di</div><div class="dt">16.06.</div></div>
+          <div class="ghead"><div class="d">Mi</div><div class="dt">17.06.</div></div>
+          <div class="ghead"><div class="d">Do</div><div class="dt">18.06.</div></div>
+          <div class="ghead"><div class="d">Fr</div><div class="dt">19.06.</div></div>
+
+          <!-- time gutter -->
+          <div class="gutter">
+            <div class="hour">08:00</div><div class="hour">09:00</div><div class="hour">10:00</div>
+            <div class="hour">11:00</div><div class="hour">12:00</div><div class="hour">13:00</div>
+            <div class="hour">14:00</div>
+          </div>
+
+          <!-- Mon -->
+          <div class="col">
+            <div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div>
+            <div class="ev" style="top:0;height:124px;background:var(--c1);border-color:var(--c1b)"><b>Programmieren II</b><span class="meta">08:00–10:00 · C348 · Prof. A</span></div>
+            <div class="ev" style="top:256px;height:90px;background:var(--c2);border-color:var(--c2b)"><b>Datenbanken</b><span class="meta">12:00–13:30 · C452 · Dr. B</span></div>
+          </div>
+          <!-- Tue -->
+          <div class="col">
+            <div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div>
+            <div class="ev" style="top:64px;height:90px;background:var(--c4);border-color:var(--c4b)"><b>Mathe II</b><span class="meta">09:00–10:30 · A474 · Prof. A</span></div>
+          </div>
+          <!-- Wed -->
+          <div class="col">
+            <div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div>
+            <div class="ev" style="top:128px;height:124px;background:var(--c1);border-color:var(--c1b)"><b>Programmieren II</b><span class="meta">10:00–12:00 · C348 · Prof. A</span></div>
+            <div class="ev" style="top:384px;height:58px;background:var(--c3);border-color:var(--c3b)"><b>Software Eng.</b><span class="meta">14:00–15:00 · B12</span></div>
+          </div>
+          <!-- Thu -->
+          <div class="col">
+            <div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div>
+            <div class="ev" style="top:0;height:90px;background:var(--c2);border-color:var(--c2b)"><b>Datenbanken</b><span class="meta">08:00–09:30 · C452 · Dr. B</span></div>
+            <div class="ev" style="top:192px;height:124px;background:var(--c4);border-color:var(--c4b)"><b>Mathe II</b><span class="meta">11:00–13:00 · A474 · Prof. A</span></div>
+          </div>
+          <!-- Fri -->
+          <div class="col">
+            <div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div>
+            <div class="ev" style="top:64px;height:90px;background:var(--c1);border-color:var(--c1b)"><b>Programmieren II</b><span class="meta">09:00–10:30 · C348 · Prof. A</span></div>
+          </div>
+        </div>
+        <div class="legendnote">Farbe = Kategorie (kategorie/farben). Anker TINF22 + Filter-Chips C348, Prof. A bestimmen, was die Woche zeigt.</div>
+      </div>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>

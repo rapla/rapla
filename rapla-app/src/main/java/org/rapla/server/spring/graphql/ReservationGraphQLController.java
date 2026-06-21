@@ -319,11 +319,12 @@ public class ReservationGraphQLController
         for (BlockGroupKey g : groups)
         {
             int dimCount = (g.date() != null ? 1 : 0) + (g.allocatables() != null ? 1 : 0)
-                    + (g.expr() != null && !g.expr().isBlank() ? 1 : 0);
+                    + (g.expr() != null && !g.expr().isBlank() ? 1 : 0)
+                    + (Boolean.TRUE.equals(g.reservation()) ? 1 : 0);
             if (dimCount != 1)
             {
                 throw new IllegalArgumentException(
-                        "groupBy entry needs exactly one of date/allocatables/expr (key=" + g.key() + ")");
+                        "groupBy entry needs exactly one of date/allocatables/expr/reservation (key=" + g.key() + ")");
             }
         }
         List<Reservation> visible = reservations(filter, env);
@@ -360,7 +361,7 @@ public class ReservationGraphQLController
                     for (List<Object> combo : cartesian(dims))
                     {
                         StringBuilder keyStr = new StringBuilder();
-                        for (Object v : combo) keyStr.append(v).append('');
+                        for (Object v : combo) keyStr.append(((DimVal) v).value()).append((char) 1);
                         StatBucketAcc acc = buckets.get(keyStr.toString());
                         if (acc == null)
                         {
@@ -368,7 +369,8 @@ public class ReservationGraphQLController
                             List<StatKey> keys = new ArrayList<>(groups.size());
                             for (int gi = 0; gi < groups.size(); gi++)
                             {
-                                keys.add(new StatKey(groups.get(gi).key(), String.valueOf(combo.get(gi))));
+                                DimVal dv = (DimVal) combo.get(gi);
+                                keys.add(new StatKey(groups.get(gi).key(), dv.value(), dv.entity()));
                             }
                             acc = new StatBucketAcc(keys, nAgg);
                             buckets.put(keyStr.toString(), acc);
@@ -404,6 +406,270 @@ public class ReservationGraphQLController
             out = new ArrayList<>(out.subList(0, limit));
         }
         return out;
+    }
+
+    /**
+     * PRD 080 item 6 — grouped/bucketed analytics over the §12-visible ALLOCATABLE population
+     * (resources/persons), not over bookings. Iterates the filtered allocatable set (reusing the
+     * {@code allocatables(filter:)} resolver — same §12 canRead gate + typed where + access filters),
+     * groups by DynamicType / custom expr / the allocatable itself, and reduces into the shared
+     * {@link BlockStatBucket} result. e.g. "seats per building". {@code self} dimension carries the
+     * Allocatable as {@code StatKey.entity}.
+     */
+    @QueryMapping
+    public List<BlockStatBucket> allocatableStats(
+            @Argument("filter") java.util.Map<String, Object> filter,
+            @Argument("groupBy") List<AllocatableGroupKey> groupBy,
+            @Argument("aggregate") List<AllocatableAggregate> aggregate,
+            @Argument("limit") Integer limit,
+            graphql.schema.DataFetchingEnvironment env) throws RaplaException
+    {
+        List<AllocatableGroupKey> groups = groupBy == null ? List.of() : groupBy;
+        List<AllocatableAggregate> aggs = aggregate == null ? List.of() : aggregate;
+        for (AllocatableGroupKey g : groups)
+        {
+            int dimCount = (Boolean.TRUE.equals(g.type()) ? 1 : 0)
+                    + (g.expr() != null && !g.expr().isBlank() ? 1 : 0)
+                    + (Boolean.TRUE.equals(g.self()) ? 1 : 0);
+            if (dimCount != 1)
+            {
+                throw new IllegalArgumentException(
+                        "allocatableStats groupBy entry needs exactly one of type/expr/self (key=" + g.key() + ")");
+            }
+        }
+        var rc = RequestContextInstrumentation.from(env.getGraphQlContext());
+        User caller = rc.caller();
+        // §12-gated, filtered allocatable set (same resolver as Query.allocatables).
+        List<Allocatable> visible = classificationController.allocatables(filter);
+        int nAgg = aggs.size();
+        final int maxBuckets = 5000;
+        java.util.Map<String, StatBucketAcc> buckets = new java.util.LinkedHashMap<>();
+        for (Allocatable alloc : visible)
+        {
+            if (alloc == null) continue;
+            List<List<Object>> dims = new ArrayList<>(groups.size());
+            boolean skip = false;
+            for (AllocatableGroupKey g : groups)
+            {
+                List<Object> vals = allocGroupValues(g, alloc, caller);
+                if (vals.isEmpty()) { skip = true; break; }
+                dims.add(vals);
+            }
+            if (skip) continue;
+            for (List<Object> combo : cartesian(dims))
+            {
+                StringBuilder keyStr = new StringBuilder();
+                for (Object v : combo) keyStr.append(((DimVal) v).value()).append((char) 1);
+                StatBucketAcc acc = buckets.get(keyStr.toString());
+                if (acc == null)
+                {
+                    if (buckets.size() >= maxBuckets) continue;
+                    List<StatKey> keys = new ArrayList<>(groups.size());
+                    for (int gi = 0; gi < groups.size(); gi++)
+                    {
+                        DimVal dv = (DimVal) combo.get(gi);
+                        keys.add(new StatKey(groups.get(gi).key(), dv.value(), dv.entity()));
+                    }
+                    acc = new StatBucketAcc(keys, nAgg);
+                    buckets.put(keyStr.toString(), acc);
+                }
+                acc.count++;
+                for (int i = 0; i < nAgg; i++)
+                {
+                    Double v = entityMetricValue(aggs.get(i).fn(), aggs.get(i).expr(), alloc, caller);
+                    if (v != null)
+                    {
+                        acc.sum[i] += v; acc.cnt[i]++;
+                        if (v < acc.min[i]) acc.min[i] = v;
+                        if (v > acc.max[i]) acc.max[i] = v;
+                    }
+                }
+            }
+        }
+        List<BlockStatBucket> out = new ArrayList<>(buckets.size());
+        for (StatBucketAcc acc : buckets.values())
+        {
+            List<StatValue> values = new ArrayList<>(nAgg);
+            for (int i = 0; i < nAgg; i++)
+            {
+                values.add(statResultGeneric(aggs.get(i).key(), aggs.get(i).fn(),
+                        acc.sum[i], acc.cnt[i], acc.min[i], acc.max[i]));
+            }
+            out.add(new BlockStatBucket(acc.keys, values, (int) acc.count));
+        }
+        out.sort(java.util.Comparator.comparing(bk -> bk.keys().toString()));
+        if (limit != null && limit > 0 && out.size() > limit)
+        {
+            out = new ArrayList<>(out.subList(0, limit));
+        }
+        return out;
+    }
+
+    /**
+     * PRD 080 item 7 — grouped/bucketed analytics over the §12-visible RESERVATION set in the window
+     * (reuses {@link #reservations} for gating/window/search), grouped by DynamicType / custom expr /
+     * the reservation itself, reduced into the shared {@link BlockStatBucket}. {@code self} dimension
+     * carries the Reservation as {@code StatKey.entity}. e.g. "events per course type".
+     */
+    @QueryMapping
+    public List<BlockStatBucket> reservationStats(@Argument("filter") ReservationFilter filter,
+            @Argument("groupBy") List<ReservationGroupKey> groupBy,
+            @Argument("aggregate") List<ReservationAggregate> aggregate,
+            @Argument("limit") Integer limit,
+            graphql.schema.DataFetchingEnvironment env) throws RaplaException
+    {
+        List<ReservationGroupKey> groups = groupBy == null ? List.of() : groupBy;
+        List<ReservationAggregate> aggs = aggregate == null ? List.of() : aggregate;
+        for (ReservationGroupKey g : groups)
+        {
+            int dimCount = (Boolean.TRUE.equals(g.type()) ? 1 : 0)
+                    + (g.expr() != null && !g.expr().isBlank() ? 1 : 0)
+                    + (Boolean.TRUE.equals(g.self()) ? 1 : 0);
+            if (dimCount != 1)
+            {
+                throw new IllegalArgumentException(
+                        "reservationStats groupBy entry needs exactly one of type/expr/self (key=" + g.key() + ")");
+            }
+        }
+        List<Reservation> visible = reservations(filter, env);
+        var rc = RequestContextInstrumentation.from(env.getGraphQlContext());
+        User caller = rc.caller();
+        int nAgg = aggs.size();
+        final int maxBuckets = 5000;
+        java.util.Map<String, StatBucketAcc> buckets = new java.util.LinkedHashMap<>();
+        for (Reservation r : visible)
+        {
+            if (r == null) continue;
+            List<List<Object>> dims = new ArrayList<>(groups.size());
+            boolean skip = false;
+            for (ReservationGroupKey g : groups)
+            {
+                List<Object> vals = reservationGroupValues(g, r, caller);
+                if (vals.isEmpty()) { skip = true; break; }
+                dims.add(vals);
+            }
+            if (skip) continue;
+            for (List<Object> combo : cartesian(dims))
+            {
+                StringBuilder keyStr = new StringBuilder();
+                for (Object v : combo) keyStr.append(((DimVal) v).value()).append((char) 1);
+                StatBucketAcc acc = buckets.get(keyStr.toString());
+                if (acc == null)
+                {
+                    if (buckets.size() >= maxBuckets) continue;
+                    List<StatKey> keys = new ArrayList<>(groups.size());
+                    for (int gi = 0; gi < groups.size(); gi++)
+                    {
+                        DimVal dv = (DimVal) combo.get(gi);
+                        keys.add(new StatKey(groups.get(gi).key(), dv.value(), dv.entity()));
+                    }
+                    acc = new StatBucketAcc(keys, nAgg);
+                    buckets.put(keyStr.toString(), acc);
+                }
+                acc.count++;
+                for (int i = 0; i < nAgg; i++)
+                {
+                    Double v = entityMetricValue(aggs.get(i).fn(), aggs.get(i).expr(), r, caller);
+                    if (v != null)
+                    {
+                        acc.sum[i] += v; acc.cnt[i]++;
+                        if (v < acc.min[i]) acc.min[i] = v;
+                        if (v > acc.max[i]) acc.max[i] = v;
+                    }
+                }
+            }
+        }
+        List<BlockStatBucket> out = new ArrayList<>(buckets.size());
+        for (StatBucketAcc acc : buckets.values())
+        {
+            List<StatValue> values = new ArrayList<>(nAgg);
+            for (int i = 0; i < nAgg; i++)
+            {
+                values.add(statResultGeneric(aggs.get(i).key(), aggs.get(i).fn(),
+                        acc.sum[i], acc.cnt[i], acc.min[i], acc.max[i]));
+            }
+            out.add(new BlockStatBucket(acc.keys, values, (int) acc.count));
+        }
+        out.sort(java.util.Comparator.comparing(bk -> bk.keys().toString()));
+        if (limit != null && limit > 0 && out.size() > limit)
+        {
+            out = new ArrayList<>(out.subList(0, limit));
+        }
+        return out;
+    }
+
+    /** PRD 080 — group-dimension values for an allocatable (type name / expr string / self entity). */
+    private static List<Object> allocGroupValues(AllocatableGroupKey g, Allocatable alloc, User caller)
+    {
+        if (Boolean.TRUE.equals(g.self()))
+        {
+            return List.of(new DimVal(alloc.getName(StructuralTypeFetchers.serverLocale()), alloc));
+        }
+        if (g.expr() != null && !g.expr().isBlank())
+        {
+            String v = StructuralTypeFetchers.computeEntityExpr(alloc, g.expr(), caller);
+            return v == null ? List.of() : List.of(new DimVal(v, null));
+        }
+        if (Boolean.TRUE.equals(g.type()))
+        {
+            var t = alloc.getClassification() == null ? null : alloc.getClassification().getType();
+            if (t == null) return List.of();
+            return List.of(new DimVal(t.getName(StructuralTypeFetchers.serverLocale()), null));
+        }
+        return List.of();
+    }
+
+    /** PRD 080 — group-dimension values for a reservation (type name / expr string / self entity). */
+    private static List<Object> reservationGroupValues(ReservationGroupKey g, Reservation r, User caller)
+    {
+        if (Boolean.TRUE.equals(g.self()))
+        {
+            return List.of(new DimVal(r.getName(StructuralTypeFetchers.serverLocale()), r));
+        }
+        if (g.expr() != null && !g.expr().isBlank())
+        {
+            String v = StructuralTypeFetchers.computeEntityExpr(r, g.expr(), caller);
+            return v == null ? List.of() : List.of(new DimVal(v, null));
+        }
+        if (Boolean.TRUE.equals(g.type()))
+        {
+            var t = r.getClassification() == null ? null : r.getClassification().getType();
+            if (t == null) return List.of();
+            return List.of(new DimVal(t.getName(StructuralTypeFetchers.serverLocale()), null));
+        }
+        return List.of();
+    }
+
+    /**
+     * PRD 080 — numeric metric value for an entity (allocatable/reservation) stat. COUNT contributes
+     * 1 per row (the {@code cnt} accumulator becomes the bucket population); SUM/MEAN/MIN/MAX coerce
+     * the {@code expr} result to a double (canonical '.' decimal; ',' tolerated). Null = skipped.
+     */
+    private static Double entityMetricValue(AggregateFn fn, String expr, Object entity, User caller)
+    {
+        if (fn == AggregateFn.COUNT) return 1.0;
+        if (expr == null || expr.isBlank()) return null;
+        String r = StructuralTypeFetchers.computeEntityExpr(entity, expr, caller);
+        if (r == null || r.isBlank()) return null;
+        try { return Double.valueOf(r.trim().replace(',', '.')); } catch (NumberFormatException e) { return null; }
+    }
+
+    /** PRD 080 — function → StatValue for the entity families (no plugin-formatted text). */
+    private static StatValue statResultGeneric(String key, AggregateFn fn,
+            double sum, long cnt, double min, double max)
+    {
+        if (fn == AggregateFn.COUNT) return new StatValue(key, (double) cnt, null);
+        if (cnt == 0) return new StatValue(key, null, null);
+        double raw = switch (fn)
+        {
+            case SUM  -> sum;
+            case MEAN -> sum / cnt;
+            case MIN  -> min;
+            case MAX  -> max;
+            default    -> Double.NaN;
+        };
+        if (Double.isNaN(raw)) return new StatValue(key, null, null);
+        return new StatValue(key, (double) Math.round(raw), null);
     }
 
     /**
@@ -461,24 +727,33 @@ public class ReservationGraphQLController
     private static List<Object> statGroupValues(BlockGroupKey g, AppointmentBlockDto dto, AppointmentBlock b,
             org.rapla.entities.User caller, PermissionController pc, StorageOperator operator)
     {
+        // PRD 080 item 3 — reservation dimension: group by the block's event; entity = Reservation.
+        if (Boolean.TRUE.equals(g.reservation()))
+        {
+            Reservation r = dto.reservation();
+            if (r == null) return List.of();
+            return List.of(new DimVal(r.getName(StructuralTypeFetchers.serverLocale()), r));
+        }
         if (g.expr() != null && !g.expr().isBlank())
         {
             String v = StructuralTypeFetchers.computeBlockExpr(b, g.expr(), caller);
-            return v == null ? List.of() : List.of(v);
+            return v == null ? List.of() : List.of(new DimVal(v, null));
         }
         if (g.date() != null)
         {
             LocalDateTime t = g.date() == BlockDateField.END ? dto.end() : dto.start();
             String bucket = timeBucket(t, g.by() == null ? null : g.by().name());
-            return bucket == null ? List.of() : List.of(bucket);
+            return bucket == null ? List.of() : List.of(new DimVal(bucket, null));
         }
         if (g.allocatables() != null)
         {
+            // PRD 080 items 1/2 — entity dimension: each §12-readable allocatable becomes a bucket
+            // key carrying the real Allocatable (selectable as StatKey.entity).
             List<Object> out = new ArrayList<>();
             for (Allocatable alloc : StructuralTypeFetchers.filterAllocatables(
                     dto.appointment(), caller, pc, g.allocatables(), operator))
             {
-                out.add(alloc.getName(StructuralTypeFetchers.serverLocale()));
+                out.add(new DimVal(alloc.getName(StructuralTypeFetchers.serverLocale()), alloc));
             }
             return out;
         }
@@ -537,13 +812,28 @@ public class ReservationGraphQLController
 
     /** One grouping dimension (exactly one of date/allocatables/expr), mirrors input {@code BlockGroupKey}. */
     public record BlockGroupKey(String key, BlockDateField date, TimeBucket by,
-            java.util.Map<String, Object> allocatables, String expr) {}
+            java.util.Map<String, Object> allocatables, String expr, Boolean reservation) {}
+
+    /** Internal: one resolved group-dimension value — display string + optional typed entity (PRD 080). */
+    private record DimVal(String value, Object entity) {}
 
     /** One metric spec, mirrors input {@code BlockAggregate}. */
     public record BlockAggregate(String key, BlockMetricField field, String expr, AggregateFn fn) {}
 
+    /** PRD 080 item 6 — one allocatable grouping dimension, mirrors input {@code AllocatableGroupKey}. */
+    public record AllocatableGroupKey(String key, Boolean type, String expr, Boolean self) {}
+
+    /** PRD 080 item 6 — one allocatable metric, mirrors input {@code AllocatableAggregate}. */
+    public record AllocatableAggregate(String key, String expr, AggregateFn fn) {}
+
+    /** PRD 080 item 7 — one reservation grouping dimension, mirrors input {@code ReservationGroupKey}. */
+    public record ReservationGroupKey(String key, Boolean type, String expr, Boolean self) {}
+
+    /** PRD 080 item 7 — one reservation metric, mirrors input {@code ReservationAggregate}. */
+    public record ReservationAggregate(String key, String expr, AggregateFn fn) {}
+
     /** One bucket dimension key/value, mirrors output {@code StatKey}. */
-    public record StatKey(String key, String value) {}
+    public record StatKey(String key, String value, Object entity) {}
 
     /** One aggregate result: {@code number} always; {@code text} = plugin-formatted (DURATION_UNIT). */
     public record StatValue(String key, Double number, String text) {}

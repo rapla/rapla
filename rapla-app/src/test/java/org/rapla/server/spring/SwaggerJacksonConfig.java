@@ -8,12 +8,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.core.jackson.ModelResolver;
 import io.swagger.v3.core.util.Json;
-import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.framework.DefaultConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.util.Map;
 
 /**
  * Field-based ModelResolver for swagger-core's schema introspection.
@@ -65,18 +62,21 @@ public class SwaggerJacksonConfig
                 .withCreatorVisibility(Visibility.ANY));
         mapper.enable(MapperFeature.PROPAGATE_TRANSIENT_MARKER);
 
-        // Suppress "Conflicting setter definitions" warnings for classes with
-        // overloaded setters. Mixins are scoped to THIS ObjectMapper only —
-        // rapla-core's entity classes stay clean of Jackson annotations, and
-        // the Jackson 3 runtime mapper never sees the @JsonIgnore on the
-        // mixin abstract methods. Adding a class here requires:
-        //   1. an abstract mixin with the conflicting setter signatures
-        //      annotated @JsonIgnore (see the two below);
+        // Suppress "Conflicting setter definitions" warnings/throws for classes with
+        // overloaded setters that collide on a bean-property name. Mixins are scoped to THIS
+        // ObjectMapper only — rapla-core's entity classes stay clean of Jackson annotations, and
+        // the Jackson 3 runtime mapper never sees the @JsonIgnore on the mixin abstract methods.
+        // Adding a class here requires:
+        //   1. an abstract mixin with the conflicting setter signatures annotated @JsonIgnore
+        //      (see the one below);
         //   2. a mapper.addMixIn(realClass, mixinClass) call.
-        // See docs/architecture/rest-api.md §"OpenAPI / Swagger spec caveat"
-        // for the broader rationale.
+        // PREFER fixing the collision at the source (rename the non-interface overload) over a
+        // mixin: the mixin only covers THIS mapper, not springdoc's PolymorphicModelConverter,
+        // which introspects with its own setter-visible mapper and THROWS — silently gutting the
+        // affected schema (RaplaMapImpl's setResolver(Map) once gutted UpdateEvent + the whole
+        // /api/storage surface; fixed by renaming it to applyResolverTo(Map)). See
+        // docs/architecture/rest-api.md §"OpenAPI / Swagger spec caveat" for the broader rationale.
         mapper.addMixIn(DefaultConfiguration.class, DefaultConfigurationSwaggerMixin.class);
-        mapper.addMixIn(RaplaMapImpl.class, RaplaMapImplSwaggerMixin.class);
 
         ModelResolver resolver = new ModelResolver(mapper);
         ModelConverters.getInstance().addConverter(resolver);
@@ -106,15 +106,10 @@ public class SwaggerJacksonConfig
         @JsonIgnore abstract void setValue(boolean selected);
     }
 
-    /**
-     * Swagger-only mixin for {@link RaplaMapImpl}. Two {@code setResolver(...)}
-     * overloads — public {@code (EntityResolver)} and private
-     * {@code (Map<String, ? extends EntityReferencer>)} — collide on the
-     * "resolver" property name. The map overload is an internal helper, never
-     * the JSON-serialization target; hidden here from swagger introspection.
-     */
-    abstract static class RaplaMapImplSwaggerMixin
-    {
-        @JsonIgnore abstract void setResolver(Map<String, ?> map);
-    }
+    // A sibling RaplaMapImplSwaggerMixin used to live here for the
+    // setResolver(Map) vs setResolver(EntityResolver) collision. It was removed
+    // once the private overload was renamed to applyResolverTo(Map) at the source
+    // — a rename beats a mixin because it also covers springdoc's
+    // PolymorphicModelConverter, which a mixin does not (that gap silently gutted
+    // the UpdateEvent schema + the whole /api/storage surface until the rename).
 }

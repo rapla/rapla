@@ -1504,6 +1504,237 @@ class ReservationGraphQLControllerTest
         assertEquals("all", keys.get(0).get("value"), "bucket key = the constant expr result");
     }
 
+    /**
+     * PRD 080 items 1/2 — an allocatable group dimension carries the typed entity in
+     * StatKey.entity (Allocatable), selectable like a normal object (here displayName).
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void blockStatsAllocatableDimensionCarriesEntity()
+    {
+        List<Map<String, Object>> buckets = tester.document("""
+                query {
+                  appointmentBlockStats(
+                    filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" },
+                    groupBy:   [ { key: "raum", allocatables: { typeKeyIn: ["room"] } } ],
+                    aggregate: [ { key: "n", field: DURATION_MINUTES, fn: COUNT } ]
+                  ) { keys { value entity { __typename ... on Allocatable { displayName } } } }
+                }
+                """)
+                .execute().path("appointmentBlockStats")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
+        assertFalse(buckets.isEmpty(), "fixture should have room-grouped buckets");
+        for (Map<String, Object> bk : buckets)
+        {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> key0 = ((List<Map<String, Object>>) bk.get("keys")).get(0);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> entity = (Map<String, Object>) key0.get("entity");
+            assertNotNull(entity, () -> "allocatable dimension must carry entity; got " + bk);
+            assertEquals("Allocatable", entity.get("__typename"), "entity is an Allocatable");
+            assertEquals(key0.get("value"), entity.get("displayName"),
+                    () -> "entity.displayName must equal the key value; got " + bk);
+        }
+    }
+
+    /**
+     * PRD 080 item 3 — `reservation: true` groups blocks by their event; StatKey.entity is the
+     * typed Reservation, selectable.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void blockStatsReservationDimensionCarriesEntity()
+    {
+        List<Map<String, Object>> buckets = tester.document("""
+                query {
+                  appointmentBlockStats(
+                    filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" },
+                    groupBy:   [ { key: "event", reservation: true } ],
+                    aggregate: [ { key: "n", field: DURATION_MINUTES, fn: COUNT } ]
+                  ) { count keys { value entity { __typename ... on Reservation { id } } } }
+                }
+                """)
+                .execute().path("appointmentBlockStats")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
+        assertFalse(buckets.isEmpty(), "fixture should produce reservation buckets");
+        Map<String, Object> bk = buckets.get(0);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> key0 = ((List<Map<String, Object>>) bk.get("keys")).get(0);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> entity = (Map<String, Object>) key0.get("entity");
+        assertNotNull(entity, () -> "reservation dimension must carry entity; got " + bk);
+        assertEquals("Reservation", entity.get("__typename"), "entity is a Reservation");
+        assertNotNull(entity.get("id"), "reservation entity has an id");
+    }
+
+    /**
+     * PRD 080 item 6 — allocatableStats groups the §12-visible allocatable population by DynamicType
+     * and counts; COUNT needs no expr. The fixture has room allocatables, so a "room" bucket exists.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void allocatableStatsGroupByTypeCounts()
+    {
+        List<Map<String, Object>> buckets = tester.document("""
+                query {
+                  allocatableStats(
+                    groupBy:   [ { key: "typ", type: true } ],
+                    aggregate: [ { key: "n", fn: COUNT } ]
+                  ) { count keys { key value } values { key number } }
+                }
+                """)
+                .execute().path("allocatableStats")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
+        assertFalse(buckets.isEmpty(), "fixture should produce type-grouped allocatable buckets");
+        for (Map<String, Object> bk : buckets)
+        {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> key0 = ((List<Map<String, Object>>) bk.get("keys")).get(0);
+            assertEquals("typ", key0.get("key"));
+            assertNotNull(key0.get("value"), "type bucket has a value (the type name)");
+            @SuppressWarnings("unchecked")
+            Map<String, Object> val0 = ((List<Map<String, Object>>) bk.get("values")).get(0);
+            // COUNT value == the bucket count (population of this type).
+            assertEquals(((Number) bk.get("count")).intValue(),
+                    ((Number) val0.get("number")).intValue(), "COUNT metric == bucket count");
+            assertTrue(((Number) bk.get("count")).intValue() > 0, "non-empty type bucket");
+        }
+    }
+
+    /**
+     * PRD 080 item 6 — `self: true` carries the typed Allocatable in StatKey.entity, selectable
+     * (here displayName); filtered to one type to keep the bucket set bounded.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void allocatableStatsSelfDimensionCarriesEntity()
+    {
+        List<Map<String, Object>> buckets = tester.document("""
+                query {
+                  allocatableStats(
+                    filter:    { typeKeyIn: ["room"] },
+                    groupBy:   [ { key: "res", self: true } ],
+                    aggregate: [ { key: "n", fn: COUNT } ]
+                  ) { keys { value entity { __typename ... on Allocatable { displayName } } } }
+                }
+                """)
+                .execute().path("allocatableStats")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
+        assertFalse(buckets.isEmpty(), "fixture should have room allocatables");
+        for (Map<String, Object> bk : buckets)
+        {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> key0 = ((List<Map<String, Object>>) bk.get("keys")).get(0);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> entity = (Map<String, Object>) key0.get("entity");
+            assertNotNull(entity, () -> "self dimension must carry entity; got " + bk);
+            assertEquals("Allocatable", entity.get("__typename"));
+            assertEquals(key0.get("value"), entity.get("displayName"),
+                    () -> "entity.displayName must equal the key value; got " + bk);
+        }
+    }
+
+    /**
+     * PRD 080 item 7 — reservationStats groups the §12-visible reservation set in the window by
+     * DynamicType and counts.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void reservationStatsGroupByTypeCounts()
+    {
+        List<Map<String, Object>> buckets = tester.document("""
+                query {
+                  reservationStats(
+                    filter:    { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" },
+                    groupBy:   [ { key: "typ", type: true } ],
+                    aggregate: [ { key: "n", fn: COUNT } ]
+                  ) { count keys { key value } values { key number } }
+                }
+                """)
+                .execute().path("reservationStats")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
+        assertFalse(buckets.isEmpty(), "fixture should produce type-grouped reservation buckets");
+        for (Map<String, Object> bk : buckets)
+        {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> val0 = ((List<Map<String, Object>>) bk.get("values")).get(0);
+            assertEquals(((Number) bk.get("count")).intValue(),
+                    ((Number) val0.get("number")).intValue(), "COUNT metric == bucket count");
+        }
+    }
+
+    /**
+     * PRD 080 item 7 — `self: true` carries the typed Reservation in StatKey.entity.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void reservationStatsSelfDimensionCarriesEntity()
+    {
+        List<Map<String, Object>> buckets = tester.document("""
+                query {
+                  reservationStats(
+                    filter:    { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" },
+                    groupBy:   [ { key: "ev", self: true } ],
+                    aggregate: [ { key: "n", fn: COUNT } ]
+                  ) { keys { value entity { __typename ... on Reservation { id } } } }
+                }
+                """)
+                .execute().path("reservationStats")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
+        assertFalse(buckets.isEmpty(), "fixture should produce reservation buckets");
+        Map<String, Object> bk = buckets.get(0);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> key0 = ((List<Map<String, Object>>) bk.get("keys")).get(0);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> entity = (Map<String, Object>) key0.get("entity");
+        assertNotNull(entity, () -> "self dimension must carry entity; got " + bk);
+        assertEquals("Reservation", entity.get("__typename"));
+        assertNotNull(entity.get("id"), "reservation entity has an id");
+    }
+
+    /**
+     * PRD 080 — generic resource lanes: two aliased {@code allocatables(filter:{isPersonEq:…})}
+     * columns split Personen / Nicht-Personen without any instance-specific type key, and each
+     * allocatable exposes the universal {@code isPerson} / {@code isLocation} flags.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void blockAllocatablesPersonNonPersonLanesAndFlags()
+    {
+        List<Map<String, Object>> blocks = tester.document("""
+                query {
+                  appointmentBlocks(filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" }) {
+                    personen:      allocatables(filter: { isPersonEq: true })  { id isPerson isLocation }
+                    nichtPersonen: allocatables(filter: { isPersonEq: false }) { id isPerson isLocation }
+                  }
+                }
+                """)
+                .execute().path("appointmentBlocks")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
+        assertFalse(blocks.isEmpty(), "fixture should produce blocks");
+        boolean sawPerson = false, sawNonPerson = false;
+        for (Map<String, Object> blk : blocks)
+        {
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> persons = (List<Map<String, Object>>) blk.get("personen");
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> others = (List<Map<String, Object>>) blk.get("nichtPersonen");
+            for (Map<String, Object> p : persons)
+            {
+                assertEquals(Boolean.TRUE, p.get("isPerson"), "isPersonEq:true lane must be persons only");
+                assertNotNull(p.get("isLocation"), "isLocation is non-null boolean");
+                sawPerson = true;
+            }
+            for (Map<String, Object> o : others)
+            {
+                assertEquals(Boolean.FALSE, o.get("isPerson"), "isPersonEq:false lane must be non-persons only");
+                assertNotNull(o.get("isLocation"), "isLocation is non-null boolean");
+                sawNonPerson = true;
+            }
+        }
+        assertTrue(sawPerson || sawNonPerson, "fixture blocks should allocate at least one allocatable");
+    }
+
     /** No @view → no extensions.view (zero overhead for plain queries). */
     @Test
     @WithMockUser(username = "homer", roles = "ADMIN")

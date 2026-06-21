@@ -1023,12 +1023,23 @@ query Termine @view(title: "Termine KW") {
 > - **Stufe b — expr metrics.** `BlockAggregate` gains `expr` (numeric; `field` now optional). `metricValue`
 >   evaluates the expr (`computeBlockExpr`) and coerces the result to a double (canonical `.`); non-numeric/
 >   formatted results are skipped → feeds the existing reduction. Constant/numeric exprs work now.
+> - **a — reference by name.** `AllocatableWhere` gains `nameContains` → filter a reference by the
+>   referenced entity's display name in ONE query (`whereRaum: { Gebaeude: { nameContains: "MOS" } }`).
+> - **b — typed reference recursion (PRD 059/065).** Reference attributes with a `KEY_DYNAMIC_TYPE`
+>   constraint now generate a `<RefType>RefWhere` ( `eq/ne/in/isNull/nameContains` + `where: <RefType>Where` )
+>   and the field targets it. `WhereEvaluator` resolves the referenced allocatable, **§12-`canRead`-gates it**
+>   (caller/pc threaded through evaluate→…→matchAllocatable; hidden ref ⇒ row dropped, no attribute leak),
+>   then recurses into its typed `where` (depth-capped). → filter rooms by the building's OWN typed
+>   attributes, e.g. `whereRaum: { Gebaeude: { Standort: { eq: "Mosbach" } } }`. **Schema cost bounded**:
+>   one small `<T>RefWhere` per referenced allocatable type. **Test caveat:** the unit fixture
+>   (`testdefault.xml`) has no allocatable-reference attribute → b is inert there (no regression; 53 green),
+>   so the recursion is **verified live** against dhbw (`Raum.Gebaeude`) after a server restart — owed: a
+>   fixture with a reference attribute for a tier-2/3 b regression + §12-leak test.
 >
 > **Remaining (server):** the `ComputeFunctions` SDL catalog (PRD 073 descriptor-SPI). **Deferred:**
 > **Stufe c** — in-expression arithmetic (`add/sub/mul/div`), the EL number-model (PRD 073), which then
-> serves all expr surfaces; Mosbach "filter referenced building by name" (nested where on the `Gebaeude`
-> reference — `AllocatableWhere` is id-only today); persistence / SavedView / switching / week-month →
-> PRD 077; the Angular table renderer → PRD 078.
+> serves all expr surfaces; persistence / SavedView / switching / week-month → PRD 077; the Angular
+> table renderer → PRD 078.
 
 1. **Phase 1 — Generator + render-meta.** Compile col annotations → server-evaluated
    composition fields (reuse `ParsedText`) + GraphQL filters; the `@view` directive +

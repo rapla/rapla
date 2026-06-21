@@ -360,6 +360,20 @@ public final class ClassificationSdlGenerator
             appendEnumWhereInputs(sb, e.getKey());
         }
 
+        // PRD 074 b — pre-pass: which DT keys get a <T>Where, so a reference field can target the
+        // referenced type's <refKey>RefWhere (typed recursive where). Computed before emission
+        // because reference fields in a <T>Where need to know the target set.
+        Set<String> whereTypeNames = new java.util.LinkedHashSet<>();
+        for (DynamicType dt : sortedByKey(dynamicTypes))
+        {
+            if (dt == null || isRaplaInternal(dt)) continue;
+            String kind = dt.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
+            if (!DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE.equals(kind)
+                    && !DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON.equals(kind)) continue;
+            String key = dt.getKey();
+            if (key != null && !key.isBlank()) whereTypeNames.add(checkGraphQlCompliantName(key));
+        }
+
         Set<String> emittedWhereNames = new HashSet<>();
         List<String> filterExtensionLines = new ArrayList<>();
         for (DynamicType dt : sortedByKey(dynamicTypes))
@@ -380,7 +394,8 @@ public final class ClassificationSdlGenerator
                 LOGGER.warn("DynamicType '{}': where input '{}' name collision; skipping", key, whereName);
                 continue;
             }
-            appendTypeWhereInput(sb, whereName, dt, valueListEnums);
+            appendTypeWhereInput(sb, whereName, dt, valueListEnums, whereTypeNames);
+            appendRefWhereInput(sb, checkGraphQlCompliantName(key));   // PRD 074 b — <type>RefWhere
             String fieldName = "where" + capitalizeFirst(checkGraphQlCompliantName(key));
             filterExtensionLines.add("  " + fieldName + ": " + whereName);
         }
@@ -423,9 +438,29 @@ public final class ClassificationSdlGenerator
         sb.append("}\n\n");
     }
 
+    /**
+     * PRD 074 b — emit `<typeName>RefWhere`: the filter for an allocatable-REFERENCE attribute that
+     * points to this type. Carries id/name predicates (`eq`/`ne`/`in`/`isNull`/`nameContains`) plus
+     * a typed nested `where: <typeName>Where` to filter the referenced entity by its OWN attributes
+     * (e.g. rooms by their building's Standort). Resolved §12-gated in WhereEvaluator.
+     */
+    private static void appendRefWhereInput(StringBuilder sb, String typeName)
+    {
+        sb.append("\"PRD 074 b — filter an allocatable reference to `").append(typeName)
+          .append("` by id/name, or recurse into its attributes via `where`.\"\n");
+        sb.append("input ").append(typeName).append("RefWhere {\n");
+        sb.append("  eq:           ID\n");
+        sb.append("  ne:           ID\n");
+        sb.append("  in:           [ID!]\n");
+        sb.append("  isNull:       Boolean\n");
+        sb.append("  nameContains: String\n");
+        sb.append("  where:        ").append(typeName).append("Where\n");
+        sb.append("}\n\n");
+    }
+
     /** Emit a `<typeKey>Where` input for one resource/person DynamicType. */
     private static void appendTypeWhereInput(StringBuilder sb, String whereName,
-            DynamicType dt, Map<String, Category> valueListEnums)
+            DynamicType dt, Map<String, Category> valueListEnums, Set<String> whereTypeNames)
     {
         sb.append("\"\"\"\n");
         sb.append("Generated typed-where predicate for DynamicType `").append(dt.getKey()).append("`.\n");
@@ -446,7 +481,7 @@ public final class ClassificationSdlGenerator
                 LOGGER.warn("DynamicType '{}': where field name '{}' collides; skipping", dt.getKey(), fieldName);
                 continue;
             }
-            String predicateType = wherePredicateTypeFor(attr, valueListEnums);
+            String predicateType = wherePredicateTypeFor(attr, valueListEnums, whereTypeNames);
             if (predicateType == null)
             {
                 LOGGER.warn("DynamicType '{}': attribute '{}' has no supported where-predicate type "
@@ -469,7 +504,8 @@ public final class ClassificationSdlGenerator
      * Returns null when no predicate type covers this attribute (e.g.
      * multi-select STRING — deferred to Phase 5).
      */
-    private static String wherePredicateTypeFor(Attribute attr, Map<String, Category> valueListEnums)
+    private static String wherePredicateTypeFor(Attribute attr, Map<String, Category> valueListEnums,
+            Set<String> whereTypeNames)
     {
         AttributeType t = attr.getType();
         if (t == null) return null;
@@ -488,7 +524,17 @@ public final class ClassificationSdlGenerator
         }
         if (t == AttributeType.ALLOCATABLE)
         {
-            return multi ? "AllocatableListWhere" : "AllocatableWhere";
+            if (multi) return "AllocatableListWhere";
+            // PRD 074 b — typed reference: if the attribute constrains to a known DynamicType that
+            // has a generated <T>Where, target <T>RefWhere (id/name + nested typed where). Otherwise
+            // the generic id/name AllocatableWhere.
+            Object dtConstraint = attr.getConstraint(ConstraintIds.KEY_DYNAMIC_TYPE);
+            if (dtConstraint instanceof DynamicType ref && ref.getKey() != null)
+            {
+                String refName = checkGraphQlCompliantName(ref.getKey());
+                if (whereTypeNames.contains(refName)) return refName + "RefWhere";
+            }
+            return "AllocatableWhere";
         }
         if (multi)
         {

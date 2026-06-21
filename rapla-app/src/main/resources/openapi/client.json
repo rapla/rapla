@@ -345,7 +345,13 @@
         "responses" : {
           "200" : {
             "description" : "OK",
-            "content" : { }
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UpdateEvent"
+                }
+              }
+            }
           }
         }
       }
@@ -561,7 +567,11 @@
         "operationId" : "dispatch",
         "requestBody" : {
           "content" : {
-            "application/json" : { }
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateEvent"
+              }
+            }
           },
           "required" : true
         },
@@ -2268,7 +2278,7 @@
           }
         }
       },
-      "PermissionImpl" : {
+      "AllocatableImpl" : {
         "properties" : {
           "links" : {
             "type" : "object",
@@ -2279,48 +2289,23 @@
               }
             }
           },
-          "pEnd" : {
-            "type" : "string",
-            "format" : "date-time"
+          "id" : {
+            "type" : "string"
           },
-          "pStart" : {
-            "type" : "string",
-            "format" : "date-time"
+          "classification" : {
+            "$ref" : "#/components/schemas/ClassificationImpl"
           },
-          "maxAdvance" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "minAdvance" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "accessLevel" : {
-            "type" : "string",
-            "enum" : [ "DENIED", "READ_TYPE", "CREATE", "READ_NO_ALLOCATION", "READ", "REQUEST", "ALLOCATE", "ALLOCATE_CONFLICTS", "EDIT", "ADMIN" ]
-          }
-        }
-      },
-      "UpdateEvent" : { },
-      "QueryAppointments" : {
-        "properties" : {
-          "ownerIds" : {
+          "permissions" : {
             "type" : "array",
             "items" : {
-              "type" : "string"
+              "$ref" : "#/components/schemas/PermissionImpl"
             }
           },
-          "resources" : {
-            "type" : "array",
-            "items" : {
-              "type" : "string"
-            }
-          },
-          "start" : {
+          "lastChanged" : {
             "type" : "string",
             "format" : "date-time"
           },
-          "end" : {
+          "createDate" : {
             "type" : "string",
             "format" : "date-time"
           },
@@ -2329,9 +2314,6 @@
             "additionalProperties" : {
               "type" : "string"
             }
-          },
-          "requestsOnly" : {
-            "type" : "boolean"
           }
         }
       },
@@ -2365,24 +2347,185 @@
           }
         }
       },
-      "AppointmentMap" : {
+      "AttributeImpl" : {
         "properties" : {
-          "reservations" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/ReservationImpl"
-            },
-            "uniqueItems" : true
-          },
-          "entityIdToAppointmentIds" : {
+          "links" : {
             "type" : "object",
             "additionalProperties" : {
               "type" : "array",
               "items" : {
                 "type" : "string"
-              },
-              "uniqueItems" : true
+              }
             }
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "name" : {
+            "$ref" : "#/components/schemas/MultiLanguageName"
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "string", "int", "date", "boolean", "rapla:category", "rapla:allocatable" ]
+          },
+          "key" : {
+            "type" : "string"
+          },
+          "multiSelect" : {
+            "type" : "boolean"
+          },
+          "belongsTo" : {
+            "type" : "boolean"
+          },
+          "packages" : {
+            "type" : "boolean"
+          },
+          "optional" : {
+            "type" : "boolean"
+          },
+          "annotations" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          },
+          "defaultValue" : {
+            "type" : "string"
+          }
+        }
+      },
+      "CalendarModelConfigurationImpl" : {
+        "properties" : {
+          "classificationFilters" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ClassificationFilterImpl"
+            }
+          },
+          "selected" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "typeList" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "startDate" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "endDate" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "selectedDate" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "view" : {
+            "type" : "string"
+          },
+          "optionMap" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          },
+          "defaultEventTypes" : {
+            "type" : "boolean"
+          },
+          "defaultResourceTypes" : {
+            "type" : "boolean"
+          },
+          "resourceRootSelected" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "CategoryImpl" : {
+        "properties" : {
+          "links" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              }
+            }
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "name" : {
+            "$ref" : "#/components/schemas/MultiLanguageName"
+          },
+          "key" : {
+            "type" : "string"
+          },
+          "lastChanged" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "createDate" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "annotations" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "ClassificationFilterImpl" : {
+        "properties" : {
+          "typeId" : {
+            "type" : "string"
+          },
+          "list" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ClassificationFilterRuleImpl"
+            }
+          }
+        }
+      },
+      "ClassificationFilterRuleImpl" : {
+        "properties" : {
+          "links" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              }
+            }
+          },
+          "operators" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "ruleValues" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "attributeKey" : {
+            "type" : "string"
+          },
+          "attributeId" : {
+            "type" : "string"
           }
         }
       },
@@ -2402,6 +2545,299 @@
                 "type" : "string"
               }
             }
+          }
+        }
+      },
+      "ConflictImpl" : {
+        "properties" : {
+          "links" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              }
+            }
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "startDate" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "lastChanged" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "reservation1Name" : {
+            "type" : "string"
+          },
+          "reservation2Name" : {
+            "type" : "string"
+          },
+          "repeatingType1" : {
+            "type" : "string",
+            "enum" : [ "weekly", "daily", "monthly", "yearly" ]
+          },
+          "repeatingType2" : {
+            "type" : "string",
+            "enum" : [ "weekly", "daily", "monthly", "yearly" ]
+          },
+          "appointment1Enabled" : {
+            "type" : "boolean"
+          },
+          "appointment2Enabled" : {
+            "type" : "boolean"
+          },
+          "appointment1Editable" : {
+            "type" : "boolean"
+          },
+          "appointment2Editable" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "DynamicTypeImpl" : {
+        "properties" : {
+          "links" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              }
+            }
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "lastChanged" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "createDate" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "attributes" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AttributeImpl"
+            }
+          },
+          "permissions" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PermissionImpl"
+            }
+          },
+          "name" : {
+            "$ref" : "#/components/schemas/MultiLanguageName"
+          },
+          "key" : {
+            "type" : "string"
+          },
+          "annotations" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/ParsedText"
+            }
+          }
+        }
+      },
+      "ExternalSyncEntityImpl" : {
+        "properties" : {
+          "links" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              }
+            }
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "direction" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "context" : {
+            "type" : "string"
+          },
+          "data" : {
+            "type" : "string"
+          },
+          "raplaId" : {
+            "type" : "string"
+          },
+          "externalSystem" : {
+            "type" : "string"
+          }
+        }
+      },
+      "LinkReferenceHandler" : {
+        "properties" : {
+          "links" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              }
+            }
+          },
+          "linkType" : {
+            "type" : "string"
+          }
+        }
+      },
+      "MultiLanguageName" : {
+        "properties" : {
+          "mapLocales" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "ParsedText" : {
+        "properties" : {
+          "formatString" : {
+            "type" : "string"
+          }
+        }
+      },
+      "PermissionImpl" : {
+        "properties" : {
+          "links" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              }
+            }
+          },
+          "pEnd" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "pStart" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "maxAdvance" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "minAdvance" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "accessLevel" : {
+            "type" : "string",
+            "enum" : [ "DENIED", "READ_TYPE", "CREATE", "READ_NO_ALLOCATION", "READ", "REQUEST", "ALLOCATE", "ALLOCATE_CONFLICTS", "EDIT", "ADMIN" ]
+          }
+        }
+      },
+      "PreferencePatch" : {
+        "properties" : {
+          "constants" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          },
+          "configurations" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/RaplaConfiguration"
+            }
+          },
+          "maps" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/RaplaMapImpl"
+            }
+          },
+          "calendars" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/CalendarModelConfigurationImpl"
+            }
+          },
+          "links" : {
+            "$ref" : "#/components/schemas/LinkReferenceHandler"
+          },
+          "userId" : {
+            "type" : "string"
+          },
+          "removedEntries" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            },
+            "uniqueItems" : true
+          },
+          "lastChanged" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "PreferencesImpl" : {
+        "properties" : {
+          "links" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              }
+            }
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "lastChanged" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "createDate" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "map" : {
+            "$ref" : "#/components/schemas/RaplaMapImpl"
+          }
+        }
+      },
+      "RaplaMapImpl" : {
+        "properties" : {
+          "constants" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          },
+          "configurations" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/RaplaConfiguration"
+            }
+          },
+          "calendars" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/CalendarModelConfigurationImpl"
+            }
+          },
+          "links" : {
+            "$ref" : "#/components/schemas/LinkReferenceHandler"
           }
         }
       },
@@ -2515,7 +2951,113 @@
           }
         }
       },
-      "AllocatableImpl" : {
+      "SerializableReferenceInfo" : {
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "localname" : {
+            "type" : "string"
+          }
+        }
+      },
+      "TimeInterval" : {
+        "properties" : {
+          "start" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "end" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "UpdateEvent" : {
+        "properties" : {
+          "categories" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CategoryImpl"
+            }
+          },
+          "types" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DynamicTypeImpl"
+            }
+          },
+          "users" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/UserImpl"
+            }
+          },
+          "preferencesPatches" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PreferencePatch"
+            }
+          },
+          "preferences" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PreferencesImpl"
+            }
+          },
+          "resources" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AllocatableImpl"
+            }
+          },
+          "reservations" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ReservationImpl"
+            }
+          },
+          "conflicts" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ConflictImpl"
+            }
+          },
+          "importExports" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ExternalSyncEntityImpl"
+            }
+          },
+          "removeSet" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SerializableReferenceInfo"
+            },
+            "uniqueItems" : true
+          },
+          "userId" : {
+            "type" : "string"
+          },
+          "needResourcesRefresh" : {
+            "type" : "boolean"
+          },
+          "forceAllocatableDeletesIgnoreDependencies" : {
+            "type" : "boolean"
+          },
+          "invalidateInterval" : {
+            "$ref" : "#/components/schemas/TimeInterval"
+          },
+          "lastValidated" : {
+            "type" : "string"
+          },
+          "timezoneOffset" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "UserImpl" : {
         "properties" : {
           "links" : {
             "type" : "object",
@@ -2529,14 +3071,20 @@
           "id" : {
             "type" : "string"
           },
-          "classification" : {
-            "$ref" : "#/components/schemas/ClassificationImpl"
+          "username" : {
+            "type" : "string"
           },
-          "permissions" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/PermissionImpl"
-            }
+          "email" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "admin" : {
+            "type" : "boolean"
+          },
+          "authenticationSource" : {
+            "type" : "string"
           },
           "lastChanged" : {
             "type" : "string",
@@ -2545,11 +3093,59 @@
           "createDate" : {
             "type" : "string",
             "format" : "date-time"
+          }
+        }
+      },
+      "QueryAppointments" : {
+        "properties" : {
+          "ownerIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "resources" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "start" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "end" : {
+            "type" : "string",
+            "format" : "date-time"
           },
           "annotations" : {
             "type" : "object",
             "additionalProperties" : {
               "type" : "string"
+            }
+          },
+          "requestsOnly" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "AppointmentMap" : {
+        "properties" : {
+          "reservations" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ReservationImpl"
+            },
+            "uniqueItems" : true
+          },
+          "entityIdToAppointmentIds" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              },
+              "uniqueItems" : true
             }
           }
         }
@@ -2564,16 +3160,6 @@
             "items" : {
               "type" : "string"
             }
-          }
-        }
-      },
-      "SerializableReferenceInfo" : {
-        "properties" : {
-          "id" : {
-            "type" : "string"
-          },
-          "localname" : {
-            "type" : "string"
           }
         }
       },
@@ -3085,56 +3671,6 @@
           }
         }
       },
-      "ConflictImpl" : {
-        "properties" : {
-          "links" : {
-            "type" : "object",
-            "additionalProperties" : {
-              "type" : "array",
-              "items" : {
-                "type" : "string"
-              }
-            }
-          },
-          "id" : {
-            "type" : "string"
-          },
-          "startDate" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "lastChanged" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "reservation1Name" : {
-            "type" : "string"
-          },
-          "reservation2Name" : {
-            "type" : "string"
-          },
-          "repeatingType1" : {
-            "type" : "string",
-            "enum" : [ "weekly", "daily", "monthly", "yearly" ]
-          },
-          "repeatingType2" : {
-            "type" : "string",
-            "enum" : [ "weekly", "daily", "monthly", "yearly" ]
-          },
-          "appointment1Enabled" : {
-            "type" : "boolean"
-          },
-          "appointment2Enabled" : {
-            "type" : "boolean"
-          },
-          "appointment1Editable" : {
-            "type" : "boolean"
-          },
-          "appointment2Editable" : {
-            "type" : "boolean"
-          }
-        }
-      },
       "I18nLocaleFormats" : {
         "properties" : {
           "isAmPm" : {
@@ -3244,18 +3780,6 @@
           },
           "syncInterval" : {
             "$ref" : "#/components/schemas/TimeInterval"
-          }
-        }
-      },
-      "TimeInterval" : {
-        "properties" : {
-          "start" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "end" : {
-            "type" : "string",
-            "format" : "date-time"
           }
         }
       },

@@ -88,10 +88,14 @@ class OpenApiSmokeTest
     }
 
     @Test
-    void apiDocsListsCalendarViewEndpoint() throws Exception
+    void apiDocsListsCalendarSettingsEndpoint() throws Exception
     {
+        // The old /api/calendar/view REST endpoint was removed (calendar VIEW data now
+        // flows via GraphQL / the SPA). The calendar-related REST surface that remains is
+        // SettingsService @GetExchange("/calendar") under /api/settings — assert discovery
+        // of that, so this test keeps verifying springdoc reaches a calendar controller.
         String body = fetchApiDocs();
-        assertContainsPath(body, "/api/calendar/view");
+        assertContainsPath(body, "/api/settings/calendar");
     }
 
     @Test
@@ -205,6 +209,61 @@ class OpenApiSmokeTest
         assertTrue(allocProps >= 5,
                 "AllocatableImpl schema must expose >=5 properties. Found: "
                         + allocProps);
+    }
+
+    @Test
+    void updateEventSchemaNotGuttedByRaplaMapSetterConflict() throws Exception
+    {
+        // Jackson-2-(swagger-core) vs Jackson-3-(runtime) divergence: RaplaMapImpl had a
+        // private setResolver(Map) overload colliding with the EntityReferencer interface
+        // method setResolver(EntityResolver). springdoc's PolymorphicModelConverter introspects
+        // setters (getter/setter-visible, no mixin) and threw "Conflicting setter definitions",
+        // aborting the schema build for UpdateEvent — the response type of ALL six /api/storage
+        // endpoints — so it serialized as an empty {} and the SPA codegen typed the entire
+        // storage payload as `any`. Fixed by renaming the private overload to applyResolverTo(Map).
+        com.fasterxml.jackson.databind.JsonNode doc = parseApiDocs();
+        com.fasterxml.jackson.databind.JsonNode ue = doc.path("components").path("schemas").path("UpdateEvent");
+        assertTrue(!ue.isMissingNode(), "UpdateEvent schema missing entirely from /api/v3/api-docs");
+        com.fasterxml.jackson.databind.JsonNode props = ue.path("properties");
+        assertTrue(props.isObject() && props.size() > 0,
+                "UpdateEvent schema has NO properties — the RaplaMapImpl setResolver overload "
+                        + "conflict gutted it to an empty object, untyping the entire /api/storage "
+                        + "surface in the SPA client. Schema was: " + ue);
+        assertTrue(props.has("reservations") && props.has("preferences"),
+                "UpdateEvent must describe its entity collections (reservations, preferences, …)");
+    }
+
+    @Test
+    void restoredSchemasExcludeTransientFields() throws Exception
+    {
+        // The captured schema must describe the WIRE payload — field-based, with `transient`
+        // fields excluded (JacksonObjectMapperFactory enables PROPAGATE_TRANSIENT_MARKER, mirrored
+        // in SwaggerJacksonConfig). A leaked transient (internal cache / wiring like `resolver`,
+        // `readOnly`, `listMap`) would make the SPA's generated TS client expect fields the wire
+        // never sends. Guards the now-resolved storage graph (see
+        // updateEventSchemaNotGuttedByRaplaMapSetterConflict). Map: schema -> its transient fields.
+        java.util.Map<String, java.util.List<String>> transientBySchema = java.util.Map.of(
+                "UpdateEvent", java.util.List.of("listMap"),
+                "RaplaMapImpl", java.util.List.of("resolver", "map", "cachedEntries", "linkClass"),
+                "PreferencesImpl", java.util.List.of("patch"),
+                "ReservationImpl", java.util.List.of("appointmentIndex"),
+                "AppointmentImpl", java.util.List.of("parent"),
+                "ClassificationImpl", java.util.List.of("resolver", "readOnly", "name", "referenceHandler"));
+
+        com.fasterxml.jackson.databind.JsonNode schemas = parseApiDocs().path("components").path("schemas");
+        for (var e : transientBySchema.entrySet())
+        {
+            com.fasterxml.jackson.databind.JsonNode props = schemas.path(e.getKey()).path("properties");
+            assertTrue(props.isObject() && props.size() > 0,
+                    e.getKey() + " schema missing/empty — it must resolve to a real field set");
+            for (String t : e.getValue())
+            {
+                assertTrue(!props.has(t),
+                        e.getKey() + " schema leaks transient field '" + t + "' — field-based "
+                                + "introspection or PROPAGATE_TRANSIENT_MARKER regressed in "
+                                + "SwaggerJacksonConfig; the SPA client would expect a field the wire never sends.");
+            }
+        }
     }
 
     private String fetchApiDocs() throws Exception

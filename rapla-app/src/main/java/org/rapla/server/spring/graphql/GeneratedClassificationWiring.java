@@ -68,6 +68,8 @@ public final class GeneratedClassificationWiring
         wiringBuilder.type("Classification",            b -> b.typeResolver(classificationResolver));
         wiringBuilder.type("AllocatableClassification", b -> b.typeResolver(classificationResolver));
         wiringBuilder.type("ReservationClassification",       b -> b.typeResolver(classificationResolver));
+        // PRD 080 — StatEntity union (typed group entity in StatKey).
+        wiringBuilder.type("StatEntity", b -> b.typeResolver(statEntityResolver()));
 
         // Performance-critical structural type fields (Allocatable / DynamicType /
         // Classification interface) — programmatic LightDataFetcher singletons
@@ -97,6 +99,30 @@ public final class GeneratedClassificationWiring
                 return builder;
             });
         }
+    }
+
+    /**
+     * PRD 080 — resolves the concrete GraphQL type for a {@code StatEntity} union value
+     * (the typed group entity carried by {@code StatKey.entity}).
+     */
+    private TypeResolver statEntityResolver()
+    {
+        return env -> {
+            Object src = env.getObject();
+            graphql.schema.GraphQLSchema schema = env.getSchema();
+            String typeName =
+                    src instanceof org.rapla.entities.domain.Allocatable ? "Allocatable"
+                  : src instanceof org.rapla.entities.domain.Reservation ? "Reservation"
+                  : src instanceof org.rapla.entities.Category          ? "Category"
+                  : null;
+            if (typeName == null)
+            {
+                LOGGER.warn("StatEntity TypeResolver got unexpected source: {}",
+                        src == null ? "null" : src.getClass().getName());
+                return null;
+            }
+            return schema.getObjectType(typeName);
+        };
     }
 
     /**

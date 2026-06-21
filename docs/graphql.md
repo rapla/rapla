@@ -1043,3 +1043,111 @@ aggregate: [{ key: "sum",     expr: "attribute(item, \"<numericAttr>\")", fn: SU
 **Not yet (PRD 073 number-model / Stufe c):** in-expression arithmetic (`add/sub/mul/div`). Single
 numeric values work (Stufe b); composing numbers inside the expr needs a numeric type in the EL,
 which would then serve every `expr` slot.
+
+## Beispiel: Raumauslastung nach Standort (typisierte Referenz-Filter, PRD 074 b)
+
+`appointmentBlockStats` + ein **typisierter Filter über eine Referenz**: Räume werden über das
+**eigene Attribut ihres Gebäudes** eingeschränkt (`Raum.Gebaeude` → `Gebaeude.Gebaeudename`). Der
+Referenz-Filter `<RefType>RefWhere` trägt id/name-Prädikate **und** ein verschachteltes
+`where: <RefType>Where`; der `WhereEvaluator` löst die Referenz §12-`canRead`-gegated auf und wertet
+das typisierte where rekursiv aus (tiefen-gedeckelt). Live verifiziert gegen dhbw (DHBW Mosbach).
+
+```graphql
+query RaumauslastungMosbach {
+  appointmentBlockStats(
+    filter: { from: "2026-03-21T00:00:00", to: "2026-06-21T00:00:00" },
+    groupBy:   [ { key: "raum", allocatables: {
+                   typeKeyIn: ["Raum"],
+                   whereRaum: { Gebaeude: { where: { Gebaeudename: { startsWith: "MOS" } } } }
+                 } } ],
+    aggregate: [ { key: "stunden", field: DURATION_MINUTES, fn: SUM },
+                 { key: "termine", field: DURATION_MINUTES, fn: COUNT } ]
+  ) {
+    keys   { value }      # Raumname
+    values { key number } # stunden = number/60, termine
+    count
+  }
+}
+```
+
+Schichtung des Filters:
+
+```
+whereRaum:          RaumWhere          # Attribute des Raums
+  Gebaeude:         GebaeudeRefWhere   # Referenz: eq/ne/in/isNull/nameContains + where
+    where:          GebaeudeWhere      # EIGENE Attribute des Gebäudes
+      Gebaeudename: StringWhere        # eq/ne/in/contains/startsWith/endsWith/isNull
+```
+
+- **§12:** ein nicht-lesbares Gebäude ⇒ der Raum (bzw. seine Blöcke) fällt heraus — kein Attribut-Leak.
+- **Standort-Feld:** `Gebaeudename` (alternativ `Kuerzel`/`Adresse`) — generierte `GebaeudeWhere`-Felder.
+- **Raumgröße ohne Join:** `keys.entity` trägt das **echte, typisierte Gruppen-Objekt** — siehe nächster
+  Abschnitt; `AnzahlPlaetzeInsgesamt` ist direkt im Bucket selektierbar, **kein** zweiter Request nötig.
+
+## Typisierte Gruppen-Entität im Stats-Bucket (`StatKey.entity`, PRD 080)
+
+Ein Stats-Bucket bleibt generisch (`keys` + `values` + `count`), **aber** jeder Gruppenschlüssel trägt
+zusätzlich die **echte, typisierte Entität**, nach der gruppiert wurde — als Union `StatEntity`:
+
+```graphql
+union StatEntity = Allocatable | Reservation | Category
+
+type StatKey {
+  key:    String!     # der groupBy-"key"-Name
+  value:  String!     # Anzeigestring (immer gesetzt)
+  entity: StatEntity  # die typisierte Gruppen-Entität — null bei Zeit-/Skalar-Dimensionen
+}
+```
+
+Damit ist **jedes Feld der Gruppen-Entität im selben Request selektierbar** (kein Client-Join). Die
+`allocatables`-Dimension liefert ein `Allocatable`, die `reservation: true`-Dimension eine
+`Reservation`; Zeit-Buckets (`date`/`by`) und reine `expr`-Strings haben `entity: null`.
+
+Mosbach-Auslastung **mit Raumgröße, eine Query**:
+
+```graphql
+query RaumauslastungMitGroesse {
+  appointmentBlockStats(
+    filter: { from: "2026-03-21T00:00:00", to: "2026-06-21T00:00:00" },
+    groupBy:   [ { key: "raum", allocatables: {
+                   typeKeyIn: ["Raum"],
+                   whereRaum: { Gebaeude: { where: { Gebaeudename: { startsWith: "MOS" } } } }
+                 } } ],
+    aggregate: [ { key: "stunden", field: DURATION_MINUTES, fn: SUM } ]
+  ) {
+    keys {
+      value                       # Raumname (Anzeigestring)
+      entity {
+        __typename
+        ... on Allocatable {
+          classification { ... on RaumClassification { AnzahlPlaetzeInsgesamt } }
+        }
+      }
+    }
+    values { key number }
+    count
+  }
+}
+```
+
+Gruppieren nach Veranstaltung (`Reservation`-Entität):
+
+```graphql
+appointmentBlockStats(
+  groupBy:   [ { key: "kurs", reservation: true } ],
+  aggregate: [ { key: "stunden", field: DURATION_MINUTES, fn: SUM } ]
+) {
+  keys   { value entity { __typename ... on Reservation { id } } }
+  values { key number }
+  count
+}
+```
+
+- **§12:** `entity` kommt aus demselben `canRead`-gegateten Resolver-Pfad wie alle anderen Entitäts-
+  Felder (`filterAllocatables` / rekursive Referenzauflösung) — eine nicht-lesbare Entität wird gar
+  nicht erst zum Gruppenschlüssel.
+- **Generik bleibt:** ad-hoc `groupBy`/`aggregate` und der eine geteilte Bucket-Typ über alle Familien
+  bleiben; nur der Schlüssel ist jetzt zusätzlich typisiert navigierbar.
+- **Status:** `appointmentBlockStats` (Allocatable- + Reservation-Dimension) ist umgesetzt; eigene
+  `allocatableStats`/`reservationStats`-Felder, die Category-Dimension und `expr → Entity` sind in
+  [PRD 080](prd/080-typed-entity-stats.md) als ⏳ offen geführt.

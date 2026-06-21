@@ -108,7 +108,7 @@ public class ClassificationGraphQLController
                 // canRead can be a permission-graph walk for non-admins. Filtering
                 // first short-circuits the expensive check for non-matching entries.
                 if (!matches(a, filter)) continue;
-                if (!evaluateWhere(a, filterMap)) continue;
+                if (!evaluateWhere(a, filterMap, caller, pc)) continue;
                 if (!pc.canRead(a, caller)) continue;
                 if (accessFilter != null && !accessFilter.test(a)) continue;   // PRD 069
                 resultById.putIfAbsent(a.getId(), a);
@@ -215,9 +215,10 @@ public class ClassificationGraphQLController
      * one operator per predicate kind. Combinators + remaining operators
      * land in Phases 4–5.
      */
-    private static boolean evaluateWhere(Allocatable a, Map<String, Object> filterMap)
+    private static boolean evaluateWhere(Allocatable a, Map<String, Object> filterMap,
+            User caller, PermissionController pc)
     {
-        return WhereEvaluator.evaluate(a, filterMap);
+        return WhereEvaluator.evaluate(a, filterMap, caller, pc);
     }
 
     /**

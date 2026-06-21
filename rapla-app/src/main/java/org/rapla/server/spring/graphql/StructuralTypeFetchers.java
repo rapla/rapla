@@ -123,6 +123,31 @@ public final class StructuralTypeFetchers
                 }
             };
 
+    /** PRD 080 — structural person flag (mirrors {@code Allocatable.type == PERSON}); universal across instances. */
+    static final LightDataFetcher<Boolean> ALLOCATABLE_IS_PERSON =
+            new LightSourceFetcher<Allocatable, Boolean>(Allocatable.class)
+            {
+                @Override protected Boolean read(Allocatable a, Supplier<DataFetchingEnvironment> env)
+                {
+                    return a.isPerson();
+                }
+            };
+
+    /** PRD 080 — true when the allocatable's DynamicType carries the {@code location=true} annotation
+     * (the same room/location marker {@code Export2iCalConverter} uses). Deployment-configured, but
+     * the annotation key is universal — no instance-specific type key in the query. */
+    static final LightDataFetcher<Boolean> ALLOCATABLE_IS_LOCATION =
+            new LightSourceFetcher<Allocatable, Boolean>(Allocatable.class)
+            {
+                @Override protected Boolean read(Allocatable a, Supplier<DataFetchingEnvironment> env)
+                {
+                    var cls = a.getClassification();
+                    if (cls == null || cls.getType() == null) return false;
+                    return "true".equals(cls.getType().getAnnotation(
+                            org.rapla.entities.dynamictype.DynamicTypeAnnotations.KEY_LOCATION));
+                }
+            };
+
     static final LightDataFetcher<String> ALLOCATABLE_DISPLAY_NAME =
             new LightSourceFetcher<Allocatable, String>(Allocatable.class)
             {
@@ -833,7 +858,7 @@ public final class StructuralTypeFetchers
             if (filterArg != null)
             {
                 if (!ClassificationGraphQLController.matchesMap(alloc, filterArg)) continue;  // scalar
-                if (!WhereEvaluator.evaluate(alloc, filterArg)) continue;                      // where<TypeKey>
+                if (!WhereEvaluator.evaluate(alloc, filterArg, caller, pc)) continue;           // where<TypeKey> (+ §12 ref-recursion)
                 if (idIn != null && !idIn.isEmpty()
                         && (alloc.getId() == null || !idIn.contains(alloc.getId()))) continue; // idIn
                 if (accessFilter != null && !accessFilter.test(alloc)) continue;              // PRD 069 access
@@ -931,7 +956,21 @@ public final class StructuralTypeFetchers
      */
     static String computeBlockExpr(org.rapla.entities.domain.AppointmentBlock block, String expr, User user)
     {
-        if (block == null || expr == null || expr.isBlank()) return null;
+        return computeEntityExpr(block, expr, user);
+    }
+
+    /**
+     * PRD 080 — generalized {@link #computeBlockExpr} to any classifiable entity (AppointmentBlock,
+     * Allocatable, Reservation). Resolves the entity's DynamicType via
+     * {@code ParsedText.guessClassification}, parses the (bare-body, subject {@code item}) expr,
+     * and evaluates it with the entity as the single context object. Returns null on blank/invalid
+     * expr or unresolvable classification; throws on over-long input. §12-safe: the EvalContext
+     * carries no PermissionController for these read-only stat exprs (the entity set is already
+     * canRead-gated by the caller).
+     */
+    static String computeEntityExpr(Object entity, String expr, User user)
+    {
+        if (entity == null || expr == null || expr.isBlank()) return null;
         if (expr.length() > 2000)
         {
             throw new IllegalArgumentException("compute expr too long (max 2000 chars)");
@@ -941,7 +980,7 @@ public final class StructuralTypeFetchers
         // (vs. treating it as literal text). A leading `{` means the author wrote the full form.
         String src = expr.trim().startsWith("{") ? expr : "{item->" + expr + "}";
         org.rapla.entities.dynamictype.Classification cls =
-                org.rapla.entities.dynamictype.internal.ParsedText.guessClassification(block);
+                org.rapla.entities.dynamictype.internal.ParsedText.guessClassification(entity);
         if (cls == null) return null;
         org.rapla.entities.dynamictype.internal.DynamicTypeImpl type =
                 (org.rapla.entities.dynamictype.internal.DynamicTypeImpl) cls.getType();
@@ -953,7 +992,7 @@ public final class StructuralTypeFetchers
             org.rapla.entities.dynamictype.internal.EvalContext ctx = type.createEvalContext(
                     user, serverLocale,
                     org.rapla.entities.dynamictype.DynamicTypeAnnotations.KEY_NAME_FORMAT,
-                    java.util.Collections.singletonList(block));
+                    java.util.Collections.singletonList(entity));
             return pt.formatName(ctx);
         }
         catch (org.rapla.entities.IllegalAnnotationException e)
@@ -1051,6 +1090,8 @@ public final class StructuralTypeFetchers
         }
         b.type("Allocatable", t -> t
                 .dataFetcher("type",           ALLOCATABLE_TYPE)
+                .dataFetcher("isPerson",       ALLOCATABLE_IS_PERSON)
+                .dataFetcher("isLocation",     ALLOCATABLE_IS_LOCATION)
                 .dataFetcher("name",           ALLOCATABLE_NAME)
                 .dataFetcher("displayName",    ALLOCATABLE_DISPLAY_NAME)
                 .dataFetcher("classification", ALLOCATABLE_CLASSIFICATION)

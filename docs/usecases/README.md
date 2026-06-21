@@ -33,6 +33,34 @@ render-mode, on *its* anchor". The SPA fundament is a *render-mode-agnostic view
 
 ---
 
+## Glossary
+
+Canonical terms for the SPA selection/view model (agreed 2026-06-21). Use these
+consistently; English for all definitions.
+
+| Term | Meaning | Technical |
+|---|---|---|
+| **View Definition** | Level 1 — the *defined* structure (admin / rapla-default): columns, render mode, declared inputs | `@view` query (PRD 074) |
+| **Saved View** | Level 2 — a *stored, named* instance: `viewRef` + concrete values (selection, date, name), per user | `CalendarModelConfiguration` / SavedView (PRD 077) |
+| **Runtime State** | Level 3 — the ephemeral live state (changed, not yet stored as a Saved View) | GraphQL variables |
+| **Group** | a *rule* over resources (type / derived / self-defined); live, §12-scoped | `ClassificationFilter[]` = `AllocatableFilter` |
+| **Selection** | the *currently active* resources of the view (= the Chips) | `ReservationFilter.allocatableMatching` |
+| **Chip** | one entry of the Selection — a *single* resource **or** a whole Group | — |
+| **Stepping List** | the left list to click through (sources: Recent / Favorites / Group) | — |
+| **Render Mode** | Week · Table · Month · Timeslot | — |
+| **Omnibox** | the single find/search field | — |
+| **Event** | a reservation (the logical course/event with many occurrences) | `Reservation` |
+| **Occurrence** | a single materialized appointment of an Event | `AppointmentBlock` |
+| **Actions** | **filter** (resource/group) · **navigate** (date / Event → first occurrence / Occurrence / Saved View) · **edit** (event sheet) | — |
+
+Resolved naming:
+- **View Definition** (the structure, shared) vs **Saved View** (the stored per-user instance) —
+  no German *View/Sicht* ambiguity; matches PRD 077's three storage levels.
+- **Group** = the noun (a resource rule); **filter** = the verb; **Filter Editor** = where
+  self-defined Groups are built. "Filter" is *not* used as a competing noun.
+- **Event** = Reservation (the whole course), **Occurrence** = one AppointmentBlock — so
+  "navigate to first occurrence" is unambiguous.
+
 ## Actors
 
 | Actor | Who | Device | Mode |
@@ -258,6 +286,66 @@ X in this period" / per-type attribute rules — which the name search does *not
 verb (PRD 028) to replace; explicit add for multi. Decide when we design the picker.
 
 ---
+
+## Resource selection — groups are filters; the stepping list; the omnibox
+
+Worked out in the GUI discussion (2026-06-21). Mockups:
+[`mockups/stepping-list.html`](mockups/stepping-list.html),
+[`mockups/group-load.html`](mockups/group-load.html),
+[`mockups/browse-all.html`](mockups/browse-all.html),
+[`mockups/search-navigation-selection.html`](mockups/search-navigation-selection.html).
+
+**On the resource level there is ONE concept: a rule** (`ClassificationFilter[]` / GraphQL
+`AllocatableFilter`). "Filter", "group", and "a chip standing for a set" are the same thing
+seen three ways.
+
+**A group = a `ClassificationFilter[]` (a rule over allocatables).** Three flavours, same
+type underneath:
+- **Type groups** — "all rooms", "all lecturers", "all cohorts (n)": just a type predicate.
+  Always available — this is how you browse a *whole* type (the tree-equivalent).
+- **Derived groups** — "rooms in building X", "cohorts of programme Y": type + one predicate.
+- **Self-defined groups** — an arbitrary `ClassificationFilter[]` built in the **filter editor**
+  (AND/OR + attribute predicates, e.g. rooms with >50 seats and a projector). Saving + naming
+  one = a self-defined group.
+
+→ **The "structured filter beside the search" IS the group builder.** There is no separate
+filter axis on the resource level — building a custom set = building a group (a rule).
+
+**Groups are live; favourites/recents are static.** A group is a *rule*, re-evaluated on use
+(and §12-scoped), so a newly added matching resource (e.g. a new lecturer) **appears
+automatically**. Favourites (pinned ids) and recents (visited ids) are static id-lists.
+
+**Two uses of a rule:**
+- **Materialise → the stepping list** — its matches as a flat, in-list-filterable list you
+  click through.
+- **Apply → one chip** on the view — the whole rule as a single chip ("lecturers of programme
+  Y") → the view shows all matches together. This is how *bulk over hierarchy* stays **one
+  chip, not N**.
+
+**The stepping list (left) — populate, step, remove:**
+- Three sources / tabs: **Recents** (auto — every viewed resource), **Favourites** (pin via ★),
+  **Group** (load a rule, including a whole type "all rooms (n)").
+- **Single-click an entry = filter the view to it (replace)** → its occupancy; click the next =
+  replace again. The dominant rhythm ("step from one room/cohort to the next"); arrow keys +
+  live preview optional. `+` accumulates instead of replacing.
+- **Removal:** Favourites — un-pin; Recents — × / FIFO; **Group — whole only** (`× clear` /
+  unload). **No individual removal from a group, and no fork-to-static** — a group is an atomic
+  rule; for a different set, use a different rule. Editing a self-defined group = editing its
+  rule in the filter editor.
+
+**Division of labour:**
+- **Omnibox** *finds* — a single resource (filter/replace + `+`), a Veranstaltung (navigate to
+  first appointment · `+` filter · ✏️ edit), a single appointment (navigate · edit), a saved
+  view (load), or a **group** ("all X (n)" / a derived group → load into the list).
+- **Filter editor** *builds* self-defined groups (`ClassificationFilter[]`).
+- **Stepping list** *materialises* a rule → click through (the Swing-tree-stepping replacement).
+- **Chip rail** *applies* rules (single resource or whole group) → the live view filter; the
+  chips **persist regardless of the search query** — they are the "what's currently selected"
+  display and carry the legacy hidden-selection safety.
+
+**Status:** the omnibox's two-gesture navigate-vs-filter shape (the *hybrid*) is the current
+leaning, **not finally decided**. The group=filter unification and the atomic-group / no-fork
+rules above are settled within this discussion.
 
 ## Cross-cutting design implications
 

@@ -118,6 +118,31 @@ type Query {
     limit: Int
   ): [BlockStatBucket!]!
 
+  # PRD 080 item 6 — grouped/bucketed analytics over the §12-visible ALLOCATABLE
+  # population (resources/persons), NOT over bookings. `groupBy` = dimensions
+  # (DynamicType / custom `expr` / the allocatable itself); `aggregate` = metrics
+  # (COUNT, or a numeric `expr` over the allocatable, e.g. capacity sum). Filter =
+  # the full AllocatableFilter (typeKeyIn / where<Type> / idIn / accessibleBy*).
+  # Shares the generic BlockStatBucket result. e.g. "seats per building".
+  allocatableStats(
+    filter: AllocatableFilter,
+    groupBy: [AllocatableGroupKey!],
+    aggregate: [AllocatableAggregate!]!,
+    limit: Int
+  ): [BlockStatBucket!]!
+
+  # PRD 080 item 7 — grouped/bucketed analytics over the §12-visible RESERVATION
+  # set in the window (same gating/window/search as `reservations`). `groupBy` =
+  # dimensions (DynamicType / custom `expr` / the reservation itself); `aggregate`
+  # = metrics (COUNT, or a numeric `expr` over the reservation). Shares the generic
+  # BlockStatBucket result. e.g. "events per course type".
+  reservationStats(
+    filter: ReservationFilter!,
+    groupBy: [ReservationGroupKey!],
+    aggregate: [ReservationAggregate!]!,
+    limit: Int
+  ): [BlockStatBucket!]!
+
   # PRD 064 — conflicts touching this reservation. §12: caller must be able
   # to read BOTH sides of each conflict + the allocatable; unreadable
   # conflicts are silently dropped.
@@ -531,6 +556,10 @@ fails GraphQL validation rather than silently returning null at runtime.
 type Allocatable {
   id:             ID!
   type:           AllocatableType!
+  "PRD 080 — true when this allocatable is a person (== type PERSON). Universal across instances."
+  isPerson:       Boolean!
+  "PRD 080 — true when the allocatable's DynamicType is annotated location=true (room/venue marker, same as iCal export). Deployment-configured; the annotation key is universal — no instance-specific type key needed."
+  isLocation:     Boolean!
   "PRD 074 — the allocatable's name composition (nameformat), locale-resolved. variant selects DISPLAY/EXPORT/PLANNING (EXPORT/PLANNING fall back to DISPLAY when the type lacks them)."
   name(variant: NameVariant = DISPLAY): String
   "Deprecated alias for name(variant: DISPLAY). Locale-resolved, classification-derived."
@@ -697,6 +726,8 @@ input BlockGroupKey {
   by: TimeBucket
   allocatables: AllocatableFilter
   expr: String
+  "PRD 080 — group by the block's reservation (the event); the StatKey carries the Reservation as `entity`. \"hours/sessions per Veranstaltung\"."
+  reservation: Boolean
 }
 
 """
@@ -713,6 +744,55 @@ input BlockAggregate {
   fn: AggregateFn!
 }
 
+"""
+PRD 080 item 6 — one grouping dimension for `allocatableStats`. Supply EXACTLY ONE of:
+- `type: true` → group by the allocatable's DynamicType (value = type name; entity = null),
+- `expr` → a custom compute expression over the allocatable (string result = bucket key),
+- `self: true` → group by the allocatable itself; StatKey carries the Allocatable as `entity`.
+`key` names the dimension in the result bucket's `keys`.
+"""
+input AllocatableGroupKey {
+  key:  String!
+  type: Boolean
+  expr: String
+  self: Boolean
+}
+
+"""
+PRD 080 item 6 — one metric for `allocatableStats`. `fn: COUNT` counts allocatables in the bucket
+(no `expr` needed). For SUM/MEAN/MIN/MAX supply a numeric `expr` over the allocatable (same engine
+as `AppointmentBlock.compute`; result coerced to a number — e.g. a capacity attribute).
+"""
+input AllocatableAggregate {
+  key:  String!
+  expr: String
+  fn:   AggregateFn!
+}
+
+"""
+PRD 080 item 7 — one grouping dimension for `reservationStats`. Supply EXACTLY ONE of:
+- `type: true` → group by the reservation's DynamicType (value = type name; entity = null),
+- `expr` → a custom compute expression over the reservation (string result = bucket key),
+- `self: true` → group by the reservation itself; StatKey carries the Reservation as `entity`.
+`key` names the dimension in the result bucket's `keys`.
+"""
+input ReservationGroupKey {
+  key:  String!
+  type: Boolean
+  expr: String
+  self: Boolean
+}
+
+"""
+PRD 080 item 7 — one metric for `reservationStats`. `fn: COUNT` counts reservations in the bucket.
+For SUM/MEAN/MIN/MAX supply a numeric `expr` over the reservation (same engine as `compute`).
+"""
+input ReservationAggregate {
+  key:  String!
+  expr: String
+  fn:   AggregateFn!
+}
+
 "PRD 079 — one grouped result row: the dimension keys, the aggregate values, and the block count."
 type BlockStatBucket {
   keys:   [StatKey!]!
@@ -721,7 +801,15 @@ type BlockStatBucket {
 }
 
 "PRD 079 — a bucket's dimension value (`key` = the BlockGroupKey.key, `value` = the bucket label)."
-type StatKey { key: String!  value: String! }
+type StatKey {
+  key:    String!
+  value:  String!
+  "PRD 080 — the typed group entity for entity dimensions (allocatables/reservation/category-resolving expr); null for time/scalar dimensions. Select its fields directly (e.g. room size)."
+  entity: StatEntity
+}
+
+"PRD 080 — the meaningful, selectable group entities a StatKey may resolve to."
+union StatEntity = Allocatable | Reservation | Category
 
 "PRD 079 — an aggregate result. `number` is the numeric value; `text` is the plugin-formatted form for DURATION_UNIT (UE/hours), else null."
 type StatValue { key: String!  number: Float  text: String }
