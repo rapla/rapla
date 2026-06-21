@@ -99,7 +99,12 @@ type Query {
   # caller-visible reservations in the window into a FLAT list (one row = one
   # block), sorted ascending by start. Same §12 + window/limit semantics as
   # `reservations`. Basis for the SPA table/calendar views.
-  appointmentBlocks(filter: ReservationFilter!): [AppointmentBlock!]!
+  # PRD 074 — `sort` orders the flat block list server-side (locale Collator for
+  # NAME, stable reservation-id tiebreaker); `offset` paginates (skip N). The
+  # block count kept is bounded to `offset + limit + 1` (the +1 powers `hasMore`
+  # without a full count). Use `@view` to also receive `extensions.view.page`
+  # `{ offset, limit, returned, hasMore }`. Default sort = START ASC.
+  appointmentBlocks(filter: ReservationFilter!, sort: [BlockSort!], offset: Int): [AppointmentBlock!]!
 
   # PRD 064 — conflicts touching this reservation. §12: caller must be able
   # to read BOTH sides of each conflict + the allocatable; unreadable
@@ -196,6 +201,18 @@ enum MatchKind {
   SUBSTRING
   "Approximate match — small edit distance from the query. Broad fallback."
   FUZZY
+}
+
+"PRD 074 — sort direction for `appointmentBlocks(sort:)`."
+enum SortDir { ASC  DESC }
+
+"PRD 074 — sortable fields of the flat block list. NAME = locale-collated block name; DURATION omitted in v1 (formatted string, not numerically comparable)."
+enum BlockSortField { START  END  NAME }
+
+"PRD 074 — one sort key for `appointmentBlocks(sort:)`. Multiple keys chain left-to-right; a stable reservation-id tiebreaker is always appended."
+input BlockSort {
+  field: BlockSortField!
+  dir:   SortDir = ASC
 }
 
 """
@@ -652,6 +669,32 @@ field. Default-locale string baked at SDL generation time.
 """
 directive @displayName(value: String!) on FIELD_DEFINITION
 
+# === PRD 074 — view render-meta directives (query-side; consumed by the SPA renderer, PRD 078) ===
+# Presence of @view on the operation makes the server emit `extensions.view`
+# (resolved title + column descriptors) alongside `data`. Field directives feed
+# that descriptor; they do NOT change `data`.
+"PRD 074 — marks an operation as a renderable view; triggers extensions.view (key/title/columns)."
+directive @view(title: String) on QUERY
+"PRD 074 — column presentation override: explicit header and/or order."
+directive @column(header: String, order: Int) on FIELD
+"PRD 074 — column fetched but not displayed (e.g. a group/sort key)."
+directive @hidden on FIELD
+"PRD 074 — list-cell join separator (default \", \")."
+directive @join(separator: String) on FIELD
+"PRD 074 — project a single leaf out of a nested object/list column so the GUI renders a flat value. `field` names the leaf; omitted = the column's single selected sub-field. Meta-only (data stays nested)."
+directive @flatten(field: String) on FIELD
+"PRD 074 — aggregate a numeric column over the FULL matched set (not just the page); the result lands in `extensions.view.totals` keyed by the column's alias. v1 applies to numeric block fields (e.g. `durationMinutes`)."
+directive @aggregate(fn: AggregateFn!) on FIELD
+
+"PRD 074 — aggregation function for @aggregate."
+enum AggregateFn { SUM  COUNT  MEAN  MIN  MAX }
+
+"PRD 079 — marks a column as a GROUPING dimension: @aggregate columns are then computed per bucket (not globally), emitted in `extensions.view.groups`. `by` buckets a date column (start/end); for an allocatable-list column (e.g. rooms) the block fans out to each §12-readable allocatable. Multiple @group = multi-dimensional buckets (e.g. week × room). Server-evaluated."
+directive @group(by: TimeBucket) on FIELD
+
+"PRD 079 — date bucket granularity for @group(by:). ISO_WEEK is ISO-8601 week-based (Mon-start)."
+enum TimeBucket { DAY  ISO_WEEK  MONTH  YEAR }
+
 """
 For ALLOCATABLE-typed attributes: which DynamicType the referenced
 allocatable must belong to. Renders the SPA's allocatable picker filter.
@@ -727,6 +770,8 @@ materialized blocks come from `blocks(from:, to:)` on demand.
 """
 type Appointment {
   id:        ID!
+  "PRD 074 Baustein 9 — appointment-aware name (reservation.formatAppointment). Honors appointment-note overrides; differs from AppointmentBlock.name only in lacking a single occurrence's date context. DISPLAY/EXPORT/PLANNING; EXPORT/PLANNING fall back to DISPLAY when undefined."
+  name(variant: NameVariant = DISPLAY): String
   start:     LocalDateTime!
   end:       LocalDateTime!
   allDay:    Boolean!
@@ -754,6 +799,8 @@ type AppointmentBlock {
   start:       LocalDateTime!
   end:         LocalDateTime!
   isException: Boolean!
+  "PRD 074 Baustein 9 — FLAT block-aware name (block → reservation.formatAppointmentBlock). NOT the reservation name: honors appointment-note overrides (appointmentnote plugin), so a block can name differently than its reservation. DISPLAY/EXPORT/PLANNING variants; EXPORT/PLANNING fall back to DISPLAY when the type defines no such format."
+  name(variant: NameVariant = DISPLAY): String
   "PRD 074 — the reservation this block belongs to (block → reservation → displayName)."
   reservation: Reservation
   "PRD 074 — the block's allocatables, §12-gated, with the same scalar filter as Appointment.allocatables (typeKeyIn/isPersonEq). Per-appointment restriction applied for this block's appointment."
@@ -762,6 +809,8 @@ type AppointmentBlock {
   duration: String
   "PRD 074 — server-evaluated formatted time range of the block (e.g. 10:00 - 11:30)."
   times: String
+  "PRD 074 — wall-clock occupancy of this block in whole minutes (end−start, no break adjustment). Numeric → aggregatable via @aggregate / groupable (PRD 079). Hours = /60. For break-adjusted teaching units use the `duration` string."
+  durationMinutes: Int
   "PRD 074 — inline composition column: evaluates an arbitrary rapla expression (same language as a nameformat; p = the block) against this block, e.g. {p->concat(substring(times(p),0,5),substring(times(p),8,13))}. Invalid expr returns null. Max 2000 chars."
   compute(expr: String!): String
 }

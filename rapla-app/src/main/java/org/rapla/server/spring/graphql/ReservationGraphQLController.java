@@ -60,14 +60,20 @@ public class ReservationGraphQLController
     private final StorageOperator operator;
     private final RaplaGraphqlProperties graphqlProps;
     private final ClassificationGraphQLController classificationController;
+    /** Optional — present only when the eventtimecalculator plugin is on the classpath/enabled. */
+    private final org.springframework.beans.factory.ObjectProvider<
+            org.rapla.plugin.eventtimecalculator.EventTimeCalculatorFactory> eventTimeFactory;
 
     public ReservationGraphQLController(StorageOperator operator,
             RaplaGraphqlProperties graphqlProps,
-            ClassificationGraphQLController classificationController)
+            ClassificationGraphQLController classificationController,
+            org.springframework.beans.factory.ObjectProvider<
+                    org.rapla.plugin.eventtimecalculator.EventTimeCalculatorFactory> eventTimeFactory)
     {
         this.operator = operator;
         this.graphqlProps = graphqlProps;
         this.classificationController = classificationController;
+        this.eventTimeFactory = eventTimeFactory;
     }
 
     // ============================================================ query roots
@@ -230,6 +236,8 @@ public class ReservationGraphQLController
      */
     @QueryMapping
     public List<AppointmentBlockDto> appointmentBlocks(@Argument("filter") ReservationFilter filter,
+            @Argument("sort") List<BlockSort> sort,
+            @Argument("offset") Integer offsetArg,
             graphql.schema.DataFetchingEnvironment env) throws RaplaException
     {
         List<Reservation> visible = reservations(filter, env);
@@ -238,19 +246,33 @@ public class ReservationGraphQLController
         int limit = filter.limit() != null && filter.limit() > 0
                 ? Math.min(filter.limit(), 5000)
                 : 500;
-        // Bounded top-N: keep only the `limit` EARLIEST blocks via a max-heap
-        // (by start). Memory is O(limit) even when recurrence expansion across
-        // all visible reservations is huge — the window cap is opt-in, so a
-        // daily appointment over a multi-year window can expand to thousands of
-        // blocks each. Naive expand-all-then-truncate would allocate O(R×A×B);
-        // a plain early-exit would break the sorted-earliest-N contract (it'd
-        // return blocks in reservation-iteration order). The heap gives the
-        // exact earliest-N, sorted, bounded.
-        java.util.Comparator<AppointmentBlockDto> byStart =
-                java.util.Comparator.comparing(AppointmentBlockDto::start)
-                        .thenComparing(AppointmentBlockDto::end);
+        int offset = offsetArg != null && offsetArg > 0 ? offsetArg : 0;
+
+        // Bounded top-N over the SORT comparator (default START ASC). We keep the
+        // `offset + limit + 1` smallest-by-comparator blocks via a max-heap (so the
+        // root is the largest of the kept set, evicted when a smaller one arrives).
+        // Memory is O(offset+limit) even when recurrence expansion is huge. The +1
+        // lets us report `hasMore` without expanding/counting the full set — the
+        // window cap is opt-in, so a daily appointment over years is thousands of
+        // blocks. The heap generalises the old earliest-N: any sort order, paginated.
+        java.util.Comparator<AppointmentBlockDto> cmp = buildBlockComparator(sort);
+        long keepL = (long) offset + limit + 1;
+        int keep = (int) Math.min(keepL, 20_000);
         java.util.PriorityQueue<AppointmentBlockDto> heap =
-                new java.util.PriorityQueue<>(byStart.reversed());   // max by start
+                new java.util.PriorityQueue<>(cmp.reversed());   // max by cmp
+        // Per-column @aggregate over the FULL matched set (not just the page), O(1) memory.
+        // §12-safe: `visible` is already canRead-gated. Nothing fixed is summed — the totals are
+        // whatever the query author declared with @aggregate on numeric columns.
+        org.rapla.plugin.eventtimecalculator.EventTimeModel etm = resolveEventTimeModel(env);
+        List<AggSpec> aggs = parseAggregates(env);
+        int n = aggs.size();
+        double[] sum = new double[n];
+        long[] cnt = new long[n];
+        double[] min = new double[n];
+        double[] max = new double[n];
+        java.util.Arrays.fill(min, Double.POSITIVE_INFINITY);
+        java.util.Arrays.fill(max, Double.NEGATIVE_INFINITY);
+        int totalCount = 0;
         List<AppointmentBlock> blocks = new ArrayList<>();
         for (Reservation r : visible)
         {
@@ -262,11 +284,22 @@ public class ReservationGraphQLController
                 {
                     AppointmentBlockDto dto = new AppointmentBlockDto(
                             b.getStartDateTime(), b.getEndDateTime(), b.isException(), r, a, b);
-                    if (heap.size() < limit)
+                    totalCount++;
+                    for (int i = 0; i < n; i++)
+                    {
+                        Double v = aggValue(aggs.get(i).field(), dto, b, etm);
+                        if (v != null)
+                        {
+                            sum[i] += v; cnt[i]++;
+                            if (v < min[i]) min[i] = v;
+                            if (v > max[i]) max[i] = v;
+                        }
+                    }
+                    if (heap.size() < keep)
                     {
                         heap.offer(dto);
                     }
-                    else if (byStart.compare(dto, heap.peek()) < 0)
+                    else if (cmp.compare(dto, heap.peek()) < 0)
                     {
                         heap.poll();
                         heap.offer(dto);
@@ -274,9 +307,159 @@ public class ReservationGraphQLController
                 }
             }
         }
-        List<AppointmentBlockDto> out = new ArrayList<>(heap);
-        out.sort(byStart);
+        List<AppointmentBlockDto> sorted = new ArrayList<>(heap);
+        sorted.sort(cmp);
+        boolean hasMore = sorted.size() > offset + limit;
+        int fromIdx = Math.min(offset, sorted.size());
+        int toIdx = Math.min(offset + limit, sorted.size());
+        List<AppointmentBlockDto> page = new ArrayList<>(sorted.subList(fromIdx, toIdx));
+
+        // Page meta → GraphQLContext; ViewMetaInstrumentation nests it under
+        // extensions.view.page when the operation carries @view.
+        java.util.Map<String, Object> pageMeta = new java.util.LinkedHashMap<>();
+        pageMeta.put("offset", offset);
+        pageMeta.put("limit", limit);
+        pageMeta.put("returned", page.size());
+        pageMeta.put("hasMore", hasMore);
+        env.getGraphQlContext().put(ViewMetaInstrumentation.PAGE_CTX_KEY, pageMeta);
+
+        // Totals: count + each declared @aggregate, keyed by the column alias. Columns backed by
+        // the eventtimecalculator (`duration`) are formatted via timeUnit (UE/hours); raw numeric
+        // columns (`durationMinutes`) stay numbers.
+        java.util.Map<String, Object> totals = new java.util.LinkedHashMap<>();
+        totals.put("count", totalCount);
+        for (int i = 0; i < n; i++)
+        {
+            AggSpec s = aggs.get(i);
+            if ("COUNT".equals(s.fn())) { totals.put(s.alias(), cnt[i]); continue; }
+            if (cnt[i] == 0) continue;
+            double raw = switch (s.fn())
+            {
+                case "SUM"  -> sum[i];
+                case "MEAN" -> sum[i] / cnt[i];
+                case "MIN"  -> min[i];
+                case "MAX"  -> max[i];
+                default      -> Double.NaN;
+            };
+            if (Double.isNaN(raw)) continue;
+            long rounded = Math.round(raw);
+            if ("duration".equals(s.field()) && etm != null) totals.put(s.alias(), etm.format(rounded));
+            else totals.put(s.alias(), rounded);
+        }
+        env.getGraphQlContext().put(ViewMetaInstrumentation.TOTALS_CTX_KEY, totals);
+        return page;
+    }
+
+    /** A column's declared {@code @aggregate}: response alias, underlying field name, function. */
+    private record AggSpec(String alias, String field, String fn) {}
+
+    /** Parse {@code @aggregate(fn:)} directives off the appointmentBlocks selection set. */
+    private static List<AggSpec> parseAggregates(graphql.schema.DataFetchingEnvironment env)
+    {
+        List<AggSpec> out = new ArrayList<>();
+        graphql.language.Field root = env.getField();
+        if (root == null || root.getSelectionSet() == null) return out;
+        for (graphql.language.Selection<?> sel : root.getSelectionSet().getSelections())
+        {
+            if (!(sel instanceof graphql.language.Field f)) continue;
+            graphql.language.Directive d = null;
+            for (graphql.language.Directive dir : f.getDirectives())
+            {
+                if ("aggregate".equals(dir.getName())) { d = dir; break; }
+            }
+            if (d == null) continue;
+            String fn = null;
+            for (graphql.language.Argument arg : d.getArguments())
+            {
+                if ("fn".equals(arg.getName()) && arg.getValue() instanceof graphql.language.EnumValue ev)
+                {
+                    fn = ev.getName();
+                }
+            }
+            if (fn == null) continue;
+            String alias = f.getAlias() != null ? f.getAlias() : f.getName();
+            out.add(new AggSpec(alias, f.getName(), fn));
+        }
         return out;
+    }
+
+    /** Numeric value of an aggregatable block column (minutes), or null if not aggregatable here. */
+    private static Double aggValue(String field, AppointmentBlockDto dto, AppointmentBlock b,
+            org.rapla.plugin.eventtimecalculator.EventTimeModel etm)
+    {
+        switch (field)
+        {
+            case "durationMinutes":
+                if (dto.start() == null || dto.end() == null) return null;
+                return (double) java.time.Duration.between(dto.start(), dto.end()).toMinutes();
+            case "duration":
+                if (etm == null) return null;
+                long m = etm.calcDuration(b);
+                return m > 0 ? (double) m : 0.0;
+            default:
+                return null;
+        }
+    }
+
+    /** The caller's {@link org.rapla.plugin.eventtimecalculator.EventTimeModel}, or null when the
+     * eventtimecalculator plugin is absent/disabled or its config can't be read. */
+    private org.rapla.plugin.eventtimecalculator.EventTimeModel resolveEventTimeModel(
+            graphql.schema.DataFetchingEnvironment env)
+    {
+        var factory = eventTimeFactory.getIfAvailable();
+        if (factory == null) return null;
+        try
+        {
+            var rc = RequestContextInstrumentation.from(env.getGraphQlContext());
+            return factory.getEventTimeModel(rc.caller());
+        }
+        catch (RuntimeException e)
+        {
+            return null;
+        }
+    }
+
+    /**
+     * Builds the block sort comparator from the {@code sort} argument (default START ASC),
+     * always appending a stable reservation-id tiebreaker so pagination is deterministic.
+     * NAME uses a locale {@link java.text.Collator}; DURATION is intentionally unsupported
+     * (it's a formatted string, not numerically comparable).
+     */
+    private static java.util.Comparator<AppointmentBlockDto> buildBlockComparator(List<BlockSort> sort)
+    {
+        java.util.Locale loc = StructuralTypeFetchers.serverLocale();
+        java.text.Collator collator = java.text.Collator.getInstance(loc);
+        java.util.Comparator<AppointmentBlockDto> cmp = null;
+        if (sort != null)
+        {
+            for (BlockSort s : sort)
+            {
+                if (s == null || s.field() == null) continue;
+                java.util.Comparator<AppointmentBlockDto> c = switch (s.field())
+                {
+                    case START -> java.util.Comparator.comparing(AppointmentBlockDto::start);
+                    case END   -> java.util.Comparator.comparing(AppointmentBlockDto::end);
+                    case NAME  -> java.util.Comparator.comparing(
+                            (AppointmentBlockDto d) -> blockNameKey(d, loc), collator);
+                };
+                if (s.dir() == SortDir.DESC) c = c.reversed();
+                cmp = cmp == null ? c : cmp.thenComparing(c);
+            }
+        }
+        if (cmp == null)
+        {
+            cmp = java.util.Comparator.comparing(AppointmentBlockDto::start)
+                    .thenComparing(AppointmentBlockDto::end);
+        }
+        return cmp.thenComparing(d -> d.reservation() == null ? ""
+                : String.valueOf(d.reservation().getId()));
+    }
+
+    private static String blockNameKey(AppointmentBlockDto d, java.util.Locale loc)
+    {
+        if (d.block() == null) return "";
+        String n = org.rapla.entities.domain.NameFormatUtil.getName(d.block(), loc);
+        return n == null ? "" : n;
     }
 
     private static org.rapla.entities.domain.Permission.AccessLevel parseAccessLevel(String s)
@@ -337,6 +520,15 @@ public class ReservationGraphQLController
             List<String> accessibleByGroup,     // PRD 069
             String accessLevel,                 // PRD 069 — AccessLevel enum name
             Integer limit) {}
+
+    /** PRD 074 — sort direction, mirrors schema {@code SortDir}. */
+    public enum SortDir { ASC, DESC }
+
+    /** PRD 074 — sortable block fields, mirrors schema {@code BlockSortField}. */
+    public enum BlockSortField { START, END, NAME }
+
+    /** PRD 074 — one block sort key, mirrors schema input {@code BlockSort}. */
+    public record BlockSort(BlockSortField field, SortDir dir) {}
 
     /** Mirror of {@code Allocation} output type. */
     public record AllocationDto(Allocatable allocatable, List<String> appointmentIds) {}

@@ -17,6 +17,7 @@ import java.util.function.Supplier;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.NameFormatUtil;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
@@ -71,6 +72,9 @@ public final class StructuralTypeFetchers
      * affects unit tests bypassing the wiring path).
      */
     private static volatile Locale serverLocale = Locale.getDefault();
+
+    /** The server-configured locale captured at schema-build time (see {@link #wire}). */
+    static Locale serverLocale() { return serverLocale; }
 
     private StructuralTypeFetchers() {}
 
@@ -388,6 +392,75 @@ public final class StructuralTypeFetchers
                 }
             };
 
+    /**
+     * PRD 074 Baustein 9 — {@code AppointmentBlock.name(variant:)} = the block's name, FLAT and
+     * <b>block-aware</b>: resolved via {@link NameFormatUtil#getName(AppointmentBlock, Locale)} /
+     * {@code reservation.formatAppointmentBlock(...)}, so the name function is evaluated with the
+     * <i>block</i> as context object. This is NOT the reservation name — an appointment can carry
+     * an appointment-note override (appointmentnote plugin) that produces a different name than the
+     * reservation. Saves the `reservation { name }` nesting for the common table column.
+     */
+    /**
+     * PRD 074 — {@code AppointmentBlock.durationMinutes}: wall-clock occupancy (end−start) in whole
+     * minutes. Numeric, so it can be summed via {@code @aggregate} or grouped (PRD 079). No break
+     * adjustment / no plugin — that's the {@code duration} string's job.
+     */
+    static final LightDataFetcher<Integer> APPOINTMENT_BLOCK_DURATION_MINUTES =
+            new LightSourceFetcher<ReservationGraphQLController.AppointmentBlockDto, Integer>(
+                    ReservationGraphQLController.AppointmentBlockDto.class)
+            {
+                @Override protected Integer read(ReservationGraphQLController.AppointmentBlockDto dto,
+                        Supplier<DataFetchingEnvironment> env)
+                {
+                    if (dto == null || dto.start() == null || dto.end() == null) return null;
+                    return (int) java.time.Duration.between(dto.start(), dto.end()).toMinutes();
+                }
+            };
+
+    static final LightDataFetcher<String> APPOINTMENT_BLOCK_NAME =
+            new LightSourceFetcher<ReservationGraphQLController.AppointmentBlockDto, String>(
+                    ReservationGraphQLController.AppointmentBlockDto.class)
+            {
+                @Override protected String read(ReservationGraphQLController.AppointmentBlockDto dto,
+                        Supplier<DataFetchingEnvironment> env)
+                {
+                    if (dto == null || dto.reservation() == null || dto.block() == null) return null;
+                    Object v = env.get().getArgument("variant");
+                    String variant = v == null ? "DISPLAY" : v.toString();
+                    return resolveBlockVariantName(dto.reservation(), dto.block(), variant);
+                }
+            };
+
+    /**
+     * Block-aware name resolution mirroring {@link NameFormatUtil}'s variant semantics: DISPLAY =
+     * {@code getName(block)}; EXPORT uses the export format only if the type defines it, else falls
+     * back to DISPLAY ({@link NameFormatUtil#getExportName(AppointmentBlock, Locale)}); PLANNING
+     * uses the planning format if defined, else DISPLAY. All paths go through
+     * {@code reservation.formatAppointmentBlock(...)} so appointment-note overrides are honored.
+     */
+    private static String resolveBlockVariantName(org.rapla.entities.domain.Reservation reservation,
+            org.rapla.entities.domain.AppointmentBlock block, String variant)
+    {
+        switch (variant)
+        {
+            case "EXPORT":
+                return NameFormatUtil.getExportName(block, serverLocale);
+            case "PLANNING":
+            {
+                org.rapla.entities.dynamictype.Classification cls = reservation.getClassification();
+                if (cls != null && cls.getType().getAnnotation(
+                        org.rapla.entities.dynamictype.DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING) != null)
+                {
+                    return reservation.formatAppointmentBlock(serverLocale,
+                            org.rapla.entities.dynamictype.DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING, block);
+                }
+                return NameFormatUtil.getName(block, serverLocale);
+            }
+            default:
+                return NameFormatUtil.getName(block, serverLocale);
+        }
+    }
+
     /** Shared name-variant resolution for Reservation + Allocatable (both Named + Classifiable):
      * DISPLAY = the plain nameformat; EXPORT/PLANNING use the variant only if the type defines it,
      * else fall back to DISPLAY. */
@@ -595,6 +668,45 @@ public final class StructuralTypeFetchers
     // === Appointment field fetchers ===========================================
 
     /** Wall-time all-day heuristic — start/end at 00:00, end > start. */
+    /**
+     * PRD 074 Baustein 9 — {@code Appointment.name(variant:)} = appointment-aware name via
+     * {@link NameFormatUtil#getName(org.rapla.entities.domain.Appointment, Locale)} /
+     * {@code reservation.formatAppointment(...)}. Like the block-level name it honors
+     * appointment-note overrides; it differs only in that it has no single occurrence's
+     * date context (the name function is evaluated against the appointment, not a block).
+     */
+    static final LightDataFetcher<String> APPOINTMENT_NAME =
+            new LightSourceFetcher<org.rapla.entities.domain.Appointment, String>(
+                    org.rapla.entities.domain.Appointment.class)
+            {
+                @Override protected String read(org.rapla.entities.domain.Appointment a,
+                        Supplier<DataFetchingEnvironment> env)
+                {
+                    if (a == null || a.getReservation() == null) return null;
+                    Object v = env.get().getArgument("variant");
+                    String variant = v == null ? "DISPLAY" : v.toString();
+                    org.rapla.entities.domain.Reservation r = a.getReservation();
+                    switch (variant)
+                    {
+                        case "EXPORT":
+                            return NameFormatUtil.getExportName(a, serverLocale);
+                        case "PLANNING":
+                        {
+                            org.rapla.entities.dynamictype.Classification cls = r.getClassification();
+                            if (cls != null && cls.getType().getAnnotation(
+                                    org.rapla.entities.dynamictype.DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING) != null)
+                            {
+                                return r.formatAppointment(serverLocale,
+                                        org.rapla.entities.dynamictype.DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING, a);
+                            }
+                            return NameFormatUtil.getName(a, serverLocale);
+                        }
+                        default:
+                            return NameFormatUtil.getName(a, serverLocale);
+                    }
+                }
+            };
+
     static final LightDataFetcher<Boolean> APPOINTMENT_ALL_DAY =
             new LightSourceFetcher<org.rapla.entities.domain.Appointment, Boolean>(
                     org.rapla.entities.domain.Appointment.class)
@@ -663,10 +775,7 @@ public final class StructuralTypeFetchers
     private static List<Allocatable> resolveAppointmentAllocatables(
             org.rapla.entities.domain.Appointment a, DataFetchingEnvironment dfe, StorageOperator operator)
     {
-        org.rapla.entities.domain.Reservation r = a.getReservation();
-        if (r == null) return List.of();
         var rc = RequestContextInstrumentation.from(dfe.getGraphQlContext());
-        User caller = rc.caller();
         PermissionController pc = rc.permissionController() != null
                 ? rc.permissionController() : operator.getPermissionController();
         // PRD 073 — optional scalar filter, applied AFTER the §12 canRead gate
@@ -674,6 +783,19 @@ public final class StructuralTypeFetchers
         @SuppressWarnings("unchecked")
         Map<String, Object> filterArg = dfe.getArgument("filter") instanceof Map<?, ?> m
                 ? (Map<String, Object>) m : null;
+        return filterAllocatables(a, rc.caller(), pc, filterArg);
+    }
+
+    /**
+     * §12-safe per-appointment allocatable resolution (canRead gate BEFORE the optional scalar
+     * filter; per-appointment restriction applied). Shared by {@code AppointmentBlock.allocatables}
+     * and the {@code @group} room dimension (PRD 079) so both honor the exact same leak rules.
+     */
+    static List<Allocatable> filterAllocatables(org.rapla.entities.domain.Appointment a,
+            User caller, PermissionController pc, Map<String, Object> filterArg)
+    {
+        org.rapla.entities.domain.Reservation r = a.getReservation();
+        if (r == null) return List.of();
         List<Allocatable> out = new ArrayList<>();
         Allocatable[] all = r.getAllocatables();
         if (all == null) return List.of();
@@ -913,13 +1035,16 @@ public final class StructuralTypeFetchers
                 .dataFetcher("allocations",    reservationAllocations(operator))
                 .dataFetcher("classification", RESERVATION_CLASSIFICATION));
         b.type("Appointment", t -> t
+                .dataFetcher("name",         APPOINTMENT_NAME)
                 .dataFetcher("allDay",       APPOINTMENT_ALL_DAY)
                 .dataFetcher("repeating",    APPOINTMENT_REPEATING)
                 .dataFetcher("allocatables", appointmentAllocatables(operator))
                 .dataFetcher("blocks",       APPOINTMENT_BLOCKS));
         b.type("AppointmentBlock", t -> t
+                .dataFetcher("name",         APPOINTMENT_BLOCK_NAME)
                 .dataFetcher("allocatables", appointmentBlockAllocatables(operator))
                 .dataFetcher("duration",     appointmentBlockDuration(operator))
+                .dataFetcher("durationMinutes", APPOINTMENT_BLOCK_DURATION_MINUTES)
                 .dataFetcher("times",        appointmentBlockTimes(operator))
                 .dataFetcher("compute",      APPOINTMENT_BLOCK_COMPUTE));
         // The Classification interface's fields are inherited by the

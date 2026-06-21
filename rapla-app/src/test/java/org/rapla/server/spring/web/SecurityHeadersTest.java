@@ -8,6 +8,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 
@@ -33,7 +34,9 @@ class SecurityHeadersTest extends IsolatedDefaultDatasetTest
     {
         mockMvc.perform(get("/login"))
                 .andExpect(header().exists("Content-Security-Policy-Report-Only"))
-                .andExpect(header().string("Content-Security-Policy-Report-Only", containsString("style-src 'self'")))
+                // style-src/img-src/font-src dropped from the SPA/login policy (lowest
+                // criticality, no code execution) — only the meaningful directives stay.
+                .andExpect(header().string("Content-Security-Policy-Report-Only", not(containsString("style-src"))))
                 .andExpect(header().string("Content-Security-Policy-Report-Only", containsString("frame-ancestors 'none'")))
                 .andExpect(header().string("Content-Security-Policy-Report-Only", containsString("object-src 'none'")))
                 .andExpect(header().string("Content-Security-Policy-Report-Only", containsString("connect-src 'self'")))

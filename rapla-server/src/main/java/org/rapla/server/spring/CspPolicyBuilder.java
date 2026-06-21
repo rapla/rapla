@@ -46,10 +46,12 @@ public final class CspPolicyBuilder
         // the bundle so dev == prod. This header carries the directives autoCsp does
         // NOT manage; a default-src here would re-impose a script policy and conflict
         // with the autoCsp loader.
+        // style-src / img-src / font-src deliberately omitted: lowest-criticality (no code
+        // execution — script-src is the real XSS defense and the autoCsp <meta> owns+enforces
+        // it). With no default-src here those resource types stay unrestricted, which is fine;
+        // dropping style-src also removes the runtime inline-<style> report-only false-positive
+        // (Angular/Material component styles) that would otherwise block flipping this header.
         return String.join("; ",
-                "style-src 'self'",
-                "img-src 'self' data:",
-                "font-src 'self'",
                 "connect-src " + String.join(" ", connect),
                 "object-src 'none'",
                 // base-uri 'self' (NOT 'none'): the Angular SPA ships <base href="/app/">,

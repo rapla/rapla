@@ -16,5 +16,13 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./reservations/reservations.component').then((m) => m.ReservationsComponent),
   },
+  {
+    // PRD 078 — GraphQL-driven table view (appointments / blocks). Sits beside
+    // the legacy /api/table reservations view until it supersedes it.
+    path: 'appointments',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./views/appointments-view.component').then((m) => m.AppointmentsViewComponent),
+  },
   { path: '**', redirectTo: 'reservations' },
 ];

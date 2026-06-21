@@ -876,17 +876,23 @@ serves both internal and public export; the difference is **only** the server-se
 > table win isn't blocked. For the first cut, standard table views may ship as **code-shipped
 > defaults** (full saved-view authoring/persistence comes with PRD 077).
 
-**In:** the GraphQL-native read-**table** view model — the generator that compiles each col
-annotation to a server-evaluated composition field (reusing rapla's `ParsedText`) or a
-GraphQL filter; GraphQL selection/filter; presentation directives
-(`@column`/`@flatten`/`@groupBy`) as optional overrides; variable→control inference;
-per-user §12 execution; save-time validation; XSS hardening; sort + pagination (decided).
+**In (server only):** the GraphQL-native read-**table** view model — the generator that
+compiles each col annotation to a server-evaluated composition field (reusing rapla's
+`ParsedText`) or a GraphQL filter; GraphQL selection/filter; presentation directives
+(`@column`/`@flatten`/`@groupBy`) as optional overrides; **the `@view` directive + the
+`extensions.view` render-meta the SPA consumes** (incl. the `inputs` block the SPA infers
+controls from); per-user §12 execution; save-time validation; XSS hardening; sort +
+pagination (decided). **074 owns the server contract; the Angular consumer is PRD 078.**
 
 **Out:** any client expression engine / CEL / dual-runtime parity (evaluated and dropped
 — compositions run server-side); the rapla DSL / Swing-HTML TableView (deprecated, not
 migrated); GraphQL mutations / edit forms (companion); charts beyond the client-only
-Vega-Lite note; **SavedView persistence, CalendarModel replacement, view-switching/conversion,
-week/month calendar render-modes → PRD 077.**
+Vega-Lite note; **the SPA render/control layer — GraphQL transport, generic `cdk-table`
+renderer, control rendering/inference, component registry, `monaco-graphql` authoring
+→ [PRD 078 — SPA GraphQL view renderer](078-spa-graphql-view-renderer.md)**; **SavedView
+persistence, CalendarModel replacement, view-switching/conversion, week/month calendar
+render-modes → PRD 077**; **the global unified/power-search across views → PRD 077 / 060**
+(it is a shared cross-view selector and conflicts with Locked Decision #6's per-view inputs).
 
 ## Plan — phased
 
@@ -904,25 +910,123 @@ week/month calendar render-modes → PRD 077.**
 > - **Baustein 4** — `AppointmentBlock.duration` + `.times`, server-evaluated via the **rapla
 >   function bridge** (`evalBlockFunction`: factory-by-namespace → `createFunction` with an identity
 >   arg → `EvalContext` over the real block → `toString`). The bridge is the runtime half of PRD 073.
->
-> **Remaining (server):** `name(variant:)` (model A — `displayName` stays as the DISPLAY default,
-> to be `@deprecated`); `compute(expr:)` (inline composition, reuses the bridge); **sort** (`$sort`
-> variable, server-applied, locale Collator, stable id tiebreaker); pagination `offset` +
-> `extensions.view.page`; the `@view` directive + `extensions.view` render-meta; the
-> `ComputeFunctions` SDL catalog (PRD 073 descriptor-SPI). **Deferred:** persistence / SavedView /
-> switching / week-month → PRD 077; the Angular table renderer.
+> - **Baustein 5** — `AppointmentBlock.compute(expr:)`, inline composition reusing the table-column
+>   machinery (`ParsedText` over the block's `DynamicType` parse context). Max 2000 chars; invalid → null.
+> - **Baustein 6** — `Reservation.name(variant: NameVariant = DISPLAY)` (model A; `displayName`
+>   `@deprecated`). `Allocatable.name(variant:)` + deprecated `displayName` (**Baustein 7**).
+> - **Baustein 8** — render-meta layer: `@view`/`@column`/`@hidden`/`@join` directives +
+>   `ViewMetaInstrumentation` emitting `extensions.view = {key,title,columns}` (no `@view` → no
+>   extensions). Each column carries a schema-derived **`type`** hint and the descriptors are
+>   **sorted by `@column(order:)`** — the GUI renders left-to-right without re-deriving anything.
 
-1. **Phase 1 — Generator + renderer.** Compile col annotations → server-evaluated
-   composition fields (reuse `ParsedText`) + GraphQL filters; convention-driven
-   `cdk-table` renderer (field order = columns, alias → header, join, format); render
-   `events` + `appointments`. Saved-view config entity (CRUD, admin-scoped). §12 via
-   existing resolvers.
+#### `extensions.view` contract v1 (GUI consumer — PRD 078)
+
+**Two classes of directives — the load-bearing split (locked 2026-06-21):**
+
+| Class | Directives | Evaluated by | Effect |
+|---|---|---|---|
+| **Client / render** | `@column`, `@hidden`, `@join`, `@flatten` | **client (GUI)** | pure presentation hints in `extensions.view.columns`; never touch `data` |
+| **Server / evaluate** | `@aggregate` (+ future `@group`, PRD 079) | **server** | real computation over the **full matched set**, result in `extensions.view.totals` |
+
+The split mirrors the query args: **what is queried/evaluated** (`filter`, `sort`, `offset`,
+`@aggregate`, `@group`) is server-side; **how it's displayed** (`@column`/`@hidden`/`@join`/`@flatten`)
+is client-side. `@aggregate` *must* be server-side: the client only receives the **page** (e.g.
+1–20 rows under `limit`/`offset`), but a total spans **all** matched blocks — it cannot be derived
+client-side. The resolver accumulates in the same block loop (O(1) memory);
+`ViewMetaInstrumentation` only translates the render hints into meta.
+
+The render directives are **client-side presentation hints**: they shape `extensions.view` only and
+never alter `data`. A query without `@view` returns no `extensions.view` (zero overhead).
+
+| Directive | On | Args | Effect on the column descriptor |
+|---|---|---|---|
+| `@view` | QUERY (operation) | `title: String` | enables emission; `key` = operation name, `title` = arg |
+| `@column` | FIELD | `header: String`, `order: Int` | `header` (default = alias), sort position |
+| `@hidden` | FIELD | — | `hidden: true` (present in data, not a visible column — e.g. group/sort keys) |
+| `@join` | FIELD | `separator: String` | `join: "<sep>"` — renderer joins a list column's leaf values |
+
+Emitted shape:
+
+```jsonc
+"extensions": {
+  "view": {
+    "key": "Termine",            // operation name
+    "title": "Termine KW",       // @view(title:)
+    "columns": [                 // sorted by @column(order:), then declaration order
+      { "alias": "head",    "header": "Veranstaltung", "type": "Reservation" },
+      { "alias": "start",   "header": "start",         "type": "LocalDateTime" },
+      { "alias": "day",     "header": "day",           "type": "LocalDateTime", "hidden": true },
+      { "alias": "persons", "header": "persons",       "type": "Allocatable",   "join": "; " }
+    ]
+  }
+}
+```
+
+- `alias` = the field's response key (read `data` by this) — the GraphQL alias, else the field name.
+- `type` = the **unwrapped** GraphQL type name (list/non-null stripped): scalars (`String`,
+  `Int`, `Float`, `Boolean`, `LocalDateTime`, `Date`, `ID`) → leaf cell + alignment/format;
+  object names (`Reservation`, `Allocatable`) → nested value the renderer projects/joins.
+- Field directives must precede the sub-selection: `head: reservation @column(header:"…") { name }`.
+
+Example query the SPA can ship as-is:
+
+```graphql
+query Termine @view(title: "Termine KW") {
+  appointmentBlocks(filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" }) {
+    name        @column(header: "Veranstaltung", order: 0)
+    start       @column(header: "Beginn",        order: 1)
+    duration    @column(header: "Dauer",         order: 2)
+    persons:   allocatables(filter: { isPersonEq: true }) @join(separator: "; ") @column(header: "Dozent", order: 3) { name }
+    resources: allocatables(filter: { typeKeyIn: ["room"] }) @join(separator: ", ") @column(header: "Raum",  order: 4) { name }
+  }
+}
+```
+> - **Baustein 9** — `AppointmentBlock.name(variant:)` (FLAT, **block-aware** via
+>   `reservation.formatAppointmentBlock` — NOT the reservation name; honors appointment-note overrides)
+>   + `Appointment.name(variant:)` (appointment-aware via `formatAppointment`). Mirrors the three
+>   `NameFormatUtil` levels (block / appointment / classifiable).
+>
+> **Test debt (Baustein 9):** the green tests assert block/appointment `name` equals the reservation
+> name in the **note-free fixture** — which can't distinguish block-aware from reservation-level
+> (they coincide without a note). The fix is correct by construction (same `formatAppointmentBlock`
+> seam as `RaplaBlock`/`HTMLRaplaBlock`), but a true **divergence regression test** is still owed:
+> a fixture appointment carrying an appointmentnote whose override surfaces via the type's nameformat,
+> asserting `block.name != reservation.name`. Add before closing PRD 074.
+>
+> - **Baustein 10** — **sort** (`appointmentBlocks(sort: [BlockSort!])` — `BlockSortField`
+>   START/END/NAME × `SortDir` ASC/DESC, locale Collator for NAME, stable reservation-id tiebreaker)
+>   + **pagination** (`offset: Int`; bounded heap keeps `offset+limit+1` so `hasMore` needs no full
+>   count). With `@view`, `extensions.view.page = { offset, limit, returned, hasMore }` (resolver →
+>   GraphQLContext → `ViewMetaInstrumentation`). GUI-ready parameterized query (variables
+>   `$filter`/`$sort`/`$offset`) lives in the contract block above.
+>
+> - **Baustein 11** — `@flatten(field:)` directive: meta-only hint adding `flatten: "<leaf>"` to
+>   the column descriptor (explicit arg, or auto-detected single sub-field) so the GUI projects a
+>   nested object/list column to a flat value. Data stays nested.
+> - **Baustein 12** — global aggregates: `extensions.view.totals = { count, minutes, unit }` over
+>   the FULL matched set (O(1) accumulation in the block loop). `minutes` = Σ wall-clock (end−start;
+>   GUI derives hours = /60). `unit` = the eventtimecalculator total formatted "whole,remainder"
+>   (break-adjusted **and** ÷timeUnit → UE at 45 / hours at 60; identical to the per-row `duration`
+>   column), present only when the plugin is. Raw break-adjusted minutes are NOT exposed (no consumer;
+>   the GUI lacks `timeUnit` to convert — the formatted string carries the conversion). §12-safe
+>   (built from the canRead-gated set). Answers "total duration of all queried blocks". **Grouped**
+>   aggregates (hours/week/room) → **PRD 079**.
+>
+> **Remaining (server):** the `ComputeFunctions` SDL catalog (PRD 073 descriptor-SPI). **Deliberately
+> omitted:** `total` block count (would defeat bounded memory — `hasMore` covers paging); grouped
+> aggregates (own scope → PRD 079). **Deferred:** persistence / SavedView / switching / week-month →
+> PRD 077; the Angular table renderer → PRD 078.
+
+1. **Phase 1 — Generator + render-meta.** Compile col annotations → server-evaluated
+   composition fields (reuse `ParsedText`) + GraphQL filters; the `@view` directive +
+   `extensions.view` emission for `events` + `appointments`. §12 via existing resolvers.
+   (The Angular `cdk-table` renderer that *consumes* `extensions.view` is **PRD 078**.)
 2. **Phase 2 — Grouping + server export.** The `appointmentBlocks(filter:)` query root
    (flat block rows); the hidden `day` group/sort column (`@group(by: DAY) @hidden`) for
    `appointments_per_day`; CSV/HTML/iCal export reuse the same **server-side** evaluation.
    (`@flatten`/`@column(order:)` are *not* needed once each view roots at the right level.)
-3. **Phase 3 — Authoring + polish.** Override directives (`@column`/`@when`), component
-   registry, `monaco-graphql` autocomplete over the query (no transform-spec editor).
+3. **Phase 3 — Authoring + polish.** Override directives (`@column`/`@when`) — server side.
+   (The component registry + `monaco-graphql` authoring editor are SPA → **PRD 078**.)
 4. **Phase 4 — Authoring scope + shared views** (global vs group-admin; personal vs
    shared).
 5. **Future — pagination/prev-next; optional aggregate-field convention; companion
@@ -937,11 +1041,10 @@ week/month calendar render-modes → PRD 077.**
 - **Tier 3 (MockMvc) §12 leak test** — two users run the same saved view; each sees
   only their readable rows (byte-identical to visible-only subset); the view can't
   widen scope.
-- **Renderer (tier 5/6)** — convention rendering (field order = columns, alias →
-  header, list join, type format) and the multi-level case (flatten + `@column(order:)`
-  → correct column order; `@groupBy(day)` → day section headers, no collapse).
+- **Renderer (tier 5/6)** — convention rendering, grouping, the multi-level case → **PRD 078**
+  (Angular consumer tests; 074 stops at the `extensions.view` contract).
 - **Server/client equivalence** — SPA render and CSV/HTML/iCal export over the *same*
-  GraphQL response produce the same rows.
+  GraphQL response produce the same rows (the SPA half lives in **PRD 078**).
 - **Save-time validation** — invalid GraphQL / unknown directive / over-deep query rejected.
 
 ## Open questions

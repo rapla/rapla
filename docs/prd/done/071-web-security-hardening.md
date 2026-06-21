@@ -1,6 +1,8 @@
 # PRD 071 — Web security hardening (audit findings, CSP/CORS/headers, XSS)
 
-**Status:** in-progress (2026-06-18)
+**Status:** done (2026-06-21) — all audit findings shipped, mitigated, or reframed. H7 → PRD 076
+(scoped API keys). The soft-shell CSP enforce-flip is deferred by decision (report-only; the
+critical `script-src` is already enforced) and the Phase-4 gate's CI-wiring is PRD 034's scope.
 
 ## Goal
 
@@ -111,17 +113,31 @@ adapters (belong with their deployment, not this core PRD).
      policies keep `'none'` — no `<base>` there). Test updated.
   3. ⚪ `connect-src` violation seen was a dev-only artifact (4200→8051 split); prod is
      same-origin/IdP, already covered.
-- **Remaining (needs IdP login — could not reach authenticated UI):** CDK overlays
-  (mat-select, datepicker, menus) set inline `style="transform:…"` for positioning, which
-  **cannot be hashed/nonced** (no SSR → no per-request nonce) and would need
-  `style-src 'self' 'unsafe-inline'`. This single open question decides SPA enforce. Until
-  an authenticated walk confirms it, the SPA header **stays report-only** (enforcing
-  partially-blind is the login-page mistake). `style-src` deliberately left at `'self'`
-  so the authenticated walk still surfaces overlay violations.
-- **To finish:** log in (Keycloak), open a mat-select/datepicker/dialog, watch for
-  `[Report Only] … style-src` violations. If only CDK inline-style attrs violate → set
-  the SPA `style-src 'self' 'unsafe-inline'` (script-src stays strict via the autoCsp
-  `<meta>`), then drop report-only to enforce for `/app`.
+- **RESOLVED — dropped the lowest-criticality directives + codified the Phase-4 gate [2026-06-21].**
+  Threat-model triage: the **critical** CSP directive is `script-src` (code execution =
+  XSS→localStorage-JWT→takeover, H4/A6) — and it is **already enforced** (SPA autoCsp `<meta>`;
+  `/api`+`/rapla` `default-src 'none'`). `style-src`/`img-src`/`font-src` are the **lowest tier**
+  (no code execution; worst case CSS defacement / weak CSS-exfil), so the SPA `CspPolicyBuilder.build()`
+  policy now **omits them entirely** (no `default-src` fallback → those resource types unrestricted —
+  acceptable for a no-code-exec class). Bonus: dropping `style-src` removes the one real blocker the
+  Playwright gate had found — a runtime-injected inline `<style>` (Angular/Material component styles;
+  `style-src-elem, blockedURI: inline`) that the manual MCP walk missed (its listener was installed
+  after load). **The remaining soft shell stays report-only** (per decision):
+  `connect-src 'self' <idp-origins>; object-src 'none'; base-uri 'self'; frame-ancestors 'none';
+  frame-src 'none'; form-action 'self'`. Tests updated: `CspPolicyBuilderTest`, `SecurityHeadersTest`.
+- **Phase-4 gate (shipped 2026-06-21):** `rapla-angular/tests/csp-enforce-readiness.spec.ts`
+  (tier-7, not yet in CI per PRD 034 Phase 4). Logs in (admin/empty → B3 nag → skip), walks the
+  CDK overlays that exist, and asserts the authenticated SPA produces **zero** report-only
+  `securitypolicyviolation`s — now **strict-green** (the soft shell is clean). A load-bearing
+  **control canary** (an `<object>` that MUST trip `object-src 'none'`) keeps it from passing
+  blind. As components land it fails on any new violation → the measured signal for "would
+  enforcing the remaining shell break anything?". Run: `npm run e2e -- csp-enforce-readiness`
+  (dev server up). NB the listener must be installed via `addInitScript` (pre-load) or it
+  misses load-time violations — the lesson from the missed inline-`<style>`.
+- **To finish (low priority):** the soft shell is gate-confirmed clean, so flipping it
+  report-only → enforce is now a one-liner whenever wanted — but it's **defense-in-depth only**
+  (script-src, the real defense, is already enforced), so it stays report-only for now. The
+  most valuable of the remaining is `connect-src` enforce (a second wall against exfiltration).
 - **dev parity:** dev runs `npm run start:ai` (no-live-reload) → no HMR WebSocket → no
   `connect-src ws:` exception → dev CSP == prod. Source maps unaffected.
 
@@ -282,10 +298,12 @@ redirect + refresh_token grant; no `silentRefreshRedirectUri`/`sessionChecksEnab
   `rotate`, default `read`) + possession-/`rotate`-scoped **self-rotation**. Overlap
   rotation already works today via create+delete (AWS/GCP model).
 
-### Phase 4 — verify
-Per AGENTS.md §1 every fix lands test-first. Phase-2 CSP additionally needs a
-Playwright report-only pass (PRD 034 Phase 4 wiring) that fails CI on violations —
-the strongest "no surprise at deploy" gate.
+### Phase 4 — verify [shipped 2026-06-21]
+Per AGENTS.md §1 every fix landed test-first. The Phase-2 CSP gate now exists:
+`rapla-angular/tests/csp-enforce-readiness.spec.ts` — drives the authenticated SPA, walks
+the CDK overlays, and fails on any new report-only `securitypolicyviolation` (with a control
+canary so it can't pass blind). Currently strict-green. The only remaining piece is wiring it
+into CI, which is **PRD 034 Phase 4's job** (the browser-e2e lane), not 071.
 
 ## Decisions (locked 2026-06-18)
 1. **Zero deploy-config** is a hard requirement; reuse existing config, never add a
@@ -298,12 +316,15 @@ the strongest "no surprise at deploy" gate.
    from the server header (nonce/per-route) for future dynamic libs.
 
 ## Tests
-`JwtConfigTokenTypeTest`, `ArchiverServiceAccessTest`, `PasswordCheckBindingGuardTest`,
-`CorsOriginPolicyTest`, `SafePageErrorTest`, `CspPolicyBuilderTest`,
-`SecurityHeadersTest`, `XMLReaderAdapterTest`, `Export2iCalContentDispositionTest`,
-`LoginAttemptTrackerTest`, `LoginRateLimitTest` (all green). Remaining: Playwright
-report-only walk (Step 3, PRD 034 Phase 4) that fails CI on violations — the strongest
-"no surprise at deploy" gate.
+Phase-1/3 point fixes: `JwtConfigTokenTypeTest`, `ArchiverServiceAccessTest`,
+`PasswordCheckBindingGuardTest`, `CorsOriginPolicyTest`, `SafePageErrorTest`,
+`CspPolicyBuilderTest`, `SecurityHeadersTest`, `XMLReaderAdapterTest`,
+`Export2iCalContentDispositionTest`, `LoginAttemptTrackerTest`, `LoginRateLimitTest`.
+A7/B3/H3 (this session): `RaplaPasswordEncoderTest`, `PasswordRehashAuthenticateTest`,
+`FixAdminPasswordGuardTest`, `CryptoHandlerTest`, `UrlCipherV2Test`,
+`UrlEncryptionControllerIntegrationTest`, `ChangePasswordNagFlowTest`, `LoginPageHintTest`.
+CSP Phase-4 gate: `rapla-angular/tests/csp-enforce-readiness.spec.ts` (tier-7, run via
+`npm run e2e`; not yet in CI per PRD 034 Phase 4). All green.
 
 ## Open Questions
 - Phase 2: confirm `@angular/build` (vite) dev-server leaves no residual WebSocket

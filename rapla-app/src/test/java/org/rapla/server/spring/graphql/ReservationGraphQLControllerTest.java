@@ -22,9 +22,15 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.client.MockMvcWebTestClient;
 
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasItems;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -807,6 +813,92 @@ class ReservationGraphQLControllerTest
     }
 
     /**
+     * PRD 074 Baustein 9 — AppointmentBlock.name is FLAT and block-aware. In the
+     * note-free fixture it equals the reservation's name (block → reservation), but
+     * it is resolved via reservation.formatAppointmentBlock so an appointment-note
+     * override would diverge. Asserts: field present, non-blank, == reservation.name.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void appointmentBlockNameIsFlatAndMatchesReservationWhenNoNote()
+    {
+        assertTrue(typeFieldNames("AppointmentBlock").contains("name"),
+                () -> "missing AppointmentBlock.name");
+        List<Map<String, Object>> blocks = tester.document("""
+                query {
+                  appointmentBlocks(filter: {
+                    from: "2006-01-01T00:00:00",
+                    to:   "2006-12-31T00:00:00"
+                  }) {
+                    name
+                    reservation { name }
+                  }
+                }
+                """)
+                .execute()
+                .path("appointmentBlocks")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
+                .get();
+        assertFalse(blocks.isEmpty(), "fixture should produce blocks");
+        for (Map<String, Object> b : blocks)
+        {
+            String flat = (String) b.get("name");
+            assertNotNull(flat, () -> "block.name required; got " + b);
+            assertFalse(flat.isBlank(), "block.name must be non-blank");
+            @SuppressWarnings("unchecked")
+            Map<String, Object> res = (Map<String, Object>) b.get("reservation");
+            assertEquals(res.get("name"), flat,
+                    () -> "note-free fixture: block.name must equal reservation.name; got " + b);
+        }
+    }
+
+    /**
+     * PRD 074 Baustein 9 — Appointment.name is appointment-aware (reservation.formatAppointment).
+     * Note-free fixture: equals the reservation name; field present + non-blank.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void appointmentNameIsAppointmentAwareAndMatchesReservationWhenNoNote()
+    {
+        assertTrue(typeFieldNames("Appointment").contains("name"),
+                () -> "missing Appointment.name");
+        List<Map<String, Object>> reservations = tester.document("""
+                query {
+                  reservations(filter: {
+                    from: "2006-01-01T00:00:00",
+                    to:   "2006-12-31T00:00:00"
+                  }) {
+                    name
+                    appointments { name }
+                  }
+                }
+                """)
+                .execute()
+                .path("reservations")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
+                .get();
+        assertFalse(reservations.isEmpty(), "fixture should produce reservations");
+        boolean sawAppointment = false;
+        for (Map<String, Object> r : reservations)
+        {
+            String resName = (String) r.get("name");
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> apps = (List<Map<String, Object>>) r.get("appointments");
+            assertNotNull(apps, "reservation.appointments required");
+            for (Map<String, Object> a : apps)
+            {
+                sawAppointment = true;
+                String aName = (String) a.get("name");
+                assertNotNull(aName, () -> "appointment.name required; got " + a);
+                assertFalse(aName.isBlank(), "appointment.name must be non-blank");
+                assertEquals(resName, aName,
+                        () -> "note-free fixture: appointment.name must equal reservation.name");
+            }
+        }
+        assertTrue(sawAppointment, "fixture should expose at least one appointment");
+    }
+
+    /**
      * PRD 074 Baustein 3 — AppointmentBlock.allocatables(filter:) narrows the
      * block's allocatables by type (Kurs/Person/Raum columns), reusing the
      * Appointment.allocatables §12 + restriction logic. Schema + behaviour.
@@ -1072,6 +1164,223 @@ class ReservationGraphQLControllerTest
             }
         }
         assertTrue(sawAny, "fixture should have non-person allocatables on a block");
+    }
+
+    // ============================================================ PRD 074 — render-meta (@view → extensions.view)
+
+    private static String gqlBody(String query)
+    {
+        return "{\"query\":\"" + query.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", " ") + "\"}";
+    }
+
+    /**
+     * PRD 074 — an operation carrying @view emits extensions.view (key + resolved
+     * title + column descriptors from the root field's selection + field directives).
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void viewDirectiveEmitsExtensionsView() throws Exception
+    {
+        String query = """
+                query Termine @view(title: "Termine KW") {
+                  appointmentBlocks(filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00", limit: 2 }) {
+                    head: reservation @column(header: "Veranstaltung") { name }
+                    start
+                    day: start @hidden
+                    persons: allocatables(filter: { isPersonEq: true }) @join(separator: "; ") { name }
+                  }
+                }
+                """;
+        mockMvc.perform(post("/api/graphql").contentType(MediaType.APPLICATION_JSON).content(gqlBody(query)))
+                .andExpect(jsonPath("$.extensions.view.key").value("Termine"))
+                .andExpect(jsonPath("$.extensions.view.title").value("Termine KW"))
+                .andExpect(jsonPath("$.extensions.view.columns[*].alias")
+                        .value(hasItems("head", "start", "day", "persons")))
+                .andExpect(jsonPath("$.extensions.view.columns[?(@.alias=='head')].header")
+                        .value(hasItem("Veranstaltung")))
+                .andExpect(jsonPath("$.extensions.view.columns[?(@.alias=='day')].hidden")
+                        .value(hasItem(true)))
+                .andExpect(jsonPath("$.extensions.view.columns[?(@.alias=='persons')].join")
+                        .value(hasItem("; ")))
+                // schema-derived type hints — the GUI uses these for alignment/formatting
+                .andExpect(jsonPath("$.extensions.view.columns[?(@.alias=='start')].type")
+                        .value(hasItem("LocalDateTime")))
+                .andExpect(jsonPath("$.extensions.view.columns[?(@.alias=='head')].type")
+                        .value(hasItem("Reservation")))
+                .andExpect(jsonPath("$.extensions.view.columns[?(@.alias=='persons')].type")
+                        .value(hasItem("Allocatable")));
+    }
+
+    /**
+     * PRD 074 — @column(order:) sorts the emitted column descriptors so the GUI can
+     * render them left-to-right without re-sorting. Columns without order keep their
+     * declaration index as the sort key (an explicit order slots into that position).
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void viewColumnsSortedByOrder() throws Exception
+    {
+        String query = """
+                query Sorted @view {
+                  appointmentBlocks(filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00", limit: 1 }) {
+                    c: start @column(order: 2)
+                    a: end @column(order: 0)
+                    b: isException @column(order: 1)
+                  }
+                }
+                """;
+        mockMvc.perform(post("/api/graphql").contentType(MediaType.APPLICATION_JSON).content(gqlBody(query)))
+                .andExpect(jsonPath("$.extensions.view.columns[*].alias").value(contains("a", "b", "c")));
+    }
+
+    /**
+     * PRD 074 — sort: START DESC returns the latest blocks first (reverses the
+     * default ascending order). Asserts the result is non-increasing by start.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void appointmentBlocksSortStartDesc()
+    {
+        List<Map<String, Object>> blocks = tester.document("""
+                query {
+                  appointmentBlocks(
+                    filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" },
+                    sort: [{ field: START, dir: DESC }]
+                  ) { start }
+                }
+                """)
+                .execute().path("appointmentBlocks")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
+        assertTrue(blocks.size() >= 2, "need ≥2 blocks to assert ordering");
+        String prev = null;
+        for (Map<String, Object> b : blocks)
+        {
+            String s = b.get("start").toString();
+            if (prev != null)
+                assertTrue(prev.compareTo(s) >= 0,
+                        "DESC: blocks must be non-increasing by start (" + prev + " < " + s + ")");
+            prev = s;
+        }
+    }
+
+    /**
+     * PRD 074 — offset pagination: page 0 (offset 0) and page 1 (offset 2), each
+     * limit 2, are disjoint and contiguous — page 1 continues exactly where page 0
+     * stopped against the full ascending list.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void appointmentBlocksOffsetPaginates()
+    {
+        String win = "from: \"2006-01-01T00:00:00\", to: \"2006-12-31T00:00:00\"";
+        List<Map<String, Object>> all = tester.document(
+                "query { appointmentBlocks(filter: { " + win + " }) { start } }")
+                .execute().path("appointmentBlocks")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
+        assertTrue(all.size() >= 4, () -> "need ≥4 blocks; got " + all.size());
+
+        List<Map<String, Object>> page1 = tester.document(
+                "query { appointmentBlocks(filter: { " + win + ", limit: 2 }, offset: 2) { start } }")
+                .execute().path("appointmentBlocks")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
+        assertEquals(2, page1.size(), "offset 2 limit 2 returns 2 rows");
+        assertEquals(all.get(2).get("start"), page1.get(0).get("start"), "page1[0] == all[2]");
+        assertEquals(all.get(3).get("start"), page1.get(1).get("start"), "page1[1] == all[3]");
+    }
+
+    /**
+     * PRD 074 — @view + pagination emits extensions.view.page {offset,limit,returned,hasMore}.
+     * With limit 1 over a multi-block window, hasMore must be true.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void viewPageMetaEmitted() throws Exception
+    {
+        String query = """
+                query Paged @view(title: "P") {
+                  appointmentBlocks(filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00", limit: 1 }, offset: 0) {
+                    start @column(header: "Beginn")
+                  }
+                }
+                """;
+        mockMvc.perform(post("/api/graphql").contentType(MediaType.APPLICATION_JSON).content(gqlBody(query)))
+                .andExpect(jsonPath("$.extensions.view.page.offset").value(0))
+                .andExpect(jsonPath("$.extensions.view.page.limit").value(1))
+                .andExpect(jsonPath("$.extensions.view.page.returned").value(1))
+                .andExpect(jsonPath("$.extensions.view.page.hasMore").value(true));
+    }
+
+    /**
+     * PRD 074 — @flatten adds a `flatten` hint to the column descriptor naming the leaf
+     * the GUI projects: explicit `@flatten(field:)` carries that field; bare `@flatten`
+     * over a single-sub-field selection auto-detects it. Meta-only (data stays nested).
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void viewFlattenHintEmitted() throws Exception
+    {
+        String query = """
+                query Flat @view {
+                  appointmentBlocks(filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00", limit: 1 }) {
+                    auto:     reservation @flatten { name }
+                    explicit: reservation @flatten(field: "id") { id name }
+                  }
+                }
+                """;
+        mockMvc.perform(post("/api/graphql").contentType(MediaType.APPLICATION_JSON).content(gqlBody(query)))
+                .andExpect(jsonPath("$.extensions.view.columns[?(@.alias=='auto')].flatten")
+                        .value(hasItem("name")))
+                .andExpect(jsonPath("$.extensions.view.columns[?(@.alias=='explicit')].flatten")
+                        .value(hasItem("id")));
+    }
+
+    /**
+     * PRD 074 — totals are DECLARATIVE: count (default) + each column's @aggregate over the
+     * FULL matched set, keyed by alias. limit:1 must NOT shrink the aggregate — it spans all
+     * blocks. `durationMinutes @aggregate(SUM)` is numeric; the fixed minutes/unit are gone.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void viewDeclaredAggregateSpansFullSet() throws Exception
+    {
+        // full-set durationMinutes, to compare against the limited aggregate
+        List<Map<String, Object>> all = tester.document(
+                "query { appointmentBlocks(filter: { from: \"2006-01-01T00:00:00\", to: \"2006-12-31T00:00:00\" }) { durationMinutes } }")
+                .execute().path("appointmentBlocks")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
+        int fullCount = all.size();
+        assertTrue(fullCount >= 2, () -> "need ≥2 blocks; got " + fullCount);
+        long expectedSum = all.stream().mapToLong(b -> ((Number) b.get("durationMinutes")).longValue()).sum();
+
+        String query = """
+                query Totals @view {
+                  appointmentBlocks(filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00", limit: 1 }) {
+                    std: durationMinutes @aggregate(fn: SUM) @column(header: "Minuten")
+                  }
+                }
+                """;
+        mockMvc.perform(post("/api/graphql").contentType(MediaType.APPLICATION_JSON).content(gqlBody(query)))
+                .andExpect(jsonPath("$.extensions.view.page.returned").value(1))
+                .andExpect(jsonPath("$.extensions.view.totals.count").value(fullCount))
+                .andExpect(jsonPath("$.extensions.view.totals.std").value((int) expectedSum))
+                // fixed wall-clock/unit totals are gone — totals are author-declared
+                .andExpect(jsonPath("$.extensions.view.totals.minutes").doesNotExist())
+                .andExpect(jsonPath("$.extensions.view.totals.unit").doesNotExist());
+    }
+
+    /** No @view → no extensions.view (zero overhead for plain queries). */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void noViewDirectiveNoExtensions() throws Exception
+    {
+        String query = """
+                query {
+                  appointmentBlocks(filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00", limit: 1 }) { start }
+                }
+                """;
+        mockMvc.perform(post("/api/graphql").contentType(MediaType.APPLICATION_JSON).content(gqlBody(query)))
+                .andExpect(jsonPath("$.data.appointmentBlocks").isArray())
+                .andExpect(jsonPath("$.extensions.view").doesNotExist());
     }
 
     /** §12 — anonymous caller gets an error on the block root, not a list. */

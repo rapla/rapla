@@ -1,8 +1,9 @@
 # PRD 077 — Calendar model & saved views over GraphQL
 
-**Status:** draft (design — deferred until PRD 074's SPA table views ship). Carved out of the
-PRD 074 discussion (2026-06-20) so the "quick breakthrough" (tables in the SPA) isn't blocked by
-the harder persistence/switching design.
+**Status:** draft (design — deferred until the SPA table views ship: server contract in PRD 074,
+Angular renderer in [PRD 078](078-spa-graphql-view-renderer.md)). Carved out of the PRD 074
+discussion (2026-06-20) so the "quick breakthrough" (tables in the SPA) isn't blocked by the
+harder persistence/switching design. 077 reuses 078's transport + renderer + selection.
 
 ## Goal
 

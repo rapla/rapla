@@ -3,78 +3,25 @@ import { HttpClient } from '@angular/common/http';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatSortModule } from '@angular/material/sort';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatToolbarModule } from '@angular/material/toolbar';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-
-import { MatDialog } from '@angular/material/dialog';
 
 import { TablePage, TableRow, TableColumnDescriptor } from './table.types';
 import { AuthService } from '../auth/auth.service';
-import { UsersService } from '../auth/users.service';
-import { SwitchToUserDialogComponent } from '../auth/switch-to-user-dialog.component';
 
 /**
  * Reservation table — a thin viewer over the server-side table renderer
  * (GET /api/table/reservations, PRD 030). The server projects the columns and
  * the scalar row cells; this component only paints them. It holds no
  * reservation graph and runs no row projection of its own.
+ *
+ * PRD 078 — the account chrome (user chip / switch-user / sign-out) was lifted
+ * to the global {@code AppToolbarComponent} in the shell; this page now renders
+ * only its table. It still refetches when the impersonation identity flips
+ * (the effect below), driven by {@link AuthService} state.
  */
 @Component({
   selector: 'app-reservations',
-  imports: [
-    MatTableModule,
-    MatSortModule,
-    MatProgressSpinnerModule,
-    MatToolbarModule,
-    MatButtonModule,
-    MatIconModule,
-  ],
+  imports: [MatTableModule, MatSortModule, MatProgressSpinnerModule],
   template: `
-    <mat-toolbar color="primary">
-      <span>Reservations</span>
-      <span class="spacer"></span>
-      @if (effectiveUsername()) {
-        @if (canImpersonate() || auth.isImpersonating()) {
-          <button
-            matButton
-            class="username username-clickable"
-            [class.impersonating]="auth.isImpersonating()"
-            [title]="
-              auth.isImpersonating()
-                ? 'Acting as ' +
-                  effectiveUsername() +
-                  ' via admin ' +
-                  adminUsername() +
-                  ' — click to switch to another user'
-                : 'Click to switch to another user'
-            "
-            (click)="openSwitchToUser()"
-          >
-            @if (auth.isImpersonating()) {
-              <mat-icon class="impersonation-marker">person_search</mat-icon>
-            } @else {
-              <mat-icon class="switch-marker">swap_horiz</mat-icon>
-            }
-            {{ effectiveUsername() }}
-          </button>
-        } @else {
-          <span class="username">{{ effectiveUsername() }}</span>
-        }
-      }
-      @if (auth.isImpersonating()) {
-        <button matButton (click)="switchBack()" title="Return to admin identity">
-          <mat-icon>undo</mat-icon>
-          Switch back
-        </button>
-      } @else {
-        <button matButton (click)="signOut()">
-          <mat-icon>logout</mat-icon>
-          Sign out
-        </button>
-      }
-    </mat-toolbar>
-
     <section class="content">
       @if (loading()) {
         <div class="centered"><mat-spinner diameter="32"></mat-spinner></div>
@@ -113,40 +60,6 @@ import { SwitchToUserDialogComponent } from '../auth/switch-to-user-dialog.compo
       :host {
         display: block;
       }
-      .spacer {
-        flex: 1 1 auto;
-      }
-      .username {
-        margin-right: 1rem;
-        font-size: 0.95rem;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.3rem;
-      }
-      .username-clickable {
-        cursor: pointer;
-      }
-      .username.impersonating {
-        background: rgba(255, 193, 7, 0.85);
-        color: rgba(0, 0, 0, 0.87);
-        padding: 0.15rem 0.6rem;
-        border-radius: 4px;
-        font-weight: 500;
-      }
-      .username.impersonating:hover {
-        background: rgba(255, 193, 7, 1);
-      }
-      .impersonation-marker {
-        font-size: 1.05rem;
-        height: 1.05rem;
-        width: 1.05rem;
-      }
-      .switch-marker {
-        font-size: 1.05rem;
-        height: 1.05rem;
-        width: 1.05rem;
-        opacity: 0.7;
-      }
       .content {
         max-width: 1100px;
         margin: 1.5rem auto;
@@ -179,9 +92,7 @@ import { SwitchToUserDialogComponent } from '../auth/switch-to-user-dialog.compo
 })
 export class ReservationsComponent implements OnInit {
   private readonly http = inject(HttpClient);
-  protected readonly auth = inject(AuthService);
-  private readonly usersService = inject(UsersService);
-  private readonly dialog = inject(MatDialog);
+  private readonly auth = inject(AuthService);
 
   readonly dataSource = new MatTableDataSource<TableRow>([]);
   readonly columns = signal<TableColumnDescriptor[]>([]);
@@ -192,42 +103,18 @@ export class ReservationsComponent implements OnInit {
   totalCount = signal(0);
   incomplete = signal(false);
 
-  /**
-   * PRD 072 — effective user shown in the toolbar chip, from the identity
-   * loaded via {@code GET /api/auth/me}. While impersonating, the server
-   * reports the TARGET as {@code username}; otherwise it's the caller's own.
-   * One source of truth so the badge, marker, and tooltip all agree.
-   */
-  readonly effectiveUsername = computed(() => this.auth.identity()?.username ?? '');
-
-  /**
-   * PRD 051 — `true` if the caller can {@code canAdminUser} over ≥1
-   * other user (i.e. is a global admin or a group admin). Derived
-   * from {@code GET /api/users} returning a non-empty list — that
-   * endpoint is server-side filtered by the same {@code canAdminUser}
-   * rule. Refreshed on init; static for the session (group-admin
-   * status doesn't change mid-session — if it does, the next
-   * impersonate call's 403 surfaces it).
-   */
-  readonly canImpersonate = signal(false);
-
-  /** The admin actor's username while impersonating, from {@code /api/auth/me}'s
-   *  {@code actor} field. Empty when no impersonation is active. */
-  readonly adminUsername = computed(() => this.auth.actorUsername());
-
   constructor() {
-    // Re-fetch whenever the impersonation state flips — covers
-    // openSwitchToUser → confirm → impersonate, switchBack, and any other
-    // path that reloads the identity. Tracks the effective username (or
-    // null when no identity); only fires when that changes. ngOnInit's
-    // initial fetch isn't enough because the dialog-close subscription
-    // path was unreliable across the angular-zone / microtask boundary.
+    // Refetch whenever the impersonation identity flips (switch-user / switch-back
+    // in the global toolbar). Tracks the effective username; only fires on change.
+    // The global toolbar triggers impersonation via AuthService; this page reacts
+    // to the resulting identity change. The initial run is skipped — ngOnInit
+    // fires the first fetch.
     let lastTarget: string | null | undefined = undefined;
     effect(() => {
       const target = this.auth.identity()?.username ?? null;
       if (lastTarget === undefined) {
         lastTarget = target;
-        return; // skip the initial run — ngOnInit fires the first fetch
+        return;
       }
       if (target !== lastTarget) {
         lastTarget = target;
@@ -237,12 +124,6 @@ export class ReservationsComponent implements OnInit {
   }
 
   ngOnInit() {
-    // PRD 051 — probe /api/users to decide whether the username chip
-    // is clickable. Empty list = caller has no admin authority;
-    // non-empty = chip becomes a "Switch to user" trigger.
-    this.usersService.list().subscribe((list) => {
-      this.canImpersonate.set(list.length > 0);
-    });
     this.fetchReservations();
   }
 
@@ -288,39 +169,6 @@ export class ReservationsComponent implements OnInit {
         );
         this.loading.set(false);
       },
-    });
-  }
-
-  /**
-   * PRD 072 — click handler on the "Impersonating X" badge. Calls the
-   * server {@code POST /api/auth/impersonate/end} (restores the admin
-   * {@code access_token} cookie) and reloads the identity. The impersonation
-   * effect then refires the table fetch; the user sees their own (admin's)
-   * data again.
-   */
-  switchBack(): void {
-    void this.auth.endImpersonation();
-  }
-
-  /** Explicit user-driven sign-out (server logout + cookie clear). */
-  signOut(): void {
-    this.auth.signOut();
-  }
-
-  /**
-   * PRD 051 — opens the "Switch to user" dialog. On successful
-   * impersonation (dialog closes with a {target} result) the toolbar
-   * re-renders and the table reloads for the new identity.
-   */
-  openSwitchToUser(): void {
-    const ref = this.dialog.open(SwitchToUserDialogComponent, {
-      width: '420px',
-      autoFocus: true,
-    });
-    ref.afterClosed().subscribe((result: { target: string } | undefined) => {
-      if (result?.target) {
-        this.fetchReservations();
-      }
     });
   }
 

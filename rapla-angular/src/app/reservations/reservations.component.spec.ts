@@ -9,7 +9,6 @@ import { signal } from '@angular/core';
 
 import { ReservationsComponent } from './reservations.component';
 import { AuthService, Identity } from '../auth/auth.service';
-import { UsersService } from '../auth/users.service';
 
 describe('ReservationsComponent', () => {
   const get = vi
@@ -37,15 +36,10 @@ describe('ReservationsComponent', () => {
         provideRouter([]),
         { provide: HttpClient, useValue: { get, post } },
         {
-          provide: UsersService,
-          useValue: { list: () => of([]) },
-        },
-        {
           provide: AuthService,
           useValue: ((): Partial<AuthService> => {
-            // PRD 072 — the toolbar reads the identity signal (from
-            // GET /api/auth/me) for the effective username + impersonation
-            // badge. Default: a logged-in, non-impersonating user.
+            // The page refetches when the impersonation identity flips; it reads
+            // the identity signal via the effect. Default: a logged-in user.
             const identity = signal<Identity | null>({
               username: 'testadmin',
               name: 'Test Admin',
@@ -100,13 +94,5 @@ describe('ReservationsComponent', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(el.textContent).toContain('Name');
     expect(el.textContent).toContain('Event A');
-  });
-
-  it("shows the logged-in user's username in the toolbar", () => {
-    const fixture = TestBed.createComponent(ReservationsComponent);
-    fixture.detectChanges();
-
-    const el = fixture.nativeElement.querySelector('.username') as HTMLElement | null;
-    expect(el?.textContent?.trim()).toBe('testadmin');
   });
 });

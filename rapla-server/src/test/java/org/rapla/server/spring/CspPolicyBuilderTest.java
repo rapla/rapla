@@ -17,9 +17,16 @@ class CspPolicyBuilderTest
     void basePolicyIsStrict()
     {
         String p = CspPolicyBuilder.build(null);
-        assertTrue(p.contains("style-src 'self'"), p);
-        assertTrue(p.contains("img-src 'self' data:"), p);
-        assertTrue(p.contains("font-src 'self'"), p);
+        // The lowest-criticality resource directives (style-src/img-src/font-src) are
+        // deliberately NOT in this policy: they can't lead to code execution (the real XSS
+        // defense is script-src, owned + enforced by the autoCsp <meta>), so restricting them
+        // is pure noise — and dropping style-src removes the runtime inline-<style>
+        // false-positive that otherwise blocks ever flipping this header to enforce. With no
+        // default-src fallback here, those resource types are simply unrestricted. The
+        // remaining directives below stay (report-only).
+        assertTrue(!p.contains("style-src"), p);
+        assertTrue(!p.contains("img-src"), p);
+        assertTrue(!p.contains("font-src"), p);
         assertTrue(p.contains("object-src 'none'"), p);
         // base-uri 'self' — the SPA's <base href="/app/"> needs it (walk finding 2026-06-19);
         // the /api + /rapla policies keep base-uri 'none' (no <base> there).
