@@ -50,6 +50,15 @@ export interface ViewColumn {
   fn?: string;
 }
 
+/** One operation variable of the stored view — the binding contract: the GUI
+ *  fills each variable from ambient state BY TYPE (ReservationFilter ← window +
+ *  selection, AllocatableFilter ← selection, …). */
+export interface ViewVariable {
+  name: string;
+  /** GraphQL type name, e.g. {@code "ReservationFilter!"}, {@code "AllocatableFilter!"}. */
+  type: string;
+}
+
 export interface ViewMeta {
   key: string;
   title?: string;
@@ -60,6 +69,8 @@ export interface ViewMeta {
   groupFormat?: string;
   /** PRD 074 — input-control metadata (date-range anchor/offset defaults). */
   inputs?: ViewInput[];
+  /** The operation's variable signature — the type-driven binding contract. */
+  variables?: ViewVariable[];
 }
 
 export interface GqlResponse<T> {

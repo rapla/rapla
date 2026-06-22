@@ -3,10 +3,25 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { of, Subject } from 'rxjs';
 
 import { ViewHostComponent } from './view-host.component';
-import { GraphqlService, type GqlResponse } from '../graphql/graphql.service';
+import { GraphqlService, type GqlResponse, type ViewMeta } from '../graphql/graphql.service';
 import { ViewStateStore } from '../state/view-state-store';
 import { FilterStore } from '../state/filter-store';
-import { WEEK_VIEW_FALLBACK } from './week-view';
+
+// A representative week-view render-meta (date columns → weekday grouping) with
+// the variable signature the server emits (drives type-driven binding).
+const SAMPLE_VIEW_META: ViewMeta = {
+  key: 'Wochenansicht',
+  title: 'Wochenansicht',
+  variables: [{ name: 'filter', type: 'ReservationFilter!' }],
+  columns: [
+    { alias: 'start', header: 'Von', type: 'LocalDateTime', order: 1 },
+    { alias: 'end', header: 'Bis', type: 'LocalDateTime', order: 2 },
+    { alias: 'times', header: 'Zeit', type: 'String', order: 3 },
+    { alias: 'name', header: 'Titel', type: 'String', order: 4 },
+    { alias: 'personen', header: 'Personen', type: 'Allocatable', order: 5, join: ', ' },
+    { alias: 'nichtPersonen', header: 'Nicht-Personen', type: 'Allocatable', order: 6, join: ', ' },
+  ],
+};
 
 const BLOCKS: Record<string, unknown>[] = [
   { start: '2026-06-17T10:00:00', end: '2026-06-17T11:30:00', times: '10:00 - 11:30', name: 'Physik', personen: [], nichtPersonen: [{ id: 'r1', name: 'C452' }] },
@@ -27,7 +42,7 @@ const GQL_STUB = {
     captured.vars = vars;
     return of({
       data: { appointmentBlocks: BLOCKS } as unknown as T,
-      extensions: { view: WEEK_VIEW_FALLBACK },
+      extensions: { view: SAMPLE_VIEW_META },
     } as GqlResponse<T>);
   },
 };
@@ -91,14 +106,14 @@ describe('ViewHostComponent', () => {
     expect(captured.view).toBe('Wochenansicht');
   });
 
-  it('passes a resource chip as allocatableIdsIn in the executeView filter (refilters the view)', async () => {
+  it('binds a resource chip into the ReservationFilter by type (allocatableMatching.idIn)', async () => {
     filter.replace({ id: 'C348', kind: 'resource', label: 'C348' });
     const f = makeHost('Wochenansicht');
     await settle(f);
     expect(captured.vars?.['filter']).toMatchObject({
       from: '2026-06-15T00:00:00',
       to: '2026-06-22T00:00:00',
-      allocatableIdsIn: ['C348'],
+      allocatableMatching: { idIn: ['C348'] },
     });
   });
 

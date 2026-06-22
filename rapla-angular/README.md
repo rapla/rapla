@@ -152,11 +152,12 @@ dev workflow B which obviates the need.)
 
 | Path | Purpose |
 |---|---|
-| `src/app/auth/` | Login form, `AuthService`, JWT `HttpInterceptor`, route guard |
-| `src/app/reservations/` | Read-only reservation list |
-| `src/app/api/` | Auto-generated TypeScript-Angular client (gitignored) |
+| `src/app/auth/` | `AuthService`, cookie reactive-401 refresh `HttpInterceptor`, route guard |
+| `src/app/views/` | Generic view host (`views/:viewName`) + the declarative view render/group/bind helpers — the SPA's one page |
+| `src/app/graphql/` | `GraphqlService` (`POST /api/graphql` consumer path) + render helpers |
+| `src/app/search/`, `src/app/shell/` | Omnibox search + the persistent shell (toolbar, chips, controls) |
 | `src/app/app.config.ts` | Bootstrap providers: `provideHttpClient` + `BASE_PATH=''` |
-| `src/app/app.routes.ts` | `/login`, `/reservations` (guarded), `**` → login |
+| `src/app/app.routes.ts` | `''` + `**` → default-view redirect (last/first view), `views/:viewName` (guarded) |
 | `proxy.conf.js` | `ng serve` proxy: forwards REST + OAuth2 + legacy to `:8051` |
 
 ## URL space (post PRD 031)

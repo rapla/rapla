@@ -2,34 +2,39 @@ import { Routes } from '@angular/router';
 import { authGuard } from './auth/auth.guard';
 
 /**
- * PRD 072 Phase 4 — the SPA no longer owns a login page or an OAuth callback
- * route. Login is the SERVER-rendered {@code /login} page (outside the SPA);
- * the authGuard redirects there (full navigation) when there is no valid
- * {@code access_token} cookie. The catch-all lands on the guarded reservations
- * view, which bounces to {@code /login} when unauthenticated.
+ * The SPA is ONE page: the generic {@link ViewHostComponent} renders every
+ * server-declared view by name ({@code views/:viewName}, PRD 078). The landing
+ * route ({@code ''}) and the catch-all ({@code '**'}) resolve to the
+ * {@link DefaultViewRedirectComponent}, which opens the last-opened view (or the
+ * first catalog view). All bespoke, non-generic data views (the REST
+ * reservations table, the hand-written appointments / week GraphQL queries) are
+ * gone — the only data paths left are the views, the search, and auth.
+ *
+ * PRD 072 Phase 4 — the SPA owns no login page or OAuth callback route. Login is
+ * the SERVER-rendered {@code /login} page; the authGuard redirects there (full
+ * navigation) when there is no valid {@code access_token} cookie.
  */
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'reservations' },
   {
-    path: 'reservations',
+    path: '',
+    pathMatch: 'full',
     canActivate: [authGuard],
     loadComponent: () =>
-      import('./reservations/reservations.component').then((m) => m.ReservationsComponent),
+      import('./views/default-view-redirect.component').then(
+        (m) => m.DefaultViewRedirectComponent,
+      ),
   },
   {
-    // PRD 078 — the generic view host. One component renders EVERY declared view
-    // (Wochenansicht, Termine, …) by name; the :viewName param binds to its input
-    // via withComponentInputBinding. Supersedes the bespoke /appointments route.
     path: 'views/:viewName',
     canActivate: [authGuard],
     loadComponent: () => import('./views/view-host.component').then((m) => m.ViewHostComponent),
   },
   {
-    // Legacy bespoke GraphQL table view — kept until the host fully supersedes it.
-    path: 'appointments',
+    path: '**',
     canActivate: [authGuard],
     loadComponent: () =>
-      import('./views/appointments-view.component').then((m) => m.AppointmentsViewComponent),
+      import('./views/default-view-redirect.component').then(
+        (m) => m.DefaultViewRedirectComponent,
+      ),
   },
-  { path: '**', redirectTo: 'reservations' },
 ];

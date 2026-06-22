@@ -10,9 +10,8 @@ import { SwitchToUserDialogComponent } from '../auth/switch-to-user-dialog.compo
 import { OmniboxComponent } from './omnibox.component';
 
 /**
- * PRD 078 — the global app toolbar (account chrome). Lifted out of
- * {@code ReservationsComponent} so identity / switch-user / sign-out live in
- * the app shell and appear on EVERY page, not just one. Pages render only
+ * PRD 078 — the global app toolbar (account chrome). Identity / switch-user /
+ * sign-out live in the app shell and appear on EVERY page. Pages render only
  * their content inside the {@code <router-outlet>}; this is the persistent
  * frame around them.
  *

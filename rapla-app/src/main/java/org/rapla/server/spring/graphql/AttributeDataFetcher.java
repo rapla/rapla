@@ -98,6 +98,17 @@ final class AttributeDataFetcher implements LightDataFetcher<Object>
         return get(env.getFieldDefinition(), env.getSource(), () -> env);
     }
 
+    /** True if a referenced allocatable has no generated GraphQL type — a dangling/deleted target
+     * ({@code rapla:unresolvedResource}) or any rapla-internal type. Such a value must not be exposed
+     * through a reference field: descending into its non-null {@code classification} would fail
+     * abstract-type resolution. The reference renders {@code null} instead. */
+    private static boolean isUnresolvedReference(Allocatable a)
+    {
+        Classification c = a.getClassification();
+        return c == null || c.getType() == null
+                || ClassificationSdlGenerator.isRaplaInternal(c.getType());
+    }
+
     private Object readSingle(Classification c, Supplier<DataFetchingEnvironment> envSupplier)
     {
         Object v = c.getValue(key);
@@ -111,6 +122,10 @@ final class AttributeDataFetcher implements LightDataFetcher<Object>
             case CATEGORY    -> coerceCategory(v);
             case ALLOCATABLE -> {
                 if (!(v instanceof Allocatable a)) yield null;
+                // Dangling/deleted target (rapla:unresolvedResource) has no generated GraphQL type;
+                // returning it would fail abstract-type resolution on its non-null `classification`.
+                // A nullable reference field renders null instead — same posture as §12-unreadable.
+                if (isUnresolvedReference(a)) yield null;
                 yield canReadAllocatable(a, envSupplier) ? a : null;
             }
         };
@@ -140,7 +155,10 @@ final class AttributeDataFetcher implements LightDataFetcher<Object>
             List<Allocatable> out = new ArrayList<>(values.size());
             for (Object v : values)
             {
-                if (v instanceof Allocatable a && canReadAllocatable(a, envSupplier)) out.add(a);
+                if (v instanceof Allocatable a && !isUnresolvedReference(a) && canReadAllocatable(a, envSupplier))
+                {
+                    out.add(a);
+                }
             }
             return out;
         }

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { renderCell, displayedColumns } from './view-render';
-import { ViewColumn, ViewMeta } from './graphql.service';
+import { renderCell } from './view-render';
+import { ViewColumn } from './graphql.service';
 
 describe('renderCell', () => {
   const col = (over: Partial<ViewColumn> = {}): ViewColumn => ({ alias: 'x', header: 'X', ...over });
@@ -56,24 +56,5 @@ describe('renderCell', () => {
 
   it('leaves an unparseable DateTime untouched', () => {
     expect(renderCell({ x: 'not-a-date' }, col({ type: 'DateTime' }))).toBe('not-a-date');
-  });
-});
-
-describe('displayedColumns', () => {
-  const meta: ViewMeta = {
-    key: 'k',
-    columns: [
-      { alias: 'a', header: 'A' },
-      { alias: 'day', header: 'Day', hidden: true },
-      { alias: 'b', header: 'B' },
-    ],
-  };
-
-  it('returns visible aliases in order, dropping hidden', () => {
-    expect(displayedColumns(meta)).toEqual(['a', 'b']);
-  });
-
-  it('returns [] for null meta', () => {
-    expect(displayedColumns(null)).toEqual([]);
   });
 });

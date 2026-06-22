@@ -517,6 +517,31 @@ class ClassificationGraphQLControllerTest
         assertEquals(baseline.size(), empty.size(), () -> "baseline=" + baseline + " empty=" + empty);
     }
 
+    /**
+     * PRD 074/059 — a {@code where<Type>} block acts as an IMPLICIT TYPE GATE (option B′): setting
+     * {@code whereRoom} alone (no typeKeyEq/typeKeyIn) restricts to rooms — it does NOT leave all
+     * other allocatable types unfiltered. So whereRoom-only equals typeKeyEq:"room"+whereRoom.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void whereBlockImpliesTypeGateWithoutTypeKey()
+    {
+        List<Map<String, Object>> withGate = tester.document("""
+                { allocatables(filter: { typeKeyEq: "room", whereRoom: { seats: { gte: 20 } } }) { displayName } }
+                """)
+                .execute().path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {}).get();
+        List<Map<String, Object>> implicit = tester.document("""
+                { allocatables(filter: { whereRoom: { seats: { gte: 20 } } }) { displayName } }
+                """)
+                .execute().path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {}).get();
+        // B′: whereRoom alone gates to rooms — identical to the explicit-type version (no persons/others leak in).
+        assertEquals(withGate.size(), implicit.size(),
+                () -> "whereRoom must imply room-gate; withGate=" + withGate + " implicit=" + implicit);
+        assertEquals("Room A66", implicit.get(0).get("displayName"));
+    }
+
     // === §5d Phase 3 — predicate evaluator, one operator per kind ============
 
     /**

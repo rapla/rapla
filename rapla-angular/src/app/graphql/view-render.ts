@@ -1,4 +1,4 @@
-import { ViewColumn, ViewMeta } from './graphql.service';
+import { ViewColumn } from './graphql.service';
 
 /**
  * PRD 078 — pure rendering helpers for the generic view table. Convention over
@@ -53,10 +53,4 @@ export function renderCell(row: Record<string, unknown>, column: ViewColumn): st
       .join(column.join ?? DEFAULT_JOIN);
   }
   return formatScalar(scalarize(value), column.type);
-}
-
-/** The alias list of the columns that are actually shown (drops {@code hidden}). */
-export function displayedColumns(meta: ViewMeta | null | undefined): string[] {
-  if (!meta) return [];
-  return meta.columns.filter((c) => !c.hidden).map((c) => c.alias);
 }

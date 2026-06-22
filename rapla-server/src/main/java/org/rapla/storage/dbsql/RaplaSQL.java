@@ -461,7 +461,7 @@ class RaplaSQL
     {
         if (lockStorage.disableLocks())
         {
-            LocalDateTime.now();
+            return LocalDateTime.now();
         }
         try
         {

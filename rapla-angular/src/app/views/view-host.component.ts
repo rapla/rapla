@@ -6,8 +6,10 @@ import { groupByWeekday, groupByColumn } from '../graphql/weekday-grouping';
 import { ViewStateStore, type DateWindow } from '../state/view-state-store';
 import { FilterStore, type FilterEntry } from '../state/filter-store';
 import { resolveWindowFromInputs } from './view-inputs';
-import { filterToReservationFilter } from './filter-serializer';
+import { buildVariablesByType } from './variable-binder';
+import { LastViewStore } from './last-view-store';
 import { formatGroupLabel } from './group-format';
+import { isProjectedView, projectRow } from './stat-projection';
 
 /** A rendered section: rows sharing one group value (or one flat group when ungrouped). */
 interface Section {
@@ -16,9 +18,9 @@ interface Section {
   rows: Record<string, unknown>[];
 }
 
-interface ViewData {
-  appointmentBlocks: Record<string, unknown>[];
-}
+/** The data envelope — root-field-agnostic: we take whatever array `data` carries
+ *  (appointmentBlocks, appointmentBlockStats, …). */
+type ViewData = Record<string, unknown>;
 
 /**
  * The column to group weekday sections by: the first {@code Date}/
@@ -40,9 +42,10 @@ export function pickDateAlias(columns: ViewColumn[]): string {
  * generically from {@code extensions.view}. Day-grouped views (no server
  * directive — PRD 074) get client-side {@link groupByWeekday} sectioning.
  *
- * BRIDGE: today it runs the registry's query text via {@code GraphqlService.query}
- * (authoring path). When server-side view persistence lands it swaps to
- * {@code executeView(viewName)} and reads {@code inputs} from {@code extensions.view}.
+ * The consumer path: {@code executeView(viewName)} runs the STORED query
+ * (server-held) and the render-meta — columns, grouping, the variable signature —
+ * arrives on {@code extensions.view}. There is no code-shipped fallback ViewMeta;
+ * the server is the single source of truth for what a view looks like.
  */
 @Component({
   selector: 'app-view-host',
@@ -67,7 +70,7 @@ export function pickDateAlias(columns: ViewColumn[]): string {
                 <thead>
                   <tr>
                     @for (col of visibleColumns(); track col.alias) {
-                      <th>{{ col.header }}</th>
+                      <th>{{ col.header ?? col.alias }}</th>
                     }
                   </tr>
                 </thead>
@@ -151,6 +154,7 @@ export class ViewHostComponent {
   private readonly gql = inject(GraphqlService);
   private readonly viewState = inject(ViewStateStore);
   private readonly filter = inject(FilterStore);
+  private readonly lastView = inject(LastViewStore);
 
   /** Bound from the route param {@code :viewName} (withComponentInputBinding). */
   readonly viewName = input.required<string>();
@@ -177,10 +181,28 @@ export class ViewHostComponent {
       .sort((a, b) => (a.order ?? 999) - (b.order ?? 999)),
   );
 
+  /** True for aggregation/pivot views (columns carry `kind`). Drives BOTH the
+   *  row projection AND where the resource selection binds (allocatableFilter vs
+   *  filter.allocatableIdsIn). A boolean computed → flips false→true once, no loop. */
+  readonly aggregated = computed(() => isProjectedView(this.meta()?.columns ?? []));
+
+  /** Stable key of the variable signature — flips once (null→signature) when the
+   *  view's contract resolves, so the query effect re-runs WITHOUT looping on each
+   *  response (a string computed memoizes by value). */
+  private readonly bindingKey = computed(() => JSON.stringify(this.meta()?.variables ?? []));
+
+  /** Rows projected into flat {alias: value} form. Flat views (no `kind`) pass
+   *  through; aggregation/pivot views get projected via the column descriptors. */
+  readonly displayRows = computed<Record<string, unknown>[]>(() => {
+    const cols = this.meta()?.columns ?? [];
+    const rows = this.rows();
+    return this.aggregated() ? rows.map((r) => projectRow(r, cols)) : rows;
+  });
+
   /** Day-sections (date group column → weekday headers), generic value sections
    *  (any other group column), or one flat group when ungrouped. */
   readonly groups = computed<Section[]>(() => {
-    const rows = this.rows();
+    const rows = this.displayRows();
     if (!this.grouped()) return rows.length ? [{ id: '', label: '', rows }] : [];
     const meta = this.meta();
     const alias = this.groupAlias();
@@ -215,6 +237,12 @@ export class ViewHostComponent {
   private reqToken = 0;
 
   constructor() {
+    // Persist the opened view so the default landing route restores it next time.
+    effect(() => {
+      const name = this.viewName();
+      untracked(() => this.lastView.set(name));
+    });
+
     // Re-query whenever the view, the window, OR the active filter (chips) change.
     // First load: window is null → send no window, the server merges its default;
     // we then seed the date-nav window from the response inputs.
@@ -222,6 +250,7 @@ export class ViewHostComponent {
       const viewName = this.viewName();
       const w = this.viewState.window();
       const chips = this.filter.entries();
+      this.bindingKey(); // re-query when the variable signature resolves
       this.run(viewName, w, chips);
     });
   }
@@ -230,9 +259,17 @@ export class ViewHostComponent {
     const token = ++this.reqToken;
     this.loading.set(true);
     this.error.set(null);
-    // With a window, send the full filter; without one (first load) send nothing
-    // and let the server merge its defaults — chips re-apply on the seeded re-query.
-    const variables = window ? { filter: filterToReservationFilter(chips, window) } : {};
+    // Type-driven binding: fill each declared variable BY TYPE (ReservationFilter ←
+    // window+selection, AllocatableFilter ← selection). The server emits the
+    // variable signature on extensions.view.variables; the FIRST query (before meta
+    // lands) sends {} → the server merges its stored defaults, then bindingKey
+    // re-queries with the resolved signature.
+    // untracked: run() executes INSIDE the query effect — reading meta() tracked
+    // here would make the effect re-fire on every response (meta.set) → infinite
+    // loop. The one-time re-query when the signature lands is driven by bindingKey.
+    const signature = untracked(() => this.meta()?.variables) ?? [];
+    const resourceIds = chips.filter((c) => c.kind === 'resource').map((c) => c.id);
+    const variables = buildVariablesByType(signature, { window, resourceIds });
     this.gql.executeView<ViewData>(viewName, variables).subscribe({
       next: (res) => {
         if (token !== this.reqToken) return; // a newer query superseded this one
@@ -241,7 +278,11 @@ export class ViewHostComponent {
           this.loading.set(false);
           return;
         }
-        const rows = res.data?.appointmentBlocks ?? [];
+        // Root-agnostic: take whatever array `data` carries, not a fixed field name.
+        const rows =
+          (Object.values(res.data ?? {}).find(Array.isArray) as
+            | Record<string, unknown>[]
+            | undefined) ?? [];
         this.meta.set(res.extensions?.view ?? null);
         this.total.set(rows.length);
         this.rows.set(rows);

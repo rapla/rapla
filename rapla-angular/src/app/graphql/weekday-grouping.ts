@@ -1,5 +1,5 @@
 /**
- * PRD 078 — pure grouping helper for week-view #2. Buckets generic GraphQL rows
+ * PRD 078 — pure grouping helper for date-grouped views (e.g. the weekly Wochenansicht). Buckets generic GraphQL rows
  * by the weekday of a LocalDateTime field (read by a configurable alias), in
  * German Montag→Sonntag order. Timezone-safe: only the date PART is parsed, the
  * weekday computed via {@code Date.UTC} so the host timezone never shifts a row

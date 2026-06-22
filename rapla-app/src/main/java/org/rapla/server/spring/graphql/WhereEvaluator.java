@@ -65,10 +65,20 @@ final class WhereEvaluator
         if (typeKey == null || typeKey.isEmpty()) return true;
         String whereField = "where" + Character.toUpperCase(typeKey.charAt(0)) + typeKey.substring(1);
         Object block = filterMap.get(whereField);
-        if (!(block instanceof Map<?, ?> wb)) return true;
-        @SuppressWarnings("unchecked")
-        Map<String, Object> typed = (Map<String, Object>) wb;
-        return evaluateWhereBlock(c, dt, typed, 0, caller, pc);
+        if (block instanceof Map<?, ?> wb)
+        {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> typed = (Map<String, Object>) wb;
+            return evaluateWhereBlock(c, dt, typed, 0, caller, pc);
+        }
+        // A where<Type> block acts as an IMPLICIT TYPE GATE (option B′): a where constrains exactly one
+        // type and would otherwise leave every other type unfiltered (the over-include footgun). So if
+        // the filter carries any where<Type> block but NONE for this allocatable's own type, exclude
+        // it — UNLESS an explicit typeKeyIn/typeKeyEq is present, which is then authoritative (it
+        // already gated upstream; here where only refines, types without a block pass unrefined).
+        // Multiple where<…> blocks ⇒ the union of their types passes (each refined by its own block).
+        if (!hasExplicitTypeGate(filterMap) && hasAnyWhereBlock(filterMap)) return false;
+        return true;
     }
 
     @SuppressWarnings("unchecked")
@@ -406,6 +416,16 @@ final class WhereEvaluator
     {
         if (value == null) return !hasAnyOperator(pred);
         if (!(value instanceof Allocatable a)) return false;
+        // A dangling/deleted reference target resolves to an unresolved-resource placeholder
+        // (rapla-internal type, no real attributes). It can't satisfy id/name/attribute predicates —
+        // treat it like a null reference: excluded whenever the predicate carries any operator, so a
+        // building-name/where filter never false-matches a room whose Gebaeude was deleted.
+        Classification refCls = a.getClassification();
+        if (refCls == null || refCls.getType() == null
+                || ClassificationSdlGenerator.isRaplaInternal(refCls.getType()))
+        {
+            return !hasAnyOperator(pred);
+        }
         Object eq = pred.get("eq");
         Object ne = pred.get("ne");
         Object in = pred.get("in");
@@ -545,5 +565,28 @@ final class WhereEvaluator
             if (e.getValue() != null) return true;
         }
         return false;
+    }
+
+    /** True if the filter carries any generated {@code where<TypeKey>} block (a typed predicate map). */
+    private static boolean hasAnyWhereBlock(Map<String, Object> filterMap)
+    {
+        for (Map.Entry<String, Object> e : filterMap.entrySet())
+        {
+            if (e.getKey() != null && e.getKey().startsWith("where") && e.getValue() instanceof Map)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** True if the filter sets an explicit type gate ({@code typeKeyIn} non-empty / {@code typeKeyEq}
+     * non-blank). When present it is authoritative and the implicit where-type gate is NOT applied. */
+    private static boolean hasExplicitTypeGate(Map<String, Object> filterMap)
+    {
+        Object in = filterMap.get("typeKeyIn");
+        if (in instanceof java.util.List<?> list && !list.isEmpty()) return true;
+        Object eq = filterMap.get("typeKeyEq");
+        return eq != null && !eq.toString().isBlank();
     }
 }

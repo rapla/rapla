@@ -7,16 +7,7 @@ import {
   HttpRequest,
 } from '@angular/common/http';
 import { inject } from '@angular/core';
-import {
-  BehaviorSubject,
-  Observable,
-  catchError,
-  filter,
-  from,
-  switchMap,
-  take,
-  throwError,
-} from 'rxjs';
+import { Observable, catchError, finalize, from, shareReplay, switchMap, take, throwError } from 'rxjs';
 
 import { AuthService } from './auth.service';
 
@@ -35,9 +26,17 @@ import { AuthService } from './auth.service';
  *      identity and redirect the browser to the server {@code /login} page.
  *
  * Stampede guard: concurrent 401s share ONE in-flight refresh. The first 401
- * flips {@code isRefreshing} and starts the refresh; subsequent 401s wait on a
- * shared {@link BehaviorSubject} that emits the outcome once, then replay — so
- * N concurrent expiries trigger exactly one {@code /refresh} call.
+ * starts a module-shared refresh {@link Observable}; subsequent 401s reuse the
+ * same one and replay on its outcome — so N concurrent expiries trigger exactly
+ * one {@code /refresh} call.
+ *
+ * Crucially the shared refresh is NOT tied to the triggering request's
+ * subscription: it is eagerly subscribed (a self-driving worker) and resets
+ * itself via {@code finalize} when it completes. If the request that first hit
+ * the 401 is torn down mid-refresh (tab suspend during a long idle, route
+ * change, switchMap-typeahead cancel), the refresh still completes and the next
+ * 401 starts a fresh one — instead of a stuck flag that wedges every later 401
+ * until a full page reload (the cookie-refresh regression this guards against).
  *
  * The refresh call goes through {@link HttpClient} (not raw `next`) so Angular's
  * XSRF interceptor attaches {@code X-XSRF-TOKEN}; the {@code REFRESH_URL} guard
@@ -46,27 +45,44 @@ import { AuthService } from './auth.service';
 
 const REFRESH_URL = '/api/auth/refresh';
 
-// Module-scoped so every interceptor invocation (one per request) shares the
-// same refresh state — that is what makes the stampede guard work across
-// concurrent requests.
-let isRefreshing = false;
-// Emits the refresh outcome (true = fresh cookie, false = refresh failed) to
-// requests that arrived mid-refresh. null = "no refresh has completed this
-// cycle"; waiters filter it out and take the first concrete result.
-const refreshResult$ = new BehaviorSubject<boolean | null>(null);
+// The single in-flight refresh, shared across all concurrent 401s. null = "no
+// refresh running"; the first 401 creates it, finalize clears it on completion
+// so the next expiry cycle starts clean. Its lifecycle is independent of any
+// request subscription (see class doc) — that is what survives a torn-down owner.
+let refresh$: Observable<boolean> | null = null;
 
 const isRefreshRequest = (req: HttpRequest<unknown>): boolean => req.url.includes(REFRESH_URL);
 const isApiRequest = (req: HttpRequest<unknown>): boolean => req.url.includes('/api/');
 
 /**
+ * The shared refresh worker. {@code shareReplay(1)} multicasts one
+ * {@code /refresh} result to every concurrent waiter; the eager
+ * {@code .subscribe()} drives it to completion even if every triggering request
+ * later unsubscribes; {@code finalize} resets the slot so a future 401 refreshes
+ * again. {@code doRefresh} never throws (resolves true/false), so the eager
+ * subscription needs no error branch beyond a defensive no-op.
+ */
+function sharedRefresh(http: HttpClient): Observable<boolean> {
+  if (!refresh$) {
+    refresh$ = from(doRefresh(http)).pipe(
+      finalize(() => {
+        refresh$ = null;
+      }),
+      shareReplay(1),
+    );
+    refresh$.subscribe({ error: () => {} });
+  }
+  return refresh$;
+}
+
+/**
  * Test-only: reset the module-scoped refresh state between specs. The stampede
  * guard is intentionally module-global (shared across all requests in the
- * running app), so tests must clear it in {@code beforeEach} to avoid leaking a
- * stale {@code refreshResult$} value or a stuck {@code isRefreshing} flag.
+ * running app), so tests must clear it in {@code beforeEach} to avoid leaking an
+ * in-flight shared refresh into the next spec.
  */
 export function __resetRefreshStateForTest(): void {
-  isRefreshing = false;
-  refreshResult$.next(null);
+  refresh$ = null;
 }
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
@@ -90,26 +106,11 @@ function handle401(
   http: HttpClient,
   err: HttpErrorResponse,
 ): Observable<HttpEvent<unknown>> {
-  if (isRefreshing) {
-    // A refresh is already in flight — wait for its outcome, then replay or
-    // bail. Shares the single /refresh call (stampede guard).
-    return refreshResult$.pipe(
-      filter((result): result is boolean => result !== null),
-      take(1),
-      switchMap((ok) => (ok ? next(req) : bounceToLogin(auth, err))),
-    );
-  }
-
-  // First 401 of this cycle: own the refresh.
-  isRefreshing = true;
-  refreshResult$.next(null);
-
-  return from(doRefresh(http)).pipe(
-    switchMap((ok) => {
-      isRefreshing = false;
-      refreshResult$.next(ok);
-      return ok ? next(req) : bounceToLogin(auth, err);
-    }),
+  // Reuse the single in-flight refresh (or start one). On success replay the
+  // original request; on failure the refresh cookie is dead → bounce to /login.
+  return sharedRefresh(http).pipe(
+    take(1),
+    switchMap((ok) => (ok ? next(req) : bounceToLogin(auth, err))),
   );
 }
 

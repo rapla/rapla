@@ -1171,6 +1171,103 @@ ist), `maxArgs: -1` = variadisch (`concat`). Der Katalog wird aus der Descriptor
 numeric values work (Stufe b); composing numbers inside the expr needs a numeric type in the EL,
 which would then serve every `expr` slot.
 
+## Raumauslastung — kanonische Query (`appointmentBlockStats`, PRD 079/080)
+
+Auslastung pro Raum: **Gebäude-Scope in ZWEI Variablen** — `$filter` (effiziente Suche, lädt nur
+betroffene Reservierungen) **und** `$allocatableFilter` (Raumauswahl: welcher Raum eine Zeile wird),
+**beide mit demselben Scope gefüllt**. Plus **Raumgröße + Gebäudename über die typisierte Entität**
+(kein Client-Join), als `@view` (stats-bewusste Spalten). Live verifiziert gegen dhbw.
+
+> **Beide Variablen MÜSSEN gesetzt sein — sie machen Unterschiedliches:**
+> - **`$filter` (`ReservationFilter`) = effiziente Suche.** `allocatableMatching` ist ein
+>   *Reservierungs*-Prädikat: eine Reservierung kommt rein, sobald sie **≥1** passenden Raum belegt —
+>   **mitsamt allen ihren übrigen Räumen** (auch fremder Gebäude). Senkt nur die geladene Datenmenge.
+> - **`$allocatableFilter` (`AllocatableFilter`) = Raumauswahl im `groupBy`.** Entscheidet pro
+>   Termin-Block, **welcher Raum zur Zeile wird**. Ohne Gebäude-Scope hier würden die Fremdgebäude-Räume
+>   derselben Reservierung über den **groupBy-Fan-out** zu Falschzeilen (live gesehen: „Schloss 11a",
+>   „Johann-Hammer-Straße"). **Das ist der korrektheitsentscheidende Filter.**
+>
+> Die **Dopplung** (gleicher Scope in beiden) ist gewollt und ok — die GUI füllt beide aus einer Auswahl.
+>
+> **`where<Type>` impliziert den Typ-Gate (Option B′):** `whereRaum` gatet automatisch auf Raum-
+> Allocatables — `typeKeyIn:["Raum"]` ist nicht mehr nötig (bleibt optional als Storage-Vorfilter; mehrere
+> `where<…>` ⇒ Union ihrer Typen). Ausnahme: explizites `typeKeyIn`/`typeKeyEq` ist autoritativ.
+
+```graphql
+query Raumauslastung($filter: ReservationFilter!, $allocatableFilter: AllocatableFilter!) @view(title: "Raumauslastung") {
+  appointmentBlockStats(
+    filter:    $filter,                                              # effiziente Suche (Reservierungen)
+    groupBy:   [ { key: "raum", allocatables: $allocatableFilter } ], # Raumauswahl (welche Zeile)
+    aggregate: [ { key: "minuten", field: DURATION_MINUTES, fn: SUM },     # Stunden = number/60
+                 { key: "termine", field: DURATION_MINUTES, fn: COUNT } ],
+    limit: 1000
+  ) {
+    keys {
+      value                                          # → Spalte "raum" (Raumname)
+      entity {
+        ... on Allocatable {
+          id
+          classification {
+            ... on RaumClassification {
+              AnzahlPlaetzeInsgesamt                 # → Spalte "AnzahlPlaetzeInsgesamt" (Raumgröße)
+              Gebaeude { classification { ... on GebaeudeClassification { Gebaeudename } } }  # → "Gebaeudename"
+            }
+          }
+        }
+      }
+    }
+    values { key number }                            # → Spalten "minuten" / "termine"
+  }
+}
+```
+
+**Variablen — Gebäude nach Name** (derselbe Gebäude-Scope in beiden; `whereRaum` gatet selbst auf Raum):
+```json
+{
+  "filter": {
+    "from": "2024-10-01T00:00:00",
+    "to":   "2025-09-30T00:00:00",
+    "allocatableMatching": {
+      "whereRaum": { "Gebaeude": { "where": { "Gebaeudename": { "contains": "Schloss 2" } } } }
+    }
+  },
+  "allocatableFilter": {
+    "whereRaum": { "Gebaeude": { "where": { "Gebaeudename": { "contains": "Schloss 2" } } } }
+  }
+}
+```
+Schichtung von `whereRaum`: `RaumWhere` → `Gebaeude` (= `GebaeudeRefWhere`: `eq`/`ne`/`in`/`isNull`/`nameContains` **+** `where`) → `where` (= `GebaeudeWhere`, eigene Attribute) → `Gebaeudename` (= `StringWhere`: `eq`/`in`/`contains`/`startsWith`/`endsWith`/`isNull`). `where:`-Wrapper nur für **Attribute** des Gebäudes; eine konkrete Gebäude-Id direkt per `Gebaeude: { eq: "<id>" }`.
+
+**Variante — bekanntes Gebäude per Id** (beide Variablen mit **identischer** `AllocatableFilter`-Shape `{idIn:[gebäudeId]}`):
+```json
+{
+  "filter": { "from": "2024-10-01T00:00:00", "to": "2025-09-30T00:00:00", "allocatableMatching": { "idIn": ["r7ed4347-9058-45a6-b402-6e3fb64c031f"] } },
+  "allocatableFilter": { "idIn": ["r7ed4347-9058-45a6-b402-6e3fb64c031f"] }
+}
+```
+> **`idIn` mit einer Gebäude-Id wirkt belongsTo-bewusst — aber NUR im Stats-/Fan-out-Pfad.**
+> - **`$filter.allocatableMatching.idIn` / `$allocatableFilter.idIn`** matchen einen Raum auch über
+>   seine **belongsTo-Vorfahren** → die Gebäude-Id wählt die Räume des Gebäudes (Filter-Pfad via
+>   `getDependentRef` nach unten, Fan-out-Pfad via belongsTo-Up-Walk in `filterAllocatables`).
+> - **`Query.allocatables(filter:{idIn:[…]})`** (globale Katalog-Abfrage) bleibt **exakte Id** — gibt
+>   das Gebäude selbst zurück, NICHT seine Räume. Eine normale Allocatable-Abfrage tauscht nie ein
+>   Gebäude gegen seine Räume.
+>
+> Mehrere Gebäude-Ids: `idIn:["id1","id2"]` (in beiden), oder per Name `whereRaum.Gebaeude.where.Gebaeudename.contains`.
+
+- **`$filter` = effiziente Suche, `$allocatableFilter` = Raumauswahl.** Beide mit demselben Scope; die
+  Dopplung ist gewollt — die GUI füllt aus *einer* Gebäude-Auswahl **beide** Variablen identisch.
+- **Ohne `$allocatableFilter`-Scope** (nur `typeKeyIn:["Raum"]` o.ä.) ⇒ Fremdgebäude-Räume über
+  groupBy-Fan-out → Falschzeilen. **Beide setzen.**
+- **Gelöschtes Gebäude:** ein Raum, dessen `Gebaeude`-Referenz auf eine **gelöschte** Ressource zeigt,
+  matcht `whereRaum.Gebaeude…` **nicht** (kein Fail-open auf den Platzhalter) und liefert
+  `entity.Gebaeude: null` — statt die Query zu killen.
+- **Raumgröße + Gebäudename ohne Join** über `keys.entity` (typisierte Gruppen-Entität, PRD 080);
+  unauflösbare Referenz → Feld `null` (TypeResolver/Fetcher-Guard).
+- **`@view` über Stats** ⇒ flache `extensions.view.columns` aus `groupBy`/`aggregate` (`raum` +
+  Entity-Felder + `minuten`/`termine`), **nicht** die generischen `keys/values/count`. `count` nur,
+  wenn selektiert (redundant mit `termine`).
+
 ## Beispiel: Raumauslastung nach Standort (typisierte Referenz-Filter, PRD 074 b)
 
 `appointmentBlockStats` + ein **typisierter Filter über eine Referenz**: Räume werden über das

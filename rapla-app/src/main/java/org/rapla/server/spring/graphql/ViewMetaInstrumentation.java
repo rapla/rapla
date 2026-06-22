@@ -94,6 +94,11 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
         List<Map<String, Object>> inputs = inputsFrom(op.getVariableDefinitions());
         if (!inputs.isEmpty()) meta.put("inputs", inputs);
 
+        // PRD 074/078 — the variable signature (name + GraphQL type) is the type-driven
+        // binding contract: the SPA fills each variable by TYPE without seeing the query.
+        List<Map<String, Object>> variables = variablesFrom(op.getVariableDefinitions());
+        if (!variables.isEmpty()) meta.put("variables", variables);
+
         parameters.getExecutionContext().getGraphQLContext().put(CTX_KEY, meta);
         return SimpleInstrumentationContext.noOp();
     }
@@ -167,6 +172,36 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
             }
         }
         return List.of();
+    }
+
+    /**
+     * The operation's variable signature ({@code name} + GraphQL {@code type} as an
+     * SDL string, e.g. {@code ReservationFilter!}). The SPA binds each variable by
+     * TYPE — ReservationFilter ← window+selection, AllocatableFilter ← selection —
+     * so it can fill ALL required variables (e.g. a stats view's two filters) without
+     * the stored query text. Unknown types are simply not auto-filled (server default).
+     */
+    private static List<Map<String, Object>> variablesFrom(List<VariableDefinition> vars)
+    {
+        if (vars == null) return List.of();
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (VariableDefinition v : vars)
+        {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("name", v.getName());
+            m.put("type", typeName(v.getType()));
+            out.add(m);
+        }
+        return out;
+    }
+
+    /** Render an AST type to its SDL string — {@code ReservationFilter!}, {@code [ID!]!}, … */
+    private static String typeName(graphql.language.Type<?> t)
+    {
+        if (t instanceof graphql.language.NonNullType nn) return typeName(nn.getType()) + "!";
+        if (t instanceof graphql.language.ListType lt) return "[" + typeName(lt.getType()) + "]";
+        if (t instanceof graphql.language.TypeName tn) return tn.getName();
+        return "";
     }
 
     private static boolean isReservationFilter(VariableDefinition v)

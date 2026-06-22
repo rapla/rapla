@@ -209,6 +209,11 @@ public final class GeneratedClassificationWiring
             }
             DynamicType dt = c.getType();
             if (dt == null || dt.getKey() == null) return null;
+            // A reference can point to an unresolved/deleted resource (rapla:unresolvedResource) or any
+            // rapla-internal type — these have NO generated GraphQL type, and their non-spec key would
+            // make checkGraphQlCompliantName throw and 500 the whole query. Resolve to null instead
+            // (the reference field renders null, like an unreadable §12 target).
+            if (ClassificationSdlGenerator.isRaplaInternal(dt)) return null;
             String typeName = ClassificationSdlGenerator.checkGraphQlCompliantName(dt.getKey()) + "Classification";
             GraphQLSchema schema = env.getSchema();
             GraphQLObjectType objectType = schema.getObjectType(typeName);

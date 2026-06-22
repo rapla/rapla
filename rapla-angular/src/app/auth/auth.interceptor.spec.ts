@@ -139,6 +139,36 @@ describe('authInterceptor (cookie refresh)', () => {
     expect(authStub.redirectToLogin).not.toHaveBeenCalled();
   });
 
+  it('recovers when the refresh-owning request is torn down mid-refresh (no stuck refresh state)', async () => {
+    // Request A 401s and OWNS the refresh, then is unsubscribed before the
+    // refresh resolves — exactly what a tab suspend during a long idle, a route
+    // change, or a switchMap-typeahead cancel does. The refresh lifecycle must
+    // NOT be tied to A's subscription, or the module-global refresh flag stays
+    // stuck and every later 401 hangs forever (only a page reload clears it).
+    const subA = http.get('/api/a').subscribe({ next: vi.fn(), error: vi.fn() });
+    httpMock.expectOne('/api/a').flush(null, { status: 401, statusText: 'Unauthorized' });
+    await flushMicrotasks();
+
+    const firstRefresh = httpMock.expectOne('/api/auth/refresh'); // A owns it
+    subA.unsubscribe(); // A torn down WHILE the refresh is in flight
+    firstRefresh.flush(null); // the in-flight refresh still completes
+    await flushMicrotasks();
+
+    // A LATER request 401s. It must be able to refresh again, not hang.
+    let observedB: unknown = null;
+    http.get('/api/b').subscribe((r) => (observedB = r));
+    httpMock.expectOne('/api/b').flush(null, { status: 401, statusText: 'Unauthorized' });
+    await flushMicrotasks();
+
+    httpMock.expectOne('/api/auth/refresh').flush(null); // BUG: none fired → stuck
+    await flushMicrotasks();
+
+    httpMock.expectOne('/api/b').flush({ ok: true });
+    await flushMicrotasks();
+    expect(observedB).toEqual({ ok: true });
+    expect(authStub.redirectToLogin).not.toHaveBeenCalled();
+  });
+
   it('stampede guard: when the shared refresh fails, all waiters redirect to /login', async () => {
     http.get('/api/a').subscribe({ next: vi.fn(), error: vi.fn() });
     http.get('/api/b').subscribe({ next: vi.fn(), error: vi.fn() });

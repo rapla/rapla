@@ -1175,6 +1175,90 @@ class ReservationGraphQLControllerTest
     }
 
     /**
+     * belongsTo asymmetry fix — {@code groupBy.allocatables.idIn:[parentId]} must match a CHILD
+     * allocatable that belongsTo the parent. Mirrors the real Raum→Gebäude case: a building id in the
+     * stats fan-out selects the building's rooms. The fan-out path ({@code filterAllocatables}) walks
+     * belongsTo UP, the same hierarchy the filter path's {@code getDependentRef} walks DOWN. Without the
+     * fix the parent id matches no child (room id ≠ building id) and the bucket is absent.
+     *
+     * <p>Fixture: Teilraum "Room A66.1" ({@code rdd6b473…}) {@code a1}→ Room A66 ({@code c24ce517…}),
+     * belongsTo=true. Counterpart {@link #catalogAllocatablesIdInStaysExactId()} asserts the global
+     * {@code Query.allocatables} idIn keeps exact-id semantics — only the group path expands.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void groupByAllocatableIdInMatchesBelongsToChild()
+    {
+        final String roomA66  = "c24ce517-4697-4e52-9917-ec000c84563c"; // parent Raum
+        final String teilraum = "rdd6b473-7c77-4344-a73d-1f27008341cb"; // belongsTo Room A66
+
+        // Seed a reservation allocating the CHILD Teilraum in an isolated future window.
+        tester.document("""
+                mutation {
+                  createReservation(input: {
+                    typeKey: "event",
+                    classification: { event: {} },
+                    appointments: [ { start: "2031-03-03T09:00:00", end: "2031-03-03T10:00:00", allDay: false } ],
+                    allocations: [ { allocatableId: "%s" } ]
+                  }) { id }
+                }
+                """.formatted(teilraum))
+                .execute().path("createReservation.id").entity(String.class).get();
+
+        // Group-path idIn = [PARENT room id] → must bucket the CHILD Teilraum via belongsTo.
+        List<Map<String, Object>> buckets = tester.document("""
+                query {
+                  appointmentBlockStats(
+                    filter: { from: "2031-03-01T00:00:00", to: "2031-03-31T00:00:00",
+                              allocatableMatching: { idIn: ["%s"] } },
+                    groupBy: [ { key: "raum", allocatables: { idIn: ["%s"] } } ],
+                    aggregate: [ { key: "termine", field: DURATION_MINUTES, fn: COUNT } ]
+                  ) { keys { value entity { ... on Allocatable { id } } } }
+                }
+                """.formatted(roomA66, roomA66))
+                .execute().path("appointmentBlockStats")
+                .entityList(new ParameterizedTypeReference<Map<String, Object>>() {}).get();
+
+        List<String> entityIds = new java.util.ArrayList<>();
+        for (Map<String, Object> b : buckets)
+        {
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> ks = (List<Map<String, Object>>) b.get("keys");
+            if (ks == null || ks.isEmpty()) continue;
+            @SuppressWarnings("unchecked")
+            Map<String, Object> ent = (Map<String, Object>) ks.get(0).get("entity");
+            if (ent != null) entityIds.add((String) ent.get("id"));
+        }
+        assertTrue(entityIds.contains(teilraum),
+                () -> "group-path idIn=[parent Room A66] must bucket the child Teilraum via belongsTo; got " + entityIds);
+    }
+
+    /**
+     * Counterpart to {@link #groupByAllocatableIdInMatchesBelongsToChild()} — the GLOBAL catalog query
+     * {@code Query.allocatables(filter:{idIn:[parentId]})} keeps EXACT-id semantics: it returns the
+     * parent itself, NOT its belongsTo children. The belongsTo expansion is scoped to the stats
+     * fan-out only; a normal allocatable lookup must not silently swap a building for its rooms.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void catalogAllocatablesIdInStaysExactId()
+    {
+        final String roomA66  = "c24ce517-4697-4e52-9917-ec000c84563c"; // parent Raum
+        final String teilraum = "rdd6b473-7c77-4344-a73d-1f27008341cb"; // belongsTo Room A66
+
+        List<Map<String, Object>> got = tester.document("""
+                { allocatables(filter: { idIn: ["%s"] }) { id } }
+                """.formatted(roomA66))
+                .execute().path("allocatables")
+                .entityList(new ParameterizedTypeReference<Map<String, Object>>() {}).get();
+
+        List<String> ids = got.stream().map(a -> (String) a.get("id")).toList();
+        assertTrue(ids.contains(roomA66),   () -> "catalog idIn must return the requested parent; got " + ids);
+        assertFalse(ids.contains(teilraum), () -> "catalog idIn must NOT expand to belongsTo children; got " + ids);
+        assertEquals(1, ids.size(),         () -> "catalog idIn returns exactly the requested id; got " + ids);
+    }
+
+    /**
      * PRD 074 Baustein 7 — Allocatable.name(variant:) mirrors Reservation.name;
      * Allocatable.displayName is now @deprecated (still queryable). name(DISPLAY)
      * equals the legacy displayName; EXPORT falls back to DISPLAY in the fixture.
@@ -1346,6 +1430,38 @@ class ReservationGraphQLControllerTest
                 .andExpect(jsonPath("$.extensions.view.columns[?(@.alias=='count')].kind").value(hasItem("count")))
                 .andExpect(jsonPath("$.extensions.view.columns[?(@.alias=='keys')]").value(empty()))
                 .andExpect(jsonPath("$.extensions.view.columns[?(@.alias=='values')]").value(empty()));
+    }
+
+    /**
+     * PRD 074/078 — a @view emits its operation variable signature (name + GraphQL type)
+     * as extensions.view.variables. The SPA binds each variable BY TYPE (ReservationFilter
+     * ← window+selection, AllocatableFilter ← selection) without ever seeing the stored
+     * query, so it can fill ALL required variables (e.g. a stats view's two filters).
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void viewEmitsVariableSignature() throws Exception
+    {
+        String query = """
+                query Raumauslastung(
+                  $filter: ReservationFilter! = { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" },
+                  $allocatableFilter: AllocatableFilter! = { typeKeyIn: ["room"] }
+                ) @view(title: "Raumauslastung") {
+                  appointmentBlockStats(
+                    filter: $filter,
+                    groupBy:   [ { key: "raum", allocatables: $allocatableFilter } ],
+                    aggregate: [ { key: "minuten", field: DURATION_MINUTES, fn: SUM } ]
+                  ) {
+                    keys { value entity { ... on Allocatable { id } } }
+                    values { key number }
+                  }
+                }
+                """;
+        mockMvc.perform(post("/api/graphql").contentType(MediaType.APPLICATION_JSON).content(gqlBody(query)))
+                .andExpect(jsonPath("$.extensions.view.variables[?(@.name=='filter')].type")
+                        .value(hasItem("ReservationFilter!")))
+                .andExpect(jsonPath("$.extensions.view.variables[?(@.name=='allocatableFilter')].type")
+                        .value(hasItem("AllocatableFilter!")));
     }
 
     @Test

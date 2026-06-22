@@ -859,8 +859,7 @@ public final class StructuralTypeFetchers
             {
                 if (!ClassificationGraphQLController.matchesMap(alloc, filterArg)) continue;  // scalar
                 if (!WhereEvaluator.evaluate(alloc, filterArg, caller, pc)) continue;           // where<TypeKey> (+ §12 ref-recursion)
-                if (idIn != null && !idIn.isEmpty()
-                        && (alloc.getId() == null || !idIn.contains(alloc.getId()))) continue; // idIn
+                if (idIn != null && !idIn.isEmpty() && !idInMatchesHierarchy(alloc, idIn)) continue; // idIn (belongsTo-aware)
                 if (accessFilter != null && !accessFilter.test(alloc)) continue;              // PRD 069 access
             }
             if (!appointmentBound(r, alloc, a)) continue;                          // per-appointment restriction
@@ -868,6 +867,46 @@ public final class StructuralTypeFetchers
             if (limit > 0 && out.size() >= limit) break;                          // limit
         }
         return out;
+    }
+
+    /**
+     * belongsTo-aware {@code idIn} match for the stats fan-out / nested allocatable filter. An
+     * allocatable matches if its OWN id is in {@code idIn} OR a belongsTo ancestor's id is — so a
+     * building id selects the building's rooms, mirroring the filter path's {@code getDependentRef}
+     * down-expansion (here read upward, from the room to its building). Scoped to this nested context
+     * ONLY; the global {@code Query.allocatables} idIn keeps exact-id semantics (returns the building,
+     * not its rooms).
+     */
+    private static boolean idInMatchesHierarchy(Allocatable alloc, List<String> idIn)
+    {
+        Allocatable current = alloc;
+        for (int guard = 0; current != null && guard <= 20; guard++)
+        {
+            String id = current.getId();
+            if (id != null && idIn.contains(id)) return true;
+            current = belongsToParent(current);
+        }
+        return false;
+    }
+
+    /** The allocatable referenced by {@code alloc}'s belongsTo attribute (its hierarchy parent), or
+     *  null if the type has no belongsTo attribute or the value is unset/unresolved. Mirrors
+     *  {@code DynamicTypeImpl.getBelongsToAttribute} via the public constraint API (no impl cast). */
+    private static Allocatable belongsToParent(Allocatable alloc)
+    {
+        Classification c = alloc.getClassification();
+        if (c == null) return null;
+        DynamicType t = c.getType();
+        if (t == null) return null;
+        for (Attribute attr : t.getAttributes())
+        {
+            Object bt = attr.getConstraint(ConstraintIds.KEY_BELONGS_TO);
+            boolean isBelongsTo = bt instanceof Boolean b ? b : (bt != null && "true".equalsIgnoreCase(bt.toString()));
+            if (!isBelongsTo) continue;
+            Object v = c.getValue(attr.getKey());
+            return v instanceof Allocatable parent ? parent : null;
+        }
+        return null;
     }
 
     /** True if {@code alloc} is bound to appointment {@code a} (no restriction = bound to all). */

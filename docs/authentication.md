@@ -313,6 +313,31 @@ cookies. The SPA reads identity from `GET /api/auth/me`, refreshes via
 `POST /api/auth/logout`. No PKCE / no `/oauth2/authorize` / no
 `/auth/callback` in the SPA (PRD 072).
 
+#### Reactive-401 refresh must not be tied to a request subscription
+
+`auth.interceptor.ts` does the reactive refresh: on a 401 from `/api`,
+it calls `POST /api/auth/refresh` once and replays the original request,
+sharing one in-flight refresh across all concurrent 401s (stampede
+guard). **The shared refresh is a module-global, eagerly-subscribed
+`Observable` (`shareReplay(1)` + `finalize`-reset) — deliberately
+decoupled from any single request's subscription.**
+
+This is load-bearing, not incidental. An earlier version owned the
+refresh inside the triggering request's `from(doRefresh()).pipe(switchMap(...))`
+chain and tracked progress in a module flag (`isRefreshing`) reset only
+inside that `switchMap`. If the request that hit the 401 was torn down
+*mid-refresh* — and `omnibox.component.ts` cancels its search request on
+every keystroke via `switchMap`, route changes / tab freeze do the same —
+the reset `switchMap` never ran, the flag stuck `true`, and every later
+401 waited forever on an outcome that never came. Symptom: after a long
+idle (access token expired, refresh token still valid for its 21 d), the
+first interaction 401s and the SPA hangs; **only a full page reload (fresh
+JS context) clears it.** The fix makes the refresh a self-driving worker
+that completes and resets regardless of who unsubscribes. Regression
+test: `auth.interceptor.spec.ts` → "recovers when the refresh-owning
+request is torn down mid-refresh". Don't reintroduce a refresh whose
+lifecycle hangs off the request observable.
+
 ### Swing client — default OAuth, fallback password dialog
 
 `RaplaClientServiceImpl.startLoginInThread()` drives Swing login:
