@@ -35,6 +35,16 @@ export function pickDateAlias(columns: ViewColumn[]): string {
 }
 
 /**
+ * Whether the active filter carries a SCOPE — at least one scoping chip. A
+ * scope narrows the query to a selectable (resource / group) or a user; an
+ * {@code event} chip is a navigation target, not a scope. No scope → the view
+ * must not query (performance: an unscoped view is a full-window firehose).
+ */
+export function hasScope(chips: FilterEntry[]): boolean {
+  return chips.some((c) => c.kind !== 'event');
+}
+
+/**
  * The generic view host (PRD 078 routing — {@code /app/views/:viewName}). One
  * component renders EVERY view: it looks up the view definition, resolves the
  * date window (runtime {@link ViewStateStore} window, else the view's
@@ -54,7 +64,12 @@ export function pickDateAlias(columns: ViewColumn[]): string {
     <section class="content">
       <h2 class="view-title">{{ meta()?.title ?? viewName() }}</h2>
 
-      @if (loading()) {
+      @if (noScope()) {
+          <p class="empty">
+            Wähle links eine Ressource, Gruppe oder Person als <strong>Scope</strong> (oder
+            füge über die Suche einen Scope-Chip hinzu), um Termine zu laden.
+          </p>
+        } @else if (loading()) {
           <p class="meta">lädt…</p>
         } @else if (error()) {
           <p class="error">{{ error() }}</p>
@@ -164,6 +179,9 @@ export class ViewHostComponent {
   readonly total = signal(0);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
+  /** True when no scope chip is set → the view shows a hint and fires NO query
+   *  (performance: an unscoped view query is a full-window firehose). */
+  readonly noScope = signal(false);
 
   /** Server render-info: the column to group by ({@code extensions.view.groupBy}),
    *  falling back to the first date column until the server emits groupBy. */
@@ -244,15 +262,32 @@ export class ViewHostComponent {
     });
 
     // Re-query whenever the view, the window, OR the active filter (chips) change.
-    // First load: window is null → send no window, the server merges its default;
-    // we then seed the date-nav window from the response inputs.
+    // PERFORMANCE GATE: a view only queries when a SCOPE is set — at least one
+    // scoping chip (resource / group / user; an `event` chip is a navigation
+    // target, not a scope). With no scope we fire NO query (an unscoped view is a
+    // full-window firehose) and show a hint instead.
     effect(() => {
       const viewName = this.viewName();
       const w = this.viewState.window();
       const chips = this.filter.entries();
       this.bindingKey(); // re-query when the variable signature resolves
+      if (!hasScope(chips)) {
+        this.clearForNoScope();
+        return;
+      }
+      this.noScope.set(false);
       this.run(viewName, w, chips);
     });
+  }
+
+  /** No scope: drop any in-flight result, clear the table, show the hint. */
+  private clearForNoScope(): void {
+    this.reqToken++; // invalidate any in-flight response
+    this.loading.set(false);
+    this.error.set(null);
+    this.rows.set([]);
+    this.total.set(0);
+    this.noScope.set(true);
   }
 
   private run(viewName: string, window: DateWindow | null, chips: FilterEntry[]): void {
@@ -269,7 +304,10 @@ export class ViewHostComponent {
     // loop. The one-time re-query when the signature lands is driven by bindingKey.
     const signature = untracked(() => this.meta()?.variables) ?? [];
     const resourceIds = chips.filter((c) => c.kind === 'resource').map((c) => c.id);
-    const variables = buildVariablesByType(signature, { window, resourceIds });
+    // ReservationFilter.ownerEq is single — take the first user chip (the pinned
+    // self is the common case; multi-user scope would need ownerIdsIn server-side).
+    const ownerId = chips.find((c) => c.kind === 'user')?.id ?? null;
+    const variables = buildVariablesByType(signature, { window, resourceIds, ownerId });
     this.gql.executeView<ViewData>(viewName, variables).subscribe({
       next: (res) => {
         if (token !== this.reqToken) return; // a newer query superseded this one

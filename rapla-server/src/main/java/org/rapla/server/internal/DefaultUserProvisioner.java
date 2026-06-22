@@ -154,7 +154,7 @@ public class DefaultUserProvisioner implements UserProvisioner
             // FacadeImpl.newUser does today).
             if (userGroupsRoot != null)
             {
-                for (String key : DEFAULT_USER_GROUPS)
+                for (String key : Permission.DEFAULT_USER_GROUPS)
                 {
                     Category g = userGroupsRoot.getCategory(key);
                     if (g != null) created.addGroup(g);
@@ -173,7 +173,7 @@ public class DefaultUserProvisioner implements UserProvisioner
      * from system preferences (the pre-Phase-8 "configured groups" knob from
      * JNDI and external-IdP paths combined). When the claims carry explicit
      * {@code groupKeys}, use those instead. When neither produces a non-empty
-     * set, the caller falls back to {@link #DEFAULT_USER_GROUPS}.
+     * set, the caller falls back to {@link Permission#DEFAULT_USER_GROUPS}.
      *
      * <p>Subclasses override for deployment-specific sources — e.g. dhbwrapla
      * maps the AD username → group keys via {@code DhbwLdapGroupMapper}.
@@ -234,11 +234,4 @@ public class DefaultUserProvisioner implements UserProvisioner
         return true;
     }
 
-    @SuppressWarnings("deprecation")
-    private static final String[] DEFAULT_USER_GROUPS = {
-            Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS,
-            Permission.GROUP_CAN_CREATE_EVENTS,
-            Permission.GROUP_MODIFY_PREFERENCES_KEY,
-            Permission.GROUP_MODIFY_PREFERENCES_KEY
-    };
 }

@@ -113,7 +113,7 @@ public class AuthCookieController implements AuthCookieService
             roles.add(group.getKey());
         }
 
-        return new IdentityResponse(user.getUsername(), user.getName(), user.isAdmin(),
+        return new IdentityResponse(user.getId(), user.getUsername(), user.getName(), user.isAdmin(),
                 roles, impersonating, actor, target);
     }
 

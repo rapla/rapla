@@ -38,7 +38,7 @@ public class ImportExportManagerImpl implements ImportExportManager {
     public void doImport() throws RaplaException {
         CachableStorageOperator source = getSource();
         CachableStorageOperator destination = getDestination();
-        LOGGER.info("Import from {} into {}", source, dest);
+        LOGGER.info("Import from {} into {}", source, destination);
         source.connect();
 		doConvert(source,destination);
         LOGGER.info("Import completed");
@@ -48,7 +48,7 @@ public class ImportExportManagerImpl implements ImportExportManager {
     public void doExport() throws RaplaException {
         CachableStorageOperator source = getSource();
         CachableStorageOperator destination = getDestination();
-        LOGGER.info("Export from {} into {}", dest, source);
+        LOGGER.info("Export from {} into {}", destination, source);
         destination.connect();
 		doConvert(destination,source);
         LOGGER.info("Export completed");

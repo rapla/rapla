@@ -7,6 +7,7 @@ import {
   type ResourceItem,
 } from '../state/resource-selection-store';
 import { FilterStore } from '../state/filter-store';
+import { AuthService, type Identity } from '../auth/auth.service';
 
 /**
  * The persistent left ResourceSelection. Tabs pick the source (Zuletzt/
@@ -19,6 +20,18 @@ import { FilterStore } from '../state/filter-store';
   imports: [FormsModule],
   template: `
     <div class="stepper">
+      @if (me(); as user) {
+        <div
+          class="pinned"
+          [class.active]="meActive()"
+          (click)="scopeToMe(user)"
+          title="Auf meine eigenen Veranstaltungen filtern"
+        >
+          <span class="dot person">👤</span>
+          <span class="lbl">{{ user.name || user.username }}</span>
+          <span class="meta">meine</span>
+        </div>
+      }
       <div class="sthead">DURCHSTEPPEN</div>
       <div class="tabs">
         @for (t of tabs; track t.key) {
@@ -69,6 +82,42 @@ import { FilterStore } from '../state/filter-store';
         flex-direction: column;
         overflow: auto;
         height: 100%;
+      }
+      .pinned {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        margin: 0.6rem 0.6rem 0.2rem;
+        padding: 0.5rem 0.6rem;
+        border: 1px solid rgba(63, 81, 181, 0.25);
+        border-radius: 6px;
+        background: rgba(63, 81, 181, 0.06);
+        cursor: pointer;
+        font-size: 0.84rem;
+      }
+      .pinned:hover {
+        background: rgba(63, 81, 181, 0.12);
+      }
+      .pinned.active {
+        background: rgba(46, 125, 50, 0.12);
+        border-color: #2e7d32;
+        font-weight: 600;
+      }
+      .pinned .dot.person {
+        font-size: 0.9rem;
+        line-height: 1;
+      }
+      .pinned .lbl {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .pinned .meta {
+        font-size: 0.62rem;
+        font-weight: 700;
+        color: var(--mat-sys-primary, #3f51b5);
+        text-transform: uppercase;
       }
       .sthead {
         padding: 0.75rem 0.9rem 0.5rem;
@@ -182,6 +231,15 @@ import { FilterStore } from '../state/filter-store';
 export class ResourceSelectionComponent {
   protected readonly store = inject(ResourceSelectionStore);
   private readonly filter = inject(FilterStore);
+  private readonly auth = inject(AuthService);
+
+  /** The logged-in user, pinned at the top for a one-click "my events" scope. */
+  protected readonly me = this.auth.identity;
+  /** True when a `user` scope chip for the logged-in user is active. */
+  protected readonly meActive = computed(() => {
+    const id = this.auth.identity()?.userId;
+    return !!id && this.filter.entries().some((e) => e.kind === 'user' && e.id === id);
+  });
 
   protected readonly query = signal('');
 
@@ -230,5 +288,10 @@ export class ResourceSelectionComponent {
   toggleFav(event: Event, it: ResourceItem): void {
     event.stopPropagation();
     this.store.toggleFavorite(it);
+  }
+
+  /** Step to the logged-in user's own events — a `user` scope chip (ownerEq:<me>). */
+  scopeToMe(user: Identity): void {
+    this.filter.replace({ id: user.userId, kind: 'user', label: user.name || user.username });
   }
 }

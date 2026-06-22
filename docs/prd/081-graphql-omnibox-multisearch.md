@@ -67,7 +67,7 @@ extend type Query {
   search(query: String!, kinds: [SearchKind!], limit: Int = 20): SearchResults!
 }
 
-enum SearchKind { RESOURCE EVENT OCCURRENCE GROUP }   # SAVED_VIEW later (PRD 077)
+enum SearchKind { RESOURCE EVENT OCCURRENCE GROUP USER }   # SAVED_VIEW later (PRD 077)
 
 type SearchResults { groups: [SearchGroup!]! }        # already kind-bucketed + ordered
 
@@ -106,7 +106,23 @@ type GroupHit implements SearchHit {                  # → load-group (material
   count: Int!                                         # number of §12-READABLE members
   memberFilter: AllocatableFilter!                    # SPA passes this to allocatables(filter:)
 }
+
+type UserHit implements SearchHit {                  # → filter-add (a USER scope chip)
+  id: ID!  label: String!  sublabel: String  score: Float!
+  user: User!                                         # carries the id the chip scopes by (ownerEq)
+}
 ```
+
+### `USER` kind — users as scope chips (added 2026-06-22)
+
+A `UserHit` lets the planner type a person's name in the omnibox and add a **`user` scope
+chip** to the rail. The chip carries the user **id**; the SPA binds it into
+`ReservationFilter.ownerEq` (the user's own events) — see [PRD 078](078-spa-graphql-view-renderer.md)
+§"Scope". §12: search must only surface users the caller may see (mirror the `users(filter:)`
+visibility — `canAdminUser` / self), and the per-kind count must not leak hidden users. The
+own logged-in user does **not** need search — it is pinned in the SPA selection (PRD 078); this
+kind covers finding *other* users (admin/planner scoping to someone else's events, which on the
+read path is `ownerEq` for owned events, or PRD 069 `accessibleByUsername` for access-scoped).
 
 ### Why `GroupHit.memberFilter` (the hard part)
 

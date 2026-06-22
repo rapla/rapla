@@ -51,4 +51,26 @@ describe('buildVariablesByType', () => {
       {},
     );
   });
+
+  it('a user scope binds into ReservationFilter.ownerEq ("my events")', () => {
+    expect(
+      buildVariablesByType([v('filter', 'ReservationFilter!')], {
+        window: W,
+        resourceIds: [],
+        ownerId: 'u-42',
+      }),
+    ).toEqual({ filter: { from: W.from, to: W.to, ownerEq: 'u-42' } });
+  });
+
+  it('user + resource scope combine (ownerEq AND allocatableMatching)', () => {
+    expect(
+      buildVariablesByType([v('filter', 'ReservationFilter!')], {
+        window: W,
+        resourceIds: RES,
+        ownerId: 'u-42',
+      }),
+    ).toEqual({
+      filter: { from: W.from, to: W.to, allocatableMatching: { idIn: RES }, ownerEq: 'u-42' },
+    });
+  });
 });

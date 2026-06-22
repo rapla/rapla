@@ -866,7 +866,7 @@ public class FacadeImpl implements RaplaFacade {
 		UserImpl user = new UserImpl( now, now);
 		setNew(user);
 		@SuppressWarnings("deprecation")
-        String[] defaultGroups = new String[] {Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS,Permission.GROUP_CAN_CREATE_EVENTS, Permission.GROUP_MODIFY_PREFERENCES_KEY, Permission.GROUP_MODIFY_PREFERENCES_KEY};
+        List<String> defaultGroups = Permission.DEFAULT_USER_GROUPS;
 		for ( String groupKey: defaultGroups)
 		{
 			Category group = getUserGroupsCategory().getCategory( groupKey);

@@ -19,6 +19,7 @@ import org.rapla.entities.User;
 
 import java.time.LocalDateTime;
 import java.time.LocalDate;
+import java.util.List;
 /** New feature to restrict the access to allocatables on a per user/group basis.
  * Specify absolute and relative booking-timeframes for each resource
  * per user/group. You can, for example, prevent modifing appointments
@@ -38,7 +39,18 @@ public interface Permission
     String GROUP_CAN_CREATE_EVENTS = "create-events";
     @Deprecated
     String GROUP_REGISTERER_KEY = "registerer";
-    
+
+    /**
+     * Group keys a freshly created user is auto-assigned (read events from
+     * others + create events). Single source of truth for {@code FacadeImpl.newUser}
+     * (Swing path) and {@code DefaultUserProvisioner} (server auto-provision) so the
+     * set cannot drift between them. Modify-preferences was intentionally dropped
+     * from the defaults in 2014 (commit 747e3bc1); it is still reachable via the
+     * create-events fallback in {@code RaplaComponent.canModifyPreferences}.
+     */
+    @Deprecated
+    List<String> DEFAULT_USER_GROUPS = List.of(GROUP_CAN_READ_EVENTS_FROM_OTHERS, GROUP_CAN_CREATE_EVENTS);
+
     enum AccessLevel
     {
         DENIED(0),

@@ -20,6 +20,9 @@ import java.util.List;
  */
 public final class IdentityResponse
 {
+    @JsonProperty("userId")
+    private String userId;
+
     @JsonProperty("username")
     private String username;
 
@@ -43,9 +46,10 @@ public final class IdentityResponse
 
     public IdentityResponse() {}
 
-    public IdentityResponse(String username, String name, boolean admin, List<String> roles,
+    public IdentityResponse(String userId, String username, String name, boolean admin, List<String> roles,
                             boolean impersonating, String actor, String target)
     {
+        this.userId = userId;
         this.username = username;
         this.name = name;
         this.admin = admin;
@@ -54,6 +58,9 @@ public final class IdentityResponse
         this.actor = actor;
         this.target = target;
     }
+
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
 
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }

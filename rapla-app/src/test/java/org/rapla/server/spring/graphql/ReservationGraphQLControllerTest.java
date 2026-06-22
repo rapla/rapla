@@ -355,6 +355,47 @@ class ReservationGraphQLControllerTest
         assertEquals(idsInOnlyIds, mergedIds, () -> "same id in both arms must produce identical result (dedup'd)");
     }
 
+    private java.util.Set<Object> reservationIds(String query)
+    {
+        return tester.document(query).execute().path("reservations")
+                .entityList(new ParameterizedTypeReference<Map<String, Object>>() {}).get()
+                .stream().map(m -> m.get("id")).collect(java.util.stream.Collectors.toSet());
+    }
+
+    /**
+     * Genuine UNION across two DISTINCT allocatables — pins that {@code allocatableIdsIn} and
+     * {@code allocatableMatching} are UNIONed (not intersected, no dropped arm) when they name
+     * different resources. The existing dedup test reuses the same id in both arms and so can't
+     * catch an intersection regression. Guards the reservations() scope-resolution refactor that
+     * resolves the scoped allocatable set DIRECTLY via the catalog resolver (skipping the full
+     * {@code getAllocatables(null)} scan): a regression to intersection or a missing arm would
+     * shrink the result below the union.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void reservationsScopeUnionsTwoDistinctAllocatables()
+    {
+        final String erwin   = "5521686b-0ab4-4ff4-a56e-0bdf148e8d1d"; // room "erwin"
+        final String roomA66 = "c24ce517-4697-4e52-9917-ec000c84563c"; // room "Room A66"
+        final String win = "from: \"2001-01-01T00:00:00\", to: \"2020-12-31T00:00:00\"";
+
+        java.util.Set<Object> a = reservationIds(
+                "{ reservations(filter: { " + win + ", allocatableIdsIn: [\"" + erwin + "\"] }) { id } }");
+        java.util.Set<Object> b = reservationIds(
+                "{ reservations(filter: { " + win + ", allocatableMatching: { idIn: [\"" + roomA66 + "\"] } }) { id } }");
+        java.util.Set<Object> merged = reservationIds(
+                "{ reservations(filter: { " + win + ", allocatableIdsIn: [\"" + erwin + "\"], "
+                        + "allocatableMatching: { idIn: [\"" + roomA66 + "\"] } }) { id } }");
+
+        assertFalse(a.isEmpty(), "fixture: room erwin should have reservations");
+        assertFalse(b.isEmpty(), "fixture: Room A66 should have reservations");
+        java.util.Set<Object> union = new java.util.HashSet<>(a);
+        union.addAll(b);
+        assertEquals(union, merged, () -> "scope must UNION both arms; a=" + a + " b=" + b + " merged=" + merged);
+        assertTrue(merged.containsAll(a) && merged.containsAll(b),
+                () -> "merged must contain every reservation from both arms; a=" + a + " b=" + b + " merged=" + merged);
+    }
+
     /**
      * §12 leak guard — non-admin caller with an `allocatableMatching` that
      * could match hidden allocatables must see only reservations they can

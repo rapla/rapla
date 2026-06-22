@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { switchMap } from 'rxjs';
 
-import { SearchService } from '../search/search.service';
+import { SearchService, MIN_QUERY_LENGTH } from '../search/search.service';
 import type { SearchResult, SearchResultGroup } from '../search/search.types';
 import { FilterStore } from '../state/filter-store';
 import { ResourceSelectionStore } from '../state/resource-selection-store';
@@ -181,7 +181,9 @@ export class OmniboxComponent {
     { initialValue: [] as SearchResultGroup[] },
   );
 
-  protected readonly showResults = computed(() => this.open() && this.term().trim().length > 0);
+  protected readonly showResults = computed(
+    () => this.open() && this.term().length >= MIN_QUERY_LENGTH,
+  );
 
   /** Typing reopens the dropdown and updates the query. */
   onType(value: string): void {

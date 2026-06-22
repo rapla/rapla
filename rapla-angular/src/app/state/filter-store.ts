@@ -1,6 +1,10 @@
 import { Injectable, computed, signal } from '@angular/core';
 
-export type FilterKind = 'resource' | 'event';
+/**
+ * A chip's kind. SCOPING kinds (`resource`, `user`; `group` later) narrow the
+ * query; `event` is a navigation target, not a scope. See PRD 078 §"Scope".
+ */
+export type FilterKind = 'resource' | 'event' | 'user';
 
 /** One filter clause — a chip in the rail. */
 export interface FilterEntry {

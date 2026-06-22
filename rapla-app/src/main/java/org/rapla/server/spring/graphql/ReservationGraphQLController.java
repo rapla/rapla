@@ -144,43 +144,43 @@ public class ReservationGraphQLController
                 filter.accessibleByUsername(), filter.accessibleByUserId(),
                 filter.accessibleByGroup(), parseAccessLevel(filter.accessLevel()),
                 caller, operator, pc);
-        Collection<Allocatable> allocatables = operator.getAllocatables(null);
         Collection<Allocatable> visibleAllocatables;
 
-        // PRD 066 — collect ids from BOTH `allocatableIdsIn` (explicit list)
-        // and `allocatableMatching` (predicate-driven). Union is the visible
-        // allocatable set for the storage query. If neither is set, fall
-        // back to "everything the caller can read."
+        // PRD 066 — collect the visible allocatables from BOTH `allocatableIdsIn`
+        // (explicit list) and `allocatableMatching` (predicate-driven), UNIONed.
+        // If neither is set, fall back to "everything the caller can read."
         boolean hasIdsIn = filter.allocatableIdsIn() != null && !filter.allocatableIdsIn().isEmpty();
         boolean hasMatching = filter.allocatableMatching() != null && !filter.allocatableMatching().isEmpty();
 
         if (hasIdsIn || hasMatching)
         {
-            Set<String> wanted = new HashSet<>();
-            if (hasIdsIn) wanted.addAll(filter.allocatableIdsIn());
-            if (hasMatching)
+            // PERF (perf-investigation 2026-06-22): resolve the scoped allocatables DIRECTLY via the
+            // catalog resolver (its idIn / typeKeyIn / where<TypeKey> passes already run §12 canRead
+            // AND drop internal types) instead of materializing+scanning ALL allocatables. The old
+            // `getAllocatables(null)` copy (`new HashSet<>(~48k)` on the dhbw store) + full stream-
+            // filter was a fixed O(N) tax on EVERY scoped query, even one naming a single id — the
+            // dominant fixed-floor cost measured (year window: 880ms unscoped → 20ms one-building).
+            // Both arms go through the same resolver, deduped by id (LinkedHashMap = union semantics).
+            java.util.LinkedHashMap<String, Allocatable> byId = new java.util.LinkedHashMap<>();
+            try
             {
-                // Resolve the inner AllocatableFilter via the existing
-                // resolver — gets us §12 + idIn + typeKeyIn + whereXxx in
-                // one call. ClassificationGraphQLController already runs
-                // canRead, so we only need the ids.
-                try
+                if (hasMatching)
                 {
-                    for (Allocatable matched : classificationController.allocatables(filter.allocatableMatching()))
-                    {
-                        if (matched != null && matched.getId() != null) wanted.add(matched.getId());
-                    }
+                    for (Allocatable a : classificationController.allocatables(filter.allocatableMatching()))
+                        if (a != null && a.getId() != null) byId.putIfAbsent(a.getId(), a);
                 }
-                catch (RaplaException e) { /* fall through — empty match set */ }
+                if (hasIdsIn)
+                {
+                    for (Allocatable a : classificationController.allocatables(java.util.Map.of("idIn", filter.allocatableIdsIn())))
+                        if (a != null && a.getId() != null) byId.putIfAbsent(a.getId(), a);
+                }
             }
-            visibleAllocatables = allocatables.stream()
-                    .filter(a -> a != null && a.getId() != null && wanted.contains(a.getId()))
-                    .filter(a -> pc.canRead(a, caller))
-                    .collect(Collectors.toList());
+            catch (RaplaException e) { /* fall through — empty scope */ }
+            visibleAllocatables = new ArrayList<>(byId.values());
         }
         else
         {
-            visibleAllocatables = allocatables.stream()
+            visibleAllocatables = operator.getAllocatables(null).stream()
                     .filter(a -> pc.canRead(a, caller))
                     .collect(Collectors.toList());
         }

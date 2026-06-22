@@ -15,6 +15,8 @@ import { firstValueFrom } from 'rxjs';
  * token handling — those are gone with H4.
  */
 export interface Identity {
+  /** Opaque user id — used for owner-scoped ("my events") queries (PRD 078 §Scope). */
+  userId: string;
   username: string;
   name: string;
   admin: boolean;

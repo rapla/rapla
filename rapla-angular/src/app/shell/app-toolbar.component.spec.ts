@@ -30,6 +30,7 @@ function configure(identityValue: Identity | null, users: { username: string; di
 }
 
 const LOGGED_IN: Identity = {
+  userId: 'u-1',
   username: 'testadmin',
   name: 'Test Admin',
   admin: false,

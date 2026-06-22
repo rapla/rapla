@@ -13,11 +13,14 @@ import type { ViewVariable } from '../graphql/graphql.service';
  * change. This is the implicit contract: the meaning of the rapla input types.
  */
 
-/** The ambient state the GUI binds from (grows: groups, conflicts, user, …). */
+/** The ambient state the GUI binds from (grows: groups, conflicts, …). */
 export interface SelectionContext {
   window: { from: string; to: string } | null;
   /** Ids of the currently-selected resources (chips). */
   resourceIds: string[];
+  /** The user scope (a `user` chip / the pinned own user) → ReservationFilter.ownerEq.
+   *  Single, because ReservationFilter.ownerEq takes one id (no ownerIdsIn). */
+  ownerId?: string | null;
 }
 
 /** Strip GraphQL type wrappers ({@code !}, {@code [ ]}) to the base type name. */
@@ -33,6 +36,8 @@ function fillByType(type: string, ctx: SelectionContext): unknown | undefined {
       // Selection narrows the reservation search via allocatableMatching (an
       // AllocatableFilter — future-proof for groups, not just ids).
       if (ctx.resourceIds.length) filter['allocatableMatching'] = { idIn: ctx.resourceIds };
+      // A user scope → events owned by that user ("my events" for the pinned self).
+      if (ctx.ownerId) filter['ownerEq'] = ctx.ownerId;
       return filter;
     }
     case 'AllocatableFilter':

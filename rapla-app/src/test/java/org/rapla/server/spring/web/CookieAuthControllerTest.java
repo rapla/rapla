@@ -83,9 +83,12 @@ class CookieAuthControllerTest
         String access = login("homer", "duffs").accessToken();
 
         // /api/auth/me requires a valid credential; cookie-only (no Bearer).
+        // userId is the caller's opaque user id — the SPA needs it for owner-scoped
+        // ("my events") queries (PRD 078 §Scope).
         mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", access)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value("homer"));
+                .andExpect(jsonPath("$.username").value("homer"))
+                .andExpect(jsonPath("$.userId").isNotEmpty());
     }
 
     @Test

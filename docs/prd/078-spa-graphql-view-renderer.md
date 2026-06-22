@@ -1,9 +1,12 @@
 # PRD 078 — SPA GraphQL view renderer
 
-**Status:** draft — 2026-06-21. The Angular consumer of PRD 074's server-side view
-contract. Carved out of [PRD 074](074-graphql-declarative-views.md) so the server view
-model (schema, `@view`, `extensions.view` emission, §12) and the SPA rendering layer
-(transport, generic table renderer, control inference) evolve as separate concerns.
+**Status:** in progress — 2026-06-21; updated 2026-06-22. The Angular consumer of PRD 074's
+server-side view contract. Carved out of [PRD 074](074-graphql-declarative-views.md) so the
+server view model (schema, `@view`, `extensions.view` emission, §12) and the SPA rendering
+layer (transport, generic renderer, control inference) evolve as separate concerns. The
+generic `ViewHostComponent` (one component renders every server-declared view by name),
+type-driven variable binding, and the **scope gate** (§"Scope") are built; see that section
+for the selection model and what remains (`user`/`group` chips, own-user pin).
 
 ## Goal
 
@@ -118,6 +121,42 @@ built. So:
   alternative to a tree).
 - **Global unified power-search across views** → **PRD 077 / 060**, not here.
 - **Omnibox multisearch (the GraphQL search resolver behind `SearchService`)** → **PRD 081**.
+
+## Scope — a view only queries within a selection (performance)
+
+**Added 2026-06-22.** A rendered view fires **no** `executeView` query until a **scope** is
+set. Scope = at least one *scoping* chip in the filter rail; a chip's kind is `resource`
+(allocatable), `group`, or `user` — an `event` chip is a navigation target, not a scope. With
+no scope the view shows a hint ("Wähle eine Ressource, Gruppe oder Person als Scope") and
+issues **zero** GraphQL view requests (`listViews` for the nav still runs — it is cheap).
+
+**Why.** An unscoped view query is a full-window firehose: the `reservations` resolver caps
+at 500 rows but still scans the whole `from`/`to` window across *all* resources (a PRD 035 hot
+path). Requiring a scope makes every view query bounded by construction. "Remove all scope
+first" = the default state is empty; scope exists **only** as explicit chips, never implicitly
+from the date window.
+
+**Scope → variables** (type-driven, PRD 074 §"Inputs"/variables; `variable-binder.ts` fills
+each declared variable by its GraphQL type, not its name):
+
+| Chip kind | Binds into |
+|---|---|
+| `resource` | `ReservationFilter.allocatableMatching.idIn` (+ a second `AllocatableFilter.idIn` for aggregation/pivot views) |
+| `user` | `ReservationFilter.ownerEq` — the user's own events |
+| `group` | `ReservationFilter.accessibleByGroup` (PRD 069, admin-scoped) |
+
+**Own user pinned (quick "my events").** The logged-in user is permanently pinned at the
+top-left of the resource selection — one click away from a `user`-scope chip (`ownerEq:<me>`),
+so a planner sees all their own events immediately. Requires the user **id** in the SPA
+identity: extend `GET /api/auth/me` (`IdentityResponse`) with `id` (it carries
+username/name/roles today, no id).
+
+**Finding users** — typing a name in the omnibox to add a `user` scope chip — is the **find**
+half, owned by **PRD 081** (add a `USER` search kind / `UserHit`).
+
+**Status (2026-06-22):** scope gate + hint + `resource` binding **built** (`ViewHostComponent`
+`hasScope`, regression-tested). Remaining: `user`/`group` chip kinds, the own-user pin, and the
+`id` on `/api/auth/me`.
 
 ## Execution transport & routing (locked 2026-06-21 — see PRD 074 §"View loading")
 

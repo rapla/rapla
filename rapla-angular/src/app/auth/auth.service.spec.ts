@@ -16,6 +16,7 @@ describe('AuthService (cookie model)', () => {
   let httpMock: HttpTestingController;
 
   const identity = (over: Partial<Identity> = {}): Identity => ({
+    userId: 'u-1',
     username: 'homer',
     name: 'Simpson Homer',
     admin: false,

@@ -71,9 +71,20 @@ describe('ViewHostComponent', () => {
     viewState = TestBed.inject(ViewStateStore);
     filter = TestBed.inject(FilterStore);
     filter.clear();
+    // A scope chip is REQUIRED for the view to query (performance gate); the
+    // rendering tests below assume a scope is set.
+    filter.replace({ id: 'scope-1', kind: 'resource', label: 'Scope' });
     captured.view = null;
     captured.vars = null;
     viewState.setWindow({ from: '2026-06-15T00:00:00', to: '2026-06-22T00:00:00' });
+  });
+
+  it('does NOT query without a scope — shows the hint instead (performance gate)', async () => {
+    filter.clear(); // no scope chip → must not fire an (expensive) unscoped query
+    const f = makeHost('Wochenansicht');
+    await settle(f);
+    expect(captured.view).toBeNull(); // no executeView was called
+    expect((f.nativeElement as HTMLElement).textContent ?? '').toContain('Scope');
   });
 
   it('renders the weekday view as ordered day sections', async () => {
@@ -163,7 +174,9 @@ describe('ViewHostComponent — stale response handling', () => {
       providers: [{ provide: GraphqlService, useValue: stub }],
     }).compileComponents();
     viewState = TestBed.inject(ViewStateStore);
-    TestBed.inject(FilterStore).clear();
+    const filter = TestBed.inject(FilterStore);
+    filter.clear();
+    filter.replace({ id: 'scope-1', kind: 'resource', label: 'Scope' }); // scope gate
     viewState.setWindow({ from: '2026-06-15T00:00:00', to: '2026-06-22T00:00:00' });
   });
 

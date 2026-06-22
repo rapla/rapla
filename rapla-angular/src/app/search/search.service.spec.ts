@@ -55,6 +55,24 @@ describe('SearchService', () => {
     expect(called).toBe(false);
   });
 
+  it('does NOT query below 3 characters (spaces counted)', async () => {
+    let called = false;
+    const gql = fakeGql([], () => (called = true));
+    for (const term of ['C', 'C3', 'ab']) {
+      const groups = await firstValueFrom(new SearchService(gql).search(term));
+      expect(groups).toEqual([]);
+    }
+    expect(called).toBe(false);
+  });
+
+  it('counts spaces toward the minimum — a trailing space reaches 3 and searches', async () => {
+    let called = false;
+    const gql = fakeGql([{ kind: 'RESOURCE', heading: 'R', hits: [resourceHit('r1', 'C3')] }], () => (called = true));
+    const groups = await firstValueFrom(new SearchService(gql).search('C3 '));
+    expect(called).toBe(true); // raw "C3 " is 3 chars
+    expect(groups.length).toBe(1);
+  });
+
   it('maps a RESOURCE bucket to a Ressourcen group with filter actions + sublabel', async () => {
     const gql = fakeGql([
       {
@@ -63,7 +81,7 @@ describe('SearchService', () => {
         hits: [resourceHit('r1', 'C348 PC Hörsaal'), resourceHit('p1', 'Prof X', 'Person')],
       },
     ]);
-    const groups = await firstValueFrom(new SearchService(gql).search('C'));
+    const groups = await firstValueFrom(new SearchService(gql).search('C34'));
     expect(groups.length).toBe(1);
     expect(groups[0].kind).toBe('resource');
     expect(groups[0].heading).toBe('Ressourcen');
@@ -96,7 +114,7 @@ describe('SearchService', () => {
       { kind: 'RESOURCE', heading: 'Ressourcen', hits: [resourceHit('r1', 'Raum 1')] },
       { kind: 'EVENT', heading: 'Veranstaltungen', hits: [eventHit('e1', 'Event 1')] },
     ]);
-    const groups = await firstValueFrom(new SearchService(gql).search('1'));
+    const groups = await firstValueFrom(new SearchService(gql).search('123'));
     expect(groups.map((g) => g.kind)).toEqual(['resource', 'event']);
   });
 
@@ -113,7 +131,7 @@ describe('SearchService', () => {
       { kind: 'WHO_KNOWS', heading: '?', hits: [resourceHit('x', 'x')] },
       { kind: 'RESOURCE', heading: 'Ressourcen', hits: [resourceHit('r1', 'Raum 1')] },
     ]);
-    const groups = await firstValueFrom(new SearchService(gql).search('x'));
+    const groups = await firstValueFrom(new SearchService(gql).search('xxx'));
     expect(groups.map((g) => g.kind)).toEqual(['resource']);
   });
 
@@ -130,7 +148,7 @@ describe('SearchService', () => {
         hits: [{ __typename: 'ResourceHit', id: 'x', label: null, sublabel: null, score: 1 }],
       },
     ]);
-    const groups = await firstValueFrom(new SearchService(gql).search('x'));
+    const groups = await firstValueFrom(new SearchService(gql).search('xxx'));
     expect(groups[0].results[0].label).toBe('(ohne Name)');
     expect(groups[0].results[0].sublabel).toBeUndefined();
   });

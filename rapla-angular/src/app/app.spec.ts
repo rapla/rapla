@@ -16,6 +16,7 @@ const VIEWS: ViewInfo[] = [
 ];
 
 const IDENTITY: Identity = {
+  userId: 'u-1',
   username: 'testadmin',
   name: 'Test Admin',
   admin: false,

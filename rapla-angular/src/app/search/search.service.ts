@@ -36,6 +36,11 @@ query OmniSuche($query: String!, $limit: Int!) {
 
 const SEARCH_LIMIT = 20;
 
+/** Minimum query length before the omnibox hits the server — counted on the RAW
+ *  term, spaces included (a too-short query matches almost everything: expensive
+ *  and useless). */
+export const MIN_QUERY_LENGTH = 3;
+
 /** Server enum value → SPA kind. Unknown kinds are dropped defensively. */
 const KIND_MAP: Record<string, SearchResultKind> = {
   RESOURCE: 'resource',
@@ -80,8 +85,10 @@ export class SearchService {
   constructor(private readonly gql: GraphqlService) {}
 
   search(term: string): Observable<SearchResultGroup[]> {
+    // Require ≥ MIN_QUERY_LENGTH chars (raw, spaces counted) before hitting the
+    // server; a purely-blank term never searches.
+    if (!term.trim() || term.length < MIN_QUERY_LENGTH) return of([]);
     const q = term.trim();
-    if (!q) return of([]);
     return this.gql
       .query<SearchData>(SEARCH_QUERY, { query: q, limit: SEARCH_LIMIT })
       .pipe(map((res) => toGroups(res.data?.search?.groups ?? [])));
