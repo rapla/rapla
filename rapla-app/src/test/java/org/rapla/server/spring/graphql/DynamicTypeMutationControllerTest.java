@@ -318,6 +318,48 @@ class DynamicTypeMutationControllerTest
     }
 
     @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void deleteEventTypeWithReservationsReportsReferenceExists()
+    {
+        // testdefault.xml holds reservations of type 'event'. Deleting it must
+        // be pre-flight rejected with the structured REFERENCE_EXISTS (same as
+        // the resource/person branch), NOT surface as a dispatch-time exception.
+        List<Map<String, Object>> types = tester.document("{ types { id key } }")
+                .execute()
+                .path("types")
+                .entityList(new ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        String eventId = types.stream()
+                .filter(t -> "event".equals(t.get("key")))
+                .map(t -> (String) t.get("id"))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("fixture must contain type 'event': " + types));
+
+        Map<String, Object> result = tester.document("""
+                mutation($ids: [ID!]!) {
+                  deleteDynamicTypes(ids: $ids) {
+                    overallStatus
+                    results { index errors { code path message } }
+                  }
+                }
+                """)
+                .variable("ids", List.of(eventId))
+                .execute()
+                .path("deleteDynamicTypes")
+                .entity(new ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+
+        assertEquals("REJECTED", result.get("overallStatus"));
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> results = (List<Map<String, Object>>) result.get("results");
+        assertEquals(1, results.size());
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> errs = (List<Map<String, Object>>) results.get(0).get("errors");
+        assertFalse(errs.isEmpty(), "expected REFERENCE_EXISTS error[]");
+        assertEquals("REFERENCE_EXISTS", errs.get(0).get("code"));
+    }
+
+    @Test
     @WithMockUser(username = "monty", roles = "USER")
     void nonAdminDeleteDynamicTypeRejected()
     {

@@ -10,12 +10,14 @@ import java.util.Map;
 import java.util.Set;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
+import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
@@ -26,6 +28,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.server.spring.graphql.ReservationMutationController.ReservationMutationException;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.StorageOperator;
+import org.rapla.storage.SyncStorageOperator;
 import org.rapla.storage.UpdateEvent;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
@@ -230,7 +233,7 @@ public class DynamicTypeMutationController
                 continue;
             }
             // Check for referrers — instances of this type
-            List<String> referrers = collectReferrers(dt, 50);
+            List<String> referrers = collectReferrers(dt, 20);
             if (!referrers.isEmpty())
             {
                 Map<String, Object> err = validationError(i, "REFERENCE_EXISTS",
@@ -526,44 +529,39 @@ public class DynamicTypeMutationController
     {
         String classificationType = dt.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
         if (classificationType == null) return List.of();
-        List<String> referrers = new ArrayList<>();
+
+        // An empty-rule filter bound to dt matches every instance of that type.
+        ClassificationFilter[] ofType = { dt.newClassificationFilter() };
         boolean isReservation = DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION
                 .equals(classificationType);
+
+        Collection<? extends Entity> referencing;
         if (isReservation)
         {
-            // Look across reservations — scan via allocatables query path is
-            // ill-fitted; use the operator's full-table walk via getAllReservations
-            // if available. Falls back to "no checked referrers" if not — better
-            // to reject conservatively when we can't enumerate.
-            for (DynamicType candidate : operator.getDynamicTypes())
-            {
-                if (!dt.getId().equals(candidate.getId())) continue;
-            }
-            // Best-effort: getReservations is not in StorageOperator's interface
-            // directly; we use the per-allocatable iteration via a wide-window
-            // query in the test pathway. For v1, return a conservative empty list
-            // — the dispatch will fail at the storage layer if instances exist,
-            // surfacing a STORAGE_ERROR through MutationExceptionResolver.
-            // TODO PRD 057 follow-up: wire to operator.getAllReservations() (does
-            // not exist today) or a dedicated reservationsByType count query.
-            return List.of();
+            // Owner-driven enumeration: passing every user as owner walks all
+            // reservations (each has an owner), so the type filter catches them
+            // regardless of allocatable bindings — an allocatables-only scan
+            // would miss un-allocated events. null/null window = unbounded. The
+            // rare appointment-less or template event is still backstopped by
+            // checkNoDependencies at dispatch (DependencyException), so integrity
+            // holds either way.
+            User[] allUsers = operator.getUsers().toArray(new User[0]);
+            referencing = ((SyncStorageOperator) operator)
+                    .getReservationsSync(null, null, allUsers, null, null, ofType);
         }
         else
         {
-            // Resource / person — scan getAllocatables(null)
-            Collection<Allocatable> all = operator.getAllocatables(null);
-            for (Allocatable a : all)
-            {
-                if (a == null) continue;
-                var classification = a.getClassification();
-                if (classification == null) continue;
-                var classifiedType = classification.getType();
-                if (classifiedType != null && dt.getId().equals(classifiedType.getId()))
-                {
-                    referrers.add(a.getId());
-                    if (referrers.size() >= cap) break;
-                }
-            }
+            // Resource / person — the existing type-filtered accessor.
+            referencing = operator.getAllocatables(ofType);
+        }
+
+        // maxPerType is applied here, internally: cap the referrer sample.
+        List<String> referrers = new ArrayList<>();
+        for (Entity e : referencing)
+        {
+            if (e == null) continue;
+            referrers.add(e.getId());
+            if (referrers.size() >= cap) break;
         }
         return referrers;
     }
