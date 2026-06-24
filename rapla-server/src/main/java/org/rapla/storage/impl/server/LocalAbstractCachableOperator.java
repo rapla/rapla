@@ -4346,7 +4346,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             final ReferenceInfo<Allocatable> newRef = selectedObject.getReference();
             selectedObject.getReference();
-            // FIXME check write permissions
             Set<Allocatable> allocatables = new LinkedHashSet<>();
             for (ReferenceInfo<Allocatable> allocatableId : allocatableIds)
             {
@@ -4357,6 +4356,27 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 }
                 final Allocatable resolve = resolve(allocatableId);
                 allocatables.add(resolve);
+            }
+            // A merge deletes the merged-away allocatables and rewrites every
+            // reference to point at the target — a write/delete on each one. The
+            // controller only checks the merge target, so re-check here to cover
+            // every doMergeSync caller: a user must not be able to destroy
+            // resources they cannot modify by merging them away.
+            if (user != null && !user.isAdmin())
+            {
+                if (!permissionController.canModify(selectedObject, user))
+                {
+                    throw new RaplaSecurityException("User " + user.getUsername()
+                            + " is not allowed to modify allocatable " + selectedObject.getName(null));
+                }
+                for (Allocatable other : allocatables)
+                {
+                    if (!permissionController.canModify(other, user))
+                    {
+                        throw new RaplaSecurityException("User " + user.getUsername()
+                                + " is not allowed to modify allocatable " + other.getName(null));
+                    }
+                }
             }
             final Collection<Entity> storeObjects = new LinkedHashSet<>();
             if (!selectedObject.isReadOnly())

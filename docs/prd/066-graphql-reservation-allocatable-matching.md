@@ -1,6 +1,6 @@
 # PRD 066 — GraphQL `reservations(filter:)` Predicate-Driven Allocatable Selection
 
-**Status:** in-progress — Phases 1+2 landed 2026-05-29; Phase 3 (doc migration) partially done. Live-verified against dhbw: 309 reservations in Gebäude B in one round-trip vs prior 2-roundtrip pattern.
+**Status:** in-progress — Phases 1+2 landed 2026-05-29; Phase 3 (doc migration) partially done. Live-verified against a production-scale store: several hundred reservations in one building in one round-trip vs prior 2-roundtrip pattern.
 
 **Date:** 2026-05-29
 

@@ -1,7 +1,7 @@
 # PRD 082 — Storage memory model: read-path indices, footprint & modernization
 
 **Status:** draft — 2026-06-22 (broadened from the original "GraphQL read-path indices" scope)
-**Related:** PRD 035 (GraphQL foundations — per-field perf hot-spots), PRD 066 (allocatable scope union on ReservationFilter), PRD 079/080 (grouped aggregates / typed-entity stats — the `appointmentBlockStats` fan-out), PRD 081 (omnibox multisearch — the reservation name full-scan this indexes), PRD 067 (server operator split)
+**Related:** PRD 035 (GraphQL foundations — per-field perf hot-spots), PRD 066 (allocatable scope union on ReservationFilter), PRD 079/080 (grouped aggregates / typed-entity stats — the `appointmentBlockStats` fan-out), PRD 081 (omnibox multisearch), PRD 067 (server operator split), PRD 083 (user change-subscription — consumes Workstream B), PRD 084 (H2 persistence engine), PRD 085 (search & name indexing — the name-search split out of Workstream A)
 
 **Scope note (changed 2026-06-22):** this PRD originally covered *only* in-memory read-path
 indices in `LocalCache` and explicitly deferred "persistence-/storage-scheme level" indices to
@@ -9,6 +9,32 @@ a separate stream. That separation is dropped: the PRD now covers the **whole st
 model** — the in-memory read-path indices remain as **Workstream A** (concrete, partly shipped),
 and the broader **re-evaluation of whether rapla's "load everything into RAM" model is still
 contemporary** is captured as the **Bestandsaufnahme + Modernization evaluation** below.
+
+**Primary objective: read performance (efficient GraphQL queries).** Footprint/memory is a
+*secondary, potential* benefit — **not** the driver of this PRD. The measured pain is read latency
+(901 ms-class scans, N+1 field resolution), not an out-of-memory condition. The footprint material
+below (slim/heavy split, windowing, parking, governance) is kept as a related opportunity, but the
+bar every option is judged against is **does it make GraphQL reads fast**, not "does it shrink the
+heap".
+
+**Scope decision (2026-06-24): for now, everything stays resident in RAM.** The footprint/tiering
+levers are **deferred** — no parking, no windowing/eviction of the heavy payload, no lazy-loading or
+serving reads from the persistence DB. The active scope is the **in-memory read-model only**: an
+**in-process H2 index** (in-memory mode) plus the slim/heavy split, **both fully resident**, built
+purely to make reads fast. The full object graph stays in RAM exactly as today; the H2 read-model is
+an *additional* in-memory structure beside it, not a replacement that offloads data to disk.
+Consequences: **option 3 (window/park the heavy payload) is deferred**; **option 2 is reframed** as
+an *in-memory* indexed read path (the H2 read-model), **not** reads served from the backing disk DB;
+the parking/governance design below is **future work** (the existing archiver's time-based deletion
+is unaffected and stays as-is). Footprint remains a later lever, consistent with "read performance
+primary, footprint secondary."
+
+**Working thesis (2026-06-22):** rather than hand-knit one index after another into the bespoke
+storage framework, modernize the **read/query layer** onto a real query engine — a **CQRS
+in-memory SQL read-model** fed from the change stream, migrated query-by-query (strangler-fig),
+leaving the write/conflict/domain core untouched. Rationale (the two-level GraphQL cost argument
+and why hand-rolling loses for open-ended GraphQL access patterns) in *Modernization evaluation →
+Strategic direction*. Workstream A's hand-rolled indices become moot under this thesis, not wrong.
 
 ---
 
@@ -45,7 +71,7 @@ Workstream-A latency tax (below) is a *RAM-scan* tax, not a DB tax.
 | **B) Read serving** (catalog lists, name search, analytics) | **No** — uses the cache only because it is there | O(all) RAM scan, no index |
 
 The unbounded dimension is **reservations/appointments** (every booking, forever). Allocatables
-(~48k today) are bounded and near-static. The memory hog is the history — and Role A is what
+(~~50k today) are bounded and near-static. The memory hog is the history — and Role A is what
 pins it in RAM.
 
 ### Multi-pod = event-log replication
@@ -58,24 +84,86 @@ pins it in RAM.
   cache; **every pod holds a full RAM copy**. Writes coordinated via process/resource/global
   locks (`docs/architecture/locking.md`); reads are lock-free against the cache.
 
-### Measured bottleneck (admin token, local dhbw backend, 2026-06-22)
-47,893 allocatables (type `Raum` = 1,872). Latency is driven by **allocatable-set size**, not by
+### Measured bottleneck (admin token, local production backend, 2026-06-22)
+~50,000 allocatables (type `Raum` = ~2,000). Latency is driven by **allocatable-set size**, not by
 the time window or result cardinality:
 
 | Scope | `appointmentBlockStats` (group by Raum, 1 yr) | Factor |
 |---|---:|---:|
-| no scope (all 47,893) | 901 ms | 1× |
-| `typeKeyEq:"Raum"` (1,872) | 201 ms | 4.5× |
+| no scope (all ~50,000) | 901 ms | 1× |
+| `typeKeyEq:"Raum"` (~2,000) | 201 ms | 4.5× |
 | one building (`idIn`) | **23 ms** | **39×** |
 
 Window scaling is flat (a 1-day, 3-block window already pays ~670 ms). Catalog
-`allocatables(filter:)` ids-only: untyped `{}` = 155 ms / 47,893 rows (dominated by
-`canRead × 47,893`); `typeKeyEq:"Raum"` = 22 ms / 1,872 rows (storage-prefiltered, but still
-`new HashSet<>(47,893)` + a 47,893-element scan inside `getAllocatables`).
+`allocatables(filter:)` ids-only: untyped `{}` = 155 ms / ~50,000 rows (dominated by
+`canRead × ~50,000`); `typeKeyEq:"Raum"` = 22 ms / ~2,000 rows (storage-prefiltered, but still
+`new HashSet<>(~50,000)` + a ~50,000-element scan inside `getAllocatables`).
 
 ---
 
 ## Modernization evaluation — is the storage model still zeitkonform?
+
+### Strategic direction (working thesis, 2026-06-22): a CQRS read-model on real query-engine technology — not hand-rolled indices
+
+The trigger for this PRD was "add a type-bucket index, then a name index, then a window-first
+appointment index" — i.e. **hand-knit one index after another into the bespoke storage framework**.
+The thesis that emerged: that is the wrong treadmill, and this is the right moment to bring the
+self-built read/query layer onto real technology instead.
+
+**Why hand-rolling loses structurally for GraphQL specifically.** A GraphQL query costs on two
+levels, and a hand-rolled index only addresses one:
+
+| Level | rapla today | Hand-rolled index helps? |
+|---|---|---|
+| **Root resolution** (`@QueryMapping allocatables(filter:)`) | full scan (901 ms) | **yes** — this is Workstream A |
+| **Field resolution** (`@SchemaMapping` per derived field) | N+1 fan-out — **28 `@QueryMapping` + 18 `@SchemaMapping`, zero `@BatchMapping`** (no DataLoader/batching anywhere) | **no** — an index does nothing here (this is PRD 035's per-field hot-spots) |
+
+So even after hand-rolling every index, the `@SchemaMapping`/N+1 level stays slow → next you
+hand-roll DataLoaders, then projection, then the next index. The treadmill never ends **because
+with GraphQL the client composes the access pattern (filter × selection set), not the server** —
+the patterns are open-ended. "One hand-optimization per access pattern" cannot keep up with an
+open-ended pattern space. **A query engine is precisely the tool for access patterns not fixed in
+advance — which is the definition of GraphQL.** The self-knitted framework and GraphQL are a
+structural mismatch, not a tuning problem.
+
+A real engine unifies both levels in one mechanism: filter args → indexed `WHERE` (root);
+selection set → `SELECT` projection + one batched fetch (fields) instead of an N+1 object-graph
+walk.
+
+**Scope is everything — modernize the read-model, never the write/conflict/domain core.** The
+bespoke framework does two jobs; only one is GraphQL-relevant:
+
+- **Write / domain / conflict** (conflict detection, repeating-rule expansion, multi-pod
+  replication) — valuable, risky, proven. **Do not touch.**
+- **Read / query** (Role B — what GraphQL serves) — the slow, hand-indexed treadmill.
+
+The direction is therefore **CQRS via a strangler-fig**, not a rewrite:
+
+> The bespoke store stays the write/domain source of truth (incl. conflict detection). A real
+> query engine — an **embedded in-memory SQL read-model**, fed from the same put/remove change
+> stream — becomes the read side. GraphQL resolvers are redirected onto the engine **query by
+> query**; root-filter indexing *and* field batching fall out together per migrated query. Nothing
+> breaks: any not-yet-migrated query runs exactly as today.
+
+This reframes Workstream A: its hand-rolled indices are not *wrong*, they become **moot** — you
+don't build 3 indices, you build the read-model **once**, after which every index and projection
+is an engine feature (`CREATE INDEX`, a one-liner, correctly maintained by the engine rather than
+by hand on put/remove). It also fixes the level (field N+1) that no hand-rolled index ever could.
+
+**Decided forks for this direction** (engine choice + where the domain logic lives):
+- **Engine: H2 in-memory — LOCKED (MQ7 resolved 2026-06-24).** In-process, SQL, MVStore/MVCC
+  (clean fit for the Stage-Y sync write-through), JSON column for Class-2 attributes, and a
+  built-in full-text index. It is also the engine PRD 084 consolidates the *persistence* backend
+  onto, so the whole stack runs one embedded engine. DuckDB (columnar analytics fit) and Calcite
+  (SQL-over-objects, no data movement) are noted as future levers if the analytics path
+  (`appointmentBlockStats`) ever needs a columnar engine, but the default and the prototyping
+  target is H2.
+- The hard boundary: does conflict detection / repeating expansion (`AppointmentImpl.processBlocks`)
+  stay imperative Java over the object graph (engine serves Role B only), or can interval-overlap
+  move into the engine (e.g. Postgres `tstzrange`+GiST if the backend goes Postgres-first)? → MQ8.
+- Read-your-writes: the read-model is fed from the change stream, so it inherits an eventual-
+  consistency lag vs the write store on the same pod — acceptable for Role B reads, but confirm no
+  write-after-read GraphQL flow depends on immediate consistency. → MQ9.
 
 ### Verdict on the *pattern*
 Stripped of labels, rapla implements **event-sourcing + CQRS with an in-memory read-model**: the
@@ -95,7 +183,7 @@ is sound. What has aged is **three mechanical choices**, not the concept:
    at the target scale (below).
 3. **DB used as a dumb change-log, not a query engine.** rapla re-implements in RAM (type buckets,
    name search, time windows — Workstream A) what Postgres does better with B-tree/GIN indices.
-   This is the real "not contemporary" smell: holding 48k+ objects resident to scan them linearly
+   This is the real "not contemporary" smell: holding ~50k+ objects resident to scan them linearly
    while an indexed database sits idle beside it.
 
 ### Target scale (decided 2026-06-22)
@@ -103,18 +191,26 @@ is sound. What has aged is **three mechanical choices**, not the concept:
 - **Reservations × 5** — the **unbounded, RAM-pinning** dimension grows the most.
 
 This stays **below** the Kafka/grid/sharding threshold — so lever (2) (sharding/distributed grid)
-is **out**. The asymmetry is the decisive planning input: the dimension that grows fastest (×5) is
-exactly the one Role A pins in RAM (appointments for conflict detection) and the one that grows
-without bound over time. **Reservation footprint, not allocatable scan, is the primary pressure at
-the target.** → **Option 3 (window the resident reservation set) is the primary lever; the
-read-path/catalog work (Workstream A / option 2) is real but secondary** because the allocatable
-dimension only doubles.
+is **out**. The asymmetry matters for **read performance at scale**: reservations ×5 means ~5×
+more appointments to scan/expand per windowed query, so the read path degrades fastest exactly on
+the growing dimension — reinforcing that an indexed/engine-served read-model (the primary
+objective) is the lever, not a footprint fix. Footprint is the *secondary* read: the same ×5
+growth would eventually pressure RAM too, which is why the slim/heavy split and parking are kept
+as related opportunities — but they are judged by whether they also help read latency, not on
+footprint alone.
 
 ### Today's footprint bound: the archiver (and why it is the wrong tool kept for the right reason)
 
+> **DEFERRED (2026-06-24 scope: all-in-memory).** Everything below in this footprint/archiver/
+> parking/governance block is **future work** — the current scope keeps the full dataset resident in
+> RAM and pursues only the in-memory read-model for read performance. The existing archiver
+> (time-based deletion) is **left exactly as-is**; the "park, don't delete" evolution and the
+> governance decoupling are revisited when footprint becomes the driver. Retained here as the
+> analysis to resume from, not as active work.
+
 rapla already bounds reservation growth — **by deleting**. The `archiver` plugin
 (`ArchiverServiceTask`, hourly `@Scheduled`; `ArchiverServiceImpl`) reads `removeOlderThan` days
-from system preferences (default `-20` = disabled; the dhbw deployment sets it to ~365 → "events
+from system preferences (default `-20` = disabled; a production deployment sets it to ~365 → "events
 older than 1 year are deleted") and, each hour, **hard-deletes** every reservation whose
 appointments are all older than the cutoff (`raplaFacade.removeObjects`), optionally preceded by a
 *full* DB export (`importExportManager.doExport`, DBOperator-only) as a backup.
@@ -163,6 +259,37 @@ boundary from the store to the cache.
    dropped. That preserves the hot-set footprint guarantee while still serving the rare
    "I need 5 years of data" case.
 
+### Data governance: parking is NOT a substitute for deletion (the two must be decoupled)
+
+Today the archiver conflates two concerns that are actually independent — and a naïve
+"park, don't delete" would silently drop the one that is legally mandatory:
+
+- **Memory tiering (parking)** — reversible, footprint-driven, our concern here. Old data leaves
+  RAM but stays recoverable.
+- **Retention / erasure (deletion)** — irreversible, **governance-driven**, legally required.
+  Some data *must* be deleted: statutory retention limits, GDPR Art. 17 right-to-erasure (on
+  request, **not** time-based), per-deployment data-protection policy. Parking such data instead
+  of deleting it is a compliance violation, not a feature.
+
+So the design must keep a **separate, deliberate deletion/erasure path** alongside parking — and
+that path must reach the parked tier too (you cannot erase what you have only evicted from cache:
+the DB still holds it). Concretely:
+
+- Splitting parking from deletion is the *right* refactor of the archiver: today its time-based
+  delete happens to satisfy retention by accident; making it explicit means retention becomes a
+  governance-configured policy, not a memory hack.
+- Erasure may be **anonymization rather than full deletion** for some categories (drop the
+  person-linked classification attributes, keep the anonymous booking for statistics) — that is a
+  governance decision per data category, not a storage default.
+- Right-to-erasure is **request-triggered and exact** (delete *this* person's data now), orthogonal
+  to both the window and the retention schedule — it must hit hot, parked, *and* any exported
+  parked store.
+
+**This requires clarification with whoever owns data governance for the deployment** (→ MQ6)
+before the parking design is finalized: what must be hard-deleted vs anonymized vs retained, on
+what schedule, and how right-to-erasure requests are serviced across the tiers. The PRD should not
+assume "keep everything forever" any more than it should assume "delete after a year".
+
 ### Is there a move that is faster AND smaller AND more standard-conform — all at once?
 **Yes — not a single switch, but the separation of the two cache roles:**
 
@@ -186,31 +313,103 @@ The one catch keeping this from being a clean single-step win on *every* backend
 stays resident regardless. So the all-axes win is real but scoped to **Role B on DB backends**;
 `FileOperator` keeps the full-load model (acceptable — it is the dev/small-install backend).
 
+### The central query is the appointment block — moved to PRD 086
+
+The slim/heavy split (the hot query needs only ids+time, not classifications) and the decoupling of the slim appointment projection from the heavy payload are the heart of the **appointment block index** — see **PRD 086**. The *Workload shape* measurement below stays here as the program-wide fact base it informs.
+
+### Workload shape: the store is overwhelmingly single-appointment (measured)
+
+Counting appointment types across **two real production-scale stores** (each on the order of a few
+hundred thousand appointments, ~10⁵ reservations) gives a decisive, consistent picture:
+
+| Property | Order of magnitude |
+|---|---|
+| Total appointments per store | hundreds of thousands (~2–3 × 10⁵) |
+| **Single (non-repeating) appointments** | **~98%** |
+| Repeating appointments | low-single-digit percent (~2%) |
+| Absolute repeating count | a few thousand — **roughly constant across stores regardless of total size** |
+| Appointments per reservation | near 1 (≈1.5–3) |
+| Time concentration | ~95% of appointments fall within the current + next year |
+
+The dominant real pattern is **semester/term scheduling that materializes every session as its own
+dated single appointment** — not as a repeating series. So repeating is the **~2% exception, and it
+does not grow with the dataset** (the absolute repeating count was nearly identical between a
+small-fan-out and a large-fan-out store); the dimension that scales is the single dated appointment.
+
+**This reshapes the appointment-index design — repeating expansion is *not* the hot path:**
+
+1. **For ~98% of appointments `start`/`end` IS the block.** The coarse range predicate
+   `start < winEnd AND end > winStart` is then **exact, not a candidate filter** — no Java
+   `processBlocks` post-expansion. The MQ8 "engine narrows, Java expands" mechanism applies only to
+   the ~2% repeating subset.
+2. **The aggregation-accuracy tension largely dissolves.** Block count ≈ row count for the single
+   majority → `appointmentBlockStats` aggregates ~98% of the data **exactly in SQL** (`COUNT`,
+   `GROUP BY`); a small Java correction expands only the repeating rows. (This is why the index can
+   promise more for the stats paths than a recurrence-centric view assumed.)
+3. **The row stays uniform:** `(alloc, resv, appt, start, end, is_rule)` — the common single case and
+   materialized occurrences are exact blocks (`is_rule=false`); only the open-ended tail is an
+   `is_rule=true` row whose rule lives in the resident object. The "materialized blocks" variant is
+   cheap because only the small, roughly-constant repeating subset is involved; the singles are
+   already blocks.
+4. **No recurrence-collector hot-spot.** Per-allocatable density comes from many *single* dated
+   appointments (which a range index serves cleanly), not from a few high-fan-out repeating series —
+   so the Stage-Y write-path benchmark sits in the "index wins" regime, not the borderline
+   high-recurrence-density regime.
+
+Net: **rapla is at its core a single-appointment store with a small recurrence annotation** — the
+index should be optimized for the dated single as the overwhelming common case, with repeating as a
+small annotated (or materialized) subset.
+
+### Appointment index — moved to PRD 086
+
+The flat `appointment_block` table, the `is_rule` representation decision, the index-exact slot filter, dual-API (RemoteStorage + GraphQL), conflict detection, and the migration/test strategy now live in **PRD 086 — appointment block index**.
+
 ### Options (smallest → largest)
 
 | # | Option | Faster | Smaller | More standard | Effort | At target (alloc ×2 / resv ×5) |
 |---|---|:--:|:--:|:--:|---|---|
-| **1** | In-memory indices only (Workstream A: type-bucket + name; + window-first appointment index) | ✅ | ❌ (adds a little) | ➖ | low | ship — perf floor; allocatable ×2 keeps the scan cost bounded |
-| **2** | **DB-indexed read path for Role B** (Spring `JdbcTemplate`/Data + SQL indices) | ✅ | ✅ | ✅ | medium | all-axes win for reads; secondary (alloc only ×2) |
-| **3** | **Window the resident conflict/reservation set** (evict old reservations; lazy historical reads) | ➖ | ✅✅ | ✅ | medium | **primary lever — resv ×5 is the footprint** |
+| **0** | **Slim appointment-block projection, decoupled from heavy payload** (the pivot above) | ✅✅ | ✅✅ | ✅ | medium–high | **the central lever — serves the hot query + conflict detection on slim data; heavy payload becomes independently evictable/parkable** |
+| **1** | In-memory indices only (Workstream A: type-bucket + name) | ✅ | ❌ (adds a little) | ➖ | low | ship — perf floor; allocatable ×2 keeps the scan cost bounded |
+| **2** | **In-memory indexed read path for Role B** (the in-process **H2 read-model**, SQL indices) — *not* reads from the disk DB | ✅ | ➖ (resident) | ✅ | medium | the indexed read path, fully in RAM; the "smaller" axis is deferred (everything stays resident) |
+| **3** | **Window / park the heavy payload** (evict old reservations' classification; lazy/parked historical) | ➖ | ✅✅ | ✅ | medium | **DEFERRED (2026-06-24 scope: all-in-memory)** — footprint + governance lever; revisit when footprint becomes the driver |
 | **4** | Transport poll → push (`LISTEN/NOTIFY`) | ➖ (consistency, not throughput) | ❌ | ✅ | low–med | nice, orthogonal |
 | **5** | Per-entity footprint (string interning, shared classification structures) | ❌ | ➖ | ➖ | low | micro, orthogonal |
 | — | Distributed grid / Kafka / sharding | — | — | — | high | **rejected at this scale** |
 
+Note option 0 reshapes 1/3: the "window-first appointment index" folds into option 0's slim
+projection, and option 3's windowing now targets the *heavy payload* (not the appointment data,
+which stays resident cheaply in slim form).
+
 ### Recommendation
-1. **Phase 0 — measure first.** Heap composition on the dhbw store (object histogram), reservation
-   + appointment counts, pod count, concurrent-user load. The asymmetric target (resv ×5) already
-   points at option 3, but confirm reservations/appointments actually dominate the heap before
-   committing the windowing work.
-2. Then, ordered by the target asymmetry: **(3) windowed resident reservation set first** (the ×5
-   footprint), then **(2) DB-indexed read path** (the all-axes read win), with **(4) push transport**
-   as the cheap consistency upgrade. Standard Spring Boot idioms, no exotic infra.
-3. **Workstream A (option 1)** ships independently as the in-memory perf floor and is largely
-   self-contained (and partly shipped, see D4). With allocatables only doubling, it keeps the
-   catalog/search scan bounded and is the cheapest immediate latency win — but it is *not* the
-   footprint lever.
+1. **Phase 0 — measure first.** Heap composition on a production store (object histogram), reservation
+   + appointment counts, pod count, concurrent-user load. Crucially, **measure the heavy/slim
+   split**: how much of the heap is appointment time-data vs classification/attribute payload? That
+   ratio decides how much option 0 alone buys.
+2. **Option 0 is the central lever** — decouple the slim appointment-block projection from the
+   heavy payload. It directly attacks the hot query (faster). It *also* unpins the footprint hog from
+   the conflict index, but under the all-in-memory scope that footprint payoff is **latent** — both
+   slim and heavy stay resident; the win we bank now is purely the compact, time-indexed hot-query
+   structure. This is the structural heart of the PRD.
+3. Then **(2) the in-memory H2 indexed read path** (materialize only result rows from the resident
+   heavy payload), with **(4) push transport** as the cheap consistency upgrade if needed. Standard
+   Spring Boot idioms, no exotic infra. **(3) window/park the heavy payload is deferred** (scope:
+   all-in-memory) — revisit with the governance-decoupled retention policy (MQ6) when footprint
+   becomes the driver.
+4. **Workstream A (option 1)** ships independently as the in-memory perf floor and is largely
+   self-contained (and partly shipped, see D4) — cheapest immediate latency win for the
+   catalog/search path, now partly subsumed by option 0.
+
+### Migration approach & write-path validation — moved to PRD 086
+
+Stage X→Y (read-model beside the conflict core, then conflict onto the engine with the `appointmentMap` shadow oracle), the sync-local feed model, and the write-path benchmark are in **PRD 086**. The cross-pod poll→push deprioritization stays a foundation note (see MQ-list / transport below).
 
 ### Open questions (modernization)
+
+> **Deferred under the all-in-memory scope (2026-06-24): MQ3, MQ4, MQ5, MQ6** all concern
+> windowing / parking / DB-offload / governance, which are not in the current scope. They stay
+> recorded for when footprint becomes the driver; the active questions are MQ1–MQ2 (sizing) and
+> MQ7–MQ9 (the in-memory read-model engine/boundary/consistency).
+
 - **MQ1** — Phase 0 numbers: confirm reservations/appointments dominate the heap (expected, given
   resv ×5) — quantify the historical-tail fraction to size the option-3 win.
 - **MQ2** — Is a DB-indexed read path acceptable to maintain alongside the cache (two read paths,
@@ -229,136 +428,96 @@ stays resident regardless. So the all-axes win is real but scoped to **Role B on
   temporary separate query scope, never back into the conflict-detection cache — preserves the
   footprint guarantee, needs an affordance). Leaning explicit; confirm against the real analytics
   use cases (which reports actually need beyond-window history?).
+- **MQ6** (governance — blocking) — Decouple parking from deletion: clarify with data governance
+  what data **must** be hard-deleted vs anonymized vs retained, on what retention schedule, and how
+  GDPR Art. 17 right-to-erasure requests are serviced across hot / parked / exported tiers.
+  Parking must not become a backdoor that keeps data the deployment is legally required to delete.
+  *Resolution:* pending — open with the deployment's data-protection owner before finalizing the
+  parking design.
+- **MQ7** (strategic direction) — Engine choice for the CQRS read-model. *Resolution:* **H2
+  in-memory — LOCKED 2026-06-24.** In-process SQL, MVStore/MVCC (fits Stage-Y sync write-through),
+  JSON column (Class-2 attributes), built-in full-text; and the same engine PRD 084 consolidates
+  the persistence backend onto. DuckDB (columnar `appointmentBlockStats`) and Calcite (SQL over the
+  live object graph, no data movement) retained only as future levers if the analytics path needs a
+  columnar engine — not the default.
+- **MQ8** (strategic direction) — Domain-logic boundary: candidate-narrowing vs precise overlap.
+  *Resolution:* **largely settled by the measured workload shape.** The engine serves the
+  **candidate range query** (`start < winEnd AND end > winStart` on `(allocatable_id, start, end)`);
+  Java keeps the **precise overlap** (`processBlocks`, exception/midnight-daily rules). Because ~98%
+  of appointments are single, the coarse predicate is **exact** for them (the row IS the block, no
+  expansion) and Java `processBlocks` runs only on the ~2% repeating subset. So the boundary is:
+  *engine narrows + serves singles directly; Java expands only the small repeating annotation.*
+  Moving interval-overlap fully into the engine (Postgres `tstzrange`+GiST) stays a future
+  Postgres-first lever, not needed for the H2 default. Residual: decide single-row vs
+  materialized-block representation for the repeating subset (cheap either way at ~2%).
+- **MQ9** (strategic direction) — Read-your-writes: the read-model is fed from the change stream,
+  so it lags the write store on the same pod. Acceptable for Role B reads, but confirm no
+  write-after-read GraphQL flow depends on immediate consistency (e.g. mutate then re-query in the
+  same SPA interaction). *Resolution:* pending — audit the SPA's mutate→refetch flows.
 
 ---
 
-# Workstream A — In-memory read-path indices (original PRD 082 scope)
+# Workstream A (type-bucket index) — moved to PRD 087
 
-## Abstract
+The in-memory type-bucket index, the `buildStorageFilter` `typeKeyIn`/B′ pushdown, and the on-the-fly Class-2 classification-attribute indices are now **PRD 087 — classification & type indices** (GraphQL-only). The name/full-text search index is **PRD 085**.
 
-Broad GraphQL read queries over the dhbw store (47,893 allocatables; every reservation
-scanned for name search) pay a fixed **O(all)** tax that is invisible at small scale but
-dominates real latency. This workstream adds two `LocalCache` indices: (a) a **`Map<String, Set<String>>`
-type-bucket index** (DynamicType id → allocatable ids) for type-scoped allocatable queries, and
-(b) a **reservation-name search index** that replaces the windowless full scan in the omnibox
-EVENT bucket. Both are maintained on entity put/remove and consumed by the storage-filter /
-search paths that today fall back to a full scan. Measurable end state: a `typeKeyEq`/`typeKeyIn`
-allocatable query resolves from the bucket(s), and an omnibox event-name search resolves from the
-name index — neither copies+scans the whole population.
+# Read-model architecture (technical foundation)
 
-## Background — measured bottlenecks (2026-06-22, admin token, local dhbw backend)
+The technical substrate the strategic direction (CQRS in-memory SQL read-model) and both workstreams sit on. Engine: **H2 in-memory** (in-process, SQL, JSON, MVCC, full-text) — **LOCKED, MQ7 resolved 2026-06-24** (same engine PRD 084 consolidates persistence onto).
 
-Dataset: **47,893 allocatables** (type `Raum` = 1,872). Probed via `/api/graphql`, median of 3.
+## Data flow & roles
 
-**The decisive finding — latency is driven by allocatable-set size, NOT by the time window or result cardinality.** `appointmentBlockStats` (group by Raum, 1 year) by allocatable scope:
+Three roles, one maintenance seam:
 
-| Scope | Latency | Factor |
-|---|---:|---:|
-| no scope (all 47,893) | 901 ms | 1× |
-| `typeKeyEq:"Raum"` (1,872) | 201 ms | 4.5× |
-| one building (`idIn`) | **23 ms** | **39×** |
+- **DB** = durable source of truth (persistence, survives restart, shared across pods).
+- **LocalCache (object graph)** = canonical in-memory working copy for the **write/domain** side (conflict detection, business logic, hydration source). Per pod.
+- **H2 read-model** = the indexed **query surface** for reads. A *derived projection*, per pod, volatile.
 
-`reservations` (1 year) — same shape: no scope 876 ms → one building **20 ms** (44×).
+The read-model is **not** a pure async stream projection — it is fed exactly like the existing cache:
 
-**Window scaling is flat** (fixed floor, not window-driven): `appointmentBlockStats` group-by-Raum = 673 ms (1 day, 3 rows) / 676 ms (1 week) / 688 ms (1 month) / 882 ms (1 year, 319 rows). `appointmentBlocks` = 686/664/659/685 ms for 1d/1w/1m/3m. A 1-day window with 3 blocks already pays ~670 ms.
+| Trigger | Flow |
+|---|---|
+| **Boot** | DB full-read → hydrate LocalCache → project into H2 (from the loaded objects) |
+| **Local write** | mutation → **DB persist + LocalCache + H2**, all synchronous in the same write lock |
+| **Remote write** (other pod) | history **delta** via poll → LocalCache + H2 (not a full re-read) |
+| **Read (GraphQL)** | H2 (filter/range/aggregate → **ids**) → LocalCache (hydrate heavy fields by id, only if the selection asks, gated by `canRead`) |
 
-**Catalog query** `allocatables(filter:)` ids-only: `{}` untyped = **155 ms / 47,893 rows**; `typeKeyEq:"Raum"` = **22 ms / 1,872 rows**. The untyped case is dominated by `canRead × 47,893` in the controller loop; the typed case is storage-prefiltered to 1,872 but still pays `new HashSet<>(47,893)` + a 47,893-element scan inside `getAllocatables`.
+Key invariant: **H2 is projected *from the entity* at the `put`/`remove` seam — never a parallel DB read.** One source (the entity stream through put/remove), two consumers (the cache's derived structures + H2). This is what keeps it drift-safe.
 
-### Why (code path)
+## Index classes — structural (static) vs dynamic-attribute (on-the-fly)
 
-- `AbstractCachableOperator.getAllocatables(filters)` (line ~442) always does `new HashSet<>(cache.getAllocatables())` (copy all 47,893) then iterates to filter — regardless of how narrow the filter is.
-- `ClassificationGraphQLController.buildStorageFilter` (line ~231) pushes **only `typeKeyEq`** to storage. `typeKeyIn` (multi-type) and `where`-only (B′) return `null` → the controller loops `matches`/`evaluateWhere`/`canRead` over all 47,893.
-- `ReservationGraphQLController.reservations()` previously called `getAllocatables(null)` unconditionally even for scoped queries (**fixed this session** — scoped queries now resolve their set directly via the catalog resolver; see Decisions D4).
+| | **Class 1 — structural** | **Class 2 — classification attributes** |
+|---|---|---|
+| Fields | `allocatable_id`, `start_ts`, `end_ts`, `event_id`, `type_id`, name | per-DynamicType attrs (`capacity`, `building`, `year`, …) |
+| Known at schema time? | yes — every deployment has them | no — admin/deployment-defined |
+| Always hot? | yes (block query, type filter, omnibox) | mostly cold — most never filtered |
+| How | **real relational columns + static indexes** (btree / fulltext) | **JSON column + lazy functional indexes**, pay-for-use, with a budget |
 
-## Where a type-bucket index helps (and where it does NOT)
+- **The hot path (the block query) is pure Class 1** — `(allocatable_id, start_ts, end_ts, event_id, repetition_*)`, plain columns, static composite index. No JSON, no on-the-fly. The dynamic/JSON machinery touches only the secondary **attribute-filter** dimension (`where:{Raum:{capacity_gt:30}}`) and can never slow the hot path.
+- **On-the-fly (Class 2):** store classification as a `JSON` column; the *first* time an attribute is filtered, create a typed generated column (`CAST` driven by the **DynamicType's known attribute type** — correct int/date/string ranges) + index it lazily. Pay-for-use; only used attributes cost memory/write-maintenance.
+- **Promotion (the bridge):** a Class-2 attribute that proves hot in a deployment can be promoted to a permanent typed indexed column (usage- or schema-driven). Cold attributes never get indexed.
+- **Budget:** adaptive indexing needs an LRU/threshold cap on on-the-fly indexes — each adds per-write maintenance (couples to the Y write-path measurement); unbounded auto-indexing over-indexes.
+- Caveat: H2's JSON indexing is weaker than Postgres `jsonb`/GIN; if multi-attribute predicates become hot, that is the Postgres-first argument (MQ8/engine).
 
-| Query class | Today | Index? | Note |
-|---|---|:--:|---|
-| **1. "all of type X" catalog** (`allocatables(typeKeyEq:"Raum")`, "alle Räume"/"alle Kurse") | 48k copy → filter to bucket (22 ms) | **YES** | the `Set<String>` **is** the answer set — direct bucket lookup, skip the 48k copy |
-| **2. multi-type union** (`typeKeyIn:[Raum,Gebäude,…]`) | `buildStorageFilter`→null → 48k + `canRead`×48k (155 ms-class) | **YES, biggest** | bucket union; `canRead` only over the union |
-| **3. `where<Type>`-only / B′** (no explicit typeKeyIn) | →null → 48k + `WhereEvaluator`×48k | **YES, potential** | B′ already knows the implied type → narrow to its bucket first |
-| **4. type-scoped analytics** (`blockStats` over all rooms, no building narrowing) | 167–201 ms | **PARTIAL** | index narrows allocatable resolution; residual `queryAppointmentsSync` over the bucket (e.g. 1,872 rooms) scales with bucket size (~tens of ms) — not removed by the index |
-| **5. id-scoped** (`idIn`, building) | `tryResolve`, 20 ms | **NO** | already direct; the SPA's analytics scope path |
-| **6. untyped "all" / window-only** (`allocatables({})`, unscoped reservations) | 48k + `canRead`×48k; `queryAppointmentsSync`×48k | **NO** | you want all types (= union of all buckets = the full map); cost is `canRead`×48k (admin-short-circuit) and `queryAppointmentsSync` (window-first index) — different levers |
+## Drift safety — the index is a pure projection, never independently mutated
 
-**Strategic read:** "alle Räume"/"alle Kurse" (whole-type) is a common, legitimate pattern — both as a catalog list (class 1) and as a grouping basis. So the index is **not** niche; it directly serves the type-as-group queries. Its lever is `getAllocatables`/`buildStorageFilter`; it is **orthogonal** to the `queryAppointmentsSync`-over-N cost (class 4/6).
+Drift = two things mutated independently that are expected to agree. The read-model is engineered so "drift" reduces to "a bug in the pure projection function `project(entity)`" — testable, and recoverable by rebuild.
 
-## Name search index (reservations + allocatables)
+1. **One seam** — maintain the index *only* from the `put`/`remove`/`putAll`/`refresh` chokepoint (the same funnel that already maintains `entities` + type maps + `graph`, for local *and* cross-pod changes). Never from scattered controllers → no path can be missed. Inherits the proven correctness of the existing derived structures.
+2. **Atomic + ordered** — index update inside the same write lock as the object update; no race, no partial window. H2 MVCC bounds a concurrent reader to the pre-commit snapshot (same staleness class as today's cache; reads are id-first so a slightly-stale id set is harmless).
+3. **Idempotent upsert** — per put: `DELETE WHERE id=? ; INSERT project(entity)`. Kills the type-change/re-put drift class *by construction* (no incremental-delta edge cases — the PRD-082 hand-rolled trap).
+4. **Rebuildable** — the index is a pure projection; boot rebuilds it; worst-case recovery is drop-and-rebuild from the object graph. The source (objects/DB) is always truth; the index is disposable.
+5. **Verified** — property test asserts the invariant `index == project(objects)` after random put/remove/refresh sequences; optional low-frequency runtime reconciliation diffs index vs re-projection and alarms on mismatch.
 
-Distinct from the type-bucket index, a second read pattern is **name search**, which today scans the full population:
+## Boot rebuild
 
-- **Omnibox EVENT bucket** (`SearchGraphQLController`, lines 154-190): a **windowless full scan over every reservation** (`CachableStorageOperator.getReservations()`) — `SearchMatcher.rank(r.getName(locale), needle, SUBSTRING)` + `canModify(r, caller)` per reservation. The controller's own Javadoc flags it: *"Phase 1 is the naive full scan; a name index is a measured follow-up."* This is exactly the reservation-name index needed.
-- **Omnibox RESOURCE bucket** (lines 121-145): name search over allocatables via `classificationController.allocatables({searchText, matchKind:FUZZY})` then `SearchMatcher.rank` per candidate — same shape, allocatable side. A name index helps here too (pairs with the type-bucket index — search within a type's bucket).
-- `ReservationFilter.searchText` on `reservations(...)` ranks the already-window+allocatable-scoped set, so it is **not** a full scan — lower priority. The omnibox EVENT scan is the one without any narrowing.
+- **Class 1 (structural): rebuilt every boot, every pod** (in-memory H2 is volatile) — consistent with "index = disposable projection". Cost is an **in-memory transform of the already-loaded objects** (not a second DB read). Optimize with **bulk-insert then `CREATE INDEX` once** (faster than per-row index maintenance); optionally build in the background and serve from the object graph until ready.
+- **Class 2 (attributes): NOT built at boot** — only the JSON column (data) is populated; functional indexes materialize lazily on first filter use.
+- **Do not persist H2** to skip the rebuild: a persistent index can drift from the store while a pod is down / across pods, reintroduces a boot-time reconciliation problem, and complicates multi-pod. Rebuild-at-boot preserves the "fresh = never drifted" guarantee.
+- **Future (with lazy-load, frame-breaker C):** populate H2 directly from the source DB's `APPOINTMENT` table via bulk copy, skipping object hydration. For the first increment, build from the loaded objects.
 
-**Index design.** Maintain in `LocalCache` on reservation put/remove (and allocatable put/remove for the resource side). The structure depends on the match semantics (OQ4): exact/prefix → a normalized `Map<String, Set<String>>` (lowercased name/token → ids) suffices; **substring/FUZZY** (what the omnibox uses today) needs a token or n-gram index, or a sorted-name structure with a candidate-narrowing pass before `SearchMatcher.rank`. The index narrows the candidate set; `SearchMatcher.rank` + `canModify`/`canRead` still run on the narrowed set (never trust the index to gate §12). **id-first, order-later** holds: the index yields candidate ids, ranking + permission gating + top-N happen after.
+---
 
-## Implementation
+# Workstream B (permission-scoped read index) — moved to PRD 083
 
-**The index alone does nothing — it only pays off through a consumer.** Ship index + `buildStorageFilter` change as one package.
-
-- `LocalCache`: add `Map<String, Set<String>>` `allocatableIdsByTypeId` (ConcurrentHashMap; value = synchronized/`CopyOnWrite`-friendly id set). Maintain in `put(Entity)` (line ~154, the `Allocatable.class` branch already calls `updateDependencies`) and `remove(...)` (line ~100). On put: if the allocatable's type changed vs the old entity, remove its id from the old type's bucket and add to the new — the "kurzer cache check bei jeder Änderung" the design calls for. Multi-pod safe: derived purely from the same put/remove stream as the existing `resources` map, no extra coordination.
-- New accessor `Set<String> getAllocatableIdsForType(String typeId)` (or `Collection<Allocatable> getAllocatablesForType(DynamicType)`).
-- `AbstractCachableOperator.getAllocatables(filters)`: when the filter set names concrete types (single or union), build the candidate set from the bucket(s) instead of `new HashSet<>(cache.getAllocatables())`. Keep internal-type exclusion + `maxPerType` semantics.
-- `ClassificationGraphQLController.buildStorageFilter`: emit one `ClassificationFilter` per type for `typeKeyIn` (currently dropped), and derive the implied type from a sole `where<Type>` block (B′) when no explicit typeKey is set.
-- **id-first, order-later** (per design): the index yields *ids*; resolve ids→entities and apply ordering/limit at the output boundary (a `Set` has no order). Multi-type union = union of buckets.
-
-## Goal
-
-- A `typeKeyIn:[A,B]` allocatable query visits `O(bucket(A)+bucket(B))` allocatables, not 47,893 — verifiable by a unit test asserting `getAllocatables` does not iterate the full population for a typed filter, and by a live latency drop on the class-2 query.
-- `allocatables(typeKeyEq:"Raum")` resolves from the bucket (no 47,893-copy) — live median materially below today's 22 ms.
-- No behaviour change: same id sets returned (existing PRD 066 + leak tests stay green).
-
-## Scope
-
-### In scope
-- `LocalCache` type-bucket index + maintenance on put/remove.
-- `getAllocatables(filters)` bucket path for typed filters.
-- `buildStorageFilter` `typeKeyIn` + B′ implied-type push-down.
-- `LocalCache` **reservation-name search index** (+ allocatable-name) for the omnibox; replace the EVENT-bucket full `getReservations()` scan.
-
-### Out of scope (of Workstream A — see the modernization evaluation above)
-- **`queryAppointmentsSync`-over-N** (class 4/6) — the per-allocatable appointment-binding iteration; needs a window-first appointment index (now part of option 1 / feeds option 3).
-- **Admin `canRead` short-circuit** (the 155 ms untyped `canRead`×48k) — cheap independent fix; track here as a sibling lever but ship separately (see OQ2).
-- Per-block fan-out micro-optimizations (EL re-parse, cartesian churn, DTO churn) — measured **not** latency-dominant at realistic block counts (≤~500 blocks/year-window); deferred.
-
-## Plan
-
-### Phase 1 — Index + maintenance
-- [ ] Add `allocatableIdsByTypeId` to `LocalCache`; populate on `put`/`remove`/`putAll`; handle type-change on re-put.
-- [ ] `getAllocatableIdsForType` / `getAllocatablesForType` accessor + unit test over `testdefault.xml` (Raum vs resource1/Teilraum counts; re-type moves the id).
-
-### Phase 2 — Consume the type-bucket index
-- [ ] `getAllocatables(filters)` builds candidates from bucket(s) for typed filters; preserve internal-type + `maxPerType`.
-- [ ] `buildStorageFilter`: `typeKeyIn` → per-type `ClassificationFilter[]`; sole `where<Type>` → implied type.
-- [ ] Tier-3: `allocatables(typeKeyIn:[…])` returns same set as today; live latency probe before/after.
-
-### Phase 3 — Name search index (after OQ4)
-- [ ] Decide index structure from match semantics (OQ4); add `LocalCache` name index for reservations (+ allocatables), maintained on put/remove.
-- [ ] `SearchGraphQLController` EVENT bucket: narrow candidates via the index before `SearchMatcher.rank` + `canModify`; same result set, no full `getReservations()` scan.
-- [ ] Tier-3 (`SearchGraphQLControllerTest`): omnibox event-name search returns identical hits/order as the full scan; §12 (`canModify`-only) preserved; live latency probe.
-
-## Tests
-
-- Tier-2 (`LocalCache`/operator): bucket membership + maintenance (put new room → in bucket; re-type → moves; remove → gone). Assert `getAllocatables(typeFilter)` returns the bucket without a full-population scan (e.g. via a counting wrapper or by correctness over the fixture).
-- Tier-3 (`ClassificationGraphQLControllerTest`): `typeKeyIn` multi-type union equals the union of per-type `typeKeyEq` results; `typeKeyEq` unchanged; §12 leak tests stay green.
-- Live: re-run the 2026-06-22 probes after the user restarts — class 1/2 latency drop; class 5 (`idIn`) unchanged.
-
-## Open Questions
-
-- **OQ1** — Frequency of multi-type `typeKeyIn` vs single `typeKeyEq` vs `idIn` in real SPA traffic? Determines whether class 2 (biggest index win) is actually exercised. *Resolution:* pending — ask before Phase 2 ordering.
-- **OQ2** — Ship the **admin `canRead` short-circuit** (skip `canRead` when `caller.isAdmin()`) first? It's a 3-line fix addressing the 155 ms untyped `canRead`×48k floor (class 6), with a live measurement, cheaper than the index. *Resolution:* pending — likely yes, as a quick win before Phase 1.
-- **OQ3** — Class 4 (type-scoped analytics) residual: is the `queryAppointmentsSync`-over-bucket cost (e.g. all 1,872 rooms ≈ tens of ms) acceptable, or does it also warrant the window-first index? *Resolution:* pending — measure class 4 with the index in place before deciding.
-- **OQ4** — Name-index structure: the omnibox uses SUBSTRING/FUZZY today. Exact/prefix needs only a normalized `Map<String,Set<String>>`; substring/fuzzy needs an n-gram/token index (more memory + maintenance). Keep FUZZY and pay for an n-gram index, or relax the omnibox to prefix-on-index + fuzzy-rerank on the narrowed set? *Resolution:* pending — measure the current full-scan latency on the dhbw reservation count first to size the win.
-
-## Decisions locked
-
-**D1 — Store ids, not entities (`Map<String, Set<String>>`).** The `Set<String>` *is* the type-group answer for class-1 queries; ids are stable across re-reads, avoid stale-entity references, and order/limit is applied after resolving at the output boundary (the design's "ids first, order later"). Rejected `Map<DynamicType, List<Allocatable>>` — heavier, order baked in prematurely, stale-entity risk on cache swap.
-
-**D2 — Index + `buildStorageFilter` ship together.** The index is inert without a consumer; `buildStorageFilter`'s `typeKeyIn`/B′ push-down is the consumer. Splitting them ships dead code.
-
-**D3 — Orthogonal to `queryAppointmentsSync`.** The index attacks allocatable *resolution* (class 1/2/3), not the per-allocatable appointment-binding iteration (class 4/6). Those are separate levers (window-first index / admin short-circuit) and out of scope for Workstream A — do not conflate.
-
-**D4 — `reservations()` scoped-set direct-resolve (shipped 2026-06-22).** `ReservationGraphQLController.reservations()` no longer calls `getAllocatables(null)` for scoped queries; it resolves the scoped allocatables directly via `classificationController.allocatables(...)` (idIn/matching arms, deduped by id = union). Removes the fixed O(47,893) copy+scan tax from every scoped query. This is the precondition that makes class-5 (`idIn`) queries cheap independent of the index; verified behaviour-preserving by the new genuine-union guard test + existing §12 leak tests (72/72 green).
-
-**D5 — Name index narrows, never gates.** The name index yields candidate ids only; `SearchMatcher.rank` + `canModify`/`canRead` always run on the narrowed set (§12 — never trust the index for permission or final match). id-first, rank+gate+top-N after. Same posture as the type-bucket index.
+The inverted `access_grant` index (carrying the access *level*), caller-side hierarchy expansion, the stateless caller-context cache, and the §12 correctness bar are now part of **PRD 083 — permission-scoped read index + user change-subscription** (GraphQL-only; the old RemoteStorage path keeps its amortized per-session permission filtering). PRD 083 both *owns* this read index and *consumes* it for the `changesSince` subscription.

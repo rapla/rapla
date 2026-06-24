@@ -54,7 +54,7 @@ Does **not** keep: full reservation graph for visible date range; full allocatab
 | Month calendar, 800 reservations | ~1.5 MB | ~80 KB |
 | Reservation table, semester (5 000 × 6 cols) | ~10 MB | ~500 KB |
 | CSV export, semester | ~10 MB JSON → client formats | ~700 KB CSV streamed |
-| DHBW admin sidebar (30 000 allocatables) | ~5 MB (PRD 021 wont-fix) | ~0 — PRD 028 server-driven |
+| Large admin sidebar (~30 000 allocatables) | ~5 MB (PRD 021 wont-fix) | ~0 — PRD 028 server-driven |
 
 Wire reduction is the headline; **memory** reduction on the client is just as important. A browser tab holding a megabyte JSON in JS heap costs you.
 
