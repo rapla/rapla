@@ -21,7 +21,9 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -119,14 +121,36 @@ class ApiKeyWriteScopeTest
     }
 
     @Test
-    void legacyKeyWithoutScopesRetainsFullWrite() throws Exception
+    void keyCreatedWithoutScopesDefaultsToReadOnly() throws Exception
     {
-        // D8 backward-compat at the HTTP boundary: a key created WITHOUT a scopes field behaves
-        // like today's full-power key. We can't easily forge a legacy stored entry here, so this
-        // is covered at unit level (ApiKeyScopesTest.missingScopesOnStoredEntryMeansWriteAll);
-        // here we assert the inverse contract is wired: an explicit write_all behaves identically.
+        // PRD 076 Phase 4: a key created WITHOUT a scopes field resolves to {read} (least
+        // privilege) — the former legacy write_all default is gone. So it cannot write a User.
+        // Locks the legacy→read change at the HTTP boundary (unit: ApiKeyScopesTest).
         String access = OAuthTestSupport.loginAs(mockMvc, "homer", "duffs");
-        String allKey = createKey(access, "legacy-equiv", "[\"write_all\"]");
-        assertEquals(200, changeName(allKey));
+        MvcResult res = mockMvc.perform(post("/api/auth/api-keys")
+                        .header("Authorization", "Bearer " + access)
+                        .contentType("application/json")
+                        .content("{\"label\":\"no-scopes\"}"))
+                .andExpect(status().isOk())
+                .andReturn();
+        String key = MAPPER.readTree(res.getResponse().getContentAsString()).get("key").asText();
+        assertEquals(401, changeName(key), "a no-scopes key defaults to read and must not write");
+    }
+
+    @Test
+    void bootstrapStripsServerOnlyPrefsFromOwnUser() throws Exception
+    {
+        // Minting a key stores server-only material (org.rapla.crypto.server.*) in homer's OWN
+        // prefs. The bootstrap (GET /api/storage/resources) must strip .server.* from ALL prefs —
+        // system AND user-owned — matching the incremental path. Before the Phase-4 fix
+        // getResources only stripped system prefs, leaking a user's own refreshToken on bootstrap.
+        String access = OAuthTestSupport.loginAs(mockMvc, "homer", "duffs");
+        createKey(access, "leak-check", "[\"read\"]");   // writes a .server. entry into homer's prefs
+        String body = mockMvc.perform(get("/api/storage/resources")
+                        .header("Authorization", "Bearer " + access))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertFalse(body.contains(".server."), "bootstrap must not leak any .server.* preference entry");
+        assertFalse(body.contains("crypto.server"), "bootstrap must not leak api-key/refreshToken material");
     }
 }
