@@ -43,6 +43,35 @@ Strategic direction*. Workstream A's hand-rolled indices become moot under this 
 
 ---
 
+## Program execution plan & live status
+
+The full program spans PRDs 082/083/085/086/087 (084 orthogonal). Build order and gating decisions
+(all locked 2026-06-24): test-harness backend = **FileOperator on `data.xml` copy** (086 OQ4); 087
+Class 1 lives on the **H2 read-model** (087 OQ1); **H2 confirmed** as engine (MQ7); appointment
+materialization **cap = 52** = one year weekly (086 OQ1).
+
+**Full build order:** 0 harness → 0.5 H2 write-path benchmark → 1 foundation seam → 2 087 Class 1 →
+3 086 Stage X → 4 086 Stage Y → 5 083 → 6 085 → 7 084 → 8 087 Phase 3a (bounded attr) → 9 087 Phase 3b
+(string attr, last). Phases 0→4 are the serial spine; 5/6/7 independent after the foundation; 8/9
+demand-gated.
+
+**Current authorized run: Phases 0–2** (current checkout, subagents for understanding fan-out /
+Phase-0 test battery / adversarial gate review), then **stop for review**.
+
+| # | Phase | Status | Notes |
+|---|---|---|---|
+| A | Understanding fan-out (read-only seam map; H2-on-`rapla-core`-classpath check) | 🔄 in progress | started 2026-06-24 |
+| 0 | Brute-force + record/replay harness (dhbwrapla, FileOperator on `data.xml` copy) | ⬜ not started | test-only; self-verified |
+| 0.5 | H2 write-path benchmark | ⬜ not started | self-gate: put +<~1 ms, ~100k-block rebuild <~5 s |
+| 1 | Foundation seam (this PRD) — projection seam, drift-safety, boot rebuild, no consumer | ⬜ not started | review checkpoint |
+| 2 | 087 Class 1 type-bucket on H2 (`allocatable`/`reservation` buckets) | ⬜ not started | §12 leak tests gate |
+| — | **STOP — present Phases 0–2 for review** | ⬜ | |
+
+Status legend: ⬜ not started · 🔄 in progress · ✅ done · ⚠️ blocked/needs decision. This table is the
+durable progress record — updated as each phase lands.
+
+---
+
 ## Bestandsaufnahme — the current storage model (2026-06-22)
 
 **One operator holds the entire dataset in `LocalCache` (RAM); the database is persistence +
