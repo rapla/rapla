@@ -1,9 +1,128 @@
-# PRD 083 — user change-subscription (permission-scoped UI refresh)
+# PRD 083 — permission-scoped read index + user change-subscription
 
-**Status:** draft — 2026-06-24
-**Related:** PRD 082 (storage memory model — provides the `access_grant` index + caller-context cache this consumes), PRD 035 (GraphQL foundations), PRD 026 (Angular SPA), [`docs/authentication.md`](../authentication.md) (stateless JWT), AGENTS.md §12 (data-leak prevention)
+**Status:** draft — 2026-06-24 (absorbed PRD 082 Workstream B — the permission read index — 2026-06-24)
+**Related:** PRD 082 (storage memory model — foundation: H2 read-model + put/remove projection seam this index sits on), PRD 086 (appointment index — dual-API sibling), PRD 087 (classification indices — GraphQL-only sibling), PRD 035 (GraphQL foundations), PRD 026 (Angular SPA), [`docs/authentication.md`](../authentication.md) (stateless JWT), AGENTS.md §12 (data-leak prevention)
 
-**Depends on PRD 082.** This PRD is the **consumer** of Workstream B's permission index. 082 answers "what can this user read/allocate, fast"; 083 answers "what changed that is relevant to this user, so the UI can refresh" — the same `access_grant` index + caller-context cache, evaluated per-update instead of per-query.
+**This PRD both *owns* and *consumes* the permission index.** **Part A** builds the `access_grant`
+read index + caller-context cache (answers "what can this user read/allocate, fast"). **Part B** is
+the `changesSince` user change-subscription that consumes it per-update (answers "what changed that
+is relevant to this user, so the UI can refresh"). Same index, two evaluation modes.
+
+**GraphQL-only (like PRD 087, unlike PRD 086).** The permission-filter pain is GraphQL-specific
+(`canRead × all` in the controller loop, *per query*); the old RemoteStorage `getResources()` filters
+once per session-refresh and is left as-is. The index accelerates the GraphQL controller's `canRead`
+loop and the SPA subscription — it does **not** touch the old Swing protocol (whose §12 filtering is
+production-load-bearing). A later, lower-priority, higher-risk follow-up could accelerate the old path
+too, but only if the amortized session-refresh measurably hurts (today it does not).
+
+---
+
+# Part A — the permission read index (`access_grant`)
+
+**Problem.** At large instances a user may read only *part* of the store, and `canRead` checks are a
+read-path bottleneck — the measured untyped `allocatables({})` = 155 ms is dominated by
+`canRead × ~50,000`. §12 forbids skipping the check. Need: the readable set **without iterating all
+entities**.
+
+**Permission model (`PermissionController`):** `canRead` walks the entity's **permission list**; each
+permission grants a **user OR a group (Category)** an **AccessLevel** (READ / READ_TYPE / EDIT /
+ADMIN), optionally time-bounded. Groups resolve through the category hierarchy; plus type-level read
+and an admin short-circuit.
+
+## The inverted index — carries the access *level*, not just "read"
+
+Permission is **not** binary visible/invisible — it has **levels** (READ / ALLOCATE / ADMIN). A user
+may *see* a resource but no longer *allocate* it. So the index stores the **access level per grant**.
+Instead of "per entity, check if the user may read it" → "for the user's principals, look up the
+entities directly":
+
+```sql
+CREATE TABLE access_grant (
+  entity_id     VARCHAR,
+  principal_key VARCHAR,    -- user-id OR group-id, EXACTLY as granted (un-expanded)
+  access_level  VARCHAR,    -- READ / ALLOCATE / ADMIN (+ READ_TYPE via type-bucket)
+  valid_from    TIMESTAMP, valid_to TIMESTAMP   -- time-bounded permissions
+);
+CREATE INDEX ix_grant_principal ON access_grant(principal_key);
+```
+
+Capability sets by level, one indexed lookup each (cost O(grants for those principals), not O(all)):
+
+```sql
+-- readable: access_level >= 'READ'; allocatable: access_level >= 'ALLOCATE'
+SELECT DISTINCT entity_id FROM access_grant
+WHERE principal_key IN (:callerPrincipals) AND access_level >= :threshold
+  AND (valid_from IS NULL OR valid_from <= :now) AND (valid_to IS NULL OR valid_to >= :now);
+```
+
+Full readable set = `access_grant` (≥READ) ∪ type-bucket(READ_TYPE types, PRD 087) ∪ world-readable;
+admin → short-circuit. The per-resource **effective level** is returned with the resource so the UI
+renders capabilities (read-only vs bookable) — this is what Part B's re-query relies on.
+
+## Expand the hierarchy on the CALLER side, not the entity side
+
+- **Entity index stores DIRECT grants only** (un-expanded principal keys + level).
+- **Caller principal set** = `{user-id}` ∪ `{direct groups}` ∪ `{all ancestor groups}` ∪ `{WORLD}`;
+  the `IN (...)` resolves the hierarchy.
+
+Why: a group-membership/hierarchy change then touches only the **caller set** (cheap recompute), not
+thousands of entity rows — avoids mass-invalidation. (10,000 allocatables grant READ to "Faculty";
+one user joins a Faculty subgroup → recompute that *one* caller's principal set, not 10,000 rows.) An
+entity's permission edit still touches only that entity's grant rows, at the put/remove seam
+(drift-safe, idempotent, rebuildable — PRD 082 foundation).
+
+## Worked example — "sees it but cannot book it"
+
+```
+entity   | principal | level
+Room-101 | Faculty   | READ
+Room-101 | CS-Staff  | ALLOCATE
+Room-202 | WORLD     | READ
+Lab-A    | CS-Staff  | ADMIN
+```
+
+Caller **bob** ∈ `CS-Dept` (under `Faculty`), **not** in `CS-Staff` → principal set `{bob, CS-Dept,
+Faculty, WORLD}`. Readable (≥READ): Room-101 via `Faculty:READ`, Room-202 via `WORLD:READ`; Lab-A ✗.
+Allocatable (≥ALLOCATE): none (`Faculty:READ` < ALLOCATE; `CS-Staff:ALLOCATE` not in bob's set). →
+bob **sees** Room-101/202 but books **neither** — the `access_level` column distinguishes it on the
+same index, just a different threshold. Maintenance on a permission edit: `DELETE FROM access_grant
+WHERE entity_id=? ` + reinsert the few rows (idempotent); the old-vs-new grant diff *is* Part B's
+update-relevance signal.
+
+## Caller-context cache (stateless — keyed by user-id, not session)
+
+rapla is stateless (JWT per request). Cache the caller's expanded principal set **per user-id**, per
+pod, lazy on first request, reused across that user's requests. Eviction LRU + TTL (no session-end
+signal). Invalidation at the seam: user-membership change → drop that user's entry; hierarchy change
+→ flush (rare). Pure performance: cache-miss → re-derive from the `category → ancestors` closure;
+drop-and-rebuildable. (Alternative: bake the principal set into the JWT — no server cache, but stale
+≤ token TTL.)
+
+## Correctness bar (security-critical)
+
+The index must be **provably equivalent to `PermissionController`** — a divergence is a **leak**.
+Differential-test over many users × entities: index-derived capability sets == `canRead`/`canAllocate`
+sets; existing §12 MockMvc leak tests stay green. The flattening must reproduce level ordering
+(READ < ALLOCATE < ADMIN), READ_TYPE, time windows, hierarchy direction, and `canReadOnlyInformation`.
+**Narrow, never gate** (PRD 082 D5): on any doubt fall back to the real `PermissionController`.
+
+### Part A open questions
+
+- **AQ1** — Exact semantics to flatten: level ordering, READ_TYPE precedence, `canReadOnlyInformation`,
+  time-bounded grants on the fast path vs fallback.
+- **AQ2** — World-readable representation: a WORLD principal row vs a "no-restriction" flag.
+- **AQ3** — Reservations vs allocatables: reuse `access_grant`, or a separate owner-based index for the
+  reservation `canModify` path.
+- **AQ4** — Closure home: app-side cached `category → ancestors` map vs an in-engine closure table.
+- **AQ5** — Caller principals in the JWT (no cache, ≤TTL stale) vs the per-user cache.
+
+---
+
+# Part B — user change-subscription (consumes Part A)
+
+**Consumes Part A.** 083 Part A answers "what can this user read/allocate, fast"; Part B answers "what
+changed that is relevant to this user, so the UI can refresh" — the same `access_grant` index +
+caller-context cache, evaluated per-update instead of per-query.
 
 ## Problem
 

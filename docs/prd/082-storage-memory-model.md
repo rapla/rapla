@@ -1,14 +1,19 @@
-# PRD 082 — Storage memory model: read-path indices, footprint & modernization
+# PRD 082 — Storage memory model: foundation (read-model architecture, engine, scope)
 
-**Status:** draft — 2026-06-22 (broadened from the original "GraphQL read-path indices" scope)
+**Status:** draft — 2026-06-22 (restructured 2026-06-24 into the foundation; index implementations split to PRDs 083/085/086/087)
 **Related:** PRD 035 (GraphQL foundations — per-field perf hot-spots), PRD 066 (allocatable scope union on ReservationFilter), PRD 079/080 (grouped aggregates / typed-entity stats — the `appointmentBlockStats` fan-out), PRD 081 (omnibox multisearch), PRD 067 (server operator split), PRD 083 (user change-subscription — consumes Workstream B), PRD 084 (H2 persistence engine), PRD 085 (search & name indexing — the name-search split out of Workstream A)
 
-**Scope note (changed 2026-06-22):** this PRD originally covered *only* in-memory read-path
-indices in `LocalCache` and explicitly deferred "persistence-/storage-scheme level" indices to
-a separate stream. That separation is dropped: the PRD now covers the **whole storage memory
-model** — the in-memory read-path indices remain as **Workstream A** (concrete, partly shipped),
-and the broader **re-evaluation of whether rapla's "load everything into RAM" model is still
-contemporary** is captured as the **Bestandsaufnahme + Modernization evaluation** below.
+**Scope note (restructured 2026-06-24): this PRD is now the FOUNDATION.** It holds the shared
+substrate — the Bestandsaufnahme, the modernization thesis (CQRS in-memory SQL read-model), the
+**H2 engine decision (locked)**, the **read-model architecture** (put/remove projection seam,
+drift-safety, boot rebuild, index classes), the all-in-memory scope, and the workload-shape
+measurement. The concrete index implementations were split out into their own PRDs and reference
+this foundation:
+- **PRD 086** — appointment block index (dual-API: old RemoteStorage + GraphQL).
+- **PRD 087** — classification & type indices (GraphQL-only).
+- **PRD 083 Part A** — permission-scoped read index (GraphQL-only); Part B consumes it.
+- **PRD 085** — search & name indexing (GraphQL-only).
+- **PRD 084** — HSQLDB→H2 persistence backend (orthogonal; same engine).
 
 **Primary objective: read performance (efficient GraphQL queries).** Footprint/memory is a
 *secondary, potential* benefit — **not** the driver of this PRD. The measured pain is read latency
@@ -365,6 +370,11 @@ small annotated (or materialized) subset.
 The flat `appointment_block` table, the `is_rule` representation decision, the index-exact slot filter, dual-API (RemoteStorage + GraphQL), conflict detection, and the migration/test strategy now live in **PRD 086 — appointment block index**.
 
 ### Options (smallest → largest)
+
+> **Program map (2026-06-24):** these options are now realized across PRDs — option 0/the appointment
+> lever = **PRD 086**; option 1 (type-bucket) = **PRD 087** + name search = **PRD 085**; the permission
+> index = **PRD 083 Part A**; option 3 (parking) = **deferred** (all-in-memory scope). The table stays
+> as the conceptual overview the split was derived from.
 
 | # | Option | Faster | Smaller | More standard | Effort | At target (alloc ×2 / resv ×5) |
 |---|---|:--:|:--:|:--:|---|---|
