@@ -101,15 +101,6 @@ class ViewCatalogControllerTest
     @WithMockUser(username = "homer", roles = "ADMIN")
     void builtinViewsAreValid()
     {
-        tester.document("{ listViews { name source valid invalidReason } }")
-              .execute()
-              .path("listViews[?(@.source == 'BUILTIN')]")
-              .entityList(Object.class)
-              .satisfies(views -> views.forEach(v -> {
-                  // Each BUILTIN view must be valid
-              }));
-
-        // Simpler: check via path filter that BUILTIN views all have valid=true
         List<Boolean> valids = tester
                 .document("{ listViews { source valid } }")
                 .execute()
@@ -203,9 +194,6 @@ class ViewCatalogControllerTest
     @WithMockUser(username = "homer", roles = "ADMIN")
     void executeBuiltinViewViaStoredViewInterceptor()
     {
-        // Execute BUILTIN rapla_appointments via the named-operation transport.
-        // Client sends extensions.storedView=true + operationName + sentinel query.
-        // StoredViewInterceptor replaces the query with the stored view text.
         tester.document("{ __typename }")
               .operationName("rapla_appointments")
               .extension("storedView", true)

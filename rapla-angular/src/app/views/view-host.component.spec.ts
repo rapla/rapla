@@ -87,15 +87,13 @@ describe('ViewHostComponent', () => {
     expect((f.nativeElement as HTMLElement).textContent ?? '').toContain('Scope');
   });
 
-  it('renders the weekday view as ordered day sections', async () => {
+  it('renders all rows in ONE flat sortable table (no day grouping)', async () => {
     const f = makeHost('Wochenansicht');
     await settle(f);
-    const headers = Array.from((f.nativeElement as HTMLElement).querySelectorAll('.day h3')).map(
-      (h) => h.textContent ?? '',
-    );
-    expect(headers.length).toBe(2);
-    expect(headers[0]).toContain('Montag');
-    expect(headers[1]).toContain('Mittwoch');
+    const el = f.nativeElement as HTMLElement;
+    expect(el.querySelectorAll('.day h3').length).toBe(0); // grouping replaced by one table
+    expect(el.querySelectorAll('tbody tr').length).toBe(2); // both blocks in a single table
+    expect(f.componentInstance.dataSource.sort).toBeTruthy(); // MatSort connected → sortable
   });
 
   it('renders a flat view (table render mode) with no day headers', async () => {
@@ -128,15 +126,13 @@ describe('ViewHostComponent', () => {
     });
   });
 
-  it('render mode drives grouping: Tabelle flattens the week view live', async () => {
+  it('sort accessor: dates by raw ISO, other columns by displayed text; default sort = date column', async () => {
     const f = makeHost('Wochenansicht');
     await settle(f);
-    expect((f.nativeElement as HTMLElement).querySelectorAll('.day h3').length).toBe(2); // week → sections
-    viewState.setRenderMode('table');
-    f.detectChanges();
-    await f.whenStable();
-    f.detectChanges();
-    expect((f.nativeElement as HTMLElement).querySelectorAll('.day h3').length).toBe(0); // table → flat
+    const acc = f.componentInstance.dataSource.sortingDataAccessor;
+    expect(acc({ start: '2026-06-17T10:00:00' }, 'start')).toBe('2026-06-17T10:00:00'); // raw ISO
+    expect(acc({ name: 'Physik' }, 'name')).toBe('physik'); // displayed text, lowercased
+    expect(f.componentInstance.defaultSortAlias()).toBe('start'); // chronological default
   });
 
   it('does not render hidden columns (reservation/duration) as headers', async () => {
@@ -199,5 +195,57 @@ describe('ViewHostComponent — stale response handling', () => {
     calls[0].next(resp(500));
     f.detectChanges();
     expect(f.componentInstance.total()).toBe(1);
+  });
+});
+
+describe('ViewHostComponent — grouped rendering (group: true)', () => {
+  const GROUPED_META: ViewMeta = {
+    key: 'Wochenansicht',
+    title: 'Wochenansicht',
+    groupBy: 'date',
+    groupFormat: 'EE dd.MM',
+    renderModes: ['week', 'table'], // seed picks renderModes[0] = week → grouped
+    columns: [
+      { alias: 'date', header: 'Datum', type: 'LocalDateTime', order: 1, group: true },
+      { alias: 'name', header: 'Titel', order: 2 },
+    ],
+  };
+  const ROWS = [
+    { date: '2026-06-17', name: 'A' },
+    { date: '2026-06-17', name: 'B' },
+    { date: '2026-06-19', name: 'C' },
+  ];
+
+  beforeEach(async () => {
+    const stub = {
+      executeView: <T>() =>
+        of({ data: { appointmentBlocks: ROWS } as unknown as T, extensions: { view: GROUPED_META } }),
+    };
+    await TestBed.configureTestingModule({
+      imports: [ViewHostComponent],
+      providers: [{ provide: GraphqlService, useValue: stub }],
+    }).compileComponents();
+    const filter = TestBed.inject(FilterStore);
+    filter.clear();
+    filter.replace({ id: 'scope-1', kind: 'resource', label: 'Scope' });
+    TestBed.inject(ViewStateStore).setWindow({ from: '2026-06-15T00:00:00', to: '2026-06-22T00:00:00' });
+  });
+
+  it('interleaves group-header rows (one per day) and disables column sort', async () => {
+    const f = TestBed.createComponent(ViewHostComponent);
+    f.componentRef.setInput('viewName', 'Wochenansicht');
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+
+    expect(f.componentInstance.isGrouped()).toBe(true);
+    // 2 group-header markers + 3 data rows
+    const tableRows = f.componentInstance.tableRows();
+    expect(tableRows.filter((r) => r['__group'] === true).length).toBe(2);
+    expect(tableRows.length).toBe(5);
+    // sorting is OFF for grouped views (would scramble the blocks)
+    expect(f.componentInstance.dataSource.sort).toBeNull();
+    // DOM: two rendered group rows
+    expect((f.nativeElement as HTMLElement).querySelectorAll('tr.group-row').length).toBe(2);
   });
 });

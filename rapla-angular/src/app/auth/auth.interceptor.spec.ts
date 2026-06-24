@@ -54,6 +54,33 @@ describe('authInterceptor (cookie refresh)', () => {
     req.flush({});
   });
 
+  it('on a GraphQL 200 with UNAUTHENTICATED error: refreshes once and replays', async () => {
+    // GraphQL auth failures come back as HTTP 200 + errors[code: UNAUTHENTICATED]
+    // (e.g. the access cookie expired during a long idle) — must refresh like a 401.
+    let observed: unknown = null;
+    http.post('/api/graphql', {}).subscribe((res) => (observed = res));
+    httpMock
+      .expectOne('/api/graphql')
+      .flush({ errors: [{ message: 'auth', extensions: { code: 'UNAUTHENTICATED' } }] });
+    await flushMicrotasks();
+
+    httpMock.expectOne('/api/auth/refresh').flush(null);
+    await flushMicrotasks();
+
+    httpMock.expectOne('/api/graphql').flush({ data: { ok: true } });
+    await flushMicrotasks();
+    expect(observed).toEqual({ data: { ok: true } });
+    expect(authStub.redirectToLogin).not.toHaveBeenCalled();
+  });
+
+  it('does NOT refresh on a non-auth GraphQL error (e.g. VIEW_NOT_FOUND)', async () => {
+    http.post('/api/graphql', {}).subscribe({ next: vi.fn(), error: vi.fn() });
+    httpMock
+      .expectOne('/api/graphql')
+      .flush({ errors: [{ message: 'nope', extensions: { code: 'VIEW_NOT_FOUND' } }] });
+    httpMock.expectNone('/api/auth/refresh');
+  });
+
   it('on 401 from /api: POSTs /api/auth/refresh once, then replays the original request', async () => {
     let observed: unknown = null;
     http.get('/api/reservations').subscribe((res) => (observed = res));

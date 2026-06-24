@@ -19,6 +19,7 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.StorageOperator;
+import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.security.core.Authentication;
@@ -83,6 +84,13 @@ public class ClassificationGraphQLController
                 stringArg(filterMap, "accessibleByUserId"),
                 stringListArg(filterMap, "accessibleByGroup"),
                 accessLevelArg(filterMap), caller, operator, pc);
+        // PRD 082 #8 — when the read-model is flipped authoritative, the per-entity canRead scan over
+        // (here) ~48k allocatables (~26 ms/query for a non-admin) is replaced by an O(1) membership test
+        // against the per-user readable-id cache. The set is canRead-equal by construction (§12), so the
+        // filter result is identical; null when off / not the server operator, keeping the canRead path.
+        final java.util.Set<String> readableIds =
+                (operator instanceof LocalAbstractCachableOperator lo && lo.isReadModelAuthoritative())
+                        ? lo.readableAllocatableIds(caller) : null;
         // PRD 066 — dedup by id across the two union arms.
         java.util.LinkedHashMap<String, Allocatable> resultById = new java.util.LinkedHashMap<>();
 
@@ -109,7 +117,7 @@ public class ClassificationGraphQLController
                 // first short-circuits the expensive check for non-matching entries.
                 if (!matches(a, filter)) continue;
                 if (!evaluateWhere(a, filterMap, caller, pc)) continue;
-                if (!pc.canRead(a, caller)) continue;
+                if (readableIds != null ? !readableIds.contains(a.getId()) : !pc.canRead(a, caller)) continue;
                 if (accessFilter != null && !accessFilter.test(a)) continue;   // PRD 069
                 resultById.putIfAbsent(a.getId(), a);
                 if (resultById.size() >= cap) break;
@@ -130,7 +138,7 @@ public class ClassificationGraphQLController
                 catch (RuntimeException e) { continue; }
                 if (a == null) continue;
                 if (isInternalAllocatable(a)) continue;
-                if (!pc.canRead(a, caller)) continue;
+                if (readableIds != null ? !readableIds.contains(a.getId()) : !pc.canRead(a, caller)) continue;
                 if (accessFilter != null && !accessFilter.test(a)) continue;   // PRD 069
                 resultById.put(id, a);
             }

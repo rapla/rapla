@@ -43,16 +43,6 @@ final class WhereEvaluator
 
     private WhereEvaluator() {}
 
-    /**
-     * Top-level dispatch — locate the {@code where<TypeKey>} block matching
-     * this allocatable's DT and evaluate it. Returns true if the allocatable
-     * passes (or there's no applicable block).
-     */
-    static boolean evaluate(Allocatable a, Map<String, Object> filterMap)
-    {
-        return evaluate(a, filterMap, null, null);
-    }
-
     /** PRD 074 b — caller/pc enable §12-gated recursion into referenced allocatables' typed where. */
     static boolean evaluate(Allocatable a, Map<String, Object> filterMap, User caller, PermissionController pc)
     {

@@ -121,6 +121,34 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     InitStatus connectStatus = InitStatus.Disconnected;
     // some indexMaps
     AppointmentMapClass appointmentBindings;
+    /**
+     * PRD 087 Class 1 — in-memory type-bucket indices ({@code typeId -> {entityId}}) for type-filtered
+     * narrowing of {@link #getAllocatables}/reservation queries without scanning the whole object graph.
+     * Maintained at the update seam ({@link #updateReadModel}/{@link #rebuildReadModel}) with per-entity
+     * old-type tracking for the re-key {@code move} on a classification-type edit.
+     */
+    private final org.rapla.storage.impl.server.readmodel.BucketIndex<String, String> allocatableTypeBucket =
+            new org.rapla.storage.impl.server.readmodel.BucketIndex<>();
+    private final org.rapla.storage.impl.server.readmodel.BucketIndex<String, String> reservationTypeBucket =
+            new org.rapla.storage.impl.server.readmodel.BucketIndex<>();
+    private final java.util.Map<String, String> allocatableBucketKey = new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.Map<String, String> reservationBucketKey = new java.util.concurrent.ConcurrentHashMap<>();
+    /**
+     * PRD 082 #8 / PRD 083 — per-user "readable allocatable ids" cache (delegates to
+     * {@link PermissionController#canRead} so it can never diverge — §12). Lazily built (the
+     * {@code PermissionController} is ready only after construction) and invalidated at the update seam:
+     * any allocatable / dynamic-type / category change drops the whole cache, a user change drops that
+     * user's entry. Reservation churn does NOT touch it (permissions live on allocatables/users).
+     */
+    private volatile org.rapla.storage.impl.server.readmodel.PermissionIndex permissionIndex;
+    /**
+     * PRD 086/087 Phase 4b — the flip flag. When {@code false} (default) the read-model only
+     * shadow-compares and consumers return the legacy result; when {@code true} flipped consumers serve
+     * from the read-model (the perf win). The legacy structures stay maintained, so flipping back is
+     * instant. Set via {@code -Drapla.readmodel.authoritative=true} (or the test setter). A read-model
+     * failure on the authoritative path falls back to the legacy scan, so the flip is fail-safe.
+     */
+    private volatile boolean readModelAuthoritative = Boolean.getBoolean("rapla.readmodel.authoritative");
     private TwoWayMap<String, ReferenceInfo> externalIds;
 
     protected enum InitStatus
@@ -719,18 +747,28 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 }
                 nonTemplates = Collections.emptySet();
             }
+            // Phase 4b-ii flip: serve plain allocatable window-reads from the block index (the perf win —
+            // a two-sided range lookup instead of scanning the full per-allocatable SortedSet), fail-safe
+            // to the legacy appointmentMap on any error. Restricted to the plain case (no user/owner
+            // filter, no classification filter, no annotation/requests filter, non-template scope); the
+            // post-filters below are then no-ops or template-exclusion, applied identically to both paths.
+            final boolean useBlockReads = readModelAuthoritative && !isResourceTemplate && user == null
+                    && filters == null && (annotationQuery == null || annotationQuery.isEmpty()) && !requestsOnly;
             Map<Entity, Collection<Appointment>> allocatableMap = new LinkedHashMap<>();
             for (Entity entity: entities)
             {
                 SortedSet<Appointment> appointmentSet;
-                final SortedSet<Appointment> appointments;
                 if (entity.getTypeClass()==User.class) {
                     ReferenceInfo<User> reference = ((User) entity).getReference();
-                    appointments = getAppointmentsForUser(reference);
+                    SortedSet<Appointment> ownerBase = readModelAuthoritative
+                            ? intervalOwnerCandidates(reference, start, end)
+                            : getAppointmentsForUser(reference);
+                    appointmentSet = AppointmentImpl.getAppointments(ownerBase, user, start, end, excludeExceptions);
+                } else if (useBlockReads) {
+                    appointmentSet = intervalWindowedAppointments((Allocatable) entity, user, start, end, excludeExceptions);
                 } else {
-                    appointments = getAppointments((Allocatable) entity);
+                    appointmentSet = AppointmentImpl.getAppointments(getAppointments((Allocatable) entity), user, start, end, excludeExceptions);
                 }
-                appointmentSet = AppointmentImpl.getAppointments(appointments, user, start, end, excludeExceptions);
                 for (Appointment appointment : appointmentSet)
                 {
                     Reservation reservation = appointment.getReservation();
@@ -1373,6 +1411,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
         }
         appointmentBindings.initAppointmentBindings(events);
+        rebuildReadModel(events);
         java.time.LocalDate today2 = today();
         AllocationMap allocationMap = new AllocationMap()
         {
@@ -1705,6 +1744,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         final Set<ReferenceInfo<Conflict>> conflictsToDelete = getConflictsToDelete(conflictChanges);
         removeConflictsFromDatabase(conflictsToDelete);
         removeConflictsFromCache(conflictsToDelete);
+        updateReadModel(result);
         return calculatedConflictChanges;
 
         //      Collection<Change> changes = result.getOperations( UpdateResult.Change.class);
@@ -1722,6 +1762,311 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         //          }
         //      }
 
+    }
+
+    /**
+     * PRD 082/087 — the type-bucket consumer. Two modes governed by the {@link #readModelAuthoritative}
+     * flip flag:
+     * <ul>
+     *   <li><b>Flag off (default) — Stage-X shadow.</b> Returns the authoritative superclass scan; the
+     *       read-model is only queried to <i>shadow-compare</i> (completeness) and log drift. Behaviour
+     *       is identical to the legacy operator.</li>
+     *   <li><b>Flag on — flipped.</b> Serves directly from the type-bucket (the perf win: resolve only
+     *       the filter-types' candidates instead of copying + scanning all allocatables). A read-model
+     *       failure falls back to the legacy scan, so the flip is fail-safe and instantly reversible.</li>
+     * </ul>
+     * Untyped queries ({@code filters == null}) can't be narrowed by type, so they always go to super.
+     */
+    @Override
+    public Collection<Allocatable> getAllocatables(ClassificationFilter[] filters) throws RaplaException
+    {
+        if (filters != null && readModelAuthoritative)
+        {
+            try
+            {
+                // Flipped: serve from the in-memory type-bucket — no full-population copy/scan.
+                return bucketDerivedAllocatables(filters, allocatableTypeBucket.membersUnion(typeIdsOf(filters)));
+            }
+            catch (RuntimeException ex)
+            {
+                LOGGER.error("read-model authoritative getAllocatables failed — falling back to legacy scan", ex);
+                // fall through to the legacy path below
+            }
+        }
+        return super.getAllocatables(filters);
+    }
+
+    /**
+     * Resolve the bucket candidate ids and apply the same per-allocatable filter the legacy scan does
+     * ({@code matches(filters, c)}), preserving exact result semantics for {@code filters != null} (the
+     * legacy internal-type exclusion only fires for {@code filters == null}, which never reaches here).
+     */
+    private Collection<Allocatable> bucketDerivedAllocatables(ClassificationFilter[] filters, java.util.Set<String> bucketIds)
+    {
+        java.util.Set<Allocatable> result = new java.util.LinkedHashSet<>();
+        for (String id : bucketIds)
+        {
+            Allocatable a = tryResolve(id, Allocatable.class);
+            if (a != null && ClassificationFilter.Util.matches(filters, a)) result.add(a);
+        }
+        return result;
+    }
+
+    /**
+     * PRD 086/087 Phase 4b — operational flip control: switch the read-model authoritative (perf win) or
+     * back to the legacy path. Reversible at runtime; the legacy structures stay maintained.
+     */
+    public void setReadModelAuthoritative(boolean authoritative) { this.readModelAuthoritative = authoritative; }
+
+    /** @return whether the read-model is currently authoritative for the flipped consumers. */
+    public boolean isReadModelAuthoritative() { return readModelAuthoritative; }
+
+    /**
+     * PRD 086 — the appointment window read served from the in-memory {@link org.rapla.storage.impl.server.readmodel.IntervalIndex}:
+     * the dependent-expanded allocatable's overlapping blocks (O(log n + k)) instead of scanning the full
+     * per-allocatable set. The index is a candidate <b>superset</b> (envelope entries over-approximate for
+     * open-ended / long series), so the result is passed through the identical {@code AppointmentImpl.getAppointments}
+     * the legacy path uses — exact and equivalent by construction. Expansion uses {@code cache.getDependentRef}
+     * (exactly as the legacy {@link #getAppointments(Allocatable)}), so there is no {@code getDependent} divergence.
+     * Fail-safe: any error falls back to the legacy appointmentMap path.
+     */
+    private SortedSet<Appointment> intervalWindowedAppointments(Allocatable allocatable, User user, LocalDateTime start, LocalDateTime end, boolean excludeExceptions)
+    {
+        try
+        {
+            return AppointmentImpl.getAppointments(intervalCandidates(allocatable, start, end), user, start, end, excludeExceptions);
+        }
+        catch (RuntimeException ex)
+        {
+            LOGGER.error("read-model authoritative queryAppointments failed for one allocatable — falling back to legacy", ex);
+            return AppointmentImpl.getAppointments(getAppointments(allocatable), user, start, end, excludeExceptions);
+        }
+    }
+
+    /**
+     * PRD 086 — conflict candidates for one query appointment from the in-memory interval index: the blocks
+     * on the dependent-expanded allocatable overlapping the query's {@code [start, maxEnd)} envelope. A
+     * deliberate <b>superset</b> — {@code getConflictingAppointments} applies the precise recurrence-aware
+     * overlap, so the result is unchanged while the scan shrinks. Fail-safe to the full set on error.
+     */
+    private SortedSet<Appointment> intervalConflictCandidates(Allocatable allocatable, Appointment queryAppointment)
+    {
+        try
+        {
+            long qaStart = DateTools.toMilli(queryAppointment.getStart());
+            long qaEnd = (queryAppointment.getMaxEnd() == null) ? Long.MAX_VALUE : DateTools.toMilli(queryAppointment.getMaxEnd());
+            return intervalCandidatesMs(allocatable, qaStart, qaEnd);
+        }
+        catch (RuntimeException ex)
+        {
+            LOGGER.error("read-model authoritative conflict candidates failed for one allocatable — falling back to legacy", ex);
+            return getAppointments(allocatable);
+        }
+    }
+
+    /** Window-overlapping candidate superset for an allocatable (dependent-expanded via {@code cache.getDependentRef}). */
+    private SortedSet<Appointment> intervalCandidates(Allocatable allocatable, LocalDateTime start, LocalDateTime end)
+    {
+        long fromMs = (start == null) ? Long.MIN_VALUE : DateTools.toMilli(start);
+        long toMs = (end == null) ? Long.MAX_VALUE : DateTools.toMilli(end);
+        return intervalCandidatesMs(allocatable, fromMs, toMs);
+    }
+
+    private SortedSet<Appointment> intervalCandidatesMs(Allocatable allocatable, long fromMs, long toMs)
+    {
+        SortedSet<Appointment> candidates = new TreeSet<>(new AppointmentStartComparator());
+        for (ReferenceInfo<Allocatable> ref : cache.getDependentRef(allocatable.getReference()))
+        {
+            candidates.addAll(appointmentBindings.overlappingByAllocatable(ref.getId(), fromMs, toMs));
+        }
+        return candidates;
+    }
+
+    /** Window-overlapping candidate superset for one owner (no dependent expansion — keyed by owner id). */
+    private SortedSet<Appointment> intervalOwnerCandidates(ReferenceInfo<User> ownerRef, LocalDateTime start, LocalDateTime end)
+    {
+        long fromMs = (start == null) ? Long.MIN_VALUE : DateTools.toMilli(start);
+        long toMs = (end == null) ? Long.MAX_VALUE : DateTools.toMilli(end);
+        SortedSet<Appointment> candidates = new TreeSet<>(new AppointmentStartComparator());
+        candidates.addAll(appointmentBindings.overlappingByOwner(ownerRef.getId(), fromMs, toMs));
+        return candidates;
+    }
+
+    /**
+     * PRD 086 window-first — every reservation with an appointment overlapping {@code [from, to)}, via
+     * the global interval index: ONE O(log N + k) window lookup instead of iterating every allocatable.
+     * Result-equal to the legacy unscoped read <b>for a full admin</b> (who sees everything, so no
+     * {@code canRead} post-filter is needed — the caller gates on {@code isAdmin()}). The candidate
+     * superset (open-ended envelopes over-approximate) is passed through the identical
+     * {@code AppointmentImpl.getAppointments} the legacy path uses, so the windowed appointment set — and
+     * thus the reservation set — is exact. Intended for the unscoped admin branch only.
+     */
+    public Collection<Reservation> reservationsInWindowGlobal(LocalDateTime from, LocalDateTime to)
+    {
+        long fromMs = (from == null) ? Long.MIN_VALUE : DateTools.toMilli(from);
+        long toMs = (to == null) ? Long.MAX_VALUE : DateTools.toMilli(to);
+        SortedSet<Appointment> candidates = new TreeSet<>(new AppointmentStartComparator());
+        candidates.addAll(appointmentBindings.overlappingGlobal(fromMs, toMs));
+        SortedSet<Appointment> windowed = AppointmentImpl.getAppointments(candidates, null, from, to, false);
+        java.util.LinkedHashSet<Reservation> reservations = new java.util.LinkedHashSet<>();
+        for (Appointment a : windowed)
+        {
+            Reservation r = a.getReservation();
+            if (r != null) reservations.add(r);
+        }
+        return reservations;
+    }
+
+    private static java.util.Set<String> typeIdsOf(ClassificationFilter[] filters)
+    {
+        java.util.Set<String> typeIds = new java.util.LinkedHashSet<>();
+        for (ClassificationFilter f : filters)
+        {
+            if (f != null && f.getType() != null && f.getType().getId() != null) typeIds.add(f.getType().getId());
+        }
+        return typeIds;
+    }
+
+    private static String typeIdOf(org.rapla.entities.dynamictype.Classification c)
+    {
+        return (c != null && c.getType() != null) ? c.getType().getId() : null;
+    }
+
+    private void indexAllocatableBucket(Allocatable a)
+    {
+        String id = a.getId();
+        String newType = typeIdOf(a.getClassification());
+        String oldType = allocatableBucketKey.get(id);
+        allocatableTypeBucket.move(oldType, newType, id);
+        if (newType == null) allocatableBucketKey.remove(id); else allocatableBucketKey.put(id, newType);
+    }
+
+    private void indexReservationBucket(Reservation r)
+    {
+        String id = r.getId();
+        String newType = typeIdOf(r.getClassification());
+        String oldType = reservationBucketKey.get(id);
+        reservationTypeBucket.move(oldType, newType, id);
+        if (newType == null) reservationBucketKey.remove(id); else reservationBucketKey.put(id, newType);
+    }
+
+    private void removeFromTypeBuckets(String id)
+    {
+        String oldAlloc = allocatableBucketKey.remove(id);
+        if (oldAlloc != null) allocatableTypeBucket.remove(oldAlloc, id);
+        String oldResv = reservationBucketKey.remove(id);
+        if (oldResv != null) reservationTypeBucket.remove(oldResv, id);
+    }
+
+    /**
+     * PRD 087 — full rebuild of the in-memory type buckets from the resident object graph (boot / drift
+     * recovery). The appointment interval indices are rebuilt separately by {@code initAppointmentBindings}.
+     * A failure here is logged and never breaks boot — consumers fall back to the legacy scan.
+     */
+    private void rebuildReadModel(Collection<Reservation> reservations)
+    {
+        try
+        {
+            allocatableTypeBucket.clear();
+            reservationTypeBucket.clear();
+            allocatableBucketKey.clear();
+            reservationBucketKey.clear();
+            for (Allocatable a : cache.getAllocatables())
+            {
+                indexAllocatableBucket(a);
+            }
+            for (Reservation r : reservations)
+            {
+                indexReservationBucket(r);
+            }
+        }
+        catch (RuntimeException ex)
+        {
+            LOGGER.error("type-bucket rebuild failed — continuing without it (consumers fall back to the legacy scan)", ex);
+        }
+    }
+
+    /**
+     * PRD 087 — incremental type-bucket maintenance at the update seam (allocatable/reservation
+     * classification-type changes re-key via {@code BucketIndex.move}). The appointment interval indices
+     * are maintained by {@code appointmentBindings.updateReservation} at the same seam. Guarded: a failure
+     * is logged and never propagated to the authoritative write path.
+     */
+    private void updateReadModel(UpdateResult result)
+    {
+        try
+        {
+            boolean invalidateAllPermissions = false;
+            for (UpdateResult.Add add : result.getOperations(UpdateResult.Add.class))
+            {
+                Entity e = tryResolve(add.getReference());
+                indexEntityBucket(e);
+                invalidateAllPermissions |= permissionAffecting(e);
+            }
+            for (UpdateResult.Change change : result.getOperations(UpdateResult.Change.class))
+            {
+                Entity e = tryResolve(change.getReference());
+                indexEntityBucket(e);
+                if (e instanceof User && permissionIndex != null) permissionIndex.invalidate(((User) e).getId());
+                else invalidateAllPermissions |= permissionAffecting(e);
+            }
+            for (UpdateResult.Remove remove : result.getOperations(UpdateResult.Remove.class))
+            {
+                ReferenceInfo<?> ref = remove.getReference();
+                removeFromTypeBuckets(ref.getId());
+                Class<?> type = ref.getType();
+                if (type == User.class && permissionIndex != null) permissionIndex.invalidate(ref.getId());
+                else if (type == Allocatable.class || type == DynamicType.class || type == Category.class) invalidateAllPermissions = true;
+            }
+            if (invalidateAllPermissions && permissionIndex != null) permissionIndex.invalidateAll();
+        }
+        catch (RuntimeException ex)
+        {
+            LOGGER.error("read-model (type-bucket / permission) update failed — index may drift until next rebuild", ex);
+        }
+    }
+
+    private void indexEntityBucket(Entity e)
+    {
+        if (e instanceof Allocatable) indexAllocatableBucket((Allocatable) e);
+        else if (e instanceof Reservation) indexReservationBucket((Reservation) e);
+    }
+
+    /** A change to any of these can change {@code canRead(allocatable, *)} for many users → drop the whole permission cache. */
+    private static boolean permissionAffecting(Entity e)
+    {
+        return e instanceof Allocatable || e instanceof DynamicType || e instanceof Category;
+    }
+
+    /** PRD 082 #8 — lazily build the permission index (the {@link PermissionController} is ready only post-construction). */
+    private org.rapla.storage.impl.server.readmodel.PermissionIndex permissionIndex()
+    {
+        org.rapla.storage.impl.server.readmodel.PermissionIndex idx = permissionIndex;
+        if (idx == null)
+        {
+            synchronized (this)
+            {
+                idx = permissionIndex;
+                if (idx == null)
+                {
+                    idx = new org.rapla.storage.impl.server.readmodel.PermissionIndex(this, getPermissionController());
+                    permissionIndex = idx;
+                }
+            }
+        }
+        return idx;
+    }
+
+    /**
+     * PRD 082 #8 — the set of allocatable ids {@code user} may READ, cached per user. Equal to
+     * {@code { a.getId() : canRead(a, user) }} by construction (it delegates to {@code canRead}), so a
+     * caller may use it as a §12-safe drop-in for the per-entity {@code canRead} scan. Flip-gated by the
+     * caller (use only when {@link #isReadModelAuthoritative()}); fail-safe — the caller keeps the
+     * {@code canRead} path for the off/non-server case.
+     */
+    public java.util.Set<String> readableAllocatableIds(User user)
+    {
+        return permissionIndex().readableAllocatables(user);
     }
 
     private void updateExternalId(UpdateOperation op, ReferenceInfo id)
@@ -2175,6 +2520,36 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
         Set<String> problematicIdSet = Collections.synchronizedSet(new HashSet<>());
 
+        /**
+         * PRD 086 — the in-memory appointment interval indices that replace the half-range prefilter
+         * pathology of {@link #appointmentMap} for windowed reads/conflict narrowing. Materialized blocks
+         * (≤ {@link #MATERIALIZE_CAP} occurrences) are filed as exact entries; open-ended / long series keep
+         * one envelope entry the read path re-checks via {@code AppointmentImpl.getAppointments}. Maintained
+         * in lockstep with {@code appointmentMap}/{@code appointmentUserMap} at the same add/remove sites in
+         * {@link #updateReservation}, so boot ({@link #initAppointmentBindings}) and incremental updates both
+         * populate them with no separate seam. Keyed by allocatable id and owner (user) id.
+         */
+        private org.rapla.storage.impl.server.readmodel.IntervalIndex<String, Appointment> appointmentIntervalByAlloc;
+        private org.rapla.storage.impl.server.readmodel.IntervalIndex<String, Appointment> appointmentIntervalByOwner;
+
+        /**
+         * PRD 086 window-first global read — a third interval index under a single {@link #GLOBAL_KEY},
+         * holding every appointment that is bound to ≥1 allocatable <b>exactly once</b> (not once per
+         * binding — that matches the legacy unscoped read, which iterates allocatables and so never
+         * returns an allocatable-less appointment). {@code overlappingGlobal(win)} is then the global
+         * "all appointments in this window" query in O(log N + k), with no per-allocatable iteration —
+         * the win for a full-admin unscoped query (47k-allocatable loop → one lookup). Maintained via a
+         * per-reservation record of what it filed ({@link #globalFiledByReservation}) so an update is a
+         * precise remove-old / add-new under the write lock.
+         */
+        private org.rapla.storage.impl.server.readmodel.IntervalIndex<Object, Appointment> appointmentIntervalGlobal;
+        private static final Object GLOBAL_KEY = new Object();
+        private Map<ReferenceInfo<Reservation>, Set<Appointment>> globalFiledByReservation;
+
+        /** Materialize iff total occurrences ≤ this cap (one year of a weekly repeating); else an envelope. */
+        private static final int MATERIALIZE_CAP = 52;
+        /** Duration cap D (~14 days): bounded entries longer than this route to the always-scanned side-set. */
+        private static final long INTERVAL_DURATION_CAP_MS = 14L * 24 * 60 * 60 * 1000;
 
         private AppointmentMapClass(org.slf4j.Logger newLogger)
         {
@@ -2187,11 +2562,72 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             appointmentUserMap = new ConcurrentHashMap<>();
             reservationAllocatableMap = new ConcurrentHashMap<>();
             reservationUserMap = new ConcurrentHashMap<>();
+            appointmentIntervalByAlloc = new org.rapla.storage.impl.server.readmodel.IntervalIndex<>(INTERVAL_DURATION_CAP_MS);
+            appointmentIntervalByOwner = new org.rapla.storage.impl.server.readmodel.IntervalIndex<>(INTERVAL_DURATION_CAP_MS);
+            appointmentIntervalGlobal = new org.rapla.storage.impl.server.readmodel.IntervalIndex<>(INTERVAL_DURATION_CAP_MS);
+            globalFiledByReservation = new ConcurrentHashMap<>();
             for (Reservation r : reservations)
             {
                 updateReservation(r, new HashSet<>(), false);
             }
 
+        }
+
+        /** Expand one appointment into the index entries it contributes (PRD 086 block materialization). */
+        @FunctionalInterface
+        private interface BlockSink { void accept(long start, long end, boolean openEnded); }
+
+        private static void materializeBlocks(Appointment a, BlockSink sink)
+        {
+            final LocalDateTime start = a.getStart();
+            if (start == null) return;
+            final org.rapla.entities.domain.Repeating repeating = a.getRepeating();
+            if (repeating == null)
+            {
+                sink.accept(DateTools.toMilli(start), DateTools.toMilli(a.getEnd()), false);
+                return;
+            }
+            final int count = repeating.getNumber(); // -1 == open-ended; else the occurrence count
+            if (count >= 0 && count <= MATERIALIZE_CAP)
+            {
+                final java.util.List<org.rapla.entities.domain.AppointmentBlock> blocks = new java.util.ArrayList<>();
+                ((AppointmentImpl) a).createBlocks(a.getStart(), a.getMaxEnd(), blocks);
+                for (org.rapla.entities.domain.AppointmentBlock b : blocks)
+                {
+                    sink.accept(b.getStart(), b.getEnd(), false);
+                }
+                return;
+            }
+            // open-ended (count < 0) OR > cap: one envelope entry [start, maxEnd|∞)
+            final LocalDateTime maxEnd = a.getMaxEnd();
+            final long endTs = (maxEnd == null) ? Long.MAX_VALUE : DateTools.toMilli(maxEnd);
+            sink.accept(DateTools.toMilli(start), endTs, maxEnd == null);
+        }
+
+        private <K> void intervalPut(org.rapla.storage.impl.server.readmodel.IntervalIndex<K, Appointment> idx, K key, Appointment app)
+        {
+            materializeBlocks(app, (s, e, open) -> idx.put(key, app, s, e, open));
+        }
+
+        private <K> void intervalRemove(org.rapla.storage.impl.server.readmodel.IntervalIndex<K, Appointment> idx, K key, Appointment app)
+        {
+            materializeBlocks(app, (s, e, open) -> idx.remove(key, app, s, e, open));
+        }
+
+        Collection<Appointment> overlappingByAllocatable(String allocatableId, long winStartMs, long winEndMs)
+        {
+            return appointmentIntervalByAlloc.overlapping(allocatableId, winStartMs, winEndMs);
+        }
+
+        Collection<Appointment> overlappingByOwner(String ownerId, long winStartMs, long winEndMs)
+        {
+            return appointmentIntervalByOwner.overlapping(ownerId, winStartMs, winEndMs);
+        }
+
+        /** PRD 086 window-first — every appointment (bound to ≥1 allocatable) overlapping the window. */
+        Collection<Appointment> overlappingGlobal(long winStartMs, long winEndMs)
+        {
+            return appointmentIntervalGlobal.overlapping(GLOBAL_KEY, winStartMs, winEndMs);
         }
 
         private void updateReservation(Reservation r, Set<ReferenceInfo<Allocatable>> toUpdate, boolean remove) {
@@ -2203,6 +2639,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             final String annotation = event.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE);
             ReferenceInfo<Allocatable> templateAlloc = (annotation != null) ? new ReferenceInfo(annotation, Allocatable.class) : null;
 
+            // PRD 086 window-first — drop this reservation's previously-filed global entries (precise:
+            // the actual old Appointment objects, so materialization matches). Re-added below for updates.
+            Set<Appointment> oldGlobal = globalFiledByReservation.remove(reference);
+            if (oldGlobal != null) {
+                for (Appointment a : oldGlobal) intervalRemove(appointmentIntervalGlobal, GLOBAL_KEY, a);
+            }
+
             if ( oldResources != null) {
                 for (ReferenceInfo<Allocatable> alloc: oldResources) {
                     SortedSet<Appointment> appointments = appointmentMap.get(alloc);
@@ -2213,6 +2656,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                             Reservation parent = app.getReservation();
                             if ( parent == null) {
                                 toUpdate.add( alloc );
+                                intervalRemove(appointmentIntervalByAlloc, alloc.getId(), app);
                                 it.remove();
                                 continue;
                             }
@@ -2221,6 +2665,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                                 // check if appointment still allocates reservation or is the template
                                 if (remove || !(event.hasAllocatedOnRef(alloc, app) && !alloc.equals( templateAlloc))) {
                                     toUpdate.add( alloc );
+                                    intervalRemove(appointmentIntervalByAlloc, alloc.getId(), app);
                                     it.remove();
                                     continue;
                                 } else {
@@ -2228,6 +2673,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                                     Appointment newAppointment = event.findAppointment( app );
                                     if ( newAppointment == null || !newAppointment.matches( app) ) {
                                         toUpdate.add( alloc );
+                                        intervalRemove(appointmentIntervalByAlloc, alloc.getId(), app);
                                         it.remove();
                                         continue;
                                     }
@@ -2248,11 +2694,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                         Appointment app = it.next();
                         Reservation parent = app.getReservation();
                         if ( parent == null) {
+                            intervalRemove(appointmentIntervalByOwner, oldUser.getId(), app);
                             it.remove();
                             continue;
                         }
                         if (parent.getReference().equals( reference)) {
                             if ( !parent.getOwnerRef().equals(newUser) ) {
+                                intervalRemove(appointmentIntervalByOwner, oldUser.getId(), app);
                                 it.remove();
                                 continue;
                             }
@@ -2260,11 +2708,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                             Appointment newAppointment = event.findAppointment( app );
 
                             if (remove || newAppointment == null) {
+                                intervalRemove(appointmentIntervalByOwner, oldUser.getId(), app);
                                 it.remove();
                                 continue;
                             } else {
                                 // check if appointment has changed; if so remove it and we add it later
                                 if ( !newAppointment.matches( app) ) {
+                                    intervalRemove(appointmentIntervalByOwner, oldUser.getId(), app);
                                     it.remove();
                                     continue;
                                 }
@@ -2287,6 +2737,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 newResources.add( templateAlloc);
             }
             Appointment[] allAppointments = event.getAppointments();
+            // PRD 086 window-first — the distinct appointments bound to ≥1 allocatable, each filed ONCE
+            // in the global index (matches the legacy unscoped read, which never returns an
+            // allocatable-less appointment). Collected here, filed + recorded after the per-alloc loop.
+            Set<Appointment> boundAppointments = new java.util.LinkedHashSet<>();
             for (ReferenceInfo<Allocatable> alloc: newResources) {
                 toUpdate.add( alloc );
                 SortedSet<Appointment> appointments = appointmentMap.computeIfAbsent(
@@ -2296,7 +2750,16 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 for (Appointment app : newAppointments) {
                     appointments.remove( app );
                     appointments.add(app);
+                    intervalRemove(appointmentIntervalByAlloc, alloc.getId(), app);
+                    intervalPut(appointmentIntervalByAlloc, alloc.getId(), app);
+                    boundAppointments.add(app);
                 }
+            }
+            for (Appointment app : boundAppointments) {
+                intervalPut(appointmentIntervalGlobal, GLOBAL_KEY, app);
+            }
+            if (!boundAppointments.isEmpty()) {
+                globalFiledByReservation.put(reference, boundAppointments);
             }
             reservationAllocatableMap.put( reference, new HashSet<>(newResources));
             {
@@ -2305,6 +2768,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 for (Appointment app : allAppointments) {
                     appointments.remove( app );
                     appointments.add(app);
+                    intervalRemove(appointmentIntervalByOwner, newUser.getId(), app);
+                    intervalPut(appointmentIntervalByOwner, newUser.getId(), app);
                 }
             }
             reservationUserMap.put( reference, newUser );
@@ -3827,16 +4292,22 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     continue;
                 }
                 // TODO check also parents and children from allocatables
-                SortedSet<Appointment> appointmentSet = getAppointments(allocatable);
-                if (appointmentSet == null)
+                // Phase 4b-ii flip: when authoritative, narrow the candidate set per query appointment via
+                // the block-index envelope query (a superset of the true conflicts — getConflictingAppointments
+                // still applies the precise overlap, so the result is unchanged); fail-safe to the full set.
+                SortedSet<Appointment> appointmentSet = readModelAuthoritative ? null : getAppointments(allocatable);
+                if (!readModelAuthoritative && appointmentSet == null)
                 {
                     continue;
                 }
                 map.put(allocatable.getReference(), new HashMap<>());
                 for (Appointment appointment : appointments)
                 {
+                    SortedSet<Appointment> candidates = readModelAuthoritative
+                            ? intervalConflictCandidates(allocatable, appointment)
+                            : appointmentSet;
                     Set<Appointment> conflictingAppointments = AppointmentImpl
-                            .getConflictingAppointments(appointmentSet, appointment, ignoreList, onlyFirstConflictingAppointment);
+                            .getConflictingAppointments(candidates, appointment, ignoreList, onlyFirstConflictingAppointment);
                     if (conflictingAppointments.size() > 0)
                     {
                         Map<Appointment, Collection<Appointment>> appMap = map.get(allocatable.getReference());

@@ -76,6 +76,12 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
         if (op.getName() != null) meta.put("key", op.getName());
         String title = stringArg(view, "title");
         if (title != null) meta.put("title", title);
+        String rowLabel = stringArg(view, "rowLabel");
+        if (rowLabel != null) meta.put("rowLabel", rowLabel);
+        String groupLabel = stringArg(view, "groupLabel");
+        if (groupLabel != null) meta.put("groupLabel", groupLabel);
+        List<String> renderModes = enumListArg(view, "renderModes");
+        meta.put("renderModes", renderModes.isEmpty() ? List.of("table") : renderModes);
         List<Map<String, Object>> columns = columnsFrom(op.getSelectionSet(),
                 parameters.getExecutionContext().getGraphQLSchema());
         meta.put("columns", columns);
@@ -91,7 +97,7 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
             }
         }
 
-        List<Map<String, Object>> inputs = inputsFrom(op.getVariableDefinitions());
+        List<Map<String, Object>> inputs = inputsFrom(op.getVariableDefinitions(), view);
         if (!inputs.isEmpty()) meta.put("inputs", inputs);
 
         // PRD 074/078 — the variable signature (name + GraphQL type) is the type-driven
@@ -158,16 +164,30 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
      * {@code $filter: ReservationFilter!} → from/to date-range controls with
      * anchor+offset defaults (Monday-week window, PRD 074 §inputs).
      */
-    private static List<Map<String, Object>> inputsFrom(List<VariableDefinition> vars)
+    private static List<Map<String, Object>> inputsFrom(List<VariableDefinition> vars, Directive view)
     {
         if (vars == null) return List.of();
         for (VariableDefinition v : vars)
         {
             if ("filter".equals(v.getName()) && isReservationFilter(v))
             {
+                // Per-view window seed from @view(fromAnchor/fromOffset/toAnchor/toOffset/unit);
+                // omitted args fall back to the default TODAY -7 … +7 window. A Monday week is
+                // fromAnchor: "WEEK_START", fromOffset: 0, toAnchor: "WEEK_START", toOffset: 7.
+                String fromAnchor = enumArg(view, "fromAnchor");
+                String toAnchor = enumArg(view, "toAnchor");
+                String unit = enumArg(view, "unit");
+                Integer fromOffset = intArg(view, "fromOffset");
+                Integer toOffset = intArg(view, "toOffset");
                 List<Map<String, Object>> inputs = new ArrayList<>();
-                inputs.add(dateInput("filter.from", "DATE_RANGE_START", "TODAY", -7));
-                inputs.add(dateInput("filter.to", "DATE_RANGE_END", "TODAY", 7));
+                inputs.add(dateInput("filter.from", "DATE_RANGE_START",
+                        fromAnchor != null ? fromAnchor : "TODAY",
+                        fromOffset != null ? fromOffset : -7,
+                        unit != null ? unit : "DAYS"));
+                inputs.add(dateInput("filter.to", "DATE_RANGE_END",
+                        toAnchor != null ? toAnchor : "TODAY",
+                        toOffset != null ? toOffset : 7,
+                        unit != null ? unit : "DAYS"));
                 return inputs;
             }
         }
@@ -212,12 +232,12 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
                 && "ReservationFilter".equals(tn.getName());
     }
 
-    private static Map<String, Object> dateInput(String name, String control, String anchor, int offset)
+    private static Map<String, Object> dateInput(String name, String control, String anchor, int offset, String unit)
     {
         Map<String, Object> in = new LinkedHashMap<>();
         in.put("name", name);
         in.put("control", control);
-        in.put("default", Map.of("anchor", anchor, "offset", offset, "unit", "DAYS"));
+        in.put("default", Map.of("anchor", anchor, "offset", offset, "unit", unit));
         return in;
     }
 
@@ -274,12 +294,16 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
         List<Map<String, Object>> cols = new ArrayList<>();
         List<Map<String, String>> entityFields = entityFieldPaths(root);
         boolean entityAttached = false;
+        int idx = 0;
         for (ObjectValue g : objectListArg(root, "groupBy"))
         {
             String key = objStr(g, "key");
             if (key == null) continue;
             Map<String, Object> c = new LinkedHashMap<>();
             c.put("alias", key);
+            Integer groupOrder = objInt(g, "order");
+            applyPresentation(c, objStr(g, "header") != null ? objStr(g, "header") : key,
+                    groupOrder, false, false, null, idx++);
             c.put("kind", "group");
             boolean entityDim = hasField(g, "allocatables") || Boolean.TRUE.equals(objBool(g, "reservation"));
             String dimType = hasField(g, "allocatables") ? "Allocatable"
@@ -295,9 +319,14 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
                 {
                     Map<String, Object> ec = new LinkedHashMap<>();
                     ec.put("alias", ef.get("name"));
+                    String efOrdStr = ef.get("order");
+                    Integer efOrder = efOrdStr != null ? Integer.parseInt(efOrdStr) : null;
+                    applyPresentation(ec,
+                            ef.getOrDefault("header", ef.get("name")),
+                            efOrder, "true".equals(ef.get("hidden")), false, null, idx++);
                     ec.put("kind", "entity");
-                    ec.put("group", key);          // which group key this attribute hangs off
-                    ec.put("path", ef.get("path")); // dotted path under keys[group].entity
+                    ec.put("group", key);
+                    ec.put("path", ef.get("path"));
                     cols.add(ec);
                 }
                 entityAttached = true;
@@ -309,6 +338,9 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
             if (key == null) continue;
             Map<String, Object> c = new LinkedHashMap<>();
             c.put("alias", key);
+            Integer aggOrder = objInt(a, "order");
+            applyPresentation(c, objStr(a, "header") != null ? objStr(a, "header") : key,
+                    aggOrder, false, false, null, idx++);
             c.put("kind", "value");
             String fn = objEnum(a, "fn");
             if (fn != null) c.put("fn", fn);
@@ -322,8 +354,11 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
             cnt.put("alias", "count");
             cnt.put("kind", "count");
             cnt.put("type", "Int");
+            cnt.put("_order", idx);
             cols.add(cnt);
         }
+        cols.sort(Comparator.comparingInt(c -> (Integer) c.get("_order")));
+        cols.forEach(c -> c.remove("_order"));
         return cols;
     }
 
@@ -360,6 +395,15 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
                     Map<String, String> m = new LinkedHashMap<>();
                     m.put("name", name);
                     m.put("path", path);
+                    if (findDirective(f.getDirectives(), "hidden") != null) m.put("hidden", "true");
+                    Directive col = findDirective(f.getDirectives(), "column");
+                    if (col != null)
+                    {
+                        String hdr = stringArg(col, "header");
+                        if (hdr != null) m.put("header", hdr);
+                        Integer ord = intArg(col, "order");
+                        if (ord != null) m.put("order", String.valueOf(ord));
+                    }
                     out.add(m);
                 }
                 else
@@ -425,6 +469,11 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
         return objField(o, name) instanceof graphql.language.BooleanValue bv ? bv.isValue() : null;
     }
 
+    private static Integer objInt(ObjectValue o, String name)
+    {
+        return objField(o, name) instanceof IntValue iv ? iv.getValue().intValue() : null;
+    }
+
     /** Resolve the object/interface type behind a root field so its sub-fields' types are known. */
     private static GraphQLFieldsContainer resolveContainer(GraphQLObjectType queryType, String rootField)
     {
@@ -435,22 +484,49 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
         return (t instanceof GraphQLFieldsContainer fc) ? fc : null;
     }
 
+    /**
+     * Single source of truth for all presentation attributes that a column descriptor
+     * can carry. Both the {@code @column}-directive path (field selections) and the
+     * {@code header}/{@code order} input-field path ({@code BlockGroupKey} /
+     * {@code BlockAggregate}) funnel through here so a new attribute only needs to be
+     * added in one place.
+     *
+     * @param c      the column map being built (alias already set by caller)
+     * @param header explicit header, or null → caller falls back to alias
+     * @param order  explicit column order, or null
+     * @param hidden true → add {@code hidden:true}
+     * @param group  true → add {@code group:true} (flat-view grouping marker)
+     * @param format opaque date-format token, or null
+     * @param idx    declaration index used as {@code _order} when order is null
+     */
+    private static void applyPresentation(Map<String, Object> c,
+            String header, Integer order, boolean hidden, boolean group, String format, int idx)
+    {
+        if (header != null) c.put("header", header);
+        if (order != null) c.put("order", order);
+        if (hidden) c.put("hidden", true);
+        if (group) c.put("group", true);
+        if (format != null) c.put("format", format);
+        c.put("_order", order != null ? order : idx);
+    }
+
     private static Map<String, Object> columnDescriptor(Field col, GraphQLFieldsContainer container, int idx)
     {
         Map<String, Object> c = new LinkedHashMap<>();
         String alias = col.getAlias() != null ? col.getAlias() : col.getName();
         c.put("alias", alias);
         Directive column = findDirective(col.getDirectives(), "column");
-        String header = column != null ? stringArg(column, "header") : null;
-        c.put("header", header != null ? header : alias);
+        boolean hidden = findDirective(col.getDirectives(), "hidden") != null;
+        applyPresentation(c,
+                column != null ? stringArg(column, "header") : alias,
+                column != null ? intArg(column, "order") : null,
+                hidden,
+                column != null && Boolean.TRUE.equals(boolArg(column, "group")),
+                column != null ? stringArg(column, "format") : null,
+                idx);
+        if (!c.containsKey("header")) c.put("header", alias); // alias fallback
         String type = resolveType(container, col.getName());
         if (type != null) c.put("type", type);
-        Integer order = column != null ? intArg(column, "order") : null;
-        if (order != null) c.put("order", order);
-        if (findDirective(col.getDirectives(), "hidden") != null) c.put("hidden", true);
-        if (column != null && Boolean.TRUE.equals(boolArg(column, "group"))) c.put("group", true);
-        String fmt = column != null ? stringArg(column, "format") : null;
-        if (fmt != null) c.put("format", fmt);   // PRD 074 — opaque render-format token (client-interpreted)
         Directive join = findDirective(col.getDirectives(), "join");
         if (join != null)
         {
@@ -464,8 +540,6 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
             if (leaf == null) leaf = singleSubFieldKey(col);
             c.put("flatten", leaf != null ? leaf : Boolean.TRUE);
         }
-        // transient sort key — removed during sort, never emitted
-        c.put("_order", order != null ? order : idx);
         return c;
     }
 
@@ -507,6 +581,21 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
     {
         Argument a = argByName(d, name);
         return (a != null && a.getValue() instanceof StringValue sv) ? sv.getValue() : null;
+    }
+
+    private static String enumArg(Directive d, String name)
+    {
+        Argument a = argByName(d, name);
+        return (a != null && a.getValue() instanceof EnumValue ev) ? ev.getName() : null;
+    }
+
+    private static List<String> enumListArg(Directive d, String name)
+    {
+        Argument a = argByName(d, name);
+        if (a == null || !(a.getValue() instanceof ArrayValue arr)) return List.of();
+        List<String> out = new ArrayList<>();
+        for (Value<?> v : arr.getValues()) if (v instanceof EnumValue ev) out.add(ev.getName());
+        return out;
     }
 
     private static Integer intArg(Directive d, String name)

@@ -1,13 +1,26 @@
 import {
   HttpClient,
+  HttpContextToken,
   HttpErrorResponse,
   HttpEvent,
   HttpHandlerFn,
   HttpInterceptorFn,
   HttpRequest,
+  HttpResponse,
 } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { Observable, catchError, finalize, from, shareReplay, switchMap, take, throwError } from 'rxjs';
+import {
+  Observable,
+  catchError,
+  finalize,
+  from,
+  mergeMap,
+  of,
+  shareReplay,
+  switchMap,
+  take,
+  throwError,
+} from 'rxjs';
 
 import { AuthService } from './auth.service';
 
@@ -18,10 +31,15 @@ import { AuthService } from './auth.service';
  * cookie the browser auto-sends same-origin. This interceptor therefore attaches
  * NO Authorization header. Its only job is the reactive refresh:
  *
- *   1. on a 401 from {@code /api} (other than the refresh endpoint itself),
+ *   1. on a 401 from {@code /api} (other than the refresh endpoint itself), OR a
+ *      {@code /api/graphql} 200 whose body carries a GraphQL {@code UNAUTHENTICATED}
+ *      error (GraphQL reports auth failures as 200 + errors[], NOT 401, so a plain
+ *      401 handler would miss a mid-session access-token expiry → "Authentication
+ *      required" until a full page reload),
  *   2. call {@code POST /api/auth/refresh} ONCE (the refresh cookie is
  *      auto-sent; the server sets a fresh {@code access_token} cookie),
- *   3. replay the original request (cookie now fresh).
+ *   3. replay the original request (cookie now fresh; GraphQL replay is guarded to
+ *      run at most once via an HttpContext token, no loop),
  *   4. If refresh itself 401s, the refresh cookie is invalid/expired → clear
  *      identity and redirect the browser to the server {@code /login} page.
  *
@@ -44,6 +62,10 @@ import { AuthService } from './auth.service';
  */
 
 const REFRESH_URL = '/api/auth/refresh';
+const GRAPHQL_URL = '/api/graphql';
+// Marks a GraphQL request already retried after an UNAUTHENTICATED error → at most
+// one refresh+replay (no loop if the replay is still unauthenticated).
+const GQL_RETRIED = new HttpContextToken<boolean>(() => false);
 
 // The single in-flight refresh, shared across all concurrent 401s. null = "no
 // refresh running"; the first 401 creates it, finalize clears it on completion
@@ -90,28 +112,47 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const http = inject(HttpClient);
 
   return next(req).pipe(
+    // GraphQL auth failures come back as HTTP 200 + errors[code: UNAUTHENTICATED]
+    // (GraphQL convention), so they bypass the 401 catchError below. Treat them the
+    // same — refresh once + replay — else an access-token expiry mid-session shows
+    // "Authentication required" until a full page reload (which the 401 path heals).
+    mergeMap((event) => {
+      if (isGraphqlAuthError(req, event) && !req.context.get(GQL_RETRIED)) {
+        const retried = req.clone({ context: req.context.set(GQL_RETRIED, true) });
+        return refreshAndReplay(retried, next, auth, http);
+      }
+      return of(event);
+    }),
     catchError((err: HttpErrorResponse) => {
       if (err.status !== 401 || !isApiRequest(req) || isRefreshRequest(req)) {
         return throwError(() => err);
       }
-      return handle401(req, next, auth, http, err);
+      return refreshAndReplay(req, next, auth, http, err);
     }),
   );
 };
 
-function handle401(
+/** Reuse the single in-flight refresh (or start one). On success replay the
+ *  request; on failure the refresh cookie is dead → bounce to /login. */
+function refreshAndReplay(
   req: HttpRequest<unknown>,
   next: HttpHandlerFn,
   auth: AuthService,
   http: HttpClient,
-  err: HttpErrorResponse,
+  err?: HttpErrorResponse,
 ): Observable<HttpEvent<unknown>> {
-  // Reuse the single in-flight refresh (or start one). On success replay the
-  // original request; on failure the refresh cookie is dead → bounce to /login.
   return sharedRefresh(http).pipe(
     take(1),
     switchMap((ok) => (ok ? next(req) : bounceToLogin(auth, err))),
   );
+}
+
+/** True for a {@code /api/graphql} 200 whose body carries a GraphQL
+ *  {@code UNAUTHENTICATED} error (the server's no-valid-caller signal). */
+function isGraphqlAuthError(req: HttpRequest<unknown>, event: HttpEvent<unknown>): boolean {
+  if (!(event instanceof HttpResponse) || !req.url.includes(GRAPHQL_URL)) return false;
+  const body = event.body as { errors?: { extensions?: { code?: string } }[] } | null;
+  return !!body?.errors?.some((e) => e?.extensions?.code === 'UNAUTHENTICATED');
 }
 
 /** POST /api/auth/refresh via HttpClient (so XSRF is attached). Resolves true on success. */
@@ -126,8 +167,8 @@ async function doRefresh(http: HttpClient): Promise<boolean> {
   }
 }
 
-function bounceToLogin(auth: AuthService, err: HttpErrorResponse): Observable<never> {
+function bounceToLogin(auth: AuthService, err?: HttpErrorResponse): Observable<never> {
   auth.identity.set(null);
   auth.redirectToLogin();
-  return throwError(() => err);
+  return throwError(() => err ?? new Error('Authentication required'));
 }

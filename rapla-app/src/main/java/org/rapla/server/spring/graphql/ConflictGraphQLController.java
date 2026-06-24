@@ -84,7 +84,7 @@ public class ConflictGraphQLController
             if (r1 == null || r2 == null || alloc == null) continue;
             if (!pc.canRead(r1, caller)) continue;
             if (!pc.canRead(r2, caller)) continue;
-            if (!pc.canRead(alloc, caller)) continue;
+            if (!rc.canReadAllocatable(alloc)) continue;   // PRD 082 #8 — index membership when flipped, else canRead (§12)
             visible.add(c);
         }
         return visible;

@@ -338,6 +338,30 @@ test: `auth.interceptor.spec.ts` → "recovers when the refresh-owning
 request is torn down mid-refresh". Don't reintroduce a refresh whose
 lifecycle hangs off the request observable.
 
+#### GraphQL auth failures are HTTP 200, not 401 — the interceptor handles both
+
+`/api/graphql` reports an unauthenticated caller as an **HTTP 200** body
+`{ errors: [{ extensions: { code: "UNAUTHENTICATED" } }] }` (GraphQL
+convention — `UnauthenticatedException` → `MutationExceptionResolver`),
+**not** a 401. The endpoint is `permitAll` (public probes like `hello` /
+`me` must stay anonymous), so an expired access-token cookie does not
+produce a 401 there — the resolver just sees a null caller and throws.
+
+A plain 401 interceptor therefore misses a mid-session access-token
+expiry on a GraphQL query: the user clicks a resource, the view query
+returns 200+`UNAUTHENTICATED`, and the SPA shows "Authentication
+required: this query needs a valid bearer token" until a full page
+reload (the reload's `GET /api/auth/me` *does* 401 → refresh → heal).
+
+So `auth.interceptor.ts` also inspects `/api/graphql` 200 responses: a
+body carrying an `UNAUTHENTICATED` error triggers the **same shared
+refresh + replay** as a 401 (one retry, guarded by an `HttpContext`
+token so a still-unauthenticated replay can't loop). Other GraphQL
+errors (e.g. `VIEW_NOT_FOUND`) pass straight through to the view.
+Regression tests: `auth.interceptor.spec.ts` → "on a GraphQL 200 with
+UNAUTHENTICATED error: refreshes once and replays" + "does NOT refresh on
+a non-auth GraphQL error".
+
 ### Swing client — default OAuth, fallback password dialog
 
 `RaplaClientServiceImpl.startLoginInThread()` drives Swing login:
@@ -469,24 +493,30 @@ removed the
 > is the dedicated `/api/auth/impersonate` endpoint with dual-slot client
 > state (PRD 051 + Phase 5 §7).
 >
-> The legacy `?username=...&password=...` request-param branch in
-> `RemoteSessionImpl.extractUser` was dropped as dead — confirmed via audit
-> that nothing in the codebase sends those params for auth. The
-> `?access_token=...` query param + `raplaLoginToken` cookie + `Authorization: Bearer`
-> header branches remain (used by external iCal subscribers + legacy browser
-> session login).
+> The legacy `?username=...&password=...` request-param branch was dropped
+> first; the **entire legacy HMAC-token fallback** (`RemoteSessionImpl` + its
+> `?access_token=` query-param / `raplaLoginToken` cookie / `Authorization: Bearer`
+> branches, plus `TokenHandler`, `SignedToken`, `ValidToken`) was then **removed**
+> once auditing confirmed nothing mints the rapla-custom `userId$signature` HMAC
+> token anymore: its only minter chain (`TokenHandler.generateAccessToken` →
+> `getSignedToken` → `SignedToken.newToken`) was reachable solely from the
+> already-deleted refresh path, the legacy `/api/auth/login` endpoint is gone, the
+> Swing fallback password dialog issues an RSA JWT via the OAuth2 password grant,
+> and external iCal subscribers authenticate via `?user=` + published calendar
+> (`Export2iCalController`/`CalendarPageController`), not via a token.
 
-**Legacy JAX-RS / `raplaLoginToken` cookie — cleanup status.** The pre-Spring-Boot
-JAX-RS `RaplaAuthRestPage` (`@Path("login")`) + its `AuthController`, and the sibling
-`RaplaEventsRestPage` / `RaplaResourcesRestPage` / `RaplaDynamicTypesRestPage`, are
-**all gone** — JAX-RS is fully removed from the reactor (`ApiPrefixArchitectureTest`
-bans any `jakarta.ws.rs.*` import, AGENTS.md §15). The only legacy remnant is
-`RemoteSessionImpl`'s `raplaLoginToken` cookie **read** branch — its own
-`LOGIN_COOKIE` constant, one of the identity-resolution branches alongside the
-`Authorization` header and the URL-embedded `?access_token=` (external iCal
-subscribers). **Nothing in the reactor sets that cookie anymore**, so the branch is
-read-only legacy (a candidate for removal once confirmed no deployed client relies
-on a pre-existing `raplaLoginToken` cookie).
+**Identity is JWT-only.** `SpringSecurityRemoteSession.checkAndGetUser` resolves the
+`JwtAuthenticationToken` that the Spring Security resource-server chain places in the
+`SecurityContext` (a Bearer header, or the `access_token` cookie promoted by
+`CookieToBearerFilter`) through the shared `JwtUserResolver`. When no JWT is present
+the request is unauthenticated — there is no header/cookie/query-param HMAC fallback.
+
+**Legacy JAX-RS — cleanup status.** The pre-Spring-Boot JAX-RS `RaplaAuthRestPage`
+(`@Path("login")`) + its `AuthController`, and the sibling `RaplaEventsRestPage` /
+`RaplaResourcesRestPage` / `RaplaDynamicTypesRestPage`, are **all gone** — JAX-RS is
+fully removed from the reactor (`ApiPrefixArchitectureTest` bans any `jakarta.ws.rs.*`
+import, AGENTS.md §15). A historical `raplaLoginToken` cookie / "refreshToken" API-key
+slot may still exist in old stores but is no longer read by any auth path.
 
 ### Auth endpoint reference
 

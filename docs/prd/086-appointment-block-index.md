@@ -1,15 +1,18 @@
-# PRD 086 — appointment block index (flat in-memory block table, dual-API)
+# PRD 086 — appointment block index (in-memory `IntervalIndex` over blocks, dual-API)
 
-**Status:** draft — 2026-06-24
-**Related:** PRD 082 (storage memory model — provides the H2 read-model + the drift-safe put/remove projection seam this builds on; the appointment-index design was split out of 082 into here), PRD 064 (GraphQL conflicts read API), PRD 079/080 (grouped aggregates / typed-entity stats — `appointmentBlockStats`), PRD 055 (GraphQL events read), `docs/architecture/locking.md`
+**Status:** draft — 2026-06-24 (**pivoted to in-memory** — the H2 design below was built, measured, and lost; see *The H2 detour*)
+**Related:** PRD 082 (storage memory model — the in-memory index catalog + shared `IntervalIndex`/`BucketIndex` kinds + the put/remove maintenance seam this builds on; the H2 pivot is recorded there), PRD 064 (GraphQL conflicts read API), PRD 079/080 (grouped aggregates / typed-entity stats — `appointmentBlockStats`), PRD 055 (GraphQL events read), `docs/architecture/locking.md`
 
-**Split from PRD 082.** The appointment index is the largest and riskiest piece of the storage
-read-path modernization, and — unlike the classification (PRD 087), permission (PRD 083), and search
-(PRD 085) indices, which are GraphQL-only — it is **dual-API**: it sits *below* both the old
-RemoteStorage protocol and the new GraphQL API (both call the same operator query/conflict path). It
-therefore carries a heavier test obligation (the old-API record/replay + brute-force oracle below)
-and gets its own PRD. The shared read-model foundation (H2 engine, projection seam, drift-safety,
-boot rebuild) lives in **PRD 082** and is referenced here, not duplicated.
+**Split from PRD 082, then pivoted from H2 to in-memory.** The appointment index is the largest piece
+of the storage read-path modernization, and — unlike the classification (PRD 087), permission (PRD
+083), and search (PRD 085) indices, which are GraphQL-only — it is **dual-API**: it sits *below* both
+the old RemoteStorage protocol and the new GraphQL API (both call the same operator query/conflict
+path), so it carries the heavier test obligation (the old-API record/replay + brute-force oracle).
+The original design put this in **H2 (in-process SQL)**; that was built, flipped behind a flag, and
+**measured 1.1×–3.7× slower** than the legacy in-memory `appointmentMap` (~91% JDBC boundary cost — see
+*The H2 detour* and PRD 082). The design is therefore an **in-memory `IntervalIndex` over materialized
+blocks** — the shared kind defined in PRD 082's index catalog, instantiated **twice** (one keyed by
+allocatable, one by owner), built on rapla's existing `AppointmentMapClass` structures and lock model.
 
 ## Problem
 
@@ -39,48 +42,66 @@ appointments):
 
 This makes the index design single-appointment-first, with repeating as a small annotated subset.
 
-## The index — a flat block table
+## The index — an in-memory `IntervalIndex` over blocks
 
-In the in-memory engine (H2, per PRD 082). One row = one *block* (a concrete dated occurrence on one
-allocatable), so the single-appointment majority maps 1:1 to a directly query/aggregate-able row.
+A plain Java structure (PRD 082's shared `IntervalIndex` kind), **no database**. One *block* = one
+concrete dated occurrence; the single-appointment majority is 1 block. Per key:
 
-```sql
-appointment_block(
-  block_id        VARCHAR,   -- PK; materialized: appointment_id#occurrenceIdx, rule row: appointment_id#rule
-  appointment_id  VARCHAR,
-  reservation_id  VARCHAR,
-  allocatable_id  VARCHAR,   -- one row per (block × allocated allocatable)
-  owner_id        VARCHAR,
-  start_ts        BIGINT,    -- epoch millis
-  end_ts          BIGINT,    -- exact block end; rule row: maxEnd (∞ → Long.MAX_VALUE)
-  is_rule         BOOLEAN    -- false ⇒ exact block (single OR materialized occurrence);
-                             -- true  ⇒ expand in Java via the RESIDENT AppointmentImpl
-)
-CREATE INDEX ix_block_alloc_time ON appointment_block(allocatable_id, start_ts);  -- the hot index
-CREATE INDEX ix_block_owner_time ON appointment_block(owner_id, start_ts);        -- replaces appointmentUserMap
-CREATE INDEX ix_block_reservation ON appointment_block(reservation_id);           -- maintenance + hydration grouping
+```
+class IntervalIndex<K> {                       // K = allocatableId  OR  userId (two instances)
+  Map<K, NavigableSet<Block>> byStart;         // blocks sorted by start (ConcurrentSkipListSet — lock-free reads)
+  Map<K, Set<Block>>          openEnded;        // the side-set: open-ended / over-cap rule entries
+  volatile long maxBlockDuration;               // capped at threshold D (a few days); high-water-mark
+}
+// Block = (appointment ref, start, end)   — exact concrete interval; no rule data stored
 ```
 
-**No recurrence rule is stored — only `is_rule`.** Under the all-in-memory scope (PRD 082) the
-engine is an **index, not a data store**: the authoritative repeating rule (interval, end/count,
-exceptions) lives in the resident `AppointmentImpl`. A rule row needs only `start_ts`/`end_ts` (the
-envelope, so the range filter selects it) + `is_rule = true`; the Java step calls
-`processBlocks(winStart, winEnd)` on the **real resident object**. The 1-bit flag lets the ~98%
-exact-block fast path emit the row without dereferencing the object. (Storing the rule columns would
-only be needed in the deferred DB-offload future, where expansion runs without a resident object.)
+**Query** `overlapping(key, winStart, winEnd)`:
+```
+candidates = byStart.get(key).subSet(winStart − maxBlockDuration, true, winEnd, false)   // tight two-sided slice
+           ∪ openEnded.get(key)                                                            // always-scanned tail
+→ for exact blocks: the slice IS the answer (no overlaps() call)
+→ for open-ended entries only: appointment.overlaps(winStart,winEnd) recurrence check
+→ dedup blocks → appointments
+```
 
-### Three row kinds (the representation decision)
+This fixes the half-range pathology (the lower bound is now indexed via the `subSet` lower key
+`winStart − maxBlockDuration`, not a per-item scan) **and eliminates the `overlaps()` recurrence call
+for the ~98%+ exact blocks** — recurrence math survives only on the small open-ended side-set. Both
+wins come from materializing bounded recurrences into short concrete blocks (a long *envelope* would
+fall into the side-set; a short *block* stays in the tight slice). Cost: a cheap blocks→appointments
+dedup on the way out (a weekly event can have several blocks in a wide window → one appointment).
 
-| Data | Rows | `is_rule` |
-|---|---|---|
-| Single appointment (~98%) | 1 block row, `start/end` = the block | false |
-| Bounded repeating ≤ 52 | N **materialized** block rows | false |
-| Open-ended / > 52 repeating | 1 **rule row**, `end_ts = maxEnd/∞` | true |
+**Two instances, shared class (locked 2026-06-24):** `IntervalIndex<allocatableId>` replaces
+`appointmentMap`, `IntervalIndex<userId>` replaces `appointmentUserMap`. Blocks are the *same objects*
+referenced from both (reference-shared, not copied), so two instances cost no extra memory; the
+separation keeps the keys type-clear, the maintenance explicit, and lets the user index hold
+owned-but-unbooked appointments the allocatable index never has.
+
+**`maxBlockDuration` + the side-set (the tightness guarantee).** Pick a cutoff `D` (≈ 7–14 days, generous
+vs the hours-to-a-day norm). Any block with `end − start > D`, or any open-ended appointment
+(`maxEnd == null`), goes to the **side-set** and is *excluded* from `maxBlockDuration` — so
+`maxBlockDuration ≤ D` by construction and the `subSet` lower bound stays tight regardless of a few long
+bookings. Track it as a **high-water mark capped at `D`** (never recomputed on remove — correct because
+the bound may be looser by ≤ `D` but never narrower than the true max).
+
+**No recurrence rule is stored** — the index holds concrete block intervals + appointment references;
+the authoritative `Repeating` lives in the resident `AppointmentImpl`, used only for the side-set's
+`overlaps()`/`processBlocks` expansion. (Materializing into Java blocks is cheap — `createBlocks` — and
+was never the slow part; the slow part was the H2 round-trip, now gone.)
+
+### Three block kinds (the representation decision)
+
+| Data | In the index |
+|---|---|
+| Single appointment (~98%) | 1 block in `byStart`, `start/end` = the block |
+| Bounded repeating ≤ 52 | N **materialized** blocks in `byStart` |
+| Open-ended / > 52 repeating | 1 entry in the **side-set** (`maxEnd`, ∞ → always a candidate) |
 
 Rationale: singles are already blocks (materialization is scoped to the ~2% repeating set); bounded
-repeatings are tiny so materializing them costs a handful of rows each; the open-ended fraction
-forces a Java expansion path to exist regardless, so the choice is "materialize everything bounded,
-keep the rule path for the irreducible open-ended tail."
+repeatings are tiny so materializing costs a handful of blocks each and keeps them in the tight slice;
+the open-ended tail forces a Java expansion path regardless → the side-set. Single-appointment-first,
+repeating as a small annotated subset.
 
 **The cap = 52 (locked).** Materialize iff total occurrences ≤ **52**; above it, or open-ended, keep a
 rule row. 52 is chosen as **one year of a weekly repeating** — the dominant recurrence frequency — so
@@ -92,28 +113,25 @@ frequency.
 
 ## Why materialize the bounded ones — the index-exact slot filter
 
-Both hot paths are the same range query:
+Both hot paths are the same in-memory slice: `byStart.subSet(winStart − maxBlockDuration, winEnd)`
+filtered to overlap — for reads (what's booked in the window) and for conflict (existing blocks
+overlapping a new block's slot on the same allocatable).
 
-```sql
--- "what is booked" / week render:
-WHERE allocatable_id IN (:scope) AND start_ts < :winEnd AND end_ts > :winStart
--- conflict for one new block:
-WHERE allocatable_id IN (:newAllocs) AND start_ts < :blockEnd AND end_ts > :blockStart AND reservation_id <> :self
-```
-
-On a *materialized* block the range index is selective on the **real occurrence**: a reservation
-whose blocks fall in other slots is excluded by the b-tree and never touched — result cardinality ≈
+On a *materialized* block the slice is selective on the **real occurrence**: a reservation whose
+blocks fall in other slots is below the `subSet` lower key and never touched — candidate cardinality ≈
 *what is actually booked in the window*, independent of dataset size or how many long-running series
-exist. A *rule row*'s envelope `[start, maxEnd]` overlaps every window, so rule-only would
-re-select and Java-expand every long/open-ended series on every query (cost ∝ resident long-running
-series — the same missing-lower-bound tax the current `SortedSet` pays).
+exist. A *rule entry*'s envelope `[start, maxEnd]` overlaps every future window, so envelope-only would
+re-scan and Java-expand every long/open-ended series on every query (cost ∝ resident long-running
+series — the same missing-lower-bound tax the current start-only `SortedSet` pays).
 
-- **Tight two-sided start range.** Materialized block durations are bounded (a session), so a block
-  overlaps `[winStart, winEnd]` only if `start_ts > winStart − maxBlockDuration` → a tight
-  `start_ts BETWEEN winStart−maxDur AND winEnd`. Only the few rule rows break this.
-- **Index-exact even on the collector.** A window query on the tens-of-thousands collector returns
-  only that window's blocks (small k), not the whole collector — the lower bound the `SortedSet`
-  lacks. (Caveat: a *wide* window over the collector is genuinely large → push aggregation into SQL.)
+- **Tight two-sided slice.** Materialized block durations are bounded (≤ `D`), so a block overlaps
+  `[winStart, winEnd]` only if its start is in `(winStart − maxBlockDuration, winEnd)` — exactly the
+  `subSet` bounds. Only the few open-ended entries break this, and they live in the always-scanned
+  side-set.
+- **Slice-exact even on the collector.** A window query on the tens-of-thousands collector touches
+  only that window's blocks (small k), not the whole collector — the lower bound the start-only
+  `SortedSet` lacks. (A genuinely *wide* window over a collector is large by nature → that's the
+  aggregation case, served by counting over the same index — index #4 in PRD 082's catalog.)
 
 ## Dual-API: the same operator path serves both surfaces
 
@@ -139,10 +157,90 @@ iterates an allocatable's full `SortedSet` with pairwise recurrence-aware overla
   almost always single-vs-single (trivial overlap); the recurrence-vs-recurrence path
   (`overlapsAppointment` / period-LCM math — the most bug-prone code) is reached only when a series
   hits the same narrow slot.
-- For materialized blocks, conflict reduces to a SQL range lookup over discrete blocks. For
-  `is_rule` rows (and pairs involving them), the existing Java `processBlocks` precise-overlap runs
-  on the narrowed candidates. The boundary: **engine narrows + serves the exact-block majority; Java
-  computes precise overlap only on the rule tail** (PRD 082 MQ8).
+- For materialized blocks, conflict reduces to a `subSet` slice over discrete blocks. For open-ended
+  side-set entries (and pairs involving them), the existing Java `processBlocks`/`overlapsAppointment`
+  precise-overlap runs on the narrowed candidates. The boundary: **the slice narrows + serves the
+  exact-block majority; Java computes precise overlap only on the open-ended tail** (PRD 082 MQ8).
+
+## Window-first global read (full-admin unscoped) — LOCKED 2026-06-24, shipped
+
+The per-allocatable `IntervalIndex` accelerates **scoped** window reads (building-`idIn` 1y: 23 → 12 ms).
+But it is queried **per key (allocatable)**; the **unscoped** path (`reservations()` else-branch) hands
+all ~48k allocatables to `queryAppointmentsSync`, so the loop runs ~48k times. Measured (admin, unscoped):
+~900–1040 ms with **flat window-scaling** (1d ≈ 1y) — the cost is the allocatable iteration, not the
+window. `overlapping(key, win)` needs a key; there was no global "all appointments in the window" query.
+
+**Routing v1 (LOCKED):**
+
+| Caller | Scope | Plan |
+|---|---|---|
+| any | explicit (resource/group) | **resource-first** (per-allocatable index) |
+| **Full admin** (`isAdmin()`) | none | **window-first** (global index) |
+| Non-admin (incl. group-admin) | none | **resource-first** over the readable set |
+
+- **Window-first hits only full admins.** Because `canRead` short-circuits to "everything" for a full
+  admin, the global read is **filter-free** — no §12 post-filter, no leak risk, no filter cost. The gate
+  is exactly the `canRead` short-circuit condition (`isAdmin()`), **not** group-admin (`canAdminUsers`) —
+  a group-admin does not see everything → resource-first.
+- **v2 (cost-based planner: `min(|scope|, |window-hits|)`)** stays **deferred** — only needed if
+  broadly-visible non-admins run unscoped/large-group queries that measure slow.
+
+**Global index — singleton key, NO change to `IntervalIndex`.** `overlapping(K key, …)` is key-generic ⇒
+the global read is a second instance under one `GLOBAL` key (`IntervalIndex<Object,Appointment>`), so
+`overlapping(GLOBAL, win)` is the global window query, **O(log N + k)**, no allocatable iteration.
+
+**Maintenance — one derivation, one extra entry per appointment.** The global index is maintained in the
+same `AppointmentMapClass.updateReservation` seam as the per-allocatable/owner indices. It holds each
+appointment **bound to ≥1 allocatable exactly once** (a per-reservation `globalFiledByReservation` record
+drives precise remove-old/add-new) — which **matches the legacy unscoped read** (it iterates allocatables
+and so never returns an allocatable-less appointment). Footprint: +1 global entry per bound appointment.
+
+**Side-set is uncritical** (dhbw data): ~5% of appointments repeat but are **expanded** (≤52) into
+bounded-short skip-list entries (fast path), not the side-set. Side-set = only open-ended (<20% of the 5%)
+≈ ~1% — a sub-ms scan per global query. Correctness: the ~99% expanded/single occurrences are **exact**;
+only the ~1% open-ended are coarse candidates (forward-infinite), re-checked precisely by the same
+`AppointmentImpl.getAppointments` window filter the resource-first path uses. Index narrows, never gates (D5).
+
+**Controller branch** (`ReservationGraphQLController.reservations()`, unscoped else-branch): full-admin +
+flip → `operator.reservationsInWindowGlobal(from, to)` (one global lookup, no `getAllocatables(null)` +
+`canRead`×48k + per-allocatable loop); else resource-first over the readable set.
+
+**Status (2026-06-24):** shipped behind `rapla.readmodel.authoritative`. Tier-1 `IntervalIndexTest`
+singleton-key test green; tier-3 `ReservationWindowFirstFlipTest` proves admin-unscoped window-first ==
+legacy resource-first (id-set identical) on the real operator; 305 rapla-server fast-lane green.
+**Open verification:** can a non-admin trigger an unscoped query from the UI? If no (UI always scopes),
+resource-first over the explicit scope is complete and the permission-index path stays optional for it.
+
+## Binding semantics (Phase-0 finding) — the index ≠ `getAllocatablesFor`
+
+A non-obvious domain fact surfaced building the Phase-0 oracle: the `appointmentMap` binding
+(`AppointmentMapClass.updateReservation`, which `queryAppointmentsSync` exposes) is **not** reproduced
+by `Reservation.getAllocatablesFor(appointment)`. The map binds via `getIds("resources")` **plus the
+template-alloc annotation** (`KEY_TEMPLATE` → an allocatable id, bound to *all* the reservation's
+appointments) and uses `getRestrictionForAllocatableRef`; `getAllocatablesFor` uses
+`getRestrictionPrivate` and omits the template alloc. They legitimately disagree on template/restriction
+edge cases. **Consequence for 086:** the new range index must preserve the *appointmentMap* binding
+relation, not the `getAllocatablesFor` one — so the Phase-0 differential oracle is built as a
+**windowing-invariance** check (all-time index bindings, filtered by plain-Java `overlaps()`), which
+isolates the range logic the index actually changes and leaves the (settled, quirky) binding relation
+to record/replay + the shadow map.
+
+## Two implementation findings (Phase 3 build, 2026-06-24)
+
+- **`block_id` is namespaced by allocatable, not just occurrence.** One appointment binds *multiple*
+  allocatables → one block row per (occurrence × allocatable). The PK is therefore
+  `appointmentId@allocatableId#occurrenceIdx` (rule row: `…@allocatableId#rule`), not the
+  `appointmentId#idx` the schema sketch implied — otherwise the PK collides across allocatables.
+- **The read path expands belongs-to/dependent references; the projection stays raw.** `getAppointments(Allocatable)`
+  (what `queryAppointments` consumes) expands the raw `appointmentMap` binding through belongs-to /
+  allocatable-attribute references (`cache.getDependentRef`): an appointment booked on resource X also
+  surfaces under resources that *depend on* X (packages, belongs-to parents, allocatable-typed
+  attributes pointing at X). The block projection stores the **raw** `updateReservation` binding (one
+  row per directly-allocated allocatable); the **read/shadow path must expand the query scope via
+  `getDependent(...)`** before hitting the block table, exactly as `getAppointments` does. Keeping the
+  expansion at read-time (not baked into the stored rows) mirrors the legacy structure and avoids
+  fan-out in the table. This is why the Phase-0 oracle and the Phase-3 equivalence test both expand
+  scope through `getDependent` before comparing.
 
 ## Open-ended rule-row handling
 
@@ -170,23 +268,49 @@ exists:
    never do this for an open-ended series; the rule row sidesteps it by always deferring to Java.
    (OQ3's exception question applies only to *materialized* blocks, never to rule rows.)
 
-Maintenance: on a put, recompute `is_rule` — if a series crosses the 52 boundary or flips
-open-ended↔bounded, `DELETE WHERE appointment_id=?` and re-project (materialize ≤ 52 or write one rule
-row). The Java-correction path is the part most likely to drift, so it is exactly what the shadow
-`appointmentMap` validates during Stage X/Y.
+Maintenance: on a put, re-evaluate the kind — if a series crosses the 52 boundary or flips
+open-ended↔bounded, remove the appointment's old blocks and re-insert (materialize ≤ 52 into `byStart`,
+or one entry in the side-set). The side-set's Java-overlap path is the part most likely to drift, so it
+is exactly what the shadow `appointmentMap` validates during Stage X/Y.
 
 ## Aggregation
 
-`appointmentBlockStats` block counts are exact `COUNT`/`GROUP BY` for every `is_rule=false` row
-(singles + materialized) — ~98%+ of blocks; a small Java correction expands only the rule tail.
+`appointmentBlockStats` counts are exact in-memory `count`/`group` over the materialized blocks (the
+non-side-set entries — ~98%+); a small Java correction expands only the open-ended side-set tail.
 
-## Maintenance (drift-safe, per the PRD 082 foundation)
+## Maintenance (drift-safe, at the PRD 082 seam)
 
-At the put/remove/refresh seam (the same chokepoint that maintains the existing cache structures, for
-local *and* cross-pod changes), a changed appointment's rows are regenerated idempotently
-(`DELETE WHERE appointment_id=?` + re-`project`, re-materializing ≤ cap occurrences or writing one
-rule row). Pure projection: rebuilt at boot from the loaded objects; drop-and-rebuildable. The
-property invariant `index == project(objects)` (PRD 082) covers it.
+At the put/remove/refresh seam (the same `updateReservation` chokepoint that maintains the existing
+cache structures, for local *and* cross-pod changes), a changed appointment's blocks are regenerated
+idempotently: **remove the appointment's old blocks from both `IntervalIndex` instances (allocatable +
+owner), then re-insert** — materialize ≤ cap occurrences into `byStart`, or place one entry in the
+side-set. Pure projection: rebuilt at boot from the loaded objects; drop-and-rebuildable. The invariant
+`index == project(objects)` (PRD 082) covers it. (Removal locates the appointment's blocks by
+regenerating them via `createBlocks` or by an appointment→blocks back-reference — an in-memory detail,
+no `DELETE WHERE` / SQL maintenance-key concern.)
+
+## The H2 detour (built, measured, lost, **deleted** — 2026-06-24)
+
+> **Deleted from the codebase 2026-06-24.** The in-memory `IntervalIndex` (two instances, allocatable +
+> owner) is now wired into `AppointmentMapClass.updateReservation` and the `queryAppointments`/conflict
+> read paths flip behind `rapla.readmodel.authoritative`; the H2 `ReadModel`/`Projection`/projections/
+> `blockDerived*`/`shadowCompare*` and the H2 dependency are gone. Equivalence is proven by
+> `ReadModelReadFlipEquivalenceTest` (window + owner + conflict, reservations stored post-boot) and
+> `ReadModelFlipDifferentialTest`; 304 rapla-server fast-lane tests green. See PRD 082 *Components built → wired*.
+> The H2 narrative below is kept for the rationale record.
+
+This index was first built in **H2 (in-process SQL)** exactly per the Migration/Shadow/Test plan below,
+flipped behind the `rapla.readmodel.authoritative` flag. It **lost**: 1.1×–3.7× slower than the legacy
+in-memory `appointmentMap` across the whole scope×window matrix on the real store, ~91% of the path
+being the JDBC boundary (`executeQuery` + row rehydration); batching made it worse. **Why it can't win:**
+the `appointmentMap` is an *already-resident in-memory* structure — crossing a SQL boundary on every
+read is strictly more work than a better in-memory data structure. So the design pivoted to the
+in-memory `IntervalIndex` above. **What carries over verbatim:** the maintenance seam, the
+differential/shadow methodology, the brute-force oracle + record/replay tests, and the
+binding/dependent-expansion correctness — all reusable for the in-memory version. Full numbers + the
+shadow/flip findings: **PRD 082 Phases 3, 4a, 4b-ii**. The sections below are that plan; read
+"H2 block table" → "in-memory `IntervalIndex`" and "SQL range query" → "`subSet` slice", everything
+else (Stage X/Y, shadow-compare, the test layers) applies unchanged to the in-memory index.
 
 ## Migration — Stage X → Stage Y
 
@@ -234,7 +358,7 @@ agrees before trusting it. Removed only after everything is proven.
 
 ## Test strategy
 
-Two complementary layers, both **in dhbwrapla** (where the real local store lives), in-process via
+Two complementary layers, both **in the plugin-deployment repo** (where the real local store lives), in-process via
 the facade/operator — **no GraphQL, no HTTP, no server lifecycle** (the old RemoteStorage protocol
 delegates to the same operator methods, so testing the operator in-process tests that surface too):
 
@@ -278,7 +402,7 @@ safe to commit. (A `DBOperator`-on-hsqldb-copy variant — the exact server back
 
 ## Plan
 
-- **Phase 0** — build the Layer-1 brute-force harness in dhbwrapla; green against today's operator
+- **Phase 0** — build the Layer-1 brute-force harness in the plugin-deployment repo; green against today's operator
   (proves the harness). Capture the Layer-2 baseline snapshot + golden recorder.
 - **Phase 0.5** — H2 validation experiment (throwaway JMH: range query + sync write-through vs
   TreeSet at real density) → confirms the engine bet before the foundation build (PRD 082).
@@ -292,7 +416,7 @@ safe to commit. (A `DBOperator`-on-hsqldb-copy variant — the exact server back
 
 ## Tests
 
-- Layer 1 brute-force oracle (Phase 0, dhbwrapla) — query equivalence on real data.
+- Layer 1 brute-force oracle (Phase 0, the plugin-deployment repo) — query equivalence on real data.
 - Layer 2 record/replay (Phase 0/1) — behavioral + persisted-data parity across the migration.
 - Stage-Y differential oracle — engine conflict sets == `appointmentMap` conflict sets over a
   generated corpus.

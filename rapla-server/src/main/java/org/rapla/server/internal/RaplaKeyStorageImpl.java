@@ -116,7 +116,7 @@ public class RaplaKeyStorageImpl implements RaplaKeyStorage
         String raw = facade.getPreferences(user).getEntryAsString(APIKEY, null);
         if (raw == null || raw.isEmpty()) return new LinkedHashMap<>();
         // Legacy single-slot value (a bare JWT string, not JSON) — promote to
-        // the "refreshToken" slot so TokenHandler's read path keeps working.
+        // the "refreshToken" slot so older stored keys remain readable.
         if (!raw.startsWith("{"))
         {
             Map<String, String> legacy = new LinkedHashMap<>();

@@ -1,5 +1,12 @@
 # PRD 036: External IdP OAuth 2.0 Login (Microsoft Entra ID + Google)
 
+> **Update 2026-06-24 — legacy HMAC token path removed.** The `AuthController` /
+> `TokenHandler` integration points referenced below no longer exist: `TokenHandler`,
+> `SignedToken`/`ValidToken`, and `RemoteSessionImpl` were deleted. Inbound external-IdP
+> JWT validation/dispatch lives entirely in `JwtConfig`/`IssuerAwareJwtDecoder` +
+> `JwtUserResolver`/`ExternalUserResolver` (the `iss`-dispatch this PRD describes), not in
+> `TokenHandler`. Mentions of `TokenHandler` below are historical.
+
 **Status:** in-progress
 **Date:** 2026-05-14
 

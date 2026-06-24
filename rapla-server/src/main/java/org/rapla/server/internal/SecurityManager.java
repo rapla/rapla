@@ -241,8 +241,24 @@ import java.time.LocalDateTime;
             checkPermissions(user, reservation, originalReservation, all);
         }
 
-        // FIXME check if permissions are changed and user has admin priviliges 
-
+        // Changing the access-control list of a Category/Allocatable requires
+        // admin (canAdmin) on the entity, not mere modify: a non-admin with an
+        // EDIT grant passed the canModify check above, but must not be able to
+        // escalate by rewriting permissions (e.g. granting themselves ADMIN).
+        // DynamicTypes are excluded — they are already fully admin-gated, so a
+        // non-admin never reaches this point for one.
+        if ((entity instanceof Allocatable || entity instanceof Category)
+                && original instanceof PermissionContainer)
+        {
+            boolean permissionsChanged = PermissionContainer.Util.differs(
+                    ((PermissionContainer) original).getPermissionList(),
+                    ((PermissionContainer) entity).getPermissionList());
+            if (permissionsChanged && !permissionController.canAdmin(original, user))
+            {
+                throw new RaplaSecurityException(
+                        i18n.format("error.admin_not_allowed", user.toString(), entity.toString()));
+            }
+        }
     }
 
     private void checkCanAdminGroups(Collection<Category> groups, final Collection<Category> groupsToAdmin, User user) throws RaplaSecurityException

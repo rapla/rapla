@@ -19,10 +19,8 @@ import org.rapla.server.internal.DefaultUserProvisioner;
 import org.rapla.server.internal.RaplaAuthentificationService;
 import org.rapla.server.internal.RaplaKeyStorageImpl;
 import org.rapla.server.internal.ReloadService;
-import org.rapla.server.internal.RemoteSessionImpl;
 import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.server.internal.ServerStorageSelector;
-import org.rapla.server.internal.TokenHandler;
 import org.rapla.storage.CachableStorageOperator;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
@@ -87,15 +85,8 @@ public class ServerServiceConfig
     }
 
     @Bean
-    public TokenHandler tokenHandler(RaplaKeyStorage keyStorage, CachableStorageOperator operator) throws RaplaInitializationException
-    {
-        return new TokenHandler(keyStorage, operator);
-    }
-
-    @Bean
     public RaplaAuthentificationService raplaAuthentificationService(
             RaplaResources i18n,
-            TokenHandler tokenHandler,
             CachableStorageOperator operator,
             UserProvisioner userProvisioner,
             ObjectProvider<AuthenticationStore> authenticationStoreProvider,
@@ -112,7 +103,7 @@ public class ServerServiceConfig
         // is active per server (vanilla rapla has none; dhbwrapla NTLM, rapla
         // legacy JNDI/LDAP, or a future Keycloak adapter each register one).
         // See AuthenticationStoreInjectionTest for the regression check.
-        return new RaplaAuthentificationService(i18n, tokenHandler, operator,
+        return new RaplaAuthentificationService(i18n, operator,
                 userProvisioner,
                 authenticationStoreProvider.getIfAvailable(), passwordCheckDisabled);
     }
@@ -157,15 +148,12 @@ public class ServerServiceConfig
     }
 
     @Bean
-    public RemoteSession remoteSession(TokenHandler tokenHandler,
-                                        org.rapla.server.spring.JwtUserResolver jwtUserResolver)
+    public RemoteSession remoteSession(org.rapla.server.spring.JwtUserResolver jwtUserResolver)
     {
-        // PRD 029 Phase 5 (2026-05-25): RaplaAuthentificationService no longer
-        // injected here — the legacy session's username/password request-param
-        // branch (which was the only consumer) is gone. The fallback now only
-        // handles Bearer header / ?access_token= / raplaLoginToken cookie.
-        RemoteSession legacy = new RemoteSessionImpl(tokenHandler);
-        return new org.rapla.server.spring.SpringSecurityRemoteSession(legacy, jwtUserResolver);
+        // Identity comes solely from the Spring Security JWT (Bearer header or
+        // access_token cookie). The legacy HMAC-token fallback was removed once
+        // every auth flow moved to RSA JWTs via the OAuth2 Authorization Server.
+        return new org.rapla.server.spring.SpringSecurityRemoteSession(jwtUserResolver);
     }
 
     @Bean

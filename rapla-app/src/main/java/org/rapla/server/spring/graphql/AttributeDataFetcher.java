@@ -188,8 +188,8 @@ final class AttributeDataFetcher implements LightDataFetcher<Object>
         DataFetchingEnvironment env = envSupplier.get();
         RequestContextInstrumentation.RequestCtx rc =
                 RequestContextInstrumentation.from(env.getGraphQlContext());
-        if (rc.caller() == null || rc.permissionController() == null) return false;
-        return rc.permissionController().canRead(a, rc.caller());
+        // PRD 082 #8 — index membership when flipped, else canRead (identical result, §12).
+        return rc.canReadAllocatable(a);
     }
 
     private static boolean isMultiSelect(Attribute attr)

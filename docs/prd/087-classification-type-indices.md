@@ -246,7 +246,12 @@ Both 3a/3b sit after 086/083 in the 082 build order.
 
 - **OQ1 — resolved.** **(b) H2 read-model.** Class 1 lives on the H2 projection (not the in-memory
   `LocalCache` map) so it is the genuine foundation-validation first consumer — exercises the put/remove
-  seam end-to-end before 086 commits to it.
+  seam end-to-end before 086 commits to it. **Placement (Stage A, PRD 082):** the H2 read-model is in
+  **rapla-server**; `getAllocatables` is in rapla-core (`AbstractCachableOperator:434`). Consume via a
+  **`LocalAbstractCachableOperator` override** of `getAllocatables` (rapla-server subclass) that
+  consults the type-bucket and falls back to `super`'s scan — rapla-core stays H2-free. The reservation
+  bucket is consumed in the GraphQL `reservations()` path (rapla-app) which already resolves a scoped
+  set; `buildStorageFilter` (rapla-app) is extended for `typeKeyIn`/B′.
 - **OQ2** — Frequency of `typeKeyIn` vs `typeKeyEq` vs `idIn` in real SPA traffic (determines whether
   the multi-type union — the biggest win — is actually exercised).
 - **OQ3** — Class-2 budget policy: LRU size / promotion threshold; H2's JSON indexing is weaker than

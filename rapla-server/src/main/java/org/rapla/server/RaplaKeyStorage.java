@@ -19,8 +19,8 @@ public interface RaplaKeyStorage {
      * overwrites the previous value.
      *
      * <p>Used by PRD 043's asymmetric flow ({@code clientId} = RFC 7638
-     * thumbprint, value = signed JWT) and by the legacy
-     * {@code TokenHandler.refresh} path ({@code clientId} = "refreshToken").
+     * thumbprint, value = signed JWT). A historical {@code clientId} =
+     * "refreshToken" slot may still exist in older stores (read-only legacy).
      */
     void storeAPIKey(User user, String clientId, String apiKey) throws RaplaException;
 

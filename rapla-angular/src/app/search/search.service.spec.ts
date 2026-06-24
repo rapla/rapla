@@ -105,7 +105,7 @@ describe('SearchService', () => {
     expect(groups[0].results[0]).toMatchObject({
       kind: 'event',
       label: 'Mathe 1',
-      actions: ['navigate', 'filter-add', 'edit'],
+      actions: ['navigate', 'edit'],
     });
   });
 

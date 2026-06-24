@@ -12,6 +12,9 @@ import type { ViewInput } from '../views/view-inputs';
  * existing {@code auth.interceptor} handles 401→refresh→replay. No Apollo.
  */
 
+/** Mirrors the server {@code ViewRenderMode} enum — the set of modes a view can switch between. */
+export type ViewRenderMode = 'table' | 'week' | 'month' | 'day' | 'program';
+
 /** A single GraphQL error entry (per the spec's {@code errors[]} shape). */
 export interface GqlError {
   message: string;
@@ -69,6 +72,12 @@ export interface ViewMeta {
   groupFormat?: string;
   /** PRD 074 — input-control metadata (date-range anchor/offset defaults). */
   inputs?: ViewInput[];
+  /** Singular|plural label for the row count line, e.g. "Termin|Termine". Falls back to "Eintrag|Einträge". */
+  rowLabel?: string;
+  /** Singular|plural label for the group count, e.g. "Tag|Tage". When set, a secondary "· N Tag(e)" is shown. */
+  groupLabel?: string;
+  /** Render modes supported by this view — mirrors the server {@code ViewRenderMode} enum. Default: {@code ["table"]}. */
+  renderModes?: ViewRenderMode[];
   /** The operation's variable signature — the type-driven binding contract. */
   variables?: ViewVariable[];
 }

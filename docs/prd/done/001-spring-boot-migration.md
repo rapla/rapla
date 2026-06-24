@@ -1,5 +1,14 @@
 # PRD 001: Spring Boot Migration
 
+> **Update 2026-06-24 — legacy HMAC token path finally removed.** This PRD's design
+> target ("`TokenHandler` + `SignedToken` — deleted; JWT-only") was only partly carried
+> out during the migration: the `TokenHandler`/`SignedToken`/`ValidToken` classes and
+> the `RemoteSessionImpl` fallback actually survived as a wired-but-vestigial HMAC path
+> (the `@Bean TokenHandler`, the `remoteSession(...TokenHandler...)` wiring, and
+> `SpringSecurityRemoteSession`'s delegate-to-legacy branch described below). They were
+> deleted on 2026-06-24 once auditing confirmed nothing mints the `userId$signature`
+> token. Auth is now genuinely JWT-only — the bean-wiring snapshots below are historical.
+
 **Status:** done — **Phases 1–9 all complete** as of 2026-05-08. Phase 9 step 2 (Gson removal) shipped end-to-end alongside the Jackson 2 → Jackson 3 cutover under [PRD 011](../011-spring-boot-4-jackson-3.md): `gson` dep dropped from rapla-bom; `HTTPWithJsonConnector`, `HTTPWithJsonMailConnector`, `MailapiClient`, `JacksonMergePatch`, `RestAPIExample` migrated to Jackson; reactor `mvn test` green on Spring Boot 4.0.6 + Jackson 3.1.2. Phase 4 (client DI) completed via [PRD 002](002-swing-spring-di.md). Verified 2026-05-08: zero `gson` in dep tree, zero `gson` imports in source, zero `gson` references in any pom file.
 **Date:** 2026-05-06 (initial); 2026-05-08 (Phase 9 + Spring Boot 4 / Jackson 3 follow-on)
 

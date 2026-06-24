@@ -50,10 +50,11 @@ const KIND_MAP: Record<string, SearchResultKind> = {
   SAVED_VIEW: 'savedView',
 };
 
-/** Default action buttons per kind — the omnibox renders these. */
+/** Default action buttons per kind — the omnibox renders these. Events drop
+ *  {@code filter-add} ("+") for now. */
 const ACTIONS: Record<SearchResultKind, SearchAction[]> = {
   resource: ['filter-replace', 'filter-add'],
-  event: ['navigate', 'filter-add', 'edit'],
+  event: ['navigate', 'edit'],
   occurrence: ['navigate', 'edit'],
   group: ['load-group'],
   savedView: ['navigate'],

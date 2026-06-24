@@ -19,7 +19,6 @@ public class RaplaAuthentificationService
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(RaplaAuthentificationService.class);
     final RaplaResources i18n;
-    final TokenHandler tokenHandler;
     /** At most one external auth source — dhbwrapla NTLM, rapla JNDI/LDAP, or
      *  similar plugin. Vanilla rapla has none, so this is {@code null} and
      *  authentication falls through to the local-DB path. Multiple
@@ -41,24 +40,16 @@ public class RaplaAuthentificationService
     private final boolean passwordCheckDisabled;
 
     public RaplaAuthentificationService(RaplaResources i18n,
-                                        TokenHandler tokenHandler,
                                         CachableStorageOperator operator,
                                         UserProvisioner userProvisioner,
                                         AuthenticationStore authenticationStore,
                                         @org.springframework.beans.factory.annotation.Value("${rapla.password-check-disabled:false}") boolean passwordCheckDisabled)
     {
         this.i18n = i18n;
-        this.tokenHandler = tokenHandler;
         this.operator = operator;
         this.userProvisioner = userProvisioner;
         this.authenticationStore = authenticationStore;
         this.passwordCheckDisabled = passwordCheckDisabled;
-    }
-
-    protected User getValidUser(final RemoteSession session, HttpServletRequest request) throws RaplaSecurityException
-    {
-        User user = session.checkAndGetUser(request);
-        return user;
     }
 
     public User getUserFromCredentials(LoginCredentials credentials) throws RaplaException

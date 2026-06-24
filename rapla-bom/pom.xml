@@ -21,6 +21,7 @@
         <commons-io.version>2.14.0</commons-io.version>
 		<commons-codec.version>1.14</commons-codec.version>
 		<hsqldb.version>2.7.1</hsqldb.version>
+		<h2.version>2.3.232</h2.version>
 		<postgresql.version>9.1-901-1.jdbc4</postgresql.version>
 		<mysql.version>8.0.28</mysql.version>
 
@@ -341,6 +342,11 @@
 				<artifactId>hsqldb</artifactId>
 				<version>${hsqldb.version}</version>
 				<classifier>jdk8</classifier>
+			</dependency>
+			<dependency>
+				<groupId>com.h2database</groupId>
+				<artifactId>h2</artifactId>
+				<version>${h2.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>mysql</groupId>

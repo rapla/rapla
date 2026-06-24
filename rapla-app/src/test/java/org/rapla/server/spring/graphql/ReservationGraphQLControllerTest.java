@@ -1399,6 +1399,32 @@ class ReservationGraphQLControllerTest
     }
 
     /**
+     * PRD 074 — the per-view window seed: {@code @view(fromAnchor/fromOffset/toAnchor/toOffset)}
+     * sets the DATE_RANGE inputs so a week view can anchor on Monday (WEEK_START + 0 … + 7)
+     * instead of the default TODAY ±7d window.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void viewWindowAnchorFromDirective() throws Exception
+    {
+        String query = """
+                query Wochenplan($filter: ReservationFilter! = { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00", limit: 1 })
+                  @view(title: "Wochenplan", fromAnchor: WEEK_START, fromOffset: 0, toAnchor: WEEK_START, toOffset: 7) {
+                  appointmentBlocks(filter: $filter) { start }
+                }
+                """;
+        mockMvc.perform(post("/api/graphql").contentType(MediaType.APPLICATION_JSON).content(gqlBody(query)))
+                .andExpect(jsonPath("$.extensions.view.inputs[?(@.control=='DATE_RANGE_START')].default.anchor")
+                        .value(hasItem("WEEK_START")))
+                .andExpect(jsonPath("$.extensions.view.inputs[?(@.control=='DATE_RANGE_START')].default.offset")
+                        .value(hasItem(0)))
+                .andExpect(jsonPath("$.extensions.view.inputs[?(@.control=='DATE_RANGE_END')].default.anchor")
+                        .value(hasItem("WEEK_START")))
+                .andExpect(jsonPath("$.extensions.view.inputs[?(@.control=='DATE_RANGE_END')].default.offset")
+                        .value(hasItem(7)));
+    }
+
+    /**
      * PRD 074 — @column(order:) sorts the emitted column descriptors so the GUI can
      * render them left-to-right without re-sorting. Columns without order keep their
      * declaration index as the sort key (an explicit order slots into that position).

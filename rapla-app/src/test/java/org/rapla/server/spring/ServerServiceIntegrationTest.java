@@ -8,7 +8,6 @@ import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.internal.RaplaAuthentificationService;
-import org.rapla.server.internal.TokenHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -54,9 +53,6 @@ class ServerServiceIntegrationTest
     RaplaKeyStorage raplaKeyStorage;
 
     @Autowired
-    TokenHandler tokenHandler;
-
-    @Autowired
     RaplaAuthentificationService raplaAuthentificationService;
 
     @Autowired
@@ -72,7 +68,6 @@ class ServerServiceIntegrationTest
     void authChainResolves()
     {
         assertNotNull(raplaKeyStorage);
-        assertNotNull(tokenHandler);
         assertNotNull(raplaAuthentificationService);
         assertNotNull(remoteSession);
     }

@@ -59,9 +59,6 @@ public class OidcLoginSuccessHandler extends SavedRequestAwareAuthenticationSucc
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(OidcLoginSuccessHandler.class);
 
-    /** Phase 1 cookie name. Phase 2 consumes it for the reactive-401 refresh. */
-    public static final String ACCESS_TOKEN_COOKIE = "access_token";
-
     private final ExternalProvidersProperties externalProviders;
     private final ExternalUserResolver externalUserResolver;
     private final UserProvisioner userProvisioner;

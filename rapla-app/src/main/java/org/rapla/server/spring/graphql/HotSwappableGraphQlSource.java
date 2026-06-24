@@ -140,7 +140,7 @@ public class HotSwappableGraphQlSource implements GraphQlSource
     public boolean rebuild()
     {
         Collection<DynamicType> types = fetchDynamicTypes();
-        String newSdl = ClassificationSdlGenerator.generate(types) + functionFieldsSdl;
+        String newSdl = ClassificationSdlGenerator.generate(types) + functionFieldsSdl + ColumnPresentation.generateSdl();
         String newHash = sha256(newSdl);
         if (newHash.equals(lastGeneratedSdlHash))
         {
@@ -158,7 +158,7 @@ public class HotSwappableGraphQlSource implements GraphQlSource
     private GraphQlSource buildSource()
     {
         Collection<DynamicType> types = fetchDynamicTypes();
-        String generatedSdl = ClassificationSdlGenerator.generate(types) + functionFieldsSdl;
+        String generatedSdl = ClassificationSdlGenerator.generate(types) + functionFieldsSdl + ColumnPresentation.generateSdl();
         lastGeneratedSdlHash = sha256(generatedSdl);
         return buildSource(types, generatedSdl);
     }

@@ -54,19 +54,31 @@ export function todayWindow(current: { from: string; to: string }, now: Date): {
   imports: [],
   template: `
     <div class="strip">
-      <div class="modes">
-        @for (m of modes; track m.mode) {
-          <button [class.on]="viewState.renderMode() === m.mode" (click)="viewState.setRenderMode(m.mode)">
-            {{ m.label }}
-          </button>
-        }
-      </div>
-      <div class="nav">
-        <button class="navbtn" title="zurück" (click)="prev()">◀</button>
-        <button class="navbtn today" (click)="today()">Heute</button>
-        <button class="navbtn" title="vor" (click)="next()">▶</button>
-        <span class="range">{{ rangeLabel() }}</span>
-      </div>
+      <!-- Mode switch — only shown when the server advertises more than one render mode. -->
+      @if (viewState.renderModes().length > 1) {
+        <div class="modes">
+          @for (m of viewState.renderModes(); track m) {
+            <button [class.on]="viewState.renderMode() === m" (click)="viewState.setRenderMode(m)">
+              {{ modeLabel(m) }}
+            </button>
+          }
+        </div>
+      }
+      @if (isWeek()) {
+        <!-- WEEK: navigation walks the window; range is read-only. -->
+        <div class="nav">
+          <button class="navbtn" title="zurück" (click)="prev()">◀</button>
+          <button class="navbtn today" (click)="today()">Heute</button>
+          <button class="navbtn" title="vor" (click)="next()">▶</button>
+          <span class="range">{{ rangeLabel() }}</span>
+        </div>
+      } @else {
+        <!-- TABLE: pick an arbitrary from/to range; no navigation. -->
+        <div class="range-edit">
+          <label>Von <input type="date" [value]="fromDate()" (change)="onFrom($event)" /></label>
+          <label>Bis <input type="date" [value]="toDate()" (change)="onTo($event)" /></label>
+        </div>
+      }
     </div>
   `,
   styles: [
@@ -119,19 +131,47 @@ export function todayWindow(current: { from: string; to: string }, now: Date): {
         color: rgba(0, 0, 0, 0.6);
         margin-left: 0.4rem;
       }
+      .range-edit {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+      .range-edit label {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-size: 0.72rem;
+        color: rgba(0, 0, 0, 0.55);
+      }
+      .range-edit input[type='date'] {
+        border: 1px solid rgba(0, 0, 0, 0.15);
+        border-radius: 6px;
+        padding: 0.25rem 0.4rem;
+        font-size: 0.78rem;
+      }
     `,
   ],
 })
 export class ViewControlStripComponent {
   protected readonly viewState = inject(ViewStateStore);
 
-  protected readonly modes: { mode: RenderMode; label: string }[] = [
-    { mode: 'week', label: 'Woche' },
-    { mode: 'table', label: 'Tabelle' },
-    { mode: 'month', label: 'Monat' },
-    { mode: 'day', label: 'Tag' },
-    { mode: 'program', label: 'Programm' },
-  ];
+  private static readonly LABELS: Record<string, string> = {
+    table: 'Tabelle',
+    week: 'Woche',
+    month: 'Monat',
+    day: 'Tag',
+    program: 'Programm',
+  };
+
+  modeLabel(mode: string): string {
+    return ViewControlStripComponent.LABELS[mode] ?? mode;
+  }
+
+  /** WEEK layout (navigation + read-only range) when the active mode is 'week'
+   *  and the server offers it; otherwise TABLE layout (editable from/to, no nav). */
+  protected readonly isWeek = computed(
+    () => this.viewState.renderModes().includes('week') && this.viewState.renderMode() === 'week',
+  );
 
   protected readonly rangeLabel = computed<string>(() => {
     const w = this.viewState.window();
@@ -140,6 +180,28 @@ export class ViewControlStripComponent {
     }
     return `${datePart(w.from)} … ${datePart(w.to)}`;
   });
+
+  /** {@code YYYY-MM-DD} value for the native date inputs (TABLE mode). */
+  protected readonly fromDate = computed<string>(() => {
+    const w = this.viewState.window();
+    return w ? datePart(w.from) : '';
+  });
+  protected readonly toDate = computed<string>(() => {
+    const w = this.viewState.window();
+    return w ? datePart(w.to) : '';
+  });
+
+  onFrom(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    const w = this.viewState.window();
+    if (w && value) this.viewState.setWindow({ from: `${value}T00:00:00`, to: w.to });
+  }
+
+  onTo(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    const w = this.viewState.window();
+    if (w && value) this.viewState.setWindow({ from: w.from, to: `${value}T00:00:00` });
+  }
 
   prev(): void {
     this.shift(-7);

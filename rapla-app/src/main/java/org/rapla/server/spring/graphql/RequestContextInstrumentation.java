@@ -7,9 +7,12 @@ import graphql.execution.instrumentation.SimpleInstrumentationContext;
 import graphql.execution.instrumentation.SimplePerformantInstrumentation;
 import graphql.execution.instrumentation.parameters.InstrumentationExecutionParameters;
 import java.util.Locale;
+import java.util.Set;
 import org.rapla.entities.User;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.StorageOperator;
+import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Component;
 
@@ -56,7 +59,16 @@ public class RequestContextInstrumentation extends SimplePerformantInstrumentati
         User caller = jwtUserResolver.resolveCurrentUserOrNull();
         PermissionController pc = operator.getPermissionController();
         Locale locale = LocaleContextHolder.getLocale();
-        ctx.put(RequestCtx.KEY, new RequestCtx(caller, pc, locale));
+        // PRD 082 #8 — when the read-model is flipped authoritative, resolve the caller's readable
+        // allocatable-id set ONCE per request (cached on the index across requests; the first query per
+        // user pays one full scan). All allocatable §12 gates then become O(1) membership instead of a
+        // per-entity canRead graph walk. null when off / anonymous / not the server operator → canRead.
+        Set<String> readableAllocatableIds = null;
+        if (caller != null && operator instanceof LocalAbstractCachableOperator lo && lo.isReadModelAuthoritative())
+        {
+            readableAllocatableIds = lo.readableAllocatableIds(caller);
+        }
+        ctx.put(RequestCtx.KEY, new RequestCtx(caller, pc, locale, readableAllocatableIds));
         return SimpleInstrumentationContext.noOp();
     }
 
@@ -76,13 +88,28 @@ public class RequestContextInstrumentation extends SimplePerformantInstrumentati
      * {@code permissionController} is always non-null (operator's singleton).
      * {@code locale} defaults to the request's resolved locale or the JVM default.
      */
-    public record RequestCtx(User caller, PermissionController permissionController, Locale locale)
+    public record RequestCtx(User caller, PermissionController permissionController, Locale locale,
+            Set<String> readableAllocatableIds)
     {
         static final String KEY = "rapla.requestCtx";
 
         /** Used when no instrumentation ran (e.g. unit-test paths that bypass
          *  the standard execution chain). Caller is null; PC is null too —
          *  fetchers must handle the null-PC case (it means "trust no one"). */
-        static final RequestCtx EMPTY = new RequestCtx(null, null, Locale.getDefault());
+        static final RequestCtx EMPTY = new RequestCtx(null, null, Locale.getDefault(), null);
+
+        /**
+         * PRD 082 #8 §12 — the single allocatable read gate for every field resolver. Uses the
+         * per-request {@link #readableAllocatableIds} membership when the read-model is flipped
+         * (O(1)), else delegates to {@link PermissionController#canRead} — identical result by
+         * construction. Anonymous / null-PC callers read nothing.
+         */
+        public boolean canReadAllocatable(Allocatable a)
+        {
+            if (a == null || caller == null || permissionController == null) return false;
+            return readableAllocatableIds != null
+                    ? readableAllocatableIds.contains(a.getId())
+                    : permissionController.canRead(a, caller);
+        }
     }
 }

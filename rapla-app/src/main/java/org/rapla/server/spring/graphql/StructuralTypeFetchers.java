@@ -335,14 +335,6 @@ public final class StructuralTypeFetchers
     // fragments on generated `<TypeKey>Classification` types are the read
     // path; descriptors carried via custom directives on those fields.
 
-    /** §12 read gate for ALLOCATABLE references. Anonymous = no access;
-     *  authenticated = canRead via the cached PermissionController. */
-    static boolean canReadAllocatable(Allocatable a, RequestContextInstrumentation.RequestCtx rc)
-    {
-        if (rc == null || rc.caller() == null || rc.permissionController() == null) return false;
-        return rc.permissionController().canRead(a, rc.caller());
-    }
-
     // === Reservation field fetchers (PRD 055 Tier-1 perf migration, 2026-05-29) ===
     //
     // Moved off @SchemaMapping in ReservationGraphQLController to follow the
@@ -618,7 +610,7 @@ public final class StructuralTypeFetchers
                     if (r1 == null || r2 == null || alloc == null) continue;
                     if (!pc.canRead(r1, caller)) continue;
                     if (!pc.canRead(r2, caller)) continue;
-                    if (!pc.canRead(alloc, caller)) continue;
+                    if (!rc.canReadAllocatable(alloc)) continue;   // PRD 082 #8 — index membership when flipped, else canRead (§12)
                     return true;        // first visible conflict wins
                 }
                 return false;
@@ -669,7 +661,7 @@ public final class StructuralTypeFetchers
                 for (Allocatable a : allocatables)
                 {
                     if (a == null) continue;
-                    if (caller != null && !pc.canRead(a, caller)) continue;
+                    if (caller != null && !rc.canReadAllocatable(a)) continue;   // PRD 082 #8 — index membership when flipped, else canRead (§12)
                     org.rapla.entities.domain.Appointment[] restriction = r.getRestriction(a);
                     List<String> appointmentIds = null;
                     if (restriction != null && restriction.length > 0)
@@ -821,6 +813,11 @@ public final class StructuralTypeFetchers
     {
         org.rapla.entities.domain.Reservation r = a.getReservation();
         if (r == null) return List.of();
+        // PRD 082 #8 — flipped: O(1) membership against the caller's readable-id set instead of a
+        // per-allocatable canRead walk; null when off / not the server operator → canRead (§12-identical).
+        final java.util.Set<String> readableIds =
+                (operator instanceof org.rapla.storage.impl.server.LocalAbstractCachableOperator lo && lo.isReadModelAuthoritative())
+                        ? lo.readableAllocatableIds(caller) : null;
         // PRD 074 A/Option 2 — the nested allocatables list honors the FULL AllocatableFilter,
         // reusing the SAME helpers as Query.allocatables (no second filter path). §12: canRead runs
         // FIRST, so every later predicate only narrows the already-readable set (cannot leak).
@@ -854,7 +851,7 @@ public final class StructuralTypeFetchers
         for (Allocatable alloc : all)
         {
             if (alloc == null) continue;
-            if (caller != null && !pc.canRead(alloc, caller)) continue;           // §12 FIRST
+            if (caller != null && !(readableIds != null ? readableIds.contains(alloc.getId()) : pc.canRead(alloc, caller))) continue;  // §12 FIRST (PRD 082 #8 membership when flipped)
             if (filterArg != null)
             {
                 if (!ClassificationGraphQLController.matchesMap(alloc, filterArg)) continue;  // scalar
@@ -1238,14 +1235,6 @@ public final class StructuralTypeFetchers
     {
         DataFetchingEnvironment env = envSupplier.get();
         return RequestContextInstrumentation.from(env.getGraphQlContext());
-    }
-
-    private static boolean isMultiSelect(Attribute attr)
-    {
-        Object c = attr.getConstraint(ConstraintIds.KEY_MULTI_SELECT);
-        if (c == null) return false;
-        if (c instanceof Boolean b) return b;
-        return "true".equalsIgnoreCase(c.toString());
     }
 
 }

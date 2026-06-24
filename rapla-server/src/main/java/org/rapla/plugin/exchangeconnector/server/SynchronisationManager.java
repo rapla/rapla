@@ -131,9 +131,6 @@ public class SynchronisationManager
 
         this.appointmentStorage = appointmentStorage;
         this.showExchangeForUser = showExchangeForUser;
-
-        //final Timer scheduledDownloadTimer = new Timer("ScheduledDownloadThread",true);
-        //scheduledDownloadTimer.schedule(new ScheduledDownloadHandler(context, clientFacade, getLogger()), 30000, ExchangeConnectorPlugin.PULL_FREQUENCY*1000);
     }
 
     /** Long-period sweep that re-pulls every shared mailbox and re-aligns all rapla

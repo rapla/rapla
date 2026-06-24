@@ -2,12 +2,8 @@ package org.rapla.server.spring;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.rapla.entities.User;
-import org.rapla.entities.storage.ReferenceInfo;
-import org.rapla.framework.RaplaException;
 import org.rapla.server.RemoteSession;
-import org.rapla.server.spring.oauth.external.ExternalProvidersProperties;
 import org.rapla.server.spring.oauth.external.ExternalUserResolver;
-import org.rapla.server.spring.oauth.external.ProviderConfig;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 import org.springframework.security.core.Authentication;
@@ -19,59 +15,43 @@ import org.slf4j.LoggerFactory;
 /**
  * Bridges Spring Security's JWT authentication to Rapla's {@link RemoteSession}.
  *
- * <p>If a {@link JwtAuthenticationToken} is present in the {@link SecurityContextHolder}
- * for the current thread, the JWT is resolved to a Rapla {@link User}:
+ * <p>Identity comes solely from the {@link JwtAuthenticationToken} that the
+ * Spring Security resource-server filter chain places in the
+ * {@link SecurityContextHolder} for the current request (a Bearer header, or the
+ * {@code access_token} cookie promoted by {@link CookieToBearerFilter}). The JWT
+ * is resolved to a Rapla {@link User} via the shared {@link JwtUserResolver}:
  * <ul>
  *   <li>If the JWT's {@code iss} matches an enabled external IdP (Microsoft Entra,
  *       Google), dispatch through {@link ExternalUserResolver} (PRD 036).</li>
  *   <li>Otherwise treat as a rapla-locally-issued token and resolve the
  *       {@code sub} claim as a User UUID via the {@link StorageOperator}.</li>
  * </ul>
- * Falls back to a legacy {@link RemoteSession} (header/cookie/query-param token
- * formats) when no Spring Security authentication is present.
+ *
+ * <p>When no JWT is present the request is unauthenticated — there is no longer a
+ * legacy header/cookie/query-param HMAC-token fallback (the rapla-custom
+ * {@code userId$signature} token is no longer minted by anything; all auth flows
+ * issue RSA JWTs via the OAuth2 Authorization Server).
  */
 public class SpringSecurityRemoteSession implements RemoteSession
 {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(SpringSecurityRemoteSession.class);
 
-    private final RemoteSession fallback;
     private final JwtUserResolver jwtUserResolver;
 
-    public SpringSecurityRemoteSession(RemoteSession fallback, StorageOperator operator)
+    public SpringSecurityRemoteSession(JwtUserResolver jwtUserResolver)
     {
-        this(fallback, operator, null, null);
-    }
-
-    public SpringSecurityRemoteSession(RemoteSession fallback,
-                                       StorageOperator operator,
-                                       ExternalProvidersProperties externalProviders,
-                                       ExternalUserResolver externalUserResolver)
-    {
-        this(fallback, new JwtUserResolver(operator, externalProviders, externalUserResolver));
-    }
-
-    public SpringSecurityRemoteSession(RemoteSession fallback, JwtUserResolver jwtUserResolver)
-    {
-        this.fallback = fallback;
         this.jwtUserResolver = jwtUserResolver;
     }
 
     @Override
     public User checkAndGetUser(HttpServletRequest request) throws RaplaSecurityException
     {
-        // When Spring Security holds a JWT for this request, the JWT path is
-        // authoritative. A resolver failure (e.g. external IdP user can't be
-        // mapped to a rapla account) propagates as a RaplaSecurityException
-        // carrying the actual reason — falling back to the legacy session
-        // path here would swap the meaningful message for the generic
-        // "No user found in session." that the legacy path emits when no
-        // header/cookie token is present.
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth instanceof JwtAuthenticationToken jwtAuth)
         {
             return resolveJwtOrThrow(jwtAuth.getToken());
         }
-        return fallback.checkAndGetUser(request);
+        throw new RaplaSecurityException("No authenticated user — a valid JWT (Bearer header or access_token cookie) is required.");
     }
 
     @Override
@@ -89,15 +69,13 @@ public class SpringSecurityRemoteSession implements RemoteSession
                 return false;
             }
         }
-        return fallback.isAuthentified(request);
+        return false;
     }
 
     @Override
     public void logout()
     {
         // Spring-managed JWT — there's no server-side session to invalidate.
-        // Fallback may have legacy state to clear.
-        fallback.logout();
     }
 
     /**

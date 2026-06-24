@@ -1,4 +1,6 @@
-import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { Component, ViewChild, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { MatTableModule, MatTableDataSource } from '@angular/material/table';
+import { MatSort, MatSortModule } from '@angular/material/sort';
 
 import { GraphqlService, type ViewMeta, type ViewColumn } from '../graphql/graphql.service';
 import { renderCell } from '../graphql/view-render';
@@ -59,7 +61,7 @@ export function hasScope(chips: FilterEntry[]): boolean {
  */
 @Component({
   selector: 'app-view-host',
-  imports: [],
+  imports: [MatTableModule, MatSortModule],
   template: `
     <section class="content">
       <h2 class="view-title">{{ meta()?.title ?? viewName() }}</h2>
@@ -74,33 +76,42 @@ export function hasScope(chips: FilterEntry[]): boolean {
         } @else if (error()) {
           <p class="error">{{ error() }}</p>
         } @else {
-          <p class="meta">{{ total() }} Termin(e){{ grouped() ? ' · ' + groups().length + ' Tag(e)' : '' }}</p>
+          <p class="meta">
+            {{ total() }} {{ rowLabelText() }}
+            @if (groupLabelText()) {
+              <span class="sep">·</span> {{ groupCount() }} {{ groupLabelText() }}
+            }
+          </p>
 
-          @for (g of groups(); track g.id) {
-            <section class="day">
-              @if (g.label) {
-                <h3>{{ g.label }} <span class="cnt">({{ g.rows.length }})</span></h3>
+          @if (total() > 0) {
+            <table
+              mat-table
+              [dataSource]="dataSource"
+              matSort
+              [matSortDisabled]="isGrouped()"
+              [matSortActive]="isGrouped() ? '' : defaultSortAlias()"
+              matSortDirection="asc"
+              class="grid"
+            >
+              @for (col of tableColumns(); track col.alias) {
+                <ng-container [matColumnDef]="col.alias">
+                  <th mat-header-cell *matHeaderCellDef mat-sort-header [disabled]="isGrouped()">
+                    {{ col.header ?? col.alias }}
+                  </th>
+                  <td mat-cell *matCellDef="let row">{{ cell(row, col) }}</td>
+                </ng-container>
               }
-              <table class="grid">
-                <thead>
-                  <tr>
-                    @for (col of visibleColumns(); track col.alias) {
-                      <th>{{ col.header ?? col.alias }}</th>
-                    }
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (row of g.rows; track $index) {
-                    <tr>
-                      @for (col of visibleColumns(); track col.alias) {
-                        <td>{{ cell(row, col) }}</td>
-                      }
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </section>
-          } @empty {
+              <!-- Group-header row (grouped views): one cell spanning all columns. -->
+              <ng-container matColumnDef="__groupHeader">
+                <td mat-cell *matCellDef="let g" [attr.colspan]="columnAliases().length" class="group-cell">
+                  {{ g['__label'] }} <span class="cnt">({{ g['__count'] }})</span>
+                </td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="columnAliases()"></tr>
+              <tr mat-row *matRowDef="let row; columns: ['__groupHeader']; when: isGroupRow" class="group-row"></tr>
+              <tr mat-row *matRowDef="let row; columns: columnAliases(); when: isDataRow"></tr>
+            </table>
+          } @else {
             <p class="empty">Keine Termine im Zeitraum.</p>
           }
         }
@@ -112,8 +123,7 @@ export function hasScope(chips: FilterEntry[]): boolean {
         display: block;
       }
       .content {
-        max-width: 1100px;
-        margin: 1.25rem auto;
+        margin: 1.25rem 0;
         padding: 0 1rem;
       }
       .view-title {
@@ -125,6 +135,10 @@ export function hasScope(chips: FilterEntry[]): boolean {
         color: rgba(0, 0, 0, 0.6);
         font-size: 0.85rem;
         margin: 0 0 0.75rem;
+      }
+      .meta .sep {
+        margin: 0 0.3rem;
+        opacity: 0.4;
       }
       .day {
         margin-bottom: 1.25rem;
@@ -155,6 +169,15 @@ export function hasScope(chips: FilterEntry[]): boolean {
         font-weight: 600;
         color: rgba(0, 0, 0, 0.6);
       }
+      .group-cell {
+        font-weight: 600;
+        color: var(--mat-sys-primary, #3f51b5);
+        padding-top: 0.9rem;
+      }
+      .group-cell .cnt {
+        color: rgba(0, 0, 0, 0.45);
+        font-weight: 400;
+      }
       .empty {
         color: rgba(0, 0, 0, 0.5);
         font-style: italic;
@@ -177,6 +200,17 @@ export class ViewHostComponent {
   readonly meta = signal<ViewMeta | null>(null);
   readonly rows = signal<Record<string, unknown>[]>([]);
   readonly total = signal(0);
+  readonly groupCount = signal(0);
+  readonly rowLabelText = computed(() => {
+    const parts = (this.meta()?.rowLabel ?? 'Eintrag|Einträge').split('|');
+    return this.total() === 1 ? parts[0] : (parts[1] ?? parts[0]);
+  });
+  readonly groupLabelText = computed(() => {
+    const label = this.meta()?.groupLabel;
+    if (!label) return null;
+    const parts = label.split('|');
+    return this.groupCount() === 1 ? parts[0] : (parts[1] ?? parts[0]);
+  });
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
   /** True when no scope chip is set → the view shows a hint and fires NO query
@@ -192,12 +226,46 @@ export class ViewHostComponent {
   readonly canGroup = computed(() => this.groupAlias() !== '');
   /** Group when in week mode AND the view actually has a group column. */
   readonly grouped = computed(() => this.viewState.renderMode() === 'week' && this.canGroup());
+  /** Whether the view CAN group (declares a {@code @column(group: true)} → server
+   *  emits {@code groupBy}). Drives the availability of the WEEK render mode. */
+  readonly groupable = computed(() => !!this.meta()?.groupBy);
+  /** Render as day/value BLOCKS (group-header rows) — only in WEEK mode AND when the
+   *  view is groupable. TABLE mode (or a non-groupable view) → flat sortable table. */
+  readonly isGrouped = computed(
+    () => this.viewState.renderMode() === 'week' && this.groupable(),
+  );
 
   readonly visibleColumns = computed<ViewColumn[]>(() =>
     (this.meta()?.columns ?? [])
       .filter((c) => !c.hidden)
       .sort((a, b) => (a.order ?? 999) - (b.order ?? 999)),
   );
+
+  /** Columns for the flat sortable table: the visible columns, plus the (otherwise
+   *  hidden) date/group column prepended so the day is still shown without grouping. */
+  readonly tableColumns = computed<ViewColumn[]>(() => {
+    const visible = this.visibleColumns();
+    if (this.isGrouped()) return visible; // the date is the group header, not a column
+    const alias = this.groupAlias();
+    if (!alias || visible.some((c) => c.alias === alias)) return visible;
+    const groupCol = (this.meta()?.columns ?? []).find((c) => c.alias === alias);
+    return groupCol ? [{ ...groupCol, hidden: false }, ...visible] : visible;
+  });
+  readonly columnAliases = computed(() => this.tableColumns().map((c) => c.alias));
+  /** Default sort: the date/group column (chronological), else the first column. */
+  readonly defaultSortAlias = computed(() => this.groupAlias() || this.tableColumns()[0]?.alias || '');
+
+  /** Material table source — built-in client sort via {@link MatSort} (no hand-rolled
+   *  sorting). Fed from {@link displayRows} by an effect in the constructor. */
+  readonly dataSource = new MatTableDataSource<Record<string, unknown>>([]);
+  private sortRef: MatSort | null = null;
+  /** Connect MatSort once the table renders (it sits behind an {@code @if}). Sorting
+   *  is connected ONLY for ungrouped views — sorting a grouped table would scramble
+   *  the day blocks (an effect in the constructor reconciles on grouping change). */
+  @ViewChild(MatSort) set matSort(sort: MatSort | undefined) {
+    this.sortRef = sort ?? null;
+    this.dataSource.sort = this.isGrouped() ? null : this.sortRef;
+  }
 
   /** True for aggregation/pivot views (columns carry `kind`). Drives BOTH the
    *  row projection AND where the resource selection binds (allocatableFilter vs
@@ -221,7 +289,7 @@ export class ViewHostComponent {
    *  (any other group column), or one flat group when ungrouped. */
   readonly groups = computed<Section[]>(() => {
     const rows = this.displayRows();
-    if (!this.grouped()) return rows.length ? [{ id: '', label: '', rows }] : [];
+    if (!this.isGrouped()) return rows.length ? [{ id: '', label: '', rows }] : [];
     const meta = this.meta();
     const alias = this.groupAlias();
 
@@ -248,6 +316,24 @@ export class ViewHostComponent {
     return groupByColumn(rows, alias).map((g) => ({ id: g.key, label: g.label, rows: g.rows }));
   });
 
+  /** The rows fed to the Material table. Flat views pass {@link displayRows}
+   *  straight through; grouped views interleave a marker {@code __group} header
+   *  row before each section so Material renders day/value BLOCKS via a `when`
+   *  row predicate (sorting is disabled in this mode — at most by group). */
+  readonly tableRows = computed<Record<string, unknown>[]>(() => {
+    if (!this.isGrouped()) return this.displayRows();
+    const out: Record<string, unknown>[] = [];
+    for (const s of this.groups()) {
+      out.push({ __group: true, __label: s.label, __count: s.rows.length });
+      out.push(...s.rows);
+    }
+    return out;
+  });
+
+  /** Row-template predicates for the grouped Material table. */
+  readonly isGroupRow = (_i: number, row: Record<string, unknown>): boolean => row['__group'] === true;
+  readonly isDataRow = (_i: number, row: Record<string, unknown>): boolean => row['__group'] !== true;
+
   /** Guards the once-per-view render-mode seed. */
   private lastSeededView: string | null = null;
   /** Monotonic request id — a slow (e.g. 500-row firehose) response from an OLDER
@@ -255,6 +341,26 @@ export class ViewHostComponent {
   private reqToken = 0;
 
   constructor() {
+    // Material client sort: sort by the displayed text, EXCEPT date columns sort
+    // by their raw ISO value (chronological, not by the formatted label).
+    this.dataSource.sortingDataAccessor = (row, id) => {
+      const col = (this.meta()?.columns ?? []).find((c) => c.alias === id);
+      if (!col) return '';
+      if (col.type === 'Date' || col.type === 'LocalDateTime') {
+        const raw = row[id];
+        return typeof raw === 'string' ? raw : '';
+      }
+      return renderCell(row, col).toLowerCase();
+    };
+    // Feed the table source — flat rows, or grouped rows with header markers.
+    effect(() => {
+      this.dataSource.data = this.tableRows();
+    });
+    // Reconnect/disconnect sort when grouping changes (grouped = no column sort).
+    effect(() => {
+      this.dataSource.sort = this.isGrouped() ? null : this.sortRef;
+    });
+
     // Persist the opened view so the default landing route restores it next time.
     effect(() => {
       const name = this.viewName();
@@ -287,6 +393,7 @@ export class ViewHostComponent {
     this.error.set(null);
     this.rows.set([]);
     this.total.set(0);
+    this.groupCount.set(0);
     this.noScope.set(true);
   }
 
@@ -321,15 +428,23 @@ export class ViewHostComponent {
           (Object.values(res.data ?? {}).find(Array.isArray) as
             | Record<string, unknown>[]
             | undefined) ?? [];
-        this.meta.set(res.extensions?.view ?? null);
+        const viewMeta = res.extensions?.view ?? null;
+        this.meta.set(viewMeta);
         this.total.set(rows.length);
+        const groupAlias = viewMeta?.groupBy;
+        this.groupCount.set(
+          groupAlias ? new Set(rows.map((r) => r[groupAlias])).size : 0,
+        );
         this.rows.set(rows);
         this.loading.set(false);
-        // Seed the render mode from the server render-info (groupable → week), once
-        // per view — replaces the old hardcoded client registry hint.
+        // Tell the control strip whether this view supports the WEEK mode, and seed
+        // the render mode once per view (groupable → week, else table).
+        const groupable = !!viewMeta?.groupBy;
+        const renderModes = viewMeta?.renderModes ?? ['table' as const];
+        untracked(() => this.viewState.setRenderModes(renderModes));
         if (this.lastSeededView !== viewName) {
           this.lastSeededView = viewName;
-          untracked(() => this.viewState.setRenderMode(this.canGroup() ? 'week' : 'table'));
+          untracked(() => this.viewState.setRenderMode(renderModes[0]));
         }
         // Seed the date-nav window from the server's input metadata, once.
         if (!window) {

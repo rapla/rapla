@@ -1,5 +1,14 @@
 # PRD 043: API Keys (GitHub-PAT flow, server-minted asymmetric JWT)
 
+> **Update 2026-06-24 — `TokenHandler` retired; its interop is moot.** The legacy
+> HMAC token path (`TokenHandler`/`SignedToken`/`ValidToken`/`RemoteSessionImpl`) was
+> deleted. Everywhere below that describes `RaplaKeyStorage`/`ApiKeyJwtDecoder`
+> coexisting with the `TokenHandler.refresh` `"refreshToken"` slot is now historical:
+> nothing mints or reads that slot for auth anymore. The multi-slot key storage and
+> the PRD 043 asymmetric-key path are unaffected; only the `TokenHandler` co-tenant is
+> gone. The cleanup foreseen in "Open questions" (rename the `storeAPIKey` family once
+> `TokenHandler` is retired) is now unblocked.
+
 **Status:** in-progress (server-side complete, docs + UI pending)
 **Date:** 2026-05-16
 **Supersedes:** PRD 031 §"API key surface" (was draft, now superseded by this design)

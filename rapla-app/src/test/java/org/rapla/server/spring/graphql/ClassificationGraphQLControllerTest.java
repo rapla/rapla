@@ -82,6 +82,9 @@ class ClassificationGraphQLControllerTest
     @Autowired
     MockMvc mockMvc;
 
+    @Autowired
+    org.rapla.storage.StorageOperator operator;
+
     HttpGraphQlTester tester;
 
     @BeforeEach
@@ -367,6 +370,56 @@ class ClassificationGraphQLControllerTest
                 .get();
         assertEquals(readableOnly, mixed,
                 () -> "mixed-id query must be byte-identical to readable-only — §12. mixed=" + mixed + " readableOnly=" + readableOnly);
+    }
+
+    /**
+     * PRD 082 #8 §12 — when the read-model is flipped authoritative, {@code Query.allocatables}
+     * serves the per-entity {@code canRead} gate from the {@link org.rapla.storage.impl.server.readmodel.PermissionIndex}
+     * (O(1) membership) instead of scanning {@code canRead × all}. For a non-admin (monty), the flipped
+     * result MUST be byte-identical to the {@code canRead} result — the index is {@code canRead}-equal by
+     * construction, so the flip can never widen or leak the visible set. Flag is restored in a finally.
+     */
+    @Test
+    @WithMockUser(username = "monty", roles = "USER")
+    void allocatablesFlipMatchesCanReadForNonAdmin()
+    {
+        org.rapla.storage.impl.server.LocalAbstractCachableOperator op =
+                (org.rapla.storage.impl.server.LocalAbstractCachableOperator) operator;
+        boolean original = op.isReadModelAuthoritative();
+        try
+        {
+            op.setReadModelAuthoritative(false);
+            List<String> canReadIds = montyAllocatableIds();
+            op.setReadModelAuthoritative(true);
+            List<String> indexIds = montyAllocatableIds();
+            assertEquals(canReadIds, indexIds,
+                    () -> "§12 — flipped permission-index allocatables must be byte-identical to the canRead scan; "
+                            + "canRead=" + canReadIds + " index=" + indexIds);
+            // The flip must also not bypass the idIn permission gate: a mixed visible+hidden id query
+            // under the flip equals the readable-only query (existence not leaked).
+            List<String> mixed = tester.document("""
+                    { allocatables(filter: { idIn: ["definitely-hidden-or-unknown"] }) { id } }
+                    """)
+                    .execute().path("allocatables[*].id").entityList(String.class).get();
+            assertTrue(mixed.isEmpty(),
+                    () -> "§12 — a hidden/unknown idIn pick must be silently dropped under the flip; got " + mixed);
+        }
+        finally
+        {
+            op.setReadModelAuthoritative(original);
+        }
+    }
+
+    private List<String> montyAllocatableIds()
+    {
+        return tester.document("{ allocatables { id } }")
+                .execute()
+                .path("allocatables[*].id")
+                .entityList(String.class)
+                .get()
+                .stream()
+                .sorted()
+                .toList();
     }
 
     // === §5d Phase 1 — generated <TypeKey>Where input SDL ====================

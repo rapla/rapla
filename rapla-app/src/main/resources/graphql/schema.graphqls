@@ -705,10 +705,32 @@ directive @displayName(value: String!) on FIELD_DEFINITION
 # Presence of @view on the operation makes the server emit `extensions.view`
 # (resolved title + column descriptors) alongside `data`. Field directives feed
 # that descriptor; they do NOT change `data`.
-"PRD 074 — marks an operation as a renderable view; triggers extensions.view (key/title/columns)."
-directive @view(title: String) on QUERY
-"PRD 074 — column presentation override: explicit header and/or order."
-directive @column(header: String, order: Int, group: Boolean, format: String) on FIELD
+
+"""
+Render modes a view can switch between. Plugins extend this enum via schema-stitching
+so their custom views can advertise additional modes without touching core.
+"""
+enum ViewRenderMode { table week month day program }
+
+"Date anchor for the default window seed of a @view directive."
+enum ViewAnchor { TODAY WEEK_START MONTH_START }
+
+"Calendar unit for the default window seed of a @view directive."
+enum ViewDateUnit { DAYS WEEKS MONTHS }
+
+"""
+PRD 074 — marks an operation as a renderable view; triggers extensions.view (key/title/columns).
+The window seed for a $filter: ReservationFilter! view is configurable here:
+fromAnchor/toAnchor are TODAY | WEEK_START | MONTH_START, fromOffset/toOffset are integer
+offsets in `unit` (DAYS | WEEKS | MONTHS). A Monday-to-Monday week is
+fromAnchor: WEEK_START, fromOffset: 0, toAnchor: WEEK_START, toOffset: 7.
+Omitted → the default TODAY -7 … +7 window.
+"""
+directive @view(
+  title: String, rowLabel: String, groupLabel: String,
+  renderModes: [ViewRenderMode],
+  fromAnchor: ViewAnchor, fromOffset: Int, toAnchor: ViewAnchor, toOffset: Int, unit: ViewDateUnit
+) on QUERY
 "PRD 074 — column fetched but not displayed (e.g. a group/sort key)."
 directive @hidden on FIELD
 "PRD 074 — list-cell join separator (default \", \")."

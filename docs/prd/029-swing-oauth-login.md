@@ -1,5 +1,11 @@
 # PRD 029: Swing Login via OAuth 2.0 (Browser-based, PKCE Loopback)
 
+> **Update 2026-06-24 — legacy HMAC token path removed.** `TokenHandler`,
+> `SignedToken`/`ValidToken`, and `RemoteSessionImpl` were deleted; auth is now
+> JWT-only (`SpringSecurityRemoteSession` + `JwtUserResolver`, Bearer header or
+> `access_token` cookie — no HMAC header/cookie/query-param fallback). Mentions of
+> `AuthController`/`TokenHandler`/`RemoteSessionImpl` below are historical.
+
 **Status:** in-progress — phase 1 done (2026-05-12), phase 2 mostly landed (2026-05-12). Phase 1 shipped discovery endpoint, single `rapla-client` RegisteredClient (Swing + planned Angular), `SwingOAuthLoginFlow`, `ConnectInfo` token path, UI button, custom redirect URI validator (WSL-bridge 172.16.0.0/12 + same-origin allowances), token unification (`/auth/login` + `/oauth2/token` both sign via single RSA JWKSource), persistent JWK via `RaplaKeyStorage` (tokens survive server restart).
 
 **2026-05-24 — paste-URL fallback removed.** Paste-callback dialog, `rapla.oauth.show-paste-fallback` toggle, `OAuthCallbackPasteDialog`, `SwingOAuthLoginFlow.Session.deliverPasted(...)` and German/English `login.oauth.paste.*` keys all removed: WSL-bridge IP path is the real fix when loopback isn't reachable. Discovery JSON no longer carries `showPasteFallback`.

@@ -1,5 +1,10 @@
 # PRD 002: Multi-Tenancy Support
 
+> **Update 2026-06-24 — `RemoteSessionImpl` removed.** The `RemoteSessionImpl` class
+> referenced in the tables below was deleted along with the legacy HMAC token path.
+> Any future tenant-awareness work attaches to `SpringSecurityRemoteSession` +
+> `JwtUserResolver` (JWT-only auth) instead.
+
 **Status:** draft
 **Date:** 2026-05-05
 

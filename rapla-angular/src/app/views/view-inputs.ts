@@ -5,13 +5,15 @@
  * is the single general rule (no closed sentinel list, no SPA redeploy per window).
  */
 
-export type Anchor = 'TODAY' | 'WEEK_START' | 'MONTH_START';
-export type Unit = 'DAYS' | 'WEEKS' | 'MONTHS';
+/** Mirrors the server {@code ViewAnchor} enum. */
+export type ViewAnchor = 'TODAY' | 'WEEK_START' | 'MONTH_START';
+/** Mirrors the server {@code ViewDateUnit} enum. */
+export type ViewDateUnit = 'DAYS' | 'WEEKS' | 'MONTHS';
 
 export interface InputDefault {
-  anchor: Anchor;
+  anchor: ViewAnchor;
   offset: number;
-  unit: Unit;
+  unit: ViewDateUnit;
 }
 
 export interface ViewInput {

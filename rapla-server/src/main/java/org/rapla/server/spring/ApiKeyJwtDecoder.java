@@ -205,7 +205,7 @@ public class ApiKeyJwtDecoder implements JwtDecoder
             catch (Exception e)
             {
                 // Skip malformed / legacy entries (e.g. plain refresh-token strings
-                // stored under "refreshToken" clientId by TokenHandler).
+                // stored under a historical "refreshToken" clientId slot).
             }
         }
         return null;

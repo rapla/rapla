@@ -43,6 +43,78 @@ Strategic direction*. Workstream A's hand-rolled indices become moot under this 
 
 ---
 
+## The H2 pivot → in-memory indices (2026-06-24, measured)
+
+**The CQRS-on-H2 read-model lost to measurement and is abandoned for the read path.** Built and
+flipped behind a flag, the H2 block index was **1.1×–3.7× SLOWER** than the legacy in-memory
+`appointmentMap` across the whole scope×window matrix on the real store; a phase decomposition showed
+**~91% of the block path was the JDBC/SQL boundary** (`executeQuery` round-trips + row rehydration),
+which an *already-resident in-memory* structure never has to pay. Batching made it worse (a wide `IN`
+defeats the index). **Conclusion: PRD 082's "use a real query engine instead of hand-knit indices"
+thesis is falsified for in-memory read performance** — the JDBC boundary cost exceeds the algorithmic
+saving, because the legacy per-allocatable scans are small and cache-hot. The H2 work was not wasted:
+it validated the **maintenance seam**, the **differential/shadow methodology**, and the
+**binding/dependent-expansion correctness** — all of which carry over. We keep those and **swap the
+storage from H2 to bespoke in-memory Java structures.** (H2 may still earn a place later for genuine
+ad-hoc/aggregate queries with no in-memory equivalent, or at Postgres scale — but not for the hot
+point/window reads.)
+
+### Two shared index kinds (build each framework once)
+
+| Kind | Shape | Query | Why |
+|---|---|---|---|
+| **`IntervalIndex<K,V>`** | per-key `ConcurrentSkipListSet` of **materialized blocks** sorted by start + a `volatile long maxBlockDuration` capped at threshold `D` + a small open-ended/long-runner **side-set** | `overlapping(key, winStart, winEnd)` = `subSet(winStart−maxBlockDuration, winEnd) ∪ sideSet` → O(log n + k), keeps lock-free reads | hand-rolled ~150 LOC; no library clears the bar (lodborg unmaintained+not-thread-safe; Guava `RangeMap` can't list overlaps; JTS/htsjdk heavy) |
+| **`BucketIndex<K,V>`** | `Map<key, Set<id>>` | `members(key)` / `membersUnion(keys…)` | trivial; avoids the O(all) copy+scan |
+
+Both are fed by the **same `updateReservation`/put-remove maintenance seam** the H2 projections used.
+Why **materialized blocks**, not appointment *envelopes*: a repeating event has a long *envelope*
+(months) → it would fall into the always-scanned side-set, bloating it. Materializing the bounded
+recurrence into short concrete blocks keeps the `subSet` tight and the side-set tiny (open-ended tail
+only, ~0.5–1%). Blocks also **eliminate the `overlaps()` recurrence call** for the 98%+ exact blocks
+(the range slice *is* the exact answer) — recurrence math survives only on the open-ended side-set.
+Cost: a cheap blocks→appointments dedup on the way out. Open-ended/over-cap → a rule entry in the
+side-set, expanded in Java (the `is_rule` distinction, now a Java object not a row).
+
+### In-memory index catalog (the inventory)
+
+| # | Index | Keyed by → value | Query it serves | Kind | Replaces / status | PRD |
+|---|---|---|---|---|---|---|
+| **1** | Appointment blocks — by allocatable | allocatableId → blocks `[start,end]` | `queryAppointments(allocatables,window)`, calendar render | `IntervalIndex` | improves `appointmentMap` (half-range fix + overlaps-elim) — **the experiment** | 086 |
+| **2** | Appointment blocks — by owner | userId → blocks | `queryAppointments(owners,window)` / `getAppointmentsForUser` | `IntervalIndex` | improves `appointmentUserMap` | 086 |
+| **3** | Conflict candidates | *(derived from #1)* | `getAllocatableBindings` / `getConflicts` narrowing | uses #1 | not a new structure | 086 |
+| **4** | blockStats aggregation | *(derived from #1)* | `appointmentBlockStats` count/group | uses #1 (in-memory group/count) | new (GraphQL) | 079/080/086 |
+| **5** | Type bucket — allocatables | typeId → allocatableIds | `getAllocatables(typeKeyEq/In)` | `BucketIndex` | avoids O(all) copy+scan | 087 |
+| **6** | Type bucket — reservations | typeId → reservationIds | `reservations(typeKeyEq/In)` | `BucketIndex` | new (GraphQL) | 087 |
+| **7** | Attribute indices (Class 2) | (attrKey,value) → entityIds | `where:{Raum:{capacity_gt:30}}` | `BucketIndex` (bounded types) | **deferred**; strings stay scanned | 087 |
+| **8** | Permission / access index | userId → readable set (READ/ALLOCATE/ADMIN) | `canRead` filtering, `changesSince` | **bespoke** (caller-context, hierarchy) | new; attacks `canRead × ~50k` | 083 |
+| **9** | Name / full-text search | computed-name terms → entityIds | omnibox / name search | **bespoke** (in-memory Lucene `RAMDirectory`) | new | 085 |
+
+### Components built (2026-06-24) — wired; H2 deleted
+
+Four standalone components in `rapla-server/.../storage/impl/server/readmodel/`:
+- **`IntervalIndex<K,V>`** — `put(key,value,start,end,openEnded)` / `remove(...)` / `overlapping(key,winStart,winEnd)`; ConcurrentSkipListSet + capped `maxBlockDuration` + side-set; lock-free reads. Remove narrows to the same-start slice (O(log n), not O(N)) so the dense "collector" key stays cheap on the write path. (7 tests)
+- **`BucketIndex<K,V>`** — `put`/`remove`/`move(old,new,member)`/`members(key)`/`membersUnion(keys)`/`clear()`. (9 tests)
+- **`PermissionIndex`** — `readableAllocatables(User)`/`accessLevel(User,id)`/`invalidate(...)`; **§12 `canRead`-equivalence test green** (13 tests). **Built, not yet wired** (GraphQL `canRead` boundary — own §12-leak-tested pass).
+- **`DependencyIndex`** — `put(Allocatable)`/`remove(ref)`/`expand(ids)`; equivalence-to-`getDependent` test (5 tests). **Built, not wired on the hot path** — the read paths expand via `cache.getDependentRef` (matches legacy exactly, already graph-fast), so the index would only duplicate it; kept as a catalog component.
+
+**Wired into `LocalAbstractCachableOperator` (2026-06-24).** No wrapper layer (the H2 `ReadModel`/`Projection`
+SPI bought a JDBC connection/schema/generic-engine lifecycle that in-memory doesn't need):
+- **Two `IntervalIndex` (allocatable + owner) maintained inside `AppointmentMapClass.updateReservation`** — at the same add/remove sites as `appointmentMap`/`appointmentUserMap`, so boot (`initAppointmentBindings`) and incremental updates both populate them with no separate seam. Appointments materialize into blocks (≤52) or one envelope entry (open-ended / >52).
+- **Two `BucketIndex` (allocatable + reservation type) on the operator**, maintained at the `updateReadModel`/`rebuildReadModel` seam (now in-memory; `move` on type change).
+- **Read paths flip behind `rapla.readmodel.authoritative`**: `queryAppointments` (allocatable + owner window read), `getAllocatableBindings` (conflict candidates), `getAllocatables` (type bucket) — each serves a candidate **superset** from the index then passes it through the *unchanged* `AppointmentImpl.getAppointments`/`getConflictingAppointments`/`matches`, so equivalence holds by construction. Expansion uses `cache.getDependentRef` (legacy-identical → the earlier Finding-2 `getDependent` divergence is gone).
+- **The whole H2 detour is deleted**: `ReadModel`, `Projection`, the three projections, `blockDerived*`, `shadowCompare*`, `queryAllocatableTypeBucket`(SQL), `readModelConnectionForTest`, the H2 dependency, and the seven H2-coupled tests.
+
+**Validation:** `ReadModelReadFlipEquivalenceTest` (window reads incl. owner scope + conflict bindings, reservations stored *after* boot so incremental maintenance is exercised) + `ReadModelFlipDifferentialTest` (type bucket) prove flag-on == flag-off; the owner read path has **no fail-safe fallback**, so its passing proves the index is genuinely served (not masked by a catch). **Full rapla-server fast lane: 304 tests green.**
+
+**Perf (real store, 2026-06-24):** `QueryAppointmentsFlipPerfTest` (dhbwrapla, on a copy of the real `data.xml`) — dense 50-allocatable scope (top binding count 2433), 1-week window at the late end of the timeline (where the legacy `headSet(start < winEnd)` half-range prefilter degenerates to ~the whole history): **legacy `appointmentMap` 14.55 ms/query → in-memory `IntervalIndex` 0.79 ms/query = 18.5× faster**, byte-identical results. This is the exact inverse of the H2 detour (1.1–3.7× *slower*) and confirms the pivot thesis: a two-sided in-memory `subSet` over materialized blocks beats both the one-sided in-memory prefilter and the JDBC boundary.
+
+**Priority:** #1 is the experiment (settles whether the in-memory two-sided index + overlaps-elimination
+wins); #2 falls out of the same framework. #5/#6 (type bucket) and #8 (permission) attack measured
+costs without #1's "is the win even there" doubt — likely real. #3/#4 are derived; #7 deferred; #9 a
+separate Lucene track. **Gate (from the H2 lesson): build #1 behind a flag, measure on the profile
+matrix — candidate-set shrinkage AND `overlaps()`-calls eliminated AND tiny-allocatable
+non-regression — before committing or deleting any legacy path.**
+
 ## Program execution plan & live status
 
 The full program spans PRDs 082/083/085/086/087 (084 orthogonal). Build order and gating decisions
@@ -60,15 +132,242 @@ Phase-0 test battery / adversarial gate review), then **stop for review**.
 
 | # | Phase | Status | Notes |
 |---|---|---|---|
-| A | Understanding fan-out (read-only seam map; H2-on-`rapla-core`-classpath check) | 🔄 in progress | started 2026-06-24 |
-| 0 | Brute-force + record/replay harness (dhbwrapla, FileOperator on `data.xml` copy) | ⬜ not started | test-only; self-verified |
-| 0.5 | H2 write-path benchmark | ⬜ not started | self-gate: put +<~1 ms, ~100k-block rebuild <~5 s |
-| 1 | Foundation seam (this PRD) — projection seam, drift-safety, boot rebuild, no consumer | ⬜ not started | review checkpoint |
-| 2 | 087 Class 1 type-bucket on H2 (`allocatable`/`reservation` buckets) | ⬜ not started | §12 leak tests gate |
-| — | **STOP — present Phases 0–2 for review** | ⬜ | |
+| A | Understanding fan-out (read-only seam map; H2-on-`rapla-core`-classpath check) | ✅ done | findings below (2026-06-24) |
+| 0 | Brute-force + record/replay harness (plugin-deployment repo, FileOperator on `data.xml` copy) | ✅ done | see Phase 0 result below |
+| 0.5 | H2 write-path benchmark | ✅ done | PASS — see result below; found the missing maintenance index |
+| 1 | Foundation seam (this PRD) — projection seam, drift-safety, boot rebuild, no consumer | ✅ done | infra + operator seam wired & tested; see below |
+| 2 | 087 Class 1 type-bucket on H2 (`allocatable`/`reservation` buckets) | ✅ done (Stage-X shadow) | shadow consumer; 138 §12 leak tests green; see below |
+| 3 | 086 appointment block index — **Stage X** (reads beside `appointmentMap`, shadow) | ✅ done | `AppointmentBlockProjection` + sampled shadow; **zero drift on the real store**; see below |
+| 4a | 086 Stage Y — conflict-completeness shadow (non-destructive) | ✅ done | block candidates ⊇ authoritative conflicts; sampled shadow; see below |
+| 4b-i | Flip **flag** (`rapla.readmodel.authoritative`, default off) + **type-bucket flipped** behind it | ✅ done | reversible; `ReadModelFlipDifferentialTest` flag-on==flag-off |
+| 4b-ii | `queryAppointments` + conflict flips built, then **measured** (H2) | ⚠️ superseded by pivot | H2 was 0.62× (SLOWER) + aggregator divergence → pivoted to in-memory |
+| P1 | **In-memory `IntervalIndex` ×2** wired into `AppointmentMapClass` (alloc+owner); read+conflict flips served from it; expansion via `getDependentRef` | ✅ done (2026-06-24) | equivalence proven; owner path has no fallback; 304 fast-lane green |
+| P2 | **In-memory `BucketIndex` ×2** on the operator; `getAllocatables` type-bucket served from it | ✅ done (2026-06-24) | `ReadModelFlipDifferentialTest` flag-on==flag-off |
+| P3 | **Delete the H2 detour** (`ReadModel`/`Projection`/3 projections/`blockDerived*`/`shadowCompare*`/H2 dep/7 tests) | ✅ done (2026-06-24) | reactor compiles; no dangling refs |
+| P4 | `PermissionIndex` → GraphQL `canRead` boundary (all list/per-request-amortized sites) | ✅ done (2026-06-24) | measured **26.6 ms→0.0003 ms warm** (real store, non-admin, 48k allocatables). Wired behind the flag: `ClassificationGraphQLController.allocatables` (inline gate) + `AttributeDataFetcher` / `ConflictGraphQLController` / `StructuralTypeFetchers` (×3) via a single per-request `RequestCtx.canReadAllocatable` gate (readable-id set resolved once per request in `RequestContextInstrumentation`). Invalidation at the operator seam. **Single-entity gates left on `canRead`** (`allocatable(id)`, `WhereEvaluator` ref-recursion) — building the 48k set to check one id would pessimize when cold. Validation: §12 flip-equivalence MockMvc test (non-admin) + **all 82 GraphQL §12 leak tests re-run with `-Drapla.readmodel.authoritative=true` green** (monty restricted-view / idIn / where-predicate / anonymous / PRD 069 access) + flag-off suites green (no regression). |
+| P5 | Run in-memory perf matrix (dhbwrapla real store) | ✅ done (2026-06-24) | **18.5× faster**: legacy 14.55 ms/query → in-memory 0.79 ms/query (dense 50 allocatables, top=2433, 1-wk late window); results byte-identical. Inverse of the H2 detour (1.1–3.7× slower). |
+| P6 | **Window-first global read** (full-admin unscoped) — global singleton-key `IntervalIndex` + `reservationsInWindowGlobal` | ✅ done (2026-06-24) | one O(log N+k) lookup replaces the ~48k-allocatable loop for `isAdmin()` unscoped; filter-free (admin short-circuits canRead). Tier-1 singleton-key + tier-3 differential (window-first == resource-first) green. Merged from draft into PRD 086. |
+| 4b-iii | Delete `appointmentMap` (irreversible end-state) | ⛔ blocked | gated on P5 win + field-clean run |
 
 Status legend: ⬜ not started · 🔄 in progress · ✅ done · ⚠️ blocked/needs decision. This table is the
 durable progress record — updated as each phase lands.
+
+### Phase 0 result (2026-06-24) — harness done & verified
+
+Built in **the plugin-deployment repo** under `src/test/java/org/rapla/test/brute/`:
+- `BruteForceFacadeSupport` — in-process `FileOperator`+`FacadeImpl` over a writable temp copy; small
+  classpath `/testdata.xml` by default, real store via `-Drapla.brutetest.data=<path>` (`assumeTrue`-
+  guarded; §17 — reads real data at runtime, asserts only ids/counts, never names).
+- `AppointmentQueryOracle` + `QueryAppointmentsDifferentialTest` — **windowing-invariance** differential
+  (all-time bindings filtered by plain-Java `overlaps()` == windowed query). Chosen over a binding-
+  re-derivation oracle because `getAllocatablesFor` ≠ the `appointmentMap` binding (template-alloc +
+  restriction divergence — see PRD 086 "Binding semantics").
+- `MutationBatteryTest` — 6 tests: create-with-conflict, delete, move-appointment, move-repeating,
+  reassign-allocatable, fresh-allocatable create/use/remove; each re-asserts the invariant + conflict
+  expectations through the mutation.
+
+**Verification:** small fixture **7/7 green**; a **large production-shaped store** (order ~10^5
+reservations) differential **passed in tens of seconds** (large heap, capped allocatable scope).
+Harness proven *sensitive* (the binding-based first cut correctly went red) and *correct*. Run the real
+differential by pointing the operator at an external store via `-Drapla.brutetest.data=<store path>`
+(+ a large `-Xmx`), `assumeTrue`-guarded.
+Real API signatures learned: `Appointment.moveTo(start)` / `move(start,end)`; `facade.remove(obj)` is
+void+throws (no Promise); `facade.newAllocatable(Classification,User)`; repeating via
+`appt.setRepeatingEnabled(true)+getRepeating().setType/​setNumber`.
+
+### Phase 1 progress (2026-06-24) — foundation infrastructure done (option C)
+
+New package `rapla-server/.../storage/impl/server/readmodel/`:
+- `Projection` — SPI: `createSchema` + `table()` + `keyColumn()` + **`rows(Entity) → Collection<Object[]>`**
+  (pure entity→rows transform; concrete projections implement it, real-entity-tested at Phase 2).
+- `ReadModel` — owns one in-memory H2; **two layers**: a generic entity-free core
+  (`upsert`/`deleteByKey`/`clearAll` = drift-safe delete-by-key + insert), and thin entity glue
+  (`put`/`remove`/`rebuild`). `index == project(objects)` by construction; per-call commit (the operator
+  seam will later batch one `UpdateResult` per transaction).
+- `ReadModelTest` — **5/5 green, 0.3 s, pure unit** (no fixture, no Spring, **no entity stub**): drives
+  the generic core with plain rows; covers idempotency, replace-by-key, absent-delete no-op, and the
+  reproject-from-scratch == incremental invariant.
+
+**Design decision (option C, agreed with user):** the foundation is entity-agnostic at the row level;
+the only place real entities appear is the concrete projections' `rows()` (Phase 2). This removed the
+hand-rolled `Entity` stub entirely — no fake rapla types in tests or production (§13). The generic
+"delete-by-entity-id + insert rows" core is the same drift-safe maintenance PRD 086/087 specify and
+Phase 0.5 proved is the hot path.
+
+### Phase 4b-ii (2026-06-24) — appointment + conflict flips built, then MEASURED — ⚠️ do not flip
+
+The `queryAppointments` read flip (`blockDerivedWindowedAppointments`) and conflict-candidate flip
+(`blockDerivedConflictCandidates`) were implemented behind the same flag, with equivalence tests green
+on the fixture. **A before/after perf measurement on the real store then produced two findings that
+say: keep these OFF.**
+
+**Finding 1 — the read flip is ~1.6× SLOWER at current scale.** Real store, 50 densest allocatables
+(top collector ~2.4k appts), a 428-appt late week: legacy `appointmentMap` **13.6 ms/query** vs flipped
+block-index **22.0 ms/query** (0.62×). The legacy in-memory `TreeSet` headSet + `overlaps()` is
+~0.3 ms/allocatable; the block path's per-allocatable H2 `executeQuery` round-trip + per-row
+`tryResolve` + `getDependent` expansion has a constant factor that dominates until collectors are far
+larger than ~2.4k. **The PRD's ~670 ms floor is a different regime** (the full ~50k-allocatable GraphQL
+path / N+1 field resolution), not this operator-level window read — so the block index does **not** win
+`queryAppointments` at this scale. The real wins to (separately) measure: the **type-bucket** (avoids
+the O(all) `getAllocatables` copy), **aggregation** (`blockStats` COUNT/GROUP BY), conflict narrowing
+**only for very large collectors**.
+
+**Finding 2 — a correctness divergence for aggregator allocatables.** At a 100-densest scope the
+flag-on vs flag-off `queryAppointments` sets **diverge** for an aggregator allocatable with
+`getDependent` children — the read-time `getDependent` expansion the flip uses ≠ the `appointmentMap`'s
+`getDependentRef` expansion that `getAppointments` does. The fixture equivalence test and the Phase-3
+"zero drift" shadow (first-250 scope) never hit that aggregator, so this was missed. **Root-cause
+`getDependent` vs `getDependentRef` before any appointment-path flip.**
+
+**Decision:** the appointment + conflict flips remain implemented but **OFF and not to be flipped** until
+(a) Finding 2 is root-caused and fixed and (b) a regime is found where the block path actually wins.
+Tests landed: `ReadModelReadFlipEquivalenceTest` (fixture, green), `QueryAppointmentsFlipPerfTest`
+(dhbwrapla, the measurement above). The type-bucket flip (4b-i) is unaffected by these findings (different
+mechanism) but should also be perf-measured before trusting its win.
+
+### Phase 4b-i (2026-06-24) — the flip flag (reversible), type-bucket flipped
+
+`LocalAbstractCachableOperator.readModelAuthoritative` — a `volatile` flip flag, default `false`, from
+`-Drapla.readmodel.authoritative` (+ a package-private test setter). It is a **flip, not a deletion**:
+the legacy structures stay maintained, so flipping back is instant. `getAllocatables(filters)` honors
+it — off → legacy scan + shadow; on → served from the bucket (`bucketDerivedAllocatables`: resolve the
+filter-types' candidates + the same `matches` filter, skipping the full-population copy/scan = the perf
+win), with **fail-safe fallback** to the legacy scan on any read-model error.
+`ReadModelFlipDifferentialTest` asserts flag-on == flag-off per type (behaviour-preserving + reversible;
+the flip is licensed only while this is green). The `queryAppointments` + conflict consumers still return
+legacy regardless of the flag — their flips ride the *same* flag (4b-ii), deferred as higher-risk on the
+hottest path. Storage+readmodel 22/22; 189 §12 leak green.
+
+### Phase 4a (2026-06-24) — 086 Stage Y conflict shadow (non-destructive)
+
+Conflict detection funnels through `getAllocatableBindings(allocatables, appointments, ignoreList, …)`
+(`getAppointments(A)` + `AppointmentImpl.getConflictingAppointments`). Added
+`shadowCompareConflictCandidates` right before its return — sampled (≤ once/10 s, own
+`lastConflictShadowAt`), guarded, side-effect-only. It checks the **Stage-Y safety invariant**: every
+authoritative conflicting appointment must appear in the block-table **range candidates** (the qa
+*envelope* `start_ts < qaMaxEnd AND end_ts > qaStart` over `getDependent`-expanded allocatables — a
+deliberate superset, so a non-empty miss is a true gap). Logs only counts (§17); returns the
+authoritative `map` unchanged.
+
+**Verification:** `ConflictCandidateShadowTest` (real far-future conflict on one allocatable; the block
+candidate set contains the conflicting appointment → completeness holds) green; rapla-server
+storage+readmodel 21/21; 188 §12 leak tests green; dhbwrapla brute 7/7. The flip (4b) — make the block
+table authoritative for reads + conflict and delete `appointmentMap` — is **irreversible and gated** on
+an explicit go plus observing zero shadow drift in the field; the perf win (O(log n + k) conflict via
+the range index vs. the full `SortedSet` scan) is realized there.
+
+### Phase 3 (2026-06-24) — 086 appointment block index, Stage X (zero drift on the real store)
+
+`AppointmentBlockProjection` (rapla-server `…/readmodel/`) projects each reservation to flat
+`appointment_block` rows — the three row kinds (single / materialized ≤52 / open-ended rule row),
+`block_id = appointmentId@allocId#idx`, binding mirroring `AppointmentMapClass.updateReservation`
+(`getIds("resources")` + template-alloc + `getRestrictionForAllocatableRef`). Registered in the
+operator's `ReadModel`, so it's maintained at the same seam.
+
+**Stage-X shadow** in `queryAppointmentsSync`: a **sampled** (≤ once/10 s), **guarded**, side-effect-only
+`shadowCompareAppointmentBlocks` compares the block-table window result against the authoritative
+`appointmentMap` raw result and logs drift *counts only* (§17) — but returns the authoritative result
+unchanged (zero behavioural change). The hot path is not doubled: throttled calls cost only a few
+skip-guards + a `long` compare. Read-time **dependent expansion** (`getDependent`) mirrors
+`getAppointments`'s belongs-to expansion (see the *Two implementation findings* in PRD 086).
+
+**Verification:** `AppointmentBlockProjectionTest` (equivalence: block window == `queryAppointments`,
+red→green) + `AppointmentBlockSeamTest` (boot/store/remove populate the table) green; rapla-server
+storage+readmodel suite 20/20; **188 §12 leak tests green**; dhbwrapla brute 7/7. **Decisive: the real
+production-shaped store (~10⁵ reservations, a few ×10⁵ appointments) differential passed AND the live
+shadow logged ZERO drift** — the block index reproduces the legacy `appointmentMap` exactly at scale.
+
+**Next (Phase 4, the cutover — a review gate):** move conflict computation onto the block-table range
+query (Stage Y), the write-path benchmark gate, then — once field drift stays zero — flip reads/conflict
+to authoritative and retire `appointmentMap`.
+
+### Phase 1 seam + Phase 2 consumer (2026-06-24) — wired, shadow, zero regression
+
+**Operator seam (Phase 1, `LocalAbstractCachableOperator`):** `readModel` field (built with the two
+type-bucket projections); boot rebuild via `rebuildReadModel(events)` right after
+`initAppointmentBindings`; incremental maintenance via `updateReadModel(result)` at the end of
+`updateIndizes` (Add/Change → `put` the resolved entity; Remove → `remove` by id); `readModel.close()`
+in `dispose()`. **Every read-model call is guarded** — a failure logs ERROR and never propagates to the
+authoritative write path (Stage-X principle: the read-model is a non-authoritative shadow). The seam is
+the same `updateIndizes(UpdateResult)` chokepoint the `appointmentMap` uses, so parity is structural.
+
+**Type-bucket consumer (Phase 2, 087 Class 1) — Stage-X shadow.** `getAllocatables(filters)` is
+overridden to query the `allocatable_type_bucket` for the filters' DynamicTypes and **compare it for
+completeness** against the authoritative scan (logs drift if the bucket is missing any scan result),
+but **returns the authoritative scan unchanged**. So behaviour is identical to today; the only effect is
+a drift signal proving the bucket is complete before a later one-line flip makes it authoritative (the
+actual perf win). The two concrete projections (`AllocatableTypeBucketProjection`,
+`ReservationTypeBucketProjection`) implement `Projection.rows()` via
+`((Classifiable)e).getClassification().getType().getId()`.
+
+**Verification:** `ReadModelSeamPopulationTest` (tier-2, real entities) — boot rebuild populates the
+bucket for every allocatable; store adds; remove deletes (3/3 green). Whole `rapla-server` storage +
+readmodel suites green (0 failures). **138 §12 GraphQL leak tests green** (`ClassificationGraphQLControllerTest`,
+`ReservationGraphQLControllerTest`, `ResourceAccessQueryGraphQLTest`) — zero regression, since the read
+path returns the authoritative result.
+
+**Next (post-review):** the reservation-bucket consumer (in the GraphQL `reservations()` path), then —
+once shadow drift is observed to be zero in the field — the flip to returning bucket candidates (the
+perf win), then Phase 3 (086 appointment index, the big one).
+
+### Phase 0.5 result (2026-06-24) — H2 write-path PASS
+
+`rapla-server/src/test/java/org/rapla/storage/readmodel/H2WritePathBenchmarkTest` (tagged `perf`,
+opt-in via `-Drapla.h2bench=true`). Builds the real `appointment_block` schema + indices, measures
+bulk projection + per-mutation re-projection. H2 added to **rapla-bom** (`h2.version` 2.3.232) +
+**rapla-server** (compile scope).
+
+- **Bulk projection:** 200k blocks in **5.13 s** (~39k rows/s → ~2.5 s per 100k) — beats the
+  "~100k-block rebuild < ~5 s" gate.
+- **Per-mutation re-projection:** **0.097 ms** (commit-per-mutation, `DELETE WHERE appointment_id=?` +
+  re-INSERT) — beats the "< ~1 ms" gate by ~10×.
+- **Finding:** the benchmark first ran at **28.35 ms/mutation** because the delete-by-appointment had
+  no index → full table scan. Added `ix_block_appointment ON appointment_block(appointment_id)` → 290×
+  faster. **PRD 086 schema corrected** to make that index mandatory (the maintenance key). Verdict: H2
+  write-path is comfortably fast enough; engine choice confirmed by measurement, not just assertion.
+
+### Stage A findings (seam map + module placement) — locked 2026-06-24
+
+**Mutation funnel is single-entry (low drift risk).** All writes converge:
+`storeAndRemove()` → `dispatch()` → `refresh()` → `AbstractCachableOperator.update()`
+(`addToCache()`/`cache.remove()`) → `LocalAbstractCachableOperator.updateIndizes()` →
+`updateAppointmentBindings()` (maintains `appointmentMap`) → `conflictFinder.updateConflicts()`.
+Boot/rebuild path: `connect()` → `cache.clearAll()` → `loadData()` → `initIndizes()` →
+`initAppointmentBindings()`. No existing listener/SPI — but we own the class, so we hook directly.
+
+**Projection seam (Phase 1):** `updateIndizes(UpdateResult)` in `LocalAbstractCachableOperator`
+(rapla-server). It already receives the structured add/change/remove diff — **the exact same input
+the `appointmentMap` shadow consumes**, so projection-vs-shadow parity is structural, not coincidental.
+Boot rebuild plugs into `initIndizes()`.
+
+**Module placement — decided:** the H2 read-model + all projections live in **rapla-server**,
+co-located with `LocalAbstractCachableOperator` / `AppointmentMapClass` / `ConflictFinder`.
+**rapla-core stays H2-free** (consistent with "no Spring Boot in core" — now "no H2 in core"). The
+layering split discovered: `getAllocatables(ClassificationFilter[])` lives in **rapla-core**
+(`AbstractCachableOperator:434`, the `new HashSet<>(cache.getAllocatables())` + filter-scan), but the
+read-model is in rapla-server. Resolution: `LocalAbstractCachableOperator` (rapla-server, the subclass)
+**overrides `getAllocatables`** to consult the H2 type-bucket and falls back to `super`'s scan — core
+untouched, server adds the indexed path. Same override pattern for any core read method an index
+accelerates.
+
+**H2 is absent from the reactor** (HSQLDB 2.7.1 is current, PRD 084). Phase 1 adds
+`com.h2database:h2` to **rapla-bom** (version management) + **rapla-server** (compile scope) — a
+flagged POM change, surfaced before it lands.
+
+**Recurrence API for the rule-row path (086):** occurrence count = `repeating.getNumber()` (computes
+from end-date when bounded; `-1` + `getEnd()==null` ⇒ open-ended; `getMaxEnd()==null` is the ∞
+sentinel). Materialize via `createBlocks(start,end,blocks)`; window-expand a rule row via
+`processBlocks(winStart,winEnd,visitor,excludeExceptions)`; correctness check via
+`overlaps(start,end,excludeExceptions)`. Exceptions are midnight-cut dates honoured inside
+`processBlocks`.
+
+**Harness data:** the real differential run points at an **external, production-shaped store** (order
+~10^5 reservations, a comparable scale of appointments/permissions/persons; confirms the
+single-appointment-dominant workload). The store holds **real personal data** → §17: the harness reads
+it at runtime (`assumeTrue`-guarded via `-Drapla.brutetest.data=<path>`, never checked in), asserting
+only on structural/count diffs, never on names. Heap-heavy: the in-process facade load needs a bumped
+surefire `-Xmx`. The harness lives in the plugin-deployment repo, which keeps a **local copy** of
+`FacadeTestSupport` (drift-risk noted in its header).
 
 ---
 

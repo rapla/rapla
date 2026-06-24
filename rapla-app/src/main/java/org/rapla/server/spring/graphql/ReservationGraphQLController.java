@@ -144,59 +144,73 @@ public class ReservationGraphQLController
                 filter.accessibleByUsername(), filter.accessibleByUserId(),
                 filter.accessibleByGroup(), parseAccessLevel(filter.accessLevel()),
                 caller, operator, pc);
-        Collection<Allocatable> visibleAllocatables;
-
         // PRD 066 — collect the visible allocatables from BOTH `allocatableIdsIn`
         // (explicit list) and `allocatableMatching` (predicate-driven), UNIONed.
         // If neither is set, fall back to "everything the caller can read."
         boolean hasIdsIn = filter.allocatableIdsIn() != null && !filter.allocatableIdsIn().isEmpty();
         boolean hasMatching = filter.allocatableMatching() != null && !filter.allocatableMatching().isEmpty();
 
-        if (hasIdsIn || hasMatching)
+        Collection<Reservation> all;
+        // PRD 086 window-first — a FULL ADMIN with NO explicit scope skips the ~48k-allocatable
+        // iteration entirely: one global window lookup. It is filter-free because canRead short-circuits
+        // to "everything" for a full admin (isAdmin()), so there is no §12 post-filter and no leak risk.
+        // The gate is exactly isAdmin() — a group-admin (canAdminUsers) or any non-admin does NOT see
+        // everything and so falls through to resource-first below. Behind the read-model flip.
+        if (!hasIdsIn && !hasMatching && caller.isAdmin()
+                && operator instanceof org.rapla.storage.impl.server.LocalAbstractCachableOperator lo
+                && lo.isReadModelAuthoritative())
         {
-            // PERF (perf-investigation 2026-06-22): resolve the scoped allocatables DIRECTLY via the
-            // catalog resolver (its idIn / typeKeyIn / where<TypeKey> passes already run §12 canRead
-            // AND drop internal types) instead of materializing+scanning ALL allocatables. The old
-            // `getAllocatables(null)` copy (`new HashSet<>(~48k)` on the dhbw store) + full stream-
-            // filter was a fixed O(N) tax on EVERY scoped query, even one naming a single id — the
-            // dominant fixed-floor cost measured (year window: 880ms unscoped → 20ms one-building).
-            // Both arms go through the same resolver, deduped by id (LinkedHashMap = union semantics).
-            java.util.LinkedHashMap<String, Allocatable> byId = new java.util.LinkedHashMap<>();
-            try
-            {
-                if (hasMatching)
-                {
-                    for (Allocatable a : classificationController.allocatables(filter.allocatableMatching()))
-                        if (a != null && a.getId() != null) byId.putIfAbsent(a.getId(), a);
-                }
-                if (hasIdsIn)
-                {
-                    for (Allocatable a : classificationController.allocatables(java.util.Map.of("idIn", filter.allocatableIdsIn())))
-                        if (a != null && a.getId() != null) byId.putIfAbsent(a.getId(), a);
-                }
-            }
-            catch (RaplaException e) { /* fall through — empty scope */ }
-            visibleAllocatables = new ArrayList<>(byId.values());
+            all = lo.reservationsInWindowGlobal(filter.from(), filter.to());
         }
         else
         {
-            visibleAllocatables = operator.getAllocatables(null).stream()
-                    .filter(a -> pc.canRead(a, caller))
-                    .collect(Collectors.toList());
+            Collection<Allocatable> visibleAllocatables;
+            if (hasIdsIn || hasMatching)
+            {
+                // PERF (perf-investigation 2026-06-22): resolve the scoped allocatables DIRECTLY via the
+                // catalog resolver (its idIn / typeKeyIn / where<TypeKey> passes already run §12 canRead
+                // AND drop internal types) instead of materializing+scanning ALL allocatables. The old
+                // `getAllocatables(null)` copy (`new HashSet<>(~48k)` on the dhbw store) + full stream-
+                // filter was a fixed O(N) tax on EVERY scoped query, even one naming a single id — the
+                // dominant fixed-floor cost measured (year window: 880ms unscoped → 20ms one-building).
+                // Both arms go through the same resolver, deduped by id (LinkedHashMap = union semantics).
+                java.util.LinkedHashMap<String, Allocatable> byId = new java.util.LinkedHashMap<>();
+                try
+                {
+                    if (hasMatching)
+                    {
+                        for (Allocatable a : classificationController.allocatables(filter.allocatableMatching()))
+                            if (a != null && a.getId() != null) byId.putIfAbsent(a.getId(), a);
+                    }
+                    if (hasIdsIn)
+                    {
+                        for (Allocatable a : classificationController.allocatables(java.util.Map.of("idIn", filter.allocatableIdsIn())))
+                            if (a != null && a.getId() != null) byId.putIfAbsent(a.getId(), a);
+                    }
+                }
+                catch (RaplaException e) { /* fall through — empty scope */ }
+                visibleAllocatables = new ArrayList<>(byId.values());
+            }
+            else
+            {
+                visibleAllocatables = operator.getAllocatables(null).stream()
+                        .filter(a -> pc.canRead(a, caller))
+                        .collect(Collectors.toList());
+            }
+            // Pass `null` as the user — NOT the caller. The storage-layer
+            // {@code AppointmentImpl.getAppointments(user, ...)} filters by
+            // appointment-OWNER when user is non-null (it's used by
+            // "my events" queries elsewhere). For a read query we want every
+            // appointment in the window; §12 is enforced by the post-loop
+            // {@code pc.canRead(r, caller)} check below. Pre-fix this resolver
+            // returned only the caller-owned subset — exactly the bug the
+            // legacy REST {@link RemoteStorageController#queryAppointments}
+            // also avoids by passing null.
+            all = ((org.rapla.storage.SyncStorageOperator) operator)
+                    .queryAppointmentsSync(null, visibleAllocatables, null,
+                            filter.from(), filter.to(), null, null, false)
+                    .getAllReservations();
         }
-        // Pass `null` as the user — NOT the caller. The storage-layer
-        // {@code AppointmentImpl.getAppointments(user, ...)} filters by
-        // appointment-OWNER when user is non-null (it's used by
-        // "my events" queries elsewhere). For a read query we want every
-        // appointment in the window; §12 is enforced by the post-loop
-        // {@code pc.canRead(r, caller)} check below. Pre-fix this resolver
-        // returned only the caller-owned subset — exactly the bug the
-        // legacy REST {@link RemoteStorageController#queryAppointments}
-        // also avoids by passing null.
-        Collection<Reservation> all = ((org.rapla.storage.SyncStorageOperator) operator)
-                .queryAppointmentsSync(null, visibleAllocatables, null,
-                        filter.from(), filter.to(), null, null, false)
-                .getAllReservations();
 
         List<Reservation> visible = new ArrayList<>(Math.min(limit, 256));
         for (Reservation r : all)

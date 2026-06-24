@@ -1,5 +1,10 @@
 # PRD 049 — One class per REST endpoint: collapse delegates into controllers
 
+> **Update 2026-06-24 — `RemoteSessionImpl` removed.** Phase 5's note that the
+> `RaplaAuthRestPage` `LOGIN_COOKIE` constant was inlined into `RemoteSessionImpl` is
+> now historical: `RemoteSessionImpl` (and the whole legacy HMAC token path) was
+> deleted — auth is JWT-only via `SpringSecurityRemoteSession` + `JwtUserResolver`.
+
 **Status:** in-progress (Phases 0-1, 3-6 landed 2026-05-21; Phase 2 partial — see notes)
 **Date:** 2026-05-21
 **Related:** PRD 009 (server bulk storage REST), PRD 031 (API namespace), PRD 041 (OpenAPI runtime removal)
