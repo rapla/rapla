@@ -244,8 +244,9 @@ Both 3a/3b sit after 086/083 in the 082 build order.
 
 ## Open Questions
 
-- **OQ1** — In-memory map (a) vs H2 read-model (b) — see *Where it lives*. Leaning (b) as the
-  foundation-validation consumer; confirm against PRD 082 foundation timing.
+- **OQ1 — resolved.** **(b) H2 read-model.** Class 1 lives on the H2 projection (not the in-memory
+  `LocalCache` map) so it is the genuine foundation-validation first consumer — exercises the put/remove
+  seam end-to-end before 086 commits to it.
 - **OQ2** — Frequency of `typeKeyIn` vs `typeKeyEq` vs `idIn` in real SPA traffic (determines whether
   the multi-type union — the biggest win — is actually exercised).
 - **OQ3** — Class-2 budget policy: LRU size / promotion threshold; H2's JSON indexing is weaker than

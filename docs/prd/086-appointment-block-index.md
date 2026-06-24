@@ -74,18 +74,21 @@ only be needed in the deferred DB-offload future, where expansion runs without a
 | Data | Rows | `is_rule` |
 |---|---|---|
 | Single appointment (~98%) | 1 block row, `start/end` = the block | false |
-| Bounded repeating ≤ cap | N **materialized** block rows | false |
-| Open-ended / over-cap repeating | 1 **rule row**, `end_ts = maxEnd/∞` | true |
+| Bounded repeating ≤ 52 | N **materialized** block rows | false |
+| Open-ended / > 52 repeating | 1 **rule row**, `end_ts = maxEnd/∞` | true |
 
 Rationale: singles are already blocks (materialization is scoped to the ~2% repeating set); bounded
 repeatings are tiny so materializing them costs a handful of rows each; the open-ended fraction
 forces a Java expansion path to exist regardless, so the choice is "materialize everything bounded,
 keep the rule path for the irreducible open-ended tail."
 
-**The cap.** Materialize iff total occurrences ≤ cap (start value **~50**); above it, or open-ended,
-keep a rule row. A count cap maps to different spans by frequency (~50 weekly ≈ 1 yr, ~50 daily ≈ 2
-mo), so a **time-horizon cap** (materialize within a resident horizon, rule-expand the tail) is the
-likely refinement — final form set from the measured occurrence distribution (OQ1).
+**The cap = 52 (locked).** Materialize iff total occurrences ≤ **52**; above it, or open-ended, keep a
+rule row. 52 is chosen as **one year of a weekly repeating** — the dominant recurrence frequency — so
+a normal weekly event materializes its whole visible year and only multi-year / open-ended series fall
+to the rule-row + Java path. A count cap maps to different spans by frequency (52 weekly ≈ 1 yr, 52
+daily ≈ 7 wk); a time-horizon cap was considered but the count cap is simpler and 52-weekly-as-a-year
+is the natural unit. Revisit only if the measured occurrence distribution shows a different dominant
+frequency.
 
 ## Why materialize the bounded ones — the index-exact slot filter
 
@@ -140,6 +143,37 @@ iterates an allocatable's full `SortedSet` with pairwise recurrence-aware overla
   `is_rule` rows (and pairs involving them), the existing Java `processBlocks` precise-overlap runs
   on the narrowed candidates. The boundary: **engine narrows + serves the exact-block majority; Java
   computes precise overlap only on the rule tail** (PRD 082 MQ8).
+
+## Open-ended rule-row handling
+
+A rule row (`is_rule=true`) stores **no rule data** — the flag is purely a pointer that says "the index
+can't answer this alone; defer to the live object." No new machinery is needed; it reuses what already
+exists:
+
+1. **Resolve `appointment_id` → the resident `AppointmentImpl`.** The block table deliberately omits
+   `repeating_kind`/`interval`/`exceptions`; the in-`LocalCache` `AppointmentImpl` already holds the
+   `Repeating` (type, interval, weekdays, number/end-date, **exceptions**). The rule row just looks it
+   up — that is why we dropped the rule columns (§ row kinds).
+2. **Window-expand only the rule-row candidates, only within the query window.** Reuse the existing
+   `AppointmentImpl.processBlocks(winStart, winEnd, collector)` / `getAppointments` — *not* a
+   reimplementation. Singles + materialized blocks are **index-exact** (answered directly); rule rows
+   are **candidates** that get expanded per-occurrence inside the window and tested with `overlaps()`.
+3. **An open-ended row (`end_ts = ∞`) is a candidate for *every* forward window.** The lower-bound
+   filter `end_ts > winStart` is always true for ∞, so every open-ended series returns as a candidate
+   for any future query and must be Java-checked. This is correct (an open-ended weekly series genuinely
+   could be active in any future week) but means the per-query Java-correction cost scales with the
+   **count of open-ended series**, not total appointments — the metric to watch (the open-ended fraction
+   varies materially between stores). A bounded > 52 row caps at `maxEnd`, so it stops being a candidate
+   past its last occurrence; only the truly open-ended (∞) rows are perpetual candidates.
+4. **Exceptions handled for free.** Because the Java path reads the live `Repeating`,
+   `getExceptions()` is honoured — an excepted occurrence is simply not emitted. The index alone could
+   never do this for an open-ended series; the rule row sidesteps it by always deferring to Java.
+   (OQ3's exception question applies only to *materialized* blocks, never to rule rows.)
+
+Maintenance: on a put, recompute `is_rule` — if a series crosses the 52 boundary or flips
+open-ended↔bounded, `DELETE WHERE appointment_id=?` and re-project (materialize ≤ 52 or write one rule
+row). The Java-correction path is the part most likely to drift, so it is exactly what the shadow
+`appointmentMap` validates during Stage X/Y.
 
 ## Aggregation
 
@@ -267,13 +301,15 @@ safe to commit. (A `DBOperator`-on-hsqldb-copy variant — the exact server back
 
 ## Open Questions
 
-- **OQ1** — Cap form & value: count (~50) vs time-horizon; final value from the measured occurrence
-  distribution. Time-horizon likely (decouples from frequency).
+- **OQ1 — resolved.** Cap = **52** (count), = one year of a weekly repeating (the dominant frequency).
+  Revisit only if the measured occurrence distribution shows a different dominant frequency.
 - **OQ2** — `maxBlockDuration` for the tight two-sided lower bound: a fixed conservative constant vs
   the real max block length per store (a degenerate multi-day block would widen it).
 - **OQ3** — Materialized-block representation for exceptions: omit excepted occurrences vs emit with
   an exception flag (affects whether the index alone can answer "is this slot free incl. exceptions").
-- **OQ4** — Backend for the test harness: `FileOperator`(data.xml copy) only, or also a
-  `DBOperator`(hsqldb copy) `@Tag("db")` variant matching the live server exactly.
+- **OQ4 — resolved.** Test-harness backend = **`FileOperator` on a `data.xml` copy** only (simpler
+  snapshot/restore; same `LocalAbstractCachableOperator` code the DBOperator path uses). A
+  `DBOperator`(hsqldb) `@Tag("db")` variant remains optional if a backend-specific divergence ever
+  appears.
 - **OQ5** — Stage X as a standalone release point (ship, observe in the field) before committing to
   Stage Y, vs straight through once the benchmark passes.
