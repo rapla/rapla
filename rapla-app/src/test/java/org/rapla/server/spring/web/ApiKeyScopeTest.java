@@ -96,7 +96,8 @@ class ApiKeyScopeTest
         MvcResult res = create(access, "{\"label\":\"events-rot\",\"scopes\":[\"write_events\",\"rotate_self\"]}");
         assertEquals(200, res.getResponse().getStatus());
         JsonNode created = MAPPER.readTree(res.getResponse().getContentAsString());
-        assertEquals(Set.of("write_events", "rotate_self"), scopeSet(created));
+        // read is the guaranteed floor — auto-added on create even when only write/rotate requested.
+        assertEquals(Set.of("read", "write_events", "rotate_self"), scopeSet(created));
 
         // a scoped key still authenticates on a read endpoint (decoder resolves the entry)
         mockMvc.perform(get("/api/storage/resources")

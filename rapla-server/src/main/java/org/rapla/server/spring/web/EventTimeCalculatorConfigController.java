@@ -8,6 +8,7 @@ import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorConfigService;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorPlugin;
+import org.rapla.server.ApiKeyScopeContext;
 import org.rapla.server.RemoteSession;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.web.bind.annotation.RestController;
@@ -31,6 +32,8 @@ public class EventTimeCalculatorConfigController implements EventTimeCalculatorC
     public DefaultConfiguration getSystemConfig() throws RaplaException
     {
         session.checkAndGetUser(request);
+        // system plugin config — interactive session only, never an api-key.
+        ApiKeyScopeContext.requireInteractiveSession("eventtimecalculator config");
         Preferences prefs = facade.getSystemPreferences();
         DefaultConfiguration config = prefs.getEntry(EventTimeCalculatorPlugin.SYSTEM_CONFIG);
         return config != null ? config : new DefaultConfiguration("eventtime");

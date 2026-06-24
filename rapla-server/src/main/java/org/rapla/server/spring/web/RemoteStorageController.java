@@ -117,21 +117,15 @@ public class RemoteStorageController implements RemoteStorage
             {
                 if (entity instanceof Preferences)
                 {
-                    Preferences preferences = (Preferences) entity;
-                    ReferenceInfo<User> ownerId = preferences.getOwnerRef();
-                    if (ownerId == null)
-                    {
-                        // Strip .server.* entries (RSA private key, LDAP / SMTP /
-                        // Exchange credentials) regardless of admin status. Matches
-                        // the other call sites in this codebase: getEntityRecursive
-                        // and UpdateDataManagerImpl.processClientReadable both strip
-                        // unconditionally. The previous '&& !user.isAdmin()' bypass
-                        // leaked the server's signing key to admin browsers on
-                        // bootstrap — admin tools that need those values use the
-                        // dedicated plugin-config endpoints (/mail/config,
-                        // /jndi, /exchange/config, /ical/config) instead.
-                        entity = UpdateDataManagerImpl.removeServerOnlyPreferences(preferences);
-                    }
+                    // Strip .server.* entries (RSA private key, LDAP / SMTP / Exchange credentials,
+                    // and the per-user org.rapla.crypto.server.* refreshToken / api-key material)
+                    // from EVERY preferences entity — system AND user-owned. The incremental path
+                    // (UpdateDataManagerImpl.processClientReadable) already strips unconditionally;
+                    // the bootstrap previously guarded on ownerId==null, leaking a user's own
+                    // server-only entries (e.g. their refreshToken) on the initial getResources —
+                    // a read-only api-key could escalate from it. Admin tools that need the
+                    // credential values use the dedicated plugin-config endpoints instead.
+                    entity = UpdateDataManagerImpl.removeServerOnlyPreferences((Preferences) entity);
                 }
                 evt.addStore(entity);
             }

@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.rapla.plugin.jndi.JNDIPlugin;
 import org.rapla.plugin.jndi.internal.JNDIConfig;
 import org.rapla.plugin.jndi.server.JNDIAuthenticationStore;
+import org.rapla.server.ApiKeyScopeContext;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -85,6 +86,8 @@ public class JNDIConfigController implements JNDIConfig
         {
             throw new RaplaSecurityException("Access only for admin users");
         }
+        // server-side LDAP bind credentials — interactive admin session only, never an api-key.
+        ApiKeyScopeContext.requireInteractiveSession("ldap config");
         Preferences preferences = facade.getSystemPreferences();
         DefaultConfiguration config = preferences.getEntry(JNDIPlugin.JNDISERVER_CONFIG);
         if (config == null)

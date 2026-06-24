@@ -11,6 +11,7 @@ import org.rapla.plugin.mail.MailConfigService;
 import org.rapla.plugin.mail.MailPlugin;
 import org.rapla.plugin.mail.server.MailInterface;
 import org.rapla.plugin.mail.server.MailapiClient;
+import org.rapla.server.ApiKeyScopeContext;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.ServerService;
 import org.rapla.storage.RaplaSecurityException;
@@ -65,6 +66,8 @@ public class MailConfigController implements MailConfigService
         {
             throw new RaplaSecurityException("Access only for admin users");
         }
+        // server-side SMTP credentials — interactive admin session only, never an api-key.
+        ApiKeyScopeContext.requireInteractiveSession("mail config");
         Preferences preferences = facade.getSystemPreferences();
         DefaultConfiguration config = preferences.getEntry(MailPlugin.MAILSERVER_CONFIG);
         if (config == null)

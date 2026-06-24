@@ -1,11 +1,123 @@
 # PRD 076 — Scoped API keys + self-rotation
 
-**Status:** done — 2026-06-21 (all three phases shipped + tested; 39 tests green). One
-discovered out-of-scope gap noted under Phase 2: api-key Bearer tokens can't drive GraphQL
-mutations yet (caller resolved by username, not subject) — enforcement is still uniform at the
-operator seam, so it applies automatically once that's fixed.
+**Status:** REOPENED 2026-06-25 — Phases 1-3 shipped 2026-06-21; a follow-up redesign (Phase 4
++ 5 below, from the 2026-06-25 code-smell audit) is in progress. Phase 4 (no-legacy default,
+config token-gate, bootstrap strip, dualis exemption) is **landed + green**; Phase 5 (api-keys
+GraphQL-only + `access_details` at the GraphQL seams) is **planned, not yet built**.
 **Related:** PRD 043 (API key mechanism — server-minted asymmetric JWT, this builds on it), PRD 071 §H7 (origin: "API key has no server-side max TTL")
+
+**Follow-up findings (2026-06-24, code-smell audit):** two limits of the "one write chokepoint" model surfaced and are recorded here so they aren't re-discovered:
+
+1. **Reads are not scope-gated at all.** The scope axis bounds *writes only*. The single
+   `ApiKeyScopeContext.current()` consultation is `guardApiKeyScopes`, which iterates the
+   `UpdateEvent`'s store/remove sets — there is **no read-side chokepoint**. Reads
+   (`getResources` → `getVisibleEntities`, `queryAppointments`, GraphQL fetchers) are filtered
+   solely by the *user's* `PermissionController.canRead*`, never by the *key's* scopes. So `{read}`
+   is a floor/marker (the key may do GETs of everything its user can see); there is no
+   `read_events`/`read_resources` split and no write-only key. Adding real read scopes needs a new
+   read chokepoint (the read surface has no single `dispatch()`-style funnel). **Deferred** — when
+   tackled, likely a new PRD. Documented in `docs/authentication.md` §"Reads are NOT scope-gated".
+2. **Non-`dispatch()` writes bypass the guard** and must gate by hand. `ImportExportManager.saveData`
+   (bulk import/export/restore), raw JDBC and file writes emit no `UpdateEvent`, so
+   `guardApiKeyScopes` never sees them. Concretely the `ArchiverService` (`backup`/`restore`/`delete`)
+   was reachable by an admin's read-only key. **Fixed 2026-06-24:** added
+   `ApiKeyScopeContext.requireWriteAllForBulk(...)`, called from `ArchiverServiceImpl.checkAccess()`
+   (gates on `write_all`); regression lock `ArchiverServiceAccessTest`; convention added to the
+   `rest-endpoint-creation` skill so future non-dispatch writes gate themselves.
 **Prior art:** GitLab [`rotate_self` token scope](https://gitlab.com/gitlab-org/gitlab/-/issues/430748) (the `rotate_self` name + endpoint-bound self-rotation), AWS IAM `${aws:username}`-scoped self key-rotation, Stripe Restricted API Keys + GitHub fine-grained PATs (per-resource read/write least-privilege model)
+
+## 2026-06-25 redesign — api-keys are GraphQL-only (Phases 4 + 5)
+
+The 2026-06-25 audit (see *Follow-up findings* above) led to a sharper authorization boundary that
+supersedes the original "an api-key is usable on **every** authenticated endpoint" assumption.
+
+### Decision
+- **api-keys are confined to a small allow-list of URL surfaces; everywhere else they are rejected
+  by token-kind** (deny-by-default — the inverse of the original model). The interactive
+  RemoteOperator/REST surface (`/api/storage/**`, the config controllers, settings) is
+  **user-token only** — an api-key has no business driving `dispatch`, `changePassword`, the
+  bootstrap, or reading server-side credential config.
+- api-keys operate on the **GraphQL layer** (`/api/graphql`) — where integrations actually read.
+  DualisAPIImpl is the one REST write exception.
+
+### api-key allow-list
+| Surface | api-key? | note |
+|---|---|---|
+| `/api/graphql/**` | ✅ | the core surface (reads today; mutations once they resolve the caller by `sub`) |
+| `/api/users/**` | ✅ | narrow §12 surface: `GET /api/users` (UserSummary = username+displayName, admin-visible-filtered) + `GET /api/users/me` (own id/username/displayName). No email/groups. |
+| `/api/dhbwsync/**` | ✅ | Dualis exception (writes via `callUnrestricted`, role-gated) |
+| `POST /api/auth/api-keys/{id}/rotate` | ✅ | self-rotation runs *through* the key |
+| `/rapla/ical`, `/rapla/calendar` | n/a | already public (`?user=` published), not bearer-gated for anyone |
+| `/api/storage/**`, config controllers, settings, `/api/auth/api-keys` POST/GET/DELETE | ❌ | user-token only |
+
+### Consequence
+Closing the REST write path means api-keys can currently only **read** (GraphQL queries). The
+write scopes (`write_events`/`write_resources`/`write_all`) stay in the vocabulary but are
+**latent** until GraphQL mutations resolve the caller by `sub` (the existing Phase-2 gap). The only
+active api-key write is Dualis (scope-exempt). `ApiKeyWriteScopeTest`'s REST-write scenario is
+superseded and will be reworked to the GraphQL path.
+
+### Phase 4 — landed 2026-06-25 (green)
+- **No-legacy default:** `ApiKeyScopes.resolveStored(empty)` + the decoder default → `{read}` (was
+  `write_all`); `LEGACY_FULL` removed. Pre-scopes keys are now read-only; the one legacy writer
+  (dualis) is exempted via `ApiKeyScopeContext.callUnrestricted`.
+- **read floor on create:** `normaliseForNewKey` always includes `read` (a stored scopes array is
+  never write-only — "at least read is set").
+- **`access_details` scope added** (`hasAccessDetails`; landed as `read_users`/`canReadUsers`,
+  renamed in Phase 5 to the generalized name): gates sensitive identity/permission expansions —
+  user PII + (future) resource permission lists. `write_all` implies it; plain `read`/`write_events`
+  do not.
+- **Config token-gate:** `ApiKeyScopeContext.requireInteractiveSession(...)` rejects api-keys from
+  the 5 plugin system/admin config reads (Mail/JNDI/Exchange/ICal/EventTimeCalc). SettingsController
+  (`getSystem`/`getCalendar`) deliberately left open — non-sensitive display metadata.
+- **Bootstrap strip consistency:** `RemoteStorageController.getResources` now strips `.server.*`
+  from ALL prefs (system AND user-owned), matching `processClientReadable` — closes the
+  user-`refreshToken` bootstrap leak.
+- Tests: `ApiKeyScopesTest`, `ApiKeyScopeContextTest`, `ArchiverServiceAccessTest`, updated
+  `ApiKeyScopeTest`; dhbwrapla `DualisAPIImpl` `callUnrestricted` wrap.
+
+### Phase 5 — planned (not built)
+1. **Central token-kind gate** in `SecurityConfig`: an api-key JWT reaches only the allow-list
+   above, else 403. One chokepoint; the Phase-4 per-config-controller gates become
+   defense-in-depth.
+2. **Sensitive-expansion enforcement = one generalized scope + a schema directive**, field-level,
+   NOT a type-level block. The critical exposure is never the type itself but its *expandable*
+   sensitive fields — for users: `groups` (permission / membership structure), `isAdmin`,
+   `authSource`, `email`; for resources (future): a permission/access-control list. These are two
+   *categories* (`read_user`, `read_permissions`) of one sensitive class, governed by a **single
+   scope `access_details`** — no growing `expand_X` zoo.
+
+   **Mechanism (declarative, one enforcement point):** a GraphQL schema directive
+   `@requiresAccessDetails(kind: USER | PERMISSIONS)` tags the sensitive fields; ONE instrumentation
+   reads it and enforces. The `kind` arg is for schema readability / audit only — enforcement is the
+   single `access_details` scope. Benefits: the complete sensitive surface is
+   `grep @requiresAccessDetails schema.graphqls` (not scattered resolver code); a new sensitive
+   field is gated by tagging it in the *schema*, so it can't be forgotten; and because the tag sits
+   on the field, every path that reaches it is covered automatically — `query.users`/`user`/`search`,
+   the `Allocatable.owner` / `Reservation.owner` expansions, the top-level `groups`/`group(id)`
+   queries. Leave `id`/`username`/`name` untagged (the §12-narrow "who owns this" surface, matching
+   the `/api/users` allow-list). Person-type allocatables: identity (`name`) is the display surface;
+   sensitive classification attributes follow the same per-field tagging.
+
+   **Two orthogonal dimensions, composed with AND — must NOT break admin user-management.** The
+   `access_details` check is the *token-kind/scope* dimension and applies to **api-keys only**: an
+   interactive session (or internal thread) has `ApiKeyScopeContext.current() == null` and therefore
+   ALWAYS passes it. So the gate reads `current() == null || hasAccessDetails(current())`, and only
+   THEN runs the existing `canAdminUser`/`canAdminGroup`/`canRead` *permission* filter. Net effect:
+   an admin (or group-admin) doing user management via the SPA/Swing (a user token) sees groups and
+   permissions exactly as today — `access_details` never subtracts from an interactive session, it
+   only adds a scope barrier for api-keys (an admin who wants a user-management or permission-audit
+   *automation* mints that key with `access_details`).
+
+   **Resource permissions today:** as of 2026-06-25 the GraphQL `Allocatable` type exposes NO
+   permission-list field (only `owner`, itself covered; `accessLevel` occurrences are PRD 069 filter
+   *inputs*, not output) — no current resource-permission leak. The directive is the guardrail: when
+   such a field is added it gets `@requiresAccessDetails(kind: PERMISSIONS)` and is gated by the same
+   `access_details` scope from day one.
+
+   *Naming note:* the Phase-4 `read_users` scope is renamed to `access_details` to reflect this
+   generalization (enforcement isn't built yet, so it's a cheap constant + test rename).
+3. Rework `ApiKeyWriteScopeTest` to the GraphQL path.
 
 ## Abstract
 

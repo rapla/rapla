@@ -105,6 +105,15 @@ class ChangeNamePost {
 
 Same for `changeEmail`/`confirmEmail` → `ChangeEmailPost` body DTO.
 
+### API-key scope coverage — automatic for `dispatch()` writes, manual for everything else
+
+API-key scopes (`read`/`write_events`/`write_resources`/`write_all`, PRD 076) are enforced at **one** chokepoint: `LocalAbstractCachableOperator.guardApiKeyScopes()`, reached only through `operator.dispatch(UpdateEvent)` (and `storeAndRemove`/`facade.store*`/`facade.removeObjects` → dispatch). So:
+
+- **Endpoints that persist by writing entities through the facade/operator are covered for free** — you cannot forget the scope check, because every `dispatch()` hits the guard, which inspects `evt.getStoreObjects()`/`getRemoveIds()` per entity type. This is true for both REST and GraphQL, and for plugins (dhbwrapla adds zero scope code and is fully covered).
+- **Endpoints that mutate state WITHOUT emitting an `UpdateEvent` bypass the guard entirely** and must gate themselves by hand. These are: `ImportExportManager.saveData(...)` (bulk import/export/restore), raw JDBC, file/blob writes, or anything that mutates a different store. There is no compiler or architecture test forcing the check — it is genuinely easy to forget.
+
+For a bypass write, call `ApiKeyScopeContext.requireWriteAllForBulk("<operation>")` at the access gate. A non-api-key caller (`current() == null`) passes; a scoped key must hold `write_all`, since bulk ops touch arbitrary entity types. **Reference impl:** `ArchiverServiceImpl.checkAccess()` — `backup`/`restore`/`delete` go through `saveData`, so they call `requireWriteAllForBulk` after the `isAdmin()` check (an admin's read-only key would otherwise trigger a full restore). Regression lock: `ArchiverServiceAccessTest`. When you add an endpoint, ask: *does this reach `operator.dispatch()`?* If no, you own the scope check.
+
 ### Always name `@RequestParam("name")` and `@PathVariable("name")` explicitly
 
 Java parameter names are lost on `@Override`-inherited methods unless the implementing class is compiled with `-parameters`. SpringDoc emits the OpenAPI spec by reading the controller's `@Override` signature — without the explicit name on the interface annotation, parameters become `arg0`/`arg1`/`arg2`, breaking SPA codegen and Swing proxies. **Always name the binding.**

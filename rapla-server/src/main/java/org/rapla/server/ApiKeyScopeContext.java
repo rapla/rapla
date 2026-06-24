@@ -1,5 +1,7 @@
 package org.rapla.server;
 
+import org.rapla.storage.RaplaSecurityException;
+
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.function.Supplier;
@@ -47,6 +49,43 @@ public final class ApiKeyScopeContext
             return null;
         }
         return source.get();
+    }
+
+    /**
+     * Explicit scope gate for a privileged operation that <b>bypasses the storage write
+     * chokepoint</b> ({@code LocalAbstractCachableOperator.guardApiKeyScopes}) and therefore is
+     * NOT covered by the automatic per-entity enforcement — e.g. bulk import/export/restore via
+     * {@code ImportExportManager.saveData}, raw JDBC, or file writes that emit no
+     * {@code UpdateEvent}. Such call sites must invoke this by hand. A non-api-key caller
+     * ({@link #current()} {@code == null}) passes unchanged; a scoped api-key must hold
+     * {@code write_all}, since these operations touch arbitrary entity types wholesale.
+     *
+     * @param operation short description for the error message (e.g. {@code "archiver restore"})
+     */
+    public static void requireWriteAllForBulk(String operation) throws RaplaSecurityException
+    {
+        Set<String> scopes = current();
+        if (scopes != null && !scopes.contains(ApiKeyScopes.WRITE_ALL))
+        {
+            throw new RaplaSecurityException("api key scope does not permit " + operation);
+        }
+    }
+
+    /**
+     * Rejects api-key principals outright — for reads that surface server-side secrets or admin
+     * config (SMTP/LDAP/Exchange credentials, plugin config) that only an <b>interactive user
+     * session</b> may see. No api-key data scope is enough; the material is simply off-limits to
+     * api-keys regardless of scope. A non-api-key caller ({@link #current()} {@code == null} —
+     * interactive session or internal thread) passes unchanged.
+     *
+     * @param operation short description for the error message (e.g. {@code "mail config"})
+     */
+    public static void requireInteractiveSession(String operation) throws RaplaSecurityException
+    {
+        if (current() != null)
+        {
+            throw new RaplaSecurityException("api keys may not read " + operation);
+        }
     }
 
     /** Runs {@code action} with scope enforcement suspended on this thread (privileged write). */

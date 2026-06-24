@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.rapla.plugin.archiver.ArchiverService;
 import org.rapla.scheduler.CommandScheduler;
+import org.rapla.server.ApiKeyScopeContext;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.RaplaSecurityException;
@@ -54,6 +55,9 @@ public class ArchiverServiceImpl  implements ArchiverService
         {
             throw new RaplaSecurityException("ArchiverService can only be triggered by admin users");
         }
+        // backup/restore/delete bypass the operator dispatch chokepoint (saveData / bulk remove),
+        // so the per-entity api-key scope guard never fires — gate them explicitly on write_all.
+        ApiKeyScopeContext.requireWriteAllForBulk("archiver operation");
 	}
 	
 	public boolean isExportEnabled() throws RaplaException {

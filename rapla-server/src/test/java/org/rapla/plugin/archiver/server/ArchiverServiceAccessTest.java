@@ -1,12 +1,17 @@
 package org.rapla.plugin.archiver.server;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaException;
+import org.rapla.server.ApiKeyScopeContext;
+import org.rapla.server.ApiKeyScopes;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.test.util.FacadeTestSupport;
+
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -76,6 +81,44 @@ class ArchiverServiceAccessTest extends FacadeTestSupport
     @Test
     void adminUserIsAllowed() throws Exception
     {
+        assertDoesNotThrow(() -> serviceWithSessionUser(user("homer")).checkAccess());
+    }
+
+    @AfterEach
+    void resetScopeSource()
+    {
+        ApiKeyScopeContext.setSource(null);
+    }
+
+    /**
+     * The archiver's backup/restore/delete bypass the storage write-chokepoint
+     * ({@code operator.dispatch} → {@code guardApiKeyScopes}) — restore/backup go through
+     * {@code ImportExportManager.saveData}, which emits no {@code UpdateEvent}. So an
+     * admin's read-only (or write_events/write_resources) api-key would otherwise trigger a
+     * full restore unchecked. {@code checkAccess} must explicitly demand {@code write_all}.
+     */
+    @Test
+    void adminWithReadScopeIsRejected() throws Exception
+    {
+        ApiKeyScopeContext.setSource(() -> Set.of(ApiKeyScopes.READ));
+        assertThrows(RaplaSecurityException.class,
+                () -> serviceWithSessionUser(user("homer")).checkAccess(),
+                "a read-only api-key must not trigger archiver bulk operations");
+    }
+
+    @Test
+    void adminWithWriteEventsScopeIsRejected() throws Exception
+    {
+        ApiKeyScopeContext.setSource(() -> Set.of(ApiKeyScopes.WRITE_EVENTS));
+        assertThrows(RaplaSecurityException.class,
+                () -> serviceWithSessionUser(user("homer")).checkAccess(),
+                "a non-write_all api-key must not trigger archiver bulk operations");
+    }
+
+    @Test
+    void adminWithWriteAllScopeIsAllowed() throws Exception
+    {
+        ApiKeyScopeContext.setSource(() -> Set.of(ApiKeyScopes.WRITE_ALL));
         assertDoesNotThrow(() -> serviceWithSessionUser(user("homer")).checkAccess());
     }
 }

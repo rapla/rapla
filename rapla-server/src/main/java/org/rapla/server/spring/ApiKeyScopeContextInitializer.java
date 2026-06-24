@@ -43,8 +43,9 @@ public class ApiKeyScopeContextInitializer
             return null;
         }
         List<String> scopes = jwt.getClaimAsStringList("scopes");
-        // An api_key JWT always carries scopes post-decode; a missing claim is treated as a
-        // legacy full-power key (write_all), never as read-only, to preserve today's behaviour.
-        return (scopes == null || scopes.isEmpty()) ? ApiKeyScopes.LEGACY_FULL : Set.copyOf(scopes);
+        // An api_key JWT always carries scopes post-decode; a missing/empty claim resolves to the
+        // least-privilege default {read} (no legacy write_all fallback — pre-scopes keys are
+        // read-only; the one legacy writer, dualis, is exempted via callUnrestricted).
+        return (scopes == null || scopes.isEmpty()) ? ApiKeyScopes.DEFAULT : Set.copyOf(scopes);
     }
 }

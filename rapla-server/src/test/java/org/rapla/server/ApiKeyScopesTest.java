@@ -25,13 +25,39 @@ class ApiKeyScopesTest
     }
 
     @Test
-    void missingScopesOnStoredEntryMeansWriteAll()
+    void missingScopesOnStoredEntryMeansReadOnly()
     {
-        // D8 — an EXISTING key entry written before this PRD has no scopes field;
-        // it must resolve to full write power (behaviour-identical to today), NEVER read.
+        // Legacy handling dropped (supersedes the original D8): a stored entry with no scopes
+        // field now resolves to least-privilege {read}, NOT write_all. The only legacy key that
+        // writes (dualis) is exempted at its own endpoint via ApiKeyScopeContext.callUnrestricted.
         Set<String> resolved = ApiKeyScopes.resolveStored(null);
-        assertTrue(ApiKeyScopes.canWriteEvents(resolved), "legacy key must keep event-write");
-        assertTrue(ApiKeyScopes.canWriteResources(resolved), "legacy key must keep resource-write");
+        assertEquals(Set.of(ApiKeyScopes.READ), resolved);
+        assertFalse(ApiKeyScopes.canWriteEvents(resolved), "legacy key must NOT write events");
+        assertFalse(ApiKeyScopes.canWriteResources(resolved), "legacy key must NOT write resources");
+    }
+
+    @Test
+    void accessDetailsIsValidVocabularyButNotImpliedByPlainRead()
+    {
+        // access_details gates sensitive identity/permission expansions; the default {read} key
+        // does NOT have it. write_all (full power) implies it; write_events does not.
+        assertEquals(Set.of(ApiKeyScopes.READ, ApiKeyScopes.ACCESS_DETAILS),
+                ApiKeyScopes.normaliseForNewKey(List.of(ApiKeyScopes.ACCESS_DETAILS)));
+        assertFalse(ApiKeyScopes.hasAccessDetails(Set.of(ApiKeyScopes.READ)));
+        assertTrue(ApiKeyScopes.hasAccessDetails(Set.of(ApiKeyScopes.ACCESS_DETAILS)));
+        assertTrue(ApiKeyScopes.hasAccessDetails(Set.of(ApiKeyScopes.WRITE_ALL)));
+        assertFalse(ApiKeyScopes.hasAccessDetails(Set.of(ApiKeyScopes.WRITE_EVENTS)));
+    }
+
+    @Test
+    void createAlwaysIncludesRead()
+    {
+        // "validate at least read is set on create" — read is the guaranteed floor, auto-added
+        // even when only a write scope is requested, so no stored key is ever write-only.
+        assertTrue(ApiKeyScopes.normaliseForNewKey(List.of(ApiKeyScopes.WRITE_EVENTS))
+                .contains(ApiKeyScopes.READ));
+        assertEquals(Set.of(ApiKeyScopes.READ, ApiKeyScopes.WRITE_ALL),
+                ApiKeyScopes.normaliseForNewKey(List.of(ApiKeyScopes.WRITE_ALL)));
     }
 
     @Test

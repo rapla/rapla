@@ -10,6 +10,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.plugin.export2ical.ICalConfigService;
 import org.rapla.plugin.export2ical.UserICalSettings;
+import org.rapla.server.ApiKeyScopeContext;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -38,6 +39,8 @@ public class ICalConfigController implements ICalConfigService
         {
             throw new RaplaSecurityException("Access only for admin users");
         }
+        // system plugin config — interactive admin session only, never an api-key.
+        ApiKeyScopeContext.requireInteractiveSession("ical config");
         return loadConfig();
     }
 

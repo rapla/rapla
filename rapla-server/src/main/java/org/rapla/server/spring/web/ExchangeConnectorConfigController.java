@@ -10,6 +10,7 @@ import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfigRemote;
 import org.rapla.plugin.exchangeconnector.ExchangeUserSettings;
 import org.rapla.plugin.exchangeconnector.server.ExchangeConnectorServerPlugin;
+import org.rapla.server.ApiKeyScopeContext;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -40,6 +41,8 @@ public class ExchangeConnectorConfigController implements ExchangeConnectorConfi
         {
             throw new RaplaSecurityException("Access only for admin users");
         }
+        // server-side Exchange credentials — interactive admin session only, never an api-key.
+        ApiKeyScopeContext.requireInteractiveSession("exchange config");
         Preferences preferences = facade.getSystemPreferences();
         return preferences.getEntry(ExchangeConnectorConfig.EXCHANGESERVER_CONFIG, new RaplaConfiguration());
     }
