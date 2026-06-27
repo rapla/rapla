@@ -106,6 +106,15 @@ Before implementing anything, check **`docs/prd/` AND `docs/prd/done/`** for an 
 | Auth / login flow specifics | `docs/authentication.md` |
 | GraphQL schema / resolver specifics | `docs/graphql.md` |
 
+**Obsidian vaults.** Two markdown vaults are in play; both are plain Obsidian vaults (`.obsidian/` config dirs):
+
+| Vault | Path | Scope |
+|---|---|---|
+| **Rapla vault** | `docs/` (i.e. `~/git/rapla/docs`) | This project's checked-in knowledge — PRDs, `architecture/`, `authentication.md`, `graphql.md`. Shared via git. |
+| **Private vault** | `~/vault` | Christopher's personal notes — NOT part of this repo, never committed here, never read into rapla artefacts (§17 PII rules still apply). |
+
+The rapla vault (`docs/`) is the source of truth per the table above; the private vault is separate and personal. Don't conflate them — never write personal-vault content into `docs/`, and never copy `docs/` PRDs into `~/vault` without intent.
+
 **Before diagnosing a problem or planning work in an unfamiliar area, check `docs/architecture/`, `docs/authentication.md`, `docs/graphql.md` first** — they may already document the invariant or design decision you're trying to reverse-engineer from code.
 
 **When in a session you learn something non-obvious about how Rapla works** — entity relationships, invariants, why a design decision was made — **propose to the user that it gets written down** in the appropriate `docs/` file. Don't leave domain knowledge only in session context where it disappears.

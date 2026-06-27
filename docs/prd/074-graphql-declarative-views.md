@@ -256,6 +256,7 @@ query appointments @view(title: "Termine", variant: DISPLAY) {   # operation nam
 | **title** | `@view(title:)` — **literal *or* composition** | composition runs server-side at the VIEW_TITLE level (`allocatables`/`timeIntervall`/`selectedDate`); `ParsedText` passes literals through |
 | **sort** | per-field **`@sort(ASC\|DESC, priority:n)`** (canonical); `@view(sort:)` optional shorthand | legacy `sortingstring` maps to per-field |
 | **variant default** | `@view(variant:)`; per-field override via `name(variant:)` | both — view-wide default + per-column override |
+| **window seed** | `@view(fromAnchor:, fromOffset:, toAnchor:, toOffset:, unit:)` | default date range for a `$filter: ReservationFilter!` view; anchors `TODAY\|WEEK_START\|MONTH_START`, offsets in `unit` `DAYS\|WEEKS\|MONTHS`; omitted ⇒ `TODAY −7…+7`. Plus `rowLabel`/`groupLabel`/`renderModes`. |
 
 **Two paths, two needs:**
 

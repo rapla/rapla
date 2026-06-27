@@ -9,7 +9,7 @@
 > gone. The cleanup foreseen in "Open questions" (rename the `storeAPIKey` family once
 > `TokenHandler` is retired) is now unblocked.
 
-**Status:** in-progress (server-side complete, docs + UI pending)
+**Status:** in-progress (server-side + docs complete; **Angular key-management UI shipped 2026-06-27**, branch spring-boot; Swing UI still deferred)
 **Date:** 2026-05-16
 **Supersedes:** PRD 031 §"API key surface" (was draft, now superseded by this design)
 
@@ -234,9 +234,19 @@ Side tests verified green: `ApiPrefixArchitectureTest` 3/3, `UnifiedRefreshInteg
 
 Storage (multi-slot, public-key-only, legacy compat); endpoints (POST/GET/DELETE authenticated); verification (api-key JWTs accepted as Bearer); security (only public keys server-side, per-key revocation, alg pinned to RS256, no algorithm-confusion attack surface — JWT-embedded `jwk` is ignored). Docs: `docs/authentication.md` API-key section rewritten end-to-end.
 
+### Angular UI — shipped 2026-06-27 (branch spring-boot)
+
+Reached from the SPA's central user menu → **Account settings ▸ Manage API keys** (PRD 078 toolbar). `ApiKeysDialogComponent` (`rapla-angular/src/app/account/`) over `ApiKeysService` (cookie-auth `HttpClient`):
+
+- **List** — label, created/expiry, last-4 thumbprint, scope chips (write scopes red). Expired keys are filtered out (PRD 076 D11).
+- **Create** — label + optional expiry-days (**default 180 days**) + scope checkboxes (`read` pinned on, the rest opt-in, mirrors `ApiKeyScopes` D5); the minted bearer JWT is shown ONCE in a copy-box, never re-fetchable.
+- **Rotate** — issues a fresh same-scope key (shown once to copy) and grace-expires the old one. Inline **grace (minutes) field, default 180, max 2 days**. Drives the unified `POST /{id}/rotate?graceMinutes=` (PRD 076 **Phase 6 / D12** — the endpoint now accepts the cookie-session user rotating their own key, not just the api-key's own credential). *History:* a first cut used create+revoke compose, then a no-op button; both replaced by the server-side grace-window rotate so a live integration key isn't killed instantly (D7).
+- **Revoke** (`DELETE /{id}`).
+
+Tier-5 `ApiKeysService` spec + tier-6 `ApiKeysDialogComponent` spec. No new server endpoints — pure consumer of the existing `/api/auth/api-keys` contract.
+
 ### What's missing
 
-- **Angular UI** for key management (Out-of-scope, deferred) — where the GitHub-PAT-style one-time copy-paste box lives.
 - **Swing UI** for key management (Out-of-scope, deferred).
 - **Cleanup**: legacy `storeAPIKey`/`getAPIKeys`/`removeAPIKey` names could be renamed once `TokenHandler` is retired. Not done — interface name churn isn't worth it.
 

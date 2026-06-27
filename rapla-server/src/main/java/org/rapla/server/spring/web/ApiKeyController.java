@@ -19,7 +19,9 @@ import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.spring.DatasourceConfiguredCondition;
 import org.rapla.storage.RaplaSecurityException;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -68,6 +70,10 @@ public class ApiKeyController
 {
     public static final String API_KEY_TYP = "api_key";
     private static final int RSA_KEY_SIZE = 2048;
+    // PRD 076 Phase 6 / D7 — rotation grace window (minutes) + successor lifetime.
+    private static final long DEFAULT_GRACE_MINUTES = 180;
+    private static final long MAX_GRACE_MINUTES = 2880; // 2 days — server cap
+    private static final int SUCCESSOR_TTL_DAYS = 180;
     private static final ObjectMapper MAPPER = JsonMapper.builder().build();
 
     private final RaplaKeyStorage keyStore;
@@ -99,7 +105,9 @@ public class ApiKeyController
         Long expiresAtMillis = (req.expiresInDays == null)
                 ? null
                 : now + req.expiresInDays * 86_400_000L;
-        return mintAndStore(user, req.label, scopes, expiresAtMillis);
+        CreateResponse created = mintAndStore(user, req.label, scopes, expiresAtMillis, null);
+        compactExpired(user); // D11 — opportunistic prune of any expired entries on write
+        return created;
     }
 
     /**
@@ -113,44 +121,77 @@ public class ApiKeyController
     @PostMapping("/{id}/rotate")
     public CreateResponse rotate(@AuthenticationPrincipal Jwt principal,
                                  @PathVariable("id") String id,
-                                 @RequestParam(value = "graceSeconds", required = false) Long graceSeconds)
+                                 @RequestParam(value = "graceMinutes", required = false) Long graceMinutes)
             throws RaplaException, JOSEException
     {
-        if (!isApiKeyPrincipal(principal))
-        {
-            throw new RaplaSecurityException("rotate is for api keys only");
-        }
+        // PRD 076 D12 — one endpoint, two principal types. Resolve the owner first; the key must
+        // live in THEIR keystore (findEntryByKid only searches the caller's own keys), so a foreign
+        // or nonexistent id is indistinguishable — no existence leak (§12).
         User user = resolveUser(principal);
-        List<String> callerScopes = principal.getClaimAsStringList("scopes");
-        if (!ApiKeyScopes.canRotateSelf(callerScopes))
-        {
-            throw new RaplaSecurityException("rotate_self scope required");
-        }
-        Object callerKid = principal.getHeaders().get("kid");
-        if (callerKid == null || !callerKid.equals(id))
-        {
-            throw new RaplaSecurityException("a key may only rotate itself");
-        }
         var oldEntry = findEntryByKid(user, id);
         if (oldEntry == null)
         {
             throw new RaplaSecurityException("key not found");
         }
-        // Successor inherits the predecessor's scope set EXACTLY (D3 — no escalation).
+        // D15 (Model B) — rotation requires the TARGET key to hold rotate_self, uniformly for human
+        // AND machine callers. A read-only key is NOT rotatable (delete + create a fresh one). The
+        // scope is read from the authoritative STORED entry (D8), not the JWT claim. Combined with
+        // D13 (the old key sheds rotate_self on rotation), this means a grace predecessor is no
+        // longer rotatable — "only the latest token in a chain can rotate" holds via the UI too.
+        if (!ApiKeyScopes.resolveStored(readScopes(oldEntry)).contains(ApiKeyScopes.ROTATE_SELF))
+        {
+            throw new RaplaSecurityException("key is not rotatable — it has no rotate_self scope");
+        }
+        if (isApiKeyPrincipal(principal))
+        {
+            // Machine self-rotation: an api-key may rotate ONLY itself (its kid must equal {id});
+            // rotate_self on the target — i.e. itself — was just verified above (D3/D10 no escalation).
+            Object callerKid = principal.getHeaders().get("kid");
+            if (callerKid == null || !callerKid.equals(id))
+            {
+                throw new RaplaSecurityException("a key may only rotate itself");
+            }
+        }
+
+        long minutes = graceMinutes == null ? DEFAULT_GRACE_MINUTES : Math.max(0L, graceMinutes);
+        if (minutes > MAX_GRACE_MINUTES)
+        {
+            // D7 cap — a "grace" window must not become an unbounded second lifetime. → HTTP 400.
+            throw new IllegalArgumentException("graceMinutes may not exceed " + MAX_GRACE_MINUTES + " (2 days)");
+        }
+        // D14 sprawl guardrail (NOT a compromise control): at most 2 live tokens per rotation chain —
+        // the active key + its one grace predecessor. If the key being rotated still has a STILL-VALID
+        // predecessor (a grace token from a previous rotation that hasn't expired or been deleted),
+        // refuse — otherwise rapid re-rotation with a small grace could pile up unbounded live tokens.
+        // Routine slow rotation is unaffected: by the next cycle the predecessor has long expired (and
+        // been compacted), so it no longer blocks.
+        if (oldEntry.has("prev"))
+        {
+            var prevNode = findEntryByKid(user, oldEntry.get("prev").asText());
+            if (prevNode != null && !isExpired(prevNode.toString()))
+            {
+                throw new PreviousKeyStillActiveException();
+            }
+        }
+        // Successor inherits the predecessor's scope set EXACTLY — including rotate_self, so the NEW
+        // key can itself be rotated again later (D3 no-escalation; D13). Fresh default lifetime
+        // (D7 update — was never-expiring).
         Set<String> successorScopes = ApiKeyScopes.resolveStored(readScopes(oldEntry));
         String label = oldEntry.has("label") ? oldEntry.get("label").asText() : null;
-        long graceMillis = (graceSeconds == null ? 300L : Math.max(0L, graceSeconds)) * 1000L;
-        long oldExp = System.currentTimeMillis() + graceMillis;
+        long now = System.currentTimeMillis();
+        long oldExp = now + minutes * 60_000L;
+        long successorExp = now + (long) SUCCESSOR_TTL_DAYS * 86_400_000L;
+        CreateResponse successor;
         try
         {
             // Key storage lives in the user's Preferences; persisting the successor + shortening
             // the old entry are privileged management writes the scope guard must NOT block (a
             // read/rotate_self key has no write_all). Suspend enforcement for just these writes.
-            return ApiKeyScopeContext.callUnrestricted(() ->
+            successor = ApiKeyScopeContext.callUnrestricted(() ->
             {
-                CreateResponse successor = mintAndStore(user, label, successorScopes, null);
+                CreateResponse s = mintAndStore(user, label, successorScopes, successorExp, id);
                 shortenStoredExp(user, id, oldExp);
-                return successor;
+                return s;
             });
         }
         catch (RaplaException | JOSEException e)
@@ -161,10 +202,13 @@ public class ApiKeyController
         {
             throw new RaplaException("rotation failed: " + e.getMessage(), e);
         }
+        compactExpired(user); // D11 — prune now-dead entries (not the just-grace-shortened old key)
+        return successor;
     }
 
     /** Mints a fresh keypair, signs one api-key JWT, stores the public-key-only entry, returns once. */
-    private CreateResponse mintAndStore(User user, String label, Set<String> scopes, Long expiresAtMillis)
+    private CreateResponse mintAndStore(User user, String label, Set<String> scopes, Long expiresAtMillis,
+                                        String prevKid)
             throws JOSEException, RaplaException
     {
         long now = System.currentTimeMillis();
@@ -199,7 +243,7 @@ public class ApiKeyController
 
         // Persist public-key-only metadata. The full JWT is NEVER stored. Scopes live HERE
         // (the stored entry), not in the signed JWT — server-side authoritative + migratable (D8).
-        String storedEntry = serialiseEntry(keypair.toPublicJWK(), label, now, expiresAtMillis, scopes);
+        String storedEntry = serialiseEntry(keypair.toPublicJWK(), label, now, expiresAtMillis, scopes, prevKid);
         keyStore.storeAPIKey(user, thumbprint, storedEntry);
         // keypair (and the private key) goes out of scope here.
 
@@ -238,13 +282,31 @@ public class ApiKeyController
         return null;
     }
 
-    /** Rewrites the stored entry for {@code kid} with a shortened {@code exp} (D7/D9 grace). */
+    /**
+     * Grace-degrades the rotated-away OLD key: shortens its {@code exp} to the grace deadline
+     * (D7/D9) AND strips {@code rotate_self} from its stored scopes (D13). Scope lives in the stored
+     * entry (D8), so the decoder reads the reduced set on the old key's next call — within the grace
+     * window the old key still authenticates, but it can no longer self-rotate (a possibly-compromised
+     * key can't mint its own successor and re-establish itself). The NEW key keeps rotate_self.
+     */
     private void shortenStoredExp(User user, String kid, long expMillis) throws RaplaException
     {
         var node = findEntryByKid(user, kid);
         if (node == null) return;
         ObjectNode updated = (ObjectNode) node;
         updated.put("exp", expMillis);
+        if (updated.has("scopes") && updated.get("scopes").isArray())
+        {
+            var reduced = MAPPER.createArrayNode();
+            for (var s : updated.get("scopes"))
+            {
+                if (!ApiKeyScopes.ROTATE_SELF.equals(s.asText()))
+                {
+                    reduced.add(s.asText());
+                }
+            }
+            updated.set("scopes", reduced);
+        }
         keyStore.storeAPIKey(user, kid, updated.toString());
     }
 
@@ -257,7 +319,8 @@ public class ApiKeyController
         for (String entry : stored)
         {
             KeyMetadata meta = parseMetadata(entry);
-            if (meta != null)
+            // D11 — expired keys are dead (decoder rejects them); never surface them in the UI.
+            if (meta != null && !isExpired(entry))
             {
                 out.add(meta);
             }
@@ -271,7 +334,64 @@ public class ApiKeyController
     {
         User user = resolveUser(principal);
         keyStore.removeAPIKey(user, id);
+        compactExpired(user); // D11 — opportunistic prune of any expired entries on write
         return ResponseEntity.noContent().build();
+    }
+
+    /** True if the stored entry carries an {@code exp} already in the past (D11). */
+    private static boolean isExpired(String entry)
+    {
+        try
+        {
+            var node = MAPPER.readTree(entry);
+            return node.has("exp") && node.get("exp").isNumber()
+                    && node.get("exp").asLong() < System.currentTimeMillis();
+        }
+        catch (Exception e)
+        {
+            return false;
+        }
+    }
+
+    /**
+     * D11 — opportunistic compaction: drop stored entries whose {@code exp} is already past. Called
+     * on every keystore write (create / rotate / revoke), never on the read/verify path (§16 — the
+     * decoder stays side-effect-free). The removes are privileged management writes, so they run
+     * unrestricted (a low-privilege api-key doing a self-delete has no {@code write_all}).
+     */
+    private void compactExpired(User user) throws RaplaException
+    {
+        try
+        {
+            ApiKeyScopeContext.callUnrestricted(() ->
+            {
+                long now = System.currentTimeMillis();
+                for (String entry : new ArrayList<>(keyStore.getAPIKeys(user)))
+                {
+                    try
+                    {
+                        var node = MAPPER.readTree(entry);
+                        if (node.has("exp") && node.get("exp").isNumber() && node.get("exp").asLong() < now)
+                        {
+                            keyStore.removeAPIKey(user, node.get("kid").asText());
+                        }
+                    }
+                    catch (Exception ignored)
+                    {
+                        // skip malformed entries
+                    }
+                }
+                return null;
+            });
+        }
+        catch (RaplaException e)
+        {
+            throw e;
+        }
+        catch (Exception e)
+        {
+            throw new RaplaException("api-key compaction failed: " + e.getMessage(), e);
+        }
     }
 
     private User resolveUser(Jwt principal) throws RaplaException
@@ -289,7 +409,7 @@ public class ApiKeyController
     }
 
     private static String serialiseEntry(JWK publicJwk, String label,
-                                         long createdAt, Long expiresAt, Set<String> scopes)
+                                         long createdAt, Long expiresAt, Set<String> scopes, String prevKid)
     {
         ObjectNode node = MAPPER.createObjectNode();
         node.put("kid", publicJwk.getKeyID());
@@ -298,6 +418,9 @@ public class ApiKeyController
         if (label != null) node.put("label", label);
         node.put("iat", createdAt);
         if (expiresAt != null) node.put("exp", expiresAt);
+        // D14 — a rotation successor records its predecessor's kid so the next rotation can enforce
+        // the max-2-per-chain sprawl guardrail. Absent on freshly-created (non-rotated) keys.
+        if (prevKid != null) node.put("prev", prevKid);
         var scopeArray = node.putArray("scopes");
         for (String scope : scopes) scopeArray.add(scope);
         return node.toString();
@@ -378,5 +501,19 @@ public class ApiKeyController
             String expiresAt,
             List<String> scopes)
     {
+    }
+
+    /**
+     * 409 — D14 sprawl guardrail: the key being rotated still has a live grace predecessor, so
+     * rotating again would exceed 2 live tokens in the chain. Delete the old grace token first.
+     * NOT a security control (a compromise is contained by revoking the active key, not by this).
+     */
+    @ResponseStatus(HttpStatus.CONFLICT)
+    static final class PreviousKeyStillActiveException extends RuntimeException
+    {
+        PreviousKeyStillActiveException()
+        {
+            super("previous key in this rotation chain is still active — delete it before rotating again");
+        }
     }
 }

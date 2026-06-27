@@ -1098,7 +1098,7 @@ type Mutation {
 
   """
   Delete N DynamicTypes by id. Admin-only. Rejected with
-  `REFERENCE_EXISTS` (and `referrers: [ID!]` capped at 20) if any data
+  `REFERENCE_EXISTS` (and `referrers: [ID!]` capped at 50) if any data
   instance still uses the type — the admin must first delete instances
   or reassign via a future reshape mutation.
   """

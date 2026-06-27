@@ -674,11 +674,33 @@ Each key carries a **scope set** that bounds the blast radius of a leak. Two axe
   or `write_all`; resources (Allocatable) need `write_resources` or `write_all`; anything else
   (User, DynamicType, …) needs `write_all`. A denied write returns the SAME 401 a permission
   denial does — indistinguishable.
-- **Self-rotation** (`POST /{id}/rotate`, gated by `rotate_self`): mints a **same-scope**
-  successor (never escalates), returns it once, and sets a short server-side **grace TTL** on the
-  old key (`?graceSeconds=`, default 300, `0` = immediate). The old key keeps working for the
-  grace window then expires — bounded overlap without an indefinite dual-key phase. A key may
-  rotate **only itself** (the `{id}` must equal the caller's `kid`).
+- **Rotation** (`POST /{id}/rotate`) — PRD 076 Phase 6:
+  - **Rotation requires the target key to hold `rotate_self` (D15, Model B)** — uniformly, whether
+    the caller is an **api-key** or a **logged-in user** (cookie/Bearer access token). A `read`-only
+    key is **not** rotatable; delete it and create a fresh one. Scopes are read from the server-side
+    stored entry (D8), never from the JWT (which carries no scopes).
+  - **One endpoint, two callers (D12):** an **api-key** may rotate **only itself** (`{id}` ==
+    caller's `kid`); a **logged-in user** may rotate **any `rotate_self` key they own** (a session
+    has no `kid`, so "self-only" can't apply — but the owner is trusted over their own keys). A
+    foreign/unknown `{id}` is indistinguishable (no existence leak, §12).
+  - Mints a **same-scope** successor (never escalates), returns it once, fresh **180-day** expiry,
+    and sets a **grace TTL** on the old key: `?graceMinutes=`, **default 180**, `0` = immediate,
+    **server-capped at 2 days (2880) → HTTP 400**. The old key keeps working for the grace window
+    then expires (bounded overlap, no indefinite dual-key phase).
+  - **The successor keeps `rotate_self`; the old key sheds it (D13)** — only the *latest* token in
+    a chain can rotate.
+  - **At most 2 live tokens per chain (D14, anti-sprawl):** a 2nd rotation while the prior grace
+    token is still alive returns **409** — delete the old grace token first. This is a guardrail
+    against accidentally piling up tokens, **not** a security control.
+  - Expired entries are pruned on every key write and never shown in `GET /api/auth/api-keys` (D11).
+
+> **Rotation is hygiene, NOT incident response. To contain a compromise, REVOKE — don't rotate.**
+> Grace deliberately keeps the leaked token alive briefly, and a `rotate_self` token is a
+> self-renewing credential — both are wrong for containment. **Revoke** (`DELETE /{id}`) is
+> immediate, with no grace. Because only the latest token in a chain can rotate (D13), deleting
+> the **active** key strips rotation from the whole chain (the grace predecessor can't rotate and
+> self-expires). Keep `rotate_self` off keys you don't need to self-renew (it's opt-in, default
+> `{read}`).
 - **Server can only tighten expiry, never extend it (D9):** the effective expiry is
   `min(jwt.exp, stored.exp)`. The signed JWT `exp` is the hard ceiling; shortening the stored
   `exp` (what `rotate` does) can pull it earlier. A missing stored `exp` is ignored — a legacy

@@ -233,7 +233,7 @@ public class DynamicTypeMutationController
                 continue;
             }
             // Check for referrers — instances of this type
-            List<String> referrers = collectReferrers(dt, 20);
+            List<String> referrers = collectReferrers(dt, 50);
             if (!referrers.isEmpty())
             {
                 Map<String, Object> err = validationError(i, "REFERENCE_EXISTS",

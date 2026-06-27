@@ -73,3 +73,6 @@ secrets.yaml
 # config, dev secret), not committed
 /tools/keycloak/
 /.agents/scheduled_tasks.lock
+
+# Obsidian vault config — local app state (UI layout, plugins), not project content
+docs/.obsidian/

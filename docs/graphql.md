@@ -1018,6 +1018,13 @@ Kanonische Vorlage für eine Wochen-/Tabellenansicht: `appointmentBlocks` liefer
 Eingabe steckt im `$filter`-Objekt (`ReservationFilter`). **Instanz-neutral** — keine
 deployment-spezifischen Typ-Keys im Query-Text; die kommen nur als Variablen-Daten rein.
 
+**`@view`-Fensterkonfiguration (window-seed).** Nimmt eine View einen `$filter: ReservationFilter!`, kann
+`@view` das Standard-Zeitfenster vorgeben — sonst gilt `TODAY −7 … +7`. Anker `fromAnchor`/`toAnchor`
+(`TODAY | WEEK_START | MONTH_START`) + Versatz `fromOffset`/`toOffset` (Int) in `unit`
+(`DAYS | WEEKS | MONTHS`); z. B. Montag–Montag-Woche =
+`@view(fromAnchor: WEEK_START, fromOffset: 0, toAnchor: WEEK_START, toOffset: 7)`. Dazu
+`rowLabel`/`groupLabel`/`renderModes: [ViewRenderMode]` für Beschriftung und erlaubte Darstellungsmodi.
+
 ```graphql
 query Wochenansicht(
   $filter: ReservationFilter!,                     # Event-Fenster (+ optional allocatableMatching)

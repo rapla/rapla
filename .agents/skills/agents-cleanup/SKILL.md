@@ -1,6 +1,6 @@
 ---
 name: agents-cleanup
-description: Use when the user asks to clean up, trim, slim, or reorganize AGENTS.md (or the project CLAUDE.md that @-includes it). AGENTS.md is always-on context loaded every session, so it has to stay short and rule-dense — this skill carries the methodology for keeping it that way — the four lenses (move-to-skills, dedup, de-verbose, move-to-docs), the "is it a rule or is it detail?" decision test, and the relocate-don't-delete invariant. Takes free-text args naming what to focus on this pass (e.g. "trim §8 and dedup the build rules"); with no args, does a full four-lens scan and proposes findings before touching anything. Skip for editing the *content* of a single rule — that's just an Edit; this is for structural cleanup.
+description: Use when the user asks to clean up, trim, slim, or reorganize AGENTS.md. AGENTS.md is always-on context loaded every session, so it has to stay short and rule-dense — this skill carries the methodology for keeping it that way — the four lenses (move-to-skills, dedup, de-verbose, move-to-docs), the "is it a rule or is it detail?" decision test, and the relocate-don't-delete invariant. Takes free-text args naming what to focus on this pass (e.g. "trim §8 and dedup the build rules"); with no args, does a full four-lens scan and proposes findings before touching anything. Skip for editing the *content* of a single rule — that's just an Edit; this is for structural cleanup.
 ---
 
 # Cleaning up AGENTS.md

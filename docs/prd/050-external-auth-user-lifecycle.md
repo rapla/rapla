@@ -203,7 +203,7 @@ Same shape applies to `isAdmin` and other server-side-only fields. Per-field adm
 - [x] Phase 2 — Stamp at auth (idempotent).
 - [x] Phase 3 — Server guards: 4 blocks + capabilities + admin-only `disconnectExternalAuth`. 10/10 ExternalAuthLifecycleIntegrationTest green.
 - [x] Phase 4 — Swing UI: admin `UserEditUI.AuthenticationSourceField` + disconnect; self `UserOption` probes capabilities, disables buttons + "Managed by &lt;label&gt;" tooltip when external.
-- [x] ~~Phase 5 — Angular SPA~~ **Cut 2026-05-21** — no SPA settings page planned.
+- [x] Phase 5 — Angular SPA: **shipped 2026-06-27** (branch spring-boot). Originally cut 2026-05-21 (no SPA settings page); un-cut once the SPA grew a central user menu. `EditAccountDialogComponent` (`rapla-angular/src/app/account/`) over `ProfileService` consumes the existing `GET /api/storage/profile/capabilities` + `POST /api/storage/change/{name,email,password}`. The menu hides "Edit account" entirely when `externalIdpLabel != null`; the dialog additionally gates each section on the `canChange*` flags and shows the "managed by &lt;label&gt;" banner — same matrix as Swing's `UserOption`. No new server endpoints. Tier-5 `ProfileService` spec + tier-6 dialog spec (local vs. provisioned).
 - [x] Phase 6 — `RemoteStorage.canChangePassword()` removed; `RemoteOperator.canChangePassword()` routes through capabilities. `legacyCanChangePasswordEndpoint_is404_afterPrd050Removal` pins it.
 - [ ] **Follow-up audit** — dispatch-path bypass (non-admin clears own `authenticationSource` via `dispatch(UpdateEvent)`); same for `isAdmin`. Tracked separately; not blocking.
 

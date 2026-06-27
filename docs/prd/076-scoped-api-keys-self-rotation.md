@@ -4,6 +4,8 @@
 + 5 below, from the 2026-06-25 code-smell audit) is in progress. Phase 4 (no-legacy default,
 config token-gate, bootstrap strip, dualis exemption) is **landed + green**; Phase 5 (api-keys
 GraphQL-only + `access_details` at the GraphQL seams) is **planned, not yet built**.
+**Phase 6** (interactive human rotation from the SPA + grace cap + expired-entry compaction,
+from the 2026-06-27 SPA key-management UI) is **in progress** — see Plan §Phase 6, D7 update, D11/D12.
 **Related:** PRD 043 (API key mechanism — server-minted asymmetric JWT, this builds on it), PRD 071 §H7 (origin: "API key has no server-side max TTL")
 
 **Follow-up findings (2026-06-24, code-smell audit):** two limits of the "one write chokepoint" model surfaced and are recorded here so they aren't re-discovered:
@@ -251,9 +253,36 @@ Three invariants:
       scope set equals predecessor's (no escalation), key without `rotate_self` → 401, **api-key
       cannot reach the generic create endpoint (D10)**, old key valid within grace then rejected.
 
+### Phase 6 — interactive rotation + key lifecycle ⏳ (2026-06-27)
+Driven by the SPA "Manage API keys" UI (PRD 043 §Angular UI). The shipped rotate (Phase 3) is
+machine-only — endpoint-bound to the api-key's own credential (D10). The SPA user needs to rotate
+their own keys from the browser cookie session, and expired entries must not accumulate.
+- [x] **Unified rotate endpoint (D12).** `POST /api/auth/api-keys/{id}/rotate` accepts EITHER an
+      api-key bearer OR a cookie-session user. Authorization branches by principal: an **api-key**
+      may rotate ONLY itself (token `kid == id`) and must hold `rotate_self` (preserves D3/D10
+      no-escalation — the successor inherits the rotated key's scopes); a **human user** may rotate
+      ANY key they own (resolved from their own keystore → no cross-user, no existence leak, §12).
+- [x] **`graceMinutes` (D7 update).** Renamed `graceSeconds` → `graceMinutes`. Default **180 min**;
+      **server rejects > 2 days (2880) → HTTP 400**; `0` = immediate. The successor gets a fresh
+      **180-day** expiry (matches the SPA create default; does not violate D1 — that forbids a forced
+      *key* TTL, this is a default, null still allowed).
+- [x] **OLD key sheds `rotate_self` on rotation (D13).** Successor keeps it (rotation repeats); the
+      rotated-away old key loses it (can't self-rotate during grace). Only the latest token in a chain
+      can rotate ⇒ revoking it strips rotation from the whole chain.
+- [x] **Max-2-per-chain sprawl guardrail (D14).** Successor stores `prev`; a 2nd rotation while the
+      predecessor is still live → **409**. Pure anti-sprawl, explicitly NOT a compromise control.
+- [x] **Expired-entry compaction (D11).** On every keystore write (create / rotate / revoke), prune
+      stored entries whose `exp` is already past; `list()` filters expired entries out. No
+      decoder-side deletion (§16 — reads stay side-effect-free), no scheduled sweep (PRD 089 D6 pattern).
+- [x] Tier-3 `ApiKeyInteractiveRotationTest` (5/5): human rotates own key (old valid during grace);
+      `graceMinutes > 2880` → 400; cross-user id → not-found (§12); chain capped at 2 (409 then ok
+      after delete); expired entry pruned + absent from `list()`. `ApiKeySelfRotationTest` (6/6)
+      adapted to `graceMinutes` + D13/D14.
+
 ### Documentation
 - [x] `docs/authentication.md` — api-key scope + self-rotation flow
 - [x] `docs/architecture/rest-api.md` — the rotate endpoint + scope param
+- [ ] `docs/authentication.md` / `rest-api.md` — refresh for the unified rotate + `graceMinutes` + compaction (Phase 6)
 
 ## Tests
 
@@ -345,6 +374,11 @@ break in-flight callers that haven't picked up the successor yet. Why not indefi
 that's the manual create→migrate→`DELETE` path, still available for deliberate long migrations.
 Depends on D9 (server must be able to tighten a key's effective expiry).
 
+> **Phase 6 update (2026-06-27).** The grace param is now `graceMinutes` (renamed from
+> `graceSeconds` — endpoint unpublished), **default 180 min**, and the **server caps it at 2 days
+> (2880) → HTTP 400** so a "grace" can't become an unbounded second lifetime. The successor minted
+> on rotate gets a fresh **180-day** expiry (was: null/never), matching the SPA create default.
+
 **D9 — effective expiry = the EARLIEST of the present `exp` values; the server can only tighten,
 never loosen; a MISSING `exp` is ignored.** Today `ApiKeyJwtDecoder` enforces expiry from the
 immutable JWT `exp` claim only (`claims.getExpirationTime()`, line 147–150) and ignores the
@@ -368,3 +402,85 @@ extra cost. The signed JWT is immutable in the client's hand and is NOT the scop
 existing key's blob has no `scopes` field → defaults to `write_all`, behaviour-identical to
 today (full write power) → backward-compatible, non-breaking. Only newly-minted keys get the
 `{read}` default (D5).
+
+**D11 — expired key entries are pruned by opportunistic write-time compaction, not a scheduled
+sweep or a read-path delete (Phase 6).** D9 makes an expired key *unusable* (decoder rejects on
+`exp < now`), but nothing removed the dead stored entry — it lingered in the user's Preferences
+keystore and still showed in `list()`. Fix: on every keystore write (create / rotate / revoke),
+drop entries whose `exp` is already past, and filter expired entries out of `list()`. Rejected
+alternatives: (a) **decoder-side deletion** — the decoder is a read/verify path; deleting there
+violates AGENTS.md §16 (reads stay side-effect-free); (b) **scheduled sweep** — heavier, and the
+codebase favours opportunistic compaction (this is exactly the PRD 089 D6 / `UserListsService`
+pattern). Accepted tradeoff: a user who rotates once and never touches keys again leaves one dead
+entry (unusable, invisible in the UI) until their next write — bounded, not unbounded growth.
+
+**D12 — one rotate endpoint for both machine and human; authorization branches by principal
+(Phase 6).** `POST /api/auth/api-keys/{id}/rotate` accepts an api-key bearer OR a cookie-session
+user — same endpoint, no human/machine fork (it is unpublished, so the contract was changed
+freely). The authorization, however, MUST differ: an **api-key** may rotate ONLY itself (token
+`kid == id`) and must hold `rotate_self`; a **human user** may rotate ANY key they own. Why the
+asymmetry is mandatory: the successor inherits the rotated key's scopes (D3), so if a
+`{read, rotate_self}` api-key could rotate a *sibling* `write_all` key it would mint itself a
+`write_all` successor — escalation. A human session already holds full authority over its own
+keys, so "any owned key" is safe there. Ownership is resolved from the caller's own keystore, so
+an id the caller doesn't own is indistinguishable from a nonexistent id (no existence leak, §12).
+D12 supersedes D10's "endpoint-bound to the key's own credential" framing for the human case;
+D10 still governs the api-key case (a key reaches only self-rotate/self-delete, never `create`).
+
+**D13 — on rotation the OLD key sheds `rotate_self`; the successor keeps it (Phase 6).** The
+successor inherits the predecessor's scope set EXACTLY — *including* `rotate_self` — so rotation is
+repeatable (the new key can be rotated again). The rotated-away OLD key, however, has `rotate_self`
+stripped from its stored scopes at the same moment its `exp` is grace-shortened. Mechanism: scope
+lives in the stored entry (D8), which the decoder reads on the old key's next call — so within the
+grace window the old key still authenticates (in-flight callers keep working) but can no longer
+self-rotate. Why: you rotate because the old credential may be compromised; if the old key could
+still self-rotate during grace it could mint its OWN successor and re-establish persistence, side-
+stepping the rotation. Stripping `rotate_self` from the old key (a pure de-escalation of a
+key that is about to expire anyway) closes that. The successor keeping `rotate_self` is essential —
+without it you could only ever rotate once. Locks `ApiKeySelfRotationTest`
+(`rotateSelfIssuesSameScopeSuccessor` = successor keeps `rotate_self`;
+`rotatedOldKeyLosesRotateSelfButSuccessorKeepsIt` = old key 401s on re-rotate, successor rotates
+once its predecessor is deleted).
+
+**D14 — at most 2 live tokens per rotation chain; this is a SPRAWL guardrail, not a security
+control (Phase 6).** Each rotation successor stores its predecessor's kid (`prev`). A rotation is
+refused with **HTTP 409** if the key being rotated still has a `prev` that resolves to a
+*still-valid* (un-expired, un-deleted) entry — so a chain never holds more than the active key +
+one grace predecessor. **Why it exists:** without it, rapid re-rotation with a small grace window
+could accidentally pile up an unbounded number of simultaneously-valid tokens. **Why it is NOT a
+compromise defence** (explicitly): a stolen `rotate_self` token is contained by *revoking the
+active key* (immediate DELETE), never by this cap — in fact the cap is irrelevant to an attacker
+who simply holds the latest token. It only bounds accidental sprawl. Routine slow rotation is
+unaffected: by the next cycle the predecessor has long since expired (grace ≤ 2 days) and been
+compacted (D11), so it no longer blocks. Locks `ApiKeyInteractiveRotationTest.chainIsCappedAtTwoLiveTokens`
+(2nd rotation → 409; allowed again after the predecessor is deleted).
+
+**Security model (recorded so it isn't re-litigated):** rotation is a *routine hygiene* feature
+(zero-downtime key refresh), **NOT** an incident-response tool. Grace deliberately keeps the old
+token alive briefly, and `rotate_self` is a self-renewing credential — both are wrong for
+containment. To contain a compromise you **REVOKE** (immediate `DELETE`, no grace) the active key
+— D13 guarantees only the latest token in a chain can rotate, so deleting it strips rotation from
+the whole chain (the grace predecessor can't rotate and self-expires). `rotate_self` stays opt-in
+(default `{read}`, D5) and is documented as a persistence risk if leaked. This is written up in
+`docs/authentication.md` § API keys.
+
+**D15 — rotation requires the TARGET key to hold `rotate_self`, uniformly for human AND machine
+callers (Model B, Phase 6).** Supersedes D12's "a human may rotate ANY key they own." Rationale
+(user, 2026-06-27): D12 let a logged-in owner rotate even a `read`-only key, so `rotate_self` — a
+scope literally named for rotation — was invisible/irrelevant in the SPA, and "only the latest
+token can rotate" (D13) held only for the machine path. **Inconsistent ⇒ users get sceptical.**
+Model B is one rule: a key is rotatable iff its **stored** scopes (D8 — never the JWT, which
+carries no scopes at all) include `rotate_self`. The SPA shows the rotate button only for
+`rotate_self` keys; a `read`-only key is not rotatable (delete + create a fresh one). The human
+path still differs in ONE inherent way — a cookie session has no `kid`, so it can't be restricted
+to "self only" (the machine's `kid == id` check) — but the owner rotating any of *their own*
+`rotate_self` keys is safe. Composes with D13: the rotated-away old key has `rotate_self` stripped
+from its stored entry, so it is **immediately non-rotatable even via the UI** (button vanishes,
+server 401s) — "only the latest token rotates" now holds everywhere. Locks
+`ApiKeyInteractiveRotationTest` (`readOnlyKeyIsNotRotatable`, `rotatedOldKeyIsNoLongerRotatable`)
++ SPA `isRotatable` button gate.
+
+> **Note on the wire format (D8 recap):** the api-key the client holds is a JWT carrying only
+> `sub`/`iat`/`typ=api_key`/optional `exp`+`name` and a header `kid` — **no scopes**. Scopes live
+> server-side in the stored entry keyed by `kid`, read fresh on every request. That's why D13's
+> strip and D15's gate take effect against a token the user still physically holds.

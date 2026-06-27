@@ -26,6 +26,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -78,10 +79,10 @@ class ApiKeySelfRotationTest
         return MAPPER.readTree(res.getResponse().getContentAsString());
     }
 
-    private MvcResult rotate(String bearer, String id, Long graceSeconds) throws Exception
+    private MvcResult rotate(String bearer, String id, Long graceMinutes) throws Exception
     {
         String url = "/api/auth/api-keys/" + id + "/rotate"
-                + (graceSeconds == null ? "" : "?graceSeconds=" + graceSeconds);
+                + (graceMinutes == null ? "" : "?graceMinutes=" + graceMinutes);
         return mockMvc.perform(post(url).header("Authorization", "Bearer " + bearer)).andReturn();
     }
 
@@ -110,8 +111,10 @@ class ApiKeySelfRotationTest
         assertEquals(200, res.getResponse().getStatus(), "rotate_self key must rotate itself");
         JsonNode succ = MAPPER.readTree(res.getResponse().getContentAsString());
 
-        // successor inherits the scope set EXACTLY (D3 no escalation) — set equality (unordered)
-        assertEquals(java.util.Set.of("read", "rotate_self"), new java.util.HashSet<>(scopesOf(succ)));
+        // Successor inherits the scope set EXACTLY — including rotate_self, so it can be rotated again
+        // later (D3 no-escalation; D13 strips rotate_self from the OLD key, not the new one).
+        assertEquals(java.util.Set.of("read", "rotate_self"), new java.util.HashSet<>(scopesOf(succ)),
+                "successor keeps rotate_self so rotation can repeat");
         assertNotEquals(oldId, succ.get("id").asText(), "successor must be a new key");
         // successor authenticates
         assertEquals(200, getResources(succ.get("key").asText()));
@@ -125,11 +128,43 @@ class ApiKeySelfRotationTest
         String oldId = key.get("id").asText();
         String oldJwt = key.get("key").asText();
 
-        rotate(oldJwt, oldId, 1L); // 1-second grace
+        rotate(oldJwt, oldId, null); // default grace (180 min) keeps the old key alive
         assertEquals(200, getResources(oldJwt), "old key must still work within the grace window");
 
-        Thread.sleep(1300);
-        assertEquals(401, getResources(oldJwt), "old key must be rejected after the grace window");
+        // A fresh key rotated with graceMinutes=0 expires immediately (minute-granularity grace
+        // makes a sub-second timing test impractical otherwise).
+        JsonNode key2 = createKey(access, "grace0", "[\"read\",\"rotate_self\"]");
+        String old2 = key2.get("key").asText();
+        rotate(old2, key2.get("id").asText(), 0L);
+        Thread.sleep(50);
+        assertEquals(401, getResources(old2), "old key must be rejected once the grace window is 0/past");
+    }
+
+    @Test
+    void rotatedOldKeyLosesRotateSelfButSuccessorKeepsIt() throws Exception
+    {
+        // D13 — after rotation the OLD key can no longer self-rotate (rotate_self stripped from its
+        // stored scopes), but the SUCCESSOR can rotate again. Otherwise you could only ever rotate once.
+        String access = OAuthTestSupport.loginAs(mockMvc, "homer", "duffs");
+        JsonNode key = createKey(access, "chain", "[\"read\",\"rotate_self\"]");
+        String oldId = key.get("id").asText();
+        String oldJwt = key.get("key").asText();
+
+        JsonNode succ = MAPPER.readTree(rotate(oldJwt, oldId, null).getResponse().getContentAsString());
+
+        // The OLD key still authenticates within grace, but may NOT self-rotate again.
+        assertEquals(200, getResources(oldJwt), "old key still valid within grace");
+        assertEquals(401, rotate(oldJwt, oldId, null).getResponse().getStatus(),
+                "old key lost rotate_self — cannot self-rotate again (D13)");
+
+        // The successor keeps rotate_self, but rotating it is blocked while the old grace token still
+        // lives (D14 max-2 cap) — delete the predecessor first, then rotation repeats.
+        assertEquals(409, rotate(succ.get("key").asText(), succ.get("id").asText(), null).getResponse().getStatus(),
+                "second rotation blocked while predecessor still in grace (D14)");
+        mockMvc.perform(delete("/api/auth/api-keys/" + oldId).header("Authorization", "Bearer " + access))
+                .andExpect(status().isNoContent());
+        assertEquals(200, rotate(succ.get("key").asText(), succ.get("id").asText(), null).getResponse().getStatus(),
+                "successor keeps rotate_self — rotation repeats once the predecessor is gone");
     }
 
     @Test

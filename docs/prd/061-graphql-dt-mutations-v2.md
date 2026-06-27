@@ -95,7 +95,11 @@ errors: [{
 }]
 ```
 
-`sampleEntities` capped at 50 (same as §5 referrers).
+`sampleEntities` capped at 50 (same as §5 referrers). The cap is a presentational tuning constant
+(how many sample ids to surface), not a correctness invariant — it is deliberately **not** covered by a
+dedicated regression test (a real cap test needs 51+ fixture referrers, disproportionate); the
+`REFERENCE_EXISTS` path itself is tested by `DynamicTypeMutationControllerTest.deleteEventTypeWithReservationsReportsReferenceExists`.
+A `20` reappearing in `collectReferrers(...)` is the regression to watch (was reverted 2026-06-27).
 
 **Tier-3 tests** — one per non-trivial matrix cell. Seed a DynamicType +
 N entities with mixed parseable/unparseable values, attempt the change,
