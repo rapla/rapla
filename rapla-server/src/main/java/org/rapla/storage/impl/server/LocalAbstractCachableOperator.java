@@ -142,10 +142,16 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
      */
     private volatile org.rapla.storage.impl.server.readmodel.PermissionIndex permissionIndex;
     /**
-     * PRD 086/087 Phase 4b — the flip flag. When {@code false} (default) the read-model only
-     * shadow-compares and consumers return the legacy result; when {@code true} flipped consumers serve
-     * from the read-model (the perf win). The legacy structures stay maintained, so flipping back is
-     * instant. Set via {@code -Drapla.readmodel.authoritative=true} (or the test setter). A read-model
+     * PRD 086/087 Phase 4b — the flip flag. When {@code true} flipped consumers serve from the in-memory
+     * read-model (the perf win); when {@code false} they return the legacy {@code appointmentMap} result.
+     * The legacy structures stay maintained, so flipping back is instant and lossless.
+     *
+     * <p><b>Default in production is {@code true}</b>: the Spring server sets it from
+     * {@code rapla.readmodel.authoritative} (default true, {@code RaplaServerProperties.Readmodel}) via
+     * {@code ServerStorageSelector.applyMergeConfig} — overridable to {@code false} in an external/custom
+     * {@code application.yml}. This field's initializer is only the <i>non-Spring</i> fallback (directly
+     * constructed operators in tests / embedded use), where it stays {@code false} unless
+     * {@code -Drapla.readmodel.authoritative=true} is set or the test setter flips it. A read-model
      * failure on the authoritative path falls back to the legacy scan, so the flip is fail-safe.
      */
     private volatile boolean readModelAuthoritative = Boolean.getBoolean("rapla.readmodel.authoritative");
@@ -772,50 +778,83 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 for (Appointment appointment : appointmentSet)
                 {
                     Reservation reservation = appointment.getReservation();
-                    if (!match(reservation, annotationQuery))
+                    if (!appointmentPassesNormalFilters(reservation, appointment, annotationQuery, nonTemplates, requestsOnly, isResourceTemplate, filters))
                     {
                         continue;
                     }
-                    if ( !nonTemplates.isEmpty())
-                    {
-                        final Stream<Allocatable> allocatablesFor = reservation.getAllocatablesFor(appointment);
-                        if (!allocatablesFor.anyMatch(nonTemplates::contains))
-                        {
-                            continue;
-                        }
-                    }
-                    if ( requestsOnly ) {
-                        final Stream<Allocatable> allocatablesFor = reservation.getAllocatablesFor(appointment);
-                        if (!allocatablesFor.anyMatch(alloc->reservation.getRequestStatus(alloc) != null))
-                        {
-                            continue;
-                        }
-                    }
-                    // Ignore Templates if not explicitly requested
-
-                    final boolean isTemplate = RaplaComponent.isTemplate(reservation);
-                    if ((isTemplate != isResourceTemplate) )
-                    {
-                        // FIXME this special case should be refactored, so one can get all reservations in one method
-                        continue;
-                    }
-                    if (filters != null && !ClassificationFilter.Util.matches(filters, reservation))
-                    {
-                        continue;
-                    }
-                    Collection<Appointment> appointmentCollection = allocatableMap.get(entity);
-                    if (appointmentCollection == null)
-                    {
-                        appointmentCollection = new LinkedHashSet<>();
-                        allocatableMap.put(entity, appointmentCollection);
-                    }
-                    appointmentCollection.add(appointment);
+                    allocatableMap.computeIfAbsent(entity, k -> new LinkedHashSet<>()).add(appointment);
                 }
             }
 
             AppointmentMapping result = new AppointmentMapping(allocatableMap);
             return result;
         }
+    }
+
+    /**
+     * PRD 086 — the SINGLE per-appointment visibility predicate for the normal window read. Extracted
+     * from {@code queryAppointmentsSync}'s post-loop so that BOTH the resource-first path (per-allocatable
+     * candidates) and the window-first path ({@link #queryAppointmentsWindowFirst}, global-index
+     * candidates) filter through the EXACT same code — no parallel filter logic to drift (templates,
+     * annotation-query, requests-only, classification filter all live here once).
+     */
+    private boolean appointmentPassesNormalFilters(Reservation reservation, Appointment appointment,
+            Map<String, String> annotationQuery, Set<Allocatable> nonTemplates, boolean requestsOnly,
+            boolean isResourceTemplate, ClassificationFilter[] filters)
+    {
+        if (reservation == null) return false;
+        if (!match(reservation, annotationQuery)) return false;
+        if (!nonTemplates.isEmpty() && reservation.getAllocatablesFor(appointment).noneMatch(nonTemplates::contains))
+        {
+            return false;
+        }
+        if (requestsOnly && reservation.getAllocatablesFor(appointment).noneMatch(alloc -> reservation.getRequestStatus(alloc) != null))
+        {
+            return false;
+        }
+        // Ignore templates unless explicitly requested (isResourceTemplate).
+        if (RaplaComponent.isTemplate(reservation) != isResourceTemplate) return false;
+        if (filters != null && !ClassificationFilter.Util.matches(filters, reservation)) return false;
+        return true;
+    }
+
+    /**
+     * PRD 086 window-first — the unscoped read served from the global interval index (one O(log N + k)
+     * lookup instead of iterating every allocatable), producing the SAME {@link AppointmentMapping} as the
+     * resource-first {@code queryAppointmentsSync} would for a full admin: the candidate appointments run
+     * through the IDENTICAL {@link #appointmentPassesNormalFilters} predicate, and each surviving
+     * appointment is grouped under its RESOLVABLE allocatables (so a binding to a deleted/dangling
+     * allocatable is dropped exactly as legacy — which iterates only resolvable allocatables — does).
+     * One filter mechanism, two candidate sources: window-first cannot drift from resource-first.
+     * Caller-gated to full admins (no {@code canRead} filter needed); normal scope ⇒ isResourceTemplate
+     * false, nonTemplates empty.
+     */
+    public AppointmentMapping queryAppointmentsWindowFirst(LocalDateTime start, LocalDateTime end,
+            ClassificationFilter[] filters, Map<String, String> annotationQuery, boolean requestsOnly)
+    {
+        long fromMs = (start == null) ? Long.MIN_VALUE : DateTools.toMilli(start);
+        long toMs = (end == null) ? Long.MAX_VALUE : DateTools.toMilli(end);
+        SortedSet<Appointment> candidates = new TreeSet<>(new AppointmentStartComparator());
+        candidates.addAll(appointmentBindings.overlappingGlobal(fromMs, toMs));
+        SortedSet<Appointment> windowed = AppointmentImpl.getAppointments(candidates, null, start, end, false);
+        Map<Entity, Collection<Appointment>> allocatableMap = new LinkedHashMap<>();
+        for (Appointment appointment : windowed)
+        {
+            Reservation reservation = appointment.getReservation();
+            if (!appointmentPassesNormalFilters(reservation, appointment, annotationQuery, Collections.emptySet(), requestsOnly, false, filters))
+            {
+                continue;
+            }
+            // Group under each resolvable allocatable — same reachability semantics as the resource-first
+            // path (legacy iterates facade.getAllocatables()); dangling-only bindings contribute nothing.
+            reservation.getAllocatablesFor(appointment).forEach(alloc -> {
+                if (alloc != null && tryResolve(alloc.getReference()) != null)
+                {
+                    allocatableMap.computeIfAbsent(alloc, k -> new LinkedHashSet<>()).add(appointment);
+                }
+            });
+        }
+        return new AppointmentMapping(allocatableMap);
     }
 
 
@@ -1362,13 +1401,43 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 Category cat = (Category) entity;
                 if (cat.getKey() == null) continue;  // super-category check is elsewhere
-                if (!Tools.isSpecCompliant(cat.getKey()))
+                // PRD 058 Phase 6 — group keys (user-groups subtree) never become
+                // GraphQL identifiers, so they use the looser pre-058 legacy rule.
+                boolean valid = isInUserGroupsSubtree(cat)
+                        ? Tools.isLegacyKey(cat.getKey())
+                        : Tools.isSpecCompliant(cat.getKey());
+                if (!valid)
                 {
                     throw new RaplaException(i18n.format("error.invalid_key",
                             new Object[] { cat.getKey(), "'_'", "'_'" }));
                 }
             }
         }
+    }
+
+    /**
+     * PRD 058 Phase 6 — true if {@code cat} is the {@code user-groups} root
+     * (the direct child of the super-category keyed {@link Permission#GROUP_CATEGORY_KEY})
+     * or any of its descendants. Walks parents to the super-category. Used to
+     * relax group-key validation to the legacy rule — group keys are exposed
+     * only as {@code type Group} string data, never as generated GraphQL
+     * identifiers, so the strict spec doesn't apply to them.
+     */
+    private boolean isInUserGroupsSubtree(Category cat)
+    {
+        Category c = cat;
+        for (int guard = 0; c != null && guard < 100; guard++)
+        {
+            Category parent = c.getParent();
+            if (Permission.GROUP_CATEGORY_KEY.equals(c.getKey())
+                    && parent != null
+                    && parent.getReference().equals(Category.SUPER_CATEGORY_REF))
+            {
+                return true;
+            }
+            c = parent;
+        }
+        return false;
     }
 
     protected void initIndizes() throws RaplaException
@@ -1893,28 +1962,15 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     }
 
     /**
-     * PRD 086 window-first — every reservation with an appointment overlapping {@code [from, to)}, via
-     * the global interval index: ONE O(log N + k) window lookup instead of iterating every allocatable.
-     * Result-equal to the legacy unscoped read <b>for a full admin</b> (who sees everything, so no
-     * {@code canRead} post-filter is needed — the caller gates on {@code isAdmin()}). The candidate
-     * superset (open-ended envelopes over-approximate) is passed through the identical
-     * {@code AppointmentImpl.getAppointments} the legacy path uses, so the windowed appointment set — and
-     * thus the reservation set — is exact. Intended for the unscoped admin branch only.
+     * PRD 086 window-first — the reservations overlapping {@code [from, to)} via the global index, for the
+     * unscoped full-admin branch. Thin adapter over {@link #queryAppointmentsWindowFirst} (the unified
+     * mechanism): same candidate source, same {@link #appointmentPassesNormalFilters} predicate, same
+     * resolvable-allocatable grouping — it just projects to the reservation set the controller needs.
+     * No filtering of its own, so it can never drift from {@code queryAppointmentsSync}.
      */
     public Collection<Reservation> reservationsInWindowGlobal(LocalDateTime from, LocalDateTime to)
     {
-        long fromMs = (from == null) ? Long.MIN_VALUE : DateTools.toMilli(from);
-        long toMs = (to == null) ? Long.MAX_VALUE : DateTools.toMilli(to);
-        SortedSet<Appointment> candidates = new TreeSet<>(new AppointmentStartComparator());
-        candidates.addAll(appointmentBindings.overlappingGlobal(fromMs, toMs));
-        SortedSet<Appointment> windowed = AppointmentImpl.getAppointments(candidates, null, from, to, false);
-        java.util.LinkedHashSet<Reservation> reservations = new java.util.LinkedHashSet<>();
-        for (Appointment a : windowed)
-        {
-            Reservation r = a.getReservation();
-            if (r != null) reservations.add(r);
-        }
-        return reservations;
+        return queryAppointmentsWindowFirst(from, to, null, null, false).getAllReservations();
     }
 
     private static java.util.Set<String> typeIdsOf(ClassificationFilter[] filters)
@@ -2590,8 +2646,22 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             final int count = repeating.getNumber(); // -1 == open-ended; else the occurrence count
             if (count >= 0 && count <= MATERIALIZE_CAP)
             {
+                // FIXME (exception semantics — PRD 086, revisit): we materialize with
+                // excludeExceptions=FALSE on purpose, to MIRROR the legacy queryAppointmentsSync, which
+                // hard-codes excludeExceptions=false (commit c274842a, 2018) and returns an appointment for
+                // a window even when the only in-window occurrence is an exception. That is the deliberate
+                // "server returns a COARSE superset; the consumer (RaplaBuilder / appointmentBlocks via
+                // createBlocks excludeExceptions=true) refines and renders no exception block" layering — so
+                // it is invisible in the UI block view. If we ever decide reservations()/the read-model
+                // should be exception-PRECISE (drop exception-only-window appointments at the query level),
+                // flip this to true AND change the legacy path in lockstep + re-baseline the differentials
+                // (that is a behaviour change, its own PRD — not part of this migration).
+                // The index is a CANDIDATE superset re-filtered downstream by
+                // AppointmentImpl.getAppointments(..., excludeExceptions=false) — the exact same filter the
+                // legacy appointmentMap read uses. Materializing WITHOUT exceptions (the createBlocks 3-arg
+                // default) would drop those blocks and make the index miss occurrences legacy returns.
                 final java.util.List<org.rapla.entities.domain.AppointmentBlock> blocks = new java.util.ArrayList<>();
-                ((AppointmentImpl) a).createBlocks(a.getStart(), a.getMaxEnd(), blocks);
+                ((AppointmentImpl) a).createBlocks(a.getStart(), a.getMaxEnd(), blocks, false);
                 for (org.rapla.entities.domain.AppointmentBlock b : blocks)
                 {
                     sink.accept(b.getStart(), b.getEnd(), false);
@@ -3767,7 +3837,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         if (Category.class == raplaType)
         {
             Category category = (Category) entity;
-            DynamicTypeImpl.checkKey(i18n, category.getKey());
+            DynamicTypeImpl.checkKey(i18n, category.getKey(), isInUserGroupsSubtree(category));
             if (entity.getReference().equals(Category.SUPER_CATEGORY_REF))
             {
                 // Check if the user group is missing

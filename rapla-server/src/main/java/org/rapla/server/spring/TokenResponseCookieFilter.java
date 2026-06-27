@@ -18,7 +18,7 @@ import java.nio.charset.StandardCharsets;
  * authorization_code grant, the response body carries {@code access_token} and
  * (for the password / code grants) {@code refresh_token}; this filter copies
  * them into the {@code access_token} (path {@code /}) and {@code refresh_token}
- * (path {@code /api/auth/refresh}) HttpOnly cookies so the SPA + explorer
+ * (path {@code /api/auth/session}) HttpOnly cookies so the SPA + explorer
  * browser surfaces get the cookie credential without any client change.
  *
  * <p>The JSON body is left intact (Swing / API clients keep reading the tokens

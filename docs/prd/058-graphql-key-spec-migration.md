@@ -1,6 +1,6 @@
 # PRD 058 — GraphQL key-spec migration
 
-**Status:** done (pending dhbw deploy verification)
+**Status:** done — Phase 6 (group-key legacy validation) landed 2026-06-24; Phase 5 (dhbw deploy verification) still pending
 **Owner:** Christopher Kohlhaas
 **Created:** 2026-05-28
 **Shipped:** 2026-05-28
@@ -221,6 +221,57 @@ Not landed (future):
 - **OQ-2 — resolved** Dot keys (`type.with.dot`) are flagged by the spec and renamed by the migration.
 - **OQ-3 — resolved by discovery** Preferences embedded `ClassificationFilter` rules were the only key-referencing concern in user prefs. The dispatch-side `addChangedDynamicTypeDependant` → `commitChange` chain walks all preferences via `getReferencingEntities` and updates them automatically. No standalone audit needed.
 
+## Update 2026-06-24 — group keys: relax write-guard to legacy validation (Option A)
+
+**Problem discovered.** PRD 058 left group keys (the `user-groups` Category
+subtree — see PRD 069 for what "groups" are) in an **inconsistent state**:
+
+- The **startup migration** (`GraphqlKeyMigration`) deliberately exempts the
+  `user-groups` subtree from both renaming and the load-side assertion
+  (`walkCategoriesForRename` line 288, `walkCategoriesForAssert` line 368:
+  `"user-groups".equals(c.getKey()) && parent == superCategory` → skip). So
+  existing non-spec group keys (Bindestriche/Umlaute) are **never migrated** and
+  don't block boot.
+- But **both write-path validators still enforce the strict GraphQL spec on
+  every Category**, including the user-groups subtree:
+  - `LocalAbstractCachableOperator.checkGraphqlKeySpecCompliance` (Plan §6b,
+    line ~1372) — no user-groups exemption, walks all Categories with `isSpecCompliant`.
+  - `checkConsitency` → `DynamicTypeImpl.checkKey` → `Tools.isKey` (now aliased
+    to `isSpecCompliant`, Plan §6a).
+- Group keys **never reach the SDL generator** — groups are exposed only via the
+  hand-written static `type Group { key: String! }` (`schema.graphqls:508`), and
+  PRD 069 group inputs (`accessibleByGroup`, `inGroup`) take slash-separated
+  key-paths `[String!]`, not generated identifiers. So there is **no schema
+  reason** to enforce the strict spec on group keys.
+
+**Consequence (regression).** An existing group with a non-spec key (e.g.
+`prüfer-extern`) boots fine but can no longer be saved — any edit (rename display
+name, add child) carries its key through `check()` and is rejected with
+`error.invalid_key`. Groups are effectively frozen. Hits dhbwrapla, whose group
+keys carry hyphens/umlauts.
+
+**Decision — Option A + legacy validation.** Relax write-path enforcement for the
+`user-groups` subtree to the **pre-058 key rule** rather than dropping validation
+entirely, so group keys are no worse off than before PRD 058:
+
+- Pre-058 rule (recovered from commit `da0aec5f`, old `Tools.isKey`): leading
+  char `_`, `-`, or any `Character.isLetter` (Unicode); subsequent chars also
+  allow `Character.isDigit`; reject the literals `true`/`false`; non-empty; ≤50
+  chars (length cap lives in `DynamicTypeImpl.checkKey`).
+- Re-introduce that predicate in rapla-core `Tools` as `isLegacyKey(String)`
+  (its body was deleted when `isKey` became the strict alias).
+- Both write-path category validators apply `isLegacyKey` (not `isSpecCompliant`)
+  **only when the Category is in the `user-groups` subtree**; the strict spec
+  stays for every other category (they can still back VALUE_LIST enums). Needs an
+  `isInUserGroupsSubtree(cat)` ancestry helper (walk `getParent()` to super; true
+  if cat or an ancestor is the `user-groups` child of super).
+- The migration exemption stays as-is — no group keys get rewritten.
+
+**Tests (test-first, tier 2 in rapla-server):** storing a user-groups child with
+key `prüfer-extern` round-trips; storing one with a space / slash / `true` still
+fails legacy; a *non-group* category with an umlaut still fails strict (unchanged).
+Pin red-green by reverting the relax.
+
 ## Phasing — as shipped
 
 All phases below landed in one session (2026-05-28) except Phase 5.
@@ -230,3 +281,4 @@ All phases below landed in one session (2026-05-28) except Phase 5.
 - ✅ **Phase 3** — Category rename works via the same path. Sibling fix in `ClassificationFilterRuleImpl.getAttribute()` (id-first resolution) makes filter-rule auto-propagation reliable. Regression-pinned by `ClassificationFilterRuleRenameTest`.
 - ✅ **Phase 4** — `sanitizeTypeName` band-aid removed; defensive throw on non-spec input. Matching `isRaplaInternal` skip added to `GeneratedClassificationWiring`. 4 SDL unit tests updated.
 - ⏳ **Phase 5** — dhbw deploy verification. Pending: run migration against dhbw test DB, capture key-count delta, verify dualis re-import lands cleanly on the renamed `Pruefer__extern_` akteurtyp category.
+- ✅ **Phase 6** (2026-06-24) — group-key legacy validation (Option A). Landed: `Tools.isLegacyKey` (rapla-core); `DynamicTypeImpl.checkKey(i18n, key, boolean legacy)` overload; `LocalAbstractCachableOperator.isInUserGroupsSubtree(cat)` ancestry helper; both write-path category validators (`checkGraphqlKeySpecCompliance` + `checkConsitency` → `checkKey`) now use legacy validation for the user-groups subtree, strict spec elsewhere. Migration exemption unchanged. Tier-2 `GroupKeyLegacyValidationTest` (5 tests: hyphen + umlaut group keys round-trip; space / slash group keys still rejected; non-group hyphen still rejected by strict spec). `DynamicTypeKeyValidatorTest` + `GraphqlKeyMigrationTest` stay green.

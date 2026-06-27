@@ -78,6 +78,30 @@ class CombinedLoginPageTest
     }
 
     @Test
+    void plainLoginPageAlwaysPromptsKeycloakButNotGoogle() throws Exception
+    {
+        // PRD 072 follow-up: Keycloak links ALWAYS carry ?prompt=login (re-prompt on
+        // every login — no silent SSO that would defeat sign-out / account-switch).
+        // Other providers (Google) keep silent SSO on an ordinary login.
+        mockMvc.perform(get("/login"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("/oauth2/authorization/keycloak?prompt=login")))
+                .andExpect(content().string(containsString("/oauth2/authorization/google\"")))
+                .andExpect(content().string(not(containsString("/oauth2/authorization/google?prompt=login"))));
+    }
+
+    @Test
+    void postLogoutLoginPageSsoLinksAllCarryPromptLogin() throws Exception
+    {
+        // After an explicit logout (/login?logout) ALL providers re-prompt — Google
+        // too — so the sign-out can't be silently undone for any of them.
+        mockMvc.perform(get("/login").param("logout", ""))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("/oauth2/authorization/keycloak?prompt=login")))
+                .andExpect(content().string(containsString("/oauth2/authorization/google?prompt=login")));
+    }
+
+    @Test
     void loginPageShowsPasswordFormWhenFlagOnByDefault() throws Exception
     {
         mockMvc.perform(get("/login"))

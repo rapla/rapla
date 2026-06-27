@@ -4,6 +4,7 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.internal.RaplaTokenRepository;
 import org.rapla.server.spring.oauth.external.ExternalProvidersProperties;
+import org.rapla.server.spring.oauth.external.ProviderConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
@@ -95,8 +96,7 @@ public class SecurityConfig
                                             LoginRateLimitFilter loginRateLimitFilter,
                                             ObjectProvider<org.springframework.security.oauth2.client.registration.ClientRegistrationRepository> clientRegistrationRepositoryProvider,
                                             ObjectProvider<org.rapla.server.spring.oauth.OidcLoginSuccessHandler> oidcSuccessHandlerProvider,
-                                            ObjectProvider<FormLoginSuccessHandler> formLoginSuccessHandlerProvider,
-                                            @Value("${rapla.oauth.web.dhbw-legacy-callback:false}") boolean dhbwLegacyCallback) throws Exception
+                                            ObjectProvider<FormLoginSuccessHandler> formLoginSuccessHandlerProvider) throws Exception
     {
         JwtDecoder decoder = jwtDecoderProvider.getIfAvailable();
         org.springframework.security.oauth2.client.registration.ClientRegistrationRepository clientRegistrations =
@@ -234,15 +234,17 @@ public class SecurityConfig
                         org.springframework.security.web.csrf.CsrfFilter.class)
                 .cors(Customizer.withDefaults());
 
-        // PRD 072 — TEMPORARY dev DHBW bridge (server-side, covers :8051 / the
-        // Swing-SSO browser, which hits the server directly with no ng-serve proxy).
-        // Redirects the registered legacy /app/auth/callback onto Spring's
-        // per-provider /login/oauth2/code/keycloak. Gated by the dev-only flag.
-        if (dhbwLegacyCallback)
-        {
-            http.addFilterBefore(new org.rapla.server.spring.oauth.LegacyKeycloakCallbackBridgeFilter(),
-                    UsernamePasswordAuthenticationFilter.class);
-        }
+        // PRD 072 / 036 Phase 3 — TEMPORARY per-provider dev bridge (server-side, covers
+        // :8051 / the Swing-SSO browser, which hits the server directly with no ng-serve
+        // proxy). Active when exactly one enabled provider sets legacy-callback: true; the
+        // filter redirects the registered legacy /app/auth/callback onto that provider's
+        // conformant /login/oauth2/code/{registrationId}.
+        externalProviders.enabledProviders().stream()
+                .filter(ProviderConfig::legacyCallback)
+                .findFirst()
+                .ifPresent(legacy -> http.addFilterBefore(
+                        new org.rapla.server.spring.oauth.LegacyAppCallbackBridgeFilter(legacy.id()),
+                        UsernamePasswordAuthenticationFilter.class));
 
         // PRD 072 Phase 1 — server-side oauth2Login() HEAD. Only wired when at
         // least one external provider is configured (the ClientRegistrationRepository
@@ -256,6 +258,12 @@ public class SecurityConfig
             http.oauth2Login(oauth -> {
                 oauth.loginPage("/login");
                 oauth.clientRegistrationRepository(clientRegistrations);
+                // PRD 072 follow-up: forward a whitelisted ?prompt=login from the
+                // post-logout /login page into the IdP authorize request, so the
+                // next SSO login re-prompts instead of silently re-using the live
+                // Keycloak SSO session. Ordinary logins carry no prompt → silent SSO.
+                oauth.authorizationEndpoint(a -> a.authorizationRequestResolver(
+                        new org.rapla.server.spring.oauth.RaplaOAuth2AuthorizationRequestResolver(clientRegistrations)));
                 if (successHandler != null)
                 {
                     oauth.successHandler(successHandler);

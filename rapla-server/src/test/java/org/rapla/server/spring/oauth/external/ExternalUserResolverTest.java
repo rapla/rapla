@@ -438,14 +438,14 @@ class ExternalUserResolverTest extends FacadeTestSupport
                 ? "https://login.microsoftonline.com/test-tenant/v2.0"
                 : "https://accounts.google.com";
         return new ProviderConfig(
-                id, "display", "icon", 10, true,
+                id.id(), id, "display", "icon", 10, true,
                 "client-id", "", issuer,
                 "https://idp/authorize", "https://idp/token", "https://idp/jwks", "",
                 "",
                 List.of("openid", "profile", "email"),
                 new LinkedHashMap<>(),
                 "preferred_username", emailClaim, "",
-                hostedDomain, autoProvision, false);
+                hostedDomain, autoProvision, false, false);
     }
 
     private Jwt entraJwt(String preferredUsername, String email)

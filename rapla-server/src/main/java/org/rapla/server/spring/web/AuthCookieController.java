@@ -200,7 +200,7 @@ public class AuthCookieController implements AuthCookieService
     {
         // Review B1: restore the admin from the act.sub claim on the CURRENT
         // impersonation token — NOT the refresh cookie. The refresh cookie is
-        // Path=/api/auth/refresh, so a real browser never sends it to
+        // Path=/api/auth/session, so a real browser never sends it to
         // /api/auth/impersonate/end → depending on it made end() always 401.
         session.checkAndGetUser(request); // 401 if anonymous
         String adminSub = actorSub(currentJwt());
@@ -235,6 +235,30 @@ public class AuthCookieController implements AuthCookieService
         // to log out with an expired token). /api/auth/** is permitAll, so the
         // bearer-validation gate never blocks this. Spring's default LogoutFilter
         // (POST /logout, clears JSESSIONID only) is unaware of these cookies.
+        //
+        // Server-side revoke: resolve the user from the path-scoped refresh_token
+        // cookie (this endpoint lives under /api/auth/session precisely so that
+        // cookie reaches it) and clear the session. peekUser works off the durable
+        // refresh token, so logout revokes correctly even when the access token
+        // has already expired. clearSession is per-user (single-token-per-user) —
+        // a deliberate "log out everywhere" property.
+        String refreshToken = CookieAuthSupport.readCookie(request, CookieAuthSupport.REFRESH_TOKEN_COOKIE);
+        if (refreshToken != null)
+        {
+            User user = refreshSessionService.peekUser(refreshToken);
+            if (user != null)
+            {
+                try
+                {
+                    refreshSessionService.clearSession(user);
+                }
+                catch (RaplaException ex)
+                {
+                    AUDIT_LOG.warn("logout: could not clear server-side session for {}: {}",
+                            user.getUsername(), ex.getMessage());
+                }
+            }
+        }
         cookies.clearAuthCookies(response);
         HttpSession httpSession = request.getSession(false);
         if (httpSession != null)

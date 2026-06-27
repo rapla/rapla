@@ -157,7 +157,7 @@ class ExternalIdTokenVerifierTest
     private static ProviderConfig keycloakProvider()
     {
         return new ProviderConfig(
-                ExternalProviderId.KEYCLOAK,
+                "keycloak", ExternalProviderId.KEYCLOAK,
                 "Keycloak", "keycloak", 15, true,
                 RAPLA_CLIENT_ID, "",
                 ISSUER,
@@ -169,6 +169,6 @@ class ExternalIdTokenVerifierTest
                 List.of("openid", "profile", "email"),
                 new LinkedHashMap<>(),
                 "preferred_username", "email", "sub",
-                "", true, false);
+                "", true, false, false);
     }
 }

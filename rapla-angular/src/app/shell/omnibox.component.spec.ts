@@ -1,6 +1,8 @@
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { of } from 'rxjs';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 import { OmniboxComponent } from './omnibox.component';
 import { FilterStore } from '../state/filter-store';
@@ -15,10 +17,18 @@ const CORPUS: SearchResult[] = [
   { id: 'res-1', kind: 'resource', label: 'Raum A-101', actions: ['filter-replace', 'filter-add'] },
   { id: 'grp-1', kind: 'group', label: 'Räume C-Bau', count: 12, actions: ['load-group'] },
   { id: 'evt-1', kind: 'event', label: 'Mathematik I', actions: ['navigate', 'filter-add', 'edit'] },
+  {
+    id: 'usr-1',
+    kind: 'user',
+    label: 'Burns Monty',
+    sublabel: 'monty',
+    actions: ['filter-replace', 'filter-add'],
+  },
 ];
 const HEADINGS: Record<SearchResultKind, string> = {
   resource: 'Ressourcen',
   event: 'Veranstaltungen',
+  user: 'Benutzer',
   occurrence: 'Termine',
   group: 'Gruppen',
   savedView: 'Ansichten',
@@ -70,7 +80,11 @@ describe('OmniboxComponent', () => {
     localStorage.clear(); // ResourceSelection recents persist — isolate each test
     await TestBed.configureTestingModule({
       imports: [OmniboxComponent],
-      providers: [{ provide: SearchService, useValue: fakeSearch }],
+      providers: [
+        { provide: SearchService, useValue: fakeSearch },
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
     }).compileComponents();
     filter = TestBed.inject(FilterStore);
     resources = TestBed.inject(ResourceSelectionStore);
@@ -106,6 +120,17 @@ describe('OmniboxComponent', () => {
     await f.whenStable();
     expect(filter.has('pre')).toBe(true);
     expect(filter.has('res-1')).toBe(true);
+  });
+
+  it('clicking "+" on a user row adds a user-kind scope chip (not a resource chip)', async () => {
+    const f = TestBed.createComponent(OmniboxComponent);
+    setTerm(f, 'Burns Monty');
+    await settle(f);
+    buttonFor(f.nativeElement as HTMLElement, 0, 'filter-add').click();
+    await f.whenStable();
+    const chip = filter.entries().find((e) => e.id === 'usr-1');
+    expect(chip).toBeDefined();
+    expect(chip?.kind).toBe('user');
   });
 
   it('closes the dropdown on Escape', async () => {
@@ -147,6 +172,17 @@ describe('OmniboxComponent', () => {
     buttonFor(f.nativeElement as HTMLElement, 0, 'filter-replace').click();
     await f.whenStable();
     expect(resources.recents().map((x) => x.id)).toEqual(['res-1']);
+  });
+
+  it('a found user is pulled into Recents as a user item (like a resource)', async () => {
+    const f = TestBed.createComponent(OmniboxComponent);
+    setTerm(f, 'Burns Monty');
+    await settle(f);
+    buttonFor(f.nativeElement as HTMLElement, 0, 'filter-replace').click();
+    await f.whenStable();
+    const recent = resources.recents().find((x) => x.id === 'usr-1');
+    expect(recent).toBeDefined();
+    expect(recent?.kind).toBe('user');
   });
 
   it('clicking "in Liste laden" on a group populates the resource selection group', async () => {

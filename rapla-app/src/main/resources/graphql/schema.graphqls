@@ -707,18 +707,6 @@ directive @displayName(value: String!) on FIELD_DEFINITION
 # that descriptor; they do NOT change `data`.
 
 """
-Render modes a view can switch between. Plugins extend this enum via schema-stitching
-so their custom views can advertise additional modes without touching core.
-"""
-enum ViewRenderMode { table week month day program }
-
-"Date anchor for the default window seed of a @view directive."
-enum ViewAnchor { TODAY WEEK_START MONTH_START }
-
-"Calendar unit for the default window seed of a @view directive."
-enum ViewDateUnit { DAYS WEEKS MONTHS }
-
-"""
 PRD 074 — marks an operation as a renderable view; triggers extensions.view (key/title/columns).
 The window seed for a $filter: ReservationFilter! view is configurable here:
 fromAnchor/toAnchor are TODAY | WEEK_START | MONTH_START, fromOffset/toOffset are integer
@@ -1417,10 +1405,11 @@ extend type Mutation {
 # CLIENT concern (the SPA derives the action buttons from `kind`). §12 applies
 # at the resolver boundary — every hit is canRead-gated; existence never leaks.
 
-"Entity kinds the omnibox can surface. Phase 1: RESOURCE + EVENT."
+"Entity kinds the omnibox can surface. Phase 1: RESOURCE + EVENT + USER."
 enum SearchKind {
   RESOURCE
   EVENT
+  USER         # selectable scope chips (ownerEq) — visible users (self + canAdminUser)
   OCCURRENCE   # Phase 3 — not yet produced
   GROUP        # Phase 2 — not yet produced
 }
@@ -1472,5 +1461,18 @@ type EventHit implements SearchHit {
   reservation: Reservation!
   "Start of the earliest appointment — for navigate; null if the event has no appointments."
   firstOccurrenceStart: LocalDateTime
+}
+
+"""
+A user hit → SPA derives a filter-add action (a `user` scope chip the SPA binds
+into ReservationFilter.ownerEq). §12: only users the caller may see (self +
+canAdminUser, mirroring `users(filter:)`) — `id` is the user id the chip scopes by.
+"""
+type UserHit implements SearchHit {
+  id: ID!
+  label: String!
+  sublabel: String
+  score: Float!
+  user: User!
 }
 

@@ -1,33 +1,19 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
+
+import { RecentsFavoritesService } from './recents-favorites.service';
 
 export type ResourceSelectionTab = 'recents' | 'favorites' | 'group';
 
-/** A steppable resource in the selection list. */
+/** A steppable item in the selection list. Usually a resource; a `user` item
+ *  steps as an ownerEq scope chip instead of a resource filter. Defaults to
+ *  `resource` when omitted (back-compat with persisted recents/favorites). */
 export interface ResourceItem {
   id: string;
   label: string;
   color?: string;
-}
-
-const RECENTS_CAP = 20;
-const RECENTS_KEY = 'rapla.resourceSelection.recents';
-const FAVORITES_KEY = 'rapla.resourceSelection.favorites';
-
-function load(key: string): ResourceItem[] {
-  try {
-    const raw = globalThis.localStorage?.getItem(key);
-    return raw ? (JSON.parse(raw) as ResourceItem[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-function save(key: string, items: ResourceItem[]): void {
-  try {
-    globalThis.localStorage?.setItem(key, JSON.stringify(items));
-  } catch {
-    /* storage unavailable / quota — non-fatal */
-  }
+  kind?: 'resource' | 'user';
+  /** rapla type key (e.g. "Raum", "Kurs") — drives the type icon in the list. */
+  typeKey?: string;
 }
 
 /**
@@ -37,22 +23,23 @@ function save(key: string, items: ResourceItem[]): void {
  * {@link activeId} marks the "▶ gezeigt" item. Distinct from the FilterStore:
  * this is the candidate pool; a click here {@code replace}s the filter.
  *
- * Recents + favorites survive reloads via {@code localStorage}. Recents keep a
- * STABLE order: a newly-found resource lands on top, but re-acting on one that's
- * already there does NOT reshuffle it (so stepping between two recents doesn't
- * reorder the list).
+ * PRD 089: recents + favorites are now PER-USER SERVER state, owned by
+ * {@link RecentsFavoritesService} (rapla Preferences, follows the user across
+ * devices, isolated per account). The store re-exposes the service signals so
+ * its consumers (the ResourceSelection component, omnibox) are unchanged.
+ * {@code group} is still a transient in-memory list.
  */
 @Injectable({ providedIn: 'root' })
 export class ResourceSelectionStore {
-  private readonly _recents = signal<ResourceItem[]>(load(RECENTS_KEY));
-  private readonly _favorites = signal<ResourceItem[]>(load(FAVORITES_KEY));
+  private readonly lists = inject(RecentsFavoritesService);
+
   private readonly _group = signal<ResourceItem[]>([]);
   private readonly _groupLabel = signal<string | null>(null);
   private readonly _activeTab = signal<ResourceSelectionTab>('recents');
   private readonly _activeId = signal<string | null>(null);
 
-  readonly recents = this._recents.asReadonly();
-  readonly favorites = this._favorites.asReadonly();
+  readonly recents = this.lists.recents;
+  readonly favorites = this.lists.favorites;
   readonly group = this._group.asReadonly();
   readonly groupLabel = this._groupLabel.asReadonly();
   readonly activeTab = this._activeTab.asReadonly();
@@ -61,11 +48,11 @@ export class ResourceSelectionStore {
   readonly activeList = computed<ResourceItem[]>(() => {
     switch (this._activeTab()) {
       case 'favorites':
-        return this._favorites();
+        return this.favorites();
       case 'group':
         return this._group();
       default:
-        return this._recents();
+        return this.recents();
     }
   });
 
@@ -75,21 +62,19 @@ export class ResourceSelectionStore {
 
   /** A newly-found resource lands on top; one already present keeps its spot (no reshuffle). */
   pushRecent(item: ResourceItem): void {
-    this._recents.update((xs) =>
-      xs.some((x) => x.id === item.id) ? xs : [item, ...xs].slice(0, RECENTS_CAP),
-    );
-    save(RECENTS_KEY, this._recents());
+    void this.lists.pushRecent(item);
+  }
+
+  clearRecents(): void {
+    void this.lists.clearRecents();
   }
 
   isFavorite(id: string): boolean {
-    return this._favorites().some((x) => x.id === id);
+    return this.lists.isFavorite(id);
   }
 
   toggleFavorite(item: ResourceItem): void {
-    this._favorites.update((xs) =>
-      xs.some((x) => x.id === item.id) ? xs.filter((x) => x.id !== item.id) : [...xs, item],
-    );
-    save(FAVORITES_KEY, this._favorites());
+    void this.lists.toggleFavorite(item);
   }
 
   loadGroup(label: string, items: ResourceItem[]): void {

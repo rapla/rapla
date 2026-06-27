@@ -18,7 +18,7 @@ comes back up. The resource server validates them through a single
 decoder in `JwtConfig.java`.
 
 The legacy rapla-custom `/api/auth/login` endpoint is **deleted**.
-`/api/auth/refresh` and `/api/auth/logout` exist again as cookie-based
+`/api/auth/session/refresh` and `/api/auth/session/logout` exist again as cookie-based
 endpoints on `AuthCookieController` (PRD 072 — the SPA reactive-401
 refresh + sign-out path). `/api/auth/oauth/config`
 (discovery) + `/api/auth/oauth/exchange/{providerId}` (BFF for external
@@ -309,14 +309,23 @@ The SPA holds no OAuth client; `AuthService.redirectToLogin()` does a full
 navigation to the server-rendered `/login` chooser. The server runs the
 OAuth / form login and sets httpOnly `access_token` + `refresh_token`
 cookies. The SPA reads identity from `GET /api/auth/me`, refreshes via
-`POST /api/auth/refresh` (`AuthCookieController`), and signs out via
-`POST /api/auth/logout`. No PKCE / no `/oauth2/authorize` / no
+`POST /api/auth/session/refresh` (`AuthCookieController`), and signs out via
+`POST /api/auth/session/logout`. No PKCE / no `/oauth2/authorize` / no
 `/auth/callback` in the SPA (PRD 072).
+
+The refresh + logout endpoints sit under the **`/api/auth/session`** namespace
+on purpose: the httpOnly `refresh_token` cookie is path-scoped to
+`/api/auth/session` (NOT `/`), so it reaches exactly those two endpoints and
+nothing else. Logout lives there so it can read that durable refresh token and
+**revoke the server-side session** (`clearSession` — invalidates every refresh
+token for the user, single-token-per-user) even when the access token has
+already expired. Sign-out therefore both revokes server-side AND expires the
+cookies; it is not a cookie-only clear.
 
 #### Reactive-401 refresh must not be tied to a request subscription
 
 `auth.interceptor.ts` does the reactive refresh: on a 401 from `/api`,
-it calls `POST /api/auth/refresh` once and replays the original request,
+it calls `POST /api/auth/session/refresh` once and replays the original request,
 sharing one in-flight refresh across all concurrent 401s (stampede
 guard). **The shared refresh is a module-global, eagerly-subscribed
 `Observable` (`shareReplay(1)` + `finalize`-reset) — deliberately
@@ -530,7 +539,7 @@ slot may still exist in old stores but is no longer read by any auth path.
 | `POST /api/auth/impersonate` | live (PRD 051) | `ImpersonationController` — mints impersonation access token (`act` claim, no refresh) |
 | `GET /api/users` | live (PRD 051) | `UsersController` — narrow `{username, displayName}[]` filtered by `canAdminUser`; typeahead source for the "Switch to user" dialog |
 | `POST /api/auth/login` (old `AuthController`) | **removed** — PRD 041, commit `d64e8553` | none — no replacement route |
-| `POST /api/auth/refresh`, `/api/auth/logout` | **live** (PRD 072) | `AuthCookieController` — cookie-model refresh + logout |
+| `POST /api/auth/session/refresh`, `/api/auth/session/logout` | **live** (PRD 072) | `AuthCookieController` — cookie-model refresh + logout |
 | `POST /api/auth/oauth/token-exchange/{id}` | live (PRD 072) | `OAuthExchangeController` — RFC 8693: external id_token → rapla token |
 
 ## API keys (Personal Access Tokens)
@@ -643,12 +652,23 @@ Each key carries a **scope set** that bounds the blast radius of a leak. Two axe
 
 | Kind | Scopes | Governs |
 |---|---|---|
-| **Data** | `read`, `write_events`, `write_resources`, `write_all` | what the key may read / mutate. `write_*` implies read |
+| **Data** | `read`, `access_details`, `write_events`, `write_resources`, `write_all` | what the key may read / mutate. `write_*` implies read; `access_details` opts into sensitive identity/permission expansions (`User.groups`/`email`/`isAdmin`, future resource permission lists); `write_all` implies `access_details` |
 | **Management** | `rotate_self` | may the key rotate itself (issue a same-scope successor) |
 
-- **Default for a new key is `{read}`** (least privilege); any write/`rotate_self` scope is
-  explicit opt-in. An **existing** key minted before PRD 076 (no `scopes` field) resolves to
-  `write_all` — behaviour-identical to before, non-breaking.
+- **Default for a new key is `{read}`** (least privilege); `access_details`, any write, and
+  `rotate_self` are explicit opt-in. `read` is always present on a created key (auto-added — a
+  stored scopes array is never write-only).
+- **No legacy fallback (changed 2026-06-25, PRD 076 Phase 4):** a stored entry with no `scopes`
+  field resolves to `{read}`, NOT `write_all`. Pre-scopes keys are therefore **read-only**; the one
+  legacy key that writes (dualis) is exempted at its own endpoint via
+  `ApiKeyScopeContext.callUnrestricted`.
+- **Config reads are interactive-session-only** (token-kind gate): the plugin system/admin config
+  endpoints that surface SMTP/LDAP/Exchange credentials (`MailConfigController` etc.) reject
+  api-keys outright via `ApiKeyScopeContext.requireInteractiveSession(...)`, regardless of scope.
+- **Direction (PRD 076 Phase 5, planned):** api-keys become **GraphQL-only** (deny-by-default on
+  the REST/RemoteOperator surface; allow-list = `graphql` + `users/*` + `dhbwsync` + `rotate`), and
+  `access_details` is enforced field-level at the GraphQL seam via a `@requiresAccessDetails`
+  directive. Until then api-key writes still go through REST.
 - **Write enforcement** is at the operator chokepoint (`LocalAbstractCachableOperator.check`),
   so it covers REST and GraphQL uniformly: events (Reservation/Appointment) need `write_events`
   or `write_all`; resources (Allocatable) need `write_resources` or `write_all`; anything else
@@ -668,6 +688,38 @@ Each key carries a **scope set** that bounds the blast radius of a leak. Two axe
 > resolve the caller by `preferred_username`, which api-key JWTs don't carry (only `sub`). REST
 > writes work. The scope enforcement is already uniform at the operator seam, so it applies to
 > GraphQL automatically once caller-resolution there is fixed by subject.
+
+#### Reads are NOT scope-gated (known limitation)
+
+The scope axis today bounds **writes only**. `read` is a *floor / marker* — "this key may
+authenticate and do GETs" — not a filter:
+
+- There is **no read-side chokepoint**. The only `ApiKeyScopeContext.current()` consultation in
+  the codebase is `LocalAbstractCachableOperator.guardApiKeyScopes`, which iterates
+  `evt.getStoreObjects()`/`getRemoveIds()` — writes. **No read path consults scopes.**
+- A read (`getResources` → `operator.getVisibleEntities(user)` → `LocalCache.getVisibleEntities`,
+  or `queryAppointments`, or any GraphQL query) is filtered solely by the **user's**
+  `PermissionController.canReadInformation(entity, user)` at the output boundary (AGENTS.md §12) —
+  user-scoped, never key-scoped.
+- Consequences: a `{read}` key can read **everything its user can read**; there is no
+  `read_events` vs `read_resources` split; and a **write-only key is impossible** (`write_*`
+  implies read, and read can't be subtracted). The Swing `RemoteOperator` is only a *consumer* of
+  these reads, not an enforcement point — and it authenticates by OAuth password grant
+  (`current() == null` ⇒ unrestricted), so it is unaffected regardless.
+
+Adding meaningful read scopes requires a new read chokepoint (the read surface is spread across
+`getVisibleEntities` / `queryAppointments` / `getAllocatables` / the GraphQL fetchers / `getPreferences`,
+with no single funnel analogous to `dispatch()`). Deferred — design decision pending.
+
+#### Writes that bypass `dispatch()` must gate scopes by hand
+
+The automatic write guard only fires for mutations that flow through `operator.dispatch(UpdateEvent)`.
+Operations that persist **without** emitting an `UpdateEvent` — `ImportExportManager.saveData(...)`
+(bulk import/export/restore), raw JDBC, file writes — bypass `guardApiKeyScopes` entirely and must
+call `ApiKeyScopeContext.requireWriteAllForBulk("<operation>")` themselves. Reference impl:
+`ArchiverServiceImpl.checkAccess()` gates `backup`/`restore`/`delete` on `write_all` (an admin's
+read-only key would otherwise trigger a full restore). Regression lock: `ArchiverServiceAccessTest`.
+See the `rest-endpoint-creation` skill for the rule.
 
 ### Storage layout
 
@@ -714,7 +766,7 @@ migrate scopes and shorten expiry (`rotate`) without re-minting the key.
 | (none) | `POST /api/auth/oauth/token-exchange/{providerId}` (PRD 072 — external `id_token` → rapla token, RFC 8693) | new |
 | (none) | `POST /api/auth/api-keys` (mint), `GET /api/auth/api-keys` (list), `DELETE /api/auth/api-keys/{id}` (revoke) | new — PRD 043 |
 
-Note: `POST /api/auth/refresh` and `POST /api/auth/logout` are **not**
+Note: `POST /api/auth/session/refresh` and `POST /api/auth/logout` are **not**
 removed — as of PRD 072 these paths exist again as the SPA
 cookie-credential endpoints (`AuthCookieController` / `AuthCookieService`),
 distinct from the old PRD-041 Bearer-JSON forms. The OAuth
@@ -740,9 +792,10 @@ completes the token exchange. No per-deployment OAuth config required.
 
 The Angular SPA at `/app/` uses the conformant redirect
 `/login/oauth2/code/{registrationId}`; the legacy DHBW callback
-`/app/auth/callback` is supported behind the
-`rapla.oauth.web.dhbw-legacy-callback` flag via
-`LegacyKeycloakCallbackBridgeFilter` — also zero-config.
+`/app/auth/callback` is supported via the per-provider
+`rapla.oauth.external.<id>.legacy-callback: true` flag (PRD 036 Phase 3 —
+formerly the global `rapla.oauth.web.dhbw-legacy-callback`) and
+`LegacyAppCallbackBridgeFilter` — also zero-config.
 
 The only authentication concern for a typical deployment is replacing
 the default empty admin password (see "Replacing the default admin"
@@ -766,7 +819,7 @@ be overridden with the matching env var.
 | `rapla.oauth.trust-external-issuers` | `RAPLA_OAUTH_TRUST_EXTERNAL_ISSUERS` | `false` | PRD 072 Phase 6 single-issuer cutover. When `false`, `/api` trusts **only** rapla-issued tokens; external IdP tokens are consumed once at login and re-minted. Set `true` only as a transitional escape hatch to restore legacy multi-issuer acceptance (wires `IssuerAwareJwtDecoder`). (Commented out in `application.yml` — the effective default is the `JwtConfig` `@Value` fallback `false`.) |
 | `rapla.oauth.allow-loopback-redirects` | `RAPLA_OAUTH_ALLOW_LOOPBACK_REDIRECTS` | `true` | Accept `127.0.0.1` / `[::1]` redirect URIs at any port (RFC 8252 §7.3), gated by the `same-origin-callback-paths` allowlist. (Also listed above under validation order.) |
 | `rapla.oauth.same-origin-callback-paths` | *(list)* | `[/login/oauth2/code/rapla, /app/auth/callback]` | Single source-of-truth path allowlist consumed by **both** the WSL-bridge and same-origin redirect validators. |
-| `rapla.oauth.web.dhbw-legacy-callback` | `RAPLA_OAUTH_WEB_DHBW_LEGACY_CALLBACK` | `false` | **Dev-only** (PRD 072 dev bridge for the DHBW Keycloak prod realm — no admin access to register conformant redirect URIs). When `true`: the keycloak `ClientRegistration` sends the registered `/app/auth/callback` `redirect_uri`, and `LegacyKeycloakCallbackBridgeFilter` server-side-redirects `/app/auth/callback` → `/login/oauth2/code/keycloak`. Must be server-side because the outgoing `redirect_uri` is built server-side in `RaplaClientRegistrationConfig`. Not for production. (Lives in `application-local.yml`, not committed `application.yml`.) |
+| `rapla.oauth.external.<id>.legacy-callback` | *(per provider)* | `false` | **Dev-only, per-provider** (PRD 036 Phase 3; was the global `rapla.oauth.web.dhbw-legacy-callback`). Set on the one external-IdP entry whose realm can't register the conformant redirect URI (DHBW Keycloak on localhost). When `true`: that provider's `ClientRegistration` sends the registered `/app/auth/callback` `redirect_uri`, and `LegacyAppCallbackBridgeFilter` server-side-redirects `/app/auth/callback` → that provider's `/login/oauth2/code/{id}`. At most one provider may set it (single `/app/auth/callback` path). A second Keycloak keeps its conformant per-provider callback. Not for production. (Lives in `application-local.yml`, not committed `application.yml`.) |
 
 ### Spring redirect URIs
 
@@ -1124,7 +1177,7 @@ prompt) until and unless the admin's refresh token has also expired —
 then the auth-error dialog opens.
 
 On the **Angular** SPA (PRD 072), impersonation is cookie-based: the
-interceptor calls `POST /api/auth/refresh` once on a 401 (cookie
+interceptor calls `POST /api/auth/session/refresh` once on a 401 (cookie
 refresh), and impersonation start/swap goes through
 `POST /api/auth/impersonate/switch` — there is no client-side Bearer
 renewal of `/api/auth/impersonate`.
@@ -1361,7 +1414,7 @@ rapla access token (+ the rapla refresh token to renew it) — never an id_token
   the exchange/login — rapla verifies its signature / `iss` / `aud`=rapla / `exp`,
   provisions, then **discards** it (#7=a). It never reaches `/api`.
 - rapla also issues a `typ=refresh` token (used only at `/oauth2/token` refresh +
-  `/api/auth/refresh`, never a `/api` Bearer) and, on `scope=openid` flows, its
+  `/api/auth/session/refresh`, never a `/api` Bearer) and, on `scope=openid` flows, its
   **own** OIDC `id_token` — but that id_token is a standards artifact for OIDC
   *relying parties*; rapla's own surfaces (SPA/Swing/`/api`) don't consume it.
 
@@ -1391,7 +1444,7 @@ IdP `id_token`** (and no rapla token) gets a rapla token through the
   code exchange + provisioning — it no longer forwards the raw IdP token. Its
   `grant_type=refresh_token` path is rejected with `400 unsupported_grant_type`
   (rapla owns the session — #7=a — and does not relay IdP refresh tokens; refresh
-  via rapla's own `/api/auth/refresh` / `/oauth2/token`).
+  via rapla's own `/api/auth/session/refresh` / `/oauth2/token`).
 
 **Replay caveat (token-exchange):** RFC 8693 has no authorization request, so the
 exchanged id_token carries **no `nonce` binding** — its replay window is bounded
@@ -1487,11 +1540,34 @@ JWKS. The Angular `AuthService.token()` picks `id_token` vs
 > **PRD 072 cookie model.** The per-provider logout above describes the
 > legacy multi-issuer SPA. Under the default single-issuer cookie model
 > the SPA no longer drives any per-provider IdP logout: `AuthService.signOut()`
-> simply does `POST /api/auth/logout` (clearing the httpOnly cookies +
-> the rapla session) then navigates to `/login`. It does **not** inspect
-> per-provider `endSessionUrl` or drive an angular-oauth2-oidc IdP
-> redirect. (The server still derives `endSessionUrl` per provider for
-> the discovery payload, but the SPA no longer consumes it.)
+> does `POST /api/auth/session/logout` (which **revokes the server-side
+> session** via `clearSession` AND expires the httpOnly cookies) then
+> navigates to `/login?logout`. It does **not** inspect per-provider
+> `endSessionUrl`, drive an angular-oauth2-oidc IdP redirect, or open a
+> `/connect/logout` tab. (The server still derives `endSessionUrl` per
+> provider for the discovery payload, but the SPA no longer consumes it.)
+>
+> **rapla logout is rapla-local — it does NOT propagate to the upstream IdP.**
+> `clearSession` ends the *rapla* session; the upstream IdP's SSO session (e.g.
+> Keycloak) survives. To stop that surviving SSO session from silently
+> re-authenticating the user on the next login, the server `/login` page forces
+> a re-prompt at the IdP: **Keycloak SSO links always carry `?prompt=login`**,
+> and after an explicit logout (`/login?logout`) *every* provider's link carries
+> it (one-shot). `RaplaOAuth2AuthorizationRequestResolver` forwards the
+> whitelisted `prompt` into the authorize request. Ordinary first-visit / token-
+> expiry logins carry no `prompt` (except Keycloak's always-on) so silent SSO is
+> preserved where it's wanted. Real upstream single-logout (ending the Keycloak
+> session itself) is deliberately **not** implemented — `prompt=login` covers the
+> silent-re-login and account-switch cases without an RP-initiated `/connect/logout`
+> round-trip (which only ends rapla's own SAS session anyway, needs a non-expired
+> `id_token_hint`, and 400s on a stale one).
+>
+> **Swing** signs out the same way in spirit: it `POST`s `/oauth2/revoke` with its
+> **refresh token** (robust even when the access token has expired — the standard
+> revoke resolves the user from the durable refresh token), clears its local
+> `TokenStore`, and re-enters the login flow. It no longer opens a background
+> `/connect/logout` browser tab; `nextOauthForcesLogin` (→ `prompt=login`) handles
+> the surviving IdP SSO session at the next login.
 
 ### 401 handling on the SPA — refresh-then-retry, redirect on real rejection
 
@@ -1506,7 +1582,7 @@ interceptor. The actual policy on every response:
 | Condition | Action |
 |---|---|
 | Non-401 | Pass through. |
-| 401 | Call `POST /api/auth/refresh` (`AuthCookieController`) **once** and replay the original request. If the refresh itself returns 401, clear local identity and `window.location` to `/login`. |
+| 401 | Call `POST /api/auth/session/refresh` (`AuthCookieController`) **once** and replay the original request. If the refresh itself returns 401, clear local identity and `window.location` to `/login`. |
 
 > *(Legacy multi-issuer mode, `rapla.oauth.trust-external-issuers=true`,
 > used a Bearer-attaching interceptor with `oauth.refreshToken()` and an
@@ -1529,7 +1605,7 @@ The server propagates the resolver's actual exception message in the
 the legacy session path.
 
 There is **no proactive/silent refresh** in the cookie model — refresh
-is purely reactive (on a 401, via `POST /api/auth/refresh`). The old
+is purely reactive (on a 401, via `POST /api/auth/session/refresh`). The old
 `app.config.ts` `oauth.setupAutomaticSilentRefresh(...)` wiring does not
 exist.
 
@@ -1604,35 +1680,40 @@ callback is only appropriate when there is exactly one upstream broker;
 rapla is the broker-RP to *multiple* IdPs (Keycloak / Microsoft / Google),
 so per-provider is the correct shape.
 
-#### TEMPORARY DHBW dev bridge — `rapla.oauth.web.dhbw-legacy-callback`
+#### TEMPORARY DHBW dev bridge — per-provider `legacy-callback` (PRD 036 Phase 3)
 
 A dev-only workaround exists for the DHBW production Keycloak
 (`login.mosbach.dhbw.de`, realm `dhbwmos-lehre`, client `rapla-app`):
 that realm only whitelists the **legacy** `/app/auth/callback` redirect
 for localhost, and the maintainer has no admin on the prod realm to
-register the conformant `/login/oauth2/code/keycloak`. With
-**`rapla.oauth.web.dhbw-legacy-callback=true`** (default `false`; set
-only in the gitignored `application-local.yml`):
+register the conformant `/login/oauth2/code/keycloak`. The bridge is a
+**per-provider** flag (PRD 036 Phase 3 — formerly the global
+`rapla.oauth.web.dhbw-legacy-callback`): set
+**`rapla.oauth.external.<id>.legacy-callback: true`** on the one provider
+entry that needs it (only in the gitignored `application-local.yml`). Then:
 
-- the keycloak `ClientRegistration` (built in `RaplaClientRegistrationConfig`)
+- that provider's `ClientRegistration` (built in `RaplaClientRegistrationConfig`)
   **sends** the registered `/app/auth/callback` as its `redirect_uri`;
 - the callback is then routed back onto Spring's real
-  `/login/oauth2/code/keycloak` endpoint by **both** (a) the ng-serve
+  `/login/oauth2/code/{id}` endpoint by **both** (a) the ng-serve
   proxy on `:4200` (the SPA dev origin) and (b) a server-side
-  `LegacyKeycloakCallbackBridgeFilter` on `:8051` — the Swing-SSO browser
+  `LegacyAppCallbackBridgeFilter` on `:8051` — the Swing-SSO browser
   hits `:8051` directly, where there is no proxy, so the filter is what
-  bridges it there.
+  bridges it there. `SecurityConfig` wires the filter only when exactly one
+  enabled provider sets `legacy-callback`, and targets that provider's
+  `registrationId` (so a second Keycloak keeps its own conformant callback).
 
 Spring validates the OAuth `state` (not the request path) and uses the
 **saved** `redirect_uri` (`/app/auth/callback`) for the token call, so it
 still matches what DHBW issued the code for. The conceptual point: the
 **outgoing** `redirect_uri` rapla sends to the IdP is built server-side
 (`RaplaClientRegistrationConfig`), so a proxy rewrite alone can't fix it —
-the server-side flag is required to make rapla *send* the legacy URI.
+the per-provider flag is required to make rapla *send* the legacy URI.
 
-**Removal condition:** delete the flag, the `LegacyKeycloakCallbackBridgeFilter`,
-and the keycloak `redirectUri` override once DHBW IT registers the
-conformant `/login/oauth2/code/keycloak` redirect URI on the prod realm.
+**Removal condition:** delete the `legacy-callback` flag from the provider
+entry, the `LegacyAppCallbackBridgeFilter`, and the `redirectUri` override
+once DHBW IT registers the conformant `/login/oauth2/code/keycloak` redirect
+URI on the prod realm.
 
 ### Recipe: Microsoft Entra ID (Web platform — required)
 
@@ -1757,7 +1838,7 @@ Keycloak emits **two different kinds of refresh tokens**:
 | **SSO-session refresh** | none — issued by default with any login | governed by realm's *SSO Session Idle/Max* (typically ~8 h sliding) | no — invalidated on logout | normal interactive web/SPA login |
 | **Offline refresh** | `offline_access` (must be in client's allowed scopes AND requested) | governed by realm's *Offline Session Idle/Max* (typically days to months) | yes — survives logout | CLI tools, background jobs |
 
-> **Under PRD 072 the IdP refresh-token kind is moot — rapla discards all IdP tokens.** rapla is an identity-only broker (#7=a): the server-side `oauth2Login` HEAD verifies the IdP `id_token` *once* at login, then `RaplaClientRegistrationConfig` actively **strips `offline_access`** from the outgoing IdP scopes, so rapla never receives an IdP refresh token it would only throw away. The SPA/Swing session is governed entirely by **rapla's own** refresh token — `RefreshSessionService.REFRESH_TOKEN_TTL_SECONDS` (21 d), delivered to the SPA as the httpOnly `refresh_token` cookie and consumed reactively via `POST /api/auth/refresh`. There is **no** `setupAutomaticSilentRefresh` and **no** silent-iframe refresh (see the SPA cookie-model section above). The realm's SSO Session Max and the IdP refresh lifetimes in the table above do **not** bound a rapla session — the table is background only, explaining why rapla requests the *minimal* identity scopes and not `offline_access`.
+> **Under PRD 072 the IdP refresh-token kind is moot — rapla discards all IdP tokens.** rapla is an identity-only broker (#7=a): the server-side `oauth2Login` HEAD verifies the IdP `id_token` *once* at login, then `RaplaClientRegistrationConfig` actively **strips `offline_access`** from the outgoing IdP scopes, so rapla never receives an IdP refresh token it would only throw away. The SPA/Swing session is governed entirely by **rapla's own** refresh token — `RefreshSessionService.REFRESH_TOKEN_TTL_SECONDS` (21 d), delivered to the SPA as the httpOnly `refresh_token` cookie and consumed reactively via `POST /api/auth/session/refresh`. There is **no** `setupAutomaticSilentRefresh` and **no** silent-iframe refresh (see the SPA cookie-model section above). The realm's SSO Session Max and the IdP refresh lifetimes in the table above do **not** bound a rapla session — the table is background only, explaining why rapla requests the *minimal* identity scopes and not `offline_access`.
 
 Adding `offline_access` to a provider's `rapla.oauth.external.<id>.scopes` has **no effect under the broker model** — `RaplaClientRegistrationConfig` strips it before the authorize call. The block below is retained only for a hypothetical future *non-broker* deployment that needs the IdP's own offline refresh token; in today's PRD 072 model it is a no-op:
 

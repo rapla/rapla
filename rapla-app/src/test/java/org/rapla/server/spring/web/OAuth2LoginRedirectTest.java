@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -70,6 +71,21 @@ class OAuth2LoginRedirectTest
                         "https://kc.example.com/realms/rapla-test/protocol/openid-connect/auth")))
                 // PKCE for the public Keycloak client
                 .andExpect(header().string("Location", containsString("code_challenge=")))
-                .andExpect(header().string("Location", containsString("code_challenge_method=S256")));
+                .andExpect(header().string("Location", containsString("code_challenge_method=S256")))
+                // PRD 072 follow-up: an ordinary login carries no prompt → silent SSO
+                .andExpect(header().string("Location", not(containsString("prompt="))));
+    }
+
+    @Test
+    void authorizationEndpointForwardsPromptLogin() throws Exception
+    {
+        // PRD 072 follow-up: the post-logout /login page links to
+        // /oauth2/authorization/keycloak?prompt=login; the resolver forwards it so
+        // Keycloak re-prompts instead of silently re-using the live SSO session.
+        mockMvc.perform(get("/oauth2/authorization/keycloak").param("prompt", "login"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(header().string("Location", startsWith(
+                        "https://kc.example.com/realms/rapla-test/protocol/openid-connect/auth")))
+                .andExpect(header().string("Location", containsString("prompt=login")));
     }
 }

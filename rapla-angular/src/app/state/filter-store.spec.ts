@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import { TestBed } from '@angular/core/testing';
+
 import { FilterStore, type FilterEntry } from './filter-store';
+import { AuthService } from '../auth/auth.service';
 
 const room = (id: string): FilterEntry => ({ id, kind: 'resource', label: id });
 const event = (id: string): FilterEntry => ({ id, kind: 'event', label: id });
@@ -8,7 +11,8 @@ describe('FilterStore', () => {
   let store: FilterStore;
 
   beforeEach(() => {
-    store = new FilterStore();
+    TestBed.configureTestingModule({ providers: [FilterStore, AuthService] });
+    store = TestBed.inject(FilterStore);
   });
 
   it('starts empty', () => {
@@ -53,5 +57,14 @@ describe('FilterStore', () => {
     store.add(room('A'));
     expect(store.has('A')).toBe(true);
     expect(store.has('B')).toBe(false);
+  });
+
+  it('persists the scope chips and restores them in a new store (survives reload)', () => {
+    store.replace(room('A'));
+    store.add(room('B'));
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [FilterStore, AuthService] });
+    const reloaded = TestBed.inject(FilterStore);
+    expect(reloaded.entries()).toEqual([room('A'), room('B')]);
   });
 });

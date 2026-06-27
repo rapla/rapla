@@ -9,16 +9,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
- * PRD 072 — tier-1 coverage for the DHBW legacy-callback bridge. The filter
- * 302-redirects {@code GET /app/auth/callback?…} (the only redirect URI DHBW
- * Keycloak whitelists) onto Spring's conformant
- * {@code /login/oauth2/code/keycloak} endpoint, preserving the query string,
- * and passes every other path straight through. No Spring context — pure
+ * PRD 072 / 036 Phase 3 — tier-1 coverage for the per-provider legacy-callback
+ * bridge. The filter 302-redirects {@code GET /app/auth/callback?…} (the only
+ * redirect URI the legacy IdP whitelists) onto the target provider's conformant
+ * {@code /login/oauth2/code/{registrationId}} endpoint, preserving the query
+ * string, and passes every other path straight through. The target registrationId
+ * is per-provider (constructor arg), not hardcoded. No Spring context — pure
  * Servlet-API mocks.
  */
-class LegacyKeycloakCallbackBridgeFilterTest
+class LegacyAppCallbackBridgeFilterTest
 {
-    private final LegacyKeycloakCallbackBridgeFilter filter = new LegacyKeycloakCallbackBridgeFilter();
+    private final LegacyAppCallbackBridgeFilter filter = new LegacyAppCallbackBridgeFilter("keycloak");
 
     @Test
     void legacyCallbackWithQueryRedirectsAndPreservesQuery() throws Exception
@@ -49,6 +50,22 @@ class LegacyKeycloakCallbackBridgeFilterTest
         assertEquals(302, response.getStatus());
         assertEquals("/login/oauth2/code/keycloak", response.getRedirectedUrl());
         assertNull(chain.getRequest(), "filter chain must not be continued on a bridged callback");
+    }
+
+    @Test
+    void targetRegistrationIdIsPerProviderNotHardcoded() throws Exception
+    {
+        // Phase 3: a provider named something other than "keycloak" bridges to ITS id.
+        LegacyAppCallbackBridgeFilter dhbwFilter = new LegacyAppCallbackBridgeFilter("dhbw");
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/app/auth/callback");
+        request.setQueryString("code=abc&state=xyz");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockFilterChain chain = new MockFilterChain();
+
+        dhbwFilter.doFilter(request, response, chain);
+
+        assertEquals(302, response.getStatus());
+        assertEquals("/login/oauth2/code/dhbw?code=abc&state=xyz", response.getRedirectedUrl());
     }
 
     @Test

@@ -1,12 +1,14 @@
 import { Component, ElementRef, HostListener, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { switchMap } from 'rxjs';
 
 import { SearchService, MIN_QUERY_LENGTH } from '../search/search.service';
 import type { SearchResult, SearchResultGroup } from '../search/search.types';
-import { FilterStore } from '../state/filter-store';
+import { FilterStore, type FilterKind } from '../state/filter-store';
 import { ResourceSelectionStore } from '../state/resource-selection-store';
+import { entityIcon } from './entity-icon';
 
 /**
  * The omnibox — one search box over the whole corpus. Each hit renders one
@@ -16,7 +18,7 @@ import { ResourceSelectionStore } from '../state/resource-selection-store';
  */
 @Component({
   selector: 'app-omnibox',
-  imports: [FormsModule],
+  imports: [FormsModule, MatIconModule],
   template: `
     <div class="omnibox">
       <input
@@ -33,7 +35,7 @@ import { ResourceSelectionStore } from '../state/resource-selection-store';
               <div class="ghead">{{ g.heading }}</div>
               @for (r of g.results; track r.id) {
                 <div class="row">
-                  <span class="dot" [style.background]="r.color ?? 'transparent'"></span>
+                  <mat-icon class="ico" [style.color]="r.color || null">{{ icon(r) }}</mat-icon>
                   <span class="meta">
                     <span class="lbl">
                       {{ r.label }}
@@ -114,11 +116,12 @@ import { ResourceSelectionStore } from '../state/resource-selection-store';
       .row:hover {
         background: rgba(63, 81, 181, 0.06);
       }
-      .row .dot {
-        width: 0.55rem;
-        height: 0.55rem;
-        border-radius: 50%;
+      .row .ico {
         flex: none;
+        font-size: 1.15rem;
+        width: 1.15rem;
+        height: 1.15rem;
+        color: rgba(0, 0, 0, 0.55);
       }
       .row .meta {
         flex: 1;
@@ -203,6 +206,11 @@ export class OmniboxComponent {
     }
   }
 
+  /** Material icon for a result row (by kind + rapla type key). */
+  protected icon(r: SearchResult): string {
+    return entityIcon(r.kind, r.sublabel);
+  }
+
   protected actionLabel(action: SearchResult['actions'][number]): string {
     switch (action) {
       case 'filter-replace':
@@ -223,7 +231,7 @@ export class OmniboxComponent {
       case 'filter-replace':
         this.filter.replace({
           id: r.id,
-          kind: r.kind === 'event' ? 'event' : 'resource',
+          kind: chipKind(r.kind),
           label: r.label,
           color: r.color,
         });
@@ -232,7 +240,7 @@ export class OmniboxComponent {
       case 'filter-add':
         this.filter.add({
           id: r.id,
-          kind: r.kind === 'event' ? 'event' : 'resource',
+          kind: chipKind(r.kind),
           label: r.label,
           color: r.color,
         });
@@ -255,10 +263,24 @@ export class OmniboxComponent {
 
   edit(_r: SearchResult): void {}
 
-  /** A found resource that the user acted on lands in the ResourceSelection "Zuletzt" list. */
+  /** A found resource OR user the user acted on lands in the ResourceSelection
+   *  "Zuletzt" list — so it can be pulled in again (a user steps as a `user`
+   *  scope, a resource as a resource filter). */
   private rememberResource(r: SearchResult): void {
-    if (r.kind === 'resource') {
-      this.resources.pushRecent({ id: r.id, label: r.label, color: r.color });
+    if (r.kind === 'resource' || r.kind === 'user') {
+      this.resources.pushRecent({
+        id: r.id,
+        label: r.label,
+        color: r.color,
+        kind: r.kind,
+        typeKey: r.sublabel,
+      });
     }
   }
+}
+
+/** Map a search-result kind to the scope-chip kind FilterStore understands
+ *  ('resource' | 'event' | 'user'). Everything not event/user is a resource chip. */
+function chipKind(kind: SearchResult['kind']): FilterKind {
+  return kind === 'event' || kind === 'user' ? kind : 'resource';
 }

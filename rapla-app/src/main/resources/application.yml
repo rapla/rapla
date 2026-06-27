@@ -187,6 +187,7 @@ spring:
 rapla:
   file-datasources:
     raplafile: data/data.xml
+
   oauth:
     # Single public OAuth client config. Both the Swing desktop client and the
     # Angular SPA use this client_id; the redirect-uris on the matching Spring

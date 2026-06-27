@@ -105,7 +105,7 @@ public class OAuthExchangeController
      * rapla adds the server-held secret, exchanges at the IdP, verifies the
      * returned {@code id_token}, provisions the user, and returns a <b>rapla</b>
      * token. {@code grant_type=refresh_token} is rejected (rapla owns the
-     * session; refresh against rapla's own {@code /api/auth/refresh} or
+     * session; refresh against rapla's own {@code /api/auth/session/refresh} or
      * {@code /oauth2/token}).
      */
     @PostMapping(value = "/exchange/{providerId}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
@@ -125,7 +125,7 @@ public class OAuthExchangeController
             // (#7=a). A rapla token from this endpoint is refreshed against
             // rapla's own endpoints, not via the IdP.
             return error(HttpStatus.BAD_REQUEST, "unsupported_grant_type",
-                    "rapla brokers the session; refresh a rapla token via /api/auth/refresh or /oauth2/token, "
+                    "rapla brokers the session; refresh a rapla token via /api/auth/session/refresh or /oauth2/token, "
                             + "not via the IdP exchange");
         }
 

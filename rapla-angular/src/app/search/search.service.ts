@@ -45,16 +45,18 @@ export const MIN_QUERY_LENGTH = 3;
 const KIND_MAP: Record<string, SearchResultKind> = {
   RESOURCE: 'resource',
   EVENT: 'event',
+  USER: 'user',
   OCCURRENCE: 'occurrence',
   GROUP: 'group',
   SAVED_VIEW: 'savedView',
 };
 
 /** Default action buttons per kind — the omnibox renders these. Events drop
- *  {@code filter-add} ("+") for now. */
+ *  {@code filter-add} ("+") for now. A user is added as an ownerEq scope chip. */
 const ACTIONS: Record<SearchResultKind, SearchAction[]> = {
   resource: ['filter-replace', 'filter-add'],
   event: ['navigate', 'edit'],
+  user: ['filter-replace', 'filter-add'],
   occurrence: ['navigate', 'edit'],
   group: ['load-group'],
   savedView: ['navigate'],

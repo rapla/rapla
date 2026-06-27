@@ -1,14 +1,53 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+
 import { ResourceSelectionStore, type ResourceItem } from './resource-selection-store';
+import { RecentsFavoritesService } from './recents-favorites.service';
+import { AuthService, type Identity } from '../auth/auth.service';
 
 const item = (id: string): ResourceItem => ({ id, label: id });
 
+function identity(userId: string): Identity {
+  return {
+    userId,
+    username: userId,
+    name: userId,
+    admin: false,
+    roles: [],
+    impersonating: false,
+    actor: null,
+    target: null,
+  };
+}
+
+/**
+ * PRD 089: recents + favorites are now server-backed (RecentsFavoritesService);
+ * the store re-exposes them. group/tab/active state stays in-memory. These tests
+ * cover the in-memory portion + delegation; the HTTP write paths are exercised in
+ * recents-favorites.service.spec.ts.
+ */
 describe('ResourceSelectionStore', () => {
   let store: ResourceSelectionStore;
+  let http: HttpTestingController;
 
   beforeEach(() => {
-    localStorage.clear(); // recents/favorites persist — isolate each test
-    store = new ResourceSelectionStore();
+    TestBed.configureTestingModule({
+      providers: [
+        ResourceSelectionStore,
+        RecentsFavoritesService,
+        AuthService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
+    });
+    store = TestBed.inject(ResourceSelectionStore);
+    http = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => {
+    http.verify();
   });
 
   it('starts on the recents tab with empty lists', () => {
@@ -19,38 +58,27 @@ describe('ResourceSelectionStore', () => {
     expect(store.activeList()).toEqual([]);
   });
 
-  it('pushRecent() prepends most-recent-first', () => {
+  it('pushRecent() optimistically prepends and reconciles with the server', async () => {
     store.pushRecent(item('A'));
-    store.pushRecent(item('B'));
-    expect(store.recents().map((x) => x.id)).toEqual(['B', 'A']);
+    http
+      .expectOne('/api/recents')
+      .flush([{ id: 'A', kind: 'resource', label: 'A', color: null, typeKey: null }]);
+    await Promise.resolve();
+    expect(store.recents().map((x) => x.id)).toEqual(['A']);
   });
 
-  it('pushRecent() keeps an existing item in place (no reshuffle on re-add)', () => {
-    store.pushRecent(item('A'));
-    store.pushRecent(item('B'));
-    store.pushRecent(item('A')); // already present → order unchanged
-    expect(store.recents().map((x) => x.id)).toEqual(['B', 'A']);
-  });
-
-  it('pushRecent() caps the list length', () => {
-    for (let i = 0; i < 30; i++) store.pushRecent(item(`R${i}`));
-    expect(store.recents().length).toBeLessThanOrEqual(20);
-    expect(store.recents()[0].id).toBe('R29');
-  });
-
-  it('persists recents + favorites across instances (localStorage)', () => {
-    store.pushRecent(item('A'));
+  it('toggleFavorite() pins then unpins through the service', async () => {
     store.toggleFavorite(item('F'));
-    const reloaded = new ResourceSelectionStore();
-    expect(reloaded.recents().map((x) => x.id)).toEqual(['A']);
-    expect(reloaded.isFavorite('F')).toBe(true);
-  });
+    http
+      .expectOne('/api/favorites')
+      .flush([{ id: 'F', kind: 'resource', label: 'F', color: null, typeKey: null }]);
+    await Promise.resolve();
+    expect(store.isFavorite('F')).toBe(true);
 
-  it('toggleFavorite() adds then removes', () => {
-    store.toggleFavorite(item('A'));
-    expect(store.isFavorite('A')).toBe(true);
-    store.toggleFavorite(item('A'));
-    expect(store.isFavorite('A')).toBe(false);
+    store.toggleFavorite(item('F'));
+    http.expectOne('/api/favorites/F').flush([]);
+    await Promise.resolve();
+    expect(store.isFavorite('F')).toBe(false);
   });
 
   it('loadGroup() fills the group, labels it, and switches to the group tab', () => {
@@ -68,16 +96,36 @@ describe('ResourceSelectionStore', () => {
     expect(store.groupLabel()).toBeNull();
   });
 
-  it('activeList() follows the active tab', () => {
+  it('activeList() follows the active tab', async () => {
     store.pushRecent(item('R'));
+    http
+      .expectOne('/api/recents')
+      .flush([{ id: 'R', kind: 'resource', label: 'R', color: null, typeKey: null }]);
     store.toggleFavorite(item('F'));
+    http
+      .expectOne('/api/favorites')
+      .flush([{ id: 'F', kind: 'resource', label: 'F', color: null, typeKey: null }]);
+    await Promise.resolve();
     store.loadGroup('G', [item('GG')]);
+
     store.setActiveTab('recents');
     expect(store.activeList().map((x) => x.id)).toEqual(['R']);
     store.setActiveTab('favorites');
     expect(store.activeList().map((x) => x.id)).toEqual(['F']);
     store.setActiveTab('group');
     expect(store.activeList().map((x) => x.id)).toEqual(['GG']);
+  });
+
+  it('clearRecents() DELETEs and empties the list', async () => {
+    store.pushRecent(item('A'));
+    http
+      .expectOne('/api/recents')
+      .flush([{ id: 'A', kind: 'resource', label: 'A', color: null, typeKey: null }]);
+    await Promise.resolve();
+    store.clearRecents();
+    http.expectOne('/api/recents').flush([]);
+    await Promise.resolve();
+    expect(store.recents()).toEqual([]);
   });
 
   it('setActive() tracks the currently shown item', () => {

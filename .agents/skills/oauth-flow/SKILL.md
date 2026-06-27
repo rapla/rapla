@@ -20,9 +20,19 @@ All authentication goes through Spring Authorization Server's `/oauth2/token` en
 | `/.well-known/openid-configuration` | Standard OIDC discovery (Spring AS exposes it). | none |
 | `/login` | HTML form login page rendered by `LoginPageController` (form login + the OAuth browser bounce). | none |
 
-> The rapla-custom `/api/auth/login`, `/api/auth/refresh`, `/api/auth/logout`
-> endpoints were removed in PRD 041 — all token issuance, refresh and
-> revocation is now on the `/oauth2/*` endpoints above.
+> The rapla-custom `/api/auth/login` endpoint was removed in PRD 041 — token
+> *issuance* is on the `/oauth2/*` endpoints above. The **cookie-model** SPA
+> session lifecycle (PRD 072) lives under the **`/api/auth/session`** namespace:
+> `POST /api/auth/session/refresh` (reactive-401 refresh from the path-scoped
+> `refresh_token` cookie) and `POST /api/auth/session/logout` (revokes the
+> server-side session via `clearSession` AND expires the cookies). The
+> `refresh_token` cookie is `Path`-scoped to `/api/auth/session` so it reaches
+> exactly those two endpoints — logout sits there to read the durable refresh
+> token and revoke even when the access token has expired. rapla logout is
+> rapla-local (does not propagate to the upstream IdP); the surviving Keycloak
+> SSO session is handled by `prompt=login` on the `/login` SSO links (always for
+> Keycloak, and for all providers after `/login?logout`). See PRD 072
+> "Follow-up (2026-06-24)" + `docs/authentication.md`.
 
 ## Token system
 
@@ -78,7 +88,7 @@ Spring's default `RegisteredClient` only allows exact-match redirect URIs. `Auth
 - Login dialog has a **"Sign in with browser…"** button next to the password form.
 - Flow: spawn an ephemeral loopback server on a random port → open Windows browser to the authorize URL → user logs in → browser is redirected to `http://127.0.0.1:<port>/callback?code=…` → loopback server captures the code → exchanges it at `/oauth2/token`.
 - **Refresh-token cache:** hybrid `TokenStore` (JNLP `PersistenceService` → `~/.rapla/tokens.json` 0600 → NoOp). All operations `catch(Throwable)` — never surfaces storage errors as login failures.
-- **Logout** (`RaplaClientServiceImpl.logout()`) POSTs `/oauth2/revoke`, opens a browser tab to discovery's `logoutUrl`, clears `TokenStore`, then `SwingUtilities.invokeLater(start(null))` to in-JVM relaunch. After logout, the next `runOauthLogin` adds `prompt=login` to defeat the race where the browser keeps the cookie.
+- **Logout** (`RaplaClientServiceImpl.logout()`) POSTs `/oauth2/revoke` with its **refresh token** (the revoke provider resolves the user from the durable refresh token, so it works even when the access token has expired — do not send the access token here), clears `TokenStore`, then re-enters the login flow. It does **NOT** open a `/connect/logout` browser tab (removed 2026-06-24): in the M2 broker model that OIDC RP-initiated logout only ends rapla's *own* SAS session, needs a non-expired `id_token_hint` (400s on a stale one), and a popup tab on logout is poor UX. The surviving upstream IdP SSO session is handled at the next login — `nextOauthForcesLogin` adds `prompt=login` to the next `/oauth2/authorize`. See PRD 072 "Follow-up (2026-06-24)".
 
 ### Angular — `angular-oauth2-oidc`
 

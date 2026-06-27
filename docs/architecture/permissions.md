@@ -79,6 +79,34 @@ The bands matter:
   classification, owner, etc. — not just its allocation. `ADMIN` is
   needed to change permissions on the entity itself.
 
+### Which levels are valid on which target (intended matrix)
+
+Not every level belongs on every entity. `READ_TYPE` / `CREATE` are
+**type-scoped** (they gate `canReadType` / `canCreate` on a
+`DynamicType`) and must **never** appear on an `Allocatable` —
+`READ_TYPE` (20) `< READ` (100), so a `READ_TYPE` row on a resource
+grants no readability at all; it is simply a misplaced grant. The
+intended set per target is encoded today in the Swing editors'
+`setPermissionLevels(...)` calls — this table is the canonical
+source-of-truth extracted from them:
+
+| Target entity | Allowed access levels | Source (Swing editor) |
+|---|---|---|
+| `DynamicType` | `READ_TYPE`, `CREATE`, `READ`, `EDIT`, `ADMIN` (+`DENIED`) | `DynamicTypeEditUI` |
+| `Allocatable` | `READ_NO_ALLOCATION`, `READ`, `REQUEST`, `ALLOCATE`, `ALLOCATE_CONFLICTS`, `EDIT`, `ADMIN` (+`DENIED`) — **no** `READ_TYPE`/`CREATE` | `AllocatableEditUI` |
+| `Reservation` | `READ`, `EDIT`, `ADMIN` (+`DENIED`) | `ReservationEditUI` |
+| `Category` (group) | not a normal permission list — group admin rights ride on the admin-group mechanism (`getGroupsToAdmin` / `CAN_ADMIN_PARENT`), effectively `ADMIN` only | — |
+
+**Enforcement status:** today this matrix is only *advisory* (the Swing
+UI offers the right levels; nothing rejects an out-of-range level stored
+through another path). It is **not yet enforced server-side**, because no
+GraphQL write path edits permission lists (`AllocatableMutationController`
+v1 copies existing permissions through and inherits type defaults — it
+never sets a level). When a permission-editing verb lands (PRD 063 OQ2 —
+`setAllocatablePermissions`, and the analogues for `DynamicType` /
+`Reservation`), the save path **must validate the level against this
+matrix** and reject a mismatch (e.g. `READ_TYPE` on an `Allocatable`).
+
 ## `PermissionImpl`
 
 `rapla-core/src/main/java/org/rapla/entities/domain/internal/PermissionImpl.java`
@@ -228,6 +256,40 @@ store. For new entities, the user must be the owner. For modifications,
 either the owner is unchanged (and the user has `EDIT`) or the user is
 admin. Re-parenting (changing the owner) requires admin rights on both
 the old and new owner records.
+
+### 5. `READ_NO_ALLOCATION` — resource visibility vs. booking visibility (verified 2026-06-24)
+
+The `READ_NO_ALLOCATION` (50) / `READ` (100) band is enforced by **two
+different methods that gate two different things** — confirmed by reading the
+call sites and the i18n label (`permission.read_no_allocation = lesen (keine
+Belegungen)` — "read, no bookings"):
+
+| Method | Threshold | Gates | Call sites |
+|---|---:|---|---|
+| `canReadInformation(alloc, user)` | ≥ `READ_NO_ALLOCATION` (50) | the **resource itself** — existence, name, attributes; whether it appears in pickers, the calendar resource column, the client store, and is an allowed `queryAppointments` target | `LocalCache.getVisibleEntities`, `UpdateDataManagerImpl` (client store filter), `SecurityManager.checkRead`, `RemoteStorageController.queryAppointments`, `RaplaBuilder.isVisible` (calendar column), `ParsedText` (name render) |
+| `canRead(alloc/appointment/reservation, user)` | ≥ `READ` (100) | the **bookings on it** — appointment blocks render with reservation detail; below `READ` a block is anonymized/suppressed (`RaplaBuilder`: `!canRead(appointment,user)` ⇒ anonymous) | `RaplaBuilder` block build, the GraphQL `canReadAllocatable` gate |
+
+So `READ_NO_ALLOCATION` literally means **"the resource can be seen and
+expanded, but without its allocations"**: a user at level 50 sees "Room A101
+exists" and can select it; the appointments on it stay hidden/anonymous until
+the user reaches `READ` (100).
+
+**Caveat for the PRD 082 #8 / PRD 083 `PermissionIndex`.**
+`PermissionIndex.readableAllocatables(user)` delegates to **`canRead`**
+(level 100), so its set is the *"can see bookings"* set, **not** the
+`canReadInformation` (level 50) resource-visibility set. Consequences:
+
+- It is a correct §12 drop-in only at the **GraphQL `canRead` gate sites**
+  (`RequestCtx.canReadAllocatable` and friends), which already used `canRead`.
+- It must **not** gate the `canReadInformation` paths (old RemoteStorage
+  `queryAppointments` / `getVisibleEntities`) — that would hide
+  `READ_NO_ALLOCATION` resources the legacy path shows (over-restrictive /
+  fail-closed — not a leak). PRD 083 scopes the index to GraphQL for exactly
+  this reason.
+- Net effect: on a `READ_NO_ALLOCATION`-only resource the **Swing client**
+  (RemoteStorage → `canReadInformation`) shows it with bookings hidden, while
+  the **SPA** (GraphQL → `canRead`) omits it from the catalog. This is a
+  pre-existing boundary difference, not introduced by the index.
 
 ## Client mirror
 

@@ -711,9 +711,20 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     }
 
     public static void checkKey(RaplaResources i18n,String key) throws RaplaException {
+        checkKey(i18n, key, false);
+    }
+
+    /**
+     * PRD 058 Phase 6 — when {@code legacy} is true, validate against the
+     * pre-058 looser rule ({@link Tools#isLegacyKey}) instead of the strict
+     * GraphQL identifier spec. Used for the {@code user-groups} category subtree,
+     * whose keys never become GraphQL identifiers.
+     */
+    public static void checkKey(RaplaResources i18n,String key, boolean legacy) throws RaplaException {
         if (key == null || key.length() ==0)
             throw new RaplaException(i18n.getString("error.no_key"));
-        if (!Tools.isKey(key) || key.length()>50) 
+        boolean valid = legacy ? Tools.isLegacyKey(key) : Tools.isKey(key);
+        if (!valid || key.length()>50)
         {
             Object[] param = new Object[3];
             param[0] = key;
@@ -721,8 +732,6 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
             param[2] = "'_'";
             throw new RaplaException(i18n.format("error.invalid_key", param));
         }
-    
-    
     }
 
 

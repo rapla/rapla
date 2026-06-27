@@ -33,7 +33,9 @@
 >    dialog; `setupAutomaticSilentRefresh()` wired at boot.
 >    Details in `docs/authentication.md` § "401 handling on the SPA".
 >
-> Phase 2.2 (Shibboleth-via-Keycloak docs) is the only open work.
+> Phase 2.2 (Shibboleth-via-Keycloak docs) and **Phase 3 (multiple external
+> OIDC providers via a registration map — added 2026-06-24, in progress)** are
+> the open work.
 
 ## Goal
 
@@ -863,6 +865,135 @@ beyond Phase 2.1.
 2. **Add Shibboleth-via-Keycloak docs** in same PR or small follow-up.
 3. If a real deployment needs native SAML, open a new PRD then —
    separate scope, not folded into PRD 036.
+
+## Phase 3: Multiple external OIDC providers (registration map)
+
+> **Added 2026-06-24.** Phase 2.1 shipped Keycloak as a single fixed slot
+> (`rapla.oauth.external.keycloak`). That conflated *provider type* with
+> *registration identity*: a deployment can run **one** Keycloak, not two
+> (e.g. DHBW Mosbach **and** a second realm), and an arbitrary key like
+> `rapla.oauth.external.dhbw` binds to nothing and is silently ignored — the
+> bug that surfaced 2026-06-24 (a `dhbw` SSO button silently absent from the
+> picker). Spring Security's native model is a **map keyed by an arbitrary
+> `registrationId`** supporting N providers of any type; rapla discarded that
+> generality when it built its own `InMemoryClientRegistrationRepository` from
+> three fixed fields. Phase 3 restores the map while keeping rapla's value-adds
+> (discovery-from-base-url+realm, BFF token exchange, identity-only brokering,
+> picker metadata, claim mapping).
+
+### Shape
+
+`rapla.oauth.external` becomes a `Map<String, ProviderDef>` (key =
+`registrationId`). `ProviderDef` is a single concrete class (Spring binds
+`Map<String, ConcreteClass>` natively — no polymorphic binding) holding the
+**union** of the former three inner classes' fields plus a `type`
+discriminator (`microsoft | google | keycloak`).
+`ProviderDef.toProviderConfig(registrationId)` switches on `type` to apply the
+per-type derivation + defaults the three former `toProviderConfig()` methods
+did (Entra multi-tenant issuer pattern; Google hardcoded endpoints +
+`extraAuthorizeParams` + `revoke-on-logout`; Keycloak `base-url`+`realm`
+derivation).
+
+```yaml
+rapla:
+  oauth:
+    external:
+      keycloak:                 # registrationId; type inferred from key
+        type: keycloak
+        base-url: https://login.mosbach.dhbw.de
+        realm: dhbwmos-lehre
+      dhbw:                     # second Keycloak, parallel — needs explicit type
+        type: keycloak
+        base-url: https://keycloak.dhbw.de
+        realm: rapla
+```
+
+Each entry yields its own `/login/oauth2/code/{registrationId}` callback.
+
+### `id` vs `type` split
+
+`ProviderConfig.id()` was the enum string (`"keycloak"`). After Phase 3:
+- `id()` = **registrationId** (map key) — callback path, BFF exchange route
+  (`/api/auth/oauth/exchange/{id}`), issuer-aware JWT decoder cache, picker id,
+  logging. Nearly every `p.id()` site already meant this → unchanged.
+- `type()` (alias of `provider()`, returns `ExternalProviderId`, now documented
+  as the provider *type*) — used only where behaviour is genuinely type-specific.
+
+The PRD-072 DHBW legacy callback turned out **not** to be type-specific: it is a
+property of one *specific registration* (the IdP whose realm can't register the
+conformant URI), so it became a **per-provider `legacy-callback: true` flag**
+(see D-3.4), not a `type == KEYCLOAK` check. The global
+`rapla.oauth.web.dhbw-legacy-callback` flag and `LegacyKeycloakCallbackBridgeFilter`
+were replaced by the per-provider flag + the renamed, dynamically-targeted
+`LegacyAppCallbackBridgeFilter`.
+
+### Back-compat: type inferred from key, fail-fast otherwise
+
+A map entry omitting `type:` infers it from the key when the key is a known
+type name (`microsoft`/`google`/`keycloak`) — so the legacy fixed-key configs
+bind unchanged. An arbitrary key (`dhbw`, `keycloak-2`) **requires** explicit
+`type:`. An `enabled` entry whose type can be neither parsed nor inferred fails
+fast at startup with a clear message — never silently dropped (that was the
+original bug; a missing SSO button is a confusing outage, not a safe default).
+
+### Implementation tasks — shipped 2026-06-24
+
+- [x] `ProviderDef` (new) — union fields + `type`; `toProviderConfig(id)` switch.
+- [x] `ExternalProvidersProperties` → `Map<String, ProviderDef>` (prefix now
+      `rapla.oauth`, field `external`); `enabledProviders()` iterates the map;
+      type inference + fail-fast; `byId`/`byIssuer` signatures unchanged.
+- [x] `ExternalProviderId` — repurposed as the type enum (values unchanged;
+      `parse()` helper for inference).
+- [x] `ProviderConfig` — carry `registrationId` distinct from `type`;
+      `id()` → registrationId, `type()` → enum.
+- [x] `RaplaClientRegistrationConfig` — legacy callback keyed on `type()`.
+- [x] Recompile — the `enabledProviders()`/`p.id()` consumers
+      (`ExternalUserResolver`, `ExternalIdTokenVerifier`, `OAuthExchangeController`,
+      `OAuthConfigController`, `JwtConfig`, `SecurityConfig`, `LoginPageController`)
+      needed no change beyond recompile (their `p.id()` already meant registrationId).
+- [x] Tier-2 test `ExternalProvidersPropertiesKeycloakTest` (13 cases): two
+      keycloak entries → distinct ids + derived issuers; type-inference;
+      fail-fast on unknown type. 5 OAuth test classes migrated to the map API,
+      all 45 green.
+- [x] Migrated in-repo YAMLs (vanilla `application-local.yml` — `application.yml`
+      has no external block; dhbwrapla `local/application.yml` gains the second
+      Keycloak `dhbw`, plus `docs/application-{web,test}.yml`) — explicit `type:`
+      on every entry.
+
+**Verified live (dhbw dev server):** `keycloak` (Mosbach) + `dhbw` (local
+`localhost:8080`) both in `GET /api/auth/oauth/config` with distinct ids and
+callbacks; CSP `connect-src` carries both issuer hosts. Phase 3 goal met.
+
+### Phase 3 goal
+
+With `keycloak` (Mosbach) + `dhbw` (local) both enabled,
+`curl localhost:8051/api/auth/oauth/config` lists **both** with distinct `id`s,
+and the CSP `connect-src` contains both issuer hosts.
+
+### Phase 3 decisions locked
+
+- **D-3.1 — flat `ProviderDef` + `type`, not polymorphic binding.** Spring binds
+  `Map<String, ConcreteClass>` natively; a `type`-keyed switch reproduces the
+  three former methods. A sealed hierarchy with a custom config `Converter` would
+  be more "typed" but Spring config has no first-class polymorphic-map support —
+  not worth the machinery.
+- **D-3.2 — `id()` = registrationId, `type()` = enum.** The 2026-06-24 bug (a
+  `dhbw` key silently ignored because only `keycloak` was a valid field) proved
+  the conflation is harmful; splitting them makes arbitrary registrationIds
+  first-class and reduces type-coupled sites to one (the legacy callback).
+- **D-3.3 — type inferred from key for back-compat; fail-fast otherwise.**
+  Silent drop is forbidden.
+- **D-3.4 — legacy callback is a per-provider flag, not global, not type-gated.**
+  `rapla.oauth.external.<id>.legacy-callback: true` replaces the global
+  `rapla.oauth.web.dhbw-legacy-callback`. The bridge is inherently about one
+  specific registration (the IdP whose realm whitelists only `/app/auth/callback`),
+  and with multiple Keycloaks a `type == KEYCLOAK` gate would wrongly route the
+  *other* Keycloak through the bridge too. `LegacyKeycloakCallbackBridgeFilter`
+  (hardcoded `/login/oauth2/code/keycloak`) → `LegacyAppCallbackBridgeFilter`
+  (target `registrationId` injected from the single provider that sets the flag).
+  At most one provider may set it — the `/app/auth/callback` path is singular.
+  Verified live 2026-06-25: `keycloak` (Mosbach, flag) sends `/app/auth/callback`,
+  `dhbw` (local, no flag) sends `/login/oauth2/code/dhbw`.
 
 ## Open Questions
 

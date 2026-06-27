@@ -665,17 +665,6 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         }
     }
 
-    /** Appends {@code id_token_hint=<idToken>} to the OIDC end-session URL.
-     *  When {@code idToken} is null/blank, returns the URL unchanged — the server
-     *  may reject the logout, but at least we don't send a malformed URL. */
-    private static String appendIdTokenHint(String logoutUrl, String idToken)
-    {
-        if (idToken == null || idToken.isEmpty()) return logoutUrl;
-        String encoded = java.net.URLEncoder.encode(idToken, java.nio.charset.StandardCharsets.UTF_8);
-        char sep = logoutUrl.indexOf('?') < 0 ? '?' : '&';
-        return logoutUrl + sep + "id_token_hint=" + encoded;
-    }
-
     private static String extractJson(String body, String field)
     {
         if (body == null) return null;
@@ -1352,27 +1341,14 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                 LOGGER.info("logout: server-side revocation failed ({}); local logout proceeds", t.getMessage());
             }
         }
-        // Also clear the browser's session AND remember-me cookies at the auth
-        // server. Discovery's logoutUrl points at /connect/logout (OIDC RP-initiated
-        // logout). That endpoint requires an id_token_hint per spec — without it
-        // Spring SAS returns 404 and the rapla-remember-me cookie survives. With
-        // a valid hint, Spring's success handler (wired by AuthorizationServerConfig)
-        // also runs the CompositeLogoutHandler that drops the remember-me cookie.
-        String logoutUrl = connectionInfo.getLogoutUrl();
-        if (logoutUrl != null && !logoutUrl.isEmpty())
-        {
-            try
-            {
-                String fullUrl = appendIdTokenHint(logoutUrl, connectionInfo.getIdToken());
-                org.rapla.client.internal.BrowserLauncher.open(URI.create(fullUrl));
-                LOGGER.info("logout: opened browser to clear IdP session cookie at {}{}", logoutUrl,
-                        (connectionInfo.getIdToken() != null ? " (with id_token_hint)" : " (NO id_token — server may reject)"));
-            }
-            catch (Throwable t)
-            {
-                LOGGER.info("logout: couldn't open browser for IdP logout ({}); local logout proceeds anyway", t.getMessage());
-            }
-        }
+        // No background browser tab to /connect/logout. In the M2 broker model that
+        // endpoint only ends rapla's OWN SAS session (its id_token_hint is a rapla
+        // token, not the upstream IdP's), it needs a non-expired hint (it 400s on a
+        // stale one), and a tab popping up on logout is poor UX. The /oauth2/revoke
+        // call above already invalidated the server-side session; the still-live
+        // upstream IdP (e.g. Keycloak) SSO session is handled at the NEXT login by
+        // prompt=login (nextOauthForcesLogin below + the server /login page forcing
+        // a re-prompt for Keycloak), not by a logout redirect here.
         tokenStore.tryClear();
         // PRD 051 — discard any active impersonation. Logout is a clean
         // state-change boundary; surviving impersonation into the next
@@ -1384,11 +1360,10 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         // session. Becomes redundant when Phase 2 lands (the whole context dies
         // on logout — the bus's @PreDestroy fires for free).
         eventBus.reset();
-        // Tell the next OAuth flow to force the IdP login form regardless of
-        // the browser's session cookie. The cookie SHOULD be cleared by the
-        // logoutUrl tab opened above, but there's a race: that tab may not
-        // have completed before /oauth2/authorize runs. prompt=login defeats
-        // the race deterministically.
+        // Tell the next OAuth flow to force the IdP login form regardless of the
+        // browser's session cookie. We no longer open a /connect/logout tab, so the
+        // browser may still hold a live SSO session; prompt=login forces a fresh
+        // prompt deterministically on the next /oauth2/authorize.
         nextOauthForcesLogin = true;
         stop(null);
         // PRD 052 Phase 2 — signal SpringRaplaClient.main() to close this

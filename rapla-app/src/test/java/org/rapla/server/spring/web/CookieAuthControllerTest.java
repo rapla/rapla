@@ -161,7 +161,7 @@ class CookieAuthControllerTest
         assertEquals("Lax", access.getAttribute("SameSite"));
         assertEquals("Lax", refresh.getAttribute("SameSite"));
         // Path-scoped refresh cookie — NOT sent on every /api call.
-        assertEquals("/api/auth/refresh", refresh.getPath());
+        assertEquals("/api/auth/session", refresh.getPath());
         assertEquals("/", access.getPath());
 
         // And the access cookie authorizes /api.
@@ -179,7 +179,7 @@ class CookieAuthControllerTest
     {
         String refresh = login("homer", "duffs").refreshToken();
 
-        MvcResult result = mockMvc.perform(post("/api/auth/refresh")
+        MvcResult result = mockMvc.perform(post("/api/auth/session/refresh")
                         .cookie(new Cookie("refresh_token", refresh)))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -200,7 +200,7 @@ class CookieAuthControllerTest
     @Test
     void refreshWithInvalidTokenReturns401() throws Exception
     {
-        mockMvc.perform(post("/api/auth/refresh")
+        mockMvc.perform(post("/api/auth/session/refresh")
                         .cookie(new Cookie("refresh_token", "not.a.valid.jwt")))
                 .andExpect(status().isUnauthorized());
     }
@@ -208,7 +208,7 @@ class CookieAuthControllerTest
     @Test
     void refreshWithNoCookieReturns401() throws Exception
     {
-        mockMvc.perform(post("/api/auth/refresh"))
+        mockMvc.perform(post("/api/auth/session/refresh"))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -298,7 +298,7 @@ class CookieAuthControllerTest
         // End impersonation — must re-establish a NON-impersonating admin cookie.
         // Review B1: ONLY the impersonation access cookie is present (a real browser
         // does NOT send the refresh_token cookie to /api/auth/impersonate/end — it is
-        // Path=/api/auth/refresh). The admin is restored from the token's act.sub claim.
+        // Path=/api/auth/session). The admin is restored from the token's act.sub claim.
         MvcResult ended = mockMvc.perform(post("/api/auth/impersonate/end")
                         .with(csrf())
                         .cookie(new Cookie("access_token", impCookie.getValue())))
@@ -374,7 +374,7 @@ class CookieAuthControllerTest
         assertNotNull(access, "form login must set an access_token cookie");
         assertNotNull(refresh, "form login must set a refresh_token cookie");
         assertTrue(access.isHttpOnly());
-        assertEquals("/api/auth/refresh", refresh.getPath());
+        assertEquals("/api/auth/session", refresh.getPath());
 
         // And the cookie authorizes /api as the logged-in user.
         mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", access.getValue())))
@@ -389,15 +389,15 @@ class CookieAuthControllerTest
     @Test
     void logoutExpiresBothAuthCookies() throws Exception
     {
-        // The SPA's sign-out hits POST /api/auth/logout (cookie-auth + XSRF). The
-        // server must EXPIRE both the access_token (Path=/) and refresh_token
-        // (Path=/api/auth/refresh) cookies so the browser drops them. Spring's
+        // The SPA's sign-out hits POST /api/auth/session/logout (cookie-auth + XSRF).
+        // The server must EXPIRE both the access_token (Path=/) and refresh_token
+        // (Path=/api/auth/session) cookies so the browser drops them. Spring's
         // default LogoutFilter only matches POST /logout and only clears
         // JSESSIONID — it does NOT know about rapla's stateless auth cookies, so a
         // dedicated endpoint is required.
         String access = login("homer", "duffs").accessToken();
 
-        MvcResult result = mockMvc.perform(post("/api/auth/logout")
+        MvcResult result = mockMvc.perform(post("/api/auth/session/logout")
                         .with(csrf())
                         .cookie(new Cookie("access_token", access)))
                 .andExpect(status().isNoContent())
@@ -410,7 +410,32 @@ class CookieAuthControllerTest
         assertEquals(0, clearedAccess.getMaxAge(), "access_token cookie must be expired (maxAge 0)");
         assertEquals(0, clearedRefresh.getMaxAge(), "refresh_token cookie must be expired (maxAge 0)");
         assertEquals("/", clearedAccess.getPath());
-        assertEquals("/api/auth/refresh", clearedRefresh.getPath());
+        assertEquals("/api/auth/session", clearedRefresh.getPath());
+    }
+
+    @Test
+    void logoutRevokesServerSideSession() throws Exception
+    {
+        // PRD 072 follow-up: logout must REVOKE server-side, not just clear cookies.
+        // After logout the presented refresh token is dead — a refresh with it 401s
+        // (clearSession wiped the user's session entry). Works off the refresh cookie,
+        // so it holds even when the access token has already expired.
+        var tokens = login("homer", "duffs");
+
+        // Sanity: the refresh token works BEFORE logout.
+        mockMvc.perform(post("/api/auth/session/refresh")
+                        .cookie(new Cookie("refresh_token", tokens.refreshToken())))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/auth/session/logout")
+                        .with(csrf())
+                        .cookie(new Cookie("refresh_token", tokens.refreshToken())))
+                .andExpect(status().isNoContent());
+
+        // After logout the SAME refresh token is revoked → 401.
+        mockMvc.perform(post("/api/auth/session/refresh")
+                        .cookie(new Cookie("refresh_token", tokens.refreshToken())))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -419,7 +444,7 @@ class CookieAuthControllerTest
         // Sign-out must be idempotent / robust: even with no (or an expired)
         // access cookie the endpoint clears whatever is there and returns 204 —
         // /api/auth/** is permitAll, so the bearer-validation gate never blocks it.
-        mockMvc.perform(post("/api/auth/logout"))
+        mockMvc.perform(post("/api/auth/session/logout"))
                 .andExpect(status().isNoContent());
     }
 
@@ -557,7 +582,7 @@ class CookieAuthControllerTest
         assertEquals(first, second,
                 "single-slot model: second login returns the same refresh token");
 
-        mockMvc.perform(post("/api/auth/refresh")
+        mockMvc.perform(post("/api/auth/session/refresh")
                         .cookie(new Cookie("refresh_token", second)))
                 .andExpect(status().isOk());
     }

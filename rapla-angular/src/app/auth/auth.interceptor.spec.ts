@@ -10,7 +10,7 @@ import { AuthService } from './auth.service';
  * PRD 072 Phase 4 — cookie-era reactive-401 refresh interceptor.
  *
  * The SPA holds no token, so the interceptor attaches NO Authorization header.
- * Its job is: on a 401 from /api, POST /api/auth/refresh once, replay the
+ * Its job is: on a 401 from /api, POST /api/auth/session/refresh once, replay the
  * original request; on refresh-401, clear identity + redirect to /login. The
  * stampede guard makes N concurrent 401s share ONE refresh.
  */
@@ -64,7 +64,7 @@ describe('authInterceptor (cookie refresh)', () => {
       .flush({ errors: [{ message: 'auth', extensions: { code: 'UNAUTHENTICATED' } }] });
     await flushMicrotasks();
 
-    httpMock.expectOne('/api/auth/refresh').flush(null);
+    httpMock.expectOne('/api/auth/session/refresh').flush(null);
     await flushMicrotasks();
 
     httpMock.expectOne('/api/graphql').flush({ data: { ok: true } });
@@ -78,10 +78,10 @@ describe('authInterceptor (cookie refresh)', () => {
     httpMock
       .expectOne('/api/graphql')
       .flush({ errors: [{ message: 'nope', extensions: { code: 'VIEW_NOT_FOUND' } }] });
-    httpMock.expectNone('/api/auth/refresh');
+    httpMock.expectNone('/api/auth/session/refresh');
   });
 
-  it('on 401 from /api: POSTs /api/auth/refresh once, then replays the original request', async () => {
+  it('on 401 from /api: POSTs /api/auth/session/refresh once, then replays the original request', async () => {
     let observed: unknown = null;
     http.get('/api/reservations').subscribe((res) => (observed = res));
 
@@ -90,7 +90,7 @@ describe('authInterceptor (cookie refresh)', () => {
       .flush(null, { status: 401, statusText: 'Unauthorized' });
     await flushMicrotasks();
 
-    const refresh = httpMock.expectOne('/api/auth/refresh');
+    const refresh = httpMock.expectOne('/api/auth/session/refresh');
     expect(refresh.request.method).toBe('POST');
     refresh.flush(null);
     await flushMicrotasks();
@@ -112,7 +112,7 @@ describe('authInterceptor (cookie refresh)', () => {
     await flushMicrotasks();
 
     httpMock
-      .expectOne('/api/auth/refresh')
+      .expectOne('/api/auth/session/refresh')
       .flush(null, { status: 401, statusText: 'Unauthorized' });
     await flushMicrotasks();
 
@@ -122,13 +122,13 @@ describe('authInterceptor (cookie refresh)', () => {
   });
 
   it('does NOT refresh on a 401 from the refresh endpoint itself (no recursion)', async () => {
-    http.post('/api/auth/refresh', null).subscribe({ next: vi.fn(), error: vi.fn() });
+    http.post('/api/auth/session/refresh', null).subscribe({ next: vi.fn(), error: vi.fn() });
     httpMock
-      .expectOne('/api/auth/refresh')
+      .expectOne('/api/auth/session/refresh')
       .flush(null, { status: 401, statusText: 'Unauthorized' });
     await flushMicrotasks();
     // No second refresh fired.
-    httpMock.expectNone('/api/auth/refresh');
+    httpMock.expectNone('/api/auth/session/refresh');
   });
 
   it('does NOT refresh on non-401 errors', () => {
@@ -136,7 +136,7 @@ describe('authInterceptor (cookie refresh)', () => {
     httpMock
       .expectOne('/api/reservations')
       .flush({}, { status: 500, statusText: 'Internal Server Error' });
-    httpMock.expectNone('/api/auth/refresh');
+    httpMock.expectNone('/api/auth/session/refresh');
     expect(authStub.redirectToLogin).not.toHaveBeenCalled();
   });
 
@@ -151,7 +151,7 @@ describe('authInterceptor (cookie refresh)', () => {
     await flushMicrotasks();
 
     // Exactly ONE refresh for both.
-    const refreshes = httpMock.match('/api/auth/refresh');
+    const refreshes = httpMock.match('/api/auth/session/refresh');
     expect(refreshes.length).toBe(1);
     refreshes[0].flush(null);
     await flushMicrotasks();
@@ -176,7 +176,7 @@ describe('authInterceptor (cookie refresh)', () => {
     httpMock.expectOne('/api/a').flush(null, { status: 401, statusText: 'Unauthorized' });
     await flushMicrotasks();
 
-    const firstRefresh = httpMock.expectOne('/api/auth/refresh'); // A owns it
+    const firstRefresh = httpMock.expectOne('/api/auth/session/refresh'); // A owns it
     subA.unsubscribe(); // A torn down WHILE the refresh is in flight
     firstRefresh.flush(null); // the in-flight refresh still completes
     await flushMicrotasks();
@@ -187,7 +187,7 @@ describe('authInterceptor (cookie refresh)', () => {
     httpMock.expectOne('/api/b').flush(null, { status: 401, statusText: 'Unauthorized' });
     await flushMicrotasks();
 
-    httpMock.expectOne('/api/auth/refresh').flush(null); // BUG: none fired → stuck
+    httpMock.expectOne('/api/auth/session/refresh').flush(null); // BUG: none fired → stuck
     await flushMicrotasks();
 
     httpMock.expectOne('/api/b').flush({ ok: true });
@@ -204,7 +204,7 @@ describe('authInterceptor (cookie refresh)', () => {
     httpMock.expectOne('/api/b').flush(null, { status: 401, statusText: 'Unauthorized' });
     await flushMicrotasks();
 
-    const refreshes = httpMock.match('/api/auth/refresh');
+    const refreshes = httpMock.match('/api/auth/session/refresh');
     expect(refreshes.length).toBe(1);
     refreshes[0].flush(null, { status: 401, statusText: 'Unauthorized' });
     await flushMicrotasks();

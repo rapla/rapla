@@ -1,5 +1,5 @@
 /** A search hit's domain category — drives icon, grouping, and default actions. */
-export type SearchResultKind = 'resource' | 'event' | 'occurrence' | 'group' | 'savedView';
+export type SearchResultKind = 'resource' | 'event' | 'user' | 'occurrence' | 'group' | 'savedView';
 
 /** What a result row's button does when clicked. */
 export type SearchAction = 'filter-replace' | 'filter-add' | 'navigate' | 'edit' | 'load-group';

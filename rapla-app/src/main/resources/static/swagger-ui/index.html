@@ -19,7 +19,7 @@
       header from the non-HttpOnly XSRF-TOKEN cookie that Spring's
       CookieCsrfTokenRepository.withHttpOnlyFalse() sets (gated by
       CookieAuthCsrfMatcher). On a 401, the responseInterceptor calls
-      POST /api/auth/refresh to mint a fresh access_token cookie; if the
+      POST /api/auth/session/refresh to mint a fresh access_token cookie; if the
       refresh itself fails, it bounces to /login.
     -->
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.30.1/swagger-ui.css">
@@ -53,7 +53,7 @@
         a.addEventListener('click', function (e) {
             e.preventDefault();
             var xsrf = getXsrfToken();
-            fetch('/api/auth/logout', {
+            fetch('/api/auth/session/logout', {
                 method: 'POST',
                 credentials: 'same-origin',
                 headers: xsrf ? { 'X-XSRF-TOKEN': xsrf } : {}
@@ -89,7 +89,7 @@
             responseInterceptor: function (res) {
                 if (res.status === 401) {
                     var xsrf = getXsrfToken();
-                    fetch('/api/auth/refresh', {
+                    fetch('/api/auth/session/refresh', {
                         method: 'POST',
                         credentials: 'same-origin',
                         headers: xsrf ? { 'X-XSRF-TOKEN': xsrf } : {}

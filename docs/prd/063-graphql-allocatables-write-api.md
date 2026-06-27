@@ -117,6 +117,8 @@ Allocatables carry per-instance permission lists (read / allocate / allocate_con
 
 **Lean: defer** until the SPA admin panel surfaces permission editing as a real UX need.
 
+**Requirement when this lands — validate access-level vs. target type.** The save path must reject an access level that does not belong on an `Allocatable`. `READ_TYPE` / `CREATE` are type-scoped (gate `canReadType` / `canCreate` on a `DynamicType`) and are meaningless on a resource — `READ_TYPE` (20) `< READ` (100), so storing one grants nothing and only corrupts the permission list. The canonical allowed-levels-per-target matrix lives in [`docs/architecture/permissions.md` → "Which levels are valid on which target"](../architecture/permissions.md); for `Allocatable` the allowed set is `READ_NO_ALLOCATION, READ, REQUEST, ALLOCATE, ALLOCATE_CONFLICTS, EDIT, ADMIN` (+`DENIED`). The same validation applies symmetrically to the `DynamicType` (PRD 061) and `Reservation` (PRD 056) permission-edit verbs against their own rows in that matrix. Today the matrix is only advisory (encoded in the Swing `setPermissionLevels(...)` calls); GraphQL has no permission-write path yet, so there is nothing to enforce until the verb exists.
+
 ### OQ3 — Allocatable bulk transformations
 
 PRD 056 ships `moveReservations` / `copyReservations` / `changeReservationOwner` because reservations have natural bulk verbs (calendar shifts, owner reassignment after a staff change). Allocatables have analogues — `changeAllocatableOwner(ids, newOwnerId)` for staff-change-style reassignment. Worth opening as a future PRD if the admin UX wants it.

@@ -114,14 +114,15 @@ class ExplorerAuthGateTest extends IsolatedDefaultDatasetTest
     {
         mockMvc.perform(get("/graphiql/index.html").with(user("admin").roles("ADMIN")))
                 .andExpect(status().isOk())
-                // No JS reads/writes of the localStorage piggyback token, and no
-                // bespoke Bearer-from-localStorage plumbing. (The words may still
-                // appear in explanatory comments — assert on the CODE patterns.)
-                .andExpect(content().string(not(containsString("localStorage.getItem"))))
+                // No bespoke Bearer-from-localStorage AUTH plumbing. Assert on CODE
+                // patterns only — broad substrings (`localStorage.getItem`, `Drop token`)
+                // would false-positive on GraphiQL's own query persistence
+                // (`localStorage.getItem('graphiql:query')`) and on explanatory comments
+                // mentioning the removed "Drop token" button. The signals below pin the
+                // actual invariant: no access-token read, no Bearer header, no token wipe.
                 .andExpect(content().string(not(containsString("localStorage.removeItem"))))
                 .andExpect(content().string(not(containsString("getItem('access_token')"))))
-                .andExpect(content().string(not(containsString("'Bearer '"))))
-                .andExpect(content().string(not(containsString("Drop token"))));
+                .andExpect(content().string(not(containsString("'Bearer '"))));
     }
 
     // NOTE: there is intentionally no tier-3 content assertion for the
@@ -158,6 +159,6 @@ class ExplorerAuthGateTest extends IsolatedDefaultDatasetTest
     {
         mockMvc.perform(get("/graphiql/index.html").with(user("admin").roles("ADMIN")))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("/api/auth/refresh")));
+                .andExpect(content().string(containsString("/api/auth/session/refresh")));
     }
 }

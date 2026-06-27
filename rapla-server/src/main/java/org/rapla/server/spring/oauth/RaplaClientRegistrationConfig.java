@@ -51,14 +51,13 @@ public class RaplaClientRegistrationConfig
 {
     @Bean
     public ClientRegistrationRepository clientRegistrationRepository(
-            ExternalProvidersProperties externalProviders,
-            @Value("${rapla.oauth.web.dhbw-legacy-callback:false}") boolean dhbwLegacyCallback)
+            ExternalProvidersProperties externalProviders)
     {
         List<ProviderConfig> enabled = externalProviders.enabledProviders();
         List<ClientRegistration> registrations = new ArrayList<>(enabled.size());
         for (ProviderConfig p : enabled)
         {
-            registrations.add(toRegistration(p, dhbwLegacyCallback));
+            registrations.add(toRegistration(p));
         }
         if (registrations.isEmpty())
         {
@@ -127,16 +126,17 @@ public class RaplaClientRegistrationConfig
                 userProvisioner, refreshSessionService, cookies, redirectAfterLogin);
     }
 
-    private static ClientRegistration toRegistration(ProviderConfig p, boolean dhbwLegacyCallback)
+    private static ClientRegistration toRegistration(ProviderConfig p)
     {
         boolean confidential = p.clientSecret() != null && !p.clientSecret().isEmpty();
-        // PRD 072 — TEMPORARY dev-only DHBW bridge (rapla.oauth.web.dhbw-legacy-callback).
-        // DHBW Keycloak only whitelists the legacy /app/auth/callback redirect (no admin
-        // to add the conformant /login/oauth2/code/keycloak). Per-provider callbacks stay
-        // the convention; for keycloak we SEND the registered /app/auth/callback, and the
-        // dev ng-serve proxy rewrites the return onto /login/oauth2/code/keycloak. Other
-        // providers + the prod build keep Spring's per-provider default.
-        String redirectUri = (dhbwLegacyCallback && "keycloak".equals(p.id()))
+        // PRD 072 / 036 Phase 3 — TEMPORARY per-provider dev bridge (legacy-callback: true
+        // on the provider entry). An IdP whose realm can only whitelist the legacy
+        // /app/auth/callback (no admin to add the conformant /login/oauth2/code/{id}) —
+        // DHBW Mosbach on localhost — sends /app/auth/callback, and LegacyAppCallbackBridgeFilter
+        // 302-redirects the return onto this provider's real /login/oauth2/code/{id}.
+        // Conformant per-provider callbacks (mix-up-attack defence) are otherwise the
+        // convention. Per-provider, so a second Keycloak keeps its own conformant callback.
+        String redirectUri = p.legacyCallback()
                 ? "{baseUrl}/app/auth/callback"
                 : "{baseUrl}/login/oauth2/code/{registrationId}";
         ClientRegistration.Builder builder = ClientRegistration.withRegistrationId(p.id())

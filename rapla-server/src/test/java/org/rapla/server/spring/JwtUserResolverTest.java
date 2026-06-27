@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.rapla.entities.User;
 import org.rapla.server.spring.oauth.external.ExternalProvidersProperties;
 import org.rapla.server.spring.oauth.external.ExternalUserResolver;
+import org.rapla.server.spring.oauth.external.ProviderDef;
 import org.rapla.test.util.FacadeTestSupport;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -38,11 +39,13 @@ class JwtUserResolverTest extends FacadeTestSupport
     void setUp()
     {
         ExternalProvidersProperties props = new ExternalProvidersProperties();
-        ExternalProvidersProperties.Keycloak kc = props.getKeycloak();
+        ProviderDef kc = new ProviderDef();
         kc.setEnabled(true);
+        kc.setType("keycloak");
         kc.setBaseUrl("https://keycloak.example.com");
         kc.setRealm("dhbw");
         kc.setClientId("rapla-client");
+        props.getExternal().put("keycloak", kc);
         resolver = new JwtUserResolver(operator, props, new ExternalUserResolver(operator));
     }
 

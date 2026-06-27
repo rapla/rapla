@@ -2,6 +2,7 @@ package org.rapla.server.spring;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.server.spring.oauth.external.ExternalProviderId;
 import org.rapla.server.spring.oauth.external.ExternalProvidersProperties;
 import org.rapla.server.spring.oauth.external.ProviderConfig;
 import org.rapla.storage.SyncStorageOperator;
@@ -92,6 +93,12 @@ public class LoginPageController
         {
             banner = "<p style=\"color:#080;\">You have been logged out</p>";
         }
+        // PRD 072 follow-up: after an explicit logout (/login?logout), re-prompt at
+        // the IdP so the next SSO login can't silently re-use the still-live Keycloak
+        // session (and lets the user pick a different account). RaplaOAuth2Authorization
+        // RequestResolver forwards this whitelisted param. Ordinary logins omit it →
+        // silent SSO preserved.
+        boolean reprompt = logout != null;
         return """
                 <!doctype html>
                 <html lang="en">
@@ -135,11 +142,11 @@ public class LoginPageController
                 </html>
                 """
                 .replace("%BANNER%", banner)
-                .replace("%SSO%", ssoButtonsHtml())
+                .replace("%SSO%", ssoButtonsHtml(reprompt))
                 .replace("%PASSWORD%", passwordLoginEnabled ? passwordFormHtml(request) : "");
     }
 
-    private String ssoButtonsHtml()
+    private String ssoButtonsHtml(boolean reprompt)
     {
         List<ProviderConfig> providers = externalProviders == null
                 ? List.of() : externalProviders.enabledProviders();
@@ -152,8 +159,15 @@ public class LoginPageController
         {
             String id = HtmlUtils.htmlEscape(p.id());
             String label = HtmlUtils.htmlEscape(p.displayName());
+            // Keycloak ALWAYS re-prompts: its SSO-session survives rapla's local
+            // logout, and the ?logout marker (one-shot signal) is not reliably
+            // present on every entry to this page — so silent SSO would defeat
+            // sign-out / account-switch. Other providers re-prompt only after an
+            // explicit logout (reprompt).
+            boolean prompt = reprompt || p.type() == ExternalProviderId.KEYCLOAK;
             sb.append("<a class=\"sso\" href=\"/oauth2/authorization/")
               .append(id)
+              .append(prompt ? "?prompt=login" : "")
               .append("\">")
               .append(label)
               .append("</a>\n");

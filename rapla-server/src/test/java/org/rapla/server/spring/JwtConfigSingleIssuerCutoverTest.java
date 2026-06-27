@@ -14,6 +14,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.junit.jupiter.api.Test;
 import org.rapla.server.spring.oauth.external.ExternalProvidersProperties;
+import org.rapla.server.spring.oauth.external.ProviderDef;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
@@ -45,11 +46,13 @@ class JwtConfigSingleIssuerCutoverTest
     private static ExternalProvidersProperties keycloakEnabled()
     {
         ExternalProvidersProperties props = new ExternalProvidersProperties();
-        ExternalProvidersProperties.Keycloak kc = props.getKeycloak();
+        ProviderDef kc = new ProviderDef();
         kc.setEnabled(true);
+        kc.setType("keycloak");
         kc.setBaseUrl("https://keycloak.example.com");
         kc.setRealm("dhbw");
         kc.setClientId("rapla-client");
+        props.getExternal().put("keycloak", kc);
         return props;
     }
 

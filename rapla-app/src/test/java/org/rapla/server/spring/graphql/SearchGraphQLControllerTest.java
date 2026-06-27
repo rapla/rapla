@@ -64,6 +64,7 @@ class SearchGraphQLControllerTest
             __typename id label sublabel score
             ... on ResourceHit { allocatable { id } }
             ... on EventHit { reservation { id } firstOccurrenceStart }
+            ... on UserHit { user { id username } }
             """;
 
     @BeforeAll
@@ -321,5 +322,62 @@ class SearchGraphQLControllerTest
     {
         assertFalse(hits(groups("test", "[EVENT]"), "EVENT").isEmpty(),
                 "admin can edit all events — EVENT bucket must be populated");
+    }
+
+    // === USER ================================================================
+
+    @SuppressWarnings("unchecked")
+    private static String hitUsername(Map<String, Object> hit)
+    {
+        Map<String, Object> user = (Map<String, Object>) hit.get("user");
+        return user == null ? null : (String) user.get("username");
+    }
+
+    /** Admin can admin every user → USER search finds users by username. */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void adminUserSearchFindsByUsername()
+    {
+        List<Map<String, Object>> userHits = hits(groups("monty", "[USER]"), "USER");
+        assertEquals(1, userHits.size(), () -> "expected the 'monty' user, got " + userHits);
+        Map<String, Object> hit = userHits.get(0);
+        assertEquals("UserHit", hit.get("__typename"));
+        assertEquals("monty", hitUsername(hit));
+        assertNotNull(hit.get("id"), () -> "UserHit must carry the user id for the ownerEq chip: " + hit);
+    }
+
+    /** USER is in the default kind set — usernames are searched without an explicit kinds arg. */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void userSearchIsInDefaultKinds()
+    {
+        assertFalse(hits(groups("monty", null), "USER").isEmpty(),
+                "USER bucket must appear with default kinds (no kinds arg)");
+    }
+
+    /** A caller always finds themselves. */
+    @Test
+    @WithMockUser(username = "monty", roles = "USER")
+    void userSearchFindsSelf()
+    {
+        List<Map<String, Object>> userHits = hits(groups("monty", "[USER]"), "USER");
+        assertTrue(userHits.stream().anyMatch(h -> "monty".equals(hitUsername(h))),
+                () -> "monty must find herself in USER search, got " + userHits);
+    }
+
+    /**
+     * §12 leak guard: a non-admin (monty) cannot admin homer, so USER search must
+     * NOT surface him — even though his username matches the term. Verified
+     * red-on-leak: dropping the isSelf/canAdminUser gate surfaces homer here.
+     */
+    @Test
+    @WithMockUser(username = "monty", roles = "USER")
+    void userSearchDoesNotLeakNonAdminableUsers()
+    {
+        // Precondition: homer exists and his username matches "homer" (admin sees him).
+        // monty must NOT — she can neither admin homer nor is she homer.
+        List<Map<String, Object>> userHits = hits(groups("homer", "[USER]"), "USER");
+        assertTrue(userHits.stream().noneMatch(h -> "homer".equals(hitUsername(h))),
+                () -> "monty must not see homer (cannot admin) in USER search, got " + userHits);
     }
 }

@@ -182,6 +182,7 @@ public final class GeneratedClassificationWiring
             String typeName =
                     src instanceof SearchGraphQLController.ResourceHit ? "ResourceHit"
                   : src instanceof SearchGraphQLController.EventHit    ? "EventHit"
+                  : src instanceof SearchGraphQLController.UserHit     ? "UserHit"
                   : null;
             if (typeName == null)
             {

@@ -142,6 +142,40 @@ public abstract class Tools
         return isSpecCompliant(key);
     }
 
+    private static boolean isLegacyValidStart(char c)
+    {
+        return c == '_' || c == '-' || Character.isLetter(c);
+    }
+
+    private static boolean isLegacyValidChar(char c)
+    {
+        return isLegacyValidStart(c) || Character.isDigit(c);
+    }
+
+    /**
+     * Pre-PRD-058 key rule: a leading Unicode letter / {@code '_'} / {@code '-'},
+     * then letters, digits, {@code '_'} or {@code '-'}. Rejects the literals
+     * {@code "true"} / {@code "false"} and the empty string.
+     *
+     * <p>PRD 058 Phase 6 — applied <em>only</em> to the {@code user-groups}
+     * Category subtree (group keys never become GraphQL identifiers, so the
+     * strict {@link #isSpecCompliant} spec doesn't apply to them; relaxing to
+     * this legacy rule restores the pre-058 behaviour so existing hyphen/umlaut
+     * group keys stay editable). The length cap (≤ 50) is enforced by callers
+     * (e.g. {@code DynamicTypeImpl.checkKey}).
+     */
+    public static boolean isLegacyKey(String key)
+    {
+        if (key == null || key.isEmpty()) return false;
+        if (key.equals("true") || key.equals("false")) return false;
+        if (!isLegacyValidStart(key.charAt(0))) return false;
+        for (int i = 0; i < key.length(); i++)
+        {
+            if (!isLegacyValidChar(key.charAt(i))) return false;
+        }
+        return true;
+    }
+
     public static String makeValidKey(String key)
     {
         return toSpecKey(key, java.util.Collections.emptySet());

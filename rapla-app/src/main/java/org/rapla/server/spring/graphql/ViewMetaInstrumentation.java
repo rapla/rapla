@@ -80,8 +80,10 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
         if (rowLabel != null) meta.put("rowLabel", rowLabel);
         String groupLabel = stringArg(view, "groupLabel");
         if (groupLabel != null) meta.put("groupLabel", groupLabel);
-        List<String> renderModes = enumListArg(view, "renderModes");
-        meta.put("renderModes", renderModes.isEmpty() ? List.of("table") : renderModes);
+        List<ViewRenderMode> renderModes = typedEnumListArg(view, "renderModes", ViewRenderMode.class);
+        meta.put("renderModes", renderModes.isEmpty()
+                ? List.of(ViewRenderMode.table.name())
+                : renderModes.stream().map(Enum::name).toList());
         List<Map<String, Object>> columns = columnsFrom(op.getSelectionSet(),
                 parameters.getExecutionContext().getGraphQLSchema());
         meta.put("columns", columns);
@@ -174,20 +176,20 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
                 // Per-view window seed from @view(fromAnchor/fromOffset/toAnchor/toOffset/unit);
                 // omitted args fall back to the default TODAY -7 … +7 window. A Monday week is
                 // fromAnchor: "WEEK_START", fromOffset: 0, toAnchor: "WEEK_START", toOffset: 7.
-                String fromAnchor = enumArg(view, "fromAnchor");
-                String toAnchor = enumArg(view, "toAnchor");
-                String unit = enumArg(view, "unit");
+                ViewAnchor fromAnchor = typedEnumArg(view, "fromAnchor", ViewAnchor.class);
+                ViewAnchor toAnchor = typedEnumArg(view, "toAnchor", ViewAnchor.class);
+                ViewDateUnit unit = typedEnumArg(view, "unit", ViewDateUnit.class);
                 Integer fromOffset = intArg(view, "fromOffset");
                 Integer toOffset = intArg(view, "toOffset");
                 List<Map<String, Object>> inputs = new ArrayList<>();
                 inputs.add(dateInput("filter.from", "DATE_RANGE_START",
-                        fromAnchor != null ? fromAnchor : "TODAY",
+                        (fromAnchor != null ? fromAnchor : ViewAnchor.TODAY).name(),
                         fromOffset != null ? fromOffset : -7,
-                        unit != null ? unit : "DAYS"));
+                        (unit != null ? unit : ViewDateUnit.DAYS).name()));
                 inputs.add(dateInput("filter.to", "DATE_RANGE_END",
-                        toAnchor != null ? toAnchor : "TODAY",
+                        (toAnchor != null ? toAnchor : ViewAnchor.TODAY).name(),
                         toOffset != null ? toOffset : 7,
-                        unit != null ? unit : "DAYS"));
+                        (unit != null ? unit : ViewDateUnit.DAYS).name()));
                 return inputs;
             }
         }
@@ -583,18 +585,27 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
         return (a != null && a.getValue() instanceof StringValue sv) ? sv.getValue() : null;
     }
 
-    private static String enumArg(Directive d, String name)
+    private static <E extends Enum<E>> E typedEnumArg(Directive d, String name, Class<E> type)
     {
         Argument a = argByName(d, name);
-        return (a != null && a.getValue() instanceof EnumValue ev) ? ev.getName() : null;
+        if (a == null || !(a.getValue() instanceof EnumValue ev)) return null;
+        try { return Enum.valueOf(type, ev.getName()); }
+        catch (IllegalArgumentException ex) { return null; }
     }
 
-    private static List<String> enumListArg(Directive d, String name)
+    private static <E extends Enum<E>> List<E> typedEnumListArg(Directive d, String name, Class<E> type)
     {
         Argument a = argByName(d, name);
         if (a == null || !(a.getValue() instanceof ArrayValue arr)) return List.of();
-        List<String> out = new ArrayList<>();
-        for (Value<?> v : arr.getValues()) if (v instanceof EnumValue ev) out.add(ev.getName());
+        List<E> out = new ArrayList<>();
+        for (Value<?> v : arr.getValues())
+        {
+            if (v instanceof EnumValue ev)
+            {
+                try { out.add(Enum.valueOf(type, ev.getName())); }
+                catch (IllegalArgumentException ignored) {}
+            }
+        }
         return out;
     }
 

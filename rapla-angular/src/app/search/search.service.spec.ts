@@ -45,6 +45,13 @@ const eventHit = (id: string, label: string, sublabel = 'event'): SearchHit => (
   score: 1,
   firstOccurrenceStart: '2026-03-01T10:00:00',
 });
+const userHit = (id: string, label: string, sublabel: string | null = null): SearchHit => ({
+  __typename: 'UserHit',
+  id,
+  label,
+  sublabel,
+  score: 1,
+});
 
 describe('SearchService', () => {
   it('returns empty for a blank term WITHOUT querying', async () => {
@@ -109,13 +116,31 @@ describe('SearchService', () => {
     });
   });
 
+  it('maps a USER bucket to a Benutzer group with resource-like actions (Belegung / +)', async () => {
+    const gql = fakeGql([
+      { kind: 'USER', heading: 'Benutzer', hits: [userHit('u1', 'Burns Monty', 'monty')] },
+    ]);
+    const groups = await firstValueFrom(new SearchService(gql).search('monty'));
+    expect(groups.length).toBe(1);
+    expect(groups[0].kind).toBe('user');
+    expect(groups[0].heading).toBe('Benutzer');
+    expect(groups[0].results[0]).toMatchObject({
+      id: 'u1',
+      kind: 'user',
+      label: 'Burns Monty',
+      sublabel: 'monty',
+      actions: ['filter-replace', 'filter-add'],
+    });
+  });
+
   it('preserves server bucket order across kinds', async () => {
     const gql = fakeGql([
       { kind: 'RESOURCE', heading: 'Ressourcen', hits: [resourceHit('r1', 'Raum 1')] },
       { kind: 'EVENT', heading: 'Veranstaltungen', hits: [eventHit('e1', 'Event 1')] },
+      { kind: 'USER', heading: 'Benutzer', hits: [userHit('u1', 'Monty')] },
     ]);
     const groups = await firstValueFrom(new SearchService(gql).search('123'));
-    expect(groups.map((g) => g.kind)).toEqual(['resource', 'event']);
+    expect(groups.map((g) => g.kind)).toEqual(['resource', 'event', 'user']);
   });
 
   it('passes the trimmed query term + a positive limit to the resolver', async () => {

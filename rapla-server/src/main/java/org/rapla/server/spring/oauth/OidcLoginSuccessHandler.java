@@ -125,7 +125,7 @@ public class OidcLoginSuccessHandler extends SavedRequestAwareAuthenticationSucc
             RefreshSessionService.IssuedTokens tokens = refreshSessionService.issueAndPersist(user);
             cookies.setAccessTokenCookie(response, tokens.accessToken(), tokens.expiresIn());
             // PRD 072 Phase 2 — also set the path-scoped refresh_token cookie so
-            // the browser can do the reactive-401 refresh against /api/auth/refresh.
+            // the browser can do the reactive-401 refresh against /api/auth/session/refresh.
             cookies.setRefreshTokenCookie(response, tokens.refreshToken(),
                     RefreshSessionService.REFRESH_TOKEN_TTL_SECONDS);
         }

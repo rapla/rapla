@@ -21,7 +21,7 @@ import org.springframework.web.service.annotation.PostExchange;
  *   <li>{@code GET /api/auth/me} — the current identity (username, name, roles,
  *       impersonation state). Reads the cookie OR the Bearer. 401 without a
  *       valid credential. §12 leak-safe: returns ONLY the caller's own identity.</li>
- *   <li>{@code POST /api/auth/refresh} — reactive-401 refresh. Reads the
+ *   <li>{@code POST /api/auth/session/refresh} — reactive-401 refresh. Reads the
  *       path-scoped {@code refresh_token} cookie, validates it, mints a fresh
  *       access JWT, sets a fresh {@code access_token} cookie. 401 on an
  *       invalid/expired refresh token.</li>
@@ -31,11 +31,16 @@ import org.springframework.web.service.annotation.PostExchange;
  *       JWT, sets it as the {@code access_token} cookie.</li>
  *   <li>{@code POST /api/auth/impersonate/end} — restores the admin's
  *       {@code access_token} cookie (re-mint from the admin's refresh session).</li>
- *   <li>{@code POST /api/auth/logout} — sign-out: EXPIRES both the
- *       {@code access_token} and {@code refresh_token} cookies and invalidates
- *       the session. Spring's default {@code LogoutFilter} only clears
- *       {@code JSESSIONID} on {@code POST /logout} and is unaware of rapla's
- *       stateless auth cookies, so the SPA hits this endpoint instead.</li>
+ *   <li>{@code POST /api/auth/session/logout} — sign-out. Resolves the user from
+ *       the path-scoped {@code refresh_token} cookie and REVOKES the server-side
+ *       session ({@code clearSession} — invalidates every refresh token for the
+ *       user, single-token-per-user), then EXPIRES both the {@code access_token}
+ *       and {@code refresh_token} cookies and invalidates the HTTP session.
+ *       Sits under {@code /api/auth/session} alongside {@code refresh} precisely
+ *       so the path-scoped {@code refresh_token} cookie reaches it — that durable
+ *       credential is what makes logout work even when the access token has
+ *       already expired. Spring's default {@code LogoutFilter} ({@code POST /logout})
+ *       only clears {@code JSESSIONID} and is unaware of rapla's auth cookies.</li>
  * </ul>
  */
 @HttpExchange("/api/auth")
@@ -44,7 +49,7 @@ public interface AuthCookieService
     @GetExchange("/me")
     IdentityResponse me() throws RaplaException;
 
-    @PostExchange("/refresh")
+    @PostExchange("/session/refresh")
     void refresh() throws RaplaException;
 
     @PostExchange("/impersonate/switch")
@@ -53,6 +58,6 @@ public interface AuthCookieService
     @PostExchange("/impersonate/end")
     void impersonateEnd() throws RaplaException;
 
-    @PostExchange("/logout")
+    @PostExchange("/session/logout")
     void logout() throws RaplaException;
 }

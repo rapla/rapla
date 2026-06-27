@@ -150,7 +150,7 @@ class OidcLoginSuccessHandlerTest
         assertNotNull(refreshCookie, "OIDC login must set a refresh_token cookie (Phase 2)");
         assertTrue(refreshCookie.isHttpOnly(), "refresh cookie must be HttpOnly");
         assertEquals("Lax", refreshCookie.getAttribute("SameSite"));
-        assertEquals("/api/auth/refresh", refreshCookie.getPath(),
+        assertEquals("/api/auth/session", refreshCookie.getPath(),
                 "refresh cookie must be path-scoped so it is not sent on every /api call");
     }
 

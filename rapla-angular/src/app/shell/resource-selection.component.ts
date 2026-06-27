@@ -1,5 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
 
 import {
   ResourceSelectionStore,
@@ -8,6 +9,7 @@ import {
 } from '../state/resource-selection-store';
 import { FilterStore } from '../state/filter-store';
 import { AuthService, type Identity } from '../auth/auth.service';
+import { entityIcon } from './entity-icon';
 
 /**
  * The persistent left ResourceSelection. Tabs pick the source (Zuletzt/
@@ -17,7 +19,7 @@ import { AuthService, type Identity } from '../auth/auth.service';
  */
 @Component({
   selector: 'app-resource-selection',
-  imports: [FormsModule],
+  imports: [FormsModule, MatIconModule],
   template: `
     <div class="stepper">
       @if (me(); as user) {
@@ -46,6 +48,12 @@ import { AuthService, type Identity } from '../auth/auth.service';
           <span class="clr" (click)="store.clearGroup()">× leeren</span>
         </div>
       }
+      @if (store.activeTab() === 'recents' && store.recents().length) {
+        <div class="grouphdr recents-hdr">
+          <span>Zuletzt verwendet</span>
+          <span class="clr" (click)="store.clearRecents()">× leeren</span>
+        </div>
+      }
       <input
         class="stsearch"
         placeholder="in der Liste filtern…"
@@ -54,7 +62,7 @@ import { AuthService, type Identity } from '../auth/auth.service';
       />
       @for (it of visible(); track it.id; let i = $index) {
         <div class="item" [class.active]="store.activeId() === it.id" (click)="step($event, it, i)">
-          <span class="dot" [style.background]="it.color ?? 'transparent'"></span>
+          <mat-icon class="ico" [style.color]="it.color || null">{{ icon(it) }}</mat-icon>
           <span class="lbl">{{ it.label }}</span>
           @if (store.activeId() === it.id) {
             <span class="now">▶ gezeigt</span>
@@ -160,6 +168,11 @@ import { AuthService, type Identity } from '../auth/auth.service';
       .grouphdr .clr {
         cursor: pointer;
       }
+      .grouphdr.recents-hdr {
+        background: rgba(0, 0, 0, 0.04);
+        color: rgba(0, 0, 0, 0.55);
+        font-weight: 600;
+      }
       .stsearch {
         margin: 0 0.75rem 0.5rem;
         height: 1.9rem;
@@ -185,11 +198,12 @@ import { AuthService, type Identity } from '../auth/auth.service';
         border-left-color: #2e7d32;
         font-weight: 600;
       }
-      .item .dot {
-        width: 0.55rem;
-        height: 0.55rem;
-        border-radius: 50%;
+      .item .ico {
         flex: none;
+        font-size: 1.15rem;
+        width: 1.15rem;
+        height: 1.15rem;
+        color: rgba(0, 0, 0, 0.5);
       }
       .item .lbl {
         flex: 1;
@@ -266,9 +280,14 @@ export class ResourceSelectionComponent {
    *
    * Stepping only views — it never reorders the list (Recents stay stable).
    */
+  /** Material icon for a list item (by kind + rapla type key). */
+  protected icon(it: ResourceItem): string {
+    return entityIcon(it.kind ?? 'resource', it.typeKey);
+  }
+
   step(event: MouseEvent, it: ResourceItem, index: number): void {
     const entry = (r: ResourceItem) =>
-      ({ id: r.id, kind: 'resource', label: r.label, color: r.color }) as const;
+      ({ id: r.id, kind: r.kind ?? 'resource', label: r.label, color: r.color }) as const;
     const list = this.visible();
 
     if (event.shiftKey && this.anchorIndex >= 0) {

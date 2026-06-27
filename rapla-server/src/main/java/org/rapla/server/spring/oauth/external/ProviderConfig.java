@@ -20,6 +20,7 @@ import java.util.regex.Pattern;
  */
 public final class ProviderConfig
 {
+    private final String registrationId;
     private final ExternalProviderId provider;
     private final String displayName;
     private final String icon;
@@ -42,8 +43,10 @@ public final class ProviderConfig
     private final String hostedDomain;
     private final boolean autoProvision;
     private final boolean revokeOnLogout;
+    private final boolean legacyCallback;
 
     public ProviderConfig(
+            String registrationId,
             ExternalProviderId provider,
             String displayName,
             String icon,
@@ -64,16 +67,18 @@ public final class ProviderConfig
             String externalIdClaim,
             String hostedDomain,
             boolean autoProvision,
-            boolean revokeOnLogout)
+            boolean revokeOnLogout,
+            boolean legacyCallback)
     {
-        this(provider, displayName, icon, order, webPickerVisible, clientId, clientSecret,
+        this(registrationId, provider, displayName, icon, order, webPickerVisible, clientId, clientSecret,
                 issuer, null, authorizeUrl, tokenUrl, jwksUrl, endSessionUrl,
                 postLogoutRedirectUri, scopes, extraAuthorizeParams,
                 usernameClaim, emailClaim, externalIdClaim, hostedDomain,
-                autoProvision, revokeOnLogout);
+                autoProvision, revokeOnLogout, legacyCallback);
     }
 
     public ProviderConfig(
+            String registrationId,
             ExternalProviderId provider,
             String displayName,
             String icon,
@@ -95,8 +100,10 @@ public final class ProviderConfig
             String externalIdClaim,
             String hostedDomain,
             boolean autoProvision,
-            boolean revokeOnLogout)
+            boolean revokeOnLogout,
+            boolean legacyCallback)
     {
+        this.registrationId = registrationId;
         this.provider = provider;
         this.displayName = displayName;
         this.icon = icon;
@@ -119,10 +126,14 @@ public final class ProviderConfig
         this.hostedDomain = hostedDomain;
         this.autoProvision = autoProvision;
         this.revokeOnLogout = revokeOnLogout;
+        this.legacyCallback = legacyCallback;
     }
 
     public ExternalProviderId provider() { return provider; }
-    public String id() { return provider.id(); }
+    /** The provider <em>type</em> (microsoft/google/keycloak) — alias of {@link #provider()}. */
+    public ExternalProviderId type() { return provider; }
+    /** The {@code registrationId} (map key) — unique per registration, drives the callback path. */
+    public String id() { return registrationId; }
     public String displayName() { return displayName; }
     public String icon() { return icon; }
     public int order() { return order; }
@@ -156,6 +167,16 @@ public final class ProviderConfig
     public String hostedDomain() { return hostedDomain; }
     public boolean autoProvision() { return autoProvision; }
     public boolean revokeOnLogout() { return revokeOnLogout; }
+    /**
+     * PRD 072 / 036 Phase 3 — when true, this provider's {@code ClientRegistration}
+     * sends the legacy {@code /app/auth/callback} redirect_uri instead of the
+     * conformant {@code /login/oauth2/code/{registrationId}}, and
+     * {@link org.rapla.server.spring.oauth.LegacyAppCallbackBridgeFilter} bridges
+     * the return to this provider's per-registration callback. Per-provider, dev
+     * bridge for an IdP whose realm can't register the conformant URI (DHBW Mosbach
+     * on localhost). At most one provider may set this (single {@code /app/auth/callback}).
+     */
+    public boolean legacyCallback() { return legacyCallback; }
 
     public String externalIdPreferenceKey()
     {

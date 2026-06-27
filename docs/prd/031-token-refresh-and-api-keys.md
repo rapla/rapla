@@ -1,7 +1,19 @@
 # PRD 031: Refresh Tokens & API Keys — IdP-portable design
 
-**Status:** in-progress — refresh-token half consolidated onto `/oauth2/token` 2026-05-16 (PRD 041); API-keys half **superseded by [PRD 043](043-api-keys-jwt-pat.md)** (server-minted asymmetric JWT, GitHub-PAT flow).
+**Status:** effectively complete / supersedable — refresh-token half consolidated onto `/oauth2/token` 2026-05-16 (PRD 041); API-keys half **superseded by [PRD 043](043-api-keys-jwt-pat.md)** (server-minted asymmetric JWT, GitHub-PAT flow); legacy HMAC token path **removed 2026-06-24**. Only residual is the PRD-043-tracked API-key UI. Candidate for `done/`.
 **Date:** 2026-05-12
+
+> **2026-06-24 update — legacy HMAC token path removed (final cleanup).** The last
+> remnant of the pre-OAuth token system is gone: `TokenHandler`, `SignedToken`/
+> `ValidToken`, and the `RemoteSessionImpl` fallback (the `?access_token=` /
+> `raplaLoginToken`-cookie / Bearer HMAC branches) were deleted. Auditing confirmed
+> nothing mints the rapla-custom `userId$signature` token anymore — its only minter
+> chain hung off the already-deleted refresh path, the Swing fallback password dialog
+> issues RSA JWTs via the `/oauth2/token` password grant, and iCal subscribers
+> authenticate via `?user=` + published calendar (not a token). Auth is now genuinely
+> JWT-only (`SpringSecurityRemoteSession` + `JwtUserResolver`). The `"refreshToken"`
+> API-key slot is now read-only legacy, consulted by no auth path; the `storeAPIKey`
+> family rename foreseen in PRD 043 is unblocked. See `docs/authentication.md`.
 
 > **2026-05-16 update.** Refresh-token consolidation done in PRD 041 — both
 > `/api/auth/login`-issued and `/oauth2/authorize`-issued refresh tokens now
@@ -19,7 +31,7 @@
 - Discovery endpoint (`/api/auth/oauth/config`) emits `refreshUrl` and `logoutUrl` — IdP swap becomes a one-env-var change (`RAPLA_OAUTH_ISSUER`).
 - Client-side refresh-token cache: hybrid `TokenStore` (JNLP `PersistenceService` → `~/.rapla/tokens.json` 0600 → NoOp) — see PRD 029 OQ 10.
 
-**Open / API-keys half:** still draft. Mechanism + UI yet to land.
+**Open / API-keys half:** mechanism landed via [PRD 043](043-api-keys-jwt-pat.md) (server-side complete); only the end-user **UI** (Swing dialog / Angular admin panel) is still pending — tracked in PRD 043, not here.
 
 ## Goal
 

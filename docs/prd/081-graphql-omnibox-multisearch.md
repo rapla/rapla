@@ -188,18 +188,33 @@ effective matching if the scan is too slow. Do not pre-optimize with an index in
 
 ## Plan — phased (server)
 
-1. **Phase 1 — unify resources + events. ✅ DONE 2026-06-21.** `search(query, kinds, limit)`
-   over RESOURCE (reuses the PRD 028 `allocatables` evaluator, FUZZY) + EVENT (windowless name
-   scan over `CachableStorageOperator.getReservations()`, SUBSTRING-only). Ranking + per-kind
-   cap + truncation log. The SPA flipped `SearchService` from the resources-only fan-out to
-   `search(...)` — seam unchanged. Implementation:
+1. **Phase 1 — unify resources + events + users. ✅ DONE 2026-06-21 (RESOURCE+EVENT), USER added
+   2026-06-24.** `search(query, kinds, limit)` over RESOURCE (reuses the PRD 028 `allocatables`
+   evaluator, FUZZY) + EVENT (windowless name scan over `CachableStorageOperator.getReservations()`,
+   SUBSTRING-only, edit-gated) + USER (name/username FUZZY scan, §12 = self + `canAdminUser`).
+   Ranking + per-kind cap + truncation log. RESOURCE/EVENT/USER are all in the **default** kind set.
+   The SPA flipped `SearchService` from the resources-only fan-out to `search(...)` — seam unchanged.
+   Implementation:
    - `SearchGraphQLController` (resolver + `SearchResults`/`SearchGroup`/`SearchHit`/`ResourceHit`/
-     `EventHit` output types); `SearchHit` TypeResolver in `GeneratedClassificationWiring`.
+     `EventHit`/`UserHit` output types); `SearchHit` TypeResolver in `GeneratedClassificationWiring`.
    - `CachableStorageOperator.getReservations()` (new windowless accessor; impl in
      `LocalAbstractCachableOperator` → `cache.getReservations()`).
-   - Schema: `search` query + `SearchKind` enum + the result/hit types in `schema.graphqls`.
+   - Schema: `search` query + `SearchKind` enum (RESOURCE/EVENT/USER/…) + the result/hit types.
    - SPA: `search.service.ts` calls `search(query, limit)`, maps `groups` → `SearchResultGroup[]`,
-     derives actions per kind. Omnibox component untouched.
+     derives actions per kind (`user` → `filter-add` scope chip). `'user'` added to
+     `SearchResultKind`; omnibox `run()` routes `user`/`event` hits to the matching `FilterStore`
+     chip kind (no longer coerces non-event → resource). `FilterStore` already had the `user` kind.
+   - **USER kind (2026-06-24):** lets the planner type a person's name/login and add a `user` scope
+     chip (the SPA binds `UserHit.id` into `ReservationFilter.ownerEq`). §12 mirrors `users(filter:)`
+     visibility — self + `canAdminUser`; verified red-on-leak (a non-admin must not see a user she
+     can't admin). Label = display name (person name, else username), sublabel = username.
+   - **GUI: a found user behaves like a resource (2026-06-24).** User rows carry the same actions as
+     resources (`filter-replace` "Belegung" + `filter-add` "+"), and acting on one **pulls it into
+     the ResourceSelection "Zuletzt" list** so it can be re-selected. To keep the scope correct,
+     `ResourceItem` gained an optional `kind` (`resource`|`user`, default `resource`) and
+     `ResourceSelection.step()` builds the `FilterStore` entry with that kind — so stepping a user
+     row creates a `user` (ownerEq) chip, not a resource filter. (The logged-in user stays pinned at
+     the top via `scopeToMe`; this covers finding *other* users.)
    - **EVENT gate = `canModify`, not `canRead` (2026-06-21 decision):** the omnibox surfaces only
      events the caller can **edit**. Event rows carry edit/navigate actions, so a non-editable
      event is noise *and* a wider leak surface; restricting to editable events is both better UX

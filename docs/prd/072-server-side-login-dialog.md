@@ -596,3 +596,61 @@ single-slot is also what couples to risk #1 above.
    is reactivated only if rapla ever calls upstream provider APIs server-side. Full rationale +
    precedent (Backstage / Cognito / Auth0 / Keycloak / RFC 8693) in the **Token-issuance model**
    and **Revocation, session cap & IdP-token handling** sections above.
+
+## Follow-up (2026-06-24) — session-namespace logout, server-side revoke, prompt=login
+
+Tightening of the M2 logout path after the realisation that the cookie-model logout
+neither revoked server-side nor handled the surviving upstream-IdP SSO session.
+
+### Endpoint move: `/api/auth/session/{refresh,logout}`
+
+Refresh and logout moved from `/api/auth/refresh` + `/api/auth/logout` into a shared
+**`/api/auth/session`** namespace, and the httpOnly `refresh_token` cookie's `Path`
+moved from `/api/auth/refresh` to `/api/auth/session` (`CookieAuthSupport.REFRESH_TOKEN_PATH`).
+Rationale (least-privilege): the durable refresh cookie now reaches *exactly* the two
+endpoints that legitimately need it — refresh and logout — and nothing else. Logout sits
+there specifically so it can read the refresh token and resolve the user **even when the
+access token has expired** (the access cookie's maxAge = token TTL, so it's gone from the
+browser after ~1 h; the refresh cookie lives 21 d).
+
+### Logout now revokes server-side
+
+`AuthCookieController.logout()` resolves the user from the path-scoped `refresh_token`
+cookie (`RefreshSessionService.peekUser`, which decodes the durable refresh token) and
+calls `clearSession(user)` before expiring the cookies. Previously it only cleared cookies,
+leaving the server-side `org.rapla.auth.session` slot intact. `clearSession` is per-user
+(single-token-per-user) → **logout-everywhere**, a deliberate feature for shared/pool machines.
+
+`/oauth2/revoke` (Spring SAS, RFC 7009) is unchanged and stays the path for external API
+clients; rapla's own SPA uses `/api/auth/session/logout`.
+
+### Swing logout: revoke + login flow, no background tab
+
+Swing already revoked via `POST /oauth2/revoke` with its **refresh token** (correct: the
+revoke provider resolves the user from the durable refresh token, so it works with an
+expired access token). Removed: the `/connect/logout` browser tab (and the `appendIdTokenHint`
+helper). In M2 that OIDC RP-initiated logout only ends rapla's *own* SAS session (its
+`id_token_hint` is a rapla token, not the upstream IdP's), needs a non-expired hint (400s on
+a stale one), and a tab popping up on logout is poor UX. The surviving upstream SSO session is
+handled at the next login by `prompt=login`.
+
+### `prompt=login` — defeat silent re-login / enable account switch
+
+In the broker model rapla's logout never propagates to the upstream IdP, so the next SSO login
+would silently re-authenticate against the still-live Keycloak SSO session (same user, no way
+to switch accounts). Fix:
+
+- `RaplaOAuth2AuthorizationRequestResolver` forwards a whitelisted `prompt` (`login` /
+  `select_account`) request param into the IdP authorize request; wired into `oauth2Login()`.
+- The server `/login` page (`LoginPageController`) emits `?prompt=login` on SSO links:
+  **always for Keycloak-type providers** (the `?logout` one-shot marker proved unreliable as
+  the sole trigger), and for **all** providers after an explicit logout (`/login?logout`).
+- Verified live against local Keycloak 26.6.1: with a live SSO session, `prompt=login` makes
+  KC show "Please re-authenticate to continue" (the reauth page with a "Restart login" affordance)
+  instead of silently bouncing straight back into the app. Without it, the SSO link logs straight
+  in. (Note: KC 26 shows reauth-as-current-user, not a free username field; switching to a
+  different account goes via "Restart login".)
+
+Real upstream single-logout (ending the KC session via a fresh `id_token_hint`) was considered
+and **deferred**: it would require keeping the IdP token server-side to mint a fresh hint at
+logout, and `prompt=login` already covers the silent-re-login + account-switch needs.

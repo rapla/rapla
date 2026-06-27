@@ -1,5 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { describe, it, expect, beforeEach } from 'vitest';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ResourceSelectionComponent } from './resource-selection.component';
 import { ResourceSelectionStore } from '../state/resource-selection-store';
 import { FilterStore } from '../state/filter-store';
@@ -18,6 +20,7 @@ describe('ResourceSelectionComponent', () => {
     localStorage.clear(); // recents/favorites persist — isolate before the store hydrates
     await TestBed.configureTestingModule({
       imports: [ResourceSelectionComponent],
+      providers: [provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
     resources = TestBed.inject(ResourceSelectionStore);
     filter = TestBed.inject(FilterStore);
@@ -76,6 +79,16 @@ describe('ResourceSelectionComponent', () => {
     await f.whenStable();
     expect(resources.activeId()).toBe('C452');
     expect(filter.entries().map((e) => e.id)).toEqual(['C452']);
+  });
+
+  it('stepping a user item creates a user-kind scope chip (not a resource filter)', async () => {
+    resources.pushRecent({ id: 'u1', label: 'Burns Monty', kind: 'user' });
+    const f = TestBed.createComponent(ResourceSelectionComponent);
+    await f.whenStable();
+    const first = (f.nativeElement as HTMLElement).querySelector('.item') as HTMLElement;
+    first.click();
+    await f.whenStable();
+    expect(filter.entries()).toEqual([{ id: 'u1', kind: 'user', label: 'Burns Monty', color: undefined }]);
   });
 
   it('toggling the star pins to Favoriten WITHOUT stepping the row', async () => {

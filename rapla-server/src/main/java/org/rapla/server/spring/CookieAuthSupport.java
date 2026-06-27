@@ -20,8 +20,11 @@ import java.time.Duration;
  *   <li>{@code access_token} — the rapla access JWT. Path {@code /} so it is
  *       sent on every {@code /api/**} call.</li>
  *   <li>{@code refresh_token} — the rapla refresh JWT. Path
- *       {@code /api/auth/refresh} so the long-lived token is NOT sent on every
- *       API call (PRD 072 § "Refresh mechanism").</li>
+ *       {@code /api/auth/session} so the long-lived token is NOT sent on every
+ *       API call — it reaches ONLY the two session endpoints that legitimately
+ *       need it, {@code /api/auth/session/refresh} and {@code /api/auth/session/logout}
+ *       (PRD 072 § "Refresh mechanism"). Logout lives there so it can read this
+ *       durable credential and revoke even when the access token has expired.</li>
  * </ul>
  */
 public class CookieAuthSupport
@@ -29,7 +32,7 @@ public class CookieAuthSupport
     public static final String ACCESS_TOKEN_COOKIE = "access_token";
     public static final String REFRESH_TOKEN_COOKIE = "refresh_token";
     public static final String ACCESS_TOKEN_PATH = "/";
-    public static final String REFRESH_TOKEN_PATH = "/api/auth/refresh";
+    public static final String REFRESH_TOKEN_PATH = "/api/auth/session";
 
     private final boolean secure;
 

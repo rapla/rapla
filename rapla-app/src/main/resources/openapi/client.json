@@ -761,6 +761,75 @@
         }
       }
     },
+    "/api/recents" : {
+      "get" : {
+        "tags" : [ "recents-controller" ],
+        "operationId" : "getRecents",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/UserListItem"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "recents-controller" ],
+        "operationId" : "addRecent",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UserListEntryRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/UserListItem"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "recents-controller" ],
+        "operationId" : "clearRecents",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/UserListItem"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/mail/config" : {
       "get" : {
         "tags" : [ "mail-config-controller" ],
@@ -882,6 +951,56 @@
               "application/json" : {
                 "schema" : {
                   "type" : "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/favorites" : {
+      "get" : {
+        "tags" : [ "favorites-controller" ],
+        "operationId" : "getFavorites",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/UserListItem"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "favorites-controller" ],
+        "operationId" : "addFavorite",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UserListEntryRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/UserListItem"
+                  }
                 }
               }
             }
@@ -1084,13 +1203,24 @@
         }
       }
     },
-    "/api/auth/refresh" : {
+    "/api/auth/session/refresh" : {
       "post" : {
         "tags" : [ "auth-cookie-controller" ],
         "operationId" : "refresh_1",
         "responses" : {
           "200" : {
             "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/auth/session/logout" : {
+      "post" : {
+        "tags" : [ "auth-cookie-controller" ],
+        "operationId" : "logout",
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
           }
         }
       }
@@ -1168,17 +1298,6 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "/api/auth/logout" : {
-      "post" : {
-        "tags" : [ "auth-cookie-controller" ],
-        "operationId" : "logout",
-        "responses" : {
-          "204" : {
-            "description" : "No Content"
           }
         }
       }
@@ -2005,6 +2124,35 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/PanelDefinition"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/favorites/{id}" : {
+      "delete" : {
+        "tags" : [ "favorites-controller" ],
+        "operationId" : "removeFavorite",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/UserListItem"
+                  }
                 }
               }
             }
@@ -3275,6 +3423,35 @@
           }
         }
       },
+      "UserListEntryRequest" : {
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "kind" : {
+            "type" : "string"
+          }
+        }
+      },
+      "UserListItem" : {
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "kind" : {
+            "type" : "string"
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "color" : {
+            "type" : "string"
+          },
+          "typeKey" : {
+            "type" : "string"
+          }
+        }
+      },
       "MailTestRequest" : {
         "properties" : {
           "config" : {
@@ -3904,6 +4081,9 @@
       },
       "IdentityResponse" : {
         "properties" : {
+          "userId" : {
+            "type" : "string"
+          },
           "username" : {
             "type" : "string"
           },

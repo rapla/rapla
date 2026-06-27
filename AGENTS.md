@@ -48,12 +48,44 @@ Two practices that pay off on a codebase this size (rapla sessions tend to be lo
 - **Don't let context exceed ~60% of the window.** Quality starts degrading at 20–40% of 200 k tokens; auto-compact (~83% threshold) is lossy and retains only 20–30% of detail. When approaching the limit, run `/compact <hint>` — e.g. `/compact focus on PRD 029 phase 2 verification, drop the bootstrap chatter` — so the summary keeps the load-bearing context and drops the rest. Don't wait for auto-compact.
 - **Use `/branch` (or `/fork`) before a risky mechanical sweep.** Date→LocalDateTime, package renames, Jackson 3 migration, the kind of change the `bulk-refactor-scripts` skill records scars from. A branch is a session snapshot — try the experiment; if it works, keep the branch; if it doesn't, return to the original conversation with no rollback cost.
 
+### 0a. Working principles — Karpathy's four rules
+
+From [multica-ai/andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills) (Andrej Karpathy's LLM-coding observations), verbatim. Cross-cutting behavioural defaults. Bias toward caution over speed — for trivial tasks, use judgment. The rapla `→` pointer on each rule names where its detailed application lives.
+
+**1. Think Before Coding** — *Don't assume. Don't hide confusion. Surface tradeoffs.*
+- State your assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them — don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
+- → rapla: read the relevant `docs/`+PRD first (§2a); `design-dialog` skill for open design space.
+
+**2. Simplicity First** — *Minimum code that solves the problem. Nothing speculative.*
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+
+**3. Surgical Changes** — *Touch only what you must. Clean up only your own mess.*
+- Don't "improve" adjacent code, comments, or formatting; don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it — don't delete it.
+- Remove imports/variables/functions that YOUR changes made unused; don't remove pre-existing dead code unless asked.
+- The test: every changed line should trace directly to the user's request.
+- → rapla: match conventions (§3); never delete code to pass a compile (§11); never touch another session's files (§7).
+
+**4. Goal-Driven Execution** — *Define success criteria. Loop until verified.*
+- "Fix the bug" → write a test that reproduces it, then make it pass. "Refactor X" → tests pass before and after.
+- For multi-step tasks, state a brief `step → verify` plan.
+- → rapla: §1 made universal — the failing-test-first discipline.
+
 ### 1. Test-First Approach
 
 The order is **(a) understand → (b) write failing test → (c) fix → (d) verify test passes**, then commit. Skipping the test step for "obvious" fixes is the most common form of slippage in this codebase — don't.
 
 - **Write the failing test before any production code change** for: bug fixes (every one — including 1-line ones), new features, behaviour changes, refactors that should preserve observable behaviour. Run `mvn test` to confirm it fails for the right reason, then fix, then re-run to confirm it passes. Tests live in `src/test/java/` mirroring the source package.
 - **Diagnostics-first is fine when** you're still locating the root cause — curl probes, log inspection, exploratory println/diagnostic dumps in a test, integration-test bisects, reading code. Once you can name the broken function/field/method, switch to test-first for the fix.
+- **One hypothesis, one variable at a time.** Write the suspected root cause down before changing anything, change exactly one thing, verify before the next. Trace a wrong value *backward* to where it's born — don't dedupe/clamp/guard it where it's observed (that hides the bug, it doesn't fix it). After 3+ failed fix attempts, stop and question the architecture instead of piling on patch #4.
 - **No exception for "trivial" fixes.** A removed `final` keyword, a missing null-check, a typo'd config key — all bug fixes get a regression test. The point isn't to verify the fix works; it's to lock the fix in so the next refactor doesn't reopen the bug. The Jackson-3 `final`-field bugs (PRD 011 follow-up, 2026-05-09) reopened the same pattern five times across different fields — a per-bug regression test would have caught the second one immediately.
 - **Verifying the test would catch the bug:** After writing the fix and seeing the test go green, briefly revert the fix and re-run the test to confirm it goes red for the right reason. Re-apply the fix. This costs one extra test run and prevents tests that pass for the wrong reason (e.g. asserting on a field that gets initialized in setUp regardless of the bug).
 - **After applying a fix, verify it yourself before asking the user to retest.** Repeat the probe that surfaced the original symptom — curl the endpoint, run the affected test, diff the output. "Please retest" comes *after* your own verification, not instead of it.
@@ -83,6 +115,7 @@ Before implementing anything, check **`docs/prd/` AND `docs/prd/done/`** for an 
 ### 3. Code Style
 - No comments unless explicitly requested.
 - Follow existing code conventions in the codebase.
+- **Simplicity first (§0a #2).** Nothing speculative — e.g. don't add `@ComponentScan`/`@Service` wiring where the explicit `@Bean` factory is the established server pattern (see below); don't build extension points no PRD asked for.
 - **Use constructor injection, never field injection.** All `@Inject` / `@Autowired` should be on a constructor parameter list, not on a field. New code (including Spring `@Bean` factory methods, `@Component`/`@Service` classes, and ported legacy classes) must use constructor injection. Existing field-injected code may be left alone until it's touched, but any class you edit should be migrated to constructor injection in the same change. Rationale: constructor injection makes dependencies explicit, supports `final` fields, and lets the class be instantiated for tests without a DI container.
 - **Spring DI wiring patterns differ between client and server in this codebase.**
   - **Client (rapla-client)**: `SwingClientConfig` has `@ComponentScan(basePackages = {"org.rapla.client", "org.rapla.plugin"}, ...)`. `@Service`/`@Component` annotations on classes in those packages are picked up automatically. Add `@Service` (with optional `("id")` for `Map<String, T>` consumers) to `@DefaultImplementation` / `@Extension` classes when wiring them. This is the dominant pattern for the Swing tier.
@@ -215,7 +248,7 @@ For JaCoCo coverage reports, load the `coverage-report` skill (release-prep only
 
 ### 11. Never delete code to fix compile errors
 
-Don't delete code to make a compile pass — unless the removal is part of the plan.
+Don't delete code to make a compile pass — unless the removal is part of the plan. (The sharp-edged case of §0a #3 *surgical changes*.)
 
 ### 12. Never leak server-side data past the user's read scope
 

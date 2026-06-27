@@ -82,22 +82,26 @@ export class AuthService {
   }
 
   /**
-   * Explicit user-driven sign-out: POST {@code /api/auth/logout} (cookie-auth;
+   * Explicit user-driven sign-out: POST {@code /api/auth/session/logout} (cookie-auth;
    * Angular's XSRF interceptor attaches X-XSRF-TOKEN), which EXPIRES both the
    * access_token and refresh_token cookies server-side. Then clear local
-   * identity and land on {@code /login}. We deliberately do NOT navigate to
-   * Spring's {@code /logout} (a POST-only form-login filter that clears only
+   * identity and land on {@code /login?logout}. We deliberately do NOT navigate
+   * to Spring's {@code /logout} (a POST-only form-login filter that clears only
    * JSESSIONID, not rapla's stateless auth cookies). The navigation runs even
    * if the POST fails so the user is never stuck on a half-signed-out shell.
+   *
+   * The {@code ?logout} marker makes the server /login page re-prompt at the IdP
+   * (SSO links carry {@code ?prompt=login}) so this explicit sign-out is not
+   * silently undone by the still-live Keycloak SSO session on the next login.
    */
   async signOut(): Promise<void> {
     try {
-      await firstValueFrom(this.http.post('/api/auth/logout', null));
+      await firstValueFrom(this.http.post('/api/auth/session/logout', null));
     } catch {
       // best-effort: still drop local identity and bounce to /login below.
     }
     this.identity.set(null);
-    window.location.assign('/login');
+    window.location.assign('/login?logout');
   }
 
   /**

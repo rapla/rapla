@@ -59,8 +59,10 @@ public class SpringDocGroupsConfig
     private static final String AUTH_GROUP_DESCRIPTION = """
             **rapla-specific authentication endpoints.** Three things this group covers:
 
-            1. **Password login + JWT lifecycle** — `POST /api/auth/login`, `POST /api/auth/refresh`,
-               `POST /api/auth/logout`. Username + password in, access + refresh JWT out (HS256).
+            1. **JWT session lifecycle (cookie model)** — `POST /api/auth/session/refresh`
+               (reactive-401 refresh, reads the path-scoped refresh_token cookie) and
+               `POST /api/auth/session/logout` (revokes the server-side session + expires the
+               cookies). Login itself is the `/oauth2/token` grants + the server `/login` page.
             2. **OIDC discovery for the SPA picker** — `GET /api/auth/oauth/config` returns the
                provider list the Angular login screen shows (rapla's embedded SAS + any external
                IdPs configured via `rapla.oauth.external.providers[]`).
@@ -158,6 +160,10 @@ public class SpringDocGroupsConfig
                         "/api/plugins/**",
                         "/api/settings",
                         "/api/settings/**",
+                        "/api/recents",
+                        "/api/recents/**",
+                        "/api/favorites",
+                        "/api/favorites/**",
                         "/api/admin/panels",
                         "/api/admin/panels/**",
                         // Plugin config screens

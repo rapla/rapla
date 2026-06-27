@@ -1,4 +1,9 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
+
+import { AuthService } from '../auth/auth.service';
+import { ScopedStorage, bindPerUser } from './persist';
+
+const KEY = 'rapla.scope';
 
 /**
  * A chip's kind. SCOPING kinds (`resource`, `user`; `group` later) narrow the
@@ -22,30 +27,46 @@ export interface FilterEntry {
  */
 @Injectable({ providedIn: 'root' })
 export class FilterStore {
-  private readonly _entries = signal<FilterEntry[]>([]);
+  private readonly storage = new ScopedStorage(inject(AuthService), KEY);
+
+  // Restored from per-user localStorage so the chosen scope survives a reload
+  // and is isolated per account (PRD 089 D2). bindPerUser reloads on identity flip.
+  private readonly _entries = signal<FilterEntry[]>(this.storage.load<FilterEntry[]>([]));
 
   readonly entries = this._entries.asReadonly();
   readonly count = computed(() => this._entries().length);
   readonly isEmpty = computed(() => this._entries().length === 0);
 
+  constructor() {
+    bindPerUser(inject(AuthService), () => this._entries.set(this.storage.load<FilterEntry[]>([])));
+  }
+
   replace(entry: FilterEntry): void {
     this._entries.set([entry]);
+    this.persist();
   }
 
   add(entry: FilterEntry): void {
     if (this.has(entry.id)) return;
     this._entries.update((es) => [...es, entry]);
+    this.persist();
   }
 
   remove(id: string): void {
     this._entries.update((es) => es.filter((e) => e.id !== id));
+    this.persist();
   }
 
   clear(): void {
     this._entries.set([]);
+    this.persist();
   }
 
   has(id: string): boolean {
     return this._entries().some((e) => e.id === id);
+  }
+
+  private persist(): void {
+    this.storage.save(this._entries());
   }
 }

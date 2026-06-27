@@ -100,7 +100,7 @@ public class OAuthConfigController
                     new Picker("never", "rapla"), List.of());
         }
         // App-facing base: respects X-Forwarded-* so dev proxy on :4200 produces
-        // :4200 URLs. Used for the rapla REST API (/api/auth/refresh, /logout).
+        // :4200 URLs. Used for the rapla REST API (/api/auth/session/refresh, /session/logout).
         String appBase = baseUrl(request);
         // OAuth-facing base: bypasses the dev proxy by default. When
         // rapla.oauth.public-base-url is set, OAuth endpoints (authorize, token,

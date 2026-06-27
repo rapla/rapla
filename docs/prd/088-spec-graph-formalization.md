@@ -21,7 +21,8 @@ exists for impact analysis and GraphRAG retrieval.
 ## Implementation
 
 Background evaluation (2026-06-24, multi-agent research workflow) compared OpenSpec, GitHub Spec Kit,
-AWS Kiro, Tessl, and BMAD against rapla's existing discipline. Conclusion: **no framework is adopted as
+AWS Kiro, Tessl, and BMAD against rapla's existing discipline. Full cited evidence base:
+[`docs/research/spec-driven-development-findings.md`](../research/spec-driven-development-findings.md). Conclusion: **no framework is adopted as
 a tool**; OpenSpec's *ideas* (delta-specs, `validate` on day one, status-as-enum, the change↔capability
 distinction) are reimplemented as thin scripts over the existing PRDs. Rationale and the full
 framework-fit table live in D1–D3 below.

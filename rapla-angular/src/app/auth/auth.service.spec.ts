@@ -157,18 +157,20 @@ describe('AuthService (cookie model)', () => {
     expect(assign).toHaveBeenCalledWith('/login');
   });
 
-  it('signOut() POSTs /api/auth/logout, clears identity and navigates to /login', async () => {
+  it('signOut() POSTs /api/auth/session/logout, clears identity and navigates to /login?logout', async () => {
     const assign = stubLocationAssign();
     auth.identity.set(identity());
 
     const done = auth.signOut();
-    const req = httpMock.expectOne('/api/auth/logout');
+    const req = httpMock.expectOne('/api/auth/session/logout');
     expect(req.request.method).toBe('POST');
     req.flush(null);
     await done;
 
     expect(auth.identity()).toBeNull();
-    expect(assign).toHaveBeenCalledWith('/login');
+    // ?logout makes the server /login page re-prompt at the IdP (prompt=login) so
+    // this explicit sign-out is not silently undone by the live Keycloak SSO session.
+    expect(assign).toHaveBeenCalledWith('/login?logout');
   });
 
   it('signOut() still clears identity and navigates even if the logout POST fails', async () => {
@@ -176,11 +178,11 @@ describe('AuthService (cookie model)', () => {
     auth.identity.set(identity());
 
     const done = auth.signOut();
-    httpMock.expectOne('/api/auth/logout').flush(null, { status: 500, statusText: 'err' });
+    httpMock.expectOne('/api/auth/session/logout').flush(null, { status: 500, statusText: 'err' });
     await done;
 
     expect(auth.identity()).toBeNull();
-    expect(assign).toHaveBeenCalledWith('/login');
+    expect(assign).toHaveBeenCalledWith('/login?logout');
   });
 
   /**

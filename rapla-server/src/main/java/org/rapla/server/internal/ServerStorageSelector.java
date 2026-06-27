@@ -58,6 +58,8 @@ public class ServerStorageSelector implements Supplier<CachableStorageOperator>
         if (properties != null)
         {
             op.setFixAdminPassword(properties.isFixAdminPassword());
+            // PRD 082/086 — read-model flip, default true; overridable via rapla.readmodel.authoritative.
+            op.setReadModelAuthoritative(properties.getReadmodel().isAuthoritative());
         }
     }
 

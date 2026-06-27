@@ -334,8 +334,6 @@ export class ViewHostComponent {
   readonly isGroupRow = (_i: number, row: Record<string, unknown>): boolean => row['__group'] === true;
   readonly isDataRow = (_i: number, row: Record<string, unknown>): boolean => row['__group'] !== true;
 
-  /** Guards the once-per-view render-mode seed. */
-  private lastSeededView: string | null = null;
   /** Monotonic request id — a slow (e.g. 500-row firehose) response from an OLDER
    *  query must not clobber a newer, filtered one. Stale responses are ignored. */
   private reqToken = 0;
@@ -437,15 +435,11 @@ export class ViewHostComponent {
         );
         this.rows.set(rows);
         this.loading.set(false);
-        // Tell the control strip whether this view supports the WEEK mode, and seed
-        // the render mode once per view (groupable → week, else table).
-        const groupable = !!viewMeta?.groupBy;
+        // Apply the view's supported render modes — keeps the user's remembered mode
+        // (restored from localStorage) when this view supports it, else the view's
+        // default. Idempotent per response.
         const renderModes = viewMeta?.renderModes ?? ['table' as const];
-        untracked(() => this.viewState.setRenderModes(renderModes));
-        if (this.lastSeededView !== viewName) {
-          this.lastSeededView = viewName;
-          untracked(() => this.viewState.setRenderMode(renderModes[0]));
-        }
+        untracked(() => this.viewState.applyViewModes(renderModes));
         // Seed the date-nav window from the server's input metadata, once.
         if (!window) {
           const seeded = resolveWindowFromInputs(res.extensions?.view?.inputs ?? []);

@@ -36,7 +36,7 @@ import { AuthService } from './auth.service';
  *      error (GraphQL reports auth failures as 200 + errors[], NOT 401, so a plain
  *      401 handler would miss a mid-session access-token expiry → "Authentication
  *      required" until a full page reload),
- *   2. call {@code POST /api/auth/refresh} ONCE (the refresh cookie is
+ *   2. call {@code POST /api/auth/session/refresh} ONCE (the refresh cookie is
  *      auto-sent; the server sets a fresh {@code access_token} cookie),
  *   3. replay the original request (cookie now fresh; GraphQL replay is guarded to
  *      run at most once via an HttpContext token, no loop),
@@ -61,7 +61,7 @@ import { AuthService } from './auth.service';
  * keeps the refresh request itself out of this 401 handler (no recursion).
  */
 
-const REFRESH_URL = '/api/auth/refresh';
+const REFRESH_URL = '/api/auth/session/refresh';
 const GRAPHQL_URL = '/api/graphql';
 // Marks a GraphQL request already retried after an UNAUTHENTICATED error → at most
 // one refresh+replay (no loop if the replay is still unauthenticated).
@@ -155,7 +155,7 @@ function isGraphqlAuthError(req: HttpRequest<unknown>, event: HttpEvent<unknown>
   return !!body?.errors?.some((e) => e?.extensions?.code === 'UNAUTHENTICATED');
 }
 
-/** POST /api/auth/refresh via HttpClient (so XSRF is attached). Resolves true on success. */
+/** POST /api/auth/session/refresh via HttpClient (so XSRF is attached). Resolves true on success. */
 async function doRefresh(http: HttpClient): Promise<boolean> {
   try {
     await new Promise<void>((resolve, reject) => {

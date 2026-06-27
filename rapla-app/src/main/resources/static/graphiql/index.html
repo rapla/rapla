@@ -16,7 +16,7 @@
       localStorage access_token Bearer. It relies on the HttpOnly
       `access_token` cookie (Phase 2) that the browser sends automatically
       with same-origin fetches. The fetcher does a plain same-origin fetch;
-      on a 401 it calls POST /api/auth/refresh (which reads the path-scoped
+      on a 401 it calls POST /api/auth/session/refresh (which reads the path-scoped
       refresh_token cookie and sets a fresh access_token cookie) and replays
       the request once; if the refresh itself 401s, it bounces to /login.
 
@@ -105,7 +105,7 @@
     //      automatically by the browser; no Bearer header needed.
     //   2. POST /api/graphql is mutating cookie-auth → attach X-XSRF-TOKEN from
     //      the XSRF-TOKEN cookie so CookieAuthCsrfMatcher is satisfied.
-    //   3. On 401: POST /api/auth/refresh (reads the path-scoped refresh_token
+    //   3. On 401: POST /api/auth/session/refresh (reads the path-scoped refresh_token
     //      cookie, sets a fresh access_token cookie), then replay the request
     //      once. If the refresh itself 401s, redirect to /login.
     // Lightweight GraphQL helper for toolbar admin operations (listViews, saveView).
@@ -141,7 +141,7 @@
 
             let response = await doFetch();
             if (response.status === 401) {
-                const refresh = await fetch('/api/auth/refresh', {
+                const refresh = await fetch('/api/auth/session/refresh', {
                     method: 'POST',
                     credentials: 'same-origin',
                     headers: (() => {
@@ -324,7 +324,7 @@
         signOut.addEventListener('click', async (e) => {
             e.preventDefault();
             const xsrf = getXsrfToken();
-            await fetch('/api/auth/logout', {
+            await fetch('/api/auth/session/logout', {
                 method: 'POST',
                 headers: xsrf ? { 'X-XSRF-TOKEN': xsrf } : {},
             }).catch(() => {});

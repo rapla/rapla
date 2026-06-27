@@ -26,6 +26,7 @@ public class RaplaServerProperties
     private String patchScript;
     private Merge merge = new Merge();
     private boolean fixAdminPassword = false;
+    private Readmodel readmodel = new Readmodel();
 
     public Map<String, DataSourceProperties> getDbDatasources()
     {
@@ -118,6 +119,40 @@ public class RaplaServerProperties
     public void setMerge(Merge merge)
     {
         this.merge = merge;
+    }
+
+    public Readmodel getReadmodel()
+    {
+        return readmodel;
+    }
+
+    public void setReadmodel(Readmodel readmodel)
+    {
+        this.readmodel = readmodel;
+    }
+
+    /**
+     * PRD 082/086 — the in-memory read-model flip. {@code rapla.readmodel.authoritative} (default
+     * {@code true}) makes the server serve windowed appointment reads, conflict narrowing, type-bucket
+     * {@code getAllocatables}, the permission index and the full-admin window-first path from the
+     * in-memory indices instead of the legacy {@code appointmentMap} scan. Reversible: set
+     * {@code rapla.readmodel.authoritative: false} in an external/custom {@code application.yml} (or via
+     * {@code --spring.config.additional-location}) to fall back to the legacy path — the legacy
+     * structures stay maintained, so the switch is instant and lossless.
+     */
+    public static class Readmodel
+    {
+        private boolean authoritative = true;
+
+        public boolean isAuthoritative()
+        {
+            return authoritative;
+        }
+
+        public void setAuthoritative(boolean authoritative)
+        {
+            this.authoritative = authoritative;
+        }
     }
 
     /**
