@@ -114,7 +114,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
         this.commandHistory = commandHistory;
         editUI = new MyClassificationEditUI(facade, i18n, raplaLocale, treeFactory,  dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);
         this.permissionListField = permissionListFieldFactory.create("permissions");
-        this.permissionListField.setPermissionLevels(Permission.DENIED, Permission.READ,Permission.EDIT, Permission.ADMIN);
+        this.permissionListField.setPermissionLevels(Permission.READ,Permission.EDIT, Permission.ADMIN);
         this.permissionListField.setDefaultAccessLevel( Permission.READ );
     }
     

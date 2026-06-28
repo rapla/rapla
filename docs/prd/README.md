@@ -1,6 +1,6 @@
 # PRD index
 
-46 PRDs total — **29 active** in this directory, **17 done** under `done/`. AGENTS.md §2 + §3 cover the lifecycle (move to `done/` when complete; `git mv` back if reopening). This index exists so agents and humans don't `ls` and guess.
+47 PRDs total — **30 active** in this directory, **17 done** under `done/`. AGENTS.md §2 + §3 cover the lifecycle (move to `done/` when complete; `git mv` back if reopening). This index exists so agents and humans don't `ls` and guess.
 
 > **Numbering note:** there are two `031` files (`031-api-namespace-redesign.md` and `031-token-refresh-and-api-keys.md`). Both are in-progress and on different tracks. Future PRDs should pick the next free number (currently 042) rather than reusing.
 
@@ -70,6 +70,7 @@
 | [040-dispatch-validate-before-lock.md](040-dispatch-validate-before-lock.md) | Dispatch validates against a stale cache before locking (multi-pod) | draft 2026-05-15 |
 | [045-end-user-deployment-and-db-config.md](045-end-user-deployment-and-db-config.md) | End-user deployment, database configuration & drop-in plugins | in-progress — Phases 1+2+3 landed 2026-05-18; Phase 4 (PropertiesLauncher) + Phases 5+6 (plugin contract, merged from former PRD 046) planned 2026-05-23 |
 | [048-eliminate-server-container-context.md](048-eliminate-server-container-context.md) | Eliminate `ServerContainerContext` + implement reload-on-restart | design complete 2026-05-18; ready to implement |
+| [090-additive-permission-resolution.md](090-additive-permission-resolution.md) | Purely additive permission resolution + soft-deny migration | draft 2026-06-28 (ADR 0003 revised) |
 
 ### Decisions / policies (no implementation phase)
 

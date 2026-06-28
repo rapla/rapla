@@ -174,7 +174,10 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
                    {
                        value = i18n.getString("permission.read_allocation"  );
                    }
-                        
+                   else  if (key.equalsIgnoreCase(Permission.DENIED.name()))
+                   {
+                       value = i18n.format("permission.deprecated", i18n.getString("permission.denied") );
+                   }
                    else
                    {
                        value = i18n.getString("permission." + key );
@@ -183,8 +186,13 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
                 }
                 Component listCellRendererComponent = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus );
                 if ( intValue == Permission.CREATE || intValue == Permission.READ_TYPE)
-                {   
+                {
                     Font newFont = listCellRendererComponent.getFont().deriveFont(Font.BOLD);
+                    listCellRendererComponent.setFont( newFont);
+                }
+                if ( intValue == Permission.DENIED)
+                {
+                    Font newFont = listCellRendererComponent.getFont().deriveFont(Font.ITALIC);
                     listCellRendererComponent.setFont( newFont);
                 }
                 return listCellRendererComponent;
@@ -267,6 +275,7 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
                 groupSelect.setValue( permission.getGroup());
             }
             userSelect.setValue(permission.getUser() );
+            accessField.setVector( selectableLevels( permissionLevels, permission.getAccessLevel() ) );
             accessField.setValue( permission.getAccessLevel() );
 
             toggleVisibility();
@@ -376,6 +385,30 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
     public void setPermissionLevels(Permission.AccessLevel... permissionLevels) {
         this.permissionLevels = Arrays.asList( permissionLevels);
         accessField.setVector( this.permissionLevels);
+    }
+
+    /** DENIED is deprecated as a selectable level (ADR 0003 — permissions are grant-only).
+     * It is filtered out of the dropdown for new/other rows, but kept when the edited row
+     * already carries it so an existing permission is never silently rewritten. */
+    static List<Permission.AccessLevel> selectableLevels(Collection<Permission.AccessLevel> configured, Permission.AccessLevel current) {
+        List<Permission.AccessLevel> result = new ArrayList<>(configured);
+        result.remove( Permission.DENIED );
+        if ( current == Permission.DENIED ) {
+            // keep an already-stored DENIED row renderable/selectable, even though
+            // it is no longer offered to new rows
+            result.add( 0, Permission.DENIED );
+        }
+        return result;
+    }
+
+    /** First non-deprecated level — the default to fall back to for a new row. */
+    static Permission.AccessLevel firstSelectableLevel(Collection<Permission.AccessLevel> configured) {
+        for ( Permission.AccessLevel level : configured ) {
+            if ( level != Permission.DENIED ) {
+                return level;
+            }
+        }
+        return configured.isEmpty() ? null : configured.iterator().next();
     }
     
     public Collection<Permission.AccessLevel> getPermissionLevels() 

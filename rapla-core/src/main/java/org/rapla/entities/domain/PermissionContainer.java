@@ -194,6 +194,38 @@ public interface PermissionContainer extends Ownable
             }
         }
 
+        /** Load-time normalization (ADR 0003 — permissions are grant-only). Removes DENIED
+         * rows that provably change nothing: a DENIED is load-bearing only when it sits at
+         * strictly higher precedence than some grant on the SAME container
+         * (USER &gt; GROUP &gt; WORLD). WORLD-deny is never load-bearing; GROUP-deny only if a
+         * WORLD grant exists; USER-deny only if any GROUP/WORLD grant exists. Never persists —
+         * callers run it on freshly-hydrated entities before setReadOnly.
+         * @return number of rows removed */
+        public static int normalizeRedundantDenies(PermissionContainer container) {
+            Collection<Permission> list = container.getPermissionList();
+            boolean worldGrant = false, groupGrant = false;
+            for (Permission p : list) {
+                if (p.getAccessLevel() == Permission.DENIED) continue;
+                String uid = p.getUserId();
+                String gid = ((PermissionImpl) p).getGroupId();
+                if (uid == null && gid == null) worldGrant = true;
+                else if (gid != null) groupGrant = true;
+            }
+            List<Permission> redundant = new ArrayList<>();
+            for (Permission p : list) {
+                if (p.getAccessLevel() != Permission.DENIED) continue;
+                String uid = p.getUserId();
+                String gid = ((PermissionImpl) p).getGroupId();
+                boolean loadBearing;
+                if (uid == null && gid == null) loadBearing = false;
+                else if (gid != null) loadBearing = worldGrant;
+                else loadBearing = worldGrant || groupGrant;
+                if (!loadBearing) redundant.add(p);
+            }
+            for (Permission p : redundant) container.removePermission(p);
+            return redundant.size();
+        }
+
         /** old permission_modify should sync with new permission model for a while or until permission_modify attribute is removed
          * @deprecated 
          * @param entity

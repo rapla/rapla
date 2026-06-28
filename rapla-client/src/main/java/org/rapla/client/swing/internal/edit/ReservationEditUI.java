@@ -68,7 +68,7 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
         allocatableSelection = allocatableSelectionFactory.create(false, new CommandHistory(), false);
         final JComponent holdBackConflictPanel = allocatableSelection.getComponent();
         holdBackConflictPanel.setPreferredSize( new Dimension(600, 200));
-        this.permissionListField.setPermissionLevels(Permission.DENIED, Permission.READ,Permission.EDIT, Permission.ADMIN);
+        this.permissionListField.setPermissionLevels(Permission.READ,Permission.EDIT, Permission.ADMIN);
         this.permissionListField.setDefaultAccessLevel( Permission.READ );
 
         final JComponent permissionPanel = permissionListField.getComponent();

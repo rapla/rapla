@@ -1129,6 +1129,7 @@ import java.time.LocalDateTime;
         Collection<ReferenceInfo> removeObjects = entitiesToRemove;
         dbStore(migratedTemplates, preferencePatches, removeObjects, connection, null);
         // It is important to do the read only later because some resolve might involve write to referenced objects
+        normalizeRedundantDeniesOnLoad(list);
         for (Entity entity : list)
         {
             ((RefEntity) entity).setReadOnly();

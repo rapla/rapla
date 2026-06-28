@@ -291,9 +291,10 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
         }
         Permission.AccessLevel accessLevel = permission.getAccessLevel();
         Collection<Permission.AccessLevel> permissionLevels = permissionField.getPermissionLevels();
-        if (!permissionLevels.contains(accessLevel))
+        // DENIED is deprecated (ADR 0003): a new row must never default to it
+        if (!permissionLevels.contains(accessLevel) || accessLevel == Permission.DENIED)
         {
-            permission.setAccessLevel(permissionLevels.iterator().next());
+            permission.setAccessLevel(PermissionField.firstSelectableLevel(permissionLevels));
         }
         try
         {

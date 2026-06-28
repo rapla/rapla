@@ -1,11 +1,23 @@
 # Permission model
 
-Rapla's permission model is **role-based, hierarchical, and
+Rapla's permission model is **grant-only, role-based, hierarchical, and
 time-aware**. Every entity that anyone might want to control access
 to (Allocatable, Reservation, DynamicType, Category) carries a list
 of `Permission` rows. Users are members of `Category` groups
 (transitively, via the category hierarchy). Permission resolution
 walks both axes.
+
+> **Grant-only is the core invariant.** Permission rows only ever *add*
+> access — there are **no deny rows**. A user's effective access is the
+> level of the single strongest-precedence row that matches them
+> (`USER` > `GROUP` > `WORLD`); a user matched by no row gets nothing.
+> Access never subtracts: you cannot stack a "deny" on top of a grant.
+> The one override idiom is putting `DENIED` (0) on a *higher-precedence*
+> row to cap an inherited lower-precedence grant (e.g. a `GROUP`-`DENIED`
+> beating an all-users grant). `DENIED` is now **deprecated in the editing
+> UI** (see [`AccessLevel`](#accesslevel) below). This is
+> [ADR 0003](../decisions/0003-permissions-are-grant-only.md) — read it
+> before reasoning about deny semantics.
 
 This page covers:
 
@@ -55,7 +67,7 @@ modulo `DENIED`):
 
 | Level | Numeric | Allows |
 |---|---:|---|
-| `DENIED` | 0 | Nothing — used to override an inherited permission. |
+| `DENIED` | 0 | Nothing — used to override an inherited permission. **Deprecated as a selectable level** (see below). |
 | `READ_TYPE` | 20 | See that the DynamicType exists (admin views). |
 | `CREATE` | 30 | Create new entities of this DynamicType. |
 | `READ_NO_ALLOCATION` | 50 | See the resource but not its bookings. |
@@ -92,9 +104,9 @@ source-of-truth extracted from them:
 
 | Target entity | Allowed access levels | Source (Swing editor) |
 |---|---|---|
-| `DynamicType` | `READ_TYPE`, `CREATE`, `READ`, `EDIT`, `ADMIN` (+`DENIED`) | `DynamicTypeEditUI` |
-| `Allocatable` | `READ_NO_ALLOCATION`, `READ`, `REQUEST`, `ALLOCATE`, `ALLOCATE_CONFLICTS`, `EDIT`, `ADMIN` (+`DENIED`) — **no** `READ_TYPE`/`CREATE` | `AllocatableEditUI` |
-| `Reservation` | `READ`, `EDIT`, `ADMIN` (+`DENIED`) | `ReservationEditUI` |
+| `DynamicType` | `READ_TYPE`, `CREATE`, `READ`, `EDIT`, `ADMIN` | `DynamicTypeEditUI` |
+| `Allocatable` | `READ_NO_ALLOCATION`, `READ`, `REQUEST`, `ALLOCATE`, `ALLOCATE_CONFLICTS`, `EDIT`, `ADMIN` — **no** `READ_TYPE`/`CREATE` | `AllocatableEditUI` |
+| `Reservation` | `READ`, `EDIT`, `ADMIN` | `ReservationEditUI` |
 | `Category` (group) | not a normal permission list — group admin rights ride on the admin-group mechanism (`getGroupsToAdmin` / `CAN_ADMIN_PARENT`), effectively `ADMIN` only | — |
 
 **Enforcement status:** today this matrix is only *advisory* (the Swing
@@ -106,6 +118,30 @@ never sets a level). When a permission-editing verb lands (PRD 063 OQ2 —
 `setAllocatablePermissions`, and the analogues for `DynamicType` /
 `Reservation`), the save path **must validate the level against this
 matrix** and reject a mismatch (e.g. `READ_TYPE` on an `Allocatable`).
+
+### `DENIED` is deprecated as a selectable level
+
+[ADR 0003](../decisions/0003-permissions-are-grant-only.md) makes permissions
+**grant-only**; `DENIED` (0) is the one subtraction idiom (a more-specific
+`DENIED` row overriding an inherited grant). Because it confuses admins who
+read it as an NTFS-style "deny", it is being **retired from the editing UI**:
+
+- **New permission rows never get `DENIED`.** The Swing access-level dropdown
+  (`PermissionField`) filters `DENIED` out, and a new row created via
+  `PermissionListField` falls back to the first non-`DENIED` level — so it can
+  no longer be *added*.
+- **Existing `DENIED` rows are preserved, not rewritten.** A row that loads with
+  `DENIED` selected keeps `DENIED` in its dropdown (rendered as
+  *"Denied (deprecated)"*, italicised) so editing the row never silently changes
+  its stored level. The filter keys off the value **at load time only** — once a
+  row is shown with `DENIED`, switching away and back is allowed within that
+  edit session.
+- **Save is not blocked.** This is a UI deprecation, not a validation rule;
+  `DENIED` remains a fully valid stored/resolved level (see the worked example
+  below and `RaplaDefaultPermissionImpl.hasAccess`).
+
+Implemented in `PermissionField.selectableLevels(...)` /
+`firstSelectableLevel(...)` (pinned by `PermissionFieldDeniedDeprecationTest`).
 
 ## `PermissionImpl`
 

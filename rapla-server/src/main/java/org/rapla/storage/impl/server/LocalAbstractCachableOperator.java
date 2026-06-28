@@ -1106,6 +1106,23 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         processUserPersonLink(entities);
     }
 
+    protected void normalizeRedundantDeniesOnLoad(Collection<Entity> list)
+    {
+        int removed = 0, affected = 0;
+        for (Entity entity : list)
+        {
+            if (entity instanceof Allocatable || entity instanceof Reservation)
+            {
+                int n = org.rapla.entities.domain.PermissionContainer.Util.normalizeRedundantDenies((org.rapla.entities.domain.PermissionContainer) entity);
+                if (n > 0) { removed += n; affected++; }
+            }
+        }
+        if (removed > 0)
+        {
+            LOGGER.info("Load-time permission normalization (ADR 0003): dropped {} redundant DENIED permission(s) from {} entit(ies)", removed, affected);
+        }
+    }
+
     protected Collection<Entity> migrateTemplates() throws RaplaException
     {
         Collection<Allocatable> allocatables = cache.getAllocatables();

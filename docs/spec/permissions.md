@@ -25,6 +25,12 @@ and no rejected alternatives; those live in the linked MADRs (`decisions:` above
 explanatory companion [`docs/architecture/permissions.md`](../architecture/permissions.md)
 (Diátaxis: this file is *reference*, that one is *explanation*).
 
+> **Core invariant: the model is grant-only.** Rows only ever *add* access; there are no deny
+> rows. Effective access is the level of the single strongest-precedence matching row
+> (`USER` > `GROUP` > `WORLD`), and no-match means no access. `DENIED` (0) is only an override on
+> a higher-precedence row, and is now deprecated in the editing UI. See
+> [[0003-permissions-are-grant-only]].
+
 ## How to read this spec — verification legend
 
 Every claim is tagged with how strongly it is held to be *true now*:
