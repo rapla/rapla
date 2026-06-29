@@ -14,8 +14,9 @@ informed: future contributors, AI coding agents
 > grant *downward* (and `DENIED` capped to nothing). That downward override is itself a soft
 > subtraction. We now go fully additive: **the effective level is the highest grant from any matching
 > row — no precedence, no deny.** Rationale and the blast-radius evidence are below. The
-> resolution-code change (`RaplaDefaultPermissionImpl`) is **pending** in a separate PRD; until it
-> lands the code still applies the *Superseded precedence model* recorded below.
+> resolution-code change (`RaplaDefaultPermissionImpl` + `PermissionContainer.Util.getInterval`)
+> **landed in PRD 090 (2026-06-28)**, with a marker-guarded one-shot migration that freezes a
+> worklist of escalated allocatables for admin review.
 
 ## Context and Problem Statement
 
@@ -122,30 +123,32 @@ is explicitly not the default.
 
 ### Confirmation
 
-> **The precedence tests below pin the *superseded* model** (current code). When the additive
-> resolution change lands, `GrantOverridesDenyAtEqualPrecedenceTest` is rewritten to assert
-> max-wins (e.g. `userReadCapsBelowGroupAllocate` and `userDeniedOverridesGroupGrant` *invert*),
-> and the redundant-`DENIED` normalizer keeps `RedundantDenyNormalizationTest`. The
-> cascade/union cases (`parentGroupPermissionCascadesToChildGroup`, `unionAcrossGroups`) stay valid
-> under additive unchanged.
+> **Additive resolution has landed (PRD 090, 2026-06-28).** `RaplaDefaultPermissionImpl` and
+> `PermissionContainer.Util.getInterval` now resolve additively (max over matching rows, no
+> precedence). The precedence-era `GrantOverridesDenyAtEqualPrecedenceTest` was **replaced** by
+> `AdditivePermissionResolutionTest` (rapla-server, tier-2), whose inverted cases pin max-wins:
+> `userReadNoLongerCapsBelowGroupAllocate`, `userDeniedNoLongerOverridesGroupGrant`,
+> `groupDeniedNoLongerOverridesAllUsersGrant`, `userDeniedIsOrderIndependentlyInert`,
+> `groupBelowWorldGrantNoLongerCaps`. The redundant-`DENIED` normalizer keeps
+> `RedundantDenyNormalizationTest`; the cascade/union cases
+> (`parentGroupPermissionCascadesToChildGroup`, `unionAcrossGroups`) stay valid unchanged.
 
 `PermissionControllerAccessQueryTest` pins cascade + union
 (`groupPermissionGrantsAtLevelButNotAbove`, `parentGroupPermissionCascadesToChildGroup`,
 `unionAcrossGroups`).
 
-`GrantOverridesDenyAtEqualPrecedenceTest` (rapla-server, tier-2) pins the full
-grant-vs-`DENIED` matrix of the **superseded precedence model**:
+`AdditivePermissionResolutionTest` (rapla-server, tier-2) pins the **additive** matrix
+(it replaced the precedence-era `GrantOverridesDenyAtEqualPrecedenceTest`):
 
-- equal-precedence group-vs-group — the stronger *level* wins, so a `DENIED` never subtracts
-  from a sibling grant (`groupGrantBeatsEqualPrecedenceGroupDenied_*`, order-independent);
-- hierarchy does **not** raise precedence — a grant on a sub-group beats a `DENIED` on its parent
-  and a `DENIED` on a sub-group cannot carve a member out of a parent grant
-  (`grantOnSubGroupBeatsDenyOnParentGroup`, `denyOnSubGroupCannotCarveOutAParentGroupGrant`);
-- the one load-bearing override across precedence: `GROUP`-`DENIED` over a `WORLD` (all-users)
-  grant (`groupDeniedOverridesLowerPrecedenceAllUsersGrant`);
-- the previously-missing `USER`-`DENIED`-overrides-`GROUP`-grant path, plus the inverse
-  `USER`-grant-over-`GROUP`-`DENIED`, both order-independent (`userDeniedOverridesGroupGrant`,
-  `userGrantOverridesGroupDenied`, `userOverrideIsOrderIndependent`).
+- `DENIED` is the floor — a sibling/parent/sub-group `DENIED` never subtracts from any grant
+  (`groupGrantBeatsGroupDenied_*`, `grantOnSubGroupSurvivesDenyOnParentGroup`,
+  `denyOnSubGroupCannotCarveOutAParentGroupGrant`, order-independent);
+- a `GROUP`-`DENIED` no longer overrides a `WORLD` (all-users) grant — the world grant wins
+  (`groupDeniedNoLongerOverridesAllUsersGrant`);
+- a `USER` row never caps below a `GROUP` row — the max wins (`userReadNoLongerCapsBelowGroupAllocate`,
+  `userDeniedNoLongerOverridesGroupGrant`, `userDeniedIsOrderIndependentlyInert`), while a `USER`
+  *grant* still elevates over a `GROUP`-`DENIED` (`userGrantStillElevatesOverGroupDenied`);
+- a `GROUP` grant below a `WORLD` grant no longer caps its members (`groupBelowWorldGrantNoLongerCaps`).
 
 Empirical corollary (dhbw store audit, 2026-06-27): no `DENIED` row there sits next to an
 all-users grant and there are no user-targeted `DENIED` rows, so every legacy `DENIED` row is
@@ -184,8 +187,9 @@ redundant under this resolution.
 
 ## Future possibilities
 
-- Implement the additive resolution change in `RaplaDefaultPermissionImpl` + `PermissionContainer.Util`
-  and the measure-then-flip migration (tracked in a separate PRD).
+- ✅ Done (PRD 090, 2026-06-28): the additive resolution change in `RaplaDefaultPermissionImpl` +
+  `PermissionContainer.Util.getInterval`, the one-shot migration freezing the escalation worklist,
+  and the admin REST endpoint + SPA dialog that drains it.
 - Retire the `DENIED` level outright once the normalizer + audit confirm no store still depends on it.
 - If a per-individual or time-boxed *limit* is ever genuinely needed, model it as a per-row
   constraint / cap (a POSIX-ACL-style mask), **not** a deny row — preserving monotonicity.

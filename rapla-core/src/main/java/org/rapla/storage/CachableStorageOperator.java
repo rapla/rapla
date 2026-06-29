@@ -48,6 +48,13 @@ public interface CachableStorageOperator extends StorageOperator {
      *  cache is a fatal startup error. */
     void migrateGraphqlKeysIfNeeded() throws RaplaException;
 
+    /** PRD 090: one-shot startup migration to the purely additive permission
+     *  model. The live resolver is already additive (the flip is the code
+     *  deploy); this pass only freezes, once, the worklist of allocatable ids
+     *  whose effective access rose at the flip, for admin review. Marker-guarded;
+     *  subsequent boots skip-fast. */
+    void migrateAdditivePermissionsIfNeeded() throws RaplaException;
+
     /** PRD 048: logical restart — reloads all data from the store, clears and
      *  rebuilds the caches and re-arms the operator's scheduled tasks, without
      *  a JVM/Spring restart. Reloads only the serving pod; other pods re-sync

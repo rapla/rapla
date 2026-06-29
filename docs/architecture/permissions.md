@@ -7,17 +7,18 @@ of `Permission` rows. Users are members of `Category` groups
 (transitively, via the category hierarchy). Permission resolution
 walks both axes.
 
-> **Grant-only is the core invariant.** Permission rows only ever *add*
-> access — there are **no deny rows**. A user's effective access is the
-> level of the single strongest-precedence row that matches them
-> (`USER` > `GROUP` > `WORLD`); a user matched by no row gets nothing.
-> Access never subtracts: you cannot stack a "deny" on top of a grant.
-> The one override idiom is putting `DENIED` (0) on a *higher-precedence*
-> row to cap an inherited lower-precedence grant (e.g. a `GROUP`-`DENIED`
-> beating an all-users grant). `DENIED` is now **deprecated in the editing
-> UI** (see [`AccessLevel`](#accesslevel) below). This is
-> [ADR 0003](../decisions/0003-permissions-are-grant-only.md) — read it
-> before reasoning about deny semantics.
+> **Grant-only and purely additive is the core invariant** (ADR 0003, revised
+> 2026-06-28; PRD 090). Permission rows only ever *add* access — there are **no
+> deny rows and no precedence**. A user's effective access is the **highest**
+> level granted by **any** matching row (`USER`, `GROUP`, or `WORLD` — the union/`max`);
+> a user matched by no row gets nothing. Access never subtracts: a `DENIED` (0)
+> row is the floor (`max` ignores it) and a more-specific *lower*-level row can
+> **never** cap a broader grant downward. To limit a person below their group you
+> change their group membership (a future per-row cap could be added) — never a
+> subtractive row. `DENIED` is **deprecated** (removed from the editing UI; a
+> load-time normalizer strips redundant rows) and inert under resolution. Read
+> [ADR 0003](../decisions/0003-permissions-are-grant-only.md) before reasoning
+> about deny semantics; the precedence model it describes is **superseded**.
 
 This page covers:
 
@@ -67,7 +68,7 @@ modulo `DENIED`):
 
 | Level | Numeric | Allows |
 |---|---:|---|
-| `DENIED` | 0 | Nothing — used to override an inherited permission. **Deprecated as a selectable level** (see below). |
+| `DENIED` | 0 | Nothing — the floor. Under additive resolution it is **inert** (never subtracts). **Deprecated as a selectable level** (see below). |
 | `READ_TYPE` | 20 | See that the DynamicType exists (admin views). |
 | `CREATE` | 30 | Create new entities of this DynamicType. |
 | `READ_NO_ALLOCATION` | 50 | See the resource but not its bookings. |
@@ -195,33 +196,34 @@ function hasAccess(U, E, requested, [start, end], today):
 
     groups = U.getGroupsIncludingParents()             # transitive ancestors
 
-    bestEffect = NO_PERMISSION
-    bestLevel  = DENIED
+    maxLevel = DENIED                                   # the floor
 
     for p in E.getPermissionList():
-        effect = p.userEffect(U, groups)               # USER > GROUP > ALL_USERS > NO
-        if effect <= bestEffect:
-            continue                                   # weaker match; ignore
+        if p.userEffect(U, groups) <= NO_PERMISSION:
+            continue                                   # row doesn't match this user
 
-        if not p.accessLevel.includes(requested):
-            continue                                   # this row doesn't grant enough
+        if maxLevel.includes(p.accessLevel):
+            continue                                   # already dominated — can't raise the max
+                                                       # (also skips DENIED, the floor)
 
         if [start, end] given and not p.covers(start, end, today):
-            continue                                   # outside time window
+            continue                                   # time-windowed ALLOCATE/REQUEST out of window
 
-        bestEffect = effect
-        bestLevel  = p.accessLevel
+        maxLevel = p.accessLevel                        # additive: take the higher level
 
-    return bestLevel.includes(requested)
+    return maxLevel.includes(requested)
 ```
 
-Two refinements that the code makes:
+Two things the code does (ADR 0003 revised / PRD 090 — **purely additive**):
 
-1. **Effect ordering.** A `USER` match outranks a `GROUP` match
-   outranks an `ALL_USERS` (wildcard) match. So if a group says
-   "DENIED" and a user-specific row says "ALLOCATE", the user-specific
-   row wins. This is what makes "deny by group, allow individuals"
-   work.
+1. **No precedence — `max` wins.** Effective access is the *highest* level across
+   *every* matching row (`USER`, `GROUP`, `WORLD`). A `USER` match does **not**
+   outrank a `GROUP` match: if a group grants `ALLOCATE` and a user row grants
+   only `READ`, the user gets `ALLOCATE` (the max), not `READ`. `DENIED` (0) is
+   the floor and subtracts nothing — "deny by group, allow individuals" via a
+   subtractive row is **no longer expressible** (use group membership instead).
+   The superseded precedence model (`USER` > `GROUP` > `WORLD`, with downward
+   override) is recorded in ADR 0003 for historical context only.
 2. **Group hierarchy.** `getGroupsIncludingParents()` returns the
    user's direct groups plus all ancestors up the category tree. So
    a permission on the root group "all-users" covers every user;
@@ -416,11 +418,12 @@ modification moves the appointment to 20:00.**
 
 1. **Allocate gate.** Now both permissions match her. `(students, ALLOCATE)`
    has no bounds and would still pass; `(students, READ, after-18:00)` would
-   not grant ALLOCATE. The strongest matching row wins → ALLOCATE → true.
+   not grant ALLOCATE. The **highest** matching level wins → ALLOCATE → true.
 2. *To restrict her properly*, the admin should change the `(students, ALLOCATE)`
-   row to have `pEnd=18:00` or replace it with a `(students, READ)` rule.
-   Permissions don't subtract; you can't add a "deny" row on top — you
-   change the existing one or use `DENIED` to override an inherited group.
+   row to have `pEnd=18:00` or **remove** it (leaving only `(students, READ)`).
+   Adding a `(students, READ)` row *alongside* the ALLOCATE one does nothing —
+   additive takes the max. Permissions don't subtract; there is no "deny" row to
+   add. To narrow one person below their group, change group membership.
 
 **Admin sees Alice's request even outside Alice's group.**
 

@@ -718,6 +718,37 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         GraphqlKeyMigration.assertCacheSpecCompliant(this);
     }
 
+    /**
+     * PRD 090 — freeze the additive-permission migration worklist once. Mirrors
+     * {@link #migrateGraphqlKeysIfNeeded()}'s marker + lock + re-check protocol.
+     * Called from {@code ServerServiceConfig.cachableStorageOperator()} right
+     * after {@link #migrateGraphqlKeysIfNeeded()}.
+     */
+    @Override
+    public void migrateAdditivePermissionsIfNeeded() throws RaplaException
+    {
+        if (AdditivePermissionMigration.markerSet(this))
+        {
+            LOGGER.debug("PRD 090 — additive permission migration marker present; skipping");
+            return;
+        }
+        RaplaLock.WriteLock writeLock = writeLockIfLoaded("additive permission migration");
+        try
+        {
+            if (AdditivePermissionMigration.markerSet(this))
+            {
+                LOGGER.debug("PRD 090 — marker appeared while waiting on lock; skipping migration");
+                return;
+            }
+            String summary = AdditivePermissionMigration.runUnderLock(this, cache.getAllocatables(), cache.getUsers());
+            LOGGER.info("PRD 090 — additive permission migration: {}", summary);
+        }
+        finally
+        {
+            lockManager.unlock(writeLock);
+        }
+    }
+
     protected abstract Collection<ExternalSyncEntity> getAllExternalSyncEntities() throws RaplaException;
 
     /**

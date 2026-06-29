@@ -81,41 +81,47 @@ public class RaplaDefaultPermissionImpl implements PermissionExtension
             return true;
         }
 
+        // ADR 0003 (revised 2026-06-28) / PRD 090 — purely additive resolution:
+        // effective access is the HIGHEST level granted by ANY matching row
+        // (user / group / world). No precedence, no subtraction — a DENIED (0)
+        // row is the floor and a more-specific lower-level row can never cap a
+        // broader grant downward.
         AccessLevel maxAccessLevel = AccessLevel.DENIED;
-        int maxEffectLevel = PermissionImpl.NO_PERMISSION;
         Collection<String> groups = UserImpl.getGroupsIncludingParents(user);
         Iterable<? extends Permission> permissions = container.getPermissionList();
         for (Permission p : permissions)
         {
             int effectLevel = PermissionContainer.Util.getUserEffect(user, p, groups);
-            if (effectLevel >= maxEffectLevel && effectLevel > PermissionImpl.NO_PERMISSION)
+            if (effectLevel <= PermissionImpl.NO_PERMISSION)
             {
-                if (p.hasTimeLimits() && (accessLevel.includes(Permission.ALLOCATE) || accessLevel.includes(Permission.REQUEST)) && today != null)
+                continue; // row does not match this user
+            }
+            AccessLevel level = p.getAccessLevel();
+            if (maxAccessLevel.includes(level))
+            {
+                continue; // already dominated — cannot raise the max (also skips DENIED)
+            }
+            if (p.hasTimeLimits() && (accessLevel.includes(Permission.ALLOCATE) || accessLevel.includes(Permission.REQUEST)) && today != null)
+            {
+                if (level != Permission.ADMIN)
                 {
-                    if (p.getAccessLevel() != Permission.ADMIN)
+                    if (checkOnlyToday)
                     {
-                        if (checkOnlyToday)
+                        if (!((PermissionImpl) p).validInTheFuture(today))
                         {
-                            if (!((PermissionImpl) p).validInTheFuture(today))
-                            {
-                                continue;
-                            }
+                            continue;
                         }
-                        else
+                    }
+                    else
+                    {
+                        if (!p.covers(start, end, today))
                         {
-                            if (!p.covers(start, end, today))
-                            {
-                                continue;
-                            }
+                            continue;
                         }
                     }
                 }
-                if (maxAccessLevel.excludes(p.getAccessLevel()) || effectLevel > maxEffectLevel)
-                {
-                    maxAccessLevel = p.getAccessLevel();
-                }
-                maxEffectLevel = effectLevel;
             }
+            maxAccessLevel = level;
         }
         boolean granted = maxAccessLevel.includes(accessLevel);
         return granted;

@@ -116,19 +116,20 @@ public interface PermissionContainer extends Ownable
             return PermissionImpl.NO_PERMISSION;
         }
 
-        // TODO check if union is correct
+        // ADR 0003 (revised 2026-06-28) / PRD 090 — additive: the allowed interval is
+        // the UNION of the time-windows of EVERY matching row that grants at least the
+        // requested level. No precedence; any qualifying grant contributes its window.
         static public TimeInterval getInterval(Iterable<? extends Permission> permissionList,User user,LocalDateTime today,  Permission.AccessLevel requestedAccessLevel ) {
             if ( user == null || user.isAdmin() )
                 return new TimeInterval( null, null);
-          
+
             TimeInterval interval = null;
-            int maxEffectLevel = PermissionImpl.NO_PERMISSION;
             Collection<String> groups = UserImpl.getGroupsIncludingParents(user);
-            for ( Permission p:permissionList) 
+            for ( Permission p:permissionList)
             {
                 int effectLevel = getUserEffect(user,p,groups);
                 Permission.AccessLevel accessLevel = p.getAccessLevel();
-                if ( effectLevel >= maxEffectLevel && effectLevel > PermissionImpl.NO_PERMISSION && accessLevel.includes( requestedAccessLevel))
+                if ( effectLevel > PermissionImpl.NO_PERMISSION && accessLevel.includes( requestedAccessLevel))
                 {
                     LocalDateTime start;
                     LocalDateTime end;
@@ -147,15 +148,8 @@ public interface PermissionContainer extends Ownable
                         start = null;
                         end = null;
                     }
-                    if ( interval == null || effectLevel > maxEffectLevel)
-                    {
-                        interval = new TimeInterval(start, end);
-                    }
-                    else
-                    {
-                        interval = interval.union(new TimeInterval(start, end));
-                    }
-                    maxEffectLevel = effectLevel;
+                    TimeInterval ti = new TimeInterval(start, end);
+                    interval = ( interval == null) ? ti : interval.union(ti);
                 }
             }
             return interval;

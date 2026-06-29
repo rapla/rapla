@@ -51,6 +51,9 @@ public class ServerServiceConfig
         // the loaded cache. Runs before HotSwappableGraphQlSource builds the SDL.
         // Marker-guarded; a failure here is a fatal startup error.
         operator.migrateGraphqlKeysIfNeeded();
+        // PRD 090 — freeze the additive-permission migration worklist (one-shot,
+        // marker-guarded). The live resolver is already additive.
+        operator.migrateAdditivePermissionsIfNeeded();
         return operator;
     }
 

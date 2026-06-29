@@ -11,6 +11,7 @@ import { ProfileService } from '../account/profile.service';
 import { SwitchToUserDialogComponent } from '../auth/switch-to-user-dialog.component';
 import { ApiKeysDialogComponent } from '../account/api-keys-dialog.component';
 import { EditAccountDialogComponent } from '../account/edit-account-dialog.component';
+import { PermissionMigrationDialogComponent } from '../account/permission-migration-dialog.component';
 import { OmniboxComponent } from './omnibox.component';
 
 /**
@@ -95,6 +96,12 @@ import { OmniboxComponent } from './omnibox.component';
             <button mat-menu-item (click)="openEditAccount()">
               <mat-icon>badge</mat-icon>
               <span>Edit account</span>
+            </button>
+          }
+          @if (isAdmin()) {
+            <button mat-menu-item (click)="openPermissionMigration()">
+              <mat-icon>rule</mat-icon>
+              <span>Permission migration</span>
             </button>
           }
         </mat-menu>
@@ -195,6 +202,9 @@ export class AppToolbarComponent implements OnInit {
   /** The admin actor's username while impersonating; '' otherwise. */
   readonly adminUsername = computed(() => this.auth.actorUsername());
 
+  /** PRD 090 — global admins see the "Permission migration" worklist entry. */
+  readonly isAdmin = computed(() => this.auth.identity()?.admin ?? false);
+
   ngOnInit(): void {
     // PRD 051 — non-empty /api/users (server-filtered by canAdminUser) ⇒ enable switch.
     this.usersService.list().subscribe((list) => this.canImpersonate.set(list.length > 0));
@@ -223,5 +233,13 @@ export class AppToolbarComponent implements OnInit {
 
   openEditAccount(): void {
     this.dialog.open(EditAccountDialogComponent, { width: '520px', autoFocus: false });
+  }
+
+  openPermissionMigration(): void {
+    this.dialog.open(PermissionMigrationDialogComponent, {
+      width: '640px',
+      maxWidth: '92vw',
+      autoFocus: false,
+    });
   }
 }

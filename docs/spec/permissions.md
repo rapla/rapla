@@ -25,11 +25,12 @@ and no rejected alternatives; those live in the linked MADRs (`decisions:` above
 explanatory companion [`docs/architecture/permissions.md`](../architecture/permissions.md)
 (Diátaxis: this file is *reference*, that one is *explanation*).
 
-> **Core invariant: the model is grant-only.** Rows only ever *add* access; there are no deny
-> rows. Effective access is the level of the single strongest-precedence matching row
-> (`USER` > `GROUP` > `WORLD`), and no-match means no access. `DENIED` (0) is only an override on
-> a higher-precedence row, and is now deprecated in the editing UI. See
-> [[0003-permissions-are-grant-only]].
+> **Core invariant: grant-only and purely additive** (ADR 0003 revised 2026-06-28 / PRD 090).
+> Rows only ever *add* access; there are no deny rows and **no precedence**. Effective access is
+> the **highest** level over *all* matching rows (`USER`, `GROUP`, `WORLD` — the `max`), and
+> no-match means no access. `DENIED` (0) is the floor — **inert** under resolution (never
+> subtracts) — and deprecated in the editing UI. The precedence model (`USER` > `GROUP` > `WORLD`
+> with downward override) is **superseded**; see [[0003-permissions-are-grant-only]].
 
 ## How to read this spec — verification legend
 
@@ -52,7 +53,7 @@ by an `int`; `level.includes(x)` ≡ `x.numeric <= this.numeric`, `excludes` is 
 
 | Level | Numeric | Grants (cumulative — includes every lower level) |
 |---|---:|---|
-| `DENIED` | 0 | Nothing. Used to override an inherited group grant down to nothing. |
+| `DENIED` | 0 | Nothing — the floor. Inert under additive resolution (never subtracts); deprecated. |
 | `READ_TYPE` | 20 | See that a `DynamicType` exists. |
 | `CREATE` | 30 | Create instances of a `DynamicType`. |
 | `READ_NO_ALLOCATION` | 50 | See a resource exists, without its bookings. |
@@ -99,14 +100,17 @@ Permission-bearing containers (`PermissionContainer`): `Allocatable`, `Reservati
 2. **Owner short-circuit** — `PermissionController.isOwner(E, U)` ⇒ **granted** (read/modify/admin).
    ✅ PINNED: `PermissionControllerAccessQueryTest.ownerHasReadAndEditWithoutAnyExplicitPermission`,
    `PermissionMatrixTest.ownerCheckMatchesOwnerRefId`.
-3. **Permission scan** — over `E.getPermissionList()`, compute the effective level as the level of
-   the **strongest-effect matching row**, where effect precedence is
-   `USER (10000) > GROUP (5000) > WORLD (-1)`. Grant iff that level `includes(R)`.
-   - ✅ PINNED (precedence + group cascade + union):
+3. **Permission scan** — over `E.getPermissionList()`, compute the effective level as the
+   **highest** `accessLevel` over *all* matching rows (`USER`, `GROUP`, or `WORLD`), with **no
+   precedence**. Grant iff that `max` `includes(R)`. `DENIED` (0) is the floor — inert.
+   - ✅ PINNED (additive max-wins, deny-inert, cascade + union):
+     `AdditivePermissionResolutionTest` (rapla-server) — `userReadNoLongerCapsBelowGroupAllocate`,
+     `userDeniedNoLongerOverridesGroupGrant`, `groupDeniedNoLongerOverridesAllUsersGrant`;
      `PermissionControllerAccessQueryTest.groupPermissionGrantsAtLevelButNotAbove`,
      `…parentGroupPermissionCascadesToChildGroup`, `…unionAcrossGroups`.
-   - 📝 DERIVED: a `USER` row beats a `GROUP` row even when the group row is stronger — this is what
-     makes "deny the group, allow individuals" work (`DENIED` on group + a user row above it).
+   - 📝 DERIVED: a lower-level `USER` row can **no longer** cap below a stronger `GROUP` row — the
+     `max` takes the group level. "Deny the group, allow individuals" is no longer expressible; use
+     group membership to exclude.
 
 📝 DERIVED (group expansion): `U`'s groups are expanded to all ancestors via
 `UserImpl.getGroupsIncludingParents` — a grant on a parent category covers all descendants.
@@ -157,7 +161,6 @@ caches, invalidated on permission or group-membership change. ✅ PINNED (invali
 These claims are 📝 DERIVED only — no test pins them today. Each is a candidate for a pinning test
 (PRD 088 Phase 3 confirmation work):
 
-- `USER` row overrides a stronger `GROUP`/`DENIED` row (the "allow individuals, deny group" path).
 - Absolute vs. relative time bounds are mutually exclusive per field.
 - `ADMIN` rows ignore time windows.
 - `REQUEST`-only ⇒ `RequestStatus.requested` rather than a rejected store.

@@ -182,6 +182,8 @@ public class SpringDocGroupsConfig
                         // Admin tools
                         "/api/archiver",
                         "/api/archiver/**",
+                        "/api/admin/permission-migration",
+                        "/api/admin/permission-migration/**",
                         "/api/urlencryption",
                         "/api/urlencryption/**",
                         // Timezone catalog — SPA admin panels (Exchange/iCal config) need it

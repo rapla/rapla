@@ -225,9 +225,12 @@ class PermissionIndexScenarioTest extends FacadeTestSupport
                 "a grant to a sibling group must not be visible");
     }
 
-    /** A3: READ via group + a DENIED permission on the user -> not readable (max-effect). */
+    /** A3 (ADR 0003 revised / PRD 090): READ via group + a DENIED on the user ->
+     * still readable. Additive resolution takes the MAX over matching rows, so the
+     * group READ grant wins and the user DENIED is inert (the floor). This INVERTS
+     * the precedence-era expectation. */
     @Test
-    void deniedOverridesGroupRead() throws Exception
+    void userDeniedNoLongerOverridesGroupRead() throws Exception
     {
         final Category myGroup = userGroups().getCategory("my-group");
 
@@ -241,8 +244,8 @@ class PermissionIndexScenarioTest extends FacadeTestSupport
         facade.store(room);
 
         assertIndexEqualsCanRead(residentNed);
-        assertFalse(index().readableAllocatables(residentNed).contains(resident(room).getId()),
-                "a user-level DENIED must override a group READ");
+        assertTrue(index().readableAllocatables(residentNed).contains(resident(room).getId()),
+                "additive: the group READ grant wins; the user-level DENIED subtracts nothing");
     }
 
     /**
