@@ -1237,9 +1237,11 @@ class ReservationGraphQLControllerTest
         tester.document("""
                 mutation {
                   createReservation(input: {
+                    id: "e6666666-6666-4666-8666-666666666666",
                     typeKey: "event",
                     classification: { event: {} },
-                    appointments: [ { start: "2031-03-03T09:00:00", end: "2031-03-03T10:00:00", allDay: false } ],
+                    appointments: [ { id: "a6666666-6666-4666-8666-666666666666",
+                                      start: "2031-03-03T09:00:00", end: "2031-03-03T10:00:00", allDay: false } ],
                     allocations: [ { allocatableId: "%s" } ]
                   }) { id }
                 }

@@ -606,6 +606,9 @@ frontend, or writing integration tests.
 
 ## See also
 
+- [reservation-edit-ui-inventory.md](reservation-edit-ui-inventory.md) —
+  functional inventory of the Swing dialog (every user-facing
+  capability; the checklist for a new frontend)
 - [domain-model.md](domain-model.md) — Reservation / Appointment /
   Repeating
 - [conflicts-and-events.md](conflicts-and-events.md) — what the

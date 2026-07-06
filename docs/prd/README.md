@@ -2,7 +2,7 @@
 
 47 PRDs total — **30 active** in this directory, **17 done** under `done/`. AGENTS.md §2 + §3 cover the lifecycle (move to `done/` when complete; `git mv` back if reopening). This index exists so agents and humans don't `ls` and guess.
 
-> **Numbering note:** there are two `031` files (`031-api-namespace-redesign.md` and `031-token-refresh-and-api-keys.md`). Both are in-progress and on different tracks. Future PRDs should pick the next free number (currently 042) rather than reusing.
+> **Numbering note:** there are two `031` files (`031-api-namespace-redesign.md`, still active, and `031-token-refresh-and-api-keys.md`, now in `done/`). Future PRDs should pick the next free number (currently 042) rather than reusing.
 
 ## Active — in-progress
 
@@ -11,7 +11,6 @@
 | File | Title | Status |
 |---|---|---|
 | [029-swing-oauth-login.md](029-swing-oauth-login.md) | Swing Login via OAuth 2.0 (Browser-based, PKCE Loopback) | phase 1 done 2026-05-12; phase 2 mostly landed |
-| [031-token-refresh-and-api-keys.md](031-token-refresh-and-api-keys.md) | Refresh Tokens & API Keys — IdP-portable design | refresh-token half shipped 2026-05-12 |
 | [036-external-idp-oauth-login.md](036-external-idp-oauth-login.md) | External IdP OAuth 2.0 Login (Microsoft Entra ID + Google) | draft 2026-05-14 |
 | [037-native-saml-shibboleth.md](037-native-saml-shibboleth.md) | Shibboleth via Reverse-Proxy Trusted Headers | draft 2026-05-15 |
 
@@ -46,7 +45,6 @@
 |---|---|---|
 | [done/035-graphql-foundations.md](done/035-graphql-foundations.md) | GraphQL foundations (architecture + classification gen + filter language + LocalDateTime/typeKey + auth) | done 2026-05-29; active work split into PRDs 056/059/060/061 |
 | [056-graphql-events-write-api.md](056-graphql-events-write-api.md) | GraphQL events write API (reservation mutations) | in-progress (design) |
-| [059-graphql-typed-where-predicates.md](059-graphql-typed-where-predicates.md) | GraphQL typed `<TypeKey>Where` predicates on `allocatables(filter:)` | in-progress (Phase 1 landed; Phases 2–5 pending) |
 | [060-graphql-mcp-foundations.md](060-graphql-mcp-foundations.md) | GraphQL discovery + compute operations + MCP transport | draft 2026-05-29 |
 | [061-graphql-dt-mutations-v2.md](061-graphql-dt-mutations-v2.md) | GraphQL DynamicType mutations v2 (deferred follow-ups) | draft 2026-05-29 |
 | [038-graph-calendar-sync.md](038-graph-calendar-sync.md) | Microsoft Graph calendar sync (Exchange Online / M365) — write-only push | draft 2026-05-15 |
@@ -130,6 +128,14 @@
 | File | Title | Done |
 |---|---|---|
 | [done/033-playwright-mcp-browser-testing.md](done/033-playwright-mcp-browser-testing.md) | Playwright MCP for browser-driven SPA testing | 2026-05-13 — MCP server installed; usage in `angular-frontend` skill, install in `docs/development.md` |
+
+### Auth / GraphQL
+
+| File | Title | Done |
+|---|---|---|
+| [done/031-token-refresh-and-api-keys.md](done/031-token-refresh-and-api-keys.md) | Refresh Tokens & API Keys — IdP-portable design | refresh half consolidated onto `/oauth2/token` (PRD 041); API-keys half superseded by PRD 043; moved 2026-07-05 |
+| [done/059-graphql-typed-where-predicates.md](done/059-graphql-typed-where-predicates.md) | GraphQL typed `<TypeKey>Where` predicates on `allocatables(filter:)` | all 5 phases landed 2026-05-29 |
+| [done/072-server-side-login-dialog.md](done/072-server-side-login-dialog.md) | Server-side login dialog (SPA committed cutover) | all 7 phases shipped + verified 2026-06-20 |
 
 ## How to add a PRD
 

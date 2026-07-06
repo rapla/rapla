@@ -76,6 +76,7 @@ import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Disposable;
+import org.rapla.framework.EntityIdCollisionException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
@@ -945,8 +946,27 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     private String replaceFirst(Class<? extends Entity> raplaType, String string)
     {
-        final String localName = RaplaType.getLocalName(raplaType);
-        Character firstLetter = raplaType == Reservation.class ? 'e' : localName.charAt(0);
+        // Hex-valid letters only, so every generated id parses as a UUID
+        // (2026-07-06; legacy stores keep their r…/u… ids — the letter is not
+        // load-bearing, lookup is by full opaque string). 'e' = event,
+        // 'b' = Benutzer (was 'u'), 'f' = facility (was 'r').
+        final Character firstLetter;
+        if (raplaType == Reservation.class)
+        {
+            firstLetter = 'e';
+        }
+        else if (raplaType == User.class)
+        {
+            firstLetter = 'b';
+        }
+        else if (raplaType == Allocatable.class)
+        {
+            firstLetter = 'f';
+        }
+        else
+        {
+            firstLetter = RaplaType.getLocalName(raplaType).charAt(0);
+        }
         String result = firstLetter + string.substring(1);
         return result;
     }
@@ -1396,6 +1416,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         //Set<Entity> removeObjects = new HashSet<Entity>(evt.getRemoveObjects());
         setResolverAndCheckReferences(evt, store);
         checkGraphqlKeySpecCompliance(storeObjects);
+        checkIdIntegrity(evt, storeObjects);
         checkConsistency(evt, store);
         checkUnique(evt, store);
         checkNoDependencies(evt, store);
@@ -1417,6 +1438,90 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
      * mutation, plugin import) and would otherwise corrupt the cache
      * invariant the GraphQL SDL generator depends on.
      */
+    /**
+     * PRD 056 §9 — dispatch-side integrity guard for client-supplied ids.
+     *
+     * <p>Check #2 (appointment ownership): reject any incoming reservation
+     * carrying an appointment whose id already resolves to a persistent
+     * appointment living in a <em>different</em> reservation. Two appointments
+     * sharing a {@link ReferenceInfo} corrupt the conflict engine, the
+     * appointment/block index and restrictions, and violate the
+     * composite-sub-entity invariant {@code checkConsitency} implicitly
+     * assumes. Guarding at the dispatch choke point covers every write path
+     * (GraphQL, Swing dispatch, plugin import) and can't be silently bypassed.
+     *
+     * <p>§12: the rejection is uniform — the message names only the client's
+     * own appointment id, never the colliding reservation, so the write path
+     * doesn't become an existence probe.
+     */
+    private void checkIdIntegrity(UpdateEvent evt, Set<Entity> storeObjects) throws RaplaException
+    {
+        // Check #1 — declared CREATEs must not resolve to a persistent entity.
+        // Fail-open: entities without a create marker keep upsert-by-id
+        // semantics. No content comparison (revised OQ5) — collision on a
+        // client-minted id IS the retry signal ("already applied").
+        for (ReferenceInfo createRef : evt.getCreateReferences())
+        {
+            @SuppressWarnings("unchecked")
+            Entity persistent = cache.tryResolve(createRef.getId(), createRef.getType());
+            if (persistent != null)
+            {
+                throw new EntityIdCollisionException(createRef.getId());
+            }
+        }
+        for (Entity entity : storeObjects)
+        {
+            Class<? extends Entity> typeClass = entity.getTypeClass();
+            if (Allocatable.class == typeClass)
+            {
+                checkIdSyntaxIfNew(entity);
+            }
+            if (Reservation.class != typeClass)
+            {
+                continue;
+            }
+            Reservation reservation = (Reservation) entity;
+            checkIdSyntaxIfNew(reservation);
+            for (Appointment appointment : reservation.getAppointments())
+            {
+                Entity persistent = findPersistent(appointment);
+                if (!(persistent instanceof Appointment persistentAppointment))
+                {
+                    checkIdSyntaxIfNew(appointment);
+                    continue;
+                }
+                Reservation owner = persistentAppointment.getReservation();
+                if (owner != null && !owner.getId().equals(reservation.getId()))
+                {
+                    throw new RaplaException("Appointment id " + appointment.getId()
+                            + " already belongs to another reservation");
+                }
+            }
+        }
+    }
+
+    /**
+     * PRD 056 §9 — syntax rule for NEW entity ids ({@link Tools#isValidEntityId}:
+     * ASCII alphanumerics + hyphen, alphanumeric start, length 8-64). Only fires
+     * when the id does not resolve to a persistent entity, so legacy store ids
+     * (e.g. {@code period_1} with an underscore) stay storable on update.
+     */
+    private void checkIdSyntaxIfNew(Entity entity) throws RaplaException
+    {
+        String id = entity.getId();
+        if (Tools.isValidEntityId(id))
+        {
+            return;
+        }
+        if (findPersistent(entity) != null)
+        {
+            return;  // grandfathered legacy id
+        }
+        throw new RaplaException("Invalid id '" + id
+                + "' for new entity: ids must be ASCII alphanumerics plus hyphen,"
+                + " start alphanumeric, length 8-64");
+    }
+
     private void checkGraphqlKeySpecCompliance(Set<Entity> storeObjects) throws RaplaException
     {
         for (Entity entity : storeObjects)

@@ -1,6 +1,7 @@
 package org.rapla.server.spring;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaException;
 import org.rapla.server.RemoteSession;
@@ -9,6 +10,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.RequestCache;
+import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -37,6 +41,7 @@ public class ChangePasswordPageController
 
     private final RemoteSession session;
     private final CachableStorageOperator operator;
+    private final RequestCache requestCache = new HttpSessionRequestCache();
 
     public ChangePasswordPageController(RemoteSession session, CachableStorageOperator operator)
     {
@@ -57,12 +62,12 @@ public class ChangePasswordPageController
     public String submit(@RequestParam(value = "newPassword", required = false) String newPassword,
                          @RequestParam(value = "confirmPassword", required = false) String confirmPassword,
                          @RequestParam(value = "skip", required = false) String skip,
-                         HttpServletRequest request) throws RaplaException
+                         HttpServletRequest request, HttpServletResponse response) throws RaplaException
     {
         if (skip != null)
         {
             // skippable, not disableable — empty password stays allowed, nag returns next login
-            return "redirect:" + AFTER;
+            return "redirect:" + afterUrl(request, response);
         }
         if (newPassword == null || newPassword.isEmpty() || !newPassword.equals(confirmPassword))
         {
@@ -71,7 +76,25 @@ public class ChangePasswordPageController
         User user = session.checkAndGetUser(request);
         operator.changePassword(user, new char[0], newPassword.toCharArray());
         LOGGER.info("User '{}' set a password via the change-password nag page", user.getUsername());
-        return "redirect:" + AFTER;
+        return "redirect:" + afterUrl(request, response);
+    }
+
+    /**
+     * Resume the request that triggered the login, if one was saved. The Swing "Sign in
+     * with browser" flow saves an {@code /oauth2/authorize} request before {@code /login};
+     * {@link FormLoginSuccessHandler} bounces an empty-password user here without consuming
+     * it, so the saved OAuth flow (→ loopback callback → Swing) must resume from this page.
+     * Only the SPA form login has no saved request → falls back to {@code /app/}.
+     */
+    private String afterUrl(HttpServletRequest request, HttpServletResponse response)
+    {
+        SavedRequest saved = requestCache.getRequest(request, response);
+        if (saved != null)
+        {
+            requestCache.removeRequest(request, response);
+            return saved.getRedirectUrl();
+        }
+        return AFTER;
     }
 
     private String render(String banner, HttpServletRequest request)

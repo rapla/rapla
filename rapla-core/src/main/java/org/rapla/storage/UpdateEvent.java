@@ -58,6 +58,12 @@ public class UpdateEvent
 
     private Set<SerializableReferenceInfo> removeSet;
 
+    // PRD 056 §9 create-intent carrier: refs the client declares as CREATEs.
+    // checkIdIntegrity #1 rejects any of these whose id already resolves to a
+    // persistent entity (ID_COLLISION). Fail-open — entities not listed here
+    // keep upsert-by-id semantics.
+    private Set<SerializableReferenceInfo> createSet;
+
 
     private String userId;
 
@@ -334,6 +340,29 @@ public class UpdateEvent
         }
         else removeSet.add(id);
 
+    }
+
+    public void addCreate(ReferenceInfo ref)
+    {
+        if (createSet == null)
+        {
+            createSet = new LinkedHashSet<>();
+        }
+        createSet.add(new SerializableReferenceInfo(ref));
+    }
+
+    public Collection<ReferenceInfo> getCreateReferences() throws RaplaException
+    {
+        if (createSet == null)
+        {
+            return Collections.emptyList();
+        }
+        Collection<ReferenceInfo> result = new ArrayList<>();
+        for (SerializableReferenceInfo entry : createSet)
+        {
+            result.add(entry.getReference());
+        }
+        return result;
     }
 
     /** find an entity in the update-event that matches the passed original. Returns null

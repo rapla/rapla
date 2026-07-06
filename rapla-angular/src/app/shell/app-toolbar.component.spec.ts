@@ -8,6 +8,10 @@ import { AppToolbarComponent } from './app-toolbar.component';
 import { AuthService, Identity } from '../auth/auth.service';
 import { UsersService } from '../auth/users.service';
 import { ProfileService, ProfileEditCapabilities } from '../account/profile.service';
+import {
+  PermissionMigrationFinding,
+  PermissionMigrationService,
+} from '../account/permission-migration.service';
 
 function configure(
   identityValue: Identity | null,
@@ -18,6 +22,7 @@ function configure(
     canChangeEmail: true,
     externalIdpLabel: null,
   },
+  migrationFindings: PermissionMigrationFinding[] = [],
 ) {
   const identity = signal<Identity | null>(identityValue);
   TestBed.configureTestingModule({
@@ -26,6 +31,10 @@ function configure(
       provideAnimationsAsync(),
       { provide: UsersService, useValue: { list: () => of(users) } },
       { provide: ProfileService, useValue: { capabilities: () => of(caps) } },
+      {
+        provide: PermissionMigrationService,
+        useValue: { findings: () => of(migrationFindings) },
+      },
       {
         provide: AuthService,
         useValue: {
@@ -101,5 +110,54 @@ describe('AppToolbarComponent', () => {
     fixture.detectChanges();
     const labels = openMenuItems(fixture).map((b) => b.textContent ?? '');
     expect(labels.some((t) => t.includes('Switch to user'))).toBe(false);
+  });
+
+  // PRD 090 — the "Permission migration" entry (in the Account settings submenu) is
+  // shown only to a global admin AND only when the worklist is non-empty.
+  const ADMIN: Identity = { ...LOGGED_IN, admin: true };
+  const FINDING: PermissionMigrationFinding = {
+    allocatableId: 'a1',
+    allocatableName: 'Room A',
+    escalations: [],
+  };
+
+  /** Open the user menu, then the Account-settings submenu; return its item labels. */
+  function openAccountSubmenuLabels(
+    fixture: ReturnType<typeof TestBed.createComponent>,
+  ): string[] {
+    const items = openMenuItems(fixture);
+    const account = items.find((b) => (b.textContent ?? '').includes('Account settings'));
+    account?.click();
+    fixture.detectChanges();
+    return (Array.from(document.querySelectorAll('button.mat-mdc-menu-item')) as HTMLElement[]).map(
+      (b) => b.textContent ?? '',
+    );
+  }
+
+  it('shows Permission migration for an admin with open worklist items', () => {
+    configure(ADMIN, [], undefined, [FINDING]);
+    const fixture = TestBed.createComponent(AppToolbarComponent);
+    fixture.detectChanges();
+    expect(openAccountSubmenuLabels(fixture).some((t) => t.includes('Permission migration'))).toBe(
+      true,
+    );
+  });
+
+  it('hides Permission migration when the worklist is empty', () => {
+    configure(ADMIN, [], undefined, []);
+    const fixture = TestBed.createComponent(AppToolbarComponent);
+    fixture.detectChanges();
+    expect(openAccountSubmenuLabels(fixture).some((t) => t.includes('Permission migration'))).toBe(
+      false,
+    );
+  });
+
+  it('hides Permission migration from a non-admin even if items exist', () => {
+    configure(LOGGED_IN, [], undefined, [FINDING]);
+    const fixture = TestBed.createComponent(AppToolbarComponent);
+    fixture.detectChanges();
+    expect(openAccountSubmenuLabels(fixture).some((t) => t.includes('Permission migration'))).toBe(
+      false,
+    );
   });
 });

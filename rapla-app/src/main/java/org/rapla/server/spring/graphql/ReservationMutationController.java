@@ -107,16 +107,17 @@ public class ReservationMutationController
         ReservationImpl r = new ReservationImpl(operator.getCurrentTimestamp(), operator.getCurrentTimestamp());
         r.setClassification(classification);
         r.setOwner(caller);
+        // PRD 056 §9 (2026-07-06): client id is REQUIRED — no server fallback.
+        // Retry-idempotency works via ID_COLLISION on the client-minted id
+        // (CalDAV model); a server-generated id can never be retry-safe.
         String clientId = (String) input.get("id");
-        if (clientId != null && !clientId.isBlank())
+        if (clientId == null || clientId.isBlank())
         {
-            r.setId(clientId);
+            throw new ReservationMutationException("REQUIRED",
+                    "operations[0].createReservation.id",
+                    "id is required — clients mint their own entity ids (PRD 056 §9)");
         }
-        else
-        {
-            ReferenceInfo<Reservation> ref = operator.createIdentifier(Reservation.class, 1).get(0);
-            r.setId(ref.getId());
-        }
+        r.setId(clientId);
 
         // Appointments (required ≥1 — PRD 056 OQ1.d)
         List<Map<String, Object>> appointments = (List<Map<String, Object>>) input.get("appointments");
@@ -145,10 +146,12 @@ public class ReservationMutationController
                     "operations[0].createReservation.allocations");
         }
 
-        // Dispatch
+        // Dispatch — declared as CREATE so checkIdIntegrity #1 rejects an
+        // already-existing id with ID_COLLISION (retry contract, PRD 056 §9)
         UpdateEvent event = new UpdateEvent();
         event.setUserId(caller.getId());
         event.addStore(r);
+        event.addCreate(r.getReference());
         operator.dispatch(event);
 
         // Re-resolve to get the stored reservation (with all derived fields populated)
@@ -329,11 +332,37 @@ public class ReservationMutationController
             ReferenceInfo<Reservation> newId = operator.createIdentifier(Reservation.class, 1).get(0);
             ((ReservationImpl) copy).setId(newId.getId());
             copy.setOwner(caller);
+            // clone() keeps appointment ids (edit pattern) — a copy must mint
+            // fresh ones or checkIdIntegrity #2 rejects the store (the source
+            // reservation still owns the original appointment ids). Capture
+            // restrictions first: they are stored as appointment-id lists and
+            // must be rewritten against the new ids.
+            Map<Allocatable, Appointment[]> restrictions = new LinkedHashMap<>();
+            for (Allocatable al : copy.getAllocatables())
+            {
+                Appointment[] restriction = copy.getRestriction(al);
+                if (restriction != null && restriction.length > 0)
+                {
+                    restrictions.put(al, restriction);
+                }
+            }
+            Appointment[] copiedAppointments = copy.getAppointments();
+            List<ReferenceInfo<Appointment>> newApptIds =
+                    operator.createIdentifier(Appointment.class, copiedAppointments.length);
+            for (int j = 0; j < copiedAppointments.length; j++)
+            {
+                ((AppointmentImpl) copiedAppointments[j]).setId(newApptIds.get(j).getId());
+            }
+            for (Map.Entry<Allocatable, Appointment[]> entry : restrictions.entrySet())
+            {
+                copy.setRestriction(entry.getKey(), entry.getValue());
+            }
             for (Appointment a : copy.getAppointments())
             {
                 a.move(a.getStart().plus(dateShift), a.getEnd().plus(dateShift));
             }
             event.addStore(copy);
+            event.addCreate(copy.getReference());
             results.add(bulkEntry(i, copy, null, null, null));
         }
         operator.dispatch(event);
@@ -384,6 +413,7 @@ public class ReservationMutationController
                 Reservation r = buildReservationFromCreateInput(ci, caller,
                         "operations[" + i + "].createReservation");
                 event.addStore(r);
+                event.addCreate(r.getReference());
                 sameBatchCreated.put(r.getId(), r);
                 results.add(bulkEntry(i, r, null, null, null));
             }
@@ -527,27 +557,17 @@ public class ReservationMutationController
                     "appointment start and end are required");
         }
         AppointmentImpl a = new AppointmentImpl(start, end);
+        // PRD 056 §9 (2026-07-06): appointment id is REQUIRED — allocation
+        // restrictions reference appointments by these ids, and only a
+        // client-minted id is retry-idempotent. Kills the old B′ conditional
+        // ("ids only required when restrictions are present").
         String clientId = (String) ai.get("id");
-        if (clientId != null && !clientId.isBlank())
+        if (clientId == null || clientId.isBlank())
         {
-            // Honor the client-supplied id — same-batch allocation restrictions
-            // reference appointments by these ids, so silently regenerating breaks
-            // the restriction join (PRD 056 OQ — caught by restrictionRoundTripBothReadShapes).
-            a.setId(clientId);
+            throw new ReservationMutationException("REQUIRED", path + ".id",
+                    "appointment id is required — clients mint their own entity ids (PRD 056 §9)");
         }
-        else
-        {
-            try
-            {
-                ReferenceInfo<Appointment> newId = operator.createIdentifier(Appointment.class, 1).get(0);
-                a.setId(newId.getId());
-            }
-            catch (RaplaException e)
-            {
-                throw new ReservationMutationException("STORAGE_ERROR", path,
-                        "Could not generate appointment id: " + e.getMessage());
-            }
-        }
+        a.setId(clientId);
         // TODO: allDay, repeating — minimal v1 skips these; add when SPA editor consumes
         return a;
     }
@@ -608,15 +628,14 @@ public class ReservationMutationController
         ReservationImpl r = new ReservationImpl(operator.getCurrentTimestamp(), operator.getCurrentTimestamp());
         r.setClassification(classification);
         r.setOwner(caller);
+        // PRD 056 §9 (2026-07-06): client id REQUIRED — mirrors createReservation.
         String clientId = (String) input.get("id");
-        if (clientId != null && !clientId.isBlank())
+        if (clientId == null || clientId.isBlank())
         {
-            r.setId(clientId);
+            throw new ReservationMutationException("REQUIRED", path + ".id",
+                    "id is required — clients mint their own entity ids (PRD 056 §9)");
         }
-        else
-        {
-            r.setId(operator.createIdentifier(Reservation.class, 1).get(0).getId());
-        }
+        r.setId(clientId);
         List<Map<String, Object>> appointments = (List<Map<String, Object>>) input.get("appointments");
         if (appointments == null || appointments.isEmpty())
         {

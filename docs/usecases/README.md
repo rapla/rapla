@@ -22,6 +22,11 @@ Two deployment archetypes anchor everything here:
   seminar-scheduling shape). **Weekly, recurring** planning. Central surface = the
   **`week_timeslot` grid** ("Wochenprogramm"), anchored on room/leader.
 
+A third archetype — **C — Equipment lending desk** (multi-day loans of portable equipment
+to external borrowers, staff-mediated) — is documented separately in
+[equipment-planning.md](equipment-planning.md); it is the one archetype where the weekly
+view is *not* central.
+
 The headline finding: **the weekly view is central to *both* — what differs is the
 *anchor* and the *render-mode flavor*.** Archetype A anchors on a **cohort** and uses the
 standard week view; B anchors on room/leader and uses the timeslot grid. There is **no
@@ -86,6 +91,10 @@ The new SPA targets the **Planner**, desktop-first. Mobile (quick edit) is in sc
 | UC-6 | **Quick edit on the go** | Planner-on-the-go | both | focused event sheet (mobile) | occasional, *later* |
 | UC-7 | **Publish / export a calendar** | Planner | both | iCal / HTML / CSV (server-rendered) | set-and-forget |
 | UC-8 | **Read my own schedule** | Consumer | both | — (out of SPA scope) | constant |
+
+The *editing* side (what UC-1/2/5/6 do when they write) is decomposed separately in
+[reservation-editing.md](reservation-editing.md) (UC-E1…E16) — requirements ground
+truth for the SPA event sheet and the availability search (PRD 091).
 
 ---
 

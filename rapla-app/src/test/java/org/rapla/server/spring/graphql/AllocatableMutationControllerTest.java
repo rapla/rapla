@@ -147,6 +147,7 @@ class AllocatableMutationControllerTest
         String createdId = tester.document("""
                 mutation {
                   createAllocatable(input: {
+                    id: "f7777777-7777-4777-8777-777777777777",
                     typeKey: "room",
                     classification: { room: {} }
                   }) { id }
@@ -186,6 +187,72 @@ class AllocatableMutationControllerTest
         @SuppressWarnings("unchecked")
         Map<String, Object> owner = (Map<String, Object>) readBack.get("owner");
         assertEquals("homer", owner.get("username"), "owner defaults to caller");
+    }
+
+    // ============================================================ PRD 056 §9 — mandatory client id
+
+    /**
+     * PRD 056 §9 (decided 2026-07-06): createAllocatable REQUIRES a
+     * client-supplied id — no server-side fallback. See
+     * ReservationMutationControllerTest#createReservationWithoutIdRejected
+     * for the rationale.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void createWithoutIdRejected()
+    {
+        tester.document("""
+                mutation {
+                  createAllocatable(input: {
+                    typeKey: "room",
+                    classification: { room: {} }
+                  }) { id }
+                }
+                """)
+                .execute()
+                .errors()
+                .satisfy(errs -> {
+                    assertFalse(errs.isEmpty(), "create without id must be rejected");
+                    String joined = errs.toString();
+                    assertTrue(joined.contains("REQUIRED") && joined.contains("id"),
+                            () -> "expected REQUIRED-on-id error; got " + joined);
+                });
+    }
+
+    /**
+     * PRD 056 §9 check #1: createAllocatable with an id that already resolves
+     * → {@code ID_COLLISION} (retry contract — no silent overwrite, no
+     * content comparison).
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void createWithExistingIdReturnsIdCollision()
+    {
+        String document = """
+                mutation {
+                  createAllocatable(input: {
+                    id: "f8888888-8888-4888-8888-888888888888",
+                    typeKey: "room",
+                    classification: { room: {} }
+                  }) { id }
+                }
+                """;
+        String createdId = tester.document(document)
+                .execute()
+                .path("createAllocatable.id")
+                .entity(String.class)
+                .get();
+        assertEquals("f8888888-8888-4888-8888-888888888888", createdId);
+
+        tester.document(document)
+                .execute()
+                .errors()
+                .satisfy(errs -> {
+                    assertFalse(errs.isEmpty(), "create with an existing id must be rejected");
+                    String joined = errs.toString();
+                    assertTrue(joined.contains("ID_COLLISION"),
+                            () -> "expected ID_COLLISION error; got " + joined);
+                });
     }
 
     // ============================================================ validation

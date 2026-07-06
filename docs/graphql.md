@@ -675,6 +675,48 @@ persons vs. a named type), not for cross-appointment id selection.
 
 ---
 
+## Availability & conflicts (PRD 091 Phase 1, 2026-07-06)
+
+One `Conflict` wire type for **realized** and **potential** conflicts (PRD 091 D4) —
+a potential conflict is a Conflict whose side 1 is not persisted (yet). Id pair
+fields always present; entity fields (`reservation1/2`, `appointment2`) are nullable
+with *semantic* nulls only: `reservation1` null = brand-new draft, side-2 nulls =
+§12-masked. `appointment1` is never null (potential side is materialized from the
+input and shows the draft state). Perspectival queries normalize side 1 = queried
+reservation / draft.
+
+Three queries, three call profiles:
+
+| Query | Profile | §12 behavior |
+|---|---|---|
+| `conflicts(reservationId:)` | realized, per saved event | unreadable conflicts **dropped** |
+| `resourceAvailability(input:)` | cheap finder/picker: per candidate `status` (`AVAILABLE\|PARTIAL\|CONFLICT\|REQUEST_ONLY\|FORBIDDEN`) + `conflictingAppointmentIds` | candidates silently reduced; hidden ≡ nonexistent |
+| `potentialConflicts(input:)` | expensive drill-down / save preflight: full `Conflict` rows vs. a draft | unreadable counterparty **masked** (side-2 null + `not_visible` text), never dropped |
+
+Contract points: draft appointment ids are REQUIRED (D3 id-first — join key for the
+result); `repeating` inputs are rejected loudly (UNSUPPORTED) until the mutation path
+materializes recurrence; permission-window violations surface only as
+`status: REQUEST_ONLY/FORBIDDEN`, never as conflict rows. Resolvers compose
+`getAllAllocatableBindingsSync` + `AllocationConflictModel` (the
+`/api/edit/check-conflicts` service path — no parallel conflict logic); candidate
+`filter` delegates to the §12-scoped `allocatables(filter:)` resolver.
+Implementation: `AvailabilityGraphQLController`, `ConflictGraphQLController`,
+shared `ConflictRow`.
+
+Example (UC-C2 "free camera Mon–Fri"):
+
+```graphql
+query {
+  resourceAvailability(input: {
+    appointments: [{ id: "a…draft-uuid…", start: "2031-06-02T09:00:00",
+                     end: "2031-06-06T17:00:00", allDay: false }],
+    candidates: { filter: { typeKeyIn: ["room"] } }
+  }) { allocatable { id name } status conflictingAppointmentIds }
+}
+```
+
+---
+
 ## Hot-swap probe
 
 When an admin saves a DynamicType change (e.g. adds an attribute):

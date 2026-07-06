@@ -73,6 +73,33 @@ public abstract class Tools
     }
 
     /**
+     * PRD 056 §9 — minimal syntax rule for client-supplied entity ids:
+     * ASCII alphanumerics + hyphen, alphanumeric first char, length 8-64
+     * ({@code [A-Za-z0-9][A-Za-z0-9-]{7,63}}). Deliberately NOT a UUID
+     * structure check — rapla ids are opaque strings (legacy prefixes
+     * {@code r…}/{@code u…} are not valid UUID hex). The charset excludes
+     * {@code ;} (conflict composite-id separator), whitespace, and anything
+     * needing XML/URL escaping; the length cap keeps composite conflict ids
+     * within their VARCHAR(255) columns. Enforced at the dispatch choke
+     * point for NEW Reservation / Appointment / Allocatable entities only —
+     * legacy store ids (e.g. {@code period_1}) stay valid on update.
+     */
+    public static boolean isValidEntityId(String id)
+    {
+        if (id == null) return false;
+        int length = id.length();
+        if (length < 8 || length > 64) return false;
+        char first = id.charAt(0);
+        if (!isAsciiLetter(first) && !isAsciiDigit(first)) return false;
+        for (int i = 1; i < length; i++)
+        {
+            char c = id.charAt(i);
+            if (!(isAsciiLetter(c) || isAsciiDigit(c) || c == '-')) return false;
+        }
+        return true;
+    }
+
+    /**
      * PRD 058 — fold a candidate string into a deterministic GraphQL-spec
      * key. Pipeline:
      * <ol>

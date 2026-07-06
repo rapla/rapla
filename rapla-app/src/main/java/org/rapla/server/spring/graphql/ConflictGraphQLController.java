@@ -1,9 +1,9 @@
 package org.rapla.server.spring.graphql;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -15,24 +15,27 @@ import org.rapla.storage.PermissionController;
 import org.rapla.storage.StorageOperator;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
-import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.stereotype.Controller;
 
 /**
- * PRD 064 — Conflicts read API. Single query root
- * {@code conflicts(reservationId)}; per-row {@link Conflict} type
- * derived-field resolution via @SchemaMapping (low cadence — conflicts
- * are typically a handful per reservation, not the 462k-dispatch case
- * that motivated the LightDataFetcher migration on PRD 055 reads).
+ * PRD 064 — Conflicts read API; reshaped to the PRD 091 D4 id-based row
+ * ({@link ConflictRow}, one wire shape for realized and potential
+ * conflicts). Rows are fully materialized here — the §12 gate already
+ * resolves both reservations per row, so there is no extra cost and no
+ * @SchemaMapping indirection.
  *
  * <p>§12 enforcement at the output boundary:
  * <ul>
- *   <li>Anonymous → empty.</li>
+ *   <li>Anonymous → error (UNAUTHENTICATED).</li>
  *   <li>Unknown / unreadable {@code reservationId} → empty (existence
  *       not leaked).</li>
  *   <li>For each conflict: if the OTHER reservation isn't caller-readable
  *       OR the allocatable isn't readable → drop the conflict.</li>
  * </ul>
+ *
+ * <p>Perspective convention (PRD 091 D4): side 1 of every returned row is
+ * the queried reservation — conflicts whose stored side 2 is the queried
+ * reservation are flipped.
  */
 @Controller
 public class ConflictGraphQLController
@@ -45,7 +48,7 @@ public class ConflictGraphQLController
     }
 
     @QueryMapping
-    public List<Conflict> conflicts(@Argument("reservationId") String reservationId,
+    public List<ConflictRow> conflicts(@Argument("reservationId") String reservationId,
             graphql.schema.DataFetchingEnvironment env) throws RaplaException
     {
         var rc = RequestContextInstrumentation.from(env.getGraphQlContext());
@@ -73,7 +76,8 @@ public class ConflictGraphQLController
                 ((org.rapla.storage.SyncStorageOperator) operator).getConflictsSync(r);
         if (raw == null || raw.isEmpty()) return List.of();
 
-        List<Conflict> visible = new ArrayList<>(raw.size());
+        Locale locale = rc.locale();
+        List<ConflictRow> visible = new ArrayList<>(raw.size());
         for (Conflict c : raw)
         {
             if (c == null) continue;
@@ -85,47 +89,27 @@ public class ConflictGraphQLController
             if (!pc.canRead(r1, caller)) continue;
             if (!pc.canRead(r2, caller)) continue;
             if (!rc.canReadAllocatable(alloc)) continue;   // PRD 082 #8 — index membership when flipped, else canRead (§12)
-            visible.add(c);
+
+            Appointment a1 = operator.tryResolve(c.getAppointment1());
+            Appointment a2 = operator.tryResolve(c.getAppointment2());
+            if (a1 == null || a2 == null) continue;   // dangling appointment ref — row unusable
+
+            // Perspective convention: side 1 = the queried reservation.
+            boolean flip = !r1.getId().equals(r.getId());
+            Reservation own = flip ? r2 : r1;
+            Reservation other = flip ? r1 : r2;
+            Appointment ownApp = flip ? a2 : a1;
+            Appointment otherApp = flip ? a1 : a2;
+
+            visible.add(new ConflictRow(
+                    c.getId(),
+                    alloc,
+                    own.getId(), ownApp.getId(),
+                    other.getId(), otherApp.getId(),
+                    ownApp, own, other, otherApp,
+                    other.getName(locale),
+                    c.getStartDate()));
         }
         return visible;
     }
-
-    // ============================================================ Conflict derived fields
-
-    @SchemaMapping(typeName = "Conflict", field = "reservation1")
-    public Reservation reservation1(Conflict c) throws RaplaException
-    {
-        return operator.tryResolve(c.getReservation1());
-    }
-
-    @SchemaMapping(typeName = "Conflict", field = "reservation2")
-    public Reservation reservation2(Conflict c) throws RaplaException
-    {
-        return operator.tryResolve(c.getReservation2());
-    }
-
-    @SchemaMapping(typeName = "Conflict", field = "appointment1")
-    public Appointment appointment1(Conflict c) throws RaplaException
-    {
-        return operator.tryResolve(c.getAppointment1());
-    }
-
-    @SchemaMapping(typeName = "Conflict", field = "appointment2")
-    public Appointment appointment2(Conflict c) throws RaplaException
-    {
-        return operator.tryResolve(c.getAppointment2());
-    }
-
-    @SchemaMapping(typeName = "Conflict", field = "startDate")
-    public LocalDateTime startDate(Conflict c)
-    {
-        return c.getStartDate();
-    }
-
-    @SchemaMapping(typeName = "Conflict", field = "allocatable")
-    public Allocatable allocatable(Conflict c)
-    {
-        return c.getAllocatable();
-    }
-
 }

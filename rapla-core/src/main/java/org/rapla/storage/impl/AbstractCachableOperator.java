@@ -256,6 +256,13 @@ public abstract class AbstractCachableOperator implements StorageOperator
             else
             {
                 evt.addStore(obj);
+                // PRD 056 §9 — translate the transient create-intent flag
+                // (set in FacadeImpl.setNew) into the serialized carrier so
+                // checkIdIntegrity #1 can reject id collisions server-side.
+                if (obj instanceof SimpleEntity se && se.isNew())
+                {
+                    evt.addCreate(obj.getReference());
+                }
             }
         }
         for (ReferenceInfo<?> entity : removeObjects)

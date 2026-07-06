@@ -26,6 +26,7 @@ import org.springframework.test.web.servlet.client.MockMvcWebTestClient;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -258,6 +259,7 @@ class ReservationMutationControllerTest
         tester.document("""
                 mutation {
                   createReservation(input: {
+                    id: "e3333333-3333-4333-8333-333333333333",
                     typeKey: "event",
                     classification: { event: {} },
                     appointments: [],
@@ -273,6 +275,169 @@ class ReservationMutationControllerTest
                     assertTrue(joined.contains("REQUIRED") || joined.contains("appointments"),
                             () -> "expected REQUIRED-on-appointments error; got " + joined);
                 });
+    }
+
+    // ============================================================ PRD 056 §9 — mandatory client ids
+
+    /**
+     * PRD 056 §9 (decided 2026-07-06): create verbs REQUIRE a client-supplied
+     * id — the server no longer generates one on absence. Rationale: revised
+     * OQ5 idempotency (retry maps ID_COLLISION on own id to "already applied")
+     * only works when the client mints the id; follows the CalDAV/RFC 5545
+     * model (client-generated UID, PUT If-None-Match).
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void createReservationWithoutIdRejected()
+    {
+        tester.document("""
+                mutation {
+                  createReservation(input: {
+                    typeKey: "event",
+                    classification: { event: {} },
+                    appointments: [
+                      { id: "a1111111-1111-4111-8111-111111111111",
+                        start: "2030-09-01T10:00:00", end: "2030-09-01T11:00:00", allDay: false }
+                    ],
+                    allocations: []
+                  }) { id }
+                }
+                """)
+                .execute()
+                .errors()
+                .satisfy(errs -> {
+                    assertFalse(errs.isEmpty(), "create without reservation id must be rejected");
+                    String joined = errs.toString();
+                    assertTrue(joined.contains("REQUIRED") && joined.contains("id"),
+                            () -> "expected REQUIRED-on-id error; got " + joined);
+                });
+    }
+
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void createReservationAppointmentWithoutIdRejected()
+    {
+        tester.document("""
+                mutation {
+                  createReservation(input: {
+                    id: "e1111111-1111-4111-8111-111111111111",
+                    typeKey: "event",
+                    classification: { event: {} },
+                    appointments: [
+                      { start: "2030-09-02T10:00:00", end: "2030-09-02T11:00:00", allDay: false }
+                    ],
+                    allocations: []
+                  }) { id }
+                }
+                """)
+                .execute()
+                .errors()
+                .satisfy(errs -> {
+                    assertFalse(errs.isEmpty(), "appointment without id must be rejected");
+                    String joined = errs.toString();
+                    assertTrue(joined.contains("REQUIRED") && joined.contains("id"),
+                            () -> "expected REQUIRED-on-appointment-id error; got " + joined);
+                });
+    }
+
+    /**
+     * PRD 056 §9 check #1 + revised OQ5: a create whose id already resolves to
+     * a persistent entity → {@code ID_COLLISION}, no content comparison. This
+     * is the retry contract: a client re-sending a lost-response create maps a
+     * collision on its own id to "already applied".
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void createReservationWithExistingIdReturnsIdCollision()
+    {
+        String document = """
+                mutation {
+                  createReservation(input: {
+                    id: "e8888888-8888-4888-8888-888888888888",
+                    typeKey: "event",
+                    classification: { event: {} },
+                    appointments: [
+                      { id: "a8888888-8888-4888-8888-888888888888",
+                        start: "2030-09-04T10:00:00", end: "2030-09-04T11:00:00", allDay: false }
+                    ],
+                    allocations: []
+                  }) { id }
+                }
+                """;
+        String createdId = tester.document(document)
+                .execute()
+                .path("createReservation.id")
+                .entity(String.class)
+                .get();
+        assertEquals("e8888888-8888-4888-8888-888888888888", createdId);
+
+        // Retry (same document, same id) — must fail loudly with ID_COLLISION,
+        // must NOT silently overwrite.
+        tester.document(document)
+                .execute()
+                .errors()
+                .satisfy(errs -> {
+                    assertFalse(errs.isEmpty(), "create with an existing id must be rejected");
+                    String joined = errs.toString();
+                    assertTrue(joined.contains("ID_COLLISION"),
+                            () -> "expected ID_COLLISION error; got " + joined);
+                });
+    }
+
+    /**
+     * checkIdIntegrity check #2 fallout: {@code clone()} keeps appointment ids
+     * (edit pattern), so a server-side copy must mint FRESH appointment ids —
+     * otherwise the copy's appointments still carry the source reservation's
+     * appointment ids and the dispatch guard rejects the store.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void copyReservationsMintsFreshAppointmentIds()
+    {
+        String sourceApptId = "a2222222-2222-4222-8222-222222222222";
+        String sourceId = tester.document("""
+                mutation {
+                  createReservation(input: {
+                    id: "e2222222-2222-4222-8222-222222222222",
+                    typeKey: "event",
+                    classification: { event: {} },
+                    appointments: [
+                      { id: "%s", start: "2030-09-03T10:00:00", end: "2030-09-03T11:00:00", allDay: false }
+                    ],
+                    allocations: []
+                  }) { id }
+                }
+                """.formatted(sourceApptId))
+                .execute()
+                .path("createReservation.id")
+                .entity(String.class)
+                .get();
+        assertNotNull(sourceId);
+
+        Map<String, Object> copyResult = tester.document("""
+                mutation ($ids: [ID!]!) {
+                  copyReservations(ids: $ids, dateShift: "PT24H") {
+                    overallStatus
+                    results { reservation { id appointments { id } } }
+                  }
+                }
+                """)
+                .variable("ids", List.of(sourceId))
+                .execute()
+                .path("copyReservations")
+                .entity(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertEquals("SUCCESS", copyResult.get("overallStatus"));
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> results = (List<Map<String, Object>>) copyResult.get("results");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> copied = (Map<String, Object>) results.get(0).get("reservation");
+        assertNotEquals(sourceId, copied.get("id"), "copy must have a fresh reservation id");
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> copiedAppts = (List<Map<String, Object>>) copied.get("appointments");
+        assertEquals(1, copiedAppts.size());
+        assertNotEquals(sourceApptId, copiedAppts.get(0).get("id"),
+                "copied appointment must have a fresh id (source id would trip checkIdIntegrity #2)");
     }
 
     // ============================================================ happy-path create + read-back
@@ -298,10 +463,12 @@ class ReservationMutationControllerTest
         String createdId = tester.document("""
                 mutation {
                   createReservation(input: {
+                    id: "e4444444-4444-4444-8444-444444444444",
                     typeKey: "event",
                     classification: { event: {} },
                     appointments: [
-                      { start: "2030-06-01T10:00:00", end: "2030-06-01T11:00:00", allDay: false }
+                      { id: "a4444444-4444-4444-8444-444444444444",
+                        start: "2030-06-01T10:00:00", end: "2030-06-01T11:00:00", allDay: false }
                     ],
                     allocations: [
                       { allocatableId: "%s" }
@@ -398,6 +565,7 @@ class ReservationMutationControllerTest
         String createdId = tester.document("""
                 mutation {
                   createReservation(input: {
+                    id: "e5555555-5555-4555-8555-555555555555",
                     typeKey: "event",
                     classification: { event: {} },
                     appointments: [

@@ -236,6 +236,144 @@ Single result list indexed to `operations[]`; per-op result populated based on
 operation kind. Heterogeneous "kitchen sink" type — paid as the cost for the
 typed-batch model.
 
+### 9. Client-supplied ids — contract rule + operator-side integrity guard (2026-07-06)
+
+Locked in the PRD 091 design dialog (id-first vs. server-assigned; the SPA edit
+surface is the first consumer that needs subset restrictions at create time).
+
+**Contract rule (REVISED 2026-07-06 — client ids are MANDATORY):**
+- `input.id` on reservations, appointments, and allocatables is **required**;
+  id absent or blank → `ValidationError` code `REQUIRED` naming the path. The
+  server-generate fallback is removed from `createReservation`,
+  `applyChanges`-create, and `createAllocatable` (PRD 063).
+- This **supersedes the earlier "B′" conditional rule** ("ids only required when
+  `AllocationInput.appointmentIds` references a subset") — with ids always
+  present the conditional collapses; one contract instead of two behavior
+  classes.
+- Ids are stored **verbatim** — no server-side normalization, no type-prefix
+  rewrite (approach W, see `docs/architecture/domain-model.md` § "Id format and
+  assignment"). The only gate is the minimal syntax rule
+  (`Tools.isValidEntityId`: alphanumerics + hyphen, 8–64 chars); a plain
+  `crypto.randomUUID()` always passes.
+- Rationale (recorded in domain-model.md): per the revised OQ5 there is no
+  content comparison, so retry-idempotency exists **only** via the client-minted
+  id (collision on own id = "already applied"). An id-less create is
+  structurally non-idempotent; every mitigation (idempotency-key store,
+  tempId mapping, response correlation) re-invents a client-generated token
+  with extra server infrastructure. Precedent: iCalendar/CalDAV require a
+  client-generated `UID` (RFC 5545, RFC 7986) with `PUT If-None-Match: *` →
+  `412`; Google Calendar's optional client id exists exactly for retry
+  idempotency; MS Graph had to retrofit `transactionId` (a client-minted
+  random token) to fix duplicate-on-retry. Rapla is semantically an iCal
+  system — we follow the CalDAV model with `ID_COLLISION` instead of `412`.
+- **Server-initiated creates keep server-generated ids**: `copyReservations`
+  clones server-side and mints fresh reservation *and appointment* ids
+  (`clone()` keeps appointment ids — the copy must re-id them or
+  `checkIdIntegrity` #2 rejects the store; restrictions are rewritten against
+  the new ids).
+
+**Operator-side integrity guard `checkIdIntegrity`** — a named step in
+`LocalAbstractCachableOperator.check()`, sibling of PRD 058's
+`checkGraphqlKeySpecCompliance` (same belt-and-suspenders rationale: guards at the
+dispatch choke point cover *every* write path — GraphQL, Swing dispatch, plugin
+imports, future PRD 067 `EntityLifecycle` — and can't be silently bypassed):
+1. A **new** entity whose id already resolves to a persistent entity → reject.
+   (Today `checkVersions` only catches the *stale* direction — a fresh entity with
+   a current timestamp sails through and create-with-existing-id becomes a silent
+   overwrite.)
+2. An **appointment id that already lives in a different reservation** → reject.
+   (Today unchecked anywhere; two appointments sharing a `ReferenceInfo` corrupt
+   the conflict engine, the appointment/block index and restrictions, and violate
+   the composite-sub-entity invariant `checkConsistency` implicitly assumes.)
+
+**Status 2026-07-06 (b).** Id **syntax validation** is implemented as part of
+`checkIdIntegrity`: NEW Reservation / Appointment / Allocatable entities (id does
+not resolve to a persistent entity) must satisfy `Tools.isValidEntityId` — ASCII
+alphanumerics + hyphen, alphanumeric first char, length 8–64. Existing store ids
+are grandfathered (e.g. legacy `period_1` allocatables keep saving). Deliberately
+not a UUID-structure check (legacy `r…`/`u…` prefixes aren't valid UUID hex; the
+guard is about store safety — no `;` because of conflict composite ids, no
+whitespace/XML/URL-escaping issues, length fits composite ids in VARCHAR(255)).
+Pinned by 4 tier-1 `ToolsTest` cases + 5 tier-2 `AppointmentIdIntegrityTest`
+cases (red-green verified).
+
+**Status 2026-07-06.** Check #2 (appointment ownership) is **implemented**:
+`checkIdIntegrity(storeObjects)` is a named step in
+`LocalAbstractCachableOperator.check()` (right after `checkGraphqlKeySpecCompliance`).
+For every incoming reservation it resolves each appointment id against the
+persistent cache (`findPersistent`) and rejects with a §12-uniform `RaplaException`
+(message names only the client's own appointment id) if the id already belongs to a
+*different* reservation. Pinned by `AppointmentIdIntegrityTest` (tier 2, red-green:
+foreign-reservation appointment id rejected; own appointment id re-stored across an
+update passes).
+
+**Status 2026-07-06 (c).** Check #1 (new-entity id collision) is **implemented**
+via the two-carrier create-intent design below. Guard: for every ref in
+`evt.getCreateReferences()`, `cache.tryResolve(id, type) != null` →
+`EntityIdCollisionException` (extends `RaplaException`; message names only the
+client's own id). `MutationExceptionResolver` maps it to GraphQL code
+`ID_COLLISION`. Pinned by `NewEntityIdCollisionTest` (tier 2, red-green: new
+reservation/allocatable reusing a persistent id rejected; edit clone keeps
+upsert semantics — fail-open; fresh new entity stores) and two tier-3
+retry-contract tests (`createReservationWithExistingIdReturnsIdCollision`,
+`createWithExistingIdReturnsIdCollision`: create → identical retry →
+`ID_COLLISION`, no silent overwrite).
+
+§12: both rejections must be **uniform** — identical error shape whether the
+colliding entity is readable or unreadable; the create path must not become an
+existence probe. Per the revised OQ5 (2026-07-06) there is **no content
+comparison**: a create whose id already resolves → `ID_COLLISION`, and the client
+(owning its id space) maps a collision on its own id to "already applied". So
+`checkIdIntegrity` #1 is the single mechanism — no controller-side pre-dispatch
+comparison — and it covers every write path uniformly.
+
+**Create-intent design for check #1 (locked + implemented 2026-07-06).**
+The operator can't distinguish create from update today: both deliver a
+full-state entity with an id, and no intent-free signal exists in the wire
+(`UpdateEvent` has no create/update flag; `checkVersions` only catches the stale
+direction). We control *every* write path, so we thread create-intent structurally
+through two carriers rather than heuristically:
+
+- **`transient boolean isNew` on `SimpleEntity`** — the in-memory carrier, sibling
+  of the existing `transient readOnly`. Set `true` in exactly one place,
+  `FacadeImpl.setNew(...)` (the sole funnel for every `newReservation` /
+  `newAllocatable` / `copy` / `clone`). Reset to `false` on the `editObject` clone
+  path (`AbstractCachableOperator.editObject`) and defaults `false` for
+  deserialized / storage-loaded entities. Because it's `transient` it does **not**
+  cross the Swing remote-dispatch wire — that's fine, it only has to survive
+  in-JVM until the event is built.
+- **`Set<ReferenceInfo> createReferences` on `UpdateEvent`** — the serialized
+  carrier. `AbstractCachableOperator.createUpdateEvent` (the single funnel where
+  the client builds the event *before* `serv.dispatch`) reads `entity.isNew()`
+  and records the ref here. From this point the set is the truth; it survives
+  serialization to the server. The GraphQL controllers build their `UpdateEvent`
+  in-JVM and populate `createReferences` directly on create verbs.
+
+`checkIdIntegrity` check #1 then becomes trivial and §12-uniform: for each ref in
+`evt.createReferences`, `findPersistent(ref) != null → reject` with `ID_COLLISION`.
+Per the revised OQ5 (2026-07-06) there is **no content comparison** anywhere — not
+in the operator and not controller-side; the client maps a collision on its own id
+to "already applied".
+
+Locked sub-decisions:
+- **Two carriers, both kept** (transient `isNew` *and* `createReferences`) so the
+  Swing caller stays dumb — it only calls `newReservation` — while intent still
+  reaches the server serialization-robustly.
+- **fail-open default:** an entity reaching dispatch *without* a create marker
+  keeps today's upsert-by-id semantics (id absent → insert, id present → update).
+  Only entities that explicitly declare create-intent are guarded. This is the
+  only sane intent-free default; undeclared writes are unchanged.
+- **scope:** the relevant target set is **Reservation + Allocatable** — the two
+  data entities with id-first GraphQL create surfaces (PRD 056 / PRD 063), i.e. the
+  only entities where a client can supply an id that could collide. The operator
+  guard itself runs generically over `createReferences` (typ-agnostic), but is
+  **inert** for server-id-assigned entities: Categories / DynamicTypes are
+  identified by key (PRD 058) not client ids, and facade-created entities always
+  carry a fresh `createIdentifier` UUID that can never resolve to a persistent one.
+  Sub-entity (appointment) id integrity stays check #2's job.
+- `SimpleEntity.clone()` must reset `isNew` the same way it resets `readOnly`, so
+  an edit clone never leaks `isNew=true`.
+
 ## Verb-level semantic notes
 
 ### `createReservation(input)`
@@ -244,8 +382,16 @@ typed-batch model.
 `canRead(allocatable, user)` for every referenced allocatable. Unknown / unreadable
 references fail identically (§12 existence rule).
 
-If `input.id` is null, server generates a UUID. If supplied, must be unique against
-storage (collision = `ValidationError` with code `ID_COLLISION`).
+`input.id` and every appointment's `id` are **required** (§9 revised contract
+rule, 2026-07-06) — absent/blank → `REQUIRED` error naming the path. Supplied ids
+must be unique against storage (collision = `ID_COLLISION`) and must pass the
+minimal syntax rule; supplied appointment ids must not live in another
+reservation — see §9 (`checkIdIntegrity` operator guard). **Status 2026-07-06:
+id-required enforcement is implemented** in `ReservationMutationController`
+(create verb + `applyChanges`-create + `buildAppointment`) and
+`AllocatableMutationController`, pinned by tier-3 REQUIRED tests. The
+*new-entity id collision* case (§9 check #1) remains spec'd-not-implemented
+pending the create-intent carriers.
 
 ### `updateReservation(id, input, expectedLastChanged)`
 
@@ -277,7 +423,13 @@ ATOMIC rejects the batch.
 
 ### `copyReservations(ids, dateShift)`
 
-Duplicates with new UUIDs. `dateShift` is required — copying without shift creates
+Duplicates with new server-generated UUIDs — reservation **and** appointments
+(`clone()` keeps appointment ids, so the copy re-ids every appointment and
+rewrites restrictions against the new ids; without this, `checkIdIntegrity` #2
+rejects the store — fixed + pinned 2026-07-06,
+`copyReservationsMintsFreshAppointmentIds`). This is the one create surface where
+the *server* mints ids: the client sends no entity input, so there is nothing to
+be idempotent against. `dateShift` is required — copying without shift creates
 guaranteed conflicts at the original time. Copies preserve classification,
 appointments, allocations. Permissions reset (caller becomes owner; admin grants
 explicit access via subsequent `applyChanges`).
@@ -355,7 +507,14 @@ Once input shapes settle (next discussion), implementation steps:
 5. **`ValidationError` mapper** — translates rapla's storage exceptions
    (RaplaException subtypes, dependency check failures) to the typed error
    codes
-6. **Tier-3 tests** — MockMvc + HttpGraphQlTester:
+6. **`checkIdIntegrity` operator guard** (locked decision §9) in
+   `LocalAbstractCachableOperator.check()` — foreign-reservation appointment id
+   (check #2) ✅ **done** (`AppointmentIdIntegrityTest`); new-entity id collision
+   (check #1) ⏳ pending on the create-intent design. Still to do: §12-uniform
+   new-entity rejection, plus the controller-side
+   subset-restrictions-require-appointment-ids validation and id normalization.
+   Regression tests still to add: foreign reservation id (once check #1 lands).
+7. **Tier-3 tests** — MockMvc + HttpGraphQlTester:
    - §12 leak tests (anonymous → rejected; non-admin → can only modify owned)
    - Permission gates per verb
    - Concurrency mismatch on update
@@ -499,19 +658,36 @@ Mirror the read-side `Allocation.appointmentIds`. **Lean: yes, mirror.**
 
 `RepeatingRuleInput` mirror of read-side `RepeatingRule`. **Lean: mirror.**
 
-### OQ5 — Idempotency on retry with same UUID — RESOLVED 2026-05-28
+### OQ5 — Idempotency on retry with same UUID — RESOLVED 2026-05-28, REVISED 2026-07-06
 
-**Same UUID + matching content = no-op success. Same UUID + differing
-content = `ID_COLLISION`.** Server compares the input's client-supplied
-fields against the existing entity (canonicalized; server-managed fields
-like timestamps excluded). Match → return existing entity, status SUCCESS.
-Diff → reject with `ID_COLLISION` extension carrying the existing entity
-id and the list of differing field paths so the caller can debug.
+**Revised rule (2026-07-06): no content comparison. A create whose id already
+resolves to a persistent entity → `ID_COLLISION`, always.** The client owns its
+id space (it mints a fresh UUID per logical create), so a collision on an id it
+generated for *this* create can only be its own earlier attempt — the client maps
+`ID_COLLISION` on a self-generated id to "already applied → success". This *is*
+the idempotency protocol: the server enforces uniqueness, the client interprets
+the conflict.
 
-Implementation: on create, before dispatch, check the storage for the
-supplied UUID. If present, build the "would-be-created" entity from the
-input and compare to stored. Cost: one extra storage lookup on the rare
-collision path; negligible on the happy path (UUID not present).
+Why the content comparison was dropped: "same content" on a reservation
+(appointments, repeatings, allocations, restrictions, classification values) is
+fiddly and fragile — too strict (a differing `lastChanged`/timestamp) turns a
+legitimate retry into a false `ID_COLLISION`; too loose waves a real conflict
+through. It also forced deep-equals into the wrong layer (§9 keeps the operator
+free of content comparison). The consumers are ours (SPA mints the id for
+optimistic UI; MCP tool-wrappers own their id) and map collision→success trivially,
+so the server-side "same content → silent no-op" ergonomics don't earn their cost.
+
+**Consequence for the layering:** the controller no longer needs a pre-dispatch
+`tryResolve` + comparison. `checkIdIntegrity` #1 (operator, create-intent ref with
+`findPersistent != null → reject`) becomes the single mechanism, and covers every
+write path uniformly. §12: the rejection is uniform (identical error shape
+regardless of the colliding entity's readability) — the id the client already
+holds is all the response reveals.
+
+What we give up (accepted): the server can no longer *distinguish* an honest retry
+from an accidental id-reuse-for-different-content bug — both surface as
+`ID_COLLISION`. That's a gross client error either way, and a loud collision is an
+acceptable answer to it.
 
 **Not in scope for PRD 056** (parked in [PRD 062 — API Robustness](062-graphql-api-robustness.md), renumbered from 058):
 in-flight lock for concurrent retries arriving while the original is
@@ -571,6 +747,69 @@ ATOMIC locked. PARTIAL deferred. No more open questions on mode.
 
 ## Decision log
 
+- **2026-07-06 — `checkIdIntegrity` check #1 landed (create-intent two-carrier).**
+  As locked: transient `SimpleEntity.isNew` (set in the `FacadeImpl.setNew`
+  funnel, cleared in `setReadOnly`, not copied by `deepClone`) + serialized
+  `UpdateEvent.createSet` (populated from `isNew` in
+  `AbstractCachableOperator.createUpdateEvent` — shared by the Swing
+  `RemoteOperator` path — and directly via `event.addCreate(...)` in the
+  GraphQL create verbs incl. `copyReservations` and `applyChanges`-create).
+  Guard throws `EntityIdCollisionException` → GraphQL `ID_COLLISION`.
+  Fail-open for undeclared writes. Red-green pinned tier-2
+  (`NewEntityIdCollisionTest`) + tier-3 (retry returns `ID_COLLISION`).
+- **2026-07-06 — client ids MANDATORY on GraphQL creates (B′ retired).**
+  `createReservation` (reservation + every appointment), `applyChanges`-create,
+  and `createAllocatable` now require `input.id` — absent/blank → `REQUIRED`;
+  the server-generate fallback is removed. Supersedes the B′ conditional rule
+  and the "server normalizes supplied ids" clause (ids are stored verbatim —
+  approach W). Rationale + framework survey (CalDAV/RFC 5545 UID, Google
+  optional-id, MS Graph transactionId, JMAP creation ids) recorded in
+  docs/architecture/domain-model.md "Id format and assignment". Same change:
+  `copyReservations` now mints fresh **appointment** ids on the server-side
+  clone (kept source ids tripped `checkIdIntegrity` #2) and rewrites
+  restrictions. Pinned by tier-3 tests (red-green):
+  `createReservationWithoutIdRejected`, `createReservationAppointmentWithoutIdRejected`,
+  `copyReservationsMintsFreshAppointmentIds`, `createWithoutIdRejected`.
+- **2026-07-06 — id syntax validation landed (minimal rule, new entities only).**
+  `Tools.isValidEntityId` (`[A-Za-z0-9][A-Za-z0-9-]{7,63}`) enforced in
+  `checkIdIntegrity` for NEW Reservation / Appointment / Allocatable ids;
+  persistent ids grandfathered. No UUID-structure check (would reject legacy
+  `r…`/`u…` ids; uniqueness comes from the collision guard, not the format).
+  Same day: server-generated prefix letters for User/Allocatable switched to
+  hex-valid `b`/`f` (`CreateIdPrefixTest`) — see
+  docs/architecture/domain-model.md "Id format and assignment".
+- **2026-07-06 — OQ5 revised: no content comparison.** A create whose id already
+  resolves → `ID_COLLISION`, always. Dropped the "same content → no-op success /
+  differing → collision" rule: deep-equals over reservation content is fiddly and
+  fragile (timestamp noise → false collisions), and our consumers own their id
+  space so they map a collision on a self-generated id to "already applied". Kills
+  the controller-side pre-dispatch comparison; `checkIdIntegrity` #1 is the single
+  mechanism. Trade-off accepted: honest retry and accidental id-reuse both surface
+  as `ID_COLLISION`. See OQ5.
+- **2026-07-06 — `checkIdIntegrity` check #2 landed.** Foreign-reservation
+  appointment-id guard implemented in `LocalAbstractCachableOperator.check()`
+  (`checkIdIntegrity`, sibling of `checkGraphqlKeySpecCompliance`), pinned by
+  `AppointmentIdIntegrityTest` (tier 2). §12-uniform message (client's own
+  appointment id only).
+- **2026-07-06 — check #1 create-intent design locked (not yet implemented).**
+  Thread create-intent through two carriers since we control all write paths:
+  transient `SimpleEntity.isNew` (set in `FacadeImpl.setNew`, reset on
+  `editObject` clone) + serialized `UpdateEvent.createReferences` (populated in
+  `createUpdateEvent` from `isNew`, and directly by the GraphQL create verbs).
+  Guard = `createReferences` ref with `findPersistent != null → reject` with
+  `ID_COLLISION` (no content comparison — revised OQ5); fail-open for undeclared
+  writes; target set = Reservation + Allocatable (the id-first create surfaces;
+  guard runs generically but is inert for server-id-assigned entities). Full
+  rationale in §9. See the "Create-intent design" block.
+- **2026-07-06 — client-supplied ids + `checkIdIntegrity` (locked decision §9).**
+  From the PRD 091 design dialog: ids stay optional (B′) *(superseded same day —
+  ids are now mandatory, see the newer entry above)*; subset restrictions require
+  appointment ids (loud validation replaces the silent trap); id normalization
+  server-side *(also superseded — ids are stored verbatim, approach W)*; new
+  operator-side guard `checkIdIntegrity` in `check()` (PRD 058
+  pattern) rejecting new-entity id collisions and foreign-reservation appointment
+  ids — discovered as an open gap of the shipped controller (client ids honored
+  unchecked, no dispatch-side check). §12-uniform rejection required.
 - **2026-05-28** — PRD opened. Locked picks captured above:
   - Approach 2 (named verbs) + Option C (`applyChanges` with typed ChangeOp)
   - 6-mutation surface
@@ -599,6 +838,7 @@ ATOMIC locked. PARTIAL deferred. No more open questions on mode.
     `changeReservationOwner`)
   - Empty `appointments[]` rejected with `REQUIRED`
   - Same-UUID retry semantics: matching content → no-op success; differing → `ID_COLLISION`
+    *(revised 2026-07-06: no content comparison — any existing id → `ID_COLLISION`; see OQ5)*
 - **2026-05-28 — OQ1.c, OQ6 resolved:**
   - `typeId` change on update → reject with `INVALID_TYPE_CHANGE`. Type
     changes land on a future `reshapeReservation` mutation per PRD 035 §7.

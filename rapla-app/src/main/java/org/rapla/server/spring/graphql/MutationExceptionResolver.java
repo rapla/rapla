@@ -71,6 +71,20 @@ public class MutationExceptionResolver extends DataFetcherExceptionResolverAdapt
                     .extensions(extensions)
                     .build();
         }
+        if (ex instanceof org.rapla.framework.EntityIdCollisionException ice)
+        {
+            // PRD 056 §9 check #1 — a create whose id already resolves. The
+            // retry contract: clients map a collision on their own id to
+            // "already applied" (revised OQ5, no content comparison).
+            Map<String, Object> extensions = new LinkedHashMap<>();
+            extensions.put("code", "ID_COLLISION");
+            extensions.put("path", "");
+            return GraphqlErrorBuilder.newError(env)
+                    .message(ice.getMessage())
+                    .errorType(graphql.ErrorType.ValidationError)
+                    .extensions(extensions)
+                    .build();
+        }
         if (ex instanceof RaplaException re)
         {
             Map<String, Object> extensions = new LinkedHashMap<>();

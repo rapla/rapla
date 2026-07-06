@@ -109,9 +109,15 @@ class ConflictGraphQLControllerTest
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> fields = (List<Map<String, Object>>) result.get("fields");
         List<String> names = fields.stream().map(f -> (String) f.get("name")).toList();
+        // PRD 091 D4 — id-based superset shape (one type for realized AND
+        // potential conflicts; entity fields nullable for draft/§12-masked sides)
         assertTrue(names.containsAll(List.of(
-                "id", "allocatable", "reservation1", "reservation2",
-                "appointment1", "appointment2", "startDate")),
+                "id", "allocatable",
+                "reservation1Id", "appointment1Id",
+                "reservation2Id", "appointment2Id",
+                "reservation1", "reservation2",
+                "appointment1", "appointment2",
+                "description", "startDate")),
                 () -> "Conflict type missing expected fields; got " + names);
     }
 

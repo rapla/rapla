@@ -186,7 +186,9 @@ recomputed from live permissions for display.
   `PermissionMigrationController` (admin-gated, 403 for non-admin): `GET /findings` (recompute live,
   skip acknowledged/clean), `POST /{id}/resolve` (prune `DENIED` + ack). Tier-3 `PermissionMigrationControllerTest` (leak + flow).
 - [x] SPA: `PermissionMigrationService` + `PermissionMigrationDialogComponent` (table keyed by allocatable,
-  one checkbox each, who-gains-access list), admin-only menu item in `app-toolbar`. Vitest service spec.
+  one checkbox each, who-gains-access list). Toolbar menu entry shown **only to a global admin AND only
+  when the worklist is non-empty** (fetched on init, re-checked after the dialog closes so draining the
+  last item hides it). Vitest service + toolbar specs.
 
 ### Phase 4 — Editor transparency (OQ2)
 - [x] Docs synced to additive: ADR 0003 Confirmation/Future, `architecture/permissions.md`, `spec/permissions.md`.

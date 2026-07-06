@@ -42,6 +42,10 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
 {
     private String id;
     transient boolean readOnly = false;
+    // PRD 056 §9 create-intent carrier — set only in FacadeImpl.setNew (the
+    // sole new-entity funnel); never serialized. AbstractCachableOperator
+    // .createUpdateEvent translates it into UpdateEvent.createReferences.
+    transient boolean isNew = false;
     
     public SimpleEntity() {
     }
@@ -148,6 +152,7 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
 
 	public void setReadOnly() {
         this.readOnly = true;
+        this.isNew = false;
         nonpersistantEntities = null;
         for (Entity ref:getSubEntities()) {
             ((SimpleEntity)ref).setReadOnly();
@@ -156,6 +161,14 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
 
     public boolean isReadOnly() {
         return readOnly;
+    }
+
+    public void setNew(boolean isNew) {
+        this.isNew = isNew;
+    }
+
+    public boolean isNew() {
+        return isNew;
     }
     
     public String getOwnerId()

@@ -24,6 +24,7 @@ references — pasting one into your IDE jumps to the right place.
 | [dynamic-types.md](dynamic-types.md) | The schema-on-data system: DynamicType, Attribute, Classification, name templates |
 | [conflicts-and-events.md](conflicts-and-events.md) | Reservation as event container; Appointment / AppointmentBlock; how `ConflictFinder` works |
 | [reservation-edit.md](reservation-edit.md) | End-to-end edit flow with clone semantics, EventCheck, save; wire model; AppointmentController rules; edge case reference |
+| [reservation-edit-ui-inventory.md](reservation-edit-ui-inventory.md) | Every user-facing capability of the Swing edit dialog (picker states, restriction popup, free-slot search) — the coverage checklist for the SPA event sheet (PRD 091) |
 | [rest-api.md](rest-api.md) | Full REST endpoint catalog grouped by audience (SPA, admin, import/export); auth header, error envelope, common-flow recipes |
 | [permissions.md](permissions.md) | AccessLevel, PermissionImpl, resolution algorithm, server enforcement, JWT |
 | [extension-points.md](extension-points.md) | Spring DI plugin wiring, extension-point catalog, plugin list |

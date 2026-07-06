@@ -73,6 +73,107 @@ back, or `resolver.resolve(id, X.class)` to throw
 index) and `RemoteOperator` (the client transport) implement
 `EntityResolver`.
 
+### Id format and assignment
+
+Ids are generated server-side by `LocalAbstractCachableOperator.createId`
+(→ `createIdentifier(type, count)`): a `UUID.randomUUID().toString()` whose
+**first character is replaced by a type-prefix letter** derived from the entity
+type (`replaceFirst`). The letter makes a bare id string self-describing:
+
+The full set of `createId`-UUID-carrying entities. **All prefix letters are hex
+characters** (since 2026-07-06), so every server-generated id is a grammatically
+valid v4 UUID (the version/variant bits at positions 14/19 are untouched by the
+letter replacement):
+
+| Type | localname | Prefix | Example |
+|---|---|---|---|
+| Reservation | `reservation` | **`e`** (event — `r` was taken by resource) | `e47ac10b-58cc-4372-…` |
+| Appointment | `appointment` | **`a`** | `a47ac10b-…` |
+| Attribute | `attribute` | **`a`** | `a47ac10b-…` |
+| Category | `category` | **`c`** | `c47ac10b-…` |
+| DynamicType | `dynamictype` | **`d`** | `d47ac10b-…` |
+| Allocatable | `resource` | **`f`** (facility; was **`r`** — not hex) | `f47ac10b-…` |
+| User | `user` | **`b`** (Benutzer; was **`u`** — not hex) | `b47ac10b-…` |
+
+**Legacy prefixes `r…` (Allocatable) and `u…` (User)** exist in every store
+created before the switch and are *not* migrated — lookup is by full opaque
+string, so they resolve exactly as before; only newly generated ids get the
+hex-valid letters. A system that wants uniform valid-UUID ids can do an explicit
+id migration (own project — ids leak into serialized preferences, exchange-sync
+mappings, and external calendar URLs). Pinned by
+`rapla-server/.../CreateIdPrefixTest`.
+
+The letters are not type-unique (`a` = Appointment *or* Attribute) — the type
+always travels separately in `ReferenceInfo`. Rapla treats all ids as opaque
+strings and never parses them back into `java.util.UUID`. A seed-based variant
+`createId(type, seed)` derives a deterministic MD5-based UUID — its only use is
+the legacy old-format id migration in `RaplaXMLReader.getId` /
+`OldIdMapping.isTextId` (numeric / `resource_123`-style ids from ancient data
+files), dormant in normal operation.
+
+Not every entity type gets a `createId` UUID — several have **derived ids**:
+
+| Type | Id shape |
+|---|---|
+| Preferences | `preferences_<userId>`, system prefs `preferences_0` (`PreferencesImpl.getPreferenceIdFromUser`) |
+| Conflict | composite `CONFLICT;<allocId>;<app1Id>;<app2Id>;<date>`, parsed by `split(";")` |
+| Period | wraps the id of its `rapla:period` allocatable |
+| ExternalSyncEntity | the external system's own id (e.g. Exchange key) — set from the `externalID`, never generated |
+
+And some `RaplaType`-registered types have **no id at all** — they are value
+objects embedded in Preferences, not `Entity` (their registration only serves
+type-name serialization): `RaplaConfiguration`, `CalendarModelConfiguration`,
+`RaplaMap`.
+
+**The prefix letter is not load-bearing.** No code derives an entity's type from
+the id's first character — the type always travels explicitly in
+`ReferenceInfo(id, Class)`, and `LocalCache` indexes by the full id string. The
+letter is historical + human-readable + a structural cross-type-uniqueness nicety
+(an `e…` reservation never collides with an `a…` appointment even on an identical
+UUID tail). `replaceFirst` runs **only** on server-generated ids.
+
+**Client-supplied ids are stored verbatim** — the GraphQL create path does
+`setId(clientId)` with no rewrite; the server never mutates an id it receives.
+**Syntax rule for new ids** (`Tools.isValidEntityId`, enforced in
+`checkIdIntegrity` at the dispatch choke point): ASCII alphanumerics + hyphen,
+alphanumeric first char, length 8–64 — deliberately *not* a UUID-structure check
+(ids are opaque; the charset just excludes `;` / whitespace / escaping hazards).
+Applies to NEW Reservation / Appointment / Allocatable entities only; ids already
+persistent are grandfathered (legacy `period_1`-style ids keep saving). Collision
+handling: PRD 056 §9.
+
+**Client ids are MANDATORY on GraphQL creates** (decided 2026-07-06, PRD 056 §9):
+`createReservation` (reservation + every appointment) and `createAllocatable`
+reject id-less input with `REQUIRED` — the server-generate fallback is removed.
+Why:
+
+- **Idempotency is id-based, with no content comparison** (PRD 056 OQ5 revised):
+  a retry whose response was lost re-sends the same client-minted id, gets
+  `ID_COLLISION`, and maps that to "already applied". Only a client-generated id
+  makes this possible — a server-generated id gives the retry no shared key, so
+  an id-less create is structurally non-idempotent (silent duplicates).
+- **Every workaround re-invents the client token with extra infrastructure:** a
+  separate idempotency-key store needs a multi-pod-shared key→response table
+  with TTL/GC; JMAP-style tempIds need a mapping protocol; both still require
+  the client to mint a random string.
+- **One contract instead of two:** the old "B′" conditional ("appointment ids
+  required only when allocation restrictions reference a subset") collapses —
+  restrictions always join on appointment ids that are always present. The SPA
+  can also use its id optimistically (no temp-id swap).
+- **Precedent — the calendar standards do exactly this:** iCalendar requires a
+  *creator*-generated `UID` on every VEVENT (RFC 5545; RFC 7986 recommends a
+  random UUID), and CalDAV creates via `PUT` on a client-chosen URL with
+  `If-None-Match: *` → `412` on collision — rapla follows that model with
+  `ID_COLLISION` instead of `412`. Google Calendar's optional client id exists
+  precisely for retry idempotency (409 = already there); MS Graph (strictly
+  server-ids) had to retrofit `transactionId` — a client-minted random token —
+  to stop duplicate-on-retry.
+
+Exception: **server-initiated** creates (e.g. `copyReservations`) mint server
+ids — there is no client input to be idempotent against. A copy re-ids its
+appointments too (`clone()` keeps sub-entity ids; keeping them would trip the
+foreign-reservation appointment guard, `checkIdIntegrity` #2).
+
 ---
 
 ## User

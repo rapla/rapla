@@ -140,4 +140,37 @@ public class ToolsTest
         Assert.assertEquals("Pruefer__extern_", Tools.makeValidKey("Prüfer (extern)"));
         Assert.assertEquals("foo_bar", Tools.makeValidKey("foo bar"));
     }
+
+    // === PRD 056 §9 — isValidEntityId (client-supplied id syntax) ===
+
+    @Test
+    public void isValidEntityId_acceptsUuidShapes() {
+        Assert.assertTrue(Tools.isValidEntityId("e47ac10b-58cc-4372-a567-0e02b2c3d479"));
+        Assert.assertTrue(Tools.isValidEntityId("f47ac10b-58cc-4372-a567-0e02b2c3d479"));
+        Assert.assertTrue(Tools.isValidEntityId("r47ac10b-58cc-4372-a567-0e02b2c3d479")); // legacy letter
+        Assert.assertTrue(Tools.isValidEntityId("abcd1234")); // 8 chars minimum
+        Assert.assertTrue(Tools.isValidEntityId("a".repeat(64))); // 64 chars maximum
+    }
+
+    @Test
+    public void isValidEntityId_rejectsBadLength() {
+        Assert.assertFalse(Tools.isValidEntityId("abc1234"));          // 7 — too short
+        Assert.assertFalse(Tools.isValidEntityId("a".repeat(65)));     // 65 — too long
+        Assert.assertFalse(Tools.isValidEntityId(""));
+        Assert.assertFalse(Tools.isValidEntityId(null));
+    }
+
+    @Test
+    public void isValidEntityId_rejectsBadCharset() {
+        Assert.assertFalse(Tools.isValidEntityId("e47ac10b;58cc4372"));  // ';' breaks conflict composite ids
+        Assert.assertFalse(Tools.isValidEntityId("e47ac10b 58cc4372"));  // whitespace
+        Assert.assertFalse(Tools.isValidEntityId("period_1period"));     // underscore not allowed
+        Assert.assertFalse(Tools.isValidEntityId("e47ac10b<script1"));
+        Assert.assertFalse(Tools.isValidEntityId("üuidshape-1234"));     // non-ASCII
+    }
+
+    @Test
+    public void isValidEntityId_rejectsLeadingHyphen() {
+        Assert.assertFalse(Tools.isValidEntityId("-47ac10b-58cc-4372"));
+    }
 }

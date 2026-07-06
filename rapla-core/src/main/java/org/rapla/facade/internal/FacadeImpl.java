@@ -946,6 +946,7 @@ public class FacadeImpl implements RaplaFacade {
 			ReferenceInfo id = ids.next();
 			SimpleEntity entity = (SimpleEntity) uncasted;
 			entity.setId(id.getId());
+			entity.setNew(true);
 			entity.setResolver(operator);
 			if ((entity instanceof Reservation) && user == null)
 				throw new IllegalStateException("The reservation " + entity + " needs an owner but user specified is null ");

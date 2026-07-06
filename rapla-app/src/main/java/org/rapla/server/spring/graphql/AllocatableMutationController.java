@@ -114,16 +114,15 @@ public class AllocatableMutationController
 
         AllocatableImpl a = new AllocatableImpl(operator.getCurrentTimestamp(),
                 operator.getCurrentTimestamp());
+        // PRD 056 §9 (2026-07-06): client id is REQUIRED — no server fallback.
+        // Retry-idempotency works via ID_COLLISION on the client-minted id.
         String clientId = (String) input.get("id");
-        if (clientId != null && !clientId.isBlank())
+        if (clientId == null || clientId.isBlank())
         {
-            a.setId(clientId);
+            throw new ReservationMutationException("REQUIRED", "input.id",
+                    "id is required — clients mint their own entity ids (PRD 056 §9)");
         }
-        else
-        {
-            ReferenceInfo<Allocatable> ref = operator.createIdentifier(Allocatable.class, 1).get(0);
-            a.setId(ref.getId());
-        }
+        a.setId(clientId);
         a.setClassification(classification);
         a.setOwner(owner);
         // Copy type-default permissions onto the new allocatable.
@@ -132,6 +131,7 @@ public class AllocatableMutationController
         UpdateEvent event = new UpdateEvent();
         event.setUserId(caller.getId());
         event.addStore(a);
+        event.addCreate(a.getReference());
         ((CachableStorageOperator) operator).dispatch(event);
 
         return operator.tryResolve(new ReferenceInfo<>(a.getId(), Allocatable.class));

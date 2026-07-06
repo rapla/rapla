@@ -12,6 +12,7 @@ import { SwitchToUserDialogComponent } from '../auth/switch-to-user-dialog.compo
 import { ApiKeysDialogComponent } from '../account/api-keys-dialog.component';
 import { EditAccountDialogComponent } from '../account/edit-account-dialog.component';
 import { PermissionMigrationDialogComponent } from '../account/permission-migration-dialog.component';
+import { PermissionMigrationService } from '../account/permission-migration.service';
 import { OmniboxComponent } from './omnibox.component';
 
 /**
@@ -98,7 +99,7 @@ import { OmniboxComponent } from './omnibox.component';
               <span>Edit account</span>
             </button>
           }
-          @if (isAdmin()) {
+          @if (showPermissionMigration()) {
             <button mat-menu-item (click)="openPermissionMigration()">
               <mat-icon>rule</mat-icon>
               <span>Permission migration</span>
@@ -178,6 +179,7 @@ export class AppToolbarComponent implements OnInit {
   protected readonly auth = inject(AuthService);
   private readonly usersService = inject(UsersService);
   private readonly profile = inject(ProfileService);
+  private readonly permissionMigration = inject(PermissionMigrationService);
   private readonly dialog = inject(MatDialog);
 
   /** Effective user shown in the chip (impersonation target when active, else self). */
@@ -202,8 +204,11 @@ export class AppToolbarComponent implements OnInit {
   /** The admin actor's username while impersonating; '' otherwise. */
   readonly adminUsername = computed(() => this.auth.actorUsername());
 
-  /** PRD 090 — global admins see the "Permission migration" worklist entry. */
-  readonly isAdmin = computed(() => this.auth.identity()?.admin ?? false);
+  /** PRD 090 — show the "Permission migration" entry only to a global admin AND only
+   * when the worklist is non-empty (nothing to migrate ⇒ no menu item). */
+  readonly hasMigrationItems = signal(false);
+  private readonly isAdmin = computed(() => this.auth.identity()?.admin ?? false);
+  readonly showPermissionMigration = computed(() => this.isAdmin() && this.hasMigrationItems());
 
   ngOnInit(): void {
     // PRD 051 — non-empty /api/users (server-filtered by canAdminUser) ⇒ enable switch.
@@ -213,6 +218,13 @@ export class AppToolbarComponent implements OnInit {
       next: (caps) => this.showEditAccount.set(caps.externalIdpLabel == null),
       error: () => this.showEditAccount.set(false),
     });
+    // PRD 090 — only surface the migration entry when there is at least one open item.
+    if (this.isAdmin()) {
+      this.permissionMigration.findings().subscribe({
+        next: (list) => this.hasMigrationItems.set(list.length > 0),
+        error: () => this.hasMigrationItems.set(false),
+      });
+    }
   }
 
   switchBack(): void {
@@ -236,10 +248,19 @@ export class AppToolbarComponent implements OnInit {
   }
 
   openPermissionMigration(): void {
-    this.dialog.open(PermissionMigrationDialogComponent, {
-      width: '640px',
-      maxWidth: '92vw',
-      autoFocus: false,
-    });
+    this.dialog
+      .open(PermissionMigrationDialogComponent, {
+        width: '640px',
+        maxWidth: '92vw',
+        autoFocus: false,
+      })
+      .afterClosed()
+      .subscribe(() => {
+        // Worklist may have been drained — re-evaluate so the menu entry hides when empty.
+        this.permissionMigration.findings().subscribe({
+          next: (list) => this.hasMigrationItems.set(list.length > 0),
+          error: () => this.hasMigrationItems.set(false),
+        });
+      });
   }
 }
