@@ -1,6 +1,7 @@
 # PRD 096 — SPA classification editor (reusable, events + allocatables)
 
-**Status:** draft — 2026-07-07
+**Status:** draft — 2026-07-07; Phases 1–4 landed, layout redesign + main/extended
+split + server-locale fix 2026-07-08
 **Related:** PRD 091 (event sheet — §2.4 defers exactly this), PRD 035 §5 (widget-mapping
 table + descriptor-on-edit, done), PRD 055 (schema-as-data β refactor — SDL directives
 are the descriptor), PRD 056 (typed `<TypeKey>ClassificationInput @oneOf`, events),
@@ -118,6 +119,23 @@ data loss, just no widget yet.
 - [x] 2.2 DONE (2026-07-07) — `remapValues` (same key + same valueType/
       cardinality survives; server stores as-is → target-variant-only keys).
       Tier-5 specs.
+- [x] 2.3 DONE (2026-07-08, user request) — layout redesign. Fields moved from
+      the ragged flex-wrap to an aligned CSS grid
+      (`repeat(auto-fill, minmax(15rem, 1fr))` → two columns on the ~58rem
+      sheet) with dense Material-style outline boxes + notched floating labels.
+      Still NATIVE inputs per 2.1 (styled, NOT `mat-form-field`/`mat-select`) —
+      keeps the controlled-patch model and the tier-6 selectors intact; real
+      Material components were rejected as a heavier change for no visual gain
+      (the outline/dense look is identical). **main/extended split implemented**
+      (resolves OQ1): `@editView additional` attributes partition out of the
+      always-visible grid into a collapsed "Weitere Felder (n)" expander
+      (`showExtended` signal, `mainDescriptors()`/`additionalDescriptors()`
+      computeds). Readonly list/allocatable fields span the full row
+      (`grid-column: 1/-1`); editable text fields are single cells so the grid
+      actually uses the second column (a first cut spanned every text field →
+      one-column collapse on text-heavy types, corrected same day). 2 added
+      tier-6 specs (additional hidden until expanded; expanded field still emits
+      patches).
 
 ### Phase 3 — Consumer 1: event sheet
 - [x] 3.1 DONE (2026-07-07) — expanded header renders the component below the
@@ -131,6 +149,13 @@ data loss, just no widget yet.
 - [ ] 3.2 Save round-trip live probe per widget type — BLOCKED on a dataset
       with a multi-attribute reservation type (dhbw dev data has only `event`
       with `name`; needs a second type via saveDynamicType or testdefault run).
+- [x] 3.3 DONE (2026-07-08) — header alignment. Type select + einklappen moved
+      into a top bar (`.hbar`, button right-aligned via `margin-left:auto`); the
+      title-strip and body classification instances now render full-width
+      (`display:block`) so their grids share column tracks AND right edges. Was:
+      the title strip sat `flex:1` inside the type row, so its grid stopped short
+      of the einklappen button → ragged right edge vs the full-width body grid
+      below. Event specs green.
 
 ### Phase 4 — Consumer 2: allocatable editor
 - [x] 4.0 DONE (2026-07-07) — server: `Allocatable.canModify: Boolean!`
@@ -164,6 +189,31 @@ data loss, just no widget yet.
       (same-`classificationType` options via `types` query, only in edit
       mode with >1 option) with client-side `remapValues` — supersedes the
       "no type select" note in 4.1. Updates PRD 063's reject stance.
+- [x] 4.4 DONE (2026-07-08) — dialog scroll. `.dlg` had no `max-height`/
+      `overflow`, so a resource/person with many attributes overflowed the
+      MatDialog surface and pushed Speichern/Abbrechen off-screen. Split into a
+      fixed `.head`, a scrolling `.body` (`max-height: min(85vh, 900px)`,
+      `overflow-y:auto`, `min-height:0` for the flex-child shrink), and a fixed
+      `.bar` with a top divider. Buttons always visible; fields scroll.
+
+### Bugfix ride-along (2026-07-08)
+- [x] Server names shown in English despite admin **"Server Sprache = Deutsch"**.
+      Root cause: two shared name-resolution paths ignored the system-preference
+      language (`RaplaLocale.LANGUAGE_ENTRY`) and used the JVM/bundle default —
+      `ClassificationSdlGenerator` (`Locale.getDefault()` for `@displayName` +
+      VALUE_LIST enum names) and `StructuralTypeFetchers.wire()`
+      (`raplaLocale.getLocale()`, which drives the `types` dropdown
+      `DynamicType.name`, plus `Allocatable.displayName`, `Category.name`). Fix:
+      new `ServerLocaleResolver.resolve(operator, raplaLocale)` (rapla-server)
+      reads the system-pref language, falling back to `raplaLocale` then the JVM
+      default; threaded through `generate(types, Locale)` (old no-arg overload
+      kept) and the `wire()` locale snapshot. Tier-2 `ServerLocaleResolverTest`
+      (red→green); 62-test `ClassificationGraphQLControllerTest` still green.
+      **Caveats:** locale is snapshotted at schema-build time (boot / DynamicType
+      UpdateEvent), so a runtime "Server Sprache" change needs a restart or type
+      edit to take effect; names still fall back to English where the type/
+      attribute data carries no German translation (data, not code). Touches the
+      PRD 035 §5 / PRD 055 β SDL generator — cross-ref PRD 035 (done).
 
 ### Bugfix ride-along (2026-07-07)
 - [x] False "zwischenzeitlich geändert" on every save of a persisted entity:
@@ -187,9 +237,10 @@ data loss, just no widget yet.
 - **OQ1** — `no-view` + main-vs-additional attribute split (Swing hides
   `no-view`, splits main/additional views) are NOT in the SDL today. Add two
   small directives in the SDL generator (`@noView`, `@additional`) or render
-  all attributes flat in v1? *Resolution:* 2026-07-08 — subsumed by the D5
-  revision: one `@editView` directive carries `title`/`additional`/`no-view`;
-  the component hides `no-view` and renders `additional` like main for now.
+  all attributes flat in v1? *Resolution:* RESOLVED 2026-07-08 (Phase 2.3) —
+  one `@editView` directive carries `title`/`additional`/`no-view`; the
+  component hides `no-view` and now SPLITS `additional` into a collapsed
+  "Weitere Felder" expander (no longer rendered like main).
 - **OQ2** — expected-rows/columns annotations (textarea sizing) — emit in SDL
   or ignore? *Resolution:* pending.
 - **OQ3** — allocatable editor entry point placement (PRD 094 command layer
@@ -229,8 +280,10 @@ annotation ("wo erscheint es") as the natural home:
 - **`additional` / `no-view`**: mirror the stored `edit-view` attribute
   annotation; `main` (default) is omitted on the wire. The SPA component now
   hides `no-view` (Swing parity — before this we rendered admin-hidden
-  attributes) and renders `additional` like main for now (collapsible
-  details = later polish; Swing's Reservation edit also shows both together).
+  attributes) and — since Phase 2.3 (2026-07-08) — SPLITS `additional` into a
+  collapsed "Weitere Felder (n)" expander below the main grid (was: rendered
+  like main; Swing's Reservation edit shows both together, but the SPA form is
+  denser and benefits from the disclosure).
 - **Stage 2 (future, with the SPA type editor):** allow `title` as an
   explicit stored `edit-view` value; explicit wins over the derivation.
   Needs the two Swing visibility one-liners (`ClassificationEditUI.isVisible`,

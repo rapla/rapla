@@ -8,6 +8,7 @@ import {
   ClassificationEditComponent,
   type ClassificationPatch,
 } from '../classification/classification-edit.component';
+import { EntityIdChipComponent } from '../common/entity-id-chip.component';
 import { remapValues } from '../classification/classification-schema';
 import { ClassificationSchemaService } from '../classification/classification-schema.service';
 import type { MutationIssue } from '../graphql/mutation-result';
@@ -30,10 +31,11 @@ export interface AllocatableEditDialogData {
 @Component({
   selector: 'app-allocatable-edit-dialog',
   standalone: true,
-  imports: [ClassificationEditComponent, FormsModule],
+  imports: [ClassificationEditComponent, EntityIdChipComponent, FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="dlg">
+      <app-entity-id-chip class="idchip" [id]="entityId" />
       @if (loading()) {
         <p class="hint">Lade Ressource…</p>
       } @else if (notFound()) {
@@ -93,11 +95,18 @@ export interface AllocatableEditDialogData {
   `,
   styles: `
     .dlg {
+      position: relative;
       display: flex;
       flex-direction: column;
       min-width: min(520px, 90vw);
       max-height: min(85vh, 900px);
       box-sizing: border-box;
+    }
+    .idchip {
+      position: absolute;
+      top: 2px;
+      right: 6px;
+      z-index: 2;
     }
     .body {
       display: flex;
@@ -187,6 +196,7 @@ export class AllocatableEditDialogComponent {
   private readonly schema = inject(ClassificationSchemaService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly dialogData = inject<AllocatableEditDialogData>(MAT_DIALOG_DATA);
+  readonly entityId = this.dialogData.id;
   private readonly dialogRef = inject<MatDialogRef<AllocatableEditDialogComponent>>(MatDialogRef);
 
   readonly loading = signal(true);

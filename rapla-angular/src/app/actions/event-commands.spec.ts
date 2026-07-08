@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { of, type Observable } from 'rxjs';
 
-import { buildBulkDeleteCommand } from './event-commands';
+import { buildBulkDeleteCommand, buildMoveCommand } from './event-commands';
 import type { MutationResult } from '../graphql/mutation-result';
 import type { GraphqlService } from '../graphql/graphql.service';
 import type { EventDataService } from '../event/event-data.service';
@@ -80,5 +80,19 @@ describe('buildBulkDeleteCommand (PRD 099 Phase 3)', () => {
     expect(messages[0]).toBe('2 von 3 wiederhergestellt');
     expect(messages[1]).toContain('Physik');
     expect(messages[1]).toContain('inzwischen geändert');
+  });
+});
+
+describe('buildMoveCommand (PRD 095 Phase 3b / week grid)', () => {
+  it('executes moveReservations with an ISO minute shift; undo negates it', () => {
+    const mutate = vi.fn<(query: string, vars: unknown) => Observable<MutationResult<unknown>>>();
+    mutate.mockReturnValue(of(ok));
+    const gql = { mutate } as unknown as GraphqlService;
+    const command = buildMoveCommand(gql, 'e-1', 'Physik', 1440 + 90); // +1 day +1:30h
+    expect(command.label).toBe('„Physik" verschoben');
+    command.execute().subscribe();
+    expect(mutate.mock.calls[0][1]).toEqual({ ids: ['e-1'], shift: 'PT1530M' });
+    command.undo!().subscribe();
+    expect(mutate.mock.calls[1][1]).toEqual({ ids: ['e-1'], shift: 'PT-1530M' });
   });
 });

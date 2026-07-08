@@ -57,7 +57,10 @@ panel (no tabs) with a top toolbar and a bottom button bar:
   (`AppointmentListEdit.java:249-259,335-449`).
 - Selecting a row switches the detail editor (selection change itself is undoable).
 - **Detail editor** (`AppointmentController`, dual-mode single/repeating —
-  auto-correction rules documented in [reservation-edit.md](reservation-edit.md)):
+  auto-correction rules documented in [reservation-edit.md](reservation-edit.md);
+  SPA coverage since 2026-07-08: recurrence panel in the sheet, deliberate
+  deviations listed in [reservation-edit.md](reservation-edit.md) § "SPA
+  recurrence editor" — open remainders: exception range-add, split):
   - Repeating-type radio: none / weekly / daily / monthly / yearly.
   - Single mode: start/end date+time, all-day toggle.
   - Repeating mode: interval, weekday checkboxes, day-in-month / weekday-in-month /

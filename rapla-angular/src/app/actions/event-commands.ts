@@ -116,6 +116,30 @@ function restoreFailureReason(result: MutationResult<unknown>): string {
   }
 }
 
+/**
+ * PRD 095 Phase 3b / week grid — drag-move of a single-appointment,
+ * non-repeating reservation (gate: `isMovableRow`, server re-checks).
+ * Forward: `moveReservations` by the minute shift; inverse: the compensating
+ * negative shift (PRD 094 command shape).
+ */
+export function buildMoveCommand(
+  gql: GraphqlService,
+  reservationId: string,
+  name: string,
+  shiftMinutes: number,
+): SpaCommand {
+  const move = (minutes: number) =>
+    gql.mutate<{ moveReservations: { overallStatus: string } }>(
+      `mutation ($ids: [ID!]!, $shift: Duration!) { moveReservations(ids: $ids, dateShift: $shift) { overallStatus } }`,
+      { ids: [reservationId], shift: `PT${minutes}M` },
+    ) as Observable<MutationResult<unknown>>;
+  return {
+    label: `„${name}" verschoben`,
+    execute: () => move(shiftMinutes),
+    undo: () => move(-shiftMinutes),
+  };
+}
+
 function scopedDeleteCommand(
   data: EventDataService,
   original: EventDraft,

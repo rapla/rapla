@@ -123,23 +123,27 @@ for month-grid structure, `BlockColors` for colors); secondary = EventCalendar s
       silent-create+undo was rejected: a real reservation needs type/name choices).
       Multi-type deployments get the first type — type is changeable in the sheet.
 
-### Phase 3b — drag-move (open; server/client split below)
-Server: **nothing new** — `moveReservations(ids, dateShift)` exists, permission checks
-+ §12 stay server-side in it; `reservation { id canModify }` + `appointmentId` are
-already in the view selection.
-Client:
-- [ ] Tier-5: pure-TS drag state machine ported from Swing `DraggingHandler` semantics —
-      states idle → armed (pointerdown on draggable chip) → dragging (move threshold
-      exceeded; below it a pointerup is a CLICK → event sheet) → drop/cancel (ESC).
-      Day-delta computed from source vs target cell date; no time change in month mode.
-- [ ] Draggable gate (client-side UX only; server re-checks): `reservation.canModify`
-      AND single-appointment AND non-repeating. Others render without drag affordance.
-- [ ] Pointer-events wiring (`setPointerCapture`, cached cell rects for hit-testing,
-      ghost chip, drop-target cell highlight) — EventCalendar `interaction` package as
-      pattern reference (MIT attribution if translated).
-- [ ] Drop → `moveReservations([reservationId], P<n>D)` → refetch window; undo toast
-      fires the compensating negative shift (PRD 094 command shape). No optimistic
-      update in v1 — refetch is cheap at month granularity.
+### Phase 3b — drag-move (DONE 2026-07-08, month + week grids)
+Server: `appointment { id repeating { type } }` + `reservation { id canModify
+appointmentCount }` in the builtin selection (OQ3); `moveReservations(ids,
+dateShift)` unchanged. The SPA row context sources block identity from the
+`appointment` object (legacy `appointmentId` scalar still accepted).
+Client (browser-verified end-to-end: drag → „…verschoben" toast → Rückgängig →
+restored):
+- [x] Drag state machine in both grids (idle → armed → dragging → drop/ESC, 4-px
+      threshold, pointer capture, `elementsFromPoint` hit-testing). Month: whole-day
+      shift + drop-target cell highlight; week: day+minute shift snapped to the
+      rows-per-hour raster + dashed preview box.
+- [x] Gate `isMovableRow` in the shared `block-style.ts` (PRD 100): `canModify` AND
+      `appointmentCount === 1` AND `repeating === null` — STRICT null (a view that
+      doesn't select `repeating` is not movable; fail-closed). Clipped multi-day
+      week segments not draggable in v1.
+- [x] Drop → `buildMoveCommand` → `moveReservations([id], PT<n>M)`; undo = the
+      compensating negative shift (PRD 094 command shape); MutationBus refresh
+      re-queries the window. Month-grid tier-6 tests pin drag/gate/ESC.
+Also shipped with this phase (PRD 100/094 wiring): chip right-click opens the
+SHARED row menu (Bearbeiten/Anzeigen/Löschen — same providers as table rows) and
+chip double-click runs the shared edit path (`onRowDblClick`, D6).
 
 ## Tests
 
@@ -155,12 +159,22 @@ Client:
   bar across the week row. *Resolution:* pending (v1 leans repeat-per-day — trivial
   with the bucketing; spanning bars are layout work).
 - **OQ2** — chip text contrast on dark colors (compute text color client-side from
-  luminance vs server-emitted text color). *Resolution:* pending (v1: client
-  luminance check, no server field).
+  luminance vs server-emitted text color). *Resolution:* 2026-07-08 — **always black
+  text, no luminance flip** (PRD 100 D1, Swing `SwingRaplaBlock.FOREGROUND_COLOR`
+  parity); deployments pick colors that work with black. Implemented via the shared
+  block-style module (PRD 100 Phase 1).
 - **OQ3** — how the client knows a block is single-appointment + non-repeating for
-  the drag gate: derive from data already in the view selection vs a small hidden
-  field (e.g. `repeating: Boolean` / appointment count) added to the builtin query.
-  *Resolution:* pending — decide when Phase 3 starts.
+  the drag gate. *Resolution:* 2026-07-08 — two raw facts on the wire (D2-consistent,
+  no render-hint boolean): `AppointmentBlock.appointment: Appointment!` (the owning
+  appointment, navigable — `repeating` read from there; `appointmentId` stays as
+  PRD 094 scalar sugar) and `Reservation.appointmentCount: Int!` (list-free
+  cardinality). Both in the builtin `rapla_appointments` hidden selection; tier-3
+  `AppointmentBlockAppointmentGraphQLTest` green. Gate (client UX only, server
+  re-checks in `moveReservations`): `canModify && appointmentCount === 1 &&
+  appointment.repeating == null`, fail-closed when a custom view omits the fields.
+  Rejected: `reservation.appointments` list on every row (payload × blocks), a
+  server `movableWholeDay` boolean (render-hint, D2 violation), and a `compute()`
+  EL expression (no `size()` function exists; untyped and fail-quiet).
 
 ## Decisions locked
 

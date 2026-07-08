@@ -34,6 +34,8 @@ references — pasting one into your IDE jumps to the right place.
 | [swing-platform-quirks.md](swing-platform-quirks.md) | Platform/compositor workarounds in the Swing client (WSLg popup input-region leak, FilterEditButton positioning, focus-dismiss handlers) |
 | [migration-from-master.md](migration-from-master.md) | What changed from the historical `master` branch to the current `spring-boot` tree (restinject removed, Spring Boot 4 + Angular added, 5-module reactor, carve-out programme); size comparison + intent for new contributors |
 | [tableview-and-graphql-views.md](tableview-and-graphql-views.md) | Legacy Swing TableView config (views, columns, `defaultValue` annotations, the dhbw-configured Termine table) as the capability benchmark for the GraphQL-native view system (PRD 074) — proves the new path reproduces the existing tables |
+| [spa-selection-and-actions.md](spa-selection-and-actions.md) | Row/item selection in the SPA (Swing/Excel semantics, keyboard map, touch selection mode) and how a multi-row selection feeds the row-action/command system (bulk Löschen, subset-wins gating, best-effort undo) — PRDs 094/099 |
+| [calendar-rendering.md](calendar-rendering.md) | Block-based calendar rendering rules extracted from Swing + HTML export (shared rapla-core strategy machinery): color resolution + always-black text, the lane/slot pipeline (`GroupAllocatablesStrategy` over SELECTED resources, fixed vs compact), rows-per-hour scale/worktime, FLOW/BLOCK selection — ground truth for the SPA month/week grids (PRDs 095/077/100) |
 
 ## What lives where (quick lookup)
 

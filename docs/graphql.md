@@ -737,16 +737,33 @@ Three queries, three call profiles:
 | `conflicts(reservationId:)` | realized, per saved event | unreadable conflicts **dropped** |
 | `resourceAvailability(input:)` | cheap finder/picker: per candidate `status` (`AVAILABLE\|PARTIAL\|CONFLICT\|REQUEST_ONLY\|FORBIDDEN`) + `conflictingAppointmentIds` | candidates silently reduced; hidden ≡ nonexistent |
 | `potentialConflicts(input:)` | expensive drill-down / save preflight: full `Conflict` rows vs. a draft | unreadable counterparty **masked** (side-2 null + `not_visible` text), never dropped |
+| `expandOccurrences(appointment:, limit: = 30)` | recurrence-editor preview: ONE draft appointment's rule expanded to concrete `Occurrence` rows (`start`/`end`/`exception`) | pure function of the input — auth gate only, no stored data touched |
 
 Contract points: draft appointment ids are REQUIRED (D3 id-first — join key for the
-result); `repeating` inputs are rejected loudly (UNSUPPORTED) until the mutation path
-materializes recurrence; permission-window violations surface only as
+result); `repeating` and `allDay` are materialized exactly like the mutation path
+(shared `AppointmentInputMapper.applyRepeating` + `setWholeDays` — PRD 091
+Phase 4.5; availability evaluates what a save would persist, series overlap is
+computed analytically on the rule, endless series included); permission-window
+violations surface only as
 `status: REQUEST_ONLY/FORBIDDEN`, never as conflict rows. Resolvers compose
 `getAllAllocatableBindingsSync` + `AllocationConflictModel` (the
 `/api/edit/check-conflicts` service path — no parallel conflict logic); candidate
 `filter` delegates to the §12-scoped `allocatables(filter:)` resolver.
 Implementation: `AvailabilityGraphQLController`, `ConflictGraphQLController`,
 shared `ConflictRow`.
+
+**Weekday wire convention (corrected 2026-07-08):** `RepeatingRule.weekdays` /
+`RepeatingRuleInput.weekdays` carry the rapla-core values **1=Sunday … 7=Saturday**
+(`DateTools`) untranslated in both directions — the schema doc-string used to
+claim "0-6", which was wrong. MONTHLY/YEARLY rules carry no extra fields: the
+pattern (weekday-in-nth-week / month+day) derives from the appointment *start*.
+
+`expandOccurrences` (PRD 091 Phase 4.1) wraps `AppointmentImpl.createBlocks`
+server-side — the MONTHLY semantic and exception-skip rules are never
+reimplemented in a client. Excepted occurrences are INCLUDED with
+`exception: true` (the SPA preview strikes them through; click toggles the
+exception date). Capped at `limit` (max 100) within a 2-year horizon from the
+appointment start.
 
 Example (UC-C2 "free camera Mon–Fri"):
 
@@ -757,6 +774,18 @@ query {
                      end: "2031-06-06T17:00:00", allDay: false }],
     candidates: { filter: { typeIn: [room] } }
   }) { allocatable { id name } status conflictingAppointmentIds }
+}
+```
+
+Recurrence-preview example (weekly series, one skipped date):
+
+```graphql
+query {
+  expandOccurrences(appointment: {
+    id: "a…draft-uuid…", start: "2032-02-03T10:00:00", end: "2032-02-03T12:00:00",
+    allDay: false,
+    repeating: { type: WEEKLY, interval: 1, count: 4, exceptions: ["2032-02-17"] }
+  }) { start end exception }
 }
 ```
 

@@ -97,8 +97,18 @@ export function extractRowContext(
   const dateAlias =
     columns.find((c) => c.type === 'Date' || c.type === 'LocalDateTime')?.alias ?? 'start';
   const startValue = row[dateAlias];
+  // PRD 095 Phase 3b — the navigable `appointment @hidden { id … }` object is the
+  // preferred block-identity source; the flat `appointmentId @hidden` scalar stays
+  // supported for older stored views.
+  const appointment = row['appointment'] as Record<string, unknown> | null | undefined;
+  const appointmentId =
+    typeof appointment?.['id'] === 'string'
+      ? appointment['id']
+      : typeof row['appointmentId'] === 'string'
+        ? row['appointmentId']
+        : null;
   const block: RowBlock = {
-    appointmentId: typeof row['appointmentId'] === 'string' ? row['appointmentId'] : null,
+    appointmentId,
     start: typeof startValue === 'string' ? startValue : null,
     isException: row['isException'] === true,
   };

@@ -141,6 +141,29 @@ export function rangeScopedDraft(
 }
 
 /**
+ * PRD 077 week grid — a scoped draft seeded from a time-range selection
+ * (drag-create): minute-precise start/end, already snapped to the grid's slot
+ * raster by the caller. A cross-day selection (Swing SelectionHandler FLOW)
+ * becomes ONE appointment spanning fromDay/start → toDay/end.
+ */
+export function timeScopedDraft(
+  typeKey: string,
+  chips: ScopeChip[],
+  fromDay: string,
+  startMin: number,
+  toDay: string,
+  endMin: number,
+  id: string = generateEventId(),
+): EventDraft {
+  const draft = newScopedDraft(typeKey, new Date(), chips, id);
+  const hhmm = (min: number) =>
+    `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}:00`;
+  draft.appointments[0].start = `${fromDay}T${hhmm(startMin)}`;
+  draft.appointments[0].end = `${toDay}T${hhmm(Math.min(endMin, 24 * 60 - 1))}`;
+  return draft;
+}
+
+/**
  * Four-field coupling (Swing parity, locked in the 2026-07-07 prototype
  * round): editing the START — date or time — SHIFTS the end so the duration
  * stays; editing the END changes the duration but never crosses the start

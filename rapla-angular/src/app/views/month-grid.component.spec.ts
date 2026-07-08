@@ -10,7 +10,9 @@ const ROWS: Record<string, unknown>[] = [
     name: 'Seminar KI',
     times: '11:00',
     color: '#ef6c00',
-    reservation: { id: 'res-4', canModify: true },
+    // movable: canModify + single appointment + non-repeating (PRD 095 D6 gate)
+    reservation: { id: 'res-4', canModify: true, appointmentCount: 1 },
+    appointment: { id: 'a4', repeating: null },
     appointmentId: 'a4',
   },
   {
@@ -150,14 +152,28 @@ describe('MonthGridComponent', () => {
     expect(tops[1]).toBeGreaterThan(tops[0]);
   });
 
-  it('emits openEvent with the reservation id on chip click; skips rows without one', () => {
+  it('emits openRow on chip DOUBLE-click (Swing/table parity, PRD 100 D6), not on single click', () => {
     const f = mount();
-    const emitted: string[] = [];
-    f.componentInstance.openEvent.subscribe((id) => emitted.push(id));
+    const emitted: Record<string, unknown>[] = [];
+    f.componentInstance.openRow.subscribe((row) => emitted.push(row));
+    const dbl = (el: HTMLElement) => el.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    // single click must NOT open the editor (selection comes with PRD 094)
     chips(f, 'Seminar KI')[0].click();
-    expect(emitted).toEqual(['res-4']);
-    chips(f, 'Ohne Reservation')[0].click();
-    expect(emitted).toEqual(['res-4']);
+    expect(emitted).toEqual([]);
+    dbl(chips(f, 'Seminar KI')[0]);
+    expect(emitted.map((r) => r['name'])).toEqual(['Seminar KI']);
+  });
+
+  it('right-click on a chip emits openMenu with the row + pointer position (shared row menu)', () => {
+    const f = mount();
+    const emitted: { row: Record<string, unknown>; x: number; y: number }[] = [];
+    f.componentInstance.openMenu.subscribe((e) => emitted.push(e));
+    chips(f, 'Seminar KI')[0].dispatchEvent(
+      new MouseEvent('contextmenu', { clientX: 40, clientY: 50, bubbles: true, cancelable: true }),
+    );
+    expect(emitted.length).toBe(1);
+    expect(emitted[0].row['name']).toBe('Seminar KI');
+    expect([emitted[0].x, emitted[0].y]).toEqual([40, 50]);
   });
 });
 
@@ -236,5 +252,50 @@ describe('MonthGridComponent — drag-create day-range selection (PRD 095 Phase 
     expect(emitted).toEqual([]);
     f.detectChanges();
     expect(cell(f, '2026-07-23').classList.contains('selecting')).toBe(false);
+  });
+
+  it('drag-move of a movable chip emits the whole-day shift (PRD 095 3b)', () => {
+    const f = mount();
+    const emitted: { row: Record<string, unknown>; dayDelta: number; minuteDelta: number }[] = [];
+    f.componentInstance.moveBlock.subscribe((e) => emitted.push(e));
+    const chip = chips(f, 'Seminar KI')[0];
+    stubHit(cell(f, '2026-07-07')); // source day under the pointer
+    chip.dispatchEvent(pointer('pointerdown', 10, 10));
+    stubHit(cell(f, '2026-07-09'));
+    chip.dispatchEvent(pointer('pointermove', 60, 10));
+    f.detectChanges();
+    expect(cell(f, '2026-07-09').classList.contains('droptarget')).toBe(true);
+    chip.dispatchEvent(pointer('pointerup', 60, 10));
+    expect(emitted).toEqual([
+      [expect.objectContaining({ dayDelta: 2, minuteDelta: 0 })][0],
+    ]);
+    expect(emitted[0].row['name']).toBe('Seminar KI');
+  });
+
+  it('a non-movable chip (no gate facts) never emits moveBlock', () => {
+    const f = mount();
+    const emitted: unknown[] = [];
+    f.componentInstance.moveBlock.subscribe((e) => emitted.push(e));
+    const chip = chips(f, 'Projektreview')[0]; // canModify false, no gate fields
+    stubHit(cell(f, '2026-07-07'));
+    chip.dispatchEvent(pointer('pointerdown', 10, 10));
+    stubHit(cell(f, '2026-07-09'));
+    chip.dispatchEvent(pointer('pointermove', 60, 10));
+    chip.dispatchEvent(pointer('pointerup', 60, 10));
+    expect(emitted).toEqual([]);
+  });
+
+  it('ESC cancels a drag-move without emitting', () => {
+    const f = mount();
+    const emitted: unknown[] = [];
+    f.componentInstance.moveBlock.subscribe((e) => emitted.push(e));
+    const chip = chips(f, 'Seminar KI')[0];
+    stubHit(cell(f, '2026-07-07'));
+    chip.dispatchEvent(pointer('pointerdown', 10, 10));
+    stubHit(cell(f, '2026-07-09'));
+    chip.dispatchEvent(pointer('pointermove', 60, 10));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    chip.dispatchEvent(pointer('pointerup', 60, 10));
+    expect(emitted).toEqual([]);
   });
 });

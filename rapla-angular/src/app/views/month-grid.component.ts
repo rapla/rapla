@@ -1,5 +1,6 @@
 import { Component, computed, input, output, signal } from '@angular/core';
 
+import { CHIP_BASE_CSS, chipColor, chipName, chipTime, isMovableRow } from './block-style';
 import { monthGridDays, chunkWeek, TOP0, type WeekChunk } from './month-chunks';
 
 type Row = Record<string, unknown>;
@@ -47,9 +48,21 @@ function localToday(): string {
                 [class.other]="isOther(day)"
                 [class.today]="day === today"
                 [class.selecting]="isSelecting(day)"
+                [class.droptarget]="moveTarget()?.day === day"
                 (pointerdown)="armSelect($event, day)"
               >
                 <span class="daynum">{{ dayNum(day) }}</span>
+                @if (moveTarget(); as mt) {
+                  @if (mt.day === day) {
+                    <!-- the dragged block itself travels into the target cell -->
+                    <span
+                      class="chip ghost"
+                      [class.neutral]="!color(mt.row)"
+                      [style.background]="color(mt.row)"
+                      ><span class="t">{{ timeOf(mt.row) }}</span>{{ nameOf(mt.row) }}</span
+                    >
+                  }
+                }
               </div>
             }
           </div>
@@ -60,12 +73,16 @@ function localToday(): string {
                 role="button"
                 tabindex="0"
                 [class.neutral]="!color(c.row)"
+                [class.movable]="isMovable(c.row)"
+                [class.dragsource]="moveTarget()?.row === c.row"
                 [style.background]="color(c.row)"
                 [style.left]="'calc(' + c.col + '/7*100% + 2px)'"
                 [style.width]="'calc(' + c.span + '/7*100% - 5px)'"
                 [style.top.px]="c.top"
-                (click)="onChipClick(c.row)"
-                (keydown.enter)="onChipClick(c.row)"
+                (dblclick)="openRow.emit(c.row)"
+                (keydown.enter)="openRow.emit(c.row)"
+                (contextmenu)="onChipMenu($event, c.row)"
+                (pointerdown)="armMove($event, c.row)"
                 >{{ c.contLeft ? '‹ ' : '' }}<span class="t">{{ timeOf(c.row) }}</span
                 >{{ nameOf(c.row) }}{{ c.contRight ? ' ›' : '' }}</span
               >
@@ -76,6 +93,7 @@ function localToday(): string {
     </div>
   `,
   styles: [
+    CHIP_BASE_CSS,
     `
       :host {
         display: block;
@@ -119,6 +137,26 @@ function localToday(): string {
         outline: 1px solid var(--mat-sys-primary, #3f51b5);
         outline-offset: -1px;
       }
+      .cell.droptarget {
+        background: #e3e7f8;
+        outline: 1px dashed var(--mat-sys-primary, #3f51b5);
+        outline-offset: -1px;
+      }
+      .chip.movable {
+        cursor: grab;
+        touch-action: none;
+      }
+      .cell .chip.ghost {
+        display: block;
+        margin-top: 2px;
+        border: 1px dashed rgba(0, 0, 0, 0.45);
+        opacity: 0.9;
+        pointer-events: none;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+      }
+      .chip.dragsource {
+        opacity: 0.35;
+      }
       .cell.other {
         background: #f7f7f7;
       }
@@ -149,26 +187,12 @@ function localToday(): string {
         pointer-events: auto;
       }
       .chip {
-        border-radius: 4px;
-        font-size: 0.72rem;
         line-height: 20px;
         height: 20px;
         padding: 0 5px;
         white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        color: #fff;
-        cursor: pointer;
-        user-select: none;
-        box-sizing: border-box;
-      }
-      .chip.neutral {
-        background: #e4e6ee;
-        color: #333;
       }
       .chip .t {
-        opacity: 0.85;
-        font-variant-numeric: tabular-nums;
         margin-right: 0.25em;
       }
     `,
@@ -177,7 +201,12 @@ function localToday(): string {
 export class MonthGridComponent {
   readonly rows = input.required<Row[]>();
   readonly anchor = input.required<string>();
-  readonly openEvent = output<string>();
+  /** Double-click / Enter on a chip — the view host runs the shared edit path. */
+  readonly openRow = output<Row>();
+  /** Right-click on a chip — the view host opens the SHARED row menu (PRD 094). */
+  readonly openMenu = output<{ row: Row; x: number; y: number }>();
+  /** Drag-move drop (gated by {@link isMovableRow}): whole-day shift. */
+  readonly moveBlock = output<{ row: Row; dayDelta: number; minuteDelta: number }>();
   /** PRD 095 Phase 3 — drag over free cell space selects a day range; released
    *  selection emits {from, to} ('YYYY-MM-DD', to inclusive, sorted). */
   readonly createRange = output<{ from: string; to: string }>();
@@ -222,23 +251,92 @@ export class MonthGridComponent {
     return !day || day < start ? start : day;
   }
 
-  color(row: Row): string | null {
-    const c = row['color'];
-    return typeof c === 'string' && c ? c : null;
+  readonly color = chipColor;
+  readonly timeOf = chipTime;
+  readonly nameOf = chipName;
+
+  onChipMenu(ev: MouseEvent, row: Row): void {
+    ev.preventDefault();
+    this.openMenu.emit({ row, x: ev.clientX, y: ev.clientY });
   }
 
-  timeOf(row: Row): string {
-    const t = row['times'];
-    return typeof t === 'string' && t ? t : String(row['start'] ?? '').slice(11, 16);
+  readonly isMovable = isMovableRow;
+
+  // --- drag-move (day-granular): idle → armed (pointerdown on a movable chip) →
+  // dragging (threshold) → drop emits the whole-day shift / ESC cancels. The
+  // hovered target cell highlights via {@link moveTarget}.
+  readonly moveTarget = signal<{ day: string; row: Row } | null>(null);
+  private mv: { row: Row; sourceDay: string; chip: HTMLElement; startX: number; startY: number } | null =
+    null;
+  private readonly onMvMove = (ev: PointerEvent) => this.mvMove(ev);
+  private readonly onMvUp = () => this.mvUp();
+  private readonly onMvCancel = () => this.cancelMove();
+  private readonly onMvKey = (ev: KeyboardEvent) => {
+    if (ev.key === 'Escape') this.cancelMove();
+  };
+
+  armMove(ev: PointerEvent, row: Row): void {
+    if (ev.button !== 0 || this.mv || !isMovableRow(row)) return;
+    const sourceDay = this.dayAt(ev.clientX, ev.clientY);
+    if (!sourceDay) return;
+    const chip = ev.currentTarget as HTMLElement;
+    ev.preventDefault();
+    ev.stopPropagation();
+    chip.setPointerCapture?.(ev.pointerId);
+    this.mv = { row, sourceDay, chip, startX: ev.clientX, startY: ev.clientY };
+    chip.addEventListener('pointermove', this.onMvMove);
+    chip.addEventListener('pointerup', this.onMvUp);
+    chip.addEventListener('pointercancel', this.onMvCancel);
+    document.addEventListener('keydown', this.onMvKey);
   }
 
-  nameOf(row: Row): string {
-    return String(row['name'] ?? '');
+  private mvMove(ev: PointerEvent): void {
+    if (!this.mv) return;
+    if (
+      this.moveTarget() === null &&
+      Math.hypot(ev.clientX - this.mv.startX, ev.clientY - this.mv.startY) <
+        MonthGridComponent.DRAG_THRESHOLD
+    ) {
+      return;
+    }
+    this.moveTarget.set({
+      day: this.dayAt(ev.clientX, ev.clientY) ?? this.mv.sourceDay,
+      row: this.mv.row,
+    });
   }
 
-  onChipClick(row: Row): void {
-    const id = (row['reservation'] as { id?: string } | undefined)?.id;
-    if (id) this.openEvent.emit(id);
+  private mvUp(): void {
+    if (!this.mv) return;
+    const target = this.moveTarget();
+    const source = this.mv;
+    this.teardownMove();
+    if (!target || target.day === source.sourceDay) return;
+    const dayDelta = Math.round(
+      (Date.parse(`${target.day}T00:00:00Z`) - Date.parse(`${source.sourceDay}T00:00:00Z`)) /
+        86400000,
+    );
+    this.moveBlock.emit({ row: source.row, dayDelta, minuteDelta: 0 });
+  }
+
+  private cancelMove(): void {
+    this.teardownMove();
+  }
+
+  private teardownMove(): void {
+    if (!this.mv) return;
+    this.mv.chip.removeEventListener('pointermove', this.onMvMove);
+    this.mv.chip.removeEventListener('pointerup', this.onMvUp);
+    this.mv.chip.removeEventListener('pointercancel', this.onMvCancel);
+    document.removeEventListener('keydown', this.onMvKey);
+    this.mv = null;
+    this.moveTarget.set(null);
+  }
+
+  private dayAt(x: number, y: number): string | null {
+    const hit = document
+      .elementsFromPoint(x, y)
+      .find((el) => el instanceof HTMLElement && el.dataset['day']) as HTMLElement | undefined;
+    return hit?.dataset['day'] ?? null;
   }
 
   // --- drag-create selection (state machine: idle → armed → dragging → emit/cancel).

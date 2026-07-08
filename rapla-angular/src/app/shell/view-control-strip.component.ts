@@ -227,11 +227,13 @@ export class ViewControlStripComponent {
     return ViewControlStripComponent.LABELS[mode] ?? mode;
   }
 
-  /** WEEK layout (navigation + read-only range) when the active mode is 'week'
-   *  and the server offers it; otherwise TABLE layout (editable from/to, no nav). */
-  protected readonly isWeek = computed(
-    () => this.viewState.renderModes().includes('week') && this.viewState.renderMode() === 'week',
-  );
+  /** WEEK-RANGE layout (navigation + read-only range) when the active mode is the
+   *  time-grid 'week' or the grouped 'day' list (PRD 077 mode shuffle) and the
+   *  server offers it; otherwise TABLE layout (editable from/to, no nav). */
+  protected readonly isWeek = computed(() => {
+    const m = this.viewState.renderMode();
+    return (m === 'week' || m === 'day') && this.viewState.renderModes().includes(m);
+  });
 
   /** MONTH layout (◀ Monat Jahr ▶ Heute) when the active mode is 'month' and the server offers it. */
   protected readonly isMonth = computed(

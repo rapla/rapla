@@ -12,9 +12,13 @@ import { TableSelection } from './table-selection';
 import { ROW_MENU_PROVIDERS, type RowMenuItem } from './row-menu';
 import { MonthGridComponent } from './month-grid.component';
 import { monthGridWindow } from './month-chunks';
+import { WeekGridComponent } from './week-grid.component';
+import { weekGridWindow } from './week-lanes';
 import { EventSheetComponent, type EventSheetDialogData } from '../event/event-sheet.component';
-import { rangeScopedDraft } from '../event/event-draft';
+import { rangeScopedDraft, timeScopedDraft, type EventDraft } from '../event/event-draft';
 import { MutationBus } from '../graphql/mutation-bus';
+import { UndoToastService } from '../actions/undo-toast.service';
+import { buildMoveCommand } from '../actions/event-commands';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { groupByWeekday, groupByColumn } from '../graphql/weekday-grouping';
 import { ViewStateStore, type DateWindow } from '../state/view-state-store';
@@ -73,7 +77,7 @@ export function hasScope(chips: FilterEntry[]): boolean {
  */
 @Component({
   selector: 'app-view-host',
-  imports: [MatTableModule, MatSortModule, MatMenuModule, MonthGridComponent],
+  imports: [MatTableModule, MatSortModule, MatMenuModule, MonthGridComponent, WeekGridComponent],
   template: `
     <section class="content">
       <h2 class="view-title">{{ meta()?.title ?? viewName() }}</h2>
@@ -100,8 +104,21 @@ export function hasScope(chips: FilterEntry[]): boolean {
             <app-month-grid
               [rows]="displayRows()"
               [anchor]="monthAnchor()"
-              (openEvent)="openEventSheet($event)"
+              (openRow)="onRowDblClick($event)"
+              (openMenu)="onChipMenu($event)"
+              (moveBlock)="onMoveBlock($event)"
               (createRange)="openCreateRange($event)"
+            />
+          } @else if (isWeekGrid()) {
+            <!-- PRD 077 prototype — week time-grid with dynamic lanes. -->
+            <app-week-grid
+              [rows]="displayRows()"
+              [anchor]="weekAnchor()"
+              [scopeResources]="scopeResources()"
+              (openRow)="onRowDblClick($event)"
+              (openMenu)="onChipMenu($event)"
+              (moveBlock)="onMoveBlock($event)"
+              (createTimeRange)="openCreateTimeRange($event)"
             />
           } @else if (total() > 0) {
             <table
@@ -291,6 +308,7 @@ export function hasScope(chips: FilterEntry[]): boolean {
 export class ViewHostComponent {
   private readonly gql = inject(GraphqlService);
   private readonly dialog = inject(MatDialog);
+  private readonly toast = inject(UndoToastService);
   private readonly viewState = inject(ViewStateStore);
   private readonly filter = inject(FilterStore);
   private readonly lastView = inject(LastViewStore);
@@ -325,18 +343,33 @@ export class ViewHostComponent {
   );
   /** A view is groupable iff it has a group column. */
   readonly canGroup = computed(() => this.groupAlias() !== '');
-  /** Group when in week mode AND the view actually has a group column. */
-  readonly grouped = computed(() => this.viewState.renderMode() === 'week' && this.canGroup());
+  /** Group when in DAY (day-list) mode AND the view actually has a group column
+   *  (PRD 077 mode shuffle: the grouped day-list moved week → day; 'week' is the
+   *  time-grid calendar). */
+  readonly grouped = computed(() => this.viewState.renderMode() === 'day' && this.canGroup());
   /** Whether the view CAN group (declares a {@code @column(group: true)} → server
-   *  emits {@code groupBy}). Drives the availability of the WEEK render mode. */
+   *  emits {@code groupBy}). Drives the availability of the DAY render mode. */
   readonly groupable = computed(() => !!this.meta()?.groupBy);
-  /** Render as day/value BLOCKS (group-header rows) — only in WEEK mode AND when the
+  /** Render as day/value BLOCKS (group-header rows) — only in DAY mode AND when the
    *  view is groupable. TABLE mode (or a non-groupable view) → flat sortable table. */
   readonly isGrouped = computed(
-    () => this.viewState.renderMode() === 'week' && this.groupable(),
+    () => this.viewState.renderMode() === 'day' && this.groupable(),
   );
   /** PRD 095 — MONTH mode: render the calendar grid instead of the table. */
   readonly isMonth = computed(() => this.viewState.renderMode() === 'month');
+  /** PRD 077 prototype — WEEK mode: the time-grid calendar (dynamic lanes). */
+  readonly isWeekGrid = computed(() => this.viewState.renderMode() === 'week');
+  /** Scoped resources for the week grid's lane grouping (PRD 100 D3):
+   *  resource chips, locale-sorted by label (Swing NamedComparator). */
+  readonly scopeResources = computed(() =>
+    this.filter
+      .entries()
+      .filter((c) => c.kind === 'resource')
+      .map((c) => ({ id: c.id, name: c.label }))
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })),
+  );
+  /** Anchor date for the week grid — the window's from (kept week-aligned by the nav). */
+  readonly weekAnchor = computed(() => this.monthAnchor());
   /** Anchor date for the month grid — the window's from (the control strip keeps
    *  the window month-aligned in month mode, D4). */
   readonly monthAnchor = computed(() => {
@@ -455,6 +488,29 @@ export class ViewHostComponent {
     this.menuX.set(event.clientX);
     this.menuY.set(event.clientY);
     this.ctxTrigger?.openMenu();
+  }
+
+  /** Block-chip context menu (PRD 100/094): chips feed the SAME shared row menu
+   *  as table rows — single-row context (block selection is future PRD 094 work). */
+  onChipMenu(e: { row: Record<string, unknown>; x: number; y: number }): void {
+    const items = this.rowItems(e.row);
+    if (items.length === 0) return;
+    this.menuItems.set(items);
+    this.menuX.set(e.x);
+    this.menuY.set(e.y);
+    this.ctxTrigger?.openMenu();
+  }
+
+  /** Drag-move drop from a grid (PRD 095 3b / D6): one moveReservations command
+   *  with the compensating undo; the MutationBus refresh re-queries the window. */
+  onMoveBlock(e: { row: Record<string, unknown>; dayDelta: number; minuteDelta: number }): void {
+    const totalMinutes = e.dayDelta * 24 * 60 + e.minuteDelta;
+    if (totalMinutes === 0) return;
+    const ctx = extractRowContext(e.row, this.viewName(), this.meta()?.columns ?? []);
+    const subject = ctx.primary;
+    if (subject?.kind !== 'reservation' || !subject.canModify) return;
+    const name = String(e.row['name'] ?? '') || 'Veranstaltung';
+    this.toast.run(buildMoveCommand(this.gql, subject.id, name, totalMinutes));
   }
 
   private readonly hasRowMenu = computed(
@@ -607,6 +663,7 @@ export class ViewHostComponent {
       // PRD 095 D4 — the stored window is the ANCHOR; month mode queries the
       // padded 42-day grid range derived from it (the anchor is not rewritten).
       const month = this.isMonth();
+      const week = this.isWeekGrid();
       this.bindingKey(); // re-query when the variable signature resolves
       this.refreshTick(); // re-query after a main-view mutation (delete / undo)
       if (!hasScope(chips)) {
@@ -614,7 +671,11 @@ export class ViewHostComponent {
         return;
       }
       this.noScope.set(false);
-      this.run(viewName, month && w ? monthGridWindow(w.from) : w, chips);
+      this.run(
+        viewName,
+        month && w ? monthGridWindow(w.from) : week && w ? weekGridWindow(w.from) : w,
+        chips,
+      );
     });
   }
 
@@ -694,17 +755,6 @@ export class ViewHostComponent {
     return renderCell(row, col);
   }
 
-  /** PRD 095 — month-grid chip click → event sheet dialog (same shape as the row menu's edit). */
-  openEventSheet(reservationId: string): void {
-    this.dialog.open(EventSheetComponent, {
-      data: { id: reservationId } satisfies EventSheetDialogData,
-      width: '960px',
-      maxWidth: '95vw',
-      height: '90vh',
-      restoreFocus: false,
-    });
-  }
-
   /** Memoized first creatable event type (same query the toolbar's "Neu" uses). */
   private eventTypeKey: string | null = null;
 
@@ -712,8 +762,27 @@ export class ViewHostComponent {
    *  event sheet PREFILLED (range-seeded scoped draft; nothing persists until save). */
   openCreateRange(range: { from: string; to: string }): void {
     const chips = this.filter.entries();
+    this.openWithEventType((typeKey) => rangeScopedDraft(typeKey, chips, range.from, range.to));
+  }
+
+  /** PRD 077 week grid — drag-create: a snapped (possibly multi-day) time-range
+   *  selection opens the event sheet PREFILLED with the exact interval. */
+  openCreateTimeRange(sel: {
+    fromDay: string;
+    startMin: number;
+    toDay: string;
+    endMin: number;
+  }): void {
+    const chips = this.filter.entries();
+    this.openWithEventType((typeKey) =>
+      timeScopedDraft(typeKey, chips, sel.fromDay, sel.startMin, sel.toDay, sel.endMin),
+    );
+  }
+
+  /** Resolve the first creatable event type (memoized), build the draft, open the sheet. */
+  private openWithEventType(makeDraft: (typeKey: string) => EventDraft): void {
     const open = (typeKey: string) => {
-      const draft = rangeScopedDraft(typeKey, chips, range.from, range.to);
+      const draft = makeDraft(typeKey);
       this.dialog.open(EventSheetComponent, {
         data: { id: draft.id, isNew: true, draft } satisfies EventSheetDialogData,
         width: '960px',

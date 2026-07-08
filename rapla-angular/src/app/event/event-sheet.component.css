@@ -474,3 +474,17 @@ input.rep-num {
   background: #fce8e6;
   color: #d93025;
 }
+
+/* copyable rapla-id chip — pinned to the window's top-right edge; zero-height
+   sticky bar so it stays at the edge while the sheet scrolls without
+   displacing the sections below */
+.idbar {
+  position: sticky;
+  top: 2px;
+  z-index: 5;
+  height: 0;
+  display: flex;
+  justify-content: flex-end;
+  /* small inset keeps clear of the dialog's rounded corner */
+  padding-right: 6px;
+}

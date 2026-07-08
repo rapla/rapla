@@ -74,11 +74,16 @@ type eventClassification implements Classification & ReservationClassification {
     expect(rule.weekdays).toHaveLength(1);
     expect(cmp.undoLabel()).toBe('Wiederholung');
 
-    // weekday chips render and toggle through the draft funnel
+    // weekday chips render and toggle through the draft funnel. The rule seeds
+    // the START's weekday (= "now" rounded up on an isNew draft) — toggle a
+    // DIFFERENT one, or this test goes red whenever the wall clock happens to
+    // seed the hardcoded day (scar: failed Wednesdays 23:00 + all Thursdays).
     const chips = (fixture.nativeElement as HTMLElement).querySelectorAll('.rep-weekdays .wd');
     expect(chips).toHaveLength(7);
-    cmp.toggleRepWeekday(cmp.draft()!.appointments[0], 5);
-    expect(cmp.draft()!.appointments[0].repeating!.weekdays).toContain(5);
+    const other = ((rule.weekdays![0] % 7) + 1) as number;
+    cmp.toggleRepWeekday(cmp.draft()!.appointments[0], other);
+    expect(cmp.draft()!.appointments[0].repeating!.weekdays).toContain(other);
+    expect(cmp.draft()!.appointments[0].repeating!.weekdays).toHaveLength(2);
 
     // rule edits are undoable — one step back removes the weekday
     cmp.undo();

@@ -68,6 +68,8 @@ secrets.yaml
 /.playwright-mcp/*.yml
 /.playwright-mcp/*.yaml
 /.playwright-mcp/*.png
+# stray screenshots the playwright MCP drops at repo root (no tracked root PNGs exist)
+/*.png
 
 # Local Keycloak dev server — local dev tooling (machine-specific realm
 # config, dev secret), not committed

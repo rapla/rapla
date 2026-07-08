@@ -73,6 +73,13 @@ mechanics; **this PRD owns persistence, switching, conversion, and the graphical
   addition is a §12-gated `AppointmentBlock.color` field. Deviation from the sketch above:
   unreadable color contributors **null the color, keep the block** (095 D3) instead of
   dropping the block.
+  → **Week slice prototyped 2026-07-08** (same no-grid-hints pattern): `WeekGridComponent`
+  + `week-lanes.ts` (dynamic lanes), FLOW cross-day drag-create (Swing `SelectionHandler`
+  port), rows-per-hour raster, builtin `rapla_appointments` `renderModes: [table, week,
+  month]`. **Mode shuffle:** the grouped day-list moved `week` → `day`; `week` is now the
+  time grid (stored custom views declaring `week` for the grouped list need `day`).
+  Swing-parity hardening (lane model, zoom, worktime, shared block styling) is
+  [PRD 100](100-spa-block-renderer-unification.md).
 - **Migration** of existing `CalendarModelConfiguration` saved calendars → (shared view +
   SavedView instance).
 

@@ -71,3 +71,34 @@ describe('extractRowContext (PRD 094 D4)', () => {
     expect(ctx.primary).toBeNull();
   });
 });
+
+describe('block identity sourcing (PRD 095 Phase 3b)', () => {
+  it('appointment object subject → block.appointmentId', () => {
+    const ctx = extractRowContext(
+      { reservation: { id: 'e1' }, appointment: { id: 'a7', repeating: null } },
+      'v',
+    );
+    expect(ctx.block.appointmentId).toBe('a7');
+  });
+
+  it('legacy scalar appointmentId still sources the block (old stored views)', () => {
+    const ctx = extractRowContext({ reservation: { id: 'e1' }, appointmentId: 'a8' }, 'v');
+    expect(ctx.block.appointmentId).toBe('a8');
+  });
+
+  it('appointment object wins over the legacy scalar when both are selected', () => {
+    const ctx = extractRowContext(
+      { reservation: { id: 'e1' }, appointment: { id: 'a-new' }, appointmentId: 'a-old' },
+      'v',
+    );
+    expect(ctx.block.appointmentId).toBe('a-new');
+  });
+
+  it('malformed appointment object (no string id) falls back to the scalar', () => {
+    const ctx = extractRowContext(
+      { reservation: { id: 'e1' }, appointment: { repeating: null }, appointmentId: 'a9' },
+      'v',
+    );
+    expect(ctx.block.appointmentId).toBe('a9');
+  });
+});

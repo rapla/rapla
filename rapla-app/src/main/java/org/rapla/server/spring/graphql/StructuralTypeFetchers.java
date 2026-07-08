@@ -477,6 +477,36 @@ public final class StructuralTypeFetchers
                 }
             };
 
+    /** PRD 095 Phase 3b (OQ3) — the owning appointment, navigable from the block.
+     *  Returns the same entity {@code Reservation.appointments} exposes, so the wired
+     *  Appointment fetchers (repeating, allDay, …) apply unchanged — no new §12 surface. */
+    static final LightDataFetcher<org.rapla.entities.domain.Appointment> APPOINTMENT_BLOCK_APPOINTMENT =
+            new LightSourceFetcher<ReservationGraphQLController.AppointmentBlockDto,
+                    org.rapla.entities.domain.Appointment>(
+                    ReservationGraphQLController.AppointmentBlockDto.class)
+            {
+                @Override protected org.rapla.entities.domain.Appointment read(
+                        ReservationGraphQLController.AppointmentBlockDto dto,
+                        Supplier<DataFetchingEnvironment> env)
+                {
+                    return dto == null ? null : dto.appointment();
+                }
+            };
+
+    /** PRD 095 Phase 3b (OQ3) — appointment cardinality without shipping the list;
+     *  the month-grid drag gate reads it per block row. */
+    static final LightDataFetcher<Integer> RESERVATION_APPOINTMENT_COUNT =
+            new LightSourceFetcher<org.rapla.entities.domain.Reservation, Integer>(
+                    org.rapla.entities.domain.Reservation.class)
+            {
+                @Override protected Integer read(org.rapla.entities.domain.Reservation r,
+                        Supplier<DataFetchingEnvironment> env)
+                {
+                    org.rapla.entities.domain.Appointment[] arr = r.getAppointments();
+                    return arr == null ? 0 : arr.length;
+                }
+            };
+
     /** PRD 094 D4 — the owning appointment's id; the SPA delete-scope flow
      *  keys on the (appointmentId, blockStart) pair per row. */
     static final LightDataFetcher<String> APPOINTMENT_BLOCK_APPOINTMENT_ID =
@@ -1266,6 +1296,7 @@ public final class StructuralTypeFetchers
                 .dataFetcher("createdAt",      RESERVATION_CREATED_AT)
                 .dataFetcher("lastModifiedAt", RESERVATION_LAST_MODIFIED_AT)
                 .dataFetcher("appointments",   RESERVATION_APPOINTMENTS)
+                .dataFetcher("appointmentCount", RESERVATION_APPOINTMENT_COUNT)
                 .dataFetcher("allocations",    reservationAllocations(operator))
                 .dataFetcher("classification", RESERVATION_CLASSIFICATION));
         b.type("Appointment", t -> t
@@ -1277,6 +1308,7 @@ public final class StructuralTypeFetchers
         b.type("AppointmentBlock", t -> t
                 .dataFetcher("name",         APPOINTMENT_BLOCK_NAME)
                 .dataFetcher("appointmentId", APPOINTMENT_BLOCK_APPOINTMENT_ID)
+                .dataFetcher("appointment",  APPOINTMENT_BLOCK_APPOINTMENT)
                 .dataFetcher("color",        APPOINTMENT_BLOCK_COLOR)
                 .dataFetcher("allocatables", appointmentBlockAllocatables(operator))
                 .dataFetcher("duration",     appointmentBlockDuration(operator))

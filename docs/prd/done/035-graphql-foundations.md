@@ -187,6 +187,18 @@ integrity, business rules) against the merged full object on every save.
 `ValidationError { path, code, message }` maps back to form fields. No
 client-side revalidation layer.
 
+**Follow-up (2026-07-08) — name locale = system preference, not JVM default.**
+The `@displayName` directives emitted here (and the VALUE_LIST enum names in
+§5b, plus the structural `DynamicType.name` / `Allocatable.displayName` /
+`Category.name` fetchers) are locale-resolved at SDL-build time. They
+originally resolved against `Locale.getDefault()` / `raplaLocale.getLocale()`
+(the JVM/bundle default), which leaked English names on a German deployment.
+Corrected to read the admin **"Server Sprache"** system preference
+(`RaplaLocale.LANGUAGE_ENTRY`) via `ServerLocaleResolver.resolve(...)`, threaded
+into `ClassificationSdlGenerator.generate(types, Locale)` and
+`StructuralTypeFetchers.wire()`. Full write-up + caveats: PRD 096 bugfix
+ride-along (2026-07-08).
+
 ### 5a. Category kind discriminator + concrete descriptor schema
 
 Categories bifurcate into value-list (flat picklist) vs organization-tree

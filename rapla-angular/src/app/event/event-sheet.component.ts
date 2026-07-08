@@ -23,6 +23,7 @@ import {
   ClassificationEditComponent,
   type ClassificationPatch,
 } from '../classification/classification-edit.component';
+import { EntityIdChipComponent } from '../common/entity-id-chip.component';
 import { remapValues } from '../classification/classification-schema';
 import { ClassificationSchemaService } from '../classification/classification-schema.service';
 import { GraphqlService } from '../graphql/graphql.service';
@@ -65,8 +66,9 @@ import {
  * "Ressourcen", active-section principle (only the focused section shows its
  * edit affordances), add mode without route change (ONE Auswählbar list with
  * pins stuck on top, closes only via Fertig/Esc/save), "gilt für" date picker
- * per allocation, sticky save bar. Recurrence is displayed, never edited
- * (Phase 4); unknown classification attributes pass through untouched (2.0b).
+ * per allocation, sticky save bar. Recurrence editing via the per-row panel
+ * (Phase 4.3, ↻ toggle — preview from `expandOccurrences`, click-to-skip
+ * exceptions); unknown classification attributes pass through untouched (2.0b).
  */
 
 interface CandidateVm extends AvailabilityRow {
@@ -101,6 +103,7 @@ function nonNullEntries(values: Record<string, unknown>): Record<string, unknown
   imports: [
     ClassificationEditComponent,
     CommonModule,
+    EntityIdChipComponent,
     FormsModule,
     MatDatepickerModule,
     MatFormFieldModule,

@@ -19,6 +19,25 @@ of this free from `JTable` (`MULTIPLE_INTERVAL_SELECTION` default) +
 selection model. The `RowContext.rows` array has been multi-select-ready since
 PRD 094 D3/D4 ("v1 always carries exactly one row") — this PRD makes it carry N.
 
+## Implementation
+
+Behaviour reference (keyboard map, per-surface semantics, extension recipe):
+[`docs/architecture/spa-selection-and-actions.md`](../architecture/spa-selection-and-actions.md).
+
+| Piece | Where | Pattern |
+|---|---|---|
+| Selection engine | `views/table-selection.ts` (`TableSelection<K>`) | headless pure TS over a caller-fed RENDERED row order; signals for `selected`/`active`/`selectionMode`; `syncSelected()` for externally-owned state |
+| Table wiring | `views/view-host.component.ts` | row-object keys; rendered order mirrored from `dataSource.connect()` (sort-aware, group headers dropped); active-descendant a11y; selection self-clears on re-query (new row objects) |
+| Multi-row context | `views/row-context.ts` `extractSelectionContext` | `subjects` = per-row primaries; `primary` only at size 1 (D3) |
+| Bulk delete menu | `views/row-menu.ts` `multiItems`/`bulkDeleteFlow` | dedupe by event id, subset-wins label (OQ1), one-option `DeleteScopeDialog` confirm |
+| Bulk command | `actions/event-commands.ts` `buildBulkDeleteCommand` | one `deleteReservations([ids])` ⇄ best-effort id-stable re-creates; aggregate → `invalid` issues on any failure (OQ2) |
+| Undo infra change | `actions/undo-toast.service.ts` | `undo()` fires `mutated$` even on a failed inverse (partial application must re-query) |
+| Rail retrofit | `shell/resource-selection.component.ts` | engine computes, `FilterStore` chips stay source of truth (`syncSelected` before every interaction, `FilterStore.setAll` mirror); exclusive vs modifier gesture rule (D4) |
+
+Specs: `table-selection.spec.ts` (32), `view-host-selection.spec.ts` (12),
+`event-commands.spec.ts` (4), `undo-toast.service.spec.ts` (+1),
+`resource-selection.component.spec.ts` (9 new).
+
 ## Swing reference (analysed 2026-07-08)
 
 Primary reference per repo convention — interaction semantics to mirror:

@@ -1039,6 +1039,8 @@ type Reservation {
   displayName:    String @deprecated(reason: "use name(variant: DISPLAY)")
   classification: ReservationClassification!
   appointments:   [Appointment!]!
+  "PRD 095 Phase 3b (OQ3) — number of appointments, without shipping the list. The month-grid drag gate needs 'single appointment?' per block row; moveReservations shifts ALL appointments, so multi-appointment reservations are not draggable."
+  appointmentCount: Int!
   allocations:    [Allocation!]!
   owner:          User
   createdAt:      DateTime
@@ -1094,6 +1096,8 @@ type AppointmentBlock {
   isException: Boolean!
   "PRD 094 D4 — the owning appointment's id; the SPA delete-scope flow keys on the (appointmentId, blockStart) pair per row."
   appointmentId: ID!
+  "PRD 095 Phase 3b (OQ3) — the owning appointment, navigable (id, repeating, allDay, …). Same §12 scope as Reservation.appointments; appointmentId stays as scalar sugar for the PRD 094 delete flow. The month-grid drag gate reads repeating from here."
+  appointment: Appointment!
   "PRD 074 Baustein 9 — FLAT block-aware name (block → reservation.formatAppointmentBlock). NOT the reservation name: honors appointment-note overrides (appointmentnote plugin), so a block can name differently than its reservation. DISPLAY/EXPORT/PLANNING variants; EXPORT/PLANNING fall back to DISPLAY when the type defines no such format."
   name(variant: NameVariant = DISPLAY): String
   "PRD 074 — the reservation this block belongs to (block → reservation → displayName)."

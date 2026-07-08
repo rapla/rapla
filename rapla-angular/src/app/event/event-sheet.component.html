@@ -1,3 +1,10 @@
+<!-- copyable rapla-id — outside the sheet grid, pinned directly under the
+     window's top edge (sticky against the scroll container) -->
+@if (draft(); as d) {
+  <div class="idbar">
+    <app-entity-id-chip [id]="d.id" />
+  </div>
+}
 <div class="sheet">
   @if (loading()) {
     <p class="hint">Lade Veranstaltung…</p>

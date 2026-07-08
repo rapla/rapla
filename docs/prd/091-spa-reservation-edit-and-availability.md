@@ -1,6 +1,6 @@
 # PRD 091 — SPA reservation editing & availability search
 
-**Status:** draft — 2026-07-05 (updated 2026-07-06: equipment-lending archetype prioritized as first implementation target; 2026-07-07: in-sheet undo/redo decided — D5)
+**Status:** draft — 2026-07-05 (updated 2026-07-06: equipment-lending archetype prioritized as first implementation target; 2026-07-07: in-sheet undo/redo decided — D5; 2026-07-08: recurrence editor shipped — Phase 4.0–4.3 + 4.5 done, D6 block-level availability permanently deferred, OQ6 → GraphQL `expandOccurrences`)
 **Related:** PRD 024 (server-side edit services — the `/api/edit` REST trio), PRD 026 (Angular umbrella), PRD 056/057/063 (GraphQL mutations, shipped), PRD 060 (GraphQL MCP foundations — designed `whoIsFree`/`findFreeSlots`/`checkConflicts`, unbuilt), PRD 067 (mutation unification, D7: GraphQL write surface still adjustable — SPA is the first real consumer), PRD 077/078 (view model + renderer, the read side), PRD 086 (appointment block index — the availability substrate), **PRD 092 (free-slot search — the fixed-resources/variable-time axis, split from this PRD)**, **PRD 093 (loan lifecycle — status/blocking rules the availability query must honor)**, PRD 094 (main-view actions & popups — command-pattern undo past the save boundary; D5 covers only in-sheet)
 
 **Focus (clarified 2026-07-06): the sheet is the GENERAL event editor** — the
@@ -228,8 +228,11 @@ block-identity convention, `AllocationStatus`, and — when PRD 092 introduces w
 sheet route (`/app/event/:id` — the ONLY route, see the id-first entry model below) with the three axis sections
 (what / when / with-what), full-state load → edit draft → `updateReservation` with
 `expectedLastChanged`; CONCURRENT_MODIFICATION → reload-and-reapply dialog
-(UC-E15). Recurrence editing reuses `/api/edit/validate-recurrence` +
-`/expand-blocks` (occurrence preview list). Read-only mode from `canModify`.
+(UC-E15). Recurrence editing: occurrence preview via the GraphQL
+`expandOccurrences` query (OQ6 resolution 2026-07-08 — this paragraph originally
+said "/api/edit/validate-recurrence + /expand-blocks", which predated the
+SPA-is-GraphQL-only decision; the REST trio stays for other consumers).
+Read-only mode from `canModify`.
 
 **Add mode = the Swing two-pane, with pins (mockup round 2026-07-06, maintainer
 direction):** clicking "+ Ressource…" expands an add mode that mirrors the Swing

@@ -842,6 +842,35 @@ frontend, or writing integration tests.
   "Same day, end-time = start-time next day" — keep N≥2 to match
   Swing behaviour.
 
+## SPA recurrence editor (PRD 091 Phase 4, 2026-07-08)
+
+The Angular sheet now carries the recurrence editor. Same rule model as
+Swing — the wire `RepeatingRuleInput` (type / interval / end / count /
+weekdays / exceptions) maps 1:1 onto `RepeatingImpl`; MONTHLY/YEARLY
+patterns still derive from the appointment start (the Swing choosers
+that appeared to edit the rule actually edited the start date).
+
+Mapping and deliberate deviations from `AppointmentController`:
+
+| Swing | SPA (event sheet) |
+|---|---|
+| Dual-mode detail editor (single/repeating swap) | ↻ per appointment row toggles a panel BELOW the row; the four-field date/time row stays unchanged in both modes |
+| Day-span chooser replaces the end-date widget in repeating mode | **Not copied** — the occurrence end derives from start + duration; multi-day occurrences stay expressible via the normal end date |
+| Repeating-type radio | Select: nie (Einzeltermin) / täglich / wöchentlich / monatlich / jährlich; type switch resets type-specific fields (`savedRepeatingType` analog: `defaultRule` in `repeating-edit.ts`) |
+| Weekday checkboxes | Chips (Mo-first display, core values 1=So…7=Sa on the wire); empty set shows an **inline error** instead of silently yielding no occurrences (validation-philosophy deviation, PRD 091 OQ7) |
+| Ending mode until / n-times / forever | Radios; switching seeds the active field (until = start + 90 d, count = 10) and clears the other — `end`/`count` presence discriminates on the wire |
+| Exceptions dialog (range-add, multi-remove, badge) | Occurrence **preview list with click-to-skip**: rows come from the server (`expandOccurrences` wraps `createBlocks`, exceptions flagged + struck through), clicking a row toggles its date in `rule.exceptions` (a skipped row restores on click — removal is per-click, Swing's multi-select remove has no SPA equivalent and needs none); count badge on the summary line. Range-add: still open (PRD 091 4.4) |
+| Convert to single events (split) | Still open (PRD 091 4.6) |
+| `CommandHistory` per widget command | Rule edits run through the sheet's memento funnel (`mutateDraft`, coalesce keys `appt:<id>:rep:*` for interval/until/count) — undo/redo restores the whole draft snapshot |
+
+Availability while editing a series: the pills recompute on every rule
+edit — the availability queries materialize `repeating`/`allDay` via
+the same `AppointmentInputMapper` the mutations use (PRD 091 Phase 4.5),
+so what the pills evaluate is exactly what a save would persist.
+Granularity stays the appointment (PRD 091 D6: block-level detail —
+fraction "8/10", per-occurrence conflict marks — is permanently
+deferred unless explicitly demanded).
+
 ## See also
 
 - [reservation-edit-ui-inventory.md](reservation-edit-ui-inventory.md) —
