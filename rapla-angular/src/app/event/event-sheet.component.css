@@ -80,9 +80,22 @@
 .top-gap {
   margin-top: 0.55rem;
 }
-app-classification-edit.titles {
-  flex: 1;
+.hbar {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.8rem;
+}
+.hbar .field.type {
+  flex: 0 1 22rem;
   min-width: 12rem;
+}
+.hbar .collapse {
+  margin-left: auto;
+  align-self: center;
+}
+app-classification-edit.titles,
+app-classification-edit.top-gap {
+  display: block;
 }
 .grow {
   flex: 1;
@@ -326,4 +339,138 @@ mat-form-field.f-time {
 .savebar button.hist {
   min-width: 36px;
   font-size: 16px;
+}
+
+/* PRD 091 Phase 4.3 — recurrence panel */
+.rep-panel {
+  margin: 4px 0 10px 24px;
+  padding: 10px 12px;
+  border: 1px solid #d9dee6;
+  border-radius: 8px;
+  background: #fafbfc;
+}
+
+button.rep-open {
+  color: #1a73e8;
+  font-weight: 700;
+}
+
+input.rep-num {
+  width: 64px;
+}
+
+.rep-weekdays {
+  display: flex;
+  gap: 4px;
+  margin: 8px 0 2px;
+}
+
+.rep-weekdays .wd {
+  border: 1px solid #d9dee6;
+  border-radius: 99px;
+  background: #fff;
+  width: 38px;
+  height: 28px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+
+.rep-weekdays .wd.on {
+  background: #1a73e8;
+  border-color: #1a73e8;
+  color: #fff;
+}
+
+.rep-error {
+  color: #d93025;
+  font-size: 12px;
+  margin: 4px 0 0;
+}
+
+.rep-end {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 8px;
+}
+
+.rep-end .opt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+}
+
+.rep-summary {
+  background: #eef1f5;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.rep-badge {
+  background: #d93025;
+  color: #fff;
+  border-radius: 99px;
+  font-size: 11px;
+  padding: 0 7px;
+  margin-left: 6px;
+}
+
+.rep-preview {
+  display: flex;
+  flex-direction: column;
+  margin-top: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.rep-preview .occ {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 6px;
+  border: none;
+  border-bottom: 1px dashed #edf0f4;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rep-preview .occ:hover {
+  background: #f2f6fd;
+}
+
+.rep-preview .occ .no {
+  color: #5c6774;
+  width: 24px;
+}
+
+.rep-preview .occ.skipped .when {
+  text-decoration: line-through;
+  color: #9aa4b0;
+}
+
+.rep-preview .occ .tag {
+  margin-left: auto;
+  font-size: 11px;
+  border-radius: 99px;
+  padding: 1px 8px;
+  background: #eef1f5;
+  color: #5c6774;
+  visibility: hidden;
+}
+
+.rep-preview .occ.skipped .tag,
+.rep-preview .occ:hover .tag {
+  visibility: visible;
+}
+
+.rep-preview .occ.skipped .tag {
+  background: #fce8e6;
+  color: #d93025;
 }

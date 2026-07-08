@@ -37,6 +37,7 @@ import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.ExternalSyncEntity;
+import org.rapla.entities.storage.StoredArtifact;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.ExternalSyncEntityImpl;
@@ -150,6 +151,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
     }
 
     private final Map<ImportExportMapKey, Map<String, ExternalSyncEntity>> externalSyncEntities = new LinkedHashMap<>();
+    private final Map<String, StoredArtifact> storedArtifacts = new LinkedHashMap<>();
 
     public FileOperator(RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,
             Map<String, FunctionFactory> functionFactoryMap, @Qualifier(ServerService.ENV_RAPLAFILE_ID) String resolvedPath,
@@ -294,6 +296,12 @@ final public class FileOperator extends LocalAbstractCachableOperator
                     iterator.remove();
                     final ExternalSyncEntity cast = (ExternalSyncEntity) entity;
                     insertIntoImportExportCache(cast);
+                }
+                else if(entity instanceof StoredArtifact)
+                {
+                    iterator.remove();
+                    final StoredArtifact cast = (StoredArtifact) entity;
+                    storedArtifacts.put(cast.getId(), cast);
                 }
             }
             dropPersistedInternalTypes(list);   // never let a persisted internal type overwrite the canonical one
@@ -468,6 +476,12 @@ final public class FileOperator extends LocalAbstractCachableOperator
                     ExternalSyncEntity cast = (ExternalSyncEntity) entity;
                     insertIntoImportExportCache(cast);
                 }
+                else if(entity instanceof StoredArtifact)
+                {
+                    iterator.remove();
+                    StoredArtifact cast = (StoredArtifact) entity;
+                    storedArtifacts.put(cast.getId(), cast);
+                }
             }
             Set<ReferenceInfo<ExternalSyncEntity>> removedImports = new HashSet<>();
             for (Iterator<ReferenceInfo> iterator = removeIds.iterator(); iterator.hasNext();)
@@ -478,11 +492,16 @@ final public class FileOperator extends LocalAbstractCachableOperator
                     iterator.remove();
                     removedImports.add( referenceInfo);
                 }
+                else if(referenceInfo.getType() == StoredArtifact.class)
+                {
+                    iterator.remove();
+                    storedArtifacts.remove(referenceInfo.getId());
+                }
             }
             removeFromImportExportCache(removedImports);
             refresh(since, until, storeObjects, preferencePatches, removeIds);
             List<ExternalSyncEntity> externalSyncEntityList = getAllExternalSyncEntities();
-            saveData(cache, externalSyncEntityList,null, includeIds);
+            saveData(cache, externalSyncEntityList, getStoredArtifacts(), null, includeIds);
         }
         finally
         {
@@ -493,6 +512,11 @@ final public class FileOperator extends LocalAbstractCachableOperator
     @Override
     public List<ExternalSyncEntity> getAllExternalSyncEntities() {
         return externalSyncEntities.values().stream().flatMap(x -> x.values().stream()).collect(Collectors.toList());
+    }
+
+    @Override
+    public Collection<StoredArtifact> getStoredArtifacts() {
+        return new ArrayList<>(storedArtifacts.values());
     }
 
     @Override
@@ -639,7 +663,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
         try
         {
             List<ExternalSyncEntity> syncEntities = getAllExternalSyncEntities();
-            saveData(cache, syncEntities,null, includeIds);
+            saveData(cache, syncEntities, getStoredArtifacts(), null, includeIds);
         }
         finally
         {
@@ -658,14 +682,14 @@ final public class FileOperator extends LocalAbstractCachableOperator
     }
 
     @Override
-    synchronized public void saveData(LocalCache cache, Collection<ExternalSyncEntity> syncEntities, String version) throws RaplaException
+    synchronized public void saveData(LocalCache cache, Collection<ExternalSyncEntity> syncEntities, Collection<StoredArtifact> artifacts, String version) throws RaplaException
     {
-        saveData(cache,syncEntities, version, true);
+        saveData(cache,syncEntities, artifacts, version, true);
     }
 
-    synchronized private void saveData(LocalCache cache, Collection<ExternalSyncEntity> syncEntities, String version, boolean includeIds) throws RaplaException
+    synchronized private void saveData(LocalCache cache, Collection<ExternalSyncEntity> syncEntities, Collection<StoredArtifact> artifacts, String version, boolean includeIds) throws RaplaException
     {
-        final RaplaMainWriter raplaMainWriter = getMainWriter(cache, syncEntities,version, includeIds);
+        final RaplaMainWriter raplaMainWriter = getMainWriter(cache, syncEntities, artifacts, version, includeIds);
         try
         {
             FileIO.write(writer -> {
@@ -694,10 +718,10 @@ final public class FileOperator extends LocalAbstractCachableOperator
         void write(BufferedWriter writer) throws IOException;
     }
 
-    private RaplaMainWriter getMainWriter(LocalCache cache, Collection<ExternalSyncEntity> externalSyncEntityList,String version, boolean includeIds) throws RaplaException
+    private RaplaMainWriter getMainWriter(LocalCache cache, Collection<ExternalSyncEntity> externalSyncEntityList, Collection<StoredArtifact> artifacts, String version, boolean includeIds) throws RaplaException
     {
         RaplaDefaultXMLContext outputContext = new IOContext().createOutputContext(raplaLocale, i18n, cache.getSuperCategoryProvider(), includeIds);
-        RaplaMainWriter writer = new RaplaMainWriter(outputContext, cache, externalSyncEntityList);
+        RaplaMainWriter writer = new RaplaMainWriter(outputContext, cache, externalSyncEntityList, artifacts);
         writer.setEncoding("utf-8");
         if (version != null)
         {

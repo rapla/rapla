@@ -44,6 +44,13 @@ export const routes: Routes = [
       import('./proto/quick-edit-proto.component').then((m) => m.QuickEditProtoComponent),
   },
   {
+    // THROWAWAY prototype route (PRD 091 Phase 4.0 recurrence editor) — same
+    // rules as quick-edit above.
+    path: 'proto/repeating',
+    loadComponent: () =>
+      import('./proto/repeating-proto.component').then((m) => m.RepeatingProtoComponent),
+  },
+  {
     path: '**',
     canActivate: [authGuard],
     loadComponent: () =>

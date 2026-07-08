@@ -68,6 +68,7 @@ import org.rapla.entities.storage.DynamicTypeDependant;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ExternalSyncEntity;
+import org.rapla.entities.storage.StoredArtifact;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.ExternalSyncEntityImpl;
@@ -662,7 +663,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         try
         {
             Collection<ExternalSyncEntity> externalSyncEntityList = getAllExternalSyncEntities();
-            cmd.execute(cache, externalSyncEntityList);
+            Collection<StoredArtifact> artifacts = getStoredArtifacts();
+            cmd.execute(cache, externalSyncEntityList, artifacts);
         }
         finally
         {

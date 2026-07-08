@@ -47,7 +47,9 @@ import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.ExternalSyncEntity;
 import org.rapla.entities.storage.ReferenceInfo;
+import org.rapla.entities.storage.StoredArtifact;
 import org.rapla.entities.storage.internal.ExternalSyncEntityImpl;
+import org.rapla.entities.storage.internal.StoredArtifactImpl;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
@@ -102,6 +104,7 @@ class RaplaSQL
     PreferenceStorage preferencesStorage;
     LockStorage lockStorage;
     private final ImportExportStorage syncEntitiesStorage;
+    private final ArtifactStorage artifactStorage;
 
     RaplaSQL(RaplaXMLContext context) throws RaplaException
     {
@@ -125,6 +128,8 @@ class RaplaSQL
 
         syncEntitiesStorage = new ImportExportStorage(context);
         stores.put(ExternalSyncEntity.class, syncEntitiesStorage);
+        artifactStorage = new ArtifactStorage(context);
+        stores.put(StoredArtifact.class, artifactStorage);
         // now set delegate because reservation storage should also use appointment storage
         reservationStorage.setAppointmentStorage(appointmentStorage);
     }
@@ -436,6 +441,42 @@ class RaplaSQL
         finally
         {
             syncEntitiesStorage.removeConnection();
+        }
+    }
+
+    public Collection<StoredArtifact> getAllArtifacts(Connection con) throws RaplaException
+    {
+        try
+        {
+            // pass the connection timestamp: the timestamp read helper dereferences it even without checkCurrent
+            artifactStorage.setConnection(con, getDatabaseTimestamp(con));
+            return artifactStorage.loadAllIntoList();
+        }
+        catch (SQLException e)
+        {
+            throw new RaplaException("Error reading artifacts.", e);
+        }
+        finally
+        {
+            artifactStorage.removeConnection();
+        }
+    }
+
+    public void saveAllArtifacts(Connection con, Collection<StoredArtifact> artifacts) throws RaplaException
+    {
+        try
+        {
+            artifactStorage.setConnection(con, null);
+            artifactStorage.deleteAll();
+            artifactStorage.save(artifacts);
+        }
+        catch (SQLException e)
+        {
+            throw new RaplaException("Error saving artifacts.", e);
+        }
+        finally
+        {
+            artifactStorage.removeConnection();
         }
     }
 
@@ -3212,4 +3253,101 @@ class ImportExportStorage extends RaplaTypeStorage<ExternalSyncEntity>
         // Do not load into cache
     }
 
+}
+
+class ArtifactStorage extends RaplaTypeStorage<StoredArtifact>
+{
+    public ArtifactStorage(RaplaXMLContext context) throws RaplaException
+    {
+        super(context, StoredArtifact.class, "ARTIFACT",
+                // CHANGED_BY deliberately not named LAST_CHANGED_BY: a column starting with
+                // "LAST_CHANGED" flips EntityStorage into timestamp-guarded deletes (LAST_CHANGED column convention)
+                new String[] { "ID VARCHAR(255) NOT NULL PRIMARY KEY", "KIND VARCHAR(50) KEY", "NAME VARCHAR(255)", "OWNER_ID VARCHAR(255)",
+                        "BODY TEXT NOT NULL", "METADATA TEXT", "CREATED_AT TIMESTAMP", "CHANGED_AT TIMESTAMP KEY", "CHANGED_BY VARCHAR(255)" });
+    }
+
+    @Override
+    public void save(Iterable<StoredArtifact> entitiesOrig) throws RaplaException, SQLException
+    {
+        Collection<ReferenceInfo<StoredArtifact>> toDelete = new ArrayList<>();
+        List<StoredArtifact> entities = new ArrayList<>();
+        for (StoredArtifact entity : entitiesOrig)
+        {
+            toDelete.add(entity.getReference());
+            entities.add(entity);
+        }
+        deleteEntities(toDelete);
+        insert(entities);
+    }
+
+    @Override
+    protected int write(PreparedStatement stmt, StoredArtifact entity) throws SQLException, RaplaException
+    {
+        stmt.setString(1, entity.getId());
+        stmt.setString(2, entity.getKind());
+        stmt.setString(3, entity.getName());
+        final ReferenceInfo<User> ownerRef = entity.getOwnerRef();
+        stmt.setString(4, ownerRef != null ? ownerRef.getId() : null);
+        setText(stmt, 5, entity.getBody());
+        setText(stmt, 6, entity.getMetadata());
+        setTimestamp(stmt, 7, entity.getCreateDate());
+        setTimestamp(stmt, 8, getConnectionTimestamp());
+        final ReferenceInfo<User> lastChangedBy = entity.getLastChangedBy();
+        stmt.setString(9, lastChangedBy != null ? lastChangedBy.getId() : null);
+        stmt.addBatch();
+        return 1;
+    }
+
+    public Collection<StoredArtifact> loadAllIntoList() throws SQLException
+    {
+        try (PreparedStatement stmt = con.prepareStatement(selectSql))
+        {
+            final ResultSet rs = stmt.executeQuery();
+            if (rs == null)
+            {
+                return Collections.emptyList();
+            }
+            List<StoredArtifact> result = new ArrayList<>();
+            while (rs.next())
+            {
+                final StoredArtifactImpl artifact = new StoredArtifactImpl();
+                artifact.setId(rs.getString(1));
+                artifact.setKind(rs.getString(2));
+                artifact.setName(rs.getString(3));
+                final String ownerId = rs.getString(4);
+                if (ownerId != null)
+                {
+                    artifact.putId("owner", new ReferenceInfo<>(ownerId, User.class));
+                }
+                artifact.setBody(getText(rs, 5));
+                artifact.setMetadata(getText(rs, 6));
+                artifact.setCreateDate(getTimestamp(rs, 7, false));
+                artifact.setLastChanged(getTimestamp(rs, 8, false));
+                final String lastChangedById = rs.getString(9);
+                if (lastChangedById != null)
+                {
+                    artifact.putId("last_changed_by", new ReferenceInfo<>(lastChangedById, User.class));
+                }
+                result.add(artifact);
+            }
+            return result;
+        }
+    }
+
+    @Override
+    void insertAll() throws SQLException, RaplaException
+    {
+        // do nothing
+    }
+
+    @Override
+    public void loadAll() throws SQLException, RaplaException
+    {
+    }
+
+    @Override
+    protected void load(ResultSet rs) throws SQLException, RaplaException
+    {
+        // Do not load into cache
+    }
 }

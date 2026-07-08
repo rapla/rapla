@@ -126,6 +126,42 @@ public class AvailabilityGraphQLController
         return "PARTIAL";
     }
 
+    // ============================================================ expandOccurrences
+
+    /**
+     * PRD 091 Phase 4.1 — the recurrence editor's occurrence preview.
+     * Server-owned expansion via {@code AppointmentImpl.createBlocks}
+     * (exceptions included, flagged — the preview strikes them through).
+     * Pure function of the input — no stored data, no §12 surface beyond
+     * the auth gate; capped at {@code limit} within a 2-year horizon.
+     */
+    @QueryMapping
+    public List<OccurrenceRow> expandOccurrences(
+            @Argument("appointment") Map<String, Object> appointment,
+            @Argument("limit") Integer limit,
+            graphql.schema.DataFetchingEnvironment env)
+    {
+        var rc = RequestContextInstrumentation.from(env.getGraphQlContext());
+        UnauthenticatedException.require(rc.caller());
+
+        AppointmentImpl a = buildDraftAppointment(appointment, "appointment");
+        int cap = limit == null ? 30 : Math.max(1, Math.min(limit, 100));
+        List<org.rapla.entities.domain.AppointmentBlock> blocks = new ArrayList<>();
+        a.createBlocks(a.getStart(), a.getStart().plusYears(2), blocks, false);
+        List<OccurrenceRow> rows = new ArrayList<>(Math.min(blocks.size(), cap));
+        for (org.rapla.entities.domain.AppointmentBlock b : blocks)
+        {
+            if (rows.size() >= cap) break;
+            rows.add(new OccurrenceRow(b.getStartDateTime(), b.getEndDateTime(), b.isException()));
+        }
+        return rows;
+    }
+
+    /** Wire row for the GraphQL {@code Occurrence} type. */
+    public record OccurrenceRow(LocalDateTime start, LocalDateTime end, boolean exception)
+    {
+    }
+
     // ============================================================ potentialConflicts
 
     @QueryMapping
@@ -234,31 +270,39 @@ public class AvailabilityGraphQLController
         int i = 0;
         for (Object o : specs)
         {
-            Map<?, ?> spec = (Map<?, ?>) o;
-            String path = "input.appointments[" + i++ + "]";
-            String id = (String) spec.get("id");
-            if (id == null || id.isBlank())
-            {
-                throw new ReservationMutationException("REQUIRED", path + ".id",
-                        "appointment id is REQUIRED for availability queries (id-first drafts, PRD 056 §9)");
-            }
-            if (spec.get("repeating") != null)
-            {
-                throw new ReservationMutationException("UNSUPPORTED", path + ".repeating",
-                        "repeating appointments are not supported by availability v1");
-            }
-            LocalDateTime start = (LocalDateTime) spec.get("start");
-            LocalDateTime end = (LocalDateTime) spec.get("end");
-            if (start == null || end == null || !end.isAfter(start))
-            {
-                throw new ReservationMutationException("INVALID", path,
-                        "appointment needs start < end");
-            }
-            AppointmentImpl a = new AppointmentImpl(start, end);
-            a.setId(id);
-            out.add(a);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> spec = (Map<String, Object>) o;
+            out.add(buildDraftAppointment(spec, "input.appointments[" + i++ + "]"));
         }
         return out;
+    }
+
+    private static AppointmentImpl buildDraftAppointment(Map<String, Object> spec, String path)
+    {
+        String id = (String) spec.get("id");
+        if (id == null || id.isBlank())
+        {
+            throw new ReservationMutationException("REQUIRED", path + ".id",
+                    "appointment id is REQUIRED for availability queries (id-first drafts, PRD 056 §9)");
+        }
+        LocalDateTime start = (LocalDateTime) spec.get("start");
+        LocalDateTime end = (LocalDateTime) spec.get("end");
+        if (start == null || end == null || !end.isAfter(start))
+        {
+            throw new ReservationMutationException("INVALID", path,
+                    "appointment needs start < end");
+        }
+        AppointmentImpl a = new AppointmentImpl(start, end);
+        a.setId(id);
+        // mutation-path parity (PRD 091 Phase 4.5): whole-day normalization +
+        // repeating materialization — availability must evaluate exactly what
+        // a save would persist
+        if (Boolean.TRUE.equals(spec.get("allDay")))
+        {
+            a.setWholeDays(true);
+        }
+        AppointmentInputMapper.applyRepeating(a, spec, path);
+        return a;
     }
 
     private Collection<Reservation> resolveIgnoreList(Map<String, Object> input)

@@ -17,6 +17,7 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.KeyAndPathResolver;
 import org.rapla.entities.storage.ExternalSyncEntity;
+import org.rapla.entities.storage.StoredArtifact;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -69,6 +70,7 @@ public class IOContext
         readerMap.put( RaplaMap.class, new RaplaMapReader(context));
         readerMap.put( CalendarModelConfiguration.class, new RaplaCalendarSettingsReader(context) );
         readerMap.put( ExternalSyncEntity.class, new ImportExportReader(context) );
+        readerMap.put( StoredArtifact.class, new StoredArtifactReader(context) );
     }
 
      protected void addWriters(Map<Class<? extends RaplaObject>,RaplaXMLWriter> writerMap,RaplaXMLContext context) throws RaplaException {
@@ -83,6 +85,7 @@ public class IOContext
         writerMap.put( Preferences.class, new PreferenceWriter(context) );
         writerMap.put( CalendarModelConfiguration.class, new RaplaCalendarSettingsWriter(context) );
         writerMap.put( ExternalSyncEntity.class, new ImportExportWriter(context) );
+        writerMap.put( StoredArtifact.class, new StoredArtifactWriter(context) );
     }
 
     public RaplaDefaultXMLContext createInputContext(RaplaLocale locale,RaplaResources i18n, EntityStore store, IdCreator idTable, Category superCategory) throws RaplaException {

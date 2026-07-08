@@ -155,13 +155,20 @@ The rapla vault (`docs/`) is the source of truth per the table above; the privat
 - Never commit unless explicitly asked.
 - Never push unless explicitly asked.
 - **Never `git checkout … -- <file>`, `git restore`, `git reset --hard`, `git clean`,
-  or otherwise discard uncommitted changes to tracked files without explicit user
-  approval.** Discarding silently destroys session work — yours and the user's.
-  `git restore` / `git reset --hard` / `git clean` are **hard-blocked by a PreToolUse
-  hook** (`.agents/settings.json`, §5 pattern) — they fire even under bypassPermissions
-  where `ask`/`deny` rules don't; if the user genuinely wants one, they run it themselves
-  via the `!` prefix. `git checkout … -- <file>` can't be hook-guarded (same verb as the
-  everyday `git checkout <branch>`/`-b`), so it rides on this rule — which is the part
+  `git stash` (any mutating form), or otherwise discard uncommitted changes to tracked
+  files without explicit user approval.** Discarding silently destroys session work —
+  yours and the user's. The rule covers INTENT, not a verb list: any command that
+  rewrites a tracked working file to another version is a discard, **even if recoverable**
+  ("it's only stashed", "I made a backup first" are rationalizations, not approval —
+  scar 2026-07-08: a `git stash -- <file>` run to lint the HEAD version reverted a file
+  carrying two sessions' uncommitted work; recovered only because of a manual backup).
+  `git restore` / `git reset --hard` / `git clean` / `git stash` (except `list`/`show`)
+  are **hard-blocked by a PreToolUse hook** (`.agents/settings.json`, §5 pattern) — they
+  fire even under bypassPermissions where `ask`/`deny` rules don't; if the user genuinely
+  wants one, they run it themselves via the `!` prefix. To compare against HEAD, use the
+  read-only forms: `git show HEAD:<path> > /tmp/…` / `git diff` — never swap the working
+  file. `git checkout … -- <file>` can't be hook-guarded (same verb as the everyday
+  `git checkout <branch>`/`-b`), so it rides on this rule — which is the part
   that actually failed once, so read it literally:
   - **Approval must name the action AND the file** — e.g. "yes, restore schema.graphqls".
     Agreement that a file *is* broken, a vague "fix it" / "repariere das", or any other

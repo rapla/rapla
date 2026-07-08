@@ -24,6 +24,7 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.storage.ExternalSyncEntity;
 import org.rapla.entities.storage.ReferenceInfo;
+import org.rapla.entities.storage.StoredArtifact;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.LocalCache;
@@ -43,13 +44,15 @@ public class RaplaMainWriter extends RaplaXMLWriter
     protected LocalCache cache;
     private String version = OUTPUT_FILE_VERSION;
     private final Collection<ExternalSyncEntity> importExportEntities;
+    private final Collection<StoredArtifact> artifacts;
 
-    public RaplaMainWriter(RaplaXMLContext context, LocalCache cache, Collection<ExternalSyncEntity> importExportEntities) throws RaplaException {
+    public RaplaMainWriter(RaplaXMLContext context, LocalCache cache, Collection<ExternalSyncEntity> importExportEntities, Collection<StoredArtifact> artifacts) throws RaplaException {
         super(context);
         this.cache = cache;
         this.importExportEntities = importExportEntities;
+        this.artifacts = artifacts;
         Assert.notNull(cache);
-    }    
+    }
 
     public String getVersion() {
         return version;
@@ -93,6 +96,7 @@ public class RaplaMainWriter extends RaplaXMLWriter
             println();
         }
         printImportExport();
+        printArtifacts();
         closeElement("rapla:data");
     }
     
@@ -186,6 +190,19 @@ public class RaplaMainWriter extends RaplaXMLWriter
 
     }
         
+    void printArtifacts() throws IOException, RaplaException {
+        if (artifacts == null || artifacts.isEmpty()) {
+            return;
+        }
+        final String elementName = "rapla:artifacts";
+        openElement(elementName);
+        StoredArtifactWriter writer = (StoredArtifactWriter)getWriterFor(StoredArtifact.class);
+        for (StoredArtifact artifact : artifacts) {
+            writer.printArtifact(artifact);
+        }
+        closeElement(elementName);
+    }
+
     void printImportExport() throws IOException, RaplaException {
         final String elementName = "rapla:importexports";
         openElement(elementName);

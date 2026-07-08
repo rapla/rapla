@@ -55,7 +55,7 @@ public class ImportExportManagerImpl implements ImportExportManager {
     }
 
     private void doConvert(final CachableStorageOperator cachableStorageOperator1,final CachableStorageOperator cachableStorageOperator2) throws RaplaException {
-    	cachableStorageOperator1.runWithReadLock((cache, syncEntityList) -> cachableStorageOperator2.saveData(cache, syncEntityList, null));
+    	cachableStorageOperator1.runWithReadLock((cache, syncEntityList, artifacts) -> cachableStorageOperator2.saveData(cache, syncEntityList, artifacts, null));
     }
 
 	@Override

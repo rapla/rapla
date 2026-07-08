@@ -32,7 +32,9 @@ import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.ExternalSyncEntity;
 import org.rapla.entities.storage.ReferenceInfo;
+import org.rapla.entities.storage.StoredArtifact;
 import org.rapla.entities.storage.internal.ExternalSyncEntityImpl;
+import org.rapla.entities.storage.internal.StoredArtifactImpl;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
@@ -55,6 +57,7 @@ public class UpdateEvent
     List<ReservationImpl> reservations;
     List<ConflictImpl> conflicts;
     List<ExternalSyncEntityImpl> importExports;
+    List<StoredArtifactImpl> artifacts;
 
     private Set<SerializableReferenceInfo> removeSet;
 
@@ -310,6 +313,11 @@ public class UpdateEvent
             {
                 importExports = new ArrayList<>();
                 list = importExports;
+            }
+            else if (class1.equals(StoredArtifact.class))
+            {
+                artifacts = new ArrayList<>();
+                list = artifacts;
             }
             else
             {

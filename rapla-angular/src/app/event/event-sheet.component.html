@@ -18,8 +18,8 @@
         (keydown.enter)="activate('header')"
         (focusin)="activate('header')"
       >
-        <div class="row">
-          <label class="field">
+        <div class="hbar">
+          <label class="field type">
             <span class="lab">Veranstaltungstyp</span>
             <select
               [ngModel]="d.typeKey"
@@ -31,20 +31,20 @@
               }
             </select>
           </label>
-          @if (titleAttrs().length > 0) {
-            <app-classification-edit
-              class="titles"
-              [typeKey]="d.typeKey"
-              [values]="d.values"
-              [disabled]="!canModify()"
-              [onlyKeys]="titleExcludeKeys()"
-              (patch)="applyClassificationPatch($event)"
-            />
-          }
-          <button type="button" class="act" (click)="headerOpen.set(false); $event.stopPropagation()">
+          <button type="button" class="act collapse" (click)="headerOpen.set(false); $event.stopPropagation()">
             ▴ einklappen
           </button>
         </div>
+        @if (titleAttrs().length > 0) {
+          <app-classification-edit
+            class="titles top-gap"
+            [typeKey]="d.typeKey"
+            [values]="d.values"
+            [disabled]="!canModify()"
+            [onlyKeys]="titleExcludeKeys()"
+            (patch)="applyClassificationPatch($event)"
+          />
+        }
         <app-classification-edit
           class="top-gap"
           [typeKey]="d.typeKey"
@@ -134,6 +134,15 @@
             <span class="right">
               <span class="hint">{{ repeatingLabel(a) }}</span>
               @if (canModify()) {
+                <button
+                  type="button"
+                  class="act linkish"
+                  [class.rep-open]="repeatingOpen() === a.id"
+                  title="Wiederholung"
+                  (click)="toggleRepeatingPanel(a)"
+                >
+                  ↻
+                </button>
                 <button type="button" class="act linkish" (click)="editingAppointment.set(a.id)">✎</button>
                 <button
                   type="button"
@@ -147,11 +156,131 @@
             </span>
           }
         </div>
+        <!-- Phase 4.3 — recurrence panel (four-field row above stays untouched;
+             the end DATE of one occurrence derives from start + duration) -->
+        @if (repeatingOpen() === a.id && canModify()) {
+          <div class="rep-panel">
+            <div class="row tight">
+              <label class="field">
+                <span class="lab">Wiederholt sich</span>
+                <select
+                  [ngModel]="a.repeating?.type ?? 'NONE'"
+                  (ngModelChange)="setRepeatingType(a, $event)"
+                >
+                  <option value="NONE">nie (Einzeltermin)</option>
+                  <option value="DAILY">täglich</option>
+                  <option value="WEEKLY">wöchentlich</option>
+                  <option value="MONTHLY">monatlich</option>
+                  <option value="YEARLY">jährlich</option>
+                </select>
+              </label>
+              @if (a.repeating; as rule) {
+                <label class="field">
+                  <span class="lab">alle</span>
+                  <input
+                    class="rep-num"
+                    type="number"
+                    min="1"
+                    [ngModel]="rule.interval"
+                    (ngModelChange)="setRepInterval(a, $event)"
+                  />
+                </label>
+              }
+            </div>
+            @if (a.repeating; as rule) {
+              @if (rule.type === 'WEEKLY') {
+                <div class="rep-weekdays">
+                  @for (w of weekdayOptions; track w.value) {
+                    <button
+                      type="button"
+                      class="wd"
+                      [class.on]="rule.weekdays?.includes(w.value)"
+                      (click)="toggleRepWeekday(a, w.value)"
+                    >
+                      {{ w.label }}
+                    </button>
+                  }
+                </div>
+                @if (!rule.weekdays?.length) {
+                  <p class="rep-error">Mindestens ein Wochentag — sonst hat die Serie keine Termine.</p>
+                }
+              }
+              <div class="rep-end">
+                <label class="opt">
+                  <input
+                    type="radio"
+                    [name]="'repend-' + a.id"
+                    [checked]="repEndMode(a) === 'FOREVER'"
+                    (change)="setRepEndMode(a, 'FOREVER')"
+                  />
+                  endet nie
+                </label>
+                <label class="opt">
+                  <input
+                    type="radio"
+                    [name]="'repend-' + a.id"
+                    [checked]="repEndMode(a) === 'UNTIL'"
+                    (change)="setRepEndMode(a, 'UNTIL')"
+                  />
+                  endet am
+                  <mat-form-field class="f-date" appearance="outline" subscriptSizing="dynamic">
+                    <input
+                      matInput
+                      [matDatepicker]="ud"
+                      [disabled]="repEndMode(a) !== 'UNTIL'"
+                      [value]="untilDate(a)"
+                      (dateChange)="setRepUntil(a, $event.value)"
+                    />
+                    <mat-datepicker-toggle matSuffix [for]="ud" />
+                    <mat-datepicker #ud />
+                  </mat-form-field>
+                </label>
+                <label class="opt">
+                  <input
+                    type="radio"
+                    [name]="'repend-' + a.id"
+                    [checked]="repEndMode(a) === 'COUNT'"
+                    (change)="setRepEndMode(a, 'COUNT')"
+                  />
+                  endet nach
+                  <input
+                    class="rep-num"
+                    type="number"
+                    min="1"
+                    [disabled]="repEndMode(a) !== 'COUNT'"
+                    [ngModel]="rule.count ?? 10"
+                    (ngModelChange)="setRepCount(a, $event)"
+                  />
+                  Terminen
+                </label>
+              </div>
+              <div class="rep-summary">
+                {{ repSummary(a) }}
+                @if (rule.exceptions.length) {
+                  <span class="rep-badge">{{ rule.exceptions.length }} Ausnahmen</span>
+                }
+              </div>
+              <div class="rep-preview">
+                @for (occ of previewRows(); track occ.start; let i = $index) {
+                  <button
+                    type="button"
+                    class="occ"
+                    [class.skipped]="isSkipped(a, occ)"
+                    (click)="toggleRepOccurrence(a, occ)"
+                  >
+                    <span class="no">{{ i + 1 }}.</span>
+                    <span class="when">{{ occ.start | date: 'EE dd.MM.yyyy' }} · {{ occ.start | date: 'HH:mm' }}–{{ occ.end | date: 'HH:mm' }}</span>
+                    <span class="tag">{{ isSkipped(a, occ) ? 'übersprungen' : 'überspringen' }}</span>
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        }
       }
       @if (canModify()) {
         <div class="row act top-gap">
           <button type="button" class="dashed" (click)="addAppointment()">+ Termin</button>
-          <button type="button" class="dashed" disabled title="Phase 4">↻ Wiederholung…</button>
         </div>
       }
     </section>

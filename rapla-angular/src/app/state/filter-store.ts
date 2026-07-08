@@ -46,6 +46,12 @@ export class FilterStore {
     this.persist();
   }
 
+  /** Bulk-replace the whole filter (PRD 099 — the rail's selection mirror). */
+  setAll(entries: FilterEntry[]): void {
+    this._entries.set([...entries]);
+    this.persist();
+  }
+
   add(entry: FilterEntry): void {
     if (this.has(entry.id)) return;
     this._entries.update((es) => [...es, entry]);

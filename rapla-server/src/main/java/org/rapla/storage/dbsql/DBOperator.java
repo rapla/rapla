@@ -28,6 +28,7 @@ import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.ExternalSyncEntity;
+import org.rapla.entities.storage.StoredArtifact;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.Conflict;
@@ -602,10 +603,10 @@ import java.time.LocalDateTime;
             c = null;
             c = createConnection();
             final Connection conn = c;
-            sourceOperator.runWithReadLock((cache, externalSyncEntityList) -> {
+            sourceOperator.runWithReadLock((cache, externalSyncEntityList, artifacts) -> {
                 try
                 {
-                    saveData(conn, cache, externalSyncEntityList);
+                    saveData(conn, cache, externalSyncEntityList, artifacts);
                 }
                 catch (SQLException ex)
                 {
@@ -763,14 +764,15 @@ import java.time.LocalDateTime;
                     final List<String> missing = new ArrayList<>();
                     for (Entity stored : storeObjects)
                     {
-                        if (!refreshedIds.contains(stored.getId()))
+                        // StoredArtifact is read-through and never in the history replay (PRD 098)
+                        if (stored.getTypeClass() != StoredArtifact.class && !refreshedIds.contains(stored.getId()))
                         {
                             missing.add(stored.getId());
                         }
                     }
                     for (ReferenceInfo removed : removeObjects)
                     {
-                        if (!refreshedIds.contains(removed.getId()))
+                        if (removed.getType() != StoredArtifact.class && !refreshedIds.contains(removed.getId()))
                         {
                             missing.add(removed.getId());
                         }
@@ -1002,7 +1004,7 @@ import java.time.LocalDateTime;
 
 
     @Override
-    public synchronized void saveData(LocalCache cache, Collection<ExternalSyncEntity> externalSyncEntityList,String version) throws RaplaException
+    public synchronized void saveData(LocalCache cache, Collection<ExternalSyncEntity> externalSyncEntityList, Collection<StoredArtifact> artifacts, String version) throws RaplaException
     {
         Connection connection = createConnection();
         try
@@ -1010,7 +1012,7 @@ import java.time.LocalDateTime;
             Map<String, TableDef> schema = loadDBSchema(connection);
             RaplaSQL raplaSQLOutput = new RaplaSQL(createOutputContext(cache));
             raplaSQLOutput.createOrUpdateIfNecessary(connection, schema);
-            saveData(connection, cache, externalSyncEntityList);
+            saveData(connection, cache, externalSyncEntityList, artifacts);
 
         }
         catch (SQLException ex)
@@ -1023,7 +1025,7 @@ import java.time.LocalDateTime;
         }
     }
 
-    protected void saveData(Connection connection, LocalCache cache,Collection<ExternalSyncEntity> externalSyncEntityList) throws RaplaException, SQLException
+    protected void saveData(Connection connection, LocalCache cache,Collection<ExternalSyncEntity> externalSyncEntityList, Collection<StoredArtifact> artifacts) throws RaplaException, SQLException
     {
         String connectionName = getConnectionName();
         LOGGER.info("Importing Data into {}", connectionName);
@@ -1042,6 +1044,7 @@ import java.time.LocalDateTime;
         LOGGER.info("Inserting new Data into {}", connectionName);
         raplaSQLOutput.createAll(connection);
         raplaSQLOutput.saveAllSyncEntities(connection, externalSyncEntityList );
+        raplaSQLOutput.saveAllArtifacts(connection, artifacts == null ? Collections.emptyList() : artifacts);
         if (!connection.getAutoCommit())
         {
             connection.commit();
@@ -1203,6 +1206,21 @@ import java.time.LocalDateTime;
         catch (SQLException e)
         {
             throw new RaplaException("Error connecting to database reading importExport", e);
+        }
+    }
+
+    @Override
+    public Collection<StoredArtifact> getStoredArtifacts() throws RaplaException
+    {
+        try (Connection con = createConnection())
+        {
+            final RaplaDefaultXMLContext context = createOutputContext(cache);
+            final RaplaSQL raplaSQL = new RaplaSQL(context);
+            return raplaSQL.getAllArtifacts(con);
+        }
+        catch (SQLException e)
+        {
+            throw new RaplaException("Error connecting to database reading artifacts", e);
         }
     }
 

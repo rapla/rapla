@@ -83,6 +83,7 @@ public class HotSwappableGraphQlSource implements GraphQlSource
     private final ObjectProvider<Instrumentation> instrumentations;
     private final ObjectProvider<GraphQlSourceBuilderCustomizer> sourceBuilderCustomizers;
     private final StorageOperator operator;
+    private final RaplaLocale raplaLocale;
     private final GeneratedClassificationWiring generatedWiring;
 
     private final AtomicReference<GraphQlSource> delegate = new AtomicReference<>();
@@ -110,6 +111,7 @@ public class HotSwappableGraphQlSource implements GraphQlSource
         this.instrumentations = instrumentations;
         this.sourceBuilderCustomizers = sourceBuilderCustomizers;
         this.operator = operator;
+        this.raplaLocale = raplaLocale;
         // PRD 073 — aggregate function descriptors once; drives generated function-fields (SDL + wiring).
         this.functionDescriptors = FunctionFieldGenerator.aggregate(functionFactories);
         this.functionFieldsSdl = FunctionFieldGenerator.generateSdl(this.functionDescriptors);
@@ -140,7 +142,7 @@ public class HotSwappableGraphQlSource implements GraphQlSource
     public boolean rebuild()
     {
         Collection<DynamicType> types = fetchDynamicTypes();
-        String newSdl = ClassificationSdlGenerator.generate(types) + functionFieldsSdl + ColumnPresentation.generateSdl();
+        String newSdl = ClassificationSdlGenerator.generate(types, org.rapla.server.internal.ServerLocaleResolver.resolve(operator, raplaLocale)) + functionFieldsSdl + ColumnPresentation.generateSdl();
         String newHash = sha256(newSdl);
         if (newHash.equals(lastGeneratedSdlHash))
         {
@@ -158,7 +160,7 @@ public class HotSwappableGraphQlSource implements GraphQlSource
     private GraphQlSource buildSource()
     {
         Collection<DynamicType> types = fetchDynamicTypes();
-        String generatedSdl = ClassificationSdlGenerator.generate(types) + functionFieldsSdl + ColumnPresentation.generateSdl();
+        String generatedSdl = ClassificationSdlGenerator.generate(types, org.rapla.server.internal.ServerLocaleResolver.resolve(operator, raplaLocale)) + functionFieldsSdl + ColumnPresentation.generateSdl();
         lastGeneratedSdlHash = sha256(generatedSdl);
         return buildSource(types, generatedSdl);
     }

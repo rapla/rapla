@@ -373,7 +373,7 @@ public class CalendarPageController
     @NotNull
     private String getBaseUrl(HttpServletRequest request)
     {
-        return AbstractHTMLCalendarPage.getUrl(request, "calendar");
+        return AbstractHTMLCalendarPage.getUrl(request, "rapla/calendar");
     }
 
     private void writeStacktrace(HttpServletResponse response, Exception ex)

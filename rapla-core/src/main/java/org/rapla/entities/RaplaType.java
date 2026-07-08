@@ -23,6 +23,7 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.ExternalSyncEntity;
+import org.rapla.entities.storage.StoredArtifact;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 
@@ -65,6 +66,7 @@ public class RaplaType<T>  {
         new RaplaType<>(Attribute.class, "attribute");
         new RaplaType<>(DynamicType.class, "dynamictype");
         new RaplaType<>(ExternalSyncEntity.class, "importexport");
+        new RaplaType<>(StoredArtifact.class, "artifact");
     }
 
 

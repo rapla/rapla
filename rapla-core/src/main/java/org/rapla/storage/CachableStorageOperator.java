@@ -22,6 +22,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.storage.ExternalSyncEntity;
 import org.rapla.entities.storage.ReferenceInfo;
+import org.rapla.entities.storage.StoredArtifact;
 import org.rapla.framework.RaplaException;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.impl.EntityStore;
@@ -63,7 +64,10 @@ public interface CachableStorageOperator extends StorageOperator {
 	void runWithReadLock(CachableStorageOperatorCommand cmd) throws RaplaException;
     void dispatch(UpdateEvent evt) throws RaplaException;
     String authenticate(String username,String password) throws RaplaException;
-    void saveData(LocalCache cache, Collection<ExternalSyncEntity> syncEntities, String version) throws RaplaException;
+    void saveData(LocalCache cache, Collection<ExternalSyncEntity> syncEntities, Collection<StoredArtifact> artifacts, String version) throws RaplaException;
+
+    /** PRD 098 — all server-only stored artifacts, read-through (never cached in LocalCache). */
+    Collection<StoredArtifact> getStoredArtifacts() throws RaplaException;
     
     Collection<Entity> getVisibleEntities(final User user) throws RaplaException;
 

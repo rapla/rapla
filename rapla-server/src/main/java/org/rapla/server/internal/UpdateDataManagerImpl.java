@@ -36,6 +36,7 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.ExternalSyncEntity;
+import org.rapla.entities.storage.StoredArtifact;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.facade.Conflict;
@@ -481,7 +482,8 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
             return false;
         }
 
-        if (raplaType == Appointment.class || raplaType == Reservation.class  || raplaType == ExternalSyncEntity.class)
+        if (raplaType == Appointment.class || raplaType == Reservation.class  || raplaType == ExternalSyncEntity.class
+                || raplaType == StoredArtifact.class)
         {
             return false;
         }

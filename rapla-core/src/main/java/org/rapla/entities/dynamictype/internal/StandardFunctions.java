@@ -56,6 +56,8 @@ public class StandardFunctions implements FunctionFactory
             case NameFunction.ID: return new NameFunction(args, raplaLocale);
             case ConcatFunction.ID: return new ConcatFunction(args);
             case EqualsFunction.ID: return new EqualsFunction(args);
+            case NowFunction.ID: return new NowFunction(args);
+            case IsBeforeFunction.ID: return new IsBeforeFunction(args);
             case FilterFunction.ID: return new FilterFunction(args);
             case DateFunction.ID: return new DateFunction(args);
             case IntervallFunction.ID: return new IntervallFunction(args);
@@ -98,6 +100,8 @@ public class StandardFunctions implements FunctionFactory
             d(NameFunction.ID,            "String",           "CLASSIFIABLE",0, 2,  "Localized name of the object (optional language)."),
             d(ConcatFunction.ID,          "String",           "ANY",         0, -1, "Concatenate all arguments into one string."),
             d(EqualsFunction.ID,          "Boolean",          "ANY",         2, 2,  "True if the two arguments are equal."),
+            d(NowFunction.ID,             "DateTime",         "ANY",         0, 0,  "Current server date-time."),
+            d(IsBeforeFunction.ID,        "Boolean",          "ANY",         2, 2,  "True if the first comparable value (e.g. date-time) sorts before the second."),
             d(FilterFunction.ID,          "[T]",              "ANY",         2, 2,  "Filter a list by a predicate lambda."),
             d(DateFunction.ID,            "Date",             "EVENT",       1, 1,  "Date (time cut) of the event."),
             d(IntervallFunction.ID,       "TimeInterval",     "EVENT",       1, 1,  "Time interval of the event."),
@@ -935,6 +939,53 @@ public class StandardFunctions implements FunctionFactory
                 return evalResult1 == evalResult2;
             }
             return evalResult1.equals(evalResult2);
+        }
+    }
+
+    public static class NowFunction extends Function
+    {
+        public static final String ID = "now";
+
+        public NowFunction(List<Function> args) throws IllegalAnnotationException
+        {
+            super(NAMESPACE, ID, args);
+            assertArgs(0);
+        }
+
+        @Override public LocalDateTime eval(EvalContext context)
+        {
+            return LocalDateTime.now();
+        }
+    }
+
+    public static class IsBeforeFunction extends Function
+    {
+        public static final String ID = "isBefore";
+        Function arg1;
+        Function arg2;
+
+        public IsBeforeFunction(List<Function> args) throws IllegalAnnotationException
+        {
+            super(NAMESPACE, ID, args);
+            assertArgs(2);
+            arg1 = args.get(0);
+            arg2 = args.get(1);
+        }
+
+        @SuppressWarnings({ "unchecked", "rawtypes" })
+        @Override public Boolean eval(EvalContext context)
+        {
+            Object evalResult1 = arg1.eval(context);
+            Object evalResult2 = arg2.eval(context);
+            if (!(evalResult1 instanceof Comparable) || !(evalResult2 instanceof Comparable))
+            {
+                return null;
+            }
+            if (!evalResult1.getClass().isInstance(evalResult2) && !evalResult2.getClass().isInstance(evalResult1))
+            {
+                return null;
+            }
+            return ((Comparable) evalResult1).compareTo(evalResult2) < 0;
         }
     }
 

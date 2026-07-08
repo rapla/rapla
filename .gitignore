@@ -76,3 +76,6 @@ secrets.yaml
 
 # Obsidian vault config — local app state (UI layout, plugins), not project content
 docs/.obsidian/
+
+# Leihschein/Leihvertrag MOCK (PRD 097 preview) — throwaway hand-rendered stand-in, not for commit
+/rapla-server/src/main/java/org/rapla/server/spring/web/LeihscheinMockController.java

@@ -70,13 +70,20 @@ export class AvailabilitySearchService {
       candidates,
       ignoreReservationIds: ignoreReservationId ? [ignoreReservationId] : [],
     });
-    const rows = (wire: AvailabilityWire | undefined): AvailabilityRow[] =>
-      (wire?.resourceAvailability ?? []).map((r) => ({
+    // Never swallow errors[] silently (PRD 091 Phase 4.5 side-finding: the
+    // repeating-UNSUPPORTED gap hid behind empty rows) — log, keep the
+    // pipeline alive with an empty result.
+    const rows = (resp: { data?: AvailabilityWire; errors?: unknown[] }): AvailabilityRow[] => {
+      if (resp.errors?.length) {
+        console.warn('[availability] resourceAvailability errors:', resp.errors);
+      }
+      return (resp.data?.resourceAvailability ?? []).map((r) => ({
         id: r.allocatable.id,
         name: r.allocatable.name ?? r.allocatable.id,
         status: r.status,
         conflictingAppointmentIds: r.conflictingAppointmentIds,
       }));
+    };
 
     const hits$ =
       searchText.trim().length > 0
@@ -84,13 +91,13 @@ export class AvailabilitySearchService {
             .query<AvailabilityWire>(QUERY, {
               input: base({ filter: { searchText: searchText.trim(), limit: 50 } }),
             })
-            .pipe(map((resp) => rows(resp.data)))
+            .pipe(map(rows))
         : of([] as AvailabilityRow[]);
     const byId$ =
       ids.length > 0
         ? this.gql
             .query<AvailabilityWire>(QUERY, { input: base({ ids }) })
-            .pipe(map((resp) => rows(resp.data)))
+            .pipe(map(rows))
         : of([] as AvailabilityRow[]);
 
     return forkJoin({ hits: hits$, idRows: byId$ }).pipe(

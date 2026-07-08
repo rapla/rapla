@@ -17,7 +17,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatTimepickerModule } from '@angular/material/timepicker';
-import { Subject, debounceTime, switchMap } from 'rxjs';
+import { Subject, catchError, debounceTime, of, switchMap, timeout } from 'rxjs';
 
 import {
   ClassificationEditComponent,
@@ -41,6 +41,21 @@ import {
   type DraftAppointment,
   type EventDraft,
 } from './event-draft';
+import { OccurrencePreviewService, type OccurrenceRow } from './occurrence-preview.service';
+import {
+  RAPLA_WEEKDAYS_MONDAY_FIRST,
+  defaultRule,
+  endModeOf,
+  ruleSummary,
+  toggleException,
+  toggleWeekday,
+  withCount,
+  withEndMode,
+  withInterval,
+  withUntil,
+  type EndMode,
+  type RepeatType,
+} from './repeating-edit';
 
 /**
  * PRD 091 Phase 2.3–2.6 — the event sheet (single route `/app/event/:id`).
@@ -70,6 +85,16 @@ export interface EventSheetDialogData {
 
 const CIRCLED = '①②③④⑤⑥⑦⑧⑨⑩';
 
+/** PRD 099 — prototype values worth seeding: nulls stay OMITTED on the wire
+ *  (explicit null means "clear" since the null-semantics fix). */
+function nonNullEntries(values: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(values)) {
+    if (v !== null && v !== undefined) out[k] = v;
+  }
+  return out;
+}
+
 @Component({
   selector: 'app-event-sheet',
   standalone: true,
@@ -90,6 +115,7 @@ const CIRCLED = '①②③④⑤⑥⑦⑧⑨⑩';
 export class EventSheetComponent {
   private readonly data = inject(EventDataService);
   private readonly availability = inject(AvailabilitySearchService);
+  private readonly occurrences = inject(OccurrencePreviewService);
   private readonly classificationSchema = inject(ClassificationSchemaService);
   private readonly gql = inject(GraphqlService);
   private readonly location = inject(Location);
@@ -123,6 +149,11 @@ export class EventSheetComponent {
   readonly giltOpen = signal<string | null>(null);
   readonly editingAppointment = signal<string | null>(null);
 
+  // PRD 091 Phase 4.3 — recurrence panel (one open at a time, per appointment).
+  readonly repeatingOpen = signal<string | null>(null);
+  readonly previewRows = signal<OccurrenceRow[]>([]);
+  readonly weekdayOptions = RAPLA_WEEKDAYS_MONDAY_FIRST;
+
   readonly saving = signal(false);
   readonly concurrent = signal(false);
   readonly issues = signal<MutationIssue[]>([]);
@@ -153,6 +184,8 @@ export class EventSheetComponent {
     const d = this.draft();
     return d !== null && isDirty(d, this.baseline);
   });
+
+  private typeSwitchToken = 0;
 
   // PRD 091 D5 — in-sheet undo/redo (memento stack, pre-save only).
   private readonly history = new DraftHistory();
@@ -186,6 +219,7 @@ export class EventSheetComponent {
   });
 
   private readonly refresh$ = new Subject<void>();
+  private readonly preview$ = new Subject<void>();
 
   constructor() {
     this.refresh$
@@ -208,6 +242,20 @@ export class EventSheetComponent {
         this.statusById.set(result.byId);
         this.hits.set(result.hits);
       });
+    // occurrence preview for the open recurrence panel — server-owned
+    // expansion (Phase 4.1); re-fetched on every draft change like the
+    // availability pills (current truth, never snapshot-time)
+    this.preview$
+      .pipe(
+        debounceTime(250),
+        switchMap(() => {
+          const a = this.openRepeatingAppointment();
+          if (!a?.repeating) return of([] as OccurrenceRow[]);
+          return this.occurrences.expand(a);
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((rows) => this.previewRows.set(rows));
     this.loadTypes();
     // descriptors must be ready for setTypeKey's remap even if the header
     // (and with it the classification component) was never opened
@@ -229,6 +277,7 @@ export class EventSheetComponent {
       this.active.set('header');
       this.loading.set(false);
       this.refresh$.next();
+      this.seedDefaults(d.typeKey);
       return;
     }
     this.data
@@ -244,6 +293,29 @@ export class EventSheetComponent {
         this.canModify.set(loaded.canModify && !this.dialogData?.readOnly);
         this.baseline = snapshot(loaded.draft);
         this.refresh$.next();
+      });
+  }
+
+  /**
+   * PRD 099 Phase 4 — seed a NEW draft with the server-computed type defaults
+   * (`reservationPrototype`). Applies only while the draft is still pristine
+   * (no history, not dirty) so a fast-typing user is never overwritten; the
+   * baseline includes the seeds (a fresh draft is NOT dirty). Fetch failed →
+   * no seeds, the server still applies defaults at create.
+   */
+  private seedDefaults(typeKey: string): void {
+    this.classificationSchema
+      .prototype(typeKey)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((defaults) => {
+        const d = this.draft();
+        if (!defaults || !d || d.persisted || d.typeKey !== typeKey) return;
+        if (this.history.canUndo() || this.dirty()) return;
+        const seeds = nonNullEntries(defaults);
+        if (Object.keys(seeds).length === 0) return;
+        const seeded = { ...d, values: { ...seeds, ...d.values } };
+        this.draft.set(seeded);
+        this.baseline = snapshot(seeded);
       });
   }
 
@@ -362,6 +434,7 @@ export class EventSheetComponent {
     this.draft.set({ ...d });
     this.historyTick.update((v) => v + 1);
     this.refresh$.next();
+    this.preview$.next();
   }
 
   undo(): void {
@@ -381,8 +454,10 @@ export class EventSheetComponent {
     if (!restored || !d) return;
     this.draft.set({ ...d, ...restored });
     this.historyTick.update((v) => v + 1);
-    // availability pills re-fetch — always current truth, never snapshot-time
+    // availability pills + occurrence preview re-fetch — always current
+    // truth, never snapshot-time
     this.refresh$.next();
+    this.preview$.next();
   }
 
   private resetHistory(): void {
@@ -403,15 +478,37 @@ export class EventSheetComponent {
    * Server accepts the switch since PRD 056 OQ1.c revision (2026-07-07).
    */
   setTypeKey(key: string): void {
-    this.mutateDraft((d) => {
-      const map = this.classificationSchema.typeMap();
-      const from = map?.get(d.typeKey)?.attributes ?? [];
-      const to = map?.get(key)?.attributes;
-      // schema not loaded yet → keep nothing (never invent keys the target
-      // @oneOf variant might not have — PRD 096 C)
-      d.values = to ? remapValues(d.values, from, to) : {};
-      d.typeKey = key;
-    }, 'Veranstaltungstyp');
+    const current = this.draft();
+    if (!current || key === current.typeKey) return;
+    // PRD 099 Phase 4 — await the target type's prototype (cache or fetch)
+    // BEFORE mutating so remap + default gap-fill stay ONE undoable step.
+    // Latest-wins on rapid double-switches; timeout/error → remap-only.
+    const token = ++this.typeSwitchToken;
+    this.classificationSchema
+      .prototype(key)
+      .pipe(
+        timeout({ first: 3000 }),
+        catchError(() => of(null)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((defaults) => {
+        if (token !== this.typeSwitchToken) return;
+        this.mutateDraft((d) => {
+          const map = this.classificationSchema.typeMap();
+          const from = map?.get(d.typeKey)?.attributes ?? [];
+          const to = map?.get(key)?.attributes;
+          // schema not loaded yet → keep nothing (never invent keys the target
+          // @oneOf variant might not have — PRD 096 C)
+          d.values = to ? remapValues(d.values, from, to) : {};
+          if (to && defaults) {
+            const seeds = nonNullEntries(defaults);
+            for (const [k, v] of Object.entries(seeds)) {
+              if (!(k in d.values)) d.values[k] = v;
+            }
+          }
+          d.typeKey = key;
+        }, 'Veranstaltungstyp');
+      });
   }
 
   applyClassificationPatch(p: ClassificationPatch): void {
@@ -529,6 +626,114 @@ export class EventSheetComponent {
         }
       }
     }, 'Termin gelöscht');
+    if (this.repeatingOpen() === id) this.repeatingOpen.set(null);
+  }
+
+  // ------------------------------------------------------------ recurrence (Phase 4.3)
+
+  private openRepeatingAppointment(): DraftAppointment | null {
+    const id = this.repeatingOpen();
+    if (!id) return null;
+    return this.draft()?.appointments.find((a) => a.id === id) ?? null;
+  }
+
+  toggleRepeatingPanel(a: DraftAppointment): void {
+    if (!this.canModify()) return;
+    this.repeatingOpen.update((cur) => (cur === a.id ? null : a.id));
+    this.previewRows.set([]);
+    this.preview$.next();
+  }
+
+  /** The rule-edit funnel: every transform runs on the draft's own appointment. */
+  private mutateRule(
+    id: string,
+    fn: (a: DraftAppointment) => void,
+    label: string,
+    coalesceKey: string | null = null,
+  ): void {
+    this.mutateDraft(
+      (d) => {
+        const a = d.appointments.find((x) => x.id === id);
+        if (a) fn(a);
+      },
+      label,
+      coalesceKey,
+    );
+  }
+
+  setRepeatingType(a: DraftAppointment, type: RepeatType | 'NONE'): void {
+    this.mutateRule(
+      a.id,
+      (ap) => (ap.repeating = type === 'NONE' ? null : defaultRule(type, ap.start)),
+      'Wiederholung',
+    );
+  }
+
+  setRepInterval(a: DraftAppointment, value: string): void {
+    this.mutateRule(
+      a.id,
+      (ap) => (ap.repeating = withInterval(ap.repeating!, Number(value))),
+      'Intervall',
+      `appt:${a.id}:rep:interval`,
+    );
+  }
+
+  toggleRepWeekday(a: DraftAppointment, weekday: number): void {
+    this.mutateRule(a.id, (ap) => (ap.repeating = toggleWeekday(ap.repeating!, weekday)), 'Wochentage');
+  }
+
+  setRepEndMode(a: DraftAppointment, mode: EndMode): void {
+    this.mutateRule(
+      a.id,
+      (ap) => (ap.repeating = withEndMode(ap.repeating!, mode, ap.start)),
+      'Serienende',
+    );
+  }
+
+  setRepUntil(a: DraftAppointment, v: Date | null): void {
+    if (!v) return;
+    const p = (n: number) => String(n).padStart(2, '0');
+    const day = `${v.getFullYear()}-${p(v.getMonth() + 1)}-${p(v.getDate())}`;
+    this.mutateRule(
+      a.id,
+      (ap) => (ap.repeating = withUntil(ap.repeating!, day)),
+      'Serienende',
+      `appt:${a.id}:rep:until`,
+    );
+  }
+
+  setRepCount(a: DraftAppointment, value: string): void {
+    this.mutateRule(
+      a.id,
+      (ap) => (ap.repeating = withCount(ap.repeating!, Number(value))),
+      'Serienende',
+      `appt:${a.id}:rep:count`,
+    );
+  }
+
+  /** The preview's click-to-skip gesture (UC-E4): toggle the occurrence's day. */
+  toggleRepOccurrence(a: DraftAppointment, row: OccurrenceRow): void {
+    this.mutateRule(
+      a.id,
+      (ap) => (ap.repeating = toggleException(ap.repeating!, row.start.slice(0, 10))),
+      'Ausnahme',
+    );
+  }
+
+  repSummary(a: DraftAppointment): string {
+    return a.repeating ? ruleSummary(a.repeating, a.start) : '';
+  }
+
+  repEndMode(a: DraftAppointment): EndMode {
+    return a.repeating ? endModeOf(a.repeating) : 'FOREVER';
+  }
+
+  untilDate(a: DraftAppointment): Date | null {
+    return a.repeating?.end ? this.asDate(a.repeating.end + 'T00:00:00') : null;
+  }
+
+  isSkipped(a: DraftAppointment, row: OccurrenceRow): boolean {
+    return row.exception || (a.repeating?.exceptions.includes(row.start.slice(0, 10)) ?? false);
   }
 
   openAddMode(): void {

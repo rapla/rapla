@@ -10,7 +10,7 @@
           },
           {
             "type": "command",
-            "command": "input=$(cat); cmd=$(echo \"$input\" | jq -r '.tool_input.command // \"\"'); if echo \"$cmd\" | grep -qE '\\bgit\\b[^|;&]*\\b(restore|clean)\\b' || echo \"$cmd\" | grep -qE '\\bgit\\b[^|;&]*\\breset\\b[^|;&]*--hard'; then echo 'BLOCKED by AGENTS.md §6: `git restore` / `git reset --hard` / `git clean` discard uncommitted work in tracked files. Fires even under bypassPermissions. If the user explicitly approved THIS exact command for a named file, they run it themselves via the ! prefix.' >&2; exit 2; fi"
+            "command": "input=$(cat); cmd=$(echo \"$input\" | jq -r '.tool_input.command // \"\"'); if echo \"$cmd\" | grep -qE '\\bgit\\b[^|;&]*\\b(restore|clean)\\b' || echo \"$cmd\" | grep -qE '\\bgit\\b[^|;&]*\\breset\\b[^|;&]*--hard' || { echo \"$cmd\" | grep -qE '\\bgit\\b[^|;&]*\\bstash\\b' && ! echo \"$cmd\" | grep -qE '\\bgit\\b[^|;&]*\\bstash\\b[[:space:]]+(list|show)\\b'; }; then echo 'BLOCKED by AGENTS.md §6: `git restore` / `git reset --hard` / `git clean` / `git stash` (all forms except list/show) discard or rewrite uncommitted work in tracked files. Fires even under bypassPermissions. If the user explicitly approved THIS exact command for a named file, they run it themselves via the ! prefix.' >&2; exit 2; fi"
           }
         ]
       }

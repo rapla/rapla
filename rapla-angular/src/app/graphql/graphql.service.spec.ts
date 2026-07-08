@@ -6,6 +6,7 @@ import {
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
 import { GraphqlService, GqlResponse } from './graphql.service';
+import { MutationBus } from './mutation-bus';
 
 describe('GraphqlService', () => {
   let service: GraphqlService;
@@ -62,5 +63,28 @@ describe('GraphqlService', () => {
     service.query('query{ x }').subscribe({ error: () => (errored = true) });
     httpMock.expectOne('/api/graphql').flush('boom', { status: 500, statusText: 'Server Error' });
     expect(errored).toBe(true);
+  });
+
+  // Manual client-side rerender trigger — later replaced by a server change listener.
+  it('mutate emits MutationBus.mutated$ on a successful mutation', () => {
+    const bus = TestBed.inject(MutationBus);
+    let fired = 0;
+    bus.mutated$.subscribe(() => fired++);
+    service.mutate('mutation{ x }').subscribe();
+    httpMock.expectOne('/api/graphql').flush({ data: { x: { id: '1' } } });
+    expect(fired).toBe(1);
+  });
+
+  it('mutate does NOT emit MutationBus.mutated$ on an error envelope or transport failure', () => {
+    const bus = TestBed.inject(MutationBus);
+    let fired = 0;
+    bus.mutated$.subscribe(() => fired++);
+    service.mutate('mutation{ x }').subscribe();
+    httpMock
+      .expectOne('/api/graphql')
+      .flush({ errors: [{ message: 'denied', extensions: { code: 'FORBIDDEN' } }] });
+    service.mutate('mutation{ x }').subscribe();
+    httpMock.expectOne('/api/graphql').flush('boom', { status: 500, statusText: 'Server Error' });
+    expect(fired).toBe(0);
   });
 });

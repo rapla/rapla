@@ -33,6 +33,17 @@ public class RaplaCspHeaderWriter implements HeaderWriter
     private final String spaReportOnlyPolicy;
     private final String apiPolicy = CspPolicyBuilder.jsonApiPolicy();
     private final String serverPagePolicy = CspPolicyBuilder.serverPagePolicy();
+    /** MOCK (PRD 097 Leihschein preview, not for commit) — document pages need inline
+     *  style + the inline print-button handler; PRD 097 D6/D6a will replace this with
+     *  the nonce'd shell + {@code sandbox} policy. */
+    private final String documentPagePolicy = String.join("; ",
+            "default-src 'none'",
+            "style-src 'unsafe-inline'",
+            "script-src 'unsafe-inline'",
+            "img-src 'self' data:",
+            "base-uri 'none'",
+            "frame-ancestors 'none'",
+            "form-action 'none'");
 
     public RaplaCspHeaderWriter(String spaReportOnlyPolicy)
     {
@@ -43,7 +54,11 @@ public class RaplaCspHeaderWriter implements HeaderWriter
     public void writeHeaders(HttpServletRequest request, HttpServletResponse response)
     {
         String path = pathWithinApplication(request);
-        if (path.startsWith("/api/"))
+        if (path.startsWith("/api/documents/"))
+        {
+            response.setHeader(ENFORCE, documentPagePolicy);
+        }
+        else if (path.startsWith("/api/"))
         {
             response.setHeader(ENFORCE, apiPolicy);
         }

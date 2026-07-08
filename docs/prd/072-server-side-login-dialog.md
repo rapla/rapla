@@ -1,6 +1,6 @@
 # PRD 072 — Server-side login dialog with provider chooser (SPA + secured pages)
 
-**Status:** done (2026-06-20) — all 7 phases shipped; Phases 5 + 6 verified live 2026-06-19/20, docs (Phase 7) landed in `docs/authentication.md` 2026-06-20
+**Status:** in-progress — **reopened 2026-07-08** for Phase 8 (memory-token hardening; see the 2026-07-08 follow-up at the end). Original scope done (2026-06-20) — all 7 phases shipped; Phases 5 + 6 verified live 2026-06-19/20, docs (Phase 7) landed in `docs/authentication.md` 2026-06-20
 
 ## Goal
 
@@ -654,3 +654,87 @@ to switch accounts). Fix:
 Real upstream single-logout (ending the KC session via a fresh `id_token_hint`) was considered
 and **deferred**: it would require keeping the IdP token server-side to mint a fresh hint at
 logout, and `prompt=login` already covers the silent-re-login + account-switch needs.
+
+## Follow-up (2026-07-08) — DECIDED: memory-token hardening (Phase 8) — supersedes the path-narrowing idea
+
+**Status: decided 2026-07-08, implementation open (Phase 8 below).** Raised while designing PRD 097
+(server-rendered semi-trusted HTML documents at standalone URLs on the main origin). Recorded here
+because PRD 072 owns the browser credential model (`CookieAuthSupport`).
+
+### The threat, and why path narrowing was dropped
+
+With PRD 097, the main origin gains **semi-trusted pages** (author-written document templates).
+A cookie's `Path` controls only *which destination URLs* the browser attaches it to — never *which
+page* a request originates from. Any script that executes on any same-origin page can
+`fetch('/api/graphql', {credentials:'include'})` and the browser attaches the `access_token`
+cookie (HttpOnly prevents *reading*, not *riding*), and the double-submit XSRF cookie is
+deliberately JS-readable, so same-origin XSS can satisfy CSRF for mutations too. The originally
+proposed narrowing of `access_token` to `Path=/api` would have shrunk transport exposure
+(logs/proxies/referrers) but provides **zero** protection against this session-riding — the
+destination `/api` always matches. The idea is therefore **obsolete**: Phase 8 removes the SPA
+access-token cookie entirely.
+
+### Hardening options evaluated (2026-07-08 dialog)
+
+1. **Prevent script execution on semi-trusted pages** (sanitize + strict CSP) — PRD 097 D6; owned by
+   the template engine, out of scope here.
+2. **Devalue the semi-trusted context: `Content-Security-Policy: sandbox`** on document responses.
+   The document gets an **opaque origin**: its requests are cross-origin → no cookies attached
+   (SameSite + CORS), no storage, no readable API responses. Even a sanitizer bypass yields nothing.
+   Never combine `allow-same-origin` with `allow-scripts` (restores the real origin = disables the
+   protection). → **accepted**, lands in PRD 097 (D6a).
+3. **Separate origin (sandbox subdomain)** — the hard SOP boundary (githubusercontent pattern).
+   → **rejected: rapla deployments have no control over subdomains.**
+4. **Non-ambient credential: access token held in SPA memory only**, sent as `Authorization` header.
+   No cookie exists that rides; a JS variable is document-bound, so semi-trusted origin neighbours
+   can neither read nor use it (unlike `localStorage`, which was origin-wide readable — the reason
+   PRD 072 left it). Residual: XSS *inside the trusted SPA itself* can read the in-memory token —
+   but such XSS can act as the user under any model; the raw-token exfiltration delta is bounded by
+   the 1 h TTL. Reload/browser-restart survival comes from the already path-scoped `refresh_token`
+   cookie (bootstrap refresh at SPA start). → **accepted as Phase 8.**
+
+**Decision: 2 + 4 combined.** Complementary layers that cover each other's residual holes: the
+sandbox seals the one gap of the memory model (a semi-trusted page calling the refresh endpoint
+and *reading* the token from the response body — under sandbox that call is cross-origin and
+unreadable); the memory model bounds the damage of a forgotten/bypassed sandbox header (no ambient
+credential left to ride). The refresh endpoint becomes the origin's single ambient-credential
+target and is hardened threefold (CSRF header + narrowed XSRF cookie + sandbox).
+
+### Phase 8 — memory-token migration (partial rollback of the Phase 2 cookie model)
+
+- [ ] **Server:** `POST /api/auth/session/refresh` returns the access token in the **response body**
+      (instead of `Set-Cookie: access_token`); login TAIL sets only the `refresh_token` cookie;
+      keep/tighten the CSRF-header requirement on the refresh endpoint. Retire the access-cookie
+      path of `CookieToBearerFilter`/`CookieAuthSupport` (the `Authorization`-header path already
+      serves Swing / iCal / API keys — unaffected).
+- [ ] **XSRF cookie scope:** the double-submit XSRF cookie must not be readable by document pages —
+      narrow its `Path` (e.g. `/app`) so semi-trusted pages cannot lift it to forge the refresh
+      call's CSRF header.
+- [ ] **SPA:** access token in a module-scope closure (never `localStorage`/`sessionStorage`/
+      cookie/`window`); `HttpClient` interceptor sets `Authorization: Bearer`; bootstrap refresh on
+      app start; the existing 401 → refresh → replay logic keeps its shape.
+- [ ] **Explorers (`/graphiql`, `/swagger-ui`):** lose cookie auth again — same choreography as the
+      SPA: shell JS calls the refresh endpoint on load, holds the token in memory, sends the header
+      (their auth-bar already has the 401→refresh→replay loop). Their SecurityConfig
+      `.authenticated()` page gate then becomes ineffective for cookie-less browsers — flip the
+      static shells to `permitAll` (they are data-free HTML; auth is enforced at `/api/graphql` /
+      `/v3/api-docs`).
+- [ ] **Verify refresh-token rotation:** confirm Spring AS rotation is active AND reuse-detection
+      revokes the token family (the class-B "stolen persistent cookie" defense); document findings
+      in `docs/authentication.md`.
+- [ ] **Docs:** update `docs/authentication.md` (credential model section) when the flip lands.
+
+**Tests:** tier-3 MockMvc — refresh response carries token in body + no `Set-Cookie: access_token`;
+`/api/graphql` 401s without `Authorization` header even with all cookies present; XSRF cookie path
+assertion; explorer shells 200 unauthenticated while their data endpoints stay gated. Playwright —
+injected `fetch('/api/graphql', {credentials:'include'})` from a PRD 097 document page gets no
+usable response.
+
+**Open questions (Phase 8):**
+- **OQ-P8.1 — `JSESSIONID` lifetime/scope.** The form-login session cookie is `Path=/` and ambient;
+  clarify how long it lives after the login TAIL and whether it can authenticate `/api` requests —
+  if so it re-opens the riding hole and needs the same treatment. *Resolution:* pending.
+- **OQ-P8.2 — refresh-token reuse detection.** Rotation without family-revoke-on-reuse leaves the
+  stolen-cookie scenario silent; verify actual SAS behaviour in rapla's config. *Resolution:* pending.
+- **OQ-P8.3 — Web-Worker token isolation** (token held in a worker so even SPA-XSS cannot read the
+  string, only ride). Noted as the known escalation step; not planned. *Resolution:* deferred.
