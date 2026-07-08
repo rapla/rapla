@@ -30,6 +30,20 @@ export const routes: Routes = [
     loadComponent: () => import('./views/view-host.component').then((m) => m.ViewHostComponent),
   },
   {
+    // PRD 091 Phase 2.3 — the event sheet. SINGLE route: "new" navigates here
+    // with a client-generated id + { isNew: true } router state (no /new route).
+    path: 'event/:id',
+    canActivate: [authGuard],
+    loadComponent: () => import('./event/event-sheet.component').then((m) => m.EventSheetComponent),
+  },
+  {
+    // THROWAWAY prototype route (PRD 091 quick-edit exploration) — no guard, no
+    // services; delete together with src/app/proto/ once the design is locked.
+    path: 'proto/quick-edit',
+    loadComponent: () =>
+      import('./proto/quick-edit-proto.component').then((m) => m.QuickEditProtoComponent),
+  },
+  {
     path: '**',
     canActivate: [authGuard],
     loadComponent: () =>
