@@ -1,15 +1,22 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 
+import {
+  AllocatableEditDialogComponent,
+  type AllocatableEditDialogData,
+} from '../allocatable/allocatable-edit-dialog.component';
 import {
   ResourceSelectionStore,
   type ResourceSelectionTab,
   type ResourceItem,
 } from '../state/resource-selection-store';
-import { FilterStore } from '../state/filter-store';
+import { FilterStore, type FilterEntry } from '../state/filter-store';
 import { AuthService, type Identity } from '../auth/auth.service';
 import { entityIcon } from './entity-icon';
+import { TableSelection } from '../views/table-selection';
 
 /**
  * The persistent left ResourceSelection. Tabs pick the source (Zuletzt/
@@ -19,9 +26,9 @@ import { entityIcon } from './entity-icon';
  */
 @Component({
   selector: 'app-resource-selection',
-  imports: [FormsModule, MatIconModule],
+  imports: [FormsModule, MatIconModule, MatMenuModule],
   template: `
-    <div class="stepper">
+    <div class="stepper" tabindex="0" (keydown)="onListKeydown($event)">
       @if (me(); as user) {
         <div
           class="pinned"
@@ -61,7 +68,13 @@ import { entityIcon } from './entity-icon';
         (ngModelChange)="query.set($event)"
       />
       @for (it of visible(); track it.id; let i = $index) {
-        <div class="item" [class.active]="store.activeId() === it.id" (click)="step($event, it, i)">
+        <div
+          class="item"
+          [class.active]="store.activeId() === it.id"
+          [class.selected]="filter.has(it.id)"
+          (mousedown)="onItemMousedown($event)"
+          (click)="step($event, it)"
+        >
           <mat-icon class="ico" [style.color]="it.color || null">{{ icon(it) }}</mat-icon>
           <span class="lbl">{{ it.label }}</span>
           @if (store.activeId() === it.id) {
@@ -76,10 +89,28 @@ import { entityIcon } from './entity-icon';
           >
             {{ store.isFavorite(it.id) ? '★' : '☆' }}
           </button>
+          @if ((it.kind ?? 'resource') === 'resource') {
+            <button
+              class="act"
+              aria-label="Aktionen"
+              title="Aktionen"
+              [matMenuTriggerFor]="itemMenu"
+              [matMenuTriggerData]="{ item: it }"
+              (click)="$event.stopPropagation()"
+            >
+              ⋮
+            </button>
+          }
         </div>
       } @empty {
         <div class="more">— leer</div>
       }
+      <mat-menu #itemMenu="matMenu">
+        <ng-template matMenuContent let-item="item">
+          <button mat-menu-item (click)="openAllocatable(item, false)">Bearbeiten</button>
+          <button mat-menu-item (click)="openAllocatable(item, true)">Anzeigen</button>
+        </ng-template>
+      </mat-menu>
     </div>
   `,
   styles: [
@@ -90,6 +121,9 @@ import { entityIcon } from './entity-icon';
         flex-direction: column;
         overflow: auto;
         height: 100%;
+      }
+      .stepper:focus {
+        outline: none;
       }
       .pinned {
         display: flex;
@@ -193,6 +227,9 @@ import { entityIcon } from './entity-icon';
       .item:hover {
         background: rgba(63, 81, 181, 0.06);
       }
+      .item.selected {
+        background: var(--mat-sys-secondary-container, rgba(63, 81, 181, 0.12));
+      }
       .item.active {
         background: rgba(46, 125, 50, 0.1);
         border-left-color: #2e7d32;
@@ -234,6 +271,18 @@ import { entityIcon } from './entity-icon';
       .item:hover .fav.on {
         color: #f5a623;
       }
+      .item .act {
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        font-size: 0.95rem;
+        line-height: 1;
+        padding: 0 0.1rem;
+        color: transparent;
+      }
+      .item:hover .act {
+        color: rgba(0, 0, 0, 0.45);
+      }
       .more {
         padding: 0.5rem 0.9rem;
         font-size: 0.75rem;
@@ -244,8 +293,9 @@ import { entityIcon } from './entity-icon';
 })
 export class ResourceSelectionComponent {
   protected readonly store = inject(ResourceSelectionStore);
-  private readonly filter = inject(FilterStore);
+  protected readonly filter = inject(FilterStore);
   private readonly auth = inject(AuthService);
+  private readonly dialog = inject(MatDialog);
 
   /** The logged-in user, pinned at the top for a one-click "my events" scope. */
   protected readonly me = this.auth.identity;
@@ -269,38 +319,74 @@ export class ResourceSelectionComponent {
     return q ? list.filter((x) => x.label.toLowerCase().includes(q)) : list;
   });
 
-  /** Index of the last plain/ctrl click — the anchor for Shift-range selection. */
-  private anchorIndex = -1;
-
   /**
-   * Click semantics (Swing-like multi-select):
-   * - plain click → REPLACE (step to this one resource)
-   * - Strg/⌘ click → ADD (accumulate this resource into the filter)
-   * - Shift click → RANGE (add every resource between the anchor and this one)
+   * PRD 099 Phase 4 — the shared {@link TableSelection} engine (Swing tree
+   * parity, DISCONTIGUOUS_TREE_SELECTION semantics): plain click = REPLACE,
+   * Strg/⌘ = TOGGLE, Shift = RANGE from the anchor (replacing), arrows step,
+   * Shift+arrows extend. The FilterStore chips stay the source of truth —
+   * the model re-syncs from them before every interaction, the interaction
+   * result mirrors back ({@link applySelection}).
    *
    * Stepping only views — it never reorders the list (Recents stay stable).
    */
+  private readonly selection = new TableSelection<string>();
+
+  constructor() {
+    effect(() => this.selection.setRows(this.visible().map((it) => it.id)));
+  }
+
   /** Material icon for a list item (by kind + rapla type key). */
   protected icon(it: ResourceItem): string {
     return entityIcon(it.kind ?? 'resource', it.typeKey);
   }
 
-  step(event: MouseEvent, it: ResourceItem, index: number): void {
-    const entry = (r: ResourceItem) =>
-      ({ id: r.id, kind: r.kind ?? 'resource', label: r.label, color: r.color }) as const;
-    const list = this.visible();
+  private entry(r: ResourceItem): FilterEntry {
+    return { id: r.id, kind: r.kind ?? 'resource', label: r.label, color: r.color };
+  }
 
-    if (event.shiftKey && this.anchorIndex >= 0) {
-      const [a, b] = [this.anchorIndex, index].sort((x, y) => x - y);
-      for (let i = a; i <= b; i++) this.filter.add(entry(list[i]));
-    } else if (event.ctrlKey || event.metaKey) {
-      this.filter.add(entry(it));
-      this.anchorIndex = index;
-    } else {
-      this.filter.replace(entry(it));
-      this.anchorIndex = index;
-    }
+  /** Shift-click must range-select, not select text. */
+  onItemMousedown(event: MouseEvent): void {
+    if (event.shiftKey) event.preventDefault();
+  }
+
+  step(event: MouseEvent, it: ResourceItem): void {
+    this.selection.syncSelected(this.filter.entries().map((e) => e.id));
+    this.selection.pointer(it.id, {
+      shift: event.shiftKey,
+      ctrl: event.ctrlKey || event.metaKey,
+    });
+    this.applySelection(!event.shiftKey && !event.ctrlKey && !event.metaKey);
     this.store.setActive(it.id);
+  }
+
+  onListKeydown(event: KeyboardEvent): void {
+    // The search input and the tab/★/⋮ buttons own their keys.
+    if (event.target instanceof HTMLInputElement || event.target instanceof HTMLButtonElement)
+      return;
+    this.selection.syncSelected(this.filter.entries().map((e) => e.id));
+    const handled = this.selection.key(event.key, {
+      shift: event.shiftKey,
+      ctrl: event.ctrlKey || event.metaKey,
+    });
+    if (!handled) return;
+    event.preventDefault();
+    this.applySelection(!event.shiftKey && !event.ctrlKey && !event.metaKey);
+    const active = this.selection.active();
+    if (active) this.store.setActive(active);
+  }
+
+  /** Mirror the selection into the filter. Exclusive (plain click / arrow —
+   *  the step rhythm) replaces the WHOLE filter; modifier gestures keep chips
+   *  that don't belong to the visible list (search chips, other tabs). */
+  private applySelection(exclusive: boolean): void {
+    const byId = new Map(this.visible().map((it) => [it.id, it]));
+    const selected = this.selection
+      .selectedKeys()
+      .map((id) => byId.get(id))
+      .filter((it): it is ResourceItem => !!it)
+      .map((it) => this.entry(it));
+    const kept = exclusive ? [] : this.filter.entries().filter((c) => !byId.has(c.id));
+    this.filter.setAll([...kept, ...selected]);
   }
 
   /** ★ pins/unpins to Favoriten without stepping the row. */
@@ -312,5 +398,14 @@ export class ResourceSelectionComponent {
   /** Step to the logged-in user's own events — a `user` scope chip (ownerEq:<me>). */
   scopeToMe(user: Identity): void {
     this.filter.replace({ id: user.userId, kind: 'user', label: user.name || user.username });
+  }
+
+  /** PRD 096 Phase 4 — Anzeigen/Bearbeiten on a resource item (⋮ menu). */
+  openAllocatable(it: ResourceItem, readOnly: boolean): void {
+    this.dialog.open(AllocatableEditDialogComponent, {
+      data: { id: it.id, readOnly } satisfies AllocatableEditDialogData,
+      maxWidth: '95vw',
+      restoreFocus: false,
+    });
   }
 }

@@ -59,7 +59,8 @@ server-side by rapla's own engine, so no dual-runtime / client engine is needed 
    `@group`/`@hidden`. CEL is **not** used — see §"If a view ever needs more".
 5. **Views are stored as persisted-query *text*** (Preferences/`RaplaMap`, like
    `tableview.config`; defaults shipped as code constants) — **no `idref` binding, no invented
-   format** (GraphQL is name-based by spec). Key currency is handled by **revalidate-and-mark**:
+   format** (GraphQL is name-based by spec; durable rationale extracted to
+   [ADR 0005](../decisions/0005-graphql-keys-are-api-identity.md)). Key currency is handled by **revalidate-and-mark**:
    a type/attribute/category save triggers the existing `HotSwappableGraphQlSource.rebuild()`,
    after which **all** stored views are re-validated against the new schema and marked
    `valid`/`invalidReason`; invalid views keep their text, refuse execution, and the **admin
@@ -116,14 +117,14 @@ Non-conventional bindings use a `@control` client directive (override only).
 **Filters live in variables, not the view definition** — and there are **two filter
 sources with two homes:**
 - **Annotation filters stay *inline* in the query** — they *are* the view definition. The
-  `Kurs` column's `allocatables(filter:{ typeKeyIn:["Kurs","Teilkurs","Kursgruppe"] })`,
+  `Kurs` column's `allocatables(filter:{ typeIn:[Kurs,Teilkurs,Kursgruppe] })`,
   the `Raum` column's room-type filter, etc. define *which allocatables each column shows*;
   they come from the column annotation and **never** become variables. This is exactly the
   shipped **`Appointment.allocatables(filter: AppointmentAllocatableFilter)`** field
-  (PRD 073 Phase 0, 2026-06-19) — `typeKeyIn`/`isPersonEq` are its v1 scalars.
+  (PRD 073 Phase 0, 2026-06-19) — `typeKeyIn`/`isPersonEq` were its v1 scalars (renamed `typeIn` + per-kind enums, PRD 059 Phase 7 / ADR 0005).
 - **CalendarModel filters become *variables*** — all user state, carried in the root's
   `filter: $filter` (`ReservationFilter`, SDL below):
-  - **reservation type** (checkbox) → `typeKeyEq`; per-type **classification rules**
+  - **reservation type** (checkbox) → `typeIn`; per-type **classification rules**
     (*neue Regel für*) → the generated `where<TypeKey>` predicates (AND/OR/NOT + attribute
     comparisons, PRD 059) — richer than a flat type list
   - **resource-tree selection** → `allocatableMatching` (PRD 066) or `allocatableIdsIn`
@@ -132,11 +133,11 @@ sources with two homes:**
 ```graphql
 query Termine($filter: ReservationFilter!) {
   appointmentBlocks(filter: $filter) {    # $filter ← CalendarModel, e.g.
-        # { from, to, typeKeyEq:"Lehrveranstaltung",
+        # { from, to, typeIn:[Lehrveranstaltung],
         #   whereLehrveranstaltung:{ AND:[{campus:{eq:"KA"}},{year:{eq:2024}}] },   # neue Regel für
-        #   allocatableMatching:{ typeKeyIn:["Raum","Teilraum"], idIn:["room-1"] } }  # resource tree
+        #   allocatableMatching:{ typeIn:[Raum,Teilraum], idIn:["room-1"] } }  # resource tree
     name: reservation { displayName }
-    kurs: allocatables(filter:{ typeKeyIn:["Kurs","Teilkurs","Kursgruppe"] }) { displayName }  # annotation filter — INLINE
+    kurs: allocatables(filter:{ typeIn:[Kurs,Teilkurs,Kursgruppe] }) { displayName }  # annotation filter — INLINE
     # … start, end, person, raum, duration … (see Worked queries) …
   }
 }
@@ -151,9 +152,9 @@ The variable's type is the **existing** schema input `ReservationFilter!`:
 ```graphql
 input ReservationFilter {
   from: LocalDateTime!   to: LocalDateTime!        # mandatory window (the date-range control)
-  typeKeyEq: String                                # reservation type (single; per-type rules below carry the type)
+  typeIn: [ReservationTypeKey!]                    # reservation type(s) (generated per-kind enum; per-type rules below carry the type)
   whereLehrveranstaltung: LehrveranstaltungWhere   # ← runtime-generated per type (PRD 059): the *neue Regel für* rules (AND/OR/NOT + attribute predicates)
-  allocatableMatching: AllocatableFilter           # PRD 066 — the resource-tree selection (typeKeyIn + per-type where + idIn) in one shot
+  allocatableMatching: AllocatableFilter           # PRD 066 — the resource-tree selection (typeIn + per-type where + idIn) in one shot
   allocatableIdsIn: [ID!]                          #   …or explicit ids
   searchText: String   matchKind: MatchKind        # PRD 028 power search
   accessibleByUsername: String   accessibleByGroup: [String!]   accessLevel: AccessLevel   # PRD 069 admin-scoped
@@ -198,7 +199,7 @@ The three building blocks:
   filter (shipped 2026-06-19), access selectors (PRD 069). In the dhbw model
   **rooms, courses and lecturers are referenced *allocatables*, not classification
   attributes**: `Raum`/`Teilraum`/`virtuellerRaum`, `Kurs`/`Teilkurs`/`Kursgruppe`,
-  `Person` — split per column by `typeKeyIn`. Rows are **AppointmentBlocks**
+  `Person` — split per column by `typeIn`. Rows are **AppointmentBlocks**
   (recurrence expansion) = the flatten unit.
 - **Composition cells → server-evaluated fields.** Each column's `defaultValue`
   composition (and the type nameformats) is evaluated **server-side via rapla's existing
@@ -242,7 +243,7 @@ query appointments @view(title: "Termine", variant: DISPLAY) {   # operation nam
   appointmentBlocks(filter: $filter) {                           # root field = legacy contentDefinition
     name:  reservation { displayName }
     start  @sort(ASC, priority: 1)                               # per-field sort (canonical, multi-key via priority)
-    raum:  allocatables(filter:{ typeKeyIn:["Raum","Teilraum"] }) { displayName } @join(separator: ", ")
+    raum:  allocatables(filter:{ typeIn:[Raum,Teilraum] }) { displayName } @join(separator: ", ")
     day:   start @bucket(DAY) @group @hidden
   }
 }
@@ -366,7 +367,7 @@ from its Tableview-Plugin dialog): the generic `resources` column is split into 
 and **`Raum`** (non-person allocatables by type), **`Person`** is the person allocatables,
 and **`Dauer`** (eventtimecalculator duration, values like `"2 UE 0 Min"`) is added —
 appointments only. Each column maps to a GraphQL construct: selection →
-`allocatables(filter:{ typeKeyIn / isPersonEq })`; projection/derivation → a
+`allocatables(filter:{ typeIn / isPersonEq })`; projection/derivation → a
 **server-evaluated field** (rapla's `ParsedText`; `displayName` = the `name` composition,
 `Dauer` = the duration composition). This per-type column split is exactly the
 nested-`allocatables` filter use case.
@@ -410,9 +411,9 @@ query Termine_appointments($filter: ReservationFilter!) {
     name:   reservation { displayName }                                             # Name    {p->name(p)}
     start                                                                           # Beginn  {p->start(p)}
     end                                                                             # Ende    {p->end(p)}
-    kurs:   allocatables(filter:{ typeKeyIn:["Kurs","Teilkurs","Kursgruppe"] })     { displayName }   # Kurs   (annotation → inline)
+    kurs:   allocatables(filter:{ typeIn:[Kurs,Teilkurs,Kursgruppe] })     { displayName }   # Kurs   (annotation → inline)
     person: allocatables(filter:{ isPersonEq:true })                                { displayName }   # Person
-    raum:   allocatables(filter:{ typeKeyIn:["Raum","Teilraum","virtuellerRaum"] }) { displayName }   # Raum
+    raum:   allocatables(filter:{ typeIn:[Raum,Teilraum,virtuellerRaum] }) { displayName }   # Raum
     duration                                                                        # Dauer   {p->…:duration(p)}
   }
 }
@@ -574,7 +575,7 @@ But these `if`/`or`/`equals`/`substring`/`concat`/`format`/`note` expressions li
 **nameformats, which rapla already evaluates server-side** into `displayName` — the
 client gets a finished string, so the conditional/string logic **never runs
 client-side**. The `filter(...)` expressions are **selection** → GraphQL
-`allocatables(filter:{ isPersonEq } / { typeKeyIn:[…] })`. What remains for the table
+`allocatables(filter:{ isPersonEq } / { typeIn:[…] })`. What remains for the table
 layer is closed formatting (`@format`/`@join`/`@times`). **The expressive real
 compositions are either (a) server-pre-computed nameformats → `displayName`, or (b)
 selection → GraphQL filters — neither needs an engine.** This validates the no-engine
@@ -665,7 +666,7 @@ per-type nameformats).
 
 A saved view **is** its GraphQL query (+ a few presentation directives). The query embeds
 deployment keys in three positions — field selection `{ Raumnummer }` (attribute key),
-`typeKeyIn:["Raum"]` literal (type key), inline fragment `... on RaumClassification` (type
+`typeIn:[Raum]` literal (type key), inline fragment `... on RaumClassification` (type
 key) — while structural names (`appointmentBlocks`, `reservation`, `allocatables`, `filter`,
 `displayName`) and admin aliases (`kurs:`, `name:`) are schema-stable / admin-chosen.
 
@@ -1084,7 +1085,7 @@ serves both internal and public export; the difference is **only** the server-se
   push filtering/computed-values into GraphQL: `Appointment.allocatables` takes **no
   arguments** (so aliased filtered sub-selections aren't expressible); **no
   `durationMinutes`**; **no `typeGroup`** / declared type-groups (PRD 065). Present:
-  `AllocatableFilter` (`typeKeyEq`/`typeKeyIn`/`isPersonEq` + per-type `where*`,
+  `AllocatableFilter` (`typeIn`/`isPersonEq` + per-type `where*`,
   PRD 059) on `Query.allocatables` only. Closing these (PRD 073 + 065) keeps the
   transform thin.
 - **Pagination + prev/next + server-side `aggregate`** are future. Client-side
@@ -1198,7 +1199,7 @@ query Termine @view(title: "Termine KW") {
     start       @column(header: "Beginn",        order: 1)
     duration    @column(header: "Dauer",         order: 2)
     persons:   allocatables(filter: { isPersonEq: true }) @join(separator: "; ") @column(header: "Dozent", order: 3) { name }
-    resources: allocatables(filter: { typeKeyIn: ["room"] }) @join(separator: ", ") @column(header: "Raum",  order: 4) { name }
+    resources: allocatables(filter: { typeIn:[room] }) @join(separator: ", ") @column(header: "Raum",  order: 4) { name }
   }
 }
 ```

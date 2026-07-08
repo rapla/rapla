@@ -3,20 +3,21 @@ package org.rapla.server.spring.graphql;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import org.rapla.entities.Category;
+import java.util.Set;
+import org.rapla.client.edit.reservation.RepeatingRuleModel;
+import org.rapla.client.edit.reservation.RepeatingRuleProjector;
+import org.rapla.client.edit.reservation.RepeatingRuleWriter;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
-import org.rapla.entities.dynamictype.Attribute;
-import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.ReferenceInfo;
@@ -107,6 +108,9 @@ public class ReservationMutationController
         ReservationImpl r = new ReservationImpl(operator.getCurrentTimestamp(), operator.getCurrentTimestamp());
         r.setClassification(classification);
         r.setOwner(caller);
+        // PRD 099 Phase 1 — Swing parity (FacadeImpl.newReservation): seed the
+        // new reservation with the type's permissions (all but CREATE/READ_TYPE).
+        org.rapla.entities.domain.PermissionContainer.Util.copyPermissions(dt, r);
         // PRD 056 §9 (2026-07-06): client id is REQUIRED — no server fallback.
         // Retry-idempotency works via ID_COLLISION on the client-minted id
         // (CalDAV model); a server-generated id can never be retry-safe.
@@ -178,16 +182,17 @@ public class ReservationMutationController
         }
         requireCanModify(stored, caller);
 
-        // OQ1.c — type change rejected
+        // OQ1.c revised 2026-07-07 (PRD 096) — type change accepted; the
+        // @oneOf variant must match the NEW typeKey, creation gate on the target type
         String inputTypeKey = (String) input.get("typeKey");
         String storedTypeKey = stored.getClassification().getType().getKey();
+        DynamicType targetType = stored.getClassification().getType();
+        String targetTypeKey = storedTypeKey;
         if (inputTypeKey != null && !inputTypeKey.equals(storedTypeKey))
         {
-            throw new ReservationMutationException("INVALID_TYPE_CHANGE",
-                    "input.typeKey",
-                    "Type changes via updateReservation are not supported (stored typeKey="
-                            + storedTypeKey + ", input typeKey=" + inputTypeKey
-                            + "). Use the future reshapeReservation mutation.");
+            targetType = resolveType(inputTypeKey);
+            requireCanCreate(targetType, caller);
+            targetTypeKey = inputTypeKey;
         }
 
         // Optimistic concurrency
@@ -201,11 +206,10 @@ public class ReservationMutationController
 
         // Clone for edit (rapla pattern — never mutate persistent entities)
         ReservationImpl draft = (ReservationImpl) editObject(stored);
-        DynamicType dt = stored.getClassification().getType();
 
         // Replace classification attrs from input
         Map<String, Object> classificationInput = (Map<String, Object>) input.get("classification");
-        Classification newClassification = buildClassificationFromInput(dt, classificationInput, storedTypeKey);
+        Classification newClassification = buildClassificationFromInput(targetType, classificationInput, targetTypeKey);
         draft.setClassification(newClassification);
 
         // Replace appointments
@@ -463,88 +467,21 @@ public class ReservationMutationController
 
     private DynamicType resolveType(String typeKey) throws RaplaException
     {
-        Collection<DynamicType> all = operator.getDynamicTypes();
-        for (DynamicType dt : all)
+        DynamicType dt = ClassificationInputMapper.tryResolveType(operator, typeKey);
+        if (dt == null)
         {
-            if (typeKey.equals(dt.getKey())) return dt;
+            throw new ReservationMutationException("REFERENCE_NOT_FOUND", "typeKey",
+                    "DynamicType " + typeKey + " not found");
         }
-        throw new ReservationMutationException("REFERENCE_NOT_FOUND", "typeKey",
-                "DynamicType " + typeKey + " not found");
+        return dt;
     }
 
     @SuppressWarnings("unchecked")
+    /** Delegates to the shared {@link ClassificationInputMapper} (dedup 2026-07-08). */
     private Classification buildClassificationFromInput(DynamicType dt, Map<String, Object> classificationInput,
             String expectedTypeKey)
     {
-        Classification c = dt.newClassification();
-        if (classificationInput == null) return c;
-        // @oneOf variant: classificationInput has exactly one key matching the typeKey
-        for (Map.Entry<String, Object> variant : classificationInput.entrySet())
-        {
-            if (!variant.getKey().equals(expectedTypeKey))
-            {
-                throw new ReservationMutationException("MISMATCHED_TYPE",
-                        "classification." + variant.getKey(),
-                        "classification @oneOf variant '" + variant.getKey()
-                                + "' does not match typeKey '" + expectedTypeKey + "'");
-            }
-            Map<String, Object> attrMap = (Map<String, Object>) variant.getValue();
-            if (attrMap == null) return c;
-            for (Map.Entry<String, Object> e : attrMap.entrySet())
-            {
-                Attribute attr = dt.getAttribute(e.getKey());
-                if (attr == null) continue;     // unknown attribute key — ignore (stale SPA)
-                Object value = coerceValue(attr, e.getValue());
-                if (value != null) c.setValueForAttribute(attr, value);
-            }
-        }
-        return c;
-    }
-
-    @SuppressWarnings("unchecked")
-    private Object coerceValue(Attribute attr, Object raw)
-    {
-        if (raw == null) return null;
-        AttributeType t = attr.getType();
-        if (t == null) return raw;
-        if (raw instanceof List<?> rawList)
-        {
-            // List value — single-value attr getting a list is invalid; for multi-value attr, take as-is
-            List<Object> out = new ArrayList<>();
-            for (Object item : rawList) {
-                Object coerced = coerceSingleValue(attr, t, item);
-                if (coerced != null) out.add(coerced);
-            }
-            return out;
-        }
-        return coerceSingleValue(attr, t, raw);
-    }
-
-    private Object coerceSingleValue(Attribute attr, AttributeType t, Object raw)
-    {
-        if (raw == null) return null;
-        try
-        {
-            return switch (t)
-            {
-                case STRING      -> raw.toString();
-                case INT         -> raw instanceof Number n ? n.longValue() : Long.parseLong(raw.toString());
-                case BOOLEAN     -> raw instanceof Boolean b ? b : Boolean.parseBoolean(raw.toString());
-                case DATE        -> raw instanceof LocalDateTime ldt ? ldt : LocalDateTime.parse(raw.toString());
-                case CATEGORY    -> {
-                    if (raw instanceof Category cat) yield cat;
-                    // For VALUE_LIST enum input, raw is the enum's string name; need to resolve by leaf key
-                    // For ORGANIZATION input, raw is the ID
-                    yield operator.tryResolve(new ReferenceInfo<>(raw.toString(), Category.class));
-                }
-                case ALLOCATABLE -> operator.tryResolve(new ReferenceInfo<>(raw.toString(), Allocatable.class));
-            };
-        }
-        catch (Exception e)
-        {
-            LOGGER.warn("Failed to coerce value for attribute '{}' (type={}): {}", attr.getKey(), t, e.getMessage());
-            return null;
-        }
+        return ClassificationInputMapper.buildClassificationFromInput(operator, dt, classificationInput, expectedTypeKey);
     }
 
     private Appointment buildAppointment(Map<String, Object> ai, String path)
@@ -568,7 +505,13 @@ public class ReservationMutationController
                     "appointment id is required — clients mint their own entity ids (PRD 056 §9)");
         }
         a.setId(clientId);
-        // TODO: allDay, repeating — minimal v1 skips these; add when SPA editor consumes
+        if (Boolean.TRUE.equals(ai.get("allDay")))
+        {
+            a.setWholeDays(true);
+        }
+        // repeating materialization shared with the availability queries
+        // (PRD 091 Phase 4.5) — see AppointmentInputMapper
+        AppointmentInputMapper.applyRepeating(a, ai, path);
         return a;
     }
 
@@ -628,6 +571,8 @@ public class ReservationMutationController
         ReservationImpl r = new ReservationImpl(operator.getCurrentTimestamp(), operator.getCurrentTimestamp());
         r.setClassification(classification);
         r.setOwner(caller);
+        // PRD 099 Phase 1 — permission create-seed, mirrors createReservation.
+        org.rapla.entities.domain.PermissionContainer.Util.copyPermissions(dt, r);
         // PRD 056 §9 (2026-07-06): client id REQUIRED — mirrors createReservation.
         String clientId = (String) input.get("id");
         if (clientId == null || clientId.isBlank())
@@ -670,10 +615,13 @@ public class ReservationMutationController
         requireCanModify(stored, caller);
         String inputTypeKey = (String) input.get("typeKey");
         String storedTypeKey = stored.getClassification().getType().getKey();
+        DynamicType targetType = stored.getClassification().getType();
+        String targetTypeKey = storedTypeKey;
         if (inputTypeKey != null && !inputTypeKey.equals(storedTypeKey))
         {
-            throw new ReservationMutationException("INVALID_TYPE_CHANGE", path + ".input.typeKey",
-                    "Type changes via updateReservation are not supported");
+            targetType = resolveType(inputTypeKey);
+            requireCanCreate(targetType, caller);
+            targetTypeKey = inputTypeKey;
         }
         if (expectedLc != null && stored.getLastChanged() != null && !expectedLc.equals(stored.getLastChanged()))
         {
@@ -681,9 +629,8 @@ public class ReservationMutationController
                     "Reservation modified after supplied lastChanged");
         }
         Reservation draft = editObject(stored);
-        DynamicType dt = stored.getClassification().getType();
         Map<String, Object> classificationInput = (Map<String, Object>) input.get("classification");
-        draft.setClassification(buildClassificationFromInput(dt, classificationInput, storedTypeKey));
+        draft.setClassification(buildClassificationFromInput(targetType, classificationInput, targetTypeKey));
         for (Appointment existing : draft.getAppointments()) draft.removeAppointment(existing);
         List<Map<String, Object>> appointments = (List<Map<String, Object>>) input.get("appointments");
         Map<String, Appointment> appointmentByClientId = new LinkedHashMap<>();

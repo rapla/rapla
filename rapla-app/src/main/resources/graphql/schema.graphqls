@@ -95,6 +95,13 @@ type Query {
   reservation(id: ID!): Reservation
   reservations(filter: ReservationFilter!): [Reservation!]!
 
+  # PRD 099 — server-computed prefill for NEW events: the classification a
+  # create of this type would be born with (attribute defaults via
+  # newClassification()). Side-effect-free; nothing is persisted. Caller must
+  # be able to CREATE the type — unknown and non-creatable typeKeys answer
+  # identically (§12, no existence leak).
+  reservationPrototype(typeKey: String!): ReservationPrototype!
+
   # PRD 074 — block-rooted read: materializes recurrence blocks across all
   # caller-visible reservations in the window into a FLAT list (one row = one
   # block), sorted ascending by start. Same §12 + window/limit semantics as
@@ -122,7 +129,7 @@ type Query {
   # population (resources/persons), NOT over bookings. `groupBy` = dimensions
   # (DynamicType / custom `expr` / the allocatable itself); `aggregate` = metrics
   # (COUNT, or a numeric `expr` over the allocatable, e.g. capacity sum). Filter =
-  # the full AllocatableFilter (typeKeyIn / where<Type> / idIn / accessibleBy*).
+  # the full AllocatableFilter (typeIn / where<Type> / idIn / accessibleBy*).
   # Shares the generic BlockStatBucket result. e.g. "seats per building".
   allocatableStats(
     filter: AllocatableFilter,
@@ -168,6 +175,15 @@ type Query {
   # the realized query, unreadable counterparties are MASKED (side-2 fields
   # null + generic description), never dropped — the resource IS busy.
   potentialConflicts(input: PotentialConflictInput!): [Conflict!]!
+
+  # PRD 091 Phase 4.1 — the recurrence editor's occurrence preview: expand ONE
+  # draft appointment's repeating rule into concrete occurrences, server-owned
+  # (Appointment.createBlocks — the MONTHLY weekday-in-nth-week semantic and
+  # exception-skip rules are never reimplemented client-side). Excepted
+  # occurrences are INCLUDED with exception=true (the preview strikes them
+  # through). Pure function of the input — no stored data touched (§12 has no
+  # surface); capped at `limit` (default 30, max 100) within a 2-year horizon.
+  expandOccurrences(appointment: AppointmentInput!, limit: Int = 30): [Occurrence!]!
 
   # PRD 081 — omnibox multisearch. Turns a free-text term into typed, ranked,
   # §12-scoped result rows bucketed per kind. Phase 1 implements RESOURCE +
@@ -245,6 +261,18 @@ input CandidateInput @oneOf {
   ids: [ID!]
 }
 
+"""
+PRD 091 Phase 4.1 — one concrete occurrence of a (possibly repeating) draft
+appointment, as expanded by `expandOccurrences`. `exception` = true marks an
+occurrence skipped via the rule's exception dates (included for preview
+display, excluded from any conflict computation).
+"""
+type Occurrence {
+  start:     LocalDateTime!
+  end:       LocalDateTime!
+  exception: Boolean!
+}
+
 type ResourceAvailability {
   allocatable: Allocatable!
   status: AllocationStatus!
@@ -279,8 +307,8 @@ input ReservationFilter {
   from:              LocalDateTime!
   "Mandatory upper bound (exclusive). Window cap (if any) is set via rapla.graphql.max-query-window-days; default = no cap."
   to:                LocalDateTime!
-  "Exact-match on reservation DynamicType key (e.g. \"event\")."
-  typeKeyEq:         String
+  # Type selection lives on the GENERATED `typeIn: [ReservationTypeKey!]` field
+  # (PRD 059 Phase 7 — SDL `extend input` emitted by ClassificationSdlGenerator).
   "Exact-match on owner id."
   ownerEq:           ID
   "Reservations using ANY of the listed allocatable ids."
@@ -288,7 +316,7 @@ input ReservationFilter {
   """
   PRD 066 — reservations using ANY allocatable matching this
   AllocatableFilter. Lets the SPA pass its tree-selection
-  (`typeKeyIn` + per-type `whereXxx` + `idIn`) in one shot instead of
+  (`typeIn` + per-type `whereXxx` + `idIn`) in one shot instead of
   resolving allocatable ids in a separate roundtrip. UNIONed with
   `allocatableIdsIn` when both are set.
   """
@@ -404,15 +432,8 @@ fields (PRD 035 §5d). They appear on this input alongside the scalar
 fields below — one per resource/person DynamicType in the deployment.
 """
 input AllocatableFilter {
-  "Exact-match on the DynamicType key (e.g. \"room\", \"lecturer\"). When set, pre-filters at the storage layer (skips full-table scan)."
-  typeKeyEq:    String
-  """
-  Match any DynamicType key in the list (cross-type union). Server-side
-  union — e.g. `typeKeyIn: ["Raum", "Teilraum"]` returns rooms AND partial
-  rooms in one result list. `typeKeyEq` takes precedence if both are set.
-  Each key is validated against {@code types}; unknown keys are ignored.
-  """
-  typeKeyIn:    [String!]
+  # Type selection lives on the GENERATED `typeIn: [AllocatableTypeKey!]` field
+  # (PRD 059 Phase 7 — SDL `extend input` emitted by ClassificationSdlGenerator).
   "True → only persons. False → only resources. null → both."
   isPersonEq:   Boolean
   "Case-insensitive substring match on displayName (legacy — prefer `searchText` + `matchKind` for new flows). ANDs with `searchText` if both are set."
@@ -426,7 +447,7 @@ input AllocatableFilter {
   """
   PRD 066 — additive id-selection that ALWAYS appears in the result
   (subject only to §12 canRead). Ids matching the type-bucket
-  (`typeKeyEq` / `typeKeyIn` + `whereXxx`) and ids in `idIn` are
+  (`typeIn` + `whereXxx`) and ids in `idIn` are
   UNIONed. The per-type filter rules do NOT apply to `idIn` picks —
   the caller has explicitly named them. Empty filter (all fields null)
   still means "everything readable"; `idIn` alone means "exactly these
@@ -665,6 +686,8 @@ type Allocatable {
   createdAt:      DateTime
   lastModifiedAt: DateTime
   classification: AllocatableClassification!
+  "Server-derived per caller — gates the SPA's edit affordance without a second roundtrip (mirror of Reservation.canModify, PRD 096)."
+  canModify:      Boolean!
 }
 
 # === DynamicType + descriptors (PRD 035 §4) =================================
@@ -970,11 +993,35 @@ populate.
 """
 directive @required on FIELD_DEFINITION
 
+"""
+PRD 096 D5 revision — attribute placement in editors, one directive for the
+whole `title > main > additional > no-view` scale. "title" is computed from
+the DISPLAY nameformat: every direct attribute reference ({surname}
+{forename} → both) becomes a title attribute (rendered as prominent header
+fields, in attribute order); function expressions and list-valued attributes
+are ignored, an explicit edit-view=no-view annotation wins over the
+derivation. "additional" / "no-view" mirror the `edit-view` attribute
+annotation. "main" is the default and is never emitted.
+"""
+directive @editView(value: String!) on FIELD_DEFINITION
+
 # === PRD 055 Reservation read types (minimal — full resolver impl in PRD 055 later) ===
 # Added 2026-05-28 alongside PRD 056 mutations so create/update return Reservation.
 
 "PRD 074 — name composition variant selector. EXPORT/PLANNING fall back to DISPLAY when the type lacks that nameformat."
 enum NameVariant { DISPLAY  EXPORT  PLANNING }
+
+"""
+PRD 099 — the unpersisted birth state of a new reservation of a type:
+classification prefilled with the type's attribute defaults. Deliberately
+carries NO id/owner/lastModifiedAt/permissions — it is not an entity and
+cannot be echoed back as one. The SPA seeds new drafts (and type-switch
+gap-fill) from it; the create mutation persists.
+"""
+type ReservationPrototype {
+  typeKey:        String!
+  classification: Classification!
+}
 
 """
 Calendar event — the central booking entity. One or more Appointments
@@ -1045,6 +1092,8 @@ type AppointmentBlock {
   start:       LocalDateTime!
   end:         LocalDateTime!
   isException: Boolean!
+  "PRD 094 D4 — the owning appointment's id; the SPA delete-scope flow keys on the (appointmentId, blockStart) pair per row."
+  appointmentId: ID!
   "PRD 074 Baustein 9 — FLAT block-aware name (block → reservation.formatAppointmentBlock). NOT the reservation name: honors appointment-note overrides (appointmentnote plugin), so a block can name differently than its reservation. DISPLAY/EXPORT/PLANNING variants; EXPORT/PLANNING fall back to DISPLAY when the type defines no such format."
   name(variant: NameVariant = DISPLAY): String
   "PRD 074 — the reservation this block belongs to (block → reservation → displayName)."
@@ -1055,6 +1104,8 @@ type AppointmentBlock {
   duration: String
   "PRD 074 — server-evaluated formatted time range of the block (e.g. 10:00 - 11:30)."
   times: String
+  "PRD 095 — single effective block color as a CSS hex string: the event color when the reservation carries one, else the first readable allocatable color (RaplaBuilder resolution + BlockColors merge). Null when no color applies OR the color-bearing contributor is not readable by the caller (§12 / PRD 095 D3 — the block stays, the color nulls)."
+  color: String
   "PRD 074 — wall-clock occupancy of this block in whole minutes (end−start, no break adjustment). Numeric → aggregatable via @aggregate / groupable (PRD 079). Hours = /60. For break-adjusted teaching units use the `duration` string."
   durationMinutes: Int
   "PRD 074 — inline composition column: evaluates an arbitrary rapla expression (same language as a nameformat; p = the block) against this block, e.g. {p->concat(substring(times(p),0,5),substring(times(p),8,13))}. Invalid expr returns null. Max 2000 chars."
@@ -1068,7 +1119,7 @@ type RepeatingRule {
   interval:   Int!
   end:        Date
   count:      Int
-  "0-6, WEEKLY-only — needed for 'every Tue + Thu' patterns."
+  "rapla weekday convention 1=Sunday … 7=Saturday (NOT 0-6); WEEKLY-only — needed for 'every Tue + Thu' patterns."
   weekdays:   [Int!]
   exceptions: [Date!]!
 }
@@ -1138,8 +1189,11 @@ type Mutation {
   createAllocatable(input: CreateAllocatableInput!): Allocatable!
 
   """
-  Update an existing Allocatable's content (classification only). Type
-  changes rejected (future reshape verb); owner immutable here (future
+  Update an existing Allocatable's content (classification only). A typeKey
+  differing from stored is an in-place type change (PRD 096 Phase 4, mirrors
+  the PRD 056 OQ1.c revision): the classification @oneOf variant must match
+  the NEW typeKey and the caller needs create-permission on the target type;
+  attribute remapping is the client's job. Owner immutable here (future
   `changeAllocatableOwner` if real demand). `expectedLastChanged`
   enables optimistic concurrency.
   """
@@ -1364,9 +1418,12 @@ input CreateReservationInput {
 }
 
 """
-Update a Reservation's content. Server validates typeKey matches stored
-(PRD 056 OQ1.c — in-place type changes rejected). Owner immutable here
-(use changeReservationOwner).
+Update a Reservation's content. A typeKey differing from the stored one is
+an in-place type change (PRD 056 OQ1.c revised 2026-07-07, PRD 096): the
+classification @oneOf variant must match the NEW typeKey, and the caller
+needs create-permission on the target type. Attribute remapping is the
+client's job — the supplied classification is stored as-is. Owner immutable
+here (use changeReservationOwner).
 """
 input UpdateReservationInput {
   "Defensive cross-check — must equal the stored reservation's typeKey."
@@ -1396,7 +1453,7 @@ input RepeatingRuleInput {
   interval:   Int!
   end:        Date
   count:      Int
-  "0-6, WEEKLY-only."
+  "rapla weekday convention 1=Sunday … 7=Saturday (NOT 0-6); WEEKLY-only."
   weekdays:   [Int!]
   exceptions: [Date!]!
 }

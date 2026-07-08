@@ -82,13 +82,13 @@ input ChangeOpUpdateAllocatable {
 
 1. **Permission gate.** `caller.isAdmin == false` → check `PermissionController.canCreate(DynamicType, caller)` (RESOURCE-type) / `canModify(Allocatable, caller)` (UPDATE) / `canAdmin(Allocatable, caller)` (DELETE). Same gates the Swing admin panel applies.
 2. **Owner ID override.** `CreateAllocatableInput.ownerId` non-null + non-admin caller → `PERMISSION_DENIED`. Admins may set arbitrary owner.
-3. **Type change on update.** `UpdateAllocatableInput.typeKey` ≠ stored → `INVALID_VALUE` (analogous to PRD 056 OQ1.c — in-place type change rejected; future reshape verb if needed).
+3. **Type change on update.** ~~`UpdateAllocatableInput.typeKey` ≠ stored → `INVALID_VALUE` (analogous to PRD 056 OQ1.c — in-place type change rejected; future reshape verb if needed).~~ *REVISED 2026-07-07 (PRD 096 Phase 4.3, follows the PRD 056 OQ1.c revision): accepted — the classification @oneOf variant must match the NEW typeKey (`MISMATCHED_TYPE` otherwise) and the caller passes the create-gate (`canCreate`) on the target type. Attribute remapping is client-side (PRD 096 editor).*
 4. **No leak on delete.** Unknown id and admin-readable-but-not-deletable id produce identical error shape (`REFERENCE_NOT_FOUND` vs `PERMISSION_DENIED` — keep distinct codes since the admin needs to know the difference; but `deleteAllocatables` is admin-only at the resolver entry, so the `canRead` check happens before the response shape diverges).
 
 ### Error code taxonomy
 
 - `REQUIRED` — missing typeKey / classification
-- `INVALID_VALUE` — unknown typeKey, type change on update, malformed classification @oneOf
+- `INVALID_VALUE` — unknown typeKey, malformed classification @oneOf (type change on update: accepted since 2026-07-07, see rule 3)
 - `REFERENCE_NOT_FOUND` — unknown id (update / delete)
 - `MISMATCHED_TYPE` — @oneOf classification variant ≠ typeKey
 - `PERMISSION_DENIED` — caller not authorized

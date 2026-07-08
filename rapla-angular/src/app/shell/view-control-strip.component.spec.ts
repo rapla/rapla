@@ -1,8 +1,64 @@
 import { TestBed } from '@angular/core/testing';
 import { describe, it, expect, beforeEach } from 'vitest';
 
-import { ViewControlStripComponent } from './view-control-strip.component';
+import {
+  ViewControlStripComponent,
+  monthWindowOf,
+  shiftMonth,
+  monthLabel,
+} from './view-control-strip.component';
 import { ViewStateStore } from '../state/view-state-store';
+
+describe('month window helpers', () => {
+  it('monthWindowOf yields [1st .. 1st-of-next-month) for a mid-month date', () => {
+    expect(monthWindowOf('2026-07-15T13:45:00')).toEqual({
+      from: '2026-07-01T00:00:00',
+      to: '2026-08-01T00:00:00',
+    });
+  });
+
+  it('monthWindowOf wraps the year for December', () => {
+    expect(monthWindowOf('2026-12-03T00:00:00')).toEqual({
+      from: '2026-12-01T00:00:00',
+      to: '2027-01-01T00:00:00',
+    });
+  });
+
+  it('shiftMonth steps an aligned month window forward and backward', () => {
+    const july = { from: '2026-07-01T00:00:00', to: '2026-08-01T00:00:00' };
+    expect(shiftMonth(july, 1)).toEqual({
+      from: '2026-08-01T00:00:00',
+      to: '2026-09-01T00:00:00',
+    });
+    expect(shiftMonth(july, -1)).toEqual({
+      from: '2026-06-01T00:00:00',
+      to: '2026-07-01T00:00:00',
+    });
+  });
+
+  it('shiftMonth wraps the year in both directions', () => {
+    expect(shiftMonth({ from: '2026-12-01T00:00:00', to: '2027-01-01T00:00:00' }, 1)).toEqual({
+      from: '2027-01-01T00:00:00',
+      to: '2027-02-01T00:00:00',
+    });
+    expect(shiftMonth({ from: '2026-01-01T00:00:00', to: '2026-02-01T00:00:00' }, -1)).toEqual({
+      from: '2025-12-01T00:00:00',
+      to: '2026-01-01T00:00:00',
+    });
+  });
+
+  it('shiftMonth snaps a non-aligned (week) window to its from-month before shifting', () => {
+    expect(shiftMonth({ from: '2026-06-15T00:00:00', to: '2026-06-22T00:00:00' }, 1)).toEqual({
+      from: '2026-07-01T00:00:00',
+      to: '2026-08-01T00:00:00',
+    });
+  });
+
+  it('monthLabel renders the German month name + year', () => {
+    expect(monthLabel('2026-07-01T00:00:00')).toBe('Juli 2026');
+    expect(monthLabel('2026-03-14T09:00:00')).toBe('März 2026');
+  });
+});
 
 describe('ViewControlStripComponent', () => {
   let viewState: ViewStateStore;
@@ -46,33 +102,52 @@ describe('ViewControlStripComponent', () => {
     expect(f.nativeElement.querySelectorAll('.range-edit input').length).toBe(0);
   });
 
-  it('TABLE mode: editable from/to date inputs, no navigation', async () => {
+  it('TABLE mode: editable from/to Material datepickers, no navigation', async () => {
     viewState.setRenderModes(['week', 'table']);
     viewState.setRenderMode('table');
     viewState.setWindow({ from: '2026-06-15T00:00:00', to: '2026-06-22T00:00:00' });
     const f = TestBed.createComponent(ViewControlStripComponent);
     f.detectChanges();
     await f.whenStable();
-    const inputs = f.nativeElement.querySelectorAll(
-      '.range-edit input[type=date]',
-    ) as NodeListOf<HTMLInputElement>;
-    expect(inputs.length).toBe(2);
-    expect(inputs[0].value).toBe('2026-06-15');
-    expect(inputs[1].value).toBe('2026-06-22');
+    expect(f.nativeElement.querySelectorAll('.range-edit input').length).toBe(2);
+    const cmp = f.componentInstance as unknown as {
+      fromDate(): Date | null;
+      toDate(): Date | null;
+    };
+    expect(cmp.fromDate()?.getTime()).toBe(new Date(2026, 5, 15).getTime());
+    expect(cmp.toDate()?.getTime()).toBe(new Date(2026, 5, 22).getTime());
     expect(f.nativeElement.querySelector('.nav')).toBeNull();
   });
 
-  it('editing the from date updates the window, keeping to', async () => {
+  it('picking a from date updates the window, keeping to', async () => {
     viewState.setRenderModes(['week', 'table']);
     viewState.setRenderMode('table');
     viewState.setWindow({ from: '2026-06-15T00:00:00', to: '2026-06-22T00:00:00' });
     const f = TestBed.createComponent(ViewControlStripComponent);
     f.detectChanges();
     await f.whenStable();
-    const from = f.nativeElement.querySelector('.range-edit input[type=date]') as HTMLInputElement;
-    from.value = '2026-06-10';
-    from.dispatchEvent(new Event('change'));
+    f.componentInstance.onFrom({ value: new Date(2026, 5, 10) } as never);
     expect(viewState.window()).toEqual({ from: '2026-06-10T00:00:00', to: '2026-06-22T00:00:00' });
+  });
+
+  it('MONTH mode: shows the German month label; prev/next step the window by a month', async () => {
+    viewState.setRenderModes(['month', 'table']);
+    viewState.setRenderMode('month');
+    viewState.setWindow({ from: '2026-07-01T00:00:00', to: '2026-08-01T00:00:00' });
+    const f = TestBed.createComponent(ViewControlStripComponent);
+    f.detectChanges();
+    await f.whenStable();
+    expect((f.nativeElement.querySelector('.month-label') as HTMLElement).textContent?.trim()).toBe(
+      'Juli 2026',
+    );
+    expect(f.nativeElement.querySelectorAll('.range-edit input').length).toBe(0);
+    const buttons = Array.from(
+      f.nativeElement.querySelectorAll('.nav .navbtn') as NodeListOf<HTMLButtonElement>,
+    );
+    buttons.find((b) => b.title === 'vor')!.click();
+    expect(viewState.window()).toEqual({ from: '2026-08-01T00:00:00', to: '2026-09-01T00:00:00' });
+    buttons.find((b) => b.title === 'zurück')!.click();
+    expect(viewState.window()).toEqual({ from: '2026-07-01T00:00:00', to: '2026-08-01T00:00:00' });
   });
 
   it('clicking Woche sets renderMode week and marks that button active', async () => {

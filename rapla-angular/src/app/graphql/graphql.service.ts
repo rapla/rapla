@@ -1,8 +1,10 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, catchError, map, of, tap } from 'rxjs';
 
 import type { ViewInput } from '../views/view-inputs';
+import { toMutationResult, type MutationIssue, type MutationResult } from './mutation-result';
+import { MutationBus } from './mutation-bus';
 
 /**
  * PRD 078 — the SPA's entire GraphQL transport. A plain {@link HttpClient}
@@ -88,9 +90,13 @@ export interface GqlResponse<T> {
   extensions?: { view?: ViewMeta; [k: string]: unknown };
 }
 
+export { toMutationResult };
+export type { MutationIssue, MutationResult };
+
 @Injectable({ providedIn: 'root' })
 export class GraphqlService {
   private readonly http = inject(HttpClient);
+  private readonly mutationBus = inject(MutationBus);
 
   /**
    * Execute a GraphQL document with variables. Returns the raw envelope
@@ -109,6 +115,30 @@ export class GraphqlService {
    * merge variable defaults. The dummy {@code query} satisfies GraphQL's
    * required field; the interceptor replaces it.
    */
+  /**
+   * PRD 091 Phase 2.1 — execute a mutation document and map the envelope to
+   * the discriminated {@link MutationResult}. Never errors the Observable:
+   * transport failures land as `kind: 'transport'` so the sheet has ONE
+   * result channel to handle.
+   */
+  mutate<T>(
+    document: string,
+    variables: Record<string, unknown> = {},
+  ): Observable<MutationResult<T>> {
+    return this.http.post<GqlResponse<T>>('/api/graphql', { query: document, variables }).pipe(
+      map((resp) => toMutationResult(resp)),
+      // Manual rerender trigger after own edits (later: server change listener).
+      tap((result) => {
+        if (result.kind === 'ok') this.mutationBus.mutated$.next();
+      }),
+      catchError((err: unknown) => {
+        const message =
+          err instanceof Error ? err.message : typeof err === 'string' ? err : 'request failed';
+        return of({ kind: 'transport', message } as MutationResult<T>);
+      }),
+    );
+  }
+
   executeView<T>(
     viewName: string,
     variables: Record<string, unknown> = {},

@@ -269,6 +269,58 @@ through `RaplaCalendarViewListener.moved(...)` /
 If the server rejects the move (version conflict, permission), the
 user sees a dialog and the optimistic UI is rolled back.
 
+### Delete — the scope dialog and its cascades
+
+Deleting a block from the calendar view goes through
+`ReservationControllerImpl.deleteAppointment()` (`:412`) /
+`deleteBlocks()` (`:139`), with the scope chooser built in
+`showDialog()` (`:513-561`). The dialog title is `delete`, the content
+`delete_appointment.format` ("Was wollen Sie löschen?"), and the option
+list is assembled from these exact predicates:
+
+| Option (i18n key) | Shown when | Effect on the data model |
+|---|---|---|
+| `reservation` (whole event) | `reservation.getAppointments().length <= 1 \|\| includeEvent` | reservation added to the remove set → `facade.dispatch(update, remove)` deletes it entirely |
+| `serie: <summary>` | `appointment.getRepeating() != null && appointments.length > 1` | the `Appointment` object is removed from the reservation; its restriction links are captured for undo and discarded |
+| `single_appointment.format` ("Termin am {0}") | `(repeating != null && isNotEmptyWithExceptions(appointment, [date])) \|\| appointments.length > 1` | repeating: exception date added (see below); non-repeating in a multi-appointment event: the appointment is removed |
+
+**The dialog is skipped when only one option applies**
+(`optionList.size() <= 1`, `:540`) — a single non-repeating appointment
+in a one-appointment event goes straight to a plain confirm
+(`deleteDialog.showDeleteDialog`, `:548`).
+
+Rules that fire regardless of which option was chosen:
+
+- **Exception dates are day-truncated.** The SINGLE case adds
+  `DateTools.cutDate(blockStart)` (midnight, `:428`) to
+  `repeating.exceptions` — not the block's start time.
+- **Empty-series cascade.** Before adding the exception, Swing checks
+  `isNotEmptyWithExceptions(appointment, exceptions)` (`:429`): if the
+  exception would leave the series with zero occurrences, the whole
+  appointment is removed instead — an all-excepted appointment is never
+  stored.
+- **Last-appointment cascade.** If a delete removes the last remaining
+  appointment(s) of a reservation, the whole reservation is deleted
+  instead (`deleteBlocks` `:182-191`) — `checkReservation()` rejects an
+  empty `appointments` array, so a zero-appointment event can never
+  reach the store.
+- **Exception blocks can't be deleted.** The block context menu omits
+  the delete action when `block.isException()`
+  (`MenuFactoryImpl:211-213`) — the occurrence is already skipped.
+- **The table view bypasses all of this.** Delete from the table/tree
+  goes through `RaplaObjectActions.delete` → `DeleteUndo` — plain
+  confirm, always the whole reservation, no scope options and no
+  exception writing.
+
+`DeleteBlocksCommand` (`ReservationControllerImpl.java:268-410`)
+implements the calendar-side delete as one command over a multi-block
+selection: it partitions the blocks into reservations-to-remove /
+appointments-to-remove / exceptions-to-add (applying both cascades
+above), captures the restriction arrays of removed appointments, and
+dispatches once. `undo()` restores in reverse: re-store deleted
+reservations (via the parent `DeleteUndo`), re-add appointments with
+`setRestrictionForAppointment(...)`, remove the added exceptions.
+
 ## Stage 3 — save with validation
 
 User clicks **Save**:
@@ -394,11 +446,57 @@ giving Ctrl+Z / Ctrl+Y.
 | User action | Behaviour | Auto-correction / gotcha |
 |---|---|---|
 | Change start date | Shift end by same delta (preserve duration) | If new start > original end, end becomes start + previous duration |
-| Change end date | Direct set | If end < start, end auto-advances by 1 day |
+| Change end date | Direct set | If end lands at/before start, the **start shifts backward** to preserve duration (see interlink mechanics below) |
 | Change start time | Same as start date | If now off-midnight, `isWholeDaysSet` clears |
 | Change end time | Direct set | If end < start, advance end-day by 1 |
 | Toggle all-day **on** | Cut start/end to midnight | Internal end = next-day-00:00; UI displays end-date − 1 day |
-| Toggle all-day **off** | Restore times from `CalendarOptions.worktime_start/end` | **Original times are lost** — the flag is destructive going off-→on, not just a presentation hint |
+| Toggle all-day **off** | Restore times from `CalendarOptions.worktime_start/end` | **Original times are not remembered** — toggling on discards them; toggling back off yields worktimes, not the previous times |
+
+### The four-widget interlink — exact mechanics
+
+`SingleEditor.processChange(source)` (`AppointmentController.java:468-539`)
+is the single handler behind all four date/time widgets plus the all-day
+checkbox. It runs under the `listenerEnabled` re-entrancy guard
+(programmatic widget updates from undo/redo must not re-fire it), computes
+the change relative to the **model** state (`appointment.getStart()/getEnd()`,
+`duration = Duration.between(start, end)`), wraps it in an
+`UndoSingleEditorChange` and executes it through the dialog
+`CommandHistory`:
+
+- **`startDate` or `startTime` changed** →
+  `newStart = toDate(startDate, startTime)`; `newEnd = newStart.plus(duration)`.
+  Begin drags end along; duration is invariant. No explicit midnight
+  handling needed — `plus()` rolls dates.
+- **`endTime` changed** → `newEnd = toDate(endDate, endTime)`; if
+  `appStart.isAfter(newEnd)`, `newEnd = addDay(newEnd)` — an end time
+  earlier than the start time means "into the next day", not an error.
+  Start untouched (`newStart = null` in the command).
+- **`endDate` changed** →
+  `newEnd = toDate(endDate + (allDay ? 1 : 0), endTime)`. If the new end
+  lands at/before the start, the **start shifts backward**: the sub-day
+  remainder of the old duration is preserved
+  (`newStart = newEnd − (duration mod 24h)`), or for exact multi-day
+  durations `newStart = newEnd − 1 day`.
+- **All-day checkbox toggled** → the command records the pre-toggle widget
+  state as "old" and the model state as "new"; the transformation itself is
+  `setToWholeDays()` (`AppointmentController.java:375-393`): toggling
+  **off** re-derives times from
+  `CalendarOptions.getWorktimeStartMinutes()/getWorktimeEndMinutes()`
+  (start = day + worktimeStart, end = (endDay − 1 day) + worktimeEnd,
+  +1 day if that inverts the pair).
+
+The command's `execute()`/`undo()` (`AppointmentController.java:593-681`)
+update the widgets first (listeners suppressed), then `mapToAppointment()`
+writes the widgets back to the model via `appointment.move(start, end)` —
+with the all-day end mapped to next-day-00:00 — and
+`fireAppointmentChanged()` notifies the list panel, which refreshes the
+affected row and re-sorts (`AppointmentListEdit.Listener.stateChanged`,
+`AppointmentListEdit.java:296-308`).
+
+The widgets are intertwined, but the **model is the arbiter**: every
+handler reads the current model start/end/duration, never the previous
+widget values, so a sequence of edits cannot drift the four widgets out
+of agreement.
 
 ### Repeating-appointment edits
 
@@ -420,6 +518,15 @@ giving Ctrl+Z / Ctrl+Y.
 | Convert to singles ("split") | Repeating → N non-repeating Appointments | Only enabled when `repeating.getEnd() != null` (finite series) |
 | Move (drag/resize on calendar) | `appointment.move(start, end)` | If moved to a different weekday, WEEKLY weekdays are **mutated** (new added, old removed iff no other occurrence remains) |
 
+In `RepeatingEditor` the same start/end-time link applies
+(`dateChanged()`, `AppointmentController.java:1124-1162`): a `startTime`
+change shifts `endTime` by the model duration; an `endTime` earlier than
+start is interpreted as next-day (`addDay`). The end *date* of one
+occurrence is not a widget — it's derived: `getEnd()` = start date +
+end time, shifted by the day-span chooser ("same day" / "next day" /
+"X days", `AppointmentController.java:961-969`). Selecting "same day"
+while end < start snaps end time up to start time.
+
 ### Validation philosophy
 
 The controller is deliberately permissive. Almost every temporal
@@ -436,6 +543,137 @@ for temporal invariants, and reserve hard errors for schema-level
 violations (missing required attribute, classification constraint).
 Validate ≥1 weekday before allowing save in WEEKLY mode — the
 server will reject otherwise.
+
+## Inside the date/time widgets (`org.rapla.components.calendar`)
+
+The four pickers are two widget types from
+`rapla-client/src/main/java/org/rapla/components/calendar/`, both
+extending `RaplaComboBox` (text editor + arrow button + lazily-created
+popup):
+
+| Widget | Editor | Popup |
+|---|---|---|
+| `RaplaCalendar` | `DateField` — block-structured text field (day/month/year) with a gray weekday label ("Mi") right-aligned inside the field (`DateField.java:333-363`) | `CalendarMenu` — month grid (`DaySelection`) with month/year nav buttons |
+| `RaplaTime` | `TimeField` — block-structured `HH:mm` (plus am/pm block in 12-hour locales) | `TimeList` — scrollable list of time slots |
+
+**Time-slot granularity.** `TimeList` renders `24 × rowsPerHour` entries;
+`rowsPerHour` defaults to 4 (15-minute slots) and is set from
+`CalendarOptions` when the widget is built via
+`RaplaGUIComponent.createRaplaTime` (`RaplaTime.java:72,152-172`).
+Selecting a slot for an off-grid time truncates (floor), not rounds.
+
+**Worktime highlighting.** `RaplaGUIComponent.getTimeRenderer()`
+(`RaplaGUIComponent.java:157-233`) closes over
+`CalendarOptions.getWorktimeStartMinutes()/EndMinutes()` and paints slots
+outside the worktime window with `NON_WORKTIME` gray (`0xcccccc`);
+an overnight worktime window (start ≥ end) inverts the test. That's the
+highlighted band visible in the time dropdown.
+
+**Duration hints.** When begin and end are on the same day, the end-time
+widget gets `setDurationStart(start)`; the dropdown then appends a
+duration to each slot — "(30 min)", "(2 h)", "(1½ h)" — computed per slot
+in `TimeList.setModel` (`RaplaTime.java:413-445`) and formatted by
+`getDurationString` (only round half-hours render text; odd durations
+show nothing).
+
+**Keyboard model** — why the Swing fields are fast to operate:
+
+| Key (in the text field) | Effect (`AbstractBlockField.java:134-211`) |
+|---|---|
+| ← / → | previous / next block (day → month → year; hour → minute → am/pm) |
+| Home / End | first / last block |
+| ↑ / ↓ | increment / decrement the selected block by 1 |
+| PageUp / PageDown | big step: ±10 years, ±3 months, ±7 days; ±12 hours, ±10 minutes |
+| digits | overwrite the block; auto-advance when the block is full or a separator is typed |
+
+Increments delegate to `LocalDate.plusDays/plusMonths/plusYears` and
+`LocalTime.plusMinutes/plusHours` (`DateField.java:258-278`,
+`TimeField.java:265-284`), so everything rolls over correctly (minute
+59 ↑ rolls the hour, month 12 rolls the year).
+
+In the popups: `CalendarMenu` arrows move by day/week, PageUp/Down by
+month, Enter/Space confirms, Esc closes (`CalendarMenu.java:310-341`);
+`TimeList` arrows move a slot, Enter/Space confirms, Esc closes
+(`RaplaTime.java:524-551`).
+
+**Events.** Both widgets fire `DateChangeEvent` to registered
+`DateChangeListener`s only when the value actually differs from the last
+fired value — this, plus the controller's `listenerEnabled` guard, is
+what keeps the four-widget feedback loop from oscillating.
+
+## Command / undo catalog
+
+The contract
+(`rapla-core/src/main/java/org/rapla/components/util/undo/CommandUndo.java`):
+
+```java
+public interface CommandUndo<T extends Exception> {
+    Promise<Void> execute();
+    Promise<Void> undo();
+    String getCommandoName();   // shown in undo/redo tooltips and menu labels
+}
+```
+
+`CommandHistory` (same package) keeps a single list plus a `current`
+pointer (max 100 entries, FIFO-trimmed). `storeAndExecute` executes,
+then truncates the redo tail and appends; `undo()`/`redo()` move the
+pointer; `CommandHistoryChangedListener.historyChanged()` fires after
+every operation and drives the arrow buttons' enabled state and
+tooltips (`getUndoText()`/`getRedoText()`).
+
+**Two histories, not one:**
+
+- the **global** history (`ClientFacadeImpl.getCommandHistory()`), bound
+  to the main-window menu and Ctrl-Z (`RaplaMenuBar.java:206-221`) —
+  holds store-level commands (save, delete, calendar drag/paste);
+- a **per-dialog** history (`ReservationEditImpl.commandHistory`,
+  cleared on every `setReservation`), bound to the dialog's own
+  undo/redo arrows — holds every in-dialog mutation and dies with the
+  dialog. Only on Save does a single `SaveUndo` land in the global
+  history.
+
+### Global-history commands
+
+| Command | Defined in | Trigger | execute() | undo() |
+|---|---|---|---|---|
+| `SaveUndo<T>` | `client/internal/SaveUndo.java` | Save in any edit dialog; copy-paste; status menus | `facade.dispatch(new)` — redo refetches mutable copies via `editListAsync` | restore old versions via `editListAsyncForUndo`; remove entities that were created |
+| `DeleteUndo<T>` | `client/internal/DeleteUndo.java` | delete menu action (`RaplaObjectActions.java:416`) | `facade.dispatchRemove` (child categories included) | re-store cloned entities, re-owned to the current user |
+| `AppointmentResize` | `ReservationControllerImpl.java:1108-1268` | drag-move/resize on the calendar, after the "only this date / series / whole event" scope dialog | SINGLE: clone as single appointment + add exception to the series; SERIE/EVENT: move the appointments | reverse the move / remove clone + exception |
+| `DeleteBlocksCommand` | `ReservationControllerImpl.java:268-410` | delete from the calendar view (single block or multi-block selection), after the delete scope dialog (see "Delete — the scope dialog") | partition into remove-reservation / remove-appointment / add-exception with empty-series + last-appointment cascades; one dispatch | re-store reservations, re-add appointments + restrictions, remove added exceptions |
+| `AllocatableExchangeCommand` | `ReservationControllerImpl.java:946-1086` | drag between resource rows in the calendar | exchange allocatable, adjust restrictions/exceptions per scope | restore old allocations and restrictions |
+| `AppointmentPaste` | `ReservationControllerImpl.java:1318-1413` | paste a copied appointment | add appointment to a reservation OR clone the whole reservation (`asNewReservation`) | remove it / delete the clone |
+| `ReservationPaste` | `ReservationControllerImpl.java:1469-1512` | paste copied reservations | `facade.copyReservations` + dispatch clones with time offset | dispatch-remove the clones |
+| `ConflictEnable` | `ConflictSelectionPresenter.java:160-202` | enable/disable-conflict context menu | toggle the conflict's enabled flag | toggle back |
+
+### Dialog-history commands
+
+| Command | Defined in | Trigger | execute() / undo() |
+|---|---|---|---|
+| `UndoReservationTypeChange` | `ReservationInfoEdit.java:641` | event-type dropdown | swap classification + DynamicType, re-render the form / swap back |
+| `UndoClassificationChange` | `ReservationInfoEdit.java:552` | attribute field edit | set new attribute value / set old value |
+| `UndoPermissionChange` | `ReservationInfoEdit.java` (after 700) | permission list edit | replace the permission set / restore the old set |
+| `UndoSingleEditorChange` | `AppointmentController.java:593-681` | any of the 4 date/time widgets or the all-day box (single mode) | set widgets + `appointment.move` / restore old start/end/flag |
+| `UndoDataChange` | `AppointmentController.java:1841-1887` | repeating-editor field changes; "free appointment" move | copy new appointment state (`AppointmentImpl.copy`) / copy old state back |
+| `UndoRepeatingTypeChange` | `AppointmentController.java:1758-1807` | repeating-type radio buttons | switch repeating type + swap card panel / switch back |
+| `UndoExceptionChange` | `AppointmentController.java:1632-1686` | exception dialog add/remove | apply exception additions/removals / revert them |
+| `NewAppointment` | `AppointmentListEdit.java:425-449` | "New" button | add appointment to reservation + list / remove it |
+| `RemoveAppointments` | `AppointmentListEdit.java:335-384` | "Delete" button | remove selected appointments (restrictions captured first) / re-add + restore restrictions |
+| `AppointmentSplit` | `AppointmentListEdit.java:462-545` | "convert to single events" | expand finite series into N single appointments, migrate restrictions / remove them, restore the series |
+| `AppointmentSelectionChange` | `AppointmentListEdit.java:557-584` | selecting a list row | select target / previous appointment — selection is **on the undo stack**, so undoing an edit also returns to the row it happened on |
+| `RestrictionChange` | `AllocatableSelection.java:2314-2346` | "Selected on" restriction popup | set new restriction array on the allocatable / restore the old array |
+| `AllocatableChange` | `AllocatableSelection.java:2250-2302` | add/remove resource buttons, double-click | add or remove allocatables on all edited reservations / inverse |
+| `UndoNoteChange` | plugin `appointmentnote/.../AppointmentNoteEditFactory.java:159-205` | appointment-note text field | set the note annotation / restore the old note |
+
+### Design notes
+
+- Commands capture old/new state **at construction**; execute()/undo()
+  never re-read the live UI.
+- Several global commands carry a `firstTimeCall` flag: the first
+  execution differs from redo (`SaveUndo` dispatches the already-edited
+  clone on first call, but a redo must refetch fresh mutable copies).
+- `execute()`/`undo()` return `Promise<Void>`, so server-backed commands
+  (save, paste) chain async; `CommandHistory` only appends after the
+  promise resolves — a failed execute never lands on the stack.
 
 ## Async on the EDT — the Promise contract
 

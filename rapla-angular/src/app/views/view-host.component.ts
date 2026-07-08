@@ -1,9 +1,21 @@
 import { Component, ViewChild, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatSort, MatSortModule } from '@angular/material/sort';
+import { MatMenuModule, MatMenuTrigger } from '@angular/material/menu';
+
+import { MatDialog } from '@angular/material/dialog';
 
 import { GraphqlService, type ViewMeta, type ViewColumn } from '../graphql/graphql.service';
 import { renderCell } from '../graphql/view-render';
+import { extractRowContext, extractSelectionContext } from './row-context';
+import { TableSelection } from './table-selection';
+import { ROW_MENU_PROVIDERS, type RowMenuItem } from './row-menu';
+import { MonthGridComponent } from './month-grid.component';
+import { monthGridWindow } from './month-chunks';
+import { EventSheetComponent, type EventSheetDialogData } from '../event/event-sheet.component';
+import { rangeScopedDraft } from '../event/event-draft';
+import { MutationBus } from '../graphql/mutation-bus';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { groupByWeekday, groupByColumn } from '../graphql/weekday-grouping';
 import { ViewStateStore, type DateWindow } from '../state/view-state-store';
 import { FilterStore, type FilterEntry } from '../state/filter-store';
@@ -61,7 +73,7 @@ export function hasScope(chips: FilterEntry[]): boolean {
  */
 @Component({
   selector: 'app-view-host',
-  imports: [MatTableModule, MatSortModule],
+  imports: [MatTableModule, MatSortModule, MatMenuModule, MonthGridComponent],
   template: `
     <section class="content">
       <h2 class="view-title">{{ meta()?.title ?? viewName() }}</h2>
@@ -83,7 +95,15 @@ export function hasScope(chips: FilterEntry[]): boolean {
             }
           </p>
 
-          @if (total() > 0) {
+          @if (isMonth()) {
+            <!-- PRD 095 — month calendar grid (spanning bars); replaces the table. -->
+            <app-month-grid
+              [rows]="displayRows()"
+              [anchor]="monthAnchor()"
+              (openEvent)="openEventSheet($event)"
+              (createRange)="openCreateRange($event)"
+            />
+          } @else if (total() > 0) {
             <table
               mat-table
               [dataSource]="dataSource"
@@ -92,6 +112,10 @@ export function hasScope(chips: FilterEntry[]): boolean {
               [matSortActive]="isGrouped() ? '' : defaultSortAlias()"
               matSortDirection="asc"
               class="grid"
+              tabindex="0"
+              aria-multiselectable="true"
+              [attr.aria-activedescendant]="activeRowId()"
+              (keydown)="onTableKeydown($event)"
             >
               @for (col of tableColumns(); track col.alias) {
                 <ng-container [matColumnDef]="col.alias">
@@ -101,21 +125,62 @@ export function hasScope(chips: FilterEntry[]): boolean {
                   <td mat-cell *matCellDef="let row">{{ cell(row, col) }}</td>
                 </ng-container>
               }
+              <!-- Row actions (PRD 094): ⋮ opens the shared row menu; only rows
+                   with a typed subject (D4) get a button. -->
+              <ng-container matColumnDef="__actions">
+                <th mat-header-cell *matHeaderCellDef class="actions-col"></th>
+                <td mat-cell *matCellDef="let row" class="actions-col">
+                  @if (rowItems(row).length > 0) {
+                    <button
+                      type="button"
+                      class="row-menu-btn"
+                      aria-label="Aktionen"
+                      [matMenuTriggerFor]="rowMenu"
+                      (click)="prepareMenu(row); $event.stopPropagation()"
+                    >
+                      ⋮
+                    </button>
+                  }
+                </td>
+              </ng-container>
               <!-- Group-header row (grouped views): one cell spanning all columns. -->
               <ng-container matColumnDef="__groupHeader">
-                <td mat-cell *matCellDef="let g" [attr.colspan]="columnAliases().length" class="group-cell">
+                <td mat-cell *matCellDef="let g" [attr.colspan]="displayedColumns().length" class="group-cell">
                   {{ g['__label'] }} <span class="cnt">({{ g['__count'] }})</span>
                 </td>
               </ng-container>
-              <tr mat-header-row *matHeaderRowDef="columnAliases()"></tr>
+              <tr mat-header-row *matHeaderRowDef="displayedColumns()"></tr>
               <tr mat-row *matRowDef="let row; columns: ['__groupHeader']; when: isGroupRow" class="group-row"></tr>
-              <tr mat-row *matRowDef="let row; columns: columnAliases(); when: isDataRow"></tr>
+              <tr
+                mat-row
+                *matRowDef="let row; columns: displayedColumns(); when: isDataRow"
+                [attr.id]="rowId(row)"
+                [class.selected]="selection.isSelected(row)"
+                [class.active-row]="selection.active() === row"
+                [attr.aria-selected]="selection.isSelected(row)"
+                (mousedown)="onRowMousedown($event)"
+                (click)="onRowClick($event, row)"
+                (contextmenu)="onContextMenu($event, row)"
+                (dblclick)="onRowDblClick(row)"
+              ></tr>
             </table>
           } @else {
             <p class="empty">Keine Termine im Zeitraum.</p>
           }
         }
       </section>
+      <mat-menu #rowMenu="matMenu">
+        @for (item of menuItems(); track item.id) {
+          <button mat-menu-item type="button" (click)="item.run()">{{ item.label }}</button>
+        }
+      </mat-menu>
+      <span
+        class="ctx-anchor"
+        [style.left.px]="menuX()"
+        [style.top.px]="menuY()"
+        [matMenuTriggerFor]="rowMenu"
+        #ctxTrigger="matMenuTrigger"
+      ></span>
   `,
   styles: [
     `
@@ -169,6 +234,15 @@ export function hasScope(chips: FilterEntry[]): boolean {
         font-weight: 600;
         color: rgba(0, 0, 0, 0.6);
       }
+      table.grid:focus {
+        outline: none;
+      }
+      .grid tr.selected td {
+        background: var(--mat-sys-secondary-container, rgba(63, 81, 181, 0.12));
+      }
+      .grid tr.active-row td:first-child {
+        box-shadow: inset 3px 0 0 var(--mat-sys-primary, #3f51b5);
+      }
       .group-cell {
         font-weight: 600;
         color: var(--mat-sys-primary, #3f51b5);
@@ -185,11 +259,38 @@ export function hasScope(chips: FilterEntry[]): boolean {
       .error {
         color: #c62828;
       }
+      .actions-col {
+        width: 2.2rem;
+        text-align: right;
+      }
+      .row-menu-btn {
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        font-size: 1.1rem;
+        line-height: 1;
+        padding: 0.15rem 0.4rem;
+        border-radius: 4px;
+        color: rgba(0, 0, 0, 0.55);
+        opacity: 0.25;
+      }
+      tr:hover .row-menu-btn,
+      .row-menu-btn:focus-visible,
+      .row-menu-btn[aria-expanded='true'] {
+        opacity: 1;
+        background: rgba(0, 0, 0, 0.05);
+      }
+      .ctx-anchor {
+        position: fixed;
+        width: 0;
+        height: 0;
+      }
     `,
   ],
 })
 export class ViewHostComponent {
   private readonly gql = inject(GraphqlService);
+  private readonly dialog = inject(MatDialog);
   private readonly viewState = inject(ViewStateStore);
   private readonly filter = inject(FilterStore);
   private readonly lastView = inject(LastViewStore);
@@ -234,6 +335,16 @@ export class ViewHostComponent {
   readonly isGrouped = computed(
     () => this.viewState.renderMode() === 'week' && this.groupable(),
   );
+  /** PRD 095 — MONTH mode: render the calendar grid instead of the table. */
+  readonly isMonth = computed(() => this.viewState.renderMode() === 'month');
+  /** Anchor date for the month grid — the window's from (the control strip keeps
+   *  the window month-aligned in month mode, D4). */
+  readonly monthAnchor = computed(() => {
+    const from = this.viewState.window()?.from;
+    if (from) return from;
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  });
 
   readonly visibleColumns = computed<ViewColumn[]>(() =>
     (this.meta()?.columns ?? [])
@@ -252,6 +363,107 @@ export class ViewHostComponent {
     return groupCol ? [{ ...groupCol, hidden: false }, ...visible] : visible;
   });
   readonly columnAliases = computed(() => this.tableColumns().map((c) => c.alias));
+
+  /** PRD 099 — Swing/Excel row selection over the RENDERED order (fed from
+   *  {@link dataSource}.connect() so shift-ranges follow the current sort;
+   *  group-header rows never enter the key list). Keys are the row objects —
+   *  a re-query mints new objects, so the selection clears itself. */
+  readonly selection = new TableSelection<Record<string, unknown>>();
+  private readonly renderedRows = signal<Record<string, unknown>[]>([]);
+  private readonly rowIdByRow = computed(
+    () => new Map(this.renderedRows().map((r, i) => [r, `vh-row-${i}`])),
+  );
+  readonly activeRowId = computed(() => {
+    const active = this.selection.active();
+    return active ? (this.rowIdByRow().get(active) ?? null) : null;
+  });
+
+  rowId(row: Record<string, unknown>): string | null {
+    return this.rowIdByRow().get(row) ?? null;
+  }
+
+  /** Shift-click must range-select, not select text. */
+  onRowMousedown(event: MouseEvent): void {
+    if (event.shiftKey) event.preventDefault();
+  }
+
+  onRowClick(event: MouseEvent, row: Record<string, unknown>): void {
+    this.selection.pointer(row, {
+      shift: event.shiftKey,
+      ctrl: event.ctrlKey || event.metaKey,
+    });
+  }
+
+  onTableKeydown(event: KeyboardEvent): void {
+    const handled = this.selection.key(event.key, {
+      shift: event.shiftKey,
+      ctrl: event.ctrlKey || event.metaKey,
+    });
+    if (!handled) return;
+    event.preventDefault();
+    const id = this.activeRowId();
+    if (id) document.getElementById(id)?.scrollIntoView?.({ block: 'nearest' });
+  }
+
+  /** PRD 094 — row menu. Providers dispatch on the typed row subject (D4);
+   *  the actions column only appears when at least one row has menu items. */
+  private readonly menuProviders = inject(ROW_MENU_PROVIDERS, { optional: true }) ?? [];
+  readonly menuItems = signal<RowMenuItem[]>([]);
+  readonly menuX = signal(0);
+  readonly menuY = signal(0);
+  @ViewChild('ctxTrigger') private ctxTrigger?: MatMenuTrigger;
+
+  rowItems(row: Record<string, unknown>): RowMenuItem[] {
+    if (this.menuProviders.length === 0) return [];
+    const ctx = extractRowContext(row, this.viewName(), this.meta()?.columns ?? []);
+    if (!ctx.primary) return [];
+    return this.menuProviders.flatMap((p) => p.items(ctx));
+  }
+
+  /** Menu items for the CURRENT selection (PRD 099) — the row is absorbed into
+   *  the selection first (unselected target replaces it, Explorer convention). */
+  private selectionItems(row: Record<string, unknown>): RowMenuItem[] {
+    if (!this.selection.isSelected(row)) this.selection.pointer(row);
+    if (this.menuProviders.length === 0) return [];
+    const ctx = extractSelectionContext(
+      this.selection.selectedKeys(),
+      this.viewName(),
+      this.meta()?.columns ?? [],
+    );
+    if (ctx.subjects.length === 0) return [];
+    return this.menuProviders.flatMap((p) => p.items(ctx));
+  }
+
+  prepareMenu(row: Record<string, unknown>): void {
+    this.menuItems.set(this.selectionItems(row));
+  }
+
+  /** Double-click = the menu's edit action (Anzeigen fallback on read-only
+   *  rows) — single-row selections only (Swing parity). */
+  onRowDblClick(row: Record<string, unknown>): void {
+    if (this.selection.count() > 1) return;
+    const items = this.rowItems(row);
+    const action = items.find((i) => i.id === 'edit') ?? items.find((i) => i.id === 'view');
+    action?.run();
+  }
+
+  onContextMenu(event: MouseEvent, row: Record<string, unknown>): void {
+    const items = this.selectionItems(row);
+    if (items.length === 0) return;
+    event.preventDefault();
+    this.menuItems.set(items);
+    this.menuX.set(event.clientX);
+    this.menuY.set(event.clientY);
+    this.ctxTrigger?.openMenu();
+  }
+
+  private readonly hasRowMenu = computed(
+    () => this.menuProviders.length > 0 && this.displayRows().some((r) => this.rowItems(r).length > 0),
+  );
+  /** Table columns incl. the trailing actions column when any row has a menu. */
+  readonly displayedColumns = computed(() =>
+    this.hasRowMenu() ? [...this.columnAliases(), '__actions'] : this.columnAliases(),
+  );
   /** Default sort: the date/group column (chronological), else the first column. */
   readonly defaultSortAlias = computed(() => this.groupAlias() || this.tableColumns()[0]?.alias || '');
 
@@ -338,7 +550,15 @@ export class ViewHostComponent {
    *  query must not clobber a newer, filtered one. Stale responses are ignored. */
   private reqToken = 0;
 
+  /** Bumped by MutationBus.mutated$ (any own mutation landed — edit / delete /
+   *  undo / quick-create) → re-query. Interim manual trigger; a server change
+   *  listener replaces the emitter later (see MutationBus). */
+  private readonly refreshTick = signal(0);
+
   constructor() {
+    inject(MutationBus)
+      .mutated$.pipe(takeUntilDestroyed())
+      .subscribe(() => this.refreshTick.update((n) => n + 1));
     // Material client sort: sort by the displayed text, EXCEPT date columns sort
     // by their raw ISO value (chronological, not by the formatted label).
     this.dataSource.sortingDataAccessor = (row, id) => {
@@ -354,6 +574,16 @@ export class ViewHostComponent {
     effect(() => {
       this.dataSource.data = this.tableRows();
     });
+    // PRD 099 — mirror the RENDERED order (sort applied, group headers dropped)
+    // into the selection model, so ranges + keyboard nav follow what's on screen.
+    this.dataSource
+      .connect()
+      .pipe(takeUntilDestroyed())
+      .subscribe((rendered) => {
+        const dataRows = rendered.filter((r) => r['__group'] !== true);
+        this.renderedRows.set(dataRows);
+        this.selection.setRows(dataRows);
+      });
     // Reconnect/disconnect sort when grouping changes (grouped = no column sort).
     effect(() => {
       this.dataSource.sort = this.isGrouped() ? null : this.sortRef;
@@ -374,13 +604,17 @@ export class ViewHostComponent {
       const viewName = this.viewName();
       const w = this.viewState.window();
       const chips = this.filter.entries();
+      // PRD 095 D4 — the stored window is the ANCHOR; month mode queries the
+      // padded 42-day grid range derived from it (the anchor is not rewritten).
+      const month = this.isMonth();
       this.bindingKey(); // re-query when the variable signature resolves
+      this.refreshTick(); // re-query after a main-view mutation (delete / undo)
       if (!hasScope(chips)) {
         this.clearForNoScope();
         return;
       }
       this.noScope.set(false);
-      this.run(viewName, w, chips);
+      this.run(viewName, month && w ? monthGridWindow(w.from) : w, chips);
     });
   }
 
@@ -458,5 +692,50 @@ export class ViewHostComponent {
 
   cell(row: Record<string, unknown>, col: ViewColumn): string {
     return renderCell(row, col);
+  }
+
+  /** PRD 095 — month-grid chip click → event sheet dialog (same shape as the row menu's edit). */
+  openEventSheet(reservationId: string): void {
+    this.dialog.open(EventSheetComponent, {
+      data: { id: reservationId } satisfies EventSheetDialogData,
+      width: '960px',
+      maxWidth: '95vw',
+      height: '90vh',
+      restoreFocus: false,
+    });
+  }
+
+  /** Memoized first creatable event type (same query the toolbar's "Neu" uses). */
+  private eventTypeKey: string | null = null;
+
+  /** PRD 095 Phase 3 — month-grid drag-create: day-range selection opens the
+   *  event sheet PREFILLED (range-seeded scoped draft; nothing persists until save). */
+  openCreateRange(range: { from: string; to: string }): void {
+    const chips = this.filter.entries();
+    const open = (typeKey: string) => {
+      const draft = rangeScopedDraft(typeKey, chips, range.from, range.to);
+      this.dialog.open(EventSheetComponent, {
+        data: { id: draft.id, isNew: true, draft } satisfies EventSheetDialogData,
+        width: '960px',
+        maxWidth: '95vw',
+        height: '90vh',
+        restoreFocus: false,
+      });
+    };
+    if (this.eventTypeKey) {
+      open(this.eventTypeKey);
+      return;
+    }
+    this.gql
+      .query<{ types: { key: string; classificationType: string }[] }>(
+        `query { types { key classificationType } }`,
+      )
+      .subscribe((resp) => {
+        const key =
+          (resp.data?.types ?? []).find((t) => t.classificationType === 'RESERVATION')?.key ??
+          'event';
+        this.eventTypeKey = key;
+        open(key);
+      });
   }
 }

@@ -298,7 +298,7 @@ class ReservationGraphQLControllerTest
     }
 
     /**
-     * PRD 066 — `allocatableMatching: { typeKeyIn: [...] }` returns
+     * PRD 066 — `allocatableMatching: { typeIn: [...] }` returns
      * reservations using ANY allocatable of those types.
      */
     @Test
@@ -308,7 +308,7 @@ class ReservationGraphQLControllerTest
         List<Map<String, Object>> got = tester.document("""
                 { reservations(filter: {
                     from: "2001-01-01T00:00:00", to: "2020-12-31T00:00:00",
-                    allocatableMatching: { typeKeyIn: ["room"] }
+                    allocatableMatching: { typeIn: [room] }
                   }) { id } }
                 """)
                 .execute()
@@ -317,6 +317,143 @@ class ReservationGraphQLControllerTest
                 .get();
         // Fixture has multiple reservations allocating Room A66 — at least 1.
         assertFalse(got.isEmpty(), () -> "expected reservations on rooms in fixture; got " + got);
+    }
+
+    /**
+     * PRD 059 Phase 7 — the GENERATED `typeIn: [ReservationTypeKey!]` on
+     * ReservationFilter selects by the RESERVATION's own DynamicType key
+     * (union over the list). The fixture's reservations are all of type
+     * `event`, so `[event]` returns everything in the window; an unknown
+     * enum value is a loud VALIDATION error (the Phase 7 trade-off).
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void reservationsTypeInFiltersByEventType()
+    {
+        List<Map<String, Object>> unfiltered = tester.document("""
+                { reservations(filter: {
+                    from: "2001-01-01T00:00:00", to: "2020-12-31T00:00:00"
+                  }) { id } }
+                """)
+                .execute()
+                .path("reservations")
+                .entityList(new ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        List<Map<String, Object>> typed = tester.document("""
+                { reservations(filter: {
+                    from: "2001-01-01T00:00:00", to: "2020-12-31T00:00:00",
+                    typeIn: [event]
+                  }) { id } }
+                """)
+                .execute()
+                .path("reservations")
+                .entityList(new ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        java.util.Set<Object> unfilteredIds = unfiltered.stream().map(m -> m.get("id")).collect(java.util.stream.Collectors.toSet());
+        java.util.Set<Object> typedIds = typed.stream().map(m -> m.get("id")).collect(java.util.stream.Collectors.toSet());
+        assertFalse(unfilteredIds.isEmpty(), "fixture should have reservations in the window");
+        assertEquals(unfilteredIds, typedIds, () -> "typeIn:[event] should match all fixture reservations; got " + typed);
+        tester.document("""
+                { reservations(filter: {
+                    from: "2001-01-01T00:00:00", to: "2020-12-31T00:00:00",
+                    typeIn: [noSuchType]
+                  }) { id } }
+                """)
+                .execute()
+                .errors()
+                .satisfy(errs -> assertFalse(errs.isEmpty(),
+                        "unknown ReservationTypeKey enum value must be rejected at validation"));
+    }
+
+    /**
+     * PRD 059 Phase 7b — the type enums are SPLIT per kind:
+     * `ReservationFilter.typeIn: [ReservationTypeKey!]` only accepts
+     * reservation DT keys; an allocatable key (`room`) is a VALIDATION
+     * error, not a silent empty result. And vice versa on
+     * `AllocatableFilter.typeIn: [AllocatableTypeKey!]`.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void typeInEnumsAreSplitPerKind()
+    {
+        tester.document("""
+                { reservations(filter: {
+                    from: "2001-01-01T00:00:00", to: "2020-12-31T00:00:00",
+                    typeIn: [room]
+                  }) { id } }
+                """)
+                .execute()
+                .errors()
+                .satisfy(errs -> assertFalse(errs.isEmpty(),
+                        "allocatable key 'room' must be rejected on ReservationFilter.typeIn"));
+        tester.document("""
+                { allocatables(filter: { typeIn: [event] }) { id } }
+                """)
+                .execute()
+                .errors()
+                .satisfy(errs -> assertFalse(errs.isEmpty(),
+                        "reservation key 'event' must be rejected on AllocatableFilter.typeIn"));
+    }
+
+    /**
+     * PRD 059 Phase 6 — generated `where<EventTypeKey>` predicates on
+     * ReservationFilter filter by the RESERVATION's own classification
+     * attributes, running through the SAME WhereEvaluator as the
+     * allocatable path. Fixture: events named "Reservation 2",
+     * "test-reservation", … — a name-eq predicate selects exactly one.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void reservationsWhereEventFiltersByAttribute()
+    {
+        List<Map<String, Object>> got = tester.document("""
+                { reservations(filter: {
+                    from: "2001-01-01T00:00:00", to: "2020-12-31T00:00:00",
+                    whereEvent: { name: { eq: "Reservation 2" } }
+                  }) { name } }
+                """)
+                .execute()
+                .path("reservations")
+                .entityList(new ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertEquals(1, got.size(), () -> "whereEvent name-eq must select exactly one event; got " + got);
+        assertEquals("Reservation 2", got.get(0).get("name"));
+        List<Map<String, Object>> combos = tester.document("""
+                { reservations(filter: {
+                    from: "2001-01-01T00:00:00", to: "2020-12-31T00:00:00",
+                    whereEvent: { OR: [ { name: { eq: "Reservation 2" } },
+                                        { name: { contains: "test-reservation" } } ] }
+                  }) { name } }
+                """)
+                .execute()
+                .path("reservations")
+                .entityList(new ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertTrue(combos.size() >= 2, () -> "OR combinator must widen the match; got " + combos);
+    }
+
+    /**
+     * PRD 059 Phase 6 — whereEvent works on the block-rooted read too
+     * (appointmentBlocks delegates to the same reservations gate).
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void appointmentBlocksWhereEventFilters()
+    {
+        List<Map<String, Object>> blocks = tester.document("""
+                { appointmentBlocks(filter: {
+                    from: "2001-01-01T00:00:00", to: "2020-12-31T00:00:00",
+                    whereEvent: { name: { eq: "Reservation 2" } }
+                  }) { reservation { name } } }
+                """)
+                .execute()
+                .path("appointmentBlocks")
+                .entityList(new ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertFalse(blocks.isEmpty(), "expected blocks for Reservation 2");
+        assertTrue(blocks.stream().allMatch(b ->
+                        "Reservation 2".equals(((Map<String, Object>) b.get("reservation")).get("name"))),
+                () -> "all blocks must belong to the whereEvent match; got " + blocks);
     }
 
     /**
@@ -408,7 +545,7 @@ class ReservationGraphQLControllerTest
         List<Map<String, Object>> got = tester.document("""
                 { reservations(filter: {
                     from: "2001-01-01T00:00:00", to: "2020-12-31T00:00:00",
-                    allocatableMatching: { typeKeyIn: ["room"] }
+                    allocatableMatching: { typeIn: [room] }
                   }) { id } }
                 """)
                 .execute()
@@ -641,6 +778,37 @@ class ReservationGraphQLControllerTest
             }
         }
         assertTrue(foundAnyBlock, "fixture should produce at least one materialized block in 2010");
+    }
+
+    /**
+     * PRD 094 D4 — every block exposes its owning appointment's id (the SPA
+     * delete-scope flow needs the (appointmentId, blockStart) pair per row).
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void appointmentBlocksExposeAppointmentId()
+    {
+        List<Map<String, Object>> blocks = tester.document("""
+                query {
+                  appointmentBlocks(filter: {
+                    from: "2006-01-01T00:00:00",
+                    to:   "2006-12-31T00:00:00"
+                  }) {
+                    start appointmentId
+                  }
+                }
+                """)
+                .execute()
+                .path("appointmentBlocks")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
+                .get();
+        assertFalse(blocks.isEmpty(), "fixture should produce blocks in the 2006 window");
+        for (Map<String, Object> b : blocks)
+        {
+            Object id = b.get("appointmentId");
+            assertNotNull(id, "block.appointmentId required");
+            assertFalse(id.toString().isBlank(), "block.appointmentId must be non-blank");
+        }
     }
 
     // ============================================================ PRD 074 Baustein 1 — appointmentBlocks query root
@@ -953,12 +1121,12 @@ class ReservationGraphQLControllerTest
         assertTrue(typeFieldNames("AppointmentBlock").contains("allocatables"),
                 () -> "missing AppointmentBlock.allocatables");
 
-        List<String> rooms = blockAllocatableNames("{ typeKeyIn: [\"room\"] }");
+        List<String> rooms = blockAllocatableNames("{ typeIn: [room] }");
         List<String> persons = blockAllocatableNames("{ isPersonEq: true }");
         assertTrue(rooms.contains("Room A66"),
                 () -> "expected Room A66 among block rooms; got " + rooms);
         assertFalse(rooms.contains("Burns Monty"),
-                () -> "person must be filtered out by typeKeyIn:[room]; got " + rooms);
+                () -> "person must be filtered out by typeIn:[room]; got " + rooms);
         assertTrue(persons.contains("Burns Monty"),
                 () -> "expected lecturer among block persons; got " + persons);
         assertFalse(persons.contains("Room A66"),
@@ -1057,7 +1225,7 @@ class ReservationGraphQLControllerTest
     void appointmentBlocksAllocatablesFilterRunsAfterCanReadGate()
     {
         List<String> unfilteredVisible = blockAllocatableNames(null);
-        List<String> serverFilteredRooms = blockAllocatableNames("{ typeKeyIn: [\"room\"] }");
+        List<String> serverFilteredRooms = blockAllocatableNames("{ typeIn: [room] }");
         java.util.Set<String> roomNames = java.util.Set.of("erwin", "Room A66");
         java.util.Set<String> expected = unfilteredVisible.stream()
                 .filter(roomNames::contains)
@@ -1474,7 +1642,7 @@ class ReservationGraphQLControllerTest
                 query Raumauslastung @view(title: "Raumauslastung") {
                   appointmentBlockStats(
                     filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" },
-                    groupBy:   [ { key: "raum", allocatables: { typeKeyIn: ["room"] } } ],
+                    groupBy:   [ { key: "raum", allocatables: { typeIn: [room] } } ],
                     aggregate: [ { key: "minuten", field: DURATION_MINUTES, fn: SUM },
                                  { key: "termine", field: DURATION_MINUTES, fn: COUNT } ]
                   ) {
@@ -1514,7 +1682,7 @@ class ReservationGraphQLControllerTest
         String query = """
                 query Raumauslastung(
                   $filter: ReservationFilter! = { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" },
-                  $allocatableFilter: AllocatableFilter! = { typeKeyIn: ["room"] }
+                  $allocatableFilter: AllocatableFilter! = { typeIn: [room] }
                 ) @view(title: "Raumauslastung") {
                   appointmentBlockStats(
                     filter: $filter,
@@ -1773,7 +1941,7 @@ class ReservationGraphQLControllerTest
                 query {
                   appointmentBlockStats(
                     filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" },
-                    groupBy:   [ { key: "raum", allocatables: { typeKeyIn: ["room"] } } ],
+                    groupBy:   [ { key: "raum", allocatables: { typeIn: [room] } } ],
                     aggregate: [ { key: "n", field: DURATION_MINUTES, fn: COUNT } ]
                   ) { keys { value entity { __typename ... on Allocatable { displayName } } } }
                 }
@@ -1869,7 +2037,7 @@ class ReservationGraphQLControllerTest
         List<Map<String, Object>> buckets = tester.document("""
                 query {
                   allocatableStats(
-                    filter:    { typeKeyIn: ["room"] },
+                    filter:    { typeIn: [room] },
                     groupBy:   [ { key: "res", self: true } ],
                     aggregate: [ { key: "n", fn: COUNT } ]
                   ) { keys { value entity { __typename ... on Allocatable { displayName } } } }
@@ -2424,7 +2592,7 @@ class ReservationGraphQLControllerTest
                         "accessLevel is part of the unified AllocatableFilter — must NOT be a validation error: " + errs));
     }
 
-    /** (a) typeKeyIn narrows the nested list to the named DynamicTypes (rooms only). */
+    /** (a) typeIn narrows the nested list to the named DynamicTypes (rooms only). */
     @Test
     @WithMockUser(username = "homer", roles = "ADMIN")
     void appointmentAllocatablesTypeKeyInNarrowsToRooms()
@@ -2433,11 +2601,11 @@ class ReservationGraphQLControllerTest
         assertTrue(all.contains("erwin") && all.contains("Room A66") && all.contains("Burns Monty"),
                 () -> "fixture precondition: Reservation 2 should allocate erwin, Room A66, Burns Monty; got " + all);
 
-        List<String> rooms = reservation2AppointmentAllocatableNames("{ typeKeyIn: [\"room\"] }");
+        List<String> rooms = reservation2AppointmentAllocatableNames("{ typeIn: [room] }");
         assertTrue(rooms.contains("erwin"), () -> "expected room erwin; got " + rooms);
         assertTrue(rooms.contains("Room A66"), () -> "expected Room A66; got " + rooms);
         assertFalse(rooms.contains("Burns Monty"),
-                () -> "lecturer must be filtered out by typeKeyIn:[room]; got " + rooms);
+                () -> "lecturer must be filtered out by typeIn:[room]; got " + rooms);
     }
 
     /** (b) isPersonEq:true returns persons only. */
@@ -2452,20 +2620,20 @@ class ReservationGraphQLControllerTest
                 () -> "rooms must be filtered out by isPersonEq:true; got " + persons);
     }
 
-    /** (c) combined typeKeyIn + isPersonEq AND together → empty (rooms aren't persons). */
+    /** (c) combined typeIn + isPersonEq AND together → empty (rooms aren't persons). */
     @Test
     @WithMockUser(username = "homer", roles = "ADMIN")
     void appointmentAllocatablesCombinedFilterAnds()
     {
         List<String> combined = reservation2AppointmentAllocatableNames(
-                "{ typeKeyIn: [\"room\"], isPersonEq: true }");
+                "{ typeIn: [room], isPersonEq: true }");
         assertTrue(combined.isEmpty(),
-                () -> "typeKeyIn:[room] AND isPersonEq:true must yield nothing (rooms aren't persons); got " + combined);
+                () -> "typeIn:[room] AND isPersonEq:true must yield nothing (rooms aren't persons); got " + combined);
 
         List<String> personRooms = reservation2AppointmentAllocatableNames(
-                "{ typeKeyIn: [\"room\"], isPersonEq: false }");
+                "{ typeIn: [room], isPersonEq: false }");
         assertTrue(personRooms.contains("erwin") && personRooms.contains("Room A66"),
-                () -> "typeKeyIn:[room] AND isPersonEq:false must keep both rooms; got " + personRooms);
+                () -> "typeIn:[room] AND isPersonEq:false must keep both rooms; got " + personRooms);
         assertFalse(personRooms.contains("Burns Monty"),
                 () -> "lecturer must be excluded; got " + personRooms);
     }
@@ -2483,7 +2651,7 @@ class ReservationGraphQLControllerTest
     void appointmentAllocatablesFilterRunsAfterCanReadGate()
     {
         List<String> unfilteredVisible = reservation2AppointmentAllocatableNames(null);
-        List<String> serverFilteredRooms = reservation2AppointmentAllocatableNames("{ typeKeyIn: [\"room\"] }");
+        List<String> serverFilteredRooms = reservation2AppointmentAllocatableNames("{ typeIn: [room] }");
 
         // Client-side reference: rooms among the names monty can actually read.
         java.util.Set<String> roomNames = java.util.Set.of("erwin", "Room A66");

@@ -1,6 +1,25 @@
 import { Component, computed, inject } from '@angular/core';
+import { MatDatepickerModule, type MatDatepickerInputEvent } from '@angular/material/datepicker';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { provideNativeDateAdapter } from '@angular/material/core';
 
-import { ViewStateStore, type RenderMode } from '../state/view-state-store';
+import { ViewStateStore } from '../state/view-state-store';
+
+/** Local-midnight {@code Date} for a 'YYYY-MM-DD' string (calendar day, no TZ drift for display). */
+function toDate(dateOnly: string): Date | null {
+  if (!dateOnly) return null;
+  const [y, m, d] = dateOnly.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+/** 'YYYY-MM-DD' from a {@code Date}'s local calendar components. */
+function toDateOnly(date: Date): string {
+  const yy = date.getFullYear().toString().padStart(4, '0');
+  const mm = (date.getMonth() + 1).toString().padStart(2, '0');
+  const dd = date.getDate().toString().padStart(2, '0');
+  return `${yy}-${mm}-${dd}`;
+}
 
 /** Shift a 'YYYY-MM-DDTHH:mm:ss' LocalDateTime string by {@code days} (UTC-stable, no timezone drift). */
 export function shiftLocalDateTime(value: string, days: number): string {
@@ -34,6 +53,37 @@ export function daysBetween(fromIso: string, toIso: string): number {
   return Math.round((Date.UTC(ty, tm - 1, td) - Date.UTC(fy, fm - 1, fd)) / 86_400_000);
 }
 
+/** The window of the month containing {@code dateIso}: [1st .. 1st-of-next-month) at T00:00:00. */
+export function monthWindowOf(dateIso: string): { from: string; to: string } {
+  const [y, m] = datePart(dateIso).split('-').map(Number);
+  return { from: firstOfMonth(y, m), to: firstOfMonth(m === 12 ? y + 1 : y, m === 12 ? 1 : m + 1) };
+}
+
+/** Snap to the month of {@code window.from}, then shift by {@code delta} months (PRD 095 D4). */
+export function shiftMonth(
+  window: { from: string; to: string },
+  delta: number,
+): {
+  from: string;
+  to: string;
+} {
+  const [y, m] = datePart(window.from).split('-').map(Number);
+  const index = y * 12 + (m - 1) + delta;
+  const yy = Math.floor(index / 12);
+  const mm = index - yy * 12 + 1;
+  return monthWindowOf(firstOfMonth(yy, mm));
+}
+
+/** German month label ('Juli 2026') for a LocalDateTime string's month. */
+export function monthLabel(fromIso: string): string {
+  const [y, m] = datePart(fromIso).split('-').map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+}
+
+function firstOfMonth(year: number, month: number): string {
+  return `${year.toString().padStart(4, '0')}-${month.toString().padStart(2, '0')}-01T00:00:00`;
+}
+
 /** Re-anchor a window to this week's Monday, preserving its span (the "Heute" jump). */
 export function todayWindow(current: { from: string; to: string }, now: Date): {
   from: string;
@@ -51,7 +101,8 @@ export function todayWindow(current: { from: string; to: string }, now: Date): {
  */
 @Component({
   selector: 'app-view-control-strip',
-  imports: [],
+  imports: [MatDatepickerModule, MatFormFieldModule, MatInputModule],
+  providers: [provideNativeDateAdapter()],
   template: `
     <div class="strip">
       <!-- Mode switch — only shown when the server advertises more than one render mode. -->
@@ -64,7 +115,15 @@ export function todayWindow(current: { from: string; to: string }, now: Date): {
           }
         </div>
       }
-      @if (isWeek()) {
+      @if (isMonth()) {
+        <!-- MONTH: navigation steps whole months; the window is the anchor month (PRD 095 D4). -->
+        <div class="nav">
+          <button class="navbtn" title="zurück" (click)="prev()">◀</button>
+          <span class="range month-label">{{ monthLabelText() }}</span>
+          <button class="navbtn" title="vor" (click)="next()">▶</button>
+          <button class="navbtn today" (click)="today()">Heute</button>
+        </div>
+      } @else if (isWeek()) {
         <!-- WEEK: navigation walks the window; range is read-only. -->
         <div class="nav">
           <button class="navbtn" title="zurück" (click)="prev()">◀</button>
@@ -75,8 +134,18 @@ export function todayWindow(current: { from: string; to: string }, now: Date): {
       } @else {
         <!-- TABLE: pick an arbitrary from/to range; no navigation. -->
         <div class="range-edit">
-          <label>Von <input type="date" [value]="fromDate()" (change)="onFrom($event)" /></label>
-          <label>Bis <input type="date" [value]="toDate()" (change)="onTo($event)" /></label>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Von</mat-label>
+            <input matInput [matDatepicker]="fromPicker" [value]="fromDate()" (dateChange)="onFrom($event)" />
+            <mat-datepicker-toggle matIconSuffix [for]="fromPicker" />
+            <mat-datepicker #fromPicker />
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Bis</mat-label>
+            <input matInput [matDatepicker]="toPicker" [value]="toDate()" (dateChange)="onTo($event)" />
+            <mat-datepicker-toggle matIconSuffix [for]="toPicker" />
+            <mat-datepicker #toPicker />
+          </mat-form-field>
         </div>
       }
     </div>
@@ -136,17 +205,8 @@ export function todayWindow(current: { from: string; to: string }, now: Date): {
         align-items: center;
         gap: 0.75rem;
       }
-      .range-edit label {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.3rem;
-        font-size: 0.72rem;
-        color: rgba(0, 0, 0, 0.55);
-      }
-      .range-edit input[type='date'] {
-        border: 1px solid rgba(0, 0, 0, 0.15);
-        border-radius: 6px;
-        padding: 0.25rem 0.4rem;
+      .range-edit mat-form-field {
+        width: 10rem;
         font-size: 0.78rem;
       }
     `,
@@ -173,6 +233,16 @@ export class ViewControlStripComponent {
     () => this.viewState.renderModes().includes('week') && this.viewState.renderMode() === 'week',
   );
 
+  /** MONTH layout (◀ Monat Jahr ▶ Heute) when the active mode is 'month' and the server offers it. */
+  protected readonly isMonth = computed(
+    () => this.viewState.renderModes().includes('month') && this.viewState.renderMode() === 'month',
+  );
+
+  protected readonly monthLabelText = computed<string>(() => {
+    const w = this.viewState.window();
+    return w ? monthLabel(w.from) : '—';
+  });
+
   protected readonly rangeLabel = computed<string>(() => {
     const w = this.viewState.window();
     if (!w) {
@@ -181,40 +251,51 @@ export class ViewControlStripComponent {
     return `${datePart(w.from)} … ${datePart(w.to)}`;
   });
 
-  /** {@code YYYY-MM-DD} value for the native date inputs (TABLE mode). */
-  protected readonly fromDate = computed<string>(() => {
+  /** {@code Date} value for the Material datepickers (TABLE mode). */
+  protected readonly fromDate = computed<Date | null>(() => {
     const w = this.viewState.window();
-    return w ? datePart(w.from) : '';
+    return w ? toDate(datePart(w.from)) : null;
   });
-  protected readonly toDate = computed<string>(() => {
+  protected readonly toDate = computed<Date | null>(() => {
     const w = this.viewState.window();
-    return w ? datePart(w.to) : '';
+    return w ? toDate(datePart(w.to)) : null;
   });
 
-  onFrom(event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
+  onFrom(event: MatDatepickerInputEvent<Date>): void {
     const w = this.viewState.window();
-    if (w && value) this.viewState.setWindow({ from: `${value}T00:00:00`, to: w.to });
+    if (w && event.value) this.viewState.setWindow({ from: `${toDateOnly(event.value)}T00:00:00`, to: w.to });
   }
 
-  onTo(event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
+  onTo(event: MatDatepickerInputEvent<Date>): void {
     const w = this.viewState.window();
-    if (w && value) this.viewState.setWindow({ from: w.from, to: `${value}T00:00:00` });
+    if (w && event.value) this.viewState.setWindow({ from: w.from, to: `${toDateOnly(event.value)}T00:00:00` });
   }
 
   prev(): void {
-    this.shift(-7);
+    if (this.isMonth()) this.shiftMonths(-1);
+    else this.shift(-7);
   }
 
   next(): void {
-    this.shift(7);
+    if (this.isMonth()) this.shiftMonths(1);
+    else this.shift(7);
   }
 
   today(): void {
+    if (this.isMonth()) {
+      const now = new Date();
+      this.viewState.setWindow(monthWindowOf(`${toDateOnly(now)}T00:00:00`));
+      return;
+    }
     const w = this.viewState.window();
     if (!w) return;
     this.viewState.setWindow(todayWindow(w, new Date()));
+  }
+
+  private shiftMonths(delta: number): void {
+    const w = this.viewState.window();
+    if (!w) return;
+    this.viewState.setWindow(shiftMonth(w, delta));
   }
 
   private shift(days: number): void {

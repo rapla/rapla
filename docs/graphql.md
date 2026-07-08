@@ -137,6 +137,26 @@ GraphiQL / Scalar / Swagger UI all read the SPA's `localStorage.access_token`
 — log in via the SPA at `/app/login` first; the explorer panels pick the
 token up automatically.
 
+## Type identity — keys are the API, renames break loudly ([ADR 0005](decisions/0005-graphql-keys-are-api-identity.md))
+
+DynamicType **keys** (not UUIDs) are the identity currency of the whole GraphQL surface:
+generated type names (`<typeKey>Classification`), where-fields (`where<TypeKey>`), inline
+fragments, and the type-selection filter. Type selection is the single generated field
+`typeIn` on **per-kind enums** — `AllocatableFilter.typeIn: [AllocatableTypeKey!]`
+(resource+person keys) and `ReservationFilter.typeIn: [ReservationTypeKey!]` (reservation
+keys). Unknown keys **and wrong-kind keys are validation errors**, not silent empty results
+(the former `typeKeyEq`/`typeKeyIn` String fields were removed, PRD 059 Phase 7).
+
+Consequences (details + rationale in the ADR):
+- A type **rename is a breaking API change** — the schema rebuilds automatically (~10 s
+  multi-pod), but client documents/variables referencing the old key fail validation.
+- **Server-stored custom views** (`org.rapla.graphql.customViews`, PRD 074) are
+  **revalidated-and-marked** after every rebuild: invalid views keep their text, refuse
+  execution, carry `invalidReason`; the admin fixes them in GraphiQL. No auto-migration.
+- Typed attribute predicates `where<TypeKey>` exist for all kinds — resource/person on
+  `AllocatableFilter`, reservation (e.g. `whereEvent`) on `ReservationFilter` — evaluated
+  by the same `WhereEvaluator`.
+
 ## Schema topology
 
 ```
@@ -414,13 +434,14 @@ SDL directives carry the bits introspection alone doesn't expose:
 | `@multiplicity(value: BELONGS_TO \| PACKAGE)` | ALLOCATABLE only, non-default multiplicity | Widget hint (vs plain LIST/SINGLE which is implied by the field type wrapper) |
 | `@expectedType(key: "...")` | ALLOCATABLE attrs with a DynamicType constraint | Filter the allocatable picker |
 | `@rootCategory(path: "key/path")` | CATEGORY attrs with an admin-set root | Allowed root for the category picker |
+| `@editView(value: "title" \| "additional" \| "no-view")` | Placement on the `title > main > additional > no-view` scale. `title` is computed from the DISPLAY nameformat's direct attribute references (`{surname} {forename}` → both; functions/lists ignored, explicit `edit-view=no-view` annotation wins); `additional`/`no-view` mirror the `edit-view` attribute annotation; `main` (default) is omitted | SPA editors: title attrs render as prominent header fields in attribute order, no-view attrs are hidden, additional renders like main for now (PRD 096 D5 revision — replaced the earlier single-attribute `@title`) |
 
 Once the SPA has the descriptor info, the read query targets the
 specific classification's typed fields directly:
 
 ```graphql
 {
-  allocatables(filter: { typeKeyEq: "<typeKey>" }) {
+  allocatables(filter: { typeIn: [<typeKey>] }) {
     id
     displayName
     classification {
@@ -441,7 +462,7 @@ consumers with a fixed deployment use this for compile-time field access:
 
 ```graphql
 {
-  allocatables(filter: { typeKeyEq: "<TypeKey>" }) {
+  allocatables(filter: { typeIn: [<TypeKey>] }) {
     displayName
     classification {
       ... on <typeKey>Classification {
@@ -458,7 +479,7 @@ consumers with a fixed deployment use this for compile-time field access:
 
 ```graphql
 # only one type
-{ allocatables(filter: { typeKeyEq: "<TypeKey>" }) { displayName } }
+{ allocatables(filter: { typeIn: [<TypeKey>] }) { displayName } }
 
 # only persons
 { allocatables(filter: { isPersonEq: true }) { displayName } }
@@ -467,7 +488,7 @@ consumers with a fixed deployment use this for compile-time field access:
 { allocatables(filter: { nameContains: "foo" }) { displayName } }
 
 # combined AND
-{ allocatables(filter: { typeKeyEq: "<TypeKey>", nameContains: "foo" }) { displayName } }
+{ allocatables(filter: { typeIn: [<TypeKey>], nameContains: "foo" }) { displayName } }
 ```
 
 ### 7. follow a reference attribute
@@ -478,7 +499,7 @@ classification:
 
 ```graphql
 {
-  allocatables(filter: { typeKeyEq: "<TypeKey>" }) {
+  allocatables(filter: { typeIn: [<TypeKey>] }) {
     displayName
     classification {
       ... on <typeKey>Classification {
@@ -508,7 +529,7 @@ One round-trip for a workbench:
 query Workbench {
   me { username isAdmin }
   types: types { key }
-  things: allocatables(filter: { typeKeyEq: "<TypeKey>" }) {
+  things: allocatables(filter: { typeIn: [<TypeKey>] }) {
     id displayName
   }
   serverNow: serverTime
@@ -540,7 +561,7 @@ narrowing at validation time — SPA mistakes never produce silent nulls:
 
 ```graphql
 {
-  allocatables(filter: { typeKeyEq: "<ResourceKey>" }) {
+  allocatables(filter: { typeIn: [<ResourceKey>] }) {
     classification { ... on <ReservationKey>Classification { typeId } }
   }
 }
@@ -551,6 +572,30 @@ Yields:
 Fragment cannot be spread here as objects of type 'AllocatableClassification'
 can never be of type '<ReservationKey>Classification'
 ```
+
+### 10a. reservationPrototype — birth state of a new event (PRD 099)
+
+`reservationPrototype(typeKey:)` returns the classification a create of
+this type would be born with — the server runs `newClassification()`
+(attribute defaults prefilled), persists nothing. The SPA seeds new
+drafts and type-switch gap-fill from it (cached per typeKey with the SDL
+cache's lifetime). Carries NO id/owner/lastModifiedAt/permissions. §12:
+unknown, non-reservation and non-creatable typeKeys answer with the
+IDENTICAL error, so type existence cannot leak.
+
+```graphql
+{
+  reservationPrototype(typeKey: "<eventKey>") {
+    typeKey
+    classification { ... on <eventKey>Classification { <attr keys> } }
+  }
+}
+```
+
+Input null-semantics on the write side (same PRD): in a classification
+@oneOf variant an attribute key that is PRESENT with `null` clears the
+value; an OMITTED key falls back to the type default (create and update
+rebuild from `newClassification()` — replace semantics, not merge).
 
 ### 11. reservations + the calendar query (PRD 055 + PRD 066)
 
@@ -563,7 +608,7 @@ per-type filter rules, explicit ticks). The combined input shape is:
 input ReservationFilter {
   from:                LocalDateTime!     # inclusive
   to:                  LocalDateTime!     # exclusive
-  typeKeyEq:           String             # narrow to one reservation DT
+  typeIn: [ReservationTypeKey!]         # narrow to reservation DTs (per-kind enum)
   ownerEq:             ID                 # who created it
   allocatableIdsIn:    [ID!]              # PRD 055 — uses ANY of these ids
   allocatableMatching: AllocatableFilter  # PRD 066 — uses ANY allocatable matching this filter
@@ -573,7 +618,7 @@ input ReservationFilter {
 ```
 
 `allocatableMatching` reuses the full `AllocatableFilter` shape — the
-same `typeKeyIn` + per-type `whereXxx` (PRD 059) + `idIn` the calendar
+same `typeIn` + per-type `whereXxx` (PRD 059) + `idIn` the calendar
 sidebar produces. Semantic: result is the union of the type-bucket
 predicate set and `idIn`; per-type filter rules apply only to the
 type-bucket; `idIn` is additive and ignores filter rules.
@@ -585,7 +630,7 @@ type-bucket; `idIn` is additive and ignores filter rules.
     from: "2026-04-01T00:00:00"
     to:   "2026-09-30T00:00:00"
     allocatableMatching: {
-      typeKeyEq: "<ResourceKey>"
+      typeIn: [<ResourceKey>]
       where<ResourceKey>: { <RefAttribute>: { eq: "<reference-id>" } }
     }
   }) {
@@ -605,7 +650,7 @@ type-bucket; `idIn` is additive and ignores filter rules.
     from: "..."
     to:   "..."
     allocatableMatching: {
-      typeKeyIn: ["<TypeA>", "<TypeB>"]      # type checkboxes
+      typeIn: [<TypeA>, <TypeB>]      # type checkboxes
       where<TypeA>: { ... }                  # per-type filter rule
       idIn: ["<id-1>", "<id-2>"]             # additive ticks (any types)
     }
@@ -632,7 +677,7 @@ queries with real dataset numbers live in
 Each appointment exposes its pre-resolved allocatable list. An optional
 `filter` argument narrows it using `AppointmentAllocatableFilter` — a
 strict subset of `AllocatableFilter` containing only the v1 scalar
-predicates (`typeKeyEq`, `typeKeyIn`, `isPersonEq`, `nameContains`,
+predicates (`typeIn`, `typeIn`, `isPersonEq`, `nameContains`,
 `searchText`, `matchKind`, `ownerEq`). Fields like `idIn`, `limit`,
 `accessibleBy*`, and generated `where<TypeKey>` blocks are intentionally
 absent — passing them is a GraphQL validation error, not a silent no-op.
@@ -659,7 +704,7 @@ never leak even when it would match.
   reservations(filter: { from: "...", to: "..." }) {
     appointments {
       start end
-      allocatables(filter: { typeKeyIn: ["<TypeA>", "<TypeB>"] }) {
+      allocatables(filter: { typeIn: [<TypeA>, <TypeB>] }) {
         displayName
         classification { typeKey }
       }
@@ -710,7 +755,7 @@ query {
   resourceAvailability(input: {
     appointments: [{ id: "a…draft-uuid…", start: "2031-06-02T09:00:00",
                      end: "2031-06-06T17:00:00", allDay: false }],
-    candidates: { filter: { typeKeyIn: ["room"] } }
+    candidates: { filter: { typeIn: [room] } }
   }) { allocatable { id name } status conflictingAppointmentIds }
 }
 ```
@@ -1081,7 +1126,10 @@ query Wochenansicht(
     start @hidden  end @hidden                      # LocalDateTime! → exakte Grid-Positionierung/-Höhe
     durationMinutes @hidden                        # Int Wall-Clock-Minuten (≠ UE-Dauer)
     isException     @hidden                         # Boolean! → Ausnahme-Styling
-    reservation { id @hidden  canModify @hidden }   # stabiler Editier-Handle (Block hat KEINE eigene id)
+    reservation @hidden { id  canModify }           # stabiler Editier-Handle (Block hat KEINE eigene id).
+                                                    # @hidden ans Objektfeld SELBST: die Spalten-Metadaten
+                                                    # lesen nur Direktiven am Zeilen-Root-Feld — @hidden
+                                                    # auf den Blättern versteckt die Spalte NICHT
 
     # Generische Ressourcen-Lanes — Trennung rein über isPersonEq, kein typeKey im Query:
     personen: allocatables(filter: { isPersonEq: true })
@@ -1104,7 +1152,7 @@ Variablen (mit `AllocatableFilter` in Aktion — schränkt die Termine auf passe
     "from": "2026-06-15T00:00:00",
     "to":   "2026-06-22T00:00:00",
     "allocatableMatching": {
-      "typeKeyIn": ["Raum"],
+      "typeIn": ["Raum"],
       "whereRaum": { "Gebaeude": { "where": { "Gebaeudename": { "startsWith": "MOS" } } } }
     },
     "limit": 2000
@@ -1193,7 +1241,11 @@ GraphQL wherever a **derived value** is produced — **one language, learned onc
 - **Arrow** — `=>` (documented) or `->` (also accepted). The bare single-subject form needs no arrow;
   the explicit/n-parameter lambda uses the braced form `{(a, b) => fn(a, b)}`.
 - **Functions** — `name`, `times`, `start`, `end`, `duration`, `concat`, `substring`, `if`, `equals`,
-  `attribute`, `key`, `type`, `resources`, … (the bridged rapla function set).
+  `attribute`, `key`, `type`, `resources`, `now`, `isBefore`, … (the bridged rapla function set).
+- ⚠️ **Keine Klammern in String-Literalen** — der Expression-Parser matcht `(`/`)` naiv, auch
+  innerhalb von Anführungszeichen: `if(cond, "(überfällig)", "")` parst NICHT (compute → null);
+  Leerzeichen/Umlaute sind ok. Ausweichen auf klammerfreie Marker: `" – überfällig"`.
+  (Befund 2026-07-08, live verifiziert.)
 
 Examples:
 ```graphql
@@ -1239,8 +1291,8 @@ betroffene Reservierungen) **und** `$allocatableFilter` (Raumauswahl: welcher Ra
 > Die **Dopplung** (gleicher Scope in beiden) ist gewollt und ok — die GUI füllt beide aus einer Auswahl.
 >
 > **`where<Type>` impliziert den Typ-Gate (Option B′):** `whereRaum` gatet automatisch auf Raum-
-> Allocatables — `typeKeyIn:["Raum"]` ist nicht mehr nötig (bleibt optional als Storage-Vorfilter; mehrere
-> `where<…>` ⇒ Union ihrer Typen). Ausnahme: explizites `typeKeyIn`/`typeKeyEq` ist autoritativ.
+> Allocatables — `typeIn: [Raum]` ist nicht mehr nötig (bleibt optional als Storage-Vorfilter; mehrere
+> `where<…>` ⇒ Union ihrer Typen). Ausnahme: explizites `typeIn`/`typeIn` ist autoritativ.
 
 ```graphql
 query Raumauslastung($filter: ReservationFilter!, $allocatableFilter: AllocatableFilter!) @view(title: "Raumauslastung") {
@@ -1306,7 +1358,7 @@ Schichtung von `whereRaum`: `RaumWhere` → `Gebaeude` (= `GebaeudeRefWhere`: `e
 
 - **`$filter` = effiziente Suche, `$allocatableFilter` = Raumauswahl.** Beide mit demselben Scope; die
   Dopplung ist gewollt — die GUI füllt aus *einer* Gebäude-Auswahl **beide** Variablen identisch.
-- **Ohne `$allocatableFilter`-Scope** (nur `typeKeyIn:["Raum"]` o.ä.) ⇒ Fremdgebäude-Räume über
+- **Ohne `$allocatableFilter`-Scope** (nur `typeIn: [Raum]` o.ä.) ⇒ Fremdgebäude-Räume über
   groupBy-Fan-out → Falschzeilen. **Beide setzen.**
 - **Gelöschtes Gebäude:** ein Raum, dessen `Gebaeude`-Referenz auf eine **gelöschte** Ressource zeigt,
   matcht `whereRaum.Gebaeude…` **nicht** (kein Fail-open auf den Platzhalter) und liefert
@@ -1330,7 +1382,7 @@ query RaumauslastungMosbach {
   appointmentBlockStats(
     filter: { from: "2026-03-21T00:00:00", to: "2026-06-21T00:00:00" },
     groupBy:   [ { key: "raum", allocatables: {
-                   typeKeyIn: ["Raum"],
+                   typeIn: [Raum],
                    whereRaum: { Gebaeude: { where: { Gebaeudename: { startsWith: "MOS" } } } }
                  } } ],
     aggregate: [ { key: "stunden", field: DURATION_MINUTES, fn: SUM },
@@ -1383,7 +1435,7 @@ query RaumauslastungMitGroesse {
   appointmentBlockStats(
     filter: { from: "2026-03-21T00:00:00", to: "2026-06-21T00:00:00" },
     groupBy:   [ { key: "raum", allocatables: {
-                   typeKeyIn: ["Raum"],
+                   typeIn: [Raum],
                    whereRaum: { Gebaeude: { where: { Gebaeudename: { startsWith: "MOS" } } } }
                  } } ],
     aggregate: [ { key: "stunden", field: DURATION_MINUTES, fn: SUM } ]

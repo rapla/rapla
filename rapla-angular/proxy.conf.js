@@ -78,6 +78,10 @@ module.exports = [
                            // unauthenticated. Also covers /login/oauth2/code/**,
                            // the server-side OAuth callback — must land on :4200
                            // so the access_token cookie is same-origin.
+      '/change-password',  // B3 — server-rendered "set a password" nag page the
+                           // form-login success handler redirects to for a
+                           // passwordless user; must proxy to :8051, not fall
+                           // through to ng serve.
       '/logout',           // Spring form-login logout (clears cookies + slot)
       '/oauth2',           // Spring Authorization Server (authorize/token/jwks)
       '/.well-known',      // OIDC discovery

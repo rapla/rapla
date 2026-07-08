@@ -363,4 +363,168 @@ class AllocatableMutationControllerTest
         assertFalse(errs.isEmpty(), "expected errors[]");
         assertEquals("REFERENCE_NOT_FOUND", errs.get(0).get("code"));
     }
+
+    // ============================================================ type change (PRD 096 Phase 4, 2026-07-07)
+
+    /**
+     * Mirror of the PRD 056 OQ1.c revision for allocatables: updateAllocatable
+     * ACCEPTS a typeKey differing from stored when the classification @oneOf
+     * variant matches the NEW typeKey; the caller passes the createAllocatable
+     * create-gate on the target type. Fixture has resource types room /
+     * resource1 / resource2.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void updateAllocatableChangesType()
+    {
+        String created = tester.document("""
+                mutation {
+                  createAllocatable(input: {
+                    id: "b1111111-1111-4111-8111-111111111111",
+                    typeKey: "room",
+                    classification: { room: { name: "Umwidmungsraum" } }
+                  }) { id }
+                }
+                """)
+                .execute()
+                .path("createAllocatable.id")
+                .entity(String.class)
+                .get();
+
+        Map<String, Object> updated = tester.document("""
+                mutation ($id: ID!) {
+                  updateAllocatable(id: $id, input: {
+                    typeKey: "resource1",
+                    classification: { resource1: { name: "Umgewidmet" } }
+                  }) {
+                    displayName
+                    classification { typeKey }
+                  }
+                }
+                """)
+                .variable("id", created)
+                .execute()
+                .path("updateAllocatable")
+                .entity(new ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        @SuppressWarnings("unchecked")
+        Map<String, Object> classification = (Map<String, Object>) updated.get("classification");
+        assertEquals("resource1", classification.get("typeKey"), "typeKey must switch");
+        assertEquals("Umgewidmet", updated.get("displayName"), "new-type values must persist");
+
+        // stored, not just echoed
+        String storedTypeKey = tester.document("""
+                query ($id: ID!) { allocatable(id: $id) { classification { typeKey } } }
+                """)
+                .variable("id", created)
+                .execute()
+                .path("allocatable.classification.typeKey")
+                .entity(String.class)
+                .get();
+        assertEquals("resource1", storedTypeKey);
+    }
+
+    /**
+     * PRD 099 ride-along — VALUE_LIST enum input on allocatables. `room` has
+     * the CATEGORY attribute `belongsto` (root=department, VALUE_LIST → the
+     * @oneOf variant field is the generated enum whose values are leaf keys).
+     * The allocatable coerceValue was a raw pass-through ("extend when SPA
+     * editor lands" — it has), so enum keys were never resolved to Categories.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void valueListEnumInputResolvesToCategoryOnUpdate()
+    {
+        Map<String, Object> typeInfo = tester.document("""
+                { __type(name: "roomClassification") { fields { name type { name } } } }
+                """)
+                .execute()
+                .path("__type")
+                .entity(new ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        @SuppressWarnings("unchecked")
+        String enumName = ((java.util.List<Map<String, Object>>) typeInfo.get("fields")).stream()
+                .filter(f -> "belongsto".equals(f.get("name")))
+                .map(f -> (String) ((Map<String, Object>) f.get("type")).get("name"))
+                .findFirst().orElseThrow();
+        java.util.List<String> values = tester.document("""
+                query ($n: String!) { __type(name: $n) { enumValues { name } } }
+                """)
+                .variable("n", enumName)
+                .execute()
+                .path("__type.enumValues[*].name")
+                .entityList(String.class)
+                .get();
+        assertTrue(!values.isEmpty(), () -> "enum " + enumName + " must have values");
+        String pick = values.get(0);
+
+        String created = tester.document("""
+                mutation {
+                  createAllocatable(input: {
+                    id: "b3030303-0303-4303-8303-030303030303",
+                    typeKey: "room",
+                    classification: { room: { name: "Enumraum" } }
+                  }) { id }
+                }
+                """)
+                .execute()
+                .path("createAllocatable.id")
+                .entity(String.class)
+                .get();
+
+        Map<String, Object> updated = tester.document("""
+                mutation ($id: ID!) {
+                  updateAllocatable(id: $id, input: {
+                    typeKey: "room",
+                    classification: { room: { name: "Enumraum", belongsto: %s } }
+                  }) {
+                    classification { ... on roomClassification { belongsto } }
+                  }
+                }
+                """.formatted(pick))
+                .variable("id", created)
+                .execute()
+                .path("updateAllocatable.classification")
+                .entity(new ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertEquals(pick, updated.get("belongsto"),
+                "enum key must resolve to the category on allocatable update");
+    }
+
+    /** Cross-validation stays: new typeKey with the OLD @oneOf variant is rejected. */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void updateAllocatableTypeChangeWithMismatchedVariantRejected()
+    {
+        String created = tester.document("""
+                mutation {
+                  createAllocatable(input: {
+                    id: "b2222222-2222-4222-8222-222222222222",
+                    typeKey: "room",
+                    classification: { room: { name: "Mismatch-Raum" } }
+                  }) { id }
+                }
+                """)
+                .execute()
+                .path("createAllocatable.id")
+                .entity(String.class)
+                .get();
+
+        tester.document("""
+                mutation ($id: ID!) {
+                  updateAllocatable(id: $id, input: {
+                    typeKey: "resource1",
+                    classification: { room: { name: "x" } }
+                  }) { id }
+                }
+                """)
+                .variable("id", created)
+                .execute()
+                .errors()
+                .satisfy(errs -> {
+                    assertFalse(errs.isEmpty(), "mismatched @oneOf variant must be rejected");
+                    assertTrue(errs.toString().contains("MISMATCHED_TYPE"),
+                            () -> "expected MISMATCHED_TYPE, got " + errs);
+                });
+    }
 }

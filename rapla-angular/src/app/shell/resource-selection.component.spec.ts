@@ -1,10 +1,13 @@
 import { TestBed } from '@angular/core/testing';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { MatDialog } from '@angular/material/dialog';
+import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { ResourceSelectionComponent } from './resource-selection.component';
 import { ResourceSelectionStore } from '../state/resource-selection-store';
 import { FilterStore } from '../state/filter-store';
+import { AllocatableEditDialogComponent } from '../allocatable/allocatable-edit-dialog.component';
 
 function setInput(el: HTMLElement, selector: string, value: string): void {
   const input = el.querySelector(selector) as HTMLInputElement;
@@ -15,12 +18,19 @@ function setInput(el: HTMLElement, selector: string, value: string): void {
 describe('ResourceSelectionComponent', () => {
   let resources: ResourceSelectionStore;
   let filter: FilterStore;
+  const dialogOpen = vi.fn();
 
   beforeEach(async () => {
     localStorage.clear(); // recents/favorites persist — isolate before the store hydrates
+    dialogOpen.mockClear();
     await TestBed.configureTestingModule({
       imports: [ResourceSelectionComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideNoopAnimations(),
+        { provide: MatDialog, useValue: { open: dialogOpen } },
+      ],
     }).compileComponents();
     resources = TestBed.inject(ResourceSelectionStore);
     filter = TestBed.inject(FilterStore);
@@ -123,5 +133,130 @@ describe('ResourceSelectionComponent', () => {
     (el.querySelector('.clr') as HTMLElement).click();
     await f.whenStable();
     expect(resources.group()).toEqual([]);
+  });
+
+  describe('Swing-tree selection semantics (PRD 099 Phase 4)', () => {
+    async function makeList() {
+      resources.loadGroup('G', [
+        { id: 'r1', label: 'Raum 1' },
+        { id: 'r2', label: 'Raum 2' },
+        { id: 'r3', label: 'Raum 3' },
+        { id: 'r4', label: 'Raum 4' },
+      ]);
+      const f = TestBed.createComponent(ResourceSelectionComponent);
+      await f.whenStable();
+      return f;
+    }
+    const items = (f: { nativeElement: HTMLElement }) =>
+      Array.from(f.nativeElement.querySelectorAll<HTMLElement>('.item'));
+    const click = (el: HTMLElement, init: MouseEventInit = {}) =>
+      el.dispatchEvent(new MouseEvent('click', { bubbles: true, ...init }));
+    const keydown = (f: { nativeElement: HTMLElement }, key: string, init: KeyboardEventInit = {}) =>
+      (f.nativeElement.querySelector('.stepper') as HTMLElement).dispatchEvent(
+        new KeyboardEvent('keydown', { key, bubbles: true, ...init }),
+      );
+    const chipIds = () => filter.entries().map((e) => e.id);
+
+    it('shift-click selects the RANGE, replacing the previous chips', async () => {
+      const f = await makeList();
+      click(items(f)[0]);
+      click(items(f)[2], { shiftKey: true });
+      expect(chipIds()).toEqual(['r1', 'r2', 'r3']);
+      click(items(f)[1], { shiftKey: true }); // re-range from the same anchor
+      expect(chipIds()).toEqual(['r1', 'r2']);
+    });
+
+    it('ctrl-click TOGGLES a chip', async () => {
+      const f = await makeList();
+      click(items(f)[0]);
+      click(items(f)[2], { ctrlKey: true });
+      expect(chipIds()).toEqual(['r1', 'r3']);
+      click(items(f)[0], { ctrlKey: true });
+      expect(chipIds()).toEqual(['r3']);
+    });
+
+    it('modifier gestures keep chips from outside the list; plain click clears them', async () => {
+      const f = await makeList();
+      filter.add({ id: 'EXT', kind: 'event', label: 'ext' });
+      click(items(f)[0], { ctrlKey: true });
+      expect(chipIds()).toEqual(['EXT', 'r1']);
+      click(items(f)[1]);
+      expect(chipIds()).toEqual(['r2']);
+    });
+
+    it('ArrowDown steps to the next item (keyboard stepping)', async () => {
+      const f = await makeList();
+      click(items(f)[0]);
+      keydown(f, 'ArrowDown');
+      expect(chipIds()).toEqual(['r2']);
+      expect(resources.activeId()).toBe('r2');
+    });
+
+    it('Shift+ArrowDown extends the range', async () => {
+      const f = await makeList();
+      click(items(f)[0]);
+      keydown(f, 'ArrowDown', { shiftKey: true });
+      expect(chipIds()).toEqual(['r1', 'r2']);
+    });
+
+    it('Escape clears the selection', async () => {
+      const f = await makeList();
+      click(items(f)[0]);
+      keydown(f, 'Escape');
+      expect(filter.isEmpty()).toBe(true);
+    });
+
+    it('keys typed into the search input do not step the list', async () => {
+      const f = await makeList();
+      click(items(f)[0]);
+      const input = f.nativeElement.querySelector('.stsearch') as HTMLInputElement;
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      expect(chipIds()).toEqual(['r1']); // unchanged
+    });
+
+    it('an externally removed chip stays removed (model re-syncs from chips)', async () => {
+      const f = await makeList();
+      click(items(f)[0]);
+      click(items(f)[1], { ctrlKey: true });
+      filter.remove('r1'); // chip removed in the toolbar
+      click(items(f)[2], { ctrlKey: true });
+      expect(chipIds()).toEqual(['r2', 'r3']); // r1 did not resurrect
+    });
+
+    it('selected items are highlighted in the list', async () => {
+      const f = await makeList();
+      click(items(f)[0]);
+      click(items(f)[2], { ctrlKey: true });
+      f.detectChanges();
+      const selected = items(f).filter((el) => el.classList.contains('selected'));
+      expect(selected.map((el) => el.textContent ?? '')).toEqual([
+        expect.stringContaining('Raum 1'),
+        expect.stringContaining('Raum 3'),
+      ]);
+    });
+  });
+
+  it('⋮ menu appears on resource items only; Bearbeiten/Anzeigen open the dialog (PRD 096)', async () => {
+    resources.pushRecent({ id: 'cam1', label: 'Canon G25 01' });
+    resources.pushRecent({ id: 'u1', label: 'Burns Monty', kind: 'user' });
+    const f = TestBed.createComponent(ResourceSelectionComponent);
+    await f.whenStable();
+    const el = f.nativeElement as HTMLElement;
+    expect(el.querySelectorAll('.act').length).toBe(1); // user rows get no editor menu
+
+    (el.querySelector('.act') as HTMLButtonElement).click();
+    await f.whenStable();
+    const menuItems = Array.from(document.querySelectorAll<HTMLButtonElement>('.mat-mdc-menu-item'));
+    expect(menuItems.map((m) => m.textContent?.trim())).toEqual(['Bearbeiten', 'Anzeigen']);
+
+    menuItems[0].click();
+    await f.whenStable();
+    expect(dialogOpen).toHaveBeenCalledWith(
+      AllocatableEditDialogComponent,
+      expect.objectContaining({ data: { id: 'cam1', readOnly: false } }),
+    );
+    // the ⋮ click must not step/replace the filter
+    expect(filter.isEmpty()).toBe(true);
+    expect(resources.activeId()).toBeNull();
   });
 });

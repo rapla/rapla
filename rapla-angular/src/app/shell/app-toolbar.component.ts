@@ -14,6 +14,11 @@ import { EditAccountDialogComponent } from '../account/edit-account-dialog.compo
 import { PermissionMigrationDialogComponent } from '../account/permission-migration-dialog.component';
 import { PermissionMigrationService } from '../account/permission-migration.service';
 import { OmniboxComponent } from './omnibox.component';
+import { EventSheetComponent, type EventSheetDialogData } from '../event/event-sheet.component';
+import { newScopedDraft } from '../event/event-draft';
+import { GraphqlService } from '../graphql/graphql.service';
+import { UndoToastService } from '../actions/undo-toast.service';
+import { FilterStore } from '../state/filter-store';
 
 /**
  * PRD 078 — the global app toolbar (account chrome). The right-hand side is now
@@ -41,6 +46,48 @@ import { OmniboxComponent } from './omnibox.component';
     <mat-toolbar color="primary" class="appbar">
       <span class="app-title">Rapla</span>
       <app-omnibox class="toolbar-search" />
+      @if (eventTypes().length > 1) {
+        <button
+          matButton
+          class="new-event"
+          [matMenuTriggerFor]="newMenu"
+          title="Neue Veranstaltung anlegen"
+        >
+          <mat-icon>add</mat-icon>
+          <span class="new-event-label">Neu</span>
+          <mat-icon class="caret">arrow_drop_down</mat-icon>
+        </button>
+        <mat-menu #newMenu="matMenu">
+          @for (t of eventTypes(); track t.key) {
+            <button mat-menu-item (click)="newEvent(t.key)">
+              <span>{{ t.name }}</span>
+            </button>
+          }
+        </mat-menu>
+      } @else {
+        <button matButton class="new-event" (click)="newEvent()" title="Neue Veranstaltung anlegen">
+          <mat-icon>add</mat-icon>
+          <span class="new-event-label">Neu</span>
+        </button>
+      }
+      <button
+        matIconButton
+        class="undo-btn"
+        [disabled]="!undo.canUndo()"
+        [title]="undo.canUndo() ? 'Rückgängig: ' + undo.undoLabel() : 'Rückgängig'"
+        (click)="undo.undo()"
+      >
+        <mat-icon>undo</mat-icon>
+      </button>
+      <button
+        matIconButton
+        class="redo-btn"
+        [disabled]="!undo.canRedo()"
+        [title]="undo.canRedo() ? 'Wiederholen: ' + undo.redoLabel() : 'Wiederholen'"
+        (click)="undo.redo()"
+      >
+        <mat-icon>redo</mat-icon>
+      </button>
       <span class="spacer"></span>
 
       @if (effectiveUsername()) {
@@ -181,6 +228,14 @@ export class AppToolbarComponent implements OnInit {
   private readonly profile = inject(ProfileService);
   private readonly permissionMigration = inject(PermissionMigrationService);
   private readonly dialog = inject(MatDialog);
+  private readonly gql = inject(GraphqlService);
+  /** PRD 094 D2 — main-view command history behind the header ↶/↷ buttons. */
+  protected readonly undo = inject(UndoToastService);
+  private readonly filter = inject(FilterStore);
+
+  /** PRD 094 Phase 2 — creatable event types; >1 turns "Neu" into a type menu
+   *  (the Swing wizard-submenu analog), exactly 1 keeps the plain button. */
+  readonly eventTypes = signal<{ key: string; name: string }[]>([]);
 
   /** Effective user shown in the chip (impersonation target when active, else self). */
   readonly effectiveUsername = computed(() => this.auth.identity()?.username ?? '');
@@ -218,6 +273,17 @@ export class AppToolbarComponent implements OnInit {
       next: (caps) => this.showEditAccount.set(caps.externalIdpLabel == null),
       error: () => this.showEditAccount.set(false),
     });
+    // PRD 094 — creatable event types for the type-aware "Neu" (wizard analog).
+    this.gql
+      .query<{ types: { key: string; name: string; classificationType: string }[] }>(
+        `query { types { key name classificationType } }`,
+      )
+      .subscribe((resp) => {
+        const all = resp.data?.types ?? [];
+        this.eventTypes.set(
+          all.filter((t) => t.classificationType === 'RESERVATION').map((t) => ({ key: t.key, name: t.name })),
+        );
+      });
     // PRD 090 — only surface the migration entry when there is at least one open item.
     if (this.isAdmin()) {
       this.permissionMigration.findings().subscribe({
@@ -225,6 +291,28 @@ export class AppToolbarComponent implements OnInit {
         error: () => this.hasMigrationItems.set(false),
       });
     }
+  }
+
+  /**
+   * PRD 091 — "Neu" opens the FULL event editor as a dialog over the current
+   * view (2026-07-07 direction: the editor is not its own page; the
+   * /app/event/:id route stays as the deep link only). Id minted client-side
+   * per D3. The quick-create window (QuickEventDialogComponent) is reserved
+   * for the future calendar-click entry point.
+   */
+  newEvent(typeKey?: string): void {
+    const key = typeKey ?? this.eventTypes()[0]?.key ?? 'event';
+    // Swing parity: the view's selected resources become allocations of the new
+    // event. The mapping lives in newScopedDraft so every "new from a scoped
+    // view" entry point (quick-create later) shares one implementation.
+    const draft = newScopedDraft(key, new Date(), this.filter.entries());
+    this.dialog.open(EventSheetComponent, {
+      data: { id: draft.id, isNew: true, draft } satisfies EventSheetDialogData,
+      width: '960px',
+      maxWidth: '95vw',
+      height: '90vh',
+      restoreFocus: false,
+    });
   }
 
   switchBack(): void {

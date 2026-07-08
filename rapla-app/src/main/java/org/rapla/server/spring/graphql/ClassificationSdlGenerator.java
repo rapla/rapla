@@ -12,6 +12,7 @@ import java.util.Set;
 import org.rapla.components.util.Tools;
 import org.rapla.entities.Category;
 import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -128,6 +129,17 @@ public final class ClassificationSdlGenerator
      */
     public static String generate(Collection<DynamicType> dynamicTypes)
     {
+        return generate(dynamicTypes, Locale.getDefault());
+    }
+
+    /**
+     * @param locale the server-configured display language (admin "Server
+     *   Sprache" — see {@code ServerLocaleResolver}) used to resolve every
+     *   {@code @displayName} and VALUE_LIST enum description. NOT the JVM
+     *   default, which is deployment-environment noise.
+     */
+    public static String generate(Collection<DynamicType> dynamicTypes, Locale locale)
+    {
         if (dynamicTypes == null || dynamicTypes.isEmpty()) return "";
 
         // Pass 1: discover VALUE_LIST roots referenced by attributes. Used
@@ -146,7 +158,7 @@ public final class ClassificationSdlGenerator
             sb.append("# --- VALUE_LIST root enums (PRD 035 §5b) ---\n");
             for (Map.Entry<String, Category> e : valueListEnums.entrySet())
             {
-                appendValueListEnum(sb, e.getKey(), e.getValue());
+                appendValueListEnum(sb, e.getKey(), e.getValue(), locale);
             }
             sb.append('\n');
         }
@@ -171,7 +183,7 @@ public final class ClassificationSdlGenerator
                         key, typeName);
                 continue;
             }
-            appendClassificationType(sb, typeName, dt, valueListEnums);
+            appendClassificationType(sb, typeName, dt, valueListEnums, locale);
         }
 
         // === PRD 056 — write-side typed inputs (symmetric β² mirror of reads) ===
@@ -180,7 +192,67 @@ public final class ClassificationSdlGenerator
         // === PRD 035 §5d — typed <TypeKey>Where + per-enum *Where inputs ===
         appendWhereInputs(sb, dynamicTypes, valueListEnums);
 
+        // === PRD 059 Phase 7 — per-kind type enums + typeIn on both filters ===
+        appendTypeInEnum(sb, dynamicTypes);
+
         return sb.toString();
+    }
+
+    /**
+     * PRD 059 Phase 7 — the single, schema-validated type selector. Emits
+     * one enum PER KIND ({@code AllocatableTypeKey} = resource+person DTs,
+     * {@code ReservationTypeKey} = reservation DTs) and extends the matching
+     * static filter input with {@code typeIn}. Replaces the removed
+     * String-typed {@code typeKeyEq}/{@code typeKeyIn} fields — unknown keys
+     * AND wrong-kind keys (an allocatable key on {@code ReservationFilter})
+     * are rejected at validation time instead of silently yielding an empty
+     * result. Enum value = {@link #checkGraphQlCompliantName} of the DT key
+     * (identical to the key except for GraphQL-reserved words, which get a
+     * trailing underscore).
+     */
+    private static void appendTypeInEnum(StringBuilder sb, Collection<DynamicType> dynamicTypes)
+    {
+        List<String> allocatableKeys = new ArrayList<>();
+        List<String> reservationKeys = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        for (DynamicType dt : sortedByKey(dynamicTypes))
+        {
+            if (dt == null || isRaplaInternal(dt)) continue;
+            String key = dt.getKey();
+            if (key == null || key.isBlank()) continue;
+            String kind = dt.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
+            boolean isAllocatableKind = DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE.equals(kind)
+                    || DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON.equals(kind);
+            boolean isReservationKind = DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION.equals(kind);
+            if (!isAllocatableKind && !isReservationKind) continue;
+            String name = checkGraphQlCompliantName(key);
+            if (!seen.add(name)) continue;
+            (isAllocatableKind ? allocatableKeys : reservationKeys).add(name);
+        }
+        if (allocatableKeys.isEmpty() && reservationKeys.isEmpty()) return;
+        sb.append("\n# === PRD 059 Phase 7 GENERATED per-kind type selectors ===\n");
+        if (!allocatableKeys.isEmpty())
+        {
+            sb.append("\"One value per resource/person DynamicType key — schema-validated type selection.\"\n");
+            sb.append("enum AllocatableTypeKey {\n");
+            for (String v : allocatableKeys) sb.append("  ").append(v).append('\n');
+            sb.append("}\n\n");
+            sb.append("extend input AllocatableFilter {\n");
+            sb.append("  \"PRD 059 Phase 7 — match any resource/person DynamicType key in the list (cross-type union). THE type selector; pre-filters at the storage layer.\"\n");
+            sb.append("  typeIn: [AllocatableTypeKey!]\n");
+            sb.append("}\n\n");
+        }
+        if (!reservationKeys.isEmpty())
+        {
+            sb.append("\"One value per reservation DynamicType key — schema-validated type selection.\"\n");
+            sb.append("enum ReservationTypeKey {\n");
+            for (String v : reservationKeys) sb.append("  ").append(v).append('\n');
+            sb.append("}\n\n");
+            sb.append("extend input ReservationFilter {\n");
+            sb.append("  \"PRD 059 Phase 7 — match any reservation DynamicType key in the list (union).\"\n");
+            sb.append("  typeIn: [ReservationTypeKey!]\n");
+            sb.append("}\n\n");
+        }
     }
 
     /**
@@ -341,19 +413,19 @@ public final class ClassificationSdlGenerator
      * For each VALUE_LIST enum, emit `<enum>Where` (eq/ne/in/isNull) and
      * `<enum>ListWhere` (contains/containsAny/containsAll/isEmpty/isNull).
      *
-     * For each RESOURCE or PERSON DynamicType, emit `<typeKey>Where` with
-     * one field per attribute (predicate type matched by attribute kind +
-     * multi-select cardinality) plus AND / OR / NOT combinators.
-     *
-     * Reservation DTs get no where-input in Phase 1; reservation filtering
-     * lands on `reservations(filter:)` (deferred — PRD 035 §5d Out of scope).
+     * For each RESOURCE, PERSON or RESERVATION DynamicType, emit
+     * `<typeKey>Where` with one field per attribute (predicate type matched
+     * by attribute kind + multi-select cardinality) plus AND / OR / NOT
+     * combinators. Resource/person where-fields extend `AllocatableFilter`;
+     * reservation where-fields extend `ReservationFilter` (PRD 059 Phase 6)
+     * — the SAME input shape and the SAME WhereEvaluator on both paths.
      */
     private static void appendWhereInputs(StringBuilder sb, Collection<DynamicType> dynamicTypes,
             Map<String, Category> valueListEnums)
     {
         sb.append("\n# === PRD 035 §5d GENERATED <TypeKey>Where + per-enum *Where inputs ===\n");
         sb.append("# Per VALUE_LIST root: <enum>Where + <enum>ListWhere.\n");
-        sb.append("# Per RESOURCE/PERSON DT: <typeKey>Where with AND/OR/NOT combinators.\n\n");
+        sb.append("# Per RESOURCE/PERSON/RESERVATION DT: <typeKey>Where with AND/OR/NOT combinators.\n\n");
 
         for (Map.Entry<String, Category> e : valueListEnums.entrySet())
         {
@@ -375,17 +447,17 @@ public final class ClassificationSdlGenerator
         }
 
         Set<String> emittedWhereNames = new HashSet<>();
-        List<String> filterExtensionLines = new ArrayList<>();
+        List<String> allocatableFilterLines = new ArrayList<>();
+        List<String> reservationFilterLines = new ArrayList<>();
         for (DynamicType dt : sortedByKey(dynamicTypes))
         {
             if (dt == null) continue;
             if (isRaplaInternal(dt)) continue;
             String kind = dt.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
-            if (!DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE.equals(kind)
-                    && !DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON.equals(kind))
-            {
-                continue;
-            }
+            boolean isAllocatableKind = DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE.equals(kind)
+                    || DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON.equals(kind);
+            boolean isReservationKind = DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION.equals(kind);
+            if (!isAllocatableKind && !isReservationKind) continue;
             String key = dt.getKey();
             if (key == null || key.isBlank()) continue;
             String whereName = checkGraphQlCompliantName(key) + "Where";
@@ -395,20 +467,30 @@ public final class ClassificationSdlGenerator
                 continue;
             }
             appendTypeWhereInput(sb, whereName, dt, valueListEnums, whereTypeNames);
-            appendRefWhereInput(sb, checkGraphQlCompliantName(key));   // PRD 074 b — <type>RefWhere
+            if (isAllocatableKind)
+            {
+                appendRefWhereInput(sb, checkGraphQlCompliantName(key));   // PRD 074 b — <type>RefWhere (allocatables can be referenced)
+            }
             String fieldName = "where" + capitalizeFirst(checkGraphQlCompliantName(key));
-            filterExtensionLines.add("  " + fieldName + ": " + whereName);
+            (isAllocatableKind ? allocatableFilterLines : reservationFilterLines)
+                    .add("  " + fieldName + ": " + whereName);
         }
 
-        // === Phase 2 — extend the static `AllocatableFilter` with one
-        // `where<TypeKey>` field per resource/person DT. Without this
-        // extension the Spring binder rejects `whereRoom:` as "field not in
-        // AllocatableFilter". GraphQL `extend input` is the spec-correct
-        // hook for runtime-generated additions to a statically-declared input.
-        if (!filterExtensionLines.isEmpty())
+        // === Phase 2 / Phase 6 — extend the static filter inputs with one
+        // `where<TypeKey>` field per DT. Without this extension the Spring
+        // binder rejects `whereRoom:` / `whereEvent:` as "field not in
+        // <filter>". GraphQL `extend input` is the spec-correct hook for
+        // runtime-generated additions to a statically-declared input.
+        if (!allocatableFilterLines.isEmpty())
         {
             sb.append("extend input AllocatableFilter {\n");
-            for (String line : filterExtensionLines) sb.append(line).append("\n");
+            for (String line : allocatableFilterLines) sb.append(line).append("\n");
+            sb.append("}\n\n");
+        }
+        if (!reservationFilterLines.isEmpty())
+        {
+            sb.append("extend input ReservationFilter {\n");
+            for (String line : reservationFilterLines) sb.append(line).append("\n");
             sb.append("}\n\n");
         }
     }
@@ -652,7 +734,7 @@ public final class ClassificationSdlGenerator
         return key;
     }
 
-    private static void appendValueListEnum(StringBuilder sb, String enumName, Category root)
+    private static void appendValueListEnum(StringBuilder sb, String enumName, Category root, Locale locale)
     {
         sb.append("\"\"\"\n");
         sb.append("Generated value-list enum for category root `")
@@ -681,7 +763,7 @@ public final class ClassificationSdlGenerator
                             root.getKey(), value, child.getKey());
                     continue;
                 }
-                String localized = child.getName(Locale.getDefault());
+                String localized = child.getName(locale);
                 if (localized != null && !localized.isBlank())
                 {
                     sb.append("  \"\"\"").append(escapeDescription(localized)).append("\"\"\"\n");
@@ -709,7 +791,7 @@ public final class ClassificationSdlGenerator
     }
 
     private static void appendClassificationType(StringBuilder sb, String typeName, DynamicType dt,
-            Map<String, Category> valueListEnums)
+            Map<String, Category> valueListEnums, Locale locale)
     {
         String implementsClause = implementsClauseFor(dt);
         sb.append("\"\"\"\n");
@@ -721,6 +803,7 @@ public final class ClassificationSdlGenerator
         sb.append("  type:    DynamicType!\n");
 
         Set<String> emittedFieldNames = new HashSet<>(Set.of("typeKey", "type"));
+        Set<String> titleKeys = titleAttributeKeys(dt);
         for (Attribute attr : dt.getAttributes())
         {
             if (attr == null) continue;
@@ -735,10 +818,55 @@ public final class ClassificationSdlGenerator
             }
             String fieldType = graphqlTypeFor(attr, valueListEnums);
             sb.append("  ").append(fieldName).append(": ").append(fieldType);
-            appendDirectives(sb, attr);
+            appendDirectives(sb, attr, locale);
+            String editView = titleKeys.contains(attrKey) ? "title" : editViewOf(attr);
+            if (editView != null)
+            {
+                sb.append(" @editView(value: \"").append(editView).append("\")");
+            }
             sb.append('\n');
         }
         sb.append("}\n\n");
+    }
+
+    /**
+     * PRD 096 D5 revision — the title attributes of a DynamicType: every
+     * direct attribute reference ({@code {key}}) in the DISPLAY nameformat
+     * whose attribute exists, is not list-valued, and is not explicitly
+     * annotated edit-view=no-view (the explicit annotation wins). Function
+     * expressions and literals in the format are ignored — {@code {surname}
+     * {forename}} yields both, {@code {name} concat(...)} yields name.
+     */
+    private static Set<String> titleAttributeKeys(DynamicType dt)
+    {
+        String format = dt.getAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT);
+        if (format == null) return Set.of();
+        Set<String> keys = new HashSet<>();
+        java.util.regex.Matcher m =
+                java.util.regex.Pattern.compile("\\{(\\w+)\\}").matcher(format);
+        while (m.find())
+        {
+            String key = m.group(1);
+            Attribute attr = dt.getAttribute(key);
+            if (attr == null || isList(attr)) continue;
+            if (AttributeAnnotations.VALUE_EDIT_VIEW_NO_VIEW.equals(
+                    attr.getAnnotation(AttributeAnnotations.KEY_EDIT_VIEW))) continue;
+            keys.add(key);
+        }
+        return keys;
+    }
+
+    /**
+     * Non-default placement from the {@code edit-view} attribute annotation:
+     * "additional" / "no-view", or null for the main default (omitted on the
+     * wire — absence of {@code @editView} means main).
+     */
+    private static String editViewOf(Attribute attr)
+    {
+        String view = attr.getAnnotation(AttributeAnnotations.KEY_EDIT_VIEW);
+        if (AttributeAnnotations.VALUE_EDIT_VIEW_ADDITIONAL.equals(view)) return "additional";
+        if (AttributeAnnotations.VALUE_EDIT_VIEW_NO_VIEW.equals(view)) return "no-view";
+        return null;
     }
 
     /**
@@ -748,10 +876,11 @@ public final class ClassificationSdlGenerator
      * surface (display name, expected allocatable target type, category root,
      * multiplicity flavor for non-default values, required flag).
      */
-    private static void appendDirectives(StringBuilder sb, Attribute attr)
+    private static void appendDirectives(StringBuilder sb, Attribute attr, Locale locale)
     {
-        // @displayName — always emitted (default-locale resolved at SDL-gen time)
-        String name = attr.getName(java.util.Locale.getDefault());
+        // @displayName — always emitted (server-configured "Server Sprache"
+        // resolved at SDL-gen time; NOT the JVM default — see ServerLocaleResolver)
+        String name = attr.getName(locale);
         if (name != null && !name.isBlank() && !name.equals(attr.getKey()))
         {
             sb.append(" @displayName(value: \"").append(escapeStringLiteral(name)).append("\")");

@@ -71,6 +71,14 @@ panel (no tabs) with a top toolbar and a bottom button bar:
     (`AppointmentListEdit.java:462-545`).
   - Extension point `AppointmentEditExtensionFactory` adds extra fields
     (`AppointmentController.java:184-193`).
+  - **Date/time picker ergonomics** (`org.rapla.components.calendar`, mechanics in
+    [reservation-edit.md](reservation-edit.md)): the four begin/end widgets are
+    interlocked (start drags end duration-preserving; end-before-start
+    auto-corrects); block-wise keyboard editing in the text fields (←/→ block,
+    ↑/↓ increment with rollover, PageUp/Down big steps, digit auto-advance);
+    time dropdown with configurable granularity (default 15 min), the worktime
+    window highlighted and a per-slot duration hint ("(2 h)"); weekday label
+    rendered inside the date field.
 
 ### The "free appointment" search (next free slot)
 
@@ -165,6 +173,12 @@ something better, or consciously drop it (decisions → PRD 091).
 - [ ] Edit reservation permissions (admin-only)
 - [ ] Add / delete appointments (clone-as-template semantics on add)
 - [ ] Edit single appointment: start/end date+time, all-day
+- [ ] Begin/end interlock: start change shifts end (duration preserved);
+      end-before-start auto-corrected (end +1 day, or start shifted back)
+- [ ] Keyboard-first date/time entry (block navigation, arrow increments
+      with rollover, digit auto-advance)
+- [ ] Time picker: worktime window visualized, per-slot duration hint,
+      configurable slot granularity
 - [ ] Edit recurrence: type, interval, weekdays, month rules, ending mode, day-span
 - [ ] Exceptions: add ranges, remove, count badge
 - [ ] Convert finite series to single appointments (restrictions migrated)

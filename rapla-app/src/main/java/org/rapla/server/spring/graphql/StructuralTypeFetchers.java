@@ -434,6 +434,62 @@ public final class StructuralTypeFetchers
                 }
             };
 
+    /**
+     * PRD 095 — {@code AppointmentBlock.color}: the single effective block color —
+     * the event color when the reservation carries one, else the first readable
+     * allocatable color — resolved via
+     * {@link org.rapla.plugin.abstractcalendar.RaplaBuilder#getColorForClassifiable}
+     * and merged through {@link org.rapla.plugin.calendarview.BlockColors#resolve}.
+     * §12 (PRD 095 D3): when the color-bearing allocatable is not readable by the
+     * caller the color resolves to <b>null</b> (the block itself already passed the
+     * read gate) — a hidden resource's color must never leak.
+     */
+    static final LightDataFetcher<String> APPOINTMENT_BLOCK_COLOR =
+            new LightSourceFetcher<ReservationGraphQLController.AppointmentBlockDto, String>(
+                    ReservationGraphQLController.AppointmentBlockDto.class)
+            {
+                @Override protected String read(ReservationGraphQLController.AppointmentBlockDto dto,
+                        Supplier<DataFetchingEnvironment> env)
+                {
+                    if (dto == null || dto.reservation() == null) return null;
+                    String eventColor = org.rapla.plugin.abstractcalendar.RaplaBuilder
+                            .getColorForClassifiable(dto.reservation());
+                    List<String> resourceColors = new ArrayList<>();
+                    if (eventColor == null && dto.appointment() != null)
+                    {
+                        var rc = RequestContextInstrumentation.from(env.get().getGraphQlContext());
+                        java.util.Iterator<Allocatable> it = dto.reservation()
+                                .getAllocatablesFor(dto.appointment()).iterator();
+                        while (it.hasNext())
+                        {
+                            Allocatable a = it.next();
+                            String c = org.rapla.plugin.abstractcalendar.RaplaBuilder
+                                    .getColorForClassifiable(a);
+                            if (c == null) continue;
+                            if (!rc.canReadAllocatable(a)) return null;   // D3: null, not drop
+                            resourceColors.add(c);
+                            break;   // first color-bearing allocatable decides
+                        }
+                    }
+                    List<String> merged = org.rapla.plugin.calendarview.BlockColors
+                            .resolve(true, eventColor, true, resourceColors);
+                    return merged.isEmpty() ? null : merged.get(0);
+                }
+            };
+
+    /** PRD 094 D4 — the owning appointment's id; the SPA delete-scope flow
+     *  keys on the (appointmentId, blockStart) pair per row. */
+    static final LightDataFetcher<String> APPOINTMENT_BLOCK_APPOINTMENT_ID =
+            new LightSourceFetcher<ReservationGraphQLController.AppointmentBlockDto, String>(
+                    ReservationGraphQLController.AppointmentBlockDto.class)
+            {
+                @Override protected String read(ReservationGraphQLController.AppointmentBlockDto dto,
+                        Supplier<DataFetchingEnvironment> env)
+                {
+                    return dto == null || dto.appointment() == null ? null : dto.appointment().getId();
+                }
+            };
+
     static final LightDataFetcher<String> APPOINTMENT_BLOCK_NAME =
             new LightSourceFetcher<ReservationGraphQLController.AppointmentBlockDto, String>(
                     ReservationGraphQLController.AppointmentBlockDto.class)
@@ -633,6 +689,23 @@ public final class StructuralTypeFetchers
                     if (caller.isAdmin()) return true;
                     return rc.permissionController() != null
                             && rc.permissionController().canModify(r, caller);
+                }
+            };
+
+    /** PRD 096 — Allocatable mirror of RESERVATION_CAN_MODIFY. */
+    static final LightDataFetcher<Boolean> ALLOCATABLE_CAN_MODIFY =
+            new LightSourceFetcher<org.rapla.entities.domain.Allocatable, Boolean>(
+                    org.rapla.entities.domain.Allocatable.class)
+            {
+                @Override protected Boolean read(org.rapla.entities.domain.Allocatable a,
+                        Supplier<DataFetchingEnvironment> env)
+                {
+                    var rc = ctxFrom(env);
+                    User caller = rc.caller();
+                    if (caller == null) return false;
+                    if (caller.isAdmin()) return true;
+                    return rc.permissionController() != null
+                            && rc.permissionController().canModify(a, caller);
                 }
             };
 
@@ -1155,11 +1228,10 @@ public final class StructuralTypeFetchers
      */
     public static void wire(RuntimeWiring.Builder b, StorageOperator operator, RaplaLocale raplaLocale)
     {
-        if (raplaLocale != null)
-        {
-            Locale l = raplaLocale.getLocale();
-            if (l != null) serverLocale = l;
-        }
+        // Server-configured "Server Sprache" (system preference), NOT the JVM
+        // default — see ServerLocaleResolver.
+        Locale l = org.rapla.server.internal.ServerLocaleResolver.resolve(operator, raplaLocale);
+        if (l != null) serverLocale = l;
         b.type("Allocatable", t -> t
                 .dataFetcher("type",           ALLOCATABLE_TYPE)
                 .dataFetcher("isPerson",       ALLOCATABLE_IS_PERSON)
@@ -1169,6 +1241,7 @@ public final class StructuralTypeFetchers
                 .dataFetcher("classification", ALLOCATABLE_CLASSIFICATION)
                 .dataFetcher("createdAt",      ALLOCATABLE_CREATED_AT)
                 .dataFetcher("lastModifiedAt", ALLOCATABLE_LAST_MODIFIED_AT)
+                .dataFetcher("canModify",      ALLOCATABLE_CAN_MODIFY)
                 .dataFetcher("owner",          allocatableOwner(operator)));
         b.type("DynamicType", t -> t
                 .dataFetcher("name",               DYNAMIC_TYPE_NAME)
@@ -1203,6 +1276,8 @@ public final class StructuralTypeFetchers
                 .dataFetcher("blocks",       APPOINTMENT_BLOCKS));
         b.type("AppointmentBlock", t -> t
                 .dataFetcher("name",         APPOINTMENT_BLOCK_NAME)
+                .dataFetcher("appointmentId", APPOINTMENT_BLOCK_APPOINTMENT_ID)
+                .dataFetcher("color",        APPOINTMENT_BLOCK_COLOR)
                 .dataFetcher("allocatables", appointmentBlockAllocatables(operator))
                 .dataFetcher("duration",     appointmentBlockDuration(operator))
                 .dataFetcher("durationMinutes", APPOINTMENT_BLOCK_DURATION_MINUTES)

@@ -101,10 +101,43 @@ public class ReservationGraphQLController
         return r;
     }
 
+    /** PRD 099 — unpersisted birth state of a new reservation (see schema doc). */
+    public record ReservationPrototype(String typeKey,
+            org.rapla.entities.dynamictype.Classification classification) {}
+
     @QueryMapping
-    public List<Reservation> reservations(@Argument("filter") ReservationFilter filter,
+    public ReservationPrototype reservationPrototype(@Argument("typeKey") String typeKey,
             graphql.schema.DataFetchingEnvironment env) throws RaplaException
     {
+        var rc = RequestContextInstrumentation.from(env.getGraphQlContext());
+        User caller = UnauthenticatedException.require(rc.caller());
+        org.rapla.entities.dynamictype.DynamicType dt =
+                ClassificationInputMapper.tryResolveType(operator, typeKey);
+        PermissionController pc = rc.permissionController() != null
+                ? rc.permissionController() : operator.getPermissionController();
+        // §12 — unknown, non-reservation and non-creatable typeKeys answer
+        // IDENTICALLY so type existence cannot leak through the prototype.
+        if (dt == null
+                || !org.rapla.entities.dynamictype.DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION
+                        .equals(dt.getAnnotation(
+                                org.rapla.entities.dynamictype.DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE))
+                || !pc.canCreate(dt, caller))
+        {
+            throw new ReservationMutationController.ReservationMutationException("REFERENCE_NOT_FOUND", "typeKey",
+                    "DynamicType " + typeKey + " not found or not creatable");
+        }
+        return new ReservationPrototype(dt.getKey(), dt.newClassification());
+    }
+
+    @QueryMapping
+    public List<Reservation> reservations(@Argument("filter") java.util.Map<String, Object> filterMap,
+            graphql.schema.DataFetchingEnvironment env) throws RaplaException
+    {
+        // PRD 059 Phase 6 — argument is the raw input map (not the record):
+        // the record can't carry the GENERATED `where<EventTypeKey>` fields
+        // that the SDL extension adds per reservation DynamicType. Same
+        // pattern as ClassificationGraphQLController.allocatables.
+        ReservationFilter filter = fromMap(filterMap);
         var rc = RequestContextInstrumentation.from(env.getGraphQlContext());
         User caller = UnauthenticatedException.require(rc.caller());
         if (filter == null || filter.from() == null || filter.to() == null)
@@ -168,7 +201,7 @@ public class ReservationGraphQLController
             if (hasIdsIn || hasMatching)
             {
                 // PERF (perf-investigation 2026-06-22): resolve the scoped allocatables DIRECTLY via the
-                // catalog resolver (its idIn / typeKeyIn / where<TypeKey> passes already run §12 canRead
+                // catalog resolver (its idIn / typeIn / where<TypeKey> passes already run §12 canRead
                 // AND drop internal types) instead of materializing+scanning ALL allocatables. The old
                 // `getAllocatables(null)` copy (`new HashSet<>(~48k)` on the dhbw store) + full stream-
                 // filter was a fixed O(N) tax on EVERY scoped query, even one naming a single id — the
@@ -218,6 +251,9 @@ public class ReservationGraphQLController
             if (r == null) continue;
             if (!pc.canRead(r, caller)) continue;
             if (!matches(r, filter)) continue;
+            // PRD 059 Phase 6 — generated where<EventTypeKey> predicates run
+            // through the SAME WhereEvaluator as the allocatable path.
+            if (!WhereEvaluator.evaluate(r, filterMap, caller, pc)) continue;
             if (accessFilter != null && !accessFilter.test(r)) continue;   // PRD 069
             visible.add(r);
             if (visible.size() >= limit) break;
@@ -249,12 +285,13 @@ public class ReservationGraphQLController
      * Returns a FLAT list, ascending by start, capped at the same limit.
      */
     @QueryMapping
-    public List<AppointmentBlockDto> appointmentBlocks(@Argument("filter") ReservationFilter filter,
+    public List<AppointmentBlockDto> appointmentBlocks(@Argument("filter") java.util.Map<String, Object> filterMap,
             @Argument("sort") List<BlockSort> sort,
             @Argument("offset") Integer offsetArg,
             graphql.schema.DataFetchingEnvironment env) throws RaplaException
     {
-        List<Reservation> visible = reservations(filter, env);
+        ReservationFilter filter = fromMap(filterMap);
+        List<Reservation> visible = reservations(filterMap, env);
         LocalDateTime from = filter.from();
         LocalDateTime to = filter.to();
         int limit = filter.limit() != null && filter.limit() > 0
@@ -322,7 +359,7 @@ public class ReservationGraphQLController
      * canRead-gated reservation set). Cost-guarded by the mandatory window + a bucket cap.
      */
     @QueryMapping
-    public List<BlockStatBucket> appointmentBlockStats(@Argument("filter") ReservationFilter filter,
+    public List<BlockStatBucket> appointmentBlockStats(@Argument("filter") java.util.Map<String, Object> filterMap,
             @Argument("groupBy") List<BlockGroupKey> groupBy,
             @Argument("aggregate") List<BlockAggregate> aggregate,
             @Argument("limit") Integer limit,
@@ -341,7 +378,8 @@ public class ReservationGraphQLController
                         "groupBy entry needs exactly one of date/allocatables/expr/reservation (key=" + g.key() + ")");
             }
         }
-        List<Reservation> visible = reservations(filter, env);
+        ReservationFilter filter = fromMap(filterMap);
+        List<Reservation> visible = reservations(filterMap, env);
         LocalDateTime from = filter.from();
         LocalDateTime to = filter.to();
         org.rapla.plugin.eventtimecalculator.EventTimeModel etm = resolveEventTimeModel(env);
@@ -528,7 +566,7 @@ public class ReservationGraphQLController
      * carries the Reservation as {@code StatKey.entity}. e.g. "events per course type".
      */
     @QueryMapping
-    public List<BlockStatBucket> reservationStats(@Argument("filter") ReservationFilter filter,
+    public List<BlockStatBucket> reservationStats(@Argument("filter") java.util.Map<String, Object> filterMap,
             @Argument("groupBy") List<ReservationGroupKey> groupBy,
             @Argument("aggregate") List<ReservationAggregate> aggregate,
             @Argument("limit") Integer limit,
@@ -547,7 +585,7 @@ public class ReservationGraphQLController
                         "reservationStats groupBy entry needs exactly one of type/expr/self (key=" + g.key() + ")");
             }
         }
-        List<Reservation> visible = reservations(filter, env);
+        List<Reservation> visible = reservations(filterMap, env);
         var rc = RequestContextInstrumentation.from(env.getGraphQlContext());
         User caller = rc.caller();
         PermissionController pc = rc.permissionController() != null
@@ -1008,10 +1046,12 @@ public class ReservationGraphQLController
 
     private static boolean matches(Reservation r, ReservationFilter f)
     {
-        if (f.typeKeyEq() != null && !f.typeKeyEq().isBlank())
+        if (f.typeIn() != null && !f.typeIn().isEmpty())
         {
             var type = r.getClassification() == null ? null : r.getClassification().getType();
-            if (type == null || !f.typeKeyEq().equals(type.getKey())) return false;
+            // typeIn carries ReservationTypeKey ENUM values = the sanitized key.
+            if (type == null || !f.typeIn().contains(
+                    ClassificationSdlGenerator.checkGraphQlCompliantName(type.getKey()))) return false;
         }
         if (f.ownerEq() != null && !f.ownerEq().isBlank())
         {
@@ -1041,11 +1081,45 @@ public class ReservationGraphQLController
 
     // ============================================================ DTOs
 
+    /**
+     * PRD 059 Phase 6 — adapt the raw input map (needed for the generated
+     * `where<EventTypeKey>` fields) to the scalar record. Mirrors
+     * {@code ClassificationGraphQLController.fromMap}.
+     */
+    @SuppressWarnings("unchecked")
+    static ReservationFilter fromMap(java.util.Map<String, Object> m)
+    {
+        if (m == null) return null;
+        SearchMatcher.MatchKind matchKind = null;
+        Object mk = m.get("matchKind");
+        if (mk instanceof String s) {
+            try { matchKind = SearchMatcher.MatchKind.valueOf(s); }
+            catch (IllegalArgumentException ignored) {}
+        } else if (mk instanceof SearchMatcher.MatchKind k) {
+            matchKind = k;
+        }
+        return new ReservationFilter(
+                (LocalDateTime) m.get("from"),
+                (LocalDateTime) m.get("to"),
+                (List<String>) m.get("typeIn"),
+                (String) m.get("ownerEq"),
+                (List<String>) m.get("allocatableIdsIn"),
+                (java.util.Map<String, Object>) m.get("allocatableMatching"),
+                (String) m.get("nameContains"),
+                (String) m.get("searchText"),
+                matchKind,
+                (String) m.get("accessibleByUsername"),
+                (String) m.get("accessibleByUserId"),
+                (List<String>) m.get("accessibleByGroup"),
+                (String) m.get("accessLevel"),
+                (Integer) m.get("limit"));
+    }
+
     /** Mirror of {@code ReservationFilter} input from schema.graphqls. */
     public record ReservationFilter(
             LocalDateTime from,
             LocalDateTime to,
-            String typeKeyEq,
+            List<String> typeIn,
             String ownerEq,
             List<String> allocatableIdsIn,
             java.util.Map<String, Object> allocatableMatching,    // PRD 066 — raw AllocatableFilter map

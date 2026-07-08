@@ -6,6 +6,7 @@ import java.util.Map;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
@@ -20,7 +21,7 @@ import org.rapla.entities.dynamictype.DynamicType;
  *
  * <p>A {@code where<OtherType>} block against an allocatable whose DT key
  * doesn't match contributes no constraint (returns true) — combined with
- * {@code typeKeyIn:} this lets cross-type queries narrow each type with its
+ * {@code typeIn:} this lets cross-type queries narrow each type with its
  * own predicate set (see PRD 059 §"Predicate semantics").
  *
  * <p>Phase 3 operator coverage:
@@ -43,8 +44,10 @@ final class WhereEvaluator
 
     private WhereEvaluator() {}
 
-    /** PRD 074 b — caller/pc enable §12-gated recursion into referenced allocatables' typed where. */
-    static boolean evaluate(Allocatable a, Map<String, Object> filterMap, User caller, PermissionController pc)
+    /** PRD 074 b — caller/pc enable §12-gated recursion into referenced allocatables' typed where.
+     * PRD 059 Phase 6 — entity-agnostic: takes any {@link Classifiable} (Allocatable OR Reservation),
+     * so the reservation path runs the exact same evaluator as the allocatable path. */
+    static boolean evaluate(Classifiable a, Map<String, Object> filterMap, User caller, PermissionController pc)
     {
         if (filterMap == null || filterMap.isEmpty()) return true;
         Classification c = a.getClassification();
@@ -64,7 +67,7 @@ final class WhereEvaluator
         // A where<Type> block acts as an IMPLICIT TYPE GATE (option B′): a where constrains exactly one
         // type and would otherwise leave every other type unfiltered (the over-include footgun). So if
         // the filter carries any where<Type> block but NONE for this allocatable's own type, exclude
-        // it — UNLESS an explicit typeKeyIn/typeKeyEq is present, which is then authoritative (it
+        // it — UNLESS an explicit typeIn is present, which is then authoritative (it
         // already gated upstream; here where only refines, types without a block pass unrefined).
         // Multiple where<…> blocks ⇒ the union of their types passes (each refined by its own block).
         if (!hasExplicitTypeGate(filterMap) && hasAnyWhereBlock(filterMap)) return false;
@@ -570,13 +573,11 @@ final class WhereEvaluator
         return false;
     }
 
-    /** True if the filter sets an explicit type gate ({@code typeKeyIn} non-empty / {@code typeKeyEq}
-     * non-blank). When present it is authoritative and the implicit where-type gate is NOT applied. */
+    /** True if the filter sets an explicit type gate ({@code typeIn} non-empty). When present it
+     * is authoritative and the implicit where-type gate is NOT applied. */
     private static boolean hasExplicitTypeGate(Map<String, Object> filterMap)
     {
-        Object in = filterMap.get("typeKeyIn");
-        if (in instanceof java.util.List<?> list && !list.isEmpty()) return true;
-        Object eq = filterMap.get("typeKeyEq");
-        return eq != null && !eq.toString().isBlank();
+        Object in = filterMap.get("typeIn");
+        return in instanceof java.util.List<?> list && !list.isEmpty();
     }
 }

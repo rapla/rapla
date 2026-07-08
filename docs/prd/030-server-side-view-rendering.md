@@ -2,6 +2,16 @@
 
 **Status:** in-progress — Phases 1–6 landed 2026-05-12. **84 new tests.** Phase 6 deletes the back-edge as an arch-test invariant. Future migration of HTML autoexport calendar pages to `CalendarLayoutEngine` is a separate PRD.
 
+> **Correction 2026-07-07:** the PRD-024-Phase-3 calendar-layout read-side core
+> (`CalendarLayoutEngine`, `RenderedBlock`, `CalendarPage`, `CalendarViewService`,
+> `BlockDecorator`/`RaplaBlockDecorator` + tests) was **deleted 2026-05-27** in commit
+> `f4e9c048` — it never gained a consumer ("used by nobody yet" → removed). Only
+> `BlockColors` survives (`rapla-core/plugin/calendarview/`), now consumed by PRD 095's
+> `AppointmentBlock.color` GraphQL field. Whether the SPA week grid (PRD 077/032)
+> **resurrects the engine from git** or **ports `BestFitStrategy` & co. to TS** for
+> client-side layout is an open question owned by that work — see PRD 032 §Calendar
+> view decision.
+
 **Update 2026-05-12: Phase 7–9 added** — Swing reservation/appointment table views migrate to `/table/*` endpoints. Triggered by a bug report: switching to the Swing reservation-table view throws `UnsupportedOperationException` at `CalendarModelImpl.requireSyncOperator` because the multimodule shift (commit `6b65470d`, 2026-05-08) moved sync methods to `SyncStorageOperator` (server-only). The bug exposed that the original "Swing keeps the in-process model" decision was factually wrong — the Swing client has always been a REST consumer via `RemoteOperator`. A three-method stopgap fix (PRD 008 split applied to `CalendarModelImpl.queryReservations`/`queryBlocks`/`queryAppointments` Promise wrappers, 2026-05-12) restores Swing immediately; Phases 7–9 retire the stopgap.
 
 Phases:

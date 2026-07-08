@@ -1,6 +1,6 @@
 # PRD index
 
-47 PRDs total — **30 active** in this directory, **17 done** under `done/`. AGENTS.md §2 + §3 cover the lifecycle (move to `done/` when complete; `git mv` back if reopening). This index exists so agents and humans don't `ls` and guess.
+47 PRDs total — **29 active** in this directory, **18 done** under `done/`. AGENTS.md §2 + §3 cover the lifecycle (move to `done/` when complete; `git mv` back if reopening). This index exists so agents and humans don't `ls` and guess.
 
 > **Numbering note:** there are two `031` files (`031-api-namespace-redesign.md`, still active, and `031-token-refresh-and-api-keys.md`, now in `done/`). Future PRDs should pick the next free number (currently 042) rather than reusing.
 
@@ -13,6 +13,7 @@
 | [029-swing-oauth-login.md](029-swing-oauth-login.md) | Swing Login via OAuth 2.0 (Browser-based, PKCE Loopback) | phase 1 done 2026-05-12; phase 2 mostly landed |
 | [036-external-idp-oauth-login.md](036-external-idp-oauth-login.md) | External IdP OAuth 2.0 Login (Microsoft Entra ID + Google) | draft 2026-05-14 |
 | [037-native-saml-shibboleth.md](037-native-saml-shibboleth.md) | Shibboleth via Reverse-Proxy Trusted Headers | draft 2026-05-15 |
+| [072-server-side-login-dialog.md](072-server-side-login-dialog.md) | Server-side login dialog (SPA committed cutover) | reopened 2026-07-08 for Phase 8 (memory-token hardening); original 7 phases shipped 2026-06-20 |
 
 ### REST API / wire format
 
@@ -31,6 +32,7 @@
 | [023-presenter-view-extraction.md](023-presenter-view-extraction.md) | Presenter / Model carve-out from Swing components | Phases 1, 2, 3 (model + refactor + tier-1 tests) landed |
 | [024-server-side-edit-services.md](024-server-side-edit-services.md) | Server-side edit services (Angular precursor) | in-progress |
 | [030-server-side-view-rendering.md](030-server-side-view-rendering.md) | Server-side view rendering (the complete picture) | Phases 1–6 landed 2026-05-12; 84 new tests |
+| [097-event-html-templates-mustache.md](097-event-html-templates-mustache.md) | Event HTML templates (stored Mustache over GraphQL views) | draft 2026-07-08 |
 
 ### Frontend / SPA
 
@@ -38,6 +40,7 @@
 |---|---|---|
 | [026-angular-frontend.md](026-angular-frontend.md) | Angular frontend (reservation editing) | Phase 0 prototype landed 2026-05-12 |
 | [047-angular-frontend-plugin-model.md](047-angular-frontend-plugin-model.md) | Angular frontend plugin model (Native Federation remotes) | draft 2026-05-18 |
+| [099-spa-table-selection.md](099-spa-table-selection.md) | SPA table selection & multi-select actions (Swing/Excel parity) | draft 2026-07-08 |
 
 ### External integrations / sync
 
@@ -83,15 +86,16 @@
 | [002-multi-tenancy.md](002-multi-tenancy.md) | Multi-Tenancy Support | future / speculative |
 | [025-headless-client-test-harness.md](025-headless-client-test-harness.md) | Headless client test harness | scoping |
 | [028-angular-power-search.md](028-angular-power-search.md) | Angular power search (single-calendar shell) | research / scoping only |
-| [032-angular-ui-library-evaluation.md](032-angular-ui-library-evaluation.md) | Angular calendar view + UI component library | research 2026-05-12 |
+| [032-angular-ui-library-evaluation.md](done/032-angular-ui-library-evaluation.md) | Angular calendar view + UI component library | done 2026-07-07 — Material + own calendar implementation (no lib) |
 
-## Done (17 PRDs)
+## Done (18 PRDs)
 
 ### Migration / modernization
 
 | File | Title | Done |
 |---|---|---|
 | [done/001-spring-boot-migration.md](done/001-spring-boot-migration.md) | Spring Boot Migration | Phases 1–9 complete 2026-05-08 |
+| [done/098-server-artifact-store.md](done/098-server-artifact-store.md) | Server artifact store (views, templates, CSS) — replaces preferences-blob storage | done 2026-07-08; views switched, PRD 097 consumes |
 | [done/002-swing-spring-di.md](done/002-swing-spring-di.md) | Swing UI Spring DI Migration | Phases A–F complete 2026-05-08 |
 | [done/011-spring-boot-4-jackson-3.md](done/011-spring-boot-4-jackson-3.md) | Upgrade to Spring Boot 4 + Jackson 3 | Phases 1–5 landed 2026-05-08; Phase 6 2026-05-11 |
 | [done/019-spring-boot-lifecycle-migration.md](done/019-spring-boot-lifecycle-migration.md) | Spring Boot Lifecycle Migration — Replacing `ServerExtension` | Phases 1–4 landed 2026-05-10 |
@@ -134,8 +138,7 @@
 | File | Title | Done |
 |---|---|---|
 | [done/031-token-refresh-and-api-keys.md](done/031-token-refresh-and-api-keys.md) | Refresh Tokens & API Keys — IdP-portable design | refresh half consolidated onto `/oauth2/token` (PRD 041); API-keys half superseded by PRD 043; moved 2026-07-05 |
-| [done/059-graphql-typed-where-predicates.md](done/059-graphql-typed-where-predicates.md) | GraphQL typed `<TypeKey>Where` predicates on `allocatables(filter:)` | all 5 phases landed 2026-05-29 |
-| [done/072-server-side-login-dialog.md](done/072-server-side-login-dialog.md) | Server-side login dialog (SPA committed cutover) | all 7 phases shipped + verified 2026-06-20 |
+| [done/059-graphql-typed-where-predicates.md](done/059-graphql-typed-where-predicates.md) | GraphQL typed `<TypeKey>Where` predicates on `allocatables(filter:)` + `ReservationFilter` (`whereEvent`), single `typeIn: [DynamicTypeKey!]` selector | phases 1–5 2026-05-29; phases 6+7 2026-07-07 |
 
 ## How to add a PRD
 

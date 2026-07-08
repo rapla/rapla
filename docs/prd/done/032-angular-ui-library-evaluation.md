@@ -1,6 +1,6 @@
 # 032 — Angular calendar view + UI component library
 
-**Status:** draft (2026-05-12)
+**Status:** done — both decisions locked (Material 2026-05-12; calendar 2026-07-07: **own implementation, no external calendar library** — see §Calendar view decision). The Phase-1 bake-off is cancelled (no library to bake off); calendar implementation ships via PRD 095 (month) and PRD 077 (week/resources).
 
 ## Goal
 
@@ -8,7 +8,7 @@ Pick the UI stack for the Angular frontend from PRD 026.
 
 **Component library: Angular Material (decided 2026-05-12).** Rationale below in §Component library decision. This PRD no longer evaluates component libraries — only the calendar.
 
-**Calendar view library: TBD by Phase 1 bake-off.** Renders week and month views of appointments. View-only: a click on an event opens the handmade editor. No in-grid drag-edit, no resource axis.
+**Calendar view library: none — own implementation (decided 2026-07-07).** The original bake-off premise ("view-only: no drag-edit, no resource axis") was superseded: multi-resource week + in-grid drag-edit ARE on the roadmap (PRD 077/095), which collapses the finalist field — see §Calendar view decision.
 
 Constraint: **OSS license compatible with Rapla (AGPL / Apache 2.0)**. Commercial libs (Syncfusion, Bryntum, Mobiscroll, Kendo, DevExtreme, AG Grid Enterprise, FullCalendar Premium, Schedule-X Premium) are disqualified up front.
 
@@ -87,6 +87,56 @@ With drag-edit and resource view out of scope, several previously-screened libra
 | FullCalendar Premium / Schedule-X Premium / etc. | commercial | — | — | — | — | **out (commercial)** |
 
 **Top 3 to bake off:** EventCalendar, FullCalendar core, Schedule-X core.
+
+## Calendar view decision (2026-07-07): own implementation, references not runtime deps
+
+**Requirement change that forced the re-screen:** the SPA roadmap needs **multi-resource
+week views + in-grid drag-edit** (PRD 077; month grid first via PRD 095) — both were on
+this PRD's original "explicitly NOT required" list. Multi-resource views are exactly what
+the commercial vendors paywall: FullCalendar core (MIT) has no resource axis (Premium,
+proprietary — visible source is NOT copyable), Schedule-X resource scheduler is paid,
+angular-calendar/DayPilot Lite have no real multi-resource story. The only MIT option
+with resource views + drag-edit is **EventCalendar (vkurko/calendar)** — which is written
+in **Svelte + untyped JS**. Consuming it compiled is build-chain-neutral, but forking it
+(the insurance against its bus-factor-1 maintenance) would mean a second frontend build
+chain in a foreign dialect — **ruled out** (constraint: no separate build chain).
+
+**Decision: build the calendar surfaces ourselves, in the existing Angular build chain,
+from rapla's own battle-tested logic, using EventCalendar's source only as a read-only
+reference.** The reference hierarchy:
+
+1. **Primary — rapla's three in-house implementations:**
+   - Layout math + block model: `rapla-core/components/calendarview/` (`Builder`,
+     `BestFitStrategy`, `AbstractGroupStrategy`, `WeekdayMapper`/`MonthMapper`) +
+     `RaplaBuilder`/`BlockColors` (`plugin/abstractcalendar`, `plugin/calendarview`).
+   - Live server-rendered HTML calendar: `rapla-server/plugin/{weekview,monthview,
+     compactweekview,dayresource,timeslot}/server/` — incl. `HTMLDayResourcePage`
+     (resources-as-columns = the multi-resource grid pattern), in production at
+     `/rapla/calendar`.
+   - Interaction semantics: `rapla-client/components/calendarview/swing/`
+     `DraggingHandler` (250 LOC) + `SelectionHandler` (296 LOC) — drag-move/resize/create
+     rules, slot hit-testing, permission gating. Ported as a pure-TS state machine
+     (tier-5 testable); Swing mouse mechanics replaced by browser pointer events.
+2. **Secondary — EventCalendar source (github.com/vkurko/calendar), read-only sibling
+   clone, never in this repo:** modern-browser pointer patterns (`interaction` package:
+   touch, scroll-while-drag, ghost rendering) and grid DOM/CSS shape (`day-grid`,
+   `time-grid`, `resource-time-grid` packages).
+
+**Attribution rule (MIT → Apache-2.0/GPL-3.0 dual is compatible, one-way):** every file
+containing code copied or *closely translated* from EventCalendar (translation = derivative
+work; patterns/ideas are free) carries a header —
+`Portions derived from EventCalendar (https://github.com/vkurko/calendar), Copyright (c)
+Vladimir Kurko, MIT License — see LICENSE_MIT_EVENTCALENDAR.` — and the full MIT text
+lands once as `LICENSE_MIT_EVENTCALENDAR` next to `LICENSE_APACHE2`/`LICENSE_GPL3`
+(created with the first actual copy, not before). GPL-only sources (DHTMLX) remain
+un-copyable into the Apache side; FullCalendar Premium is proprietary — not copyable at all.
+
+**Rejected alternatives:** (a) consume EventCalendar as pinned npm dep — fastest to a
+working grid, but bus-factor-1 with no fork insurance and a public-hooks ceiling;
+(b) fork EventCalendar — Svelte build chain + untyped-JS maintenance, ruled out;
+(c) resurrect-or-port question for the *layout engine* (server-side `CalendarLayoutEngine`,
+deleted 2026-05-27 `f4e9c048`, recoverable from git — vs a TS port of `BestFitStrategy`)
+stays OPEN, owned by the week-grid work — the month grid (PRD 095) needs no overlap layout.
 
 ## Component library decision
 
@@ -177,7 +227,7 @@ Smoke test by `mvn -pl rapla-app -am spring-boot:run -Dspring-boot.run.fork=fals
 | Decision | Pick | Date | Rationale |
 |---|---|---|---|
 | Component library | **Angular Material** | 2026-05-12 | A11y first-class, Angular-team-maintained, curated set covers all rapla needs |
-| Calendar view library | _TBD_ | — | Filled by Phase 1 scorecard |
+| Calendar view library | **none — own implementation** | 2026-07-07 | Multi-resource + drag-edit requirement collapsed the MIT field to EventCalendar (Svelte); no-fork/no-second-build-chain constraint + rich in-house logic (Swing/HTML/builder) → build ourselves, EventCalendar source as MIT-attributed reference. §Calendar view decision |
 
 ## References
 

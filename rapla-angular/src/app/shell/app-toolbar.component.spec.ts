@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { signal } from '@angular/core';
 import { of } from 'rxjs';
@@ -12,6 +13,14 @@ import {
   PermissionMigrationFinding,
   PermissionMigrationService,
 } from '../account/permission-migration.service';
+import { GraphqlService } from '../graphql/graphql.service';
+import { MatDialog } from '@angular/material/dialog';
+import { EventSheetComponent } from '../event/event-sheet.component';
+import { UndoToastService } from '../actions/undo-toast.service';
+import { FilterStore } from '../state/filter-store';
+import { signal as ngSignal } from '@angular/core';
+
+const dialogOpen = vi.fn();
 
 function configure(
   identityValue: Identity | null,
@@ -23,14 +32,31 @@ function configure(
     externalIdpLabel: null,
   },
   migrationFindings: PermissionMigrationFinding[] = [],
+  eventTypes: { key: string; name: string }[] = [{ key: 'event', name: 'Veranstaltung' }],
+  scopeChips: { id: string; kind: string; label: string }[] = [],
 ) {
   const identity = signal<Identity | null>(identityValue);
+  dialogOpen.mockClear();
   TestBed.configureTestingModule({
     imports: [AppToolbarComponent],
     providers: [
       provideAnimationsAsync(),
+      provideRouter([]),
+      { provide: FilterStore, useValue: { entries: () => scopeChips } },
       { provide: UsersService, useValue: { list: () => of(users) } },
       { provide: ProfileService, useValue: { capabilities: () => of(caps) } },
+      {
+        provide: GraphqlService,
+        useValue: {
+          query: () =>
+            of({
+              data: {
+                types: eventTypes.map((t) => ({ ...t, classificationType: 'RESERVATION' })),
+              },
+            }),
+        },
+      },
+      { provide: MatDialog, useValue: { open: dialogOpen } },
       {
         provide: PermissionMigrationService,
         useValue: { findings: () => of(migrationFindings) },
@@ -159,5 +185,146 @@ describe('AppToolbarComponent', () => {
     expect(openAccountSubmenuLabels(fixture).some((t) => t.includes('Permission migration'))).toBe(
       false,
     );
+  });
+});
+
+describe('AppToolbarComponent — header undo/redo (PRD 094 D2)', () => {
+  beforeEach(() => TestBed.resetTestingModule());
+
+  function configureUndo(canUndo: boolean, canRedo: boolean) {
+    const undo = vi.fn();
+    const redo = vi.fn();
+    const identity = ngSignal<Identity | null>(LOGGED_IN);
+    TestBed.configureTestingModule({
+      imports: [AppToolbarComponent],
+      providers: [
+        provideAnimationsAsync(),
+        provideRouter([]),
+        { provide: UsersService, useValue: { list: () => of([]) } },
+        {
+          provide: ProfileService,
+          useValue: {
+            capabilities: () =>
+              of({
+                canChangePassword: true,
+                canChangeName: true,
+                canChangeEmail: true,
+                externalIdpLabel: null,
+              }),
+          },
+        },
+        { provide: PermissionMigrationService, useValue: { findings: () => of([]) } },
+        { provide: GraphqlService, useValue: { query: () => of({ data: { types: [] } }) } },
+        { provide: MatDialog, useValue: { open: vi.fn() } },
+        {
+          provide: UndoToastService,
+          useValue: {
+            canUndo: () => canUndo,
+            canRedo: () => canRedo,
+            undoLabel: () => 'A gelöscht',
+            redoLabel: () => 'A wiederhergestellt',
+            undo,
+            redo,
+          },
+        },
+        {
+          provide: AuthService,
+          useValue: {
+            identity,
+            isImpersonating: () => false,
+            actorUsername: () => '',
+            signOut: vi.fn(),
+            endImpersonation: vi.fn(),
+          } as unknown as Partial<AuthService>,
+        },
+      ],
+    });
+    return { undo, redo };
+  }
+
+  it('undo button disabled when the history is empty, enabled when it has entries', () => {
+    configureUndo(false, false);
+    let f = TestBed.createComponent(AppToolbarComponent);
+    f.detectChanges();
+    expect((f.nativeElement.querySelector('.undo-btn') as HTMLButtonElement).disabled).toBe(true);
+    TestBed.resetTestingModule();
+    configureUndo(true, false);
+    f = TestBed.createComponent(AppToolbarComponent);
+    f.detectChanges();
+    expect((f.nativeElement.querySelector('.undo-btn') as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('clicking undo / redo calls the service', () => {
+    const { undo, redo } = configureUndo(true, true);
+    const f = TestBed.createComponent(AppToolbarComponent);
+    f.detectChanges();
+    (f.nativeElement.querySelector('.undo-btn') as HTMLButtonElement).click();
+    (f.nativeElement.querySelector('.redo-btn') as HTMLButtonElement).click();
+    expect(undo).toHaveBeenCalledTimes(1);
+    expect(redo).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('AppToolbarComponent — type-aware Neu (PRD 094 Phase 2)', () => {
+  beforeEach(() => TestBed.resetTestingModule());
+
+  const TWO_TYPES = [
+    { key: 'event', name: 'Veranstaltung' },
+    { key: 'ausleihe', name: 'Ausleihe' },
+  ];
+
+  it('one creatable type: Neu opens the sheet directly with that type', () => {
+    configure(LOGGED_IN, []);
+    const fixture = TestBed.createComponent(AppToolbarComponent);
+    fixture.detectChanges();
+    const btn = fixture.nativeElement.querySelector('.new-event') as HTMLButtonElement;
+    btn.click();
+    expect(dialogOpen).toHaveBeenCalledTimes(1);
+    const [, config] = dialogOpen.mock.calls[0] as [
+      unknown,
+      { data: { id: string; isNew?: boolean; draft?: { id: string; typeKey: string } } },
+    ];
+    expect(config.data.isNew).toBe(true);
+    expect(config.data.draft?.typeKey).toBe('event');
+    expect(config.data.id).toBe(config.data.draft?.id);
+  });
+
+  it('Swing parity: resource scope chips are pre-added as allocations, users are not', () => {
+    configure(LOGGED_IN, [], undefined, [], [{ key: 'event', name: 'Veranstaltung' }], [
+      { id: 'r1', kind: 'resource', label: 'Kamera G40' },
+      { id: 'u1', kind: 'user', label: 'admin' },
+    ]);
+    const fixture = TestBed.createComponent(AppToolbarComponent);
+    fixture.detectChanges();
+    (fixture.nativeElement.querySelector('.new-event') as HTMLButtonElement).click();
+    const [, config] = dialogOpen.mock.calls[0] as [
+      unknown,
+      { data: { draft?: { allocations: { allocatableId: string; allocatableName: string; appointmentIds: string[] | null }[] } } },
+    ];
+    expect(config.data.draft?.allocations).toEqual([
+      { allocatableId: 'r1', allocatableName: 'Kamera G40', appointmentIds: null },
+    ]);
+  });
+
+  it('several creatable types: Neu opens a type menu, choice pre-selects the type', () => {
+    configure(LOGGED_IN, [], undefined, [], TWO_TYPES);
+    const fixture = TestBed.createComponent(AppToolbarComponent);
+    fixture.detectChanges();
+    const btn = fixture.nativeElement.querySelector('.new-event') as HTMLButtonElement;
+    btn.click();
+    fixture.detectChanges();
+    expect(dialogOpen).not.toHaveBeenCalled(); // menu first, no direct open
+    const items = Array.from(
+      document.querySelectorAll<HTMLButtonElement>('button.mat-mdc-menu-item'),
+    );
+    const labels = items.map((b) => (b.textContent ?? '').trim());
+    expect(labels).toEqual(['Veranstaltung', 'Ausleihe']);
+    items[1].click();
+    expect(dialogOpen).toHaveBeenCalledTimes(1);
+    const [, config] = dialogOpen.mock.calls[0] as [
+      unknown,
+      { data: { draft?: { typeKey: string } } },
+    ];
+    expect(config.data.draft?.typeKey).toBe('ausleihe');
   });
 });

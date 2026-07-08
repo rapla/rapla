@@ -72,6 +72,15 @@ class ReservationMutationControllerTest
     @Autowired
     MockMvc mockMvc;
 
+    @Autowired
+    HotSwappableGraphQlSource graphQlSource;
+
+    @Autowired
+    org.rapla.storage.CachableStorageOperator operator;
+
+    @Autowired
+    org.rapla.facade.RaplaFacade facade;
+
     HttpGraphQlTester tester;
 
     @BeforeEach
@@ -670,5 +679,528 @@ class ReservationMutationControllerTest
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("event variant missing on ReservationClassificationInput"));
         assertEquals("event", first.get("name"));
+    }
+
+    // ============================================================ expectedLastChanged echo contract
+
+    /**
+     * Regression (2026-07-07, false "zwischenzeitlich geändert" bug): the SPA
+     * reads {@code lastModifiedAt} (DateTime, offset + MILLISECOND fraction),
+     * strips ONLY the offset and echoes the rest as expectedLastChanged. The
+     * server compares with LocalDateTime.equals(), so the fraction must
+     * round-trip — a client that also strips the fraction gets a spurious
+     * CONCURRENT_MODIFICATION on every save of a persisted entity.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void updateWithOffsetStrippedLastModifiedAtPassesConcurrencyCheck()
+    {
+        String reservationId = "e9999999-9999-4999-8999-999999999999";
+        tester.document("""
+                mutation {
+                  createReservation(input: {
+                    id: "%s",
+                    typeKey: "event",
+                    classification: { event: {} },
+                    appointments: [
+                      { id: "a9999999-9999-4999-8999-999999999999",
+                        start: "2030-06-01T10:00:00", end: "2030-06-01T11:00:00", allDay: false }
+                    ],
+                    allocations: []
+                  }) { id }
+                }
+                """.formatted(reservationId))
+                .execute()
+                .path("createReservation.id")
+                .entity(String.class)
+                .get();
+
+        String lastModifiedAt = tester.document("""
+                query ($id: ID!) { reservation(id: $id) { lastModifiedAt } }
+                """)
+                .variable("id", reservationId)
+                .execute()
+                .path("reservation.lastModifiedAt")
+                .entity(String.class)
+                .get();
+        // the exact SPA transform: strip the offset, KEEP the fraction
+        String expected = lastModifiedAt.replaceAll("(Z|[+-]\\d{2}:\\d{2})$", "");
+
+        tester.document("""
+                mutation ($id: ID!, $expected: LocalDateTime) {
+                  updateReservation(id: $id, input: {
+                    typeKey: "event",
+                    classification: { event: {} },
+                    appointments: [
+                      { id: "a9999999-9999-4999-8999-999999999999",
+                        start: "2030-06-01T10:00:00", end: "2030-06-01T12:00:00", allDay: false }
+                    ],
+                    allocations: []
+                  }, expectedLastChanged: $expected) { id }
+                }
+                """)
+                .variable("id", reservationId)
+                .variable("expected", expected)
+                .execute()
+                .errors()
+                .satisfy(errs -> assertTrue(errs.isEmpty(),
+                        () -> "offset-stripped echo must pass the concurrency check; got " + errs));
+    }
+
+    // ============================================================ type change (PRD 056 OQ1.c revised 2026-07-07)
+
+    /**
+     * PRD 096 / PRD 056 OQ1.c revision (2026-07-07): updateReservation ACCEPTS
+     * a type change when the classification @oneOf variant matches the new
+     * typeKey. The attribute-remap preview happens client-side in the SPA
+     * classification editor; the server just validates + stores the new shape.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void updateReservationChangesType()
+    {
+        createMeetingTypeAndRebuildSchema();
+
+        String reservationId = "e6666666-6666-4666-8666-666666666666";
+        tester.document("""
+                mutation {
+                  createReservation(input: {
+                    id: "%s",
+                    typeKey: "event",
+                    classification: { event: {} },
+                    appointments: [
+                      { id: "a6666666-6666-4666-8666-666666666666",
+                        start: "2030-06-01T10:00:00", end: "2030-06-01T11:00:00", allDay: false }
+                    ],
+                    allocations: []
+                  }) { id }
+                }
+                """.formatted(reservationId))
+                .execute()
+                .path("createReservation.id")
+                .entity(String.class)
+                .get();
+
+        Map<String, Object> updated = tester.document("""
+                mutation ($id: ID!) {
+                  updateReservation(id: $id, input: {
+                    typeKey: "meeting",
+                    classification: { meeting: { name: "Planning sync", topic: "Q3" } },
+                    appointments: [
+                      { id: "a6666666-6666-4666-8666-666666666666",
+                        start: "2030-06-01T10:00:00", end: "2030-06-01T11:00:00", allDay: false }
+                    ],
+                    allocations: []
+                  }) {
+                    classification {
+                      typeKey
+                      ... on meetingClassification { topic }
+                    }
+                  }
+                }
+                """)
+                .variable("id", reservationId)
+                .execute()
+                .path("updateReservation.classification")
+                .entity(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertEquals("meeting", updated.get("typeKey"), "typeKey must switch to the new type");
+        assertEquals("Q3", updated.get("topic"), "new-type attribute values must persist");
+
+        // read back — the change is stored, not just echoed
+        String storedTypeKey = tester.document("""
+                query ($id: ID!) { reservation(id: $id) { classification { typeKey } } }
+                """)
+                .variable("id", reservationId)
+                .execute()
+                .path("reservation.classification.typeKey")
+                .entity(String.class)
+                .get();
+        assertEquals("meeting", storedTypeKey, "type change must survive the read-back");
+    }
+
+    /** Cross-validation stays: new typeKey with the OLD @oneOf variant is rejected. */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void updateReservationTypeChangeWithMismatchedVariantRejected()
+    {
+        createMeetingTypeAndRebuildSchema();
+
+        String reservationId = "e7777777-7777-4777-8777-777777777777";
+        tester.document("""
+                mutation {
+                  createReservation(input: {
+                    id: "%s",
+                    typeKey: "event",
+                    classification: { event: {} },
+                    appointments: [
+                      { id: "a7777777-7777-4777-8777-777777777777",
+                        start: "2030-06-01T10:00:00", end: "2030-06-01T11:00:00", allDay: false }
+                    ],
+                    allocations: []
+                  }) { id }
+                }
+                """.formatted(reservationId))
+                .execute()
+                .path("createReservation.id")
+                .entity(String.class)
+                .get();
+
+        tester.document("""
+                mutation ($id: ID!) {
+                  updateReservation(id: $id, input: {
+                    typeKey: "meeting",
+                    classification: { event: {} },
+                    appointments: [
+                      { start: "2030-06-01T10:00:00", end: "2030-06-01T11:00:00", allDay: false }
+                    ],
+                    allocations: []
+                  }) { id }
+                }
+                """)
+                .variable("id", reservationId)
+                .execute()
+                .errors()
+                .satisfy(errs -> {
+                    assertFalse(errs.isEmpty(), "mismatched @oneOf variant must be rejected");
+                    String joined = errs.toString();
+                    assertTrue(joined.contains("MISMATCHED_TYPE"),
+                            () -> "expected MISMATCHED_TYPE, got " + joined);
+                });
+    }
+
+    /**
+     * The fixture ships only ONE reservation type (event) — a type change
+     * needs a second. saveDynamicType + poll-on-demand rebuild (the 10s
+     * {@link GraphQlSchemaRebuilder} cadence is too slow for a test).
+     * Create-if-absent: the test methods share one app context + data file,
+     * and an id-less saveDynamicType on an existing key is KEY_COLLISION.
+     */
+    // ============================================================ PRD 099 Phase 1 — permission create-seed
+
+    /**
+     * PRD 099 Phase 1 — Swing parity: {@code FacadeImpl.newReservation} copies
+     * the type's permissions onto every new reservation
+     * ({@code PermissionContainer.Util.copyPermissions} — all but CREATE and
+     * READ_TYPE). The GraphQL create must do the same, or SPA-created events
+     * are invisible to third parties that could read a Swing-created sibling.
+     * Fixture: type `event` carries read_type + read + create → exactly the
+     * plain READ permission must arrive on the stored entity.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void createReservationCopiesTypePermissions()
+    {
+        String reservationId = "e1010101-0101-4101-8101-010101010101";
+        tester.document("""
+                mutation {
+                  createReservation(input: {
+                    id: "%s",
+                    typeKey: "event",
+                    classification: { event: {} },
+                    appointments: [
+                      { id: "a1010101-0101-4101-8101-010101010101",
+                        start: "2030-07-01T10:00:00", end: "2030-07-01T11:00:00", allDay: false }
+                    ],
+                    allocations: []
+                  }) { id }
+                }
+                """.formatted(reservationId))
+                .execute()
+                .path("createReservation.id")
+                .entity(String.class)
+                .get();
+
+        org.rapla.entities.domain.Reservation stored = operator.tryResolve(
+                new org.rapla.entities.storage.ReferenceInfo<>(reservationId,
+                        org.rapla.entities.domain.Reservation.class));
+        assertNotNull(stored, "created reservation must be resolvable");
+        java.util.Collection<org.rapla.entities.domain.Permission> perms = stored.getPermissionList();
+        assertTrue(perms.stream().anyMatch(
+                        p -> p.getAccessLevel() == org.rapla.entities.domain.Permission.READ),
+                () -> "type permission READ must be copied onto the new reservation (Swing parity); got " + perms);
+        assertTrue(perms.stream().noneMatch(
+                        p -> p.getAccessLevel() == org.rapla.entities.domain.Permission.CREATE
+                                || p.getAccessLevel() == org.rapla.entities.domain.Permission.READ_TYPE),
+                () -> "CREATE/READ_TYPE are type-level only and must NOT be copied; got " + perms);
+    }
+
+    // ============================================================ PRD 099 Phase 2 — explicit null clears
+
+    /**
+     * PRD 099 Phase 2 — input null-semantics. `buildClassificationFromInput`
+     * rebuilds from `newClassification()` (defaults prefilled) on EVERY
+     * create/update; the old `if (value != null)` guard swallowed explicit
+     * nulls, so a cleared defaulted attribute resurrected on each save.
+     * Contract: key present with null = clear; key OMITTED = default applies.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void explicitNullClearsDefaultedAttributeOmittedKeyGetsDefault() throws Exception
+    {
+        createMeetingTypeAndRebuildSchema();
+        setTopicDefault("auto-topic");
+
+        String reservationId = "e2020202-0202-4202-8202-020202020202";
+        String appointment = """
+                { id: "a2020202-0202-4202-8202-020202020202",
+                  start: "2030-07-02T10:00:00", end: "2030-07-02T11:00:00", allDay: false }
+                """;
+        // Create WITHOUT topic — the omitted key gets the type default.
+        tester.document("""
+                mutation {
+                  createReservation(input: {
+                    id: "%s",
+                    typeKey: "meeting",
+                    classification: { meeting: { name: "Nulling" } },
+                    appointments: [%s],
+                    allocations: []
+                  }) { id }
+                }
+                """.formatted(reservationId, appointment))
+                .execute()
+                .path("createReservation.id")
+                .entity(String.class)
+                .get();
+        assertEquals("auto-topic", storedTopic(reservationId),
+                "omitted key on create → type default applies");
+
+        // Update with EXPLICIT topic: null — must clear and STAY cleared.
+        tester.document("""
+                mutation ($id: ID!) {
+                  updateReservation(id: $id, input: {
+                    typeKey: "meeting",
+                    classification: { meeting: { name: "Nulling", topic: null } },
+                    appointments: [%s],
+                    allocations: []
+                  }) { id }
+                }
+                """.formatted(appointment))
+                .variable("id", reservationId)
+                .execute()
+                .path("updateReservation.id")
+                .entity(String.class)
+                .get();
+        assertEquals(null, storedTopic(reservationId),
+                "explicit null must clear the attribute — the type default may not resurrect it");
+
+        // Update OMITTING topic — replace semantics: the default applies again.
+        tester.document("""
+                mutation ($id: ID!) {
+                  updateReservation(id: $id, input: {
+                    typeKey: "meeting",
+                    classification: { meeting: { name: "Nulling" } },
+                    appointments: [%s],
+                    allocations: []
+                  }) { id }
+                }
+                """.formatted(appointment))
+                .variable("id", reservationId)
+                .execute()
+                .path("updateReservation.id")
+                .entity(String.class)
+                .get();
+        assertEquals("auto-topic", storedTopic(reservationId),
+                "omitted key on update → replace semantics, default applies");
+    }
+
+    // ============================================================ PRD 099 Phase 3 — reservationPrototype
+
+    /**
+     * PRD 099 Phase 3 — the prototype query returns the birth state of a new
+     * reservation: `newClassification()` executed server-side, defaults
+     * prefilled, nothing persisted. Same code path the create runs → preview
+     * and persisted result can never diverge.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void reservationPrototypeReturnsTypeDefaults() throws Exception
+    {
+        createMeetingTypeAndRebuildSchema();
+        setTopicDefault("auto-topic");
+
+        Map<String, Object> cls = tester.document("""
+                {
+                  reservationPrototype(typeKey: "meeting") {
+                    typeKey
+                    classification {
+                      typeKey
+                      ... on meetingClassification { name topic }
+                    }
+                  }
+                }
+                """)
+                .execute()
+                .path("reservationPrototype.classification")
+                .entity(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertEquals("meeting", cls.get("typeKey"));
+        assertEquals("auto-topic", cls.get("topic"), "type default must be prefilled");
+        assertEquals(null, cls.get("name"), "attributes without default stay null");
+    }
+
+    /**
+     * §12 — the prototype must not leak type existence: a type the caller
+     * cannot CREATE answers exactly like a type that does not exist.
+     */
+    @Test
+    @WithMockUser(username = "monty")
+    void reservationPrototypeNonCreatableAnswersLikeUnknown()
+    {
+        String forRestricted = prototypeErrors("room");          // ALLOCATABLE type — never creatable as reservation
+        String forUnknown = prototypeErrors("doesnotexist1234");
+        assertEquals(forUnknown.replace("doesnotexist1234", "X"),
+                forRestricted.replace("room", "X"),
+                "non-creatable and unknown typeKey must answer identically (existence non-leak)");
+    }
+
+    private String prototypeErrors(String typeKey)
+    {
+        StringBuilder out = new StringBuilder();
+        tester.document("""
+                query ($k: String!) { reservationPrototype(typeKey: $k) { typeKey } }
+                """)
+                .variable("k", typeKey)
+                .execute()
+                .errors()
+                .satisfy(errs -> {
+                    assertFalse(errs.isEmpty(), "expected an error for typeKey " + typeKey);
+                    errs.forEach(e -> out.append(e.getErrorType()).append('|').append(e.getMessage()).append('\n'));
+                });
+        return out.toString();
+    }
+
+    /**
+     * PRD 099 ride-along (live bug 2026-07-08: "changing loan from geplant to
+     * verliehen and saving does not work") — VALUE_LIST enum input. The @oneOf
+     * variant field for a VALUE_LIST category attribute is the GENERATED enum;
+     * its values are the leaf-child KEYS. `coerceSingleValue` resolved CATEGORY
+     * input by ID only, so the enum key resolved to null and the value was
+     * silently dropped on every create/update.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void valueListEnumInputResolvesToCategoryOnCreateAndUpdate()
+    {
+        // discover the generated enum for event.belongsto + two of its values
+        Map<String, Object> typeInfo = tester.document("""
+                { __type(name: "eventClassification") {
+                    fields { name type { name kind } }
+                } }
+                """)
+                .execute()
+                .path("__type")
+                .entity(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        @SuppressWarnings("unchecked")
+        String enumName = ((List<Map<String, Object>>) typeInfo.get("fields")).stream()
+                .filter(f -> "belongsto".equals(f.get("name")))
+                .map(f -> (String) ((Map<String, Object>) f.get("type")).get("name"))
+                .findFirst().orElseThrow();
+        List<String> values = tester.document("""
+                query ($n: String!) { __type(name: $n) { enumValues { name } } }
+                """)
+                .variable("n", enumName)
+                .execute()
+                .path("__type.enumValues[*].name")
+                .entityList(String.class)
+                .get();
+        assertTrue(values.size() >= 2, () -> "need two enum values, got " + values);
+        String first = values.get(0);
+        String second = values.get(1);
+
+        String reservationId = "e3030303-0303-4303-8303-030303030303";
+        String appointment = """
+                { id: "a3030303-0303-4303-8303-030303030303",
+                  start: "2030-07-03T10:00:00", end: "2030-07-03T11:00:00", allDay: false }
+                """;
+        Map<String, Object> created = tester.document("""
+                mutation {
+                  createReservation(input: {
+                    id: "%s",
+                    typeKey: "event",
+                    classification: { event: { belongsto: %s } },
+                    appointments: [%s],
+                    allocations: []
+                  }) { classification { ... on eventClassification { belongsto } } }
+                }
+                """.formatted(reservationId, first, appointment))
+                .execute()
+                .path("createReservation.classification")
+                .entity(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertEquals(first, created.get("belongsto"),
+                "enum key must resolve to the category on create");
+
+        Map<String, Object> updated = tester.document("""
+                mutation ($id: ID!) {
+                  updateReservation(id: $id, input: {
+                    typeKey: "event",
+                    classification: { event: { belongsto: %s } },
+                    appointments: [%s],
+                    allocations: []
+                  }) { classification { ... on eventClassification { belongsto } } }
+                }
+                """.formatted(second, appointment))
+                .variable("id", reservationId)
+                .execute()
+                .path("updateReservation.classification")
+                .entity(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertEquals(second, updated.get("belongsto"),
+                "changing the enum value and saving must persist the new category");
+    }
+
+    private void setTopicDefault(String value) throws Exception
+    {
+        org.rapla.entities.dynamictype.DynamicType dt = facade.getDynamicType("meeting");
+        if (value.equals(dt.getAttribute("topic").defaultValue()))
+        {
+            return;
+        }
+        org.rapla.entities.dynamictype.DynamicType edit = facade.edit(dt);
+        edit.getAttribute("topic").setDefaultValue(value);
+        facade.store(edit);
+    }
+
+    private Object storedTopic(String reservationId)
+    {
+        org.rapla.entities.domain.Reservation stored = operator.tryResolve(
+                new org.rapla.entities.storage.ReferenceInfo<>(reservationId,
+                        org.rapla.entities.domain.Reservation.class));
+        assertNotNull(stored, "reservation must be resolvable");
+        org.rapla.entities.dynamictype.Classification c = stored.getClassification();
+        return c.getValueForAttribute(c.getType().getAttribute("topic"));
+    }
+
+    private void createMeetingTypeAndRebuildSchema()
+    {
+        List<String> keys = tester.document("{ types { key } }")
+                .execute()
+                .path("types[*].key")
+                .entityList(String.class)
+                .get();
+        if (keys.contains("meeting"))
+        {
+            return;
+        }
+        tester.document("""
+                mutation {
+                  saveDynamicType(input: {
+                    key: "meeting",
+                    name: { default: "Meeting" },
+                    classificationType: RESERVATION,
+                    attributes: [
+                      { key: "name",  name: { default: "Name" },  valueType: STRING, multiplicity: SINGLE, required: true },
+                      { key: "topic", name: { default: "Topic" }, valueType: STRING, multiplicity: SINGLE, required: false }
+                    ]
+                  }) { id }
+                }
+                """)
+                .execute()
+                .path("saveDynamicType.id")
+                .entity(String.class)
+                .get();
+        graphQlSource.rebuild();
     }
 }

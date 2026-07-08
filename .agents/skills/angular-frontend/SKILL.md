@@ -31,6 +31,30 @@ There is **no** generated OpenAPI client (`src/app/api/`) and **no** `npm run ge
 
 Same defaults as AGENTS.md §4 (no comments unless requested, constructor injection — use Angular `inject()` or constructor params, not the `@Inject` property decorator). Formatting/lint is Prettier (`.prettierrc`, 100-col, single-quote) + ESLint flat config (`eslint.config.js`, typescript-eslint + `@angular-eslint` recommended).
 
+## Calendar surfaces — own implementation, EventCalendar as attributed reference only
+
+The calendar-library question is **decided** (PRD `done/032` §Calendar view decision, 2026-07-07) —
+don't re-litigate it: rapla builds its calendar surfaces itself, in the existing Angular build
+chain. **No runtime calendar library, no fork, no second build chain.** The month grid (PRD 095)
+is the first surface: `views/month-chunks.ts` (chunking/stacking math, pure TS, tier-5-tested) +
+`views/month-grid.component.ts` (spanning bars), mounted by `ViewHostComponent` when
+`renderMode === 'month'`; `renderModes` come from the server's `@view` directive via
+`extensions.view`.
+
+Two rules that fire whenever you extend these surfaces (week grid, drag interactions, …):
+
+- **Reference hierarchy:** rapla's own Swing/HTML/builder code is the PRIMARY reference
+  (interaction semantics: `rapla-client/.../calendarview/swing/DraggingHandler` +
+  `SelectionHandler`; multi-resource grid: `rapla-server/.../dayresource/server/`); the
+  EventCalendar source (github.com/vkurko/calendar) is a SECONDARY, **read-only** reference for
+  browser pointer patterns and grid CSS — clone it as a sibling/scratchpad checkout, never into
+  this repo, never consume it from npm.
+- **MIT attribution is mandatory for copied OR closely-translated code** (a Svelte→TS port of
+  their algorithm counts; patterns/ideas are free): per-file header
+  `Portions derived from EventCalendar (https://github.com/vkurko/calendar), Copyright (c)
+  Vladimir Kurko, MIT License — see LICENSE_MIT_EVENTCALENDAR.` — the full MIT text lives at
+  repo root `LICENSE_MIT_EVENTCALENDAR`. `month-chunks.ts` is the existing example.
+
 ## Writing tests — tier 5 (TS unit) and tier 6 (component)
 
 AGENTS.md §10's pyramid covers the decision rule (default tier 5; mount with `TestBed` only when behaviour depends on template/DOM). Conventions for this repo:
@@ -128,6 +152,55 @@ Setup is in `docs/development.md` § "Playwright MCP — install" (one-off: syst
 **Login shortcut for the dev server:** with `--user-data-dir` enabled (see setup doc), one OAuth login persists for the session. With `--isolated` (default for unattended), each navigate triggers a fresh OAuth roundtrip — fine for one-shot probes, painful for iteration.
 
 **Artefacts (`.playwright-mcp/*.yml`, `*.png`) are gitignored.** Don't commit them.
+
+### Throwaway UI prototypes — local-first, Artifact only on request
+
+Christopher develops alone; a shareable URL has no value during iteration.
+For HTML mockups/prototypes the loop is strictly local:
+
+1. Write the prototype into the session scratchpad.
+2. Serve it locally (`python3 -m http.server <port>` in the scratchpad) —
+   the Playwright browser cannot open `file://`.
+3. **Self-test with Playwright BEFORE showing it**: load the page, read
+   `browser_console_messages`, click through the core flow. A prototype
+   that was never loaded in a browser is untested (a single quote-escaping
+   syntax error once shipped a completely dead page — 2026-07-06).
+4. Iterate on the local URL — the user watches the same Playwright window;
+   after an edit just reload. Don't drive clicks while the user is
+   interacting with the page.
+
+Publish an Artifact ONLY when explicitly asked, or when the user wants to
+test on another device (mobile) / keep a milestone beyond the session.
+Artifact pages run under a strict CSP (no CDN, no external JS/fonts) —
+hand-roll widgets there; never conclude from an Artifact prototype that a
+library "isn't available" for the real SPA.
+
+### Material widget traps (learned 2026-07-07, quick-edit prototype)
+
+For a Material prototype, hand-rolled HTML is useless — build a throwaway
+standalone component under `src/app/proto/` + one clearly-marked route in
+`app.routes.ts` (delete both afterwards). Note: the app-initializer loads
+`/api/auth/me` and the interceptor bounces ANY page to `/login` on failure —
+guard-less routes still need a logged-in session.
+
+- **`mat-timepicker` `valueChange` fires on programmatic `[value]` writes
+  too** (unlike `mat-datepicker`'s `dateChange`, which is user-only). A
+  handler that writes back a fresh `Date` instance on every echo loops
+  change detection forever (`NG0103`) — and a side effect of the loop is
+  that ALL CDK overlays stop positioning (panes stuck at 0,0 top-left).
+  Fix: equality-guard the setters (`if (next.getTime() === cur.getTime())
+  return`). Same family: `[value]="new Date(iso)"`-style bindings mint a NEW
+  instance every CD cycle and loop the same way even with guarded setters —
+  bind STABLE `Date` references (memoize per iso string). If overlays pile
+  up unpositioned at the viewport corner, check the console for NG0103
+  FIRST — it's not an overlay/CSS problem.
+- **Never `position: fixed` overlays inside routed components.** Routed
+  content renders inside the sidenav content's stacking context, so the
+  drawer paints OVER your overlay regardless of z-index. Use `MatDialog`
+  (global overlay container): backdrop-less + `position` at the click point
+  for popup cards, `width/height/maxWidth: 100vw/vh` for fullscreen sheets.
+  Draggable dialog = `cdkDrag` + `cdkDragRootElement=".cdk-overlay-pane"` +
+  `cdkDragHandle` on the grip.
 
 ### Playwright Agents (Planner / Generator / Healer)
 

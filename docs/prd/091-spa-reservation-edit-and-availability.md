@@ -1,7 +1,7 @@
 # PRD 091 — SPA reservation editing & availability search
 
-**Status:** draft — 2026-07-05 (updated 2026-07-06: equipment-lending archetype prioritized as first implementation target)
-**Related:** PRD 024 (server-side edit services — the `/api/edit` REST trio), PRD 026 (Angular umbrella), PRD 056/057/063 (GraphQL mutations, shipped), PRD 060 (GraphQL MCP foundations — designed `whoIsFree`/`findFreeSlots`/`checkConflicts`, unbuilt), PRD 067 (mutation unification, D7: GraphQL write surface still adjustable — SPA is the first real consumer), PRD 077/078 (view model + renderer, the read side), PRD 086 (appointment block index — the availability substrate), **PRD 092 (free-slot search — the fixed-resources/variable-time axis, split from this PRD)**, **PRD 093 (loan lifecycle — status/blocking rules the availability query must honor)**
+**Status:** draft — 2026-07-05 (updated 2026-07-06: equipment-lending archetype prioritized as first implementation target; 2026-07-07: in-sheet undo/redo decided — D5)
+**Related:** PRD 024 (server-side edit services — the `/api/edit` REST trio), PRD 026 (Angular umbrella), PRD 056/057/063 (GraphQL mutations, shipped), PRD 060 (GraphQL MCP foundations — designed `whoIsFree`/`findFreeSlots`/`checkConflicts`, unbuilt), PRD 067 (mutation unification, D7: GraphQL write surface still adjustable — SPA is the first real consumer), PRD 077/078 (view model + renderer, the read side), PRD 086 (appointment block index — the availability substrate), **PRD 092 (free-slot search — the fixed-resources/variable-time axis, split from this PRD)**, **PRD 093 (loan lifecycle — status/blocking rules the availability query must honor)**, PRD 094 (main-view actions & popups — command-pattern undo past the save boundary; D5 covers only in-sheet)
 
 **Focus (clarified 2026-07-06): the sheet is the GENERAL event editor** — the
 lending archetype (`docs/usecases/equipment-planning.md`, UC-C1/C2) is a *special
@@ -194,12 +194,16 @@ type Conflict {
   enumeration* (fraction display "8/10", matrix cells) — features of the deprioritized
   matrix phase. Swing never needed either; the equipment slice (single appointments)
   makes them pure ceremony. Dropped per Simplicity First.
-- **Evolution path (reserved, additive):** when the matrix (Phase 5) or the fraction
-  display needs per-occurrence detail, add a sub-field
-  `ResourceAvailability.occurrences(window: TimeWindow!)` — the window moves to where
-  enumeration actually happens and is mandatory only there. Block identity stays the
-  reserved convention `(appointmentId, blockStart)` (index-based identity remains
-  rejected: draft edits between two calls shift indexes and misattribute conflicts).
+- **Evolution path (reserved, additive) — PERMANENTLY DEFERRED (D6, 2026-07-08):**
+  per-occurrence/block-level detail (`ResourceAvailability.occurrences(window:
+  TimeWindow!)`, fraction display "8/10", per-occurrence conflict marks) is NOT to
+  be built unless the maintainer explicitly demands it. Availability stays
+  appointment-granular — the Swing semantics. The design sketch below is kept only
+  so a future activation doesn't re-derive it: the window moves to where
+  enumeration actually happens and is mandatory only there; block identity stays
+  the reserved convention `(appointmentId, blockStart)` (index-based identity
+  remains rejected: draft edits between two calls shift indexes and misattribute
+  conflicts).
 
 Implementation: both resolvers compose `getAllAllocatableBindingsSync` +
 `AllocationConflictModel` — exactly the service path `/api/edit/check-conflicts`
@@ -221,7 +225,7 @@ block-identity convention, `AllocationStatus`, and — when PRD 092 introduces w
 ### B — SPA mutation layer + event sheet skeleton
 
 `graphql.service.ts` gets `mutate<T>(document, variables)`; a deep-linkable event
-sheet route (`/app/event/:id` + `/app/event/new`) with the three axis sections
+sheet route (`/app/event/:id` — the ONLY route, see the id-first entry model below) with the three axis sections
 (what / when / with-what), full-state load → edit draft → `updateReservation` with
 `expectedLastChanged`; CONCURRENT_MODIFICATION → reload-and-reapply dialog
 (UC-E15). Recurrence editing reuses `/api/edit/validate-recurrence` +
@@ -266,8 +270,16 @@ pins (PRD 089 favorites adjacency).
 carrying an event id opens `/app/event/:id` directly; a row carrying only an
 appointment id resolves its owning reservation first (client-side from the row's
 data where present, else one lookup) and opens that event's sheet; (b) a "new"
-action (`/app/event/new`) — for the lending desk a toolbar "Neue Ausleihe" button
-on the table lens. No calendar-drag entry in this phase (PRD 077's render mode
+action — for the lending desk a toolbar "Neue Ausleihe" button on the table
+lens. **No `/app/event/new` route (locked 2026-07-06):** D3 makes it redundant —
+the "new" action generates the event id client-side and navigates straight to
+`/app/event/:id` with an isNew router flag; the URL is the permanent event URL
+from the first second (no redirect on first save). The sheet has ONE state
+("draft for id X, persisted or not"): id resolves → draft from data; id unknown
+AND isNew flag → empty draft with that id; id unknown WITHOUT the flag →
+"nicht gefunden" (a mistyped/foreign URL must never silently become a create
+form; §12 keeps unknown ≡ hidden, the collision case fails uniformly at save
+via PRD 056 §9). No calendar-drag entry in this phase (PRD 077's render mode
 owns that).
 
 ### C — Tri-state resource finder (UC-E5; Swing picker successor)
@@ -337,6 +349,7 @@ a similarity ranking. Beyond current market state; explicitly a later phase.
 - Resource finder (C), per-resource date picker (D workhorse); matrix only as
   stretch (D special case)
 - Request-only workflow status surfacing (UC-E9)
+- In-sheet undo/redo — memento stack over the draft, pre-save only (D5)
 
 ### Out of scope
 - **Free-time search (UC-E6): `freeSlots` query, slot finder, heatmap,
@@ -346,7 +359,14 @@ a similarity ranking. Beyond current market state; explicitly a later phase.
 - Calendar drag-editing — belongs to PRD 077's render mode
 - Swing changes of any kind; permissions *editor* parity beyond read/gate (UC-E11
   minimal: show, edit only for `canAdmin`)
-- Undo/redo stack parity — draft-local editing + abort covers UC-E14's core
+- **Undo past the save boundary** — a post-action "Rückgängig" toast (compensating
+  server mutation, Google-Calendar style) is an **app-shell** concern, not a sheet
+  concern: it fires on committed actions from any surface (sheet save, future
+  table-lens delete, PRD 077 calendar drag, PRD 093 loan actions) and needs its own
+  building blocks (toast surface, inverse retention, CONCURRENT_MODIFICATION
+  handling on the inverse mutation). → **PRD 094** (main-view actions & popups,
+  command pattern). The Swing analog is the *global* `CommandHistory` (menu
+  bar); D5 covers only the *dialog* history.
 
 ## Plan
 
@@ -383,13 +403,40 @@ multi-day appointment) is the acceptance case for Phases 1+3.
 Detailed plan locked 2026-07-06 (full-state per OQ1; entry points per proposal B).
 Order matters — each step is independently verifiable before the next starts.
 
-- [ ] **2.1 `mutate<T>(document, variables)`** in `graphql.service.ts` — same
+- [x] **2.0 Round-trip safety — DONE 2026-07-06.** (a) `buildAppointment` now
+      materializes `repeating` + `allDay` (`applyRepeating`, reusing
+      `RepeatingRuleModel`/`RepeatingRuleWriter`); regression tests
+      `MutationRecurrenceRoundTripTest` (create weekly + exceptions → read back;
+      full-state update echoing the rule → series intact; allDay). Permissions/
+      request-status are preserved structurally (update clones the stored entity
+      via `editObject`; the input cannot touch them) — explicit per-field
+      regression tests deferred. (b) client pass-through implemented in
+      `event-draft.ts` + round-trip spec. (c) the read-only guard for recurring
+      events is OBSOLETE — (a) landed first, recurring events edit safely (rule
+      displayed, not editable).
+      ORIGINAL SPEC (kept for reference):
+      Full-state save must NEVER destroy state the UI can't display/edit yet.
+      (a) Server: `updateReservation`/`createReservation` must materialize
+      `AppointmentInput.repeating` + `allDay` (today a PRD 056 v1 TODO in
+      `ReservationMutationController.buildAppointment` — a full-state update of
+      a recurring event would silently flatten the series). Test-first
+      regression: load event with weekly rule → save unchanged → rule intact.
+      Also verify by regression test per field that update PRESERVES what the
+      input cannot express (permissions, request status).
+      (b) Client: the draft is the COMPLETE loaded state + edit overlay; the
+      mutation input echoes unknown classification attributes and untouched
+      appointments (incl. repeating) verbatim. Tier-5 round-trip test:
+      load → no edit → built input ≡ loaded state.
+      (c) Guard until (a) lands: the sheet opens events with repeating
+      appointments read-only with a banner — fail loud, never destroy silently
+      (same stance as availability v1's UNSUPPORTED on repeating).
+- [x] **2.1 DONE** — `mutate()` in `graphql.service.ts` + pure `mutation-result.ts` mapper (ok/concurrent/denied/invalid/transport), 8 tier-5 tests. **2.1 `mutate<T>(document, variables)`** in `graphql.service.ts` — same
       transport as `query()`, plus mapping of the typed error codes
       (`VALIDATION_ERROR` extensions, `PERMISSION_DENIED`,
       `CONCURRENT_MODIFICATION`) into a discriminated result the sheet can act
       on. Tier-5 tests (pure TS, no TestBed): success path, each error code,
       network failure.
-- [ ] **2.2 Draft model + id generation** — `EventDraft` (pure TS): classification
+- [x] **2.2 DONE** — `event-draft.ts` (pure TS, 7 tier-5 tests incl. round-trip invariant + defensive copies). **2.2 Draft model + id generation** — `EventDraft` (pure TS): classification
       values, an appointment LIST (Phase 2 UI creates one entry, the model carries
       n — Swing parity), allocation list incl. read-only restriction info;
       client-generated typed UUIDs at draft creation (D3: `crypto.randomUUID()`,
@@ -397,7 +444,8 @@ Order matters — each step is independently verifiable before the next starts.
       `updateReservation` input (full-state) and GraphQL reservation → draft
       (load). Tier-5 tests: new-draft ids present, round-trip mapping, dirty
       tracking for abort-without-trace (UC-E14).
-- [ ] **2.3 Event sheet route + skeleton** — `/app/event/new` + `/app/event/:id`,
+- [x] **2.3 DONE** — `event-sheet.component.ts` at `/app/event/:id` (isNew router state; unknown id without flag → "nicht gefunden"); active-section principle, collapse rules, compact header, sticky save bar; `EventDataService` load = shell query + introspection-driven classification fragment (object values normalized to ids). **2.3 Event sheet route + skeleton** — `/app/event/:id` (single route; new =
+      client-generated id + isNew flag, no /new route),
       deep-linkable. UI labels (locked 2026-07-06, mockup round): a header area
       (name + event type, NO section label) plus two sections **"Termine"** and
       **"Ressourcen"** — the what/when/with-what axis vocabulary stays
@@ -418,21 +466,26 @@ Order matters — each step is independently verifiable before the next starts.
       `canModify` = no section can become active. Load = full-state query; save = full-state mutation;
       cancel = drop draft, no server contact. Tier-6 tests only for template
       bindings (axis sections render, read-only disables inputs).
-- [ ] **2.4 What-axis form** — DynamicType-driven fields for the event type
-      (name attribute suffices for the loan type); reuse the existing
-      classification rendering conventions from the read views.
-- [ ] **2.5 When-axis (appointment list, single-entry slice)** — rendered as a
+- [x] **2.4 DONE** — type select (disabled on persisted events for now) + name input; other attributes pass through. **2.4 Header form (slice locked 2026-07-06)** — classification editing is
+      ONLY the event-type select + the fixed `name` attribute for now. All other
+      classification attributes are NOT rendered as inputs in this slice — they
+      ride along untouched via the 2.0b pass-through (the "weitere Attribute"
+      expand may show them read-only). The full DynamicType-driven attribute
+      form is a later increment of the same header area — now scoped as
+      [PRD 096 — SPA classification editor](096-spa-classification-editor.md)
+      (reusable across events + allocatables; Phase 3 there closes this deferral).
+- [x] **2.5 DONE** — appointment LIST with inline datetime editing, "+ Termin", delete (min 1), recurrence displayed read-only ("Serie · wöchentlich"), disabled Wiederholung button. **2.5 When-axis (appointment list, single-entry slice)** — rendered as a
       LIST (Swing parity: the dialog's Termine list) with "+ Termin" and a
       disabled recurrence affordance; Phase 2 supports exactly one entry
       (from/to date-time, multi-day capable). Full multi-entry editing +
       recurrence: Phase 4.
-- [ ] **2.6 With-what minimal** — add/remove allocations via the existing
+- [x] **2.6 DONE** — assigned list with live status pills + editable "gilt für" date picker; add mode per prototype (ONE Auswählbar list, pins on top, debounced `AvailabilitySearchService`: filter query + ids query in parallel, Fertig/Esc/save close). **2.6 With-what minimal** — add/remove allocations via the existing
       `search` query (person + items for UC-C1); chips list; no finder yet
       (Phase 3 replaces the picker interior, the section shell stays).
-- [ ] **2.7 Concurrency** — `updateReservation` with `expectedLastChanged`;
+- [x] **2.7 DONE** — CONCURRENT_MODIFICATION banner (reload-discarding vs. overwrite); ID_COLLISION on own create id mapped to "already applied" (PRD 056 §9 retry contract); save reloads for fresh lastChanged. NOTE: `lastModifiedAt` (DateTime) is offset-stripped to LocalDateTime for `expectedLastChanged` — verify against a live server probe. **2.7 Concurrency** — `updateReservation` with `expectedLastChanged`;
       CONCURRENT_MODIFICATION → reload-and-reapply dialog (UC-E15). Tier-5 test
       for the reapply merge (fresh lastChanged + kept draft edits).
-- [ ] **2.8 Table-lens entry points** — row edit action (event id direct;
+- [x] **2.8 DONE** — toolbar "Neu" button (client-minted id + isNew state) DONE 2026-07-06; table-lens ROW EDIT landed 2026-07-07 via PRD 094 Phase 1 (row context menu Bearbeiten/Anzeigen in the view host). **2.8 Table-lens entry points** — row edit action (event id direct;
       appointment-id rows resolve the owning event) + "new" toolbar action on
       the table lens (UC-C1 "Neue Ausleihe").
 
@@ -440,13 +493,147 @@ Out of this slice (explicit): recurrence editor (Phase 4), finder interior
 (Phase 3), availability strip, permissions tab beyond read-only gating,
 loan-status chip (PRD 093 Phase 3 — the sheet must merely not preclude it).
 
+### Phase 2b — Material date/time + quick-create window (DONE 2026-07-07)
+
+Prototyped in `src/app/proto/quick-edit-proto.component.ts` (throwaway route
+`/app/proto/quick-edit` — delete once no longer needed), then landed:
+
+- [x] **2b.1** Four-field coupled date/time editing (Swing parity): pure
+      `withStart`/`withEnd` in `event-draft.ts` (tier-5 specs — start edit
+      shifts end preserving duration; end edit clamped to start + 15 min);
+      appointment row + quick window render them as `mat-datepicker` +
+      `mat-timepicker` (`interval="15m"`); `provideNativeDateAdapter()` in
+      `app.config.ts` (German d.M.yyyy / 24h via LOCALE_ID de-DE).
+- [x] **2b.2** Quick-create window (gcal-style, `quick-event-dialog.component.ts`):
+      backdrop-less draggable `MatDialog` (cdkDrag on the overlay pane);
+      type + name + ONE appointment; Speichern = `createReservation` staying
+      on the page; "Mehr Optionen" opens the full editor dialog with the
+      draft. Currently has NO entry point — reserved for the future
+      calendar-click integration.
+- [x] **2b.3** (direction change 2026-07-07) The FULL editor is a dialog OVER
+      the current view, not its own page: `EventSheetComponent` runs in both
+      modes (optional `MAT_DIALOG_DATA {id,isNew,draft}` + `MatDialogRef`;
+      save/cancel close the dialog). Toolbar "Neu" opens this big dialog
+      directly (960px × 90vh). The `/app/event/:id` route stays as the D3
+      permanent deep link only — no UI path navigates to it anymore.
+- Traps hit and recorded in the `angular-frontend` skill (Material widget
+  traps): timepicker `valueChange` echo + fresh-`Date`-per-CD-cycle both loop
+  change detection (NG0103) — equality guards + memoized per-iso `Date`
+  instances; clamp-rejected picks additionally need a one-shot cache bust so
+  the widget reformats on blur.
+
+### Phase 2c — In-sheet undo/redo (D5)
+
+- [x] **2c.1 DONE 2026-07-07** — `draft-history.ts`, 11 tier-5 specs green. `draft-history.ts` (pure TS): past/future stacks over deep-cloned
+      (`structuredClone`) draft content, cap 50; gesture coalescing via
+      `coalesceKey` (same key + ≤1 s + top-of-stack → merge) with a label per
+      entry for tooltips. Tier-5 specs: push/undo/redo, coalesce window, cap
+      eviction, clone isolation (later in-place mutation must not corrupt
+      history), undo-to-baseline turns `dirty` off (content compare).
+- [x] **2c.2 DONE** — all 10 mutation call sites labeled/keyed; resets on save-ok, reloadAsPersisted, reloadDiscarding. Wire into the single funnel: `mutateDraft(fn, coalesceKey?)`
+      pushes before mutating; `undo()`/`redo()` set the draft signal +
+      `refresh$.next()` (availability pills re-fetch — always current, never
+      snapshot-time). History reset on load, successful save, and
+      `reloadDiscarding()`.
+- [x] **2c.3 DONE** — savebar ↶/↷ with label tooltips; host keydown (Ctrl+Z/Ctrl+Y/Cmd+Shift+Z), text inputs skipped; tier-6 spec (buttons + shortcut) green; Playwright-verified in the dialog. UI: ↶/↷ buttons in the sticky save bar (`canUndo`/`canRedo`
+      signals, tooltip = entry label, Swing parity) + Ctrl+Z / Ctrl+Y /
+      Cmd+Shift+Z scoped to the sheet (component host listener, NOT
+      document-level — the sheet also runs as a MatDialog since 2b.3 and must
+      not grab shortcuts from the underlying view); skip when focus is in a
+      text input (native browser undo owns it there; its changes re-enter the
+      history via `ngModelChange` anyway). One tier-6 test: buttons + shortcut.
+
 ### Phase 3 — Resource finder (C)
 - [ ] Tri-state finder over `resourceAvailability` (UC-E5 / UC-C2)
 
 ### Phase 4 — Multi-appointment editing (when-axis completion + assignment)
-- [ ] recurrence + exceptions in the sheet (validate-recurrence / expand-blocks preview)
-- [ ] per-resource date picker in the allocation section ("applies to: all / selected
-      appointments", conflict marks per entry — the UC-E7 workhorse, see D)
+
+Recurrence sub-plan detailed 2026-07-08 (Swing→SPA migration research):
+
+**Research facts (2026-07-08):**
+- **The wire model is already complete.** `RepeatingRuleInput` (type / interval /
+  end / count / weekdays / exceptions) ≡ core `RepeatingImpl`. Swing's
+  day-in-month / weekday-in-month / month choosers (MONTHLY/YEARLY) do NOT live in
+  the rule — they edit the appointment *start date*; the rule derives the pattern
+  from the start (MONTHLY = weekday-in-nth-week of start, YEARLY = start's
+  month+day). No schema extension needed for the editor.
+- The mutation path already materializes `repeating` (Phase 2.0a,
+  `applyRepeating`) — round-trip is safe; the sheet already displays rules
+  read-only ("Serie · wöchentlich") with a disabled Wiederholung button.
+- Swing capability checklist (ui-inventory: `AppointmentController` dual-mode):
+  type radio none/daily/weekly/monthly/yearly · interval · weekday checkboxes
+  (WEEKLY) · ending mode until-date / n-times / forever · exceptions (range-add
+  expanded to single days, multi-remove, count badge) · day-span chooser ·
+  convert-to-single split (finite series only, restrictions migrated) · silent
+  auto-corrections (reservation-edit.md).
+- Remaining server gap: `resourceAvailability`/`potentialConflicts` reject
+  `repeating` loudly (UNSUPPORTED, Phase 1) — must be lifted for live pills on
+  recurring drafts (analytic rule overlap is already the Swing semantic in
+  `getAllAllocatableBindings`; only the input materialization is missing).
+
+- [x] **4.0 Prototype — DONE 2026-07-08, browser-verified** — throwaway
+      `/app/proto/repeating`
+      (`repeating-proto.component.ts`, delete with proto/): recurrence panel UX —
+      type select, interval stepper, weekday chips, end-mode radio
+      (nie / am Datum / nach N Terminen), derived summary line, occurrence
+      preview list with click-to-skip exceptions (UC-E4 gesture). Preview
+      expansion is client-side TS *in the prototype only* — production preview
+      comes from the server (4.1), the MONTHLY semantic stays server-owned.
+      Awaiting maintainer UX feedback before 4.2/4.3.
+- [x] **4.1 DONE 2026-07-08 — GraphQL `expandOccurrences` (OQ6 → GraphQL).**
+      `expandOccurrences(appointment: AppointmentInput!, limit: Int = 30):
+      [Occurrence!]!` — thin wrapper over `AppointmentImpl.createBlocks`
+      (exceptions INCLUDED, flagged; 2-year horizon, limit capped at 100; no
+      TimeWindow ceremony — the preview is "next N from series start"). Lives
+      in `AvailabilityGraphQLController` (shares `buildDraftAppointment`);
+      auth-gated, otherwise a pure function of the input. 3 tier-3 tests.
+      Side-finding fixed: the schema's `weekdays` doc said "0-6" but the wire
+      passes CORE values through untranslated (1=Sunday…7=Saturday, DateTools)
+      — doc corrected on type + input.
+- [x] **4.2 DONE 2026-07-08 — `repeating-edit.ts`** (pure TS, 11 tier-5
+      specs): `defaultRule` (type switch resets fields, WEEKLY seeds start
+      weekday, FOREVER default), `withEndMode/withUntil/withCount/withInterval`
+      (end/count discriminate the mode; seeds 90 d / 10), `toggleWeekday`
+      (empty set representable — inline error, OQ7 direction),
+      `toggleException`, `ruleSummary`, `RAPLA_WEEKDAYS_MONDAY_FIRST`
+      (core 1=So…7=Sa convention).
+- [x] **4.3 DONE 2026-07-08 — sheet integration** (browser-verified against
+      ng serve): ↻ per appointment row toggles the recurrence panel (four-field
+      row above stays UNTOUCHED — occurrence end date derives from start +
+      duration; the Swing day-span-chooser swap was NOT copied, maintainer
+      2026-07-08); panel = type select (nie/täglich/…), interval, weekday
+      chips, end-mode radios, summary line + exception badge, occurrence
+      preview via `OccurrencePreviewService` (debounced `preview$`, re-fetched
+      on every draft change incl. undo/redo, fail-loud on GraphQL errors);
+      rule edits run through `mutateDraft` (coalesce keys `appt:<id>:rep:*`
+      for interval/until/count, discrete otherwise) → undoable + availability
+      pills refresh (4.5). Tier-6 spec `event-sheet-repeating.spec.ts` (3
+      tests). The dead "↻ Wiederholung… (Phase 4)" placeholder button is gone.
+- [ ] **4.4 Exceptions completion (UC-E4)** — preview click-to-skip LANDED
+      with 4.3; still open: date-range add (Swing exception dialog parity),
+      cancel-one-occurrence entry point from the view host (OQ4).
+- [x] **4.5 DONE 2026-07-08 — availability on recurring drafts** (landed ahead
+      of the rest of Phase 4; it was an EXISTING gap, not editor enablement:
+      the SPA already sent `repeating` when the draft carried it, so recurring
+      events in the sheet hit UNSUPPORTED on the pill display — silently,
+      because the service swallowed `errors[]`). Landed: `applyRepeating`
+      extracted to the shared `AppointmentInputMapper` (pattern:
+      `ClassificationInputMapper`); UNSUPPORTED guard in
+      `AvailabilityGraphQLController.buildDraftAppointments` replaced by the
+      helper call + `allDay`→`setWholeDays` mutation-path parity; 6 tier-3
+      regression tests (weekly clash on later occurrence, exception clears,
+      endless series terminates, `potentialConflicts` first-clash date,
+      self-ignore on stored series, allDay normalization). SPA side-finding
+      fixed: `AvailabilitySearchService` now `console.warn`s GraphQL
+      `errors[]` instead of swallowing them (pipeline stays alive, tier-5
+      spec). Appointment-granular per D6 — no block-level detail.
+- [ ] **4.6 Convert-to-single (split)** — finite series → N single appointments
+      client-side in the draft (ids client-minted per D3, restrictions migrated),
+      one full-state save. Stretch within this phase.
+- [ ] recurrence editing lands BEFORE the multi-entry list completion below —
+      per-resource date picker in the allocation section ("applies to: all /
+      selected appointments", conflict marks per entry — the UC-E7 workhorse,
+      see D)
 
 ### Phase 5 (stretch) — Matrix (D, special-case overview) + split suggestions (F)
 - [ ] matrix only as progressive disclosure for ≥2-appointment events with
@@ -479,6 +666,18 @@ loan-status chip (PRD 093 Phase 3 — the sheet must merely not preclude it).
   block context action in the view host? *Resolution:* pending.
 - **OQ5** — Request-only (UC-E9): does the SPA v1 surface REQUESTED as read-only
   status or full request workflow? *Resolution:* pending.
+- **OQ6** — Occurrence-preview transport: new GraphQL `expandOccurrences` query
+  vs. PRD 024 REST `/api/edit/expand-blocks` (predates the SPA GraphQL-only
+  decision). *Resolution 2026-07-08:* **GraphQL** — shipped as Phase 4.1. The
+  REST trio stays for now (Swing/third parties); retiring it is a separate
+  decision.
+- **OQ7** — Validation philosophy for the recurrence panel: Swing silently
+  auto-corrects nearly everything (event-per-keystroke constraint); Material
+  forms make inline errors cheap. *Resolution 2026-07-08 (partial):*
+  inline-validate — the empty weekday set stays representable and shows an
+  inline error (shipped in 4.3); auto-correction only for the established
+  date/time couplings (2b.1). Remaining cases (until < start) decided as they
+  come up.
 
 ## Decisions locked
 
@@ -534,3 +733,64 @@ rejected: separate `AppointmentConflict`/`PotentialConflict` type (duplicates th
 pair semantics; hides the continuity of id pairs across save); asymmetric unified
 type (breaks the overview queries, where no side is "mine"); lazy `conflicts` field
 on `ResourceAvailability` (implicit cost model, misuse-prone).
+
+**D5 — in-sheet undo/redo is a memento (snapshot) stack, pre-save only
+(2026-07-07).** One history entry = one deep-cloned copy of the draft's
+*user-editable content*; undo/redo restore it through the same `mutateDraft`
+funnel as any edit. Grounding (web research 2026-07-07):
+
+- *Pattern:* Angular core/CDK ship nothing for undo; the signals-era norm is a
+  hand-rolled snapshot stack over the state signal (SignalStore's
+  `withUndoRedo()` is the packaged same thing). Every reason big products use
+  command/operation structures — multiplayer history transformation (Figma),
+  offline-sync replay (Linear), canvas state too large to snapshot — is absent
+  for a single-user draft that is one small serializable object.
+- *Market:* NO calendar product (Outlook classic/new, Google Calendar,
+  Fantastical, Notion Calendar) has multi-step undo inside the event form —
+  the norm is cancel-only + a single-shot post-save toast. In-sheet undo
+  therefore *exceeds* the market; justified as Swing dialog-history parity
+  (ui-inventory checklist) and because our sheet carries more state than a
+  typical event form (restriction map, future recurrence + exceptions).
+- *Snapshot boundary = the `toReservationInput()` boundary* (same line dirty
+  tracking already uses): `typeKey`, `values`, `appointments`, `allocations`.
+  Excluded: availability results (server-derived — re-fetched after every
+  undo, so pills always show *current* truth, never snapshot-time), pins /
+  search text / add mode / active section / focus (comparison & view state;
+  the locked collapse rules apply to undo too), transient feedback, and the
+  epoch constants (`id`, `persisted`, `lastChanged`, baseline).
+- *Step boundary = one user gesture:* coalesce by key — text runs
+  (`values:name`) and same-field date/time bursts (`appt:<id>:start`, incl.
+  the coupled `withStart` end-shift) merge within a ~1 s pause window;
+  discrete actions (+ Termin, delete, → Zuordnen, unassign, type change)
+  never coalesce; "gilt für" toggles coalesce per resource
+  (`gilt:<allocatableId>`, ≙ Swing's one `RestrictionChange` per popup edit).
+- *Hard boundary: the save.* History is cleared on load / successful save /
+  reload-discarding. Undo never crosses into committed server state — a
+  client snapshot restore of shared, versioned, multi-pod data would be a
+  silent lost-update (restoring pre-save state overwrites concurrent edits);
+  past the save only a compensating mutation is honest (see Out of scope).
+  Swing draws the identical line: dialog history (memento-like) vs. global
+  `SaveUndo` (dispatches the old version as a *normal mutation* through
+  version checks).
+- *Rejected:* command pattern in the sheet (Swing needed ~14 dialog command
+  classes with hand-written inverses because scattered in-place-mutating
+  widgets *were* the state; our central immutable draft removes that premise —
+  commands would add per-feature inverse maintenance + drift risk for zero
+  gain; the one command virtue, named steps, is kept as a label on each stack
+  entry); `@ngrx/signals` + `withUndoRedo` (adopting SignalStore for one
+  finished plain-signals component); immer `produceWithPatches` (dependency +
+  patch fragility, pays off only for canvas-sized state).
+
+**D6 — block-level availability detail is permanently deferred (2026-07-08).**
+Availability stays appointment-granular (the Swing semantics): per candidate,
+*which appointments* clash — no occurrence/block enumeration, no fraction
+display ("8/10"), no per-occurrence conflict marks, no `occurrences(window:)`
+sub-field. Not to be activated unless the maintainer explicitly demands it.
+Rationale: edit granularity is the appointment (the restriction map binds
+resource → appointments; a single occurrence deviates only via series split),
+series are mostly broken into single appointments in practice (UC-E12) where
+appointment ≡ date anyway, and Swing never needed block granularity either.
+The recurrence editor (Phase 4) therefore ships without occurrence-level
+conflict annotations; the drill-down remains `potentialConflicts`
+(counterparty + first clash date per pair). The design sketch for a future
+activation is preserved in proposal A's evolution-path note.

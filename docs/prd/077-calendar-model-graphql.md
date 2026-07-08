@@ -68,6 +68,11 @@ mechanics; **this PRD owns persistence, switching, conversion, and the graphical
   start/end + display + resources + **colors**). `extensions.view` becomes **render-mode-aware**
   (grid-hints instead of columns). **§12 RenderedBlock rule:** a block whose colors mix a
   reservation + an allocatable is only emitted if the user can read **both** (else drop the block).
+  → **Month slice ships via [PRD 095](095-month-grid-render-mode.md)** (2026-07-07): NO
+  grid-hints schema — the grid is a pure client renderer over the flat rows; the only server
+  addition is a §12-gated `AppointmentBlock.color` field. Deviation from the sketch above:
+  unreadable color contributors **null the color, keep the block** (095 D3) instead of
+  dropping the block.
 - **Migration** of existing `CalendarModelConfiguration` saved calendars → (shared view +
   SavedView instance).
 
@@ -83,4 +88,7 @@ for tables) — that ships first. The function/composition engine (PRD 073).
 3. Ownership/visibility (private vs shared/published saved views).
 4. Conversion: client-side only vs server helper; defaulting aggressiveness.
 5. Week/month render-meta shape in `extensions.view` (grid-hints schema).
+   *Resolved 2026-07-07 (PRD 095 D2):* **none needed** — a §12-gated
+   `AppointmentBlock.color` field sufficed; `extensions.view` stays column-shaped
+   and the month grid renders client-side from the flat rows.
 6. Migration path for existing CalendarModels.

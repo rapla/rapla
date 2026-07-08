@@ -46,8 +46,9 @@ Out (future PRDs):
   needed (`BulkMode`, `mode:` arg, `PARTIAL_SUCCESS` status)
 - **`instantiateFromTemplate`** — defers to a templates PRD (current
   `rapla:template` filter from PRD 055 excludes templates from GraphQL)
-- **`reshapeClassification`** preview query + type-change save path —
-  separate PRD
+- ~~**`reshapeClassification`** preview query + type-change save path —
+  separate PRD~~ *(obsolete 2026-07-07: type change lands in
+  `updateReservation` itself, preview is client-side — OQ1.c revision + PRD 096)*
 - **Allocatable / User / Permission mutations** — extend `ChangeOp` in future
   PRDs (057, 058)
 - **`dryRun` validation-only mode** — additive, deferred to first real consumer
@@ -561,22 +562,25 @@ non-empty; rejects with `REQUIRED` at path `operations[i].createReservation.appo
 (or .updateReservation). GraphQL doesn't support list-min-length at the
 schema layer, so the check is server-side.
 
-**OQ1.c — typeId change on update — RESOLVED 2026-05-28: reject.**
-`updateReservation` is for content edits only. If `input.typeId` differs
-from the stored reservation's `typeId`, server rejects with
-`INVALID_TYPE_CHANGE`. Type changes are a high-intent operation needing
-their own UX (preview which attributes get dropped before commit) and
-land on a future dedicated `reshapeReservation` mutation per PRD 035 §7.
+**OQ1.c — typeId change on update — REVISED 2026-07-07 (PRD 096): accept.**
+Original 2026-05-28 resolution was reject-with-`INVALID_TYPE_CHANGE` plus a
+future dedicated `reshapeReservation` mutation, because type changes need a
+"which attributes get dropped" preview UX. That preview now lives client-side
+in the PRD 096 classification editor (draft-based sheet: user switches the
+type, sees the remapped attributes live, saves once — the type change stays
+undoable in the draft, Swing parity). `updateReservation` therefore accepts
+a `typeKey` differing from stored:
+- The classification `@oneOf` variant must match the NEW typeKey
+  (else `MISMATCHED_TYPE`)
+- The caller passes the same create-gate as `createReservation` on the
+  target type (`requireCanCreate` → `PERMISSION_DENIED`)
+- Attribute remapping is the client's job — the supplied classification is
+  stored as-is (no server-side `newClassificationFrom` remap)
+- Applies to both the direct mutation and the `applyChanges` batch op
 
-`typeId` stays in `UpdateReservationInput` as defensive cross-validation:
-- The `@oneOf` variant inside `classification: ReservationClassificationInput!`
-  encodes the type via field name (`lehrveranstaltung: { ... }`)
-- The outer `typeId` is the explicit discriminator
-- Server validates: `input.typeId` ↔ classification's `@oneOf` variant ↔
-  stored `.typeId` must all align; mismatch → `INVALID_TYPE_CHANGE` (or
-  `MISMATCHED_TYPE` if it's just internal input inconsistency)
-
-Same intent-verb pattern as OQ1.a (`ownerId` → `changeReservationOwner`).
+No separate `reshapeReservation` mutation. Tests:
+`ReservationMutationControllerTest.updateReservationChangesType` /
+`updateReservationTypeChangeWithMismatchedVariantRejected`.
 
 ### OQ2 — Classification input shape — RESOLVED 2026-05-28 (symmetric β²)
 
@@ -843,6 +847,8 @@ ATOMIC locked. PARTIAL deferred. No more open questions on mode.
   - `typeId` change on update → reject with `INVALID_TYPE_CHANGE`. Type
     changes land on a future `reshapeReservation` mutation per PRD 035 §7.
     `typeId` stays in `UpdateReservationInput` as defensive cross-validation.
+    *(REVISED 2026-07-07 — see OQ1.c above: type change now accepted in-place,
+    no reshapeReservation; preview is client-side in the PRD 096 editor.)*
   - Reservation delete has no inbound references → clean delete.
   - Future allocatable/user/permission delete reject with `REFERENCE_EXISTS`
     + referrer list. `applyChanges` is dependency-aware (excludes same-batch

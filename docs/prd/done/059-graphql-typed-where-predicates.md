@@ -1,14 +1,14 @@
 # PRD 059 — GraphQL Typed Where Predicates on `allocatables(filter:)`
 
-**Status:** done — all 5 phases landed 2026-05-29. Extracted from PRD 035 §5d on 2026-05-29; design locked.
+**Status:** done — phases 1–5 (allocatables) 2026-05-29; Phase 6 (reservation where-predicates, same evaluator) + Phase 7 (single `typeIn` selector on per-kind enums `AllocatableTypeKey`/`ReservationTypeKey`, typeKeyEq/typeKeyIn removed) both landed 2026-07-07 (per-kind split 2026-07-08). Extracted from PRD 035 §5d on 2026-05-29. Durable identity/rename decision: [ADR 0005](../../decisions/0005-graphql-keys-are-api-identity.md).
 
-**Date:** 2026-05-29
+**Date:** 2026-05-29 (reopened 2026-07-07)
 
 **Parent:** [PRD 035 (done) — GraphQL foundations](done/035-graphql-foundations.md) §"Filter & query language" for the broader filter-axis model this PRD extends.
 
 **Siblings:**
 - [PRD 055 — Events Read API](055-graphql-events-read-api.md) — establishes the typed-classification interface pattern this extends to filtering (reopened 2026-05-29 for Tier-1 perf migration)
-- Future: same evaluator could apply to `reservations(filter:)` and to nested `AllocatableWhere` — both deferred (see Out of scope)
+- Reservation where-predicates: now **Phase 6** of this PRD (added 2026-07-07). Nested `AllocatableWhere` stays deferred (see Out of scope)
 
 ## Goal
 
@@ -27,7 +27,7 @@ In:
 
 Out of scope (deferred):
 - Nested where on `AllocatableWhere`. Today id-equality only. A recursive type structure (`AllocatableWhere.where: AllocatableWhere`) is a separate PRD if real consumer demand emerges.
-- Where on Reservations (`reservations(filter:)`). Same evaluator could apply; separate phase / separate PRD.
+- ~~Where on Reservations (`reservations(filter:)`).~~ Pulled into scope as **Phase 6** (2026-07-07) — consumer demand arrived (equipment-lending loan-status filtering / PRD 093, SPA event tables).
 - Sort by typed attribute.
 
 ## Locked design
@@ -90,6 +90,17 @@ input AllocatableFilter {
 3. **Phase 3 — Predicate evaluator for one operator per kind.** [DONE 2026-05-29.] `WhereEvaluator.evaluate(...)` walks the `where<TypeKey>` block matching the allocatable's DT key, dispatching per-attribute predicates: StringWhere `eq`/`contains` (case-insensitive)/`startsWith`; IntWhere `gte`/`lte`; BooleanWhere `eq`; CATEGORY-typed (both VALUE_LIST `<Enum>Where.eq` and ORGANIZATION `CategoryWhere.eq` — id-then-key match handles both shapes). `where<OtherType>` against a non-matching DT contributes no constraint. Tier-3 tests confirm each operator filters down to the expected row.
 4. **Phase 4 — Combinators AND/OR/NOT.** [DONE 2026-05-29.] Recursive evaluator; depth cap 10. AND vacuously true on empty list; OR vacuously false on empty list; NOT inverts. Tier-3 tests for each + nested + vacuous edge cases.
 5. **Phase 5 — Remaining predicates** (`endsWith`, `ne`, `in`, `between`, `gt`/`lt`, `containsAll`/`containsAny`, `isEmpty`, `isNull`) + implicit "and not null" semantics + tier-3 permission-leak test for non-admin filter against a hidden allocatable. [DONE 2026-05-29.] Covers single-valued attrs and multi-select via `*ListWhere` (CATEGORY/ALLOCATABLE).
+6. **Phase 6 — `where<TypeKey>` for RESERVATION DynamicTypes on `ReservationFilter`.** [DONE 2026-07-07.] Zero duplication: `ClassificationSdlGenerator.appendWhereInputs` now emits `<eventTypeKey>Where` for RESERVATION DTs in the SAME loop (extension lines split per target: resource/person → `extend input AllocatableFilter`, reservation → `extend input ReservationFilter`; no RefWhere for reservation DTs — nothing references them). `WhereEvaluator.evaluate` generalized from `Allocatable` to `Classifiable` — the reservation path runs the IDENTICAL evaluator. `reservations`/`appointmentBlocks`/`appointmentBlockStats`/`reservationStats` switched from record binding to the raw-map pattern (`fromMap`, mirrors `allocatables`) so the generated `whereEvent` fields bind; the where check runs in the `reservations` visible-loop, so all block/stats roots inherit it. Tier-3 tests: `reservationsWhereEventFiltersByAttribute` (eq + OR combinator), `appointmentBlocksWhereEventFilters`, `reservationDTGetsWhereInput` (introspection; replaced the Phase-1 negative test). Original scope notes (kept for context): (added 2026-07-07 — was "Out of scope"). Today event classification attributes are not typed-filterable at all: `ReservationFilter` offers only `typeIn` type selection plus name search; attribute filtering exists only indirectly via `allocatableMatching.where<Type>` on the *resources*. Phases 1–5 excluded reservation DTs purely as scope-cutting (no consumer at the time), not for technical reasons — the evaluator is type-agnostic.
+   - Extend the `ClassificationSdlGenerator.appendWhereInputs(...)` loop to also accept `VALUE_CLASSIFICATION_TYPE_RESERVATION` DTs → emit `<eventTypeKey>Where` inputs (same attribute→predicate mapping, same AND/OR/NOT combinators).
+   - Emit `extend input ReservationFilter { where<EventTypeKey>: <eventTypeKey>Where ... }` analog to the existing `extend input AllocatableFilter`.
+   - Wire the existing `WhereEvaluator` into the reservation query path (`appointmentBlocks(filter:)` / `reservations(filter:)`) — evaluate against `Reservation.getClassification()`. Same semantics: a `where<OtherType>` against a non-matching event DT contributes no constraint; combines with `typeIn`.
+   - Consumer demand (why now): archetype C equipment lending ([usecases/equipment-planning.md](../usecases/equipment-planning.md)) — loan-status filtering on the reservation (PRD 093 loan lifecycle, UC-C4 "what's out / overdue" table) needs "reservations where attribute X = Y" server-side; also general SPA event-table filtering (PRD 074/077 views).
+7. **Phase 7 — consolidate type selection: generated per-kind type enums + single `typeIn` field.** [DONE 2026-07-07 — hard cut, no deprecation cycle (nothing in production).] The old selection was redundant and inconsistent: `AllocatableFilter` carried BOTH `typeKeyEq: String` and `typeKeyIn: [String!]` (with an eq-takes-precedence special rule); `ReservationFilter` carried only `typeKeyEq` (no list form at all). `typeKeyEq: "X"` ≡ `typeKeyIn: ["X"]` — one field suffices.
+   - **Landed:** `typeKeyEq` + `typeKeyIn` REMOVED from both static inputs. `ClassificationSdlGenerator.appendTypeInEnum(...)` emits **per-kind enums** (2026-07-08 refinement — one shared enum would let an allocatable key validate on `ReservationFilter` and silently yield empty, the exact failure mode Phase 7 removes): `enum AllocatableTypeKey` (resource+person DTs) → `extend input AllocatableFilter { typeIn: [AllocatableTypeKey!] }`, and `enum ReservationTypeKey` (reservation DTs) → `extend input ReservationFilter { typeIn: [ReservationTypeKey!] }` (ReservationFilter thereby gains list/union type selection for the first time). Wrong-kind keys are validation errors (`typeInEnumsAreSplitPerKind` test).
+   - Semantics: `typeIn` = union over listed types; combines with `where<TypeKey>` exactly like `typeKeyIn` did (explicit gate authoritative — `WhereEvaluator.hasExplicitTypeGate` now reads `typeIn`; where-blocks refine). The storage pre-filter (`buildStorageFilter`) now builds one `ClassificationFilter` per listed type — list selection pre-filters at the storage layer (previously only the Eq form did).
+   - Enum value = `checkGraphQlCompliantName(key)` — identical to the raw key except GraphQL-reserved words (trailing `_`); resolvers match on the sanitized name.
+   - Enums stay variable-friendly: `query($types: [AllocatableTypeKey!])`; unknown values are a loud VALIDATION error (replaces the old silent-empty for typos — the accepted trade-off). Multi-pod schema-rebuild skew (~10 s polling window) can briefly reject a just-added type's enum value on a stale pod.
+   - Tests: `reservationsTypeInFiltersByEventType` (tier-3, new capability), `allocatablesFilterTypeInUnknownKeyIsRejected` (validation error), plus the migrated where-predicate suites (142 green in the graphql package, 2026-07-07). `docs/graphql.md` examples updated.
 
 ## Tests
 
@@ -101,14 +112,18 @@ Per-phase tier-3 tests:
 - **Phase 4:** Tier-3 tests for `AND: [...]`, `OR: [...]`, `NOT: ...`, and one mixed-nesting case (e.g. `AND: [{ Grundflaeche: { gte: 100 } }, { OR: [{ RollstuhlgerechterZugang: { eq: true } }, { NOT: { Raumart: { eq: ... } } }] }]`). Plus a depth-11 query that must be rejected with a clear validation error.
 - **Phase 5:** Coverage-matrix test parameterised over (predicate kind x operator), asserting evaluator behaviour against a fixed in-memory fixture. Plus `isNull: true` and the implicit `not null` semantics for every other operator.
 
+- **Phase 6:** Tier-1 SDL assertion — a synthesized RESERVATION DT yields `<eventTypeKey>Where` + the `extend input ReservationFilter` block. Tier-3 tests mirroring Phase 3/4 against the reservation path: `appointmentBlocks(filter: { typeKeyEq: "event", whereEvent: { <attr>: { eq: ... } } })` filters to the expected subset; combinators; `where<OtherType>` no-constraint semantics. Plus the §12 leak test on reservations (hidden event matching the predicate must not surface).
+
 **Permission-leak test (AGENTS.md §12).** Mandatory across phases 2-5: non-admin user filtering on a where predicate whose true match set contains both visible and hidden allocatables (e.g. a hidden room that matches `Grundflaeche: { gte: 200 }`). Assert the response is byte-identical to the visible-only subset and to the all-non-existent case — the where predicate must not leak existence via row count, error text, or latency. Extension of the existing `GraphQlLeakTest` pattern.
 
 ## Out of scope
 
 - Nested where on `AllocatableWhere`. Today id-equality only. A recursive type structure (`AllocatableWhere.where: AllocatableWhere`) is a separate PRD if real consumer demand emerges.
-- Where on Reservations (`reservations(filter:)`). Same evaluator could apply; separate phase / separate PRD.
 - Sort by typed attribute.
 
 ## Open questions
 
-None — design locked.
+- **OQ1** (Phase 7) — migration order. *Resolution:* obsolete 2026-07-07 — nothing in production; hard cut executed (no deprecation window, String fields removed outright).
+- **OQ2** (Phase 7) — key-compliance enforcement. *Resolution:* already guaranteed — PRD 058's `GraphqlKeyMigration` renames non-spec keys at startup and `checkGraphQlCompliantName` throws if one slips through, so every enum value is emittable. Only GraphQL-reserved words differ (trailing `_`), handled in the resolvers.
+
+(Phases 1–5: none — design locked.)

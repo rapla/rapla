@@ -70,7 +70,7 @@ public class ClassificationGraphQLController
         // AllocatableFilter record). The record can't carry the dynamic
         // `where<TypeKey>` fields that the SDL extension adds per
         // resource/person DynamicType. The map carries everything: legacy
-        // scalar predicates (typeKeyEq/typeKeyIn/...) AND the per-type
+        // scalar predicates (typeIn/...) AND the per-type
         // whereXxx blocks consumed by the (Phase 3+) WhereEvaluator.
         AllocatableFilter filter = fromMap(filterMap);
 
@@ -102,7 +102,7 @@ public class ClassificationGraphQLController
 
         if (runTypeBucket)
         {
-            // Operator-level pre-filter when typeKeyEq is set — avoids materializing
+            // Operator-level pre-filter when typeIn is set — avoids materializing
             // every allocatable across all types just to narrow to one type.
             ClassificationFilter[] storageFilter = buildStorageFilter(filter);
             Collection<Allocatable> all = operator.getAllocatables(storageFilter);
@@ -172,8 +172,7 @@ public class ClassificationGraphQLController
     private static boolean hasTypeBucketSelector(AllocatableFilter f, Map<String, Object> filterMap)
     {
         if (f == null) return false;
-        if (f.typeKeyEq() != null && !f.typeKeyEq().isBlank()) return true;
-        if (f.typeKeyIn() != null && !f.typeKeyIn().isEmpty()) return true;
+        if (f.typeIn() != null && !f.typeIn().isEmpty()) return true;
         if (f.isPersonEq() != null) return true;
         if (f.nameContains() != null && !f.nameContains().isBlank()) return true;
         if (f.searchText() != null && !f.searchText().isBlank()) return true;
@@ -207,8 +206,7 @@ public class ClassificationGraphQLController
             matchKind = k;
         }
         return new AllocatableFilter(
-                (String) m.get("typeKeyEq"),
-                (List<String>) m.get("typeKeyIn"),
+                (List<String>) m.get("typeIn"),
                 (Boolean) m.get("isPersonEq"),
                 (String) m.get("nameContains"),
                 (String) m.get("searchText"),
@@ -231,17 +229,29 @@ public class ClassificationGraphQLController
 
     /**
      * Build a {@link ClassificationFilter} array for the storage layer's
-     * type-aware accessor when the caller asks for a single type. Returns
-     * null (= "all types") otherwise. The storage layer's filter does
-     * coarse-grained "DynamicType match"; the in-resolver loop still applies
-     * the rest of the predicates (isPerson, nameContains, ownerEq, limit).
+     * type-aware accessor when the caller asks for specific types via
+     * {@code typeIn}. Returns null (= "all types") otherwise. The storage
+     * layer's filter does coarse-grained "DynamicType match"; the in-resolver
+     * loop still applies the rest of the predicates (isPerson, nameContains,
+     * ownerEq, limit). Unknown / rapla-internal keys are skipped; if NONE of
+     * the listed keys resolves, null is returned and the in-resolver
+     * {@code matches()} pass yields the empty result (§12 — no existence leak).
      */
     private ClassificationFilter[] buildStorageFilter(AllocatableFilter filter) throws RaplaException
     {
-        if (filter == null || filter.typeKeyEq() == null || filter.typeKeyEq().isBlank()) return null;
-        DynamicType dt = type(filter.typeKeyEq());
-        if (dt == null) return null;   // unknown / rapla-internal — type() returns null
-        return new ClassificationFilter[] { dt.newClassificationFilter() };
+        if (filter == null || filter.typeIn() == null || filter.typeIn().isEmpty()) return null;
+        List<ClassificationFilter> filters = new java.util.ArrayList<>();
+        for (String key : filter.typeIn())
+        {
+            if (key == null || key.isBlank()) continue;
+            // Enum value == raw key except for GraphQL-reserved words (trailing '_').
+            DynamicType dt = type(key);
+            if (dt == null && key.endsWith("_")) dt = type(key.substring(0, key.length() - 1));
+            if (dt == null) continue;   // rapla-internal — type() returns null (enum can't carry unknown keys)
+            filters.add(dt.newClassificationFilter());
+        }
+        if (filters.isEmpty()) return null;
+        return filters.toArray(new ClassificationFilter[0]);
     }
 
     /**
@@ -342,16 +352,13 @@ public class ClassificationGraphQLController
     private static boolean matches(Allocatable a, AllocatableFilter f)
     {
         if (f == null) return true;
-        // typeKeyEq takes precedence over typeKeyIn when both are set.
-        if (f.typeKeyEq() != null && !f.typeKeyEq().isBlank())
+        if (f.typeIn() != null && !f.typeIn().isEmpty())
         {
             DynamicType dt = a.getClassification() == null ? null : a.getClassification().getType();
-            if (dt == null || !f.typeKeyEq().equals(dt.getKey())) return false;
-        }
-        else if (f.typeKeyIn() != null && !f.typeKeyIn().isEmpty())
-        {
-            DynamicType dt = a.getClassification() == null ? null : a.getClassification().getType();
-            if (dt == null || !f.typeKeyIn().contains(dt.getKey())) return false;
+            // typeIn carries AllocatableTypeKey ENUM values = the sanitized key
+            // (identical to the raw key except GraphQL-reserved words).
+            if (dt == null || !f.typeIn().contains(
+                    ClassificationSdlGenerator.checkGraphQlCompliantName(dt.getKey()))) return false;
         }
         if (f.isPersonEq() != null && a.isPerson() != f.isPersonEq()) return false;
         if (f.nameContains() != null && !f.nameContains().isBlank())
@@ -412,8 +419,7 @@ public class ClassificationGraphQLController
 
     /** Mirror of the {@code AllocatableFilter} GraphQL input. */
     public record AllocatableFilter(
-            String                   typeKeyEq,
-            List<String>             typeKeyIn,
+            List<String>             typeIn,
             Boolean                  isPersonEq,
             String                   nameContains,
             String                   searchText,

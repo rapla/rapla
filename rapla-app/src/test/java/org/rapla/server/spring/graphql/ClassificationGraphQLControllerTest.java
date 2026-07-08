@@ -284,12 +284,12 @@ class ClassificationGraphQLControllerTest
     @WithMockUser(username = "homer", roles = "ADMIN")
     void allocatablesFilterIdInUnionsTypeKeyIn()
     {
-        // typeKeyIn:["room"] picks all rooms; idIn adds a lecturer who isn't
+        // typeIn:["room"] picks all rooms; idIn adds a lecturer who isn't
         // a room. Result is the union.
         String simpsonHomer = idByDisplayName("Simpson Homer");
         List<Map<String, Object>> got = tester.document(String.format("""
                 { allocatables(filter: {
-                    typeKeyIn: ["room"]
+                    typeIn: [room]
                     idIn: ["%s"]
                   }) { id displayName } }
                 """, simpsonHomer))
@@ -312,7 +312,7 @@ class ClassificationGraphQLControllerTest
         String erwin = idByDisplayName("erwin");
         List<Map<String, Object>> got = tester.document(String.format("""
                 { allocatables(filter: {
-                    typeKeyIn: ["room"]
+                    typeIn: [room]
                     whereRoom: { seats: { gte: 20 } }
                     idIn: ["%s"]
                   }) { id displayName classification { ... on roomClassification { seats } } } }
@@ -472,19 +472,28 @@ class ClassificationGraphQLControllerTest
     }
 
     /**
-     * Phase 1 — reservation DynamicTypes do NOT get a `<TypeKey>Where` input.
-     * Where on Reservations lands on `reservations(filter:)` and is its own
-     * scope (deferred — PRD 035 §5d "Out of scope"). The fixture `event` DT
-     * is reservation-kind; assert no `eventWhere` was emitted.
+     * PRD 059 Phase 6 — reservation DynamicTypes DO get a `<TypeKey>Where`
+     * input now (was Phase-1-deferred), wired onto `ReservationFilter` via
+     * `extend input`. The fixture `event` DT is reservation-kind; assert
+     * `eventWhere` is emitted with the attribute + combinator fields.
      */
     @Test
     @WithMockUser(username = "homer", roles = "ADMIN")
-    void reservationDTGetsNoWhereInputInPhase1()
+    void reservationDTGetsWhereInput()
     {
-        tester.document("{ __type(name: \"eventWhere\") { name } }")
+        Map<String, Object> result = tester.document("""
+                { __type(name: "eventWhere") { name inputFields { name } } }
+                """)
                 .execute()
                 .path("__type")
-                .valueIsNull();
+                .entity(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        assertEquals("eventWhere", result.get("name"));
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> inputFields = (List<Map<String, Object>>) result.get("inputFields");
+        List<String> names = inputFields.stream().map(f -> (String) f.get("name")).toList();
+        assertTrue(names.contains("name"), () -> "eventWhere must carry the name attribute; got " + names);
+        assertTrue(names.containsAll(List.of("AND", "OR", "NOT")), () -> "combinators missing; got " + names);
     }
 
     /**
@@ -554,14 +563,14 @@ class ClassificationGraphQLControllerTest
         // no constraint. Distinct from Phase 2's broader "where is always
         // no-op" check (superseded by Phase 3 predicate tests below).
         List<Map<String, Object>> baseline = tester.document("""
-                { allocatables(filter: { typeKeyEq: "room" }) { displayName } }
+                { allocatables(filter: { typeIn: [room] }) { displayName } }
                 """)
                 .execute()
                 .path("allocatables")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         List<Map<String, Object>> empty = tester.document("""
-                { allocatables(filter: { typeKeyEq: "room", whereRoom: {} }) { displayName } }
+                { allocatables(filter: { typeIn: [room], whereRoom: {} }) { displayName } }
                 """)
                 .execute()
                 .path("allocatables")
@@ -572,15 +581,15 @@ class ClassificationGraphQLControllerTest
 
     /**
      * PRD 074/059 — a {@code where<Type>} block acts as an IMPLICIT TYPE GATE (option B′): setting
-     * {@code whereRoom} alone (no typeKeyEq/typeKeyIn) restricts to rooms — it does NOT leave all
-     * other allocatable types unfiltered. So whereRoom-only equals typeKeyEq:"room"+whereRoom.
+     * {@code whereRoom} alone (no typeIn) restricts to rooms — it does NOT leave all
+     * other allocatable types unfiltered. So whereRoom-only equals typeIn:["room"]+whereRoom.
      */
     @Test
     @WithMockUser(username = "homer", roles = "ADMIN")
     void whereBlockImpliesTypeGateWithoutTypeKey()
     {
         List<Map<String, Object>> withGate = tester.document("""
-                { allocatables(filter: { typeKeyEq: "room", whereRoom: { seats: { gte: 20 } } }) { displayName } }
+                { allocatables(filter: { typeIn: [room], whereRoom: { seats: { gte: 20 } } }) { displayName } }
                 """)
                 .execute().path("allocatables")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {}).get();
@@ -610,7 +619,7 @@ class ClassificationGraphQLControllerTest
     void stringWhereEqMatchesOneRoom()
     {
         List<Map<String, Object>> got = tester.document("""
-                { allocatables(filter: { typeKeyEq: "room",
+                { allocatables(filter: { typeIn: [room],
                     whereRoom: { name: { eq: "Room A66" } } }) { displayName } }
                 """)
                 .execute()
@@ -627,7 +636,7 @@ class ClassificationGraphQLControllerTest
     {
         // case-insensitive substring per StringWhere.contains semantics.
         List<Map<String, Object>> got = tester.document("""
-                { allocatables(filter: { typeKeyEq: "room",
+                { allocatables(filter: { typeIn: [room],
                     whereRoom: { name: { contains: "RWIN" } } }) { displayName } }
                 """)
                 .execute()
@@ -644,7 +653,7 @@ class ClassificationGraphQLControllerTest
     {
         // case-sensitive prefix per StringWhere.startsWith.
         List<Map<String, Object>> got = tester.document("""
-                { allocatables(filter: { typeKeyEq: "room",
+                { allocatables(filter: { typeIn: [room],
                     whereRoom: { name: { startsWith: "Room" } } }) { displayName } }
                 """)
                 .execute()
@@ -660,7 +669,7 @@ class ClassificationGraphQLControllerTest
     void intWhereGteMatchesOneRoom()
     {
         List<Map<String, Object>> got = tester.document("""
-                { allocatables(filter: { typeKeyEq: "room",
+                { allocatables(filter: { typeIn: [room],
                     whereRoom: { seats: { gte: 20 } } }) { displayName } }
                 """)
                 .execute()
@@ -676,7 +685,7 @@ class ClassificationGraphQLControllerTest
     void intWhereLteMatchesOneRoom()
     {
         List<Map<String, Object>> got = tester.document("""
-                { allocatables(filter: { typeKeyEq: "room",
+                { allocatables(filter: { typeIn: [room],
                     whereRoom: { seats: { lte: 15 } } }) { displayName } }
                 """)
                 .execute()
@@ -694,7 +703,7 @@ class ClassificationGraphQLControllerTest
         // testdefault category leaf "springfield-powerplant" → enum value
         // springfield_powerplant after PRD 058 migration.
         List<Map<String, Object>> got = tester.document("""
-                { allocatables(filter: { typeKeyEq: "room",
+                { allocatables(filter: { typeIn: [room],
                     whereRoom: { belongsto: { eq: springfield_powerplant } } }) { displayName } }
                 """)
                 .execute()
@@ -711,7 +720,7 @@ class ClassificationGraphQLControllerTest
     private int countWhereRoom(String wherePredicate)
     {
         List<Map<String, Object>> got = tester.document(
-                "{ allocatables(filter: { typeKeyEq: \"room\", whereRoom: " + wherePredicate + " }) { displayName } }")
+                "{ allocatables(filter: { typeIn: [room], whereRoom: " + wherePredicate + " }) { displayName } }")
                 .execute()
                 .path("allocatables")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
@@ -786,7 +795,7 @@ class ClassificationGraphQLControllerTest
     {
         // monty's visible rooms — baseline.
         List<Map<String, Object>> visible = tester.document("""
-                { allocatables(filter: { typeKeyEq: "room" }) { id displayName } }
+                { allocatables(filter: { typeIn: [room] }) { id displayName } }
                 """)
                 .execute()
                 .path("allocatables")
@@ -796,7 +805,7 @@ class ClassificationGraphQLControllerTest
         // (seats=30 is only Room A66) must NOT return Room A66 in monty's results
         // and must be byte-identical to the visible-only subset filtered the same way.
         List<Map<String, Object>> withWhere = tester.document("""
-                { allocatables(filter: { typeKeyEq: "room",
+                { allocatables(filter: { typeIn: [room],
                     whereRoom: { seats: { eq: 30 } } }) { id displayName } }
                 """)
                 .execute()
@@ -821,7 +830,7 @@ class ClassificationGraphQLControllerTest
     {
         // Both clauses match Room A66 only.
         List<Map<String, Object>> got = tester.document("""
-                { allocatables(filter: { typeKeyEq: "room",
+                { allocatables(filter: { typeIn: [room],
                     whereRoom: { AND: [
                       { name:  { eq: "Room A66" } }
                       { seats: { gte: 20 } }
@@ -840,7 +849,7 @@ class ClassificationGraphQLControllerTest
     void andCombinatorOneFailingClauseRejects()
     {
         List<Map<String, Object>> got = tester.document("""
-                { allocatables(filter: { typeKeyEq: "room",
+                { allocatables(filter: { typeIn: [room],
                     whereRoom: { AND: [
                       { name:  { eq: "Room A66" } }
                       { seats: { gte: 100 } }
@@ -858,7 +867,7 @@ class ClassificationGraphQLControllerTest
     void orCombinatorAnyClauseMatching()
     {
         List<Map<String, Object>> got = tester.document("""
-                { allocatables(filter: { typeKeyEq: "room",
+                { allocatables(filter: { typeIn: [room],
                     whereRoom: { OR: [
                       { name: { eq: "Room A66" } }
                       { name: { eq: "erwin"    } }
@@ -877,7 +886,7 @@ class ClassificationGraphQLControllerTest
     {
         // NOT name = "Room A66" → only erwin.
         List<Map<String, Object>> got = tester.document("""
-                { allocatables(filter: { typeKeyEq: "room",
+                { allocatables(filter: { typeIn: [room],
                     whereRoom: { NOT: { name: { eq: "Room A66" } } } }) { displayName } }
                 """)
                 .execute()
@@ -895,7 +904,7 @@ class ClassificationGraphQLControllerTest
         // AND[{seats >= 20}, {NOT belongsto = elementary_springfield}]
         // → Room A66 (seats=30, belongsto=springfield_powerplant)
         List<Map<String, Object>> got = tester.document("""
-                { allocatables(filter: { typeKeyEq: "room",
+                { allocatables(filter: { typeIn: [room],
                     whereRoom: { AND: [
                       { seats: { gte: 20 } }
                       { NOT: { belongsto: { eq: elementary_springfield } } }
@@ -915,7 +924,7 @@ class ClassificationGraphQLControllerTest
     {
         // AND: [] vacuously true → no filter (both rooms).
         List<Map<String, Object>> emptyAnd = tester.document("""
-                { allocatables(filter: { typeKeyEq: "room",
+                { allocatables(filter: { typeIn: [room],
                     whereRoom: { AND: [] } }) { displayName } }
                 """)
                 .execute()
@@ -926,7 +935,7 @@ class ClassificationGraphQLControllerTest
 
         // OR: [] vacuously false → empty result.
         List<Map<String, Object>> emptyOr = tester.document("""
-                { allocatables(filter: { typeKeyEq: "room",
+                { allocatables(filter: { typeIn: [room],
                     whereRoom: { OR: [] } }) { displayName } }
                 """)
                 .execute()
@@ -944,7 +953,7 @@ class ClassificationGraphQLControllerTest
         // a room-only query is a no-op (allocatable belongs to one DT;
         // per-PRD a where<OtherType> contributes no constraint).
         List<Map<String, Object>> got = tester.document("""
-                { allocatables(filter: { typeKeyEq: "room",
+                { allocatables(filter: { typeIn: [room],
                     whereLecturer: { surname: { eq: "Burns" } } }) { displayName } }
                 """)
                 .execute()
@@ -1054,7 +1063,7 @@ class ClassificationGraphQLControllerTest
     {
         List<Map<String, Object>> rooms = tester.document("""
                 {
-                  allocatables(filter: { typeKeyEq: "room" }) {
+                  allocatables(filter: { typeIn: [room] }) {
                     displayName
                   }
                 }
@@ -1076,7 +1085,7 @@ class ClassificationGraphQLControllerTest
         // all four.
         List<Map<String, Object>> union = tester.document("""
                 {
-                  allocatables(filter: { typeKeyIn: ["room", "lecturer"] }) {
+                  allocatables(filter: { typeIn: [room, lecturer] }) {
                     displayName
                     classification { typeKey }
                   }
@@ -1091,44 +1100,21 @@ class ClassificationGraphQLControllerTest
 
     @Test
     @WithMockUser(username = "homer", roles = "ADMIN")
-    void allocatablesFilterTypeKeyEqOverridesTypeKeyIn()
+    void allocatablesFilterTypeInUnknownKeyIsRejected()
     {
-        // When both typeKeyEq and typeKeyIn are set, typeKeyEq wins per the
-        // schema doc. Confirms intent: stricter narrowing trumps the broader
-        // list, mirroring how SQL "= X AND IN (X, Y)" reduces to "= X".
-        List<Map<String, Object>> only = tester.document("""
+        // PRD 059 Phase 7 — typeIn is the generated AllocatableTypeKey enum:
+        // a typo'd type is a VALIDATION error (loud), not a silent empty.
+        tester.document("""
                 {
-                  allocatables(filter: { typeKeyEq: "room", typeKeyIn: ["room", "lecturer"] }) {
+                  allocatables(filter: { typeIn: [room, doesNotExist] }) {
                     displayName
                   }
                 }
                 """)
                 .execute()
-                .path("allocatables")
-                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
-                .get();
-        assertEquals(2, only.size(), () -> "expected 2 rooms only, got " + only);
-    }
-
-    @Test
-    @WithMockUser(username = "homer", roles = "ADMIN")
-    void allocatablesFilterTypeKeyInWithUnknownKeyIgnoresIt()
-    {
-        // Unknown keys in the list are silently dropped — matches typeKeyEq's
-        // existing behavior of "no match → empty". A typo in one key shouldn't
-        // hide the matches for the other keys.
-        List<Map<String, Object>> result = tester.document("""
-                {
-                  allocatables(filter: { typeKeyIn: ["room", "does-not-exist"] }) {
-                    displayName
-                  }
-                }
-                """)
-                .execute()
-                .path("allocatables")
-                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
-                .get();
-        assertEquals(2, result.size(), () -> "expected 2 rooms (unknown key ignored), got " + result);
+                .errors()
+                .satisfy(errs -> org.junit.jupiter.api.Assertions.assertFalse(errs.isEmpty(),
+                        "unknown AllocatableTypeKey enum value must be rejected at validation"));
     }
 
     @Test
@@ -1196,7 +1182,7 @@ class ClassificationGraphQLControllerTest
         // typed field. The SPA must NOT use this; PRD 035 §540 lock-in.
         Map<String, Object> first = tester.document("""
                 {
-                  allocatables(filter: { typeKeyEq: "room" }) {
+                  allocatables(filter: { typeIn: [room] }) {
                     displayName
                     classification {
                       ... on roomClassification {
@@ -1308,7 +1294,7 @@ class ClassificationGraphQLControllerTest
         // From testdefault.xml: "Room A66" has belongsto=springfield-powerplant
         Map<String, Object> roomA66 = tester.document("""
                 {
-                  allocatables(filter: { typeKeyEq: "room", nameContains: "Room A66" }) {
+                  allocatables(filter: { typeIn: [room], nameContains: "Room A66" }) {
                     displayName
                     classification {
                       ... on roomClassification {
@@ -1410,7 +1396,7 @@ class ClassificationGraphQLControllerTest
         // fail GraphQL validation up-front, not return null silently.
         tester.document("""
                 {
-                  allocatables(filter: { typeKeyEq: "room" }) {
+                  allocatables(filter: { typeIn: [room] }) {
                     classification {
                       ... on eventClassification {
                         typeKey
@@ -1522,7 +1508,7 @@ class ClassificationGraphQLControllerTest
         List<Map<String, Object>> rooms = tester.document("""
                 {
                   allocatables(filter: {
-                    typeKeyEq: "room",
+                    typeIn: [room],
                     searchText: "Room",
                     matchKind: PREFIX
                   }) { id displayName }
@@ -1546,7 +1532,7 @@ class ClassificationGraphQLControllerTest
         List<Map<String, Object>> rooms = tester.document("""
                 {
                   allocatables(filter: {
-                    typeKeyEq: "room",
+                    typeIn: [room],
                     searchText: "r",
                     matchKind: SUBSTRING
                   }) { id displayName }
@@ -1568,7 +1554,7 @@ class ClassificationGraphQLControllerTest
         List<Map<String, Object>> rooms = tester.document("""
                 {
                   allocatables(filter: {
-                    typeKeyEq: "room",
+                    typeIn: [room],
                     searchText: "Room",
                     matchKind: PREFIX
                   }) { displayName }
@@ -1580,5 +1566,102 @@ class ClassificationGraphQLControllerTest
                 .get();
         assertEquals("Room A66", rooms.get(0).get("displayName"),
                 () -> "PREFIX hit should rank first; got " + rooms);
+    }
+
+    // ============================================================ @editView (PRD 096 D5 rev.)
+
+    /**
+     * PRD 096 D5 revision — one placement directive {@code @editView} replaces
+     * {@code @title}: value "title" is computed from ALL direct attribute
+     * references in the DISPLAY nameformat (composites included), "additional" /
+     * "no-view" mirror the {@code edit-view} attribute annotation, "main" (the
+     * default) is omitted. Fixture: `event` nameformat "{name}" → name is title,
+     * description carries edit-view=additional-view, belongsto has no annotation;
+     * `lecturer` nameformat "{surname} {forename}" → BOTH are title, its `title`
+     * attribute (unreferenced) gets nothing. Asserted against the printed SDL
+     * (directive applications are invisible to introspection).
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void editViewDirectiveMarksTitleAdditionalAndNoView() throws Exception
+    {
+        String sdl = mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .get("/api/graphql/schema"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        assertFalse(sdl.contains("@title"), "the @title directive is replaced by @editView");
+
+        String eventBlock = blockOf(sdl, "eventClassification");
+        assertTrue(eventBlock.lines().anyMatch(l -> l.trim().startsWith("name:")
+                        && l.contains("@editView") && l.contains("\"title\"")),
+                () -> "event nameformat {name} must mark name as title; block:\n" + eventBlock);
+        assertTrue(eventBlock.lines().anyMatch(l -> l.trim().startsWith("description:")
+                        && l.contains("@editView") && l.contains("\"additional\"")),
+                () -> "edit-view=additional-view must surface as additional; block:\n" + eventBlock);
+        assertTrue(eventBlock.lines().anyMatch(l -> l.trim().startsWith("belongsto:")
+                        && !l.contains("@editView")),
+                () -> "unannotated attribute defaults to main → no directive; block:\n" + eventBlock);
+
+        String lecturerBlock = blockOf(sdl, "lecturerClassification");
+        assertTrue(lecturerBlock.lines().anyMatch(l -> l.trim().startsWith("surname:")
+                        && l.contains("@editView") && l.contains("\"title\"")),
+                () -> "composite nameformat marks surname as title; block:\n" + lecturerBlock);
+        assertTrue(lecturerBlock.lines().anyMatch(l -> l.trim().startsWith("forename:")
+                        && l.contains("@editView") && l.contains("\"title\"")),
+                () -> "composite nameformat marks forename as title; block:\n" + lecturerBlock);
+        assertTrue(lecturerBlock.lines().anyMatch(l -> l.trim().startsWith("title:")
+                        && !l.contains("@editView")),
+                () -> "attribute not referenced in nameformat is not a title; block:\n" + lecturerBlock);
+    }
+
+    private static String blockOf(String sdl, String typeName)
+    {
+        int start = sdl.indexOf("type " + typeName + " ");
+        assertTrue(start >= 0, () -> "generated type " + typeName + " missing from printed SDL");
+        int end = sdl.indexOf("}", start);
+        return sdl.substring(start, end + 1);
+    }
+
+    // ============================================================ canModify (PRD 096 Phase 4)
+
+    /**
+     * PRD 096 — `Allocatable.canModify` mirrors `Reservation.canModify`
+     * (server-derived per caller, gates the SPA's Bearbeiten affordance
+     * without a second roundtrip). Room A66 grants non-admins only
+     * allocate_conflicts — not modify.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void allocatableCanModifyTrueForAdmin()
+    {
+        String roomA66 = idByDisplayName("Room A66");
+        Boolean canModify = tester.document(String.format("""
+                { allocatable(id: "%s") { canModify } }
+                """, roomA66))
+                .execute()
+                .path("allocatable.canModify")
+                .entity(Boolean.class)
+                .get();
+        assertEquals(Boolean.TRUE, canModify);
+    }
+
+    @Test
+    @WithMockUser(username = "monty", roles = "USER")
+    void allocatableCanModifyFalseWithoutModifyPermission()
+    {
+        List<Map<String, Object>> got = tester.document("""
+                { allocatables(filter: { searchText: "Room A66", matchKind: PREFIX }) { displayName canModify } }
+                """)
+                .execute()
+                .path("allocatables")
+                .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                .get();
+        Map<String, Object> roomA66 = got.stream()
+                .filter(a -> "Room A66".equals(a.get("displayName")))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("monty must still SEE Room A66; got " + got));
+        assertEquals(Boolean.FALSE, roomA66.get("canModify"),
+                "allocate_conflicts permission must not surface as canModify");
     }
 }

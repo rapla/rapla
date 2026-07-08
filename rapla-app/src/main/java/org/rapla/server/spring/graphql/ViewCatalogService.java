@@ -13,15 +13,11 @@ import graphql.validation.Validator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
-import org.rapla.entities.Entity;
 import org.rapla.entities.User;
-import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.internal.UserImpl;
+import org.rapla.entities.storage.StoredArtifact;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.TypedComponentRole;
-import org.rapla.storage.StorageOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -29,7 +25,8 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * PRD 074 — BUILTIN view catalog + CUSTOM view CRUD backed by system {@link Preferences}.
+ * PRD 074 — BUILTIN view catalog + CUSTOM view CRUD backed by the server artifact store
+ * (PRD 098, kind=VIEW — the earlier system-Preferences storage was cut off without migration).
  * Validation runs at read time against the current live {@link GraphQLSchema};
  * invalid/broken views are surfaced in {@link ViewEntry#invalidReason()} but never deleted.
  */
@@ -38,8 +35,6 @@ public class ViewCatalogService
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ViewCatalogService.class);
 
-    private static final TypedComponentRole<String> VIEWS_KEY =
-            new TypedComponentRole<>("org.rapla.graphql.customViews");
     private static final ObjectMapper MAPPER = JsonMapper.builder().build();
 
     static final List<ViewEntry> BUILTIN_VIEWS = List.of(
@@ -48,12 +43,15 @@ public class ViewCatalogService
                     + "    $filter: ReservationFilter!,\n"
                     + "    $sort:   [BlockSort!] = [{ field: START, dir: ASC }],\n"
                     + "    $offset: Int = 0\n"
-                    + "  ) @view(title: \"Termine\", rowLabel: \"Termin|Termine\") {\n"
+                    + "  ) @view(title: \"Termine\", rowLabel: \"Termin|Termine\", renderModes: [table, month]) {\n"
                     + "  appointmentBlocks(filter: $filter, sort: $sort, offset: $offset) {\n"
                     + "    start @column(header: \"Von\",           order: 1)\n"
                     + "    end   @column(header: \"Bis\",           order: 2)\n"
                     + "    name  @column(header: \"Titel\",         order: 3)\n"
+                    + "    color @hidden\n"
                     + "    reservation @hidden { id  canModify }\n"
+                    + "    appointmentId @hidden\n"
+                    + "    isException @hidden\n"
                     + "    persons: allocatables(filter: { isPersonEq: true })\n"
                     + "      @join(separator: \", \") @column(header: \"Personen\",   order: 4) {\n"
                     + "      id  name  isLocation\n"
@@ -70,16 +68,18 @@ public class ViewCatalogService
                     + "    name: displayName\n"
                     + "    start: firstDate\n"
                     + "    lastChanged: lastModifiedAt\n"
+                    + "    reservationId: id @hidden\n"
+                    + "    canModify @hidden\n"
                     + "  }\n"
                     + "}")
     );
 
-    private final StorageOperator operator;
+    private final ArtifactCatalogService artifactCatalog;
     private final HotSwappableGraphQlSource graphQlSource;
 
-    public ViewCatalogService(StorageOperator operator, HotSwappableGraphQlSource graphQlSource)
+    public ViewCatalogService(ArtifactCatalogService artifactCatalog, HotSwappableGraphQlSource graphQlSource)
     {
-        this.operator = operator;
+        this.artifactCatalog = artifactCatalog;
         this.graphQlSource = graphQlSource;
     }
 
@@ -160,11 +160,8 @@ public class ViewCatalogService
         List<String> errors = validate(queryText, schema);
         if (!errors.isEmpty()) return errors;
 
-        List<StoredViewData> stored = loadStored();
-        stored.removeIf(v -> v.name().equals(name));
-        stored.add(new StoredViewData(name, queryText, isPublic,
-                groups == null ? List.of() : groups, defaultVariables));
-        persist(stored, callerUser);
+        ViewMeta meta = new ViewMeta(isPublic, groups == null ? List.of() : groups, defaultVariables);
+        artifactCatalog.save(StoredArtifact.KIND_VIEW, name, queryText, MAPPER.writeValueAsString(meta), callerUser);
         return List.of();
     }
 
@@ -175,10 +172,7 @@ public class ViewCatalogService
         {
             if (b.name().equals(name)) return false;
         }
-        List<StoredViewData> stored = loadStored();
-        boolean removed = stored.removeIf(v -> v.name().equals(name));
-        if (removed) persist(stored, callerUser);
-        return removed;
+        return artifactCatalog.delete(StoredArtifact.KIND_VIEW, name, callerUser);
     }
 
     private boolean isVisible(StoredViewData v, User caller)
@@ -237,48 +231,32 @@ public class ViewCatalogService
 
     private List<StoredViewData> loadStored()
     {
-        try
+        List<StoredViewData> result = new ArrayList<>();
+        for (StoredArtifact artifact : artifactCatalog.list(StoredArtifact.KIND_VIEW))
         {
-            Preferences prefs = operator.getPreferences(null, false);
-            if (prefs == null) return new ArrayList<>();
-            String json = prefs.getEntryAsString(VIEWS_KEY, null);
-            if (json == null || json.isBlank()) return new ArrayList<>();
-            StoredViewData[] arr = MAPPER.readValue(json, StoredViewData[].class);
-            List<StoredViewData> result = new ArrayList<>(arr.length);
-            for (StoredViewData d : arr) result.add(d);
-            return result;
+            ViewMeta meta;
+            try
+            {
+                String metadata = artifact.getMetadata();
+                meta = metadata == null || metadata.isBlank()
+                        ? new ViewMeta(false, List.of(), null)
+                        : MAPPER.readValue(metadata, ViewMeta.class);
+            }
+            catch (Exception e)
+            {
+                LOGGER.warn("Ignoring unparseable metadata of view artifact {}", artifact.getId(), e);
+                meta = new ViewMeta(false, List.of(), null);
+            }
+            result.add(new StoredViewData(artifact.getName(), artifact.getBody(), meta.isPublic(),
+                    meta.groups() == null ? List.of() : meta.groups(), meta.defaultVariables()));
         }
-        catch (Exception e)
-        {
-            LOGGER.warn("Failed to load custom views from preferences", e);
-            return new ArrayList<>();
-        }
+        return result;
     }
 
-    private void persist(List<StoredViewData> views, User callerUser) throws RaplaException
-    {
-        String json;
-        try
-        {
-            json = MAPPER.writeValueAsString(views);
-        }
-        catch (Exception e)
-        {
-            throw new RaplaException("Failed to serialize views", e);
-        }
-        Preferences sysprefs = operator.getPreferences(null, true);
-        Map<Entity, Entity> edits = operator.editObjects(List.of(sysprefs), callerUser);
-        Preferences edit = (Preferences) edits.get(sysprefs);
-        if (edit == null)
-        {
-            LOGGER.warn("Could not obtain editable system preferences for view catalog");
-            return;
-        }
-        edit.putEntry(VIEWS_KEY, json);
-        operator.storeAndRemove(List.of(edit), List.of(), callerUser);
-    }
+    /** Visibility/default-variables metadata persisted as the artifact's metadata JSON (PRD 098). */
+    record ViewMeta(boolean isPublic, List<String> groups, String defaultVariables) { }
 
-    /** JSON-serializable storage record for CUSTOM views (valid/invalidReason not stored). */
+    /** In-memory carrier joining artifact body + parsed metadata (valid/invalidReason not stored). */
     record StoredViewData(String name, String queryText, boolean isPublic, List<String> groups,
             String defaultVariables) { }
 }

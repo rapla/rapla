@@ -2,14 +2,12 @@ package org.rapla.server.spring.graphql;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.internal.AllocatableImpl;
-import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.ReferenceInfo;
@@ -56,11 +54,17 @@ import org.springframework.stereotype.Controller;
 @Controller
 public class AllocatableMutationController
 {
-    private final StorageOperator operator;
+    private static final org.slf4j.Logger LOGGER =
+            org.slf4j.LoggerFactory.getLogger(AllocatableMutationController.class);
 
-    public AllocatableMutationController(StorageOperator operator)
+    private final StorageOperator operator;
+    private final org.rapla.server.spring.JwtUserResolver jwtUserResolver;
+
+    public AllocatableMutationController(StorageOperator operator,
+            org.rapla.server.spring.JwtUserResolver jwtUserResolver)
     {
         this.operator = operator;
+        this.jwtUserResolver = jwtUserResolver;
     }
 
     // ============================================================ createAllocatable
@@ -163,14 +167,26 @@ public class AllocatableMutationController
                     "No modify permission on allocatable " + id);
         }
 
-        // Type change rejected (analog of PRD 056 OQ1.c)
+        // Type change accepted (PRD 096 Phase 4 — mirrors the PRD 056 OQ1.c
+        // revision): @oneOf variant must match the NEW typeKey, create-gate
+        // on the target type. Attribute remapping is the client's job.
         String inputTypeKey = (String) input.get("typeKey");
         String storedTypeKey = stored.getClassification().getType().getKey();
+        DynamicType targetType = stored.getClassification().getType();
+        String targetTypeKey = storedTypeKey;
         if (inputTypeKey != null && !inputTypeKey.equals(storedTypeKey))
         {
-            throw new ReservationMutationException("INVALID_TYPE_CHANGE", "input.typeKey",
-                    "Type changes via updateAllocatable are not supported (stored typeKey="
-                            + storedTypeKey + ", input typeKey=" + inputTypeKey + ")");
+            targetType = resolveType(inputTypeKey);
+            if (!caller.isAdmin())
+            {
+                PermissionController pc = operator.getPermissionController();
+                if (!pc.canCreate(targetType, caller))
+                {
+                    throw new ReservationMutationException("PERMISSION_DENIED", "input.typeKey",
+                            "No permission to create allocatables of type " + targetType.getKey());
+                }
+            }
+            targetTypeKey = inputTypeKey;
         }
 
         // Optimistic concurrency
@@ -185,11 +201,10 @@ public class AllocatableMutationController
         // Clone for edit (rapla pattern — never mutate persistent entities).
         // AllocatableImpl exposes a public clone() returning Allocatable.
         AllocatableImpl draft = (AllocatableImpl) ((AllocatableImpl) stored).clone();
-        DynamicType dt = stored.getClassification().getType();
 
         Map<String, Object> classificationInput = (Map<String, Object>) input.get("classification");
-        Classification newClassification = buildClassificationFromInput(dt, classificationInput,
-                storedTypeKey);
+        Classification newClassification = buildClassificationFromInput(targetType, classificationInput,
+                targetTypeKey);
         draft.setClassification(newClassification);
 
         UpdateEvent event = new UpdateEvent();
@@ -272,82 +287,37 @@ public class AllocatableMutationController
 
     // ============================================================ helpers
 
-    private User requireCaller() throws RaplaException
+    /** Same seam as {@link ReservationMutationController} — the JwtUserResolver
+     *  handles external-IdP tokens; the earlier hand-rolled preferred_username
+     *  lookup silently failed for Keycloak/Entra logins (dedup 2026-07-08). */
+    private User requireCaller()
     {
-        var auth = org.springframework.security.core.context.SecurityContextHolder
-                .getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated())
-        {
-            throw new ReservationMutationException("PERMISSION_DENIED", "",
-                    "authentication required");
-        }
-        String username = null;
-        if (auth.getPrincipal() instanceof org.springframework.security.oauth2.jwt.Jwt jwt)
-        {
-            username = jwt.getClaimAsString("preferred_username");
-        }
-        if (username == null || username.isBlank()) username = auth.getName();
-        if (username == null || username.isBlank() || "anonymousUser".equals(username))
-        {
-            throw new ReservationMutationException("PERMISSION_DENIED", "",
-                    "authentication required");
-        }
-        User caller = operator.getUser(username);
+        User caller = jwtUserResolver.resolveCurrentUserOrNull();
         if (caller == null)
         {
-            throw new ReservationMutationException("PERMISSION_DENIED", "",
-                    "caller not resolvable");
+            throw new ReservationMutationException("PERMISSION_DENIED", "caller",
+                    "Mutations require an authenticated caller");
         }
         return caller;
     }
 
     private DynamicType resolveType(String typeKey) throws RaplaException
     {
-        Collection<DynamicType> all = operator.getDynamicTypes();
-        for (DynamicType dt : all)
+        DynamicType dt = ClassificationInputMapper.tryResolveType(operator, typeKey);
+        if (dt == null)
         {
-            if (typeKey.equals(dt.getKey())) return dt;
+            throw new ReservationMutationException("REFERENCE_NOT_FOUND", "input.typeKey",
+                    "DynamicType " + typeKey + " not found");
         }
-        throw new ReservationMutationException("REFERENCE_NOT_FOUND", "input.typeKey",
-                "DynamicType " + typeKey + " not found");
+        return dt;
     }
 
     @SuppressWarnings("unchecked")
+    /** Delegates to the shared {@link ClassificationInputMapper} (dedup 2026-07-08). */
     private Classification buildClassificationFromInput(DynamicType dt,
             Map<String, Object> classificationInput, String expectedTypeKey)
     {
-        Classification c = dt.newClassification();
-        if (classificationInput == null) return c;
-        for (Map.Entry<String, Object> variant : classificationInput.entrySet())
-        {
-            if (!variant.getKey().equals(expectedTypeKey))
-            {
-                throw new ReservationMutationException("MISMATCHED_TYPE",
-                        "classification." + variant.getKey(),
-                        "classification @oneOf variant '" + variant.getKey()
-                                + "' does not match typeKey '" + expectedTypeKey + "'");
-            }
-            Map<String, Object> attrMap = (Map<String, Object>) variant.getValue();
-            if (attrMap == null) return c;
-            for (Map.Entry<String, Object> e : attrMap.entrySet())
-            {
-                Attribute attr = dt.getAttribute(e.getKey());
-                if (attr == null) continue;
-                Object value = coerceValue(attr, e.getValue());
-                if (value != null) c.setValueForAttribute(attr, value);
-            }
-        }
-        return c;
-    }
-
-    private static Object coerceValue(Attribute attr, Object raw)
-    {
-        if (raw == null) return null;
-        // For v1, lean on rapla's loose typing (Classification.setValue accepts
-        // String / Long / Boolean / Category / Allocatable directly). The
-        // mutation controller for reservations does deeper coercion; for
-        // allocatables it's not yet exercised — extend when SPA editor lands.
-        return raw;
+        return ClassificationInputMapper.buildClassificationFromInput(operator, dt, classificationInput, expectedTypeKey);
     }
 
     private static Map<String, Object> bulkEntry(int index)
