@@ -15,7 +15,7 @@ import { MutationBus } from './mutation-bus';
  */
 
 /** Mirrors the server {@code ViewRenderMode} enum — the set of modes a view can switch between. */
-export type ViewRenderMode = 'table' | 'week' | 'month' | 'day' | 'program';
+export type ViewRenderMode = 'table' | 'grouped' | 'week' | 'month' | 'day' | 'program';
 
 /** A single GraphQL error entry (per the spec's {@code errors[]} shape). */
 export interface GqlError {

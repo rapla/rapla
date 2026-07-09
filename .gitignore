@@ -81,3 +81,12 @@ docs/.obsidian/
 
 # Leihschein/Leihvertrag MOCK (PRD 097 preview) — throwaway hand-rendered stand-in, not for commit
 /rapla-server/src/main/java/org/rapla/server/spring/web/LeihscheinMockController.java
+
+# JVM crash / profiler dumps — belt-and-suspenders. The profiling skill directs these to a
+# scratch dir outside the repo; ignore them so a forgotten -Xdump:directory cannot add trash.
+core.*.dmp
+javacore.*.txt
+jitdump.*.dmp
+Snap.*.trc
+hs_err_pid*.log
+*.hprof

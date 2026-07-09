@@ -760,16 +760,15 @@ public class RaplaBuilder
         	        matchingAllocatables.add(allocatable);
         	    }
             }
-            for(Allocatable alloc : builder.bindings.getAllocatables())
-            {
-                final Collection<Appointment> appointments = builder.bindings.getAppointments(alloc);
-                if(appointments.contains(appointment))
-                {
-                    if ( selectedAllocatable == null ||  selectedAllocatable.equals( alloc) ) {
-                        selectedMatchingAllocatables.add(alloc);
-                    }
-                }
-            }
+            // Match provenance — the SINGLE primitive also behind GraphQL
+            // AppointmentBlock.matchedBy (PRD 100 Phase 5): the bound allocatables
+            // (restricted to selectedAllocatable when set) whose belongsTo-resolved
+            // set contains this appointment.
+            Collection<Allocatable> candidates = selectedAllocatable != null
+                    ? java.util.Collections.singletonList(selectedAllocatable)
+                    : builder.bindings.getAllocatables();
+            selectedMatchingAllocatables.addAll(
+                    builder.bindings.getMatchingAllocatables(appointment, candidates));
         }
 
         public boolean isMovable() {

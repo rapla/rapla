@@ -1104,6 +1104,8 @@ type AppointmentBlock {
   reservation: Reservation
   "PRD 074 A — the block's allocatables, §12-gated, with the FULL AllocatableFilter (scalar + where<TypeKey> + idIn + accessibleBy*/accessLevel + limit; same evaluators as Query.allocatables). Per-appointment restriction applied for this block's appointment."
   allocatables(filter: AllocatableFilter): [Allocatable!]!
+  "PRD 100 Phase 5 — match provenance (no argument): the SCOPED allocatables this block's appointment is bound to (belongsTo-resolved), as navigable Allocatables. The candidate pool is the QUERY'S OWN resolved allocatable scope (allocatableIdsIn / allocatableMatching) — so it can never diverge from the filter that selected the block — using the SAME AppointmentMapping.getMatchingAllocatables primitive + storage binding the Swing/HTML week view groups by. The week grid's lane grouping key is matchedBy[0] (the selected building/room that admitted the block, not necessarily one it allocates); empty ⇒ the query was unscoped OR the block was admitted by a non-resource criterion ⇒ compact fallback. §12: the pool is the query's canRead-gated scope set, so only readable, already-scoped resources can surface."
+  matchedBy: [Allocatable!]!
   "PRD 074 — server-evaluated event-time-calculator duration (e.g. 2 UE 0 Min), via the rapla function bridge. Null if the eventtimecalculator plugin is absent."
   duration: String
   "PRD 074 — server-evaluated formatted time range of the block (e.g. 10:00 - 11:30)."

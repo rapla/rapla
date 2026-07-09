@@ -24,6 +24,12 @@ export interface LaneOptions<R> {
   mode?: 'fixed' | 'compact';
   /** The block's allocatables (id+name), for the grouping key + fallback. */
   allocsOf?: (r: R) => NamedRef[];
+  /** PRD 100 Phase 5 — server-computed match provenance (`AppointmentBlock.matchedBy`):
+   *  the SELECTED allocatables that admitted this block (belongsTo-resolved server-side,
+   *  so a room's blocks carry the selected BUILDING). When present and non-empty it is
+   *  the authoritative grouping key (`matchedBy[0]`), reproducing Swing's binding-based
+   *  lanes the client can't derive from row cells; empty ⇒ fall back to `allocsOf`. */
+  matchedByOf?: (r: R) => NamedRef[];
 }
 
 export interface DayBlock<R> {
@@ -80,6 +86,12 @@ export function weekDays(anchorIso: string): string[] {
 export function weekGridWindow(anchorIso: string): { from: string; to: string } {
   const monday = mondayOf(anchorIso);
   return { from: `${monday}T00:00:00`, to: `${shiftDay(monday, 7)}T00:00:00` };
+}
+
+/** Query window for day mode: the anchor day 00:00 → next day 00:00 (1-column grid). */
+export function dayGridWindow(anchorIso: string): { from: string; to: string } {
+  const day = anchorIso.slice(0, 10);
+  return { from: `${day}T00:00:00`, to: `${shiftDay(day, 1)}T00:00:00` };
 }
 
 function minutesOf(iso: string): number {
@@ -168,22 +180,46 @@ function mergeSlots<R>(slots: Seg<R>[][]): void {
  * Blocks with no allocatables land in a trailing group. Groups ordered by
  * locale-collated name.
  */
+/**
+ * The grouping key (lane) for a row. PRD 100 Phase 5 — server match provenance wins:
+ * matchedBy[0] is the SELECTED allocatable that admitted the block (belongsTo-resolved),
+ * so a building selection groups all its rooms' blocks into ONE lane exactly like Swing.
+ * Only when the block was admitted by a non-resource criterion (empty matchedBy) do we
+ * fall back to the client-side heuristic over the block's own allocatables (selected id →
+ * location → first). Null ⇒ the block has no lane key (trailing no-allocatable group).
+ */
+function groupKeyRef<R>(
+  row: R,
+  selectedIds: Set<string>,
+  allocsOf: (r: R) => NamedRef[],
+  matchedByOf?: (r: R) => NamedRef[],
+): NamedRef | undefined {
+  const matched = matchedByOf?.(row);
+  if (matched && matched.length) return matched[0];
+  const allocs = allocsOf(row);
+  return (
+    allocs.find((a) => selectedIds.has(a.id)) ??
+    allocs.find((a) => a.isLocation === true) ??
+    allocs[0]
+  );
+}
+
 function groupBySelected<R>(
   segs: Seg<R>[],
   selected: NamedRef[],
   allocsOf: (r: R) => NamedRef[],
+  matchedByOf?: (r: R) => NamedRef[],
 ): Seg<R>[][] {
   const selectedIds = new Set(selected.map((s) => s.id));
+  // NO empty-lane seeding: the SPA grid has no per-lane labels, so a reserved empty lane
+  // for a selected resource absent that day (Swing fixed-slots) is pure dead space — the
+  // very "big empty column" we want gone. Groups form ONLY from blocks; a resource with
+  // no block that day gets no lane. (fixed vs compact still differ via mergeSlots.)
   const groups = new Map<string, { name: string; blocks: Seg<R>[] }>();
-  for (const s of selected) groups.set(s.id, { name: s.name, blocks: [] });
   const noAlloc: Seg<R>[] = [];
 
   for (const seg of segs) {
-    const allocs = allocsOf(seg.row);
-    const key =
-      allocs.find((a) => selectedIds.has(a.id)) ??
-      allocs.find((a) => a.isLocation === true) ??
-      allocs[0];
+    const key = groupKeyRef(seg.row, selectedIds, allocsOf, matchedByOf);
     if (!key) {
       noAlloc.push(seg);
       continue;
@@ -215,10 +251,29 @@ export function layoutWeek<R>(
   startOf: (r: R) => string,
   endOf: (r: R) => string,
   options?: LaneOptions<R>,
+  /** Days to render (Mo–So of the anchor week by default; a single day for day mode). */
+  days: string[] = weekDays(anchorIso),
 ): WeekLayout<R> {
-  const days = weekDays(anchorIso);
-  const grouping = !!(options?.selected?.length && options.allocsOf);
-  const fixed = options?.mode === 'fixed';
+  // Swing parity: `compactColumns = … || builder.getAllocatables().isEmpty()` —
+  // when the selection resolves to allocatables NO block carries (container
+  // chips: buildings/categories/users), the week view packs COMPACT instead of
+  // opening per-fallback fixed lanes.
+  const selectedIds = new Set((options?.selected ?? []).map((s) => s.id));
+  // PRD 100 Phase 5 — when the server supplies match provenance, it is authoritative:
+  // grouping is ON iff SOME block carries a non-empty matchedBy (exactly Swing's
+  // `!builder.getAllocatables().isEmpty()` switch). matchedBy[0] then keys the lanes,
+  // so a container chip (building/category) — which the client can't resolve from row
+  // cells — groups correctly instead of falling into the compact fallback.
+  const hasMatchProvenance =
+    !!options?.matchedByOf && rows.some((r) => options.matchedByOf!(r).length > 0);
+  // Empty week: nothing to disprove the selection — keep the fixed-lane
+  // reservation (Swing shows the selected resources' empty lanes).
+  const anyMatch =
+    !!options?.allocsOf &&
+    selectedIds.size > 0 &&
+    (rows.length === 0 || rows.some((r) => options.allocsOf!(r).some((a) => selectedIds.has(a.id))));
+  const grouping = hasMatchProvenance || anyMatch;
+  const fixed = grouping && options?.mode === 'fixed';
   let minHour = 8;
   let maxHour = 18;
 
@@ -248,7 +303,7 @@ export function layoutWeek<R>(
     segs.sort(byStart);
 
     const groups = grouping
-      ? groupBySelected(segs, options!.selected!, options!.allocsOf!)
+      ? groupBySelected(segs, options?.selected ?? [], options?.allocsOf ?? (() => []), options?.matchedByOf)
       : [segs];
     resolveConflicts(groups);
     if (!fixed) mergeSlots(groups);
@@ -261,4 +316,27 @@ export function layoutWeek<R>(
   });
 
   return { days: perDay, startHour: minHour, endHour: maxHour };
+}
+
+/** PRD 077 print — printable width of an A4 landscape page (297mm minus the
+ *  browsers' default margins, in CSS px). */
+export const PRINT_PAGE_PX = 1026;
+/** Narrowest lane that still prints readably (~0.7× the 80px on-screen floor);
+ *  below this the week stops printing as a grid and stacks its days instead. */
+export const PRINT_MIN_LANE_PX = 56;
+
+/**
+ * How the week grid should print: 'grid' (landscape, lanes squeeze to fit the
+ * page width) while every lane keeps ≥ {@link PRINT_MIN_LANE_PX}; 'stacked'
+ * (portrait, one full-width day under the other) when the lanes would become
+ * unreadable. A single day always prints as a grid — stacking one day changes
+ * nothing. The 48px time gutter and 16px per-day selection gutter mirror the
+ * week-grid component's column template.
+ */
+export function printMode(laneCounts: number[]): 'grid' | 'stacked' {
+  if (laneCounts.length <= 1) return 'grid';
+  const total = laneCounts.reduce((sum, lanes) => sum + lanes, 0);
+  if (total === 0) return 'grid';
+  const usable = PRINT_PAGE_PX - 48 - laneCounts.length * 16;
+  return usable / total >= PRINT_MIN_LANE_PX ? 'grid' : 'stacked';
 }

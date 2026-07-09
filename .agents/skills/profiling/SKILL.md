@@ -61,6 +61,54 @@ $ASPROF stop -f /tmp/profile.txt -o flat $PID            # flat hottest-leaves t
 
 `asprof status $PID` shows whether profiling is currently running and how long.
 
+## Keep all output OUT of the git repo (profiles AND crash dumps)
+
+**Never write profiler output — or let JVM dumps land — inside a project checkout.**
+async-profiler's `file=` path and, crucially, the JVM's own dump files (OpenJ9
+`core.*.dmp` / `javacore.*.txt` / `jitdump.*.dmp` / `Snap.*.trc`; HotSpot
+`hs_err_pid*.log` / `*.hprof`) default to the **JVM's working directory** — which for
+a `spring-boot:run` boot is the *project root*. That dumps trash straight into the repo
+(and worse, into a *plugin* checkout like `dhbwrapla` whose `logs/` is gitignored but
+whose root is not). Always send them to a scratch dir outside any git repo:
+
+```bash
+PROF=/tmp/rapla-prof            # or your session scratchpad — anywhere NOT under a git checkout
+mkdir -p "$PROF"
+```
+
+- Write every `-f` output there (`-f "$PROF/profile.collapsed"`).
+- When you start a JVM with the agent baked in (boot profiling, below), also pin JVM
+  dumps there so a crash can't litter the repo:
+  - OpenJ9 (this machine's Semeru JDK): `-Xdump:directory=$PROF`
+  - HotSpot: `-XX:HeapDumpPath=$PROF -XX:ErrorFile=$PROF/hs_err_%p.log`
+
+## Profiling startup / boot (agent baked in at JVM launch)
+
+Attach-after-start misses the boot. To profile startup, load the agent at JVM launch via
+`-agentpath` and dump after the `Started …` marker. **Pick the event by what you're
+measuring:** `wall` captures blocked/IO time (e.g. a slow DB connection open); `itimer`
+captures on-CPU work (entity load, JSON, index build) and is **more robust on OpenJ9**.
+
+```bash
+PROF=/tmp/rapla-prof; mkdir -p "$PROF"
+ASO=/home/chris/.local/share/async-profiler/lib/libasyncProfiler.so
+AGENT="-agentpath:${ASO}=start,event=itimer,interval=5ms"   # or event=wall for IO-bound phases
+# Run via the normal dev recipe (server-lifecycle skill), adding the agent + dump dir as JVM args.
+# For dhbw use its aggregator recipe; the key part is:
+mvn ... spring-boot:run -Dspring-boot.run.jvmArguments="$AGENT -Xdump:directory=$PROF"
+# After the "Started RaplaSpringBootApplication in …" marker appears:
+PID=$(jps -l | awk '/RaplaSpringBoot/ {print $1}')
+$ASPROF stop -o collapsed -f "$PROF/boot.collapsed" $PID
+```
+
+**OpenJ9 caveat (learned the hard way, 2026-07-09):** `asprof stop` can crash the
+Semeru/OpenJ9 VM while flushing — **especially with `-o jfr`** (native crash in the
+FlightRecorder writer). Prefer `-o collapsed`; the output file is still written before the
+VM dies. Because the VM may crash on stop, the `-Xdump:directory=$PROF` above is what keeps
+the resulting core/javacore/jitdump/Snap files out of the repo. If you must produce a JFR,
+expect the crash and convert with `jfrconv -o collapsed in.jfr out` (a truncated JFR often
+won't parse — another reason to prefer collapsed directly).
+
 ## Reading the output
 
 ### Flame graph (HTML)
@@ -177,5 +225,5 @@ Useful for "why is GC spiking under load" or "we allocate too much per request."
 ## When NOT to use this skill
 
 - A single failing test — log statements + targeted debug
-- A startup performance issue — `mvn spring-boot:run` startup goes through plugin classloading; profile-on-startup is awkward. Easier to use `-Xverbose:class` or check actuator's `/startup`
+- A startup performance issue — use the **Profiling startup / boot** section above (agent baked in at launch, dumps pinned to a scratch dir). For a coarse class-load view instead, `-Xverbose:class` or actuator's `/startup` are lighter.
 - A multi-pod production issue — need a deployable profiling agent, not async-profiler ad-hoc attach

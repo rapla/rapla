@@ -80,6 +80,19 @@ mechanics; **this PRD owns persistence, switching, conversion, and the graphical
   time grid (stored custom views declaring `week` for the grouped list need `day`).
   Swing-parity hardening (lane model, zoom, worktime, shared block styling) is
   [PRD 100](100-spa-block-renderer-unification.md).
+  → **Print support landed 2026-07-09**: browser print shows ONLY the main pane (shell
+  chrome hidden via `@media print` in `app.css`; Material drawer un-caged; a print-only
+  `view-title` heading carries "Termine (68 Termine)", the on-screen count moved to the
+  control strip as right-aligned `ViewStateStore.resultInfo`). The week/day grid picks its
+  print layout via `printMode()` in `week-lanes.ts`: **grid** (lanes drop the 80px
+  floor, squeeze as `fr` onto the page) vs **stacked days** (one full-width day per
+  block with print-only day label + hour axis) when lanes would fall below `PRINT_MIN_LANE_PX` (56px,
+  ≈3+ lanes/day avg on a 7-day week). Horizontal overflow is unpaginatable in CSS —
+  stacking converts it to vertical flow. The week/day view ALWAYS prints landscape
+  (`@page A4 landscape` injected while mounted — 2026-07-09 decision: grid needs the
+  width, stacked days get wider lanes and a typical 8–18h day still fits one landscape
+  page; table/month keep the user's free orientation choice). Tests: `week-print.spec.ts` (boundary math),
+  `week-grid-print.spec.ts` (class/`@page` wiring), `view-host-result-info.spec.ts`.
 - **Migration** of existing `CalendarModelConfiguration` saved calendars → (shared view +
   SavedView instance).
 

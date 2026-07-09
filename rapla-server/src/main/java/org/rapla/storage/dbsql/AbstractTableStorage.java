@@ -229,7 +229,13 @@ public class AbstractTableStorage implements TableStorage
     	List<String> createSQL = new ArrayList<>();
     	StringBuffer buf = new StringBuffer();
     	String table = tableName;
-		buf.append("CREATE TABLE " + table + " (");
+		// HSQLDB defaults CREATE TABLE to a MEMORY table, whose rows are all
+		// serialised as SQL INSERTs in the .script file and re-parsed into RAM
+		// on every boot — startup then scales with total row count. CACHED
+		// tables keep rows in the binary .data file and load lazily. CACHED is
+		// HSQLDB-specific syntax, so only emit it for that backend.
+		String tableKeyword = isHsqldb() ? "CREATE CACHED TABLE " : "CREATE TABLE ";
+		buf.append(tableKeyword + table + " (");
 		List<String> keyCreates = new ArrayList<>();
 		boolean first= true;
 		for (ColumnDef col: columns.values())

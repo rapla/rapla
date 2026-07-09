@@ -1,9 +1,11 @@
 # PRD 094 — SPA main-view actions & popups (command pattern + post-action undo)
 
-**Status:** draft — 2026-07-07
+**Status:** draft — 2026-07-07 (updated 2026-07-09: calendar drag/resize **move** pulled in as a command producer — Phase 4 + D5; scope logic locked server-side in a new `moveAppointment` GraphQL mutation)
 **Related:** PRD 091 (event sheet — D5 locks *in-sheet* undo as memento, pre-save
 only, and moves everything past the save boundary HERE), PRD 077/078 (view model +
-renderer — the main view these actions live on; calendar drag-editing stays there),
+renderer — the main view these actions live on; the calendar surface hosts the
+Phase 4 drag/resize, but the move *command + scope dialog + mutation* are owned
+here), PRD 091 (recurrence semantics the `moveAppointment` SINGLE-split reuses),
 PRD 093 (loan lifecycle — its status actions are the first archetype-specific
 command producers), PRD 056 (mutation contract incl. §9 id-integrity/retry — the
 create-inverse relies on it), PRD 067 (D7: GraphQL write surface adjustable)
@@ -47,7 +49,7 @@ From `docs/architecture/reservation-edit.md` (global commands table):
 |---|---|---|
 | `SaveUndo` (save from edit dialog) | toast after sheet save; inverse = `updateReservation` with the captured pre-save state (or `deleteReservations` after a create) | yes (Phase 2) |
 | `DeleteUndo` | delete action on a table row; inverse = `createReservation` re-creating the captured full state **with the same ids** (D3 id-first makes re-create id-stable — conflicts/links re-attach) | yes (Phase 2) |
-| `AppointmentResize` (drag/resize, scope dialog) | calendar drag commands | no — PRD 077 render mode; must be able to reuse this PRD's command/toast infra |
+| `AppointmentResize` (drag/resize, scope dialog) | calendar drag/resize **move** commands | **yes (Phase 4)** — the scope dialog + command/toast infra live here; the EVENT/SERIE/SINGLE cascade is a new server `moveAppointment` mutation (D5) |
 | `AllocatableExchangeCommand` | drag between resource rows | no — PRD 077 |
 | `AppointmentPaste` / `ReservationPaste` | copy/duplicate action | duplicate-as-new: candidate (Phase 3); paste semantics deferred |
 | `ConflictEnable` | conflict view action | no — future conflict surface |
@@ -79,7 +81,9 @@ From `docs/architecture/reservation-edit.md` (global commands table):
 
 ### Out of scope
 - In-sheet (pre-save) undo — PRD 091 D5 (memento)
-- Calendar drag/resize/paste commands — PRD 077 render mode (reuses this infra)
+- Calendar drag/resize **move** is now Phase 4 (in scope). Still out: **paste**
+  (needs a paste-target model — PRD 077 calendar surface) and
+  `AllocatableExchangeCommand` (drag between resource rows — PRD 077)
 - Loan-specific transitions — PRD 093 defines them, they only *run* here
 - Multi-step global history / cross-session undo (server trash-can semantics
   would be its own design)
@@ -132,6 +136,53 @@ Design locked 2026-07-07 (D3); implementation deferred — no phase started.
       2 toolbar specs. Survives paging within the session (in-memory);
       localStorage persistence across reload is a later increment.
 - [ ] Sheet-save-as-command toast (inverse = `updateReservation` pre-save state) — deferred; delete is the shipped producer, sheet save still owns its own path.
+
+### Phase 4 — Calendar drag/resize move (scope dialog + `moveAppointment` mutation)
+
+> **⚠ Mutation design moved to [PRD 101](101-transpose-anchors-move-copy-paste.md)**
+> (2026-07-09): the `moveAppointment(scope, dateShift)` shape referenced below was
+> superseded by the anchor-based verb family (typed `Anchor` input, scope-split verbs).
+> D5's principle (scope logic server-side) stands — recorded as PRD 101 D1. This phase's
+> task list gets rewritten once PRD 101 Phase 1 locks the verbs.
+
+Reuses the Phase 2 command/toast/history infra. Grounded in
+`docs/architecture/reservation-edit.md` § "Drag / resize on the calendar" (Swing
+`AppointmentResize.change()` — the EVENT/SERIE/SINGLE cascade this ports) and its
+"SPA gap" subsection.
+
+Current SPA state: the week grid enables drag only when `canModify &&
+appointmentCount === 1 && repeating === null` (`week-grid.component.ts`
+`isMovableRow`) and commits via `moveReservations(ids, dateShift)` — i.e. **only
+the lone case where Swing skips the dialog** (EVENT is the sole safe action).
+Multi-appointment and repeating blocks don't drag today.
+
+- [ ] **Server: `moveAppointment` mutation — designed in [PRD 056](056-graphql-events-write-api.md)
+      § "Verb-level semantic notes" (the `moveAppointment` verb + `AppointmentEditScope`
+      enum + per-scope semantics live there, since PRD 056 owns the reservation
+      write surface).** Summary: `moveAppointment(reservationId, appointmentId,
+      occurrenceStart, dateShift, scope: EVENT|SERIE|SINGLE, keepTime, newEnd,
+      expectedLastChanged): Reservation!` carries the full
+      `AppointmentResize.change()` cascade server-side (EVENT = shift all; SERIE =
+      shift the whole repeating appointment; SINGLE = split off + `addException`,
+      with the `isNotEmptyWithExceptions` empty cascade). Test-first (tier-3
+      GraphQL): one case per scope + last-occurrence-becomes-empty + permission
+      denied. **This is the D5 server work.**
+- [ ] **Resize form.** The same `moveAppointment` verb with a `newEnd` argument
+      (Swing runs move and resize through the one `showDialog(..., "move", ...)`
+      path) — see PRD 056. No separate `resizeAppointment` verb.
+- [ ] **Client dialog:** reuse `views/delete-scope-dialog.component.ts` pattern
+      for a move-scope chooser (EVENT/SERIE/SINGLE) with Swing's show-when
+      predicates (skip the dialog when only one option qualifies — the current
+      single-appointment drag path). Extend `views/delete-scope.ts` alongside it or
+      add `views/move-scope.ts`.
+- [ ] **Command:** `actions/event-commands.ts` `buildMoveCommand`: forward =
+      `moveAppointment(scope)`, inverse = `moveAppointment` with the negated shift
+      and the SAME scope (server re-derives; SINGLE's inverse needs care — likely a
+      captured-state `updateReservation` back to the pre-split reservation, since a
+      split is not self-inverting). Runs through `UndoToastService` (toast +
+      header history, drop-on-stale).
+- [ ] **Grid gate:** widen `isMovableRow` to allow multi-appointment/repeating
+      blocks (still `canModify`); the scope dialog handles the branching.
 
 ### Phase 3 — Candidates (each needs its own go)
 - [ ] Duplizieren (create-as-new from an existing event, fresh ids, opens sheet as draft)
@@ -244,6 +295,29 @@ row/block context menu, adapted to the web:
   empty-slot menu (calendar-surface concern, PRD 077), multi-select actions
   (no table selection exists yet — PRD 099 supplies the selection model and
   the multi-row command producers).
+
+**D5 — calendar move/resize scope logic lives in a server `moveAppointment`
+GraphQL mutation, not in the client (2026-07-09, maintainer directive: "the actual
+logic should happen in the mutation graphql").** The EVENT/SERIE/SINGLE cascade —
+whole-reservation shift, whole-repeating-appointment shift, and the SINGLE
+occurrence *split* (clone-as-non-repeating at the new time + `addException` on the
+series, with the `isNotEmptyWithExceptions` empty-series cascade) — is exactly what
+Swing's `AppointmentResize.change()` encapsulates and exactly the kind of
+recurrence invariant that must not be reimplemented in TypeScript. The SPA
+therefore does **not** build `updateReservation` payloads for SERIE/SINGLE (which
+would force the SPA event model to carry multi-appointment sets + exceptions +
+per-appointment restrictions and duplicate the cascade). Instead a new
+`moveAppointment` mutation — **designed in PRD 056** (the reservation write-surface
+PRD), § "Verb-level semantic notes" — keeps the cascade in Java as the single
+source of truth, the same principle `moveReservations`/`deleteAppointment`/the
+Phase 2 delete-scope path already follow. The client owns only the **scope dialog**
+(present the chooser with Swing's show-when predicates) and the **command wrapper**
+(forward + compensating inverse through the Phase 2 undo infra). *Alternatives rejected:* client-side
+`updateReservation` rebuild (duplicates recurrence logic, needs the full PRD 091
+recurrence model on the read side just to move a block — the maintainer explicitly
+ruled this out); silently widening `moveReservations` to non-EVENT scopes (loses
+the scope choice — a repeating drag would ambiguously move either one occurrence or
+all).
 
 **D4 — typed row subject via hidden well-known aliases (2026-07-07).** View rows
 are generic (`Record<string, unknown>` from arbitrary stored views) — a row can

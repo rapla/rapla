@@ -891,6 +891,39 @@ public final class StructuralTypeFetchers
         };
     }
 
+    /** Request-scoped {@link GraphQLContext} key carrying the query's SCOPED
+     *  {@link org.rapla.entities.domain.AppointmentMapping} (stashed by
+     *  {@link ReservationGraphQLController#reservations} only when the query is explicitly scoped by
+     *  allocatables) — {@code AppointmentBlock.matchedBy} reads its per-allocatable, belongsTo-resolved
+     *  bindings directly. Absent ⇒ unscoped query ⇒ matchedBy empty ⇒ compact lanes. */
+    static final String MATCHED_BY_SCOPE_KEY = "rapla.matchedBy.scope";
+
+    /**
+     * PRD 100 Phase 5 — {@code AppointmentBlock.matchedBy}. Match provenance (NO argument): the SCOPED
+     * allocatables this block's appointment is bound to (belongsTo-resolved), as navigable Allocatables.
+     * The candidate pool is the query's OWN resolved allocatable scope — so it can never diverge from
+     * the filter that selected the block — read from the {@link org.rapla.entities.domain.AppointmentMapping}
+     * the query already built (no second storage call). Uses the SAME primitive Swing's grouping does
+     * ({@link org.rapla.entities.domain.AppointmentMapping#getMatchingAllocatables}). §12 falls out: the
+     * mapping's allocatables are the query's canRead-gated scope set, so matchedBy can only ever surface
+     * readable, already-scoped resources. Unscoped query ⇒ no mapping stashed ⇒ empty (compact, Swing's
+     * empty-selection fallback).
+     */
+    static final LightDataFetcher<List<Allocatable>> APPOINTMENT_BLOCK_MATCHED_BY =
+            new LightSourceFetcher<ReservationGraphQLController.AppointmentBlockDto, List<Allocatable>>(
+                    ReservationGraphQLController.AppointmentBlockDto.class)
+            {
+                @Override protected List<Allocatable> read(ReservationGraphQLController.AppointmentBlockDto dto,
+                        Supplier<DataFetchingEnvironment> envSup)
+                {
+                    if (dto == null || dto.appointment() == null) return List.of();
+                    org.rapla.entities.domain.AppointmentMapping mapping =
+                            envSup.get().getGraphQlContext().get(MATCHED_BY_SCOPE_KEY);
+                    if (mapping == null) return List.of();   // unscoped query → compact
+                    return mapping.getMatchingAllocatables(dto.appointment(), null);
+                }
+            };
+
     /** Shared core for Appointment.allocatables + AppointmentBlock.allocatables. */
     private static List<Allocatable> resolveAppointmentAllocatables(
             org.rapla.entities.domain.Appointment a, DataFetchingEnvironment dfe, StorageOperator operator)
@@ -1311,6 +1344,7 @@ public final class StructuralTypeFetchers
                 .dataFetcher("appointment",  APPOINTMENT_BLOCK_APPOINTMENT)
                 .dataFetcher("color",        APPOINTMENT_BLOCK_COLOR)
                 .dataFetcher("allocatables", appointmentBlockAllocatables(operator))
+                .dataFetcher("matchedBy",    APPOINTMENT_BLOCK_MATCHED_BY)
                 .dataFetcher("duration",     appointmentBlockDuration(operator))
                 .dataFetcher("durationMinutes", APPOINTMENT_BLOCK_DURATION_MINUTES)
                 .dataFetcher("times",        appointmentBlockTimes(operator))

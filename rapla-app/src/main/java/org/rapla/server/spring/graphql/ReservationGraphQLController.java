@@ -239,10 +239,21 @@ public class ReservationGraphQLController
             // returned only the caller-owned subset — exactly the bug the
             // legacy REST {@link RemoteStorageController#queryAppointments}
             // also avoids by passing null.
-            all = ((org.rapla.storage.SyncStorageOperator) operator)
-                    .queryAppointmentsSync(null, visibleAllocatables, null,
-                            filter.from(), filter.to(), null, null, false)
-                    .getAllReservations();
+            // PRD 100 Phase 5 — reuse this scoped mapping for AppointmentBlock.matchedBy:
+            // its per-allocatable appointment sets ARE the belongsTo-resolved bindings the
+            // week-grid lane grouping needs (no second query). Stashed ONLY when the query is
+            // EXPLICITLY scoped (allocatableIdsIn / allocatableMatching) — an unscoped query's
+            // "all readable" set would be a meaningless firehose, so matchedBy stays empty →
+            // compact, exactly Swing's empty-selection fallback.
+            org.rapla.entities.domain.AppointmentMapping scopedMapping =
+                    ((org.rapla.storage.SyncStorageOperator) operator)
+                            .queryAppointmentsSync(null, visibleAllocatables, null,
+                                    filter.from(), filter.to(), null, null, false);
+            all = scopedMapping.getAllReservations();
+            if (hasIdsIn || hasMatching)
+            {
+                env.getGraphQlContext().put(StructuralTypeFetchers.MATCHED_BY_SCOPE_KEY, scopedMapping);
+            }
         }
 
         List<Reservation> visible = new ArrayList<>(Math.min(limit, 256));

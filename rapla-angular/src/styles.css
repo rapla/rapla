@@ -13,3 +13,14 @@ body {
 body {
   font-family: Roboto, 'Helvetica Neue', sans-serif;
 }
+
+/* Print: the week/day time grid caps its height to the viewport remainder via an
+   inline maxHeight (its own scroller). For paper the full grid must flow across
+   pages — !important in a stylesheet outranks the inline style. Global (not
+   component-scoped) because app.css can't reach into the encapsulated component. */
+@media print {
+  app-week-grid .wg {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}

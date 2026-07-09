@@ -53,12 +53,32 @@ group(blocks)                  # strategy-specific initial grouping
 - **`GroupAllocatablesStrategy`** (the week-view default): initial grouping is
   **one group per SELECTED allocatable** — the grouping key of a block is its
   first *selected* allocatable (`RaplaBuilder.BlockContext.getGroupAllocatable`,
-  `RaplaBuilder.java:813`): the block's allocatables are intersected with the
-  calendar's selection; only when the block matches no selected allocatable does
-  it fall back to its own first allocatable; blocks with none land in a shared
-  no-allocatable group appended LAST. Groups are ordered by locale-collated
-  allocatable name (`NamedComparator`). ⇒ Lanes are stable per selected resource:
-  room A is the same lane on every day of the week.
+  `RaplaBuilder.java:813`); only when the block matches no selected allocatable
+  does it fall back to its own first allocatable (**resources before persons**,
+  `RaplaBlockContext` ctor comment "Prefer resources when grouping"); blocks
+  with none land in a shared no-allocatable group appended LAST. Groups are
+  ordered by locale-collated allocatable name (`NamedComparator`). ⇒ Lanes are
+  stable per selected resource: room A is the same lane on every day of the week.
+- **The selected-match is a QUERY-LAYER BINDING, not an id intersection**
+  (`RaplaBlockContext.addAllocatables`, `RaplaBuilder.java:763`): a block matches
+  a selected allocatable iff `bindings.getAppointments(alloc)` contains its
+  appointment — the storage query resolves **belongsTo hierarchies**, so a
+  lecture in a room matches its selected BUILDING. A building selection thus
+  groups ALL its blocks into ONE group → `resolveConflicts` → dense greedy
+  columns (this is what the Swing + exported-HTML screenshots show; the
+  selection was building + person). Client renderers cannot derive this from
+  row cells — the SPA gets it as a server-computed **`matchedBy`** field (NO
+  argument) returning the matched SELECTED allocatables (match provenance, PRD 100
+  Phase 5, shipped 2026-07-09). Its candidate pool is the QUERY'S OWN resolved
+  allocatable scope (`allocatableIdsIn`/`allocatableMatching`), so it can't diverge
+  from the filter that selected the block; the client groups lanes by
+  `matchedBy[0]`, empty ⇒ compact. The binding test itself is the ONE shared
+  primitive `AppointmentMapping.getMatchingAllocatables(appointment, candidates)`
+  (rapla-core): both this loop (`RaplaBlockContext.addAllocatables`) and the
+  `matchedBy` resolver call it, over the SAME `AppointmentMapping` the query builds
+  via `queryAppointmentsSync` — Swing and server can't drift. Note: distinct from
+  `AppointmentBlock.allocatables(filter:)`, which filters the block's OWN reserved
+  resources by an independent predicate (no belongsTo, not query-scoped).
 - **Fixed vs compact** (`CalendarOptions.isCompactColumns()`):
   - *fixed slots* (`setFixedSlotsEnabled(true)`, the default when not compact):
     the per-selected-resource groups are NOT merged — each selected resource keeps

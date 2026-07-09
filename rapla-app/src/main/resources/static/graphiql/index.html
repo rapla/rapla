@@ -269,6 +269,43 @@
         });
     }
 
+    async function populateDeleteSelect(sel) {
+        sel.innerHTML = '<option value="">— Delete view —</option>';
+        try {
+            const result = await gqlFetch('{ listViews { name title source } }');
+            const views = (result.data && result.data.listViews) || [];
+            for (const v of views) {
+                if (v.source !== 'CUSTOM') continue;
+                const opt = document.createElement('option');
+                opt.value = v.name;
+                opt.textContent = v.title || v.name;
+                sel.appendChild(opt);
+            }
+        } catch (e) {
+            sel.innerHTML = '<option value="">Error loading views</option>';
+        }
+    }
+
+    async function deleteViewByName(viewName) {
+        if (!confirm('Delete view \'' + viewName + '\'? This cannot be undone.')) return;
+        try {
+            const result = await gqlFetch(
+                'mutation($name:String!){ deleteView(name:$name) }',
+                { name: viewName }
+            );
+            const errors = result.errors && result.errors.map(e => e.message);
+            if (result.data && result.data.deleteView) {
+                alert('View \'' + viewName + '\' deleted.');
+            } else if (errors && errors.length) {
+                alert('Delete failed:\n' + errors.join('\n'));
+            } else {
+                alert('Delete failed: view is built-in or not found.');
+            }
+        } catch (e) {
+            alert('Failed to delete view: ' + e.message);
+        }
+    }
+
     function addViewToolbar(bar) {
         const sep = document.createElement('span');
         sep.textContent = '|';
@@ -290,6 +327,15 @@
         saveBtn.title = 'Save current editor query as a named view (admin)';
         saveBtn.addEventListener('click', (e) => { e.preventDefault(); saveCurrentView(); });
         bar.appendChild(saveBtn);
+
+        const delSel = document.createElement('select');
+        delSel.title = 'Delete a saved custom view (admin)';
+        delSel.innerHTML = '<option value="">— Delete view —</option>';
+        delSel.addEventListener('focus', () => populateDeleteSelect(delSel));
+        delSel.addEventListener('change', () => {
+            if (delSel.value) { deleteViewByName(delSel.value); delSel.value = ''; }
+        });
+        bar.appendChild(delSel);
     }
 
     function renderAuthBar() {

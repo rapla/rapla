@@ -1,11 +1,19 @@
 import { describe, expect, it } from 'vitest';
 
-import { layoutWeek, mondayOf, weekDays, weekGridWindow, type LaneOptions } from './week-lanes';
+import {
+  dayGridWindow,
+  layoutWeek,
+  mondayOf,
+  weekDays,
+  weekGridWindow,
+  type LaneOptions,
+} from './week-lanes';
 
 interface Blk {
   start: string;
   end: string;
-  allocs?: { id: string; name: string }[];
+  allocs?: { id: string; name: string; isLocation?: boolean }[];
+  matchedBy?: { id: string; name: string }[];
 }
 
 const startOf = (r: Blk) => r.start;
@@ -52,6 +60,28 @@ describe('week window math', () => {
       from: '2026-12-28T00:00:00',
       to: '2027-01-04T00:00:00',
     });
+  });
+
+  it('dayGridWindow is the anchor day 00:00 → next day 00:00', () => {
+    expect(dayGridWindow('2026-12-31T12:00:00')).toEqual({
+      from: '2026-12-31T00:00:00',
+      to: '2027-01-01T00:00:00',
+    });
+  });
+});
+
+describe('day mode (single-day layout)', () => {
+  it('renders only the anchor day when given a one-day list', () => {
+    const result = layoutWeek(
+      [{ start: '2026-06-10T09:00:00', end: '2026-06-10T10:00:00' }],
+      '2026-06-10T00:00:00',
+      (r) => r.start,
+      (r) => r.end,
+      undefined,
+      ['2026-06-10'], // day mode: just the anchor day, not Mo–So
+    );
+    expect(result.days.map((d) => d.day)).toEqual(['2026-06-10']);
+    expect(result.days[0].blocks).toHaveLength(1);
   });
 });
 
@@ -126,12 +156,33 @@ describe('group-by-selected-resource (Swing GroupAllocatablesStrategy)', () => {
     allocsOf: (r) => r.allocs ?? [],
   };
 
-  it('fixed mode reserves a lane per selected resource even on empty days', () => {
+  it('an empty week collapses to a single empty lane (no per-resource phantom reservation)', () => {
     const result = lay([], scoped);
-    expect(day(result, '2026-06-08').lanes).toBe(2);
+    expect(day(result, '2026-06-08').lanes).toBe(1);
   });
 
-  it('each selected resource keeps ITS lane, stable across days', () => {
+  it('a co-selected resource with NO blocks all week gets no lane (matchedBy groups elsewhere)', () => {
+    const building = { id: 'building-1', name: 'Schloss 2' };
+    const person = { id: 'p1', name: 'Kohlhaas' };
+    const roomA = { id: 'roomA', name: 'S2/1160', isLocation: true };
+    // building + person both selected; every block binds to the building via matchedBy
+    const result = lay(
+      [
+        { start: '2026-06-08T09:00:00', end: '2026-06-08T10:00:00', allocs: [roomA, person], matchedBy: [building] },
+        { start: '2026-06-08T11:00:00', end: '2026-06-08T12:00:00', allocs: [roomA, person], matchedBy: [building] },
+      ],
+      {
+        selected: [building, person],
+        mode: 'fixed',
+        allocsOf: (r) => r.allocs ?? [],
+        matchedByOf: (r) => r.matchedBy ?? [],
+      },
+    );
+    // one building lane (non-colliding blocks stack in it); NO empty person lane
+    expect(day(result, '2026-06-08').lanes).toBe(1);
+  });
+
+  it('each day packs only its own booked resources — no reserved empty lane for absent ones', () => {
     const result = lay(
       [
         // only room B booked on Monday, only room A on Tuesday — no overlap anywhere
@@ -140,10 +191,13 @@ describe('group-by-selected-resource (Swing GroupAllocatablesStrategy)', () => {
       ],
       scoped,
     );
-    // Raum A sorts before Raum B → lane 0 = A, lane 1 = B on EVERY day
-    expect(day(result, '2026-06-08').blocks[0].lane).toBe(1);
+    // Monday has only B, Tuesday only A → each day a SINGLE lane (the absent room
+    // reserves nothing — no dead column). Lane stability is not kept (the grid has no
+    // per-lane labels, so it has no visual value and would only add empty columns).
+    expect(day(result, '2026-06-08').lanes).toBe(1);
+    expect(day(result, '2026-06-08').blocks[0].lane).toBe(0);
+    expect(day(result, '2026-06-09').lanes).toBe(1);
     expect(day(result, '2026-06-09').blocks[0].lane).toBe(0);
-    expect(day(result, '2026-06-08').lanes).toBe(2);
   });
 
   it('a conflict within one resource opens an extra lane right after it', () => {
@@ -175,29 +229,39 @@ describe('group-by-selected-resource (Swing GroupAllocatablesStrategy)', () => {
     expect(day(result, '2026-06-08').lanes).toBe(1);
   });
 
-  it('a block matching no selected resource falls back to its own allocatable group', () => {
+  it('a block matching no selected resource falls back to its own allocatable group (others DO match)', () => {
     const other = { id: 'rX', name: 'Zzz Extern' };
     const result = lay(
-      [{ start: '2026-06-08T09:00:00', end: '2026-06-08T10:00:00', allocs: [other] }],
+      [
+        { start: '2026-06-08T09:00:00', end: '2026-06-08T10:00:00', allocs: [ROOM_A] },
+        { start: '2026-06-08T09:00:00', end: '2026-06-08T10:00:00', allocs: [other] },
+      ],
       scoped,
     );
     const d = day(result, '2026-06-08');
-    // Raum A, Raum B, then Zzz Extern (name-sorted) → lane 2
-    expect(d.lanes).toBe(3);
-    expect(d.blocks[0].lane).toBe(2);
+    // Raum A (has a block), then Zzz Extern (name-sorted) — Raum B is selected but has NO
+    // block this week, so it gets no phantom lane → 2 lanes, rX at lane 1.
+    expect(d.lanes).toBe(2);
+    const laneOf = (start: string, alloc: string) =>
+      d.blocks.find((b) => (b.row as Blk).allocs?.[0].id === alloc)?.lane;
+    expect(laneOf('2026-06-08T09:00:00', 'rX')).toBe(1);
   });
 
-  it('a block with no allocatables lands in a trailing group', () => {
+  it('a block with no allocatables lands in a trailing group (others DO match)', () => {
     const result = lay(
-      [{ start: '2026-06-08T09:00:00', end: '2026-06-08T10:00:00' }],
+      [
+        { start: '2026-06-08T09:00:00', end: '2026-06-08T10:00:00', allocs: [ROOM_A] },
+        { start: '2026-06-08T09:00:00', end: '2026-06-08T10:00:00' },
+      ],
       scoped,
     );
     const d = day(result, '2026-06-08');
-    expect(d.lanes).toBe(3);
-    expect(d.blocks[0].lane).toBe(2);
+    // Raum A + the no-allocatable trailing group; Raum B (empty) reserves no lane → 2.
+    expect(d.lanes).toBe(2);
+    expect(d.blocks.find((b) => !(b.row as Blk).allocs)?.lane).toBe(1);
   });
 
-  it('container-chip fallback: blocks matching no selected id group per ROOM, packing sequential lectures into one dense lane (Swing building-selection parity)', () => {
+  it('container chip (no block matches any selected id) → COMPACT dense packing (Swing: empty builder allocatables ⇒ compactColumns)', () => {
     const building: LaneOptions<Blk> = {
       selected: [{ id: 'building-1', name: 'Schloss 2' }], // container — no block carries it
       mode: 'fixed',
@@ -209,18 +273,74 @@ describe('group-by-selected-resource (Swing GroupAllocatablesStrategy)', () => {
     const lecturer2 = { id: 'p2', name: 'Gillig, Thomas' };
     const result = lay(
       [
-        // room A hosts two sequential lectures by DIFFERENT lecturers
         { start: '2026-06-08T09:00:00', end: '2026-06-08T10:30:00', allocs: [lecturer1, roomA] },
         { start: '2026-06-08T10:45:00', end: '2026-06-08T12:15:00', allocs: [lecturer2, roomA] },
-        // room B in parallel
         { start: '2026-06-08T09:00:00', end: '2026-06-08T10:30:00', allocs: [lecturer2, roomB] },
       ],
       building,
     );
     const d = day(result, '2026-06-08');
-    // building lane (empty) + room A lane (both lectures stacked) + room B lane
-    expect(d.lanes).toBe(3);
+    // greedy time packing: max overlap is 2 — NO reserved container lane,
+    // NO per-room/per-lecturer lanes; the 10:45 block stacks under a 09:00 one
+    expect(d.lanes).toBe(2);
     const laneOf = (start: string) => d.blocks.find((b) => (b.row as Blk).start === start)?.lane;
-    expect(laneOf('2026-06-08T09:00:00')).toBe(laneOf('2026-06-08T10:45:00')); // room A packs vertically
+    expect(laneOf('2026-06-08T10:45:00')).toBe(0);
+  });
+
+  it('server matchedBy is authoritative: a building groups ALL its rooms into ONE lane', () => {
+    // The dhbw case: a BUILDING is scoped; the server resolves belongsTo and stamps every
+    // block with matchedBy=[building]. The client can't derive this from row cells (blocks
+    // carry rooms/lecturers, not the building) — matchedBy[0] is the grouping key.
+    const building = { id: 'building-1', name: 'Schloss 2' };
+    const roomA = { id: 'roomA', name: 'S2/1160', isLocation: true };
+    const roomB = { id: 'roomB', name: 'S2/2190', isLocation: true };
+    const result = lay(
+      [
+        { start: '2026-06-08T09:00:00', end: '2026-06-08T10:30:00', allocs: [roomA], matchedBy: [building] },
+        { start: '2026-06-08T11:00:00', end: '2026-06-08T12:00:00', allocs: [roomB], matchedBy: [building] },
+      ],
+      { selected: [], mode: 'fixed', allocsOf: (r) => r.allocs ?? [], matchedByOf: (r) => r.matchedBy ?? [] },
+    );
+    const d = day(result, '2026-06-08');
+    // one group (the building), non-colliding → still one lane in fixed mode
+    expect(d.lanes).toBe(1);
+  });
+
+  it('matchedBy per-room: distinct provenance keeps a lane per matched room', () => {
+    const roomA = { id: 'roomA', name: 'Raum A' };
+    const roomB = { id: 'roomB', name: 'Raum B' };
+    const result = lay(
+      [
+        { start: '2026-06-08T09:00:00', end: '2026-06-08T10:00:00', allocs: [roomA], matchedBy: [roomA] },
+        { start: '2026-06-08T11:00:00', end: '2026-06-08T12:00:00', allocs: [roomB], matchedBy: [roomB] },
+      ],
+      { selected: [roomA, roomB], mode: 'fixed', allocsOf: (r) => r.allocs ?? [], matchedByOf: (r) => r.matchedBy ?? [] },
+    );
+    // two distinct matchedBy keys → two fixed lanes despite no time overlap
+    expect(day(result, '2026-06-08').lanes).toBe(2);
+  });
+
+  it('empty matchedBy everywhere → compact (Swing: admitted by a non-resource criterion)', () => {
+    const result = lay(
+      [
+        { start: '2026-06-08T09:00:00', end: '2026-06-08T10:00:00', matchedBy: [] },
+        { start: '2026-06-08T11:00:00', end: '2026-06-08T12:00:00', matchedBy: [] },
+      ],
+      { selected: [], mode: 'fixed', allocsOf: (r) => r.allocs ?? [], matchedByOf: (r) => r.matchedBy ?? [] },
+    );
+    expect(day(result, '2026-06-08').lanes).toBe(1);
+  });
+
+  it('a partial match keeps fixed grouping (selected room matched by some blocks)', () => {
+    const roomA = { id: 'roomA', name: 'Raum A', isLocation: true };
+    const result = lay(
+      [
+        { start: '2026-06-08T09:00:00', end: '2026-06-08T10:00:00', allocs: [roomA] },
+        { start: '2026-06-08T11:00:00', end: '2026-06-08T12:00:00', allocs: [{ id: 'rX', name: 'Zzz', isLocation: true }] },
+      ],
+      { selected: [roomA], mode: 'fixed', allocsOf: (r) => r.allocs ?? [] },
+    );
+    const d = day(result, '2026-06-08');
+    expect(d.lanes).toBe(2); // Raum A lane + Zzz fallback lane, despite no overlap
   });
 });

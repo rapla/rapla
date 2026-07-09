@@ -1161,6 +1161,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     protected void normalizeRedundantDeniesOnLoad(Collection<Entity> list)
     {
+        long start = System.nanoTime();
         int removed = 0, affected = 0;
         for (Entity entity : list)
         {
@@ -1170,10 +1171,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 if (n > 0) { removed += n; affected++; }
             }
         }
-        if (removed > 0)
-        {
-            LOGGER.info("Load-time permission normalization (ADR 0003): dropped {} redundant DENIED permission(s) from {} entit(ies)", removed, affected);
-        }
+        long tookMs = (System.nanoTime() - start) / 1_000_000;
+        LOGGER.info("Load-time permission normalization (ADR 0003): dropped {} redundant DENIED permission(s) from {} entit(ies) in {} ms (scanned {} entities)", removed, affected, tookMs, list.size());
     }
 
     protected Collection<Entity> migrateTemplates() throws RaplaException

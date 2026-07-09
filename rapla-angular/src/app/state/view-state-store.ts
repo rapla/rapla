@@ -39,11 +39,15 @@ export class ViewStateStore {
   /** Render modes supported by the active view — emitted by the server via
    *  {@code extensions.view.renderModes}. Drives which toggle buttons are shown. */
   private readonly _renderModes = signal<ViewRenderMode[]>(['table']);
+  /** Result summary of the active view ("68 Termine · 5 Tage") — published by the
+   *  view host after each load, shown right-aligned in the control strip. Ephemeral. */
+  private readonly _resultInfo = signal<string | null>(null);
 
   readonly renderMode = this._renderMode.asReadonly();
   readonly window = this._window.asReadonly();
   readonly activeView = this._activeView.asReadonly();
   readonly renderModes = this._renderModes.asReadonly();
+  readonly resultInfo = this._resultInfo.asReadonly();
 
   constructor() {
     bindPerUser(this.auth, () => {
@@ -81,5 +85,9 @@ export class ViewStateStore {
 
   setActiveView(key: string): void {
     this._activeView.set(key);
+  }
+
+  setResultInfo(info: string | null): void {
+    this._resultInfo.set(info);
   }
 }

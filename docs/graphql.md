@@ -1198,6 +1198,21 @@ Erläuterung:
   Innerhalb „Nicht-Personen" weiter über `isLocation` lanen (Raum/Ort vs. Sonstiges). `isPerson`/
   `isLocation` sind universelle Felder (PRD 080): `isPerson` == `type: PERSON`, `isLocation` == die
   DynamicType-Annotation `location=true` (derselbe Marker wie der iCal-Export).
+- **`matchedBy` — Lane-Gruppierung im Wochengrid (PRD 100 Phase 5, Server ab 2026-07-09):**
+  `matchedBy @hidden { id }` (KEIN Argument) liefert die *Match-Provenienz* — welche der
+  **gescopeten** Allocatables den Block zugelassen haben, als navigierbare `Allocatable`s. Der
+  Kandidaten-Pool ist der EIGENE aufgelöste Allocatable-Scope der Query (`allocatableIdsIn` /
+  `allocatableMatching`), nicht ein separates Argument — so kann `matchedBy` nie von dem Filter
+  abweichen, der den Block selektiert hat. Auflösung inkl. belongsTo (ein selektiertes **Gebäude**
+  matcht seine Raum-Blöcke, obwohl der Block den Raum, nicht das Gebäude, allokiert). Das Grid nimmt
+  `matchedBy[0]` als Lane-Schlüssel; leer ⇒ Query ungescopet ODER durch ein Nicht-Ressourcen-Kriterium
+  (Owner-/User-Chip) zugelassen ⇒ Compact-Fallback. Implementiert durch Wiederverwendung der
+  `AppointmentMapping`, die die Query ohnehin baut (keine zweite Storage-Abfrage) + gemeinsame
+  Java-Primitive mit dem Swing-Grouping (`AppointmentMapping.getMatchingAllocatables`). §12 fällt
+  raus: der Pool ist der canRead-gegatete Scope der Query, also erscheinen nur lesbare, bereits
+  gescopete Ressourcen. **Wichtig:** nicht zu verwechseln mit `allocatables(filter:)`, das die
+  EIGENEN reservierten Ressourcen des Blocks gegen ein *unabhängiges* Prädikat filtert (kein
+  belongsTo, nicht an den Query-Scope gebunden).
 - **`@join`** macht aus der Ressourcen-Liste eine Zelle (`", "`-getrennt); die Daten bleiben verschachtelt.
 - **AllocatableFilter an drei Stellen, alle derselbe Typ:** `$filter.allocatableMatching` (welche
   *Termine* erscheinen) und die zwei Lane-Filter (welche *Ressourcen pro Row*). Die GUI kann auf die

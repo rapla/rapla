@@ -5,6 +5,7 @@
 **Parent:** [PRD 035 (done) — Foundations](done/035-graphql-foundations.md) — supersedes the former §6 "Bulk mutations" per the 2026-05-28 design discussion. **Sibling:** [PRD 055 — Events Read API](055-graphql-events-read-api.md) (reopened 2026-05-29 for Tier-1 perf migration).
 
 **Related cross-PRDs:**
+- [PRD 094 — SPA main-view actions & popups](094-spa-main-view-actions-and-popups.md) — Phase 4 (calendar drag/resize move) is the consumer of the `moveAppointment` verb designed here; PRD 094 D5 locks that the EVENT/SERIE/SINGLE cascade stays server-side in this mutation, not in the client.
 - [PRD 040 — dispatch validate before lock](040-dispatch-validate-before-lock.md) — lock-set requirement for bulk operations
 - [PRD 057 (done) — DT Mutations v1](done/057-graphql-dt-mutations-v1.md) + [PRD 061 — DT Mutations v2](061-graphql-dt-mutations-v2.md) — schema-editor mutation surface
 - Future PRD — allocatables write (extends `applyChanges`)
@@ -422,6 +423,201 @@ WEEKLY stays WEEKLY, just N days offset. Exceptions shift too.
 date before its `start` → `INVALID_SHIFT` error per affected reservation;
 ATOMIC rejects the batch.
 
+### `moveAppointment(reservationId, appointmentId, occurrenceStart, dateShift, scope, …)` — added 2026-07-09
+
+> **⚠ SUPERSEDED same day by [PRD 101](101-transpose-anchors-move-copy-paste.md).**
+> The design dialog continued past this sketch: the scope enum, the `Duration` delta,
+> `keepTime`, and `reservationId` were all revised (typed `Anchor` input, scope-split
+> verbs, no-rebase exception doctrine). This section is kept only as the decision trail;
+> the current design state lives in PRD 101, and the final verbs will be rewritten here
+> in PRD 101 Phase 1. Do not implement from this section.
+
+**Post-v1 additive verb.** The scope-aware, single-reservation counterpart of
+`moveReservations`: it moves/resizes **one appointment** of a reservation with an
+explicit EVENT/SERIE/SINGLE scope, keeping the recurrence cascade server-side. It
+exists because the calendar drag/resize surface (PRD 094 Phase 4) must offer the
+same EVENT / SERIE / SINGLE choice Swing's `AppointmentResize.change()` does, and
+that split logic must **not** be reimplemented client-side (PRD 094 **D5**; grounded
+in `docs/architecture/reservation-edit.md` § "Drag / resize on the calendar").
+
+```graphql
+enum AppointmentEditScope {
+  EVENT    # move every appointment of the reservation (== moveReservations for one id)
+  SERIE    # move the whole repeating appointment (all occurrences), structure preserved
+  SINGLE   # move only the grabbed occurrence — split off + add an exception
+}
+
+extend type Mutation {
+  moveAppointment(
+    reservationId:       ID!
+    appointmentId:       ID!
+    occurrenceStart:     LocalDateTime!     # which occurrence was grabbed — identifies the block for SINGLE
+    dateShift:           Duration!          # ISO-8601; applied to the start (and end unless keepTime)
+    scope:               AppointmentEditScope!
+    keepTime:            Boolean = false    # true = shift the day only, preserve time-of-day (Swing keepTime)
+    newEnd:              LocalDateTime      # resize form — set the occurrence end instead of shifting start
+    expectedLastChanged: LocalDateTime      # optimistic concurrency, as on updateReservation
+  ): Reservation!
+}
+```
+
+Per-scope semantics (1:1 with `AppointmentResize.change()`):
+- **EVENT** — shift the start of *every* appointment of the reservation by
+  `dateShift`. Equivalent to `moveReservations(ids: [reservationId], dateShift)`;
+  offered here so the scope dialog has a single entry point.
+- **SERIE** — shift the whole repeating appointment identified by `appointmentId`
+  (every occurrence moves together; the repeating rule is preserved structurally,
+  its exceptions shift with it). This is the case `moveReservations` cannot express
+  — it can't target one appointment of a multi-appointment reservation.
+- **SINGLE** — **split**: clone the grabbed occurrence as a *new non-repeating*
+  appointment at `occurrenceStart + dateShift` (carrying that appointment's
+  per-appointment allocation restrictions) and add a **day-truncated exception**
+  for `occurrenceStart` to the original series. If the series becomes empty
+  (`isNotEmptyWithExceptions` false) the whole-appointment / whole-event cascade
+  from the Delete section applies.
+
+`keepTime` and `newEnd` are mutually the move-vs-resize forms of the one Swing
+`showDialog(block, "move", …)` path (resize passes a new end; move passes a shift);
+supplying `newEnd` makes the mutation a resize of the addressed occurrence under the
+same scope rules.
+
+Returns the updated `Reservation` (post-state, fresh `lastChanged`) so the PRD 094
+command layer can capture the inverse. §12: `canModify(reservation, user)`. Errors:
+`INVALID_SHIFT` (recurrence end < start after the move), `CONCURRENT_MODIFICATION`
+(`expectedLastChanged` mismatch), `PERMISSION_DENIED`. Note the SINGLE inverse is
+**not** self-inverting (a split can't be undone by a negated split) — the PRD 094
+command captures pre-split state and inverts via `updateReservation` (see PRD 094
+Phase 4).
+
+**Relationship to `moveReservations`:** `moveReservations` stays the bulk EVENT
+verb (shift many reservations wholesale, no scope choice); `moveAppointment` is the
+single-reservation, scope-aware verb the interactive calendar drag needs. Neither
+subsumes the other.
+
+#### Example calls
+
+Running scenario: reservation `res-3f2a9c11` ("Lineare Algebra") has one **weekly
+repeating** appointment `app-8b7d0e42`, Mondays 10:00–12:00, and a second one-off
+appointment `app-1c4f77a0` (the exam). The user grabbed the occurrence on Monday
+**2026-07-13** in the week grid.
+
+**1 — EVENT** (drag the block, choose *"Ganze Veranstaltung"*): shift **every**
+appointment of the reservation by +1 day. Both `app-8b7d0e42` (all its Mondays →
+Tuesdays) and `app-1c4f77a0` (the exam) move.
+
+```graphql
+mutation MoveWholeEvent {
+  moveAppointment(
+    reservationId:   "res-3f2a9c11"
+    appointmentId:   "app-8b7d0e42"
+    occurrenceStart: "2026-07-13T10:00:00"
+    dateShift:       "P1D"
+    scope:           EVENT
+  ) { id lastChanged }
+}
+```
+
+**2 — SERIE** (choose *"Serie"*): shift only appointment `app-8b7d0e42` — the whole
+weekly series moves an hour earlier; the exam `app-1c4f77a0` is untouched. The
+repeating rule stays WEEKLY; existing exceptions shift with it.
+
+```graphql
+mutation MoveWholeSeries {
+  moveAppointment(
+    reservationId:   "res-3f2a9c11"
+    appointmentId:   "app-8b7d0e42"
+    occurrenceStart: "2026-07-13T10:00:00"
+    dateShift:       "PT-1H"            # every Monday is now 09:00–11:00
+    scope:           SERIE
+  ) { id lastChanged }
+}
+```
+
+**3 — SINGLE** (choose *"nur dieser Termin"*): **split** — the Monday 2026-07-13
+occurrence moves to Tuesday; the series keeps all *other* Mondays and gains a
+`2026-07-13` exception, and a new **non-repeating** appointment is created at the
+new time (carrying that appointment's per-appointment restrictions).
+
+```graphql
+mutation MoveOneOccurrence {
+  moveAppointment(
+    reservationId:   "res-3f2a9c11"
+    appointmentId:   "app-8b7d0e42"
+    occurrenceStart: "2026-07-13T10:00:00"   # this Monday only
+    dateShift:       "P1D"                    # -> Tuesday 2026-07-14 10:00–12:00
+    scope:           SINGLE
+  ) {
+    id
+    appointments {
+      id start end
+      repeating { type exceptions }          # original series now excludes 2026-07-13
+    }
+  }
+}
+```
+
+**4 — day-only move, keep time** (drop onto a different day column; `keepTime`
+preserves the time-of-day so a DST-crossing or day-granular drop never drifts the
+clock): move the whole event two days forward, keeping 10:00–12:00.
+
+```graphql
+mutation MoveKeepingTime {
+  moveAppointment(
+    reservationId:   "res-3f2a9c11"
+    appointmentId:   "app-8b7d0e42"
+    occurrenceStart: "2026-07-13T10:00:00"
+    dateShift:       "P2D"
+    scope:           EVENT
+    keepTime:        true
+  ) { id }
+}
+```
+
+**5 — resize** (drag the block's bottom edge): extend the grabbed occurrence's end
+by 30 min. `dateShift` leaves the start put; `newEnd` sets the new end, and the
++30 min delta is applied per `scope` — here `SERIE`, so every Monday becomes
+10:00–12:30.
+
+```graphql
+mutation ResizeSeriesEnd {
+  moveAppointment(
+    reservationId:   "res-3f2a9c11"
+    appointmentId:   "app-8b7d0e42"
+    occurrenceStart: "2026-07-13T10:00:00"
+    dateShift:       "PT0S"                  # start unchanged
+    newEnd:          "2026-07-13T12:30:00"
+    scope:           SERIE
+  ) { id }
+}
+```
+
+**6 — concurrency-checked move** (the PRD 094 command inverse captures
+`expectedLastChanged` so a foreign edit between the move and its undo fails loudly
+instead of silently overwriting):
+
+```graphql
+mutation MoveWithVersionCheck {
+  moveAppointment(
+    reservationId:       "res-3f2a9c11"
+    appointmentId:       "app-8b7d0e42"
+    occurrenceStart:     "2026-07-13T10:00:00"
+    dateShift:           "P1D"
+    scope:               EVENT
+    expectedLastChanged: "2026-07-09T14:22:31"
+  ) { id lastChanged }
+}
+```
+
+On a stale `expectedLastChanged` the server returns
+`ValidationError { code: "CONCURRENT_MODIFICATION", extensions: { currentLastChanged } }`
+(§7 / error taxonomy), never a silent overwrite.
+
+**Undo note.** EVENT / SERIE / keepTime / resize moves invert by re-issuing
+`moveAppointment` with the negated `dateShift` (or the prior `newEnd`) and the same
+scope. A **SINGLE** move is *not* self-inverting (a split can't be undone by a
+negated split) — the PRD 094 command captures the pre-split reservation state and
+inverts via `updateReservation` (see PRD 094 Phase 4).
+
 ### `copyReservations(ids, dateShift)`
 
 Duplicates with new server-generated UUIDs — reservation **and** appointments
@@ -750,6 +946,24 @@ surface for what the batch-aware applyChanges already handles.
 ATOMIC locked. PARTIAL deferred. No more open questions on mode.
 
 ## Decision log
+
+- **2026-07-09 (later) — the `moveAppointment` sketch below is superseded by PRD 101**
+  (transpose & anchors): the design dialog moved to a typed `Anchor` input
+  (day/dateTime `@oneOf` replacing `keepTime`/`Duration`), scope-split verbs
+  (`moveAppointment`/`splitOccurrence`, EVENT via `moveReservations`), and the
+  no-rebase exception doctrine. PRD 101 holds the research findings + decisions; its
+  Phase 1 rewrites this PRD's verb notes to the final shape.
+- **2026-07-09 — `moveAppointment` verb designed (post-v1 additive; not yet
+  implemented).** A scope-aware single-reservation move/resize
+  (`AppointmentEditScope = EVENT | SERIE | SINGLE`) that keeps the recurrence
+  cascade — whole-event shift / whole-series shift / SINGLE-occurrence split +
+  `addException` — server-side, mirroring Swing `AppointmentResize.change()`. Driven
+  by PRD 094 Phase 4 (calendar drag/resize): the SPA owns only the scope dialog +
+  command inverse, the split logic lives in Java (PRD 094 D5, maintainer directive
+  "the actual logic should happen in the mutation graphql"). Distinct from
+  `moveReservations` (bulk, EVENT-only, no scope). Schema + semantics in the
+  "Verb-level semantic notes" section. Implementation is test-first tier-3 per PRD
+  094 Phase 4.
 
 - **2026-07-06 — `checkIdIntegrity` check #1 landed (create-intent two-carrier).**
   As locked: transient `SimpleEntity.isNew` (set in the `FacadeImpl.setNew`

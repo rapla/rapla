@@ -440,10 +440,14 @@ import java.time.LocalDateTime;
     {
         super.disconnect();
 
-        // HSQLDB Special
+        // HSQLDB Special: cleanly close the embedded database so it flushes and marks
+        // itself not-modified (avoids a .log replay / recovery pass on next boot).
+        // Plain SHUTDOWN, NOT SHUTDOWN COMPACT — with CACHED tables COMPACT rewrites the
+        // entire .data file (tens of seconds on a large DB) on every stop, which the
+        // graceful-shutdown window truncates. Defrag is a separate, occasional concern.
         if (hsqldb)
         {
-            String sql = "SHUTDOWN COMPACT";
+            String sql = "SHUTDOWN";
             try
             {
                 LOGGER.info("Disconnecting: {}", getConnectionName());
@@ -459,6 +463,112 @@ import java.time.LocalDateTime;
         }
     }
 
+    private static final double DEFAULT_DEFRAG_THRESHOLD = 0.25;
+
+    /**
+     * Whether the .data file is fragmented enough to warrant a (blocking) defrag.
+     * {@code threshold <= 0} disables; otherwise defrag when lost/used exceeds the ratio.
+     */
+    static boolean shouldDefrag(long lostBytes, long usedBytes, double threshold)
+    {
+        if (threshold <= 0 || usedBytes <= 0 || lostBytes <= 0)
+        {
+            return false;
+        }
+        return (double) lostBytes / (double) usedBytes > threshold;
+    }
+
+    /**
+     * At startup, BEFORE the web port opens (this runs during bean init, well before Tomcat
+     * accepts connections), reclaim dead space in the HSQLDB {@code .data} file if it has
+     * grown too fragmented. {@code CHECKPOINT DEFRAG} rewrites the whole {@code .data} file
+     * and locks the database for the duration (tens of seconds on a large store), so it is
+     * gated on {@code FILE_LOST_BYTES} — HSQLDB's own persisted tally of unreclaimable dead
+     * space — exceeding {@link #defragThreshold()} of the used file. It therefore runs only
+     * when genuinely needed, never on a healthy DB, and never mid-service. Runtime
+     * auto-defrag is disabled ({@code SET FILES DEFRAG 0}) so the lock can never land while
+     * serving. HSQLDB file databases are single-process (the {@code .lck} prevents a second
+     * opener), so no cross-pod coordination is needed — multi-pod deployments use a real
+     * DB server where {@code hsqldb} is false and this never runs. A no-op for in-memory
+     * (mem:) databases; failures must not break connect.
+     */
+    private void maybeCompactHsqldb(Connection c)
+    {
+        try (Statement st = c.createStatement())
+        {
+            st.execute("SET FILES DEFRAG 0");
+        }
+        catch (SQLException ex)
+        {
+            LOGGER.warn("Could not disable HSQLDB runtime auto-defrag (SET FILES DEFRAG 0)", ex);
+        }
+        final double threshold = defragThreshold();
+        if (threshold <= 0)
+        {
+            return;
+        }
+        long lost, used;
+        try (Statement st = c.createStatement();
+             java.sql.ResultSet rs = st.executeQuery(
+                     "SELECT FILE_LOST_BYTES, FILE_FREE_POS FROM INFORMATION_SCHEMA.SYSTEM_CACHEINFO"))
+        {
+            if (!rs.next())
+            {
+                return;
+            }
+            lost = rs.getLong(1);
+            used = rs.getLong(2);
+        }
+        catch (SQLException ex)
+        {
+            // mem: databases have no .data file / cache info — nothing to compact.
+            LOGGER.debug("HSQLDB cache info unavailable; skipping startup defrag check", ex);
+            return;
+        }
+        if (!shouldDefrag(lost, used, threshold))
+        {
+            LOGGER.info("HSQLDB startup defrag skipped: lost {} bytes of {} used ({}% < {}% threshold)",
+                    lost, used, pct(lost, used), Math.round(threshold * 100));
+            return;
+        }
+        LOGGER.info("HSQLDB startup defrag: reclaiming {} lost bytes of {} used ({}% >= {}% threshold) — "
+                        + "locks the DB briefly and runs before the port opens",
+                lost, used, pct(lost, used), Math.round(threshold * 100));
+        final long start = System.nanoTime();
+        try (Statement st = c.createStatement())
+        {
+            st.execute("CHECKPOINT DEFRAG");
+        }
+        catch (SQLException ex)
+        {
+            LOGGER.warn("HSQLDB startup CHECKPOINT DEFRAG failed", ex);
+            return;
+        }
+        LOGGER.info("HSQLDB startup defrag complete in {} ms", (System.nanoTime() - start) / 1_000_000);
+    }
+
+    private static double defragThreshold()
+    {
+        final String prop = System.getProperty("rapla.hsqldb.defragThreshold");
+        if (prop != null)
+        {
+            try
+            {
+                return Double.parseDouble(prop.trim());
+            }
+            catch (NumberFormatException ex)
+            {
+                LOGGER.warn("Invalid rapla.hsqldb.defragThreshold '{}', using default {}", prop, DEFAULT_DEFRAG_THRESHOLD);
+            }
+        }
+        return DEFAULT_DEFRAG_THRESHOLD;
+    }
+
+    private static long pct(long lost, long used)
+    {
+        return used > 0 ? Math.round(100.0 * lost / used) : 0;
+    }
+
     public final void loadData() throws RaplaException
     {
         //clearAllHistory();
@@ -470,12 +580,20 @@ import java.time.LocalDateTime;
         {
             c = createConnection();
             connectionName = c.getMetaData().getURL();
-            LOGGER.info("Using datasource {}: {}", c.getMetaData().getDatabaseProductName(), connectionName);
+            final String productName = c.getMetaData().getDatabaseProductName();
+            LOGGER.info("Using datasource {}: {}", productName, connectionName);
+            // Drives the SHUTDOWN branch in disconnect(); without this the field stays
+            // false and HSQLDB is never cleanly closed on shutdown.
+            hsqldb = productName != null && productName.toLowerCase(java.util.Locale.ENGLISH).contains("hsql");
             if (upgradeDatabase(c))
             {
                 close(c);
                 c = null;
                 c = createConnection();
+            }
+            if (hsqldb)
+            {
+                maybeCompactHsqldb(c);
             }
             cache.clearAll();
             addInternalTypes(cache);

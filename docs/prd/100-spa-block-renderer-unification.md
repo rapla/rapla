@@ -143,6 +143,58 @@ SavedView options vs user preferences).
 - [ ] Rows-per-hour drives hour height (zoom) and persists (OQ1).
 - [ ] Worktime + excludeDays options; auto-fit stays as fallback.
 
+### Phase 5 — server-computed lane matching (OQ4 resolution; SYNC-BY-SEAM)
+The algorithm splits at the Swing seam: **matching = Java** (single source of
+truth, reusing the binding/belongsTo logic the CalendarModel uses), **grouping
+pipeline = the faithful TS port** (already line-for-line + spec-pinned).
+
+Conceptual frame: the field is **match PROVENANCE** — the scope filter decides
+THAT a block is in the result; `matchedBy` records WHY, i.e. which SCOPED
+allocatable admitted it (belongsTo-resolved: a lecture in a room is admitted by
+the selected BUILDING, so `matchedBy` = `[building]`, not the room the block
+allocates). **Name: `matchedBy`** (provenance vocabulary; `boundTo` was Swing's
+internal binding term). Empty `matchedBy` ⇒ the query was unscoped OR the block
+was admitted by a non-resource criterion (owner/user chip) ⇒ compact fallback.
+Reuse beyond lanes: "why is this shown" debugging, chip-tinted highlighting.
+
+**Landed 2026-07-09 (server side).** The "same code" is literal: the binding test
+was lifted into `AppointmentMapping.getMatchingAllocatables(appointment,
+candidates)` (rapla-core, `org.rapla.entities.domain`) — the SINGLE primitive both
+Swing's `RaplaBuilder.RaplaBlockContext.addAllocatables` and the GraphQL resolver
+call. Sync-by-seam is a compile-time fact, not a discipline.
+
+**No argument — the candidate pool is the query's OWN resolved scope** (decision
+2026-07-09, D7 below): `matchedBy` takes no `ids`. `reservations()` already
+resolves the filter's `allocatableIdsIn`/`allocatableMatching` to a §12-gated
+`AppointmentMapping` (its per-allocatable appointment sets ARE the belongsTo
+bindings); it stashes that mapping in the request context ONLY when the query is
+explicitly allocatable-scoped, and the resolver reads it — no second query, no
+firehose when unscoped. This structurally guarantees the **filter-consistency
+invariant** (`matchedBy` can't diverge from the filter that selected the block,
+because it IS that filter's resolved scope) and §12 (the pool = the query's
+canRead-gated allocatables, so only readable, already-scoped resources surface).
+
+- [x] Schema: `AppointmentBlock.matchedBy: [Allocatable!]!` — no arg; navigable
+      Allocatables (the builtin view selects only `{ id }` — lanes have no
+      visible label, so no name). Reused the `AppointmentMapping` the query builds.
+- [x] Resolver: `APPOINTMENT_BLOCK_MATCHED_BY` reads the context-stashed scoped
+      mapping (`MATCHED_BY_SCOPE_KEY`) and returns
+      `mapping.getMatchingAllocatables(appointment, null)`; no mapping ⇒ `[]`.
+      `reservations()` stashes the mapping iff `hasIdsIn || hasMatching`.
+- [x] Builtin view: `matchedBy @hidden { id }` (no `$scopeIds` variable —
+      the pool comes from the same `$filter` that scopes the query).
+- [x] Client (2026-07-09): grouping key = `matchedBy[0] ?? location-fallback`;
+      compact iff no block has a non-empty `matchedBy` (exactly Swing's
+      `builder.getAllocatables().isEmpty()` switch) — the earlier heuristics
+      became the no-server-data fallback for custom views. `week-lanes.ts`
+      `groupBySelected`/`layoutWeek` take a `matchedByOf`; `week-grid.component`
+      reads `row.matchedBy`. No variable-binder change (no arg to bind).
+      Tier-5 specs in `week-lanes.spec.ts`.
+- [ ] **Cross-language contract fixtures**: one checked-in JSON set
+      (blocks + selection → expected lane assignment) consumed by BOTH a Java
+      test over `AbstractGroupStrategy` and the Vitest suite over
+      `week-lanes.ts` — either codebase drifting goes red on the other.
+
 ### Phase 4 — polish
 - [x] Minimum lane width + horizontal scroll (2026-07-09, Swing
       `SwingWeekView.updateSize`/`minBlockWidth` parity): lanes floor at 80 px
@@ -166,15 +218,18 @@ probe on the dhbw dataset.
 
 - **OQ4** — container scope chips (building/category): the server expands them
   for the QUERY, but no block carries the chip id, so client-side lane grouping
-  can't match them. Interim (2026-07-09, shipped): the fallback lane key prefers
-  the block's **location** (`isLocation` ref) — reproduces Swing's dense
-  per-room columns for a building selection (verified vs the Swing screenshot,
-  12→9 lanes, sequential lectures stack per room). Residue: the container chip
-  still reserves one permanently-empty fixed lane, and non-room containers
-  (groups, categories of persons) fall back the same way. Proper fix: resolve
-  chip → member allocatable ids (server support, e.g. an `allocatables(filter:
-  {accessibleBy…})` id query at scope time) and feed the members into
-  `selected`. *Resolution:* pending.
+  can't match them. Interim heuristics shipped 2026-07-09: fallback lane key
+  prefers the block's **location** ref; compact when NO block matches any chip
+  id (proxy for Swing's empty-allocatables switch; empty week keeps fixed).
+  *Resolution:* 2026-07-09 — **server-computed matching** (design locked, see
+  Phase 5). Ground truth found in `RaplaBuilder.RaplaBlockContext.addAllocatables`
+  (`RaplaBuilder.java:763`): Swing/HTML matching is NOT id intersection — a
+  block matches a selected allocatable iff the **query-layer bindings**
+  (`bindings.getAppointments(alloc)`) contain its appointment, which resolves
+  belongsTo hierarchies. A building selection therefore groups ALL its blocks
+  under the building itself (ONE group → resolveConflicts → the dense greedy
+  columns of the Swing/HTML screenshots). Unreplicable client-side by design —
+  the matching fact must come from the server.
 
 - **OQ1** — persistence home for rows-per-hour/worktime/excludeDays: PRD 077
   SavedView options (per saved calendar, Swing-`CalendarModelConfiguration`-like) vs
@@ -243,3 +298,26 @@ Swing keeps the selection standing and creates via context menu; the SPA opens t
 prefilled event sheet on release (PRD 095 3a "editor öffnet vorbefüllt", reaffirmed
 for the week grid 2026-07-08). Context actions on a standing selection are PRD 094
 territory and can layer on later without changing the default.
+
+**D7 — `matchedBy` takes NO argument; its candidate pool is the query's own
+resolved allocatable scope.** (2026-07-09.) An earlier draft had
+`matchedBy(ids: [ID!]!)` with the client re-sending its scope chips via a
+`$scopeIds` variable. Rejected in favour of no argument, deriving the pool from the
+same `$filter` (`allocatableIdsIn`/`allocatableMatching`) that already scoped the
+query. Rationale:
+- **Can't diverge.** `AppointmentBlock.allocatables(filter:)` takes an *independent*
+  filter (the builtin view uses `isPersonEq` lane filters) — reusing it, or a
+  client-sent `$scopeIds`, could attribute against a *different* set than the one
+  that selected the block. Deriving from the query filter makes divergence
+  impossible.
+- **belongsTo is a query-scope concept, not a block-resource one.** `matchedBy`
+  must return the *scoped* allocatable (the building) that admitted the block via
+  belongsTo — the block only *owns* the room, so no per-block field
+  (`allocatables(filter:)`) can produce it. It lives on the query's
+  `AppointmentMapping`, which the resolver reuses (no second query).
+- **No client plumbing, structural §12.** The pool is the query's canRead-gated
+  scope set; unscoped query ⇒ no mapping ⇒ empty ⇒ compact (Swing's
+  empty-selection fallback). The variable-binder needs no `[ID!]` filler.
+Alternative kept in mind: an *optional* `ids` arg for callers wanting provenance
+against an arbitrary set (highlighting, counts) — deferred (YAGNI) until a consumer
+needs it.

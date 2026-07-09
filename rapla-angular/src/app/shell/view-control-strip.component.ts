@@ -148,6 +148,10 @@ export function todayWindow(current: { from: string; to: string }, now: Date): {
           </mat-form-field>
         </div>
       }
+      <!-- Result summary of the active view ("68 Termine"), published by the view host. -->
+      @if (viewState.resultInfo(); as info) {
+        <span class="result-info">{{ info }}</span>
+      }
     </div>
   `,
   styles: [
@@ -209,6 +213,12 @@ export function todayWindow(current: { from: string; to: string }, now: Date): {
         width: 10rem;
         font-size: 0.78rem;
       }
+      .result-info {
+        margin-left: auto;
+        font-size: 0.78rem;
+        color: rgba(0, 0, 0, 0.55);
+        white-space: nowrap;
+      }
     `,
   ],
 })
@@ -217,6 +227,7 @@ export class ViewControlStripComponent {
 
   private static readonly LABELS: Record<string, string> = {
     table: 'Tabelle',
+    grouped: 'Gruppiert',
     week: 'Woche',
     month: 'Monat',
     day: 'Tag',
@@ -228,12 +239,18 @@ export class ViewControlStripComponent {
   }
 
   /** WEEK-RANGE layout (navigation + read-only range) when the active mode is the
-   *  time-grid 'week' or the grouped 'day' list (PRD 077 mode shuffle) and the
-   *  server offers it; otherwise TABLE layout (editable from/to, no nav). */
+   *  time-grid 'week' or the 'grouped' section list (a week's appointments grouped by
+   *  the group column, navigated by week) and the server offers it; otherwise TABLE
+   *  layout (editable from/to, no nav). */
   protected readonly isWeek = computed(() => {
     const m = this.viewState.renderMode();
-    return (m === 'week' || m === 'day') && this.viewState.renderModes().includes(m);
+    return (m === 'week' || m === 'grouped' || m === 'day') && this.viewState.renderModes().includes(m);
   });
+
+  /** DAY grid — navigates by a single day (week/grouped step by a week). */
+  protected readonly isDay = computed(
+    () => this.viewState.renderMode() === 'day' && this.viewState.renderModes().includes('day'),
+  );
 
   /** MONTH layout (◀ Monat Jahr ▶ Heute) when the active mode is 'month' and the server offers it. */
   protected readonly isMonth = computed(
@@ -275,12 +292,12 @@ export class ViewControlStripComponent {
 
   prev(): void {
     if (this.isMonth()) this.shiftMonths(-1);
-    else this.shift(-7);
+    else this.shift(this.isDay() ? -1 : -7);
   }
 
   next(): void {
     if (this.isMonth()) this.shiftMonths(1);
-    else this.shift(7);
+    else this.shift(this.isDay() ? 1 : 7);
   }
 
   today(): void {

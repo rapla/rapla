@@ -62,6 +62,19 @@ import java.time.LocalDateTime;
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
 public class ReservationControllerImpl implements ReservationController {
+
+    /**
+     * Start for a single-occurrence copy: keep the appointment's own day AND time-of-day
+     * (the paste step supplies the destination date). Bug history: this read
+     * {@code DateTools.toTime(cutDate(start))}, and toTime of a midnight value is always 0,
+     * so the clone landed at 00:00. Pinned by SingleCopyStartTest.
+     */
+    static LocalDateTime singleCopyStart(LocalDateTime appointmentStart) {
+        LocalDateTime date = DateTools.cutDate(appointmentStart);
+        TimeWithoutTimezone time = DateTools.toTime(appointmentStart);
+        return date.plus(java.time.Duration.ofMillis(time.getMilliseconds()));
+    }
+
     private static final Logger LOGGER = LoggerFactory.getLogger(ReservationControllerImpl.class);
     /**
      * We store all open ReservationEditWindows with their reservationId
@@ -635,10 +648,7 @@ public class ReservationControllerImpl implements ReservationController {
                 ready = getFacade().cloneAsync(appointment).thenAccept( copy->
                 {
                     copy.setRepeatingEnabled(false);
-                    LocalDateTime date = DateTools.cutDate(copy.getStart());
-                    TimeWithoutTimezone time = DateTools.toTime(date);
-                    LocalDateTime newStart = date.plus(java.time.Duration.ofMillis(time.getMilliseconds()));
-                    copy.moveTo(newStart);
+                    copy.moveTo(singleCopyStart(copy.getStart()));
                     RaplaClipboard.CopyType copyType = deleteOriginal ? CopyType.CUT_BLOCK : CopyType.COPY_BLOCK;
                     raplaClipboard.setAppointment(copy, sourceReservation, copyType, restrictedAllocatables, contextAllocatables);
                 });

@@ -45,3 +45,34 @@
   min-height: 0;
   overflow: auto;
 }
+
+/* Print: only the main pane (the routed view) prints — toolbar, sidenav, chip
+   rail and control strip are screen chrome. The view host's print-only heading
+   ("Termine (68 Termine)") carries title + count instead. */
+@media print {
+  app-toolbar,
+  .nav,
+  app-chip-rail,
+  app-view-control-strip {
+    display: none !important;
+  }
+  /* Material pushes the content by the drawer width via an inline style —
+     !important in a stylesheet outranks inline styles. Material's own
+     .mat-drawer-container/.mat-drawer-content styles clip + scroll; on paper
+     they must let the content flow so the browser can paginate it. */
+  mat-sidenav-container,
+  mat-sidenav-content {
+    overflow: visible !important;
+  }
+  mat-sidenav-content {
+    margin-left: 0 !important;
+  }
+  /* Un-cage the viewport-height scrollers so the full content flows onto pages. */
+  .shell,
+  .content-col {
+    height: auto;
+  }
+  .view-host {
+    overflow: visible;
+  }
+}

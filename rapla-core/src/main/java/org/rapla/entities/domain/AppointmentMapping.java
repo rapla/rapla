@@ -90,6 +90,26 @@ public class AppointmentMapping {
         return appointmentMap.get( entity );
     }
 
+    /**
+     * Match provenance: the allocatables (restricted to {@code candidates}, or ALL
+     * mapped allocatables when {@code candidates} is null) whose belongsTo-resolved
+     * binding set contains {@code appointment}. This is the SINGLE primitive behind
+     * both Swing's {@code RaplaBuilder.RaplaBlockContext} selected-match grouping and
+     * the GraphQL {@code AppointmentBlock.matchedBy} field, so client and server agree
+     * on WHY a block is in scope. Result order follows the candidate iteration order.
+     */
+    public List<Allocatable> getMatchingAllocatables(Appointment appointment, Collection<Allocatable> candidates) {
+        Collection<Allocatable> pool = candidates != null ? candidates : allocatables;
+        List<Allocatable> out = new ArrayList<>();
+        for (Allocatable alloc : pool) {
+            Collection<Appointment> appts = appointmentMap.get( alloc );
+            if (appts != null && appts.contains( appointment )) {
+                out.add( alloc );
+            }
+        }
+        return out;
+    }
+
     public int size() {
         return appointmentMap.size();
     }

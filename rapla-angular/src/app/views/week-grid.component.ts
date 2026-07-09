@@ -1,7 +1,24 @@
-import { Component, computed, input, output, signal } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  ElementRef,
+  afterNextRender,
+  computed,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 
 import { CHIP_BASE_CSS, chipColor, chipName, chipTime, isMovableRow } from './block-style';
-import { layoutWeek, weekDays, type DayBlock, type DayLayout, type NamedRef } from './week-lanes';
+import {
+  layoutWeek,
+  printMode,
+  weekDays,
+  type DayBlock,
+  type DayLayout,
+  type NamedRef,
+} from './week-lanes';
 
 type Row = Record<string, unknown>;
 type DayBlockView = DayBlock<Row>;
@@ -12,6 +29,10 @@ const DAY_MIN_MAX = 24 * 60;
  *  at minBlockWidth and lets the calendar scroll horizontally instead of
  *  squeezing lanes into the viewport). */
 const MIN_LANE_PX = 80;
+/** A slice of empty column kept to the RIGHT of the lanes so there is always free
+ *  grid space to start a new time selection (Swing leaves an empty strip too),
+ *  even on a fully-packed day. Blocks pack into `100% - SELECT_GUTTER_PX`. */
+const SELECT_GUTTER_PX = 16;
 
 /** Calendar days from {@code a} to {@code b} ('YYYY-MM-DD'), negative when b < a. */
 function daysBetween(a: string, b: string): number {
@@ -31,13 +52,32 @@ function localToday(): string {
  *  No refs → the block lands in the trailing no-allocatable lane (fail-closed). */
 function rowAllocRefs(row: Row): NamedRef[] {
   const refs: NamedRef[] = [];
-  for (const value of Object.values(row)) {
-    if (!Array.isArray(value)) continue;
+  for (const [k, value] of Object.entries(row)) {
+    if (k === 'matchedBy' || !Array.isArray(value)) continue; // matchedBy is provenance, not a lane source
     for (const item of value) {
       const o = item as Record<string, unknown> | null;
       if (o && typeof o['id'] === 'string' && typeof o['name'] === 'string') {
         refs.push({ id: o['id'], name: o['name'], isLocation: o['isLocation'] === true });
       }
+    }
+  }
+  return refs;
+}
+
+/** The server-computed match provenance for the block (`AppointmentBlock.matchedBy`,
+ *  PRD 100 Phase 5): the SELECTED allocatable(s) that admitted it. The authoritative
+ *  lane key — a room's block carries the selected BUILDING here, which row cells can't
+ *  show. Absent (custom view without the field) ⇒ empty ⇒ heuristic fallback. */
+function rowMatchedRefs(row: Row): NamedRef[] {
+  const value = row['matchedBy'];
+  if (!Array.isArray(value)) return [];
+  const refs: NamedRef[] = [];
+  for (const item of value) {
+    const o = item as Record<string, unknown> | null;
+    // name is optional — the builtin view selects only { id } (lanes have no visible
+    // label); fall back to the id so the group sort key stays stable.
+    if (o && typeof o['id'] === 'string') {
+      refs.push({ id: o['id'], name: typeof o['name'] === 'string' ? o['name'] : o['id'] });
     }
   }
   return refs;
@@ -52,9 +92,16 @@ function rowAllocRefs(row: Row): NamedRef[] {
  */
 @Component({
   selector: 'app-week-grid',
+  host: { '[class.print-stacked]': 'printStacked()' },
   template: `
-    <div class="wg">
-      <div class="hdr" [style.gridTemplateColumns]="gridCols()">
+    <div
+      class="wg"
+      [style.maxHeight.px]="maxHeight()"
+      [style.--wg-hpx]="hourPx() + 'px'"
+      [style.--wg-cols]="gridCols()"
+      [style.--wg-print-cols]="printCols()"
+    >
+      <div class="hdr">
         <div class="gutter">
           <select
             class="raster"
@@ -74,34 +121,40 @@ function rowAllocRefs(row: Row): NamedRef[] {
           </div>
         }
       </div>
-      <div class="body" [style.gridTemplateColumns]="gridCols()">
-        <div class="gutter times" [style.height.px]="bodyHeight()">
+      <div class="body">
+        <div class="gutter times" [style.height]="bodyHeight()">
           @for (h of hours(); track h) {
-            <span class="hlabel" [style.top.px]="hourTop(h)">{{ h }}:00</span>
+            <span class="hlabel" [style.top]="hourTop(h)">{{ h }}:00</span>
           }
         </div>
         @for (d of layout().days; track d.day) {
           <div
             class="daycol"
             [class.today]="d.day === today"
-            [style.height.px]="bodyHeight()"
+            [style.height]="bodyHeight()"
             [attr.data-day]="d.day"
             (pointerdown)="armCreate($event, d.day)"
           >
+            <!-- print-stacked only: each day carries its own label + hour axis -->
+            <div class="pday">{{ dowOf(d.day) }} {{ dayNum(d.day) }}</div>
             @for (h of hours(); track h) {
-              <div class="hline" [style.top.px]="hourTop(h)"></div>
-              @for (sub of subSlots(); track sub) {
-                <div class="subline" [style.top.px]="hourTop(h) + sub"></div>
+              <span class="phlabel" [style.top]="hourTop(h)">{{ h }}:00</span>
+              <div class="hline" [style.top]="hourTop(h)"></div>
+              <!-- no sub-slots after the last hour line — they'd overflow the axis -->
+              @if (h < layout().endHour) {
+                @for (sub of subSlots(); track sub) {
+                  <div class="subline" [style.top]="hourTop(h, sub)"></div>
+                }
               }
             }
             @if (d.day === today) {
-              <div class="now" [style.top.px]="nowTop()"></div>
+              <div class="now" [style.top]="nowTop()"></div>
             }
             @if (selSegment(d.day); as seg) {
               <div
                 class="createsel"
-                [style.top.px]="blockTop(seg.startMin)"
-                [style.height.px]="blockHeight(seg.startMin, seg.endMin)"
+                [style.top]="blockTop(seg.startMin)"
+                [style.height]="blockHeight(seg.startMin, seg.endMin)"
               >
                 {{ seg.label }}
               </div>
@@ -113,8 +166,8 @@ function rowAllocRefs(row: Row): NamedRef[] {
                   class="chip ghost"
                   [class.neutral]="!color(mp.row)"
                   [style.background]="color(mp.row)"
-                  [style.top.px]="blockTop(mp.startMin)"
-                  [style.height.px]="blockHeight(mp.startMin, mp.endMin)"
+                  [style.top]="blockTop(mp.startMin)"
+                  [style.height]="blockHeight(mp.startMin, mp.endMin)"
                 >
                   <span class="t">{{ selLabelOf(mp.startMin, mp.endMin) }}</span>
                   <span class="n">{{ nameOf(mp.row) }}</span>
@@ -130,10 +183,10 @@ function rowAllocRefs(row: Row): NamedRef[] {
                 [class.movable]="movable(b)"
                 [class.dragsource]="movePreview()?.row === b.row"
                 [style.background]="color(b.row)"
-                [style.top.px]="blockTop(b.startMin)"
-                [style.height.px]="blockHeight(b.startMin, b.endMin)"
-                [style.left]="'calc(' + b.lane + '/' + d.lanes + '*100% + 1px)'"
-                [style.width]="'calc(' + 1 + '/' + d.lanes + '*100% - 3px)'"
+                [style.top]="blockTop(b.startMin)"
+                [style.height]="blockHeight(b.startMin, b.endMin)"
+                [style.left]="chipLeft(b.lane, d.lanes)"
+                [style.width]="chipWidth(d.lanes)"
                 (dblclick)="openRow.emit(b.row)"
                 (keydown.enter)="openRow.emit(b.row)"
                 (contextmenu)="onChipMenu($event, b.row)"
@@ -158,11 +211,67 @@ function rowAllocRefs(row: Row): NamedRef[] {
         border: 1px solid rgba(0, 0, 0, 0.12);
         background: #fff;
         overflow: auto;
-        max-height: calc(100vh - 200px);
       }
       .hdr,
       .body {
         display: grid;
+        grid-template-columns: var(--wg-cols);
+      }
+      /* Print-only helpers (per-day label + hour axis for the stacked layout). */
+      .pday,
+      .phlabel {
+        display: none;
+      }
+      @media print {
+        .raster {
+          display: none;
+        }
+        .wg {
+          border: none;
+          /* Pin the screen-stretched hour height (inline --wg-hpx) back to the
+             compact 48px the PRD 077 page-fit math assumes. */
+          --wg-hpx: 48px !important;
+        }
+        /* Grid mode: drop the 80px lane floor — pure fr weights squeeze the week
+           onto the (landscape) page width. printMode() guarantees ≥ 56px lanes,
+           else the stacked layout below takes over. */
+        .hdr,
+        .body {
+          grid-template-columns: var(--wg-print-cols);
+        }
+        /* Stacked mode: one full-width day under the other — horizontal overflow
+           becomes vertical flow, which the browser CAN paginate. */
+        :host(.print-stacked) .hdr {
+          display: none;
+        }
+        :host(.print-stacked) .body {
+          display: block;
+        }
+        :host(.print-stacked) .gutter.times {
+          display: none;
+        }
+        :host(.print-stacked) .daycol {
+          margin: 2.2rem 0 0 52px;
+          break-inside: avoid;
+        }
+        :host(.print-stacked) .pday {
+          display: block;
+          position: absolute;
+          top: -1.5rem;
+          left: 0;
+          font-size: 0.85rem;
+          font-weight: 600;
+        }
+        :host(.print-stacked) .phlabel {
+          display: block;
+          position: absolute;
+          left: -48px;
+          width: 42px;
+          text-align: right;
+          transform: translateY(-50%);
+          font-size: 0.65rem;
+          color: rgba(0, 0, 0, 0.55);
+        }
       }
       .hdr {
         position: sticky;
@@ -246,6 +355,7 @@ function rowAllocRefs(row: Row): NamedRef[] {
         position: absolute;
         left: 1px;
         right: 1px;
+        min-height: 18px;
         background: rgba(63, 81, 181, 0.18);
         border: 1px solid var(--mat-sys-primary, #3f51b5);
         border-radius: 4px;
@@ -281,6 +391,7 @@ function rowAllocRefs(row: Row): NamedRef[] {
       }
       .chip {
         position: absolute;
+        min-height: 18px;
         padding: 1px 4px;
         line-height: 1.25;
         border: 1px solid rgba(0, 0, 0, 0.12);
@@ -301,6 +412,9 @@ function rowAllocRefs(row: Row): NamedRef[] {
 export class WeekGridComponent {
   readonly rows = input.required<Row[]>();
   readonly anchor = input.required<string>();
+  /** Columns to render: 7 = week (Mo–So of the anchor), 1 = day (the anchor day only).
+   *  Same grid, lanes, drag + matchedBy machinery either way. */
+  readonly dayCount = input(7);
   /** Scope resources (PRD 100 D3) — >1 enables Swing fixed-slots lanes. */
   readonly scopeResources = input<NamedRef[]>([]);
   /** Double-click / Enter on a chip — the view host runs the shared edit path. */
@@ -320,6 +434,56 @@ export class WeekGridComponent {
 
   readonly today = localToday();
 
+  /** The grid is THE vertical scroller — sized to fill the viewport remainder
+   *  so the page doesn't grow a second scrollbar (measured, resize-aware). */
+  readonly maxHeight = signal<number | null>(null);
+  /** Measured header-row height — part of the vertical budget hourPx fills. */
+  readonly headerPx = signal(0);
+  /** Measured .wg chrome (borders + horizontal scrollbar, offsetHeight −
+   *  clientHeight) — a wide week's scrollbar would otherwise eat into the
+   *  hour axis and leave a needless vertical scroll. */
+  readonly chromePx = signal(2);
+  private readonly host = inject(ElementRef);
+
+  constructor() {
+    const measure = () => {
+      // Never reflow mid-drag: changing the grid height moves the target under the pointer
+      // and tears listeners; the drag handlers capture element geometry at gesture start.
+      if (this.mv || this.cre) return;
+      const el = this.host.nativeElement as HTMLElement;
+      const top = el.getBoundingClientRect().top;
+      this.headerPx.set((el.querySelector('.hdr') as HTMLElement | null)?.offsetHeight ?? 0);
+      const wg = el.querySelector('.wg') as HTMLElement | null;
+      this.chromePx.set(wg ? wg.offsetHeight - wg.clientHeight : 0);
+      const next = Math.max(320, window.innerHeight - top - 12);
+      // Only set on a real change — measuring changes maxHeight → grid height → body size →
+      // ResizeObserver fires again; the equality guard makes that loop converge in one pass.
+      if (this.maxHeight() === null || Math.abs(this.maxHeight()! - next) > 1) {
+        this.maxHeight.set(next);
+      }
+    };
+    afterNextRender(measure);
+    window.addEventListener('resize', measure);
+    // Re-measure when anything above the grid reflows (chips wrap, control strip grows,
+    // data loads) — a stale `top` would size the grid too tall and grow a page scrollbar.
+    const ro = new ResizeObserver(() => measure());
+    ro.observe(document.body);
+    // PRD 077 print — the week/day view ALWAYS prints landscape: grid mode needs
+    // the width for 7 day columns, and a stacked day gets ~40% wider lanes while
+    // a typical 8–18h day block still fits one landscape page. Explicit rule so
+    // Chrome's remembered manual choice never leaks in. Document-level because
+    // @page can't live in component styles; removed with the component, so
+    // table/month keep the user's free choice.
+    const pageStyle = document.createElement('style');
+    pageStyle.textContent = '@page { size: A4 landscape; }';
+    document.head.appendChild(pageStyle);
+    inject(DestroyRef).onDestroy(() => {
+      pageStyle.remove();
+      ro.disconnect();
+      window.removeEventListener('resize', measure);
+    });
+  }
+
   /** Slot raster (Swing "rows per hour" calendar option): 1 = 60m, 2 = 30m, 4 = 15m. */
   readonly rowsPerHour = signal(2);
 
@@ -327,17 +491,38 @@ export class WeekGridComponent {
     this.rowsPerHour.set(Number((ev.target as HTMLSelectElement).value) || 2);
   }
 
-  /** px offsets of the sub-hour gridlines within one hour row. */
+  /** Hour-fractions of the sub-hour gridlines within one hour row. */
   readonly subSlots = computed(() => {
     const n = this.rowsPerHour();
-    return Array.from({ length: n - 1 }, (_, i) => ((i + 1) * HOUR_PX) / n);
+    return Array.from({ length: n - 1 }, (_, i) => (i + 1) / n);
+  });
+
+  /** Hour row height (--wg-hpx): stretches so the time axis fills the measured
+   *  viewport height on big screens, floored at HOUR_PX so small screens scroll
+   *  instead (the vertical analog of MIN_LANE_PX). Screen-only — @media print
+   *  pins the variable back to 48px so PRD 077 page fitting is unaffected.
+   *  16 = the body padding baked into bodyHeight. */
+  readonly hourPx = computed(() => {
+    const mh = this.maxHeight();
+    const hours = this.layout().endHour - this.layout().startHour;
+    if (mh === null || hours <= 0) return HOUR_PX;
+    return Math.max(
+      HOUR_PX,
+      Math.floor((mh - this.headerPx() - this.chromePx() - 16) / hours),
+    );
   });
 
   readonly layout = computed(() => {
     const selected = this.scopeResources();
+    const rows = this.rows();
+    // A container chip (building/category) never appears as a resource chip, but its
+    // blocks carry matchedBy — so scope is "in effect" whenever provenance exists too.
+    const scoped = selected.length > 0 || rows.some((r) => rowMatchedRefs(r).length > 0);
+    const anchor = this.anchor();
+    const days = this.dayCount() === 1 ? [anchor.slice(0, 10)] : weekDays(anchor);
     return layoutWeek(
-      this.rows(),
-      this.anchor(),
+      rows,
+      anchor,
       (r) => String(r['start'] ?? ''),
       (r) => String(r['end'] ?? ''),
       {
@@ -346,9 +531,11 @@ export class WeekGridComponent {
         // ANY resource is scoped — Swing's isCompactColumns is dead config
         // (hardcoded false, no options UI); compact is only the empty-selection
         // fallback (CalendarWeekViewPresenter:188).
-        mode: selected.length > 0 ? 'fixed' : 'compact',
+        mode: scoped ? 'fixed' : 'compact',
         allocsOf: rowAllocRefs,
+        matchedByOf: rowMatchedRefs,
       },
+      days,
     );
   });
 
@@ -361,8 +548,26 @@ export class WeekGridComponent {
   readonly gridCols = computed(
     () =>
       `48px ${this.layout()
-        .days.map((d: DayLayout<Row>) => `minmax(${d.lanes * MIN_LANE_PX}px, ${d.lanes}fr)`)
+        .days.map(
+          (d: DayLayout<Row>) =>
+            `minmax(${d.lanes * MIN_LANE_PX + SELECT_GUTTER_PX}px, ${d.lanes}fr)`,
+        )
         .join(' ')}`,
+  );
+
+  /** Print column template — pure fr weights (no px floor): the week always fits
+   *  the page width; {@link printStacked} guards readability. */
+  readonly printCols = computed(
+    () =>
+      `48px ${this.layout()
+        .days.map((d: DayLayout<Row>) => `${d.lanes}fr`)
+        .join(' ')}`,
+  );
+
+  /** PRD 077 print — stacked days when the landscape grid would squeeze lanes
+   *  below the readable minimum (see printMode in week-lanes.ts). */
+  readonly printStacked = computed(
+    () => printMode(this.layout().days.map((d: DayLayout<Row>) => d.lanes)) === 'stacked',
   );
 
   readonly hours = computed(() => {
@@ -371,22 +576,35 @@ export class WeekGridComponent {
   });
 
   readonly bodyHeight = computed(
-    () => (this.layout().endHour - this.layout().startHour) * HOUR_PX + 16,
+    () => `calc(var(--wg-hpx) * ${this.layout().endHour - this.layout().startHour} + 16px)`,
   );
 
-  hourTop(hour: number): number {
-    return (hour - this.layout().startHour) * HOUR_PX + 8;
+  /** Chip x-position: lanes pack into `100% - SELECT_GUTTER_PX`, leaving the trailing
+   *  gutter as free grid space for starting a time selection. */
+  chipLeft(lane: number, lanes: number): string {
+    return `calc((100% - ${SELECT_GUTTER_PX}px) * ${lane} / ${lanes} + 1px)`;
   }
 
-  blockTop(startMin: number): number {
-    return ((startMin - this.layout().startHour * 60) / 60) * HOUR_PX + 8;
+  chipWidth(lanes: number): string {
+    return `calc((100% - ${SELECT_GUTTER_PX}px) / ${lanes} - 3px)`;
   }
 
-  blockHeight(startMin: number, endMin: number): number {
-    return Math.max(18, ((endMin - startMin) / 60) * HOUR_PX - 2);
+  /* Vertical geometry is expressed in --wg-hpx (not resolved px) so the print
+     stylesheet can pin the hour height independently of the screen value. The
+     18px chip minimum lives in CSS (min-height) for the same reason. */
+  hourTop(hour: number, frac = 0): string {
+    return `calc(var(--wg-hpx) * ${hour - this.layout().startHour + frac} + 8px)`;
   }
 
-  nowTop(): number {
+  blockTop(startMin: number): string {
+    return `calc(var(--wg-hpx) * ${(startMin - this.layout().startHour * 60) / 60} + 8px)`;
+  }
+
+  blockHeight(startMin: number, endMin: number): string {
+    return `calc(var(--wg-hpx) * ${(endMin - startMin) / 60} - 2px)`;
+  }
+
+  nowTop(): string {
     const now = new Date();
     return this.blockTop(now.getHours() * 60 + now.getMinutes());
   }
@@ -624,7 +842,7 @@ export class WeekGridComponent {
   /** Minutes-of-day at a viewport y within the column (clamped to the axis). */
   private minAt(clientY: number, rectTop: number): number {
     const { startHour, endHour } = this.layout();
-    const min = startHour * 60 + ((clientY - rectTop - 8) / HOUR_PX) * 60;
+    const min = startHour * 60 + ((clientY - rectTop - 8) / this.hourPx()) * 60;
     return Math.max(startHour * 60, Math.min(endHour * 60, min));
   }
 

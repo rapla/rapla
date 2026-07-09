@@ -1,4 +1,14 @@
-import { Component, ViewChild, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  ViewChild,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+  untracked,
+} from '@angular/core';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatMenuModule, MatMenuTrigger } from '@angular/material/menu';
@@ -13,7 +23,7 @@ import { ROW_MENU_PROVIDERS, type RowMenuItem } from './row-menu';
 import { MonthGridComponent } from './month-grid.component';
 import { monthGridWindow } from './month-chunks';
 import { WeekGridComponent } from './week-grid.component';
-import { weekGridWindow } from './week-lanes';
+import { dayGridWindow, weekGridWindow } from './week-lanes';
 import { EventSheetComponent, type EventSheetDialogData } from '../event/event-sheet.component';
 import { rangeScopedDraft, timeScopedDraft, type EventDraft } from '../event/event-draft';
 import { MutationBus } from '../graphql/mutation-bus';
@@ -79,8 +89,10 @@ export function hasScope(chips: FilterEntry[]): boolean {
   selector: 'app-view-host',
   imports: [MatTableModule, MatSortModule, MatMenuModule, MonthGridComponent, WeekGridComponent],
   template: `
-    <section class="content">
-      <h2 class="view-title">{{ meta()?.title ?? viewName() }}</h2>
+    <section class="content" [class.grid]="isMonth() || isWeekGrid() || isDayGrid()">
+      <!-- Print-only: on screen the title lives in the view tabs and the count in the
+           control strip; print shows only this pane, so both go into the heading. -->
+      <h2 class="view-title">{{ printTitle() }}</h2>
 
       @if (noScope()) {
           <p class="empty">
@@ -92,13 +104,6 @@ export function hasScope(chips: FilterEntry[]): boolean {
         } @else if (error()) {
           <p class="error">{{ error() }}</p>
         } @else {
-          <p class="meta">
-            {{ total() }} {{ rowLabelText() }}
-            @if (groupLabelText()) {
-              <span class="sep">·</span> {{ groupCount() }} {{ groupLabelText() }}
-            }
-          </p>
-
           @if (isMonth()) {
             <!-- PRD 095 — month calendar grid (spanning bars); replaces the table. -->
             <app-month-grid
@@ -109,11 +114,12 @@ export function hasScope(chips: FilterEntry[]): boolean {
               (moveBlock)="onMoveBlock($event)"
               (createRange)="openCreateRange($event)"
             />
-          } @else if (isWeekGrid()) {
-            <!-- PRD 077 prototype — week time-grid with dynamic lanes. -->
+          } @else if (isWeekGrid() || isDayGrid()) {
+            <!-- PRD 077 — time grid with dynamic lanes; 7 columns (week) or 1 (day). -->
             <app-week-grid
               [rows]="displayRows()"
               [anchor]="weekAnchor()"
+              [dayCount]="isDayGrid() ? 1 : 7"
               [scopeResources]="scopeResources()"
               (openRow)="onRowDblClick($event)"
               (openMenu)="onChipMenu($event)"
@@ -208,19 +214,28 @@ export function hasScope(chips: FilterEntry[]): boolean {
         margin: 1.25rem 0;
         padding: 0 1rem;
       }
+      /* Grid modes: the grid is its own viewport-height scroller — a bottom margin
+         would push the document past the viewport and grow a SECOND (page) scrollbar. */
+      .content.grid {
+        margin-bottom: 0;
+      }
+      /* Screen: title + count live in the tabs / control strip — hide the heading.
+         Print: only this pane prints, so the heading (with count) is the header. */
       .view-title {
+        display: none;
         font-size: 1.3rem;
         font-weight: 500;
         margin: 0 0 0.5rem;
+      }
+      @media print {
+        .view-title {
+          display: block;
+        }
       }
       .meta {
         color: rgba(0, 0, 0, 0.6);
         font-size: 0.85rem;
         margin: 0 0 0.75rem;
-      }
-      .meta .sep {
-        margin: 0 0.3rem;
-        opacity: 0.4;
       }
       .day {
         margin-bottom: 1.25rem;
@@ -330,6 +345,20 @@ export class ViewHostComponent {
     const parts = label.split('|');
     return this.groupCount() === 1 ? parts[0] : (parts[1] ?? parts[0]);
   });
+  /** "68 Termine · 5 Tage" — null while there is no loaded result. Published to the
+   *  {@link ViewStateStore} so the control strip can show it (right-aligned). */
+  readonly resultInfoText = computed<string | null>(() => {
+    if (this.noScope() || this.loading() || this.error()) return null;
+    const base = `${this.total()} ${this.rowLabelText()}`;
+    const group = this.groupLabelText();
+    return group ? `${base} · ${this.groupCount()} ${group}` : base;
+  });
+  /** Print-only heading — the browser prints just this pane, so title + count go here. */
+  readonly printTitle = computed(() => {
+    const title = this.meta()?.title ?? this.viewName();
+    const info = this.resultInfoText();
+    return info ? `${title} (${info})` : title;
+  });
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
   /** True when no scope chip is set → the view shows a hint and fires NO query
@@ -343,22 +372,24 @@ export class ViewHostComponent {
   );
   /** A view is groupable iff it has a group column. */
   readonly canGroup = computed(() => this.groupAlias() !== '');
-  /** Group when in DAY (day-list) mode AND the view actually has a group column
-   *  (PRD 077 mode shuffle: the grouped day-list moved week → day; 'week' is the
-   *  time-grid calendar). */
-  readonly grouped = computed(() => this.viewState.renderMode() === 'day' && this.canGroup());
+  /** Group when in GROUPED mode AND the view actually has a group column. The group
+   *  key is the @column(group:true) column (day today, but configurable) — 'day' is a
+   *  separate 1-column time grid, not this. */
+  readonly grouped = computed(() => this.viewState.renderMode() === 'grouped' && this.canGroup());
   /** Whether the view CAN group (declares a {@code @column(group: true)} → server
-   *  emits {@code groupBy}). Drives the availability of the DAY render mode. */
+   *  emits {@code groupBy}). Drives the availability of the GROUPED render mode. */
   readonly groupable = computed(() => !!this.meta()?.groupBy);
-  /** Render as day/value BLOCKS (group-header rows) — only in DAY mode AND when the
-   *  view is groupable. TABLE mode (or a non-groupable view) → flat sortable table. */
+  /** Render as grouped section BLOCKS (group-header rows) — only in GROUPED mode AND
+   *  when the view is groupable. TABLE mode (or a non-groupable view) → flat sortable table. */
   readonly isGrouped = computed(
-    () => this.viewState.renderMode() === 'day' && this.groupable(),
+    () => this.viewState.renderMode() === 'grouped' && this.groupable(),
   );
   /** PRD 095 — MONTH mode: render the calendar grid instead of the table. */
   readonly isMonth = computed(() => this.viewState.renderMode() === 'month');
   /** PRD 077 prototype — WEEK mode: the time-grid calendar (dynamic lanes). */
   readonly isWeekGrid = computed(() => this.viewState.renderMode() === 'week');
+  /** DAY mode: the SAME time grid with a single column (1-day window + ±1-day nav). */
+  readonly isDayGrid = computed(() => this.viewState.renderMode() === 'day');
   /** Scoped resources for the week grid's lane grouping (PRD 100 D3):
    *  resource chips, locale-sorted by label (Swing NamedComparator). */
   readonly scopeResources = computed(() =>
@@ -651,6 +682,14 @@ export class ViewHostComponent {
       untracked(() => this.lastView.set(name));
     });
 
+    // Publish the result summary to the store (shown in the control strip);
+    // clear it when this view host goes away so no stale count lingers.
+    effect(() => {
+      const info = this.resultInfoText();
+      untracked(() => this.viewState.setResultInfo(info));
+    });
+    inject(DestroyRef).onDestroy(() => this.viewState.setResultInfo(null));
+
     // Re-query whenever the view, the window, OR the active filter (chips) change.
     // PERFORMANCE GATE: a view only queries when a SCOPE is set — at least one
     // scoping chip (resource / group / user; an `event` chip is a navigation
@@ -664,6 +703,7 @@ export class ViewHostComponent {
       // padded 42-day grid range derived from it (the anchor is not rewritten).
       const month = this.isMonth();
       const week = this.isWeekGrid();
+      const day = this.isDayGrid();
       this.bindingKey(); // re-query when the variable signature resolves
       this.refreshTick(); // re-query after a main-view mutation (delete / undo)
       if (!hasScope(chips)) {
@@ -673,7 +713,13 @@ export class ViewHostComponent {
       this.noScope.set(false);
       this.run(
         viewName,
-        month && w ? monthGridWindow(w.from) : week && w ? weekGridWindow(w.from) : w,
+        month && w
+          ? monthGridWindow(w.from)
+          : week && w
+            ? weekGridWindow(w.from)
+            : day && w
+              ? dayGridWindow(w.from)
+              : w,
         chips,
       );
     });

@@ -43,7 +43,7 @@ public class ViewCatalogService
                     + "    $filter: ReservationFilter!,\n"
                     + "    $sort:   [BlockSort!] = [{ field: START, dir: ASC }],\n"
                     + "    $offset: Int = 0\n"
-                    + "  ) @view(title: \"Termine\", rowLabel: \"Termin|Termine\", renderModes: [table, week, month]) {\n"
+                    + "  ) @view(title: \"Termine\", rowLabel: \"Termin|Termine\", renderModes: [table, day, week, month]) {\n"
                     + "  appointmentBlocks(filter: $filter, sort: $sort, offset: $offset) {\n"
                     + "    start @column(header: \"Von\",           order: 1)\n"
                     + "    end   @column(header: \"Bis\",           order: 2)\n"
@@ -51,6 +51,10 @@ public class ViewCatalogService
                     + "    color @hidden\n"
                     + "    reservation @hidden { id  canModify  appointmentCount }\n"
                     + "    appointment @hidden { id  repeating { type } }\n"
+                    // PRD 100 Phase 5 — week-grid lane grouping key (match provenance): the scoped
+                    // allocatable that admitted the block, from the query's OWN filter (no argument).
+                    // Only the id is needed — lanes have no visible label, so no name.
+                    + "    matchedBy @hidden { id }\n"
                     + "    isException @hidden\n"
                     + "    persons: allocatables(filter: { isPersonEq: true })\n"
                     + "      @join(separator: \", \") @column(header: \"Personen\",   order: 4) {\n"

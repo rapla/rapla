@@ -258,16 +258,109 @@ RaplaListEdit.Listener.addButtonClicked()
           └── (queries getConflictingAppointments(...) for the picked allocatable)
 ```
 
-### Drag / resize on the calendar
+### Drag / resize on the calendar — the SAME scope dialog as delete
 
-The same flow but skipping the dialog entirely. Drag and resize go
-through `RaplaCalendarViewListener.moved(...)` /
-`resized(...)`, which call
-`reservationController.moveAppointment(...)` /
-`reservationController.resizeAppointment(...)`. Each constructs a
-`MoveAppointmentCommand` (a `CommandUndo`) and dispatches optimistically.
-If the server rejects the move (version conflict, permission), the
-user sees a dialog and the optimistic UI is rolled back.
+Drag and resize go through `RaplaCalendarViewListener.moved(...)` /
+`resized(...)` (`:153`/`:189`), which call
+`reservationController.moveAppointment(...)` (`:763`) /
+`resizeAppointment(...)` (`:771`). **Both funnel through the same
+`showDialog(appointmentBlock, "move", includeEvent, context)`** (`:776`) that
+delete uses — a move/resize of a repeating or multi-appointment block pops the
+EVENT/SERIE/SINGLE chooser, not a silent shift. (`moveAppointment` delegates to
+`resizeAppointment` with `newEnd == null`, and `includeEvent = newEnd == null`,
+so a pure move always offers the whole-event option.)
+
+The chosen `DialogAction` (`:506`) drives `AppointmentResize.change()`
+(`:1186-1252`), which clones the appointment and applies the offset
+(`getOffset(sourceStart, destStart, keepTime)`):
+
+| Option | Shown when (same predicates as delete) | What `change()` does |
+|---|---|---|
+| `reservation` (**EVENT**) | `appointments.length <= 1 \|\| includeEvent` | move EVERY appointment of the reservation (`appointments = reservation.getAppointments()`); each keeps its own start, all shift by `offset` |
+| `serie: <summary>` (**SERIE**) | `repeating != null && appointments.length > 1` | move the whole repeating appointment (`appointments = {mutableAppointment}`) — every occurrence shifts by `offset` |
+| `single_appointment` (**SINGLE**) | `(repeating != null && isNotEmptyWithExceptions(...)) \|\| appointments.length > 1` | **split off the occurrence**: clone the appointment, `setRepeatingEnabled(false)`, `moveTo(sourceStart + offset)`, `addAppointment(clone)` with the SAME `getRestrictedAllocatables`, then `repeating.addException(oldStart)` on the original series (`:1242-1250`). `undo()` removes the clone + `removeException` |
+
+- **`keepTime`** (Swing calendar option): when set, the offset snaps to whole
+  days so the time-of-day is preserved (`getOffset` `:805`); otherwise it's the
+  exact drag delta. For SINGLE the base is the block's occurrence start
+  (`sourceStart`); for EVENT/SERIE each appointment's own start.
+- **Dialog skipped when only one option qualifies** (`optionList.size() <= 1`,
+  `:540`) — a single non-repeating appointment in a one-appointment event moves
+  straight through as EVENT, no prompt. **This is exactly the SPA's drag gate.**
+- Each is an undoable `AppointmentResize` command dispatched optimistically; a
+  server reject (version conflict / permission) rolls the optimistic UI back and
+  shows the exception.
+
+#### SPA gap — what's missing for parity (2026-07-09)
+
+The SPA week grid only enables drag when `canModify && appointmentCount === 1 &&
+repeating === null` (`week-grid.component.ts` `isMovableRow`) — i.e. **only the
+lone case where Swing skips the dialog** (EVENT is the sole safe action). Multi-
+appointment and repeating blocks show a plain pointer cursor and don't drag. To
+reach Swing parity the SPA needs BOTH a mutation surface and a dialog it does not
+have yet:
+
+- **Have:** `moveReservations(ids, dateShift: Duration!)` — shifts ALL
+  appointments of N reservations. This is the **EVENT** case only (and only when
+  it happens to be the whole reservation).
+- **Missing — dialog:** the EVENT/SERIE/SINGLE scope chooser (Swing
+  `showDialog` + `DialogAction`), shown on drag-move/resize of a
+  repeating/multi-appointment block, with the same show-when predicates.
+- **Missing — SERIE move:** shift ONE appointment's series inside a
+  multi-appointment reservation. `moveReservations` can't target one appointment;
+  expressible today only by rebuilding the whole reservation via
+  `updateReservation` (full-content `UpdateReservationInput`).
+- **Missing — SINGLE (occurrence) move:** the split — clone the occurrence as a
+  new non-repeating appointment at the new time (carrying its per-appointment
+  restrictions) + add an exception date to the original series. `RepeatingRule.
+  exceptions` is read-only on the wire (schema `:1130`); there is **no** mutation
+  to add an exception except by resending the entire reservation via
+  `updateReservation`/`applyChanges`.
+- **Decision (locked 2026-07-09): the scope logic lives in the GraphQL
+  mutation, not the client.** The SPA does **not** build `updateReservation`
+  payloads for SERIE/SINGLE — that would force the SPA event model to represent
+  multi-appointment sets + exceptions + per-appointment restrictions and would
+  duplicate the clone-and-except cascade in TypeScript. Instead, add a server
+  mutation that takes the block identity + a scope enum and carries the same
+  cascade Swing's `AppointmentResize.change()` does — designed in **PRD 056**
+  (§ "Verb-level semantic notes": `moveAppointment` + `AppointmentEditScope`),
+  consumed by **PRD 094 Phase 4** (the SPA scope dialog + undo command):
+  - `moveAppointment(reservationId, appointmentId, occurrenceStart, dateShift,
+    scope: EVENT | SERIE | SINGLE, keepTime)` — EVENT shifts all appointments of
+    the reservation, SERIE shifts the whole repeating appointment, SINGLE splits
+    the occurrence (clone as non-repeating at the new time carrying its
+    per-appointment restrictions + `repeating.addException(dayTruncated
+    occurrenceStart)`).
+  - resize maps to the same mutation with a `newEnd`/duration form (Swing uses
+    the one `showDialog(..., "move", ...)` path for both).
+  The `isNotEmptyWithExceptions` empty-series cascade and day-truncated exception
+  dates (see the Delete section) stay entirely server-side — the SPA never
+  reconstructs them. The client's only job is the **dialog**: present the
+  EVENT/SERIE/SINGLE chooser with the same show-when predicates and call the
+  mutation with the chosen scope. This keeps the recurrence-edit invariants in
+  one place (Java) exactly as `moveReservations`/`deleteAppointment` already do.
+
+**Example calls** (condensed — full set incl. keepTime / resize / concurrency in
+PRD 056 § "Verb-level notes → moveAppointment → Example calls"). Scenario:
+reservation `res-3f2a9c11` has a weekly appointment `app-8b7d0e42` (Mondays
+10:00–12:00); the user grabbed Monday 2026-07-13 and dropped it on Tuesday.
+
+```graphql
+# EVENT — "Ganze Veranstaltung": every appointment of the reservation shifts +1 day
+moveAppointment(reservationId: "res-3f2a9c11", appointmentId: "app-8b7d0e42",
+  occurrenceStart: "2026-07-13T10:00:00", dateShift: "P1D", scope: EVENT) { id }
+
+# SERIE — "Serie": only this repeating appointment shifts (all its Mondays), others untouched
+moveAppointment(reservationId: "res-3f2a9c11", appointmentId: "app-8b7d0e42",
+  occurrenceStart: "2026-07-13T10:00:00", dateShift: "P1D", scope: SERIE) { id }
+
+# SINGLE — "nur dieser Termin": split — the 2026-07-13 occurrence moves to Tuesday,
+# the series gains a 2026-07-13 exception + a new non-repeating appointment is created
+moveAppointment(reservationId: "res-3f2a9c11", appointmentId: "app-8b7d0e42",
+  occurrenceStart: "2026-07-13T10:00:00", dateShift: "P1D", scope: SINGLE) {
+    id appointments { id start end repeating { exceptions } }
+  }
+```
 
 ### Delete — the scope dialog and its cascades
 

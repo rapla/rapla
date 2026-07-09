@@ -80,24 +80,39 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
         if (rowLabel != null) meta.put("rowLabel", rowLabel);
         String groupLabel = stringArg(view, "groupLabel");
         if (groupLabel != null) meta.put("groupLabel", groupLabel);
-        List<ViewRenderMode> renderModes = typedEnumListArg(view, "renderModes", ViewRenderMode.class);
-        meta.put("renderModes", renderModes.isEmpty()
-                ? List.of(ViewRenderMode.table.name())
-                : renderModes.stream().map(Enum::name).toList());
         List<Map<String, Object>> columns = columnsFrom(op.getSelectionSet(),
                 parameters.getExecutionContext().getGraphQLSchema());
         meta.put("columns", columns);
         // PRD 074 — render-hint: the column marked @column(group: true) is the row-grouping key.
         // Emitted as the column's alias so a generic renderer reads one field (row[view.groupBy]).
+        boolean hasGroup = false;
         for (Map<String, Object> c : columns)
         {
             if (Boolean.TRUE.equals(c.get("group")))
             {
                 meta.put("groupBy", c.get("alias"));
                 if (c.get("format") != null) meta.put("groupFormat", c.get("format"));
+                hasGroup = true;
                 break;
             }
         }
+        // renderModes: an explicit @view(renderModes:) list wins; otherwise derive from the view's
+        // shape — `table` always (columns render as a flat table), plus `grouped` when the view has a
+        // @column(group:true). Grids (week/day/month) are never auto-added; they must be opted in.
+        List<ViewRenderMode> renderModes = typedEnumListArg(view, "renderModes", ViewRenderMode.class);
+        List<String> renderModeNames;
+        if (!renderModes.isEmpty())
+        {
+            renderModeNames = renderModes.stream().map(Enum::name).toList();
+        }
+        else
+        {
+            List<String> derived = new java.util.ArrayList<>();
+            derived.add(ViewRenderMode.table.name());
+            if (hasGroup) derived.add(ViewRenderMode.grouped.name());
+            renderModeNames = derived;
+        }
+        meta.put("renderModes", renderModeNames);
 
         List<Map<String, Object>> inputs = inputsFrom(op.getVariableDefinitions(), view);
         if (!inputs.isEmpty()) meta.put("inputs", inputs);

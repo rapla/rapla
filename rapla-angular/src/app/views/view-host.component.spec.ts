@@ -204,7 +204,7 @@ describe('ViewHostComponent — grouped rendering (group: true)', () => {
     title: 'Wochenansicht',
     groupBy: 'date',
     groupFormat: 'EE dd.MM',
-    renderModes: ['day', 'table'], // seed picks renderModes[0] = day → grouped day-list
+    renderModes: ['grouped', 'table'], // seed picks renderModes[0] = grouped → section list
     columns: [
       { alias: 'date', header: 'Datum', type: 'LocalDateTime', order: 1, group: true },
       { alias: 'name', header: 'Titel', order: 2 },

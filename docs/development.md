@@ -344,6 +344,8 @@ WSL2 specifics:
 
 Once installed, `claude mcp list` should show `playwright: … ✓ Connected`. Per-session artefacts (screenshots, YAML snapshots, console logs) land in `.playwright-mcp/` and are gitignored.
 
+- **Screenshot output dir (2026-07-09):** without an explicit `outputDir`, screenshots saved with a bare filename land in the MCP server's cwd — the repo root. Set `"outputDir": ".playwright-mcp"` in the `--config` JSON (e.g. `~/.claude/playwright-mcp-config.json`); the relative path resolves per-project. `.gitignore` additionally ignores root-level `/*.png` as a backstop.
+
 ### Headed windows don't display under WSLg
 
 Symptom: a headed browser (or *any* Linux GUI app — test with `xeyes`) shows a

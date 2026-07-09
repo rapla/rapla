@@ -57,7 +57,7 @@ public class ServerServiceConfig
         return operator;
     }
 
-    @Bean
+    @Bean(destroyMethod = "dispose")
     public ServerServiceContainer serverServiceContainer(
             CachableStorageOperator operator,
             RaplaFacade facade,
