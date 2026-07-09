@@ -125,9 +125,14 @@ for month-grid structure, `BlockColors` for colors); secondary = EventCalendar s
 
 ### Phase 3b — drag-move (DONE 2026-07-08, month + week grids)
 Server: `appointment { id repeating { type } }` + `reservation { id canModify
-appointmentCount }` in the builtin selection (OQ3); `moveReservations(ids,
-dateShift)` unchanged. The SPA row context sources block identity from the
-`appointment` object (legacy `appointmentId` scalar still accepted).
+appointmentCount }` in the builtin selection (OQ3). The SPA row context sources
+block identity from the `appointment` object (legacy `appointmentId` scalar still
+accepted). **Migration note (PRD 101, 2026-07-09):** the `dateShift: Duration`
+verbs referenced below were replaced by the `reference`/`target` transpose family
+(`moveReservations(ids, reference, target)`, `moveAppointment`, `splitOccurrence`;
+`Duration` scalar deleted); month/week drag now dispatch through the shared
+scope-aware `view-host.onMoveBlock` — see PRD 101 Phase 5 and
+`docs/architecture/reservation-edit.md § "SPA move/resize — implemented"`.
 Client (browser-verified end-to-end: drag → „…verschoben" toast → Rückgängig →
 restored):
 - [x] Drag state machine in both grids (idle → armed → dragging → drop/ESC, 4-px
@@ -206,11 +211,13 @@ pure-TS state machine); EventCalendar source is a read-only, MIT-attributed refe
 for browser pointer *mechanics* and grid CSS. Full rationale + attribution rule:
 PRD 032 §Calendar view decision.
 
-**D6 — drag v1 reuses `moveReservations`, gated to the safe subset.** A month-cell
-drop is a whole-day shift; `moveReservations([id], dateShift)` is exactly that for a
-single-appointment, non-repeating reservation — no new mutation, server-side
-permission checks included, and the undo toast is the compensating negative shift
-(PRD 094 command shape). Repeating/multi-appointment blocks are not draggable in v1:
-`moveReservations` would shift ALL appointments of the reservation, and an
-occurrence-only move needs the exception/series dialog (PRD 094/091) — silently
-picking either semantic on a drop would surprise users.
+**D6 — drag v1 reused `moveReservations`, gated to the safe subset — SUPERSEDED
+by PRD 101 Phase 5 (2026-07-09).** v1: a month-cell drop is a whole-day shift and
+`moveReservations([id], dateShift)` was exactly that for a single-appointment,
+non-repeating reservation; repeating/multi blocks were not draggable (silently
+picking EVENT vs occurrence-split would surprise users). **Now:** the drag gate is
+widened (`block-style.isDraggableRow`) and a repeating/multi drop pops the
+EVENT/SERIE/SINGLE scope dialog, dispatching `moveReservations` / `moveAppointment`
+/ `splitOccurrence` server-side (PRD 101 D1). Month stays move-only (no resize —
+Swing parity); the undo toast is still the compensating command (split is not
+undoable in v1). See PRD 101 Phase 5.

@@ -1,7 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 import { of, type Observable } from 'rxjs';
 
-import { buildBulkDeleteCommand, buildMoveCommand } from './event-commands';
+import {
+  buildBulkDeleteCommand,
+  buildMoveAppointmentCommand,
+  buildMoveCommand,
+  buildResizeAppointmentCommand,
+  buildSplitOccurrenceCommand,
+} from './event-commands';
 import type { MutationResult } from '../graphql/mutation-result';
 import type { GraphqlService } from '../graphql/graphql.service';
 import type { EventDataService } from '../event/event-data.service';
@@ -84,15 +90,98 @@ describe('buildBulkDeleteCommand (PRD 099 Phase 3)', () => {
 });
 
 describe('buildMoveCommand (PRD 095 Phase 3b / week grid)', () => {
-  it('executes moveReservations with an ISO minute shift; undo negates it', () => {
+  it('executes moveReservations with a reference/target minute shift; undo negates it', () => {
     const mutate = vi.fn<(query: string, vars: unknown) => Observable<MutationResult<unknown>>>();
     mutate.mockReturnValue(of(ok));
     const gql = { mutate } as unknown as GraphqlService;
     const command = buildMoveCommand(gql, 'e-1', 'Physik', 1440 + 90); // +1 day +1:30h
     expect(command.label).toBe('„Physik" verschoben');
     command.execute().subscribe();
-    expect(mutate.mock.calls[0][1]).toEqual({ ids: ['e-1'], shift: 'PT1530M' });
+    // pivot 2000-01-01T00:00:00 + 1530min = 2000-01-02T01:30:00
+    expect(mutate.mock.calls[0][1]).toEqual({
+      ids: ['e-1'],
+      ref: '2000-01-01T00:00:00',
+      target: { dateTime: '2000-01-02T01:30:00' },
+    });
     command.undo!().subscribe();
-    expect(mutate.mock.calls[1][1]).toEqual({ ids: ['e-1'], shift: 'PT-1530M' });
+    // pivot − 1530min = 1999-12-30T22:30:00
+    expect(mutate.mock.calls[1][1]).toEqual({
+      ids: ['e-1'],
+      ref: '2000-01-01T00:00:00',
+      target: { dateTime: '1999-12-30T22:30:00' },
+    });
+  });
+});
+
+describe('buildMoveAppointmentCommand (PRD 101 Phase 5 / SERIE)', () => {
+  it('moves the appointment by the shift; undo grabs the block at its new spot and targets the original', () => {
+    const mutate = vi.fn<(q: string, v: unknown) => Observable<MutationResult<unknown>>>();
+    mutate.mockReturnValue(of(ok));
+    const gql = { mutate } as unknown as GraphqlService;
+    // occurrence 2031-03-05T10:00 + (1440+90)min = 2031-03-06T11:30
+    const command = buildMoveAppointmentCommand(gql, 'a-1', 'Physik', '2031-03-05T10:00:00', 1440 + 90);
+    expect(command.label).toBe('„Physik" verschoben');
+    command.execute().subscribe();
+    expect(mutate.mock.calls[0][1]).toEqual({
+      id: 'a-1',
+      occ: '2031-03-05T10:00:00',
+      target: { dateTime: { start: '2031-03-06T11:30:00' } },
+    });
+    command.undo!().subscribe();
+    // inverse: grab at the moved spot, target the original start
+    expect(mutate.mock.calls[1][1]).toEqual({
+      id: 'a-1',
+      occ: '2031-03-06T11:30:00',
+      target: { dateTime: { start: '2031-03-05T10:00:00' } },
+    });
+  });
+});
+
+describe('buildResizeAppointmentCommand (PRD 101 Phase 5 / resize)', () => {
+  it('sets the new end (start fixed); undo restores the old end', () => {
+    const mutate = vi.fn<(q: string, v: unknown) => Observable<MutationResult<unknown>>>();
+    mutate.mockReturnValue(of(ok));
+    const gql = { mutate } as unknown as GraphqlService;
+    const command = buildResizeAppointmentCommand(
+      gql,
+      'a-1',
+      'Physik',
+      '2031-03-05T10:00:00',
+      '2031-03-05T11:00:00',
+      '2031-03-05T11:30:00',
+    );
+    expect(command.label).toBe('„Physik" Dauer geändert');
+    command.execute().subscribe();
+    expect(mutate.mock.calls[0][0]).toContain('moveAppointment');
+    expect(mutate.mock.calls[0][1]).toEqual({
+      id: 'a-1',
+      occ: '2031-03-05T10:00:00',
+      target: { dateTime: { start: '2031-03-05T10:00:00', end: '2031-03-05T11:30:00' } },
+    });
+    command.undo!().subscribe();
+    expect(mutate.mock.calls[1][1]).toEqual({
+      id: 'a-1',
+      occ: '2031-03-05T10:00:00',
+      target: { dateTime: { start: '2031-03-05T10:00:00', end: '2031-03-05T11:00:00' } },
+    });
+  });
+});
+
+describe('buildSplitOccurrenceCommand (PRD 101 Phase 5 / SINGLE)', () => {
+  it('splits at the occurrence with the given target; is not undoable in v1', () => {
+    const mutate = vi.fn<(q: string, v: unknown) => Observable<MutationResult<unknown>>>();
+    mutate.mockReturnValue(of(ok));
+    const gql = { mutate } as unknown as GraphqlService;
+    const command = buildSplitOccurrenceCommand(gql, 'a-1', 'Physik', '2031-03-12T10:00:00', {
+      dateTime: { start: '2031-03-13T10:00:00' },
+    });
+    expect(command.undo).toBeNull();
+    command.execute().subscribe();
+    expect(mutate.mock.calls[0][0]).toContain('splitOccurrence');
+    expect(mutate.mock.calls[0][1]).toEqual({
+      id: 'a-1',
+      occ: '2031-03-12T10:00:00',
+      target: { dateTime: { start: '2031-03-13T10:00:00' } },
+    });
   });
 });

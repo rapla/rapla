@@ -68,6 +68,24 @@ public interface CachableStorageOperator extends StorageOperator {
 
     /** PRD 098 — all server-only stored artifacts, read-through (never cached in LocalCache). */
     Collection<StoredArtifact> getStoredArtifacts() throws RaplaException;
+
+    /** PRD 098 — point read by natural key ({@code kind:name}); null when absent. */
+    default StoredArtifact getStoredArtifact(String id) throws RaplaException
+    {
+        for (StoredArtifact artifact : getStoredArtifacts())
+        {
+            if (artifact.getId().equals(id)) return artifact;
+        }
+        return null;
+    }
+
+    /** PRD 098 — all stored artifacts WITHOUT bodies (catalog listing; bodies load via
+     *  {@link #getStoredArtifact}). Implementations may return full bodies where stripping
+     *  saves nothing (file backend) — callers must not rely on bodies being present. */
+    default Collection<StoredArtifact> getStoredArtifactsMetadata() throws RaplaException
+    {
+        return getStoredArtifacts();
+    }
     
     Collection<Entity> getVisibleEntities(final User user) throws RaplaException;
 

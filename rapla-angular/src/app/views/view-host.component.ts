@@ -28,7 +28,15 @@ import { EventSheetComponent, type EventSheetDialogData } from '../event/event-s
 import { rangeScopedDraft, timeScopedDraft, type EventDraft } from '../event/event-draft';
 import { MutationBus } from '../graphql/mutation-bus';
 import { UndoToastService } from '../actions/undo-toast.service';
-import { buildMoveCommand } from '../actions/event-commands';
+import { shiftIso } from '../actions/event-commands';
+import {
+  buildMoveScopeCommand,
+  moveBlockFacts,
+  moveScopeOptions,
+  type MoveBlockFacts,
+  type MoveGesture,
+} from './move-scope';
+import { MoveScopeDialogComponent, type MoveScopeDialogData } from './move-scope-dialog.component';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { groupByWeekday, groupByColumn } from '../graphql/weekday-grouping';
 import { ViewStateStore, type DateWindow } from '../state/view-state-store';
@@ -124,6 +132,7 @@ export function hasScope(chips: FilterEntry[]): boolean {
               (openRow)="onRowDblClick($event)"
               (openMenu)="onChipMenu($event)"
               (moveBlock)="onMoveBlock($event)"
+              (resizeBlock)="onResizeBlock($event)"
               (createTimeRange)="openCreateTimeRange($event)"
             />
           } @else if (total() > 0) {
@@ -532,16 +541,59 @@ export class ViewHostComponent {
     this.ctxTrigger?.openMenu();
   }
 
-  /** Drag-move drop from a grid (PRD 095 3b / D6): one moveReservations command
-   *  with the compensating undo; the MutationBus refresh re-queries the window. */
+  /** Drag-move drop from a grid (PRD 095 3b / 101 Phase 5): resolve the block
+   *  facts and dispatch the scoped move — a simple single non-repeating block
+   *  moves straight (EVENT), otherwise the scope dialog picks SERIE/SINGLE.
+   *  The MutationBus refresh re-queries the window on success. */
   onMoveBlock(e: { row: Record<string, unknown>; dayDelta: number; minuteDelta: number }): void {
     const totalMinutes = e.dayDelta * 24 * 60 + e.minuteDelta;
     if (totalMinutes === 0) return;
-    const ctx = extractRowContext(e.row, this.viewName(), this.meta()?.columns ?? []);
-    const subject = ctx.primary;
-    if (subject?.kind !== 'reservation' || !subject.canModify) return;
-    const name = String(e.row['name'] ?? '') || 'Veranstaltung';
-    this.toast.run(buildMoveCommand(this.gql, subject.id, name, totalMinutes));
+    const facts = moveBlockFacts(e.row);
+    if (!facts || !facts.canModify) return;
+    this.dispatchScopedMove(facts, { kind: 'move', totalMinutes });
+  }
+
+  /** Edge-resize drop (PRD 101 Phase 5): change the block's end (start fixed).
+   *  Resize never touches EVENT scope; repeating blocks pick SERIE/SINGLE. */
+  onResizeBlock(e: { row: Record<string, unknown>; endMin: number }): void {
+    const facts = moveBlockFacts(e.row);
+    if (!facts || !facts.canModify || !facts.appointmentId) return;
+    const oldEnd = String(e.row['end'] ?? '');
+    // Add the minute-of-day to the block's midnight so endMin === 1440 rolls to
+    // next-day 00:00 instead of an invalid "24:00:00".
+    const newEnd = shiftIso(`${facts.occurrence.slice(0, 10)}T00:00:00`, e.endMin);
+    if (!oldEnd || newEnd === oldEnd) return;
+    this.dispatchScopedMove(facts, { kind: 'resize', newEnd, oldEnd });
+  }
+
+  /** Shared move/resize dispatch: direct when there is ≤1 scope, else the
+   *  EVENT/SERIE/SINGLE dialog (Swing `showDialog` parity). */
+  private dispatchScopedMove(facts: MoveBlockFacts, gesture: MoveGesture): void {
+    const options = moveScopeOptions(facts, gesture);
+    const run = (scope: (typeof options)[number]['scope']) =>
+      this.toast.run(buildMoveScopeCommand(this.gql, facts, scope, gesture));
+    if (options.length <= 1) {
+      run(options[0]?.scope ?? 'event');
+      return;
+    }
+    const question =
+      gesture.kind === 'resize'
+        ? 'Für welche Termine gilt die neue Dauer?'
+        : `Was möchtest du an „${facts.name}" verschieben?`;
+    this.dialog
+      .open(MoveScopeDialogComponent, {
+        data: {
+          question,
+          confirmLabel: gesture.kind === 'resize' ? 'Größe ändern' : 'Verschieben',
+          options,
+        } satisfies MoveScopeDialogData,
+        width: '420px',
+        autoFocus: false,
+      })
+      .afterClosed()
+      .subscribe((scope) => {
+        if (scope) run(scope);
+      });
   }
 
   private readonly hasRowMenu = computed(

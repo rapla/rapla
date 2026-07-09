@@ -1342,6 +1342,36 @@ import java.time.LocalDateTime;
         }
     }
 
+    @Override
+    public StoredArtifact getStoredArtifact(String id) throws RaplaException
+    {
+        try (Connection con = createConnection())
+        {
+            final RaplaDefaultXMLContext context = createOutputContext(cache);
+            final RaplaSQL raplaSQL = new RaplaSQL(context);
+            return raplaSQL.getArtifact(con, id);
+        }
+        catch (SQLException e)
+        {
+            throw new RaplaException("Error connecting to database reading artifact " + id, e);
+        }
+    }
+
+    @Override
+    public Collection<StoredArtifact> getStoredArtifactsMetadata() throws RaplaException
+    {
+        try (Connection con = createConnection())
+        {
+            final RaplaDefaultXMLContext context = createOutputContext(cache);
+            final RaplaSQL raplaSQL = new RaplaSQL(context);
+            return raplaSQL.getAllArtifactsMetadata(con);
+        }
+        catch (SQLException e)
+        {
+            throw new RaplaException("Error connecting to database reading artifact metadata", e);
+        }
+    }
+
     @Override public LocalDateTime requestLock(String id, Long validMilliseconds) throws RaplaException
     {
         // no commit needed as getLocks will do a commit

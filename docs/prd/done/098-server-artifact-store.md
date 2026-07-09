@@ -128,18 +128,29 @@ stale-node bug source. Conclusion: at dozens of rows and one indexed query per c
 read-through SQL is fast enough (single-digit ms vs the GraphQL execution it feeds) — **no cluster
 invalidation machinery** (consistent with OQ1).
 
-Sanctioned cache shape (decided 2026-07-08): a process-local **10 s TTL snapshot, invalidated
-locally on every write** — one `volatile` snapshot + load timestamp in the catalog service, ~10
-lines. Semantics: same-pod read-your-own-writes (the admin who saves sees it immediately — SPA edit
-loop; single-pod deployments get perfect freshness with no pod-count detection), other pods ≤10 s
-stale — the same staleness bound the update-history poll gives every other rapla entity, so no new
-consistency class. **Two-tier bodies (added 2026-07-08):** the snapshot holds full bodies only for
-artifacts ≤ 1 MiB (all text artifacts + sane logos); larger artifacts are cached **metadata-only**
-(name, kind, visibility, size, mimeType) and their body is fetched read-through from SQL when
-actually used — same TTL/invalidate logic, one branch. This decouples the size cap (OQ2) from cache
-memory/reload traffic. No cross-pod invalidation messages, ever (the Keycloak/Ehcache trap). Also
-permitted: memoize *derived* values — compiled JMustache template, parsed+validated view document —
-keyed by body content hash (self-invalidating, §16-safe pure derivation).
+Sanctioned cache shape (decided 2026-07-08, **redesigned pull-based 2026-07-09** — the original
+whole-catalog eager snapshot did `SELECT *` every refresh, so large bodies travelled over JDBC only
+to be discarded; the cache was two-tier but the SQL read behind it was not): reads are
+**demand-driven**, process-local, 10 s TTL, invalidated locally on every write.
+- **`find(kind, name)`** — the hot path (view execution, template render) — is a **point read on
+  the natural-key PK** (`WHERE ID = ?`), cached per entry when the body is ≤ 1 MiB; larger bodies
+  are deliberately uncached and read-through per use (PRD 097's serving endpoint adds JDBC
+  streaming + ETag/304 for those). 500 users requesting the same template = one point query per
+  10 s per pod.
+- **`list(kind)`** — the rare path (catalog/admin listings) — is **metadata-only**: the SQL
+  projection selects every column except BODY (`CAST(NULL AS CHAR(1))` in its place), so listing
+  can never transfer bodies regardless of table content; demand-loaded snapshot, same TTL.
+- Consumers needing listed bodies (the view catalog: `listViewsForCaller` needs every query text)
+  do list + per-entry `find` — cold that is 1 + N point queries (N = dozens, once per pod per TTL),
+  warm it is zero SQL. Deletions need no propagation: nothing long-lived holds the catalog.
+
+Semantics unchanged: same-pod read-your-own-writes (invalidate-on-write), other pods ≤10 s stale —
+the same staleness bound the update-history poll gives every other rapla entity, so no new
+consistency class. Net effect: a large body **never leaves the database unless an actual use
+requests it**, which makes OQ2's "the cap can be generous because the cache is immune" true at the
+SQL layer, not just in cache memory. No cross-pod invalidation messages, ever (the Keycloak/Ehcache
+trap). Also permitted: memoize *derived* values — compiled JMustache template, parsed+validated
+view document — keyed by body content hash (self-invalidating, §16-safe pure derivation).
 
 ### Catalog service
 
@@ -213,6 +224,23 @@ entry is ignored.
   `DBOperator.dispatch`'s post-save drift warning skips `StoredArtifact` ids.
 - **`mimeType` guard for kind=IMAGE is NOT yet implemented** — no image consumer exists yet; add it
   in the same change that introduces the first IMAGE writer/serving endpoint (PRD 097 Phase 4+).
+
+### Implementation findings (pull-based read redesign, 2026-07-09)
+- Operator API grew two read methods (defaults on `CachableStorageOperator` delegate to the full
+  load; efficient overrides in both backends): `getStoredArtifact(id)` (DB: PK point query via
+  `ArtifactStorage.loadById`; file: side-map lookup) and `getStoredArtifactsMetadata()` (DB:
+  projection without BODY; file: full instances — the catalog strips a **clone**, never the live
+  map instance).
+- `ArtifactCatalogService`: whole-catalog `Snapshot`+`strippedIds` replaced by a
+  `ConcurrentHashMap` per-entry cache (`find`) + a demand-loaded metadata snapshot (`list`);
+  `list()` now contractually returns body-null entries.
+- `ViewCatalogService`: `findView` is a direct point read (no catalog scan); `loadStored` =
+  metadata list + per-entry `find`.
+- `CAST(NULL AS CHAR(1))` as the BODY placeholder keeps one row-parsing path across full/metadata
+  selects and is dialect-safe (HSQLDB-verified; CHAR works where VARCHAR casts differ).
+- Tests: `ArtifactCatalogServiceTest` 7 (was 5 — + metadata-only list, + large-body read-through),
+  `StoredArtifactDbRoundTripTest` 4 (+ point read & projection on HSQLDB), file round-trip /
+  client exclusion / `ViewCatalogControllerTest` unchanged green.
 
 ### Phase 3 — Hand-off to PRD 097
 - [ ] PRD 097 Phase 1 re-pointed: `DocumentTemplate` = kind=TEMPLATE artifact, no new

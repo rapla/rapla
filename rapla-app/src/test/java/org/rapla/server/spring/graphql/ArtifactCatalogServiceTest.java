@@ -35,6 +35,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -150,6 +151,32 @@ public class ArtifactCatalogServiceTest
                 "two different artifacts persist independently — per-row granularity");
         assertEquals("query a", catalog.find(StoredArtifact.KIND_VIEW, "a").orElseThrow().getBody());
         assertEquals("query b", catalog.find(StoredArtifact.KIND_VIEW, "b").orElseThrow().getBody());
+    }
+
+    @Test
+    void listReturnsMetadataWithoutBodies() throws Exception
+    {
+        catalog.save(StoredArtifact.KIND_TEMPLATE, "letter", "<html/>", "{\"isPublic\":true}", admin());
+
+        StoredArtifact entry = catalog.list(StoredArtifact.KIND_TEMPLATE).get(0);
+        assertEquals("letter", entry.getName());
+        assertEquals("{\"isPublic\":true}", entry.getMetadata());
+        assertNull(entry.getBody(), "list is metadata-only — bodies load through find()");
+
+        assertEquals("<html/>", catalog.find(StoredArtifact.KIND_TEMPLATE, "letter").orElseThrow().getBody(),
+                "stripping the listed entry must not damage the stored artifact");
+    }
+
+    @Test
+    void largeBodyIsServedReadThroughAndNeverListed() throws Exception
+    {
+        String large = "y".repeat(2 * 1024 * 1024);   // > 1 MiB cache limit, < 10 MB cap
+        catalog.save(StoredArtifact.KIND_IMAGE, "big", large, null, admin());
+
+        assertEquals(large, catalog.find(StoredArtifact.KIND_IMAGE, "big").orElseThrow().getBody());
+        assertEquals(large, catalog.find(StoredArtifact.KIND_IMAGE, "big").orElseThrow().getBody(),
+                "uncached large body stays retrievable on repeated reads");
+        assertNull(catalog.list(StoredArtifact.KIND_IMAGE).get(0).getBody());
     }
 
     @Test

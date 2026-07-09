@@ -92,8 +92,11 @@ type Mutation {
 
   # ===== bulk transformations (typed intent verbs) =====
   changeReservationOwner(ids: [ID!]!, newOwnerId: ID!): BulkResult!
-  moveReservations(ids: [ID!]!, dateShift: Duration!): BulkResult!
-  copyReservations(ids: [ID!]!, dateShift: Duration!): BulkResult!
+  # ⚠ SHIPPED SHAPE (PRD 101, 2026-07-09): dateShift:Duration was replaced by
+  #   reference/target and the Duration scalar was deleted. See PRD 101 for the
+  #   live signatures + the moveAppointment/splitOccurrence appointment verbs.
+  moveReservations(ids: [ID!]!, reference: LocalDateTime, target: Target!): BulkResult!
+  copyReservations(ids: [ID!]!, reference: LocalDateTime, target: Target!): BulkResult!
   deleteReservations(ids: [ID!]!): BulkResult!
 
   # ===== escape hatch — cross-type / compound / concurrency-checked delete =====
@@ -413,7 +416,16 @@ Failures cause whole-batch rejection per ATOMIC mode.
 `newOwnerId` must resolve to a real, visible user. Unknown ownerId fails as
 `REFERENCE_NOT_FOUND`.
 
-### `moveReservations(ids, dateShift)`
+### `moveReservations(ids, dateShift)` — ⚠ SUPERSEDED by PRD 101 (2026-07-09)
+
+> The shipped verb is `moveReservations(ids, reference: LocalDateTime, target:
+> Target!)` — the `dateShift: Duration` form and the `Duration` scalar were
+> **removed** (couldn't express keep-time; the delta is now `target − reference`).
+> Exceptions stay **absolute** on move (PRD 101 D2 — not shifted, contrary to the
+> note below). Full semantics + the appointment-addressed verbs
+> (`moveAppointment`, `splitOccurrence`) live in
+> [PRD 101](101-transpose-anchors-move-copy-paste.md). Do not implement from this
+> section; kept for the error-taxonomy history only.
 
 Shifts the **start** of each reservation's appointments by `dateShift` (ISO-8601
 Duration: `"P7D"`, `"PT-30M"`, etc.). Recurrence rules preserved structurally —
@@ -618,7 +630,13 @@ scope. A **SINGLE** move is *not* self-inverting (a split can't be undone by a
 negated split) — the PRD 094 command captures the pre-split reservation state and
 inverts via `updateReservation` (see PRD 094 Phase 4).
 
-### `copyReservations(ids, dateShift)`
+### `copyReservations(ids, dateShift)` — ⚠ SUPERSEDED by PRD 101 (2026-07-09)
+
+> Shipped as `copyReservations(ids, reference: LocalDateTime, target: Target!)`
+> (`dateShift`/`Duration` removed, as for `moveReservations`). Copy keeps
+> exceptions **absolute** but re-bases a non-fixed `until` length-preserving
+> (PRD 101 D2/D3). See [PRD 101](101-transpose-anchors-move-copy-paste.md); the
+> id-minting/permission prose below is still accurate.
 
 Duplicates with new server-generated UUIDs — reservation **and** appointments
 (`clone()` keeps appointment ids, so the copy re-ids every appointment and

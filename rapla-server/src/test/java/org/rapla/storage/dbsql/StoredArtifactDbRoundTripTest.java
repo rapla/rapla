@@ -171,6 +171,26 @@ public class StoredArtifactDbRoundTripTest
     }
 
     @Test
+    void pointReadAndMetadataProjection() throws Exception
+    {
+        User admin = getAdmin();
+        operator.storeAndRemove(List.of(newArtifact(StoredArtifact.KIND_TEMPLATE, "brief", "<html>{{x}}</html>")),
+                Collections.emptyList(), admin);
+
+        StoredArtifact point = operator.getStoredArtifact("TEMPLATE:brief");
+        assertEquals("<html>{{x}}</html>", point.getBody(), "point read returns the full row");
+        assertEquals("brief", point.getName());
+
+        assertTrue(operator.getStoredArtifact("TEMPLATE:missing") == null, "point read miss returns null");
+
+        StoredArtifact meta = operator.getStoredArtifactsMetadata().stream()
+                .filter(a -> a.getId().equals("TEMPLATE:brief")).findFirst().orElseThrow();
+        assertTrue(meta.getBody() == null, "metadata projection never transfers bodies");
+        assertEquals("{\"isPublic\":false,\"groups\":[\"g1\"]}", meta.getMetadata());
+        assertEquals(StoredArtifact.KIND_TEMPLATE, meta.getKind());
+    }
+
+    @Test
     void deleteRemovesRow() throws Exception
     {
         User admin = getAdmin();

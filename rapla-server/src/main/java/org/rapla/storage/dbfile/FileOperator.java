@@ -520,6 +520,11 @@ final public class FileOperator extends LocalAbstractCachableOperator
     }
 
     @Override
+    public StoredArtifact getStoredArtifact(String id) {
+        return storedArtifacts.get(id);
+    }
+
+    @Override
     protected void changePassword(User user, String password) throws RaplaException {
         ReferenceInfo<User> userId = user.getReference();
         List<Entity> editList = new ArrayList<>(1);

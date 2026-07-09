@@ -425,7 +425,7 @@ class ReservationMutationControllerTest
 
         Map<String, Object> copyResult = tester.document("""
                 mutation ($ids: [ID!]!) {
-                  copyReservations(ids: $ids, dateShift: "PT24H") {
+                  copyReservations(ids: $ids, target: { dateTime: "2030-09-04T10:00:00" }) {
                     overallStatus
                     results { reservation { id appointments { id } } }
                   }
@@ -447,6 +447,105 @@ class ReservationMutationControllerTest
         assertEquals(1, copiedAppts.size());
         assertNotEquals(sourceApptId, copiedAppts.get(0).get("id"),
                 "copied appointment must have a fresh id (source id would trip checkIdIntegrity #2)");
+    }
+
+    // ==================================================== PRD 101 move / resize / split
+
+    private void createEvent(String resId, String apptId, String start, String end, String repeatingClause)
+    {
+        String appt = "{ id: \"" + apptId + "\", start: \"" + start + "\", end: \"" + end + "\", allDay: false"
+                + (repeatingClause != null ? ", " + repeatingClause : "") + " }";
+        String id = tester.document("""
+                mutation {
+                  createReservation(input: {
+                    id: "%s", typeKey: "event", classification: { event: {} },
+                    appointments: [ %s ], allocations: []
+                  }) { id }
+                }
+                """.formatted(resId, appt))
+                .execute().path("createReservation.id").entity(String.class).get();
+        assertNotNull(id);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> appointments(Map<String, Object> reservation)
+    {
+        return (List<Map<String, Object>>) reservation.get("appointments");
+    }
+
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void moveAppointmentByDayKeepsTimeOfDay()
+    {
+        String apptId = "a3333333-3333-4333-8333-333333333333";
+        createEvent("e3333333-3333-4333-8333-333333333333", apptId,
+                "2030-09-03T10:00:00", "2030-09-03T11:00:00", null);
+        Map<String, Object> res = tester.document("""
+                mutation ($aid: ID!) {
+                  moveAppointment(appointmentId: $aid, target: { day: "2030-09-10" }) {
+                    appointments { id start end }
+                  }
+                }
+                """)
+                .variable("aid", apptId)
+                .execute().path("moveAppointment")
+                .entity(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {}).get();
+        Map<String, Object> a = appointments(res).get(0);
+        assertEquals("2030-09-10T10:00:00", a.get("start"), "shifted +7 days, time-of-day kept");
+        assertEquals("2030-09-10T11:00:00", a.get("end"));
+    }
+
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void moveAppointmentResizeExtendsEnd()
+    {
+        String apptId = "a4444444-4444-4444-8444-444444444444";
+        createEvent("e4444444-4444-4444-8444-444444444444", apptId,
+                "2030-09-03T10:00:00", "2030-09-03T11:00:00", null);
+        Map<String, Object> res = tester.document("""
+                mutation ($aid: ID!) {
+                  moveAppointment(appointmentId: $aid,
+                      target: { dateTime: { start: "2030-09-03T10:00:00", end: "2030-09-03T11:30:00" } }) {
+                    appointments { start end }
+                  }
+                }
+                """)
+                .variable("aid", apptId)
+                .execute().path("moveAppointment")
+                .entity(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {}).get();
+        Map<String, Object> a = appointments(res).get(0);
+        assertEquals("2030-09-03T10:00:00", a.get("start"), "start unchanged");
+        assertEquals("2030-09-03T11:30:00", a.get("end"), "end extended +30min (resize)");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void splitOccurrenceDetachesAndAddsException()
+    {
+        String apptId = "a5555555-5555-4555-8555-555555555555";
+        // weekly, 4 occurrences from Wed 2030-09-04
+        createEvent("e5555555-5555-4555-8555-555555555555", apptId,
+                "2030-09-04T10:00:00", "2030-09-04T11:00:00",
+                "repeating: { type: WEEKLY, interval: 1, count: 4, exceptions: [] }");
+        Map<String, Object> res = tester.document("""
+                mutation ($aid: ID!) {
+                  splitOccurrence(appointmentId: $aid, occurrence: "2030-09-11T10:00:00",
+                      target: { day: "2030-09-12" }) {
+                    appointments { id start end repeating { type exceptions } }
+                  }
+                }
+                """)
+                .variable("aid", apptId)
+                .execute().path("splitOccurrence")
+                .entity(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {}).get();
+        List<Map<String, Object>> appts = appointments(res);
+        assertEquals(2, appts.size(), "original series + detached occurrence");
+        Map<String, Object> original = appts.stream().filter(a -> a.get("repeating") != null).findFirst().orElseThrow();
+        Map<String, Object> clone = appts.stream().filter(a -> a.get("repeating") == null).findFirst().orElseThrow();
+        List<String> exceptions = (List<String>) ((Map<String, Object>) original.get("repeating")).get("exceptions");
+        assertTrue(exceptions.contains("2030-09-11"), "series must except the split date, got " + exceptions);
+        assertEquals("2030-09-12T10:00:00", clone.get("start"), "clone lands at target day, time kept");
     }
 
     // ============================================================ happy-path create + read-back

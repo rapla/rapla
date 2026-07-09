@@ -127,26 +127,21 @@ public class ViewCatalogService
                     invalid, stored.size());
     }
 
-    /** Find a view by name for execution (ignores caller visibility). */
+    /** Find a view by name for execution (ignores caller visibility). Point read — no catalog scan. */
     public Optional<ViewEntry> findView(String name)
     {
         for (ViewEntry b : BUILTIN_VIEWS)
         {
             if (b.name().equals(name)) return Optional.of(b);
         }
-        GraphQLSchema schema = graphQlSource.schema();
-        for (StoredViewData stored : loadStored())
-        {
-            if (stored.name().equals(name))
-            {
-                List<String> errors = validate(stored.queryText(), schema);
-                return Optional.of(new ViewEntry(
-                        stored.name(), extractTitle(stored.queryText()), stored.queryText(),
-                        false, stored.isPublic(), stored.groups(),
-                        errors.isEmpty(), errors, stored.defaultVariables()));
-            }
-        }
-        return Optional.empty();
+        return artifactCatalog.find(StoredArtifact.KIND_VIEW, name).map(artifact -> {
+            StoredViewData stored = toStoredViewData(artifact);
+            List<String> errors = validate(stored.queryText(), graphQlSource.schema());
+            return new ViewEntry(
+                    stored.name(), extractTitle(stored.queryText()), stored.queryText(),
+                    false, stored.isPublic(), stored.groups(),
+                    errors.isEmpty(), errors, stored.defaultVariables());
+        });
     }
 
     /**
@@ -236,26 +231,34 @@ public class ViewCatalogService
 
     private List<StoredViewData> loadStored()
     {
+        // list() is metadata-only (PRD 098 pull redesign) — bodies come per entry through find(),
+        // which serves from the catalog's per-entry cache
         List<StoredViewData> result = new ArrayList<>();
-        for (StoredArtifact artifact : artifactCatalog.list(StoredArtifact.KIND_VIEW))
+        for (StoredArtifact listed : artifactCatalog.list(StoredArtifact.KIND_VIEW))
         {
-            ViewMeta meta;
-            try
-            {
-                String metadata = artifact.getMetadata();
-                meta = metadata == null || metadata.isBlank()
-                        ? new ViewMeta(false, List.of(), null)
-                        : MAPPER.readValue(metadata, ViewMeta.class);
-            }
-            catch (Exception e)
-            {
-                LOGGER.warn("Ignoring unparseable metadata of view artifact {}", artifact.getId(), e);
-                meta = new ViewMeta(false, List.of(), null);
-            }
-            result.add(new StoredViewData(artifact.getName(), artifact.getBody(), meta.isPublic(),
-                    meta.groups() == null ? List.of() : meta.groups(), meta.defaultVariables()));
+            artifactCatalog.find(StoredArtifact.KIND_VIEW, listed.getName())
+                    .ifPresent(artifact -> result.add(toStoredViewData(artifact)));
         }
         return result;
+    }
+
+    private StoredViewData toStoredViewData(StoredArtifact artifact)
+    {
+        ViewMeta meta;
+        try
+        {
+            String metadata = artifact.getMetadata();
+            meta = metadata == null || metadata.isBlank()
+                    ? new ViewMeta(false, List.of(), null)
+                    : MAPPER.readValue(metadata, ViewMeta.class);
+        }
+        catch (Exception e)
+        {
+            LOGGER.warn("Ignoring unparseable metadata of view artifact {}", artifact.getId(), e);
+            meta = new ViewMeta(false, List.of(), null);
+        }
+        return new StoredViewData(artifact.getName(), artifact.getBody(), meta.isPublic(),
+                meta.groups() == null ? List.of() : meta.groups(), meta.defaultVariables());
     }
 
     /** Visibility/default-variables metadata persisted as the artifact's metadata JSON (PRD 098). */

@@ -53,6 +53,26 @@ export function isMovableRow(row: Row): boolean {
 }
 
 /**
+ * Wider drag/resize gate (PRD 101 Phase 5): a `canModify` block with a
+ * resolvable appointment id that is NOT an already-skipped exception occurrence
+ * (Swing parity — exception blocks aren't draggable). Repeating and
+ * multi-appointment blocks ARE draggable here; the drop resolves EVENT/SERIE/
+ * SINGLE server-side via a scope dialog (see move-scope.ts). Fail-closed: custom
+ * views that don't select the hidden `reservation`/`appointment` facts get no
+ * affordance. Swing analog: `RaplaBlock.isMovable()` / `isEditable()`.
+ */
+export function isDraggableRow(row: Row): boolean {
+  const reservation = row['reservation'] as Record<string, unknown> | null | undefined;
+  const appointment = row['appointment'] as Record<string, unknown> | null | undefined;
+  return (
+    reservation?.['canModify'] === true &&
+    appointment != null &&
+    typeof appointment['id'] === 'string' &&
+    row['isException'] !== true
+  );
+}
+
+/**
  * Base chip look shared by all block renderers. Positioning (absolute, top/left/
  * width/height) stays with each grid — the *look* is view-independent, the
  * *layout* is not.

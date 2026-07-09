@@ -1,7 +1,11 @@
 # PRD 101 — Transpose & anchors: the move/copy/paste/template mutation family
 
-**Status:** draft — 2026-07-09; **solution drafted same day** (§ "Drafted solution") —
-verb family + typed targets locked in the design dialog; implementation not started.
+**Status:** in-progress — 2026-07-09. Phases 0–5 DONE: findings + solution
+drafted, Swing copy-SINGLE fix (D9), server move family (`moveReservations`/
+`moveAppointment`/`splitOccurrence`/`copyReservations` reworked, `Duration`
+scalar deleted), curl-verified, and the SPA basic move + resize with the
+EVENT/SERIE/SINGLE scope dialog. Phase 6+ (copy verbs, SPA copy/paste,
+`instantiateTemplate`, `exchangeAllocatable`, month drag) deferred.
 This PRD is the durable record of a long design dialog (2026-07-09) plus a six-track
 research sweep (5-agent workflow over the Swing codebase + 1 multi-reservation deep-dive
 + external API survey). Read this before touching move/copy/paste/template mutations —
@@ -236,7 +240,7 @@ exchangeAllocatable(appointmentId: ID!, occurrence: LocalDateTime,
 | `copyReservations` | clone + shift (server-minted ids) | new reservations | no |
 | `instantiateTemplate` | read template reservations server-side, transpose, strip `rapla:template` → `copyof`, honor `fixedtimeandduration` (rejects `dateTime` target when true) | new reservations | no |
 | `moveAppointment` | shift/resize ONE appointment (rule rides along; weekly weekday set self-heals) | no | via `dateTime.end` |
-| `copyAppointment` | clone one appointment (rule + exceptions verbatim) **into the same reservation** (Swing "paste into existing"; paste-as-new = OQ1 residue) | new appointment (server id) | no |
+| `copyAppointment` | clone one appointment (rule + exceptions verbatim). `asNewReservation=false` → add to the SAME reservation (Swing "Einfügen"); `=true` → NEW reservation from just this appointment (Swing "Einfügen als neuer Termin") — mirrors Swing's own `pasteAppointment(…, asNewReservation, …)` param | new appointment; `asNewReservation` → new reservation (server ids) | no |
 | `splitOccurrence` | detach one occurrence: clone as non-repeating at target (restrictions carried) + `addException(cutDate(occurrence))` + `isNotEmptyWithExceptions` escalation | new appointment (server id) | via `dateTime.end` |
 | `exchangeAllocatable` | swap `from`→`to` allocatable at scope, with the full Swing restriction algebra (`ReservationControllerImpl:817–975`); SINGLE = split + swap; optional `target` = the diagonal drag (lane/column drop at a different time — atomic, Swing parity) | SINGLE: new appointment | no (Swing parity) |
 
@@ -298,64 +302,136 @@ Maintainer directive; recorded as PRD 094 D5. The SPA never rebuilds
 `updateReservation` payloads for scope moves.
 
 **D2 — exceptions are absolute calendar facts; NO operation re-bases them
-(2026-07-09, maintainer).** An exception means "no lecture on May 1 *because May 1 is
-a holiday*" — the reason is bound to the date, not the series shape. Consequences:
-(a) move: keep absolute — Swing/GraphQL status quo confirmed *with rationale*; the
-occurrence resurfacing off-holiday after a shift is CORRECT behavior, not a wart;
-(b) copy/template: the facade's day-count re-base (`FacadeImpl:1113–1120`) is judged
-WRONG under this doctrine — the server port deliberately does NOT copy it (a re-based
-exception lands on a meaningless date; an absolute one stays correct for near-range
-copies and goes inert for far-range ones ≈ Google/Graph drop-on-copy);
-(c) the GraphQL `copyReservations` (which never re-based) is accidentally correct.
-Open sub-choice OQ2 (keep-absolute vs drop-on-copy).
+(2026-07-09, maintainer, CONFIRMED).** An exception means "no lecture on May 1
+*because May 1 is a holiday*" — the reason is bound to the date, not the series shape.
+Round-trip stability clinches it: move a series away and back and the holiday exclusion
+still holds. Consequences: (a) **move** keeps exceptions absolute (Swing parity —
+`AppointmentImpl.move` verified never touches them); the occurrence resurfacing
+off-holiday after a shift is CORRECT, not a wart; (b) **copy/template** ALSO keeps
+them absolute — a **deliberate divergence from Swing**, whose `FacadeImpl.copy`
+re-bases by day-count (`:1113–1120`). Swing's re-base is judged *wrong*: on a
+near-range copy it actively suppresses the wrong day (copy +7d → the copy's May-1
+lecture happens and May-8 is wrongly skipped); keep-absolute stays correct near-range
+and goes harmlessly inert far-range (holidays don't translate by day-count anyway).
+OQ2 resolved → keep-absolute everywhere.
 
 **D3 — `until` is asymmetric: absolute on move, length-preserving on copy
-(2026-07-09, direction — confirm in solution draft).** "Until end of semester" is
-date-reasoned → a move must not extend it (forward moves shrink the series; emptying
-may warrant `INVALID_SHIFT`). A far-range copy with an absolute until would be empty →
-copy re-bases until to preserve length in days (facade behavior kept for copy only).
+(2026-07-09, CONFIRMED against Swing).** Only absolute-end series are affected
+(fixed-count is start-relative → preserved automatically). Verified Swing behavior:
+`AppointmentImpl.move` leaves `until` absolute (a forward move shrinks the tail —
+correct, the semester still ends when it ends); `FacadeImpl.copy` re-bases `until`
+length-preserving (`:1122–1132`) — necessary, else a far-range template copy is empty
+(zero occurrences). The asymmetry is principled: an out-of-range exception is *inert*,
+an out-of-range `until` is *load-bearing* (kills the series). We match Swing on both.
 
 **D4 — one transpose implementation server-side.** The facade primitive's anchor rule
 (earliest-start, relative offsets, per-variant arithmetic, restriction rewrite) is the
 spec; the `AppointmentPaste` millisecond path is subsumed and not ported.
 
-## Open questions
+**D5 — verified Swing exception/until behavior (the port target).**
 
-- **OQ1 — verb family final shape**: exact verb list + which take `anchor: Anchor` vs
-  positional from/to; naming (`moveAppointment` keeps implicit resize?); does
-  paste-into-existing become `addAppointment`-style or a copy-variant flag.
-- **OQ2 — exceptions on copy**: keep-absolute (lean — correct for near-range copies,
-  inert for far-range) vs drop-on-copy (Google/Graph precedent, cleaner storage).
-- **OQ3 — resize/`newEnd` placement**: sibling arg constrained to `dateTime` anchors vs
-  inside `DateTimeAnchor`; top/bottom-edge resize both expressible.
-- **OQ4 — `WeekdayAnchor`**: third variant now, or defer until the Wochenprogramm SPA
-  surface exists? (No industry precedent; rapla's weekday-swap gives the mechanic.)
-  Multi-weekday sets need it to be a set edit, not a date shift.
-- **OQ5 — resource axis**: `exchangeAllocatable` as its own verb (Swing shape) vs an
-  optional `resource: {from,to}` component combinable with a time anchor.
-- **OQ6 — orphaned-exception hygiene**: leave forever (status quo) vs opportunistic GC
-  on save vs UI-only display filter. (D2 makes orphans *meaningful* — GC may be wrong.)
-- **OQ7 — `INVALID_SHIFT` semantics**: currently claimed in PRD 056 prose but not
-  implemented; define exactly (move emptying an absolute-end series? until < start?).
-- **OQ8 — MONTHLY/YEARLY day-moves silently change pattern rank** (2nd Tue → 3rd Tue).
-  Accept (Swing behavior), warn, or reject rank-changing day-moves on monthly series?
-- **OQ9 — Swing copy-SINGLE midnight bug** (`:638–641`): fix in Swing, or note-and-leave
-  (SPA won't share the code path)?
+| | exceptions | `until` (absolute-end) | fixed count |
+|---|---|---|---|
+| move (`AppointmentImpl.move`) | absolute | absolute | preserved (start-relative) |
+| copy + template (`FacadeImpl.copy`) | re-based by day-count | re-based length-preserving | preserved |
+| **our design** | **absolute always** (D2 — diverges from Swing copy) | absolute on move / length-preserving on copy (D3 — matches Swing) | preserved |
+
+**D6 — naming: keep `copy*`, no cut verb, `splitOccurrence` over `moveOccurrence`
+(2026-07-09, maintainer).** "copy" = the complete source→destination operation (API
+sense: `cp`, Drive `files.copy`), not the clipboard step; the clipboard is client
+state the stateless API doesn't model (UI paste = call `copyReservations`/`moveReservations`
+with the remembered selection + `target`). No cut verb — cut/paste is a pure client
+composition (delete + copy/move). `splitOccurrence` names the observable consequence
+(a new appointment id appears; the occurrence detaches permanently — unlike RFC 5545's
+attached override) rather than hiding it behind "move".
+
+**D7 — `exchangeAllocatable` ported literally (2026-07-09, maintainer).** Including:
+scope enum (its arg shape doesn't vary by scope, so an enum is right here where it was
+wrong for move); SINGLE = split + swap; EVENT + `target` shifts only the grabbed
+appointment's time (`ReservationControllerImpl:934–941`, `app = addAppointment ?:
+appointment`); the full restriction algebra (`:817–975`).
+
+**D8 — MONTHLY rank drift accepted + documented (2026-07-09; OQ8).** MONTHLY has no
+stored pattern — nth-weekday re-derives from the start (`RepeatingImpl:631–640`), so a
+±7d SERIE move silently turns "2nd Tue" → "3rd Tue". Server accepts any move (Swing
+parity, arguably correct — the pattern IS the start); schema description warns; any
+snap/preview mitigation is a client concern, not in the contract.
+
+**D9 — Swing copy-SINGLE midnight bug FIXED (2026-07-09; OQ9).**
+`ReservationControllerImpl:638` used `toTime(cutDate(start))` (always 0 → clone at
+00:00); fixed to `toTime(start)`, extracted to the testable `singleCopyStart` helper,
+pinned by `SingleCopyStartTest` (tier-1, 3 cases, red-green verified). Independent of
+the GraphQL work; landed alongside it.
+
+## Open questions (remaining)
+
+- **OQ7 — `INVALID_SHIFT` semantics**: define exactly — a move emptying an absolute-end
+  series (all occurrences past `until`)? `until < start`? Currently PRD 056 prose,
+  unimplemented. Resolve when the move verb lands (Phase 2).
+- **OQ6 — orphaned-exception display**: D2 makes orphans *meaningful* (dormant holiday
+  facts), so GC would be a bug. At most a UI "inactive exceptions" grouping — a client
+  concern, deferred.
+- **OQ-copy — single-block paste-as-new**: RESOLVED — `copyAppointment.asNewReservation`
+  boolean (mirrors Swing's `pasteAppointment(…, asNewReservation, …)`).
 
 ## Plan
 
-### Phase 0 — this document (findings capture) — DONE 2026-07-09
-### Phase 1 — solution draft (NOT started)
-- [ ] Resolve OQ1–OQ5 in a design dialog; lock the verb family + anchor input
-- [ ] Rewrite PRD 056's verb-level notes + examples to the final shape; drop the
-      interim `moveAppointment` sketch + `Duration` migration decision there
-- [ ] Update PRD 094 Phase 4 to consume the final verbs
-- [ ] Distill the durable Swing findings (§1–§4, §7) into
-      `docs/architecture/reservation-edit.md` / a new architecture doc
-### Phase 2+ — implementation (test-first per verb; not scoped here)
+Implementation order (maintainer directive 2026-07-09): server first → Swing fix →
+restart + curl the API → SPA basic move + resize. **Copy/paste in the SPA deferred to a
+later phase** (server copy verbs may land opportunistically but the SPA consumes only
+move/resize now).
+
+### Phase 0 — findings capture (this document) — DONE 2026-07-09
+### Phase 1 — solution draft — DONE 2026-07-09 (§ "Drafted solution", Decisions D1–D9)
+### Phase 2 — Swing copy-SINGLE fix — DONE 2026-07-09 (D9; `SingleCopyStartTest` green)
+### Phase 3 — server: move family (test-first, tier-3 GraphQL)
+- [ ] Schema: `Target`, `ResizableTarget`, `DateTimeTarget` `@oneOf` inputs; drop
+      `Duration` scalar; rework `moveReservations` to `(reference?, target!)`
+- [ ] Shared server transpose helper (port `FacadeImpl.copy` anchor rule to the
+      operator; exceptions absolute per D2, `until` per D3/D5)
+- [ ] `moveAppointment` (SERIE; move + resize via `dateTime.end`; weekday self-heal;
+      `occurrence` default + `OCCURRENCE_NOT_FOUND` guard)
+- [ ] `splitOccurrence` (SINGLE; clone + restriction copy + `addException` +
+      `isNotEmptyWithExceptions` escalation)
+- [ ] `moveReservations` rework (EVENT/bulk; `reference` pivot)
+- [ ] tier-3 tests: one per verb/scope + resize + split-empties-series edge + §12 leak
+### Phase 4 — verify: restart dev server, curl the API (login → query → move → re-query)
+### Phase 5 — SPA: basic move + resize — DONE 2026-07-09
+- [x] Week grid drag → scoped move with the EVENT/SERIE/SINGLE dialog
+      (`MoveScopeDialogComponent`). Verb dispatch (`move-scope.ts`
+      `buildMoveScopeCommand`): EVENT → `moveReservations([id], reference)`,
+      SERIE → `moveAppointment`, SINGLE → `splitOccurrence` (repeating) /
+      `moveAppointment` (non-repeating appointment). A simple single
+      non-repeating block moves straight with no dialog (the old fast path).
+- [x] Week grid edge-resize (bottom handle) → `moveAppointment` with
+      `dateTime.end` (SERIE) / `splitOccurrence` with `dateTime.end` (SINGLE);
+      resize never offers EVENT (Swing parity).
+- [x] Wired through the PRD 094 command/undo infra (`UndoToastService`).
+      Move + resize carry compensating inverses; **`splitOccurrence` is
+      not undoable in v1** (`undo: null`) — a clean inverse needs the minted
+      appointment id + an updateReservation rebuild (D1 keeps that server-side);
+      deferred.
+- [x] Drag gate widened: `block-style.isDraggableRow` (canModify + resolvable
+      appointment id + not an exception occurrence) replaces the single-
+      appointment-non-repeating `isMovableRow` on BOTH the week and month grids.
+      Month drag now pops the same scope dialog (move-only, whole-day = keepTime;
+      no resize — Swing parity); pulled forward from Phase 6.
+- Tests: `move-scope.spec.ts` (facts/options/verb-dispatch, tier-5),
+  `event-commands.spec.ts` (move/resize/split builders + undo, tier-5), a month
+  repeating-drag tier-6 case, plus the existing week-grid/view-host tier-6 specs.
+  Full SPA suite green.
+- **v1 deviations / deferred:** no keyboard resize; `splitOccurrence`
+  non-undoable (above). Browser (tier-7) verification of the live drag/resize
+  gestures not yet run.
+### Phase 6+ (deferred) — copy verbs, SPA copy/paste, `instantiateTemplate`,
+      `exchangeAllocatable` (month scoped-drag landed early in Phase 5)
+
+Then: rewrite PRD 056 verb notes to the final shape (drop the superseded sketch),
+update PRD 094 Phase 4 task list, distill §1–§7 into `docs/architecture/reservation-edit.md`.
 
 ## Tests
 
-Solution-draft phase: none (docs only). Implementation phases will pin each verb with
-tier-3 GraphQL tests (one per scope + split/empty-series edges + §12 permission cases)
-per the test-first rule.
+Per-verb tier-3 GraphQL (`@SpringBootTest` + MockMvc / HttpGraphQlTester): happy path
+per scope, resize, the split-empties-series cascade, `OCCURRENCE_NOT_FOUND` on stale
+occurrence, and a §12 leak variant (non-admin cannot move an unreadable reservation).
+Swing fix pinned by `SingleCopyStartTest` (tier-1, done).

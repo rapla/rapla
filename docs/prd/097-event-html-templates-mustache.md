@@ -155,22 +155,58 @@ a *dialogless one-click* download turns out to be a hard requirement — see OQ2
 ### Phase 6 — Template-authoring UI (the GraphiQL analogue for the presentation layer)
 
 GraphiQL is the tooling for the **data** layer (the view); this phase gives the **presentation**
-layer its equivalent — an in-SPA editor where an author composes a document (view + template + CSS)
+layer its equivalent — an editor where an author composes a document (view + template + CSS)
 with immediate, engine-truthful feedback. Motivation: this is also where **AI-assisted authoring**
 lands — describe → AI generates the template → live preview validates → iterate. Without an
 engine-truthful preview, AI generation is a blind flight.
+
+**Delivery shape (decided 2026-07-09): a static admin page after the GraphiQL pattern — NOT part
+of the Angular SPA.** Like `static/graphiql/index.html`: a `static/template-editor/` page loading
+its editor from CDN, vanilla-JS toolbar speaking `fetch` against the server endpoints; the SPA
+only links to it from the admin menu. This drops the whole Monaco-in-Angular embedding cost
+(lazy-loading, worker config, bundle weight) and makes `/graphiql` (data authoring) and
+`/template-editor` (presentation authoring) two identically-built admin tool pages — same
+cookie-session auth, same CDN trade-off (both need internet access; if an air-gapped deployment
+ever needs them, serving the assets locally fixes both pages together).
+
+**Editor engine (decided 2026-07-09): Monaco** — the same engine GraphiQL 4+/5 (which rapla embeds
+at 5.2.1) runs on, so admins get identical editor behaviour across both tool pages; MIT-licensed,
+framework-free (no React needed on our page). Monaco's built-in `handlebars` language mode covers
+Mustache **highlighting only** (a Monarch tokenizer — it validates nothing; Handlebars-only syntax
+like `{{#if}}` highlights fine but is caught by the engine-truthful validation below, which is the
+actual "restrict to JMustache" mechanism). Web research 2026-07-09: no Mustache LSP / ready-made
+data-aware completion exists anywhere (Monaco feature request microsoft/monaco-editor#1731 open for
+years); everyone who has Mustache completion built a schema source themselves (Ember→Glint/TS,
+Qute→param declarations) — ours is the referenced view's selection set, the nicest of the lot.
 
 - [ ] **Preview endpoint** `POST /api/documents/preview` — body `{ template, viewName, variables }`.
       Renders with the **real engine** (JMustache — NOT a client-side mustache.js, whose output can
       differ), against the **real view data executed in the author's §12 read-scope** (author sees
       only their own data — no leak). Applies the same D6 pipeline: `<script>`-strip + sandboxed
       `<iframe>` + CSP, so the preview itself is never an XSS vector against the author.
-- [ ] **SPA editor**: view picker + variables input + template editor + live preview pane (renders
-      the preview HTML in a sandboxed iframe).
-- [ ] **Available-fields pane** — the GraphiQL-schema-explorer analogue: run the referenced view
-      once and surface its result shape (the JSON keys) so the author knows which `{{fields}}` exist.
+- [ ] **Static editor page** (`static/template-editor/`): view picker + variables input + Monaco
+      template editor + live preview pane (renders the preview HTML in a sandboxed iframe) +
+      load/save toolbar (the `graphiql/index.html` toolbar pattern against the template CRUD).
+- [ ] **Result-shape endpoint** (~100–200 lines): parse the referenced view's query with the
+      existing `graphql.parser.Parser` (+ schema walk for alias resolution and list-vs-object) and
+      return its selection-set tree as JSON — the single source for the fields pane, completion,
+      and unknown-field warnings.
+- [ ] **Available-fields pane** — the GraphiQL-schema-explorer analogue, fed by the result-shape
+      endpoint, so the author knows which `{{fields}}` exist.
+- [ ] **Field completion** (~150–250 lines JS, separately unit-testable): a Monaco
+      `CompletionItemProvider` on `{{` contexts; walks the open-section stack above the cursor
+      (`{{#…}}`/`{{^…}}`/`{{/…}}`) to descend the result-shape tree, proposes context-valid fields
+      and the closing tag of the open section. Suggests **only JMustache-valid constructs** — no
+      Handlebars helpers.
+- [ ] **Engine-truthful validation**: server compiles with the real JMustache
+      (`MustacheParseException` carries the line number) → editor shows red markers via
+      `setModelMarkers`, debounced; `saveTemplate` uses the same check as its save gate (the
+      `saveView` pattern). Optional second tier: traverse the compiled template with JMustache's
+      `Mustache.Visitor`, cross-check variable/section names against the result-shape tree →
+      yellow unknown-field warnings (a missing field can be intentional — Mustache renders empty).
 - [ ] Engine-agnostic: the preview renders with whichever engine the DevOps flag selects (D2) — the
-      tooling does not change between Mustache and Handlebars.
+      tooling does not change between Mustache and Handlebars (Monaco's mode is named `handlebars`
+      anyway; validation follows the real compiler automatically).
 - Note: public JS playgrounds (handlebarsjs.com "Try", online mustache testers) are fine for
   *learning syntax* but render with the JS impl + no access to our data — not usable for authoring
   against our server engine/§12 data, hence the server-backed preview.

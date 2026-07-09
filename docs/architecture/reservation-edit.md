@@ -291,75 +291,85 @@ The chosen `DialogAction` (`:506`) drives `AppointmentResize.change()`
   server reject (version conflict / permission) rolls the optimistic UI back and
   shows the exception.
 
-#### SPA gap — what's missing for parity (2026-07-09)
+#### SPA move/resize — implemented (PRD 101 Phase 5, 2026-07-09)
 
-The SPA week grid only enables drag when `canModify && appointmentCount === 1 &&
-repeating === null` (`week-grid.component.ts` `isMovableRow`) — i.e. **only the
-lone case where Swing skips the dialog** (EVENT is the sole safe action). Multi-
-appointment and repeating blocks show a plain pointer cursor and don't drag. To
-reach Swing parity the SPA needs BOTH a mutation surface and a dialog it does not
-have yet:
+The verb family and typed targets are designed in **PRD 101** (which supersedes
+the earlier PRD 056 `moveAppointment(…, dateShift, scope)` sketch). The transpose
+math and the EVENT/SERIE/SINGLE cascade live **server-side** (PRD 101 D1) — the
+SPA never rebuilds an `updateReservation` payload for a scoped move; its only job
+is the dialog + the compensating-undo command.
 
-- **Have:** `moveReservations(ids, dateShift: Duration!)` — shifts ALL
-  appointments of N reservations. This is the **EVENT** case only (and only when
-  it happens to be the whole reservation).
-- **Missing — dialog:** the EVENT/SERIE/SINGLE scope chooser (Swing
-  `showDialog` + `DialogAction`), shown on drag-move/resize of a
-  repeating/multi-appointment block, with the same show-when predicates.
-- **Missing — SERIE move:** shift ONE appointment's series inside a
-  multi-appointment reservation. `moveReservations` can't target one appointment;
-  expressible today only by rebuilding the whole reservation via
-  `updateReservation` (full-content `UpdateReservationInput`).
-- **Missing — SINGLE (occurrence) move:** the split — clone the occurrence as a
-  new non-repeating appointment at the new time (carrying its per-appointment
-  restrictions) + add an exception date to the original series. `RepeatingRule.
-  exceptions` is read-only on the wire (schema `:1130`); there is **no** mutation
-  to add an exception except by resending the entire reservation via
-  `updateReservation`/`applyChanges`.
-- **Decision (locked 2026-07-09): the scope logic lives in the GraphQL
-  mutation, not the client.** The SPA does **not** build `updateReservation`
-  payloads for SERIE/SINGLE — that would force the SPA event model to represent
-  multi-appointment sets + exceptions + per-appointment restrictions and would
-  duplicate the clone-and-except cascade in TypeScript. Instead, add a server
-  mutation that takes the block identity + a scope enum and carries the same
-  cascade Swing's `AppointmentResize.change()` does — designed in **PRD 056**
-  (§ "Verb-level semantic notes": `moveAppointment` + `AppointmentEditScope`),
-  consumed by **PRD 094 Phase 4** (the SPA scope dialog + undo command):
-  - `moveAppointment(reservationId, appointmentId, occurrenceStart, dateShift,
-    scope: EVENT | SERIE | SINGLE, keepTime)` — EVENT shifts all appointments of
-    the reservation, SERIE shifts the whole repeating appointment, SINGLE splits
-    the occurrence (clone as non-repeating at the new time carrying its
-    per-appointment restrictions + `repeating.addException(dayTruncated
-    occurrenceStart)`).
-  - resize maps to the same mutation with a `newEnd`/duration form (Swing uses
-    the one `showDialog(..., "move", ...)` path for both).
-  The `isNotEmptyWithExceptions` empty-series cascade and day-truncated exception
-  dates (see the Delete section) stay entirely server-side — the SPA never
-  reconstructs them. The client's only job is the **dialog**: present the
-  EVENT/SERIE/SINGLE chooser with the same show-when predicates and call the
-  mutation with the chosen scope. This keeps the recurrence-edit invariants in
-  one place (Java) exactly as `moveReservations`/`deleteAppointment` already do.
+**Server verb family** (`ReservationMutationController`, schema `Target` /
+`ResizableTarget` / `DateTimeTarget` `@oneOf` inputs; the old `Duration` scalar
+was **deleted** — it over-claimed ISO 8601 and couldn't express keep-time):
 
-**Example calls** (condensed — full set incl. keepTime / resize / concurrency in
-PRD 056 § "Verb-level notes → moveAppointment → Example calls"). Scenario:
-reservation `res-3f2a9c11` has a weekly appointment `app-8b7d0e42` (Mondays
-10:00–12:00); the user grabbed Monday 2026-07-13 and dropped it on Tuesday.
+- `moveReservations(ids: [ID!]!, reference: LocalDateTime, target: Target!)` —
+  shift EVERY appointment of every listed reservation. `reference` is an
+  unvalidated arithmetic pivot (default = derived earliest start); the client
+  sends the grabbed occurrence start so the delta is `target − reference`.
+- `moveAppointment(appointmentId, occurrence, target: ResizableTarget!,
+  expectedLastChanged)` — shift/resize ONE appointment (rule rides along, weekly
+  weekday set self-heals). `occurrence` is the grabbed block start (drag style —
+  the client MUST send it or a mid-series grab shifts by the wrong delta).
+  `target.dateTime.end` present ⇒ resize.
+- `splitOccurrence(appointmentId, occurrence!, target: ResizableTarget!,
+  expectedLastChanged)` — detach one occurrence: clone as non-repeating at the
+  target (per-appointment restrictions carried) + `addException(cutDate(
+  occurrence))` + the `isNotEmptyWithExceptions` empty-series cascade — all the
+  invariants from the Delete section, server-side.
+
+Target granularity is a **type**, not a `keepTime` flag: `day` = whole-day delta
+keeping time-of-day (≙ Swing `keepTime=true`, RFC 5545 DATE); `dateTime` = exact
+delta (≙ `keepTime=false`). The week grid always sends `dateTime` (exact); a
+whole-day shift is `N·1440` minutes, which is DST-safe because appointments store
+zone-less wall-clock `LocalDateTime`.
+
+**SPA client wiring** (`views/move-scope.ts`, `views/move-scope-dialog.component.ts`,
+`actions/event-commands.ts`, consumed by `view-host.component.ts`
+`onMoveBlock`/`onResizeBlock`):
+
+- **Drag gate widened** — `block-style.isDraggableRow` (canModify + resolvable
+  appointment id + not an exception occurrence) replaces the old single-
+  appointment-non-repeating `isMovableRow` on the WEEK grid, so repeating and
+  multi-appointment blocks now drag. Each movable chip also grows a bottom
+  **resize handle** (`.rz`, `ns-resize`).
+- **Scope decision** — `moveScopeOptions(facts, gesture)` mirrors
+  `deleteScopeOptions`: MOVE offers EVENT always, SERIE only when repeating AND
+  multi, SINGLE when repeating OR multi; RESIZE never offers EVENT (Swing parity)
+  and only splits SERIE/SINGLE when repeating. ≤1 option ⇒ no dialog (the lone
+  simple case moves straight through, exactly the old fast path).
+- **Verb dispatch** — `buildMoveScopeCommand`: EVENT → `moveReservations`,
+  SERIE → `moveAppointment`, SINGLE → `splitOccurrence` (repeating) /
+  `moveAppointment` (a non-repeating appointment among siblings). Resize routes to
+  `moveAppointment` / `splitOccurrence` with `target.dateTime.end`.
+- **Undo** — move + resize carry compensating inverses (a move back / restore the
+  old end). `splitOccurrence` is **not undoable in v1** (`undo: null`) — a clean
+  inverse needs the server-minted appointment id + an `updateReservation` rebuild,
+  which D1 keeps server-side; deferred.
+
+**Example calls** (schema shape as implemented). Scenario: reservation
+`res-3f2a9c11` has a weekly appointment `app-8b7d0e42` (Mondays 10:00–12:00); the
+user grabbed Monday 2026-07-13 and dropped it on Tuesday (+1 day).
 
 ```graphql
-# EVENT — "Ganze Veranstaltung": every appointment of the reservation shifts +1 day
-moveAppointment(reservationId: "res-3f2a9c11", appointmentId: "app-8b7d0e42",
-  occurrenceStart: "2026-07-13T10:00:00", dateShift: "P1D", scope: EVENT) { id }
+# EVENT — "Ganze Veranstaltung": every appointment of the reservation shifts +1 day.
+moveReservations(ids: ["res-3f2a9c11"], reference: "2026-07-13T10:00:00",
+  target: { dateTime: "2026-07-14T10:00:00" }) { overallStatus }
 
-# SERIE — "Serie": only this repeating appointment shifts (all its Mondays), others untouched
-moveAppointment(reservationId: "res-3f2a9c11", appointmentId: "app-8b7d0e42",
-  occurrenceStart: "2026-07-13T10:00:00", dateShift: "P1D", scope: SERIE) { id }
+# SERIE — "Serie": only this repeating appointment shifts (all its Mondays).
+moveAppointment(appointmentId: "app-8b7d0e42", occurrence: "2026-07-13T10:00:00",
+  target: { dateTime: { start: "2026-07-14T10:00:00" } }) { id }
 
-# SINGLE — "nur dieser Termin": split — the 2026-07-13 occurrence moves to Tuesday,
-# the series gains a 2026-07-13 exception + a new non-repeating appointment is created
-moveAppointment(reservationId: "res-3f2a9c11", appointmentId: "app-8b7d0e42",
-  occurrenceStart: "2026-07-13T10:00:00", dateShift: "P1D", scope: SINGLE) {
+# SINGLE — "nur dieser Termin": the 2026-07-13 occurrence detaches to Tuesday; the
+# series gains a 2026-07-13 exception + a new non-repeating appointment.
+splitOccurrence(appointmentId: "app-8b7d0e42", occurrence: "2026-07-13T10:00:00",
+  target: { dateTime: { start: "2026-07-14T10:00:00" } }) {
     id appointments { id start end repeating { exceptions } }
   }
+
+# RESIZE (SERIE) — same start, end extended 12:00 → 12:30 for every occurrence.
+moveAppointment(appointmentId: "app-8b7d0e42", occurrence: "2026-07-13T10:00:00",
+  target: { dateTime: { start: "2026-07-13T10:00:00", end: "2026-07-13T12:30:00" } }) { id }
 ```
 
 ### Delete — the scope dialog and its cascades

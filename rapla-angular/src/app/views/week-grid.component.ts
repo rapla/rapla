@@ -10,7 +10,7 @@ import {
   signal,
 } from '@angular/core';
 
-import { CHIP_BASE_CSS, chipColor, chipName, chipTime, isMovableRow } from './block-style';
+import { CHIP_BASE_CSS, chipColor, chipName, chipTime, isDraggableRow } from './block-style';
 import {
   layoutWeek,
   printMode,
@@ -174,6 +174,21 @@ function rowMatchedRefs(row: Row): NamedRef[] {
                 </span>
               }
             }
+            @if (resizePreview(); as rp) {
+              @if (rp.day === d.day) {
+                <!-- live resize outline: same start, new end -->
+                <span
+                  class="chip ghost"
+                  [class.neutral]="!color(rp.row)"
+                  [style.background]="color(rp.row)"
+                  [style.top]="blockTop(rp.startMin)"
+                  [style.height]="blockHeight(rp.startMin, rp.endMin)"
+                >
+                  <span class="t">{{ selLabelOf(rp.startMin, rp.endMin) }}</span>
+                  <span class="n">{{ nameOf(rp.row) }}</span>
+                </span>
+              }
+            }
             @for (b of d.blocks; track $index) {
               <span
                 class="chip"
@@ -181,7 +196,7 @@ function rowMatchedRefs(row: Row): NamedRef[] {
                 tabindex="0"
                 [class.neutral]="!color(b.row)"
                 [class.movable]="movable(b)"
-                [class.dragsource]="movePreview()?.row === b.row"
+                [class.dragsource]="movePreview()?.row === b.row || resizePreview()?.row === b.row"
                 [style.background]="color(b.row)"
                 [style.top]="blockTop(b.startMin)"
                 [style.height]="blockHeight(b.startMin, b.endMin)"
@@ -194,6 +209,9 @@ function rowMatchedRefs(row: Row): NamedRef[] {
               >
                 <span class="t">{{ b.contLeft ? '‹ ' : '' }}{{ timeOf(b.row) }}</span>
                 <span class="n">{{ nameOf(b.row) }}{{ b.contRight ? ' ›' : '' }}</span>
+                @if (movable(b)) {
+                  <span class="rz" (pointerdown)="armResize($event, b, d.day)"></span>
+                }
               </span>
             }
           </div>
@@ -370,6 +388,15 @@ function rowMatchedRefs(row: Row): NamedRef[] {
         cursor: grab;
         touch-action: none;
       }
+      .chip .rz {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 7px;
+        cursor: ns-resize;
+        touch-action: none;
+      }
       .chip.ghost {
         left: 1px;
         right: 1px;
@@ -421,8 +448,11 @@ export class WeekGridComponent {
   readonly openRow = output<Row>();
   /** Right-click on a chip — the view host opens the SHARED row menu (PRD 094). */
   readonly openMenu = output<{ row: Row; x: number; y: number }>();
-  /** Drag-move drop (gated by {@link isMovableRow}): day + minute shift. */
+  /** Drag-move drop (gated by {@link isDraggableRow}): day + minute shift. */
   readonly moveBlock = output<{ row: Row; dayDelta: number; minuteDelta: number }>();
+  /** Edge-resize drop (PRD 101 Phase 5): the block's new end, minutes-of-day
+   *  (start unchanged; the block stays on its day). */
+  readonly resizeBlock = output<{ row: Row; endMin: number }>();
   /** Drag-create: a snapped, possibly multi-day time-range selection was released
    *  (Swing SelectionHandler FLOW semantics — ONE continuous datetime interval). */
   readonly createTimeRange = output<{
@@ -449,7 +479,7 @@ export class WeekGridComponent {
     const measure = () => {
       // Never reflow mid-drag: changing the grid height moves the target under the pointer
       // and tears listeners; the drag handlers capture element geometry at gesture start.
-      if (this.mv || this.cre) return;
+      if (this.mv || this.cre || this.rz) return;
       const el = this.host.nativeElement as HTMLElement;
       const top = el.getBoundingClientRect().top;
       this.headerPx.set((el.querySelector('.hdr') as HTMLElement | null)?.offsetHeight ?? 0);
@@ -627,9 +657,10 @@ export class WeekGridComponent {
     this.openMenu.emit({ row, x: ev.clientX, y: ev.clientY });
   }
 
-  /** Drag affordance: gate + not a clipped multi-day segment (v1). */
+  /** Drag/resize affordance: gate + not a clipped multi-day segment (a resize
+   *  keeps the block on its day; a clipped segment has no true start/end here). */
   movable(b: DayBlockView): boolean {
-    return !b.contLeft && !b.contRight && isMovableRow(b.row);
+    return !b.contLeft && !b.contRight && isDraggableRow(b.row);
   }
 
   // --- drag-move (Swing DraggingHandler analog): idle → armed (pointerdown on a
@@ -732,6 +763,74 @@ export class WeekGridComponent {
     const f = (m: number) =>
       `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
     return `${f(startMin)} – ${f(endMin)}`;
+  }
+
+  // --- edge-resize (Swing AppointmentResize analog): grab the bottom handle,
+  // drag the end; start stays fixed and the block stays on its day. Drop emits
+  // the new end minute-of-day / ESC cancels. The preview shows the live extent.
+  readonly resizePreview = signal<{
+    day: string;
+    startMin: number;
+    endMin: number;
+    row: Row;
+  } | null>(null);
+  private rz: {
+    row: Row;
+    day: string;
+    startMin: number;
+    endMin: number;
+    colTop: number;
+    handle: HTMLElement;
+  } | null = null;
+  private readonly onRzMove = (ev: PointerEvent) => this.rzMove(ev);
+  private readonly onRzUp = () => this.rzUp();
+  private readonly onRzCancel = () => this.cancelResize();
+  private readonly onRzKey = (ev: KeyboardEvent) => {
+    if (ev.key === 'Escape') this.cancelResize();
+  };
+
+  armResize(ev: PointerEvent, b: DayBlockView, day: string): void {
+    if (ev.button !== 0 || this.rz || !this.movable(b)) return;
+    const handle = ev.currentTarget as HTMLElement;
+    ev.preventDefault();
+    ev.stopPropagation(); // don't also arm a move on the parent chip
+    handle.setPointerCapture?.(ev.pointerId);
+    const colTop = (handle.closest('.daycol') as HTMLElement).getBoundingClientRect().top;
+    this.rz = { row: b.row, day, startMin: b.startMin, endMin: b.endMin, colTop, handle };
+    handle.addEventListener('pointermove', this.onRzMove);
+    handle.addEventListener('pointerup', this.onRzUp);
+    handle.addEventListener('pointercancel', this.onRzCancel);
+    document.addEventListener('keydown', this.onRzKey);
+  }
+
+  private rzMove(ev: PointerEvent): void {
+    if (!this.rz) return;
+    const slot = 60 / this.rowsPerHour();
+    const endMin = Math.max(this.rz.startMin + slot, this.snapUp(this.minAt(ev.clientY, this.rz.colTop)));
+    this.resizePreview.set({ day: this.rz.day, startMin: this.rz.startMin, endMin, row: this.rz.row });
+  }
+
+  private rzUp(): void {
+    if (!this.rz) return;
+    const preview = this.resizePreview();
+    const source = this.rz;
+    this.teardownResize();
+    if (!preview || preview.endMin === source.endMin) return;
+    this.resizeBlock.emit({ row: source.row, endMin: preview.endMin });
+  }
+
+  private cancelResize(): void {
+    this.teardownResize();
+  }
+
+  private teardownResize(): void {
+    if (!this.rz) return;
+    this.rz.handle.removeEventListener('pointermove', this.onRzMove);
+    this.rz.handle.removeEventListener('pointerup', this.onRzUp);
+    this.rz.handle.removeEventListener('pointercancel', this.onRzCancel);
+    document.removeEventListener('keydown', this.onRzKey);
+    this.rz = null;
+    this.resizePreview.set(null);
   }
 
   // --- drag-create (idle → armed → dragging → emit/cancel; Swing SelectionHandler

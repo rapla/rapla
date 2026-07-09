@@ -1,6 +1,6 @@
 import { Component, computed, input, output, signal } from '@angular/core';
 
-import { CHIP_BASE_CSS, chipColor, chipName, chipTime, isMovableRow } from './block-style';
+import { CHIP_BASE_CSS, chipColor, chipName, chipTime, isDraggableRow } from './block-style';
 import { monthGridDays, chunkWeek, TOP0, type WeekChunk } from './month-chunks';
 
 type Row = Record<string, unknown>;
@@ -205,7 +205,10 @@ export class MonthGridComponent {
   readonly openRow = output<Row>();
   /** Right-click on a chip — the view host opens the SHARED row menu (PRD 094). */
   readonly openMenu = output<{ row: Row; x: number; y: number }>();
-  /** Drag-move drop (gated by {@link isMovableRow}): whole-day shift. */
+  /** Drag-move drop (gated by {@link isDraggableRow}): whole-day shift. The
+   *  scope (EVENT/SERIE/SINGLE) is resolved by the shared view-host dispatch —
+   *  month is move-only (no resize; Swing parity), a whole-day shift keeps the
+   *  time-of-day (≙ keepTime). */
   readonly moveBlock = output<{ row: Row; dayDelta: number; minuteDelta: number }>();
   /** PRD 095 Phase 3 — drag over free cell space selects a day range; released
    *  selection emits {from, to} ('YYYY-MM-DD', to inclusive, sorted). */
@@ -260,7 +263,7 @@ export class MonthGridComponent {
     this.openMenu.emit({ row, x: ev.clientX, y: ev.clientY });
   }
 
-  readonly isMovable = isMovableRow;
+  readonly isMovable = isDraggableRow;
 
   // --- drag-move (day-granular): idle → armed (pointerdown on a movable chip) →
   // dragging (threshold) → drop emits the whole-day shift / ESC cancels. The
@@ -276,7 +279,7 @@ export class MonthGridComponent {
   };
 
   armMove(ev: PointerEvent, row: Row): void {
-    if (ev.button !== 0 || this.mv || !isMovableRow(row)) return;
+    if (ev.button !== 0 || this.mv || !isDraggableRow(row)) return;
     const sourceDay = this.dayAt(ev.clientX, ev.clientY);
     if (!sourceDay) return;
     const chip = ev.currentTarget as HTMLElement;

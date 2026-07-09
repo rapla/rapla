@@ -1,6 +1,7 @@
 package org.rapla.server.spring.graphql;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -11,9 +12,12 @@ import java.util.Set;
 import org.rapla.client.edit.reservation.RepeatingRuleModel;
 import org.rapla.client.edit.reservation.RepeatingRuleProjector;
 import org.rapla.client.edit.reservation.RepeatingRuleWriter;
+import org.rapla.components.util.DateTools;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.AppointmentBlock;
+import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AppointmentImpl;
@@ -291,23 +295,41 @@ public class ReservationMutationController
 
     @MutationMapping
     public Map<String, Object> moveReservations(@Argument("ids") List<String> ids,
-                                                 @Argument("dateShift") Duration dateShift)
+                                                 @Argument("reference") LocalDateTime reference,
+                                                 @Argument("target") Map<String, Object> target)
             throws RaplaException
     {
         User caller = requireCaller();
-        UpdateEvent event = new UpdateEvent();
-        event.setUserId(caller.getId());
-        List<Map<String, Object>> results = new ArrayList<>(ids.size());
+        List<Reservation> resolved = new ArrayList<>(ids.size());
         for (int i = 0; i < ids.size(); i++)
         {
             Reservation r = operator.tryResolve(new ReferenceInfo<>(ids.get(i), Reservation.class));
             if (r == null) throw new ReservationMutationException("REFERENCE_NOT_FOUND",
                     "ids[" + i + "]", "Reservation " + ids.get(i) + " not found");
             requireCanModify(r, caller);
-            Reservation draft = editObject(r);
+            resolved.add(r);
+        }
+        // reference = arithmetic pivot; default = earliest appointment start across the set (PRD 101).
+        LocalDateTime pivot = reference;
+        if (pivot == null)
+        {
+            for (Reservation r : resolved)
+                for (Appointment a : r.getAppointments())
+                    if (pivot == null || a.getStart().isBefore(pivot)) pivot = a.getStart();
+        }
+        if (pivot == null) throw new ReservationMutationException("REQUIRED", "reference",
+                "no appointments to derive a reference from");
+        Duration delta = resolveTargetDeltas(target, pivot, null)[0]; // move-only → endDelta = startDelta
+
+        UpdateEvent event = new UpdateEvent();
+        event.setUserId(caller.getId());
+        List<Map<String, Object>> results = new ArrayList<>(ids.size());
+        for (int i = 0; i < resolved.size(); i++)
+        {
+            Reservation draft = editObject(resolved.get(i));
             for (Appointment a : draft.getAppointments())
             {
-                a.move(a.getStart().plus(dateShift), a.getEnd().plus(dateShift));
+                a.move(a.getStart().plus(delta), a.getEnd().plus(delta));
             }
             event.addStore(draft);
             results.add(bulkEntry(i, draft, null, null, null));
@@ -317,14 +339,106 @@ public class ReservationMutationController
     }
 
     @MutationMapping
-    public Map<String, Object> copyReservations(@Argument("ids") List<String> ids,
-                                                 @Argument("dateShift") Duration dateShift)
+    public Reservation moveAppointment(@Argument("appointmentId") String appointmentId,
+                                       @Argument("occurrence") LocalDateTime occurrence,
+                                       @Argument("target") Map<String, Object> target,
+                                       @Argument("expectedLastChanged") LocalDateTime expectedLastChanged)
             throws RaplaException
     {
         User caller = requireCaller();
-        UpdateEvent event = new UpdateEvent();
-        event.setUserId(caller.getId());
-        List<Map<String, Object>> results = new ArrayList<>(ids.size());
+        Appointment stored = resolveAppointment(appointmentId);
+        Reservation r = stored.getReservation();
+        requireCanModify(r, caller);
+        checkConcurrency(r, expectedLastChanged);
+        LocalDateTime occ = occurrence != null ? occurrence : stored.getStart();
+        if (occurrence != null) requireOccurrence(stored, occurrence);
+        LocalDateTime occEnd = occ.plus(Duration.between(stored.getStart(), stored.getEnd()));
+        Duration[] d = resolveTargetDeltas(target, occ, occEnd);
+
+        Reservation draft = editObject(r);
+        Appointment appt = findAppointment(draft, appointmentId);
+        appt.move(appt.getStart().plus(d[0]), appt.getEnd().plus(d[1]));
+        dispatchStore(caller, draft);
+        return draft;
+    }
+
+    @MutationMapping
+    public Reservation splitOccurrence(@Argument("appointmentId") String appointmentId,
+                                       @Argument("occurrence") LocalDateTime occurrence,
+                                       @Argument("target") Map<String, Object> target,
+                                       @Argument("expectedLastChanged") LocalDateTime expectedLastChanged)
+            throws RaplaException
+    {
+        User caller = requireCaller();
+        Appointment stored = resolveAppointment(appointmentId);
+        Reservation r = stored.getReservation();
+        requireCanModify(r, caller);
+        checkConcurrency(r, expectedLastChanged);
+        if (stored.getRepeating() == null)
+        {
+            throw new ReservationMutationException("INVALID_VALUE", "appointmentId",
+                    "splitOccurrence requires a repeating appointment; use moveAppointment");
+        }
+        requireOccurrence(stored, occurrence);
+        LocalDateTime occEnd = occurrence.plus(Duration.between(stored.getStart(), stored.getEnd()));
+        Duration[] d = resolveTargetDeltas(target, occurrence, occEnd);
+
+        Reservation draft = editObject(r);
+        Appointment original = findAppointment(draft, appointmentId);
+
+        // capture the allocatables restricted to the original appointment (id-list restrictions)
+        List<Allocatable> restrictedTo = new ArrayList<>();
+        for (Allocatable al : draft.getAllocatables())
+        {
+            Appointment[] restriction = draft.getRestriction(al);
+            for (Appointment ra : restriction)
+                if (ra.equals(original)) { restrictedTo.add(al); break; }
+        }
+
+        // add the exception on the original series; if it empties, remove the whole appointment
+        original.getRepeating().addException(DateTools.cutDate(occurrence));
+        if (!isNotEmpty(original))
+        {
+            draft.removeAppointment(original);
+            if (draft.getAppointments().length == 0)
+            {
+                // whole reservation emptied — delete it
+                UpdateEvent del = new UpdateEvent();
+                del.setUserId(caller.getId());
+                del.putRemoveId(new ReferenceInfo<>(r.getId(), Reservation.class));
+                operator.dispatch(del);
+                return r; // pre-delete snapshot
+            }
+        }
+
+        // clone the grabbed occurrence as a new non-repeating appointment at the target
+        Appointment clone = (Appointment) original.clone();
+        clone.setRepeatingEnabled(false);
+        ReferenceInfo<Appointment> cloneId = operator.createIdentifier(Appointment.class, 1).get(0);
+        ((AppointmentImpl) clone).setId(cloneId.getId());
+        clone.move(occurrence.plus(d[0]), occEnd.plus(d[1]));
+        draft.addAppointment(clone);
+        // carry the original appointment's restrictions onto the clone
+        for (Allocatable al : restrictedTo)
+        {
+            Appointment[] existing = draft.getRestriction(al);
+            Appointment[] extended = new Appointment[existing.length + 1];
+            System.arraycopy(existing, 0, extended, 0, existing.length);
+            extended[existing.length] = clone;
+            draft.setRestriction(al, extended);
+        }
+        dispatchStore(caller, draft);
+        return draft;
+    }
+
+    @MutationMapping
+    public Map<String, Object> copyReservations(@Argument("ids") List<String> ids,
+                                                 @Argument("reference") LocalDateTime reference,
+                                                 @Argument("target") Map<String, Object> target)
+            throws RaplaException
+    {
+        User caller = requireCaller();
+        List<Reservation> sources = new ArrayList<>(ids.size());
         for (int i = 0; i < ids.size(); i++)
         {
             Reservation src = operator.tryResolve(new ReferenceInfo<>(ids.get(i), Reservation.class));
@@ -332,38 +446,55 @@ public class ReservationMutationController
                     "ids[" + i + "]", "Reservation " + ids.get(i) + " not found");
             requireCanRead(src, caller);
             requireCanCreate(src.getClassification().getType(), caller);
-            Reservation copy = (Reservation) src.clone();
+            sources.add(src);
+        }
+        LocalDateTime pivot = reference;
+        if (pivot == null)
+        {
+            for (Reservation r : sources)
+                for (Appointment a : r.getAppointments())
+                    if (pivot == null || a.getStart().isBefore(pivot)) pivot = a.getStart();
+        }
+        if (pivot == null) throw new ReservationMutationException("REQUIRED", "reference",
+                "no appointments to derive a reference from");
+        Duration delta = resolveTargetDeltas(target, pivot, null)[0];
+
+        UpdateEvent event = new UpdateEvent();
+        event.setUserId(caller.getId());
+        List<Map<String, Object>> results = new ArrayList<>(ids.size());
+        for (int i = 0; i < sources.size(); i++)
+        {
+            Reservation copy = (Reservation) sources.get(i).clone();
             ReferenceInfo<Reservation> newId = operator.createIdentifier(Reservation.class, 1).get(0);
             ((ReservationImpl) copy).setId(newId.getId());
             copy.setOwner(caller);
-            // clone() keeps appointment ids (edit pattern) — a copy must mint
-            // fresh ones or checkIdIntegrity #2 rejects the store (the source
-            // reservation still owns the original appointment ids). Capture
-            // restrictions first: they are stored as appointment-id lists and
-            // must be rewritten against the new ids.
+            // clone() keeps appointment ids — a copy must mint fresh ones (checkIdIntegrity #2).
+            // Restrictions are appointment-id lists → rewrite against the new ids.
             Map<Allocatable, Appointment[]> restrictions = new LinkedHashMap<>();
             for (Allocatable al : copy.getAllocatables())
             {
                 Appointment[] restriction = copy.getRestriction(al);
-                if (restriction != null && restriction.length > 0)
-                {
-                    restrictions.put(al, restriction);
-                }
+                if (restriction != null && restriction.length > 0) restrictions.put(al, restriction);
             }
             Appointment[] copiedAppointments = copy.getAppointments();
             List<ReferenceInfo<Appointment>> newApptIds =
                     operator.createIdentifier(Appointment.class, copiedAppointments.length);
             for (int j = 0; j < copiedAppointments.length; j++)
-            {
                 ((AppointmentImpl) copiedAppointments[j]).setId(newApptIds.get(j).getId());
-            }
             for (Map.Entry<Allocatable, Appointment[]> entry : restrictions.entrySet())
-            {
                 copy.setRestriction(entry.getKey(), entry.getValue());
-            }
             for (Appointment a : copy.getAppointments())
             {
-                a.move(a.getStart().plus(dateShift), a.getEnd().plus(dateShift));
+                LocalDateTime oldStart = a.getStart();
+                a.move(oldStart.plus(delta), a.getEnd().plus(delta));
+                // D2: exceptions stay absolute (do NOT re-base). D3: non-fixed `until`
+                // is length-preserving on copy, else a far-range copy is empty.
+                Repeating rep = a.getRepeating();
+                if (rep != null && !rep.isFixedNumber() && rep.getEnd() != null)
+                {
+                    long lenDays = DateTools.countDays(oldStart, rep.getEnd());
+                    rep.setEnd(DateTools.addDays(a.getStart(), lenDays));
+                }
             }
             event.addStore(copy);
             event.addCreate(copy.getReference());
@@ -371,6 +502,101 @@ public class ReservationMutationController
         }
         operator.dispatch(event);
         return bulkResult("SUCCESS", results);
+    }
+
+    // ============================================ PRD 101 transpose helpers
+
+    /** Resolve an appointment id to its (read-only) stored appointment. */
+    private Appointment resolveAppointment(String appointmentId)
+    {
+        Appointment a = operator.tryResolve(new ReferenceInfo<>(appointmentId, Appointment.class));
+        if (a == null) throw new ReservationMutationException("REFERENCE_NOT_FOUND",
+                "appointmentId", "Appointment " + appointmentId + " not found");
+        return a;
+    }
+
+    private Appointment findAppointment(Reservation draft, String appointmentId)
+    {
+        for (Appointment a : draft.getAppointments())
+            if (appointmentId.equals(a.getId())) return a;
+        throw new ReservationMutationException("REFERENCE_NOT_FOUND", "appointmentId",
+                "Appointment " + appointmentId + " not found in reservation");
+    }
+
+    /**
+     * Resolve (startDelta, endDelta) from a target (@oneOf day|dateTime) against a reference
+     * start/end (PRD 101). day → whole-day delta keeping time-of-day; dateTime scalar (Target)
+     * → exact start shift; DateTimeTarget (ResizableTarget) → exact start shift + optional end
+     * (resize). endDelta defaults to startDelta (pure move).
+     */
+    @SuppressWarnings("unchecked")
+    private Duration[] resolveTargetDeltas(Map<String, Object> target, LocalDateTime referenceStart,
+                                           LocalDateTime referenceEnd)
+    {
+        Object day = target.get("day");
+        Object dateTime = target.get("dateTime");
+        LocalDateTime newStart;
+        LocalDateTime newEnd = null;
+        if (day instanceof LocalDate d)
+        {
+            newStart = LocalDateTime.of(d, referenceStart.toLocalTime());
+        }
+        else if (dateTime instanceof LocalDateTime ldt)
+        {
+            newStart = ldt;
+        }
+        else if (dateTime instanceof Map)
+        {
+            Map<String, Object> dt = (Map<String, Object>) dateTime;
+            newStart = (LocalDateTime) dt.get("start");
+            newEnd = (LocalDateTime) dt.get("end");
+        }
+        else
+        {
+            throw new ReservationMutationException("REQUIRED", "target",
+                    "target must set exactly one of day / dateTime");
+        }
+        Duration startDelta = Duration.between(referenceStart, newStart);
+        Duration endDelta = (newEnd != null && referenceEnd != null)
+                ? Duration.between(referenceEnd, newEnd) : startDelta;
+        return new Duration[] { startDelta, endDelta };
+    }
+
+    /** Validate that {@code occurrence} is a real block start of the appointment. */
+    private void requireOccurrence(Appointment appointment, LocalDateTime occurrence)
+    {
+        List<AppointmentBlock> blocks = new ArrayList<>();
+        appointment.createBlocks(occurrence, occurrence.plusNanos(1), blocks);
+        for (AppointmentBlock b : blocks)
+            if (b.getStartDateTime().equals(occurrence)) return;
+        throw new ReservationMutationException("OCCURRENCE_NOT_FOUND", "occurrence",
+                "No occurrence starts at " + occurrence);
+    }
+
+    private void checkConcurrency(Reservation r, LocalDateTime expectedLastChanged)
+    {
+        if (expectedLastChanged != null && r.getLastChanged() != null
+                && !expectedLastChanged.equals(r.getLastChanged()))
+        {
+            throw new ReservationMutationException("CONCURRENT_MODIFICATION", "expectedLastChanged",
+                    "Reservation was modified concurrently");
+        }
+    }
+
+    private void dispatchStore(User caller, Reservation draft) throws RaplaException
+    {
+        UpdateEvent event = new UpdateEvent();
+        event.setUserId(caller.getId());
+        event.addStore(draft);
+        operator.dispatch(event);
+    }
+
+    /** True if the appointment still produces ≥1 block (mirrors isNotEmptyWithExceptions). */
+    private boolean isNotEmpty(Appointment appointment)
+    {
+        List<AppointmentBlock> blocks = new ArrayList<>();
+        appointment.createBlocks(appointment.getStart(), DateTools.addYears(appointment.getStart(), 4), blocks);
+        return !blocks.isEmpty();
     }
 
     @MutationMapping

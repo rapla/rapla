@@ -272,6 +272,30 @@ describe('MonthGridComponent — drag-create day-range selection (PRD 095 Phase 
     expect(emitted[0].row['name']).toBe('Seminar KI');
   });
 
+  it('PRD 101: a repeating chip now drags in month view (scope resolved downstream)', () => {
+    const f = mount([
+      {
+        start: '2026-07-07T11:00:00',
+        end: '2026-07-07T12:00:00',
+        name: 'Vorlesung',
+        times: '11:00',
+        color: '#1565c0',
+        reservation: { id: 'res-rep', canModify: true, appointmentCount: 1 },
+        appointment: { id: 'a-rep', repeating: { type: 'WEEKLY' } },
+        appointmentId: 'a-rep',
+      },
+    ]);
+    const emitted: { dayDelta: number; minuteDelta: number }[] = [];
+    f.componentInstance.moveBlock.subscribe((e) => emitted.push(e));
+    const chip = chips(f, 'Vorlesung')[0];
+    stubHit(cell(f, '2026-07-07'));
+    chip.dispatchEvent(pointer('pointerdown', 10, 10));
+    stubHit(cell(f, '2026-07-08'));
+    chip.dispatchEvent(pointer('pointermove', 60, 10));
+    chip.dispatchEvent(pointer('pointerup', 60, 10));
+    expect(emitted).toEqual([expect.objectContaining({ dayDelta: 1, minuteDelta: 0 })]);
+  });
+
   it('a non-movable chip (no gate facts) never emits moveBlock', () => {
     const f = mount();
     const emitted: unknown[] = [];

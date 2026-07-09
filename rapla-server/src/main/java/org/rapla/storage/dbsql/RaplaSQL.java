@@ -462,6 +462,40 @@ class RaplaSQL
         }
     }
 
+    public StoredArtifact getArtifact(Connection con, String id) throws RaplaException
+    {
+        try
+        {
+            artifactStorage.setConnection(con, getDatabaseTimestamp(con));
+            return artifactStorage.loadById(id);
+        }
+        catch (SQLException e)
+        {
+            throw new RaplaException("Error reading artifact " + id, e);
+        }
+        finally
+        {
+            artifactStorage.removeConnection();
+        }
+    }
+
+    public Collection<StoredArtifact> getAllArtifactsMetadata(Connection con) throws RaplaException
+    {
+        try
+        {
+            artifactStorage.setConnection(con, getDatabaseTimestamp(con));
+            return artifactStorage.loadMetadataIntoList();
+        }
+        catch (SQLException e)
+        {
+            throw new RaplaException("Error reading artifact metadata.", e);
+        }
+        finally
+        {
+            artifactStorage.removeConnection();
+        }
+    }
+
     public void saveAllArtifacts(Connection con, Collection<StoredArtifact> artifacts) throws RaplaException
     {
         try
@@ -3300,8 +3334,31 @@ class ArtifactStorage extends RaplaTypeStorage<StoredArtifact>
 
     public Collection<StoredArtifact> loadAllIntoList() throws SQLException
     {
-        try (PreparedStatement stmt = con.prepareStatement(selectSql))
+        return query(selectSql, null);
+    }
+
+    /** Catalog listing — bodies stay in the database (metadata-only rows, BODY selected as NULL). */
+    public Collection<StoredArtifact> loadMetadataIntoList() throws SQLException
+    {
+        final String sql = "select ID,KIND,NAME,OWNER_ID,CAST(NULL AS CHAR(1)),METADATA,CREATED_AT,CHANGED_AT,CHANGED_BY from " + tableName;
+        return query(sql, null);
+    }
+
+    /** Point read by natural key; null when absent. */
+    public StoredArtifact loadById(String id) throws SQLException
+    {
+        final Collection<StoredArtifact> result = query(selectSql + " where ID = ?", id);
+        return result.isEmpty() ? null : result.iterator().next();
+    }
+
+    private Collection<StoredArtifact> query(String sql, String idParam) throws SQLException
+    {
+        try (PreparedStatement stmt = con.prepareStatement(sql))
         {
+            if (idParam != null)
+            {
+                stmt.setString(1, idParam);
+            }
             final ResultSet rs = stmt.executeQuery();
             if (rs == null)
             {

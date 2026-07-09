@@ -1152,7 +1152,32 @@ scalar Date
 # ATOMIC-only in v1 (PRD 062 defers PARTIAL + heavier robustness patterns).
 # `@oneOf` on ChangeOp enforces exactly-one-variant at parse time.
 
-scalar Duration
+"""
+PRD 101 — transpose target. @oneOf: the variant type IS the granularity.
+`day` = a whole-day delta against the reference's date, time-of-day preserved by
+construction (≙ Swing keepTime=true, RFC 5545 DATE). `dateTime` = exact delta
+(≙ keepTime=false, RFC DATE-TIME). Move-only flavor — no resize.
+"""
+input Target @oneOf {
+  day: Date
+  dateTime: LocalDateTime
+}
+
+"""
+PRD 101 — transpose target for single-block move verbs, which can also resize.
+`day` is move-only (a day-granular surface has no resize handle — structural).
+`dateTime.end` present ⇒ resize the addressed block.
+"""
+input ResizableTarget @oneOf {
+  day: Date
+  dateTime: DateTimeTarget
+}
+
+"Target start (and optional end) for a single-block move/resize. end present ⇒ resize."
+input DateTimeTarget {
+  start: LocalDateTime!
+  end: LocalDateTime
+}
 
 type Mutation {
   # ===== editor flow =====
@@ -1175,14 +1200,51 @@ type Mutation {
   "Reassign owner across N reservations to a single new owner. Admin/group-admin workflow."
   changeReservationOwner(ids: [ID!]!, newOwnerId: ID!): BulkResult!
 
-  "Shift the start of N reservations' appointments by an ISO-8601 Duration. Recurrence rules preserved structurally."
-  moveReservations(ids: [ID!]!, dateShift: Duration!): BulkResult!
+  """
+  Shift N reservations (all their appointments) to a new anchor (PRD 101).
+  `reference` = the arithmetic pivot the delta is measured from — default = the
+  earliest appointment start across the set (server-derived at execution time). The
+  EVENT drag passes the grabbed occurrence start so a mid-batch grab shifts correctly.
+  `target` carries the granularity: `day` keeps each appointment's time-of-day (whole-day
+  delta); `dateTime` shifts exactly. Move-only — set transforms cannot resize.
+  Exceptions stay absolute (D2); repeating `until` stays absolute on move (D3).
+  """
+  moveReservations(ids: [ID!]!, reference: LocalDateTime, target: Target!): BulkResult!
 
-  "Duplicate N reservations with new UUIDs, shifted by an ISO-8601 Duration. Copies start with no permission overrides."
-  copyReservations(ids: [ID!]!, dateShift: Duration!): BulkResult!
+  """
+  Duplicate N reservations to a new anchor (new server-minted ids; PRD 101). Same
+  `reference`/`target` transpose as moveReservations. Exceptions stay absolute (D2);
+  non-fixed repeating `until` is length-preserving on copy (D3). Copies start with no
+  permission overrides. NOT idempotent — a retried call creates another copy.
+  """
+  copyReservations(ids: [ID!]!, reference: LocalDateTime, target: Target!): BulkResult!
 
   "Delete N reservations. No per-id concurrency check — accepts the race. For concurrency-checked delete use applyChanges with DeleteInput.expectedLastChanged."
   deleteReservations(ids: [ID!]!): BulkResult!
+
+  """
+  Move or resize ONE appointment — the whole SERIE (PRD 101). The appointment's start
+  (and every occurrence) shifts by the delta from `occurrence` to `target`; the repeating
+  rule rides along (weekly weekday set self-heals; MONTHLY re-derives its nth-weekday
+  pattern from the new start — moving a monthly series by non-month amounts silently
+  changes its day-of-month rank). `occurrence` = the grabbed occurrence; defaults to the
+  appointment's own start (occurrence #1). If given it is validated (OCCURRENCE_NOT_FOUND
+  when it matches no occurrence). `target.dateTime.end` present ⇒ resize (a `day` target
+  cannot resize — structural). Exceptions and `until` stay absolute (D2/D3).
+  """
+  moveAppointment(appointmentId: ID!, occurrence: LocalDateTime, target: ResizableTarget!,
+                  expectedLastChanged: LocalDateTime): Reservation!
+
+  """
+  Move/resize a SINGLE occurrence of a repeating appointment by splitting it off (PRD 101).
+  The occurrence is cloned as a new NON-repeating appointment at `target` (carrying the
+  original appointment's per-allocatable restrictions), and the series gains an exception
+  on the original date. If that exception would empty the series, the whole appointment is
+  removed instead (and if that empties the reservation, the reservation is removed). The
+  response carries the new appointment id. Requires a repeating appointment.
+  """
+  splitOccurrence(appointmentId: ID!, occurrence: LocalDateTime!, target: ResizableTarget!,
+                  expectedLastChanged: LocalDateTime): Reservation!
 
   # ===== PRD 063 — Allocatable (resource / person) mutations =====
 
