@@ -1,7 +1,7 @@
 # PRD 077 — Calendar model & saved views over GraphQL
 
-**Status:** draft (design — deferred until the SPA table views ship: server contract in PRD 074,
-Angular renderer in [PRD 078](078-spa-graphql-view-renderer.md)). Carved out of the PRD 074
+**Status:** draft (design — deferred until the SPA table views ship: server contract in [PRD 074](074-graphql-declarative-views.md),
+Angular renderer in [PRD 078](078-spa-graphql-view-renderer.md)). Carved out of the [PRD 074](074-graphql-declarative-views.md)
 discussion (2026-06-20) so the "quick breakthrough" (tables in the SPA) isn't blocked by the
 harder persistence/switching design. 077 reuses 078's transport + renderer + selection.
 
@@ -10,7 +10,7 @@ harder persistence/switching design. 077 reuses 078's transport + renderer + sel
 Replace the legacy **`CalendarModel` / saved calendars** with a GraphQL-native model: how the SPA
 **persists view state**, how a user's saved calendars map onto **stored GraphQL views + inputs**,
 how **view-switching/conversion** works, and how **week/month calendar render-modes** are fed from
-GraphQL. PRD 074 owns the *table* render layer + the `@view`/function-field/sort/pagination
+GraphQL. [PRD 074](074-graphql-declarative-views.md) owns the *table* render layer + the `@view`/function-field/sort/pagination
 mechanics; **this PRD owns persistence, switching, conversion, and the graphical calendar views.**
 
 ## Legacy ground truth (verified)
@@ -25,9 +25,9 @@ mechanics; **this PRD owns persistence, switching, conversion, and the graphical
   "switch table↔week↔month keeping inputs" charm. It also stores **both** the table range
   (`start/end`) **and** the week anchor (`selectedDate`) so the switch-back is lossless.
 
-## Decisions carried in from the PRD 074 discussion (2026-06-20)
+## Decisions carried in from the [PRD 074](074-graphql-declarative-views.md) discussion (2026-06-20)
 
-- **SPA views are independent** (PRD 074 Decision 6) — no uniform input contract, no `timeContext`
+- **SPA views are independent** ([PRD 074](074-graphql-declarative-views.md) Decision 6) — no uniform input contract, no `timeContext`
   reconciliation machinery, no enforced cross-view switching. Each view = its `@view` query + its
   own inputs + render-mode.
 - **The switch charm is *emergent*, not enforced:** the event-family views (`events`/`appointments`/
@@ -39,7 +39,7 @@ mechanics; **this PRD owns persistence, switching, conversion, and the graphical
   week/month = **anchor** + fixed interval. Resolved by: **persist one date** (the view's render-mode),
   and keep **per-render-mode date in client-session state** for lossless round-trips (the legacy
   "co-store both" becomes ephemeral client state, not persisted).
-- **Three storage levels:** (1) **view definition** (shared/admin — the `@view` query, PRD 074
+- **Three storage levels:** (1) **view definition** (shared/admin — the `@view` query, [PRD 074](074-graphql-declarative-views.md)
   storage); (2) **SavedView instance** (per-user — `{ viewRef, inputs, title?, options }`); (3)
   **runtime** (client-ephemeral GraphQL variables).
 - **Two orthogonal axes:** **domain** (root field + its schema filter type — Reservation/Allocatable/
@@ -63,7 +63,7 @@ mechanics; **this PRD owns persistence, switching, conversion, and the graphical
   **best-effort conversion à la dynamic-type `commitChange`** ("convert what fits, drop the rest" —
   e.g. table-range→week-anchor; conflict-selection dropped in a plain table). Open: client-side vs
   small server helper; how aggressive the defaulting is. May ship as a pure **client-side
-  convenience** (PRD 074 Decision 6 leaves the door open).
+  convenience** ([PRD 074](074-graphql-declarative-views.md) Decision 6 leaves the door open).
 - **Week/month render-modes.** Feed the calendar grid from GraphQL (appointmentBlocks with
   start/end + display + resources + **colors**). `extensions.view` becomes **render-mode-aware**
   (grid-hints instead of columns). **§12 RenderedBlock rule:** a block whose colors mix a
@@ -98,8 +98,8 @@ mechanics; **this PRD owns persistence, switching, conversion, and the graphical
 
 ## Out of scope
 
-The PRD 074 **table** render layer (`@view`, function fields, sort, pagination, `extensions.view`
-for tables) — that ships first. The function/composition engine (PRD 073).
+The [PRD 074](074-graphql-declarative-views.md) **table** render layer (`@view`, function fields, sort, pagination, `extensions.view`
+for tables) — that ships first. The function/composition engine ([PRD 073](073-graphql-function-equivalents.md)).
 
 ## Open questions
 
@@ -108,7 +108,7 @@ for tables) — that ships first. The function/composition engine (PRD 073).
 3. Ownership/visibility (private vs shared/published saved views).
 4. Conversion: client-side only vs server helper; defaulting aggressiveness.
 5. Week/month render-meta shape in `extensions.view` (grid-hints schema).
-   *Resolved 2026-07-07 (PRD 095 D2):* **none needed** — a §12-gated
+   *Resolved 2026-07-07 ([PRD 095](095-month-grid-render-mode.md) D2):* **none needed** — a §12-gated
    `AppointmentBlock.color` field sufficed; `extensions.view` stays column-shaped
    and the month grid renders client-side from the flat rows.
 6. Migration path for existing CalendarModels.

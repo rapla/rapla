@@ -31,4 +31,16 @@ public interface UserProvisioner
      * @return the post-provisioning {@link User} (re-read from cache).
      */
     User provision(IdentityClaims claims) throws RaplaException;
+
+    /**
+     * As {@link #provision(IdentityClaims)}, but when {@code autoProvision} is false a
+     * <em>new</em> user is NOT created — an unknown identity is rejected
+     * (security-audit A0c / PRD 036 {@code rapla.oauth.external.<id>.auto-provision}).
+     * An existing user is still resolved and updated. Implementations that do not gate
+     * provisioning fall back to the auto-provisioning behaviour.
+     */
+    default User provision(IdentityClaims claims, boolean autoProvision) throws RaplaException
+    {
+        return provision(claims);
+    }
 }

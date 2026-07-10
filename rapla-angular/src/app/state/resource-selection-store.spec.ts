@@ -5,22 +5,9 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 
 import { ResourceSelectionStore, type ResourceItem } from './resource-selection-store';
 import { RecentsFavoritesService } from './recents-favorites.service';
-import { AuthService, type Identity } from '../auth/auth.service';
+import { AuthService } from '../auth/auth.service';
 
 const item = (id: string): ResourceItem => ({ id, label: id });
-
-function identity(userId: string): Identity {
-  return {
-    userId,
-    username: userId,
-    name: userId,
-    admin: false,
-    roles: [],
-    impersonating: false,
-    actor: null,
-    target: null,
-  };
-}
 
 /**
  * PRD 089: recents + favorites are now server-backed (RecentsFavoritesService);

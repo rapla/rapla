@@ -1,21 +1,21 @@
 # GraphQL API — generic query catalog
 
-PRD 035 exposes a GraphQL endpoint at `POST /api/graphql` covering
+[PRD 035](prd/done/035-graphql-foundations.md) exposes a GraphQL endpoint at `POST /api/graphql` covering
 allocatables (resources + persons), classifications, dynamic types, and
-reservations (PRD 055/066). Live UIs: GraphiQL at `/graphiql/`,
+reservations (PRD [055](prd/055-graphql-events-read-api.md)/[066](prd/066-graphql-reservation-allocatable-matching.md)). Live UIs: GraphiQL at `/graphiql/`,
 Scalar at `/scalar/`, schema-as-data via introspection.
 
 ---
 
-## TODO — Angular SPA admin convention helper (PRD 035 §5b follow-up)
+## TODO — Angular SPA admin convention helper ([PRD 035](prd/done/035-graphql-foundations.md) §5b follow-up)
 
 > **Big TODO, not yet implemented.** Land alongside the schema-editor
 > work or as a separate small PRD.
 
 **Problem.** Rapla keys go into the GraphQL schema verbatim — no
 PascalCase, no SCREAMING_SNAKE, no automatic transformation
-(PRD 058 + PRD 035 §5b revision 2026-05-28). That's the right
-boundary: PRD 058 owns syntax (the GraphQL identifier regex),
+([PRD 058](prd/058-graphql-key-spec-migration.md) + [PRD 035](prd/done/035-graphql-foundations.md) §5b revision 2026-05-28). That's the right
+boundary: [PRD 058](prd/058-graphql-key-spec-migration.md) owns syntax (the GraphQL identifier regex),
 admins own convention (case style). But it means an admin who keys a
 DynamicType `room` and category leaves `seminar_raum` / `hoersaal`
 gets a schema like:
@@ -32,7 +32,7 @@ codegen / lint tooling will warn or auto-rename downstream.
 
 **What we should NOT do.** Imposing the convention server-side (e.g.
 having the SDL generator PascalCase type names or uppercase enum
-values) re-introduces the same class of bug PRD 058 just removed:
+values) re-introduces the same class of bug [PRD 058](prd/058-graphql-key-spec-migration.md) just removed:
 silent transformations destroy information. Concrete burn 2026-05-28
 on dhbw: `DIN_5_2_3_11` / `DIN_5_2_31_1` / `DIN_52_3_11` all collapsed
 to `DIN52311`; SDL generator silently dropped 2 of every 3 leaves
@@ -51,9 +51,9 @@ with a WARN. Verbatim emission was the fix.
 - Never enforce; never silently rewrite on save. The admin's
   explicit choice always wins. The hint is education, not policy.
 
-This lives in the SPA's schema-editor forms (PRD 057
+This lives in the SPA's schema-editor forms ([PRD 057](prd/done/057-graphql-dt-mutations-v1.md)
 `createDynamicType` / `updateDynamicType` mutation consumers when
-those ship). Server-side, the existing PRD 058 spec check is the only
+those ship). Server-side, the existing [PRD 058](prd/058-graphql-key-spec-migration.md) spec check is the only
 gate — same as today.
 
 **Why this is fine to defer.** Existing dhbw deploys already have keys
@@ -78,7 +78,7 @@ and the SPA-on-interface contract see
 
 Every fenced ```graphql block in this file and in
 `~/git/dhbwrapla/docs/graphql.md` is executable against a running rapla
-server. The schema-as-data nature of the API plus rapla's PRD 058
+server. The schema-as-data nature of the API plus rapla's [PRD 058](prd/058-graphql-key-spec-migration.md)
 verbatim-key emission means doc drift is real — queries go stale
 silently when admins rename a DynamicType / attribute / category root,
 or refactor the schema.
@@ -109,8 +109,14 @@ controller resolvers).
 
 ## Auth
 
-GraphQL is a regular `/api/*` endpoint behind Spring Security. Get a JWT
-via the password grant (rapla-client public OAuth client):
+`/api/graphql` is in `SecurityConfig` `permitAll()` **by design** — it is
+NOT a 401 Bearer-JWT gate. An anonymous request returns HTTP 200 and reaches
+the resolvers; the auth boundary is the per-field §12 `canRead` gating inside
+the resolvers (anonymous → null caller → empty read scope; mutations fail
+closed via `requireCaller()`). A missing/invalid token surfaces as a GraphQL
+`UNAUTHENTICATED` error in the `errors` array, not an HTTP 401. To act as a
+real user, get a JWT via the password grant (rapla-client public OAuth
+client) and attach it:
 
 ```bash
 TOK=$(curl -s -X POST http://localhost:8051/oauth2/token \
@@ -133,9 +139,12 @@ gq() {
 }
 ```
 
-GraphiQL / Scalar / Swagger UI all read the SPA's `localStorage.access_token`
-— log in via the SPA at `/app/login` first; the explorer panels pick the
-token up automatically.
+GraphiQL / Scalar / Swagger UI authenticate via the browser session, not a
+JS-readable token. Since [PRD 072](prd/072-server-side-login-dialog.md) Phase 4 the SPA holds NO `access_token` —
+it's an HttpOnly cookie JS cannot read. Log in via the SPA at `/app/login`
+first; the explorer requests then carry the `access_token` cookie
+automatically plus an `X-XSRF-TOKEN` double-submit header (from the
+`XSRF-TOKEN` cookie) for CSRF protection.
 
 ## Type identity — keys are the API, renames break loudly ([ADR 0005](decisions/0005-graphql-keys-are-api-identity.md))
 
@@ -145,12 +154,12 @@ fragments, and the type-selection filter. Type selection is the single generated
 `typeIn` on **per-kind enums** — `AllocatableFilter.typeIn: [AllocatableTypeKey!]`
 (resource+person keys) and `ReservationFilter.typeIn: [ReservationTypeKey!]` (reservation
 keys). Unknown keys **and wrong-kind keys are validation errors**, not silent empty results
-(the former `typeKeyEq`/`typeKeyIn` String fields were removed, PRD 059 Phase 7).
+(the former `typeKeyEq`/`typeKeyIn` String fields were removed, [PRD 059](prd/done/059-graphql-typed-where-predicates.md) Phase 7).
 
 Consequences (details + rationale in the ADR):
 - A type **rename is a breaking API change** — the schema rebuilds automatically (~10 s
   multi-pod), but client documents/variables referencing the old key fail validation.
-- **Server-stored custom views** (`org.rapla.graphql.customViews`, PRD 074) are
+- **Server-stored custom views** (`org.rapla.graphql.customViews`, [PRD 074](prd/074-graphql-declarative-views.md)) are
   **revalidated-and-marked** after every rebuild: invalid views keep their text, refuse
   execution, carry `invalidReason`; the admin fixes them in GraphiQL. No auto-migration.
 - Typed attribute predicates `where<TypeKey>` exist for all kinds — resource/person on
@@ -201,7 +210,7 @@ explicit, deploy-coupled).
 
 rapla's category tree serves three distinct purposes that look the same
 in storage but should look different at the API boundary. The GraphQL
-schema makes this split explicit (PRD 035 §5a-c).
+schema makes this split explicit ([PRD 035](prd/done/035-graphql-foundations.md) §5a-c).
 
 ### Three category modes
 
@@ -434,7 +443,7 @@ SDL directives carry the bits introspection alone doesn't expose:
 | `@multiplicity(value: BELONGS_TO \| PACKAGE)` | ALLOCATABLE only, non-default multiplicity | Widget hint (vs plain LIST/SINGLE which is implied by the field type wrapper) |
 | `@expectedType(key: "...")` | ALLOCATABLE attrs with a DynamicType constraint | Filter the allocatable picker |
 | `@rootCategory(path: "key/path")` | CATEGORY attrs with an admin-set root | Allowed root for the category picker |
-| `@editView(value: "title" \| "additional" \| "no-view")` | Placement on the `title > main > additional > no-view` scale. `title` is computed from the DISPLAY nameformat's direct attribute references (`{surname} {forename}` → both; functions/lists ignored, explicit `edit-view=no-view` annotation wins); `additional`/`no-view` mirror the `edit-view` attribute annotation; `main` (default) is omitted | SPA editors: title attrs render as prominent header fields in attribute order, no-view attrs are hidden, additional renders like main for now (PRD 096 D5 revision — replaced the earlier single-attribute `@title`) |
+| `@editView(value: "title" \| "additional" \| "no-view")` | Placement on the `title > main > additional > no-view` scale. `title` is computed from the DISPLAY nameformat's direct attribute references (`{surname} {forename}` → both; functions/lists ignored, explicit `edit-view=no-view` annotation wins); `additional`/`no-view` mirror the `edit-view` attribute annotation; `main` (default) is omitted | SPA editors: title attrs render as prominent header fields in attribute order, no-view attrs are hidden, additional renders like main for now ([PRD 096](prd/096-spa-classification-editor.md) D5 revision — replaced the earlier single-attribute `@title`) |
 
 Once the SPA has the descriptor info, the read query targets the
 specific classification's typed fields directly:
@@ -597,7 +606,7 @@ Input null-semantics on the write side (same PRD): in a classification
 value; an OMITTED key falls back to the type default (create and update
 rebuild from `newClassification()` — replace semantics, not merge).
 
-### 11. reservations + the calendar query (PRD 055 + PRD 066)
+### 11. reservations + the calendar query ([PRD 055](prd/055-graphql-events-read-api.md) + [PRD 066](prd/066-graphql-reservation-allocatable-matching.md))
 
 `reservations(filter:)` requires a mandatory time window and supports
 three orthogonal ways to select which allocatables drive the result —
@@ -618,7 +627,7 @@ input ReservationFilter {
 ```
 
 `allocatableMatching` reuses the full `AllocatableFilter` shape — the
-same `typeIn` + per-type `whereXxx` (PRD 059) + `idIn` the calendar
+same `typeIn` + per-type `whereXxx` ([PRD 059](prd/done/059-graphql-typed-where-predicates.md)) + `idIn` the calendar
 sidebar produces. Semantic: result is the union of the type-bucket
 predicate set and `idIn`; per-type filter rules apply only to the
 type-bucket; `idIn` is additive and ignores filter rules.
@@ -667,22 +676,28 @@ type-bucket; `idIn` is additive and ignores filter rules.
 
 Window cap is configurable via Spring Boot property
 `rapla.graphql.max-query-window-days` (default null = no cap). Result
-size caps at 5000 entries (default 500). Per-deployment example
+size caps at 5000 entries (default 500).
+
+**Execution deadline.** A single GraphQL query's wall-clock is bounded by
+`rapla.graphql.execution-budget-millis` (default 30000; set 0 to disable) so
+one expensive query can't tie up a worker thread indefinitely. Enforced by
+`GraphQlExecutionDeadlineInstrumentation`; exceeding the budget aborts the
+execution rather than running unbounded.
+
+Per-deployment example
 queries with real dataset numbers live in
 [`dhbwrapla/docs/graphql.md`](../../dhbwrapla/docs/graphql.md)
 §"Reservation queries".
 
-#### Nested `Appointment.allocatables(filter:)` — PRD 073
+#### Nested `Appointment.allocatables(filter:)` — [PRD 073](prd/073-graphql-function-equivalents.md)
 
 Each appointment exposes its pre-resolved allocatable list. An optional
-`filter` argument narrows it using `AppointmentAllocatableFilter` — a
-strict subset of `AllocatableFilter` containing only the v1 scalar
-predicates (`typeIn`, `typeIn`, `isPersonEq`, `nameContains`,
-`searchText`, `matchKind`, `ownerEq`). Fields like `idIn`, `limit`,
-`accessibleBy*`, and generated `where<TypeKey>` blocks are intentionally
-absent — passing them is a GraphQL validation error, not a silent no-op.
+`filter` argument narrows it using the full `AllocatableFilter` — the same
+shape as `Query.allocatables(filter:)`, including `idIn`, `limit`,
+`accessibleBy*`, and generated `where<TypeKey>` blocks. (The earlier
+strict-subset `AppointmentAllocatableFilter` type was removed.)
 
-The canRead gate runs **before** the filter, so a hidden allocatable can
+The canRead gate runs **before** any predicate, so a hidden allocatable can
 never leak even when it would match.
 
 ```graphql
@@ -713,16 +728,16 @@ never leak even when it would match.
 }
 ```
 
-`AppointmentAllocatableFilter` does **not** support `idIn` / `limit` /
-`accessibleBy*` / `where<TypeKey>` — use `Query.allocatables(filter:)` for
-those. The nested filter is for structural column splitting (rooms vs.
-persons vs. a named type), not for cross-appointment id selection.
+The nested filter accepts the full `AllocatableFilter` (`idIn` / `limit` /
+`accessibleBy*` / `where<TypeKey>` all honored), but its typical use is
+structural column splitting (rooms vs. persons vs. a named type) within one
+appointment, not cross-appointment id selection.
 
 ---
 
-## Availability & conflicts (PRD 091 Phase 1, 2026-07-06)
+## Availability & conflicts ([PRD 091](prd/091-spa-reservation-edit-and-availability.md) Phase 1, 2026-07-06)
 
-One `Conflict` wire type for **realized** and **potential** conflicts (PRD 091 D4) —
+One `Conflict` wire type for **realized** and **potential** conflicts ([PRD 091](prd/091-spa-reservation-edit-and-availability.md) D4) —
 a potential conflict is a Conflict whose side 1 is not persisted (yet). Id pair
 fields always present; entity fields (`reservation1/2`, `appointment2`) are nullable
 with *semantic* nulls only: `reservation1` null = brand-new draft, side-2 nulls =
@@ -741,7 +756,7 @@ Three queries, three call profiles:
 
 Contract points: draft appointment ids are REQUIRED (D3 id-first — join key for the
 result); `repeating` and `allDay` are materialized exactly like the mutation path
-(shared `AppointmentInputMapper.applyRepeating` + `setWholeDays` — PRD 091
+(shared `AppointmentInputMapper.applyRepeating` + `setWholeDays` — [PRD 091](prd/091-spa-reservation-edit-and-availability.md)
 Phase 4.5; availability evaluates what a save would persist, series overlap is
 computed analytically on the rule, endless series included); permission-window
 violations surface only as
@@ -758,7 +773,7 @@ shared `ConflictRow`.
 claim "0-6", which was wrong. MONTHLY/YEARLY rules carry no extra fields: the
 pattern (weekday-in-nth-week / month+day) derives from the appointment *start*.
 
-`expandOccurrences` (PRD 091 Phase 4.1) wraps `AppointmentImpl.createBlocks`
+`expandOccurrences` ([PRD 091](prd/091-spa-reservation-edit-and-availability.md) Phase 4.1) wraps `AppointmentImpl.createBlocks`
 server-side — the MONTHLY semantic and exception-skip rules are never
 reimplemented in a client. Excepted occurrences are INCLUDED with
 `exception: true` (the SPA preview strikes them through; click toggles the
@@ -821,7 +836,7 @@ the issue, not the operator — check server logs for
 ## §12 expectations (permission boundary)
 
 Every read goes through `PermissionController.canRead` at the output
-boundary — see AGENTS.md §12 and PRD 035 line 491-500. The contract:
+boundary — see AGENTS.md §12 and [PRD 035](prd/done/035-graphql-foundations.md) line 491-500. The contract:
 
 - **Anonymous callers** see `me: null`, empty `users`, empty `allocatables`.
   Trivial probes (`hello`, `serverTime`, `version`) and the schema /
@@ -1123,7 +1138,7 @@ That single flag saved ~1 s on the 42k Person query in measurement (~14 % wall-c
 
 ## Limitations
 
-- **No mutations yet.** PRD 035 §6 bulk-mutation design is locked but not implemented. Reads only.
+- **No mutations yet.** [PRD 035](prd/done/035-graphql-foundations.md) §6 bulk-mutation design is locked but not implemented. Reads only.
 - **No subscriptions.** Polling only (10 s) for schema changes; queries themselves are request/response.
 - **Rapla-internal types fully hidden.** Templates, periods, default-user, and anonymous-event don't appear in any GraphQL surface. Use the dedicated query roots (`periods`, …) for those.
 
@@ -1196,9 +1211,9 @@ Erläuterung:
   Render-/Edit-Key = `reservation.id` + `start`; `canModify` gated den Edit-Button ohne 2. Request.
 - **Ressourcen-Lanes:** rein über `isPersonEq: true|false` getrennt (server-seitig, kein deployment-Key).
   Innerhalb „Nicht-Personen" weiter über `isLocation` lanen (Raum/Ort vs. Sonstiges). `isPerson`/
-  `isLocation` sind universelle Felder (PRD 080): `isPerson` == `type: PERSON`, `isLocation` == die
+  `isLocation` sind universelle Felder ([PRD 080](prd/080-typed-entity-stats.md)): `isPerson` == `type: PERSON`, `isLocation` == die
   DynamicType-Annotation `location=true` (derselbe Marker wie der iCal-Export).
-- **`matchedBy` — Lane-Gruppierung im Wochengrid (PRD 100 Phase 5, Server ab 2026-07-09):**
+- **`matchedBy` — Lane-Gruppierung im Wochengrid ([PRD 100](prd/100-spa-block-renderer-unification.md) Phase 5, Server ab 2026-07-09):**
   `matchedBy @hidden { id }` (KEIN Argument) liefert die *Match-Provenienz* — welche der
   **gescopeten** Allocatables den Block zugelassen haben, als navigierbare `Allocatable`s. Der
   Kandidaten-Pool ist der EIGENE aufgelöste Allocatable-Scope der Query (`allocatableIdsIn` /
@@ -1266,7 +1281,7 @@ const header = formatDate(d, view.groupFormat ?? 'EEEE, dd.MM.yyyy');   // "EE d
 - **Die `date`-Spalte darf zusätzlich `@hidden`** sein (`group:true` + `format:` + `@hidden` zusammen ok):
   sie steht dann nur im Header statt redundant in jeder Zeile; `view.groupBy`/`groupFormat` bleiben gesetzt.
 
-## The rapla expression (`expr`) — one language, several slots (PRD 074 V2)
+## The rapla expression (`expr`) — one language, several slots ([PRD 074](prd/074-graphql-declarative-views.md) V2)
 
 `expr` is the bounded rapla expression language (the `ParsedText` / nameformat engine), exposed in
 GraphQL wherever a **derived value** is produced — **one language, learned once**:
@@ -1274,7 +1289,7 @@ GraphQL wherever a **derived value** is produced — **one language, learned onc
 | Slot | Shape | Produces |
 |---|---|---|
 | Column projection | `compute(expr: "…")` on `AppointmentBlock` | a per-row string cell |
-| Group key | `groupBy: [{ key, expr: "…" }]` (PRD 079) | a bucket key |
+| Group key | `groupBy: [{ key, expr: "…" }]` ([PRD 079](prd/079-graphql-grouped-aggregates.md)) | a bucket key |
 | Metric value (Stufe b) | `aggregate: [{ key, expr: "…", fn }]` | a numeric value (coerced) |
 
 **Syntax (externally documented form):**
@@ -1299,7 +1314,7 @@ groupBy:   [{ key: "initial", expr: "substring(name(),0,1)" }]
 aggregate: [{ key: "sum",     expr: "attribute(item, \"<numericAttr>\")", fn: SUM }]
 ```
 
-**Welche Funktionen gibt es? → `computeFunctions` (PRD 073).** Der Katalog der verfügbaren
+**Welche Funktionen gibt es? → `computeFunctions` ([PRD 073](prd/073-graphql-function-equivalents.md)).** Der Katalog der verfügbaren
 expr-Funktionen ist abfragbar — für Editor-Autocomplete und View-Validierung:
 
 ```graphql
@@ -1312,11 +1327,11 @@ Aggregiert aus allen registrierten `FunctionFactory`s (Core `org.rapla` + aktive
 ist), `maxArgs: -1` = variadisch (`concat`). Der Katalog wird aus der Descriptor-SPI generiert
 (`FunctionFactory.getDescriptors()`), nicht aus geparstem Quellcode.
 
-**Not yet (PRD 073 number-model / Stufe c):** in-expression arithmetic (`add/sub/mul/div`). Single
+**Not yet ([PRD 073](prd/073-graphql-function-equivalents.md) number-model / Stufe c):** in-expression arithmetic (`add/sub/mul/div`). Single
 numeric values work (Stufe b); composing numbers inside the expr needs a numeric type in the EL,
 which would then serve every `expr` slot.
 
-## Raumauslastung — kanonische Query (`appointmentBlockStats`, PRD 079/080)
+## Raumauslastung — kanonische Query (`appointmentBlockStats`, PRD [079](prd/079-graphql-grouped-aggregates.md)/[080](prd/080-typed-entity-stats.md))
 
 Auslastung pro Raum: **Gebäude-Scope in ZWEI Variablen** — `$filter` (effiziente Suche, lädt nur
 betroffene Reservierungen) **und** `$allocatableFilter` (Raumauswahl: welcher Raum eine Zeile wird),
@@ -1407,13 +1422,13 @@ Schichtung von `whereRaum`: `RaumWhere` → `Gebaeude` (= `GebaeudeRefWhere`: `e
 - **Gelöschtes Gebäude:** ein Raum, dessen `Gebaeude`-Referenz auf eine **gelöschte** Ressource zeigt,
   matcht `whereRaum.Gebaeude…` **nicht** (kein Fail-open auf den Platzhalter) und liefert
   `entity.Gebaeude: null` — statt die Query zu killen.
-- **Raumgröße + Gebäudename ohne Join** über `keys.entity` (typisierte Gruppen-Entität, PRD 080);
+- **Raumgröße + Gebäudename ohne Join** über `keys.entity` (typisierte Gruppen-Entität, [PRD 080](prd/080-typed-entity-stats.md));
   unauflösbare Referenz → Feld `null` (TypeResolver/Fetcher-Guard).
 - **`@view` über Stats** ⇒ flache `extensions.view.columns` aus `groupBy`/`aggregate` (`raum` +
   Entity-Felder + `minuten`/`termine`), **nicht** die generischen `keys/values/count`. `count` nur,
   wenn selektiert (redundant mit `termine`).
 
-## Beispiel: Raumauslastung nach Standort (typisierte Referenz-Filter, PRD 074 b)
+## Beispiel: Raumauslastung nach Standort (typisierte Referenz-Filter, [PRD 074](prd/074-graphql-declarative-views.md) b)
 
 `appointmentBlockStats` + ein **typisierter Filter über eine Referenz**: Räume werden über das
 **eigene Attribut ihres Gebäudes** eingeschränkt (`Raum.Gebaeude` → `Gebaeude.Gebaeudename`). Der
@@ -1453,7 +1468,7 @@ whereRaum:          RaumWhere          # Attribute des Raums
 - **Raumgröße ohne Join:** `keys.entity` trägt das **echte, typisierte Gruppen-Objekt** — siehe nächster
   Abschnitt; `AnzahlPlaetzeInsgesamt` ist direkt im Bucket selektierbar, **kein** zweiter Request nötig.
 
-## Typisierte Gruppen-Entität im Stats-Bucket (`StatKey.entity`, PRD 080)
+## Typisierte Gruppen-Entität im Stats-Bucket (`StatKey.entity`, [PRD 080](prd/080-typed-entity-stats.md))
 
 Ein Stats-Bucket bleibt generisch (`keys` + `values` + `count`), **aber** jeder Gruppenschlüssel trägt
 zusätzlich die **echte, typisierte Entität**, nach der gruppiert wurde — als Union `StatEntity`:

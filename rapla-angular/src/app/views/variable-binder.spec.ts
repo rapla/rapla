@@ -9,9 +9,9 @@ const v = (name: string, type: string): ViewVariable => ({ name, type });
 
 describe('buildVariablesByType', () => {
   it('fills a ReservationFilter with the window (no selection)', () => {
-    expect(buildVariablesByType([v('filter', 'ReservationFilter!')], { window: W, resourceIds: [] })).toEqual(
-      { filter: { from: W.from, to: W.to } },
-    );
+    expect(
+      buildVariablesByType([v('filter', 'ReservationFilter!')], { window: W, resourceIds: [] }),
+    ).toEqual({ filter: { from: W.from, to: W.to } });
   });
 
   it('Raumauslastung: BOTH variables get the selection, by type', () => {
@@ -26,15 +26,15 @@ describe('buildVariablesByType', () => {
   });
 
   it('an AllocatableFilter variable can be named anything (binds by TYPE, not name)', () => {
-    expect(buildVariablesByType([v('rooms', 'AllocatableFilter!')], { window: W, resourceIds: RES })).toEqual(
-      { rooms: { idIn: RES } },
-    );
+    expect(
+      buildVariablesByType([v('rooms', 'AllocatableFilter!')], { window: W, resourceIds: RES }),
+    ).toEqual({ rooms: { idIn: RES } });
   });
 
   it('an AllocatableFilter with no selection is omitted (server default applies)', () => {
-    expect(buildVariablesByType([v('rooms', 'AllocatableFilter!')], { window: W, resourceIds: [] })).toEqual(
-      {},
-    );
+    expect(
+      buildVariablesByType([v('rooms', 'AllocatableFilter!')], { window: W, resourceIds: [] }),
+    ).toEqual({});
   });
 
   it('unknown variable types are left unset (graceful → server default)', () => {
@@ -47,9 +47,9 @@ describe('buildVariablesByType', () => {
   });
 
   it('null window → ReservationFilter is omitted (first load, server merges defaults)', () => {
-    expect(buildVariablesByType([v('filter', 'ReservationFilter!')], { window: null, resourceIds: RES })).toEqual(
-      {},
-    );
+    expect(
+      buildVariablesByType([v('filter', 'ReservationFilter!')], { window: null, resourceIds: RES }),
+    ).toEqual({});
   });
 
   it('a user scope binds into ReservationFilter.ownerEq ("my events")', () => {

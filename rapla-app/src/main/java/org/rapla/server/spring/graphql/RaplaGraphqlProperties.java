@@ -21,4 +21,17 @@ public class RaplaGraphqlProperties
 
     public Integer getMaxQueryWindowDays() { return maxQueryWindowDays; }
     public void setMaxQueryWindowDays(Integer maxQueryWindowDays) { this.maxQueryWindowDays = maxQueryWindowDays; }
+
+    /**
+     * Wall-clock budget (in milliseconds) for a single GraphQL execution
+     * (security-audit §G). Once exceeded, remaining field fetches abort with an
+     * error instead of continuing — so one expensive query cannot run 10s+ and
+     * tie up a worker thread / block the shared dispatch-locked store. Unlike a
+     * depth cap this also bounds the shallow-but-wide queries that actually run
+     * long. Default 30000 (30s); {@code 0} or negative disables the check.
+     */
+    private long executionBudgetMillis = 30_000L;
+
+    public long getExecutionBudgetMillis() { return executionBudgetMillis; }
+    public void setExecutionBudgetMillis(long executionBudgetMillis) { this.executionBudgetMillis = executionBudgetMillis; }
 }

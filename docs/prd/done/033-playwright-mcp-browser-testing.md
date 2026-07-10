@@ -8,7 +8,7 @@ Add `@playwright/mcp` as a Claude Code MCP server so an agent can drive a real b
 
 ## Why
 
-PRD 026 + 031's three SPA debug rounds would have collapsed to one with browser observation:
+PRD [026](../026-angular-frontend.md) + 031's three SPA debug rounds would have collapsed to one with browser observation:
 
 | Round | Was | Would be |
 |---|---|---|
@@ -76,7 +76,7 @@ Run the four install commands; verify `mcp__playwright__browser_*` tools appear;
 
 ### Phase 2 — End-to-end OAuth smoke
 
-Pin sequence: navigate to `http://localhost:4200/app/` (assumes ng serve + Spring Boot per PRD 026) → wait redirect to `/login` → click "Sign in" → browser hits `:8051/oauth2/authorize` cross-origin → Spring form: `admin` / empty password → bounce to `:4200/app/auth/callback?code=…` → SPA exchanges → navigates to `/reservations` → screenshot.
+Pin sequence: navigate to `http://localhost:4200/app/` (assumes ng serve + Spring Boot per [PRD 026](../026-angular-frontend.md)) → wait redirect to `/login` → click "Sign in" → browser hits `:8051/oauth2/authorize` cross-origin → Spring form: `admin` / empty password → bounce to `:4200/app/auth/callback?code=…` → SPA exchanges → navigates to `/reservations` → screenshot.
 
 ### Phase 3 — Skill seed
 

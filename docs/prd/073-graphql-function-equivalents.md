@@ -14,7 +14,7 @@
   registered `FunctionFactory`'s descriptors (core + active plugins), dedupes by `namespace:name`,
   sorts. SDL type `ComputeFunction`. Tier-3 test asserts core fns + metadata (`concat` variadic,
   `attribute` CLASSIFIABLE/2-arg, `start` EVENT). **62 GraphQL tests green.**
-- ✅ **`isLocation` / `isPerson`** surfaced as `Allocatable` fields (PRD 080 work) — closes row #22's
+- ✅ **`isLocation` / `isPerson`** surfaced as `Allocatable` fields ([PRD 080](080-typed-entity-stats.md) work) — closes row #22's
   field gap (filter `isLocationEq` still open; `isPersonEq` already shipped).
 - ✅ **Descriptor-driven generated fields (first cut).** `FunctionFieldGenerator` derives eligible
   fields from the same descriptors and emits them BOTH as `extend type … { }` SDL (appended in
@@ -61,7 +61,7 @@ Rapla has a small server-side **expression language** — the
 `org.rapla.entities.extensionpoints.Function` tree — used inside DynamicType
 nameformats, classification filters, and annotations (e.g. a room's
 `nameformat` `{if(Gebaeude startsWith "MOS", Raumnummer+" "+Raumname, …)}`).
-The GraphQL API (PRD 035 family) is the modern read/query surface. This PRD
+The GraphQL API ([PRD 035](done/035-graphql-foundations.md) family) is the modern read/query surface. This PRD
 answers: **for each rapla Function, what can a GraphQL caller do today, and
 where are the gaps?** It is the reference for deciding which Function semantics
 deserve a first-class GraphQL construct (computed field, filter operator) versus
@@ -83,7 +83,7 @@ staying client-side or server-template-only.
   by role:
   1. **Filter / predicate** (`equals`, `and`, `or`, `not`, `isPerson`,
      `isLocation`, `attribute`+compare) → GraphQL **where-predicate** language
-     (PRD 059, done) + structural filters.
+     ([PRD 059](done/059-graphql-typed-where-predicates.md), done) + structural filters.
   2. **Projection / read access** (`attribute`, `type`, `key`, `parent`,
      `name`, `start`, `end`, `appointments`, `appointmentBlocks`, `events`,
      `resources`, `lastchanged`) → GraphQL **fields** on the generated
@@ -98,7 +98,7 @@ staying client-side or server-template-only.
 analysis; a phased proposal for the gaps worth closing on the GraphQL read API.
 
 **Out of scope:** implementing the closures (each lands as its own PRD/phase);
-GraphQL mutations (write API — PRDs 056/057/061/063); the Swing/iCal nameformat
+GraphQL mutations (write API — PRDs [056](056-graphql-events-write-api.md)/[057](done/057-graphql-dt-mutations-v1.md)/[061](061-graphql-dt-mutations-v2.md)/[063](063-graphql-allocatables-write-api.md)); the Swing/iCal nameformat
 engine itself (unchanged — Functions remain the templating language there).
 
 ## Equivalence table
@@ -108,9 +108,9 @@ belong on a read/query API).
 
 | # | Function (id) | Role | GraphQL equivalent | Status |
 |---|---|---|---|---|
-| 1 | `and` / `or` / `not` | filter | `<TypeKey>Where.AND:[…] / OR:[…] / NOT:{…}` (PRD 059, depth-cap 10, `WhereEvaluator`) | ✅ |
+| 1 | `and` / `or` / `not` | filter | `<TypeKey>Where.AND:[…] / OR:[…] / NOT:{…}` ([PRD 059](done/059-graphql-typed-where-predicates.md), depth-cap 10, `WhereEvaluator`) | ✅ |
 | 2 | `equals` | filter | `*Where.eq` / `.ne` on every typed predicate (`StringWhere`, `IntWhere`, `BooleanWhere`, `LocalDateTimeWhere`, `CategoryWhere`, `AllocatableWhere`) | ✅ |
-| 3 | `stringComparator` | sort | no comparator; closest is `searchText` + `matchKind` ranking (PRD 028) | ◐ |
+| 3 | `stringComparator` | sort | no comparator; closest is `searchText` + `matchKind` ranking ([PRD 028](028-angular-power-search.md)) | ◐ |
 | 4 | `attribute(obj,"key")` | projection | generated `<TypeKey>Classification` typed per-attribute fields (`ClassificationSdlGenerator`); §12-gated for reference attrs | ✅ |
 | 5 | `type(obj)` | projection | `Classification.type: DynamicType!` + `Classification.typeKey: String!` | ✅ |
 | 6 | `key(category\|type)` | projection | `Category.key: String!`, `DynamicType.key: String!` | ✅ |
@@ -123,9 +123,9 @@ belong on a read/query API).
 | 13 | `appointmentBlocks` | navigation | `Appointment.blocks(from:,to:): [AppointmentBlock!]!` (same recurrence expansion) | ✅ |
 | 14 | `number` (block seq #) | projection | none on `AppointmentBlock` | ❌ |
 | 15 | `lastchanged` | projection | `Reservation.lastModifiedAt`, `Allocatable.lastModifiedAt` (`DateTime`/offset) | ✅ |
-| 16 | `events(obj)` | navigation | `Query.reservations(filter:{ allocatableIdsIn / allocatableMatching })` (PRD 066) | ✅ |
+| 16 | `events(obj)` | navigation | `Query.reservations(filter:{ allocatableIdsIn / allocatableMatching })` ([PRD 066](066-graphql-reservation-allocatable-matching.md)) | ✅ |
 | 17 | `resources(obj)` | navigation | `Appointment.allocatables: [Allocatable!]!`, `Reservation.allocations` | ✅ |
-| 18 | `filter(list,pred)` | collection | `allocatables(filter:{ where<TypeKey> })` (PRD 059); reservations via `ReservationFilter` | ◐ |
+| 18 | `filter(list,pred)` | collection | `allocatables(filter:{ where<TypeKey> })` ([PRD 059](done/059-graphql-typed-where-predicates.md)); reservations via `ReservationFilter` | ◐ |
 | 19 | `sort(list,cmp)` | collection | no server sort (results unordered); client sorts | ❌ |
 | 20 | `index(list,n)` | collection | only `limit` truncation; no positional index | ◐ |
 | 21 | `isPerson` | filter | `Allocatable.type: AllocatableType` (PERSON/RESOURCE) + `AllocatableFilter.isPersonEq: Boolean` | ✅ |
@@ -183,7 +183,7 @@ already evaluates server-side in two places:
   (with `if`/`concat`/`substring`/`startsWith`) evaluated via `getName(locale)`.
   This is the existing precedent that GraphQL *can* return a server-evaluated
   Function expression — it's just hard-wired to one annotation.
-- **The `/table/*` REST API (PRD 030)** — `TableViewEngine` renders each column
+- **The `/table/*` REST API ([PRD 030](030-server-side-view-rendering.md))** — `TableViewEngine` renders each column
   from a stored `ParsedText` expression per row (e.g. `{appointmentBlocks()}`,
   `{p->filter(resources(p), r->isPerson(r))}`), producing finished display
   strings + `/export/csv`. **This is the legacy Swing + HTML view solution** — it
@@ -233,7 +233,7 @@ stored compositions in place. Since everything is server-side (no client engine,
 TS↔Java parity), a *new* op-set buys little; rapla's own engine **is** the bounded
 composition language. (The op-set catalogued below is "something similar" — kept only as an
 *optional later* cleanup, **not** a build requirement; CEL / transform pipeline dropped,
-PRD 074.)
+[PRD 074](074-graphql-declarative-views.md).)
 
 **The one real GraphQL gap = the composition-field bridge.** GraphQL can't do composition
 natively; the bridge takes an (admin-configured) rapla-Function composition, **evaluates it
@@ -356,7 +356,7 @@ name(variant: NameVariant = DISPLAY)        # NameVariant { DISPLAY EXPORT PLANN
 ```
 
 - This is why **the same stored query yields DISPLAY in the UI and EXPORT when the export
-  service runs it in-process** (the service sets the context; see PRD 074 §"Server-side
+  service runs it in-process** (the service sets the context; see [PRD 074](074-graphql-declarative-views.md) §"Server-side
   rendering") — and the tree can force `name(variant: PLANNING)`.
 - The `NameVariant` enum **self-documents the three variants in the served SDL** — the
   schema-file-only AI/author sees them natively.
@@ -491,7 +491,7 @@ server-side** — no CEL, no client runtime, no TS↔Java parity.
   and exposed as **`displayName(variant: DISPLAY|EXPORT|PLANNING)`** (or named fields). The
   "out of annotation" goal was **only for the table-column definitions**, not nameformat.
 - **Table-column definitions MOVE** from the legacy config into the **GraphQL view
-  definition** (view-level, explicit — PRD 074). The op-set serves both: nameformat at the
+  definition** (view-level, explicit — [PRD 074](074-graphql-declarative-views.md)). The op-set serves both: nameformat at the
   type, and any computed view column.
 - **No migration; legacy keeps its evaluation.** The `nameformat` annotations stay on the
   types and serve **both** paths over the **same stored rapla syntax**:
@@ -501,7 +501,7 @@ server-side** — no CEL, no client runtime, no TS↔Java parity.
     to produce `displayName` (server-side); initially it can reuse `ParsedText`, with the
     bounded op-set as the clean re-implementation over time. **No conversion of stored
     strings, no disruption of legacy.**
-  Legacy column defs stay legacy; new GraphQL views are **greenfield** (PRD 074 — no
+  Legacy column defs stay legacy; new GraphQL views are **greenfield** ([PRD 074](074-graphql-declarative-views.md) — no
   TableView migration). The op-set is mainly the bounded composition language for **new
   view-level computed columns**; for nameformat the existing evaluation is reused
   server-side (a clean op-set swap is optional, later).
@@ -681,7 +681,7 @@ predicate truly runs** — see [PRD 074](074-graphql-declarative-views.md).
    request-context values (deployment id, locale) the nameformat `env()` exposes?
 4. **Pagination/sort (rows 3/19/20)** — split into a dedicated cursor-pagination +
    `orderBy` PRD rather than per-function patches? (Recommended.)
-5. **Cross-check** against PRD 028 (power search) and PRD 069 (resource-access) so
+5. **Cross-check** against [PRD 028](028-angular-power-search.md) (power search) and [PRD 069](069-graphql-resource-access-read-api.md) (resource-access) so
    new filters compose with `searchText`/`matchKind` and the access-by-target
    selectors rather than duplicating them.
 6. **Admin-defined saved GraphQL table views (follow-on PRD).** The strategic
@@ -692,7 +692,7 @@ predicate truly runs** — see [PRD 074](074-graphql-declarative-views.md).
    executes **under each running user's permissions** — §12 is enforced by the
    resolvers, so authoring a query grants no data access; (b) validate the query
    against the live schema at save time + keep GraphQL complexity/depth caps
-   (PRD 062); (c) decide global-admin vs. group-admin authoring scope
+   ([PRD 062](062-graphql-api-robustness.md)); (c) decide global-admin vs. group-admin authoring scope
    (`canAdminUsers`). This makes the client-side-formatting path (group C / Phase
    6 option 1) the default and leaves the server-side eval field unneeded for the
    SPA. → **Now [PRD 074 — Declarative GraphQL View Definitions](074-graphql-declarative-views.md)** (broadened: query document = whole view; variables→controls, selection→output, client directives for the rest; SPA-only).

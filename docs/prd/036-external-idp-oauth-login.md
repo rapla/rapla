@@ -71,11 +71,11 @@ keeping its token validation (useful e.g. keep rapla-local password for
 API/Swing while only showing SSO on web).
 
 **Swing — rapla embedded SAS only, no external IdP support.** Swing is
-being deprecated in favour of the Angular SPA (PRD 026). Wiring
+being deprecated in favour of the Angular SPA ([PRD 026](026-angular-frontend.md)). Wiring
 Microsoft/Google into Swing means a new picker dialog state,
 browser-launch handling for Google's `access_type=offline`, more test
 surface — all work that ages out when Swing is removed. Swing keeps
-PRD 029 Phase 2 behaviour: probe discovery, auto-fire rapla embedded
+[PRD 029](029-swing-oauth-login.md) Phase 2 behaviour: probe discovery, auto-fire rapla embedded
 SAS. The discovery endpoint's flat top-level fields always point at
 the embedded SAS regardless of which providers are enabled, so Swing's
 probe sees today's URLs unchanged. Deployments needing SSO from Swing
@@ -97,18 +97,18 @@ interface (`ExternalUserResolver`).
    exposes `authorize-url`, `token-url`, `jwks-url`, `userinfo-url`,
    `end-session-url`, `issuer` overrides (class Javadoc mentions
    "deployments that delegate auth to Keycloak / Auth0 / Okta / etc.").
-   PRD 029 Phase 1 + PRD 031 unified the client view of refresh and
+   [PRD 029](029-swing-oauth-login.md) Phase 1 + PRD 031 unified the client view of refresh and
    logout. Missing: (a) wiring JWT decoder to validate externally-issued
    tokens, (b) mapping external claims to a rapla user, (c) setup recipe.
 3. **Microsoft + Google cover the bulk of the addressable audience.**
    DHBW, most German universities, and many municipal deployments are
    M365 shops; smaller orgs and education deployments are on Google
-   Workspace. Keycloak (PRD 029 Phase 2 placeholder) is a self-hosted
+   Workspace. Keycloak ([PRD 029](029-swing-oauth-login.md) Phase 2 placeholder) is a self-hosted
    intermediate step few deployments will run if they can point at
    Entra/Google directly. Shipping both means the abstraction
    (`ExternalUserResolver`, multi-issuer decoder, discovery re-pointing)
    is exercised by two real providers from day one.
-4. **Same shape as PRD 029.** Configuration recipe + multi-issuer JWT
+4. **Same shape as [PRD 029](029-swing-oauth-login.md).** Configuration recipe + multi-issuer JWT
    decoder + provider-pluggable user-mapping. Discovery endpoint shape
    stays; Swing/Angular clients stay unchanged.
 
@@ -186,7 +186,7 @@ interface (`ExternalUserResolver`).
   All fields settable via `RAPLA_OAUTH_*` env vars. No `client-secret`:
   rapla stays a public PKCE client against both providers.
 - **Discovery endpoint emits `providers[]` array.** Backwards-compatible
-  with PRD 029: flat `authorizeUrl`/`tokenUrl`/`clientId`/`issuer`/`endSessionUrl`
+  with [PRD 029](029-swing-oauth-login.md): flat `authorizeUrl`/`tokenUrl`/`clientId`/`issuer`/`endSessionUrl`
   remain at the top level and **always reflect rapla embedded SAS**
   regardless of which external providers are enabled. Swing's
   discovery probe sees today's values; external IdPs are web-only. New
@@ -532,7 +532,7 @@ and return fresh tokens. SPA POSTs to the **provider's `tokenUrl`
 from discovery**, which for confidential clients routes via the BFF
 (`/api/auth/oauth/exchange/{providerId}`) so the server-held
 `client_secret` is added before forwarding — same shape as initial
-code-exchange. PRD 041 removed standalone `/api/auth/refresh`; no
+code-exchange. [PRD 041](041-openapi-runtime-removal.md) removed standalone `/api/auth/refresh`; no
 rapla-specific refresh route.
 
 Refresh-token rotation policy is the provider's, not rapla's: the
@@ -572,18 +572,14 @@ discovery entry carries `extraAuthorizeParams: { access_type: offline, prompt: c
 Entra has a proper OIDC RP-initiated logout endpoint:
 `https://login.microsoftonline.com/{tenant}/oauth2/v2.0/logout`. Both
 Swing and Angular redirect to it; `id_token_hint` is recommended
-(plumbed by Swing per PRD 029 Phase 2 2026-05-13 fix).
+(plumbed by Swing per [PRD 029](029-swing-oauth-login.md) Phase 2 2026-05-13 fix).
 
 Google **has no proper RP-initiated OIDC logout**. The
 `https://accounts.google.com/Logout` URL logs the user out of *every*
 Google product — almost never desired. When active provider is Google:
 
 1. Clear local rapla tokens (TokenStore + memory).
-2. Optionally POST to `https://oauth2.googleapis.com/revoke` to revoke
-   server-side (configurable via
-   `rapla.oauth.external.google.revoke-on-logout: true`; default off —
-   users typically expect "log out of rapla", not "uncouple the OAuth grant").
-3. Do **not** open a browser tab. The user's Google session stays untouched.
+2. Do **not** open a browser tab. The user's Google session stays untouched.
 
 Rapla's local remember-me cookie + `/connect/logout` flow is bypassed
 when external IdP is active: no rapla session to clear.
@@ -642,7 +638,7 @@ of a single decoder, a registry of resolvers, a `providers[]` array
    serialized correctly.
 
 6. **Swing client: no changes.** External IdPs are web-only. Existing
-   PRD 029 Phase 2 discovery probe + auto-fire-rapla-SAS flow stays.
+   [PRD 029](029-swing-oauth-login.md) Phase 2 discovery probe + auto-fire-rapla-SAS flow stays.
    Confirm by running existing Swing OAuth tests against a server
    config with Microsoft + Google enabled.
 
@@ -662,7 +658,7 @@ of a single decoder, a registry of resolvers, a `providers[]` array
      screen, "Web application" credential, scopes `openid profile email`).
    - "Multi-provider deployments": `web.picker` knobs, login screen
      with three buttons, hidden-from-web providers.
-   - Cross-link from PRD 029 Phase 2 and PRD 031.
+   - Cross-link from [PRD 029](029-swing-oauth-login.md) Phase 2 and PRD 031.
 
 9. **Manual smoke:**
    - Entra test tenant: Angular login → main view.
@@ -674,7 +670,7 @@ of a single decoder, a registry of resolvers, a `providers[]` array
      launches rapla SAS flow unchanged. Tagged `e2e`, manual.
 
 10. **PRD close:** when all phases done, `git mv` to `docs/prd/done/`.
-    Update PRD 029 Phase 2 OQ §5 — `localAccountsEnabled=false`
+    Update [PRD 029](029-swing-oauth-login.md) Phase 2 OQ §5 — `localAccountsEnabled=false`
     becomes meaningful once external is configured.
 
 ## Tests
@@ -891,7 +887,7 @@ discriminator (`microsoft | google | keycloak`).
 `ProviderDef.toProviderConfig(registrationId)` switches on `type` to apply the
 per-type derivation + defaults the three former `toProviderConfig()` methods
 did (Entra multi-tenant issuer pattern; Google hardcoded endpoints +
-`extraAuthorizeParams` + `revoke-on-logout`; Keycloak `base-url`+`realm`
+`extraAuthorizeParams`; Keycloak `base-url`+`realm`
 derivation).
 
 ```yaml
@@ -1008,10 +1004,12 @@ and the CSP `connect-src` contains both issuer hosts.
    (`RaplaAuthentificationService.authenticate()` auto-creates on
    successful external auth — no opt-in in the LDAP path). Entra
    single-tenant (default) scopes to deployment's directory. Google:
-   document that `hosted-domain` is the practical scope guard — without
-   it, every verified Google account becomes a rapla user, so
-   deployments without a Workspace should explicitly set
-   `auto-provision: false`. Default groups: shared with LDAP via
+   `hosted-domain` is one scope guard, but `auto-provision: false` is
+   now an implemented gate in its own right — `UserProvisioner.provision(claims,
+   autoProvision)` rejects any unknown identity when the flag is off, so a
+   deployment without a Workspace can set `auto-provision: false` to require
+   pre-existing accounts (no longer just hosted-domain that gates provisioning).
+   Default groups: shared with LDAP via
    `JNDIPlugin.USERGROUP_CONFIG` system preference.
 
 3. **Cross-provider account collisions.** Resolved by username-as-identity
@@ -1041,7 +1039,7 @@ and the CSP `connect-src` contains both issuer hosts.
    Keep logging in via legacy password form unless
    `rapla.oauth.local-accounts-enabled: false`. With external + local
    both on, Angular picker shows "Sign in with rapla password"
-   alongside SSO buttons. Configurable via the flag PRD 029 OQ §5 had.
+   alongside SSO buttons. Configurable via the flag [PRD 029](029-swing-oauth-login.md) OQ §5 had.
 
 7. **`oid` vs `sub` for Entra; `sub` for Google.** Microsoft documents
    `oid` as stable per (tenant, user) and `sub` as pairwise pseudonym
@@ -1070,12 +1068,11 @@ and the CSP `connect-src` contains both issuer hosts.
     to deployment's public base URL. Entra requires the URI to be
     pre-registered. Cover in the setup recipe.
 
-12. **Token revocation on Google logout.** Default off — typical user
-    expectation of "log out of rapla" is to clear the rapla session,
-    not to uncouple the Google grant (next login would re-trigger
-    consent). Enable
-    `rapla.oauth.external.google.revoke-on-logout: true` for
-    high-security or compliance contexts.
+12. **Token revocation on Google logout.** Not wired — logout only clears
+    the rapla session; it does not uncouple the Google grant. That matches
+    the typical user expectation of "log out of rapla" (server-side grant
+    revocation would re-trigger consent on next login). No config knob
+    exists for this.
 
 13. **Group sync from token claims.** Out of v1 scope. Follow-up PRD
     would add admin-maintained `external-group-id → rapla-category-id`

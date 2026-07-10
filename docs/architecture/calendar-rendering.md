@@ -3,8 +3,8 @@
 Rules extracted from the legacy calendar renderers (Swing client + server HTML
 export pages), verified against source 2026-07-08. These are the ground truth for
 the SPA's block-based render modes (month/week grids and future day/program) —
-PRD 100 tracks the SPA-side unification; PRD 095 shipped the month slice, the week
-grid prototype landed 2026-07-08 (PRD 077).
+[PRD 100](../prd/100-spa-block-renderer-unification.md) tracks the SPA-side unification; [PRD 095](../prd/095-month-grid-render-mode.md) shipped the month slice, the week
+grid prototype landed 2026-07-08 ([PRD 077](../prd/077-calendar-model-graphql.md)).
 
 **The core design principle worth copying:** all block/lane/color logic lives ONCE
 in `rapla-core` (`org.rapla.components.calendarview.*`,
@@ -12,7 +12,7 @@ in `rapla-core` (`org.rapla.components.calendarview.*`,
 client views and the server-side HTML export pages (`HTMLWeekViewPage`,
 `HTMLCompactWeekViewPage`, `HTMLMonthViewPage`, …). Swing and the exported HTML
 calendars render identically because they share the machinery. The SPA equivalent:
-shared pure-TS modules (`week-lanes.ts`, the PRD 100 `block-style.ts`) consumed by
+shared pure-TS modules (`week-lanes.ts`, the [PRD 100](../prd/100-spa-block-renderer-unification.md) `block-style.ts`) consumed by
 every grid component, with the server keeping color/§12 authority.
 
 ## 1. Block building & coloring
@@ -24,12 +24,12 @@ every grid component, with the server keeping color/§12 authority.
   `BlockColors.resolve`, rapla-core `plugin/calendarview/`): the reservation's own
   color annotation wins; otherwise the first color-bearing allocatable's color.
   The SPA gets the *effective* color as the §12-gated `AppointmentBlock.color`
-  GraphQL field (PRD 095 D2/D3 — unreadable contributor ⇒ color nulls, block
+  GraphQL field ([PRD 095](../prd/095-month-grid-render-mode.md) D2/D3 — unreadable contributor ⇒ color nulls, block
   stays); clients never re-derive colors.
 - **Text on blocks is ALWAYS black**: `SwingRaplaBlock.FOREGROUND_COLOR =
   Color.black` (`SwingRaplaBlock.java:111`). There is no luminance-based flip —
   deployments choose block colors that read with black text, and every renderer
-  (Swing, HTML export, SPA) must agree. PRD 100 D1; resolves PRD 095 OQ2.
+  (Swing, HTML export, SPA) must agree. [PRD 100](../prd/100-spa-block-renderer-unification.md) D1; resolves [PRD 095](../prd/095-month-grid-render-mode.md) OQ2.
 - Special block states tint the *background*, not the text: exceptions, conflicts,
   not-visible/anonymous blocks, request-state blocks (alpha-adjusted colors in
   `SwingRaplaBlock`).
@@ -68,7 +68,7 @@ group(blocks)                  # strategy-specific initial grouping
   columns (this is what the Swing + exported-HTML screenshots show; the
   selection was building + person). Client renderers cannot derive this from
   row cells — the SPA gets it as a server-computed **`matchedBy`** field (NO
-  argument) returning the matched SELECTED allocatables (match provenance, PRD 100
+  argument) returning the matched SELECTED allocatables (match provenance, [PRD 100](../prd/100-spa-block-renderer-unification.md)
   Phase 5, shipped 2026-07-09). Its candidate pool is the QUERY'S OWN resolved
   allocatable scope (`allocatableIdsIn`/`allocatableMatching`), so it can't diverge
   from the filter that selected the block; the client groups lanes by
@@ -105,10 +105,10 @@ group(blocks)                  # strategy-specific initial grouping
 | generic best-fit | `BestFitStrategy` (single group ⇒ pure compact packing) | — | — | `BestFitStrategy` |
 
 - **SPA mapping (2026-07-08):** `week-lanes.ts` implements pure overlap greedy ≈
-  compact mode without resource grouping. PRD 100 Phase 2 ports the
+  compact mode without resource grouping. [PRD 100](../prd/100-spa-block-renderer-unification.md) Phase 2 ports the
   selected-resource grouping + fixed/compact modes + 5-min floor. The SPA month
   grid deliberately does NOT use per-day slots — it renders EventCalendar-style
-  spanning bars (PRD 095, `month-chunks.ts`), a locked divergence from
+  spanning bars ([PRD 095](../prd/095-month-grid-render-mode.md), `month-chunks.ts`), a locked divergence from
   `HTMLMonthViewPage`.
 
 ## 3. Time scale — rows per hour, worktime, excluded days
@@ -125,9 +125,13 @@ group(blocks)                  # strategy-specific initial grouping
   previous day — `AbstractGroupStrategy.getBlockMap`).
 - `VariableRowScale` exists for non-linear axes (per-period rows); the SPA doesn't
   need it yet.
-- **SPA mapping:** week grid has a raster select (snap + gridlines only, no zoom,
-  not persisted) and auto-fits the axis to data (default 8–18, expands). PRD 100
-  D4/Phase 3 brings zoom + persistence; auto-fit stays as the no-config fallback.
+- **SPA mapping:** week grid has a raster select (snap + gridlines only, no manual
+  zoom, not persisted) and auto-fits the axis to data (default 8–18, expands).
+  The hour HEIGHT auto-fits too (2026-07-09): `--wg-hpx` stretches so the axis
+  fills the measured viewport remainder, floored at 48px — small screens scroll
+  (vertical analog of the 80px lane floor); `@media print` pins it back to 48px
+  so [PRD 077](../prd/077-calendar-model-graphql.md) page fitting is untouched. [PRD 100](../prd/100-spa-block-renderer-unification.md) D4/Phase 3 brings manual zoom +
+  persistence; auto-fit stays as the no-config fallback.
 
 ## 4. Selection — creating from the grid
 
@@ -144,31 +148,31 @@ group(blocks)                  # strategy-specific initial grouping
   follow the pointer (`m_wv.scrollTo`).
 - In Swing the selection PERSISTS after mouse-up; creation happens via the
   context menu on the selection (`fireSelectionPopup`). **The SPA deliberately
-  diverges** (PRD 095 3a, PRD 100 D5): releasing the drag opens the event sheet
+  diverges** ([PRD 095](../prd/095-month-grid-render-mode.md) 3a, [PRD 100](../prd/100-spa-block-renderer-unification.md) D5): releasing the drag opens the event sheet
   immediately, prefilled with the interval; nothing persists until Speichern.
 - **Editing opens on DOUBLE-click, everywhere.** Swing blocks and the SPA table
   rows (`onRowDblClick`) edit on double-click; single click selects. Block chips
-  follow the same rule (PRD 100 D6) — a one-click editor would steal the click
+  follow the same rule ([PRD 100](../prd/100-spa-block-renderer-unification.md) D6) — a one-click editor would steal the click
   the selection/context-menu concept needs.
 - **Context menus are ONE shared concept across table AND calendar views.** In
   Swing every view's popup — table rows, calendar blocks, empty slot selections —
   funnels through the same `SelectionMenuContext` + `ObjectMenuFactory` extension
   chain; a block popup and a table-row popup on the same reservation offer the
   same actions. SPA equivalent: the `RowContext` subject extraction + shared row
-  menu (PRD 094 D4, PRD 099) that the table views already use — block chips and
+  menu ([PRD 094](../prd/094-spa-main-view-actions-and-popups.md) D4, PRD 099) that the table views already use — block chips and
   grid selections must feed THAT system (chip → same `RowContext` as its table
   row; standing selection → a time-scoped creation context), never a
   renderer-private menu.
 - **SPA mapping:** FLOW is ported 1:1 in `WeekGridComponent` (cross-day verified
   2026-07-08); the month grid's day-range drag-create is the day-granular
-  analogue. Auto-scroll is pending (PRD 100 Phase 4).
+  analogue. Auto-scroll is pending ([PRD 100](../prd/100-spa-block-renderer-unification.md) Phase 4).
 
 ## 5. Dragging existing blocks
 
 `DraggingHandler` (rapla-client, same package) moves/resizes existing blocks;
 `RaplaBlock.isMovable()` gates it (`canModify` + not an exception occurrence).
-The SPA plan (PRD 095 Phase 3b, D6): drag gate = `canModify && appointmentCount
+The SPA plan ([PRD 095](../prd/095-month-grid-render-mode.md) Phase 3b, D6): drag gate = `canModify && appointmentCount
 === 1 && appointment.repeating == null` read from the builtin view's hidden
 fields — fail-closed when a custom view omits them; the server re-checks in
 `moveReservations`. Repeating/multi-appointment blocks are not draggable until
-the occurrence-vs-series dialog exists (PRD 094/091).
+the occurrence-vs-series dialog exists (PRD [094](../prd/094-spa-main-view-actions-and-popups.md)/[091](../prd/091-spa-reservation-edit-and-availability.md)).

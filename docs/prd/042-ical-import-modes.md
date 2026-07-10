@@ -10,7 +10,7 @@ Replace the current broken iCal import (`org.rapla.plugin.ical.ICalImport` / `Ra
 1. **One-time import (modifiable)** — iCal events become rapla Reservations owned by the importing user. They are normal editable reservations after import; the import link is informational only (UID stored as `KEY_EXTERNALID` for re-import deduplication).
 2. **Read-only periodic sync (managed)** — iCal events become rapla Reservations *managed* by a sync source. They appear everywhere normal Reservations do (calendar views, conflict detection, reports) but are **read-only** in the UI; the source feed is authoritative; rapla refetches periodically and applies changes; reservations disappear when they're removed from the source.
 
-Both modes share parsing infrastructure: the `IcalFeedParser` service introduced in PRD 039 is the substrate. The differences live above the parse layer — what rapla does with the parsed events.
+Both modes share parsing infrastructure: the `IcalFeedParser` service introduced in [PRD 039](039-external-ical-subscription-per-resource.md) is the substrate. The differences live above the parse layer — what rapla does with the parsed events.
 
 ## Background — current state
 
@@ -30,15 +30,15 @@ State: endpoint `POST /api/ical/import` exists; Angular OpenAPI codegen exists b
 | Manual mutation | Allowed by the owning user | Allowed only by admin with explicit "break the sync" action |
 | UID re-import handling | Configurable: `SKIP_EXISTING` / `UPDATE_EXISTING` / `RECREATE_ALL` | N/A — sync handles it |
 | Use case | "Bootstrap rapla from our legacy system one time"; "import last semester's schedule" | "Mirror the central university calendar into rapla as read-only schedule"; "keep our department's contractor schedule in sync from their system" |
-| Sibling PRD relationship | Distinct from PRD 039 (which produces busy markers, not Reservations) | **Distinct from PRD 039**: PRD 039 events appear only in conflict detection (`ExternalAppointment`); Mode 2 events appear everywhere Reservations do. Different mental model. |
+| Sibling PRD relationship | Distinct from [PRD 039](039-external-ical-subscription-per-resource.md) (which produces busy markers, not Reservations) | **Distinct from [PRD 039](039-external-ical-subscription-per-resource.md)**: [PRD 039](039-external-ical-subscription-per-resource.md) events appear only in conflict detection (`ExternalAppointment`); Mode 2 events appear everywhere Reservations do. Different mental model. |
 
-A given allocatable can have any combination: PRD 038 writes (rapla → Exchange), PRD 039 subscriptions (busy-marker awareness), PRD 042 Mode 2 syncs (managed Reservations), and ordinary user-created Reservations. They compose; each carries its own provenance.
+A given allocatable can have any combination: [PRD 038](038-graph-calendar-sync.md) writes (rapla → Exchange), [PRD 039](039-external-ical-subscription-per-resource.md) subscriptions (busy-marker awareness), PRD 042 Mode 2 syncs (managed Reservations), and ordinary user-created Reservations. They compose; each carries its own provenance.
 
-## Three-way comparison — Mode 1 vs Mode 2 vs PRD 039
+## Three-way comparison — Mode 1 vs Mode 2 vs [PRD 039](039-external-ical-subscription-per-resource.md)
 
-PRD 039 produces something *different* from a Reservation; the three together cover the spectrum:
+[PRD 039](039-external-ical-subscription-per-resource.md) produces something *different* from a Reservation; the three together cover the spectrum:
 
-| | **PRD 039** busy-marker | **Mode 1** one-time | **Mode 2** read-only sync |
+| | **[PRD 039](039-external-ical-subscription-per-resource.md)** busy-marker | **Mode 1** one-time | **Mode 2** read-only sync |
 |---|---|---|---|
 | Creates | `ExternalAppointment` sidecar (+ `AvailabilityWindow`) | Normal `Reservation` | Managed `Reservation` (read-only flag) |
 | Visible | Conflict detection only — gray busy block | Lists, grid, reports, search | Same as Mode 1 |
@@ -52,7 +52,7 @@ PRD 039 produces something *different* from a Reservation; the three together co
 
 ### The fundamental axis
 
-**Sidecar vs Reservation.** Sidecar (PRD 039) for "availability matters but events aren't rapla business." Reservation (PRD 042) for events that ARE rapla business. Then one-shot (Mode 1, rapla owns) vs ongoing (Mode 2, source owns).
+**Sidecar vs Reservation.** Sidecar ([PRD 039](039-external-ical-subscription-per-resource.md)) for "availability matters but events aren't rapla business." Reservation (PRD 042) for events that ARE rapla business. Then one-shot (Mode 1, rapla owns) vs ongoing (Mode 2, source owns).
 
 ### Decision tree
 
@@ -67,23 +67,23 @@ Real rapla entries (lists/reports/titles/allocatables)?
 ### Same source, three different choices
 
 Dr. Schmidt's Outlook iCal:
-- **PRD 039 (BUSY_TIMES)** — gray busy blocks on her row; no titles for others; blocks rapla bookings on top.
+- **[PRD 039](039-external-ical-subscription-per-resource.md) (BUSY_TIMES)** — gray busy blocks on her row; no titles for others; blocks rapla bookings on top.
 - **Mode 1** — Outlook events become editable Reservations with her as allocatable. Outlook changes tomorrow → rapla doesn't notice.
 - **Mode 2** — events appear as read-only managed Reservations; badge "Managed by sync from …"; Outlook changes propagate; Outlook delete removes from rapla.
 
 ### Privacy distinction
 
-PRD 039 is privacy-aware by default (BUSY_ONLY) — right for personal calendars. PRD 042 has no built-in privacy stripping — titles visible to anyone with read. So personal calendars → PRD 039; administrative/organisational calendars (dean's office, central room schedule, official course calendar) → PRD 042.
+[PRD 039](039-external-ical-subscription-per-resource.md) is privacy-aware by default (BUSY_ONLY) — right for personal calendars. PRD 042 has no built-in privacy stripping — titles visible to anyone with read. So personal calendars → [PRD 039](039-external-ical-subscription-per-resource.md); administrative/organisational calendars (dean's office, central room schedule, official course calendar) → PRD 042.
 
 ### Coexistence
 
-OK with care. Mode 2 of admin schedule + PRD 039 of personal Outlook on the same allocatable composes well. **Don't wire both to the same source** — duplicate conflict signals.
+OK with care. Mode 2 of admin schedule + [PRD 039](039-external-ical-subscription-per-resource.md) of personal Outlook on the same allocatable composes well. **Don't wire both to the same source** — duplicate conflict signals.
 
 ### Why "true dual sync" isn't a v1 goal
 
 Decomposes into three one-way flows:
-- rapla bookings in Outlook → PRD 038
-- Personal calendar blocks rapla → PRD 039
+- rapla bookings in Outlook → [PRD 038](038-graph-calendar-sync.md)
+- Personal calendar blocks rapla → [PRD 039](039-external-ical-subscription-per-resource.md)
 - External schedule as rapla bookings → PRD 042 Mode 2
 
 Three needs, three one-way solutions. Combining yields bidirectional behaviour without rapla solving bidirectional-sync conflict resolution.
@@ -92,7 +92,7 @@ Three needs, three one-way solutions. Combining yields bidirectional behaviour w
 
 **In scope (both modes):**
 
-- Rewrite `RaplaICalImport` on top of PRD 039's `IcalFeedParser`. Parser handles iCal4j strict mode, recurrence expansion, timezone normalisation, size caps, `TRANSP:TRANSPARENT` / `X-MICROSOFT-CDO-BUSYSTATUS:FREE` filtering.
+- Rewrite `RaplaICalImport` on top of [PRD 039](039-external-ical-subscription-per-resource.md)'s `IcalFeedParser`. Parser handles iCal4j strict mode, recurrence expansion, timezone normalisation, size caps, `TRANSP:TRANSPARENT` / `X-MICROSOFT-CDO-BUSYSTATUS:FREE` filtering.
 - Fix the `UNTIL`-bounded RRULE handling that currently throws.
 - New REST endpoints under `/api/ical-import/*` per AGENTS.md §15 (the existing `/api/ical/import` URL gets retired; Angular codegen regenerates):
   - `POST /api/ical-import/preview` — dry-run: parse the source, return what *would* be imported (event count, per-event details, parse errors, conflict-detection preview). No DB writes. Used by the UI to show admins what they're about to commit.
@@ -114,33 +114,33 @@ Three needs, three one-way solutions. Combining yields bidirectional behaviour w
 - New `KEY_EXTERNAL_SYNC_SOURCE` annotation = `IcalSyncSource.id`. Combined with `KEY_EXTERNALID` uniquely identifies external-managed.
 - Read-only enforcement: reservation mutation controllers check the annotation; non-admin → 403 with explanatory message naming the source.
 - Admin "break the sync": strips the annotation; reservation becomes editable. Audit-logged. One-way (no re-attach).
-- Scheduled fetcher (PRD 039 pattern): fetch enabled sources, parse via `IcalFeedParser`, diff against managed Reservations (create/update/delete-vanished), log counts.
+- Scheduled fetcher ([PRD 039](039-external-ical-subscription-per-resource.md) pattern): fetch enabled sources, parse via `IcalFeedParser`, diff against managed Reservations (create/update/delete-vanished), log counts.
 - Sync conflict handling: update proceeds even when it creates conflicts (source is authoritative; rapla conflict UI is advisory).
-- Body-marker symmetry with PRD 038: description note "Externally managed by sync from `<URL>`. Edits will be overwritten."
+- Body-marker symmetry with [PRD 038](038-graph-calendar-sync.md): description note "Externally managed by sync from `<URL>`. Edits will be overwritten."
 
 **Out of scope:**
 
 - Legacy `POST /api/ical/import` shape — endpoint removed; new at `/api/ical-import/*`. Codegen + Swing menu regenerate.
-- Angular UI — codegen-ready, but UI is follow-up (PRD 043 if asked).
-- Two-way sync (PRD 038 territory).
+- Angular UI — codegen-ready, but UI is follow-up ([PRD 043](043-api-keys-jwt-pat.md) if asked).
+- Two-way sync ([PRD 038](038-graph-calendar-sync.md) territory).
 - Mode-conversion (Mode 1 → Mode 2 after the fact).
 - Multi-sync coordination — two sources for same allocatable both create; conflict UI surfaces it.
-- Auth on feed URLs (Basic/OAuth) — public/secret-URL only, same as PRD 039.
+- Auth on feed URLs (Basic/OAuth) — public/secret-URL only, same as [PRD 039](039-external-ical-subscription-per-resource.md).
 
 ## Sequencing & dependencies
 
 PRD 042 is **furthest downstream** in the iCal/Exchange family:
 
-- **Hard dep on PRD 039** — `IcalFeedParser` for all parsing (strict-mode, size caps, recurrence expansion, `BUSYSTATUS`/`TRANSP` filtering, tz normalisation). Phase 1 step 1 gates on it.
-- **Soft dep on PRD 038** — Mode 2's loopback uses `RaplaExportedEvent`-based logic; degrades to no-filter when absent (admin wiring both 038 + Mode 2 against same target before 038 lands sees duplicates).
+- **Hard dep on [PRD 039](039-external-ical-subscription-per-resource.md)** — `IcalFeedParser` for all parsing (strict-mode, size caps, recurrence expansion, `BUSYSTATUS`/`TRANSP` filtering, tz normalisation). Phase 1 step 1 gates on it.
+- **Soft dep on [PRD 038](038-graph-calendar-sync.md)** — Mode 2's loopback uses `RaplaExportedEvent`-based logic; degrades to no-filter when absent (admin wiring both 038 + Mode 2 against same target before 038 lands sees duplicates).
 
-PRD 039 must land first (or at least `IcalFeedParser` merged). PRD 038 can land before or after.
+[PRD 039](039-external-ical-subscription-per-resource.md) must land first (or at least `IcalFeedParser` merged). [PRD 038](038-graph-calendar-sync.md) can land before or after.
 
 ## Plan
 
 ### Phase 1 — Cleanup + shared infrastructure
 
-1. Confirm PRD 039's `IcalFeedParser` service is in place and exposes the API this PRD needs (parse + recurrence expansion + filtering). Add any missing primitives.
+1. Confirm [PRD 039](039-external-ical-subscription-per-resource.md)'s `IcalFeedParser` service is in place and exposes the API this PRD needs (parse + recurrence expansion + filtering). Add any missing primitives.
 2. Delete the dead-code commented-out block in `RaplaICalImport.java`. Stub the endpoint to return a clear error ("iCal import is being rewritten; use `/api/ical-import/*` endpoints") so existing callers (Swing menu, Angular codegen) get a real signal until they're updated.
 3. Liquibase changelog for new `ical_sync_source` table + new annotation columns where needed.
 
@@ -168,7 +168,7 @@ PRD 039 must land first (or at least `IcalFeedParser` merged). PRD 038 can land 
 ### Phase 5 — Docs
 
 1. `docs/configuration.md` — Mode 2 setup, mapping, allocatable mapping, "what externally managed means."
-2. User-facing read-only notice when opening managed Reservation (mirror PRD 038 body marker).
+2. User-facing read-only notice when opening managed Reservation (mirror [PRD 038](038-graph-calendar-sync.md) body marker).
 3. Migration: `/api/ical/import` removed; callers → `/api/ical-import/preview`+`commit`.
 
 ## Tests

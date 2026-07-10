@@ -265,7 +265,7 @@ Writer: `rapla-core/.../storage/xml/ClassifiableWriter.java`.
 
 ### JSON (REST wire format)
 
-Jackson (since PRD 011) serializes the implementation directly via
+Jackson (since [PRD 011](../prd/done/011-spring-boot-4-jackson-3.md)) serializes the implementation directly via
 `@JsonProperty` on `ClassificationImpl` private fields. The shape:
 
 ```json
@@ -283,7 +283,7 @@ Jackson (since PRD 011) serializes the implementation directly via
 ```
 
 This is the same shape as the in-memory representation. See
-PRD 010 (field-based wire format) and PRD 011 (Jackson 3 migration)
+[PRD 010](../prd/done/010-jackson-field-based-wire-format.md) (field-based wire format) and [PRD 011](../prd/done/011-spring-boot-4-jackson-3.md) (Jackson 3 migration)
 for history.
 
 ## Storage and migration
@@ -365,5 +365,5 @@ ReservationImpl R23
   control who can create / read instances of a given type
 - [reservation-edit.md](reservation-edit.md) — how the edit dialog
   builds its UI from the schema
-- PRD 010 (Jackson field-based wire format), PRD 011 (Jackson 3) —
+- [PRD 010](../prd/done/010-jackson-field-based-wire-format.md) (Jackson field-based wire format), [PRD 011](../prd/done/011-spring-boot-4-jackson-3.md) (Jackson 3) —
   serialization history

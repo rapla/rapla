@@ -72,19 +72,19 @@ Categorisation by source pattern:
 | Pattern | Count | Action |
 |---|---|---|
 | `plugin.<name>.client.swing` → `client.*` | ~30 | **Not illegal** — these packages should be classified as `client`. Fix the classification, not the code. |
-| `plugin.<name>.{client, server}` (bare) → `client.*` or `server.*` | ~40 | Classification question per plugin (PRD 004 Risk 2 deferral). Most resolve to `client` or `server` once each plugin is laid out. |
+| `plugin.<name>.{client, server}` (bare) → `client.*` or `server.*` | ~40 | Classification question per plugin ([PRD 004](004-multi-module-architecture-analysis.md) Risk 2 deferral). Most resolve to `client` or `server` once each plugin is laid out. |
 | `client.spring` → `plugin.<name>.{client,server}` | 6 | `client.spring.SwingClientConfig` `@Import`s plugin client configs. After PRD 005 splits the modules, `client.spring` lives in `rapla-client`; the plugin `*.client.swing` packages also live in `rapla-client`; plugin `*.server` packages live in `rapla-server`. The "illegal" flag is wrong — these are intra-`rapla-client` edges except for one entry that needs investigation. |
 | `framework.internal → server.*` (1) | 1 | The `TimeZoneConverterImpl` cycle (resolved by Phase B4 above). |
 | `storage.dbfile → storage.impl.server` (1) | 1 | One file: `storage.dbfile.RaplaCoreFileService` references `storage.impl.server`. Likely belongs in `rapla-server` rather than `rapla-core`. Resolve in Phase D3. |
 
 After applying Phase B4 + the plugin classification cleanup in Phase D2/D3, the residual count of true cross-module violations should be **0**.
 
-## Verdict against PRD 004 Risk 1
+## Verdict against [PRD 004](004-multi-module-architecture-analysis.md) Risk 1
 
-PRD 004 Risk 1 set the threshold:
+[PRD 004](004-multi-module-architecture-analysis.md) Risk 1 set the threshold:
 > If <50 cycles, the split is a 1–2 week task; if >300, it's a quarter.
 
-**Observed: 1 real cross-module cycle + 92 plugin-classification questions.** This is the easy end of PRD 004's range. The 1.5-week effort estimate in PRD 005 stands.
+**Observed: 1 real cross-module cycle + 92 plugin-classification questions.** This is the easy end of [PRD 004](004-multi-module-architecture-analysis.md)'s range. The 1.5-week effort estimate in PRD 005 stands.
 
 ## Next concrete steps before Phase C
 
@@ -92,4 +92,4 @@ PRD 004 Risk 1 set the threshold:
 2. **Re-run `jdeps`** after B4 to confirm the cycle is gone.
 3. Then proceed to Phase C (reactor skeleton).
 
-The plugin-classification questions (the 92 one-way edges) are deliberately deferred to Phase D2/D3 — they can't be answered without committing to a per-plugin module layout, which PRD 004 Risk 2 says to defer until at least one plugin needs independent release.
+The plugin-classification questions (the 92 one-way edges) are deliberately deferred to Phase D2/D3 — they can't be answered without committing to a per-plugin module layout, which [PRD 004](004-multi-module-architecture-analysis.md) Risk 2 says to defer until at least one plugin needs independent release.

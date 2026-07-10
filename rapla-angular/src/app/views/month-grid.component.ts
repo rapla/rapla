@@ -59,7 +59,8 @@ function localToday(): string {
                       class="chip ghost"
                       [class.neutral]="!color(mt.row)"
                       [style.background]="color(mt.row)"
-                      ><span class="t">{{ timeOf(mt.row) }}</span>{{ nameOf(mt.row) }}</span
+                      ><span class="t">{{ timeOf(mt.row) }}</span
+                      >{{ nameOf(mt.row) }}</span
                     >
                   }
                 }
@@ -269,8 +270,13 @@ export class MonthGridComponent {
   // dragging (threshold) → drop emits the whole-day shift / ESC cancels. The
   // hovered target cell highlights via {@link moveTarget}.
   readonly moveTarget = signal<{ day: string; row: Row } | null>(null);
-  private mv: { row: Row; sourceDay: string; chip: HTMLElement; startX: number; startY: number } | null =
-    null;
+  private mv: {
+    row: Row;
+    sourceDay: string;
+    chip: HTMLElement;
+    startX: number;
+    startY: number;
+  } | null = null;
   private readonly onMvMove = (ev: PointerEvent) => this.mvMove(ev);
   private readonly onMvUp = () => this.mvUp();
   private readonly onMvCancel = () => this.cancelMove();
@@ -348,7 +354,13 @@ export class MonthGridComponent {
   private static readonly DRAG_THRESHOLD = 4;
   /** Sorted [from, to] while DRAGGING, else null — drives the .selecting cells. */
   readonly selection = signal<{ from: string; to: string } | null>(null);
-  private sel: { startDay: string; endDay: string; cell: HTMLElement; startX: number; startY: number } | null = null;
+  private sel: {
+    startDay: string;
+    endDay: string;
+    cell: HTMLElement;
+    startX: number;
+    startY: number;
+  } | null = null;
   private readonly onSelMove = (ev: PointerEvent) => this.selMove(ev);
   private readonly onSelUp = () => this.selUp();
   private readonly onSelCancel = () => this.cancelSelection();

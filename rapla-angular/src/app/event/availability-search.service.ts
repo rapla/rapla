@@ -95,9 +95,7 @@ export class AvailabilitySearchService {
         : of([] as AvailabilityRow[]);
     const byId$ =
       ids.length > 0
-        ? this.gql
-            .query<AvailabilityWire>(QUERY, { input: base({ ids }) })
-            .pipe(map(rows))
+        ? this.gql.query<AvailabilityWire>(QUERY, { input: base({ ids }) }).pipe(map(rows))
         : of([] as AvailabilityRow[]);
 
     return forkJoin({ hits: hits$, idRows: byId$ }).pipe(

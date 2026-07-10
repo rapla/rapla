@@ -88,7 +88,9 @@ describe('ViewHostComponent — result info placement (screen vs print)', () => 
 
 describe('ViewControlStripComponent — right-aligned result info', () => {
   beforeEach(async () => {
-    await TestBed.configureTestingModule({ imports: [ViewControlStripComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [ViewControlStripComponent],
+    }).compileComponents();
   });
 
   it('renders resultInfo from the store, right-aligned', () => {

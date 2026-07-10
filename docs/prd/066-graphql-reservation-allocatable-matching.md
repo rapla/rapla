@@ -29,8 +29,8 @@ In:
 
 Out of scope (deferred):
 
-- AND/OR/NOT combinators at the `AllocatableFilter` top level. The current shape (per-type `whereXxx` already carries combinators per PRD 059) covers every real selection — combinators across types are rare and the SPA can fake them with two aliased queries.
-- Recursive `AllocatableWhere.where` for "filter X by attributes of an entity X references" — a different shape, deferred (PRD 059 §"Out of scope").
+- AND/OR/NOT combinators at the `AllocatableFilter` top level. The current shape (per-type `whereXxx` already carries combinators per [PRD 059](done/059-graphql-typed-where-predicates.md)) covers every real selection — combinators across types are rare and the SPA can fake them with two aliased queries.
+- Recursive `AllocatableWhere.where` for "filter X by attributes of an entity X references" — a different shape, deferred ([PRD 059](done/059-graphql-typed-where-predicates.md) §"Out of scope").
 - Where on Reservations themselves (`whereReservation: ReservationWhere`) — same evaluator could apply; separate PRD.
 
 ## Locked design
@@ -78,8 +78,8 @@ result = (type-bucket: typeKeyIn-matching, narrowed by per-type whereXxx and
 **Semantic invariants:**
 
 1. **`idIn` always wins over filter narrowing.** An id in `idIn` whose entity doesn't match `typeKeyIn` or any `whereXxx` is still in the result. The user picked it explicitly — filter rules don't apply.
-2. **`idIn` does NOT win over §12.** `pc.canRead(entity, caller)` runs on every entity, regardless of whether it came from the type-bucket or `idIn`. Unreadable picks drop silently (PRD 035 §12 — existence not leaked).
-3. **`whereXxx` is type-scoped.** `whereRoom: { Grundflaeche: { gte: 50 } }` only filters allocatables whose DT key is `room`; it has no effect on Persons in the same query. (Already PRD 059 behaviour.)
+2. **`idIn` does NOT win over §12.** `pc.canRead(entity, caller)` runs on every entity, regardless of whether it came from the type-bucket or `idIn`. Unreadable picks drop silently ([PRD 035](done/035-graphql-foundations.md) §12 — existence not leaked).
+3. **`whereXxx` is type-scoped.** `whereRoom: { Grundflaeche: { gte: 50 } }` only filters allocatables whose DT key is `room`; it has no effect on Persons in the same query. (Already [PRD 059](done/059-graphql-typed-where-predicates.md) behaviour.)
 4. **Empty filter** (all fields null) = "everything the caller can read", unchanged from today.
 5. **Only `idIn` set** = exactly those ids (with §12), nothing else.
 6. **Only `typeKeyIn` set** = all of those types (with §12 + whereXxx), no extras.
@@ -167,7 +167,7 @@ Tier-3 tests for each phase, using the `testdefault.xml` fixture (Springfield pe
 ## Out of scope
 
 - AND/OR/NOT combinators at `AllocatableFilter` top level. Add when a real consumer needs "predicate-set A OR predicate-set B" in one query; today the SPA fakes it with two aliased calls when needed.
-- Recursive `AllocatableWhere.where` (PRD 059 §"Out of scope" defer).
+- Recursive `AllocatableWhere.where` ([PRD 059](done/059-graphql-typed-where-predicates.md) §"Out of scope" defer).
 - `whereReservation` typed-where on `ReservationFilter` — same evaluator could apply; separate PRD.
 
 ## Open questions

@@ -48,7 +48,14 @@ Two rules that fire whenever you extend these surfaces (week grid, drag interact
   `SelectionHandler`; multi-resource grid: `rapla-server/.../dayresource/server/`); the
   EventCalendar source (github.com/vkurko/calendar) is a SECONDARY, **read-only** reference for
   browser pointer patterns and grid CSS — clone it as a sibling/scratchpad checkout, never into
-  this repo, never consume it from npm.
+  this repo, never consume it from npm. **Read the Swing implementation + 
+  `docs/architecture/calendar-rendering.md` BEFORE designing, not after the user redirects you** —
+  parity with Swing is the spec unless the user says otherwise (one evening cost four
+  "check how swing does it / still looks different" redirects).
+- **Debugging a server-defined view that renders wrong:** FIRST fetch the view's stored query
+  text + its variable declarations — views can declare multiple filter variables (e.g.
+  `$filter` AND `$rooms`) while the SPA populates only one; don't conclude "resolver bug"
+  from client-side probes alone.
 - **MIT attribution is mandatory for copied OR closely-translated code** (a Svelte→TS port of
   their algorithm counts; patterns/ideas are free): per-file header
   `Portions derived from EventCalendar (https://github.com/vkurko/calendar), Copyright (c)
@@ -149,7 +156,13 @@ Setup is in `docs/development.md` § "Playwright MCP — install" (one-off: syst
 4. `browser_snapshot` to confirm rendered state, then `browser_evaluate` if you need to peek at JS-side state.
 5. Edit code → `npm run build:fast` → user reloads their `ng serve` tab → re-run from step 1.
 
-**Login shortcut for the dev server:** with `--user-data-dir` enabled (see setup doc), one OAuth login persists for the session. With `--isolated` (default for unattended), each navigate triggers a fresh OAuth roundtrip — fine for one-shot probes, painful for iteration.
+**Login shortcut for the dev server:** with `--user-data-dir` enabled (see setup doc), one OAuth login persists for the session. With `--isolated` (default for unattended), each navigate triggers a fresh OAuth roundtrip — fine for one-shot probes, painful for iteration. Logging in via Playwright is EASY (drive the form / OAuth redirect like any page) — "login is too hard for a smoke test" is a named non-excuse for skipping self-verification.
+
+**Browser-visible = browser-verified.** A fix to anything the user sees or touches (layout, drag, click, print, resize, login) counts as verified ONLY after you drove or screenshotted it via Playwright against a freshly-built, freshly-restarted server. `tsc`/`build:fast`, unit tests, and DOM-presence queries do NOT count — an element can be in the DOM and pushed off-screen by CSS, and a compile proves nothing about pointer behavior. Verify yourself BEFORE telling the user it's fixed (AGENTS.md §1); five sessions in a row needed the user to demand this.
+
+**Whose browser is this?** The MCP owns its own Chrome instance — the user may watch it via WSLg, but an MCP reconnect/restart spawns a NEW window, so you and the user can silently look at different browsers (cost ~40 min once). When demonstrating a fix: take a screenshot (ground truth) or tell the user explicitly which window to watch, and reload the page first to clear any `browser_evaluate` monkey-patches you injected while debugging.
+
+**Profile-lock recovery** — any `browser_*` call failing with `Browser is already in use for ~/.cache/ms-playwright-mcp/mcp-chrome-*, use --isolated`: do NOT retry browser tools (even `browser_close` fails). Either fall back to `curl` probing (`api-testing`/`graphql-api` skills), or clear the stale lock: `pkill -f mcp-chrome` (exit 144 = pkill self-match, benign) then `rm ~/.cache/ms-playwright-mcp/mcp-chrome-*/Singleton*`.
 
 **Artefacts (`.playwright-mcp/*.yml`, `*.png`) are gitignored.** Don't commit them.
 

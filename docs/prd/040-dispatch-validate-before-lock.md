@@ -7,7 +7,7 @@
 
 Close a multi-pod correctness window in the dispatch path: conflict detection and permission checks run against the per-pod `LocalCache` — which lags up to ~10 s behind other pods — **before** the cluster `WRITE_LOCK` is acquired. Validation should run **under the lock, against fresh store state**.
 
-Surfaced during the PRD 035 design review (OQ#10); independent rapla issue, unrelated to GraphQL/MCP.
+Surfaced during the [PRD 035](done/035-graphql-foundations.md) design review (OQ#10); independent rapla issue, unrelated to GraphQL/MCP.
 
 ## Problem
 

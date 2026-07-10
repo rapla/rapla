@@ -16,7 +16,12 @@ import type { SearchResult, SearchResultGroup, SearchResultKind } from '../searc
 const CORPUS: SearchResult[] = [
   { id: 'res-1', kind: 'resource', label: 'Raum A-101', actions: ['filter-replace', 'filter-add'] },
   { id: 'grp-1', kind: 'group', label: 'Räume C-Bau', count: 12, actions: ['load-group'] },
-  { id: 'evt-1', kind: 'event', label: 'Mathematik I', actions: ['navigate', 'filter-add', 'edit'] },
+  {
+    id: 'evt-1',
+    kind: 'event',
+    label: 'Mathematik I',
+    actions: ['navigate', 'filter-add', 'edit'],
+  },
   {
     id: 'usr-1',
     kind: 'user',

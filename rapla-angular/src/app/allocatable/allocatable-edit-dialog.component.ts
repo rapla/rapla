@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
@@ -85,7 +92,12 @@ export interface AllocatableEditDialogData {
           </span>
           <button type="button" (click)="cancel()">Abbrechen</button>
           @if (editable()) {
-            <button type="button" class="primary" [disabled]="saving() || !dirty()" (click)="save()">
+            <button
+              type="button"
+              class="primary"
+              [disabled]="saving() || !dirty()"
+              (click)="save()"
+            >
               {{ saving() ? 'Speichere…' : 'Speichern' }}
             </button>
           }

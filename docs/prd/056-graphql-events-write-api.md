@@ -5,7 +5,7 @@
 **Parent:** [PRD 035 (done) — Foundations](done/035-graphql-foundations.md) — supersedes the former §6 "Bulk mutations" per the 2026-05-28 design discussion. **Sibling:** [PRD 055 — Events Read API](055-graphql-events-read-api.md) (reopened 2026-05-29 for Tier-1 perf migration).
 
 **Related cross-PRDs:**
-- [PRD 094 — SPA main-view actions & popups](094-spa-main-view-actions-and-popups.md) — Phase 4 (calendar drag/resize move) is the consumer of the `moveAppointment` verb designed here; PRD 094 D5 locks that the EVENT/SERIE/SINGLE cascade stays server-side in this mutation, not in the client.
+- [PRD 094 — SPA main-view actions & popups](094-spa-main-view-actions-and-popups.md) — Phase 4 (calendar drag/resize move) is the consumer of the `moveAppointment` verb designed here; [PRD 094](094-spa-main-view-actions-and-popups.md) D5 locks that the EVENT/SERIE/SINGLE cascade stays server-side in this mutation, not in the client.
 - [PRD 040 — dispatch validate before lock](040-dispatch-validate-before-lock.md) — lock-set requirement for bulk operations
 - [PRD 057 (done) — DT Mutations v1](done/057-graphql-dt-mutations-v1.md) + [PRD 061 — DT Mutations v2](061-graphql-dt-mutations-v2.md) — schema-editor mutation surface
 - Future PRD — allocatables write (extends `applyChanges`)
@@ -46,10 +46,10 @@ Out (future PRDs):
 - **PARTIAL mode** — deferred; v1 is ATOMIC-only. Additive enum extension when
   needed (`BulkMode`, `mode:` arg, `PARTIAL_SUCCESS` status)
 - **`instantiateFromTemplate`** — defers to a templates PRD (current
-  `rapla:template` filter from PRD 055 excludes templates from GraphQL)
+  `rapla:template` filter from [PRD 055](055-graphql-events-read-api.md) excludes templates from GraphQL)
 - ~~**`reshapeClassification`** preview query + type-change save path —
   separate PRD~~ *(obsolete 2026-07-07: type change lands in
-  `updateReservation` itself, preview is client-side — OQ1.c revision + PRD 096)*
+  `updateReservation` itself, preview is client-side — OQ1.c revision + [PRD 096](096-spa-classification-editor.md))*
 - **Allocatable / User / Permission mutations** — extend `ChangeOp` in future
   PRDs (057, 058)
 - **`dryRun` validation-only mode** — additive, deferred to first real consumer
@@ -58,7 +58,7 @@ Out (future PRDs):
 - **DynamicType schema editor mutations** — when the Angular SPA gains a
   schema editor (create / update / delete DynamicTypes + their Attributes),
   it'll need `createDynamicType` / `updateDynamicType` / `deleteDynamicType`
-  + an `AttributeInput` shape. The hot-swap mechanism built in PRD 055 Cut C
+  + an `AttributeInput` shape. The hot-swap mechanism built in [PRD 055](055-graphql-events-read-api.md) Cut C
   fires on these too — admin's edits are visible within ~10s. Out of scope
   for events; needs its own PRD when the editor work starts.
 
@@ -121,7 +121,7 @@ Forward-compatibility caveat: a stale SPA submitting full state may omit
 attributes the admin added to a DynamicType after the SPA build. **Mitigation:**
 server treats "attribute not in input list" as unchanged (not as cleared);
 descriptor query at edit-open keeps the SPA aligned with current attribute set
-(PRD 035 §4).
+([PRD 035](done/035-graphql-foundations.md) §4).
 
 ### 4. Delete is uniform — only `deleteReservations(ids: [ID!]!)`
 
@@ -243,14 +243,14 @@ typed-batch model.
 
 ### 9. Client-supplied ids — contract rule + operator-side integrity guard (2026-07-06)
 
-Locked in the PRD 091 design dialog (id-first vs. server-assigned; the SPA edit
+Locked in the [PRD 091](091-spa-reservation-edit-and-availability.md) design dialog (id-first vs. server-assigned; the SPA edit
 surface is the first consumer that needs subset restrictions at create time).
 
 **Contract rule (REVISED 2026-07-06 — client ids are MANDATORY):**
 - `input.id` on reservations, appointments, and allocatables is **required**;
   id absent or blank → `ValidationError` code `REQUIRED` naming the path. The
   server-generate fallback is removed from `createReservation`,
-  `applyChanges`-create, and `createAllocatable` (PRD 063).
+  `applyChanges`-create, and `createAllocatable` ([PRD 063](063-graphql-allocatables-write-api.md)).
 - This **supersedes the earlier "B′" conditional rule** ("ids only required when
   `AllocationInput.appointmentIds` references a subset") — with ids always
   present the conditional collapses; one contract instead of two behavior
@@ -278,10 +278,10 @@ surface is the first consumer that needs subset restrictions at create time).
   the new ids).
 
 **Operator-side integrity guard `checkIdIntegrity`** — a named step in
-`LocalAbstractCachableOperator.check()`, sibling of PRD 058's
+`LocalAbstractCachableOperator.check()`, sibling of [PRD 058](058-graphql-key-spec-migration.md)'s
 `checkGraphqlKeySpecCompliance` (same belt-and-suspenders rationale: guards at the
 dispatch choke point cover *every* write path — GraphQL, Swing dispatch, plugin
-imports, future PRD 067 `EntityLifecycle` — and can't be silently bypassed):
+imports, future [PRD 067](067-server-mutation-unification.md) `EntityLifecycle` — and can't be silently bypassed):
 1. A **new** entity whose id already resolves to a persistent entity → reject.
    (Today `checkVersions` only catches the *stale* direction — a fresh entity with
    a current timestamp sails through and create-with-existing-id becomes a silent
@@ -369,11 +369,11 @@ Locked sub-decisions:
   Only entities that explicitly declare create-intent are guarded. This is the
   only sane intent-free default; undeclared writes are unchanged.
 - **scope:** the relevant target set is **Reservation + Allocatable** — the two
-  data entities with id-first GraphQL create surfaces (PRD 056 / PRD 063), i.e. the
+  data entities with id-first GraphQL create surfaces (PRD 056 / [PRD 063](063-graphql-allocatables-write-api.md)), i.e. the
   only entities where a client can supply an id that could collide. The operator
   guard itself runs generically over `createReferences` (typ-agnostic), but is
   **inert** for server-id-assigned entities: Categories / DynamicTypes are
-  identified by key (PRD 058) not client ids, and facade-created entities always
+  identified by key ([PRD 058](058-graphql-key-spec-migration.md)) not client ids, and facade-created entities always
   carry a fresh `createIdentifier` UUID that can never resolve to a persistent one.
   Sub-entity (appointment) id integrity stays check #2's job.
 - `SimpleEntity.clone()` must reset `isNew` the same way it resets `readOnly`, so
@@ -416,12 +416,12 @@ Failures cause whole-batch rejection per ATOMIC mode.
 `newOwnerId` must resolve to a real, visible user. Unknown ownerId fails as
 `REFERENCE_NOT_FOUND`.
 
-### `moveReservations(ids, dateShift)` — ⚠ SUPERSEDED by PRD 101 (2026-07-09)
+### `moveReservations(ids, dateShift)` — ⚠ SUPERSEDED by [PRD 101](101-transpose-anchors-move-copy-paste.md) (2026-07-09)
 
 > The shipped verb is `moveReservations(ids, reference: LocalDateTime, target:
 > Target!)` — the `dateShift: Duration` form and the `Duration` scalar were
 > **removed** (couldn't express keep-time; the delta is now `target − reference`).
-> Exceptions stay **absolute** on move (PRD 101 D2 — not shifted, contrary to the
+> Exceptions stay **absolute** on move ([PRD 101](101-transpose-anchors-move-copy-paste.md) D2 — not shifted, contrary to the
 > note below). Full semantics + the appointment-addressed verbs
 > (`moveAppointment`, `splitOccurrence`) live in
 > [PRD 101](101-transpose-anchors-move-copy-paste.md). Do not implement from this
@@ -441,15 +441,15 @@ ATOMIC rejects the batch.
 > The design dialog continued past this sketch: the scope enum, the `Duration` delta,
 > `keepTime`, and `reservationId` were all revised (typed `Anchor` input, scope-split
 > verbs, no-rebase exception doctrine). This section is kept only as the decision trail;
-> the current design state lives in PRD 101, and the final verbs will be rewritten here
-> in PRD 101 Phase 1. Do not implement from this section.
+> the current design state lives in [PRD 101](101-transpose-anchors-move-copy-paste.md), and the final verbs will be rewritten here
+> in [PRD 101](101-transpose-anchors-move-copy-paste.md) Phase 1. Do not implement from this section.
 
 **Post-v1 additive verb.** The scope-aware, single-reservation counterpart of
 `moveReservations`: it moves/resizes **one appointment** of a reservation with an
 explicit EVENT/SERIE/SINGLE scope, keeping the recurrence cascade server-side. It
-exists because the calendar drag/resize surface (PRD 094 Phase 4) must offer the
+exists because the calendar drag/resize surface ([PRD 094](094-spa-main-view-actions-and-popups.md) Phase 4) must offer the
 same EVENT / SERIE / SINGLE choice Swing's `AppointmentResize.change()` does, and
-that split logic must **not** be reimplemented client-side (PRD 094 **D5**; grounded
+that split logic must **not** be reimplemented client-side ([PRD 094](094-spa-main-view-actions-and-popups.md) **D5**; grounded
 in `docs/architecture/reservation-edit.md` § "Drag / resize on the calendar").
 
 ```graphql
@@ -493,12 +493,12 @@ Per-scope semantics (1:1 with `AppointmentResize.change()`):
 supplying `newEnd` makes the mutation a resize of the addressed occurrence under the
 same scope rules.
 
-Returns the updated `Reservation` (post-state, fresh `lastChanged`) so the PRD 094
+Returns the updated `Reservation` (post-state, fresh `lastChanged`) so the [PRD 094](094-spa-main-view-actions-and-popups.md)
 command layer can capture the inverse. §12: `canModify(reservation, user)`. Errors:
 `INVALID_SHIFT` (recurrence end < start after the move), `CONCURRENT_MODIFICATION`
 (`expectedLastChanged` mismatch), `PERMISSION_DENIED`. Note the SINGLE inverse is
-**not** self-inverting (a split can't be undone by a negated split) — the PRD 094
-command captures pre-split state and inverts via `updateReservation` (see PRD 094
+**not** self-inverting (a split can't be undone by a negated split) — the [PRD 094](094-spa-main-view-actions-and-popups.md)
+command captures pre-split state and inverts via `updateReservation` (see [PRD 094](094-spa-main-view-actions-and-popups.md)
 Phase 4).
 
 **Relationship to `moveReservations`:** `moveReservations` stays the bulk EVENT
@@ -603,7 +603,7 @@ mutation ResizeSeriesEnd {
 }
 ```
 
-**6 — concurrency-checked move** (the PRD 094 command inverse captures
+**6 — concurrency-checked move** (the [PRD 094](094-spa-main-view-actions-and-popups.md) command inverse captures
 `expectedLastChanged` so a foreign edit between the move and its undo fails loudly
 instead of silently overwriting):
 
@@ -627,15 +627,15 @@ On a stale `expectedLastChanged` the server returns
 **Undo note.** EVENT / SERIE / keepTime / resize moves invert by re-issuing
 `moveAppointment` with the negated `dateShift` (or the prior `newEnd`) and the same
 scope. A **SINGLE** move is *not* self-inverting (a split can't be undone by a
-negated split) — the PRD 094 command captures the pre-split reservation state and
-inverts via `updateReservation` (see PRD 094 Phase 4).
+negated split) — the [PRD 094](094-spa-main-view-actions-and-popups.md) command captures the pre-split reservation state and
+inverts via `updateReservation` (see [PRD 094](094-spa-main-view-actions-and-popups.md) Phase 4).
 
-### `copyReservations(ids, dateShift)` — ⚠ SUPERSEDED by PRD 101 (2026-07-09)
+### `copyReservations(ids, dateShift)` — ⚠ SUPERSEDED by [PRD 101](101-transpose-anchors-move-copy-paste.md) (2026-07-09)
 
 > Shipped as `copyReservations(ids, reference: LocalDateTime, target: Target!)`
 > (`dateShift`/`Duration` removed, as for `moveReservations`). Copy keeps
 > exceptions **absolute** but re-bases a non-fixed `until` length-preserving
-> (PRD 101 D2/D3). See [PRD 101](101-transpose-anchors-move-copy-paste.md); the
+> ([PRD 101](101-transpose-anchors-move-copy-paste.md) D2/D3). See [PRD 101](101-transpose-anchors-move-copy-paste.md); the
 > id-minting/permission prose below is still accurate.
 
 Duplicates with new server-generated UUIDs — reservation **and** appointments
@@ -776,11 +776,11 @@ non-empty; rejects with `REQUIRED` at path `operations[i].createReservation.appo
 (or .updateReservation). GraphQL doesn't support list-min-length at the
 schema layer, so the check is server-side.
 
-**OQ1.c — typeId change on update — REVISED 2026-07-07 (PRD 096): accept.**
+**OQ1.c — typeId change on update — REVISED 2026-07-07 ([PRD 096](096-spa-classification-editor.md)): accept.**
 Original 2026-05-28 resolution was reject-with-`INVALID_TYPE_CHANGE` plus a
 future dedicated `reshapeReservation` mutation, because type changes need a
 "which attributes get dropped" preview UX. That preview now lives client-side
-in the PRD 096 classification editor (draft-based sheet: user switches the
+in the [PRD 096](096-spa-classification-editor.md) classification editor (draft-based sheet: user switches the
 type, sees the remapped attributes live, saves once — the type change stays
 undoable in the draft, Swing parity). `updateReservation` therefore accepts
 a `typeKey` differing from stored:
@@ -847,7 +847,7 @@ input CreateReservationInput {
 
 Rationale:
 - **One mental model.** Same one-schema-two-modes consumption as reads
-  (PRD 035 §580): SPA via dynamic mutation construction; codegen consumers
+  ([PRD 035](done/035-graphql-foundations.md) §580): SPA via dynamic mutation construction; codegen consumers
   via typed access.
 - **Smaller wire** — typed fields don't need the `{key, value}` envelope.
 - **Parse-time validation** — graphql-java rejects wrong types at the
@@ -862,7 +862,7 @@ Generator emission rules:
 - CATEGORY VALUE_LIST attrs typed as the same generated enum used on read
 - Multi-valued (LIST / BELONGS_TO / PACKAGE) emit as `[X!]`
 - All fields nullable — required semantics enforced server-side per
-  `AttributeInput.required` from PRD 057
+  `AttributeInput.required` from [PRD 057](done/057-graphql-dt-mutations-v1.md)
 
 Hot-swap surface doubles (read + write types regenerated per DynamicType
 change). Same trigger / poll / atomic-swap mechanism; SDL generator just
@@ -922,7 +922,7 @@ no inbound references — appointments are composite (deleted with parent);
 allocations are outbound only. `deleteReservations(ids)` is a clean delete
 with no `REFERENCE_EXISTS` path needed.
 
-**Future PRD scope (allocatable / user / permission delete — PRD 057+):**
+**Future PRD scope (allocatable / user / permission delete — [PRD 057](done/057-graphql-dt-mutations-v1.md)+):**
 
 - **Reject with `REFERENCE_EXISTS`** when delete is blocked by referring
   entities. Error extension carries first 50 referring ids + total count
@@ -965,19 +965,19 @@ ATOMIC locked. PARTIAL deferred. No more open questions on mode.
 
 ## Decision log
 
-- **2026-07-09 (later) — the `moveAppointment` sketch below is superseded by PRD 101**
+- **2026-07-09 (later) — the `moveAppointment` sketch below is superseded by [PRD 101](101-transpose-anchors-move-copy-paste.md)**
   (transpose & anchors): the design dialog moved to a typed `Anchor` input
   (day/dateTime `@oneOf` replacing `keepTime`/`Duration`), scope-split verbs
   (`moveAppointment`/`splitOccurrence`, EVENT via `moveReservations`), and the
-  no-rebase exception doctrine. PRD 101 holds the research findings + decisions; its
+  no-rebase exception doctrine. [PRD 101](101-transpose-anchors-move-copy-paste.md) holds the research findings + decisions; its
   Phase 1 rewrites this PRD's verb notes to the final shape.
 - **2026-07-09 — `moveAppointment` verb designed (post-v1 additive; not yet
   implemented).** A scope-aware single-reservation move/resize
   (`AppointmentEditScope = EVENT | SERIE | SINGLE`) that keeps the recurrence
   cascade — whole-event shift / whole-series shift / SINGLE-occurrence split +
   `addException` — server-side, mirroring Swing `AppointmentResize.change()`. Driven
-  by PRD 094 Phase 4 (calendar drag/resize): the SPA owns only the scope dialog +
-  command inverse, the split logic lives in Java (PRD 094 D5, maintainer directive
+  by [PRD 094](094-spa-main-view-actions-and-popups.md) Phase 4 (calendar drag/resize): the SPA owns only the scope dialog +
+  command inverse, the split logic lives in Java ([PRD 094](094-spa-main-view-actions-and-popups.md) D5, maintainer directive
   "the actual logic should happen in the mutation graphql"). Distinct from
   `moveReservations` (bulk, EVENT-only, no scope). Schema + semantics in the
   "Verb-level semantic notes" section. Implementation is test-first tier-3 per PRD
@@ -1038,11 +1038,11 @@ ATOMIC locked. PARTIAL deferred. No more open questions on mode.
   guard runs generically but is inert for server-id-assigned entities). Full
   rationale in §9. See the "Create-intent design" block.
 - **2026-07-06 — client-supplied ids + `checkIdIntegrity` (locked decision §9).**
-  From the PRD 091 design dialog: ids stay optional (B′) *(superseded same day —
+  From the [PRD 091](091-spa-reservation-edit-and-availability.md) design dialog: ids stay optional (B′) *(superseded same day —
   ids are now mandatory, see the newer entry above)*; subset restrictions require
   appointment ids (loud validation replaces the silent trap); id normalization
   server-side *(also superseded — ids are stored verbatim, approach W)*; new
-  operator-side guard `checkIdIntegrity` in `check()` (PRD 058
+  operator-side guard `checkIdIntegrity` in `check()` ([PRD 058](058-graphql-key-spec-migration.md)
   pattern) rejecting new-entity id collisions and foreign-reservation appointment
   ids — discovered as an open gap of the shipped controller (client ids honored
   unchecked, no dispatch-side check). §12-uniform rejection required.
@@ -1077,15 +1077,15 @@ ATOMIC locked. PARTIAL deferred. No more open questions on mode.
     *(revised 2026-07-06: no content comparison — any existing id → `ID_COLLISION`; see OQ5)*
 - **2026-05-28 — OQ1.c, OQ6 resolved:**
   - `typeId` change on update → reject with `INVALID_TYPE_CHANGE`. Type
-    changes land on a future `reshapeReservation` mutation per PRD 035 §7.
+    changes land on a future `reshapeReservation` mutation per [PRD 035](done/035-graphql-foundations.md) §7.
     `typeId` stays in `UpdateReservationInput` as defensive cross-validation.
     *(REVISED 2026-07-07 — see OQ1.c above: type change now accepted in-place,
-    no reshapeReservation; preview is client-side in the PRD 096 editor.)*
+    no reshapeReservation; preview is client-side in the [PRD 096](096-spa-classification-editor.md) editor.)*
   - Reservation delete has no inbound references → clean delete.
   - Future allocatable/user/permission delete reject with `REFERENCE_EXISTS`
     + referrer list. `applyChanges` is dependency-aware (excludes same-batch
     deletes from the referrer check) for atomic clean-up workflows.
-- **2026-05-28 — PRD 062 (API Robustness, originally 058) opened** as a parking lot for
+- **2026-05-28 — [PRD 062](062-graphql-api-robustness.md) (API Robustness, originally 058) opened** as a parking lot for
   heavy-infrastructure patterns (in-flight idempotency lock, TTL cache,
   rate limiting, query complexity caps, distributed tracing). Not in PRD
   056 scope; revived when rapla scale / multi-tenant deployment changes

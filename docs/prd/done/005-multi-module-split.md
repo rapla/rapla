@@ -11,18 +11,18 @@ Reactor aggregates 5 modules. `mvn -f master/pom.xml clean test` → **94 pass /
 
 Source distribution after Phase D6: `rapla-core` 380 files; `rapla-client` 440 files; `rapla-server` 156 files; `rapla-app` ~3 files. Tests all in `rapla-app/src/test/` (D5 pragmatic placement; per-module redistribution is Phase E follow-up).
 
-D3 compromise resolved 2026-05-07: 27 toolkit-agnostic files moved from rapla-client to rapla-core eliminated the original rapla-server → rapla-client edge. **`rapla-server` now depends only on `rapla-core`.** Detail in `005-cycle-audit.md` §0. The `rapla-client-api` extraction is **permanently off the table** per PRD 003 direction change 2026-05-07 — dhbwrapla becomes server-only.
+D3 compromise resolved 2026-05-07: 27 toolkit-agnostic files moved from rapla-client to rapla-core eliminated the original rapla-server → rapla-client edge. **`rapla-server` now depends only on `rapla-core`.** Detail in `005-cycle-audit.md` §0. The `rapla-client-api` extraction is **permanently off the table** per [PRD 003](../003-custom-deployments-after-spring-migration.md) direction change 2026-05-07 — dhbwrapla becomes server-only.
 
 ## Goal
 
-Turn the existing single-module Maven build into a **5-module reactor** along PRD 004's layer boundaries, while keeping `mvn test` green at every step. The split delivers:
+Turn the existing single-module Maven build into a **5-module reactor** along [PRD 004](004-multi-module-architecture-analysis.md)'s layer boundaries, while keeping `mvn test` green at every step. The split delivers:
 
 - **Build-time enforcement** of the package-level layering that already exists by convention
 - **Smaller dependency surface** for downstream consumers (`dhbwrapla`, future custom deployments) — pull `rapla-server` only, not the whole monolith
 - **A clean home** for the future Angular SPA (PRD 006, not here)
 - **Maven Central publishability** for `rapla-core`, `rapla-client`, `rapla-server`
 
-Out of scope: Angular code (PRD 006); splitting rapla-client into api+swing (PRD 004 defers); per-plugin modules (PRD 004 Risk 2); Swing UI legacy-DI migration (PRD 001 Phase 4 follow-up); `dhbwrapla` update (separate PR/PRD).
+Out of scope: Angular code (PRD 006); splitting rapla-client into api+swing ([PRD 004](004-multi-module-architecture-analysis.md) defers); per-plugin modules ([PRD 004](004-multi-module-architecture-analysis.md) Risk 2); Swing UI legacy-DI migration (PRD 001 Phase 4 follow-up); `dhbwrapla` update (separate PR/PRD).
 
 ## Scope
 
@@ -48,16 +48,16 @@ docs/prd/004-...                         → status note: superseded-by-005 for 
 
 **Source-of-truth file count today**: **976 files** + tests under `src/test/java`.
 
-## Decisions ratified from PRD 004
+## Decisions ratified from [PRD 004](004-multi-module-architecture-analysis.md)
 
 | Axis | Choice | Reference |
 |---|---|---|
-| **Module count** | 5 (`rapla-bom`, `rapla-core`, `rapla-client`, `rapla-server`, `rapla-app`) — no per-plugin modules, no `rapla-client-api/swing` split | PRD 004 §A2, §Risk 2 |
-| **Build tool** | Maven (no Gradle migration in this PRD) | PRD 004 §B verdict |
-| **Plugin layout** | Plugins remain as packages inside the three main modules; `plugin/<name>/{client,server,extensionpoints}/` distributes naturally | PRD 004 §Risk 2 (option a) |
-| **`components.*` placement** | Split: `i18n/{,client/}`, `util`, `layout`, `restproxy` → `rapla-core`; `calendar`, `calendarview`, `iolayer`, `tablesorter`, `treetable`, `i18n/client/swing/` → `rapla-client` | PRD 004 §OQ2 recommendation |
+| **Module count** | 5 (`rapla-bom`, `rapla-core`, `rapla-client`, `rapla-server`, `rapla-app`) — no per-plugin modules, no `rapla-client-api/swing` split | [PRD 004](004-multi-module-architecture-analysis.md) §A2, §Risk 2 |
+| **Build tool** | Maven (no Gradle migration in this PRD) | [PRD 004](004-multi-module-architecture-analysis.md) §B verdict |
+| **Plugin layout** | Plugins remain as packages inside the three main modules; `plugin/<name>/{client,server,extensionpoints}/` distributes naturally | [PRD 004](004-multi-module-architecture-analysis.md) §Risk 2 (option a) |
+| **`components.*` placement** | Split: `i18n/{,client/}`, `util`, `layout`, `restproxy` → `rapla-core`; `calendar`, `calendarview`, `iolayer`, `tablesorter`, `treetable`, `i18n/client/swing/` → `rapla-client` | [PRD 004](004-multi-module-architecture-analysis.md) §OQ2 recommendation |
 | **`custom/` POM** | **Defer.** Per user direction 2026-05-07: dropped from reactor but directory stays on disk for reference. dhbwrapla integration in Phase G handles absence of `org.rapla:custom` separately. | User direction; supersedes earlier "delete" plan |
-| **`rapla-archetype`** | **Not** created in this PRD | PRD 004 §OQ6 |
+| **`rapla-archetype`** | **Not** created in this PRD | [PRD 004](004-multi-module-architecture-analysis.md) §OQ6 |
 
 ## Cycle audit (verified 2026-05-07, before any code change)
 
@@ -74,7 +74,7 @@ Grep-based scan of the **proposed module boundaries**:
 | `rest.*` → `javax.swing` | **0** | none |
 | `components/i18n/*` → `javax.swing` | **2 files**, both in `client/swing/` subpackage (`SwingBundleManager`, `SwingIcon`) | Move that subpackage to `rapla-client`; rest of `i18n` → `rapla-core` |
 
-**Conclusion:** "<50 cycles → 1–2 weeks" scenario from PRD 004 Risk 1. Migration is dominated by mechanical `git mv` + pom-writing, not dependency surgery.
+**Conclusion:** "<50 cycles → 1–2 weeks" scenario from [PRD 004](004-multi-module-architecture-analysis.md) Risk 1. Migration is dominated by mechanical `git mv` + pom-writing, not dependency surgery.
 
 ## Plan
 
@@ -91,7 +91,7 @@ Eight phases. Each ends green; full `mvn test` at session end per AGENTS.md §5.
   - **D5 (tests):** move alongside the package they test; resolve shared fixtures per Phase B.
   - **D6:** delete `<module>.</module>` from root pom; move/delete root `src/` stragglers.
 - **Phase E — Build hygiene & per-module deps (1–2d)**: audit BOM (third-party pins only); `mvn dependency:analyze -pl <module>`; manifest entries per module; rename `rapla-app/pom.xml` to `<artifactId>rapla-app</artifactId>` + `<finalName>rapla-2.1-SNAPSHOT</finalName>` (preserves on-disk JAR filename); move signing profiles from `parent/pom.xml` to `rapla-app/pom.xml`.
-- **Phase F — Documentation (0.5d)**: AGENTS.md build commands + §7 worktree notes; module-map table in README or `docs/architecture.md`; PRD 003 supersedes notes; PRD 004 status flip.
+- **Phase F — Documentation (0.5d)**: AGENTS.md build commands + §7 worktree notes; module-map table in README or `docs/architecture.md`; [PRD 003](../003-custom-deployments-after-spring-migration.md) supersedes notes; [PRD 004](004-multi-module-architecture-analysis.md) status flip.
 - **Phase G — `dhbwrapla` update — DEFERRED with custom/**. Originally to update dhbwrapla to depend on `rapla-server` directly. Per user direction 2026-05-07, deferred to a future PRD. dhbwrapla build does NOT need to keep working through PRD 005's lifetime. When done: replace `<parent>org.rapla:custom</parent>` with `rapla-bom`; replace `<dependency>org.rapla:rapla</dependency>` with `rapla-server` (+ `rapla-client` if Swing customisations); verify `dhbwrapla-container/pom.xml` resolves `../../rapla`.
 - **Phase H — Maven Central readiness (out of scope; tracked here)**: source + Javadoc JARs per module; `nexus-staging-maven-plugin`; GPG signing in CI; POM metadata; per-module license tagging.
 
@@ -178,7 +178,7 @@ If cycle audit surfaces >50 cycles, Phase B grows to 3–5 days and total to ~3 
 | **001** Spring Boot Migration | **Hard prerequisite** — Phases 1–8 done on `spring-boot` branch. Phase 4 follow-up runs independently in parallel. |
 | **001-A** Date → LocalDateTime | Independent; touches `rapla-core` signatures. |
 | **002** Multi-Tenancy | Independent; `TenantAwareFacade` lives in `rapla-server`. |
-| **003** Custom Deployments | **Bidirectional.** PRD 005 simplifies PRD 003's OQ2/OQ5/OQ6; update PRD 003 in Phase F. |
+| **003** Custom Deployments | **Bidirectional.** PRD 005 simplifies [PRD 003](../003-custom-deployments-after-spring-migration.md)'s OQ2/OQ5/OQ6; update [PRD 003](../003-custom-deployments-after-spring-migration.md) in Phase F. |
 | **004** Multi-Module Architecture Analysis | **Decision document.** PRD 005 implements it. |
 | **006** Angular Client (future) | Depends on PRD 005 for clean home as peer of Java reactor. |
 | **007** Build & Test Performance | Likely benefits from split but doesn't block. |

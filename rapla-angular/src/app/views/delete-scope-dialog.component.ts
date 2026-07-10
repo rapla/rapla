@@ -61,6 +61,7 @@ export interface DeleteScopeDialogData {
 })
 export class DeleteScopeDialogComponent {
   readonly data = inject<DeleteScopeDialogData>(MAT_DIALOG_DATA);
-  readonly ref = inject<MatDialogRef<DeleteScopeDialogComponent, DeleteScope | undefined>>(MatDialogRef);
+  readonly ref =
+    inject<MatDialogRef<DeleteScopeDialogComponent, DeleteScope | undefined>>(MatDialogRef);
   readonly selected = signal<DeleteScope>(this.data.options[0]?.scope ?? 'event');
 }

@@ -6,9 +6,21 @@ import type { ViewColumn } from '../graphql/graphql.service';
 const COLUMNS: ViewColumn[] = [
   { alias: 'raum', header: 'raum', kind: 'group', type: 'Allocatable' },
   { alias: 'id', header: 'id', kind: 'entity', group: 'raum', path: 'id' },
-  { alias: 'plaetze', header: 'plaetze', kind: 'entity', group: 'raum', path: 'AnzahlPlaetzeInsgesamt' },
+  {
+    alias: 'plaetze',
+    header: 'plaetze',
+    kind: 'entity',
+    group: 'raum',
+    path: 'AnzahlPlaetzeInsgesamt',
+  },
   { alias: 'gebName', header: 'gebName', kind: 'entity', group: 'raum', path: 'Gebaeude.name' },
-  { alias: 'gebKey', header: 'gebKey', kind: 'entity', group: 'raum', path: 'Gebaeude.Gebaeudename' },
+  {
+    alias: 'gebKey',
+    header: 'gebKey',
+    kind: 'entity',
+    group: 'raum',
+    path: 'Gebaeude.Gebaeudename',
+  },
   { alias: 'minuten', header: 'minuten', kind: 'value', fn: 'SUM' },
   { alias: 'termine', header: 'termine', kind: 'value', fn: 'COUNT' },
   { alias: 'count', header: 'count', kind: 'count', type: 'Int' },

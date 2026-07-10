@@ -71,7 +71,7 @@ The resource lock is acquired **inside `dbStore`, after**
 run against the (possibly stale — see below) `LocalCache`, **not** under
 the cluster lock. The lock covers the write and the optimistic
 version-check inside `store`, not the check. Cross-pod this is a
-time-of-check-to-time-of-use window — see PRD 035's OQ#10 / the
+time-of-check-to-time-of-use window — see [PRD 035](../prd/done/035-graphql-foundations.md)'s OQ#10 / the
 multi-pod-validation discussion for the analysis and the
 lock-then-fetch-then-validate fix.
 
@@ -101,7 +101,7 @@ language, because that persists `org.rapla.language` to the user's
 preferences (a client-side store whose `refresh` continuation fires the
 update event right as `Application.start` builds the GUI).
 
-**Fix pattern** (PRD 029 Phase 4, 2026-05-18): `refresh(UpdateEvent)` /
+**Fix pattern** ([PRD 029](../prd/029-swing-oauth-login.md) Phase 4, 2026-05-18): `refresh(UpdateEvent)` /
 `refreshAll()` compute the `UpdateResult` under `synchronized (this)`,
 release the monitor, then call `fireStorageUpdated`. A dedicated
 `fireLock` keeps the events ordered without putting the `this` monitor

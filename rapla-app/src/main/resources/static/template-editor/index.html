@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Rapla Template Editor</title>
+    <!--
+      PRD 097 Phase 4 — the presentation-layer analogue of /graphiql.
+
+      GraphiQL authors the DATA (a stored view); this page authors the PRESENTATION
+      (a Mustache document over that view). Built the same way on purpose: a static
+      admin page, Monaco from CDN, vanilla-JS toolbar over fetch, cookie-session auth
+      plus the X-XSRF-TOKEN double-submit header — no Angular, no bundler.
+
+      Everything that decides whether a template is valid or what it may render is
+      answered by the SERVER (POST /api/documents/preview, /result-shape). A
+      client-side mustache.js could disagree with JMustache; a preview that lies is
+      worse than no preview. The preview HTML is shown in a sandboxed, srcdoc iframe:
+      it can neither script nor reach the author's session.
+    -->
+    <style>
+        :root { color-scheme: light dark; }
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: system-ui, sans-serif; height: 100vh; display: flex; flex-direction: column; }
+        header { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap;
+                 padding: .5rem .75rem; border-bottom: 1px solid #8884; }
+        header h1 { font-size: 1rem; margin: 0 1rem 0 0; font-weight: 600; }
+        select, input, button { font: inherit; padding: .25rem .4rem; }
+        button { cursor: pointer; }
+        #status { margin-left: auto; font-size: .8rem; opacity: .8; }
+        #status.error { color: #c00; opacity: 1; }
+        main { flex: 1; display: grid; grid-template-columns: 15rem 1fr 1fr; min-height: 0; }
+        #fields, #editor, #preview { min-height: 0; }
+        #fields { overflow: auto; border-right: 1px solid #8884; padding: .5rem; font-size: .85rem; }
+        #fields ul { list-style: none; margin: 0; padding-left: .8rem; }
+        #fields code { cursor: pointer; }
+        #fields .section > code::before { content: "▸ "; opacity: .6; }
+        #editor { border-right: 1px solid #8884; }
+        #preview { border: 0; width: 100%; height: 100%; background: #fff; }
+    </style>
+</head>
+<body>
+<header>
+    <h1>Template Editor</h1>
+    <label>Document <select id="doc"><option value="">— new —</option></select></label>
+    <input id="name" placeholder="document name" size="18">
+    <label>View <select id="view"></select></label>
+    <label><input type="checkbox" id="public"> public</label>
+    <input id="vars" placeholder="variables: a=1&amp;b=2" size="20">
+    <button id="render">Preview</button>
+    <button id="save">Save</button>
+    <button id="delete">Delete</button>
+    <span id="status"></span>
+</header>
+<main>
+    <aside id="fields"><em>Pick a view to see its fields.</em></aside>
+    <div id="editor"></div>
+    <iframe id="preview" sandbox title="Preview"></iframe>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"></script>
+<script>
+    const MONACO_BASE = 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs';
+
+    // The XSRF-TOKEN cookie is non-HttpOnly by design (CookieCsrfTokenRepository
+    // .withHttpOnlyFalse()); the access_token cookie is HttpOnly and the browser
+    // attaches it to same-origin fetches for us. Same contract as /graphiql.
+    function xsrf() {
+        const m = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
+        return m ? decodeURIComponent(m[1]) : null;
+    }
+
+    async function api(method, url, body) {
+        const token = xsrf();
+        const resp = await fetch(url, {
+            method,
+            credentials: 'same-origin',
+            headers: Object.assign(
+                body ? { 'Content-Type': 'application/json' } : {},
+                token ? { 'X-XSRF-TOKEN': token } : {}),
+            body: body ? JSON.stringify(body) : undefined
+        });
+        if (resp.status === 401) { location.href = '/login'; throw new Error('unauthenticated'); }
+        if (!resp.ok) throw new Error(await errorMessage(resp));
+        return resp.status === 204 ? null : resp.json();
+    }
+
+    /** The save gate answers 400 with {errors:[…]} — show those, not the raw JSON. */
+    async function errorMessage(resp) {
+        const text = await resp.text();
+        try {
+            const parsed = JSON.parse(text);
+            if (parsed.errors) return parsed.errors.join('; ');
+            if (parsed.message) return parsed.message;
+        } catch (ignored) { /* not JSON */ }
+        return 'HTTP ' + resp.status + (text ? ' ' + text : '');
+    }
+
+    async function gql(query) {
+        const token = xsrf();
+        const resp = await fetch('/api/graphql', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: Object.assign({ 'Content-Type': 'application/json' },
+                token ? { 'X-XSRF-TOKEN': token } : {}),
+            body: JSON.stringify({ query })
+        });
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        return (await resp.json()).data;
+    }
+
+    const el = id => document.getElementById(id);
+    function status(text, isError) {
+        el('status').textContent = text;
+        el('status').className = isError ? 'error' : '';
+    }
+
+    /**
+     * "filter.allocatableIdsIn=r1&filter.allocatableIdsIn=r2" → { "filter.allocatableIdsIn": ["r1","r2"] }
+     * Values stay grouped per key so the server's RequestVariables sees the repeats a real URL would
+     * carry — the dot-nesting is the server's job, not ours.
+     */
+    function parseVariables(text) {
+        const out = {};
+        for (const [k, v] of new URLSearchParams(text || '')) (out[k] ||= []).push(v);
+        return out;
+    }
+
+    // ---- result shape: fields pane + completion source ----------------------
+
+    let shape = null;   // ShapeNode from POST /api/documents/result-shape
+
+    async function loadShape(viewName) {
+        shape = null;
+        if (!viewName) { el('fields').innerHTML = '<em>Pick a view to see its fields.</em>'; return; }
+        try {
+            shape = await api('POST', '/api/documents/result-shape', { viewName });
+            el('fields').innerHTML = '';
+            el('fields').append(renderFields(shape.fields));
+        } catch (e) {
+            el('fields').innerHTML = '<em>No shape: ' + e.message + '</em>';
+        }
+    }
+
+    function renderFields(nodes) {
+        const ul = document.createElement('ul');
+        for (const node of nodes) {
+            const li = document.createElement('li');
+            if (node.list) li.className = 'section';
+            const code = document.createElement('code');
+            code.textContent = node.key;
+            code.title = node.type + (node.list ? ' (list — use {{#' + node.key + '}})' : '');
+            code.onclick = () => insert(node.list ? '{{#' + node.key + '}}{{/' + node.key + '}}' : '{{' + node.key + '}}');
+            li.append(code);
+            if (node.fields.length) li.append(renderFields(node.fields));
+            ul.append(li);
+        }
+        return ul;
+    }
+
+    /**
+     * Walk the `{{#x}}` / `{{^x}}` / `{{/x}}` section stack above the cursor and descend the shape
+     * tree along it — inside `{{#persons}}` only Person's fields are addressable. This is the whole
+     * reason completion is data-aware rather than a keyword list.
+     */
+    function nodeAtCursor(textBefore) {
+        if (!shape) return null;
+        const stack = [];
+        const tag = /\{\{([#^\/])\s*([\w.]+)\s*\}\}/g;
+        let m;
+        while ((m = tag.exec(textBefore)) !== null) {
+            if (m[1] === '/') stack.pop();
+            else stack.push(m[2]);
+        }
+        let node = shape;
+        for (const key of stack) {
+            const next = (node.fields || []).find(f => f.key === key);
+            if (!next) return null;   // unknown section — propose nothing rather than something wrong
+            node = next;
+        }
+        return node;
+    }
+
+    function completionsAt(model, position) {
+        const textBefore = model.getValueInRange(
+            { startLineNumber: 1, startColumn: 1, endLineNumber: position.lineNumber, endColumn: position.column });
+        const node = nodeAtCursor(textBefore);
+        if (!node) return [];
+        const suggestions = [];
+        for (const f of node.fields || []) {
+            suggestions.push(f.list
+                ? { label: '#' + f.key, insertText: '#' + f.key + '}}{{/' + f.key,
+                    kind: monaco.languages.CompletionItemKind.Folder, detail: '[' + f.type + '] section' }
+                : { label: f.key, insertText: f.key,
+                    kind: monaco.languages.CompletionItemKind.Field, detail: f.type });
+        }
+        // the closing tag of the section we are inside
+        if (node !== shape && node.key) {
+            suggestions.push({ label: '/' + node.key, insertText: '/' + node.key,
+                kind: monaco.languages.CompletionItemKind.Snippet, detail: 'close section' });
+        }
+        return suggestions;
+    }
+
+    // ---- editor ------------------------------------------------------------
+
+    let editor;
+    function insert(text) {
+        editor.executeEdits('fields-pane', [{ range: editor.getSelection(), text, forceMoveMarkers: true }]);
+        editor.focus();
+    }
+
+    require.config({ paths: { vs: MONACO_BASE } });
+    require(['vs/editor/editor.main'], async () => {
+        editor = monaco.editor.create(el('editor'), {
+            // Monaco's `handlebars` mode is a Monarch tokenizer: highlighting only, it validates
+            // nothing. Handlebars-only constructs like {{#if}} therefore highlight happily — they
+            // are rejected by the server's real JMustache compiler below, which is the actual
+            // "restrict to JMustache" mechanism.
+            language: 'handlebars',
+            value: '<h1>{{title}}</h1>\n',
+            automaticLayout: true,
+            minimap: { enabled: false }
+        });
+        monaco.languages.registerCompletionItemProvider('handlebars', {
+            triggerCharacters: ['{', '#', '/'],
+            provideCompletionItems: (model, position) => {
+                const word = model.getWordUntilPosition(position);
+                const range = { startLineNumber: position.lineNumber, endLineNumber: position.lineNumber,
+                    startColumn: word.startColumn, endColumn: word.endColumn };
+                return { suggestions: completionsAt(model, position).map(s => Object.assign({ range }, s)) };
+            }
+        });
+        editor.onDidChangeModelContent(debounce(preview, 700));
+        await Promise.all([loadViews(), loadDocuments()]);
+        preview();
+    });
+
+    function debounce(fn, ms) {
+        let handle;
+        return () => { clearTimeout(handle); handle = setTimeout(fn, ms); };
+    }
+
+    /** The markers come from the real compiler's line number — never from a client-side parse. */
+    function showParseError(line, message) {
+        monaco.editor.setModelMarkers(editor.getModel(), 'mustache', line ? [{
+            severity: monaco.MarkerSeverity.Error,
+            message,
+            startLineNumber: line, endLineNumber: line,
+            startColumn: 1, endColumn: editor.getModel().getLineMaxColumn(line)
+        }] : []);
+    }
+
+    // ---- actions -----------------------------------------------------------
+
+    async function preview() {
+        const viewName = el('view').value;
+        if (!viewName || !editor) return;
+        try {
+            const result = await api('POST', '/api/documents/preview', {
+                viewName,
+                template: editor.getValue(),
+                variables: parseVariables(el('vars').value)
+            });
+            if (result.errorMessage) {
+                showParseError(result.errorLine, result.errorMessage);
+                status('Line ' + result.errorLine + ': ' + result.errorMessage, true);
+                return;
+            }
+            showParseError(null);
+            el('preview').srcdoc = result.html;
+            status('Preview updated ' + new Date().toLocaleTimeString());
+        } catch (e) {
+            status(e.message, true);
+        }
+    }
+
+    async function loadViews() {
+        const data = await gql('{ listViews { name title valid } }');
+        el('view').innerHTML = '';
+        for (const v of data.listViews.filter(v => v.valid)) {
+            el('view').append(new Option(v.title ? v.title + ' (' + v.name + ')' : v.name, v.name));
+        }
+        await loadShape(el('view').value);
+    }
+
+    async function loadDocuments() {
+        const documents = await api('GET', '/api/documents');
+        el('doc').innerHTML = '';
+        el('doc').append(new Option('— new —', ''));
+        for (const d of documents) el('doc').append(new Option(d.name + (d.valid ? '' : ' ⚠'), d.name));
+    }
+
+    el('doc').onchange = async () => {
+        const name = el('doc').value;
+        if (!name) { el('name').value = ''; return; }
+        const source = await api('GET', '/api/documents/' + encodeURIComponent(name) + '/source');
+        el('name').value = source.name;
+        el('view').value = source.viewName;
+        el('public').checked = source.isPublic;
+        editor.setValue(source.template);
+        await loadShape(source.viewName);
+        preview();
+    };
+
+    el('view').onchange = async () => { await loadShape(el('view').value); preview(); };
+    el('render').onclick = preview;
+
+    el('save').onclick = async () => {
+        const name = el('name').value.trim();
+        if (!name) { status('A document needs a name', true); return; }
+        try {
+            await api('PUT', '/api/documents/' + encodeURIComponent(name), {
+                viewName: el('view').value,
+                template: editor.getValue(),
+                isPublic: el('public').checked,
+                groups: []
+            });
+            status('Saved ' + name);
+            await loadDocuments();
+            el('doc').value = name;
+        } catch (e) {
+            status(e.message, true);
+        }
+    };
+
+    el('delete').onclick = async () => {
+        const name = el('doc').value;
+        if (!name || !confirm('Delete document "' + name + '"?')) return;
+        await api('DELETE', '/api/documents/' + encodeURIComponent(name));
+        el('name').value = '';
+        await loadDocuments();
+        status('Deleted ' + name);
+    };
+</script>
+</body>
+</html>

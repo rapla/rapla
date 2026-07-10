@@ -1,22 +1,22 @@
 # PRD 021 — Client-side resource stubs for large deployments
 
-**Status:** wont-fix — superseded by PRD 026 (Angular frontend). 2026-05-11.
+**Status:** wont-fix — superseded by [PRD 026](../026-angular-frontend.md) (Angular frontend). 2026-05-11.
 **Author:** Christopher Kohlhaas
 **Created:** 2026-05-10
-**Related:** PRD 002 (multi-tenancy lazy init), PRD 009 (server bulk storage REST), PRD 012 (DHBW client migration), PRD 026 (Angular frontend)
+**Related:** PRD 002 (multi-tenancy lazy init), [PRD 009](../009-server-bulk-storage-rest-api.md) (server bulk storage REST), [PRD 012](../012-dhbwrapla-client-migration.md) (DHBW client migration), [PRD 026](../026-angular-frontend.md) (Angular frontend)
 
 ## Why wont-fix
 
 The stub design would require a multi-phase carve-out of the Swing client's
 `LocalCache`/`RemoteOperator` paths plus a new server endpoint surface, plus a
 permission-flip detection mechanism, plus a per-plugin compat audit. The
-Angular frontend (PRD 026) replaces the whole Swing tier — including the
+Angular frontend ([PRD 026](../026-angular-frontend.md)) replaces the whole Swing tier — including the
 client-side cache that motivates this PRD — so the investment would be paid
 off only on the deprecated client.
 
 **The one quick win extracted from this PRD** — a name-search field next to
 the filter button in `AllocatableSelection` and the reservation filter — has
-been moved to PRD 023 (presenter / view carve-out), since 023 already
+been moved to [PRD 023](../023-presenter-view-extraction.md) (presenter / view carve-out), since 023 already
 touches both components. The search field is implementable today against the
 existing full-resource client cache; no stub/server changes required.
 

@@ -21,7 +21,15 @@ describe('ApiKeysService', () => {
 
   it('GETs the key list', () => {
     const keys: ApiKeyMetadata[] = [
-      { id: 'k1', label: 'CI', alg: 'RS256', thumbprint: 'k1', createdAt: 't', expiresAt: null, scopes: ['read'] },
+      {
+        id: 'k1',
+        label: 'CI',
+        alg: 'RS256',
+        thumbprint: 'k1',
+        createdAt: 't',
+        expiresAt: null,
+        scopes: ['read'],
+      },
     ];
     let received: ApiKeyMetadata[] | undefined;
     service.list().subscribe((r) => (received = r));
@@ -33,24 +41,40 @@ describe('ApiKeysService', () => {
 
   it('POSTs a create request and returns the one-time key', () => {
     const created: ApiKeyCreated = {
-      id: 'k2', label: 'bot', alg: 'RS256', thumbprint: 'k2',
-      createdAt: 't', expiresAt: null, scopes: ['read', 'write_events'], key: 'eyJ.JWT.sig',
+      id: 'k2',
+      label: 'bot',
+      alg: 'RS256',
+      thumbprint: 'k2',
+      createdAt: 't',
+      expiresAt: null,
+      scopes: ['read', 'write_events'],
+      key: 'eyJ.JWT.sig',
     };
     let received: ApiKeyCreated | undefined;
-    service.create({ label: 'bot', expiresInDays: null, scopes: ['read', 'write_events'] }).subscribe(
-      (r) => (received = r),
-    );
+    service
+      .create({ label: 'bot', expiresInDays: null, scopes: ['read', 'write_events'] })
+      .subscribe((r) => (received = r));
     const req = http.expectOne('/api/auth/api-keys');
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({ label: 'bot', expiresInDays: null, scopes: ['read', 'write_events'] });
+    expect(req.request.body).toEqual({
+      label: 'bot',
+      expiresInDays: null,
+      scopes: ['read', 'write_events'],
+    });
     req.flush(created);
     expect(received?.key).toBe('eyJ.JWT.sig');
   });
 
   it('POSTs rotate with the graceMinutes param', () => {
     const rotated: ApiKeyCreated = {
-      id: 'k9', label: 'CI', alg: 'RS256', thumbprint: 'k9', createdAt: 't', expiresAt: null,
-      scopes: ['read'], key: 'eyJ.NEW',
+      id: 'k9',
+      label: 'CI',
+      alg: 'RS256',
+      thumbprint: 'k9',
+      createdAt: 't',
+      expiresAt: null,
+      scopes: ['read'],
+      key: 'eyJ.NEW',
     };
     let received: ApiKeyCreated | undefined;
     service.rotate('k1', 180).subscribe((r) => (received = r));

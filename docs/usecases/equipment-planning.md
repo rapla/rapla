@@ -71,7 +71,7 @@ never touches rapla).
 | # | Use case | Surface today | Notes |
 |---|---|---|---|
 | UC-C1 | **Take a loan request** — pick borrower (or register new), pick items, set loan period | Swing: new loan event, allocate person + items | The core write. Event name = borrower name (manual convention duplicating the person allocation) |
-| UC-C2 | **Find an available item of kind X for period T** — "a camera from Mon to Fri" | manual: open the type's calendar, scan for gaps | **The PRD 092 free-slot search, verbatim** — same shape as UC-3 (free room), over equipment types + multi-day windows |
+| UC-C2 | **Find an available item of kind X for period T** — "a camera from Mon to Fri" | manual: open the type's calendar, scan for gaps | **The [PRD 092](../prd/092-free-slot-search.md) free-slot search, verbatim** — same shape as UC-3 (free room), over equipment types + multi-day windows |
 | UC-C3 | **Return an item** — record the loan came back | the "ZURÜCK" pseudo-resource hack (gap #1) | No loan lifecycle (out ▸ returned ▸ overdue) exists |
 | UC-C4 | **Overdue / what's-out overview** — what is out right now, what's late | none — read the calendar | Wants a *table lens over active loans*, not a week grid |
 | UC-C5 | **Borrower lookup** — history + contact of a borrower | person calendar / search | Person-as-resource makes this fall out of the anchor model |
@@ -83,7 +83,7 @@ never touches rapla).
   weeks; the natural lenses are **item-availability-over-a-date-range** and a **table of
   active loans**. Confirms README implication #1: no hardcoded central surface — this
   deployment's landing view is a *table/month*, same render-mode-agnostic host.
-- **PRD 092 (free-slot search) gets a second, stronger customer.** "Free camera Mon–Fri"
+- **[PRD 092](../prd/092-free-slot-search.md) (free-slot search) gets a second, stronger customer.** "Free camera Mon–Fri"
   is UC-3 with equipment instead of rooms and *multi-day* windows — the gap-enumeration
   design must not assume within-day slots.
 - **Anchor model works unchanged:** anchor = an equipment *type* (all cameras) or a

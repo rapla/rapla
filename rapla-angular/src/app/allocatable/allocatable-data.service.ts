@@ -56,7 +56,6 @@ const SHELL_QUERY = `
     }
   }`;
 
-
 @Injectable({ providedIn: 'root' })
 export class AllocatableDataService {
   private readonly gql = inject(GraphqlService);
@@ -106,9 +105,9 @@ export class AllocatableDataService {
   /** Type options for the select — same classificationType as the loaded allocatable. */
   typeOptions(classificationType: string): Observable<{ key: string; name: string }[]> {
     return this.gql
-      .query<{ types: { key: string; name: string; classificationType: string }[] }>(
-        `query { types { key name classificationType } }`,
-      )
+      .query<{
+        types: { key: string; name: string; classificationType: string }[];
+      }>(`query { types { key name classificationType } }`)
       .pipe(
         map((resp) =>
           (resp.data?.types ?? [])

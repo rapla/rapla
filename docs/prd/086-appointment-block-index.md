@@ -1,17 +1,17 @@
 # PRD 086 — appointment block index (in-memory `IntervalIndex` over blocks, dual-API)
 
 **Status:** draft — 2026-06-24 (**pivoted to in-memory** — the H2 design below was built, measured, and lost; see *The H2 detour*)
-**Related:** PRD 082 (storage memory model — the in-memory index catalog + shared `IntervalIndex`/`BucketIndex` kinds + the put/remove maintenance seam this builds on; the H2 pivot is recorded there), PRD 064 (GraphQL conflicts read API), PRD 079/080 (grouped aggregates / typed-entity stats — `appointmentBlockStats`), PRD 055 (GraphQL events read), `docs/architecture/locking.md`
+**Related:** [PRD 082](082-storage-memory-model.md) (storage memory model — the in-memory index catalog + shared `IntervalIndex`/`BucketIndex` kinds + the put/remove maintenance seam this builds on; the H2 pivot is recorded there), [PRD 064](064-graphql-conflicts-read-api.md) (GraphQL conflicts read API), PRD [079](079-graphql-grouped-aggregates.md)/[080](080-typed-entity-stats.md) (grouped aggregates / typed-entity stats — `appointmentBlockStats`), [PRD 055](055-graphql-events-read-api.md) (GraphQL events read), `docs/architecture/locking.md`
 
-**Split from PRD 082, then pivoted from H2 to in-memory.** The appointment index is the largest piece
-of the storage read-path modernization, and — unlike the classification (PRD 087), permission (PRD
-083), and search (PRD 085) indices, which are GraphQL-only — it is **dual-API**: it sits *below* both
+**Split from [PRD 082](082-storage-memory-model.md), then pivoted from H2 to in-memory.** The appointment index is the largest piece
+of the storage read-path modernization, and — unlike the classification ([PRD 087](087-classification-type-indices.md)), permission (PRD
+083), and search ([PRD 085](085-search-name-indexing.md)) indices, which are GraphQL-only — it is **dual-API**: it sits *below* both
 the old RemoteStorage protocol and the new GraphQL API (both call the same operator query/conflict
 path), so it carries the heavier test obligation (the old-API record/replay + brute-force oracle).
 The original design put this in **H2 (in-process SQL)**; that was built, flipped behind a flag, and
 **measured 1.1×–3.7× slower** than the legacy in-memory `appointmentMap` (~91% JDBC boundary cost — see
-*The H2 detour* and PRD 082). The design is therefore an **in-memory `IntervalIndex` over materialized
-blocks** — the shared kind defined in PRD 082's index catalog, instantiated **twice** (one keyed by
+*The H2 detour* and [PRD 082](082-storage-memory-model.md)). The design is therefore an **in-memory `IntervalIndex` over materialized
+blocks** — the shared kind defined in [PRD 082](082-storage-memory-model.md)'s index catalog, instantiated **twice** (one keyed by
 allocatable, one by owner), built on rapla's existing `AppointmentMapClass` structures and lock model.
 
 ## Problem
@@ -21,14 +21,14 @@ calendar render, the conflict check, `appointmentBlocks` / `appointmentBlockStat
 served from `AppointmentMapClass` (`LocalAbstractCachableOperator`): per-allocatable
 `SortedSet<Appointment>` ordered by **start only**.
 
-The measured pathology (PRD 082): latency is a **fixed floor independent of the window** — a 1-day,
+The measured pathology ([PRD 082](082-storage-memory-model.md)): latency is a **fixed floor independent of the window** — a 1-day,
 3-block query already pays ~670 ms; growing the window 365× (to a year, 100× the blocks) only moves
 it to ~882 ms (1.3×). Cause: `headSet(start < winEnd)` applies only the **upper** time bound; the
 **lower** bound (`maxEnd > winStart`) is checked per-appointment via `overlaps`. For a window late
 in the dataset the headSet is ≈ *all appointments ever started*, so cost ∝ (allocatables ×
 appointments-before-winEnd), not ∝ result. At reservations ×5 this scan tax grows with total data.
 
-## Workload shape (measured — see PRD 082 for the full numbers)
+## Workload shape (measured — see [PRD 082](082-storage-memory-model.md) for the full numbers)
 
 Orders of magnitude across two production-scale stores (each ~10⁵ reservations, a few × 10⁵
 appointments):
@@ -44,7 +44,7 @@ This makes the index design single-appointment-first, with repeating as a small 
 
 ## The index — an in-memory `IntervalIndex` over blocks
 
-A plain Java structure (PRD 082's shared `IntervalIndex` kind), **no database**. One *block* = one
+A plain Java structure ([PRD 082](082-storage-memory-model.md)'s shared `IntervalIndex` kind), **no database**. One *block* = one
 concrete dated occurrence; the single-appointment majority is 1 block. Per key:
 
 ```
@@ -131,7 +131,7 @@ series — the same missing-lower-bound tax the current start-only `SortedSet` p
 - **Slice-exact even on the collector.** A window query on the tens-of-thousands collector touches
   only that window's blocks (small k), not the whole collector — the lower bound the start-only
   `SortedSet` lacks. (A genuinely *wide* window over a collector is large by nature → that's the
-  aggregation case, served by counting over the same index — index #4 in PRD 082's catalog.)
+  aggregation case, served by counting over the same index — index #4 in [PRD 082](082-storage-memory-model.md)'s catalog.)
 
 ## Dual-API: the same operator path serves both surfaces
 
@@ -140,7 +140,7 @@ The index is at the **operator** level (`queryAppointmentsSync`, conflict detect
 | Surface | Read entry | Conflict entry | Maps to |
 |---|---|---|---|
 | **Old RemoteStorage** (`/api/storage`, Swing/`RemoteOperator`) | `queryAppointments` | `getConflicts`, `getFirst/AllAllocatableBindings`, `getNextAllocatableDate` | `queryAppointmentsSync` / `getConflictsSync` |
-| **GraphQL** (SPA) | `appointmentBlocks` / `appointmentBlockStats` | conflicts read API (PRD 064) | same operator methods |
+| **GraphQL** (SPA) | `appointmentBlocks` / `appointmentBlockStats` | conflicts read API ([PRD 064](064-graphql-conflicts-read-api.md)) | same operator methods |
 
 Because both surfaces funnel through the same operator methods, changing the index **necessarily
 changes both** — which is why this PRD owns the old-API behavioral guarantee (the record/replay test
@@ -160,7 +160,7 @@ iterates an allocatable's full `SortedSet` with pairwise recurrence-aware overla
 - For materialized blocks, conflict reduces to a `subSet` slice over discrete blocks. For open-ended
   side-set entries (and pairs involving them), the existing Java `processBlocks`/`overlapsAppointment`
   precise-overlap runs on the narrowed candidates. The boundary: **the slice narrows + serves the
-  exact-block majority; Java computes precise overlap only on the open-ended tail** (PRD 082 MQ8).
+  exact-block majority; Java computes precise overlap only on the open-ended tail** ([PRD 082](082-storage-memory-model.md) MQ8).
 
 ## Window-first global read (full-admin unscoped) — LOCKED 2026-06-24, shipped
 
@@ -278,14 +278,14 @@ is exactly what the shadow `appointmentMap` validates during Stage X/Y.
 `appointmentBlockStats` counts are exact in-memory `count`/`group` over the materialized blocks (the
 non-side-set entries — ~98%+); a small Java correction expands only the open-ended side-set tail.
 
-## Maintenance (drift-safe, at the PRD 082 seam)
+## Maintenance (drift-safe, at the [PRD 082](082-storage-memory-model.md) seam)
 
 At the put/remove/refresh seam (the same `updateReservation` chokepoint that maintains the existing
 cache structures, for local *and* cross-pod changes), a changed appointment's blocks are regenerated
 idempotently: **remove the appointment's old blocks from both `IntervalIndex` instances (allocatable +
 owner), then re-insert** — materialize ≤ cap occurrences into `byStart`, or place one entry in the
 side-set. Pure projection: rebuilt at boot from the loaded objects; drop-and-rebuildable. The invariant
-`index == project(objects)` (PRD 082) covers it. (Removal locates the appointment's blocks by
+`index == project(objects)` ([PRD 082](082-storage-memory-model.md)) covers it. (Removal locates the appointment's blocks by
 regenerating them via `createBlocks` or by an appointment→blocks back-reference — an in-memory detail,
 no `DELETE WHERE` / SQL maintenance-key concern.)
 
@@ -296,7 +296,7 @@ no `DELETE WHERE` / SQL maintenance-key concern.)
 > read paths flip behind `rapla.readmodel.authoritative`; the H2 `ReadModel`/`Projection`/projections/
 > `blockDerived*`/`shadowCompare*` and the H2 dependency are gone. Equivalence is proven by
 > `ReadModelReadFlipEquivalenceTest` (window + owner + conflict, reservations stored post-boot) and
-> `ReadModelFlipDifferentialTest`; 304 rapla-server fast-lane tests green. See PRD 082 *Components built → wired*.
+> `ReadModelFlipDifferentialTest`; 304 rapla-server fast-lane tests green. See [PRD 082](082-storage-memory-model.md) *Components built → wired*.
 > The H2 narrative below is kept for the rationale record.
 
 This index was first built in **H2 (in-process SQL)** exactly per the Migration/Shadow/Test plan below,
@@ -308,7 +308,7 @@ read is strictly more work than a better in-memory data structure. So the design
 in-memory `IntervalIndex` above. **What carries over verbatim:** the maintenance seam, the
 differential/shadow methodology, the brute-force oracle + record/replay tests, and the
 binding/dependent-expansion correctness — all reusable for the in-memory version. Full numbers + the
-shadow/flip findings: **PRD 082 Phases 3, 4a, 4b-ii**. The sections below are that plan; read
+shadow/flip findings: **[PRD 082](082-storage-memory-model.md) Phases 3, 4a, 4b-ii**. The sections below are that plan; read
 "H2 block table" → "in-memory `IntervalIndex`" and "SQL range query" → "`subSet` slice", everything
 else (Stage X/Y, shadow-compare, the test layers) applies unchanged to the in-memory index.
 
@@ -405,8 +405,8 @@ safe to commit. (A `DBOperator`-on-hsqldb-copy variant — the exact server back
 - **Phase 0** — build the Layer-1 brute-force harness in the plugin-deployment repo; green against today's operator
   (proves the harness). Capture the Layer-2 baseline snapshot + golden recorder.
 - **Phase 0.5** — H2 validation experiment (throwaway JMH: range query + sync write-through vs
-  TreeSet at real density) → confirms the engine bet before the foundation build (PRD 082).
-- **Phase 1 (Stage X)** — project `appointment_block` at the PRD 082 seam; redirect
+  TreeSet at real density) → confirms the engine bet before the foundation build ([PRD 082](082-storage-memory-model.md)).
+- **Phase 1 (Stage X)** — project `appointment_block` at the [PRD 082](082-storage-memory-model.md) seam; redirect
   `queryAppointmentsSync` to H2 (+ `is_rule` Java expand). Conflict core untouched. Gate: brute-force
   oracle green + record/replay identical + live latency win.
 - **Phase 2 (Stage Y)** — conflict detection onto the engine; `appointmentMap` as shadow oracle;
@@ -420,7 +420,7 @@ safe to commit. (A `DBOperator`-on-hsqldb-copy variant — the exact server back
 - Layer 2 record/replay (Phase 0/1) — behavioral + persisted-data parity across the migration.
 - Stage-Y differential oracle — engine conflict sets == `appointmentMap` conflict sets over a
   generated corpus.
-- Existing GraphQL tier-3 (PRD 064/079/080) + §12 leak tests stay green (the GraphQL surface).
+- Existing GraphQL tier-3 (PRD [064](064-graphql-conflicts-read-api.md)/[079](079-graphql-grouped-aggregates.md)/[080](080-typed-entity-stats.md)) + §12 leak tests stay green (the GraphQL surface).
 - Write-path JMH benchmark (Phase 2 gate).
 
 ## Open Questions

@@ -32,8 +32,8 @@ After this PRD: every wired class uses Spring stereotypes (`@Service` / `@Compon
 ## Cross-references
 
 - **PRD 001** (Spring Boot migration) — Phase 7 deleted the restinject annotation processor; PRD 002 cleans up the orphaned `@Inject` / `@DefaultImplementation` / `@Extension` annotations the processor used to consume.
-- **PRD 003** (custom-deployments) — references the now-removed `restinject` jar via `custom/pom.xml`. Patched with a TODO comment in this PRD; full rework deferred to PRD 003.
-- **PRD 010** (Jackson field-based wire format) — happened concurrently in this session and broke `mvn compile` mid-Phase-F (Jackson 2→3 API change in `JacksonMergePatch.java`). Per AGENTS.md §7 not addressed here; PRD 010 owns it.
+- **[PRD 003](../003-custom-deployments-after-spring-migration.md)** (custom-deployments) — references the now-removed `restinject` jar via `custom/pom.xml`. Patched with a TODO comment in this PRD; full rework deferred to [PRD 003](../003-custom-deployments-after-spring-migration.md).
+- **[PRD 010](010-jackson-field-based-wire-format.md)** (Jackson field-based wire format) — happened concurrently in this session and broke `mvn compile` mid-Phase-F (Jackson 2→3 API change in `JacksonMergePatch.java`). Per AGENTS.md §7 not addressed here; [PRD 010](010-jackson-field-based-wire-format.md) owns it.
 - **AGENTS.md §4** — sets the policy this PRD enforces: server uses `@Bean` factories, client uses `@ComponentScan`. Phase D respects the asymmetry.
 
 ## Verification (run any time to confirm migration hasn't regressed)
@@ -138,7 +138,7 @@ The 2026-05-06 plan; actual work split into A-F as documented above. Original ph
 - `RaplaSpringBootApplicationTest` ✅ passes.
 - Server-side integration tests (REST + JDBC) ✅ pass.
 - **`mvn test` for `rapla-bom,rapla-client,rapla-server,rapla-app` modules: 45 tests pass.**
-- **`rapla-core` tests: 1 failure (`JsonReaderTest.testJson`)** — pre-existing parallel-session work on PRD 010 (Jackson 2→3 migration); not addressed here per AGENTS.md §7.
+- **`rapla-core` tests: 1 failure (`JsonReaderTest.testJson`)** — pre-existing parallel-session work on [PRD 010](010-jackson-field-based-wire-format.md) (Jackson 2→3 migration); not addressed here per AGENTS.md §7.
 
 **Smoke test (live server + client):**
 - Server (PID at session end: 1048732): `POST /auth/login` → 200; `GET /storage/resources` → 200.

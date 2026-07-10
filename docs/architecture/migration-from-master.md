@@ -24,15 +24,15 @@ Cross-references below to the PRDs that drove each piece of the work.
 | Concern | Master | Spring-boot |
 |---|---|---|
 | Module shape | 1 monolithic Maven project (`pom.xml` + `parent/pom.xml`) | 5-module reactor (`rapla-bom`, `rapla-core`, `rapla-client`, `rapla-server`, `rapla-app`) — PRD 005 |
-| DI framework | Custom `restinject` (annotation-processor-driven; external Maven dep `artifactId restinject` at `2.0-RC11`) | Spring Boot 4 (`@Service`, `@ComponentScan`, `@Bean` factories, `@Conditional`) — PRD 001 / 011 |
-| REST wire | Hand-rolled JSON-RPC: `org/rapla/enpoints/`, `org/rapla/rest/`, `org/rapla/server/internal/rest/` (~2.3 k LOC) | Spring MVC + Jackson 3 + `@HttpExchange` interfaces — PRD 009 / 010 / 024 / 030 |
+| DI framework | Custom `restinject` (annotation-processor-driven; external Maven dep `artifactId restinject` at `2.0-RC11`) | Spring Boot 4 (`@Service`, `@ComponentScan`, `@Bean` factories, `@Conditional`) — PRD 001 / [011](../prd/done/011-spring-boot-4-jackson-3.md) |
+| REST wire | Hand-rolled JSON-RPC: `org/rapla/enpoints/`, `org/rapla/rest/`, `org/rapla/server/internal/rest/` (~2.3 k LOC) | Spring MVC + Jackson 3 + `@HttpExchange` interfaces — PRD [009](../prd/009-server-bulk-storage-rest-api.md) / [010](../prd/done/010-jackson-field-based-wire-format.md) / [024](../prd/024-server-side-edit-services.md) / [030](../prd/030-server-side-view-rendering.md) |
 | Server runtime | Embedded Jetty bootstrapped by custom code | `RaplaSpringBootApplication`, embedded Tomcat, autoconfig (`META-INF/spring/AutoConfiguration.imports`) — PRD 001 |
-| Wire format | Custom Jackson 2 mapper config | Jackson 3 field-based serialisation — PRD 010 |
+| Wire format | Custom Jackson 2 mapper config | Jackson 3 field-based serialisation — [PRD 010](../prd/done/010-jackson-field-based-wire-format.md) |
 | Date types in entities | `java.util.Date` everywhere (millis-since-epoch on the wire) | `java.time.LocalDateTime` / `LocalDate` — PRD 001 (Phase A) / 014 (Appointment) / 015 (Rapla-client) |
-| Web frontend | None (Swing JNLP only) | Angular SPA at `/app/` — PRD 026 (in flight) |
-| Server-side rendered surfaces (calendar tiles / table rows / CSV) | None — clients fetched raw entities and laid out / projected locally | `/calendar/view`, `/table/*`, `/export/csv` — PRD 024 Phase 3 + PRD 030 |
-| Authentication | Custom session token, server-side state | OAuth 2.0 PKCE + JWT bearer (browser-redirect for Swing) — PRD 029 |
-| Test infrastructure | Smattering of GUI tests + few entity tests (~9 % ratio) | Four-tier pyramid (PRD 017): tier-1 pure Java, tier-2 `FacadeTestSupport`, tier-3 MockMvc + Spring context, tier-4 `@SpringBootTest` end-to-end; ~12.4 % ratio |
+| Web frontend | None (Swing JNLP only) | Angular SPA at `/app/` — [PRD 026](../prd/026-angular-frontend.md) (in flight) |
+| Server-side rendered surfaces (calendar tiles / table rows / CSV) | None — clients fetched raw entities and laid out / projected locally | `/calendar/view`, `/table/*`, `/export/csv` — [PRD 024](../prd/024-server-side-edit-services.md) Phase 3 + [PRD 030](../prd/030-server-side-view-rendering.md) |
+| Authentication | Custom session token, server-side state | OAuth 2.0 PKCE + JWT bearer (browser-redirect for Swing) — [PRD 029](../prd/029-swing-oauth-login.md) |
+| Test infrastructure | Smattering of GUI tests + few entity tests (~9 % ratio) | Four-tier pyramid ([PRD 017](../prd/017-test-coverage-strategy.md)): tier-1 pure Java, tier-2 `FacadeTestSupport`, tier-3 MockMvc + Spring context, tier-4 `@SpringBootTest` end-to-end; ~12.4 % ratio |
 | Documentation | One 21-line README | ~20 k LOC across `docs/prd/`, `docs/architecture/`, `AGENTS.md`, `CLAUDE.md` |
 
 ## What got removed
@@ -59,8 +59,8 @@ Replaced by:
 - Runtime DI via Spring Boot's `@ComponentScan` + `@Service` /
   `@Component` annotations on the classes themselves (PRD 002).
 - REST proxy generation via Spring 6's `@HttpExchange` /
-  `HttpServiceProxyFactory` (PRD 009).
-- JSON serialisation via Jackson 3 (PRD 010).
+  `HttpServiceProxyFactory` ([PRD 009](../prd/009-server-bulk-storage-rest-api.md)).
+- JSON serialisation via Jackson 3 ([PRD 010](../prd/done/010-jackson-field-based-wire-format.md)).
 
 Master's `parent/pom.xml:31` declared `<restinject.version>2.0-RC11</restinject.version>`.
 That property no longer exists in spring-boot.
@@ -105,18 +105,18 @@ The split has a hard dependency direction:
 `rapla-app → rapla-server → rapla-core ← rapla-client`. The
 historical back-edge from `rapla-server → rapla-client` (PRD 005 D3)
 is closed: pinned by `NoRaplaClientImportInServerTest` arch test
-(PRD 030 Phase 6).
+([PRD 030](../prd/030-server-side-view-rendering.md) Phase 6).
 
-### Spring Boot 4 stack (PRD 001 / 011)
+### Spring Boot 4 stack (PRD 001 / [011](../prd/done/011-spring-boot-4-jackson-3.md))
 
 - `RaplaSpringBootApplication` is the single `@SpringBootApplication`.
 - Autoconfig discovered via `META-INF/spring/AutoConfiguration.imports`.
 - Embedded Tomcat 10. Servlet path `/rapla/` (preserved from master).
 - Spring Security with JWT bearer for the REST surface.
 - Jackson 3 (`tools.jackson.*`) for wire serialisation, field-based
-  per PRD 010 to avoid getter/setter scaffolding drift.
+  per [PRD 010](../prd/done/010-jackson-field-based-wire-format.md) to avoid getter/setter scaffolding drift.
 
-### Angular SPA (PRD 026, in flight)
+### Angular SPA ([PRD 026](../prd/026-angular-frontend.md), in flight)
 
 A separate `rapla-angular/` directory holds the SPA (build via npm,
 served at `/app/` by Spring Boot). Phase 0 prototype just landed
@@ -125,11 +125,11 @@ served at `/app/` by Spring Boot). Phase 0 prototype just landed
 `@HttpExchange` interfaces.
 
 The SPA never holds full entity graphs for view purposes — it
-consumes server-rendered surfaces from PRD 024 / 030 (calendar tiles,
+consumes server-rendered surfaces from PRD [024](../prd/024-server-side-edit-services.md) / [030](../prd/030-server-side-view-rendering.md) (calendar tiles,
 table rows, CSV export). See [overview.md](overview.md) §"Wire
 contracts" for the catalog.
 
-### Pure-Java carve-outs from Swing (PRD 023)
+### Pure-Java carve-outs from Swing ([PRD 023](../prd/023-presenter-view-extraction.md))
 
 The largest body of new Java code in spring-boot is **pure-logic
 classes carved out of Swing god-classes** into `rapla-core`. The
@@ -162,7 +162,7 @@ The carve-outs serve two ends: tier-1 testability today, and Angular
 reuse later (the SPA either calls these classes via the REST
 controllers, or — for stateless helpers — gets a TypeScript port).
 
-### Test-tier pyramid (PRD 017)
+### Test-tier pyramid ([PRD 017](../prd/017-test-coverage-strategy.md))
 
 | Tier | Where | Engine |
 |---|---|---|
@@ -171,7 +171,7 @@ controllers, or — for stateless helpers — gets a TypeScript port).
 | 3 | `rapla-app/src/test/...` with `@SpringBootTest` + `@AutoConfigureMockMvc` | Cached Spring context, JWT + MockMvc |
 | 4 | `rapla-app/src/test/...` with `@SpringBootTest(webEnvironment=RANDOM_PORT)` | Spring + Tomcat |
 
-Mock-framework policy (PRD 027): **no mocks of internal rapla types**
+Mock-framework policy ([PRD 027](../prd/027-mock-framework-policy.md)): **no mocks of internal rapla types**
 — use the real thing at the appropriate tier. The carve-outs make
 tier-1 viable.
 
@@ -205,12 +205,12 @@ Counts as of 2026-05-13 (lines of code, excluding `target/`,
 | **Total** | **169 741** | **193 779** | **+24 038** (+14.2 %) |
 
 The +16.5 k production growth is roughly:
-- +10 k from PRD 023 carve-outs (each extraction adds the pure-Java
+- +10 k from [PRD 023](../prd/023-presenter-view-extraction.md) carve-outs (each extraction adds the pure-Java
   class and a tier-1 test; the Swing class shrinks but stays
   in-tree). Net: additive.
 - +4 k from new REST controllers + server-side render surfaces
-  (PRD 024 / 030).
-- +2 k from Spring Boot autoconfig + OAuth (PRD 029).
+  (PRD [024](../prd/024-server-side-edit-services.md) / [030](../prd/030-server-side-view-rendering.md)).
+- +2 k from Spring Boot autoconfig + OAuth ([PRD 029](../prd/029-swing-oauth-login.md)).
 
 The +7.5 k test growth tracks the carve-outs directly — every
 carved class gets a tier-1 test class.
@@ -253,7 +253,7 @@ bigger; the migration didn't simplify anything." The honest reading:
   one person (the maintainer) had to keep working with every Java /
   framework upgrade. The replacements are framework-provided.
 - **Testability went from ~5 % coverage of Swing-edge logic to
-  tier-1 coverage of the equivalent decisions.** Every PRD 023
+  tier-1 coverage of the equivalent decisions.** Every [PRD 023](../prd/023-presenter-view-extraction.md)
   carve-out is a regression test for a hand-clicked-only rule that
   master didn't pin.
 - **The Angular SPA exists.** A user looking at this rework in

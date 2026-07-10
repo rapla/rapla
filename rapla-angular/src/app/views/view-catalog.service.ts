@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
@@ -21,7 +21,7 @@ const LIST_VIEWS_QUERY = `{ listViews { name title source valid } }`;
  */
 @Injectable({ providedIn: 'root' })
 export class ViewCatalogService {
-  constructor(private readonly gql: GraphqlService) {}
+  private readonly gql = inject(GraphqlService);
 
   listViews(): Observable<ViewInfo[]> {
     return this.gql
@@ -32,5 +32,7 @@ export class ViewCatalogService {
 
 /** CUSTOM views first (the hand-authored showcase, e.g. Wochenansicht), then BUILTIN; stable within. */
 export function orderViews(views: ViewInfo[]): ViewInfo[] {
-  return [...views].sort((a, b) => (a.source === 'CUSTOM' ? 0 : 1) - (b.source === 'CUSTOM' ? 0 : 1));
+  return [...views].sort(
+    (a, b) => (a.source === 'CUSTOM' ? 0 : 1) - (b.source === 'CUSTOM' ? 0 : 1),
+  );
 }

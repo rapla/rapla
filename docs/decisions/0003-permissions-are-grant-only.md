@@ -15,7 +15,7 @@ informed: future contributors, AI coding agents
 > subtraction. We now go fully additive: **the effective level is the highest grant from any matching
 > row — no precedence, no deny.** Rationale and the blast-radius evidence are below. The
 > resolution-code change (`RaplaDefaultPermissionImpl` + `PermissionContainer.Util.getInterval`)
-> **landed in PRD 090 (2026-06-28)**, with a marker-guarded one-shot migration that freezes a
+> **landed in [PRD 090](../prd/090-additive-permission-resolution.md) (2026-06-28)**, with a marker-guarded one-shot migration that freezes a
 > worklist of escalated allocatables for admin review.
 
 ## Context and Problem Statement
@@ -27,7 +27,7 @@ individual rule — what is the effective level? Is access *additive* (strongest
 *subtractive* (any matching deny removes access, as in POSIX/NTFS ACLs)?
 
 Derived from `RaplaDefaultPermissionImpl.hasAccess` (`:29-122`) and `PermissionContainer.Util`.
-Contract: [[permissions]] (`docs/spec/permissions.md`).
+Contract: [permissions](../spec/permissions.md).
 
 ## Decision Drivers
 
@@ -123,7 +123,7 @@ is explicitly not the default.
 
 ### Confirmation
 
-> **Additive resolution has landed (PRD 090, 2026-06-28).** `RaplaDefaultPermissionImpl` and
+> **Additive resolution has landed ([PRD 090](../prd/090-additive-permission-resolution.md), 2026-06-28).** `RaplaDefaultPermissionImpl` and
 > `PermissionContainer.Util.getInterval` now resolve additively (max over matching rows, no
 > precedence). The precedence-era `GrantOverridesDenyAtEqualPrecedenceTest` was **replaced** by
 > `AdditivePermissionResolutionTest` (rapla-server, tier-2), whose inverted cases pin max-wins:
@@ -187,7 +187,7 @@ redundant under this resolution.
 
 ## Future possibilities
 
-- ✅ Done (PRD 090, 2026-06-28): the additive resolution change in `RaplaDefaultPermissionImpl` +
+- ✅ Done ([PRD 090](../prd/090-additive-permission-resolution.md), 2026-06-28): the additive resolution change in `RaplaDefaultPermissionImpl` +
   `PermissionContainer.Util.getInterval`, the one-shot migration freezing the escalation worklist,
   and the admin REST endpoint + SPA dialog that drains it.
 - Retire the `DENIED` level outright once the normalizer + audit confirm no store still depends on it.

@@ -26,7 +26,7 @@ Related: [PRD 035 (done) §11](../prd/done/035-graphql-foundations.md),
 ## Decision Drivers
 
 - One identity currency across the whole API surface (fragments, filters, inputs, tooling) — no
-  "which one do I use?" per consumer (the PRD 035 §11 driver).
+  "which one do I use?" per consumer (the [PRD 035](../prd/done/035-graphql-foundations.md) §11 driver).
 - Typos and stale references should fail **loudly** at validation, not silently return empty
   results (the silent-empty of the former `typeKeyIn: [String!]` cost real debugging time).
 - GraphQL is name-based **by spec** — there is no standard stable-id binding for fields/types;
@@ -45,9 +45,9 @@ Related: [PRD 035 (done) §11](../prd/done/035-graphql-foundations.md),
    tolerant of renames (old queries return empty) but silently swallows typos and stale keys.
 3. **UUID-based identity** (`typeId`) — rename-stable, but nothing user-facing uses the UUID;
    fragments/generated names embed the key anyway, so renames still break the schema (rejected
-   in PRD 035 §11).
+   in [PRD 035](../prd/done/035-graphql-foundations.md) §11).
 4. **Id-bound stored views** (`idref` AST) — rename-proof persistence, but a self-invented
-   format against GraphQL's name-based spec (explicitly dropped in PRD 074).
+   format against GraphQL's name-based spec (explicitly dropped in [PRD 074](../prd/074-graphql-declarative-views.md)).
 5. **Auto-migration of stored views on rename** — rewrite stored query text/variables when a
    key changes.
 
@@ -60,17 +60,17 @@ error, and keeps persistence on the GraphQL standard (persisted-query **text**).
 Concretely:
 
 - `Classification` exposes `typeKey: String!` only (no `typeId`); UUID escape hatch is
-  `type { id }` (PRD 035 §11).
+  `type { id }` ([PRD 035](../prd/done/035-graphql-foundations.md) §11).
 - Type selection is the single generated field `typeIn: [<Kind>TypeKey!]` on
   `AllocatableFilter`/`ReservationFilter`; the redundant `typeKeyEq`/`typeKeyIn` String fields
-  were **removed** (PRD 059 Phase 7, hard cut — nothing in production). Per-kind enums mean a
+  were **removed** ([PRD 059](../prd/done/059-graphql-typed-where-predicates.md) Phase 7, hard cut — nothing in production). Per-kind enums mean a
   wrong-kind key (an allocatable key on `ReservationFilter`) is also a validation error.
 - Typed attribute predicates (`where<TypeKey>`) exist for **all** kinds — resource/person on
   `AllocatableFilter`, reservation on `ReservationFilter` — through one generator loop and one
-  `WhereEvaluator` (PRD 059 Phase 6).
+  `WhereEvaluator` ([PRD 059](../prd/done/059-graphql-typed-where-predicates.md) Phase 6).
 - **Rename/delete lifecycle:** schema rebuild → `ViewCatalogService.revalidateCustomViews()`
   marks every stored custom view `valid`/`invalidReason`. Invalid views keep their text, refuse
-  execution, and the **admin fixes them in GraphiQL** (PRD 074 D5/D8). **No auto-migrate, no
+  execution, and the **admin fixes them in GraphiQL** ([PRD 074](../prd/074-graphql-declarative-views.md) D5/D8). **No auto-migrate, no
   silent prune.** Built-in views are code constants — keeping them schema-current is a
   developer/test responsibility.
 
@@ -83,7 +83,7 @@ Concretely:
   every external client referencing the old key breaks loudly until fixed by hand.
 - Bad (accepted): multi-pod schema-rebuild skew (~10 s update-history polling) can briefly
   reject a just-added key's enum value on a stale pod.
-- Constraint: DynamicType keys must be GraphQL-name-compliant — guaranteed by PRD 058's
+- Constraint: DynamicType keys must be GraphQL-name-compliant — guaranteed by [PRD 058](../prd/058-graphql-key-spec-migration.md)'s
   startup `GraphqlKeyMigration`; `checkGraphQlCompliantName` throws if one slips through
   (GraphQL-reserved words get a trailing `_`).
 
@@ -95,7 +95,7 @@ Concretely:
   enum value is a validation error.
 - `ClassificationGraphQLControllerTest.reservationDTGetsWhereInput` — reservation kinds carry
   where-inputs.
-- `ViewCatalogService.revalidateCustomViews` + PRD 074's revalidate tests — invalid views are
+- `ViewCatalogService.revalidateCustomViews` + [PRD 074](../prd/074-graphql-declarative-views.md)'s revalidate tests — invalid views are
   marked, never pruned.
 - Grep guard: `typeKeyEq`/`typeKeyIn` must not reappear in `schema.graphqls` or resolvers.
 
@@ -103,11 +103,11 @@ Concretely:
 
 - A rename-assist (offer the admin a preview/one-click textual rewrite of invalidated views on
   key rename) — tooling **on top of** revalidate-and-mark, not silent auto-migration.
-- Saved-view variables (PRD 077) could get the same revalidate-and-mark treatment if they ever
+- Saved-view variables ([PRD 077](../prd/077-calendar-model-graphql.md)) could get the same revalidate-and-mark treatment if they ever
   store type keys outside the query text.
 
 ## More Information
 
-Extracted from PRD 035 §11 (`typeKey` vs `typeId`), PRD 059 phases 6+7 (D-locks in the done
-PRD), and PRD 074 D5 ("revalidate-and-mark") so the rationale stays visible now that PRDs 035
+Extracted from [PRD 035](../prd/done/035-graphql-foundations.md) §11 (`typeKey` vs `typeId`), [PRD 059](../prd/done/059-graphql-typed-where-predicates.md) phases 6+7 (D-locks in the done
+PRD), and [PRD 074](../prd/074-graphql-declarative-views.md) D5 ("revalidate-and-mark") so the rationale stays visible now that [PRDs 035](../prd/done/035-graphql-foundations.md)
 and 059 live in `done/`. Living contract: [docs/graphql.md](../graphql.md).

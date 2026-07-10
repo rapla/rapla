@@ -59,7 +59,10 @@ describe('isMovableRow — drag gate (PRD 095 D6, fail-closed)', () => {
 
   it('not movable: no modify permission', () => {
     expect(
-      isMovableRow({ ...movable, reservation: { id: 'e1', canModify: false, appointmentCount: 1 } }),
+      isMovableRow({
+        ...movable,
+        reservation: { id: 'e1', canModify: false, appointmentCount: 1 },
+      }),
     ).toBe(false);
   });
 

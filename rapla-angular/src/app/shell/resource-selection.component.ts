@@ -32,8 +32,11 @@ import { TableSelection } from '../views/table-selection';
       @if (me(); as user) {
         <div
           class="pinned"
+          role="button"
+          tabindex="0"
           [class.active]="meActive()"
           (click)="scopeToMe(user)"
+          (keydown.enter)="scopeToMe(user)"
           title="Auf meine eigenen Veranstaltungen filtern"
         >
           <span class="dot person">👤</span>
@@ -52,13 +55,27 @@ import { TableSelection } from '../views/table-selection';
       @if (store.activeTab() === 'group' && store.groupLabel()) {
         <div class="grouphdr">
           <span>{{ store.groupLabel() }}</span>
-          <span class="clr" (click)="store.clearGroup()">× leeren</span>
+          <span
+            class="clr"
+            role="button"
+            tabindex="0"
+            (click)="store.clearGroup()"
+            (keydown.enter)="store.clearGroup()"
+            >× leeren</span
+          >
         </div>
       }
       @if (store.activeTab() === 'recents' && store.recents().length) {
         <div class="grouphdr recents-hdr">
           <span>Zuletzt verwendet</span>
-          <span class="clr" (click)="store.clearRecents()">× leeren</span>
+          <span
+            class="clr"
+            role="button"
+            tabindex="0"
+            (click)="store.clearRecents()"
+            (keydown.enter)="store.clearRecents()"
+            >× leeren</span
+          >
         </div>
       }
       <input
@@ -70,10 +87,13 @@ import { TableSelection } from '../views/table-selection';
       @for (it of visible(); track it.id; let i = $index) {
         <div
           class="item"
+          role="button"
+          tabindex="0"
           [class.active]="store.activeId() === it.id"
           [class.selected]="filter.has(it.id)"
           (mousedown)="onItemMousedown($event)"
           (click)="step($event, it)"
+          (keydown.enter)="step($event, it)"
         >
           <mat-icon class="ico" [style.color]="it.color || null">{{ icon(it) }}</mat-icon>
           <span class="lbl">{{ it.label }}</span>
@@ -349,13 +369,15 @@ export class ResourceSelectionComponent {
     if (event.shiftKey) event.preventDefault();
   }
 
-  step(event: MouseEvent, it: ResourceItem): void {
+  step(event: Event, it: ResourceItem): void {
+    // click gives a MouseEvent, (keydown.enter) a KeyboardEvent — both carry the modifier flags.
+    const mods = event as MouseEvent | KeyboardEvent;
     this.selection.syncSelected(this.filter.entries().map((e) => e.id));
     this.selection.pointer(it.id, {
-      shift: event.shiftKey,
-      ctrl: event.ctrlKey || event.metaKey,
+      shift: mods.shiftKey,
+      ctrl: mods.ctrlKey || mods.metaKey,
     });
-    this.applySelection(!event.shiftKey && !event.ctrlKey && !event.metaKey);
+    this.applySelection(!mods.shiftKey && !mods.ctrlKey && !mods.metaKey);
     this.store.setActive(it.id);
   }
 

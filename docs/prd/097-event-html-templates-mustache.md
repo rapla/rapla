@@ -1,24 +1,41 @@
-# PRD 097 — Event HTML templates (stored Mustache over GraphQL views)
+what i# PRD 097 — Event HTML templates (stored Mustache over GraphQL views)
 
 **Status:** draft — 2026-07-08
-**Related:** PRD 074 (declarative GraphQL views — the stored-view + `@view` mechanism this reuses),
-PRD 077 (calendar-model & saved views over GraphQL — render-modes, saved-view persistence),
-PRD 078 (SPA view renderer), PRD 030 (server-side view rendering — `CalendarLayoutEngine`, parks
-the "HTML autoexport → engine" migration this PRD's grid phase would consume), PRD 095 (SPA
+**Related:** [PRD 074](074-graphql-declarative-views.md) (declarative GraphQL views — the stored-view + `@view` mechanism this reuses),
+[PRD 077](077-calendar-model-graphql.md) (calendar-model & saved views over GraphQL — render-modes, saved-view persistence),
+[PRD 078](078-spa-graphql-view-renderer.md) (SPA view renderer), [PRD 030](030-server-side-view-rendering.md) (server-side view rendering — `CalendarLayoutEngine`, parks
+the "HTML autoexport → engine" migration this PRD's grid phase would consume), [PRD 095](095-month-grid-render-mode.md) (SPA
 month-grid — proves GraphQL feeds a calendar grid, but layout in TS not a template),
-PRD 011 (Jackson 3 — the runtime is Jackson-2-free, which constrains engine choice),
-PRD 098 (server artifact store, DONE 2026-07-08 — templates are stored as kind=TEMPLATE artifacts
+[PRD 011](done/011-spring-boot-4-jackson-3.md) (Jackson 3 — the runtime is Jackson-2-free, which constrains engine choice),
+[PRD 098](done/098-server-artifact-store.md) (server artifact store, DONE 2026-07-08 — templates are stored as kind=TEMPLATE artifacts
 there, NOT in a new preferences key; the generic artifact CRUD/upload endpoint and the IMAGE
-mimeType guard were deliberately left to this PRD as the store's first consumer)
+mimeType guard were deliberately left to this PRD as the store's first consumer),
+[PRD 102](102-browser-credential-hardening.md) (browser credential hardening — owns the auth/credential constraints for the semi-trusted
+document pages + template preview this PRD renders: `CSP: sandbox` opaque origin, `connect-src 'none'`,
+scoped `{read}` capability tokens, and the "one un-forgettable render-untrusted path" invariant)
+**Use-case catalog:** [`docs/usecases/htmltemplates.md`](../usecases/htmltemplates.md) — 40 collected
+use cases (real university-deployment evidence, data sources, tiers, auth classes, link navigation;
+gathered 2026-07-10), the grounding for OQ1 and the phase cut
 
 ## Abstract
 
 Let admins/groups store **HTML templates** that are filled with event data on request — the
-document analogue of the stored GraphQL views (PRD 074). A stored **GraphQL view supplies the data
+document analogue of the stored GraphQL views ([PRD 074](074-graphql-declarative-views.md)). A stored **GraphQL view supplies the data
 (and its §12 authorization); a stored logic-less template arranges it into HTML**; the browser turns
 HTML into PDF via native print. The measurable end state: an admin saves a template referencing a
 view, and `GET`ting the rendered document returns permission-safe HTML that `window.print()` saves as
 a vector PDF — with zero new expression-evaluation attack surface.
+
+**Direction (refocused 2026-07-09).** The primary purpose is *server-side document rendering*, in two
+shapes: **event documents** (Leihschein, lists, letters — the new capability) and, mid-term, a
+**replacement for the rigid hand-coded calendar export pages** (`AbstractHTMLCalendarPage` and the
+`/rapla/calendar` family), which today can only be changed by editing Java. Rendering *SPA views*
+through Mustache is explicitly **secondary** and drips in last (Phase 7): the SPA's calendar surfaces
+are interactive (drag-create, drag-move, selection, popups) and most of that dynamism does not want to
+live in a logic-less template. Engine + editor come first; the publish/anonymous-URL authorization
+model comes last (Phase 8 below — *this* PRD's Phase 8; every reference to [PRD 072](072-server-side-login-dialog.md)'s Phase 8 is
+spelled out with its PRD number), because the calendar replacement can inherit the existing routes'
+auth unchanged.
 
 ## Motivation
 
@@ -28,13 +45,21 @@ There is no way for an admin to define a print/letter/list layout for events wit
 The stored-view mechanism already proves the pattern: user-authored, server-stored, validated,
 group-scoped, filled on request. This PRD applies the same pattern to *presentation*.
 
+The same rigidity is what makes the **calendar export pages** hard to evolve: their HTML is assembled
+in Java (`rapla-server/.../plugin/abstractcalendar/server/AbstractHTMLCalendarPage.java`), so every
+deployment that wants a different export layout needs a `custom/` overlay or a patch. [PRD 030](030-server-side-view-rendering.md) already
+parked this as "future migration of HTML autoexport calendar pages to `CalendarLayoutEngine` is a
+separate PRD" — Phases 5–6 below **are** that PRD: the layout engine produces a positioned model, a
+stored template paints it, and the frozen §15 routes keep serving the same URLs with the same
+authorization.
+
 ## Implementation
 
 ### The pairing model — a "document" = view + template
 
-Both halves are stored the same way (the PRD 098 server artifact store — admin/group-authored,
+Both halves are stored the same way (the [PRD 098](done/098-server-artifact-store.md) server artifact store — admin/group-authored,
 validated at save; originally sketched on system `Preferences` like `StoredViewData`, superseded
-2026-07-08 by PRD 098). A document pairs a **data source** (a stored
+2026-07-08 by [PRD 098](done/098-server-artifact-store.md)). A document pairs a **data source** (a stored
 GraphQL view, by reference) with a **presentation** (a Mustache template):
 
 ```
@@ -70,8 +95,10 @@ The GraphQL result JSON tree **is** the Mustache data model — no impedance mis
 - **No XSS:** Mustache `{{ }}` auto-escapes the interpolated query values into HTML.
 - **No ambient authority even if XSS slips through:** document responses carry
   `Content-Security-Policy: sandbox` → opaque origin, no cookies/storage/readable API responses
-  (D6a); and the SPA access token is memory-held, not a cookie (PRD 072 Phase 8) — so a script on a
-  document page has nothing to ride and nothing to read.
+  (D6a) — so a script on a document page has nothing to read even though the HttpOnly
+  `access_token` cookie is ambient on the origin ([PRD 102](102-browser-credential-hardening.md) D1, 2026-07-09, kept the cookie and
+  rejected the memory-only token). Containment here rests on the `sandbox` opaque origin, not on
+  the absence of an ambient credential.
 
 ### View complexity tiers — where the engine is / isn't needed
 
@@ -82,7 +109,7 @@ compute** — it has no arithmetic/overlap/positioning:
 |---|---|---|---|
 | **Flat** | events (reservation list), appointments (block list) | nothing | ✅ trivial |
 | **Grouped (1D)** | per-day (`appointments_per_day`), per-resource, week-as-list | a **group-by-key projection** (cheap resolver field or thin Java pass) — *not* the layout engine | ✅ nested sections |
-| **2D grid** | week, month (time×day, overlap columns, spanning bars) | **`CalendarLayoutEngine`** (PRD 030 — deleted `f4e9c048`, resurrectable from git; pure-Java strategies) to emit positioned `RenderedBlock`s, *then* Mustache paints | ⚠️ deferred phase |
+| **2D grid** | week, month (time×day, overlap columns, spanning bars) | **`CalendarLayoutEngine`** ([PRD 030](030-server-side-view-rendering.md) — deleted `f4e9c048`, resurrectable from git; pure-Java strategies) to emit positioned `RenderedBlock`s, *then* Mustache paints | ⚠️ deferred phase |
 
 Grouping is 1-dimensional bucketing (`groupBy(date)`); the grid is 2-dimensional positioning with
 overlap resolution — categorically different. Most "calendar" list/agenda views fall in the easy
@@ -107,52 +134,68 @@ a *dialogless one-click* download turns out to be a hard requirement — see OQ2
 ## Scope
 
 ### In scope
-- `DocumentTemplate` storage as kind=TEMPLATE artifacts in the PRD 098 store + CRUD +
+- `DocumentTemplate` storage as kind=TEMPLATE artifacts in the [PRD 098](done/098-server-artifact-store.md) store + CRUD +
   `isPublic`/`groups` visibility (via `ArtifactCatalogService`), reusing the `ViewCatalogService` shape.
 - JMustache engine wiring (server-side, fed `Map` data — no Jackson path, see D2).
 - Render endpoint (REST `GET /api/documents/{name}` or a GraphQL field — see OQ4) with §12 leak test.
 - Flat + grouped (1D) views: events, appointments, per-day.
-- A `@media print` stylesheet + a "Print / PDF" action in the SPA that opens the rendered HTML and
-  calls `window.print()`.
-- A **template-authoring UI** in the SPA (the GraphiQL analogue for the presentation layer) with an
-  engine-truthful live preview — see Phase 6.
+- A `@media print` stylesheet + a "Print / PDF" action that opens the rendered HTML and calls
+  `window.print()` — the Leihschein flow (Phase 2), session-authenticated.
+- A **template-authoring UI** (static admin page, GraphiQL-style — see Phase 4) with an
+  engine-truthful live preview.
+- **2D time-grid HTML** (week/month) via `CalendarLayoutEngine` → positioned model → template
+  (Phase 5) — moved *into* scope 2026-07-09: it is the prerequisite for the calendar-page
+  replacement, which is now a primary goal, not a nice-to-have.
+- **Replacement of the hand-coded HTML calendar export pages** behind the existing §15-frozen routes
+  (Phase 6), authorization inherited unchanged from `CalendarPageController` (publish flag +
+  optional URL encryption).
 
 ### Out of scope
-- 2D time-grid HTML (week/month) — deferred to a later phase gated on `CalendarLayoutEngine`
-  resurrection **and** the §15 URL-sensitivity of the legacy `/rapla/calendar` pages (external iCal
-  subscribers depend on those literal URLs/output — a migration must not break them). Possibly its
-  own PRD.
+- Rendering the SPA's *interactive* calendar surfaces through Mustache. Phase 7 drips in the static
+  parts only; drag-create/drag-move/selection/popups stay TS (PRDs [094](094-spa-main-view-actions-and-popups.md)/[095](095-month-grid-render-mode.md)/[100](100-spa-block-renderer-unification.md)/[101](101-transpose-anchors-move-copy-paste.md)).
+- New anonymous/publish URL shapes for documents — Phase 8, deliberately last (see "Authorization").
 - Server-side PDF generation (openhtmltopdf/PDFBox) — explicitly rejected.
 - Any expression-language / sandboxed-eval engine (Thymeleaf, FreeMarker, liqp-with-custom-filters).
 
 ## Plan
 
 ### Phase 1 — Storage + engine
-- [ ] `DocumentTemplate` = kind=TEMPLATE artifact in the PRD 098 store; `DocumentCatalogService`
+- [x] `DocumentTemplate` = kind=TEMPLATE artifact in the [PRD 098](done/098-server-artifact-store.md) store; `DocumentCatalogService`
       is a thin consumer of `ArtifactCatalogService` (no new preferences key — superseded
-      2026-07-08 by PRD 098, which is DONE: the store + catalog are live, gate cleared).
-- [ ] Add JMustache dependency (`com.samskivert:jmustache`, ~100 KB, zero transitive deps).
-- [ ] Unit: SSTI-inert test (injection payload renders empty), auto-escape test.
+      2026-07-08 by [PRD 098](done/098-server-artifact-store.md), which is DONE: the store + catalog are live, gate cleared).
+- [x] Add JMustache dependency (`com.samskivert:jmustache`, ~100 KB, zero transitive deps).
+- [x] Unit: SSTI-inert test (injection payload renders empty), auto-escape test.
 
-### Phase 2 — Render pipeline (flat views)
-- [ ] Render endpoint: resolve doc → execute referenced view (caller-scoped) → feed `data` Map to
-      Mustache → return HTML.
-- [ ] Tier-3 MockMvc **leak test** (non-admin, mixed visible/hidden ids → byte-identical to
-      visible-only).
+### Phase 2 — Render pipeline (flat views) + the Leihschein flow
+- [x] Render endpoint: resolve doc → execute referenced view (caller-scoped) → feed `data` Map to
+      Mustache → return HTML. **Credential-agnostic**: authorization comes from the standard Spring
+      Security chain, so the same controller serves a cookie session or a Bearer header
+      interchangeably (the HttpOnly `access_token` cookie is the established credential — [PRD 102](102-browser-credential-hardening.md) D1,
+      2026-07-09, kept it and rejected the memory-only-token plan).
+- [x] Variables (e.g. `eventId`) are ordinary request parameters. Security = the referenced view
+      executes in the **caller's §12 read-scope**; unreadable and non-existent must be **byte-identical
+      404s** (existence never leaks). Both artifacts — template *and* referenced view — must be
+      visible to the caller, else 404.
+- [x] Tier-3 MockMvc **leak test** (non-admin, mixed visible/hidden ids → byte-identical to
+      visible-only, and to the all-non-existent case). AGENTS.md §12 — mandatory, not optional.
+- [x] "Print / PDF": `@media print` stylesheet (hides chrome, `@page` margins) — shipped in
+      `DocumentShell`. **The SPA action moved to Phase 7** with the rest of the SPA surface.
+      *(Deviation from D4, adopted 2026-07-10: the shell is **script-free**, so there is no print
+      button and no auto-print — printing is the browser's own Ctrl+P, announced by a print hint that
+      hides itself when printing. This is D6a's "script-free print affordance" branch, and it is what
+      lets the response carry `script-src 'none'` with no nonce plumbing and no `allow-scripts` in
+      the sandbox.)*
+      `window.open(url)` suffices (the `access_token` cookie is HttpOnly and auto-attached,
+      `CookieAuthSupport.java:77`). [PRD 102](102-browser-credential-hardening.md) D1 (2026-07-09) kept that cookie — the memory-only-token
+      plan was rejected — so this stays a plain navigation permanently; no `fetch` + `Authorization`
+      → Blob fallback is needed.
 
 ### Phase 3 — Grouped (1D) views
-- [ ] Group-by-key projection for per-day (resolver field `appointmentBlocksByDay` **or** thin Java
-      pass — OQ3), nested-section template.
+- [x] Group-by-key projection for per-day (resolver field `appointmentBlocksByDay` **or** thin Java
+      pass — OQ3), nested-section template. Completes the event-document shapes (lists, per-day
+      agendas, the Leihschein of Appendix A).
 
-### Phase 4 — SPA print
-- [ ] "Print / PDF" action opens rendered HTML; `@media print` stylesheet hides chrome, sets
-      `@page` margins; `window.print()`.
-
-### Phase 5 (deferred) — 2D grid HTML
-- [ ] Resurrect/port `CalendarLayoutEngine` → positioned model → Mustache paints week/month.
-      Gated on §15 URL compatibility for legacy autoexport calendar pages.
-
-### Phase 6 — Template-authoring UI (the GraphiQL analogue for the presentation layer)
+### Phase 4 — Template-authoring UI (the GraphiQL analogue for the presentation layer)
 
 GraphiQL is the tooling for the **data** layer (the view); this phase gives the **presentation**
 layer its equivalent — an editor where an author composes a document (view + template + CSS)
@@ -179,26 +222,26 @@ data-aware completion exists anywhere (Monaco feature request microsoft/monaco-e
 years); everyone who has Mustache completion built a schema source themselves (Ember→Glint/TS,
 Qute→param declarations) — ours is the referenced view's selection set, the nicest of the lot.
 
-- [ ] **Preview endpoint** `POST /api/documents/preview` — body `{ template, viewName, variables }`.
+- [x] **Preview endpoint** `POST /api/documents/preview` — body `{ template, viewName, variables }`.
       Renders with the **real engine** (JMustache — NOT a client-side mustache.js, whose output can
       differ), against the **real view data executed in the author's §12 read-scope** (author sees
       only their own data — no leak). Applies the same D6 pipeline: `<script>`-strip + sandboxed
       `<iframe>` + CSP, so the preview itself is never an XSS vector against the author.
-- [ ] **Static editor page** (`static/template-editor/`): view picker + variables input + Monaco
+- [x] **Static editor page** (`static/template-editor/`): view picker + variables input + Monaco
       template editor + live preview pane (renders the preview HTML in a sandboxed iframe) +
       load/save toolbar (the `graphiql/index.html` toolbar pattern against the template CRUD).
-- [ ] **Result-shape endpoint** (~100–200 lines): parse the referenced view's query with the
+- [x] **Result-shape endpoint** (~100–200 lines): parse the referenced view's query with the
       existing `graphql.parser.Parser` (+ schema walk for alias resolution and list-vs-object) and
       return its selection-set tree as JSON — the single source for the fields pane, completion,
       and unknown-field warnings.
-- [ ] **Available-fields pane** — the GraphiQL-schema-explorer analogue, fed by the result-shape
+- [x] **Available-fields pane** — the GraphiQL-schema-explorer analogue, fed by the result-shape
       endpoint, so the author knows which `{{fields}}` exist.
-- [ ] **Field completion** (~150–250 lines JS, separately unit-testable): a Monaco
+- [x] **Field completion** (~150–250 lines JS, separately unit-testable): a Monaco
       `CompletionItemProvider` on `{{` contexts; walks the open-section stack above the cursor
       (`{{#…}}`/`{{^…}}`/`{{/…}}`) to descend the result-shape tree, proposes context-valid fields
       and the closing tag of the open section. Suggests **only JMustache-valid constructs** — no
       Handlebars helpers.
-- [ ] **Engine-truthful validation**: server compiles with the real JMustache
+- [x] **Engine-truthful validation**: server compiles with the real JMustache
       (`MustacheParseException` carries the line number) → editor shows red markers via
       `setModelMarkers`, debounced; `saveTemplate` uses the same check as its save gate (the
       `saveView` pattern). Optional second tier: traverse the compiled template with JMustache's
@@ -211,47 +254,234 @@ Qute→param declarations) — ours is the referenced view's selection set, the 
   *learning syntax* but render with the JS impl + no access to our data — not usable for authoring
   against our server engine/§12 data, hence the server-backed preview.
 
+### Phase 5 — 2D time-grid rendering (the layout engine half)
+- [ ] Resurrect/port `CalendarLayoutEngine` ([PRD 030](030-server-side-view-rendering.md) / [PRD 024](024-server-side-edit-services.md) Phase 3 read-side core) so it emits a
+      **positioned model** — lanes, slots, block geometry — as a plain data tree.
+- [ ] A stored template paints week/month from that model; the template does no layout maths (a
+      logic-less engine cannot, by construction). Colour resolution + always-black text per
+      `docs/architecture/calendar-rendering.md`.
+- [ ] Golden-output tests against the current `AbstractHTMLCalendarPage` rendering for a fixture
+      calendar — the diff is the migration's acceptance criterion.
+
+### Phase 6 — Calendar-export page replacement (the primary strategic goal)
+- [ ] Swap the hand-assembled HTML in `AbstractHTMLCalendarPage` for a stored template rendered by
+      the Phase-5 model, **behind the existing routes**: `/rapla/calendar(.csv)?`,
+      `/rapla/internal_calendar(.csv)?`. These URLs are 🔒-frozen (AGENTS.md §15 — external
+      subscribers depend on them literally); the migration changes the renderer, not the address.
+- [ ] **Authorization is inherited, not rebuilt**: `CalendarPageController` already gates on the
+      per-calendar publish flag (`AutoExportPlugin.HTML_EXPORT`, `CalendarPageController.java:169`)
+      and the URL-encryption preprocessor decrypts params before the controller sees them
+      (`ServerServiceConfig.java:221`). That is why this phase can land long before Phase 8.
+- [ ] Ship a default template reproducing today's output, so an untouched deployment sees no change;
+      the win is that an admin can now edit it.
+- [ ] Free request parameters stay validated against the published artifact's own configuration —
+      the existing `allocatable_id` ∈ `model.getSelectedAllocatablesAsList()` check
+      (`CalendarPageController.java:176-199`) is the pattern to preserve, not to loosen.
+
+### Phase 7 — SPA integration (secondary, drip-in)
+- [ ] Render the **static** parts of SPA view surfaces through stored templates where it buys
+      admin-editability. Interactive behaviour (drag-create, drag-move, selection, popups, undo
+      toasts — PRDs [094](094-spa-main-view-actions-and-popups.md)/[095](095-month-grid-render-mode.md)/[100](100-spa-block-renderer-unification.md)/[101](101-transpose-anchors-move-copy-paste.md)) stays in TypeScript: a logic-less template cannot carry it, and
+      forcing it in would trade a working interaction model for an editable one.
+- [ ] Deliberately last: nothing above depends on it, and the boundary between "static enough for a
+      template" and "must stay TS" is best drawn once the engine and editor exist in practice.
+
+### Phase 8 — Publish + capability URLs for document routes (last)
+- [ ] Only needed for **new** document URLs that must serve callers who cannot log in (an external
+      borrower, a display, a machine). The Phase-6 calendar routes need none of this — they inherit.
+- [ ] Two document classes, decided per document, never per request:
+      **published** (opt-in flag, anonymous, publisher's scope, variables pinned or validated against
+      the document's declaration, revocable) vs **session** (free variables, caller's §12 scope, no
+      shareable link). Personal documents — the Leihschein — are session documents by nature.
+- [ ] If a capability URL is built, reuse `UrlCipherV2` (AES-256-GCM, authenticated — tampering with
+      an encrypted `eventId` breaks the tag) with **two additions**: an `exp` claim inside the
+      plaintext (a permanent bearer URL printed in a page header is a standing credential), and a
+      **separately derived key**, because the calendar root key is effectively unrotatable (the
+      legacy ECB path is "kept forever — old subscriber URLs live in the wild", `UrlCipherV2.java:23`).
+- [ ] `Referrer-Policy: no-referrer` on rendered documents; mask the token query parameter in access
+      logs.
+
+### Phase 9 — Interactive tier: components + native save
+
+Documents that carry **rapla UI components** (dropdowns, nav buttons, pickers) and can **save**, while
+the author stays untrusted (AI/user). **The security model + decisions live in
+[PRD 102 § Interactive document tier](102-browser-credential-hardening.md#interactive-document-tier-untrusted-authored-components--native-save) (D4–D9);** this phase is the
+*implementation* of that spec, built here where the document-engine code lives. Static documents are
+unaffected (they keep `script-src 'none'`; see the current `RaplaCspHeaderWriter.documentPagePolicy`).
+
+**The decisions being implemented** (full text + rationale in [PRD 102 § Decisions locked](102-browser-credential-hardening.md#decisions-locked)):
+- **D4** — two document CSP tiers, selected per document by component usage (static `script-src 'none'`;
+  interactive allowlist + `allow-scripts`; `connect-src 'none'` in both).
+- **D5** — script loading via a deployment-owned path-scoped **allowlist, NOT nonce** (sandbox carries
+  containment; no `'unsafe-inline'`; never a public CDN; external JS only as a vetted/SRI exception).
+- **D6** — interactivity via **precompiled, form-associated** rapla/plugin custom elements, referenced by
+  a **component registry** key/tag (never a URL). Rejected: SSR Angular (Node sidecar); admin-authored
+  Angular templates (SSTI).
+- **D7** — save via **native `<form>` POST + scoped write-capability** (cookieless/opaque → no session
+  ride; declared save; short TTL; POST not GET; embedded docs `postMessage`-to-parent instead).
+- **D8** — **untrusted-author** model: structural safety (logic-less JMustache + declarative components);
+  AI emits a structured tree, not raw HTML; links scheme-allowlisted (`javascript:`/`data:` stripped).
+- **D9** — **author-JS config escape hatch, default OFF** (high-trust deployments only; never AI/open).
+
+- [ ] **Per-document CSP tier selection** (102 **D4**): in `RaplaCspHeaderWriter`, choose the document
+      policy from whether the validated template uses registered component tags — static → `script-src
+      'none'` (unchanged); interactive → the allowlist policy + `sandbox allow-scripts`. `connect-src
+      'none'` in both.
+- [ ] **Deployment-owned script allowlist** (102 **D5**): config of exact/narrow path-scoped script
+      sources (rapla + plugin component paths); no `'unsafe-inline'`; **no nonce** (the sandbox carries
+      containment); never a public CDN. External JS only as a specific vetted (SRI-pinned) exception.
+- [ ] **Component registry** (102 **D6**): `key → { bundleUrl, tags, attributes, capabilityNeeds }`,
+      populated by rapla + plugins (JAR `META-INF/resources`; ESM bundles served with
+      `Access-Control-Allow-Origin: *`) + deployment. Authors reference by **key/tag, never URL**; the
+      registry drives the allowlist match, the sanitizer tag allowlist, and capability minting.
+- [ ] **First precompiled, form-associated custom element** (102 **D6**): AOT (no `unsafe-eval`),
+      `formAssociated` + `ElementInternals.setFormValue` so its value submits with a native form.
+- [ ] **Native-form save endpoint + write-capability** (102 **D7**): `POST …/submit` validates a scoped
+      **write** capability (cookieless, opaque-origin `Origin: null`), minted server-side at render for a
+      *declared* save (entity+fields+action, short TTL); performs only that save, §12/§16 enforced; POST
+      not GET. `allow-forms` + `form-action <endpoint>` for standalone docs; embedded docs `postMessage`
+      to the SPA parent instead (**OQ4 in 102** decides embedded vs standalone).
+- [ ] **Sanitizer / validate-on-save** (102 **D8**): strip author `<script>`/`on*`/unknown tags +
+      `javascript:`/`data:` hrefs; allowlist registered component tags+attributes + safe layout HTML;
+      `href` scheme-allowlist (`http`/`https`/`mailto`/`#`); forbid sensitive inputs (`type=password`).
+- [ ] **AI structured authoring** (102 **D8**): AI emits a structured component tree (JSON), rendered
+      from trusted templates (no markup-injection surface); validated identically to user templates.
+- [ ] **(later) author-JS config escape hatch** (102 **D9**): permissive per-document policy variant,
+      default OFF, high-trust deployments only, never for AI/open-user content.
+
+Depends on: the shared **capability-mint primitive** ([PRD 102](102-browser-credential-hardening.md) Phase 2 — `{read}` base; this phase adds
+the **write**-scoped save capability on top). Blocked on **102 OQ4** (embedded-vs-standalone) for the
+save/data plumbing.
+
 ## Tests
 
 - Tier-1: JMustache SSTI-inert + auto-escape unit tests.
 - Tier-3: MockMvc leak test on the render endpoint (the §12 recipe).
 - Manual: render a document, `window.print()` → PDF in Chrome + Firefox.
 
+## Implementation findings (Phases 1–4, 2026-07-10)
+
+Three things the implementation forced that the plan did not anticipate.
+
+**1. A document's visibility does not cover the view it points at.** The first run of the §12 leak
+test caught a real leak: `GET /api/documents` listed a *public* document whose *view* was private,
+exposing the hidden view's name through the document's `viewName`. Visibility is now a conjunction —
+`DocumentCatalogService.isVisible` requires `views.viewVisible(doc.viewName(), caller)` before its
+own public/groups check — so listing, `findVisible` and the render path all agree. Generalises: an
+artifact that references another artifact must AND their visibilities, never just its own.
+
+**2. Sanitize the rendered output, not the template.** jsoup is an HTML parser: fed a raw template it
+foster-parents `{{#rows}}` out of `<table>` and destroys the loop. `DocumentSanitizer` therefore runs
+on the render *result*, which is also the only order that is actually safe — the dangerous markup can
+come from the data, not just the template.
+
+**3. `/source`, preview and result-shape are write surfaces.** A template is code that renders into
+other users' browsers, so *reading* one is an authoring action: all three sit behind
+`DocumentCatalogService.requireAuthor` (i.e. `ArtifactCatalogService.checkWrite`), and `save()` gates
+the caller **before** validating, so a non-admin cannot probe template or view validity through the
+error channel. Note the status code is **401**, not 403: `RaplaExceptionHandler` maps every
+`RaplaSecurityException` to UNAUTHORIZED — the codebase has no permission-denied exception type.
+
+Shipped: `document/{DocumentApi,DocumentController,DocumentCatalogService,DocumentRenderService,
+DocumentRenderer,DocumentSanitizer,DocumentShell,DocumentEntry,RowGrouping,ResultShapeService}`,
+`static/template-editor/index.html`, the sandbox CSP in `RaplaCspHeaderWriter`, and
+`graphql/ViewVariables` (extracted from `StoredViewInterceptor` so the SPA transport and the document
+render path resolve the date window identically).
+
 ## Open Questions
 
-- **OQ1 — document as a separate entity vs a render-mode on the view.** PRD 074/077 views already
+- **OQ1 — document as a separate entity vs a render-mode on the view.** PRD [074](074-graphql-declarative-views.md)/[077](077-calendar-model-graphql.md) views already
   carry render-modes (table/month). Option A: a standalone `DocumentTemplate` pairing `viewRef` +
   template (this PRD's sketch). Option B: an `html`/`print` **render-mode** on the view itself, whose
   render-meta carries the Mustache template. B is tighter integration; A keeps presentation cleanly
-  separate and lets one view feed many documents. *Resolution:* pending.
+  separate and lets one view feed many documents. *Resolution:* **resolved 2026-07-10 — Option A
+  (standalone document artifact).** Grounded in the 40-use-case catalog
+  ([`docs/usecases/htmltemplates.md`](../usecases/htmltemplates.md)); two independent advocates,
+  arguing A and B over that catalog, converged on the same three structural failures of B:
+  1. **The D6 delegation seam closes.** [PRD 098](done/098-server-artifact-store.md) D6 pre-designed: views are delegatable (they execute
+     in the *caller's* scope, §12-gated at the resolvers, worst case an expensive query bounded by
+     `DEPTH_CAP`); templates/CSS render HTML into *other users'* browsers (stored-XSS surface) and
+     stay admin-only. Under B one artifact carries both, so whoever may edit the query may inject
+     HTML. The exam-schedule use case ("the exam planner maintains it himself") dies.
+  2. **The auth class belongs to the document, not the data.** The evacuation/fire-safety list
+     (session-only, personal data) and the foyer notice board (published, anonymous) share one data
+     root. Under B a view carries exactly one visibility. Worse, B's own advocate found the leak: two
+     templates on one view force the query to fetch the field *union*, so on the anonymous fetch —
+     which runs in the publisher's scope — the sensitive fields travel and only the template omits
+     them. §12 forbids exactly that.
+  3. **Document-to-document links need addressable documents.** The chain timetable → lecturer →
+     room → building, plus "the dunning row links to *the loan slip of that event*", addresses named
+     documents with their own parameter contracts, not views.
+  Also: shared `{{> letterhead}}` partials (OQ5) across document families have no home in per-view
+  metadata, and letters/CSV/mail bodies would pollute `listViews` (the SPA's view picker).
+  **Two corrections adopted *from* B's case:** (a) "many documents per view" is often really
+  *parameter pinning* — thousands of door signs are ONE document published N times with a pinned
+  `roomId`; that belongs in the Phase-8 publish mechanism, not in document multiplication.
+  (b) B's ergonomic win (a print button appears where the user already is) is reachable under A as a
+  catalog filter — `documents where viewName == currentView` — and should be built that way.
+  **Reversibility (asked 2026-07-10):** the switch stays possible but gets costlier with time —
+  free before Phase 1 (no rows exist), a local refactor + one-shot startup migration after Phases
+  2–4, and effectively frozen once Phase 8 publishes URLs into the wild (door-sign displays, QR
+  codes, subscriber links — the §15 lesson), because inter-document links live *inside the
+  templates*. Insurance, adopted regardless of model: **the address is decoupled from the model** —
+  the render route is `/api/documents/{name}` under A *and* would remain so under B (where `{name}`
+  would map to view+mode). Only the address truly freezes; the model behind it stays a refactor.
 - **OQ2 — is a dialogless one-click PDF download a hard requirement?** If yes, `window.print()` can't
   do it (browser security boundary) and a JS lib (raster PDF) would be needed. If a dialog click is
-  acceptable, no lib — `window.print()` wins on quality. *Resolution:* pending (leaning: dialog is
-  acceptable → no lib).
-- **OQ3 — grouping: GraphQL field vs thin Java projection** for per-day. Native `…ByDay` field is
-  schema-clean; a Java `groupBy` avoids schema growth. *Resolution:* pending.
+  acceptable, no lib — `window.print()` wins on quality. *Resolution:* **resolved 2026-07-09 — the
+  print dialog is acceptable.** No JS PDF library; D4 stands unchanged.
+- **OQ3 — grouping: GraphQL field vs thin Java projection** for per-day. *Resolution:* **resolved
+  2026-07-09 — thin Java projection; no schema growth, no `…ByDay` resolver field.** Verified against
+  the running mechanism: grouping is *already declared* in the view via `@column(group: true)`, and
+  `ViewMetaInstrumentation.java:87-95` already emits `extensions.view.groupBy` (the group column's
+  **alias**) plus `groupFormat` (an opaque header-format token). The SPA then buckets flat rows with
+  the pure function `groupByColumn(rows, alias)` (`rapla-angular/src/app/graphql/weekday-grouping.ts`,
+  [PRD 078](078-spa-graphql-view-renderer.md)) and formats each header with `formatGroupLabel(key, fmt)`. The server-side Mustache path
+  needs the **same two functions in Java** (~30 lines) to turn the flat `data` rows into nested
+  sections — no new GraphQL field, and the grouping *semantics* stay single-sourced in the view's
+  own directive. Consequence: any view that already renders as `ViewRenderMode.grouped` in the SPA
+  (the Übersicht/Wochenansicht) is server-renderable as-is. ⚠️ Parity risk to watch: `groupFormat`
+  is applied client-side today; the Java formatter must produce identical headers (German locale,
+  date part only, no host-timezone shift) or a server-rendered Übersicht drifts from the SPA's.
 - **OQ4 — render transport: REST `GET /api/documents/{name}` vs a GraphQL field** returning HTML.
-  *Resolution:* pending.
+  *Resolution:* **resolved 2026-07-09 — REST.** The response is a *page*: it must be navigable,
+  printable, cacheable, and carry its own `Content-Type`/CSP/`Referrer-Policy` headers (D6a). A
+  GraphQL field returning an HTML string can be none of those. Follow `rest-endpoint-creation`
+  (the `@HttpExchange` interface owns the route).
 - **OQ5 — Mustache partials for shared layout** (`{{> letterhead}}`) — store partials too, for
   print letterhead/footer across documents? *Resolution:* pending (cheap to add later).
 - **OQ6 — author-embedded `<script>` for less-trusted authors.** D6 strips `<script>`/handlers by
   default. Open: do we allow full raw HTML+JS for **admin-only** templates (they "own" the page
   anyway), gated on an author-trust flag? Or is stripping unconditional? *Resolution:* **resolved
-  2026-07-08 — stripping is unconditional** (PRD 098 D6): never keyed on author trust, so a later
+  2026-07-08 — stripping is unconditional** ([PRD 098](done/098-server-artifact-store.md) D6): never keyed on author trust, so a later
   loosening of the write rule cannot change the security posture; "an admin authored it" is not
   "an admin's session wasn't riding". No admin raw-JS exception.
-- **OQ7 — document-page auth after PRD 072 Phase 8.** D7 relies on the browser sending an auth
-  cookie on the top-level navigation; Phase 8 removes the `access_token` cookie. Candidates: the
-  form-login `JSESSIONID` session (see PRD 072 OQ-P8.1 on its lifetime), or a dedicated
-  narrowly-path-scoped page cookie for page generators. A memory token cannot authenticate a
-  navigation. *Resolution:* pending — resolve together with PRD 072 Phase 8.
+- **OQ7 — document-page auth after [PRD 072](072-server-side-login-dialog.md) Phase 8.** *Resolution:* **moot 2026-07-09 ([PRD 102](102-browser-credential-hardening.md)
+  D1).** The premise was that Phase 8 would remove the `access_token` cookie, leaving a top-level
+  navigation with no credential. [PRD 102](102-browser-credential-hardening.md) D1 reversed that: the HttpOnly `access_token` cookie
+  **stays** (the memory-only-token plan was rejected). D7's top-level navigation is therefore
+  authenticated by the ambient `access_token` cookie exactly as it is today — no `JSESSIONID` /
+  page-cookie / `fetch`→Blob workaround is needed.
+
+- **OQ8 — `kind=TEMPLATE` collides with rapla's own "template" concept.** Rapla already calls a
+  Reservation annotated `RaplaObjectAnnotations.KEY_TEMPLATE` a *template/Vorlage*
+  (`RaplaComponent.isTemplate`, permission group `edit-templates`), and DynamicType nameformats are
+  "name templates" too — three unrelated meanings, now catalogued in
+  `docs/architecture/glossary.md`. Proposal: rename this PRD's artifact kind to
+  **`KIND_DOCUMENT`** (`StoredArtifact.KIND_TEMPLATE` → `KIND_DOCUMENT`) before Phase 1 writes the
+  first row. It is free today — the store has no TEMPLATE producer yet, so there is nothing to
+  migrate. The PRD's own vocabulary ("document = view + template") already points that way.
+  *Resolution:* **resolved 2026-07-10 — renamed to `KIND_DOCUMENT`.** Only tests referenced
+  `KIND_TEMPLATE`; no production producer existed, so the rename cost nothing. A document artifact's
+  body IS the Mustache template; its metadata carries `viewName` + visibility + the parameter
+  contract. `KIND_CSS`/`KIND_PARTIAL`/`KIND_IMAGE` keep their names (no collision).
 
 ## Decisions locked
 
 **D1 — Server-side rendering, reusing the stored-view storage mechanism.** Consistent with PRD
 074's proven pattern (validated, group-scoped, filled on request); central management + §12 gating
 for free. Client-side template storage rejected (no central admin, duplicated logic).
-*Amended 2026-07-08:* the storage mechanism is now the PRD 098 server artifact store, not system
+*Amended 2026-07-08:* the storage mechanism is now the [PRD 098](done/098-server-artifact-store.md) server artifact store, not system
 `Preferences` — 098 records why preferences is the wrong home for template/CSS bodies (whole-entity
 conflicts, client-sync bloat, no per-artifact metadata) and lands before this PRD's Phase 1.
 
@@ -311,7 +541,7 @@ attribute/URL contexts (HTML-escaping ≠ JS/URL-context escaping — the gap So
 autoescaping fills and Mustache does not). Admin-only raw-HTML+JS is left open (OQ6).
 
 **D6a — Document responses carry `Content-Security-Policy: sandbox` (decided 2026-07-08, dialog
-recorded in PRD 072's 2026-07-08 follow-up).** Second, independent layer under D6: the `sandbox`
+recorded in [PRD 072](072-server-side-login-dialog.md)'s 2026-07-08 follow-up).** Second, independent layer under D6: the `sandbox`
 directive gives the top-level document an **opaque origin**, so even a script that survives
 stripping + CSP executes in a devalued context — its `fetch`es are cross-origin (no cookies
 attached, responses unreadable under CORS), no `localStorage`/`sessionStorage`, no window handles
@@ -323,9 +553,10 @@ per-controller response can forget it; note the shell's nonce'd print snippet (D
 sandbox policy (script blocked unless `allow-scripts` — resolve when the shell lands: either
 `allow-scripts` + nonce-CSP, or a script-free print affordance). A **separate sandbox origin**
 (githubusercontent pattern) was evaluated and rejected — rapla deployments have no control over
-subdomains; `CSP: sandbox` is the in-origin approximation. Paired with PRD 072 Phase 8
-(memory-held SPA token — no ambient access credential on the origin at all); the two layers cover
-each other's residual gaps. Tests: tier-3 header assertion on document responses (and its absence
+subdomains; `CSP: sandbox` is the in-origin approximation. The `access_token` cookie **is** ambient
+on the origin ([PRD 102](102-browser-credential-hardening.md) D1, 2026-07-09, kept it and rejected the memory-only token), so the sandbox
+opaque origin is doing the real containment work: a script on a document page cannot read cookies or
+API responses even though the credential is present. Tests: tier-3 header assertion on document responses (and its absence
 on SPA/API responses); Playwright: injected same-origin `fetch` with credentials from a document
 page yields no authenticated response.
 
@@ -350,12 +581,12 @@ document is opened directly in the browser at its own human-navigable URL (like 
   under `/api/` it needs no exception. *URL space — OQ4.*
 - **Auth = browser session cookie**, resolved server-side (not a SPA bearer token). The GraphQL view
   executes as the **session user**, so §12 filtering scopes the document to that user's read scope —
-  a shared/bookmarked URL never leaks beyond what its opener may read. ⚠️ PRD 072 Phase 8 removes
-  the `access_token` cookie — which credential then authenticates this top-level navigation is
-  OQ7. (`CSP: sandbox` (D6a) is unaffected: cookies are attached on the *request*; the sandbox
-  constrains the resulting document.)
+  a shared/bookmarked URL never leaks beyond what its opener may read. The top-level navigation is
+  authenticated by the ambient HttpOnly `access_token` cookie ([PRD 102](102-browser-credential-hardening.md) D1, 2026-07-09, kept it and
+  rejected the memory-only token — so OQ7 is moot). (`CSP: sandbox` (D6a) is unaffected: cookies are
+  attached on the *request*; the sandbox constrains the resulting document.)
 - **Server-authored shell** wraps the (stripped) author body: doctype, `@media print`/`@page` CSS,
-  the print trigger (auto-print or button), and the CSP nonce. Aligns with PRD 030's parked
+  the print trigger (auto-print or button), and the CSP nonce. Aligns with [PRD 030](030-server-side-view-rendering.md)'s parked
   "HTML autoexport calendar pages" migration — the same standalone-server-rendered-HTML shape.
 
 ## Appendix A — Worked example: Leihschein (single reservation → loan slip)

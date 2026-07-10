@@ -92,7 +92,11 @@ function sharedRefresh(http: HttpClient): Observable<boolean> {
       }),
       shareReplay(1),
     );
-    refresh$.subscribe({ error: () => {} });
+    refresh$.subscribe({
+      error: () => {
+        /* doRefresh resolves true/false and never rejects; defensive no-op */
+      },
+    });
   }
   return refresh$;
 }

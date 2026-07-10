@@ -6,7 +6,7 @@
 
 Use **Jackson with field-based introspection + `transient`-honoring + JSR-310 dates** as the single, shared JSON wire format between Spring Boot server and Swing client. Replaces Gson on both sides of the Spring HTTP machinery.
 
-**Why this matters (read before switching anything to getters):** Rapla entities are not POJOs — they're graph nodes with bidirectional references stored in a per-entity `ReferenceHandler.links: Map<String,List<String>>` and resolved through a `transient EntityResolver`. `Category.getParent()` walks the resolver and may cycle. Naïve Jackson defaults (getter-based) → `StackOverflowError` mid-serialization with truncated JSON, no error code. Naïve Gson defaults (field-based, no JSR-310 module) → `InaccessibleObjectException` because JDK modules block reflection into `java.time` internals. **Both modes hit PRD 009 implementation.** This PRD freezes the config that solved them.
+**Why this matters (read before switching anything to getters):** Rapla entities are not POJOs — they're graph nodes with bidirectional references stored in a per-entity `ReferenceHandler.links: Map<String,List<String>>` and resolved through a `transient EntityResolver`. `Category.getParent()` walks the resolver and may cycle. Naïve Jackson defaults (getter-based) → `StackOverflowError` mid-serialization with truncated JSON, no error code. Naïve Gson defaults (field-based, no JSR-310 module) → `InaccessibleObjectException` because JDK modules block reflection into `java.time` internals. **Both modes hit [PRD 009](../009-server-bulk-storage-rest-api.md) implementation.** This PRD freezes the config that solved them.
 
 ## Scope
 
@@ -44,7 +44,7 @@ The four key knobs and *why each one is load-bearing*:
 |---|---|---|
 | `FIELD = ANY`, `GETTER/IS_GETTER/SETTER = NONE` | opt-in via fields | Stops Jackson from calling derived getters (`getParent`, `getCategoryList`, `getReservation`, `getAppointmentStream`, …) that traverse the `transient resolver` and cycle the graph. Only persistent state (primitive fields + the `links: Map<String,List<String>>` ID-ref table) crosses the wire. |
 | `CREATOR = ANY` | constructors visible | Lets Jackson find no-arg / args constructors during deserialization, otherwise classes with private ctors fail to instantiate even though their fields are visible. |
-| `PROPAGATE_TRANSIENT_MARKER = true` | honor `transient` | Jackson normally ignores the Java `transient` keyword (it's a `Serializable`-only marker). With this on, fields like `ReferenceHandler.resolver`, `SimpleEntity.readOnly`, `SimpleEntity.nonpersistantEntities` are skipped. Without this we re-enter the `resolver → scheduler → ScheduledThreadPoolExecutor.threadFactory` chain that crashed PRD 009 before. |
+| `PROPAGATE_TRANSIENT_MARKER = true` | honor `transient` | Jackson normally ignores the Java `transient` keyword (it's a `Serializable`-only marker). With this on, fields like `ReferenceHandler.resolver`, `SimpleEntity.readOnly`, `SimpleEntity.nonpersistantEntities` are skipped. Without this we re-enter the `resolver → scheduler → ScheduledThreadPoolExecutor.threadFactory` chain that crashed [PRD 009](../009-server-bulk-storage-rest-api.md) before. |
 | `JavaTimeModule` + `WRITE_DATES_AS_TIMESTAMPS=false` | ISO-8601 dates | `LocalDateTime` / `Instant` round-trip as ISO strings, not 7-element numeric arrays. The JDK module system forbids reflective access to `java.time` internals; without this module Gson and Jackson both fail at runtime with `InaccessibleObjectException`. |
 
 ## Wiring
@@ -71,7 +71,7 @@ Acceptance criteria — all observable from a running dev server (AGENTS.md §8)
 3. **Swing client logs into the server end-to-end** without any `JsonIOException` (`Interfaces can't be instantiated`, `Failed making field 'java.time.LocalDateTime#date' accessible`, etc.).
 4. **`LocalDateTime` fields round-trip** as ISO-8601 strings, not numeric arrays — eyeball-verifiable by grepping a `lastChanged` value in the curl output.
 
-These are smoke-level checks; promote them to a `@SpringBootTest`-style round-trip test under PRD 009 Phase 6 if the wire format itself ever needs to be regression-locked.
+These are smoke-level checks; promote them to a `@SpringBootTest`-style round-trip test under [PRD 009](../009-server-bulk-storage-rest-api.md) Phase 6 if the wire format itself ever needs to be regression-locked.
 
 ## Plan
 

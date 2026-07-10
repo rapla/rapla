@@ -63,11 +63,9 @@ export class ApiKeysService {
    * window (server default 180, hard cap 2 days → 400). Returns the new key once.
    */
   rotate(id: string, graceMinutes: number): Observable<ApiKeyCreated> {
-    return this.http.post<ApiKeyCreated>(
-      `${this.base}/${encodeURIComponent(id)}/rotate`,
-      null,
-      { params: { graceMinutes } },
-    );
+    return this.http.post<ApiKeyCreated>(`${this.base}/${encodeURIComponent(id)}/rotate`, null, {
+      params: { graceMinutes },
+    });
   }
 
   revoke(id: string): Observable<void> {

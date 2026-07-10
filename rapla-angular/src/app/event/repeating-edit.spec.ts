@@ -98,7 +98,9 @@ describe('repeating-edit (PRD 091 Phase 4.2, pure)', () => {
     expect(ruleSummary(withInterval(defaultRule('DAILY', START), 2), START)).toBe(
       'Alle 2 Tage · endet nie',
     );
-    expect(ruleSummary(defaultRule('MONTHLY', START), START)).toBe('Monatlich am 1. Di · endet nie');
+    expect(ruleSummary(defaultRule('MONTHLY', START), START)).toBe(
+      'Monatlich am 1. Di · endet nie',
+    );
     const yearly = withUntil(defaultRule('YEARLY', START), '2030-07-07');
     expect(ruleSummary(yearly, START)).toBe('Jährlich am 7.7. · bis 2030-07-07');
   });

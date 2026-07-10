@@ -50,8 +50,16 @@ describe('resolveAnchorOffset', () => {
 
 describe('resolveWindowFromInputs', () => {
   const INPUTS: ViewInput[] = [
-    { name: 'filter.from', control: 'DATE_RANGE_START', default: { anchor: 'WEEK_START', offset: 0, unit: 'DAYS' } },
-    { name: 'filter.to', control: 'DATE_RANGE_END', default: { anchor: 'WEEK_START', offset: 7, unit: 'DAYS' } },
+    {
+      name: 'filter.from',
+      control: 'DATE_RANGE_START',
+      default: { anchor: 'WEEK_START', offset: 0, unit: 'DAYS' },
+    },
+    {
+      name: 'filter.to',
+      control: 'DATE_RANGE_END',
+      default: { anchor: 'WEEK_START', offset: 7, unit: 'DAYS' },
+    },
   ];
 
   it('maps DATE_RANGE_START/END to {from, to}', () => {

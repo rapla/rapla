@@ -8,7 +8,7 @@ of `Permission` rows. Users are members of `Category` groups
 walks both axes.
 
 > **Grant-only and purely additive is the core invariant** (ADR 0003, revised
-> 2026-06-28; PRD 090). Permission rows only ever *add* access — there are **no
+> 2026-06-28; [PRD 090](../prd/090-additive-permission-resolution.md)). Permission rows only ever *add* access — there are **no
 > deny rows and no precedence**. A user's effective access is the **highest**
 > level granted by **any** matching row (`USER`, `GROUP`, or `WORLD` — the union/`max`);
 > a user matched by no row gets nothing. Access never subtracts: a `DENIED` (0)
@@ -115,7 +115,7 @@ UI offers the right levels; nothing rejects an out-of-range level stored
 through another path). It is **not yet enforced server-side**, because no
 GraphQL write path edits permission lists (`AllocatableMutationController`
 v1 copies existing permissions through and inherits type defaults — it
-never sets a level). When a permission-editing verb lands (PRD 063 OQ2 —
+never sets a level). When a permission-editing verb lands ([PRD 063](../prd/063-graphql-allocatables-write-api.md) OQ2 —
 `setAllocatablePermissions`, and the analogues for `DynamicType` /
 `Reservation`), the save path **must validate the level against this
 matrix** and reject a mismatch (e.g. `READ_TYPE` on an `Allocatable`).
@@ -214,7 +214,7 @@ function hasAccess(U, E, requested, [start, end], today):
     return maxLevel.includes(requested)
 ```
 
-Two things the code does (ADR 0003 revised / PRD 090 — **purely additive**):
+Two things the code does (ADR 0003 revised / [PRD 090](../prd/090-additive-permission-resolution.md) — **purely additive**):
 
 1. **No precedence — `max` wins.** Effective access is the *highest* level across
    *every* matching row (`USER`, `GROUP`, `WORLD`). A `USER` match does **not**
@@ -312,7 +312,7 @@ expanded, but without its allocations"**: a user at level 50 sees "Room A101
 exists" and can select it; the appointments on it stay hidden/anonymous until
 the user reaches `READ` (100).
 
-**Caveat for the PRD 082 #8 / PRD 083 `PermissionIndex`.**
+**Caveat for the [PRD 082](../prd/082-storage-memory-model.md) #8 / [PRD 083](../prd/083-user-change-subscription.md) `PermissionIndex`.**
 `PermissionIndex.readableAllocatables(user)` delegates to **`canRead`**
 (level 100), so its set is the *"can see bookings"* set, **not** the
 `canReadInformation` (level 50) resource-visibility set. Consequences:
@@ -322,7 +322,7 @@ the user reaches `READ` (100).
 - It must **not** gate the `canReadInformation` paths (old RemoteStorage
   `queryAppointments` / `getVisibleEntities`) — that would hide
   `READ_NO_ALLOCATION` resources the legacy path shows (over-restrictive /
-  fail-closed — not a leak). PRD 083 scopes the index to GraphQL for exactly
+  fail-closed — not a leak). [PRD 083](../prd/083-user-change-subscription.md) scopes the index to GraphQL for exactly
   this reason.
 - Net effect: on a `READ_NO_ALLOCATION`-only resource the **Swing client**
   (RemoteStorage → `canReadInformation`) shows it with bookings hidden, while

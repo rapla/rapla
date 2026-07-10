@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
+import { TestBed } from '@angular/core/testing';
 import { of, firstValueFrom, type Observable } from 'rxjs';
 
 import { ViewCatalogService, orderViews, type ViewInfo } from './view-catalog.service';
-import type { GraphqlService, GqlResponse } from '../graphql/graphql.service';
+import { GraphqlService, type GqlResponse } from '../graphql/graphql.service';
 
 interface ViewRow extends ViewInfo {
   valid: boolean;
@@ -10,8 +11,7 @@ interface ViewRow extends ViewInfo {
 
 function fakeGql(rows: ViewRow[]): GraphqlService {
   return {
-    query: <T>(): Observable<GqlResponse<T>> =>
-      of({ data: { listViews: rows } as unknown as T }),
+    query: <T>(): Observable<GqlResponse<T>> => of({ data: { listViews: rows } as unknown as T }),
   } as unknown as GraphqlService;
 }
 
@@ -39,13 +39,20 @@ describe('orderViews', () => {
 
 describe('ViewCatalogService', () => {
   it('maps listViews and drops invalid views', async () => {
-    const svc = new ViewCatalogService(
-      fakeGql([
-        view('Wochenansicht', 'CUSTOM'),
-        view('broken', 'CUSTOM', false),
-        view('rapla_appointments', 'BUILTIN'),
-      ]),
-    );
+    TestBed.configureTestingModule({
+      providers: [
+        ViewCatalogService,
+        {
+          provide: GraphqlService,
+          useValue: fakeGql([
+            view('Wochenansicht', 'CUSTOM'),
+            view('broken', 'CUSTOM', false),
+            view('rapla_appointments', 'BUILTIN'),
+          ]),
+        },
+      ],
+    });
+    const svc = TestBed.inject(ViewCatalogService);
     const views = await firstValueFrom(svc.listViews());
     expect(views.map((v) => v.name)).toEqual(['Wochenansicht', 'rapla_appointments']);
   });

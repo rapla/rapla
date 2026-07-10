@@ -1,6 +1,6 @@
 # PRD 012: Migrate dhbwrapla client-side plugin code to server pages / general rapla
 
-**Status:** in-progress — rapla-side carve-out fully landed 2026-05-10 (`externaleventimport` wire contract + 12-file move + metadata-driven wizard refactor + `ExternalEventImportResources` bundle + property-gated activation). dhbwrapla server-side adapter (`DualisEventsLoaderImpl` → `ExternalEventImportService`) pending under PRD 003 D2/E.
+**Status:** in-progress — rapla-side carve-out fully landed 2026-05-10 (`externaleventimport` wire contract + 12-file move + metadata-driven wizard refactor + `ExternalEventImportResources` bundle + property-gated activation). dhbwrapla server-side adapter (`DualisEventsLoaderImpl` → `ExternalEventImportService`) pending under [PRD 003](003-custom-deployments-after-spring-migration.md) D2/E.
 **Date:** 2026-05-08
 
 ## 2026-05-10 Implementation snapshot
@@ -24,9 +24,9 @@
 
 **dhbwrapla deletions**: `org.rapla.plugin.dhbw.dualisimport.client/**` (12 files), `DualisEventsLoader.java` + `DualisEventsResult.java`, `DhbwResources.java` + 2 `.properties` (replaced by metadata).
 
-**Phases 1+2+3 (auth/terminal admin pages, index links)** — ALL DROPPED per user direction 2026-05-10. Config moved to `application.yml` / `DhbwProperties` (no UI). One tiny admin page kept: `TerminalUrlController` for encrypted export-URL query (PRD 003 §I).
+**Phases 1+2+3 (auth/terminal admin pages, index links)** — ALL DROPPED per user direction 2026-05-10. Config moved to `application.yml` / `DhbwProperties` (no UI). One tiny admin page kept: `TerminalUrlController` for encrypted export-URL query ([PRD 003](003-custom-deployments-after-spring-migration.md) §I).
 
-Pending: dhbwrapla server-side `DualisEventsLoaderImpl` rewrite as `ExternalEventImportService` impl with `Locale`-aware `getMetadata()` (PRD 003 Phase E).
+Pending: dhbwrapla server-side `DualisEventsLoaderImpl` rewrite as `ExternalEventImportService` impl with `Locale`-aware `getMetadata()` ([PRD 003](003-custom-deployments-after-spring-migration.md) Phase E).
 
 
 ## Goal
@@ -74,7 +74,7 @@ Plain `PrintWriter` HTML, matching `RaplaIndexPageGenerator`. Don't introduce Th
 
 ### D. Super-admin gating
 
-Two layers: Spring Security URL rule (`requestMatchers("/rapla/dhbw/**").authenticated()`) + method-level `User user = remoteSession.checkAndGetUser(request); if (!user.isAdmin()) throw new RaplaSecurityException(...)`. Existing `RaplaExceptionHandler` (PRD 009 Phase 5) maps to 401. `isAdmin()` is the existing super-admin marker (single admin tier); finer-grained role is a separate PRD.
+Two layers: Spring Security URL rule (`requestMatchers("/rapla/dhbw/**").authenticated()`) + method-level `User user = remoteSession.checkAndGetUser(request); if (!user.isAdmin()) throw new RaplaSecurityException(...)`. Existing `RaplaExceptionHandler` ([PRD 009](009-server-bulk-storage-rest-api.md) Phase 5) maps to 401. `isAdmin()` is the existing super-admin marker (single admin tier); finer-grained role is a separate PRD.
 
 ### E. Conditional activation for the moved `externaleventimport`
 
@@ -135,7 +135,7 @@ This forces the wire contract (interface + result DTO + generic plugin-id consta
 #### 4.1 What moves (vanilla rapla)
 
 In `rapla-core/org.rapla.plugin.externaleventimport`:
-- `ExternalEventImportService` — REST interface, renamed from `DualisEventsLoader`. Rewritten as Spring `@HttpExchange` (drops `jakarta.ws.rs` per PRD 010). Single method `ExternalEventImportResult loadEvents(ImportCriteria criteria)`.
+- `ExternalEventImportService` — REST interface, renamed from `DualisEventsLoader`. Rewritten as Spring `@HttpExchange` (drops `jakarta.ws.rs` per [PRD 010](done/010-jackson-field-based-wire-format.md)). Single method `ExternalEventImportResult loadEvents(ImportCriteria criteria)`.
 - `ExternalEventImportResult` — renamed from `DualisEventsResult`. Nested types renamed `Pruefung`/`Veranstaltung`/`Course` → `ExternalExam`/`ExternalLecture`/`ExternalCourse`. The two German `DynamicType`-key constants (`VERANSTALTUNG_TYPE_KEY = "Lehrveranstaltung"`, `PRUEFUNG_TYPE_KEY = "Pruefung"`) keep their **string values** verbatim — they're rapla type keys; renaming would force every dhbwrapla deployment to re-key existing data.
 - `ExternalEventImportPlugin` — constants holding `org.rapla.plugin.externaleventimport` + `ENABLE_BY_DEFAULT = false`.
 - `ImportCriteria` — request DTO; small POJO so interface signature stays stable.
@@ -213,8 +213,8 @@ Empty `org.rapla.plugin.dhbw.dualisimport.client[.swing]` packages disappear.
 |---|---|
 | **001** Spring Boot Migration | Hard prerequisite — controllers need Spring MVC + Security setup. |
 | **002** Swing UI Spring DI Migration | Soft — `ExternalEventImportWizard` will be `@Service`-annotated using those patterns. |
-| **009** Server Bulk Storage REST | Soft — `RaplaExceptionHandler` (PRD 009 Phase 5) handles `RaplaSecurityException` → 401 the new controllers rely on. |
-| **003** Custom Deployments after Spring Migration | This PRD is one of the dhbw-specific items PRD 003 anticipated. |
+| **009** Server Bulk Storage REST | Soft — `RaplaExceptionHandler` ([PRD 009](009-server-bulk-storage-rest-api.md) Phase 5) handles `RaplaSecurityException` → 401 the new controllers rely on. |
+| **003** Custom Deployments after Spring Migration | This PRD is one of the dhbw-specific items [PRD 003](003-custom-deployments-after-spring-migration.md) anticipated. |
 
 ## Effort estimate
 

@@ -36,5 +36,8 @@ public class ExplorerRedirects implements WebMvcConfigurer
         registry.addRedirectViewController("/swagger-ui/", "/swagger-ui/index.html");
         registry.addRedirectViewController("/graphiql", "/graphiql/index.html");
         registry.addRedirectViewController("/graphiql/", "/graphiql/index.html");
+        // PRD 097 Phase 4: the presentation-layer counterpart of /graphiql.
+        registry.addRedirectViewController("/template-editor", "/template-editor/index.html");
+        registry.addRedirectViewController("/template-editor/", "/template-editor/index.html");
     }
 }

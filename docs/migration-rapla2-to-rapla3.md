@@ -189,7 +189,7 @@ one Rapla has always used:
 After the first successful boot in DB mode, the database is the source of truth;
 the `data.xml` seed is no longer read.
 
-## 3. The new permission model (PRD 090)
+## 3. The new permission model ([PRD 090](prd/090-additive-permission-resolution.md))
 
 This is the one **behaviour** change in the migration that can affect who sees
 what. Read it even if everything else in your deployment is unchanged.

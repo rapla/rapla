@@ -36,7 +36,10 @@ import { newDraft, withEnd, withStart, type EventDraft } from './event-draft';
     MatTimepickerModule,
   ],
   styles: `
-    .card { width: 560px; max-width: 90vw; }
+    .card {
+      width: 560px;
+      max-width: 90vw;
+    }
     .grip {
       display: flex;
       align-items: center;
@@ -45,17 +48,48 @@ import { newDraft, withEnd, withStart, type EventDraft } from './event-draft';
       color: var(--mat-sys-on-surface-variant, #5c6774);
       background: var(--mat-sys-surface-container, #eef1f5);
     }
-    .grip:active { cursor: grabbing; }
-    .body { padding: 14px 16px 0; }
-    .row { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; row-gap: 4px; }
-    .grow { flex: 1; }
-    .dash { align-self: center; color: var(--mat-sys-on-surface-variant, #5c6774); }
-    .foot { display: flex; align-items: center; padding: 4px 16px 12px; }
-    .spacer { flex: 1; }
-    mat-form-field.f-type { width: 180px; }
-    mat-form-field.f-date { width: 150px; }
-    mat-form-field.f-time { width: 148px; }
-    .err { color: var(--mat-sys-error, #d93025); font-size: 12px; margin: 4px 0 0; }
+    .grip:active {
+      cursor: grabbing;
+    }
+    .body {
+      padding: 14px 16px 0;
+    }
+    .row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      flex-wrap: wrap;
+      row-gap: 4px;
+    }
+    .grow {
+      flex: 1;
+    }
+    .dash {
+      align-self: center;
+      color: var(--mat-sys-on-surface-variant, #5c6774);
+    }
+    .foot {
+      display: flex;
+      align-items: center;
+      padding: 4px 16px 12px;
+    }
+    .spacer {
+      flex: 1;
+    }
+    mat-form-field.f-type {
+      width: 180px;
+    }
+    mat-form-field.f-date {
+      width: 150px;
+    }
+    mat-form-field.f-time {
+      width: 148px;
+    }
+    .err {
+      color: var(--mat-sys-error, #d93025);
+      font-size: 12px;
+      margin: 4px 0 0;
+    }
   `,
   template: `
     <div class="card" cdkDrag cdkDragRootElement=".cdk-overlay-pane">

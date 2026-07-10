@@ -3,7 +3,12 @@ import { Observable, of } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { GraphqlService } from '../graphql/graphql.service';
-import type { SearchAction, SearchResult, SearchResultGroup, SearchResultKind } from './search.types';
+import type {
+  SearchAction,
+  SearchResult,
+  SearchResultGroup,
+  SearchResultKind,
+} from './search.types';
 
 /**
  * Omnibox multisearch against the unified {@code search(query, kinds, limit)}

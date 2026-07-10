@@ -81,7 +81,13 @@ export function newDraft(typeKey: string, now: Date, id: string = generateEventI
     typeKey,
     values: {},
     appointments: [
-      { id: generateAppointmentId(), start: localIso(start), end: localIso(end), allDay: false, repeating: null },
+      {
+        id: generateAppointmentId(),
+        start: localIso(start),
+        end: localIso(end),
+        allDay: false,
+        repeating: null,
+      },
     ],
     allocations: [],
     lastChanged: null,
@@ -183,9 +189,7 @@ export function withEnd(
 ): { start: string; end: string } {
   const start = new Date(a.start).getTime();
   const end =
-    new Date(newEnd).getTime() <= start
-      ? localIso(new Date(start + 15 * 60_000))
-      : newEnd;
+    new Date(newEnd).getTime() <= start ? localIso(new Date(start + 15 * 60_000)) : newEnd;
   return { start: a.start, end };
 }
 

@@ -536,10 +536,7 @@ export class WeekGridComponent {
     const mh = this.maxHeight();
     const hours = this.layout().endHour - this.layout().startHour;
     if (mh === null || hours <= 0) return HOUR_PX;
-    return Math.max(
-      HOUR_PX,
-      Math.floor((mh - this.headerPx() - this.chromePx() - 16) / hours),
-    );
+    return Math.max(HOUR_PX, Math.floor((mh - this.headerPx() - this.chromePx() - 16) / hours));
   });
 
   readonly layout = computed(() => {
@@ -806,8 +803,16 @@ export class WeekGridComponent {
   private rzMove(ev: PointerEvent): void {
     if (!this.rz) return;
     const slot = 60 / this.rowsPerHour();
-    const endMin = Math.max(this.rz.startMin + slot, this.snapUp(this.minAt(ev.clientY, this.rz.colTop)));
-    this.resizePreview.set({ day: this.rz.day, startMin: this.rz.startMin, endMin, row: this.rz.row });
+    const endMin = Math.max(
+      this.rz.startMin + slot,
+      this.snapUp(this.minAt(ev.clientY, this.rz.colTop)),
+    );
+    this.resizePreview.set({
+      day: this.rz.day,
+      startMin: this.rz.startMin,
+      endMin,
+      row: this.rz.row,
+    });
   }
 
   private rzUp(): void {
@@ -900,7 +905,9 @@ export class WeekGridComponent {
     let sel;
     if (curDay === anchor.day) {
       const [a, b] =
-        cur >= anchor.min ? [anchor.min, this.snapUp(cur)] : [this.snapDown(cur), anchor.min + slot];
+        cur >= anchor.min
+          ? [anchor.min, this.snapUp(cur)]
+          : [this.snapDown(cur), anchor.min + slot];
       sel = { fromDay: anchor.day, startMin: a, toDay: anchor.day, endMin: Math.max(b, a + slot) };
     } else if (curDay > anchor.day) {
       // Swing move(): later slot → anchor is the start, pointer row is the end

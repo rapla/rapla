@@ -4,7 +4,7 @@
 
 **Date:** 2026-05-29
 
-**Parent:** [PRD 035 (done) — GraphQL foundations](done/035-graphql-foundations.md). Continues the per-entity write surface PRD 056 (events) and PRD 057 (DynamicTypes) opened.
+**Parent:** [PRD 035 (done) — GraphQL foundations](done/035-graphql-foundations.md). Continues the per-entity write surface [PRD 056](056-graphql-events-write-api.md) (events) and [PRD 057](done/057-graphql-dt-mutations-v1.md) (DynamicTypes) opened.
 
 **Siblings:**
 - [PRD 056 — Events Write API](056-graphql-events-write-api.md) — the verb naming + typed-classification input + ChangeOp dispatch patterns this PRD mirrors. β² typed classification inputs (already shipped — `AllocatableClassificationInput @oneOf` + per-DT `<TypeKey>ClassificationInput`) are reused as-is.
@@ -14,12 +14,12 @@
 
 Land the write-side **allocatables** GraphQL surface so admins + group-admins can create, update, and delete Resources / Persons from the SPA or MCP without falling back to the legacy `/api/storage/*` thick client.
 
-Combined with PRD 056 (events writes) + PRD 057 (DynamicType mutations), this closes "admin can do everything via GraphQL" for the scheduling domain.
+Combined with [PRD 056](056-graphql-events-write-api.md) (events writes) + [PRD 057](done/057-graphql-dt-mutations-v1.md) (DynamicType mutations), this closes "admin can do everything via GraphQL" for the scheduling domain.
 
 ## Scope
 
 In v1 (this PRD):
-- `createAllocatable(input: CreateAllocatableInput!): Allocatable!` — owner = caller, **always**. ~~admins may override~~ **AMENDED by [PRD 067](067-server-mutation-unification.md) D10 (2026-06-10): the `ownerId` create-override is removed** — owner-at-create is audit erasure (the entity appears to belong to X "from birth" with no transfer record); the sanctioned flow is create + explicit changeOwner mutation (two audited change records, new owner notified). Drop `ownerId` from `CreateAllocatableInput`, drop the admin-override test, remove the implemented `ownerId` block in `AllocatableMutationController` (lands with PRD 067 phase 2).
+- `createAllocatable(input: CreateAllocatableInput!): Allocatable!` — owner = caller, **always**. ~~admins may override~~ **AMENDED by [PRD 067](067-server-mutation-unification.md) D10 (2026-06-10): the `ownerId` create-override is removed** — owner-at-create is audit erasure (the entity appears to belong to X "from birth" with no transfer record); the sanctioned flow is create + explicit changeOwner mutation (two audited change records, new owner notified). Drop `ownerId` from `CreateAllocatableInput`, drop the admin-override test, remove the implemented `ownerId` block in `AllocatableMutationController` (lands with [PRD 067](067-server-mutation-unification.md) phase 2).
 - `updateAllocatable(id: ID!, input: UpdateAllocatableInput!, expectedLastChanged: LocalDateTime): Allocatable!` — full-state replace with optimistic concurrency. Owner immutable here (future `changeAllocatableOwner` verb if demand).
 - `deleteAllocatables(ids: [ID!]!): BulkResult!` — bulk, no per-id concurrency check (use `applyChanges` for concurrency-checked delete).
 - `ChangeOp` extension — additive `createAllocatable` / `updateAllocatable` / `deleteAllocatable` variants for atomic cross-type batches.
@@ -29,7 +29,7 @@ Out of scope:
 - Permission editing on allocatables. Existing permissions are preserved on update; new allocatables start with type-default permissions (mirror facade's `addDefaultResourcePermissions`).
 - ALLOCATABLE-typed attribute references between allocatables (e.g. a Room's `Building` allocatable attribute). The reads handle this; writes deferred until we have a documented use case beyond static lecturer/room data.
 - Owner change verb. `createReservation`-style "owner = caller, server sets" applies; admin override on create; immutable on update; future `changeAllocatableOwner(ids, newOwnerId)` if real demand.
-- Conflict checking on save (e.g. reservation references through this allocatable). Same model as PRD 057's DT delete — if conflicts exist, the storage layer rejects with `STORAGE_ERROR`; admin handles dependencies first.
+- Conflict checking on save (e.g. reservation references through this allocatable). Same model as [PRD 057](done/057-graphql-dt-mutations-v1.md)'s DT delete — if conflicts exist, the storage layer rejects with `STORAGE_ERROR`; admin handles dependencies first.
 
 ## Locked design
 
@@ -82,7 +82,7 @@ input ChangeOpUpdateAllocatable {
 
 1. **Permission gate.** `caller.isAdmin == false` → check `PermissionController.canCreate(DynamicType, caller)` (RESOURCE-type) / `canModify(Allocatable, caller)` (UPDATE) / `canAdmin(Allocatable, caller)` (DELETE). Same gates the Swing admin panel applies.
 2. **Owner ID override.** `CreateAllocatableInput.ownerId` non-null + non-admin caller → `PERMISSION_DENIED`. Admins may set arbitrary owner.
-3. **Type change on update.** ~~`UpdateAllocatableInput.typeKey` ≠ stored → `INVALID_VALUE` (analogous to PRD 056 OQ1.c — in-place type change rejected; future reshape verb if needed).~~ *REVISED 2026-07-07 (PRD 096 Phase 4.3, follows the PRD 056 OQ1.c revision): accepted — the classification @oneOf variant must match the NEW typeKey (`MISMATCHED_TYPE` otherwise) and the caller passes the create-gate (`canCreate`) on the target type. Attribute remapping is client-side (PRD 096 editor).*
+3. **Type change on update.** ~~`UpdateAllocatableInput.typeKey` ≠ stored → `INVALID_VALUE` (analogous to [PRD 056](056-graphql-events-write-api.md) OQ1.c — in-place type change rejected; future reshape verb if needed).~~ *REVISED 2026-07-07 ([PRD 096](096-spa-classification-editor.md) Phase 4.3, follows the [PRD 056](056-graphql-events-write-api.md) OQ1.c revision): accepted — the classification @oneOf variant must match the NEW typeKey (`MISMATCHED_TYPE` otherwise) and the caller passes the create-gate (`canCreate`) on the target type. Attribute remapping is client-side ([PRD 096](096-spa-classification-editor.md) editor).*
 4. **No leak on delete.** Unknown id and admin-readable-but-not-deletable id produce identical error shape (`REFERENCE_NOT_FOUND` vs `PERMISSION_DENIED` — keep distinct codes since the admin needs to know the difference; but `deleteAllocatables` is admin-only at the resolver entry, so the `canRead` check happens before the response shape diverges).
 
 ### Error code taxonomy
@@ -107,7 +107,7 @@ input ChangeOpUpdateAllocatable {
 
 ### OQ1 — Shared exception type
 
-`ReservationMutationException` is currently nested in `ReservationMutationController`. The DT mutation controller (PRD 057) already cross-references it; this PRD will be the third user. Should we extract a top-level `GraphQlMutationException` shared by all three controllers?
+`ReservationMutationException` is currently nested in `ReservationMutationController`. The DT mutation controller ([PRD 057](done/057-graphql-dt-mutations-v1.md)) already cross-references it; this PRD will be the third user. Should we extract a top-level `GraphQlMutationException` shared by all three controllers?
 
 **Lean: yes**, but as a follow-up. The current cross-package import (`ReservationMutationController.ReservationMutationException`) works; rename is a mechanical refactor that can land independently.
 
@@ -117,14 +117,14 @@ Allocatables carry per-instance permission lists (read / allocate / allocate_con
 
 **Lean: defer** until the SPA admin panel surfaces permission editing as a real UX need.
 
-**Requirement when this lands — validate access-level vs. target type.** The save path must reject an access level that does not belong on an `Allocatable`. `READ_TYPE` / `CREATE` are type-scoped (gate `canReadType` / `canCreate` on a `DynamicType`) and are meaningless on a resource — `READ_TYPE` (20) `< READ` (100), so storing one grants nothing and only corrupts the permission list. The canonical allowed-levels-per-target matrix lives in [`docs/architecture/permissions.md` → "Which levels are valid on which target"](../architecture/permissions.md); for `Allocatable` the allowed set is `READ_NO_ALLOCATION, READ, REQUEST, ALLOCATE, ALLOCATE_CONFLICTS, EDIT, ADMIN` (+`DENIED`). The same validation applies symmetrically to the `DynamicType` (PRD 061) and `Reservation` (PRD 056) permission-edit verbs against their own rows in that matrix. Today the matrix is only advisory (encoded in the Swing `setPermissionLevels(...)` calls); GraphQL has no permission-write path yet, so there is nothing to enforce until the verb exists.
+**Requirement when this lands — validate access-level vs. target type.** The save path must reject an access level that does not belong on an `Allocatable`. `READ_TYPE` / `CREATE` are type-scoped (gate `canReadType` / `canCreate` on a `DynamicType`) and are meaningless on a resource — `READ_TYPE` (20) `< READ` (100), so storing one grants nothing and only corrupts the permission list. The canonical allowed-levels-per-target matrix lives in [`docs/architecture/permissions.md` → "Which levels are valid on which target"](../architecture/permissions.md); for `Allocatable` the allowed set is `READ_NO_ALLOCATION, READ, REQUEST, ALLOCATE, ALLOCATE_CONFLICTS, EDIT, ADMIN` (+`DENIED`). The same validation applies symmetrically to the `DynamicType` ([PRD 061](061-graphql-dt-mutations-v2.md)) and `Reservation` ([PRD 056](056-graphql-events-write-api.md)) permission-edit verbs against their own rows in that matrix. Today the matrix is only advisory (encoded in the Swing `setPermissionLevels(...)` calls); GraphQL has no permission-write path yet, so there is nothing to enforce until the verb exists.
 
 ### OQ3 — Allocatable bulk transformations
 
-PRD 056 ships `moveReservations` / `copyReservations` / `changeReservationOwner` because reservations have natural bulk verbs (calendar shifts, owner reassignment after a staff change). Allocatables have analogues — `changeAllocatableOwner(ids, newOwnerId)` for staff-change-style reassignment. Worth opening as a future PRD if the admin UX wants it.
+[PRD 056](056-graphql-events-write-api.md) ships `moveReservations` / `copyReservations` / `changeReservationOwner` because reservations have natural bulk verbs (calendar shifts, owner reassignment after a staff change). Allocatables have analogues — `changeAllocatableOwner(ids, newOwnerId)` for staff-change-style reassignment. Worth opening as a future PRD if the admin UX wants it.
 
 **Lean: defer** until the SPA admin views surface a bulk-owner workflow.
 
 ## Decision log
 
-- **2026-05-29** — PRD opened. Surface mirrors PRD 056 (named verbs + ChangeOp additive variants). β² typed-classification inputs reused as-is from PRD 055 read side.
+- **2026-05-29** — PRD opened. Surface mirrors [PRD 056](056-graphql-events-write-api.md) (named verbs + ChangeOp additive variants). β² typed-classification inputs reused as-is from [PRD 055](055-graphql-events-read-api.md) read side.

@@ -7,7 +7,7 @@
 
 Let custom deployments (dhbwrapla and similar) ship their own Angular views, routes, and UI patterns — without forking `rapla-angular`, without customer TypeScript in the rapla repo, and without dormant customer code in stock builds.
 
-Frontend counterpart of PRD 003 (custom server deployments) and PRD 045 §4 (drop-in server plugin jars). Unlike PRD 003 (2026-05-07), this PRD does NOT pull customer code into rapla — the two drivers behind that Swing decision don't transfer:
+Frontend counterpart of [PRD 003](003-custom-deployments-after-spring-migration.md) (custom server deployments) and [PRD 045](045-end-user-deployment-and-db-config.md) §4 (drop-in server plugin jars). Unlike [PRD 003](003-custom-deployments-after-spring-migration.md) (2026-05-07), this PRD does NOT pull customer code into rapla — the two drivers behind that Swing decision don't transfer:
 
 1. **Signing.** Swing ships as signed JNLP jars; web bundles are not code-signed (no jarsigner / JNLP / YubiKey).
 2. **Migration ease.** A one-time SB4 / `jakarta.*` concern, not steady-state.
@@ -66,9 +66,9 @@ Stock rapla ships zero dhbw bytes.
 
 ## How it works as a drop-in jar (stock deployable)
 
-dhbwrapla above is the heavyweight delivery (full `@SpringBootApplication`). The **same remote artifact** also works as a PRD 045 §4 drop-in jar for "stock rapla + one frontend feature, no fork, no rebuild."
+dhbwrapla above is the heavyweight delivery (full `@SpringBootApplication`). The **same remote artifact** also works as a [PRD 045](045-end-user-deployment-and-db-config.md) §4 drop-in jar for "stock rapla + one frontend feature, no fork, no rebuild."
 
-Enabler: Spring Boot's `WebMvcAutoConfiguration` maps `/**` to `classpath:/static/` across every classpath entry including jars. PRD 045 adds `./plugins/` to `loader.path` — so a jar in `./plugins/` carrying `static/plugins/<id>/remoteEntry.json` + chunks is served at `/plugins/<id>/…` with no controller (esbuild chunks are plain static files).
+Enabler: Spring Boot's `WebMvcAutoConfiguration` maps `/**` to `classpath:/static/` across every classpath entry including jars. [PRD 045](045-end-user-deployment-and-db-config.md) adds `./plugins/` to `loader.path` — so a jar in `./plugins/` carrying `static/plugins/<id>/remoteEntry.json` + chunks is served at `/plugins/<id>/…` with no controller (esbuild chunks are plain static files).
 
 A frontend drop-in jar carries both halves:
 
@@ -82,11 +82,11 @@ rapla-plugin-<id>-1.0.jar               ← dropped into ./plugins/
     └── chunk-*.js                         (built by an ng build at jar-build time)
 ```
 
-`<Id>PluginAutoConfiguration` is discovered via PRD 045 §4's `AutoConfiguration.imports` aggregation. Its frontend contribution is a `RaplaUiRemote` `@Bean`; the stock `/api/ui-config` controller collects via `List<RaplaUiRemote>`. Drop jar in → bean appears → shell loads remote same-origin. No custom app, no rebuild, no operator npm, no signing.
+`<Id>PluginAutoConfiguration` is discovered via [PRD 045](045-end-user-deployment-and-db-config.md) §4's `AutoConfiguration.imports` aggregation. Its frontend contribution is a `RaplaUiRemote` `@Bean`; the stock `/api/ui-config` controller collects via `List<RaplaUiRemote>`. Drop jar in → bean appears → shell loads remote same-origin. No custom app, no rebuild, no operator npm, no signing.
 
 **dhbwrapla and drop-in jar are the same artifact shape** — identical layout, bean, contract. Differences:
 
-| | dhbwrapla (Model B) | Drop-in jar (PRD 045 §4) |
+| | dhbwrapla (Model B) | Drop-in jar ([PRD 045](045-end-user-deployment-and-db-config.md) §4) |
 |---|---|---|
 | Bundle location | dhbwrapla fat JAR | plain library jar in `./plugins/` |
 | `RaplaUiRemote` reg | `@Bean` in `DhbwRaplaApplication` | `@Bean` in jar's `@AutoConfiguration` |
@@ -107,7 +107,7 @@ In scope:
 - Native Federation host wiring + runtime `loadRemoteModule`.
 - `@rapla/feature-api` published contract package.
 - dhbwrapla `rapla-plugin-web/` remote + Maven build integration.
-- The PRD 045 §4 drop-in-jar delivery: a frontend plugin jar carrying server
+- The [PRD 045](045-end-user-deployment-and-db-config.md) §4 drop-in-jar delivery: a frontend plugin jar carrying server
   beans *and* `static/plugins/<id>/` remote assets, served from `./plugins/`
   on a stock deployable. Same artifact shape as the dhbwrapla remote.
 

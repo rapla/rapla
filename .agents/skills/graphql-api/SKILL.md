@@ -14,6 +14,20 @@ categories/allocatable references, without parsing raw store XML.
 Server must be running (AGENTS.md §8). All paths are relative to the dev base
 URL `http://localhost:8051`.
 
+## Local-dev URLs at a glance
+
+| What | URL | Auth |
+|---|---|---|
+| GraphQL endpoint | `POST /api/graphql` | Bearer token (§2) |
+| **Raw SDL schema** (incl. generated `<TypeKey>Classification` types) | `GET /api/graphql/schema` | none |
+| **Interactive GraphiQL UI** (custom, OAuth2-PKCE login button — no manual token minting) | `GET /graphiql/` | browser login (form / SPA-OAuth session) |
+
+For interactive exploration prefer the **GraphiQL UI at
+`http://localhost:8051/graphiql/`** — it ships a built-in OAuth2 login button
+(Spring's bundled CDN launcher is disabled; ours owns the path), so you write
+queries and get schema autocomplete without curl or hand-minting a Bearer token.
+Use the curl paths below for scripted probes and for reading the SDL into a file.
+
 ## 1. Read the schema — no auth needed
 
 The full SDL is served at **`GET /api/graphql/schema`** (plain text, unauthenticated):
@@ -37,6 +51,12 @@ Key facts about the schema (PRD 035):
   schema to discover the actual field names for a deployment.
 - The DynamicType is identified by `typeKey` (the human key, e.g. `"Raum"`), not a
   UUID. For the UUID use `type { id }`. See memory `typekey_only_classifications`.
+
+**Hand-editing `schema.graphqls`:** multi-line SDL descriptions MUST use triple quotes
+(`"""…"""`) — a single-quoted `"…"` description spanning lines is invalid SDL that parses
+fine to the eye but fails at server start (scar 2026-06-21: broke a parallel session's
+boot at "Syntaxfehler bei Zeile 1440"). After any hand-edit, validate the schema parses
+(server start, or a parser check) before handing over.
 
 ## 2. Authenticate — Bearer token
 

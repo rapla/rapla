@@ -59,13 +59,16 @@ public class AuthCookieController implements AuthCookieService
     private final HttpServletRequest request;
     private final HttpServletResponse response;
 
+    private final boolean impersonationEnabled;
+
     public AuthCookieController(RemoteSession session,
                                RaplaFacade facade,
                                JwtConfig.JwtIssuer jwtIssuer,
                                RefreshSessionService refreshSessionService,
                                CookieAuthSupport cookies,
                                HttpServletRequest request,
-                               HttpServletResponse response)
+                               HttpServletResponse response,
+                               @org.springframework.beans.factory.annotation.Value("${rapla.auth.impersonation.enabled:true}") boolean impersonationEnabled)
     {
         this.session = session;
         this.facade = facade;
@@ -74,6 +77,7 @@ public class AuthCookieController implements AuthCookieService
         this.cookies = cookies;
         this.request = request;
         this.response = response;
+        this.impersonationEnabled = impersonationEnabled;
     }
 
     @Override
@@ -143,6 +147,12 @@ public class AuthCookieController implements AuthCookieService
     @Override
     public void impersonateSwitch(String targetUsername) throws RaplaException
     {
+        // security-audit A0c / PRD 051: honour the same impersonation kill switch as
+        // ImpersonationController (rapla.auth.impersonation.enabled=false).
+        if (!impersonationEnabled)
+        {
+            throw new RaplaSecurityException("Impersonation is disabled (rapla.auth.impersonation.enabled=false)");
+        }
         // 401 if anonymous. The EFFECTIVE user is the impersonation target when an
         // act-claim token is presented (a chained switch).
         session.checkAndGetUser(request);

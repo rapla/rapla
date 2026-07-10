@@ -25,12 +25,12 @@ and no rejected alternatives; those live in the linked MADRs (`decisions:` above
 explanatory companion [`docs/architecture/permissions.md`](../architecture/permissions.md)
 (Diátaxis: this file is *reference*, that one is *explanation*).
 
-> **Core invariant: grant-only and purely additive** (ADR 0003 revised 2026-06-28 / PRD 090).
+> **Core invariant: grant-only and purely additive** (ADR 0003 revised 2026-06-28 / [PRD 090](../prd/090-additive-permission-resolution.md)).
 > Rows only ever *add* access; there are no deny rows and **no precedence**. Effective access is
 > the **highest** level over *all* matching rows (`USER`, `GROUP`, `WORLD` — the `max`), and
 > no-match means no access. `DENIED` (0) is the floor — **inert** under resolution (never
 > subtracts) — and deprecated in the editing UI. The precedence model (`USER` > `GROUP` > `WORLD`
-> with downward override) is **superseded**; see [[0003-permissions-are-grant-only]].
+> with downward override) is **superseded**; see [ADR 0003](../decisions/0003-permissions-are-grant-only.md).
 
 ## How to read this spec — verification legend
 
@@ -38,7 +38,7 @@ Every claim is tagged with how strongly it is held to be *true now*:
 
 - **✅ PINNED** — an executable test fails if this drifts. Named inline. Treat as truth.
 - **🔧 GENERATABLE** — should be machine-generated from the cited source; not yet generated, so
-  currently transcribed by hand (drift-prone until generation lands — PRD 088 Phase 3).
+  currently transcribed by hand (drift-prone until generation lands — [PRD 088](../prd/088-spec-graph-formalization.md) Phase 3).
 - **📝 DERIVED** — read out of the code on 2026-06-24, but no test pins it. Probably true; verify
   against the cited file before relying on it.
 
@@ -159,7 +159,7 @@ caches, invalidated on permission or group-membership change. ✅ PINNED (invali
 ## Unverified surface (honest gaps — raise these to ✅ over time)
 
 These claims are 📝 DERIVED only — no test pins them today. Each is a candidate for a pinning test
-(PRD 088 Phase 3 confirmation work):
+([PRD 088](../prd/088-spec-graph-formalization.md) Phase 3 confirmation work):
 
 - Absolute vs. relative time bounds are mutually exclusive per field.
 - `ADMIN` rows ignore time windows.
@@ -169,6 +169,6 @@ These claims are 📝 DERIVED only — no test pins them today. Each is a candid
 
 ## See also
 
-- Rationale + rejected alternatives: [[0003-permissions-are-grant-only]] (`docs/decisions/`).
+- Rationale + rejected alternatives: [ADR 0003](../decisions/0003-permissions-are-grant-only.md).
 - Explanation + worked examples + auth flow: [`architecture/permissions.md`](../architecture/permissions.md).
 - Entity model: [`architecture/domain-model.md`](../architecture/domain-model.md).

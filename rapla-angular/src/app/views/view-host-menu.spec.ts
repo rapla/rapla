@@ -67,7 +67,13 @@ const LOADED_DRAFT: EventDraft = {
   typeKey: 'event',
   values: { name: 'Mathe' },
   appointments: [
-    { id: 'a-1', start: '2026-06-15T08:00:00', end: '2026-06-15T09:30:00', allDay: false, repeating: null },
+    {
+      id: 'a-1',
+      start: '2026-06-15T08:00:00',
+      end: '2026-06-15T09:30:00',
+      allDay: false,
+      repeating: null,
+    },
   ],
   allocations: [],
   lastChanged: '2026-06-01T10:00:00',

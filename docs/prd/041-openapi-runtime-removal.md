@@ -1,6 +1,6 @@
 # PRD 041: OpenAPI — build-time generation + runtime plugin filtering
 
-**Status:** in-progress (Phase 1 done 2026-05-16; runtime plugin filter deferred). Spun off PRD 031's refresh consolidation + PRD 043 (API keys) when testing Scalar/Swagger UI surfaced cracks in the existing /oauth2/token refresh path.
+**Status:** in-progress (Phase 1 done 2026-05-16; runtime plugin filter deferred). Spun off PRD 031's refresh consolidation + [PRD 043](043-api-keys-jwt-pat.md) (API keys) when testing Scalar/Swagger UI surfaced cracks in the existing /oauth2/token refresh path.
 **Date:** 2026-05-15
 
 > **2026-05-16 — adjacent work landed in this session.** Verifying OAuth on the served Scalar / Swagger UI explorers exposed that **embedded Spring AS doesn't issue refresh tokens to public clients by default**. To make refresh work end-to-end (and not paper over the issue), the rest of the session consolidated rapla's refresh-token mechanism onto Spring AS's `/oauth2/*` endpoints, sharing storage with the existing `/api/auth/refresh` path.
@@ -14,7 +14,7 @@
 > - `AuthController` **deleted** — same session migrated the ~12 test `loginAs` helpers to the new `OAuthTestSupport.loginAs(MockMvc, …)` helper that posts `/oauth2/token grant_type=password`. Swing logout migrated to `/oauth2/revoke`. `refreshUrl` field dropped from discovery + SPA + Swing.
 > - **Client-side follow-up (2026-05-16):** the Swing *direct-password* path (fallback login dialog + `MyCustomConnector` password-reauth) still called the removed `POST /api/auth/login` via `RemoteAuthentificationService` `@HttpExchange` proxy. Fixed by swapping that bean for `ClientProxyConfig.OAuth2RemoteAuthentificationService`, which posts `/oauth2/token grant_type=password`. Dead `RemoteAuthentificationServiceImpl` removed. See `docs/authentication.md`.
 >
-> See PRD 031 (now mostly shipped) for the design discussion + PRD 043 for the spun-off API-key work.
+> See PRD 031 (now mostly shipped) for the design discussion + [PRD 043](043-api-keys-jwt-pat.md) for the spun-off API-key work.
 >
 > ## OAuth-refresh consolidation — final architecture (added 2026-05-16)
 >
@@ -71,8 +71,8 @@
 > Survivors under `/api/auth/`:
 >
 > - `/api/auth/oauth/config` — discovery
-> - `/api/auth/oauth/exchange/{providerId}` — BFF for external IdPs (PRD 036)
-> - `/api/auth/api-keys/*` — personal-access-token CRUD (PRD 043)
+> - `/api/auth/oauth/exchange/{providerId}` — BFF for external IdPs ([PRD 036](036-external-idp-oauth-login.md))
+> - `/api/auth/api-keys/*` — personal-access-token CRUD ([PRD 043](043-api-keys-jwt-pat.md))
 
 ## Goal
 
@@ -80,13 +80,13 @@ Take OpenAPI spec *generation* out of the runtime. Today SpringDoc generates the
 
 Instead: generate the spec **once at build time** as a static artifact; at runtime serve a *filtered copy* with disabled-plugin endpoints removed. SpringDoc and its Jackson 2 dependency become **build/test-scope only** — they leave the production classpath.
 
-Separable REST-infrastructure cleanup, spun out of PRD 035 design discussion.
+Separable REST-infrastructure cleanup, spun out of [PRD 035](done/035-graphql-foundations.md) design discussion.
 
 ## Why now
 
 - The Jackson-2 island (`SwaggerJacksonConfig`) and reflective generation are standing overhead — see AGENTS.md's Jackson 3 note.
-- PRD 035 makes **GraphQL the external API**, which narrows the REST surface over time — runtime SpringDoc machinery is increasingly disproportionate.
-- But REST is **not** going away: `/api/storage/*` (RemoteStorage, the Swing client's interface — PRD 009) is long-lived, plus `/api/auth/*` and export feeds. They still need accurate docs + the SPA's codegen. The answer is not "drop OpenAPI" — it is "move generation to build time."
+- [PRD 035](done/035-graphql-foundations.md) makes **GraphQL the external API**, which narrows the REST surface over time — runtime SpringDoc machinery is increasingly disproportionate.
+- But REST is **not** going away: `/api/storage/*` (RemoteStorage, the Swing client's interface — [PRD 009](009-server-bulk-storage-rest-api.md)) is long-lived, plus `/api/auth/*` and export feeds. They still need accurate docs + the SPA's codegen. The answer is not "drop OpenAPI" — it is "move generation to build time."
 - The REST OpenAPI is **product-level** (controllers/DTOs are fixed at build, not per-deployment), so a build-time spec is byte-identical to runtime-generated — *except* for which plugins are enabled. That single per-deployment variable is handled by a cheap runtime filter.
 
 ## Scope
@@ -102,9 +102,9 @@ Separable REST-infrastructure cleanup, spun out of PRD 035 design discussion.
 
 **Out of scope:**
 
-- The GraphQL schema / transport — PRD 035.
+- The GraphQL schema / transport — [PRD 035](done/035-graphql-foundations.md).
 - Retiring OpenAPI entirely — REST stays (auth, exports, RemoteStorage).
-- Hand-maintaining the spec — explicitly rejected: RemoteStorage alone is ~25+ operations (PRD 009); auto-generation is the point.
+- Hand-maintaining the spec — explicitly rejected: RemoteStorage alone is ~25+ operations ([PRD 009](009-server-bulk-storage-rest-api.md)); auto-generation is the point.
 
 ## Plan
 

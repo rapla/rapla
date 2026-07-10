@@ -2,7 +2,7 @@
 
 **Status:** done (2026-05-11). Phases 1–5 landed 2026-05-08; Phase 6 follow-up (six Jackson-3 final-field / default-behaviour bugs) verified fixed 2026-05-09–10. `rapla-bom` pins `spring-boot.version=4.0.6`; codebase has 33 `tools.jackson.*` imports and zero `com.fasterxml.jackson.{databind,core}` imports. All six listed final-field bugs are non-final on Jackson-deserialized impls (`ClassificationImpl.data`, `ReservationImpl.appointments`/`permissions`, `AppointmentImpl`, …). `JacksonObjectMapperFactory` re-enables `ALLOW_FINAL_FIELDS_AS_MUTATORS` + `PROPAGATE_TRANSIENT_MARKER` as belt-and-suspenders.
 **Date:** 2026-05-08 (closed: 2026-05-11)
-**Depends on:** PRD 001 (Spring Boot Migration) substantially complete; PRD 010 (Jackson wire format) lands first.
+**Depends on:** PRD 001 (Spring Boot Migration) substantially complete; [PRD 010](010-jackson-field-based-wire-format.md) (Jackson wire format) lands first.
 **Supersedes pin:** `rapla-bom/pom.xml` `<spring-boot.version>3.2.5</spring-boot.version>` and `<jackson.version>2.15.1 / 2.19.0</jackson.version>`.
 
 ## Goal
@@ -76,7 +76,7 @@ Reactor `mvn test`. Investigate every regression. **No Jackson 3 work** — veri
 | **`JavaTimeModule`** | `mapper.registerModule(new JavaTimeModule())` from `jackson-datatype-jsr310` | **No-op — built into `jackson-databind`.** `java.time` types serialize correctly out of the box. Drop the import + the `registerModule` call. |
 | **`WRITE_DATES_AS_TIMESTAMPS`** | `disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)` | **Default is now `false` (ISO-8601).** Calling `disable(...)` is redundant but harmless. |
 | **`PROPAGATE_TRANSIENT_MARKER`** | `enable(MapperFeature.PROPAGATE_TRANSIENT_MARKER)` | **Same name and semantics** at `tools.jackson.databind.MapperFeature.PROPAGATE_TRANSIENT_MARKER`. Confirmed present in `jackson-databind` master. |
-| **Visibility config** (PRD 010 cornerstone) | `mapper.setVisibility(mapper.getSerializationConfig().getDefaultVisibilityChecker().withFieldVisibility(Visibility.ANY).withGetterVisibility(Visibility.NONE)…)` | `JsonMapper.builder().changeDefaultVisibility(vc -> vc.withFieldVisibility(Visibility.ANY).withGetterVisibility(Visibility.NONE).withIsGetterVisibility(Visibility.NONE).withSetterVisibility(Visibility.NONE).withCreatorVisibility(Visibility.ANY)).build();` — lambda transforms the immutable visibility checker; `Visibility` enum stays at `com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility`. |
+| **Visibility config** ([PRD 010](010-jackson-field-based-wire-format.md) cornerstone) | `mapper.setVisibility(mapper.getSerializationConfig().getDefaultVisibilityChecker().withFieldVisibility(Visibility.ANY).withGetterVisibility(Visibility.NONE)…)` | `JsonMapper.builder().changeDefaultVisibility(vc -> vc.withFieldVisibility(Visibility.ANY).withGetterVisibility(Visibility.NONE).withIsGetterVisibility(Visibility.NONE).withSetterVisibility(Visibility.NONE).withCreatorVisibility(Visibility.ANY)).build();` — lambda transforms the immutable visibility checker; `Visibility` enum stays at `com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility`. |
 | **Tree model nodes** (`JsonNode`, `ObjectNode`, `ArrayNode`) | `com.fasterxml.jackson.databind.{JsonNode,node.ObjectNode,node.ArrayNode}` | `tools.jackson.databind.{JsonNode,node.ObjectNode,node.ArrayNode}` — straight rename |
 | **Spring HTTP message converter** | `MappingJackson2HttpMessageConverter` | `JacksonJsonHttpMessageConverter` — Spring 7 deprecates the Jackson-2-specific converter; new one implements `SmartHttpMessageConverter` and obsoletes `MappingJacksonValue` for serialization hints |
 | **Spring Boot mapper customizer** | `Jackson2ObjectMapperBuilderCustomizer` | `JsonMapperBuilderCustomizer` (`builder.changeDefaultPropertyInclusion(...)` etc.) |
@@ -149,10 +149,10 @@ public static JsonMapper create() {
 ### Phase 5 — verification + cleanup
 
 1. Reactor `mvn test` green.
-2. Manual smoke: server up → Swing client connects → resource tree populates → save a reservation → re-fetch (exercises `RemoteStorage` wire surface PRD 010 stress-tested).
+2. Manual smoke: server up → Swing client connects → resource tree populates → save a reservation → re-fetch (exercises `RemoteStorage` wire surface [PRD 010](010-jackson-field-based-wire-format.md) stress-tested).
 3. Drop legacy `<jackson.version>` from `rapla-bom/pom.xml` once `mvn dependency:tree | grep com.fasterxml` clean.
 4. Update PRD 001 status: "Phase 9 step 2 (Gson removal) now possible end-to-end."
-5. Update PRD 010: "configuration applies on Jackson 3 mapper API."
+5. Update [PRD 010](010-jackson-field-based-wire-format.md): "configuration applies on Jackson 3 mapper API."
 
 ## Tests
 
@@ -162,7 +162,7 @@ public static JsonMapper create() {
 | 1 | `RaplaSpringBootApplicationTest` (7 tests) + reactor compile. |
 | 2 | Full reactor `mvn test`. Baseline before Jackson 3. |
 | 3 | `RaplaSpringBootApplicationTest` + `AuthControllerIntegrationTest` against Jackson 3 default mapper. |
-| 4 | New `JacksonObjectMapperFactoryJackson3Test` mirroring PRD 010's 2.x side: round-trip `Reservation`, `UpdateEvent`, `Category` (the `@JsonIgnore`-on-`getResolver` case from PRD 009 risk #1). Field-for-field match with 2.x baseline. |
+| 4 | New `JacksonObjectMapperFactoryJackson3Test` mirroring [PRD 010](010-jackson-field-based-wire-format.md)'s 2.x side: round-trip `Reservation`, `UpdateEvent`, `Category` (the `@JsonIgnore`-on-`getResolver` case from [PRD 009](../009-server-bulk-storage-rest-api.md) risk #1). Field-for-field match with 2.x baseline. |
 | 5 | Reactor `mvn test` + manual end-to-end smoke. |
 
 ## Risks
@@ -170,7 +170,7 @@ public static JsonMapper create() {
 1. **Spring Security 7 JWT API shift.** SS6 pinned nimbus-jose-jwt 9.x; SS7 may bump to 10.x with breaking signer/decoder API. Watch `JwtConfig.deriveHmacSecret` (PRD 001 Phase 3 step 4) and `MACSigner`/`MACVerifier` ctors. If broken, fall back to nimbus low-level API (already done — minimal exposure).
 2. **`HttpServiceProxyFactory` builder API drift.** Spring 7 may have moved builder/bind-init APIs. 13 `@HttpExchange` proxies + per-request `Authorization: Bearer <jwt>` initializer need to keep working. If `RestClient.Builder.requestInitializer(...)` moves, rewrite via `requestInterceptor` / `ClientHttpRequestInitializer` bean.
 3. **Jackson 3 module ecosystem incomplete.** Verify `tools.jackson.datatype.JavaTimeModule` published at execution. If not, blocks until module ships.
-4. **Field-introspection knobs may have moved.** PRD 010's wire format relies on `Visibility.NONE` for every accessor (so `Category.getParent()` resolver-walking getters never fire), `PROPAGATE_TRANSIENT_MARKER = true` (skips `ReferenceHandler.resolver`, `SimpleEntity.{readOnly,nonpersistantEntities}` — without this we re-enter the resolver→scheduler→ScheduledThreadPoolExecutor.threadFactory chain that crashed PRD 009), and `JavaTimeModule`. Jackson 3 reorganized config around immutable builders; verify each knob has an exact equivalent. **Test first thing in Phase 4** with a `Category` round-trip (cycle case) + `Reservation` round-trip (transient-skipping case) — `StackOverflowError` or serialized resolver state means config didn't transfer cleanly.
+4. **Field-introspection knobs may have moved.** [PRD 010](010-jackson-field-based-wire-format.md)'s wire format relies on `Visibility.NONE` for every accessor (so `Category.getParent()` resolver-walking getters never fire), `PROPAGATE_TRANSIENT_MARKER = true` (skips `ReferenceHandler.resolver`, `SimpleEntity.{readOnly,nonpersistantEntities}` — without this we re-enter the resolver→scheduler→ScheduledThreadPoolExecutor.threadFactory chain that crashed [PRD 009](../009-server-bulk-storage-rest-api.md)), and `JavaTimeModule`. Jackson 3 reorganized config around immutable builders; verify each knob has an exact equivalent. **Test first thing in Phase 4** with a `Category` round-trip (cycle case) + `Reservation` round-trip (transient-skipping case) — `StackOverflowError` or serialized resolver state means config didn't transfer cleanly.
 5. **Tomcat 11 servlet API tightening.** Stricter spec compliance (session ID uniqueness, header parsing). Subtle behaviour changes in `Export2iCalServlet` or static-resource handler. Smoke test in Phase 5 catches.
 6. **Reactor-wide compile cascade.** Bare `mvn -pl rapla-bom install` after bump may cascade-rebuild every module. Don't be surprised by slow first compile.
 
@@ -305,7 +305,7 @@ User-visible: every resource name and reservation rendered blank in the Swing cl
 
 #### D4. `MapperFeature.ALLOW_FINAL_FIELDS_AS_MUTATORS` default flipped to false
 
-Risk #4 asked to verify wire-format knobs transferred. `Visibility.NONE`, `PROPAGATE_TRANSIENT_MARKER`, `JavaTimeModule` came across cleanly — but `ALLOW_FINAL_FIELDS_AS_MUTATORS` (J2 default `true`) became J3 default `false`. PRD 010's wire format used `private final Collection<…> = new ArrayList<>();` on five entity collection fields, all silently failed.
+Risk #4 asked to verify wire-format knobs transferred. `Visibility.NONE`, `PROPAGATE_TRANSIENT_MARKER`, `JavaTimeModule` came across cleanly — but `ALLOW_FINAL_FIELDS_AS_MUTATORS` (J2 default `true`) became J3 default `false`. [PRD 010](010-jackson-field-based-wire-format.md)'s wire format used `private final Collection<…> = new ArrayList<>();` on five entity collection fields, all silently failed.
 
 Diagnostic chain:
 1. Curl `/storage/resources` — JSON `classification.data: {"name":["test"]}` correct. Server-side serialization fine.

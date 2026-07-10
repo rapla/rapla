@@ -89,60 +89,74 @@ type Widget = 'text' | 'number' | 'checkbox' | 'select' | 'date' | 'readonly';
               (ngModelChange)="emitPatch(d, $event, null)"
               [disabled]="disabled()"
             />
-            <span class="lab">{{ d.label }}@if (d.required) {<span class="req"> *</span>}</span>
+            <span class="lab"
+              >{{ d.label }}
+              @if (d.required) {
+                <span class="req"> *</span>
+              }
+            </span>
           </label>
         </div>
       } @else {
         <div class="field">
           <div class="ctrl" [class.select]="widgetOf(d) === 'select'">
             @switch (widgetOf(d)) {
-            @case ('text') {
-              <input
-                [id]="'cls-' + d.key"
-                type="text"
-                [ngModel]="asString(values()[d.key])"
-                (ngModelChange)="emitPatch(d, $event === '' ? null : $event, 'values:' + d.key)"
-                [disabled]="disabled()"
-              />
-            }
-            @case ('number') {
-              <input
-                [id]="'cls-' + d.key"
-                type="number"
-                [ngModel]="values()[d.key]"
-                (ngModelChange)="emitPatch(d, $event === null || $event === '' ? null : +$event, 'values:' + d.key)"
-                [disabled]="disabled()"
-              />
-            }
-            @case ('date') {
-              <input
-                [id]="'cls-' + d.key"
-                type="date"
-                [ngModel]="datePart(values()[d.key])"
-                (ngModelChange)="emitPatch(d, $event ? $event + 'T00:00:00' : null, null)"
-                [disabled]="disabled()"
-              />
-            }
-            @case ('select') {
-              <select
-                [id]="'cls-' + d.key"
-                [ngModel]="values()[d.key] ?? ''"
-                (ngModelChange)="emitPatch(d, $event === '' ? null : $event, null)"
-                [disabled]="disabled()"
-              >
-                <!-- unset shows blank but "nothing" is NOT pickable (user decision
+              @case ('text') {
+                <input
+                  [id]="'cls-' + d.key"
+                  type="text"
+                  [ngModel]="asString(values()[d.key])"
+                  (ngModelChange)="emitPatch(d, $event === '' ? null : $event, 'values:' + d.key)"
+                  [disabled]="disabled()"
+                />
+              }
+              @case ('number') {
+                <input
+                  [id]="'cls-' + d.key"
+                  type="number"
+                  [ngModel]="values()[d.key]"
+                  (ngModelChange)="
+                    emitPatch(
+                      d,
+                      $event === null || $event === '' ? null : +$event,
+                      'values:' + d.key
+                    )
+                  "
+                  [disabled]="disabled()"
+                />
+              }
+              @case ('date') {
+                <input
+                  [id]="'cls-' + d.key"
+                  type="date"
+                  [ngModel]="datePart(values()[d.key])"
+                  (ngModelChange)="emitPatch(d, $event ? $event + 'T00:00:00' : null, null)"
+                  [disabled]="disabled()"
+                />
+              }
+              @case ('select') {
+                <select
+                  [id]="'cls-' + d.key"
+                  [ngModel]="values()[d.key] ?? ''"
+                  (ngModelChange)="emitPatch(d, $event === '' ? null : $event, null)"
+                  [disabled]="disabled()"
+                >
+                  <!-- unset shows blank but "nothing" is NOT pickable (user decision
                      2026-07-07 — deliberate deviation from Swing's nothing_selected) -->
-                <option value="" disabled hidden></option>
-                @for (e of d.enumValues; track e.key) {
-                  <option [value]="e.key">{{ e.label }}</option>
-                }
-              </select>
-            }
+                  <option value="" disabled hidden></option>
+                  @for (e of d.enumValues; track e.key) {
+                    <option [value]="e.key">{{ e.label }}</option>
+                  }
+                </select>
+              }
             }
           </div>
           <label class="lab" [for]="'cls-' + d.key"
-            >{{ d.label }}@if (d.required) {<span class="req"> *</span>}</label
-          >
+            >{{ d.label }}
+            @if (d.required) {
+              <span class="req"> *</span>
+            }
+          </label>
         </div>
       }
     </ng-template>
@@ -179,7 +193,9 @@ type Widget = 'text' | 'number' | 'checkbox' | 'select' | 'date' | 'readonly';
       border-radius: 6px;
       padding: 0.55rem 0.7rem;
       background: var(--mat-sys-surface, transparent);
-      transition: border-color 0.12s, box-shadow 0.12s;
+      transition:
+        border-color 0.12s,
+        box-shadow 0.12s;
     }
     .ctrl:focus-within {
       border-color: var(--mat-sys-primary, #0061a4);

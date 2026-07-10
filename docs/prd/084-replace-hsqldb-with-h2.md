@@ -1,11 +1,11 @@
 # PRD 084 — replace the embedded HSQLDB persistence backend with H2
 
 **Status:** draft — 2026-06-24
-**Related:** PRD 082 (storage memory model — the new read-model uses H2; this consolidates the *persistence* backend on the same engine), PRD 083 (user change-subscription), AGENTS.md §8 (server lifecycle), PRD 054 (timestamp/wall-clock storage scars)
+**Related:** [PRD 082](082-storage-memory-model.md) (storage memory model — the new read-model uses H2; this consolidates the *persistence* backend on the same engine), [PRD 083](083-user-change-subscription.md) (user change-subscription), AGENTS.md §8 (server lifecycle), [PRD 054](054-standalone-windows-installer.md) (timestamp/wall-clock storage scars)
 
 ## Abstract
 
-rapla's embedded/dev persistence backend is **HSQLDB** (`DBOperator`, `jdbc:hsqldb:file:...`). PRD 082 selects **H2** for the in-memory read-model (MVStore/MVCC, built-in full-text, richer JSON). Running two embedded SQL engines (HSQLDB for persistence + H2 for the read-model) is avoidable: **replace the shipped HSQLDB with H2** and consolidate on one engine. Independently of PRD 082 it is also a modernization win (H2's MVStore is faster and more concurrent than HSQLDB's older engine).
+rapla's embedded/dev persistence backend is **HSQLDB** (`DBOperator`, `jdbc:hsqldb:file:...`). [PRD 082](082-storage-memory-model.md) selects **H2** for the in-memory read-model (MVStore/MVCC, built-in full-text, richer JSON). Running two embedded SQL engines (HSQLDB for persistence + H2 for the read-model) is avoidable: **replace the shipped HSQLDB with H2** and consolidate on one engine. Independently of [PRD 082](082-storage-memory-model.md) it is also a modernization win (H2's MVStore is faster and more concurrent than HSQLDB's older engine).
 
 **Scope is the embedded backend only.** The external `DBOperator` backends — **MariaDB / PostgreSQL — are unaffected**; this PRD swaps the bundled embedded default and its dev/distribution config. The `FileOperator` (XML) backend is also unaffected.
 
@@ -15,11 +15,11 @@ rapla's embedded/dev persistence backend is **HSQLDB** (`DBOperator`, `jdbc:hsql
 - **Dialect handling — H2 is already partially wired:** `AbstractTableStorage` has both `isHsqldb()` (`dbProductName.contains("hsql")`) **and `isH2()`** branches (e.g. `if (!isHsqldb() && !isH2())`, `if (isHsqldb() || isH2())`); `RaplaSQL` has `isHsqldb()` branches. So the dialect abstraction already anticipates H2 — Phase 1 is auditing completeness, not greenfield.
 - **`DBOperator`:** a `boolean hsqldb` flag + an HSQLDB-special `SHUTDOWN COMPACT` on disconnect.
 - **Config / distribution:** `application-local.yml` → `jdbc:hsqldb:file:./data/rapla-hsqldb`; `src/main/distribution/contexts/rapla.xml` and `README-Server.txt` use `org.hsqldb.jdbc.JDBCDataSource` URLs.
-- **Timestamp semantics:** `RaplaSQL` has wall-clock/timezone handling ("same wall-clock representation HSQL/MariaDB stored", PRD 054 scars) that must be preserved byte-for-byte on H2.
+- **Timestamp semantics:** `RaplaSQL` has wall-clock/timezone handling ("same wall-clock representation HSQL/MariaDB stored", [PRD 054](054-standalone-windows-installer.md) scars) that must be preserved byte-for-byte on H2.
 
 ## Why
 
-- **Consolidate on one embedded engine** with PRD 082's read-model → one dependency, one dialect to reason about, one set of quirks.
+- **Consolidate on one embedded engine** with [PRD 082](082-storage-memory-model.md)'s read-model → one dependency, one dialect to reason about, one set of quirks.
 - **Modernization:** H2 MVStore (MVCC, log-structured) > HSQLDB's older lock-oriented engine for concurrent read/write.
 - **Low risk:** the dialect layer already has `isH2()` branches; H2 and HSQLDB share a near-identical SQL dialect.
 
@@ -48,14 +48,14 @@ dhbwrapla and other downstream deployments must be coordinated (their data is th
 - Swap `hsqldb` → `h2` dependency (`rapla-server/pom.xml`, `rapla-bom/pom.xml`).
 - Audit + complete the `isH2()` dialect branches; replace the `hsqldb` flag / `SHUTDOWN COMPACT` special with the H2 equivalent (H2 also supports `SHUTDOWN [COMPACT]`).
 - Update embedded URLs/driver in `application-local.yml`, `contexts/rapla.xml`, `README-Server.txt` → `jdbc:h2:file:...` / `org.h2.Driver`.
-- Preserve timestamp/wall-clock semantics (PRD 054) — verified by round-trip test.
+- Preserve timestamp/wall-clock semantics ([PRD 054](054-standalone-windows-installer.md)) — verified by round-trip test.
 - A migration path for existing HSQLDB data (OQ1).
 - `@Tag("db")` tests run green against H2.
 
 ### Out of scope
 - MariaDB / PostgreSQL backends (unchanged).
 - `FileOperator` (XML) backend (unchanged).
-- The PRD 082 read-model (separate; this PRD only makes the *persistence* engine match it).
+- The [PRD 082](082-storage-memory-model.md) read-model (separate; this PRD only makes the *persistence* engine match it).
 
 ## Plan
 
@@ -68,7 +68,7 @@ dhbwrapla and other downstream deployments must be coordinated (their data is th
 
 ### Phase 2 — schema + timestamp parity
 - [ ] Verify every `RaplaSQL` table DDL (types: `VARCHAR(255)`, `DATETIME`, `INTEGER`, …) creates correctly on H2.
-- [ ] Timestamp/wall-clock round-trip test: write via H2, read back, assert identical `LocalDateTime` to the HSQLDB baseline (PRD 054 regression).
+- [ ] Timestamp/wall-clock round-trip test: write via H2, read back, assert identical `LocalDateTime` to the HSQLDB baseline ([PRD 054](054-standalone-windows-installer.md) regression).
 
 ### Phase 3 — data migration
 - [ ] Decide OQ1 (XML round-trip vs dual-read vs dump).
@@ -90,6 +90,6 @@ dhbwrapla and other downstream deployments must be coordinated (their data is th
 
 - **OQ1** — Migration strategy: **A (XML round-trip)** vs B (dual-read first-boot) vs C (SQL dump). A reuses existing export/import and is dialect-neutral → leaning A, with an automated detect-and-migrate boot path; confirm against operator ergonomics and the dhbwrapla dataset size.
 - **OQ2** — Keep the HSQLDB dependency for one transitional release (needed by migration option B; lets old installs still be read)? Or hard-cut and require migration before upgrade?
-- **OQ3** — H2 storage mode: classic PageStore vs MVStore (MVCC). MVStore is the modern default and aligns with PRD 082's read-model rationale — confirm it's used for persistence too.
+- **OQ3** — H2 storage mode: classic PageStore vs MVStore (MVCC). MVStore is the modern default and aligns with [PRD 082](082-storage-memory-model.md)'s read-model rationale — confirm it's used for persistence too.
 - **OQ4** — Are there HSQLDB-specific SQL constructs in `RaplaSQL` beyond the audited `isHsqldb()` branches (sequences, identity, function names) that H2 spells differently?
 - **OQ5** — Does any external tooling/runbook (backup scripts, dhbwrapla ops) depend on the `rapla-hsqldb.*` file layout? Cutover must not silently break operator backups.

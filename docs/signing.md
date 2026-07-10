@@ -175,6 +175,19 @@ per session.
 
 ## Running a signed build
 
+**Step 0 — always attach the YubiKey first.** Do this *before* the build, every time,
+even if you think it's already attached: the attach does not survive a `wsl --shutdown`
+or an unplug, and a `Shared`-but-not-`Attached` token makes the signing step fail late
+(after a full compile) with `slotListIndex is 0 but token only has 0 slots`. The attach
+is idempotent — safe to run when already attached:
+
+```bash
+usbipd.exe attach --wsl --busid 2-2              # VID 1050:0407, busid typically 2-2
+pkcs11-tool --list-slots | grep -i 'erdkante'    # confirm: token label "erdkante GmbH"
+```
+
+Then build:
+
 ```bash
 mvn -pl rapla-app -am package -DskipTests -Psign-pkcs11
 ```

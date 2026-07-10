@@ -24,7 +24,7 @@ The `DateChangeEvent` wire and public `getDate()/getTime()` stay LDT to avoid to
     1 non-Date diff hunk (intentional DateTools.toHour deletion, 0 callers)
 ```
 
-100% of the diff is Date migration work. **All script collateral has been recovered** via the file-restore + re-script approach (see PRD 013).
+100% of the diff is Date migration work. **All script collateral has been recovered** via the file-restore + re-script approach (see [PRD 013](013-date-script-collateral-damage.md)).
 
 ## Error breakdown — 200 errors, all in rapla-client
 
@@ -114,7 +114,7 @@ mvn test -pl rapla-core -Dtest=DateToolsLocalDateTimeTest  # smoke test
 ## Related PRDs
 
 - **PRD 001-A** (`docs/prd/001-a-date-to-localdatetime.md`) — parent migration spec
-- **PRD 013** (`docs/prd/013-date-script-collateral-damage.md`) — collateral damage recovery (now mostly resolved per "1 non-Date hunk" status)
+- **[PRD 013](013-date-script-collateral-damage.md)** (`docs/prd/013-date-script-collateral-damage.md`) — collateral damage recovery (now mostly resolved per "1 non-Date hunk" status)
 
 ## Definition of Done
 

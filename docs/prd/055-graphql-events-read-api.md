@@ -3,7 +3,7 @@
 **Status:** in-progress — reopened 2026-05-29 to land the Tier-1 `LightDataFetcher` perf migration (formerly deferred per step 6 v2). Initial read resolvers shipped 2026-05-29 (single + list, derived fields, RepeatingRule, blocks, §12 leak gates, `RequestContextInstrumentation` caller cache); restriction round-trip test deferred to a future tier-3 spec.
 
 **Parent:** [PRD 035 (done) — GraphQL foundations](done/035-graphql-foundations.md) §"Per-type shape" + spin-out map.
-PRD 035 fixes the architecture; this PRD nailed down the resolver-batch surface,
+[PRD 035](done/035-graphql-foundations.md) fixes the architecture; this PRD nailed down the resolver-batch surface,
 captured open design questions specifically about the allocation/restriction
 model, and landed the read-side resolvers.
 
@@ -53,20 +53,20 @@ In:
 
 Out (future PRDs):
 - **Mutations (create/update/delete/bulk)** — covered by [PRD 056](../056-graphql-events-write-api.md)
-  (sibling). Supersedes PRD 035 §6 with named-verbs + `applyChanges` design.
+  (sibling). Supersedes [PRD 035](done/035-graphql-foundations.md) §6 with named-verbs + `applyChanges` design.
   Symmetric β² (2026-05-28): write side gets typed per-DynamicType
   classification inputs mirroring this PRD's typed reads — same
   hot-swap, same one-schema-two-modes consumption pattern.
 - Conflicts derivation (`conflicts: [Conflict!]!`)
 - Templates (`rapla:template` is currently filtered out per PRD 055-Cut-C policy)
 - `Reservation.canModify` — defer with mutations
-- The `renderedBlocks` server-side projection (PRD 030)
+- The `renderedBlocks` server-side projection ([PRD 030](030-server-side-view-rendering.md))
 
 ## Locked decisions (confirmed 2026-05-27)
 
 | Q | Decision | Rationale |
 |---|---|---|
-| 1 | Name `Reservation` (not `Event`) | Matches rapla internal naming + already locked in PRD 035 schema (`ReservationClassification`) |
+| 1 | Name `Reservation` (not `Event`) | Matches rapla internal naming + already locked in [PRD 035](done/035-graphql-foundations.md) schema (`ReservationClassification`) |
 | 2 | `AppointmentBlock` is id-less | Block ids aren't stable across recurring expansions; use parent ids + start for addressing |
 | 3 | `Appointment.repeating` nullable (not `RepeatingType.NONE`) | Cleaner: "no recurrence" is its own state, not an enum value |
 | 4 | `Reservation.allocations[]` (restriction-aware, editor-only) + `Appointment.allocatables[]` (pre-resolved, everyone else). Block has no `allocatables` field — traverses via `block.appointment.allocatables`. Block is a sub-resolution on Appointment (`Appointment.blocks(from:, to:)`), not a peer query root. | Use-case driven: editor needs lossless restriction structure for round-trip save; listviews / iCal / calendar need pre-resolved per-appointment lists with no client-side join. Restrictions are appointment-level in rapla's domain (see [domain-model.md §Reservation](../../architecture/domain-model.md#reservation)), so blocks inherit allocatables from their parent appointment with no duplication. Architectural rationale lives in [PRD 035 §"Consumer-driven read surfaces"](035-graphql-foundations.md#consumer-driven-read-surfaces-locked-2026-05-27). |
@@ -198,7 +198,7 @@ rendering.
 **Defer.** No conflict field on Reservation in v1. Conflict computation
 has real perf implications (cross-allocatable schedule scan); modelling
 it as a separate top-level `checkConflicts(...)` query later — per
-PRD 035 §"Consumer-driven read surfaces" "Scheduling pre-flight"
+[PRD 035](done/035-graphql-foundations.md) §"Consumer-driven read surfaces" "Scheduling pre-flight"
 row — gives us room to design the appointment-pair aggregation properly
 (a weekly clash = **one** conflict spanning N dates, not N conflicts).
 
@@ -433,7 +433,7 @@ Expected response shape for the split case:
 ```
 
 The `appointments[].allocatables` is server-side derived from
-`allocations` per the rule in PRD 035 §"Consumer-driven read surfaces":
+`allocations` per the rule in [PRD 035](done/035-graphql-foundations.md) §"Consumer-driven read surfaces":
 `appointmentIds == null || appointmentIds.contains(this.id)`.
 
 ## Plan (implemented)
@@ -519,7 +519,7 @@ Implementation steps:
    §12-gated fields (`canModify`, `allocations`,
    `appointment.allocatables`) read the per-query caller from
    `RequestContextInstrumentation`'s cached `RequestCtx` rather than
-   re-resolving `SecurityContextHolder` per dispatch. PRD 035 §11 lock
+   re-resolving `SecurityContextHolder` per dispatch. [PRD 035](done/035-graphql-foundations.md) §11 lock
    (Classification exposes `typeKey` only, no `typeId`) means
    `validateInterfaceCoverage`'s existing three-interface loop covers
    the read-side without extension. Same caveat preserved:
@@ -576,8 +576,8 @@ closest analogue.
 - **Templates** — `rapla:template` is currently filtered out by the
   rapla-internal SDL filter. Adding templates means special-casing them
   back in or designing a separate `templates: [Template!]!` query root
-  per PRD 035 §"New query roots".
-- **`renderedBlocks`** — server-side calendar/table projection per PRD 030.
+  per [PRD 035](done/035-graphql-foundations.md) §"New query roots".
+- **`renderedBlocks`** — server-side calendar/table projection per [PRD 030](030-server-side-view-rendering.md).
   Different surface (HTML/JSON projections), not raw GraphQL.
 
 ## Decision log
@@ -592,7 +592,7 @@ closest analogue.
   editor needs lossless restriction round-trip; listview ("all
   reservations for user X / for resource Y, with per-appointment
   allocation visibility") needs server-side restriction resolution.
-  Architectural rationale committed to PRD 035 + domain-model.md
+  Architectural rationale committed to [PRD 035](done/035-graphql-foundations.md) + domain-model.md
   same session.
 - 2026-05-27 — OQ2-OQ5 **resolved**: exceptions stay on
   `RepeatingRule.exceptions: [LocalDate!]!`; `Reservation.canModify`
@@ -606,7 +606,7 @@ closest analogue.
   `<TypeKey>Classification` types; descriptor data lives in the schema
   itself (field types) + custom directives (`@expectedType`,
   `@multiplicity`, etc.). One source of truth.
-- **2026-05-28 — symmetric β² (writes mirror reads)**: PRD 056 adopts
+- **2026-05-28 — symmetric β² (writes mirror reads)**: [PRD 056](056-graphql-events-write-api.md) adopts
   typed per-DynamicType classification inputs; same hot-swap surface,
   same one-schema-two-modes consumption pattern in both directions.
 - **2026-05-29 — read resolvers shipped**: `ReservationGraphQLController`

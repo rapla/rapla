@@ -140,19 +140,19 @@ public class StoredArtifactDbRoundTripTest
     void storeReconnectAndReadBack() throws Exception
     {
         String body = "<div class=\"leihschein\">{{name}} &amp; äöü</div>";
-        operator.storeAndRemove(List.of(newArtifact(StoredArtifact.KIND_TEMPLATE, "leihschein", body)),
+        operator.storeAndRemove(List.of(newArtifact(StoredArtifact.KIND_DOCUMENT, "leihschein", body)),
                 Collections.emptyList(), getAdmin());
 
-        Optional<StoredArtifact> direct = find("TEMPLATE:leihschein");
+        Optional<StoredArtifact> direct = find("DOCUMENT:leihschein");
         assertTrue(direct.isPresent(), "read-through sees the artifact immediately");
 
         operator.disconnect();
         operator.connect();
 
-        Optional<StoredArtifact> reloaded = find("TEMPLATE:leihschein");
+        Optional<StoredArtifact> reloaded = find("DOCUMENT:leihschein");
         assertTrue(reloaded.isPresent(), "artifact survives DB reconnect");
         assertEquals(body, reloaded.get().getBody());
-        assertEquals(StoredArtifact.KIND_TEMPLATE, reloaded.get().getKind());
+        assertEquals(StoredArtifact.KIND_DOCUMENT, reloaded.get().getKind());
         assertEquals("leihschein", reloaded.get().getName());
         assertEquals("{\"isPublic\":false,\"groups\":[\"g1\"]}", reloaded.get().getMetadata());
     }
@@ -174,20 +174,20 @@ public class StoredArtifactDbRoundTripTest
     void pointReadAndMetadataProjection() throws Exception
     {
         User admin = getAdmin();
-        operator.storeAndRemove(List.of(newArtifact(StoredArtifact.KIND_TEMPLATE, "brief", "<html>{{x}}</html>")),
+        operator.storeAndRemove(List.of(newArtifact(StoredArtifact.KIND_DOCUMENT, "brief", "<html>{{x}}</html>")),
                 Collections.emptyList(), admin);
 
-        StoredArtifact point = operator.getStoredArtifact("TEMPLATE:brief");
+        StoredArtifact point = operator.getStoredArtifact("DOCUMENT:brief");
         assertEquals("<html>{{x}}</html>", point.getBody(), "point read returns the full row");
         assertEquals("brief", point.getName());
 
-        assertTrue(operator.getStoredArtifact("TEMPLATE:missing") == null, "point read miss returns null");
+        assertTrue(operator.getStoredArtifact("DOCUMENT:missing") == null, "point read miss returns null");
 
         StoredArtifact meta = operator.getStoredArtifactsMetadata().stream()
-                .filter(a -> a.getId().equals("TEMPLATE:brief")).findFirst().orElseThrow();
+                .filter(a -> a.getId().equals("DOCUMENT:brief")).findFirst().orElseThrow();
         assertTrue(meta.getBody() == null, "metadata projection never transfers bodies");
         assertEquals("{\"isPublic\":false,\"groups\":[\"g1\"]}", meta.getMetadata());
-        assertEquals(StoredArtifact.KIND_TEMPLATE, meta.getKind());
+        assertEquals(StoredArtifact.KIND_DOCUMENT, meta.getKind());
     }
 
     @Test

@@ -1,6 +1,6 @@
 # PRD 078 — SPA GraphQL view renderer
 
-**Status:** in progress — 2026-06-21; updated 2026-06-22. The Angular consumer of PRD 074's
+**Status:** in progress — 2026-06-21; updated 2026-06-22. The Angular consumer of [PRD 074](074-graphql-declarative-views.md)'s
 server-side view contract. Carved out of [PRD 074](074-graphql-declarative-views.md) so the
 server view model (schema, `@view`, `extensions.view` emission, §12) and the SPA rendering
 layer (transport, generic renderer, control inference) evolve as separate concerns. The
@@ -10,7 +10,7 @@ for the selection model and what remains (`user`/`group` chips, own-user pin).
 
 ## Goal
 
-Render PRD 074's table views in the Angular SPA (`rapla-angular/`, served at `/app/`):
+Render [PRD 074](074-graphql-declarative-views.md)'s table views in the Angular SPA (`rapla-angular/`, served at `/app/`):
 a **generic renderer** that turns an `appointmentBlocks`/`reservations` GraphQL response
 + its `extensions.view` render-meta into a table — **without per-view client code**. First
 target: the dhbw **`appointments`** table (Name, Beginn, Ende, Kurs, Person, Raum, Dauer)
@@ -40,14 +40,14 @@ over recurrence blocks.
 - **Server render-meta — in flight** (074): `@view` directive + `extensions.view` emission
   (columns/title/sort/inputs) not yet present.
 - **SPA — greenfield.** No GraphQL transport, no renderer. `reservations.component` still
-  uses the legacy `/api/table/*` REST (PRD 030, deprecated). This PRD is all of it.
+  uses the legacy `/api/table/*` REST ([PRD 030](030-server-side-view-rendering.md), deprecated). This PRD is all of it.
 
 ## Architecture — the connection is cheap (cookie auth)
 
 The whole transport is a plain `HttpClient.post` — **no Apollo, no token wiring, no CORS**:
 
 - **Endpoint:** `POST /api/graphql` (`spring.graphql.http.path`), body `{ query, variables }`.
-- **Auth — free.** The SPA holds **no token** (PRD 072 Phase 4): the JWT lives in an
+- **Auth — free.** The SPA holds **no token** ([PRD 072](072-server-side-login-dialog.md) Phase 4): the JWT lives in an
   HttpOnly `access_token` cookie the browser auto-sends same-origin. GraphQL calls carry it
   with **no `Authorization` header**, and the existing `auth.interceptor` already handles
   **401 → `/api/auth/refresh` → replay** for any `/api/*` request.
@@ -70,7 +70,7 @@ query<T>(document: string, variables: Record<string, unknown>) {
 codegen reaches it): `{ key, title, columns: {alias, header, type, sort?, join?, hidden?,
 group?}[], inputs: {name, control, default?}[], page?: {...} }`.
 
-## Inputs = query variables, controls inferred (PRD 074 §"Inputs")
+## Inputs = query variables, controls inferred ([PRD 074](074-graphql-declarative-views.md) §"Inputs")
 
 A view's inputs **are** its GraphQL variables (`$filter`, `$sort`). The SPA renders one
 **control per input**, by convention (name + type): `from`+`to` → date-range; a search
@@ -107,11 +107,11 @@ query appointments($filter: ReservationFilter!) {
 ### Why power search is *not* in the first slice (the conflict)
 
 "Power search as both event-filter **and** resource-select" wants to be a **global,
-cross-view selector** — which collides with PRD 074 **Locked Decision #6** (views are
+cross-view selector** — which collides with [PRD 074](074-graphql-declarative-views.md) **Locked Decision #6** (views are
 independent; each declares **its own** inputs; the uniform shared-input / selection-transfer
 machinery was deliberately dropped). It also can't be expressed today: the `reservations`
 resolver **ANDs** `searchText` with `allocatableIdsIn`/`allocatableMatching` (intersection),
-not the OR a unified relevance search needs, and the unified `Query.search` (PRD 060) isn't
+not the OR a unified relevance search needs, and the unified `Query.search` ([PRD 060](060-graphql-mcp-foundations.md)) isn't
 built. So:
 
 - **Event-name filter** (`ReservationFilter.searchText`, ✅ honored) — a *per-view* input;
@@ -119,8 +119,8 @@ built. So:
 - **Resource selection via search** (`allocatables(filter:{searchText})` → picks →
   `allocatableIdsIn`, ✅ honored) — a *per-view* input (search-driven picker, the lightweight
   alternative to a tree).
-- **Global unified power-search across views** → **PRD 077 / 060**, not here.
-- **Omnibox multisearch (the GraphQL search resolver behind `SearchService`)** → **PRD 081**.
+- **Global unified power-search across views** → **PRD [077](077-calendar-model-graphql.md) / [060](060-graphql-mcp-foundations.md)**, not here.
+- **Omnibox multisearch (the GraphQL search resolver behind `SearchService`)** → **[PRD 081](081-graphql-omnibox-multisearch.md)**.
 
 ## Scope — a view only queries within a selection (performance)
 
@@ -131,19 +131,19 @@ no scope the view shows a hint ("Wähle eine Ressource, Gruppe oder Person als S
 issues **zero** GraphQL view requests (`listViews` for the nav still runs — it is cheap).
 
 **Why.** An unscoped view query is a full-window firehose: the `reservations` resolver caps
-at 500 rows but still scans the whole `from`/`to` window across *all* resources (a PRD 035 hot
+at 500 rows but still scans the whole `from`/`to` window across *all* resources (a [PRD 035](done/035-graphql-foundations.md) hot
 path). Requiring a scope makes every view query bounded by construction. "Remove all scope
 first" = the default state is empty; scope exists **only** as explicit chips, never implicitly
 from the date window.
 
-**Scope → variables** (type-driven, PRD 074 §"Inputs"/variables; `variable-binder.ts` fills
+**Scope → variables** (type-driven, [PRD 074](074-graphql-declarative-views.md) §"Inputs"/variables; `variable-binder.ts` fills
 each declared variable by its GraphQL type, not its name):
 
 | Chip kind | Binds into |
 |---|---|
 | `resource` | `ReservationFilter.allocatableMatching.idIn` (+ a second `AllocatableFilter.idIn` for aggregation/pivot views) |
 | `user` | `ReservationFilter.ownerEq` — the user's own events |
-| `group` | `ReservationFilter.accessibleByGroup` (PRD 069, admin-scoped) |
+| `group` | `ReservationFilter.accessibleByGroup` ([PRD 069](069-graphql-resource-access-read-api.md), admin-scoped) |
 
 **Own user pinned (quick "my events").** The logged-in user is permanently pinned at the
 top-left of the resource selection — one click away from a `user`-scope chip (`ownerEq:<me>`),
@@ -152,15 +152,15 @@ identity: extend `GET /api/auth/me` (`IdentityResponse`) with `id` (it carries
 username/name/roles today, no id).
 
 **Finding users** — typing a name in the omnibox to add a `user` scope chip — is the **find**
-half, owned by **PRD 081** (add a `USER` search kind / `UserHit`).
+half, owned by **[PRD 081](081-graphql-omnibox-multisearch.md)** (add a `USER` search kind / `UserHit`).
 
 **Status (2026-06-22):** scope gate + hint + `resource` binding **built** (`ViewHostComponent`
 `hasScope`, regression-tested). Remaining: `user`/`group` chip kinds, the own-user pin, and the
 `id` on `/api/auth/me`.
 
-## Execution transport & routing (locked 2026-06-21 — see PRD 074 §"View loading")
+## Execution transport & routing (locked 2026-06-21 — see [PRD 074](074-graphql-declarative-views.md) §"View loading")
 
-**Open question resolved: server-merge (option 1).** Full design in PRD 074
+**Open question resolved: server-merge (option 1).** Full design in [PRD 074](074-graphql-declarative-views.md)
 §"View loading — execution transport". SPA summary:
 
 - **Consumer path** — `POST /api/graphql` with `{ operationName: viewName, variables }` (no
@@ -191,7 +191,7 @@ acceptable. On first visit (no URL params) the SPA uses `default` sentinels from
    → `allocatableIdsIn`) and the per-view name-search box; the date-window pre-fill decision.
 3. **Phase 3 — grouping + component registry.** **Client-side** day/weekday sectioning —
    the server has NO grouping directive (`@group`/`@aggregate` were removed from 074 on
-   2026-06-21 → PRD 079; render directives are `@column`/`@hidden`/`@join`/`@flatten` only).
+   2026-06-21 → [PRD 079](079-graphql-grouped-aggregates.md); render directives are `@column`/`@hidden`/`@join`/`@flatten` only).
    Day-grouping is a pure SPA renderer concern: `groupByWeekday()` over the flat `start`
    column (`graphql/weekday-grouping.ts`), buckets ordered Montag→Sonntag. `ngComponentOutlet`
    cell-component registry (safe allowlist, no raw HTML); sort-on-header-click → `$sort`;
@@ -218,5 +218,5 @@ acceptable. On first visit (no URL params) the SPA uses `default` sentinels from
   page) must land before Phase 1 can render generically. Until then, a throwaway hardcoded
   column list can prove the transport, but is not the deliverable.
 - **072** — cookie auth + the refresh interceptor (already shipped; the transport relies on it).
-- **angular-frontend skill / PRD 026** — the SPA build/test/codegen conventions this renderer
+- **angular-frontend skill / [PRD 026](026-angular-frontend.md)** — the SPA build/test/codegen conventions this renderer
   follows.

@@ -119,7 +119,13 @@ describe('buildMoveAppointmentCommand (PRD 101 Phase 5 / SERIE)', () => {
     mutate.mockReturnValue(of(ok));
     const gql = { mutate } as unknown as GraphqlService;
     // occurrence 2031-03-05T10:00 + (1440+90)min = 2031-03-06T11:30
-    const command = buildMoveAppointmentCommand(gql, 'a-1', 'Physik', '2031-03-05T10:00:00', 1440 + 90);
+    const command = buildMoveAppointmentCommand(
+      gql,
+      'a-1',
+      'Physik',
+      '2031-03-05T10:00:00',
+      1440 + 90,
+    );
     expect(command.label).toBe('„Physik" verschoben');
     command.execute().subscribe();
     expect(mutate.mock.calls[0][1]).toEqual({

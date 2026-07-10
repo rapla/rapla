@@ -50,9 +50,9 @@ Raw: 41,072 / 264,024 instr, 3,470 / 24,644 branch. rapla-client low — existin
 | `ConflictPerformanceTest` | 2 perf | 3 | 18 s |
 | **Total** | | **78** | |
 
-**Real bugs surfaced (3):** PRD 011 follow-up Jackson 3 `final`-field bugs (via `XmlRoundTripTest`); `LocalAbstractCachableOperator.storeAndRemoveAsync(...)` empty-stub no-op (via `ConflictPerformanceTest`, fixed same session); MONTHLY = Nth-weekday-of-month convention pinned (not a bug — load-bearing semantic).
+**Real bugs surfaced (3):** [PRD 011](done/011-spring-boot-4-jackson-3.md) follow-up Jackson 3 `final`-field bugs (via `XmlRoundTripTest`); `LocalAbstractCachableOperator.storeAndRemoveAsync(...)` empty-stub no-op (via `ConflictPerformanceTest`, fixed same session); MONTHLY = Nth-weekday-of-month convention pinned (not a bug — load-bearing semantic).
 
-**Full-lane health:** 211 tests / 49 classes, 0 failures, including 4 `@SpringBootTest` e2e + `ConcurrentTests`. `HeadlessClientNameResolutionIntegrationTest` (prior 401 bug from Phase 2) now passes — likely fixed transitively by PRDs 011/014.
+**Full-lane health:** 211 tests / 49 classes, 0 failures, including 4 `@SpringBootTest` e2e + `ConcurrentTests`. `HeadlessClientNameResolutionIntegrationTest` (prior 401 bug from Phase 2) now passes — likely fixed transitively by PRDs [011](done/011-spring-boot-4-jackson-3.md)/[014](done/014-appointment-long-to-java-time.md).
 
 Phase 4 ✅ done. Phase 5 began same day with `DbOperatorBootTest` (above). Remaining weakest areas: `rapla-server.server.spring.web` (partially covered by rapla-app `*ControllerIntegrationTest` ring) + DBOperator follow-ups (refresh-tick, conflict DB round-trip, pre-2.0 schema upgrade). rapla-client Swing UI out of scope for unit-style coverage.
 
@@ -98,13 +98,13 @@ Full save chain (`newReservation` → `addAppointment` → `addAllocatable` → 
 ### 2026-05-10 — Phase 4 follow-up: Classification + ParsedText landed
 
 `ClassificationAndNameformatTest` (rapla-server, tier-2 via `FacadeTestSupport`, 6 tests, 4 s):
-- Every allocatable `getName(locale)` non-null/non-empty/not-the-id (PRD 011 bug shape; tier-2 canary for the slow tier-4 `HeadlessClientNameResolutionIntegrationTest`).
+- Every allocatable `getName(locale)` non-null/non-empty/not-the-id ([PRD 011](done/011-spring-boot-4-jackson-3.md) bug shape; tier-2 canary for the slow tier-4 `HeadlessClientNameResolutionIntegrationTest`).
 - `editAsync` → setValue → getName reflects change on editable, original untouched.
 - `getValue(key)` == `getValueForAttribute(attr)`; `getValueAsString` non-null.
 - `type.getAttribute(key)` matches iteration (post-deserialize identity).
 - `getClassification().getType()` non-null + in `facade.getDynamicTypes()` (resolver wiring intact).
 
-**Coverage delta on `entities.dynamictype.internal`:** `ClassificationImpl` 54 % line / 37 % branch; `ParsedText` 51 / 36; `DynamicTypeImpl` 36 / 22; package 27 → **29 %** (+194). Headline barely moves (10K-instr package dominated by `ParsedText` branches + `DynamicTypeImpl` helpers); wins concentrate on the high-value PRD 011 chain (`getName`/`getValue`/`getValueAsString`) — regressions now surface in <4 s vs 10-15 s tier-4 e2e.
+**Coverage delta on `entities.dynamictype.internal`:** `ClassificationImpl` 54 % line / 37 % branch; `ParsedText` 51 / 36; `DynamicTypeImpl` 36 / 22; package 27 → **29 %** (+194). Headline barely moves (10K-instr package dominated by `ParsedText` branches + `DynamicTypeImpl` helpers); wins concentrate on the high-value [PRD 011](done/011-spring-boot-4-jackson-3.md) chain (`getName`/`getValue`/`getValueAsString`) — regressions now surface in <4 s vs 10-15 s tier-4 e2e.
 
 **Implementation note:** `org.rapla.scheduler.Promise` has no `.get()` / no `whenComplete` — only `thenAccept` / `exceptionally` / `handle` / `finally_`. Tier-2 waits use `CountDownLatch` + `AtomicReference`; `waitFor` helper promoted to `FacadeTestSupport`.
 
@@ -126,7 +126,7 @@ Full save chain (`newReservation` → `addAppointment` → `addAllocatable` → 
 `XmlRoundTripTest` (rapla-server, tier-2 via `FacadeTestSupport`, 6 tests, 3.5 s):
 - Categories: top-level keys + ids identical.
 - Dynamic types: count + key set identical.
-- Allocatable names: non-null/non-empty (PRD 011 bug shape — server-side tier-2 twin of slow tier-4 `HeadlessClientNameResolutionIntegrationTest`).
+- Allocatable names: non-null/non-empty ([PRD 011](done/011-spring-boot-4-jackson-3.md) bug shape — server-side tier-2 twin of slow tier-4 `HeadlessClientNameResolutionIntegrationTest`).
 - User logins: count + login set identical.
 - Classification → DynamicType resolver intact.
 - Idempotency under double round-trip (load → save → load → save → load).
@@ -186,7 +186,7 @@ Tagging wired. `@Tag("db")` on `ConcurrentTests` (also JUnit-5-migrated — stra
 | Fast | `mvn test` | 1m 51s | green; 4 e2e + ConcurrentTests skipped |
 | Full | `mvn test -Dtest.excludedGroups=` | — | one pre-existing 401 in `HeadlessClientNameResolutionIntegrationTest`, flagged |
 
-Fast-lane 1m 51s is above PRD 007's 1m 9s baseline — gap is MockMvc controller tests each cold-booting their own Spring context (cache key not shared due to per-class `@TempDir`/`@DynamicPropertySource`). PRD 007 Phase 2.7 owns the fix.
+Fast-lane 1m 51s is above [PRD 007](007-build-and-test-performance.md)'s 1m 9s baseline — gap is MockMvc controller tests each cold-booting their own Spring context (cache key not shared due to per-class `@TempDir`/`@DynamicPropertySource`). [PRD 007](007-build-and-test-performance.md) Phase 2.7 owns the fix.
 
 `MariadbTest` left untouched (a `main()` scratchpad with hardcoded creds, never discovered by surefire; flagged separately).
 
@@ -205,7 +205,7 @@ OQ #1 resolved: **copy** `testdefault.xml` rather than move + test-jar dep. The 
 
 ## Goal
 
-Grow the automated test suite into a fast, layered safety net so refactors (date migration, Spring Boot 4 / Jackson 3, multi-module split) stay safe and CI stays under ~90 s. PRD 007 fixed suite execution time + silently-skipped JUnit 4 classes; this PRD addresses *what to test, where, and how to keep new tests cheap*.
+Grow the automated test suite into a fast, layered safety net so refactors (date migration, Spring Boot 4 / Jackson 3, multi-module split) stay safe and CI stays under ~90 s. [PRD 007](007-build-and-test-performance.md) fixed suite execution time + silently-skipped JUnit 4 classes; this PRD addresses *what to test, where, and how to keep new tests cheap*.
 
 1. Test pyramid matching the 5-module reactor (PRD 005).
 2. Tier-2 base class (`FacadeTestSupport`) so storage/facade tests skip `@SpringBootTest`.
@@ -215,7 +215,7 @@ Grow the automated test suite into a fast, layered safety net so refactors (date
 
 ## Why now
 
-Date → `LocalDateTime` (PRDs 001a, 014, 015) + Jackson 3 (PRD 011) rewrote storage/wire-format with weak coverage; PRD 016 triaged the deletion fallout. PRD 007 baseline is **94 tests** (rapla-core 14, rapla-client 16 mostly interactive Swing, rapla-server 11, rapla-app 19 mostly `@SpringBootTest`) — most assertions in slowest tier. Spring context-cache work (PRD 007 Phase 2.7) reduces marginal `@SpringBootTest` cost but not cold-boot of the first test per context — pushing logic out of `@SpringBootTest` is the larger win.
+Date → `LocalDateTime` (PRDs 001a, 014, 015) + Jackson 3 ([PRD 011](done/011-spring-boot-4-jackson-3.md)) rewrote storage/wire-format with weak coverage; [PRD 016](done/016-pre-checkin-deletion-audit.md) triaged the deletion fallout. [PRD 007](007-build-and-test-performance.md) baseline is **94 tests** (rapla-core 14, rapla-client 16 mostly interactive Swing, rapla-server 11, rapla-app 19 mostly `@SpringBootTest`) — most assertions in slowest tier. Spring context-cache work ([PRD 007](007-build-and-test-performance.md) Phase 2.7) reduces marginal `@SpringBootTest` cost but not cold-boot of the first test per context — pushing logic out of `@SpringBootTest` is the larger win.
 
 ## Scope
 
@@ -305,7 +305,7 @@ Notes: `FunctionFactory` production registers 3 (`StandardFunctions`/`DurationFu
 
 ### Phase 2 — Tagging and dev-loop gating ✅ Done 2026-05-09
 
-Shipped: `@Tag("db")` on `ConcurrentTests` (+ JUnit 5 migration); `@Tag("e2e")` on 4 acceptance tests; surefire `<excludedGroups>${test.excludedGroups}</excludedGroups>` + default `db,e2e`. `MariadbTest` skipped (a `main()` scratchpad never discovered by surefire). Default `mvn test`: 1m 51s, 49+ tests, green. `< 60 s` target not hit — gap owned by PRD 007 Phase 2.7 (Spring context-cache sharing).
+Shipped: `@Tag("db")` on `ConcurrentTests` (+ JUnit 5 migration); `@Tag("e2e")` on 4 acceptance tests; surefire `<excludedGroups>${test.excludedGroups}</excludedGroups>` + default `db,e2e`. `MariadbTest` skipped (a `main()` scratchpad never discovered by surefire). Default `mvn test`: 1m 51s, 49+ tests, green. `< 60 s` target not hit — gap owned by [PRD 007](007-build-and-test-performance.md) Phase 2.7 (Spring context-cache sharing).
 
 ### Phase 3 — Coverage reporting ✅ Done 2026-05-09
 
@@ -328,7 +328,7 @@ the infrastructure works.
 |---|---|
 | 1 | `mvn -pl rapla-server -am test -Dtest=<demo-conversion>` runs in < 2 s wall (was > 10 s as `@SpringBootTest`). Test passes. |
 | 2 | `mvn test` (default) excludes `MariadbTest`, `ConcurrentTests`, the four E2E tests. `mvn test -DexcludedGroups=` includes them. |
-| 3 | `mvn -Pcoverage test` produces `rapla-core/target/site/jacoco/index.html`. Default `mvn test` is unaffected (no instrumentation overhead — verify by comparing wall-clock to PRD 007's < 90 s target). |
+| 3 | `mvn -Pcoverage test` produces `rapla-core/target/site/jacoco/index.html`. Default `mvn test` is unaffected (no instrumentation overhead — verify by comparing wall-clock to [PRD 007](007-build-and-test-performance.md)'s < 90 s target). |
 | 4 | New tests added pass on a clean checkout. Coverage delta visible in JaCoCo report. |
 
 ## Risks
@@ -352,5 +352,5 @@ the infrastructure works.
 |---|---|
 | **007: Build & Test Performance** | Direct complement. 007 made the suite executable; 017 fills it. Phase 2 of this PRD touches `rapla-bom/pom.xml` surefire config — coordinate with 007 Phase 2 changes. |
 | **005: Multi-Module Split** | Hard prerequisite (already landed). The pyramid here only makes sense with rapla-core / rapla-server / rapla-app separate. |
-| **011: Spring Boot 4 / Jackson 3** | Surfaced wire-format coverage gaps (PRD 016). Phase 4 #12 (XML round-trip) is the durable answer. |
+| **011: Spring Boot 4 / Jackson 3** | Surfaced wire-format coverage gaps ([PRD 016](done/016-pre-checkin-deletion-audit.md)). Phase 4 #12 (XML round-trip) is the durable answer. |
 | **016: Pre-checkin Deletion Audit** | Tactical fix for past damage. 017 is the strategic prevention. |

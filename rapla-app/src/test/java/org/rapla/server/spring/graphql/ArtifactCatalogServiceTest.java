@@ -130,11 +130,11 @@ public class ArtifactCatalogServiceTest
     void readYourOwnWritesDespiteTtlSnapshot() throws Exception
     {
         // prime the snapshot before the write
-        assertTrue(catalog.list(StoredArtifact.KIND_TEMPLATE).isEmpty());
+        assertTrue(catalog.list(StoredArtifact.KIND_DOCUMENT).isEmpty());
 
-        catalog.save(StoredArtifact.KIND_TEMPLATE, "doc", "<div/>", "{\"isPublic\":true}", admin());
+        catalog.save(StoredArtifact.KIND_DOCUMENT, "doc", "<div/>", "{\"isPublic\":true}", admin());
 
-        Optional<StoredArtifact> found = catalog.find(StoredArtifact.KIND_TEMPLATE, "doc");
+        Optional<StoredArtifact> found = catalog.find(StoredArtifact.KIND_DOCUMENT, "doc");
         assertTrue(found.isPresent(), "invalidate-on-write must make the save immediately visible");
         assertEquals("<div/>", found.get().getBody());
         assertNotNull(found.get().getCreateDate());
@@ -156,14 +156,14 @@ public class ArtifactCatalogServiceTest
     @Test
     void listReturnsMetadataWithoutBodies() throws Exception
     {
-        catalog.save(StoredArtifact.KIND_TEMPLATE, "letter", "<html/>", "{\"isPublic\":true}", admin());
+        catalog.save(StoredArtifact.KIND_DOCUMENT, "letter", "<html/>", "{\"isPublic\":true}", admin());
 
-        StoredArtifact entry = catalog.list(StoredArtifact.KIND_TEMPLATE).get(0);
+        StoredArtifact entry = catalog.list(StoredArtifact.KIND_DOCUMENT).get(0);
         assertEquals("letter", entry.getName());
         assertEquals("{\"isPublic\":true}", entry.getMetadata());
         assertNull(entry.getBody(), "list is metadata-only — bodies load through find()");
 
-        assertEquals("<html/>", catalog.find(StoredArtifact.KIND_TEMPLATE, "letter").orElseThrow().getBody(),
+        assertEquals("<html/>", catalog.find(StoredArtifact.KIND_DOCUMENT, "letter").orElseThrow().getBody(),
                 "stripping the listed entry must not damage the stored artifact");
     }
 

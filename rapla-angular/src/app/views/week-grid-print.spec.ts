@@ -63,7 +63,9 @@ describe('WeekGridComponent — print layout (PRD 077)', () => {
   it('each day column carries its print-only label and hour axis', async () => {
     const f = await make(WEEK.map((d) => block(d, '09:00', '10:00', `ev-${d}`)));
     const el = f.nativeElement as HTMLElement;
-    const labels = Array.from(el.querySelectorAll('.daycol .pday')).map((n) => n.textContent?.trim());
+    const labels = Array.from(el.querySelectorAll('.daycol .pday')).map((n) =>
+      n.textContent?.trim(),
+    );
     expect(labels.length).toBe(7);
     expect(labels[0]).toMatch(/15/);
     expect(el.querySelectorAll('.daycol .phlabel').length).toBeGreaterThan(0);

@@ -168,8 +168,18 @@ describe('group-by-selected-resource (Swing GroupAllocatablesStrategy)', () => {
     // building + person both selected; every block binds to the building via matchedBy
     const result = lay(
       [
-        { start: '2026-06-08T09:00:00', end: '2026-06-08T10:00:00', allocs: [roomA, person], matchedBy: [building] },
-        { start: '2026-06-08T11:00:00', end: '2026-06-08T12:00:00', allocs: [roomA, person], matchedBy: [building] },
+        {
+          start: '2026-06-08T09:00:00',
+          end: '2026-06-08T10:00:00',
+          allocs: [roomA, person],
+          matchedBy: [building],
+        },
+        {
+          start: '2026-06-08T11:00:00',
+          end: '2026-06-08T12:00:00',
+          allocs: [roomA, person],
+          matchedBy: [building],
+        },
       ],
       {
         selected: [building, person],
@@ -211,8 +221,7 @@ describe('group-by-selected-resource (Swing GroupAllocatablesStrategy)', () => {
     );
     const d = day(result, '2026-06-08');
     expect(d.lanes).toBe(3); // A, A-overflow, B
-    const laneOf = (start: string) =>
-      d.blocks.find((b) => (b.row as Blk).start === start)?.lane;
+    const laneOf = (start: string) => d.blocks.find((b) => (b.row as Blk).start === start)?.lane;
     expect(laneOf('2026-06-08T09:00:00')).toBe(0); // first A block
     expect(laneOf('2026-06-08T10:00:00')).toBe(1); // colliding A block → inserted lane
     expect(laneOf('2026-06-08T09:30:00')).toBe(2); // Room B pushed right by the conflict lane
@@ -296,10 +305,25 @@ describe('group-by-selected-resource (Swing GroupAllocatablesStrategy)', () => {
     const roomB = { id: 'roomB', name: 'S2/2190', isLocation: true };
     const result = lay(
       [
-        { start: '2026-06-08T09:00:00', end: '2026-06-08T10:30:00', allocs: [roomA], matchedBy: [building] },
-        { start: '2026-06-08T11:00:00', end: '2026-06-08T12:00:00', allocs: [roomB], matchedBy: [building] },
+        {
+          start: '2026-06-08T09:00:00',
+          end: '2026-06-08T10:30:00',
+          allocs: [roomA],
+          matchedBy: [building],
+        },
+        {
+          start: '2026-06-08T11:00:00',
+          end: '2026-06-08T12:00:00',
+          allocs: [roomB],
+          matchedBy: [building],
+        },
       ],
-      { selected: [], mode: 'fixed', allocsOf: (r) => r.allocs ?? [], matchedByOf: (r) => r.matchedBy ?? [] },
+      {
+        selected: [],
+        mode: 'fixed',
+        allocsOf: (r) => r.allocs ?? [],
+        matchedByOf: (r) => r.matchedBy ?? [],
+      },
     );
     const d = day(result, '2026-06-08');
     // one group (the building), non-colliding → still one lane in fixed mode
@@ -311,10 +335,25 @@ describe('group-by-selected-resource (Swing GroupAllocatablesStrategy)', () => {
     const roomB = { id: 'roomB', name: 'Raum B' };
     const result = lay(
       [
-        { start: '2026-06-08T09:00:00', end: '2026-06-08T10:00:00', allocs: [roomA], matchedBy: [roomA] },
-        { start: '2026-06-08T11:00:00', end: '2026-06-08T12:00:00', allocs: [roomB], matchedBy: [roomB] },
+        {
+          start: '2026-06-08T09:00:00',
+          end: '2026-06-08T10:00:00',
+          allocs: [roomA],
+          matchedBy: [roomA],
+        },
+        {
+          start: '2026-06-08T11:00:00',
+          end: '2026-06-08T12:00:00',
+          allocs: [roomB],
+          matchedBy: [roomB],
+        },
       ],
-      { selected: [roomA, roomB], mode: 'fixed', allocsOf: (r) => r.allocs ?? [], matchedByOf: (r) => r.matchedBy ?? [] },
+      {
+        selected: [roomA, roomB],
+        mode: 'fixed',
+        allocsOf: (r) => r.allocs ?? [],
+        matchedByOf: (r) => r.matchedBy ?? [],
+      },
     );
     // two distinct matchedBy keys → two fixed lanes despite no time overlap
     expect(day(result, '2026-06-08').lanes).toBe(2);
@@ -326,7 +365,12 @@ describe('group-by-selected-resource (Swing GroupAllocatablesStrategy)', () => {
         { start: '2026-06-08T09:00:00', end: '2026-06-08T10:00:00', matchedBy: [] },
         { start: '2026-06-08T11:00:00', end: '2026-06-08T12:00:00', matchedBy: [] },
       ],
-      { selected: [], mode: 'fixed', allocsOf: (r) => r.allocs ?? [], matchedByOf: (r) => r.matchedBy ?? [] },
+      {
+        selected: [],
+        mode: 'fixed',
+        allocsOf: (r) => r.allocs ?? [],
+        matchedByOf: (r) => r.matchedBy ?? [],
+      },
     );
     expect(day(result, '2026-06-08').lanes).toBe(1);
   });
@@ -336,7 +380,11 @@ describe('group-by-selected-resource (Swing GroupAllocatablesStrategy)', () => {
     const result = lay(
       [
         { start: '2026-06-08T09:00:00', end: '2026-06-08T10:00:00', allocs: [roomA] },
-        { start: '2026-06-08T11:00:00', end: '2026-06-08T12:00:00', allocs: [{ id: 'rX', name: 'Zzz', isLocation: true }] },
+        {
+          start: '2026-06-08T11:00:00',
+          end: '2026-06-08T12:00:00',
+          allocs: [{ id: 'rX', name: 'Zzz', isLocation: true }],
+        },
       ],
       { selected: [roomA], mode: 'fixed', allocsOf: (r) => r.allocs ?? [] },
     );

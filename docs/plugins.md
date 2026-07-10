@@ -8,7 +8,7 @@ scheduled jobs, etc. become part of the running server.
 No rebuild of rapla. No custom `@SpringBootApplication`. No touching the
 operator's installed JAR.
 
-This is **PRD 045 §4 + Phase 5+6**. Read [`prd/045-end-user-deployment-and-db-config.md`](prd/045-end-user-deployment-and-db-config.md)
+This is **[PRD 045](prd/045-end-user-deployment-and-db-config.md) §4 + Phase 5+6**. Read [`prd/045-end-user-deployment-and-db-config.md`](prd/045-end-user-deployment-and-db-config.md)
 for the design rationale and trade-offs.
 
 ## What an operator does
@@ -192,8 +192,8 @@ rapla 2.2. The failure is loud (boot stops with a stack trace) but late
 for that release.
 
 This is a known trade-off and the conscious cost of the drop-in model — see
-PRD 045 §4 ("Why drop-in, not PRD 003's custom deployable?") and the
-"API stability guarantee" entry in PRD 045's Open Questions for the
+[PRD 045](prd/045-end-user-deployment-and-db-config.md) §4 ("Why drop-in, not [PRD 003](prd/003-custom-deployments-after-spring-migration.md)'s custom deployable?") and the
+"API stability guarantee" entry in [PRD 045](prd/045-end-user-deployment-and-db-config.md)'s Open Questions for the
 rationale and the path to a frozen surface if it ever becomes worth the
 maintenance commitment.
 

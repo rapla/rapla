@@ -4,8 +4,8 @@ Drill-down of the editing side of [README.md](README.md) (UC-1/2/5/6 touch editi
 this doc decomposes *what editing actually consists of*). Grounded in the Swing
 functional inventory
 ([../architecture/reservation-edit-ui-inventory.md](../architecture/reservation-edit-ui-inventory.md))
-and the market/UX research collected for PRD 091. Design proposals → PRD 091
-(resource availability, event sheet, matrix) and PRD 092 (free-slot search); this
+and the market/UX research collected for [PRD 091](../prd/091-spa-reservation-edit-and-availability.md). Design proposals → [PRD 091](../prd/091-spa-reservation-edit-and-availability.md)
+(resource availability, event sheet, matrix) and [PRD 092](../prd/092-free-slot-search.md) (free-slot search); this
 page is the requirements ground truth.
 
 Terminology per the README glossary: **Event** = Reservation, **Occurrence** =
@@ -48,7 +48,7 @@ and should — decompose them: most real edits touch exactly one axis.
 ## Load-bearing observations
 
 - **UC-E5/E6/E7/E8 are where the Swing dialog is weakest** and where the SPA can beat
-  it — the market research (PRD 091) shows no mainstream product handles
+  it — the market research ([PRD 091](../prd/091-spa-reservation-edit-and-availability.md)) shows no mainstream product handles
   per-occurrence resource assignment on recurring series well; rapla's sparse
   restriction map is the native data model for exactly that.
 - **"Partially free" is a first-class state**, not an error: Swing already computes
@@ -65,7 +65,7 @@ and should — decompose them: most real edits touch exactly one axis.
 - **Validation split stays as-is:** client converges (non-blocking auto-corrections,
   as documented in reservation-edit.md), server decides (EventCheck equivalents +
   dispatch). Recurrence validation and block expansion already exist as server
-  services (`/api/edit/*`, PRD 024) so the SPA never re-implements the rules.
+  services (`/api/edit/*`, [PRD 024](../prd/024-server-side-edit-services.md)) so the SPA never re-implements the rules.
 - **§12 applies to availability answers:** "room busy" must not leak *what* occupies
   it when the other event is unreadable — show occupied/free, reveal details only
   when readable.
@@ -75,8 +75,8 @@ and should — decompose them: most real edits touch exactly one axis.
 - The **event sheet** (README UC-6) is the container: deep-linkable, responsive,
   scoped sections for the three axes.
 - **Availability is a service, not a pane:** UC-E5 (find resource) and the matrix
-  (UC-E7/E8) consume the server-side `resourceAvailability` query (PRD 091);
-  UC-E6 (find slot) consumes the `freeSlots` query (PRD 092) — the SPA must not
+  (UC-E7/E8) consume the server-side `resourceAvailability` query ([PRD 091](../prd/091-spa-reservation-edit-and-availability.md));
+  UC-E6 (find slot) consumes the `freeSlots` query ([PRD 092](../prd/092-free-slot-search.md)) — the SPA must not
   compute availability client-side.
 - The **matrix** is the series-planner's power view; the **calendar drag + strip**
   is the single-occurrence view; the **finder** is the search-shaped entry (kin to

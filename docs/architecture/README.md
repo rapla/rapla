@@ -19,12 +19,13 @@ references — pasting one into your IDE jumps to the right place.
 
 | Page | Read first if you want to know… |
 |---|---|
+| [glossary.md](glossary.md) | What a term *means* — the disambiguation index for colliding words ("template", "view", "export", "calendar", "model", "block", …), each domain term with its German equivalent and a code pointer |
 | [overview.md](overview.md) | What modules exist, how they're laid out, how they talk |
 | [domain-model.md](domain-model.md) | What entities exist, how they relate (ER summary) |
 | [dynamic-types.md](dynamic-types.md) | The schema-on-data system: DynamicType, Attribute, Classification, name templates |
 | [conflicts-and-events.md](conflicts-and-events.md) | Reservation as event container; Appointment / AppointmentBlock; how `ConflictFinder` works |
 | [reservation-edit.md](reservation-edit.md) | End-to-end edit flow with clone semantics, EventCheck, save; wire model; AppointmentController rules; edge case reference |
-| [reservation-edit-ui-inventory.md](reservation-edit-ui-inventory.md) | Every user-facing capability of the Swing edit dialog (picker states, restriction popup, free-slot search) — the coverage checklist for the SPA event sheet (PRD 091) |
+| [reservation-edit-ui-inventory.md](reservation-edit-ui-inventory.md) | Every user-facing capability of the Swing edit dialog (picker states, restriction popup, free-slot search) — the coverage checklist for the SPA event sheet ([PRD 091](../prd/091-spa-reservation-edit-and-availability.md)) |
 | [rest-api.md](rest-api.md) | Full REST endpoint catalog grouped by audience (SPA, admin, import/export); auth header, error envelope, common-flow recipes |
 | [permissions.md](permissions.md) | AccessLevel, PermissionImpl, resolution algorithm, server enforcement, JWT |
 | [extension-points.md](extension-points.md) | Spring DI plugin wiring, extension-point catalog, plugin list |
@@ -33,12 +34,15 @@ references — pasting one into your IDE jumps to the right place.
 | [mvp-pattern.md](mvp-pattern.md) | Presenter / View / pure-model carve-out pattern; headless test harness; AGENTS.md §12 leak-probe pattern |
 | [swing-platform-quirks.md](swing-platform-quirks.md) | Platform/compositor workarounds in the Swing client (WSLg popup input-region leak, FilterEditButton positioning, focus-dismiss handlers) |
 | [migration-from-master.md](migration-from-master.md) | What changed from the historical `master` branch to the current `spring-boot` tree (restinject removed, Spring Boot 4 + Angular added, 5-module reactor, carve-out programme); size comparison + intent for new contributors |
-| [tableview-and-graphql-views.md](tableview-and-graphql-views.md) | Legacy Swing TableView config (views, columns, `defaultValue` annotations, the dhbw-configured Termine table) as the capability benchmark for the GraphQL-native view system (PRD 074) — proves the new path reproduces the existing tables |
-| [spa-selection-and-actions.md](spa-selection-and-actions.md) | Row/item selection in the SPA (Swing/Excel semantics, keyboard map, touch selection mode) and how a multi-row selection feeds the row-action/command system (bulk Löschen, subset-wins gating, best-effort undo) — PRDs 094/099 |
-| [calendar-rendering.md](calendar-rendering.md) | Block-based calendar rendering rules extracted from Swing + HTML export (shared rapla-core strategy machinery): color resolution + always-black text, the lane/slot pipeline (`GroupAllocatablesStrategy` over SELECTED resources, fixed vs compact), rows-per-hour scale/worktime, FLOW/BLOCK selection — ground truth for the SPA month/week grids (PRDs 095/077/100) |
+| [tableview-and-graphql-views.md](tableview-and-graphql-views.md) | Legacy Swing TableView config (views, columns, `defaultValue` annotations, the dhbw-configured Termine table) as the capability benchmark for the GraphQL-native view system ([PRD 074](../prd/074-graphql-declarative-views.md)) — proves the new path reproduces the existing tables |
+| [spa-selection-and-actions.md](spa-selection-and-actions.md) | Row/item selection in the SPA (Swing/Excel semantics, keyboard map, touch selection mode) and how a multi-row selection feeds the row-action/command system (bulk Löschen, subset-wins gating, best-effort undo) — PRDs [094](../prd/094-spa-main-view-actions-and-popups.md)/099 |
+| [legacy-urls.md](legacy-urls.md) | The `/rapla/` prefix after the context-root move (server routes kept it literally, client URL generators must emit it themselves) + the `UrlEncryptor` salt-in-return-value wire format — read before touching published calendar/iCal URL generation |
+| [calendar-rendering.md](calendar-rendering.md) | Block-based calendar rendering rules extracted from Swing + HTML export (shared rapla-core strategy machinery): color resolution + always-black text, the lane/slot pipeline (`GroupAllocatablesStrategy` over SELECTED resources, fixed vs compact), rows-per-hour scale/worktime, FLOW/BLOCK selection — ground truth for the SPA month/week grids (PRDs [095](../prd/095-month-grid-render-mode.md)/[077](../prd/077-calendar-model-graphql.md)/[100](../prd/100-spa-block-renderer-unification.md)) |
 
 ## What lives where (quick lookup)
 
+- **"Which meaning of this word?"** — [glossary.md](glossary.md),
+  starting with its `⚠ Colliding terms` section.
 - **Build, test, server / client lifecycle, hard rules** —
   [`../../AGENTS.md`](../../AGENTS.md).
 - **Conflict overlap algorithm in detail** —
@@ -69,5 +73,5 @@ explanation is worth more than a deleted page.
 
 ## Drafted
 
-PRD 022 captures the rationale and scope of this doc set. It will
+[PRD 022](../prd/022-architecture-documentation.md) captures the rationale and scope of this doc set. It will
 move to `docs/prd/done/` once the eight pages are stable.

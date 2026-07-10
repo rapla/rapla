@@ -378,7 +378,7 @@ Fixes, in order:
 
 Separate from the Playwright **MCP** above (which drives a browser
 interactively): the Playwright **Agents** layer authors and maintains
-`*.spec.ts` browser e2e tests. Set up by PRD 044; all of it lives under
+`*.spec.ts` browser e2e tests. Set up by [PRD 044](prd/done/044-playwright-agents.md); all of it lives under
 `rapla-angular/`.
 
 ```bash
@@ -407,7 +407,7 @@ Key facts:
 - Run the authored specs with `npm run e2e` (= `playwright test`) or
   `npm run e2e:ui`. The rapla dev server must be up (AGENTS.md §8) — specs hit
   `http://localhost:8051/app/`; there is no `webServer` auto-start.
-- Tier-7 in AGENTS.md §10's pyramid. Not wired into CI yet — PRD 034 Phase 4.
+- Tier-7 in AGENTS.md §10's pyramid. Not wired into CI yet — [PRD 034](prd/034-ci-baseline-workflow.md) Phase 4.
 
 ## Known JNLP defects
 

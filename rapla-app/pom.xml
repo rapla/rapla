@@ -482,6 +482,21 @@
             <artifactId>graphql-java-extended-scalars</artifactId>
             <version>24.0</version>
         </dependency>
+        <!-- PRD 097 D2: JMustache — logic-less template engine for stored HTML
+             documents. ~100 KiB, zero transitive deps, no expression language
+             (structural no-SSTI guarantee). Version managed by the Spring Boot
+             BOM (it backs spring-boot-starter-mustache), so no <version> here. -->
+        <dependency>
+            <groupId>com.samskivert</groupId>
+            <artifactId>jmustache</artifactId>
+        </dependency>
+        <!-- PRD 097 D6: jsoup strips <script>/event handlers/javascript: URLs from the
+             rendered document before the server-authored shell wraps it. Not BOM-managed. -->
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.21.1</version>
+        </dependency>
         <!-- PRD 035 testbed: HttpGraphQlTester for tier-3 resolver tests
              (Spring for GraphQL's MockMvc-equivalent — wraps the configured
              GraphQL endpoint via MockMvc, no random port).

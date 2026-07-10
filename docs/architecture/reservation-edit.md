@@ -291,11 +291,11 @@ The chosen `DialogAction` (`:506`) drives `AppointmentResize.change()`
   server reject (version conflict / permission) rolls the optimistic UI back and
   shows the exception.
 
-#### SPA move/resize — implemented (PRD 101 Phase 5, 2026-07-09)
+#### SPA move/resize — implemented ([PRD 101](../prd/101-transpose-anchors-move-copy-paste.md) Phase 5, 2026-07-09)
 
-The verb family and typed targets are designed in **PRD 101** (which supersedes
-the earlier PRD 056 `moveAppointment(…, dateShift, scope)` sketch). The transpose
-math and the EVENT/SERIE/SINGLE cascade live **server-side** (PRD 101 D1) — the
+The verb family and typed targets are designed in **[PRD 101](../prd/101-transpose-anchors-move-copy-paste.md)** (which supersedes
+the earlier [PRD 056](../prd/056-graphql-events-write-api.md) `moveAppointment(…, dateShift, scope)` sketch). The transpose
+math and the EVENT/SERIE/SINGLE cascade live **server-side** ([PRD 101](../prd/101-transpose-anchors-move-copy-paste.md) D1) — the
 SPA never rebuilds an `updateReservation` payload for a scoped move; its only job
 is the dialog + the compensating-undo command.
 
@@ -333,6 +333,20 @@ zone-less wall-clock `LocalDateTime`.
   appointment-non-repeating `isMovableRow` on the WEEK grid, so repeating and
   multi-appointment blocks now drag. Each movable chip also grows a bottom
   **resize handle** (`.rz`, `ns-resize`).
+  - **⚠ Custom views must select the hidden drag-gate fields or every chip is
+    silently un-draggable** (verified 2026-07-09 debugging the `Übersicht` custom
+    view). `isDraggableRow`/`moveBlockFacts`/`moveScopeOptions` read
+    `appointment @hidden { id repeating { type } }`, `reservation @hidden { …
+    appointmentCount }`, and `isException @hidden` off the row — the builtin
+    `rapla_appointments` selects all of them, a hand-authored view may not. Without
+    `appointment.id` the gate returns false and NOTHING drags (no error, no
+    cursor); without `appointmentCount`/`repeating` the EVENT/SERIE/SINGLE scope
+    dialog can't be built. Fail-closed by design (§12 — a view that omits the
+    facts gets no drag affordance). Copy the builtin's hidden block verbatim into
+    any custom view that should support drag. Possible future softening: allow
+    EVENT-only drag from just `reservation { id canModify }` — but that shifts ALL
+    appointments of a multi-appointment reservation on a one-block grab, the exact
+    surprise `appointmentCount === 1` was gating; not done.
 - **Scope decision** — `moveScopeOptions(facts, gesture)` mirrors
   `deleteScopeOptions`: MOVE offers EVENT always, SERIE only when repeating AND
   multi, SINGLE when repeating OR multi; RESIZE never offers EVENT (Swing parity)
@@ -945,7 +959,7 @@ frontend, or writing integration tests.
   "Same day, end-time = start-time next day" — keep N≥2 to match
   Swing behaviour.
 
-## SPA recurrence editor (PRD 091 Phase 4, 2026-07-08)
+## SPA recurrence editor ([PRD 091](../prd/091-spa-reservation-edit-and-availability.md) Phase 4, 2026-07-08)
 
 The Angular sheet now carries the recurrence editor. Same rule model as
 Swing — the wire `RepeatingRuleInput` (type / interval / end / count /
@@ -960,17 +974,17 @@ Mapping and deliberate deviations from `AppointmentController`:
 | Dual-mode detail editor (single/repeating swap) | ↻ per appointment row toggles a panel BELOW the row; the four-field date/time row stays unchanged in both modes |
 | Day-span chooser replaces the end-date widget in repeating mode | **Not copied** — the occurrence end derives from start + duration; multi-day occurrences stay expressible via the normal end date |
 | Repeating-type radio | Select: nie (Einzeltermin) / täglich / wöchentlich / monatlich / jährlich; type switch resets type-specific fields (`savedRepeatingType` analog: `defaultRule` in `repeating-edit.ts`) |
-| Weekday checkboxes | Chips (Mo-first display, core values 1=So…7=Sa on the wire); empty set shows an **inline error** instead of silently yielding no occurrences (validation-philosophy deviation, PRD 091 OQ7) |
+| Weekday checkboxes | Chips (Mo-first display, core values 1=So…7=Sa on the wire); empty set shows an **inline error** instead of silently yielding no occurrences (validation-philosophy deviation, [PRD 091](../prd/091-spa-reservation-edit-and-availability.md) OQ7) |
 | Ending mode until / n-times / forever | Radios; switching seeds the active field (until = start + 90 d, count = 10) and clears the other — `end`/`count` presence discriminates on the wire |
-| Exceptions dialog (range-add, multi-remove, badge) | Occurrence **preview list with click-to-skip**: rows come from the server (`expandOccurrences` wraps `createBlocks`, exceptions flagged + struck through), clicking a row toggles its date in `rule.exceptions` (a skipped row restores on click — removal is per-click, Swing's multi-select remove has no SPA equivalent and needs none); count badge on the summary line. Range-add: still open (PRD 091 4.4) |
-| Convert to single events (split) | Still open (PRD 091 4.6) |
+| Exceptions dialog (range-add, multi-remove, badge) | Occurrence **preview list with click-to-skip**: rows come from the server (`expandOccurrences` wraps `createBlocks`, exceptions flagged + struck through), clicking a row toggles its date in `rule.exceptions` (a skipped row restores on click — removal is per-click, Swing's multi-select remove has no SPA equivalent and needs none); count badge on the summary line. Range-add: still open ([PRD 091](../prd/091-spa-reservation-edit-and-availability.md) 4.4) |
+| Convert to single events (split) | Still open ([PRD 091](../prd/091-spa-reservation-edit-and-availability.md) 4.6) |
 | `CommandHistory` per widget command | Rule edits run through the sheet's memento funnel (`mutateDraft`, coalesce keys `appt:<id>:rep:*` for interval/until/count) — undo/redo restores the whole draft snapshot |
 
 Availability while editing a series: the pills recompute on every rule
 edit — the availability queries materialize `repeating`/`allDay` via
-the same `AppointmentInputMapper` the mutations use (PRD 091 Phase 4.5),
+the same `AppointmentInputMapper` the mutations use ([PRD 091](../prd/091-spa-reservation-edit-and-availability.md) Phase 4.5),
 so what the pills evaluate is exactly what a save would persist.
-Granularity stays the appointment (PRD 091 D6: block-level detail —
+Granularity stays the appointment ([PRD 091](../prd/091-spa-reservation-edit-and-availability.md) D6: block-level detail —
 fraction "8/10", per-occurrence conflict marks — is permanently
 deferred unless explicitly demanded).
 

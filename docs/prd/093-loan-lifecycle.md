@@ -1,7 +1,7 @@
 # PRD 093 — Loan lifecycle (check-out / return / overdue)
 
 **Status:** draft — 2026-07-06
-**Related:** PRD 091 (SPA reservation edit + `resourceAvailability` — the finder that must respect open loans), PRD 092 (free-slot search — *not* required for the lending archetype), `docs/usecases/equipment-planning.md` (archetype C, UC-C3/UC-C4 — the requirements ground truth)
+**Related:** [PRD 091](091-spa-reservation-edit-and-availability.md) (SPA reservation edit + `resourceAvailability` — the finder that must respect open loans), [PRD 092](092-free-slot-search.md) (free-slot search — *not* required for the lending archetype), `docs/usecases/equipment-planning.md` (archetype C, UC-C3/UC-C4 — the requirements ground truth)
 
 ## Abstract
 
@@ -78,7 +78,7 @@ Cancellation stays what it is today: deleting the reservation. No `cancelled` st
   (deployments fake it with `rapla:disabled` colors today).
 - Reminder mails / borrower notifications.
 - Barcode / scanner integration, asset management (serials stay plain attributes).
-- Swing UI for the lifecycle (SPA-only, consistent with PRD 090's direction).
+- Swing UI for the lifecycle (SPA-only, consistent with [PRD 090](090-additive-permission-resolution.md)'s direction).
 - Migration tooling for existing ZURÜCK allocations (the observed deployment has zero —
   the workaround is staged, not in routine use).
 
@@ -96,13 +96,13 @@ Cancellation stays what it is today: deleting the reservation. No `cancelled` st
 
 ### Phase 2 — Availability honors open loans
 - [ ] Blocking-interval rule `[start, max(end, now)]` for `status == out` in the
-      availability computation (PRD 091 resolver path; check interaction with PRD 086
+      availability computation ([PRD 091](091-spa-reservation-edit-and-availability.md) resolver path; check interaction with [PRD 086](086-appointment-block-index.md)
       block index — OQ4).
 - [ ] Computed `Allocatable.currentLoan` (§12-scoped) + `excludeCurrentlyOut` filter.
 - [ ] Tier-3 leak test per §12 (unreadable loan → `isOut` only).
 
 ### Phase 3 — SPA surfaces
-- [ ] Status chip + checkout/return actions in the event sheet (PRD 091 Phase 2 host).
+- [ ] Status chip + checkout/return actions in the event sheet ([PRD 091](091-spa-reservation-edit-and-availability.md) Phase 2 host).
 - [ ] Active-loans table lens: filter by status, derived overdue column, sort by end.
 
 ## Tests
@@ -129,7 +129,7 @@ Cancellation stays what it is today: deleting the reservation. No `cancelled` st
 - **OQ3 — mutation shape:** generic `setLoanStatus(status)` vs explicit verbs
   (`checkOut`/`return`). Verbs are self-documenting and validate transitions naturally.
   *Resolution:* pending.
-- **OQ4 — PRD 086 block index:** the open-ended blocking interval depends on *now*, so
+- **OQ4 — [PRD 086](086-appointment-block-index.md) block index:** the open-ended blocking interval depends on *now*, so
   it cannot be materialized into a static block index. Does the index path need a
   status-aware overlay, or is the loan volume small enough to always resolve open loans
   live? *Resolution:* pending.

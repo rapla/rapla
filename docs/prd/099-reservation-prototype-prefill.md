@@ -3,9 +3,9 @@
 **Status:** implemented — 2026-07-08 (Phases 1–4 done, uncommitted on
 spring-boot; open: live browser smoke + the optional dropdown hardening;
 templates/permission-preview deferred per D6/OQ1)
-**Related:** PRD 096 (classification editor — consumes the prototype in the sheet),
-PRD 056 (events write API — create/update semantics, client-minted ids §9),
-PRD 090 (additive permissions — the permission model the create-seed feeds into)
+**Related:** [PRD 096](096-spa-classification-editor.md) (classification editor — consumes the prototype in the sheet),
+[PRD 056](056-graphql-events-write-api.md) (events write API — create/update semantics, client-minted ids §9),
+[PRD 090](090-additive-permission-resolution.md) (additive permissions — the permission model the create-seed feeds into)
 
 ## Abstract
 
@@ -23,7 +23,7 @@ defaults become visible.
 
 Key design decisions from the 2026-07-08 design dialog (see Decisions locked):
 prototype is a QUERY, not a persisted draft and not a mutation; ids stay
-client-minted (PRD 056 §9 unchanged); permissions are a create-seed applied
+client-minted ([PRD 056](056-graphql-events-write-api.md) §9 unchanged); permissions are a create-seed applied
 server-side, never client-supplied, never remapped on type change; templates
 are OUT of scope but constrained the API shape (list-form, re-keying,
 value-faithful copy).
@@ -167,7 +167,7 @@ mutations were broken for externally-authenticated users.
   target prototype (cache or fetch) before mutating, so remap + gap-fill stay
   ONE undoable mutateDraft step (prefetching all dropdown types stays a noted
   option, not built). Residual staleness = mid-session schema drift — the
-  same class PRD 096 D1 already accepts (rare; save validates, reload heals).
+  same class [PRD 096](096-spa-classification-editor.md) D1 already accepts (rare; save validates, reload heals).
   Hardening (optional): filter the type dropdown to types present in the
   parsed SDL so options/descriptors/prototypes are guaranteed one consistent
   snapshot.
@@ -182,7 +182,7 @@ cancel becomes a delete, drafts leak into queries/conflicts, fights memento
 undo — Swing itself does not persist before save); a draft-building MUTATION
 whose only write is id allocation (collapsed once D2 removed the id argument).
 
-**D2 — Ids stay client-minted (PRD 056 §9 unchanged).** Typed UUIDs make
+**D2 — Ids stay client-minted ([PRD 056](056-graphql-events-write-api.md) §9 unchanged).** Typed UUIDs make
 collisions negligible and the ID_COLLISION check remains as the retry/
 idempotency contract. A server-built draft would have solved the id question
 only for the initial state anyway — appointment ids are minted continuously
@@ -194,7 +194,7 @@ separate id-strategy decision, not a draft-design ride-along.
 default semantics stay 100% server-side (`newClassification()` — the exact
 code the create runs), preview and persisted result can never diverge, and no
 default-value encoding (category keys, dates, lists) enters the SDL. The SDL
-descriptor pipeline (PRD 096 D1/D5) stays attribute-STRUCTURE only.
+descriptor pipeline ([PRD 096](096-spa-classification-editor.md) D1/D5) stays attribute-STRUCTURE only.
 
 **D4 — Permissions are a CREATE-SEED, not a live binding to the type**
 (user decision 2026-07-08). `copyPermissions(type, reservation)` happens
@@ -207,7 +207,7 @@ unsaved drafts this is automatically correct: permissions do not exist until
 create, which copies from the then-current type.
 
 **D5 — Type change stays save-time-only (reaffirmed).** No per-switch server
-call, no `reshapeReservation`: the sheet remaps client-side (PRD 096), the
+call, no `reshapeReservation`: the sheet remaps client-side ([PRD 096](096-spa-classification-editor.md)), the
 save is a plain update with the new typeKey. The prototype cache is therefore
 the defaults source on switch.
 

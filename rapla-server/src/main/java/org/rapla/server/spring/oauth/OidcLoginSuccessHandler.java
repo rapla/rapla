@@ -114,7 +114,7 @@ public class OidcLoginSuccessHandler extends SavedRequestAwareAuthenticationSucc
         try
         {
             IdentityClaims identity = externalUserResolver.claimsFor(claims, provider);
-            User user = userProvisioner.provision(identity);
+            User user = userProvisioner.provision(identity, provider.autoProvision());
             // PRD 072 (Swing-SSO broker fix): re-establish the SecurityContext as the
             // rapla user (UUID principal), matching the password-grant convention
             // (raplaAuthenticationProvider). Otherwise the Authorization Server issues

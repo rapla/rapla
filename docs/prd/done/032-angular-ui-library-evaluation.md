@@ -1,14 +1,14 @@
 # 032 — Angular calendar view + UI component library
 
-**Status:** done — both decisions locked (Material 2026-05-12; calendar 2026-07-07: **own implementation, no external calendar library** — see §Calendar view decision). The Phase-1 bake-off is cancelled (no library to bake off); calendar implementation ships via PRD 095 (month) and PRD 077 (week/resources).
+**Status:** done — both decisions locked (Material 2026-05-12; calendar 2026-07-07: **own implementation, no external calendar library** — see §Calendar view decision). The Phase-1 bake-off is cancelled (no library to bake off); calendar implementation ships via [PRD 095](../095-month-grid-render-mode.md) (month) and [PRD 077](../077-calendar-model-graphql.md) (week/resources).
 
 ## Goal
 
-Pick the UI stack for the Angular frontend from PRD 026.
+Pick the UI stack for the Angular frontend from [PRD 026](../026-angular-frontend.md).
 
 **Component library: Angular Material (decided 2026-05-12).** Rationale below in §Component library decision. This PRD no longer evaluates component libraries — only the calendar.
 
-**Calendar view library: none — own implementation (decided 2026-07-07).** The original bake-off premise ("view-only: no drag-edit, no resource axis") was superseded: multi-resource week + in-grid drag-edit ARE on the roadmap (PRD 077/095), which collapses the finalist field — see §Calendar view decision.
+**Calendar view library: none — own implementation (decided 2026-07-07).** The original bake-off premise ("view-only: no drag-edit, no resource axis") was superseded: multi-resource week + in-grid drag-edit ARE on the roadmap (PRD [077](../077-calendar-model-graphql.md)/[095](../095-month-grid-render-mode.md)), which collapses the finalist field — see §Calendar view decision.
 
 Constraint: **OSS license compatible with Rapla (AGPL / Apache 2.0)**. Commercial libs (Syncfusion, Bryntum, Mobiscroll, Kendo, DevExtreme, AG Grid Enterprise, FullCalendar Premium, Schedule-X Premium) are disqualified up front.
 
@@ -20,9 +20,9 @@ The calendar lib doesn't have to be Angular-native — a framework-agnostic JS /
 
 **Editor is handmade, not vendor.** The reservation editor carries ~15 years of rapla-specific behaviour: `AppointmentController` rules, recurrence + exception dates, permission gating per field, `EventCheck` pre-save validators, classification-aware fields. None maps to a vendor form-builder. Swing knowledge transfers to the editor's *behaviour*, not to a calendar component's *rendering*.
 
-**Component library is therefore for editor primitives** — text fields, date pickers, dialogs, the table listing reservations — plus option panels migrated in PRD 026.
+**Component library is therefore for editor primitives** — text fields, date pickers, dialogs, the table listing reservations — plus option panels migrated in [PRD 026](../026-angular-frontend.md).
 
-PRD 026 Phase 0 proved the toolchain (Angular 21 + typed REST client + same-origin hosting) on a plain-HTML reservation table. Phase 1 needs real calendar rendering + proper form controls; this PRD chooses both.
+[PRD 026](../026-angular-frontend.md) Phase 0 proved the toolchain (Angular 21 + typed REST client + same-origin hosting) on a plain-HTML reservation table. Phase 1 needs real calendar rendering + proper form controls; this PRD chooses both.
 
 ## Scope
 
@@ -36,11 +36,11 @@ Out of scope:
 
 - **Resource-axis / timeline scheduling view.** Not in SPA v1; separate PRD if needed.
 - **Drag-create / drag-resize / drag-move inside the calendar.** Click → opens handmade editor.
-- **The reservation editor itself.** Lives in PRD 026 Phases 2–5.
+- **The reservation editor itself.** Lives in [PRD 026](../026-angular-frontend.md) Phases 2–5.
 - Charts, rich text editors, file upload, drag-drop tree.
 - Theming / branding (default theme is fine for v1).
 - i18n wiring (verify the API exists; don't connect it).
-- Replacing the Phase 0 reservation list with a calendar view — calendar lands in PRD 026 Phase 4.
+- Replacing the Phase 0 reservation list with a calendar view — calendar lands in [PRD 026](../026-angular-frontend.md) Phase 4.
 
 ## Calendar view requirements
 
@@ -62,7 +62,7 @@ Derived from `docs/architecture/reservation-edit.md` and `conflicts-and-events.m
 9. Day view as third option.
 10. Keyboard navigation + a11y annotations.
 11. Bundle ≤ 100 KB compressed (view-only is much lighter than full scheduler).
-12. Time-range navigation hook (pre-fetching events on visible window — pairs with `/edit/expand-blocks` in PRD 026 §B4).
+12. Time-range navigation hook (pre-fetching events on visible window — pairs with `/edit/expand-blocks` in [PRD 026](../026-angular-frontend.md) §B4).
 
 **Explicitly NOT required:**
 
@@ -91,7 +91,7 @@ With drag-edit and resource view out of scope, several previously-screened libra
 ## Calendar view decision (2026-07-07): own implementation, references not runtime deps
 
 **Requirement change that forced the re-screen:** the SPA roadmap needs **multi-resource
-week views + in-grid drag-edit** (PRD 077; month grid first via PRD 095) — both were on
+week views + in-grid drag-edit** ([PRD 077](../077-calendar-model-graphql.md); month grid first via [PRD 095](../095-month-grid-render-mode.md)) — both were on
 this PRD's original "explicitly NOT required" list. Multi-resource views are exactly what
 the commercial vendors paywall: FullCalendar core (MIT) has no resource axis (Premium,
 proprietary — visible source is NOT copyable), Schedule-X resource scheduler is paid,
@@ -136,7 +136,7 @@ working grid, but bus-factor-1 with no fork insurance and a public-hooks ceiling
 (b) fork EventCalendar — Svelte build chain + untyped-JS maintenance, ruled out;
 (c) resurrect-or-port question for the *layout engine* (server-side `CalendarLayoutEngine`,
 deleted 2026-05-27 `f4e9c048`, recoverable from git — vs a TS port of `BestFitStrategy`)
-stays OPEN, owned by the week-grid work — the month grid (PRD 095) needs no overlap layout.
+stays OPEN, owned by the week-grid work — the month grid ([PRD 095](../095-month-grid-render-mode.md)) needs no overlap layout.
 
 ## Component library decision
 
@@ -198,12 +198,12 @@ Write the scorecard at the bottom of this PRD. Decide.
 - `npm install @angular/material @angular/cdk` and the calendar pick.
 - Replace Phase 0 plain-HTML list with `mat-table` + `MatSort` + `MatPaginator` (reading from `GET /storage/resources` + appointment query, unchanged).
 - Wire `MatDialog`; row-click opens stub editor dialog (single read-only `mat-form-field` with title, no save).
-- Add `MatSnackBar` for save/error toasts (used later by PRD 026 phases 2+).
+- Add `MatSnackBar` for save/error toasts (used later by [PRD 026](../026-angular-frontend.md) phases 2+).
 - Confirm `ng build --configuration=production` and same-origin load through `http://localhost:8051/rapla/app/` still work.
 - Delete `rapla-angular/src/app/bakeoff/`.
-- Update PRD 026 Phase 1 plan to reference Material + the picked calendar lib by name.
+- Update [PRD 026](../026-angular-frontend.md) Phase 1 plan to reference Material + the picked calendar lib by name.
 
-No calendar code lands in this PRD — calendar wired in PRD 026 Phase 4 using the library chosen here.
+No calendar code lands in this PRD — calendar wired in [PRD 026](../026-angular-frontend.md) Phase 4 using the library chosen here.
 
 ## Tests
 
@@ -213,7 +213,7 @@ No calendar code lands in this PRD — calendar wired in PRD 026 Phase 4 using t
   - Mounts a `MatDialog` host, fires open + ESC, asserts close.
 - No tests for bake-off code (the `bakeoff/` directory is deleted before merge).
 
-Smoke test by `mvn -pl rapla-app -am spring-boot:run -Dspring-boot.run.fork=false` + `cd rapla-angular && ng build --watch` per PRD 026 §Dev-mode wiring, load `http://localhost:8051/rapla/app/`, log in, verify list + stub dialog round-trip works.
+Smoke test by `mvn -pl rapla-app -am spring-boot:run -Dspring-boot.run.fork=false` + `cd rapla-angular && ng build --watch` per [PRD 026](../026-angular-frontend.md) §Dev-mode wiring, load `http://localhost:8051/rapla/app/`, log in, verify list + stub dialog round-trip works.
 
 ## Open questions
 
@@ -248,4 +248,4 @@ Smoke test by `mvn -pl rapla-app -am spring-boot:run -Dspring-boot.run.fork=fals
   `docs/architecture/reservation-edit.md`,
   `docs/architecture/conflicts-and-events.md`,
   `docs/architecture/permissions.md`,
-  and PRD 026.
+  and [PRD 026](../026-angular-frontend.md).

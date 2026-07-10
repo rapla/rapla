@@ -1,14 +1,8 @@
 package org.rapla.server.spring.graphql;
 
-import java.time.DayOfWeek;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import tools.jackson.databind.json.JsonMapper;
 import org.springframework.graphql.server.WebGraphQlInterceptor;
 import org.springframework.graphql.server.WebGraphQlRequest;
 import org.springframework.graphql.server.WebGraphQlResponse;
@@ -42,8 +36,6 @@ public class StoredViewInterceptor implements WebGraphQlInterceptor
 
     /** GraphQL-context key set when the requested view is invalid. Value = List&lt;String&gt; reasons. */
     public static final String VIEW_INVALID_CTX = "rapla.view.invalid";
-
-    private static final DateTimeFormatter ISO_DT = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
     private final ViewCatalogService catalog;
 
@@ -92,52 +84,8 @@ public class StoredViewInterceptor implements WebGraphQlInterceptor
         String storedDefaults = view.defaultVariables();
         request.configureExecutionInput((input, builder) ->
                 builder.query(storedQuery)
-                        .variables(mergeDefaults(input.getVariables(), storedDefaults))
+                        .variables(ViewVariables.mergeDefaults(input.getVariables(), storedDefaults))
                         .build());
         return chain.next(request);
-    }
-
-    /**
-     * Merge variable defaults: stored view defaults form the base, client-supplied vars
-     * override them, then Monday-week fills any still-missing filter.from/to.
-     */
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> mergeDefaults(Map<String, Object> clientVars, String storedDefaultsJson)
-    {
-        Map<String, Object> base = parseDefaults(storedDefaultsJson);
-        Map<String, Object> vars = new LinkedHashMap<>(base);
-        if (clientVars != null) vars.putAll(clientVars);
-
-        Map<String, Object> filter = vars.containsKey("filter")
-                ? (Map<String, Object>) vars.get("filter") : Map.of();
-        if (filter.containsKey("from") && filter.containsKey("to")) return vars;
-
-        LocalDate monday = LocalDate.now().with(DayOfWeek.MONDAY);
-        LocalDateTime from = monday.atStartOfDay();
-        LocalDateTime to = monday.plusDays(7).atStartOfDay();
-
-        Map<String, Object> mergedFilter = new LinkedHashMap<>(filter);
-        if (!filter.containsKey("from")) mergedFilter.put("from", from.format(ISO_DT));
-        if (!filter.containsKey("to")) mergedFilter.put("to", to.format(ISO_DT));
-
-        vars.put("filter", mergedFilter);
-        return vars;
-    }
-
-    private static final JsonMapper MAPPER = JsonMapper.builder().build();
-
-    @SuppressWarnings("unchecked")
-    private static Map<String, Object> parseDefaults(String json)
-    {
-        if (json == null || json.isBlank()) return Map.of();
-        try
-        {
-            Object parsed = MAPPER.readValue(json, Object.class);
-            return parsed instanceof Map<?, ?> m ? (Map<String, Object>) m : Map.of();
-        }
-        catch (Exception e)
-        {
-            return Map.of();
-        }
     }
 }

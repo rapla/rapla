@@ -24,8 +24,22 @@ const SAMPLE_VIEW_META: ViewMeta = {
 };
 
 const BLOCKS: Record<string, unknown>[] = [
-  { start: '2026-06-17T10:00:00', end: '2026-06-17T11:30:00', times: '10:00 - 11:30', name: 'Physik', personen: [], nichtPersonen: [{ id: 'r1', name: 'C452' }] },
-  { start: '2026-06-15T08:00:00', end: '2026-06-15T09:30:00', times: '08:00 - 09:30', name: 'Mathe', personen: [], nichtPersonen: [{ id: 'r2', name: 'C348' }] },
+  {
+    start: '2026-06-17T10:00:00',
+    end: '2026-06-17T11:30:00',
+    times: '10:00 - 11:30',
+    name: 'Physik',
+    personen: [],
+    nichtPersonen: [{ id: 'r1', name: 'C452' }],
+  },
+  {
+    start: '2026-06-15T08:00:00',
+    end: '2026-06-15T09:30:00',
+    times: '08:00 - 09:30',
+    name: 'Mathe',
+    personen: [],
+    nichtPersonen: [{ id: 'r2', name: 'C348' }],
+  },
 ];
 
 // Capturing stub — records the view name + variables of the most recent executeView.
@@ -105,8 +119,8 @@ describe('ViewHostComponent', () => {
     f.detectChanges();
     const el = f.nativeElement as HTMLElement;
     expect(el.querySelectorAll('.day h3').length).toBe(0);
-    expect((el.textContent ?? '')).toContain('Mathe');
-    expect((el.textContent ?? '')).toContain('Physik');
+    expect(el.textContent ?? '').toContain('Mathe');
+    expect(el.textContent ?? '').toContain('Physik');
   });
 
   it('executes the STORED view by name (consumer path)', async () => {
@@ -219,7 +233,10 @@ describe('ViewHostComponent — grouped rendering (group: true)', () => {
   beforeEach(async () => {
     const stub = {
       executeView: <T>() =>
-        of({ data: { appointmentBlocks: ROWS } as unknown as T, extensions: { view: GROUPED_META } }),
+        of({
+          data: { appointmentBlocks: ROWS } as unknown as T,
+          extensions: { view: GROUPED_META },
+        }),
     };
     await TestBed.configureTestingModule({
       imports: [ViewHostComponent],
@@ -228,7 +245,10 @@ describe('ViewHostComponent — grouped rendering (group: true)', () => {
     const filter = TestBed.inject(FilterStore);
     filter.clear();
     filter.replace({ id: 'scope-1', kind: 'resource', label: 'Scope' });
-    TestBed.inject(ViewStateStore).setWindow({ from: '2026-06-15T00:00:00', to: '2026-06-22T00:00:00' });
+    TestBed.inject(ViewStateStore).setWindow({
+      from: '2026-06-15T00:00:00',
+      to: '2026-06-22T00:00:00',
+    });
   });
 
   it('interleaves group-header rows (one per day) and disables column sort', async () => {

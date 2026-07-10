@@ -335,7 +335,7 @@ The history table retains the previous N versions of each entity
 
 For the table schema details and the migration history (Spring Boot
 4 / Jackson 3 forced a few subtle changes around `final` fields), see
-PRD 011 and PRD 017's coverage of `DbOperatorBootTest`.
+[PRD 011](../prd/done/011-spring-boot-4-jackson-3.md) and [PRD 017](../prd/017-test-coverage-strategy.md)'s coverage of `DbOperatorBootTest`.
 
 ## 6. Concurrency
 
@@ -359,6 +359,6 @@ PRD 011 and PRD 017's coverage of `DbOperatorBootTest`.
 - [conflicts-and-events.md](conflicts-and-events.md) — what the
   conflict reindex covers
 - PRD 008 — sync server / async client facade split (history)
-- PRD 011 — Spring Boot 4 / Jackson 3 migration (wire format)
-- PRD 017 — test coverage including DBOperator round-trip tests
+- [PRD 011](../prd/done/011-spring-boot-4-jackson-3.md) — Spring Boot 4 / Jackson 3 migration (wire format)
+- [PRD 017](../prd/017-test-coverage-strategy.md) — test coverage including DBOperator round-trip tests
 - PRD 021 — client-side resource stubs (read filter scaling)

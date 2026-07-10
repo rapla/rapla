@@ -136,7 +136,9 @@ function parseEnums(sdl: string): Map<string, EnumValue[]> {
 export function parseClassificationSdl(sdl: string): Map<string, ClassificationType> {
   const enums = parseEnums(sdl);
   const result = new Map<string, ClassificationType>();
-  const blocks = sdl.matchAll(/^type\s+(\w+)Classification\s+implements\s+([^{]+)\{([\s\S]*?)^\}/gm);
+  const blocks = sdl.matchAll(
+    /^type\s+(\w+)Classification\s+implements\s+([^{]+)\{([\s\S]*?)^\}/gm,
+  );
   for (const block of blocks) {
     const typeKey = block[1];
     if (RESERVED_TYPE_NAMES.has(typeKey + 'Classification')) continue;

@@ -8,11 +8,11 @@
 Landed this date:
 - **Rapla-server auto-configuration** (`RaplaServerAutoConfiguration` + `META-INF/spring/AutoConfiguration.imports`). `RaplaSpringBootApplication` is now a thin `@SpringBootApplication`. Verified by `AutoConfigImportTest` — a third-party `@SpringBootApplication` in a foreign package boots the full server stack via classpath alone. Resolves OQ6.
 - **dhbwrapla pom.xml rewrite** — parent=`rapla-bom` (with explicit `${rapla.version}` overrides on each rapla-* dep to defeat the inherited `${project.version}` interpolation), depends on `rapla-server` + `rapla-app`. Replaces system-scope JARs with maven deps (jcifs-ng, unboundid-ldapsdk 6.x, jtds, gson, jakarta.inject-api, jetbrains annotations). Uses Spring Boot's HikariCP for the secondary Dualis DataSource.
-- **dhbwrapla obsolete-files purge** — deleted `dhbwrapla-container/`, `lib/`, `src/main/java9/`, `src/main/webapp/`. Deleted the four obsolete Swing option panels (`DhbwAuthPluginOptionPanel`, `TerminalOption`, `MoradaPluginOptionPanel`, `DhbwMergeChecker` + test) and `DhbwResources` (replaced respectively by yaml config, server-rendered admin pages, and metadata-driven labels in PRD 012's wizard).
+- **dhbwrapla obsolete-files purge** — deleted `dhbwrapla-container/`, `lib/`, `src/main/java9/`, `src/main/webapp/`. Deleted the four obsolete Swing option panels (`DhbwAuthPluginOptionPanel`, `TerminalOption`, `MoradaPluginOptionPanel`, `DhbwMergeChecker` + test) and `DhbwResources` (replaced respectively by yaml config, server-rendered admin pages, and metadata-driven labels in [PRD 012](012-dhbwrapla-client-migration.md)'s wizard).
 - **`DhbwRaplaApplication`** thin `@SpringBootApplication(scanBasePackages={"org.rapla.dhbw","org.rapla.plugin.dhbw"})`. No `@Import` shim — autoconfig delivers rapla-server.
 - **`DhbwProperties`** absorbing all server-level dhbw config (auth, dualis datasource, morada, terminal). Replaces what the deleted Swing option panels used to write into rapla `Preferences`.
 - **`DhbwDatasourceConfig`** secondary `@Bean DataSource` for Dualis, qualified.
-- **`application.yml`** — pre-wired with `rapla.merge.blocked-sync-attributes=morada_id,dualis_id` (Phase G server-side merge gate), `rapla.externalevents.enabled=true` (PRD 012 external-event-import wizard activation), and `rapla.dhbw.*` placeholders.
+- **`application.yml`** — pre-wired with `rapla.merge.blocked-sync-attributes=morada_id,dualis_id` (Phase G server-side merge gate), `rapla.externalevents.enabled=true` ([PRD 012](012-dhbwrapla-client-migration.md) external-event-import wizard activation), and `rapla.dhbw.*` placeholders.
 - **`TerminalUrlController`** — single small server-rendered HTML admin page (super-admin gated) replacing the URL-display field of the legacy `TerminalOption` Swing panel (the only HTML admin UI we keep; rest is yaml).
 - **`PromiseWait` shim** restored at `org.rapla.dhbw.server.PromiseWait` (the original `org.rapla.server.PromiseWait` was deleted from rapla-core during the Spring migration). Delegates to `SynchronizedCompletablePromise.waitFor`.
 - **`custom/pom.xml` deleted** from the rapla repo.
@@ -33,7 +33,7 @@ User decision (with PRD 005 multi-module split landing): **all dhbw-specific Swi
 **Consequences:**
 
 1. **Single-signing pass.** Only `rapla-app` signs `webclient/*.jar`. dhbwrapla build produces no client JAR, stages no `webclient/`, runs no jarsigner.
-2. **No `rapla-client-api` extraction.** Customer Swing extensions ship inside the canonical `rapla-client` JAR — the split (deferred per PRD 004/005) is permanently off the table.
+2. **No `rapla-client-api` extraction.** Customer Swing extensions ship inside the canonical `rapla-client` JAR — the split (deferred per PRD [004](done/004-multi-module-architecture-analysis.md)/005) is permanently off the table.
 3. **dhbw Swing code → `org.rapla.plugin.dhbw.*`** in rapla-client / rapla-server / rapla-core (mirrors stock-plugin layout post-PRD-005).
 4. **dhbw plugins ship by default.** Use `@ConditionalOnProperty(prefix="rapla.plugins", name="org.rapla.plugin.dhbw.<id>", matchIfMissing=false)` per-plugin for opt-in.
 5. **dhbwrapla pom** depends only on `rapla-server` (transitively `rapla-core`); not `rapla-client`. dhbwrapla is its own `@SpringBootApplication` fat JAR that re-exports rapla-app's `webclient/` via Spring Boot `META-INF/resources`.
@@ -124,7 +124,7 @@ public class DhbwNtlmAuthStore implements AuthenticationStore {
 
 ### Scheduled Background Jobs
 
-> **Superseded 2026-05-10** — `CommandScheduler.scheduleAtGivenTime` removed during Spring Boot migration with no Spring-native replacement. **PRD 019 (Spring Boot Lifecycle Migration) is canonical** — migrate to `@Scheduled` (cron) + `@EventListener(ApplicationReadyEvent.class)` (one-shot startup) + delete `ServerExtension`.
+> **Superseded 2026-05-10** — `CommandScheduler.scheduleAtGivenTime` removed during Spring Boot migration with no Spring-native replacement. **[PRD 019](done/019-spring-boot-lifecycle-migration.md) (Spring Boot Lifecycle Migration) is canonical** — migrate to `@Scheduled` (cron) + `@EventListener(ApplicationReadyEvent.class)` (one-shot startup) + delete `ServerExtension`.
 
 (Pre-supersede plan was a `@Component` `ServerExtension` impl wrapping `CommandScheduler` calls; kept here for historical context only.)
 

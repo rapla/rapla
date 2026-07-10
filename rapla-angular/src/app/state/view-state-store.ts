@@ -34,7 +34,9 @@ export class ViewStateStore {
     this.modeStorage.load<ViewRenderMode | null>(null),
   );
   private readonly _renderMode = signal<ViewRenderMode>(this._userMode() ?? 'table');
-  private readonly _window = signal<DateWindow | null>(this.windowStorage.load<DateWindow | null>(null));
+  private readonly _window = signal<DateWindow | null>(
+    this.windowStorage.load<DateWindow | null>(null),
+  );
   private readonly _activeView = signal<string | null>(null);
   /** Render modes supported by the active view — emitted by the server via
    *  {@code extensions.view.renderModes}. Drives which toggle buttons are shown. */

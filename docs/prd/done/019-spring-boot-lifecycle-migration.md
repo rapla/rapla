@@ -72,8 +72,8 @@ After all 6 impls are off:
 2. Drop the `Map<String, ServerExtension>` field + constructor arg.
 3. Drop the `Supplier<Map<String, ServerExtension>>` arg from `ServerServiceConfig.serverServiceContainer(...)`.
 4. Delete `org.rapla.server.extensionpoints.ServerExtension`.
-5. Update PRD 003 §"Scheduled Background Jobs" — remove Option 1 (`@Component implements ServerExtension`); make `@Scheduled` canonical.
-6. Update PRD 003 §"Extension Point Preservation Checklist" — remove `ServerExtension`.
+5. Update [PRD 003](../003-custom-deployments-after-spring-migration.md) §"Scheduled Background Jobs" — remove Option 1 (`@Component implements ServerExtension`); make `@Scheduled` canonical.
+6. Update [PRD 003](../003-custom-deployments-after-spring-migration.md) §"Extension Point Preservation Checklist" — remove `ServerExtension`.
 
 ## Storage-up ordering invariant (post-Phase 1)
 

@@ -271,7 +271,8 @@ export function layoutWeek<R>(
   const anyMatch =
     !!options?.allocsOf &&
     selectedIds.size > 0 &&
-    (rows.length === 0 || rows.some((r) => options.allocsOf!(r).some((a) => selectedIds.has(a.id))));
+    (rows.length === 0 ||
+      rows.some((r) => options.allocsOf!(r).some((a) => selectedIds.has(a.id))));
   const grouping = hasMatchProvenance || anyMatch;
   const fixed = grouping && options?.mode === 'fixed';
   let minHour = 8;
@@ -303,7 +304,12 @@ export function layoutWeek<R>(
     segs.sort(byStart);
 
     const groups = grouping
-      ? groupBySelected(segs, options?.selected ?? [], options?.allocsOf ?? (() => []), options?.matchedByOf)
+      ? groupBySelected(
+          segs,
+          options?.selected ?? [],
+          options?.allocsOf ?? (() => []),
+          options?.matchedByOf,
+        )
       : [segs];
     resolveConflicts(groups);
     if (!fixed) mergeSlots(groups);

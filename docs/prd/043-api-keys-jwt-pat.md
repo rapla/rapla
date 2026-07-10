@@ -28,8 +28,8 @@ The private key exists only for the few milliseconds it takes to mint one JWT, t
 
 ## Why now
 
-- Refresh-token consolidation lands in PRD 041 (`/oauth2/token` for session refresh, `/oauth2/revoke` for logout). API keys are the natural follow-on — long-lived integrator credentials share the per-user prefs registry.
-- Several ongoing initiatives need long-lived credentials: PRD 035 (rapla MCP server), PRD 039 (external iCal subscriptions per resource), CI/deploy scripts.
+- Refresh-token consolidation lands in [PRD 041](041-openapi-runtime-removal.md) (`/oauth2/token` for session refresh, `/oauth2/revoke` for logout). API keys are the natural follow-on — long-lived integrator credentials share the per-user prefs registry.
+- Several ongoing initiatives need long-lived credentials: [PRD 035](done/035-graphql-foundations.md) (rapla MCP server), [PRD 039](039-external-ical-subscription-per-resource.md) (external iCal subscriptions per resource), CI/deploy scripts.
 - Asymmetric-only avoids the bearer-secret leak class entirely. A stolen backup, leaked DB snapshot, or compromised prefs store yields **public** keys only — useless for minting new credentials. Removes a class of incidents the GitHub-PAT model has had to manage operationally.
 
 ## Scope
@@ -152,7 +152,7 @@ DELETE /api/auth/api-keys/{id}
 When `Authorization: Bearer <jwt>` arrives:
 
 1. Decode header + payload without verifying; read `typ`, `sub`, `kid`, embedded `jwk`.
-2. If `typ != "api_key"`, fall through to existing access-token verification (PRDs 031/041).
+2. If `typ != "api_key"`, fall through to existing access-token verification (PRDs 031/[041](041-openapi-runtime-removal.md)).
 3. Resolve user from `sub`. Call `keyStore.getAPIKeys(user)`; confirm presented JWT is in the set. Absent ⇒ reject `invalid_token`.
 4. Verify signature against public key embedded in header (`jwk`).
 5. Validate `exp` (if present) is in the future; validate `iat` not impossibly far in future.
@@ -236,11 +236,11 @@ Storage (multi-slot, public-key-only, legacy compat); endpoints (POST/GET/DELETE
 
 ### Angular UI — shipped 2026-06-27 (branch spring-boot)
 
-Reached from the SPA's central user menu → **Account settings ▸ Manage API keys** (PRD 078 toolbar). `ApiKeysDialogComponent` (`rapla-angular/src/app/account/`) over `ApiKeysService` (cookie-auth `HttpClient`):
+Reached from the SPA's central user menu → **Account settings ▸ Manage API keys** ([PRD 078](078-spa-graphql-view-renderer.md) toolbar). `ApiKeysDialogComponent` (`rapla-angular/src/app/account/`) over `ApiKeysService` (cookie-auth `HttpClient`):
 
-- **List** — label, created/expiry, last-4 thumbprint, scope chips (write scopes red). Expired keys are filtered out (PRD 076 D11).
+- **List** — label, created/expiry, last-4 thumbprint, scope chips (write scopes red). Expired keys are filtered out ([PRD 076](076-scoped-api-keys-self-rotation.md) D11).
 - **Create** — label + optional expiry-days (**default 180 days**) + scope checkboxes (`read` pinned on, the rest opt-in, mirrors `ApiKeyScopes` D5); the minted bearer JWT is shown ONCE in a copy-box, never re-fetchable.
-- **Rotate** — issues a fresh same-scope key (shown once to copy) and grace-expires the old one. Inline **grace (minutes) field, default 180, max 2 days**. Drives the unified `POST /{id}/rotate?graceMinutes=` (PRD 076 **Phase 6 / D12** — the endpoint now accepts the cookie-session user rotating their own key, not just the api-key's own credential). *History:* a first cut used create+revoke compose, then a no-op button; both replaced by the server-side grace-window rotate so a live integration key isn't killed instantly (D7).
+- **Rotate** — issues a fresh same-scope key (shown once to copy) and grace-expires the old one. Inline **grace (minutes) field, default 180, max 2 days**. Drives the unified `POST /{id}/rotate?graceMinutes=` ([PRD 076](076-scoped-api-keys-self-rotation.md) **Phase 6 / D12** — the endpoint now accepts the cookie-session user rotating their own key, not just the api-key's own credential). *History:* a first cut used create+revoke compose, then a no-op button; both replaced by the server-side grace-window rotate so a live integration key isn't killed instantly (D7).
 - **Revoke** (`DELETE /{id}`).
 
 Tier-5 `ApiKeysService` spec + tier-6 `ApiKeysDialogComponent` spec. No new server endpoints — pure consumer of the existing `/api/auth/api-keys` contract.
@@ -261,7 +261,7 @@ Tier-5 `ApiKeysService` spec + tier-6 `ApiKeysDialogComponent` spec. No new serv
 
 ## Cross-references
 
-- [PRD 031 — Refresh Tokens & API Keys](031-token-refresh-and-api-keys.md) — API-key half superseded by this PRD's asymmetric design; refresh-token half stays canonical (consolidated onto `/oauth2/token` per PRD 041).
+- [PRD 031 — Refresh Tokens & API Keys](031-token-refresh-and-api-keys.md) — API-key half superseded by this PRD's asymmetric design; refresh-token half stays canonical (consolidated onto `/oauth2/token` per [PRD 041](041-openapi-runtime-removal.md)).
 - [PRD 041 — OpenAPI runtime removal](041-openapi-runtime-removal.md) — established `RefreshSessionService` as unified refresh-token store; this PRD shares the same prefs persistence model.
 - [PRD 035 (done) — GraphQL foundations](done/035-graphql-foundations.md) + [PRD 060 — MCP foundations](060-graphql-mcp-foundations.md) — natural consumer for AI-agent service tokens.
 - [PRD 039 — external iCal subscriptions per resource](039-external-ical-subscription-per-resource.md) — consumer for per-user feed credentials.

@@ -224,7 +224,7 @@ public class OAuthExchangeController
         {
             Jwt jwt = verifier.verify(idToken, provider);
             IdentityClaims claims = resolver.claimsFor(jwt, provider);
-            user = provisioner.provision(claims);
+            user = provisioner.provision(claims, provider.autoProvision());
         }
         catch (JwtException jwtEx)
         {

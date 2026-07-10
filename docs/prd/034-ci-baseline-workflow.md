@@ -4,13 +4,13 @@
 
 ## Goal
 
-Add a minimal GitHub Actions workflow that runs on every PR to `master` and on every push to `spring-boot`, exercising the bottom of the testing pyramid (PRD 017 tiers 1–2 for Java, tier 5–6 for Angular). Today the only active workflow is `Dependabot Updates` — every commit on `spring-boot` (64 of them so far) has gone untested in CI. PRs from external contributors get no automatic feedback.
+Add a minimal GitHub Actions workflow that runs on every PR to `master` and on every push to `spring-boot`, exercising the bottom of the testing pyramid ([PRD 017](017-test-coverage-strategy.md) tiers 1–2 for Java, tier 5–6 for Angular). Today the only active workflow is `Dependabot Updates` — every commit on `spring-boot` (64 of them so far) has gone untested in CI. PRs from external contributors get no automatic feedback.
 
 ## Why now
 
-1. **`spring-boot` is the working trunk** (PRDs 005, 011, 029, 031, 026 land here). Merge-back diff is +84 k / −55 k LOC; catching regressions by re-reading 64 commits is the wrong tool.
+1. **`spring-boot` is the working trunk** (PRDs 005, [011](done/011-spring-boot-4-jackson-3.md), [029](029-swing-oauth-login.md), 031, [026](026-angular-frontend.md) land here). Merge-back diff is +84 k / −55 k LOC; catching regressions by re-reading 64 commits is the wrong tool.
 2. **External contributors exist** (`@stephenBDT`, `@floxdeveloper` merged PRs in 2025); they get no CI feedback today.
-3. **The test pyramid is real** (PRD 017 Phases 1–4 done, ~150 tests; PRDs 023 + 030 added 84 more). CI as forcing function makes it load-bearing.
+3. **The test pyramid is real** ([PRD 017](017-test-coverage-strategy.md) Phases 1–4 done, ~150 tests; PRDs [023](023-presenter-view-extraction.md) + [030](030-server-side-view-rendering.md) added 84 more). CI as forcing function makes it load-bearing.
 
 ## Scope
 
@@ -27,7 +27,7 @@ Add a minimal GitHub Actions workflow that runs on every PR to `master` and on e
 
 - Tier-3 web-slice tests (`@SpringBootTest` + MockMvc). These boot a Spring context; expensive but parallelizable. Phase 2.
 - Tier-4 full E2E (`@Tag("e2e")`). 7–15 s per test, want them in a separate slower job. Phase 3.
-- Browser e2e (Playwright MCP, PRD 033). Headless Playwright on Linux runners is straightforward but adds 5–10 min and a browser binary cache. Phase 4.
+- Browser e2e (Playwright MCP, [PRD 033](done/033-playwright-mcp-browser-testing.md)). Headless Playwright on Linux runners is straightforward but adds 5–10 min and a browser binary cache. Phase 4.
 - Coverage report upload to a service. The JaCoCo aggregate works locally per the `coverage-report` skill; sending it to Codecov/Coveralls is a Phase-5 polish.
 - Cross-OS or cross-JDK matrix. rapla targets one JDK (21); cross-OS only matters for the Swing client, which CI can't exercise headless without WSLg/Xvfb.
 

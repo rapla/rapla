@@ -38,7 +38,11 @@
               }
             </select>
           </label>
-          <button type="button" class="act collapse" (click)="headerOpen.set(false); $event.stopPropagation()">
+          <button
+            type="button"
+            class="act collapse"
+            (click)="headerOpen.set(false); $event.stopPropagation()"
+          >
             ▴ einklappen
           </button>
         </div>
@@ -62,7 +66,12 @@
         />
       </section>
     } @else {
-      <section class="sec collapsed-header" tabindex="0" (click)="openHeader()" (keydown.enter)="openHeader()">
+      <section
+        class="sec collapsed-header"
+        tabindex="0"
+        (click)="openHeader()"
+        (keydown.enter)="openHeader()"
+      >
         <span class="hint">{{ typeName(d.typeKey) }} ·</span>
         <span class="title">{{ displayName(d) }}</span>
         @if (canModify()) {
@@ -135,9 +144,13 @@
               <button type="button" (click)="editingAppointment.set(null)">OK</button>
             </span>
           } @else {
-            <span>{{ circled(i) }} {{ a.start | date: 'EE dd.MM.yyyy HH:mm' }}–{{
-              a.end | date: (a.start.slice(0, 10) === a.end.slice(0, 10) ? 'HH:mm' : 'EE dd.MM. HH:mm')
-            }}</span>
+            <span
+              >{{ circled(i) }} {{ a.start | date: 'EE dd.MM.yyyy HH:mm' }}–{{
+                a.end
+                  | date
+                    : (a.start.slice(0, 10) === a.end.slice(0, 10) ? 'HH:mm' : 'EE dd.MM. HH:mm')
+              }}</span
+            >
             <span class="right">
               <span class="hint">{{ repeatingLabel(a) }}</span>
               @if (canModify()) {
@@ -150,7 +163,9 @@
                 >
                   ↻
                 </button>
-                <button type="button" class="act linkish" (click)="editingAppointment.set(a.id)">✎</button>
+                <button type="button" class="act linkish" (click)="editingAppointment.set(a.id)">
+                  ✎
+                </button>
                 <button
                   type="button"
                   class="act linkish"
@@ -209,7 +224,9 @@
                   }
                 </div>
                 @if (!rule.weekdays?.length) {
-                  <p class="rep-error">Mindestens ein Wochentag — sonst hat die Serie keine Termine.</p>
+                  <p class="rep-error">
+                    Mindestens ein Wochentag — sonst hat die Serie keine Termine.
+                  </p>
                 }
               }
               <div class="rep-end">
@@ -276,8 +293,14 @@
                     (click)="toggleRepOccurrence(a, occ)"
                   >
                     <span class="no">{{ i + 1 }}.</span>
-                    <span class="when">{{ occ.start | date: 'EE dd.MM.yyyy' }} · {{ occ.start | date: 'HH:mm' }}–{{ occ.end | date: 'HH:mm' }}</span>
-                    <span class="tag">{{ isSkipped(a, occ) ? 'übersprungen' : 'überspringen' }}</span>
+                    <span class="when"
+                      >{{ occ.start | date: 'EE dd.MM.yyyy' }} · {{ occ.start | date: 'HH:mm' }}–{{
+                        occ.end | date: 'HH:mm'
+                      }}</span
+                    >
+                    <span class="tag">{{
+                      isSkipped(a, occ) ? 'übersprungen' : 'überspringen'
+                    }}</span>
                   </button>
                 }
               </div>
@@ -337,7 +360,9 @@
               <button type="button" class="act" (click)="toggleGilt(al.allocatableId)">
                 gilt für: {{ giltLabel(al) }} {{ giltOpen() === al.allocatableId ? '▴' : '▾' }}
               </button>
-              <button type="button" class="act linkish" (click)="unassign(al.allocatableId)">✕</button>
+              <button type="button" class="act linkish" (click)="unassign(al.allocatableId)">
+                ✕
+              </button>
             } @else {
               <span class="hint">gilt für: {{ giltLabel(al) }}</span>
             }
@@ -407,9 +432,12 @@
             @for (c of candidates(); track c.id) {
               <div class="cand" [class.pinned]="c.pinned">
                 <span class="dot" [class]="'dot ' + c.status"></span>
-                <span class="grow">{{ c.name }}@if (c.pinned) {
+                <span class="grow"
+                  >{{ c.name }}
+                  @if (c.pinned) {
                     <span class="hint"> · gepinnt</span>
-                  }</span>
+                  }
+                </span>
                 <span class="pill" [class]="'pill ' + c.status">
                   @switch (c.status) {
                     @case ('AVAILABLE') {
@@ -451,13 +479,17 @@
         <b>Zwischenzeitlich geändert.</b>
         <span>Jemand hat diese Veranstaltung nach dem Laden gespeichert.</span>
         <span class="right">
-          <button type="button" (click)="reloadDiscarding()">Neu laden (meine Änderungen verwerfen)</button>
+          <button type="button" (click)="reloadDiscarding()">
+            Neu laden (meine Änderungen verwerfen)
+          </button>
           <button type="button" (click)="save(true)">Trotzdem speichern</button>
         </span>
       </section>
     }
     @for (issue of issues(); track issue.path + issue.code) {
-      <section class="sec errbox">{{ issue.code }} · {{ issue.path }} — {{ issue.message }}</section>
+      <section class="sec errbox">
+        {{ issue.code }} · {{ issue.path }} — {{ issue.message }}
+      </section>
     }
     @if (notice()) {
       <p class="hint">{{ notice() }}</p>

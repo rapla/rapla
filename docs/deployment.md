@@ -106,8 +106,12 @@ change. Profiles work too: `config/application-prod.yml` activated with
 | `logging.level.org.rapla` | `INFO` | See [`logging.md`](logging.md) for the full picture (file locations, access log, profile-based stdout-only, full-replace, JUL bridge). |
 
 Behind a reverse proxy / load balancer, keep `server.forward-headers-strategy:
-FRAMEWORK` (the default) so Rapla derives correct absolute URLs from
-`X-Forwarded-{Proto,Host,Port}`. With that in place the OAuth SPA callback is
+native` (the shipped default) so Rapla derives correct absolute URLs from
+`X-Forwarded-{Proto,Host,Port}` **only** when they come from an RFC1918-internal
+proxy (Tomcat's `RemoteIpValve` trust list). Do **not** switch to `FRAMEWORK`:
+that trusts `X-Forwarded-*` from any caller, so a client reaching the server
+directly can forge `X-Forwarded-Host` to hijack the OAuth redirect-URI
+same-origin check. With `native` in place the OAuth SPA callback is
 accepted automatically for your real hostname (`rapla.oauth.allow-same-origin-
 redirects` is on by default) — no per-deployment redirect URI to register.
 

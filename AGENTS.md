@@ -116,6 +116,8 @@ Before implementing anything, check **`docs/prd/` AND `docs/prd/done/`** for an 
 
 The rapla vault (`docs/`) is the source of truth per the table above; the private vault is separate and personal. Don't conflate them — never write personal-vault content into `docs/`, and never copy `docs/` PRDs into `~/vault` without intent.
 
+**Cross-reference links — portable markdown only (works on GitHub *and* Obsidian).** The `docs/` vault is hosted on GitHub, so every reference between docs/PRDs must be a standard markdown link with a **relative path + heading anchor**: `[PRD 102 § Decisions locked](102-browser-credential-hardening.md#decisions-locked)` (same dir) or `[glossary](../architecture/glossary.md)` (cross dir). **Never `[[wikilinks]]`** — GitHub renders them as literal text (they only work in the separate GitHub *Wiki* feature, which `docs/` is not). Anchors are the GitHub heading slug (lowercase, spaces→hyphens, punctuation dropped; ` — `/`: ` leave a double hyphen). Prefer linking a specific `#section` over the bare file. Don't rely on Obsidian-only features that break on GitHub — block IDs (`^id`) render as visible cruft; YAML frontmatter renders as a metadata table. When you cite another PRD/doc by "PRD NNN" or "§ Section" in prose, make it such a link.
+
 **Before diagnosing a problem or planning work in an unfamiliar area, check `docs/architecture/`, `docs/authentication.md`, `docs/graphql.md` first** — they may already document the invariant or design decision you're trying to reverse-engineer from code.
 
 **When in a session you learn something non-obvious about how Rapla works** — entity relationships, invariants, why a design decision was made — **propose to the user that it gets written down** in the appropriate `docs/` file. Don't leave domain knowledge only in session context where it disappears.
@@ -215,7 +217,7 @@ The dev server is a Spring Boot application started via `mvn spring-boot:run` (n
 **Start recipe + startup-wait loop + JDWP + log truncation:** load the **`server-lifecycle`** skill — it carries the full `run_in_background=true` recipe with all gotchas (absolute paths, separate stop/start, `Started Rapla` marker). Load it for any server lifecycle work beyond a plain start.
 
 Quick essentials that stay inline:
-- Stop: `pkill -f RaplaSpringBootApplication` (10 s graceful window — never `kill -9` first).
+- Stop: `pkill -f 'RaplaSpringBoot[A]pplication'` (10 s graceful window — never `kill -9` first). The `[A]` avoids pkill matching the wrapping shell's own command line; **exit 144 from a compound stop command = pkill killed its own shell** — run pkill in its own Bash call, not chained with wait/status logic.
 - One server per checkout (port 8051 binds once); use a worktree per §7 for parallel work.
 - **Is the running server fresh (does it have your latest code)?** `curl -s localhost:8051/server | grep -o '[0-9-]\{10\} [0-9:]\{5\} GMT' | head -1` prints the build timestamp — compare against your last compile before assuming the process is stale; don't guess.
 - Never start the server during a `mvn package` build (`spring-boot:repackage` rewrites the same JAR).
@@ -330,9 +332,12 @@ Anything shaped as a read — `get*`, `find*`, `resolve*`, `lookup*`, `is*`, `ha
 
 **Worked example:** `ExternalUserResolver.resolve()` called `facade.store(...)` on every authenticated request → concurrent `RaplaNewVersionException` → 401 modal in SPA. The right seam is once-per-token at OAuth exchange/refresh, not per-request on the read path.
 
-### 17. No real personal information in tests, docs, or PRDs
+### 17. No real personal information or secrets in tests, docs, or PRDs
 
 Never put real names, real email addresses, real phone numbers, real user ids that map to real people, or any other identifying real-person data into tests, docs, PRDs, fixtures, schema examples, log snippets, or commit messages. Even when a screenshot or live probe surfaces a real name (e.g. a lecturer's name from a dhbw query), **strip it before it lands in checked-in artefacts**.
+
+- **Secrets too:** never write real passwords, tokens, API keys, or other credentials into checked-in artefacts — **including audit notes and TODOs**. Reference a found secret by location ("password in `docs/graphql.md` line N"), never by value; quoting the finding during a security audit *is* re-leaking it (scar 2026-06-18: plaintext passwords copied into a fresh committable SECURITY-TODO.md while auditing the leak).
+- **Deployment-specific production data** (dhbw user counts, visibility profiles, building/course structure) belongs in the private dhbwrapla docs even when anonymized; `rapla/docs/` keeps only the generic pattern plus a reference. Anonymization alone doesn't make it placeable here.
 
 **Allowed:** obvious dummy data that no real person would mistake for themselves —
 - Generic placeholders: `<user-id>`, `<lecturer-id>`, `Prof X`, `Dr. A`, `lecturer-1`

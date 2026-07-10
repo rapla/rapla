@@ -915,6 +915,15 @@ public class ReservationMutationController
         PermissionController pc = operator.getPermissionController();
         if (!pc.canModify(r, caller))
         {
+            // §12 (security-audit A0d): a caller who can neither read nor modify must not be able
+            // to distinguish this from a nonexistent id — report REFERENCE_NOT_FOUND, identical to
+            // the null-resolve case. A readable-but-unmodifiable reservation keeps PERMISSION_DENIED
+            // (the caller already knows it exists).
+            if (!pc.canRead(r, caller))
+            {
+                throw new ReservationMutationException("REFERENCE_NOT_FOUND", "id",
+                        "Reservation " + r.getId() + " not found");
+            }
             throw new ReservationMutationException("PERMISSION_DENIED", "id",
                     "No modify permission on reservation " + r.getId());
         }

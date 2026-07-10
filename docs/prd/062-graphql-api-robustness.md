@@ -4,7 +4,7 @@
 
 **Parent:** [PRD 035 (done) — GraphQL foundations](done/035-graphql-foundations.md). **Siblings:** [PRD 056 — events write API](056-graphql-events-write-api.md), [PRD 057 (done) — DynamicType mutations v1](done/057-graphql-dt-mutations-v1.md), [PRD 061 — DT mutations v2](061-graphql-dt-mutations-v2.md).
 
-**Triggered by:** PRD 056 OQ5 (idempotency on retry) — the basic
+**Triggered by:** [PRD 056](056-graphql-events-write-api.md) OQ5 (idempotency on retry) — the basic
 same-UUID-content-match semantic ships in 056 because it's a few lines
 of comparison logic and matches industry practice. The heavier
 infrastructure (lock acquisition for in-flight retries, TTL on
@@ -19,10 +19,10 @@ duplicate-create vectors / runaway clients / distributed-coordination
 issues become real, the design groundwork is here.
 
 **Explicitly not in scope:** any implementation. This PRD is a parking
-lot. Promote individual sections to their own PRDs (or fold into PRD 056
+lot. Promote individual sections to their own PRDs (or fold into [PRD 056](056-graphql-events-write-api.md)
 / 057 / future events) when there's real consumer demand.
 
-## Why this isn't in PRD 056
+## Why this isn't in [PRD 056](056-graphql-events-write-api.md)
 
 Rapla's `createReservation` traffic profile:
 - A few dozen creates per day in typical deployments
@@ -92,7 +92,7 @@ retries (mobile / shaky-network clients).
 
 ### 2. Idempotency TTL + cache eviction
 
-**Problem:** Long-lived UUIDs accumulate. PRD 056 currently inspects
+**Problem:** Long-lived UUIDs accumulate. [PRD 056](056-graphql-events-write-api.md) currently inspects
 storage on every create for UUID collision — fine while UUIDs are
 unique-per-request, problematic if clients reuse old UUIDs by accident
 months later.
@@ -140,11 +140,11 @@ multi-tenant deployment.
 `MaxQueryDepthInstrumentation` from graphql-java. Each field gets a
 complexity score; queries above threshold are rejected at parse time.
 
-**Rapla specifics:** PRD 055 perf round (2026-05-27 profiling) already
+**Rapla specifics:** [PRD 055](055-graphql-events-read-api.md) perf round (2026-05-27 profiling) already
 identified the 14s admin query as graphql-java per-field overhead. A
 complexity cap would have rejected that query before it ran.
 
-**Existing leaning** (carry-over from PRD 056 perf discussion):
+**Existing leaning** (carry-over from [PRD 056](056-graphql-events-write-api.md) perf discussion):
 - Cap at ~10000 complexity units
 - Per-field weight: 1 unit; list-typed field weighs `child_complexity ×
   expected_list_size`
@@ -180,7 +180,7 @@ client + storage layer.
 propagating through `operator.dispatch(...)` into the storage layer.
 Trace ID in error responses so clients can supply it for support tickets.
 
-**Rapla specifics:** PRD 035 perf observability discussion already
+**Rapla specifics:** [PRD 035](done/035-graphql-foundations.md) perf observability discussion already
 sketches Micrometer-based timing instrumentation. Tracing is the next
 layer up.
 
@@ -199,14 +199,14 @@ When to promote a section to its own PRD:
 - **Implementation cost vs. user impact** — robust patterns add
   ongoing maintenance; ensure the user impact justifies it
 
-## What's currently shipped (lean version, in PRD 056)
+## What's currently shipped (lean version, in [PRD 056](056-graphql-events-write-api.md))
 
 The bare minimum for safe-retry semantics:
-- Client UUID for new entities (PRD 056 §6 — `client UUIDs` lock)
-- Same UUID + matching content on retry → no-op success (PRD 056 OQ5)
-- Same UUID + differing content → `ID_COLLISION` (PRD 056 OQ5)
+- Client UUID for new entities ([PRD 056](056-graphql-events-write-api.md) §6 — `client UUIDs` lock)
+- Same UUID + matching content on retry → no-op success ([PRD 056](056-graphql-events-write-api.md) OQ5)
+- Same UUID + differing content → `ID_COLLISION` ([PRD 056](056-graphql-events-write-api.md) OQ5)
 - Single-pod single-thread atomicity via `operator.dispatch(UpdateEvent)`
-  (PRD 035 architecture)
+  ([PRD 035](done/035-graphql-foundations.md) architecture)
 
 That covers the network-glitch retry case for rapla's current scale.
 The patterns in this PRD are the next-level concerns when rapla

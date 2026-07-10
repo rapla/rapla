@@ -19,7 +19,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *   <li>{@code /rapla/**} (calendar/iCal HTML pages) → strict ENFORCED
  *       {@code default-src 'none'} — kills the A6 reflected-XSS class;</li>
  *   <li>{@code /api/**} (JSON) → strict ENFORCED {@code default-src 'none'};</li>
- *   <li>everything else (SPA, login) → report-only (Material walk pending).</li>
+ *   <li>{@code /app/**} (SPA) → the non-script SPA policy ENFORCED (PRD 102 Phase 1);</li>
+ *   <li>{@code /login} + explorers → the same policy report-only (their enforce pass pending).</li>
  * </ul>
  */
 @SpringBootTest(classes = RaplaSpringBootApplication.class)
@@ -58,6 +59,21 @@ class SecurityHeadersTest extends IsolatedDefaultDatasetTest
                 .andExpect(header().string("Content-Security-Policy", containsString("form-action 'self'")))
                 .andExpect(header().string("Content-Security-Policy", containsString("frame-ancestors 'none'")))
                 // strictly enforced — NOT report-only
+                .andExpect(header().doesNotExist("Content-Security-Policy-Report-Only"));
+    }
+
+    @Test
+    void spaAppGetsEnforcedNonScriptCsp() throws Exception
+    {
+        // PRD 102 Phase 1: /app carries the SPA policy ENFORCED (not report-only). It has NO
+        // script-src/style-src (Material + inline bootstrap untouched) but enforces the non-script
+        // directives — connect-src exfil-confinement, object-src/base-uri/frame-*/form-action.
+        mockMvc.perform(get("/app/"))
+                .andExpect(header().exists("Content-Security-Policy"))
+                .andExpect(header().string("Content-Security-Policy", containsString("connect-src 'self'")))
+                .andExpect(header().string("Content-Security-Policy", containsString("object-src 'none'")))
+                .andExpect(header().string("Content-Security-Policy", containsString("frame-ancestors 'none'")))
+                .andExpect(header().string("Content-Security-Policy", not(containsString("script-src"))))
                 .andExpect(header().doesNotExist("Content-Security-Policy-Report-Only"));
     }
 

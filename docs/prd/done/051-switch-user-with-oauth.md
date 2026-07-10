@@ -1,13 +1,13 @@
 # PRD 051: Restore "switch to user" admin feature with OAuth-only auth
 
-**Status:** done — SPA shipped 2026-05-22. Swing parity superseded by PRD 052 (see § Closed scope below).
+**Status:** done — SPA shipped 2026-05-22. Swing parity superseded by [PRD 052](../052-client-clean-restart.md) (see § Closed scope below).
 **Date:** 2026-05-21 (closed 2026-05-22)
 
 ## Closed scope (2026-05-22)
 
 ### Shipped
 
-- **Server** — `ImpersonationController` + `UsersController` (PRD 049
+- **Server** — `ImpersonationController` + `UsersController` ([PRD 049](../049-controller-interface-deduplication.md)
   `@HttpExchange` pattern), `JwtConfig.JwtIssuer.issueImpersonationToken`,
   `AuthorizationServerConfig.jwtTokenCustomizer` injecting
   `preferred_username` + `name` on rapla-SAS tokens so the SPA's user
@@ -23,22 +23,25 @@
 - **Docs landed** — `docs/authentication.md` § "Group administration
   policy", § "Admin impersonation", § "Switching from one target to
   another mid-impersonation" (with the authoritative "impersonation
-  tokens cannot themselves invoke the impersonation endpoints" rule),
-  endpoint-reference table additions, visual-indicator section.
+  tokens cannot themselves invoke the impersonation endpoints" rule —
+  the one deliberate exception is the SPA cookie switch endpoint
+  `AuthCookieController.impersonateSwitch`, which re-resolves the admin
+  via `act.sub` and is CSRF-protected), endpoint-reference table
+  additions, visual-indicator section.
 
-### Superseded by PRD 052
+### Superseded by [PRD 052](../052-client-clean-restart.md)
 
 - **Plan §7** — Swing `RaplaClientServiceImpl.switchTo(User)` rewrite
-  (in-place token swap). PRD 052 resolves OQ6: switch-to-user and
+  (in-place token swap). [PRD 052](../052-client-clean-restart.md) resolves OQ6: switch-to-user and
   switch-back ride the same close+recreate session channel as logout.
-  PRD 052's `BlockingQueue<NextSession>` + `NextSession.reconnectAs(...)`
+  [PRD 052](../052-client-clean-restart.md)'s `BlockingQueue<NextSession>` + `NextSession.reconnectAs(...)`
   is the live design.
 - **Plan §8** — Swing status-bar indicator. The visible UI element stays
   in scope; only the underlying session-swap mechanism changes per
-  PRD 052. Ships under PRD 052.
+  [PRD 052](../052-client-clean-restart.md). Ships under [PRD 052](../052-client-clean-restart.md).
 - **Tests S2 / S3** — `RefreshOn401InterceptorImpersonationTest`,
   `MyCustomConnectorReauthImpersonationTest`. Designed against in-place
-  token-swap; replaced by PRD 052's close-recreate test plan.
+  token-swap; replaced by [PRD 052](../052-client-clean-restart.md)'s close-recreate test plan.
 
 ### Deferred / accepted gaps
 
@@ -48,18 +51,18 @@
 | Group-admin → out-of-scope target (403) | `testdefault.xml` has no third user outside `monty`'s scope. 403 branch exercised via `groupAdminCannotImpersonateGlobalAdmin`; `belongsTo`-false branch asserted via unit `PermissionController` coverage. | Add a fixture user when another PRD needs one. |
 | `CallbackComponentClearsImpersonationOverrideTest` (tier 6) | Lower-risk path — override is in-memory only; a fresh OAuth code lands in a new `AuthService` lifecycle in production. | When the override moves out of `signal()` memory. |
 | Live cross-IdP browser verification (DHBW Keycloak admin → local user) | All-rapla-SAS flow verified end-to-end 2026-05-22. | Next session with DHBW Keycloak available. |
-| Native Swing flow | User explicitly scoped to SPA-only ("we only do spa", 2026-05-22). | Handled by PRD 052. |
+| Native Swing flow | User explicitly scoped to SPA-only ("we only do spa", 2026-05-22). | Handled by [PRD 052](../052-client-clean-restart.md). |
 
-PRD closed: SPA feature is live + verified + regression-tested; Swing path has successor PRD 052.
+PRD closed: SPA feature is live + verified + regression-tested; Swing path has successor [PRD 052](../052-client-clean-restart.md).
 
 ## Goal
 
 Restore the admin-only **"Switch to user"** feature in the rapla
 clients so an admin can view rapla as another user without their
 password, work in their context, and switch back with one click. The
-feature shipped pre-PRD 041 via `/api/auth/login`'s `connectAs` field;
-PRD 041 deleted that endpoint when consolidating onto `/oauth2/token`,
-and the OAuth2 password grant has no equivalent. With PRD 036 +
+feature shipped pre-[PRD 041](../041-openapi-runtime-removal.md) via `/api/auth/login`'s `connectAs` field;
+[PRD 041](../041-openapi-runtime-removal.md) deleted that endpoint when consolidating onto `/oauth2/token`,
+and the OAuth2 password grant has no equivalent. With [PRD 036](../036-external-idp-oauth-login.md) +
 Keycloak, rapla no longer mints the token for external-IdP logins at
 all, so even reintroducing `connectAs` wouldn't cover the dominant SSO case.
 
@@ -71,7 +74,7 @@ all, so even reintroducing `connectAs` wouldn't cover the dominant SSO case.
 2. **OAuth2 password grant has no `connectAs`** by RFC 6749 design.
    Impersonation is a separate OAuth concern (RFC 8693 Token Exchange).
    Re-introducing `connectAs` would be a rapla-only extension breaking
-   the "any standards-compliant OIDC client works" property PRD 041 set up.
+   the "any standards-compliant OIDC client works" property [PRD 041](../041-openapi-runtime-removal.md) set up.
 3. **External IdPs issue the token.** Rapla can't produce a Keycloak-
    signed token claiming `sub: <target>`. The impersonation token must
    be signed by rapla's own SAS — and the auth pipe must accept it
@@ -121,7 +124,7 @@ all, so even reintroducing `connectAs` wouldn't cover the dominant SSO case.
   1. Decode the Bearer via the multi-issuer `JwtDecoder` (any
      accepted issuer).
   2. Resolve actor → rapla `User` via `SpringSecurityRemoteSession.resolveJwtOrThrow`
-     (username-as-identity per PRD 036).
+     (username-as-identity per [PRD 036](../036-external-idp-oauth-login.md)).
   3. Resolve `target_username` → rapla `User` via case-insensitive
      lookup. 404 if not found.
   4. `PermissionController.canAdminUser(actor, target)` — same rule as
@@ -235,7 +238,7 @@ side as the check.
 ### Load-bearing principle: rapla can mint tokens for any rapla user
 
 Rapla's embedded Spring Authorization Server controls its own
-RSA-signing key (`RaplaKeyStorage`, per PRD 029 Phase 1) and can sign
+RSA-signing key (`RaplaKeyStorage`, per [PRD 029](../029-swing-oauth-login.md) Phase 1) and can sign
 a JWT for any rapla user identity provided server-side rules allow.
 External IdPs **cannot** do this — they only issue tokens whose `sub`
 is the human who authenticated to them.
@@ -252,7 +255,7 @@ impersonation token (RFC 8693 strict, RFC 7523 user-assertion,
 `act_as:` scopes) is rejected: they only work when IdP policy
 cooperates, and rapla deployments don't control external IdP realm
 policy. Token swap is the **only** option that works for the
-IdP-replaceable architecture PRD 031 + PRD 036 established.
+IdP-replaceable architecture PRD 031 + [PRD 036](../036-external-idp-oauth-login.md) established.
 
 ### Why a rapla-namespaced endpoint, not a SAS extension
 
@@ -473,7 +476,7 @@ clears `impersonation_override`.
    with usernames + UUIDs.
 4. **Client: `ImpersonationClient`** (new) in
    `rapla-core/src/main/java/org/rapla/storage/dbrm/`. `@HttpExchange`
-   interface paired with the controller (PRD 049 pattern).
+   interface paired with the controller ([PRD 049](../049-controller-interface-deduplication.md) pattern).
 5. **Client: impersonation override storage.** One field in
    `AuthService` (Angular) / `RaplaClientServiceImpl` (Swing):
    `{ accessToken, target, expAt }`. In-memory by default. No
@@ -490,7 +493,7 @@ clears `impersonation_override`.
 9. **Documentation.** `docs/authentication.md`: new section "Admin
    impersonation ('switch to user')" with wire format, audit log
    shape, "no impersonation refresh anywhere" + "no admin password
-   stored" properties. Cross-ref PRD 036 § "Out of scope" → "Admin
+   stored" properties. Cross-ref [PRD 036](../036-external-idp-oauth-login.md) § "Out of scope" → "Admin
    impersonation".
 
 ## Tests
@@ -542,12 +545,15 @@ The trade-off:
 **Mitigations (configurable per deployment):**
 
 1. **Opt-in flag.** `rapla.auth.impersonation.enabled` (default
-   `true`). Set `false` → endpoint returns 404 (not 403 — invisible,
-   not just denied), Swing hides the menu action. Documented in
-   `docs/authentication.md`.
-2. **JWT header marker.** Impersonation tokens carry explicit
-   `typ: "impersonation"` claim alongside `act` so ops pipelines can
-   alert specifically on impersonation issuance.
+   `true`) — implemented. Set `false` → both impersonation entry
+   points refuse (`ImpersonationController.impersonate` and the SPA
+   cookie switch `AuthCookieController.impersonateSwitch`), returning
+   404 (not 403 — invisible, not just denied), and Swing hides the
+   menu action. Documented in `docs/authentication.md`.
+2. **JWT `act` claim (RFC 8693).** Impersonation tokens carry the
+   standard `act` claim (`typ` stays `"access"` — no non-standard
+   `typ: "impersonation"` is emitted), so ops pipelines alert on
+   presence of `act` to catch impersonation issuance.
 3. **Mandatory audit-log line.** Already in design — every issuance
    logs actor+target UUIDs/usernames.
 4. **Per-deployment audit sink** (follow-up PRD) — route audit line
@@ -643,10 +649,10 @@ designed for microservice meshes; expensive plumbing for zero benefit.
 
 | Pattern | Why discarded |
 |---|---|
-| **Cookie-based session impersonation** (Django admin, Rails "become") | Requires server-side session state; PRD 041 explicitly moved rapla off sessions onto stateless Bearer. |
+| **Cookie-based session impersonation** (Django admin, Rails "become") | Requires server-side session state; [PRD 041](../041-openapi-runtime-removal.md) explicitly moved rapla off sessions onto stateless Bearer. |
 | **Microsoft On-Behalf-Of (OBO)** | Solves service-to-service token propagation, not admin-impersonating-user. Wrong shape. |
 | **DPoP-bound impersonation tokens (RFC 9449)** | Cryptographic device binding; strict security win but heavy plumbing (DPoP nonce per request, key registration). Disproportionate for rapla's threat model. Future PRD if needed. |
-| **PRD 043 API key with `act_as` flag** | API keys are long-lived headless access; reusing for interactive impersonation muddies threat model. Keep orthogonal. |
+| **[PRD 043](../043-api-keys-jwt-pat.md) API key with `act_as` flag** | API keys are long-lived headless access; reusing for interactive impersonation muddies threat model. Keep orthogonal. |
 | **OIDC CIBA (RFC 9126)** | Out-of-band user consent — target user approves via push. Inapplicable: admin impersonation by definition bypasses target. |
 | **Cookie + Bearer pair** | Same failure modes as per-request header; cookies survive across tabs unintentionally. |
 | **Reverse-proxy JWT rewriter** | Equivalent to Option 1 at network edge; doesn't fit single-process deployment, splits auth logic between rapla and proxy. |
@@ -660,7 +666,7 @@ designed for microservice meshes; expensive plumbing for zero benefit.
 ## Open Questions
 
 1. **Should impersonation tokens have shorter TTL than regular access tokens?**
-   Today 1-h (`access-token-time-to-live: 1h`, PRD 041 — Spring AS stock
+   Today 1-h (`access-token-time-to-live: 1h`, [PRD 041](../041-openapi-runtime-removal.md) — Spring AS stock
    is 5 min). Could shorten to 10–15 min to limit blast radius. Lean:
    same TTL for now; manual "Switch back" + standard expiry covers it.
 2. **Multiple-level impersonation** (admin → user → some-other-user).

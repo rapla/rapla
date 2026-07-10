@@ -41,8 +41,8 @@ whom is this accessible" today means hand-iterating entities.
 ## Scope
 
 **In:**
-- Extend `allocatables(filter:)` (PRD 035 / 059 / 066) and
-  `reservations(filter:)` (PRD 055) with **access-by-target** fields:
+- Extend `allocatables(filter:)` (PRD [035](done/035-graphql-foundations.md) / [059](done/059-graphql-typed-where-predicates.md) / [066](066-graphql-reservation-allocatable-matching.md)) and
+  `reservations(filter:)` ([PRD 055](055-graphql-events-read-api.md)) with **access-by-target** fields:
   - `accessibleByUsername: String` — target user by **username** (single value,
     the human handle, like `user(username:)`).
   - `accessibleByUserId: ID` — target user by **opaque id** (single value, for

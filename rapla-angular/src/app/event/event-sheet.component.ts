@@ -267,13 +267,18 @@ export class EventSheetComponent {
 
   // eslint-disable-next-line @angular-eslint/use-lifecycle-interface
   ngOnInit(): void {
-    const isNew = this.dialogData ? this.dialogData.isNew === true : history.state?.['isNew'] === true;
+    const isNew = this.dialogData
+      ? this.dialogData.isNew === true
+      : history.state?.['isNew'] === true;
     if (isNew) {
       const typeKey = (history.state?.['typeKey'] as string | undefined) ?? 'event';
       // "Mehr Optionen" in the quick-create window carries its draft along.
-      const carried = this.dialogData?.draft ?? (history.state?.['draft'] as EventDraft | undefined);
+      const carried =
+        this.dialogData?.draft ?? (history.state?.['draft'] as EventDraft | undefined);
       const d =
-        carried && carried.id === this.eventId() ? carried : newDraft(typeKey, new Date(), this.eventId());
+        carried && carried.id === this.eventId()
+          ? carried
+          : newDraft(typeKey, new Date(), this.eventId());
       this.draft.set(d);
       this.baseline = snapshot(d);
       this.headerOpen.set(true);
@@ -331,7 +336,9 @@ export class EventSheetComponent {
       .subscribe((resp) => {
         const all = resp.data?.types ?? [];
         this.typeOptions.set(
-          all.filter((t) => t.classificationType === 'RESERVATION').map((t) => ({ key: t.key, name: t.name })),
+          all
+            .filter((t) => t.classificationType === 'RESERVATION')
+            .map((t) => ({ key: t.key, name: t.name })),
         );
       });
   }
@@ -583,7 +590,6 @@ export class EventSheetComponent {
     if (next !== a.end) this.applyEnd(a, withEnd(a, next));
   }
 
-
   // When the clamp rejects the user's pick WITHOUT changing the model, the
   // cached Date reference makes the [value] write a no-op and the widget
   // keeps displaying the rejected pick. Dropping the cache entries hands the
@@ -682,7 +688,11 @@ export class EventSheetComponent {
   }
 
   toggleRepWeekday(a: DraftAppointment, weekday: number): void {
-    this.mutateRule(a.id, (ap) => (ap.repeating = toggleWeekday(ap.repeating!, weekday)), 'Wochentage');
+    this.mutateRule(
+      a.id,
+      (ap) => (ap.repeating = toggleWeekday(ap.repeating!, weekday)),
+      'Wochentage',
+    );
   }
 
   setRepEndMode(a: DraftAppointment, mode: EndMode): void {
@@ -764,7 +774,11 @@ export class EventSheetComponent {
   assign(row: AvailabilityRow): void {
     this.mutateDraft((d) => {
       if (d.allocations.some((a) => a.allocatableId === row.id)) return;
-      d.allocations.push({ allocatableId: row.id, allocatableName: row.name, appointmentIds: null });
+      d.allocations.push({
+        allocatableId: row.id,
+        allocatableName: row.name,
+        appointmentIds: null,
+      });
     }, 'Ressource zugeordnet');
     this.pins.update((p) => p.filter((x) => x !== row.id));
   }
@@ -825,7 +839,10 @@ export class EventSheetComponent {
     if (key !== 'z' && key !== 'y') return;
     const target = e.target as HTMLElement;
     if (target instanceof HTMLTextAreaElement) return;
-    if (target instanceof HTMLInputElement && !['checkbox', 'radio', 'button'].includes(target.type)) {
+    if (
+      target instanceof HTMLInputElement &&
+      !['checkbox', 'radio', 'button'].includes(target.type)
+    ) {
       return;
     }
     e.preventDefault();

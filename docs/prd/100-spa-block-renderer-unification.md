@@ -4,15 +4,15 @@
 black chip text browser-verified on the light-color cases, Swing lane pipeline in
 `week-lanes.ts` with the full tier-5 suite — 34 tests). D6 added: chip double-click
 opens the editor (Swing/table parity). Phases 3+4 open.
-**Related:** PRD 077 (calendar model — owns week/month render modes; the week grid
-shipped as a prototype under this PRD's scope), PRD 095 (month grid — its OQ2 chip
-contrast is resolved here as D1), PRD 032 (own-implementation calendar decision,
-EventCalendar MIT reference rule), PRD 094 (context actions on blocks/selections —
+**Related:** [PRD 077](077-calendar-model-graphql.md) (calendar model — owns week/month render modes; the week grid
+shipped as a prototype under this PRD's scope), [PRD 095](095-month-grid-render-mode.md) (month grid — its OQ2 chip
+contrast is resolved here as D1), [PRD 032](done/032-angular-ui-library-evaluation.md) (own-implementation calendar decision,
+EventCalendar MIT reference rule), [PRD 094](094-spa-main-view-actions-and-popups.md) (context actions on blocks/selections —
 explicitly out of scope here)
 
 ## Abstract
 
-The SPA now has two block-based calendar renderers — `MonthGridComponent` (PRD 095)
+The SPA now has two block-based calendar renderers — `MonthGridComponent` ([PRD 095](095-month-grid-render-mode.md))
 and the week time-grid prototype (`WeekGridComponent`, 2026-07-08) — each carrying
 its own copy of chip styling, color handling, and time/name composition, and the week
 grid diverges from the Swing week view in documented ways. This PRD (a) extracts the
@@ -34,13 +34,13 @@ suite over all extracted pure logic.
 | Aspect | Swing | SPA today | Verdict |
 |---|---|---|---|
 | Chip text color | **Always black** (`SwingRaplaBlock.FOREGROUND_COLOR = Color.black`); users pick block colors that work with black text | White text on colored chips, dark on neutral — unreadable on light colors (yellow/lime, see 2026-07-08 screenshot) | **Unify → D1** |
-| Block color resolution | `RaplaBuilder.getColorForClassifiable` + `BlockColors.resolve`, shared by ALL views | Server `AppointmentBlock.color` (PRD 095, delegates to the same helpers, §12-gated) — correct; but client-side chip styling duplicated per grid | **Extract → D2** |
+| Block color resolution | `RaplaBuilder.getColorForClassifiable` + `BlockColors.resolve`, shared by ALL views | Server `AppointmentBlock.color` ([PRD 095](095-month-grid-render-mode.md), delegates to the same helpers, §12-gated) — correct; but client-side chip styling duplicated per grid | **Extract → D2** |
 | Lane assignment (week) | `GroupAllocatablesStrategy` (+`AbstractGroupStrategy`): group blocks by their first **selected** allocatable (locale-sorted; selection = the calendar's chosen resources); `resolveConflicts` spawns extra slots on collision; **fixed-slots** mode (default when not compact) keeps each selected resource's lane stable across the week; `mergeSlots` (compact) greedily collapses non-colliding lanes | Pure overlap greedy (interval partitioning) ≈ Swing's *compact* mode only; lanes reshuffle day-by-day, no resource identity | **Unify → D3** |
 | Collision floor | 5-minute minimum block length in `isCollision` (zero-length blocks claim lane space) | `endMin <= startMin` clamped to +30 min | **Unify → D3** |
 | Rows-per-hour | `CalendarOptions.getRowsPerHour()` — per-user persisted; **also a zoom**: hour height = `rowSize × rowsPerHour` (`LinearRowScale`) | Component-local signal; raster affects gridlines + selection snap only, hour height fixed 48 px | **Unify → D4** |
 | Worktime / excluded days | `CalendarOptions` worktime start/end minutes + `excludeDays` (hide weekends) | Auto-fit axis (default 8–18, expands to data); always 7 days | **Partial-unify → D4** (auto-fit stays as fallback) |
 | Cross-day selection | `SelectionHandler` FLOW: anchor-swap, intermediate days fully selected, one continuous interval | Ported 1:1 (2026-07-08, browser-verified) | ✅ done |
-| Selection → creation | Selection persists after mouse-up; creation via context menu (`fireSelectionPopup`) | Release opens the prefilled event sheet immediately (PRD 095 3a decision) | **Deliberate divergence → D5** |
+| Selection → creation | Selection persists after mouse-up; creation via context menu (`fireSelectionPopup`) | Release opens the prefilled event sheet immediately ([PRD 095](095-month-grid-render-mode.md) 3a decision) | **Deliberate divergence → D5** |
 | Auto-scroll during drag | `m_wv.scrollTo` follows the pointer | missing | Phase 4 |
 | Selection raster clamp | row clamped to `rowsPerDay-1` | clamped to axis bounds | ✅ done |
 
@@ -71,7 +71,7 @@ future block renderer (day/program):
 
 **Setting plumbing** (Phase 3): rows-per-hour becomes zoom (hour height =
 `rowSize × rowsPerHour`) and persists; worktime + excludeDays as options with
-auto-fit-to-data as the no-config fallback. Persistence home is OQ1 (PRD 077's
+auto-fit-to-data as the no-config fallback. Persistence home is OQ1 ([PRD 077](077-calendar-model-graphql.md)'s
 SavedView options vs user preferences).
 
 ## Goal
@@ -97,17 +97,17 @@ SavedView options vs user preferences).
   consumes, fail-closed degradation when a custom view omits one).
 
 ### Out of scope
-- Drag-move of existing blocks (PRD 095 Phase 3b for month; week follows after).
-- Context menus / actions on blocks and selections — PRD 094. But the *shape* is
+- Drag-move of existing blocks ([PRD 095](095-month-grid-render-mode.md) Phase 3b for month; week follows after).
+- Context menus / actions on blocks and selections — [PRD 094](094-spa-main-view-actions-and-popups.md). But the *shape* is
   locked here: context menus are ONE shared concept across table and block
   renderers (Swing: `SelectionMenuContext` + `ObjectMenuFactory` serve table rows
   AND calendar blocks alike). Block chips must produce the same `RowContext` as
-  their table row and feed the existing shared row-menu path (PRD 094 D4/099) —
+  their table row and feed the existing shared row-menu path ([PRD 094](094-spa-main-view-actions-and-popups.md) D4/099) —
   no renderer-private menu implementations.
   *Shipped 2026-07-08 (single-row slice):* chip right-click → `openMenu {row,x,y}`
   → view-host `onChipMenu` → the shared `ctx-anchor` menu via `rowItems`
   (Bearbeiten/Anzeigen/Löschen incl. delete-scope); chip double-click →
-  `onRowDblClick` (D6). Still PRD 094: multi-block selection + selection-context
+  `onRowDblClick` (D6). Still [PRD 094](094-spa-main-view-actions-and-popups.md): multi-block selection + selection-context
   menus + menu on a standing time selection.
 - Day/program render modes themselves (only: the shared module must not assume 7
   columns).
@@ -137,7 +137,7 @@ SavedView options vs user preferences).
       allocsOf}`. View-host passes locale-sorted scope resources; mode = fixed
       when >1 resource scoped (OQ2 default), else compact.
 - [x] D6: chip DOUBLE-click opens the editor in both grids (single click reserved
-      for selection/PRD 094); month-grid spec pins the contract.
+      for selection/[PRD 094](094-spa-main-view-actions-and-popups.md)); month-grid spec pins the contract.
 
 ### Phase 3 — options: zoom + worktime
 - [ ] Rows-per-hour drives hour height (zoom) and persists (OQ1).
@@ -231,11 +231,11 @@ probe on the dhbw dataset.
   columns of the Swing/HTML screenshots). Unreplicable client-side by design —
   the matching fact must come from the server.
 
-- **OQ1** — persistence home for rows-per-hour/worktime/excludeDays: PRD 077
+- **OQ1** — persistence home for rows-per-hour/worktime/excludeDays: [PRD 077](077-calendar-model-graphql.md)
   SavedView options (per saved calendar, Swing-`CalendarModelConfiguration`-like) vs
   user preferences (per user, Swing-`CalendarOptions`-like). Swing splits them:
   rowsPerHour/worktime are CalendarOptions (user-level). *Resolution:* pending —
-  decide with PRD 077's SavedView design.
+  decide with [PRD 077](077-calendar-model-graphql.md)'s SavedView design.
 - **OQ2** — SPA default for fixed-slots vs compact. *Resolution:* 2026-07-09 —
   **fixed whenever ANY resource is scoped; compact only with no scope** (Swing
   effective behavior). Source finding: `isCompactColumns` is DEAD config —
@@ -266,17 +266,17 @@ Swing. Rejected: server-emitted text color (more wire surface for a constant).
 Swing, block look and color logic live once (`SwingRaplaBlock`, `RaplaBuilder`,
 `BlockColors`) and every view renders the same block. The SPA's per-grid copies have
 already diverged once (text color); extraction is the fix, not discipline. Server
-stays the single source of the *effective color* (PRD 095 D2/D3 — §12 gating stays
+stays the single source of the *effective color* ([PRD 095](095-month-grid-render-mode.md) D2/D3 — §12 gating stays
 server-side).
 
 **D3 — week lanes get Swing's model: group by SELECTED resource + fixed/compact
 modes + 5-min collision floor.** The stable-lane-per-selected-resource behaviour is
 the genuinely rapla-ish part of the Swing week view (multi-resource planning was
-the reason PRD 032 rejected off-the-shelf calendar libs) — and the grouping key is
+the reason [PRD 032](done/032-angular-ui-library-evaluation.md) rejected off-the-shelf calendar libs) — and the grouping key is
 the calendar's *selection* (SPA: scope chips), not any allocatable of the block
 (`RaplaBuilder.getGroupAllocatable`). Pure-TS port into `week-lanes.ts`, Swing
 `AbstractGroupStrategy`/`GroupAllocatablesStrategy` as the reference — in-house
-first per PRD 032; EventCalendar stays reference-only for pointer/CSS patterns.
+first per [PRD 032](done/032-angular-ui-library-evaluation.md); EventCalendar stays reference-only for pointer/CSS patterns.
 The identical strategy stack drives the exported HTML calendars
 (`HTMLWeekViewPage:85`), so parity here keeps SPA ↔ HTML-export ↔ Swing agreeing
 on the same data (see `docs/architecture/calendar-rendering.md` §2).
@@ -290,13 +290,13 @@ than Swing's blank evening rows when data falls outside worktime).
 **D6 — chip double-click opens the editor; single click is reserved for
 selection.** Swing and the SPA tables both edit on double-click (`onRowDblClick`);
 a one-click editor on block chips was inconsistent and steals the click needed for
-the shared selection/context-menu concept (PRD 094/099) that blocks will join.
+the shared selection/context-menu concept (PRD [094](094-spa-main-view-actions-and-popups.md)/099) that blocks will join.
 Keyboard: Enter on a focused chip still activates (a11y parity with tables).
 
 **D5 — selection→creation stays immediate (divergence from Swing, deliberate).**
 Swing keeps the selection standing and creates via context menu; the SPA opens the
-prefilled event sheet on release (PRD 095 3a "editor öffnet vorbefüllt", reaffirmed
-for the week grid 2026-07-08). Context actions on a standing selection are PRD 094
+prefilled event sheet on release ([PRD 095](095-month-grid-render-mode.md) 3a "editor öffnet vorbefüllt", reaffirmed
+for the week grid 2026-07-08). Context actions on a standing selection are [PRD 094](094-spa-main-view-actions-and-popups.md)
 territory and can layer on later without changing the default.
 
 **D7 — `matchedBy` takes NO argument; its candidate pool is the query's own

@@ -252,7 +252,12 @@ type eventClassification implements Classification & ReservationClassification {
     // no free-text input for the category — only the type select + enum select
     expect(header.querySelector('app-classification-edit input[type="text"]')).toBeNull();
 
-    cmp.applyClassificationPatch({ key: 'loan', value: 'planned', label: 'Ausleihe', coalesceKey: null });
+    cmp.applyClassificationPatch({
+      key: 'loan',
+      value: 'planned',
+      label: 'Ausleihe',
+      coalesceKey: null,
+    });
     // collapsed header shows the enum LABEL, not the raw key
     expect(cmp.displayName(cmp.draft()!)).toBe('Geplant');
   });

@@ -1,17 +1,17 @@
 # PRD 087 — classification & type indices (GraphQL read-path, server-side filter pushdown)
 
-**Status:** draft — 2026-06-24 (split from PRD 082 Workstream A)
-**Related:** PRD 082 (storage memory model — foundation: H2 read-model + put/remove projection seam; this is its first low-risk consumer), PRD 066 (allocatable scope union on ReservationFilter), PRD 059 (GraphQL typed where-predicates), PRD 028 (allocatable evaluator), PRD 085 (search/name — sibling GraphQL-only index), PRD 086 (appointment index — the dual-API sibling)
+**Status:** draft — 2026-06-24 (split from [PRD 082](082-storage-memory-model.md) Workstream A)
+**Related:** [PRD 082](082-storage-memory-model.md) (storage memory model — foundation: H2 read-model + put/remove projection seam; this is its first low-risk consumer), [PRD 066](066-graphql-reservation-allocatable-matching.md) (allocatable scope union on ReservationFilter), [PRD 059](done/059-graphql-typed-where-predicates.md) (GraphQL typed where-predicates), [PRD 028](028-angular-power-search.md) (allocatable evaluator), [PRD 085](085-search-name-indexing.md) (search/name — sibling GraphQL-only index), [PRD 086](086-appointment-block-index.md) (appointment index — the dual-API sibling)
 
-**Split from PRD 082 (Workstream A).** Unlike the appointment index (PRD 086, dual-API), these
+**Split from [PRD 082](082-storage-memory-model.md) (Workstream A).** Unlike the appointment index ([PRD 086](086-appointment-block-index.md), dual-API), these
 indices are **GraphQL-only**: they accelerate server-side *classification/type filtering*, which
 exists only on the GraphQL read path (`ClassificationGraphQLController`, `buildStorageFilter`). The
 old RemoteStorage `getResources()` returns the caller's full readable set and the Swing client filters
 client-side — no server-side type filter to accelerate. So this PRD needs only GraphQL tier-3 tests,
 not the old-API behavioral harness. The shared read-model foundation (H2, projection seam,
-drift-safety, boot rebuild, index classes) lives in **PRD 082** and is referenced here.
+drift-safety, boot rebuild, index classes) lives in **[PRD 082](082-storage-memory-model.md)** and is referenced here.
 
-## Problem (measured — PRD 082)
+## Problem (measured — [PRD 082](082-storage-memory-model.md))
 
 Broad GraphQL read queries over a large store (tens of thousands of allocatables) pay a fixed
 **O(all)** tax. `AbstractCachableOperator.getAllocatables(filters)` always does
@@ -38,7 +38,7 @@ a single id-space is technically unambiguous — but the two query paths resolve
 (`canRead` on an allocatable ≠ readability of a reservation that references it). Keep two maps —
 `allocatableTypeBucket` and `reservationTypeBucket` — so each consumer (`getAllocatables` /
 `reservations`) reads only its own space and a bucket lookup never crosses the entity boundary.
-Reservation-side maintenance lives at the same put/remove seam; the appointment index (PRD 086) is the
+Reservation-side maintenance lives at the same put/remove seam; the appointment index ([PRD 086](086-appointment-block-index.md)) is the
 *time* lever, this is the *type* lever — orthogonal, both can narrow the same `reservations()` query.
 
 Where it helps (and where not — table is allocatable-phrased; the reservation path is symmetric):
@@ -48,24 +48,24 @@ Where it helps (and where not — table is allocatable-phrased; the reservation 
 | "all of type X" (`typeKeyEq:"Raum"`) | full copy → filter | **yes** — direct bucket lookup |
 | multi-type union (`typeKeyIn:[A,B,…]`) | `buildStorageFilter`→null → full + `canRead`×all | **yes, biggest** — bucket union; `canRead` only over the union |
 | `where<Type>`-only (B′, implied type) | →null → full + `WhereEvaluator`×all | **yes** — narrow to the implied type's bucket first |
-| type-scoped analytics (`blockStats` over all of a type) | full | **partial** — narrows allocatable resolution; residual appointment cost is PRD 086 |
+| type-scoped analytics (`blockStats` over all of a type) | full | **partial** — narrows allocatable resolution; residual appointment cost is [PRD 086](086-appointment-block-index.md) |
 | id-scoped (`idIn`) | direct | no (already direct) |
-| untyped "all" / window-only | full + `canRead`×all | no (= union of all buckets = the full map; the `canRead` cost is PRD 083) |
+| untyped "all" / window-only | full + `canRead`×all | no (= union of all buckets = the full map; the `canRead` cost is [PRD 083](083-user-change-subscription.md)) |
 
 "alle Räume"/"alle Kurse" (whole-type) is a common, legitimate pattern, so the index is not niche.
 Its lever is `getAllocatables`/`buildStorageFilter`; it is **orthogonal** to the appointment cost
-(PRD 086) and the `canRead` cost (PRD 083).
+([PRD 086](086-appointment-block-index.md)) and the `canRead` cost ([PRD 083](083-user-change-subscription.md)).
 
 ### Class 2 — on-the-fly classification-attribute indices (dynamic) — *later in the 082 plan (D7)*
 
 Classification attributes (`capacity`, `building`, `year`, …) are admin-/deployment-defined — not
-known at schema time, and mostly never filtered. Per the PRD 082 read-model: store classification as
+known at schema time, and mostly never filtered. Per the [PRD 082](082-storage-memory-model.md) read-model: store classification as
 a `JSON` column; the **first** time an attribute is filtered (`where:{Raum:{capacity_gt:30}}`),
 create a typed generated column (CAST driven by the DynamicType's known attribute type) + index it
 **lazily**. Pay-for-use; only filtered attributes cost memory/write-maintenance. An LRU/threshold
 **budget** caps the number of on-the-fly indexes (each adds per-write maintenance). A proven-hot
 attribute can be **promoted** to a permanent typed indexed column. The hot path (the appointment
-block query, PRD 086) is pure Class 1 / structural and never touches this JSON machinery.
+block query, [PRD 086](086-appointment-block-index.md)) is pure Class 1 / structural and never touches this JSON machinery.
 
 **Not every attribute type is index-safe — the explosion guard (D6).** rapla `AttributeType` is
 `STRING | INT | BOOLEAN | DATE | CATEGORY | ALLOCATABLE`. The bounded types index cheaply:
@@ -109,7 +109,7 @@ discard the index on the first outlier. Instead:
   entirely and fall back to the `WhereEvaluator` scan over the Class-1-narrowed set. The `max(10, …)`
   floor keeps small indexes from being killed by a handful of long values; the `2%` term scales the
   tolerance with index size.
-- **Safe and reversible.** The index is a **pure, drop-and-rebuildable projection** (PRD 082 —
+- **Safe and reversible.** The index is a **pure, drop-and-rebuildable projection** ([PRD 082](082-storage-memory-model.md) —
   `index == project(objects)`), so dropping costs only the acceleration, never correctness, and reclaims
   the index in full. If the attribute is filtered again later and samples back under the cap, it rebuilds
   from scratch (same drop-and-rebuild primitive used at boot).
@@ -149,25 +149,25 @@ half is string-only and deferred.
 
 - **(a) In-memory `LocalCache` map** — the type-bucket as a `Map<String, Set<String>>` (partly shipped;
   see Decisions). Cheapest, ships value fast, but does **not** exercise the H2 read-model.
-- **(b) On the H2 read-model** (PRD 082) — the type-bucket + Class-2 attribute indices as projections
+- **(b) On the H2 read-model** ([PRD 082](082-storage-memory-model.md)) — the type-bucket + Class-2 attribute indices as projections
   at the put/remove seam. More work, but makes this the **low-risk first H2 consumer** that validates
-  the foundation end-to-end before the appointment index (PRD 086) commits to it.
+  the foundation end-to-end before the appointment index ([PRD 086](086-appointment-block-index.md)) commits to it.
 
 Leaning **(b)** for the program: a safe load-test of the projection seam before the risky appointment
 work. (a) remains the fallback if foundation timing slips.
 
 ## Maintenance & drift
 
-At the put/remove seam (PRD 082): on an allocatable put, if its type changed vs the old entity, move
+At the put/remove seam ([PRD 082](082-storage-memory-model.md)): on an allocatable put, if its type changed vs the old entity, move
 its id from the old type's bucket to the new. Class-2: idempotent upsert of the JSON column;
 functional indexes materialize lazily. Pure projection — `index == project(objects)`, rebuilt at boot,
-drop-and-rebuildable. **Narrow, never gate** (PRD 082 D5): the index yields candidate ids; ordering,
+drop-and-rebuildable. **Narrow, never gate** ([PRD 082](082-storage-memory-model.md) D5): the index yields candidate ids; ordering,
 `canRead`, and final matching run after, on the narrowed set.
 
 ## Plan
 
 **Class 1 (type index) is this PRD's near-term work; Class 2 (attribute indices) is sequenced later in
-the overall PRD 082 program build order, not within 087 (D7).** The two are independent — Class 1
+the overall [PRD 082](082-storage-memory-model.md) program build order, not within 087 (D7).** The two are independent — Class 1
 needs no JSON column, no lazy functional indexes, no budget machinery, and delivers the measured "all
 of type X" / multi-type-union win on its own. Class 2 is speculative (OQ2: is multi-attribute
 filtering even hot?) and carries the explosion risk (D6), so it lands in a later step of the 082 plan,
@@ -204,12 +204,12 @@ Both 3a/3b sit after 086/083 in the 082 build order.
   GraphQL controller — same as today).
 - Live: type-scoped catalog latency drop; `idIn` unchanged.
 
-## Decisions locked (carried from PRD 082 Workstream A)
+## Decisions locked (carried from [PRD 082](082-storage-memory-model.md) Workstream A)
 
 - **D1 — Store ids, not entities (`Map<String, Set<String>>`).** The id set *is* the type-group
   answer; ids are stable across re-reads; order/limit applied after resolving at the output boundary.
 - **D2 — Index + `buildStorageFilter` ship together.** The index is inert without the consumer.
-- **D3 — Orthogonal to the appointment cost (PRD 086) and the `canRead` cost (PRD 083).** This index
+- **D3 — Orthogonal to the appointment cost ([PRD 086](086-appointment-block-index.md)) and the `canRead` cost ([PRD 083](083-user-change-subscription.md)).** This index
   attacks allocatable *resolution*, not appointment iteration or permission filtering.
 - **D4 — `reservations()` scoped-set direct-resolve (shipped 2026-06-22).**
   `ReservationGraphQLController.reservations()` resolves scoped allocatables directly via the catalog
@@ -228,7 +228,7 @@ Both 3a/3b sit after 086/083 in the 082 build order.
   alongside the index so reads stay correct), not put in the B-tree; the whole index is **discarded**
   only when violators exceed `max(10, 2% · index size)` → fall back to scan (the projection is
   drop-and-rebuildable, so correctness is never at risk; rebuild if it samples back under the cap).
-  Free-text substring search is **PRD 085** (Lucene).
+  Free-text substring search is **[PRD 085](085-search-name-indexing.md)** (Lucene).
 - **D8 — H2 supplies storage primitives only; the adaptive layer is bespoke Java.** Native: `JSON`
   column + `JSON_VALUE`/`CAST`, generated columns (the functional-index vehicle), B-tree index, runtime
   `CREATE`/`DROP INDEX`. **Not** native: partial/filtered indexes, on-the-fly creation, sampling,
@@ -246,7 +246,7 @@ Both 3a/3b sit after 086/083 in the 082 build order.
 
 - **OQ1 — resolved.** **(b) H2 read-model.** Class 1 lives on the H2 projection (not the in-memory
   `LocalCache` map) so it is the genuine foundation-validation first consumer — exercises the put/remove
-  seam end-to-end before 086 commits to it. **Placement (Stage A, PRD 082):** the H2 read-model is in
+  seam end-to-end before 086 commits to it. **Placement (Stage A, [PRD 082](082-storage-memory-model.md)):** the H2 read-model is in
   **rapla-server**; `getAllocatables` is in rapla-core (`AbstractCachableOperator:434`). Consume via a
   **`LocalAbstractCachableOperator` override** of `getAllocatables` (rapla-server subclass) that
   consults the type-bucket and falls back to `super`'s scan — rapla-core stays H2-free. The reservation
@@ -256,7 +256,7 @@ Both 3a/3b sit after 086/083 in the 082 build order.
   the multi-type union — the biggest win — is actually exercised).
 - **OQ3** — Class-2 budget policy: LRU size / promotion threshold; H2's JSON indexing is weaker than
   Postgres `jsonb`/GIN — if multi-attribute predicates become hot, that is the Postgres-first
-  argument (PRD 082 engine note).
+  argument ([PRD 082](082-storage-memory-model.md) engine note).
 - **OQ4 — resolved.** Global `STRING` cap = **128 chars**; discard threshold = `max(10, 2% · index
   size)` (violators-list size). Both locked; revisit only if real value-length distributions show 128
   is wrong. Until string indexing (Phase 3b) is built, strings stay on the `WhereEvaluator` fallback.

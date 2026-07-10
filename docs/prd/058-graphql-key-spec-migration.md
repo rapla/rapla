@@ -4,7 +4,7 @@
 **Owner:** Christopher Kohlhaas
 **Created:** 2026-05-28
 **Shipped:** 2026-05-28
-**Tracks against:** PRD 035 (GraphQL Cut C — exposes the same key surface)
+**Tracks against:** [PRD 035](done/035-graphql-foundations.md) (GraphQL Cut C — exposes the same key surface)
 
 ## Goal
 
@@ -42,7 +42,7 @@ In scope:
 
 Out of scope:
 - Generic Unicode → ASCII transliteration for non-Latin scripts (Cyrillic, Greek, CJK). For those, fall back to `_<hex-codepoint>_` substitution. Documented as a known limitation; rapla deployments are Latin-script today and we'll address transliteration if a non-Latin deployment appears.
-- Schema evolution beyond what the migration touches. PRD 035 §5 (Cut C / enum generation / Group type) stays the same — it just sees clean keys after this lands.
+- Schema evolution beyond what the migration touches. [PRD 035](done/035-graphql-foundations.md) §5 (Cut C / enum generation / Group type) stays the same — it just sees clean keys after this lands.
 - UI tooling for admins to manually rename a key. Migration is fully automatic.
 
 ## Plan
@@ -224,7 +224,7 @@ Not landed (future):
 ## Update 2026-06-24 — group keys: relax write-guard to legacy validation (Option A)
 
 **Problem discovered.** PRD 058 left group keys (the `user-groups` Category
-subtree — see PRD 069 for what "groups" are) in an **inconsistent state**:
+subtree — see [PRD 069](069-graphql-resource-access-read-api.md) for what "groups" are) in an **inconsistent state**:
 
 - The **startup migration** (`GraphqlKeyMigration`) deliberately exempts the
   `user-groups` subtree from both renaming and the load-side assertion
@@ -240,7 +240,7 @@ subtree — see PRD 069 for what "groups" are) in an **inconsistent state**:
     to `isSpecCompliant`, Plan §6a).
 - Group keys **never reach the SDL generator** — groups are exposed only via the
   hand-written static `type Group { key: String! }` (`schema.graphqls:508`), and
-  PRD 069 group inputs (`accessibleByGroup`, `inGroup`) take slash-separated
+  [PRD 069](069-graphql-resource-access-read-api.md) group inputs (`accessibleByGroup`, `inGroup`) take slash-separated
   key-paths `[String!]`, not generated identifiers. So there is **no schema
   reason** to enforce the strict spec on group keys.
 

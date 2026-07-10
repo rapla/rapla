@@ -1,8 +1,8 @@
 # PRD 088 — Spec-as-source formalization, spec graph & AI-maintained docs
 
 **Status:** draft — 2026-06-24 (condensed + D6/D7 added 2026-06-27)
-**Related:** PRD 049 (`@HttpExchange` = REST contract), PRD 035 (`schema.graphqls` = boot-enforced contract),
-PRD 022 (architecture reference docs), PRD 067, PRD 082–087.
+**Related:** [PRD 049](049-controller-interface-deduplication.md) (`@HttpExchange` = REST contract), [PRD 035](done/035-graphql-foundations.md) (`schema.graphqls` = boot-enforced contract),
+[PRD 022](022-architecture-documentation.md) (architecture reference docs), [PRD 067](067-server-mutation-unification.md), [PRD 082](082-storage-memory-model.md)–087.
 ADRs: [0001](../decisions/0001-use-madr-for-architecture-decisions.md) (MADR),
 [0002](../decisions/0002-no-sdd-framework-as-tool.md) (no SDD tool = D1),
 [0004](../decisions/0004-ai-maintained-docs-conversational-diff.md) (AI-maintained docs = D7).
@@ -87,8 +87,8 @@ Neo4j/Backstage at the start. The implicit graph already exists in prose; the jo
 edges, not build one from scratch. Matches the docs-as-code, git-versioned culture.
 
 **D4 — Capability-spec extraction starts with REST/GraphQL/permissions; not storage or Swing.** First targets
-already have a half-formalized, machine-checkable contract (`@HttpExchange` PRD 049, `schema.graphqls`
-PRD 035, `permissions.md` + §12 leak-tests). Avoid the storage engine (in flux — 082–087 draft) and the
+already have a half-formalized, machine-checkable contract (`@HttpExchange` [PRD 049](049-controller-interface-deduplication.md), `schema.graphqls`
+[PRD 035](done/035-graphql-foundations.md), `permissions.md` + §12 leak-tests). Avoid the storage engine (in flux — 082–087 draft) and the
 Swing client (dying legacy, low ROI).
 
 **D5 — Dogfooded:** PRD 088 is the first node authored under its own front-matter schema once Phase 0 lands.
@@ -100,7 +100,7 @@ openspec CLI`; every body delegates to `openspec new change` / `status` / `instr
 cannot satisfy a no-CLI requirement, and the spec location *is* relocatable (`.openspec.yaml` planning-home,
 `changesDir`), so neither the binary nor the location was the blocker. The real blocker: **the automatic
 delta-merge on `archive` plus the fixed artifact schema rob flexibility and force a rigid structure** that
-cannot hold rapla's free-prose treatises (668-line PRD 082), inline **code examples** (AI implementation aid),
+cannot hold rapla's free-prose treatises (668-line [PRD 082](082-storage-memory-model.md)), inline **code examples** (AI implementation aid),
 or **PlantUML** (human architecture). Because the CLI's payoff (`validate`, graph, typed instructions)
 *derives from* that rigidity, format-conformance is self-defeating and dissolves the earlier "lock-out" worry.
 **Direction:** implement the lifecycle idea as rapla-owned, self-contained skills with an **agent-judgment

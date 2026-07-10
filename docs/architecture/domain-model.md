@@ -140,14 +140,14 @@ alphanumeric first char, length 8–64 — deliberately *not* a UUID-structure c
 (ids are opaque; the charset just excludes `;` / whitespace / escaping hazards).
 Applies to NEW Reservation / Appointment / Allocatable entities only; ids already
 persistent are grandfathered (legacy `period_1`-style ids keep saving). Collision
-handling: PRD 056 §9.
+handling: [PRD 056](../prd/056-graphql-events-write-api.md) §9.
 
-**Client ids are MANDATORY on GraphQL creates** (decided 2026-07-06, PRD 056 §9):
+**Client ids are MANDATORY on GraphQL creates** (decided 2026-07-06, [PRD 056](../prd/056-graphql-events-write-api.md) §9):
 `createReservation` (reservation + every appointment) and `createAllocatable`
 reject id-less input with `REQUIRED` — the server-generate fallback is removed.
 Why:
 
-- **Idempotency is id-based, with no content comparison** (PRD 056 OQ5 revised):
+- **Idempotency is id-based, with no content comparison** ([PRD 056](../prd/056-graphql-events-write-api.md) OQ5 revised):
   a retry whose response was lost re-sends the same client-minted id, gets
   `ID_COLLISION`, and maps that to "already applied". Only a client-generated id
   makes this possible — a server-generated id gives the retry no shared key, so
@@ -277,7 +277,7 @@ allocatable set. Two consequences for downstream callers:
 
 - "Which allocatables are bound to *this appointment*?" is the
   natural query — `getAppointmentsFor()` inverted. External APIs
-  (PRD 035) expose this as `Appointment.allocatables` (pre-resolved
+  ([PRD 035](../prd/done/035-graphql-foundations.md)) expose this as `Appointment.allocatables` (pre-resolved
   through restriction); blocks inherit it via their parent.
 - The restriction structure itself (`appointmentIds` per
   allocatable, with `null` meaning "bound to all") is only relevant
@@ -331,7 +331,7 @@ A block has start, end, a back-reference to its appointment, and an
 level, not the block level** — they consume RRULE / EXDATE natively
 and expand client-side. Rapla's own calendar UI expands server-side
 into blocks because the UI grid is indexed by time, not by
-appointment. External APIs (PRD 035) therefore expose appointments
+appointment. External APIs ([PRD 035](../prd/done/035-graphql-foundations.md)) therefore expose appointments
 as a primary read shape with blocks as an opt-in materialization
 (`Appointment.blocks(from:, to:)`) — same query root, two
 consumption shapes.
@@ -415,7 +415,7 @@ facade. Each Conflict identifies one Allocatable and two
 **appointment-pair plus a list of dates**, not block-pair. Two
 weekly recurring lectures sharing Room A produce **one** Conflict
 spanning N dates, not N Conflicts — the Swing client renders them
-that way, and external APIs (PRD 035) preserve the same shape
+that way, and external APIs ([PRD 035](../prd/done/035-graphql-foundations.md)) preserve the same shape
 (`{ allocatable, otherAppointment, dates: [LocalDate!]! }`). A
 block-pair shape would force every consumer to re-aggregate.
 

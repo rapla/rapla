@@ -1,14 +1,14 @@
 # PRD 094 — SPA main-view actions & popups (command pattern + post-action undo)
 
 **Status:** draft — 2026-07-07 (updated 2026-07-09: calendar drag/resize **move** pulled in as a command producer — Phase 4 + D5; scope logic locked server-side in a new `moveAppointment` GraphQL mutation)
-**Related:** PRD 091 (event sheet — D5 locks *in-sheet* undo as memento, pre-save
-only, and moves everything past the save boundary HERE), PRD 077/078 (view model +
+**Related:** [PRD 091](091-spa-reservation-edit-and-availability.md) (event sheet — D5 locks *in-sheet* undo as memento, pre-save
+only, and moves everything past the save boundary HERE), PRD [077](077-calendar-model-graphql.md)/[078](078-spa-graphql-view-renderer.md) (view model +
 renderer — the main view these actions live on; the calendar surface hosts the
 Phase 4 drag/resize, but the move *command + scope dialog + mutation* are owned
-here), PRD 091 (recurrence semantics the `moveAppointment` SINGLE-split reuses),
-PRD 093 (loan lifecycle — its status actions are the first archetype-specific
-command producers), PRD 056 (mutation contract incl. §9 id-integrity/retry — the
-create-inverse relies on it), PRD 067 (D7: GraphQL write surface adjustable)
+here), [PRD 091](091-spa-reservation-edit-and-availability.md) (recurrence semantics the `moveAppointment` SINGLE-split reuses),
+[PRD 093](093-loan-lifecycle.md) (loan lifecycle — its status actions are the first archetype-specific
+command producers), [PRD 056](056-graphql-events-write-api.md) (mutation contract incl. §9 id-integrity/retry — the
+create-inverse relies on it), [PRD 067](067-server-mutation-unification.md) (D7: GraphQL write surface adjustable)
 
 ## Abstract
 
@@ -17,13 +17,13 @@ Give the SPA main view (table lens today, calendar surfaces later) row/context
 the editor — and introduce the **command pattern** for them: every committed
 action is a command object carrying a label and a *compensating GraphQL mutation*,
 surfaced as a post-action **"Rückgängig" toast**. This is the SPA counterpart of
-Swing's *global* `CommandHistory` (menu bar) — the architecture line PRD 091 D5
+Swing's *global* `CommandHistory` (menu bar) — the architecture line [PRD 091](091-spa-reservation-edit-and-availability.md) D5
 drew: memento inside the draft dialog, commands for committed actions on shared
 state.
 
 Grounding: `docs/architecture/reservation-edit.md` § "Command / undo catalog"
 (the Swing global-history command inventory this PRD maps to the SPA) and the
-market research in PRD 091 D5 (post-action single-shot undo toast is what Google
+market research in [PRD 091](091-spa-reservation-edit-and-availability.md) D5 (post-action single-shot undo toast is what Google
 Calendar / Trello / Asana ship; deep client-side stacks for committed actions
 exist nowhere in the calendar space).
 
@@ -50,10 +50,10 @@ From `docs/architecture/reservation-edit.md` (global commands table):
 | `SaveUndo` (save from edit dialog) | toast after sheet save; inverse = `updateReservation` with the captured pre-save state (or `deleteReservations` after a create) | yes (Phase 2) |
 | `DeleteUndo` | delete action on a table row; inverse = `createReservation` re-creating the captured full state **with the same ids** (D3 id-first makes re-create id-stable — conflicts/links re-attach) | yes (Phase 2) |
 | `AppointmentResize` (drag/resize, scope dialog) | calendar drag/resize **move** commands | **yes (Phase 4)** — the scope dialog + command/toast infra live here; the EVENT/SERIE/SINGLE cascade is a new server `moveAppointment` mutation (D5) |
-| `AllocatableExchangeCommand` | drag between resource rows | no — PRD 077 |
+| `AllocatableExchangeCommand` | drag between resource rows | no — [PRD 077](077-calendar-model-graphql.md) |
 | `AppointmentPaste` / `ReservationPaste` | copy/duplicate action | duplicate-as-new: candidate (Phase 3); paste semantics deferred |
 | `ConflictEnable` | conflict view action | no — future conflict surface |
-| *(no Swing equivalent)* | loan status transitions (planned▸out▸returned, PRD 093) | producer only — commands defined in 093, run on this infra |
+| *(no Swing equivalent)* | loan status transitions (planned▸out▸returned, [PRD 093](093-loan-lifecycle.md)) | producer only — commands defined in 093, run on this infra |
 
 ## Goal
 
@@ -80,11 +80,11 @@ From `docs/architecture/reservation-edit.md` (global commands table):
 - Own-actions-only semantics (never undo another user's change)
 
 ### Out of scope
-- In-sheet (pre-save) undo — PRD 091 D5 (memento)
+- In-sheet (pre-save) undo — [PRD 091](091-spa-reservation-edit-and-availability.md) D5 (memento)
 - Calendar drag/resize **move** is now Phase 4 (in scope). Still out: **paste**
-  (needs a paste-target model — PRD 077 calendar surface) and
-  `AllocatableExchangeCommand` (drag between resource rows — PRD 077)
-- Loan-specific transitions — PRD 093 defines them, they only *run* here
+  (needs a paste-target model — [PRD 077](077-calendar-model-graphql.md) calendar surface) and
+  `AllocatableExchangeCommand` (drag between resource rows — [PRD 077](077-calendar-model-graphql.md))
+- Loan-specific transitions — [PRD 093](093-loan-lifecycle.md) defines them, they only *run* here
 - Multi-step global history / cross-session undo (server trash-can semantics
   would be its own design)
 - Swing changes
@@ -123,7 +123,7 @@ Design locked 2026-07-07 (D3); implementation deferred — no phase started.
 - [x] `actions/event-commands.ts` `buildDeleteCommand`: whole-event → `deleteReservations` ⇄ `createReservation` (captured full state, SAME ids — D3 id-stable); scoped → full-state `updateReservation` of the modified draft ⇄ update back to the captured original, with the inverse's `expectedLastChanged` captured by a reload right after the forward save (a third-party edit between delete and undo then fails loudly, never silent-overwrites).
 - [x] **Löschen** in `EventRowMenuProvider` (`canModify` + not an exception block — Swing parity): load → scope dialog → command → toast. View re-queries on `UndoToastService.mutated$`. 8 tier-6 specs in `view-host-menu.spec.ts`.
 - [x] Server: `appointmentId: ID!` on `AppointmentBlock` (`APPOINTMENT_BLOCK_APPOINTMENT_ID` fetcher) + builtin `rapla_appointments` view gained `appointmentId @hidden` + `isException @hidden`; `RowContext.block` carries `(appointmentId, start, isException)`. Server tests green (block-id + view catalog).
-- [x] **Neu, type-aware (Swing wizard-submenu analog):** toolbar "Neu" becomes a `mat-menu` when >1 creatable RESERVATION type exists (one entry per type, pre-selects `typeKey` via `newDraft`), plain button at exactly one type. `app-toolbar.component.ts`; 2 tier-6 specs. Lending-lens "Neue Ausleihe" falls out as the one-type case. NOT in the row menu (object menu); "new from context" stays the quick-create entry point (Phase 3 / PRD 077).
+- [x] **Neu, type-aware (Swing wizard-submenu analog):** toolbar "Neu" becomes a `mat-menu` when >1 creatable RESERVATION type exists (one entry per type, pre-selects `typeKey` via `newDraft`), plain button at exactly one type. `app-toolbar.component.ts`; 2 tier-6 specs. Lending-lens "Neue Ausleihe" falls out as the one-type case. NOT in the row menu (object menu); "new from context" stays the quick-create entry point (Phase 3 / [PRD 077](077-calendar-model-graphql.md)).
 - [x] **Scope pre-allocation (Swing parity):** the view's selected resource scope chips (`FilterStore`, kind `resource`) are pre-added as allocations of the new event (applies-to-all, null restriction) — as Swing pre-allocates the marked allocatables on a new reservation. `user` chips (owner filter) are not added. tier-6 spec.
 - [x] **Header undo/redo (D2 revised — flat stack, not single-slot).**
       `UndoToastService` became the main-view command history: `past`/`future`
@@ -142,8 +142,8 @@ Design locked 2026-07-07 (D3); implementation deferred — no phase started.
 > **⚠ Mutation design moved to [PRD 101](101-transpose-anchors-move-copy-paste.md)**
 > (2026-07-09): the `moveAppointment(scope, dateShift)` shape referenced below was
 > superseded by the anchor-based verb family (typed `Anchor` input, scope-split verbs).
-> D5's principle (scope logic server-side) stands — recorded as PRD 101 D1. This phase's
-> task list gets rewritten once PRD 101 Phase 1 locks the verbs.
+> D5's principle (scope logic server-side) stands — recorded as [PRD 101](101-transpose-anchors-move-copy-paste.md) D1. This phase's
+> task list gets rewritten once [PRD 101](101-transpose-anchors-move-copy-paste.md) Phase 1 locks the verbs.
 
 Reuses the Phase 2 command/toast/history infra. Grounded in
 `docs/architecture/reservation-edit.md` § "Drag / resize on the calendar" (Swing
@@ -158,7 +158,7 @@ Multi-appointment and repeating blocks don't drag today.
 
 - [ ] **Server: `moveAppointment` mutation — designed in [PRD 056](056-graphql-events-write-api.md)
       § "Verb-level semantic notes" (the `moveAppointment` verb + `AppointmentEditScope`
-      enum + per-scope semantics live there, since PRD 056 owns the reservation
+      enum + per-scope semantics live there, since [PRD 056](056-graphql-events-write-api.md) owns the reservation
       write surface).** Summary: `moveAppointment(reservationId, appointmentId,
       occurrenceStart, dateShift, scope: EVENT|SERIE|SINGLE, keepTime, newEnd,
       expectedLastChanged): Reservation!` carries the full
@@ -169,7 +169,7 @@ Multi-appointment and repeating blocks don't drag today.
       denied. **This is the D5 server work.**
 - [ ] **Resize form.** The same `moveAppointment` verb with a `newEnd` argument
       (Swing runs move and resize through the one `showDialog(..., "move", ...)`
-      path) — see PRD 056. No separate `resizeAppointment` verb.
+      path) — see [PRD 056](056-graphql-events-write-api.md). No separate `resizeAppointment` verb.
 - [ ] **Client dialog:** reuse `views/delete-scope-dialog.component.ts` pattern
       for a move-scope chooser (EVENT/SERIE/SINGLE) with Swing's show-when
       predicates (skip the dialog when only one option qualifies — the current
@@ -186,9 +186,9 @@ Multi-appointment and repeating blocks don't drag today.
 
 ### Phase 3 — Candidates (each needs its own go)
 - [ ] Duplizieren (create-as-new from an existing event, fresh ids, opens sheet as draft)
-- [ ] Loan transitions (PRD 093) as the first external `MenuItemProvider`
+- [ ] Loan transitions ([PRD 093](093-loan-lifecycle.md)) as the first external `MenuItemProvider`
 - [ ] Request confirm/deny (UC-E9 / 091 OQ5) as a provider
-- [ ] Quick-create window entry point (091 2b.2 has none yet — a "+" cell/slot action could open it; coordinate with PRD 077 calendar-click)
+- [ ] Quick-create window entry point (091 2b.2 has none yet — a "+" cell/slot action could open it; coordinate with [PRD 077](077-calendar-model-graphql.md) calendar-click)
 
 ## Tests
 
@@ -205,7 +205,7 @@ Multi-appointment and repeating blocks don't drag today.
 - **OQ2** — `z` keyboard shortcut for the toast undo (Google/Trello precedent) —
   worth the global key handler? *Resolution:* pending.
 - **OQ3** — Does the delete inverse restore *request status* and other
-  server-managed fields the mutation input cannot express (PRD 091 2.0a
+  server-managed fields the mutation input cannot express ([PRD 091](091-spa-reservation-edit-and-availability.md) 2.0a
   preserved them on update — create is a different path)? Needs a server-side
   answer; possibly a dedicated `restoreReservation` mutation instead of plain
   `createReservation`. *Resolution:* pending.
@@ -218,7 +218,7 @@ Multi-appointment and repeating blocks don't drag today.
 
 **D1 — committed actions use the command pattern with compensating mutations;
 client state restore is forbidden past the save boundary (2026-07-07).** Inherited
-from PRD 091 D5's boundary analysis: shared/versioned/multi-pod state can only be
+from [PRD 091](091-spa-reservation-edit-and-availability.md) D5's boundary analysis: shared/versioned/multi-pod state can only be
 un-done by a domain inverse that passes version checks (`expectedLastChanged`),
 permissions and validation — exactly Swing's global-history model (`SaveUndo`
 dispatches the old version as a normal write). Alternatives rejected: memento
@@ -276,7 +276,7 @@ row/block context menu, adapted to the web:
   the Swing muscle memory this menu is the analog of).
 - *Extension point from day one:* `MenuItemProvider` multi-provider
   (`(context: RowContext) => MenuItem[]`), the ObjectMenuFactory analog —
-  PRD 093's loan transitions and the UC-E9 request confirm/deny arrive this
+  [PRD 093](093-loan-lifecycle.md)'s loan transitions and the UC-E9 request confirm/deny arrive this
   way; a plugin system is NOT built, it's just an injected list. The menu
   context carries a list of rows (multi-select-ready) even though v1 always
   passes one — Swing's edit_multi/delete_selection stay possible without a
@@ -291,8 +291,8 @@ row/block context menu, adapted to the web:
   Phase 4 makes exceptions editable in the sheet — building the exception
   write path menu-first would bypass the sheet.
 - *Not ported:* copy/cut/paste (clipboard semantics need paste *targets* — the
-  calendar surface, PRD 077; Duplizieren covers the common case), the
-  empty-slot menu (calendar-surface concern, PRD 077), multi-select actions
+  calendar surface, [PRD 077](077-calendar-model-graphql.md); Duplizieren covers the common case), the
+  empty-slot menu (calendar-surface concern, [PRD 077](077-calendar-model-graphql.md)), multi-select actions
   (no table selection exists yet — PRD 099 supplies the selection model and
   the multi-row command producers).
 
@@ -307,13 +307,13 @@ recurrence invariant that must not be reimplemented in TypeScript. The SPA
 therefore does **not** build `updateReservation` payloads for SERIE/SINGLE (which
 would force the SPA event model to carry multi-appointment sets + exceptions +
 per-appointment restrictions and duplicate the cascade). Instead a new
-`moveAppointment` mutation — **designed in PRD 056** (the reservation write-surface
+`moveAppointment` mutation — **designed in [PRD 056](056-graphql-events-write-api.md)** (the reservation write-surface
 PRD), § "Verb-level semantic notes" — keeps the cascade in Java as the single
 source of truth, the same principle `moveReservations`/`deleteAppointment`/the
 Phase 2 delete-scope path already follow. The client owns only the **scope dialog**
 (present the chooser with Swing's show-when predicates) and the **command wrapper**
 (forward + compensating inverse through the Phase 2 undo infra). *Alternatives rejected:* client-side
-`updateReservation` rebuild (duplicates recurrence logic, needs the full PRD 091
+`updateReservation` rebuild (duplicates recurrence logic, needs the full [PRD 091](091-spa-reservation-edit-and-availability.md)
 recurrence model on the read side just to move a block — the maintainer explicitly
 ruled this out); silently widening `moveReservations` to non-EVENT scopes (loses
 the scope choice — a repeating drag would ambiguously move either one occurrence or

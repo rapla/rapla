@@ -6,7 +6,7 @@
 
 ## Goal
 
-Add a `HeadlessPresenterTestSupport` base class (peer of `FacadeTestSupport`) so that **presenter and pure-model classes carved out by PRD 023 can be unit-tested without spinning up Swing, EDT, or a Spring context**.
+Add a `HeadlessPresenterTestSupport` base class (peer of `FacadeTestSupport`) so that **presenter and pure-model classes carved out by [PRD 023](023-presenter-view-extraction.md) can be unit-tested without spinning up Swing, EDT, or a Spring context**.
 
 The harness:
 
@@ -17,10 +17,10 @@ The harness:
 
 ## Why this is needed now
 
-1. **PRD 023 produces classes with no tier-2 home.** Carved-out presenters (e.g. `ReservationEditPresenter` in 023 Phase 6) need a real facade for `facade.edit(...)` / `facade.store(...)` and a fake view for `view.show(...)` / `view.showWarning(...)`. Without a shared harness, every test class hand-rolls the same fixture.
-2. **Existing client-side tests are tier-4 (full Swing GUI)** — e.g. `UndoTests` boots a real `JDialog`. Slow (~5–10 s each) and fragile (need `$DISPLAY` or Xvfb). PRD 023 shouldn't inherit that.
+1. **[PRD 023](023-presenter-view-extraction.md) produces classes with no tier-2 home.** Carved-out presenters (e.g. `ReservationEditPresenter` in 023 Phase 6) need a real facade for `facade.edit(...)` / `facade.store(...)` and a fake view for `view.show(...)` / `view.showWarning(...)`. Without a shared harness, every test class hand-rolls the same fixture.
+2. **Existing client-side tests are tier-4 (full Swing GUI)** — e.g. `UndoTests` boots a real `JDialog`. Slow (~5–10 s each) and fragile (need `$DISPLAY` or Xvfb). [PRD 023](023-presenter-view-extraction.md) shouldn't inherit that.
 3. **The MockView pattern is small but worth standardising.** Without a shared `RecordingView`, every test writes the same `boolean shown; void show(...) { shown = true; }` boilerplate.
-4. **PRD 020 already proved the value at field-renderer scale** — `FieldRendererTest` (10 tests, ~150 ms total) is the only client code with proper tier-1 unit tests. Same for presenters.
+4. **[PRD 020](020-server-driven-admin-panels.md) already proved the value at field-renderer scale** — `FieldRendererTest` (10 tests, ~150 ms total) is the only client code with proper tier-1 unit tests. Same for presenters.
 
 ## Scope
 
@@ -33,7 +33,7 @@ The harness:
    - Exposes `RaplaResources` test stub returning `key` for any i18n lookup, so labels are deterministic.
    - Helper: `User defaultAdmin()` / `User newUser(String role)`.
 2. **`RecordingView<P>`** generic test double, same package. Records every method call on the View interface (small reflective proxy) into a `List<ViewCall>`. Assertion helpers: `view.assertCalled("showWarning").withArgs(...)`, `view.assertNeverCalled("hide")`, `view.lastCall()`. Optional typed sub-class: `RecordingReservationView extends RecordingView<ReservationView.Presenter> implements ReservationView`.
-3. **Documentation**: add a section to `docs/architecture/mvp-pattern.md` (per PRD 022) showing the standard test layout:
+3. **Documentation**: add a section to `docs/architecture/mvp-pattern.md` (per [PRD 022](022-architecture-documentation.md)) showing the standard test layout:
 
    ```java
    class ReservationEditPresenterTest extends HeadlessPresenterTestSupport {
@@ -56,7 +56,7 @@ The harness:
        }
    }
    ```
-4. **One worked-example test** per PRD 023 phase, using the harness, to prove the pattern. Migrate as 023 lands.
+4. **One worked-example test** per [PRD 023](023-presenter-view-extraction.md) phase, using the harness, to prove the pattern. Migrate as 023 lands.
 
 ### Out of scope
 
@@ -82,18 +82,18 @@ The harness:
 
 ### Phase 3 — First production use: `ReservationEditPresenterTest` (≈1 day)
 
-Lands with PRD 023 Phase 6. ~10 tests covering the production presenter end-to-end via facade + recording view.
+Lands with [PRD 023](023-presenter-view-extraction.md) Phase 6. ~10 tests covering the production presenter end-to-end via facade + recording view.
 
 ### Phase 4 — Documentation (≈1 day)
 
 1. `docs/architecture/mvp-pattern.md` (or `extension-points.md` if 022's structure is locked in) section on the test pattern.
-2. Update PRD 017 tier-table with: "Headless presenter / pure-model — tier 2 — extends `HeadlessPresenterTestSupport` — 200–400 ms per test".
+2. Update [PRD 017](017-test-coverage-strategy.md) tier-table with: "Headless presenter / pure-model — tier 2 — extends `HeadlessPresenterTestSupport` — 200–400 ms per test".
 
 ## Tests
 
 - `HeadlessPresenterTestSupportTest` (tier 2): facade boots, clock mutable, temp-dir cleanup OK.
 - `RecordingViewTest` (tier 1): proxy records, assertions fire.
-- Worked examples (Phase 3 + every PRD 023 phase).
+- Worked examples (Phase 3 + every [PRD 023](023-presenter-view-extraction.md) phase).
 
 The harness itself is test infrastructure; CI catches drift via worked-example tests breaking.
 

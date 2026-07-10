@@ -16,12 +16,34 @@ function draft(partial: Partial<EventDraft>): EventDraft {
   };
 }
 
-const WEEKLY = { type: 'WEEKLY' as const, interval: 1, end: null, count: null, weekdays: [1], exceptions: [] };
+const WEEKLY = {
+  type: 'WEEKLY' as const,
+  interval: 1,
+  end: null,
+  count: null,
+  weekdays: [1],
+  exceptions: [],
+};
 
-const single = { id: 'a1', start: '2026-07-08T08:00:00', end: '2026-07-08T16:00:00', allDay: false, repeating: null };
-const repeating = { id: 'a2', start: '2026-07-09T10:00:00', end: '2026-07-09T11:00:00', allDay: false, repeating: WEEKLY };
+const single = {
+  id: 'a1',
+  start: '2026-07-08T08:00:00',
+  end: '2026-07-08T16:00:00',
+  allDay: false,
+  repeating: null,
+};
+const repeating = {
+  id: 'a2',
+  start: '2026-07-09T10:00:00',
+  end: '2026-07-09T11:00:00',
+  allDay: false,
+  repeating: WEEKLY,
+};
 
-const block = (appointmentId: string | null, start: string | null = '2026-07-16T10:00:00'): BlockRef => ({
+const block = (
+  appointmentId: string | null,
+  start: string | null = '2026-07-16T10:00:00',
+): BlockRef => ({
   appointmentId,
   start,
   isException: false,

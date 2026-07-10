@@ -4,7 +4,7 @@ Companion to [reservation-edit.md](reservation-edit.md), which documents the *fl
 (clone semantics, EDT/Promise, EventCheck chain, AppointmentController auto-correction
 rules, wire model). This page inventories the *user-facing capabilities* of the Swing
 dialog — every pane, control and behaviour — as the checklist a new frontend (the SPA
-event sheet, PRD 091) must consciously cover or drop.
+event sheet, [PRD 091](../prd/091-spa-reservation-edit-and-availability.md)) must consciously cover or drop.
 
 Paths: `RES` = `rapla-client/src/main/java/org/rapla/client/swing/internal/edit/reservation/`.
 i18n keys from `rapla-core/src/main/resources/org/rapla/RaplaResources.properties`.
@@ -169,7 +169,7 @@ editing renders partially-allocated resources italic, fully-allocated bold.
 ## 6. Capability checklist for a new frontend
 
 Every line is a Swing capability; a new edit surface must cover it, replace it with
-something better, or consciously drop it (decisions → PRD 091).
+something better, or consciously drop it (decisions → [PRD 091](../prd/091-spa-reservation-edit-and-availability.md)).
 
 - [ ] Choose event type (creatable types only); type change re-maps attributes
 - [ ] Edit classification fields; main vs additional attribute views; `no-view` hidden
@@ -204,7 +204,7 @@ something better, or consciously drop it (decisions → PRD 091).
 
 - [reservation-edit.md](reservation-edit.md) — flow, wire model, validation rules
 - `docs/usecases/reservation-editing.md` — the use-case view + SPA reorganization
-- PRD 091 — SPA reservation editing & availability (proposals)
-- PRD 023/024 — the pure-Java edit models (`RepeatingRuleValidator`,
+- [PRD 091](../prd/091-spa-reservation-edit-and-availability.md) — SPA reservation editing & availability (proposals)
+- PRD [023](../prd/023-presenter-view-extraction.md)/[024](../prd/024-server-side-edit-services.md) — the pure-Java edit models (`RepeatingRuleValidator`,
   `AllocationConflictModel`, `AllocatableRowStatusModel`, …) and the `/api/edit`
   services that already serve non-Swing clients

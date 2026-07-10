@@ -134,8 +134,11 @@ sibling temp file) so the watcher never sees a half-written PEM.
 
 If a proxy already terminates TLS, **do not** configure `server.ssl` here —
 keep Rapla on plain HTTP and rely on `X-Forwarded-{Proto,Host,Port}`. The
-default `server.forward-headers-strategy: FRAMEWORK` already handles them, and
-`rapla.oauth.public-base-url` then derives correctly from the request. See
+default `server.forward-headers-strategy: native` (Tomcat's `RemoteIpValve`,
+which trusts `X-Forwarded-*` only from RFC1918 internal proxies) already handles
+them, and `rapla.oauth.public-base-url` then derives correctly from the request.
+Do **not** switch this to `FRAMEWORK` — it trusts the forwarded headers from any
+caller, letting an external client spoof its origin. See
 `deployment.md` §"Keys to review for production".
 
 ## Troubleshooting

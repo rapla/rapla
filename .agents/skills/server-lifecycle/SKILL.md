@@ -38,6 +38,23 @@ For the agent flow where the PID file doesn't track the JVM (see §8), `pkill -f
 
 Stop in one Bash call (returns immediately), then start in a separate Bash call with `run_in_background=true`. **Do not chain stop + start in one Bash call** — `kill ... ; sleep ; mvn spring-boot:run` makes the whole call a long-running process from the agent's perspective.
 
+**A restart replays the exact previous start command — never reconstruct it from memory.**
+Profiles, `-P<plugin-id>`, run arguments: dropping any of them silently changes server
+behavior (scar 2026-06-24: a restart without `profiles=local` lost an OAuth flag and broke
+the Mosbach-Keycloak login; the user found out via screenshot 30 min later). Recipe: on
+every start, first write the full command to `logs/rapla.cmd` (`echo "<full mvn command>"
+> logs/rapla.cmd`); on restart, `cat logs/rapla.cmd` and reuse it verbatim. If there is no
+`.cmd` file (server started by the user), ask or check `ps -eo args` for the running
+command line before stopping — see also the `feedback_dev_server_flavor` memory (the
+running server is often dhbw-flavored, not vanilla).
+
+**No multi-minute foreground watch loops.** Background start + one instant probe
+(`jps` / `curl`), report the result immediately; the 30 s startup-wait below is the upper
+bound for foreground waiting. If something needs ongoing watching, use a background
+`tail -F` + Monitor — and when launching long background work, tell the user the expected
+duration and report on completion; don't leave them typing "status" (happened 4× in one
+session, plus "are you still running?" during a rejected 400 s foreground wait).
+
 > **pkill self-match footgun (cost a chain of exit-144 mysteries, 2026-06-21).**
 > `pkill -f <pattern>` matches against the FULL command line of every process —
 > **including the very shell running your `pkill`.** So a one-liner that both kills

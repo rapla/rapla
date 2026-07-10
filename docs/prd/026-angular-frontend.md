@@ -12,7 +12,7 @@ UIs are out of scope for v1.
 
 ## Why
 
-Swing is the long-tail debt: WSL2/JNLP launch is fragile (gates new contributors — see PRD `done/jnlp-signing-pitfalls`); reservation-edit UI has ~1800 lines of edge-case glue in `AppointmentController` alone; REST surface is now hardened enough (PRDs 009, 020, 024, 025) for a browser client.
+Swing is the long-tail debt: WSL2/JNLP launch is fragile (gates new contributors — see PRD `done/jnlp-signing-pitfalls`); reservation-edit UI has ~1800 lines of edge-case glue in `AppointmentController` alone; REST surface is now hardened enough (PRDs [009](009-server-bulk-storage-rest-api.md), [020](020-server-driven-admin-panels.md), [024](024-server-side-edit-services.md), [025](025-headless-client-test-harness.md)) for a browser client.
 
 ## Scope
 
@@ -49,7 +49,7 @@ domain and the wire model is in the architecture docs:
 - [`permissions.md`](../architecture/permissions.md) — what the
   server enforces on dispatch.
 
-### Calendar read substrate — GraphQL (PRDs 055/059/066)
+### Calendar read substrate — GraphQL (PRDs [055](055-graphql-events-read-api.md)/[059](done/059-graphql-typed-where-predicates.md)/[066](066-graphql-reservation-allocatable-matching.md))
 
 The SPA calendar's main read query — "show me the events for the
 resources selected in the tree" — is GraphQL, not REST. Use
@@ -58,7 +58,7 @@ with `allocatableMatching: AllocatableFilter` to encode the tree
 selection in one round-trip:
 
 - Type checkboxes → `typeKeyIn`
-- Per-type filter rules → `whereRaum` / `wherePerson` / `where<TypeKey>` (PRD 059)
+- Per-type filter rules → `whereRaum` / `wherePerson` / `where<TypeKey>` ([PRD 059](done/059-graphql-typed-where-predicates.md))
 - Individual ticks → `idIn`
 
 Semantic: result is the union of (type-bucket narrowed by `whereXxx`)
@@ -129,7 +129,7 @@ expected impact on the SPA team, not by dependency.
 
 ### Blocking (must have before Phase 1)
 
-1. **Finish PRD 024 phases 1+2** — the bulk of edit-time business
+1. **Finish [PRD 024](024-server-side-edit-services.md) phases 1+2** — the bulk of edit-time business
    logic (conflict pre-check, recurrence validation, permission
    filtering, allocatable suggestion) needs to live as REST so
    the SPA doesn't re-port it to TypeScript. Phase 3 contract
@@ -169,7 +169,7 @@ expected impact on the SPA team, not by dependency.
    `/edit/check-conflicts`). Request: `{ appointment: AppointmentSpec,
    windowStart, windowEnd, excludeExceptions }`. Response:
    `List<AppointmentBlockDto>` where each DTO is `{ start, end }` in
-   timezone-naive UTC (PRD 014 convention). Server-side wraps the
+   timezone-naive UTC ([PRD 014](done/014-appointment-long-to-java-time.md) convention). Server-side wraps the
    transient `AppointmentImpl.createBlocks(...)` — the SPA gets a
    flat list without re-porting the weekday-flip-on-move logic to
    TypeScript. Tier-1 contract test + 4 tier-3 MockMvc cases covering
@@ -199,7 +199,7 @@ expected impact on the SPA team, not by dependency.
    FooResult foo(@RequestBody FooReq req) throws RaplaException;
    ```
 
-   The 409 row exposes `RaplaNewVersionException`→409 from §B2 to the generated client. **Cost:** one new compile-scope dep on rapla-server (`swagger-annotations-jakarta`, ~50 KiB). **Annotate first:** the new endpoints from PRDs 024 + 026 §B2/§B4 (`/edit/check-conflicts`, `/edit/validate-recurrence`, `/edit/expand-blocks`, `/calendar/view`). Skip legacy `/storage/*` — not part of the new Angular surface.
+   The 409 row exposes `RaplaNewVersionException`→409 from §B2 to the generated client. **Cost:** one new compile-scope dep on rapla-server (`swagger-annotations-jakarta`, ~50 KiB). **Annotate first:** the new endpoints from PRDs [024](024-server-side-edit-services.md) + 026 §B2/§B4 (`/edit/check-conflicts`, `/edit/validate-recurrence`, `/edit/expand-blocks`, `/calendar/view`). Skip legacy `/storage/*` — not part of the new Angular surface.
 
    `springdoc.api-docs.enabled=false` disables endpoints in prod (jars still ship); gate the dep on a Maven profile to strip entirely.
 
@@ -227,7 +227,7 @@ expected impact on the SPA team, not by dependency.
 
 9. **Pick one write path.** `/storage/dispatch` (transactional
    bundle, Swing's choice) vs. `/events`+`/resources` (resource-style
-   REST, PRD 009). Mixing them in the SPA risks optimistic-lock
+   REST, [PRD 009](009-server-bulk-storage-rest-api.md)). Mixing them in the SPA risks optimistic-lock
    surprises. Either deprecate the resource-style endpoints or
    thin the dispatch path.
 
@@ -240,7 +240,7 @@ expected impact on the SPA team, not by dependency.
     with server push. Cuts visible latency on multi-user edits.
     v2 item.
 
-12. **Tier-3 MockMvc coverage for `/storage/*`.** Per PRD 017, the
+12. **Tier-3 MockMvc coverage for `/storage/*`.** Per [PRD 017](017-test-coverage-strategy.md), the
     storage controller is light on MockMvc tests. Add coverage
     before the SPA starts depending on these endpoints — gives a
     safety net for inevitable contract tweaks.
@@ -325,7 +325,7 @@ All read-only-migratable panels done; server controllers exist, client panels ca
 
 **Panels remaining (no work):** `CalendarOption`, `NotificationOption`, `TableviewOption` (deferred for Angular replacement); `view-factory option panels`, `ImportTemplateMenu` (no behaviour win).
 
-**Next pre-migration items:** items 1 (blocking — PRD 024 phases 1+2), 3 (blocking — `POST /storage/draft`), 6 (computed permission flags), 7 (DTO consolidation), 8 (`/locale/{id}` audit).
+**Next pre-migration items:** items 1 (blocking — [PRD 024](024-server-side-edit-services.md) phases 1+2), 3 (blocking — `POST /storage/draft`), 6 (computed permission flags), 7 (DTO consolidation), 8 (`/locale/{id}` audit).
 
 Git state at session end: new DTOs (`SystemSettings`, `UserICalSettings`, `ExchangeUserSettings`) and modifications across `rapla-core/.../rest/`, `rapla-server/.../web/`, `rapla-client/.../swing/internal/`, plus 3 new proxy beans in `ClientProxyConfig`. Not committed (branch `spring-boot`).
 
@@ -584,7 +584,7 @@ Likely shape:
 
 - **Phase 1** — production-grade reservation listing for one
   DynamicType, with filtering. **Gated on §Pre-migration items 1
-  and 3 (PRD 024 phases 1+2 + draft endpoint).**
+  and 3 ([PRD 024](024-server-side-edit-services.md) phases 1+2 + draft endpoint).**
 - **Phase 2** — create new reservation (single appointment,
   no repeat, no allocatable).
 - **Phase 3** — repeating-rule editor with exception dates.

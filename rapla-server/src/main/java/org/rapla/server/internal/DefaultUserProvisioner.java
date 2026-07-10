@@ -65,6 +65,21 @@ public class DefaultUserProvisioner implements UserProvisioner
     }
 
     @Override
+    public User provision(IdentityClaims claims, boolean autoProvision) throws RaplaException
+    {
+        // security-audit A0c / PRD 036: when auto-provisioning is disabled for the provider,
+        // an unknown identity must NOT create a new rapla user — reject the login instead.
+        // An existing user is still resolved/updated by the delegate below.
+        if (!autoProvision && lookup(claims.username()) == null)
+        {
+            throw new org.rapla.storage.RaplaSecurityException(
+                    "Auto-provisioning is disabled for this provider and no rapla user exists for '"
+                            + claims.username() + "'");
+        }
+        return provision(claims);
+    }
+
+    @Override
     public User provision(IdentityClaims claims) throws RaplaException
     {
         Category userGroupsRoot = operator.getSuperCategory().getCategory(Permission.GROUP_CATEGORY_KEY);

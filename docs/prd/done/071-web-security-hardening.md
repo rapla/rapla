@@ -1,8 +1,9 @@
 # PRD 071 — Web security hardening (audit findings, CSP/CORS/headers, XSS)
 
-**Status:** done (2026-06-21) — all audit findings shipped, mitigated, or reframed. H7 → PRD 076
-(scoped API keys). The soft-shell CSP enforce-flip is deferred by decision (report-only; the
-critical `script-src` is already enforced) and the Phase-4 gate's CI-wiring is PRD 034's scope.
+**Status:** done (2026-06-21) — all audit findings shipped, mitigated, or reframed. H7 → [PRD 076](../076-scoped-api-keys-self-rotation.md)
+(scoped API keys). The soft-shell CSP enforce-flip that was deferred here (report-only; the
+critical `script-src` was already enforced) **shipped in [PRD 102](../102-browser-credential-hardening.md) Phase 1 (2026-07-10)** —
+`/app` is now enforced via `RaplaCspHeaderWriter`. The Phase-4 gate's CI-wiring is [PRD 034](../034-ci-baseline-workflow.md)'s scope.
 
 ## Goal
 
@@ -25,8 +26,8 @@ H4); CSP is the structural defense that breaks it even for unknown future sinks.
 ## Scope
 
 In: rapla server (Spring Security, page controllers, JWT decode) and the Angular SPA
-build config. Out: auth *flows* (PRDs 029/031/036/043/050 own those); GraphQL
-read-scope (§12 / PRD 069); operational follow-ups (ops); deployment-specific auth
+build config. Out: auth *flows* (PRDs [029](../029-swing-oauth-login.md)/031/[036](../036-external-idp-oauth-login.md)/[043](../043-api-keys-jwt-pat.md)/[050](../050-external-auth-user-lifecycle.md) own those); GraphQL
+read-scope (§12 / [PRD 069](../069-graphql-resource-access-read-api.md)); operational follow-ups (ops); deployment-specific auth
 adapters (belong with their deployment, not this core PRD).
 
 ## Plan
@@ -59,7 +60,7 @@ adapters (belong with their deployment, not this core PRD).
   dead `RaplaMailToUserOnLocalhost` + client proxy. Real mail paths (test-mail,
   email-change, Exchange-sync) untouched.
 
-### Phase 2 — CSP + security headers (A6 Layer 2 + H1) — IN PROGRESS
+### Phase 2 — CSP + security headers (A6 Layer 2 + H1) — DONE (enforce-flip completed in [PRD 102](../102-browser-credential-hardening.md) Phase 1, 2026-07-10)
 
 **Step 1 — server security headers + path-scoped enforce [shipped 2026-06-18/19]**
 - `SecurityConfig.headers(...)`: `RaplaCspHeaderWriter` (path-scoped CSP) +
@@ -69,7 +70,8 @@ adapters (belong with their deployment, not this core PRD).
   |---|---|---|
   | `/api/**` (JSON) | `CspPolicyBuilder.jsonApiPolicy()` — `default-src 'none'` | **ENFORCE** |
   | `/rapla/**` (calendar + iCal HTML pages) | `CspPolicyBuilder.serverPagePolicy()` — `default-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; form-action 'self'` | **ENFORCE** |
-  | SPA `/app`, `/login`, explorers | `CspPolicyBuilder.build(idp)` (SPA policy) | report-only |
+  | SPA `/app` | `CspPolicyBuilder.build(idp)` (SPA policy — no `script-src`/`style-src`, those ride the Angular autoCsp `<meta>`, [PRD 102](../102-browser-credential-hardening.md) Phase 6) | **ENFORCE** (flipped in [PRD 102](../102-browser-credential-hardening.md) Phase 1, 2026-07-10) |
+  | `/login` (inline submit script), GraphiQL/Swagger explorers | SPA policy | report-only |
 - **Why enforce on `/rapla/**` first:** the calendar pages are public, render
   user-controlled data (resource/event names — where A6 lived), and run **no scripts
   of their own**. `default-src 'none'` makes an injected `<script>` structurally
@@ -126,7 +128,7 @@ adapters (belong with their deployment, not this core PRD).
   `connect-src 'self' <idp-origins>; object-src 'none'; base-uri 'self'; frame-ancestors 'none';
   frame-src 'none'; form-action 'self'`. Tests updated: `CspPolicyBuilderTest`, `SecurityHeadersTest`.
 - **Phase-4 gate (shipped 2026-06-21):** `rapla-angular/tests/csp-enforce-readiness.spec.ts`
-  (tier-7, not yet in CI per PRD 034 Phase 4). Logs in (admin/empty → B3 nag → skip), walks the
+  (tier-7, not yet in CI per [PRD 034](../034-ci-baseline-workflow.md) Phase 4). Logs in (admin/empty → B3 nag → skip), walks the
   CDK overlays that exist, and asserts the authenticated SPA produces **zero** report-only
   `securitypolicyviolation`s — now **strict-green** (the soft shell is clean). A load-bearing
   **control canary** (an `<object>` that MUST trip `object-src 'none'`) keeps it from passing
@@ -134,10 +136,12 @@ adapters (belong with their deployment, not this core PRD).
   enforcing the remaining shell break anything?". Run: `npm run e2e -- csp-enforce-readiness`
   (dev server up). NB the listener must be installed via `addInitScript` (pre-load) or it
   misses load-time violations — the lesson from the missed inline-`<style>`.
-- **To finish (low priority):** the soft shell is gate-confirmed clean, so flipping it
-  report-only → enforce is now a one-liner whenever wanted — but it's **defense-in-depth only**
-  (script-src, the real defense, is already enforced), so it stays report-only for now. The
-  most valuable of the remaining is `connect-src` enforce (a second wall against exfiltration).
+- **RESOLVED in [PRD 102](../102-browser-credential-hardening.md) Phase 1 (2026-07-10):** the soft shell was gate-confirmed clean, so the
+  `/app` policy was **flipped report-only → enforce** via `RaplaCspHeaderWriter`. The enforced
+  `/app` header carries the soft shell (`connect-src`/`object-src`/`base-uri`/`frame-ancestors`/
+  `frame-src`/`form-action`) but **no** `script-src`/`style-src` — those ride the Angular autoCsp
+  `<meta>` ([PRD 102](../102-browser-credential-hardening.md) Phase 6). `/login` (legit inline submit script) and the GraphiQL/Swagger
+  explorers **remain report-only**.
 - **dev parity:** dev runs `npm run start:ai` (no-live-reload) → no HMR WebSocket → no
   `connect-src ws:` exception → dev CSP == prod. Source maps unaffected.
 
@@ -291,9 +295,9 @@ redirect + refresh_token grant; no `silentRefreshRedirectUri`/`sessionChecksEnab
     legacy ECB). Key derivation locked at `SHA-256` (the root key is already high-entropy —
     no slow KDF needed).
 - **H4** JWT in `localStorage` — mitigated by the Phase-2 CSP.
-- **H7** API-key no server-side max TTL. **Reframed → PRD 076.** API keys are revocable
+- **H7** API-key no server-side max TTL. **Reframed → [PRD 076](../076-scoped-api-keys-self-rotation.md).** API keys are revocable
   (membership check in `ApiKeyJwtDecoder`), unlike stateless access tokens, so a forced
-  max-TTL was rejected (breaks automation, little gain). Instead PRD 076 shrinks the leak
+  max-TTL was rejected (breaks automation, little gain). Instead [PRD 076](../076-scoped-api-keys-self-rotation.md) shrinks the leak
   blast radius with **scoped API keys** (`read`/`write_events`/`write_resources`/`write_all`/
   `rotate`, default `read`) + possession-/`rotate`-scoped **self-rotation**. Overlap
   rotation already works today via create+delete (AWS/GCP model).
@@ -303,7 +307,7 @@ Per AGENTS.md §1 every fix landed test-first. The Phase-2 CSP gate now exists:
 `rapla-angular/tests/csp-enforce-readiness.spec.ts` — drives the authenticated SPA, walks
 the CDK overlays, and fails on any new report-only `securitypolicyviolation` (with a control
 canary so it can't pass blind). Currently strict-green. The only remaining piece is wiring it
-into CI, which is **PRD 034 Phase 4's job** (the browser-e2e lane), not 071.
+into CI, which is **[PRD 034](../034-ci-baseline-workflow.md) Phase 4's job** (the browser-e2e lane), not 071.
 
 ## Decisions (locked 2026-06-18)
 1. **Zero deploy-config** is a hard requirement; reuse existing config, never add a
@@ -324,10 +328,12 @@ A7/B3/H3 (this session): `RaplaPasswordEncoderTest`, `PasswordRehashAuthenticate
 `FixAdminPasswordGuardTest`, `CryptoHandlerTest`, `UrlCipherV2Test`,
 `UrlEncryptionControllerIntegrationTest`, `ChangePasswordNagFlowTest`, `LoginPageHintTest`.
 CSP Phase-4 gate: `rapla-angular/tests/csp-enforce-readiness.spec.ts` (tier-7, run via
-`npm run e2e`; not yet in CI per PRD 034 Phase 4). All green.
+`npm run e2e`; not yet in CI per [PRD 034](../034-ci-baseline-workflow.md) Phase 4). All green.
 
 ## Open Questions
-- Phase 2: confirm `@angular/build` (vite) dev-server leaves no residual WebSocket
+- ~~Phase 2: confirm `@angular/build` (vite) dev-server leaves no residual WebSocket
   under `start:ai`; if it does, a dev-build-only `connect-src ws://localhost:*` line
-  (never prod).
+  (never prod).~~ **Closed** — the `/app` enforce-flip ([PRD 102](../102-browser-credential-hardening.md) Phase 1, 2026-07-10) ships
+  the soft shell (incl. `connect-src`) in enforce mode with no dev-only `ws:` exception, so
+  the residual-WebSocket concern is settled.
 - A7: migration of existing unsalted hashes — rehash-on-login vs forced reset.

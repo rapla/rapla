@@ -1,11 +1,11 @@
 # PRD 092 — Free-slot search (free time for a fixed resource set)
 
 **Status:** draft — 2026-07-05
-**Related:** PRD 091 (SPA reservation edit & resource availability — this PRD is the
+**Related:** [PRD 091](091-spa-reservation-edit-and-availability.md) (SPA reservation edit & resource availability — this PRD is the
 complementary axis, split out of 091; shared schema vocabulary defined there),
-PRD 060 (GraphQL MCP foundations — sketched `findFreeSlots`), PRD 086 (appointment
-block index — the enumeration substrate), PRD 077 (calendar render mode — future
-home of the availability strip), PRD 024 (server-side edit services)
+[PRD 060](060-graphql-mcp-foundations.md) (GraphQL MCP foundations — sketched `findFreeSlots`), [PRD 086](086-appointment-block-index.md) (appointment
+block index — the enumeration substrate), [PRD 077](077-calendar-model-graphql.md) (calendar render mode — future
+home of the availability strip), [PRD 024](024-server-side-edit-services.md) (server-side edit services)
 
 ## Abstract
 
@@ -14,7 +14,7 @@ that returns *ranked candidate times* for a fixed resource set — replacing the
 "free appointment >>" button, which returns only the first hit, hides its parameters
 in global `CalendarOptions`, and brute-force-scans up to a year slot by slot. Serves
 the SPA slot finder (use case UC-E6 in `docs/usecases/reservation-editing.md`) and
-MCP clients (PRD 060).
+MCP clients ([PRD 060](060-graphql-mcp-foundations.md)).
 
 ## Current state
 
@@ -24,7 +24,7 @@ MCP clients (PRD 060).
   ~:4451). Exposed only over the legacy Swing RPC `/api/storage/allocatable/date/next`.
 - Search parameters (worktime start/end, excluded weekdays, slot granularity) come
   from global `CalendarOptions`, not from the caller.
-- PRD 086's `IntervalIndex` (behind `rapla.readmodel.authoritative`) gives cheap
+- [PRD 086](086-appointment-block-index.md)'s `IntervalIndex` (behind `rapla.readmodel.authoritative`) gives cheap
   per-allocatable busy-interval retrieval for a window — the substrate for a
   gap-based algorithm.
 
@@ -47,7 +47,7 @@ a semester weekday pattern in one query, sub-second on a production-shaped datas
 
 The inputs overlap ~80% (resources, window, duration, worktime constraints); the
 *result shapes* differ (concrete `start` vs. weekday+time with a quota). Options:
-one query with optional `pattern` and a result type covering both (PRD 091's
+one query with optional `pattern` and a result type covering both ([PRD 091](091-spa-reservation-edit-and-availability.md)'s
 original sketch — heterogeneous), a `@oneOf` result union, or two queries sharing
 input types. **Undecided — see OQ1.**
 
@@ -79,7 +79,7 @@ resource count bounded.
 ### Ranking
 
 - Concrete mode: chronological (earliest first) + `limit`. No attribute-fit
-  ranking here — resource fit is the finder's job (PRD 091 C, OQ2 there).
+  ranking here — resource fit is the finder's job ([PRD 091](091-spa-reservation-edit-and-availability.md) C, OQ2 there).
 - Pattern mode: quota first ("14/15"), then chronological.
 
 ### §12
@@ -90,17 +90,17 @@ only times and counts, never details of the blocking reservations.
 
 ## UI surfaces
 
-### Slot finder (the primary; was proposal E in PRD 091)
+### Slot finder (the primary; was proposal E in [PRD 091](091-spa-reservation-edit-and-availability.md))
 
 In the event sheet's "when" section: pick window, duration, optional weekly
 pattern; resource set defaults to the event's allocation → ranked list; picking a
-slot sets the appointment/series and jumps to the PRD 091 matrix for residual
+slot sets the appointment/series and jumps to the [PRD 091](091-spa-reservation-edit-and-availability.md) matrix for residual
 conflicts. All parameters in-dialog (fixes the CalendarOptions burial).
 
 ### Later increments
 
 - **Availability strip:** while dragging an occurrence, Outlook-style mini
-  free/busy lanes per allocated resource for that day — candidate for the PRD 077
+  free/busy lanes per allocated resource for that day — candidate for the [PRD 077](077-calendar-model-graphql.md)
   calendar render mode.
 - **Weekday×hour heatmap** at term scale (When2Meet-style: cell shade = number of
   free weeks) — pure presentation over the pattern-mode result.
@@ -113,7 +113,7 @@ conflicts. All parameters in-dialog (fixes the CalendarOptions burial).
 - SPA slot finder in the event sheet
 
 ### Out of scope
-- Resource-axis search and the assignment matrix (PRD 091)
+- Resource-axis search and the assignment matrix ([PRD 091](091-spa-reservation-edit-and-availability.md))
 - Availability strip + heatmap (later increments, listed above)
 - Replacing/removing the legacy `date/next` RPC (Swing keeps it; separate cleanup)
 
@@ -125,10 +125,10 @@ conflicts. All parameters in-dialog (fixes the CalendarOptions burial).
 - [ ] §12 leak tests (hidden resource ids; no blocking-event details)
 
 ### Phase 2 — SPA slot finder
-- [ ] Finder UI in the when-axis; handoff to the PRD 091 matrix
+- [ ] Finder UI in the when-axis; handoff to the [PRD 091](091-spa-reservation-edit-and-availability.md) matrix
 
 ### Phase 3 — Increments
-- [ ] Heatmap (pattern mode), availability strip (with PRD 077)
+- [ ] Heatmap (pattern mode), availability strip (with [PRD 077](077-calendar-model-graphql.md))
 
 ## Tests
 
@@ -136,7 +136,7 @@ conflicts. All parameters in-dialog (fixes the CalendarOptions burial).
   intervals; boundary cases: adjacent bookings, overnight gaps, excluded days,
   DST-irrelevant naive times)
 - Tier 3: GraphQL leak tests (§12), window-cap enforcement
-- Tier 5/6: finder component; tier 7 covered by PRD 091's Playwright path once
+- Tier 5/6: finder component; tier 7 covered by [PRD 091](091-spa-reservation-edit-and-availability.md)'s Playwright path once
   integrated
 
 ## Open Questions
@@ -150,12 +150,12 @@ conflicts. All parameters in-dialog (fixes the CalendarOptions burial).
   (archetype B, "Wochenprogramm") as candidate rows instead of free-form times?
   *Resolution:* pending.
 - **OQ4** — Index dependency: require `rapla.readmodel.authoritative` or ship a
-  legacy-scan fallback (mirror of PRD 091 OQ3)? *Resolution:* pending.
+  legacy-scan fallback (mirror of [PRD 091](091-spa-reservation-edit-and-availability.md) OQ3)? *Resolution:* pending.
 
 ## Decisions locked
 
-**D1 — GraphQL transport (2026-07-05).** Same rationale as PRD 091 D1 (SPA is
-GraphQL-only, PRD 067 direction, MCP for free); inherits its rejected
+**D1 — GraphQL transport (2026-07-05).** Same rationale as [PRD 091](091-spa-reservation-edit-and-availability.md) D1 (SPA is
+GraphQL-only, [PRD 067](067-server-mutation-unification.md) direction, MCP for free); inherits its rejected
 alternatives.
 
 **D2 — Gap enumeration replaces grid scan (2026-07-05).** Busy-interval merge +

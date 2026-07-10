@@ -246,7 +246,8 @@ export class AppToolbarComponent implements OnInit {
     const source = (id?.name?.trim() || id?.username || '').trim();
     if (!source) return '';
     const parts = source.split(/\s+/);
-    const letters = parts.length >= 2 ? parts[0][0] + parts[parts.length - 1][0] : source.slice(0, 2);
+    const letters =
+      parts.length >= 2 ? parts[0][0] + parts[parts.length - 1][0] : source.slice(0, 2);
     return letters.toUpperCase();
   });
 
@@ -275,13 +276,15 @@ export class AppToolbarComponent implements OnInit {
     });
     // PRD 094 — creatable event types for the type-aware "Neu" (wizard analog).
     this.gql
-      .query<{ types: { key: string; name: string; classificationType: string }[] }>(
-        `query { types { key name classificationType } }`,
-      )
+      .query<{
+        types: { key: string; name: string; classificationType: string }[];
+      }>(`query { types { key name classificationType } }`)
       .subscribe((resp) => {
         const all = resp.data?.types ?? [];
         this.eventTypes.set(
-          all.filter((t) => t.classificationType === 'RESERVATION').map((t) => ({ key: t.key, name: t.name })),
+          all
+            .filter((t) => t.classificationType === 'RESERVATION')
+            .map((t) => ({ key: t.key, name: t.name })),
         );
       });
     // PRD 090 — only surface the migration entry when there is at least one open item.
@@ -328,7 +331,11 @@ export class AppToolbarComponent implements OnInit {
   }
 
   openApiKeys(): void {
-    this.dialog.open(ApiKeysDialogComponent, { width: '680px', maxWidth: '92vw', autoFocus: false });
+    this.dialog.open(ApiKeysDialogComponent, {
+      width: '680px',
+      maxWidth: '92vw',
+      autoFocus: false,
+    });
   }
 
   openEditAccount(): void {

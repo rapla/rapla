@@ -1,6 +1,6 @@
 # Rapla Use Cases
 
-Collected use cases that drive the **new SPA design** (PRD 026/074/077/078 and the
+Collected use cases that drive the **new SPA design** (PRD [026](../prd/026-angular-frontend.md)/[074](../prd/074-graphql-declarative-views.md)/[077](../prd/077-calendar-model-graphql.md)/[078](../prd/078-spa-graphql-view-renderer.md) and the
 GUI-redesign discussion, 2026-06-21). This is the *requirements ground truth* for
 "what the application must let people do" — kept separate from the *how* (PRDs) and the
 *data model* ([architecture/domain-model.md](../architecture/domain-model.md)).
@@ -45,8 +45,8 @@ consistently; English for all definitions.
 
 | Term | Meaning | Technical |
 |---|---|---|
-| **View Definition** | Level 1 — the *defined* structure (admin / rapla-default): columns, render mode, declared inputs | `@view` query (PRD 074) |
-| **Saved View** | Level 2 — a *stored, named* instance: `viewRef` + concrete values (selection, date, name), per user | `CalendarModelConfiguration` / SavedView (PRD 077) |
+| **View Definition** | Level 1 — the *defined* structure (admin / rapla-default): columns, render mode, declared inputs | `@view` query ([PRD 074](../prd/074-graphql-declarative-views.md)) |
+| **Saved View** | Level 2 — a *stored, named* instance: `viewRef` + concrete values (selection, date, name), per user | `CalendarModelConfiguration` / SavedView ([PRD 077](../prd/077-calendar-model-graphql.md)) |
 | **Runtime State** | Level 3 — the ephemeral live state (changed, not yet stored as a Saved View) | GraphQL variables |
 | **Group** | a *rule* over resources (type / derived / self-defined); live, §12-scoped | `ClassificationFilter[]` = `AllocatableFilter` |
 | **Selection** | the *currently active* resources of the view (= the Chips) | `ReservationFilter.allocatableMatching` |
@@ -60,7 +60,7 @@ consistently; English for all definitions.
 
 Resolved naming:
 - **View Definition** (the structure, shared) vs **Saved View** (the stored per-user instance) —
-  no German *View/Sicht* ambiguity; matches PRD 077's three storage levels.
+  no German *View/Sicht* ambiguity; matches [PRD 077](../prd/077-calendar-model-graphql.md)'s three storage levels.
 - **Group** = the noun (a resource rule); **filter** = the verb; **Filter Editor** = where
   self-defined Groups are built. "Filter" is *not* used as a competing noun.
 - **Event** = Reservation (the whole course), **Occurrence** = one AppointmentBlock — so
@@ -94,7 +94,7 @@ The new SPA targets the **Planner**, desktop-first. Mobile (quick edit) is in sc
 
 The *editing* side (what UC-1/2/5/6 do when they write) is decomposed separately in
 [reservation-editing.md](reservation-editing.md) (UC-E1…E16) — requirements ground
-truth for the SPA event sheet and the availability search (PRD 091).
+truth for the SPA event sheet and the availability search ([PRD 091](../prd/091-spa-reservation-edit-and-availability.md)).
 
 ---
 
@@ -166,7 +166,7 @@ lecturer needs a room for an ad-hoc session.
 
 **Goal:** jump to a specific room / person / event by name, fast.
 
-- **Surface:** the single search box (PRD 028) — ranked across allocatables, reservations,
+- **Surface:** the single search box ([PRD 028](../prd/028-angular-power-search.md)) — ranked across allocatables, reservations,
   conflicts, weighted by what's on screen (selection + visible window).
 - **Verbs:** toggle into selection · "switch selection" (replace with just this one) ·
   jump-to-block. **Recency** floats recently-touched entities up.
@@ -183,7 +183,7 @@ lecturer needs a room for an ad-hoc session.
 - **Surface:** conflict list → jump to the calendar with the overlap emphasized; on mobile,
   a **textual** conflict summary (no grid): "collides with *<event>* in *<room>* on these dates".
 - **rapla mechanism:** `Query.conflicts(reservationId:)` · `Reservation.hasConflicts` for
-  badges · the conflict view is a *view with a conflict-sourced selection* (PRD 077), not a
+  badges · the conflict view is a *view with a conflict-sourced selection* ([PRD 077](../prd/077-calendar-model-graphql.md)), not a
   separate domain.
 
 ## UC-6 — Quick edit on the go (mobile, later)
@@ -197,7 +197,7 @@ lecturer needs a room for an ad-hoc session.
 - **Surface:** find (search) → **event sheet** (focused, deep-linkable, responsive) → one
   edit → save with **server conflict check** shown as text.
 - **rapla mechanism:** `Reservation.canModify` (server-derived, gates the edit button) ·
-  GraphQL mutations (`UpdateReservationInput`/`ChangeOp`/`applyChanges`) · PRD 023/024
+  GraphQL mutations (`UpdateReservationInput`/`ChangeOp`/`applyChanges`) · PRD [023](../prd/023-presenter-view-extraction.md)/[024](../prd/024-server-side-edit-services.md)
   pure-Java validation (recurrence) shared with desktop.
 - **Status:** in scope for the product, **built later**. Design the event sheet mobile-first
   from day one so responsive isn't a retrofit.
@@ -206,7 +206,7 @@ lecturer needs a room for an ad-hoc session.
 
 **Goal:** make a calendar consumable outside Rapla (subscriptions, embeds, spreadsheets).
 
-- **Surface:** server-rendered iCal / HTML / CSV from the **same** GraphQL view (PRD 074
+- **Surface:** server-rendered iCal / HTML / CSV from the **same** GraphQL view ([PRD 074](../prd/074-graphql-declarative-views.md)
   server-side rendering).
 - **Privacy invariant:** public/unencrypted exports strip person names via the server-set
   `internal_request=false` context flag (never a client variable) — §12.
@@ -292,7 +292,7 @@ X in this period" / per-type attribute rules — which the name search does *not
 
 **Open:** does picking from the list **add** to the selection (chips accumulate) or
 **replace** it (single anchor)? Likely both — single pick = anchor + a "switch selection"
-verb (PRD 028) to replace; explicit add for multi. Decide when we design the picker.
+verb ([PRD 028](../prd/028-angular-power-search.md)) to replace; explicit add for multi. Decide when we design the picker.
 
 ---
 

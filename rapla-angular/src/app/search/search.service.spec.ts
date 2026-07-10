@@ -74,7 +74,10 @@ describe('SearchService', () => {
 
   it('counts spaces toward the minimum — a trailing space reaches 3 and searches', async () => {
     let called = false;
-    const gql = fakeGql([{ kind: 'RESOURCE', heading: 'R', hits: [resourceHit('r1', 'C3')] }], () => (called = true));
+    const gql = fakeGql(
+      [{ kind: 'RESOURCE', heading: 'R', hits: [resourceHit('r1', 'C3')] }],
+      () => (called = true),
+    );
     const groups = await firstValueFrom(new SearchService(gql).search('C3 '));
     expect(called).toBe(true); // raw "C3 " is 3 chars
     expect(groups.length).toBe(1);

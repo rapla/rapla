@@ -163,6 +163,13 @@ public class AllocatableMutationController
         if (!caller.isAdmin()
                 && !operator.getPermissionController().canModify(stored, caller))
         {
+            // §12 (security-audit A0d): don't leak existence past read scope — a caller who can
+            // neither read nor modify gets the same REFERENCE_NOT_FOUND as a nonexistent id.
+            if (!operator.getPermissionController().canRead(stored, caller))
+            {
+                throw new ReservationMutationException("REFERENCE_NOT_FOUND", "id",
+                        "Allocatable " + id + " not found");
+            }
             throw new ReservationMutationException("PERMISSION_DENIED", "id",
                     "No modify permission on allocatable " + id);
         }
@@ -245,8 +252,12 @@ public class AllocatableMutationController
             if (!caller.isAdmin()
                     && !operator.getPermissionController().canAdmin(a, caller))
             {
-                entry.put("errors", List.of(validationError(i, "PERMISSION_DENIED",
-                        "No admin permission on allocatable " + id)));
+                // §12 (security-audit A0d): a caller who cannot read the allocatable must not learn
+                // it exists — report REFERENCE_NOT_FOUND, identical to a nonexistent id.
+                boolean readable = operator.getPermissionController().canRead(a, caller);
+                entry.put("errors", List.of(readable
+                        ? validationError(i, "PERMISSION_DENIED", "No admin permission on allocatable " + id)
+                        : validationError(i, "REFERENCE_NOT_FOUND", "Allocatable " + id + " not found")));
                 results.add(entry);
                 anyFailure = true;
                 continue;

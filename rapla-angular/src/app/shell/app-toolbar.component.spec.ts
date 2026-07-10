@@ -15,7 +15,6 @@ import {
 } from '../account/permission-migration.service';
 import { GraphqlService } from '../graphql/graphql.service';
 import { MatDialog } from '@angular/material/dialog';
-import { EventSheetComponent } from '../event/event-sheet.component';
 import { UndoToastService } from '../actions/undo-toast.service';
 import { FilterStore } from '../state/filter-store';
 import { signal as ngSignal } from '@angular/core';
@@ -109,7 +108,9 @@ describe('AppToolbarComponent', () => {
     configure(LOGGED_IN, []);
     const fixture = TestBed.createComponent(AppToolbarComponent);
     fixture.detectChanges();
-    const avatar = fixture.nativeElement.querySelector('.user-trigger .avatar') as HTMLElement | null;
+    const avatar = fixture.nativeElement.querySelector(
+      '.user-trigger .avatar',
+    ) as HTMLElement | null;
     expect(avatar?.textContent?.trim()).toBe('TA');
   });
 
@@ -148,9 +149,7 @@ describe('AppToolbarComponent', () => {
   };
 
   /** Open the user menu, then the Account-settings submenu; return its item labels. */
-  function openAccountSubmenuLabels(
-    fixture: ReturnType<typeof TestBed.createComponent>,
-  ): string[] {
+  function openAccountSubmenuLabels(fixture: ReturnType<typeof TestBed.createComponent>): string[] {
     const items = openMenuItems(fixture);
     const account = items.find((b) => (b.textContent ?? '').includes('Account settings'));
     account?.click();
@@ -290,16 +289,33 @@ describe('AppToolbarComponent — type-aware Neu (PRD 094 Phase 2)', () => {
   });
 
   it('Swing parity: resource scope chips are pre-added as allocations, users are not', () => {
-    configure(LOGGED_IN, [], undefined, [], [{ key: 'event', name: 'Veranstaltung' }], [
-      { id: 'r1', kind: 'resource', label: 'Kamera G40' },
-      { id: 'u1', kind: 'user', label: 'admin' },
-    ]);
+    configure(
+      LOGGED_IN,
+      [],
+      undefined,
+      [],
+      [{ key: 'event', name: 'Veranstaltung' }],
+      [
+        { id: 'r1', kind: 'resource', label: 'Kamera G40' },
+        { id: 'u1', kind: 'user', label: 'admin' },
+      ],
+    );
     const fixture = TestBed.createComponent(AppToolbarComponent);
     fixture.detectChanges();
     (fixture.nativeElement.querySelector('.new-event') as HTMLButtonElement).click();
     const [, config] = dialogOpen.mock.calls[0] as [
       unknown,
-      { data: { draft?: { allocations: { allocatableId: string; allocatableName: string; appointmentIds: string[] | null }[] } } },
+      {
+        data: {
+          draft?: {
+            allocations: {
+              allocatableId: string;
+              allocatableName: string;
+              appointmentIds: string[] | null;
+            }[];
+          };
+        };
+      },
     ];
     expect(config.data.draft?.allocations).toEqual([
       { allocatableId: 'r1', allocatableName: 'Kamera G40', appointmentIds: null },

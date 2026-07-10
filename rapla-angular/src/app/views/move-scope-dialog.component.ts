@@ -61,6 +61,7 @@ export interface MoveScopeDialogData {
 })
 export class MoveScopeDialogComponent {
   readonly data = inject<MoveScopeDialogData>(MAT_DIALOG_DATA);
-  readonly ref = inject<MatDialogRef<MoveScopeDialogComponent, MoveScope | undefined>>(MatDialogRef);
+  readonly ref =
+    inject<MatDialogRef<MoveScopeDialogComponent, MoveScope | undefined>>(MatDialogRef);
   readonly selected = signal<MoveScope>(this.data.options[0]?.scope ?? 'event');
 }

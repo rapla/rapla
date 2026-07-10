@@ -156,7 +156,8 @@ describe('MonthGridComponent', () => {
     const f = mount();
     const emitted: Record<string, unknown>[] = [];
     f.componentInstance.openRow.subscribe((row) => emitted.push(row));
-    const dbl = (el: HTMLElement) => el.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    const dbl = (el: HTMLElement) =>
+      el.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
     // single click must NOT open the editor (selection comes with PRD 094)
     chips(f, 'Seminar KI')[0].click();
     expect(emitted).toEqual([]);
@@ -192,8 +193,9 @@ describe('MonthGridComponent — drag-create day-range selection (PRD 095 Phase 
 
   /** jsdom has no elementsFromPoint — the component hit-tests through it. */
   function stubHit(el: HTMLElement | null): void {
-    (document as unknown as { elementsFromPoint: (x: number, y: number) => Element[] })
-      .elementsFromPoint = () => (el ? [el] : []);
+    (
+      document as unknown as { elementsFromPoint: (x: number, y: number) => Element[] }
+    ).elementsFromPoint = () => (el ? [el] : []);
   }
 
   function pointer(type: string, x: number, y: number): Event {
@@ -266,9 +268,7 @@ describe('MonthGridComponent — drag-create day-range selection (PRD 095 Phase 
     f.detectChanges();
     expect(cell(f, '2026-07-09').classList.contains('droptarget')).toBe(true);
     chip.dispatchEvent(pointer('pointerup', 60, 10));
-    expect(emitted).toEqual([
-      [expect.objectContaining({ dayDelta: 2, minuteDelta: 0 })][0],
-    ]);
+    expect(emitted).toEqual([[expect.objectContaining({ dayDelta: 2, minuteDelta: 0 })][0]]);
     expect(emitted[0].row['name']).toBe('Seminar KI');
   });
 

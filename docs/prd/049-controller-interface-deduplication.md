@@ -7,7 +7,7 @@
 
 **Status:** in-progress (Phases 0-1, 3-6 landed 2026-05-21; Phase 2 partial — see notes)
 **Date:** 2026-05-21
-**Related:** PRD 009 (server bulk storage REST), PRD 031 (API namespace), PRD 041 (OpenAPI runtime removal)
+**Related:** [PRD 009](009-server-bulk-storage-rest-api.md) (server bulk storage REST), PRD 031 (API namespace), [PRD 041](041-openapi-runtime-removal.md) (OpenAPI runtime removal)
 
 ## Goal
 
@@ -77,7 +77,7 @@ Pattern C returns HTML / iCal / JNLP. These controllers don't have `@HttpExchang
 
 ### Pattern D — cleanup deletions
 
-- `RaplaAuthRestPage` (`@Path("login")`) — `POST /api/auth/login` removed in PRD 041→043 cleanup. Verify zero callers, delete.
+- `RaplaAuthRestPage` (`@Path("login")`) — `POST /api/auth/login` removed in [PRD 041](041-openapi-runtime-removal.md)→043 cleanup. Verify zero callers, delete.
 - `MessageHTMLWriter`, `RestWebApplicationExceptionMapper` (RESTEasy `@Provider` SPI) — Spring Boot 4 has no JAX-RS runtime. Verify zero autoconfig, delete. `RaplaExceptionHandler` is the replacement.
 - `org.rapla.rest.PATCH` — custom JAX-RS `@HttpMethod`. If no live refs, delete (use Spring's `@PatchMapping`).
 - `@Context HttpServletRequest` → plain `HttpServletRequest` sweep across ~11 surviving classes still injecting via JAX-RS.

@@ -430,6 +430,9 @@ final class WhereEvaluator
         Object nameContains = pred.get("nameContains");
         if (nameContains != null)
         {
+            // §12: the referenced allocatable's display name must not leak to a caller who cannot
+            // read it — mirror the nested-where gate below (drop the row rather than name-match).
+            if (caller != null && pc != null && !pc.canRead(a, caller)) return false;
             String hay = a.getName(Locale.getDefault());
             if (hay == null || !hay.toLowerCase(Locale.ROOT)
                     .contains(nameContains.toString().toLowerCase(Locale.ROOT))) return false;

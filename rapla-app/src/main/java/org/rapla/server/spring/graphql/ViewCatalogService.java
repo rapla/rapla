@@ -145,6 +145,22 @@ public class ViewCatalogService
     }
 
     /**
+     * Find a view by name, but only if the caller may see it (PRD 097: a document renders only
+     * when BOTH artifacts — the document and the view it references — are visible to the caller;
+     * otherwise the response is indistinguishable from "no such document", §12).
+     */
+    public Optional<ViewEntry> findViewForCaller(String name, User caller)
+    {
+        return findView(name).filter(view -> view.builtin() || isVisible(view, caller));
+    }
+
+    private boolean isVisible(ViewEntry view, User caller)
+    {
+        return isVisible(new StoredViewData(view.name(), view.queryText(), view.isPublic(),
+                view.groups(), view.defaultVariables()), caller);
+    }
+
+    /**
      * Save or overwrite a CUSTOM view. Rejects BUILTIN name collisions.
      * Returns empty list on success, or validation errors/rejections.
      */

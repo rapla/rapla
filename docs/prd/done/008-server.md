@@ -20,7 +20,7 @@ These are the genuine remaining server-side todos. Each has its own home:
 - **Wire orphan plugin extensions as Spring beans** (~25 server `@Extension` / `@DefaultImplementation` classes) — tracked under PRD 002's "Audit of remaining `@Inject` files" + the post-002 follow-ups noted in PRD 002's status section.
 - **Drop Gson dep from BOM after `HTTPWithJsonMailConnector` + `HTTPWithJsonConnector` migrate to Jackson** — tracked under PRD 001 Phase 9.
 - **Migrate `autowireBean()` workarounds in `ServerServiceConfig`/`ServerCoreConfig` (~19 occurrences) to constructor injection** — per AGENTS.md ctor-injection rule, on a touch-it-as-you-go basis. No dedicated PRD.
-- **Phase 5 error-handling cleanup for the new REST surface** — done in PRD 009 Phase 5 (`@RestControllerAdvice`).
+- **Phase 5 error-handling cleanup for the new REST surface** — done in [PRD 009](../009-server-bulk-storage-rest-api.md) Phase 5 (`@RestControllerAdvice`).
 
 ### Server orphan @DefaultImplementation survey (2026-05-08)
 

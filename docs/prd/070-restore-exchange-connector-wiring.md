@@ -31,13 +31,13 @@ The Spring Boot / reactor-split migrations dropped this without a full replaceme
 | `ExchangeConnectorRemote` | `ExchangeConnectorRemoteObjectFactory` | ❌ dropped, no controller → **404** |
 | `SynchronisationManager` | container component + `@Scheduled`-equivalent | ❌ never registered as a bean → `@Scheduled` never fires |
 
-Cross-references: the `@Scheduled` annotations were added in **PRD 019** (which listed
+Cross-references: the `@Scheduled` annotations were added in **[PRD 019](done/019-spring-boot-lifecycle-migration.md)** (which listed
 `SynchronisationManager` as migrated, but the bean wiring was never completed); the
-controller miss happened in **PRD 049** (its inventory only had the config remote);
+controller miss happened in **[PRD 049](049-controller-interface-deduplication.md)** (its inventory only had the config remote);
 the "intentionally NOT wired" deferral comment in `ServerServiceConfig` dates from the
-**PRD 005** reactor split. **PRD 048** even assumes `SynchronisationManager` is a live
+**PRD 005** reactor split. **[PRD 048](048-eliminate-server-container-context.md)** even assumes `SynchronisationManager` is a live
 `@Scheduled` bean ("must NOT restart") — that assumption is false until this PRD lands.
-**PRD 038** (Graph backend) is *additive* and explicitly does not replace this EWS path.
+**[PRD 038](038-graph-calendar-sync.md)** (Graph backend) is *additive* and explicitly does not replace this EWS path.
 
 ## Scope
 
@@ -45,7 +45,7 @@ the "intentionally NOT wired" deferral comment in `ServerServiceConfig` dates fr
   deployments; add the `ExchangeConnectorController`; split scheduling into a separate
   `@ConditionalOnProperty` trigger bean gated on the existing `rapla.exchange.enabled`
   flag (already set true only on the dhbw sync deployment — was a dead property, now bound).
-- **Out:** the Microsoft Graph backend (PRD 038); any new UI; changing the EWS
+- **Out:** the Microsoft Graph backend ([PRD 038](038-graph-calendar-sync.md)); any new UI; changing the EWS
   protocol code (`EWSConnector`, `AppointmentSynchronizer`); the SPA — the Exchange
   dialog stays Swing-only.
 
@@ -95,7 +95,7 @@ the "intentionally NOT wired" deferral comment in `ServerServiceConfig` dates fr
 Test-first per AGENTS.md §1: the failing tier-3 test (`ExchangeConnectorControllerTest`,
 already written) asserts `GET /api/exchange/connect` → 200. It currently can't run
 because the `@SpringBootTest` context is blocked branch-wide by unrelated in-flight
-PRD 069 GraphQL schema edits — resolve that (or use a clean worktree off HEAD) before
+[PRD 069](069-graphql-resource-access-read-api.md) GraphQL schema edits — resolve that (or use a clean worktree off HEAD) before
 relying on the red→green signal.
 
 ### Phase 1 — wire `SynchronisationManager` + deps as beans (all deployments)
@@ -105,7 +105,7 @@ Bean dependency order (each later bean consumes earlier ones):
 - [x] `ShowExchangeForUser` ← `CachableStorageOperator`
 - [x] `ExchangeAppointmentStorage` ← `RaplaFacade`, `CachableStorageOperator`, `ShowExchangeForUser`
 - [x] `ConfigReader` ← `CachableStorageOperator` (reads system prefs at construction — relies on
-      the PRD 019 storage-up invariant: operator is connected at `cachableStorageOperator` `@Bean` time)
+      the [PRD 019](done/019-spring-boot-lifecycle-migration.md) storage-up invariant: operator is connected at `cachableStorageOperator` `@Bean` time)
 - [x] `ExchangeConnectorResources` ← `BundleManager`
 - [x] `AppointmentFormater` — already a bean (`ServerCoreConfig:158`), injected as a param
 - [x] `SynchronisationManager` ← all the above + `RaplaResources`, `TimeZoneConverter`,
@@ -151,7 +151,7 @@ Done: factories added to `ServerServiceConfig` (next to `notificationService`).
       confirmed: with the controller removed (clean rebuild) the test fails
       `expected:<200> but was:<404>` — the exact dialog error. Verified in a throwaway
       worktree off HEAD, because the main tree's `@SpringBootTest` context is blocked by
-      unrelated in-flight PRD 069 GraphQL schema edits. Full context booted with all new
+      unrelated in-flight [PRD 069](069-graphql-resource-access-read-api.md) GraphQL schema edits. Full context booted with all new
       `@Bean` factories → wiring validated end-to-end.
 - [x] `ApiPrefixArchitectureTest` green (4/4) after the `SpringDocGroupsConfig` grouping add.
 - [x] Trigger-bean presence/absence test (`ExchangeSchedulerTriggerConditionTest`): with
@@ -192,5 +192,5 @@ Done: factories added to `ServerServiceConfig` (next to `notificationService`).
   `rapla.exchange.enabled` property; keep `ENABLED_BY_ADMIN` runtime guard;
   GUI methods synchronous.)
 - Note: tier-3 verification depends on the `@SpringBootTest` context booting — currently
-  blocked branch-wide by unrelated in-flight PRD 069 GraphQL schema edits (two empty
+  blocked branch-wide by unrelated in-flight [PRD 069](069-graphql-resource-access-read-api.md) GraphQL schema edits (two empty
   input types). Verify once that lands or in a clean worktree off HEAD.

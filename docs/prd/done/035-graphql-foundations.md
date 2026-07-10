@@ -1,6 +1,6 @@
 # PRD 035: GraphQL foundations — external integration API substrate
 
-**Status:** done — architectural foundations landed; active work split into PRDs 056/059/060/061 (2026-05-29)
+**Status:** done — architectural foundations landed; active work split into PRDs [056](../056-graphql-events-write-api.md)/[059](059-graphql-typed-where-predicates.md)/[060](../060-graphql-mcp-foundations.md)/[061](../061-graphql-dt-mutations-v2.md) (2026-05-29)
 **Date:** 2026-05-13 (original); archived 2026-05-29
 
 This PRD captures the locked architectural foundations of rapla's GraphQL
@@ -14,12 +14,12 @@ here is the substrate every active PRD depends on.
 
 | Former section | New home |
 |---|---|
-| §5d typed-where predicates on `allocatables(filter:)` | PRD 059 |
-| §6 bulk mutations (typed per-entity) | PRD 056 (supersedes) |
-| §8 new query roots, §9 search root, Compute ops (`findFreeSlots` / `checkConflicts` / `whoIsFree`), MCP transport shape | PRD 060 |
+| §5d typed-where predicates on `allocatables(filter:)` | [PRD 059](059-graphql-typed-where-predicates.md) |
+| §6 bulk mutations (typed per-entity) | [PRD 056](../056-graphql-events-write-api.md) (supersedes) |
+| §8 new query roots, §9 search root, Compute ops (`findFreeSlots` / `checkConflicts` / `whoIsFree`), MCP transport shape | [PRD 060](../060-graphql-mcp-foundations.md) |
 | §7 type change reshape (non-persistent reshape query) | deferred — no active PRD |
-| OQs 15–20 (Conflict symmetry, §12 on conflict hits, window semantics, default window, max-range cap, viewport-centered) | PRD 060 |
-| Plan Phases 3–7 (write side, MCP, scoped API keys, docs, showcase recording) | PRDs 056/060/043 |
+| OQs 15–20 (Conflict symmetry, §12 on conflict hits, window semantics, default window, max-range cap, viewport-centered) | [PRD 060](../060-graphql-mcp-foundations.md) |
+| Plan Phases 3–7 (write side, MCP, scoped API keys, docs, showcase recording) | PRDs [056](../056-graphql-events-write-api.md)/[060](../060-graphql-mcp-foundations.md)/[043](../043-api-keys-jwt-pat.md) |
 
 ## Scope-change context
 
@@ -36,20 +36,20 @@ from the thick `/api/storage/*` client to a thin GraphQL client),
 promoted group output interfaces to v1, and revised plugin-contributed
 types: plugins get their own per-plugin APIs rather than being stitched
 into the core schema. The decisions captured below are the substrate
-PRDs 055/056/059/060/061 build on.
+PRDs [055](../055-graphql-events-read-api.md)/[056](../056-graphql-events-write-api.md)/[059](059-graphql-typed-where-predicates.md)/[060](../060-graphql-mcp-foundations.md)/[061](../061-graphql-dt-mutations-v2.md) build on.
 
 ## Goal
 
 Give rapla a deliberate, stable, permission-safe **external integration
 surface** — distinct from the internal `/api/storage/*` client plumbing
-(PRD 009) and the SPA-internal `client` API group (PRD 031). Two
+([PRD 009](../009-server-bulk-storage-rest-api.md)) and the SPA-internal `client` API group (PRD 031). Two
 transports, one substrate:
 
 1. **GraphQL external API** — for scripts, custom plugins, custom
    table/report tooling, the Angular SPA, and deployment-coupled
    third-party integrators.
 2. **MCP server** — for AI assistants embedded in chat tools. A thin
-   hybrid over the GraphQL surface (covered by PRD 060).
+   hybrid over the GraphQL surface (covered by [PRD 060](../060-graphql-mcp-foundations.md)).
 
 Both sit on **one shared task-level service layer**
 (`ExternalSchedulingService` or similar) and enforce the AGENTS.md §12
@@ -61,14 +61,14 @@ filter.
 
 1. **MCP adoption** — 97 M monthly SDK downloads as of March 2026;
    every major AI vendor supports it; Q2 2026 OAuth 2.1 + PKCE which
-   rapla already has (PRD 029).
+   rapla already has ([PRD 029](../029-swing-oauth-login.md)).
 2. **Spring AI lands the MCP layer for Java** — `@McpTool` + Spring DI
    make wiring concise.
 3. **rapla's value is what an LLM agent wants to call.** "Find a free
    90-minute slot next Tuesday for these three people" is one prompt,
    today a five-step REST sequence.
 4. **No deliberate external API today.** `/api/storage/*` is internal
-   bulk plumbing; `/api/resources` + `/api/events` (PRD 009) are
+   bulk plumbing; `/api/resources` + `/api/events` ([PRD 009](../009-server-bulk-storage-rest-api.md)) are
    in-progress raw-entity CRUD never designed as a stable third-party
    contract. MCP needs a real substrate; building it once for both
    transports avoids divergence.
@@ -98,7 +98,7 @@ filter.
 - **Shared service layer.** Task-level operations plus the GraphQL field
   resolvers. Both transports call it; neither bypasses it.
 - **GraphQL is the external transport.** Decision record below.
-- **MCP is a hybrid over GraphQL** (see PRD 060).
+- **MCP is a hybrid over GraphQL** (see [PRD 060](../060-graphql-mcp-foundations.md)).
 - **One §12 boundary.** The permission-leak filter lives in the
   GraphQL field resolvers — one filter point per type, covering every
   query shape and both transports. Stronger than per-endpoint leak tests.
@@ -116,7 +116,7 @@ The 2026-05-24 session tightened v1 around three principles:
    typeRegistry, no Zod runtime validation.
 3. **Server is authoritative on validation.** Widget pre-validation is
    UX convenience; every save runs L1 (GraphQL schema) + L2 (rapla
-   semantic) against the merged full object under PRD 040's lock.
+   semantic) against the merged full object under [PRD 040](../040-dispatch-validate-before-lock.md)'s lock.
 
 ### 1. Three callers, three mutation input shapes
 
@@ -137,7 +137,7 @@ The 2026-05-24 session tightened v1 around three principles:
 `renderedBlocks` is a GraphQL field wrapping
 [PRD 030](../030-server-side-view-rendering.md)'s existing
 `CalendarLayoutEngine` + `CalendarViewController` substrate (already
-shipped Phases 1–6). PRD 030's REST endpoints stay for direct REST
+shipped Phases 1–6). [PRD 030](../030-server-side-view-rendering.md)'s REST endpoints stay for direct REST
 callers; CSV/iCal export stays REST (own API surface).
 
 ### 3. Group output interfaces — v1
@@ -196,7 +196,7 @@ originally resolved against `Locale.getDefault()` / `raplaLocale.getLocale()`
 Corrected to read the admin **"Server Sprache"** system preference
 (`RaplaLocale.LANGUAGE_ENTRY`) via `ServerLocaleResolver.resolve(...)`, threaded
 into `ClassificationSdlGenerator.generate(types, Locale)` and
-`StructuralTypeFetchers.wire()`. Full write-up + caveats: PRD 096 bugfix
+`StructuralTypeFetchers.wire()`. Full write-up + caveats: [PRD 096](../096-spa-classification-editor.md) bugfix
 ride-along (2026-07-08).
 
 ### 5a. Category kind discriminator + concrete descriptor schema
@@ -270,12 +270,12 @@ separate descriptor query needed for VALUE_LIST attributes.
 
 **Naming — verbatim.** Emit the admin-authored rapla key VERBATIM (no
 PascalCase, no case folding). Type names join nested paths with `_`
-(e.g. `Veranstaltungsattribute_Veranstaltungskategorien`). PRD 058
+(e.g. `Veranstaltungsattribute_Veranstaltungskategorien`). [PRD 058](../058-graphql-key-spec-migration.md)
 guarantees the key is GraphQL-spec-compliant; the generator verifies
 via `ClassificationSdlGenerator.checkGraphQlCompliantName`. The
 original PascalCase convention collapsed dhbw's DIN room references
 (`DIN_5_2_3_11`, `DIN_5_2_31_1`, `DIN_52_3_11`) to one identifier and
-silently dropped 2 of every 3 leaves — **PRD 058 owns syntax; admin
+silently dropped 2 of every 3 leaves — **[PRD 058](../058-graphql-key-spec-migration.md) owns syntax; admin
 owns convention**. The SPA may auto-suggest GraphQL convention at
 key-creation time but never rewrites silently.
 
@@ -333,10 +333,10 @@ fields like `Query.serverTime`) and from `Date` (`LocalDate`).
 |---|---|
 | Two fields (`date: Date! + time: LocalTime!`) | Doubles every time-bearing field and every filter input; range queries become 3–4 conjunctions; reachable invalid states; splits a single concept across the schema. |
 | Plain `String` | Type system says nothing — introspection can't distinguish a time string from a name string; MCP/AI consumers can't reason; validation pushed to every resolver. |
-| `DateTime` (offset) | **Wrong domain semantics.** A "10:00 lecture in Berlin" stored as offset shifts an hour at DST transitions. Conflicts with iCal floating-time. PRD 014 wall-time invariant is non-negotiable. |
+| `DateTime` (offset) | **Wrong domain semantics.** A "10:00 lecture in Berlin" stored as offset shifts an hour at DST transitions. Conflicts with iCal floating-time. [PRD 014](014-appointment-long-to-java-time.md) wall-time invariant is non-negotiable. |
 
 **Rationale:** domain fit (`java.time.LocalDateTime` 1:1, wall-time per
-PRD 014); one field per moment; trivial wire format; lexicographically
+[PRD 014](014-appointment-long-to-java-time.md)); one field per moment; trivial wire format; lexicographically
 total-orderable; typed semantics in introspection for MCP/AI.
 
 **SPA guidance:** treat `LocalDateTime` values as opaque strings or map
@@ -351,7 +351,7 @@ iCal's `VALUE=DATE` / `VALUE=DATE-TIME` discriminator).
 
 ## §11. `typeKey` vs `typeId` — `typeKey` only
 
-Surfaced by the PRD 056 happy-path test: `Classification.typeId`
+Surfaced by the [PRD 056](../056-graphql-events-write-api.md) happy-path test: `Classification.typeId`
 returned the DynamicType UUID, but the input `CreateReservationInput.typeId`
 was the discriminator that had to match the `@oneOf` variant name (the
 verbatim DynamicType key). Same field name, two semantics.
@@ -378,7 +378,7 @@ Reasoning:
 
 **Inputs.** `CreateReservationInput.typeKey` +
 `UpdateReservationInput.typeKey`. `AttributeInput.expectedTypeKey`
-(PRD 057) — target DynamicType key for ALLOCATABLE attributes,
+([PRD 057](057-graphql-dt-mutations-v1.md)) — target DynamicType key for ALLOCATABLE attributes,
 matching the `@expectedType(key:)` directive on the read side.
 
 **Mechanical implementation:** `Classification`,
@@ -405,7 +405,7 @@ These each have their own API surface:
 | Saved calendar configurations | Preferences subsystem | Stored in preferences today |
 | Plugin features | Per-plugin API (REST today; GraphQL per-plugin if a plugin wants it) | Plugins are independent contexts; not stitched into the core schema |
 | Calendar feed export (`/rapla/calendar.csv`, `/rapla/ical`) | Existing literal URLs (AGENTS.md §15 allow-list) | External subscribers depend on URLs; stays REST |
-| CSV export (`/export/csv`) | PRD 030's existing REST endpoint | Bytes-streamed download; GraphQL fits poorly |
+| CSV export (`/export/csv`) | [PRD 030](../030-server-side-view-rendering.md)'s existing REST endpoint | Bytes-streamed download; GraphQL fits poorly |
 | Modification history / audit log | Separate PRD (TBD) | Distinct concern |
 | Resource utilization aggregates | Follow-on | Not blocked; compute operations later |
 
@@ -446,7 +446,7 @@ The literal-URL feed exports under
 `/rapla/calendar.csv` — stay on REST regardless. External calendar
 subscribers depend on the URLs.
 
-> **Why not reuse the internal format.** PRD 009 Risk 1 is the canary:
+> **Why not reuse the internal format.** [PRD 009](../009-server-bulk-storage-rest-api.md) Risk 1 is the canary:
 > the internal Jackson format serializes raw `EntityImpl` graphs whose
 > back-refs must be patched `@JsonIgnore` getter by getter. That format
 > is tied to `LocalCache` and is a moving target. A tree-shaped
@@ -562,8 +562,8 @@ change. Four pieces:
    generated type name`.
 2. **Generic attribute `DataFetcher`** — every generated classification
    field is served by one key-parameterized fetcher
-   (`source.getClassification().getValue(key)`). Where §12 filter +
-   DataLoader batching live.
+   (`source.getClassification().getValue(key)`). Where the §12 filter is
+   applied (no DataLoader shipped — see OQ#7).
 3. **Structural field fetchers** — `id`, `appointments`, `allocations`,
    `owner` on the `Reservation` / `Allocatable` interfaces — written
    once, shared by all concrete types.
@@ -714,8 +714,10 @@ model and the Swing filter UI is separable, larger, and out of scope.
 
 Filter results pass the per-entity permission filter; a predicate must
 never leak existence — a filter matching only hidden entities returns
-identically to one matching nothing. `GraphQlLeakTest` covers a
-filtered path.
+identically to one matching nothing. Per-controller leak tests (e.g.
+`ResourceAccessQueryGraphQLTest`, `UsersControllerLeakTest`,
+`MutationExistenceLeakTest`) cover filtered paths — there is no single
+`GraphQlLeakTest` class.
 
 ## GraphQL transport — decision record
 
@@ -727,8 +729,8 @@ was raised and resolved — re-litigating it later wastes a session:
 | GraphQL's static SDL can't express rapla's admin-configurable DynamicTypes | Schema-from-config is a proven pattern (Hasura, PostGraphile). rapla generates classification types from DynamicTypes. |
 | A generated schema goes stale when an admin edits a type | Rebuild + hot-swap on the `DynamicType` save path. Server-side correctness is instant. |
 | Client codegen goes stale → forces a rebuild | Only if a client codegens the *dynamic* part. Structural types are static (codegen once); classification is consumed data-driven via introspection. |
-| MCP agents shouldn't author query strings | Frontier models compose GraphQL reliably; on-demand field selection is a *context-budget* win. MCP uses a `graphql_query` tool (PRD 060). |
-| Operational surface (DoS via deep/expensive queries) | Query depth + complexity limiting. (Persisted-query allowlisting deliberately not adopted — OQ#5.) |
+| MCP agents shouldn't author query strings | Frontier models compose GraphQL reliably; on-demand field selection is a *context-budget* win. MCP uses a `graphql_query` tool ([PRD 060](../060-graphql-mcp-foundations.md)). |
+| Operational surface (DoS via deep/expensive queries) | Per-request wall-clock deadline (`GraphQlExecutionDeadlineInstrumentation`, `rapla.graphql.execution-budget-millis`, default 30s). Depth/complexity limiting was never implemented — it wouldn't catch shallow-but-wide queries anyway. (Persisted-query allowlisting deliberately not adopted — OQ#5.) |
 
 What tipped it: the **multi-consumer unification**. One schema serves
 the SPA, custom plugins, custom tables, external REST consumers *and*
@@ -741,9 +743,9 @@ Boot 4 — OQ#2 — so REST fallback no longer needed).
 
 ## Write mutations — design substrate
 
-> **PRD 056 supersedes the bulk-mutations design (§6 of the original
+> **[PRD 056](../056-graphql-events-write-api.md) supersedes the bulk-mutations design (§6 of the original
 > umbrella).** The patch-principle and validation substrate described
-> below remain the foundation PRD 056 builds on.
+> below remain the foundation [PRD 056](../056-graphql-events-write-api.md) builds on.
 
 All write mutations funnel through rapla's existing
 `UpdateEvent`/dispatch path; the whole mutation maps to **exactly one
@@ -805,13 +807,13 @@ the caller cannot read it. A `NOT_FOUND` for an unreadable id is
 indistinguishable from a genuinely missing id.
 
 All write mutations funnel through the **same operator/dispatch path**
-as PRD 009's `dispatch(UpdateEvent)` — conflict detection and
+as [PRD 009](../009-server-bulk-storage-rest-api.md)'s `dispatch(UpdateEvent)` — conflict detection and
 persistence are not reimplemented. The GraphQL mutation is a thin
 adapter onto it.
 
 The full code taxonomy, bulk semantics, atomic-vs-partial mode,
 `applyChanges` escape hatch, and the typed-per-DynamicType input
-generation are elaborated in **PRD 056**.
+generation are elaborated in **[PRD 056](../056-graphql-events-write-api.md)**.
 
 ## Worked scenario — query, expand, save, validation
 
@@ -888,9 +890,9 @@ auth needs are covered there.
 - Replacing `/api/storage/*` (internal client plumbing stays).
 - GraphQL *subscription* (streaming) surface — Phase-2 material.
 - Multi-tenant isolation (PRD 002).
-- External-IdP integration — inherits from PRD 036.
+- External-IdP integration — inherits from [PRD 036](../036-external-idp-oauth-login.md).
 - Per-tool rate limiting beyond depth/complexity limits.
-- M365 Copilot deployment — deferred to PRD 036.
+- M365 Copilot deployment — deferred to [PRD 036](../036-external-idp-oauth-login.md).
 
 ## Plan — phases that landed
 
@@ -914,7 +916,9 @@ All three share the same surface.
    classification generation yet).
 3. One read query end-to-end (`reservations`), §12 filter in the
    resolver.
-4. OAuth / API-key gate: unauthenticated → 401.
+4. `/api/graphql` is `permitAll` by design — unauthenticated requests
+   return HTTP 200 with an `UNAUTHENTICATED` error; access is gated
+   per-field by §12, not by an endpoint-level 401.
 5. Verify `spring-boot-starter-graphql` is Jackson-3 / Spring Boot 4
    clean.
 
@@ -924,7 +928,7 @@ All three share the same surface.
 2. Rebuild + hot-swap on the `DynamicType` save path.
 3. Introspection tested as both data (runtime) and codegen source.
 4. Cursor pagination on list fields; custom date/time scalars.
-5. **β read simplification (locked 2026-05-28, PRD 055 decision log):**
+5. **β read simplification (locked 2026-05-28, [PRD 055](../055-graphql-events-read-api.md) decision log):**
    drop `attributes: [AttributeValue!]!` from the `Classification`
    interface and `AttributeDescriptor` from `DynamicType.attributes`.
    Schema becomes the **one source of truth** for both values and
@@ -939,18 +943,18 @@ All three share the same surface.
 7. SPA dynamic query construction via `__type(name: ...)` introspection
    at app start — discover `<TypeKey>Classification` fields + their
    directives, build editor/listview queries on the fly.
-8. Symmetric β² (write side, PRD 056 dependency): typed
+8. Symmetric β² (write side, [PRD 056](../056-graphql-events-write-api.md) dependency): typed
    per-DynamicType input types (`Create<TypeKey>ClassificationInput`)
    mirror the read types — same hot-swap, same introspection-driven SPA
    construction.
 
 ### Phases 3–7 — see spin-out PRDs
 
-- Phase 3 (write side + validation): PRD 056.
-- Phase 4 (MCP transport): PRD 060.
-- Phase 5 (scoped API keys): PRD 043.
-- Phase 6 (docs + skill): rolled into PRDs 056/060.
-- Phase 7 (showcase recording): follows PRD 060.
+- Phase 3 (write side + validation): [PRD 056](../056-graphql-events-write-api.md).
+- Phase 4 (MCP transport): [PRD 060](../060-graphql-mcp-foundations.md).
+- Phase 5 (scoped API keys): [PRD 043](../043-api-keys-jwt-pat.md).
+- Phase 6 (docs + skill): rolled into PRDs [056](../056-graphql-events-write-api.md)/[060](../060-graphql-mcp-foundations.md).
+- Phase 7 (showcase recording): follows [PRD 060](../060-graphql-mcp-foundations.md).
 
 ## Tests
 
@@ -961,7 +965,7 @@ All three share the same surface.
 - **Tier 2** — `ExternalSchedulingServiceTest` against a real
   `RaplaFacade` (`FacadeTestSupport`): query, expand, two-layer write
   validation, conflict errors.
-- **Tier 3** — `GraphQlLeakTest` (mandatory AGENTS.md §12: non-admin
+- **Tier 3** — the §12 leak-test convention (AGENTS.md §12: non-admin
   user, mixed visible/hidden/non-existent ids, response byte-identical
   to the visible-only subset; error messages name no unreadable
   entity); `SchemaRebuildTest` (edit a DynamicType → schema reflects
@@ -988,7 +992,7 @@ All three share the same surface.
    schema at `/api/graphql`. Structural types follow `@deprecated` +
    sunset cadence; classification types are per-deployment, not a
    versioned contract.
-4. **Does GraphQL replace PRD 009's CRUD?** GraphQL is *the* external
+4. **Does GraphQL replace [PRD 009](../009-server-bulk-storage-rest-api.md)'s CRUD?** GraphQL is *the* external
    surface. `/api/resources` + `/api/events` stay internal/transitional.
    `/api/storage/*` stays for the Swing client unconditionally. SPA
    migration is v1 (per the 2026-05-24 refinement).
@@ -1001,22 +1005,21 @@ All three share the same surface.
    and rapla API key both arrive as `Authorization: Bearer X`; PRD 031
    filter dispatches them. v1 default — scoped API key; OAuth Auth Code
    + PKCE for interactive multi-user MCP hosts.
-7. **§12 + DataLoader batching.** Five rules:
-   (a) §12 filter runs **per-entity inside the batch loader**, never
-   per-batch;
-   (b) batch loader reads the authenticated user from per-request
-   `GraphQLContext`;
-   (c) DataLoaders are **request-scoped** — never application-scoped, or
-   a shared id-keyed cache serves one user's filtered entity to another;
-   (d) unreadable *and* non-existent ids both map to `null`;
-   (e) `GraphQlLeakTest` must exercise a **batched** path.
+7. **§12 leak protection.** As shipped there is **no DataLoader** and
+   **no `GraphQlLeakTest`**. Leak protection is per-controller inline
+   `canRead` in each field resolver: the resolver reads the
+   authenticated user from the per-request `GraphQLContext` and drops
+   entities the user can't read, so unreadable *and* non-existent ids
+   both resolve to `null` (existence never leaks). The batched-loader
+   design and its five locked rules described in earlier drafts were
+   never implemented.
 8. **Plugin-contributed types.** Revised 2026-05-24: plugins get their
    own per-plugin API surfaces — **not** stitched into the core schema.
    No schema-stitching / federation machinery needed.
-9. **PRD 038/039 entities in the schema.** PRD 038 adds no schema-visible
-   entities. PRD 039 adds `ExternalCalendarSubscription`,
+9. **PRD [038](../038-graph-calendar-sync.md)/[039](../039-external-ical-subscription-per-resource.md) entities in the schema.** [PRD 038](../038-graph-calendar-sync.md) adds no schema-visible
+   entities. [PRD 039](../039-external-ical-subscription-per-resource.md) adds `ExternalCalendarSubscription`,
    `ExternalAppointment`, `AvailabilityWindow` as structural types when
-   it lands (035 ships without them). PRD 039's `BusyOnlyProjection` is
+   it lands (035 ships without them). [PRD 039](../039-external-ical-subscription-per-resource.md)'s `BusyOnlyProjection` is
    implemented as **per-field resolvers** — `summary`/`description`/
    `location`/`url` resolve to `null` for non-owner/non-admin viewers
    on `BUSY_ONLY` subscriptions; time fields always resolve. Schema
@@ -1039,19 +1042,19 @@ All three share the same surface.
     (~25–40 types). Returns **SDL** (~200–300 lines), not raw
     introspection JSON.
 14. **Mutation atomicity.** A `createReservation` with N appointments +
-    M allocations maps to exactly **one** `UpdateEvent` (PRD 009
+    M allocations maps to exactly **one** `UpdateEvent` ([PRD 009](../009-server-bulk-storage-rest-api.md)
     dispatch is atomic per batch).
 
 OQs 15–20 (Conflict symmetry, §12 on conflict hits, window semantics,
-default window, max-range cap, viewport-centered) are owned by PRD 060.
+default window, max-range cap, viewport-centered) are owned by [PRD 060](../060-graphql-mcp-foundations.md).
 
 ## Risks
 
 | Risk | Mitigation |
 |---|---|
 | Spring AI MCP starter SB4/Jackson 3 alignment | Verify Phase 1; worst case isolate Jackson 2 like `SwaggerJacksonConfig` |
-| DoS via deep/expensive queries | Depth + complexity limiting; query logging (no persisted-query allowlist — OQ#5) |
-| Permission-leak via clever traversal | §12 filter in *every* field resolver; mandatory `GraphQlLeakTest` |
+| DoS via deep/expensive queries | Per-request wall-clock deadline (`GraphQlExecutionDeadlineInstrumentation`, `rapla.graphql.execution-budget-millis`, default 30s); query logging (no depth/complexity limiting — shallow-but-wide queries slip it; no persisted-query allowlist — OQ#5) |
+| Permission-leak via clever traversal | §12 `canRead` in *every* field resolver; per-controller leak tests (no single `GraphQlLeakTest` class shipped) |
 | `book` invoked autonomously without confirmation | Curated tool marked `cautious`; host prompts; all `book` calls logged; `created_via=mcp` flag for fast revert |
 | Name-mangling collisions | Deterministic scheme + collision detection at generation time → fail rebuild loudly |
 | MCP spec churn through 2026 | Spring AI tracks the spec; exposed surface is simple |
@@ -1069,7 +1072,7 @@ default window, max-range cap, viewport-centered) are owned by PRD 060.
 ## Deferred — not v1, by deliberate decision
 
 - `findFreeSlots` multiple independent pools + one-call embedded
-  `poolFilter` — v1 has single explicit-id `poolIds` (owned by PRD 060).
+  `poolFilter` — v1 has single explicit-id `poolIds` (owned by [PRD 060](../060-graphql-mcp-foundations.md)).
 - Resource (allocatable) **writes** — v1 is booking-focused.
 - Subscriptions / streaming — Phase 2.
 - Rate limiting / per-key quotas — add with a real consumer.
@@ -1081,10 +1084,10 @@ default window, max-range cap, viewport-centered) are owned by PRD 060.
 
 - [PRD 009 — Server bulk-storage REST API](../009-server-bulk-storage-rest-api.md) — the dispatch path write mutations funnel through.
 - [PRD 014 — appointment long → java.time](../done/014-appointment-long-to-java-time.md) — `LocalDateTime` scalar rationale.
-- [PRD 028 — Angular power search](../028-angular-power-search.md) — substrate provided by PRD 060.
+- [PRD 028 — Angular power search](../028-angular-power-search.md) — substrate provided by [PRD 060](../060-graphql-mcp-foundations.md).
 - [PRD 029 — Swing OAuth login](../029-swing-oauth-login.md) — the OAuth surface.
 - [PRD 030 — Server-side view rendering](../030-server-side-view-rendering.md) — `renderedBlocks` wraps its substrate.
-- [PRD 031 — Token refresh & API keys](../031-token-refresh-and-api-keys.md) — the API-keys half (now PRD 043).
+- [PRD 031 — Token refresh & API keys](../031-token-refresh-and-api-keys.md) — the API-keys half (now [PRD 043](../043-api-keys-jwt-pat.md)).
 - [PRD 040 — Dispatch validate before lock](../040-dispatch-validate-before-lock.md) — coupled dependency for bulk; lock-set computation includes allocatables across the batch.
 - [PRD 043 — API keys (JWT PAT)](../043-api-keys-jwt-pat.md) — scoped API key mechanism.
 - [PRD 055 — GraphQL Events Read API](../055-graphql-events-read-api.md) — Reservation/Appointment/Allocation read surface, β read simplification (reopened 2026-05-29 for Tier-1 perf migration).

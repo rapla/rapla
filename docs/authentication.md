@@ -1,7 +1,7 @@
 # Rapla Authentication
 
 Rapla uses **OAuth 2.0 / OIDC exclusively** for token issuance, refresh,
-and revocation (PRD 041, 2026-05-16). All three flows go through the
+and revocation ([PRD 041](prd/041-openapi-runtime-removal.md), 2026-05-16). All three flows go through the
 bundled Spring Authorization Server's `/oauth2/*` endpoints:
 
 | Path | Used by | Credentials |
@@ -19,11 +19,11 @@ decoder in `JwtConfig.java`.
 
 The legacy rapla-custom `/api/auth/login` endpoint is **deleted**.
 `/api/auth/session/refresh` and `/api/auth/session/logout` exist again as cookie-based
-endpoints on `AuthCookieController` (PRD 072 — the SPA reactive-401
+endpoints on `AuthCookieController` ([PRD 072](prd/072-server-side-login-dialog.md) — the SPA reactive-401
 refresh + sign-out path). `/api/auth/oauth/config`
 (discovery) + `/api/auth/oauth/exchange/{providerId}` (BFF for external
 IdPs that need server-held client_secret) +
-`/api/auth/oauth/token-exchange/{providerId}` (PRD 072 external-id-token
+`/api/auth/oauth/token-exchange/{providerId}` ([PRD 072](prd/072-server-side-login-dialog.md) external-id-token
 → rapla-token exchange) + `/api/auth/api-keys/*`
 (personal-access-token management, see [API keys](#api-keys-personal-access-tokens))
 remain.
@@ -58,7 +58,7 @@ until their 1 h TTL elapses.
 |---|---|---|
 | Access-token TTL | 1 h | `spring.security.oauth2.authorizationserver.client.rapla-client.token.access-token-time-to-live` |
 | Refresh-token TTL | 21 d | (constant in `RefreshSessionService.REFRESH_TOKEN_TTL_SECONDS`) |
-| Rotation policy | never rotate | by design — see PRD 041 |
+| Rotation policy | never rotate | by design — see [PRD 041](prd/041-openapi-runtime-removal.md) |
 
 For per-device revocation, theft detection via rotation conflict, and
 session inventory UI, deploy against Keycloak (PRD 031: IdP swap is an
@@ -67,7 +67,7 @@ env-var override of the discovery endpoint URLs).
 ### Access-token claim shape (rapla-SAS)
 
 Rapla's resource-server JWT decoder validates incoming Bearers against
-the JWKS published at `/oauth2/jwks`. Since PRD 072 (default
+the JWKS published at `/oauth2/jwks`. Since [PRD 072](prd/072-server-side-login-dialog.md) (default
 `rapla.oauth.trust-external-issuers=false`) `/api` accepts **only
 rapla-issued tokens** — external IdP tokens are consumed at login and
 never reach `/api` (see § "Single-issuer `/api`"); set the flag `true`
@@ -81,9 +81,9 @@ itself carry:
 | `iss` | string | authorization_code grant only | Issuer URL. `IssuerAwareJwtDecoder` keys its decoder selection on this — rapla-SAS or one of the configured external IdPs. Direct-mint (password / refresh_token / impersonation) rapla-SAS tokens **omit** `iss`; the local decoder accepts them via a `self` sentinel. |
 | `aud` | string | authorization_code grant only | `"rapla-client"` for rapla-SAS authorization_code tokens. Direct-mint (password / refresh_token / impersonation) tokens carry **no** `aud` claim. |
 | `iat` / `exp` | int (UNIX) | always | Issued-at + expiry. 1 h TTL on access; 21 d on refresh. |
-| `preferred_username` | string | rapla-SAS access tokens (PRD 051, 2026-05-22) | OIDC standard claim. Used by the SPA toolbar chip to render the effective user without an extra `/api/users/me` round-trip. Emitted by both the Spring AS `OAuth2TokenCustomizer` path (authorization_code grant) and the `JwtConfig.JwtIssuer` direct-mint path (password / refresh_token grants) — both grants produce structurally identical tokens. |
-| `name` | string | rapla-SAS access tokens (PRD 051, 2026-05-22) | Display name (may be empty if the rapla User has no `name`). |
-| `act` | object `{sub, username}` | impersonation tokens only (PRD 051) | RFC 8693 delegation actor. Names the admin who minted the impersonation token; the effective subject (`sub`) is the impersonation target. Absent on regular access tokens. See § "Admin impersonation" below. |
+| `preferred_username` | string | rapla-SAS access tokens ([PRD 051](prd/done/051-switch-user-with-oauth.md), 2026-05-22) | OIDC standard claim. Used by the SPA toolbar chip to render the effective user without an extra `/api/users/me` round-trip. Emitted by both the Spring AS `OAuth2TokenCustomizer` path (authorization_code grant) and the `JwtConfig.JwtIssuer` direct-mint path (password / refresh_token grants) — both grants produce structurally identical tokens. |
+| `name` | string | rapla-SAS access tokens ([PRD 051](prd/done/051-switch-user-with-oauth.md), 2026-05-22) | Display name (may be empty if the rapla User has no `name`). |
+| `act` | object `{sub, username}` | impersonation tokens only ([PRD 051](prd/done/051-switch-user-with-oauth.md)) | RFC 8693 delegation actor. Names the admin who minted the impersonation token; the effective subject (`sub`) is the impersonation target. Absent on regular access tokens. See § "Admin impersonation" below. |
 | `jti` | string (UUID) | rapla-SAS | Per-token unique id. Used for audit correlation. |
 
 External-IdP tokens (Keycloak, Entra, Google) carry their own claim
@@ -189,13 +189,13 @@ After the first successful external authentication, rapla stamps
 `user.authenticationSource = IdentityClaims.sourceId()` — the label is
 supplied by the active store (no longer a hardcoded `"ldap"`). The
 stamping and persistence happen in `DefaultUserProvisioner.provision()`
-via `operator.storeAndRemove` (PRD 050 Phase 8), not inline in the auth
+via `operator.storeAndRemove` ([PRD 050](prd/050-external-auth-user-lifecycle.md) Phase 8), not inline in the auth
 service. The marker drives every downstream "is this an external user?"
 gate:
 
 - `RemoteStorageController.changePassword` / `changeName` /
   `changeEmail` / `confirmEmail` return 401 with the IdP name in the
-  message — even for the user themselves (PRD 050).
+  message — even for the user themselves ([PRD 050](prd/050-external-auth-user-lifecycle.md)).
 - `GET /api/storage/profile/capabilities` returns all-false +
   `authenticationSource` for stamped users; for local users
   `canChangeName` / `canChangeEmail` are true, `canChangePassword`
@@ -249,7 +249,7 @@ DefaultUserProvisioner` (the sync no longer lives inline in
 - **Email** — the legacy "only-when-empty" override is **commented out**;
   the default **overwrite-on-mismatch** (`equalsIgnoreCase`) now applies.
   The value is the IdP-provided email when present, else the Standort
-  email derived by `DhbwLdapGroupMapper`. PRD 050 makes this safe: name /
+  email derived by `DhbwLdapGroupMapper`. [PRD 050](prd/050-external-auth-user-lifecycle.md) makes this safe: name /
   email change is 403-gated for any user with a non-null
   `authenticationSource`, so the AD/IdP side is structurally authoritative.
 - **Groups** — re-derived from the DHBW LDAP role mapping on every login
@@ -260,7 +260,7 @@ DefaultUserProvisioner` (the sync no longer lives inline in
 
 Two consequences worth remembering:
 
-1. **The DHBW side is authoritative under PRD 050.** Because name / email
+1. **The DHBW side is authoritative under [PRD 050](prd/050-external-auth-user-lifecycle.md).** Because name / email
    change is 403-gated for stamped users and `DhbwUserProvisioner` runs the
    default overwrite-on-mismatch policy, an org-wide email-domain rename in
    AD *is* pushed on the next login — there is no stale-local-value to clear.
@@ -311,7 +311,7 @@ OAuth / form login and sets httpOnly `access_token` + `refresh_token`
 cookies. The SPA reads identity from `GET /api/auth/me`, refreshes via
 `POST /api/auth/session/refresh` (`AuthCookieController`), and signs out via
 `POST /api/auth/session/logout`. No PKCE / no `/oauth2/authorize` / no
-`/auth/callback` in the SPA (PRD 072).
+`/auth/callback` in the SPA ([PRD 072](prd/072-server-side-login-dialog.md)).
 
 The refresh + logout endpoints sit under the **`/api/auth/session`** namespace
 on purpose: the httpOnly `refresh_token` cookie is path-scoped to
@@ -380,13 +380,13 @@ a non-auth GraphQL error".
 2. **Default — OAuth enabled, `swing-legacy-login=false`**: the dialog
    shows in "browser login in progress" mode (credential fields hidden)
    and auto-fires `SwingOAuthLoginFlow` — the standard authorization_code
-   + PKCE flow against rapla's `/oauth2/token` (PRD 029 Phase 2). Since
-   PRD 072 this is the **single "SSO" entry** — rapla brokers the upstream
+   + PKCE flow against rapla's `/oauth2/token` ([PRD 029](prd/029-swing-oauth-login.md) Phase 2). Since
+   [PRD 072](prd/072-server-side-login-dialog.md) this is the **single "SSO" entry** — rapla brokers the upstream
    IdP via the `/login` chooser (see § "Swing SSO flow" below); there is no
    per-provider Swing menu. The credential fields are never shown.
 3. **Admin opted into the legacy dialog — OAuth enabled,
    `swing-legacy-login=true`**: the dialog is shown in full state with
-   username/password fields (PRD 029 Phase 3). When
+   username/password fields ([PRD 029](prd/029-swing-oauth-login.md) Phase 3). When
    `swing-legacy-show-sso-button=true`, the "Sign in with browser…"
    button is also rendered so users can try SSO; otherwise it's hidden.
 4. **Fallback — OAuth disabled server-side, or the discovery probe
@@ -397,11 +397,11 @@ a non-auth GraphQL error".
 Token refresh for every client kind is OAuth-standard:
 `POST /oauth2/token grant_type=refresh_token`
 (`MyCustomConnector.refreshUsingToken(...)`,
-`ClientProxyConfig.RefreshOn401Interceptor.doRefresh(...)`, PRD 041).
+`ClientProxyConfig.RefreshOn401Interceptor.doRefresh(...)`, [PRD 041](prd/041-openapi-runtime-removal.md)).
 
-#### Swing SSO flow — rapla as the single federating IdP (PRD 072 Phase 5)
+#### Swing SSO flow — rapla as the single federating IdP ([PRD 072](prd/072-server-side-login-dialog.md) Phase 5)
 
-Since PRD 072, Swing has **one** "SSO" login entry (the default) instead of
+Since [PRD 072](prd/072-server-side-login-dialog.md), Swing has **one** "SSO" login entry (the default) instead of
 the old per-provider menu — rapla is Swing's single federating Authorization
 Server (broker). The flow:
 
@@ -424,7 +424,7 @@ defaults to SSO and remembers the last-used method via
 `TokenStore.KEY_LOGIN_METHOD`; the rapla password form stays available,
 gated by `rapla.oauth.swing-legacy-login`.
 
-Two bugs were fixed (verified PRD 072) to make rapla-brokered SSO work:
+Two bugs were fixed (verified [PRD 072](prd/072-server-side-login-dialog.md)) to make rapla-brokered SSO work:
 
 - **`OidcLoginSuccessHandler` re-authenticates the `SecurityContext` as the
   rapla user** (UUID principal, mirroring `raplaAuthenticationProvider`'s
@@ -464,7 +464,7 @@ password `admin` account once for bootstrap, launch with no args and type
 When the fallback dialog is used, `loginAction` (`RaplaClientServiceImpl.startLoginInThread`)
 takes the typed username + password `char[]` and exchanges them for tokens via
 `OAuth2PasswordLogin.login(LoginCredentials)` *inline at the dialog button*
-(PRD 029 Phase 5). The password `char[]` is zeroed in the same lambda that
+([PRD 029](prd/029-swing-oauth-login.md) Phase 5). The password `char[]` is zeroed in the same lambda that
 calls the seam, so no password reference survives past the HTTP round-trip.
 Only the resulting `(accessToken, refreshToken)` are stashed on the session.
 
@@ -472,7 +472,7 @@ Only the resulting `(accessToken, refreshToken)` are stashed on the session.
 `/oauth2/token` (RFC 6749 §4.3) and parses the snake_case token response into
 a `LoginTokens`.
 
-> **PRD 029 Phase 5 (2026-05-25): no password caching anywhere.** Pre-Phase-5,
+> **[PRD 029](prd/029-swing-oauth-login.md) Phase 5 (2026-05-25): no password caching anywhere.** Pre-Phase-5,
 > the dialog built a `ConnectInfo(username, password, connectAs)` polymorphic
 > object that propagated through `start() → login() → dispatch` and was stashed
 > in `RemoteConnectionInfo.connectInfo` for the session's lifetime — keeping
@@ -500,7 +500,7 @@ removed the
 > The dialog's `" su "` impersonation shorthand was dropped — the OAuth2
 > password grant has no `connect_as` parameter; modern admin "switch to user"
 > is the dedicated `/api/auth/impersonate` endpoint with dual-slot client
-> state (PRD 051 + Phase 5 §7).
+> state ([PRD 051](prd/done/051-switch-user-with-oauth.md) + Phase 5 §7).
 >
 > The legacy `?username=...&password=...` request-param branch was dropped
 > first; the **entire legacy HMAC-token fallback** (`RemoteSessionImpl` + its
@@ -536,11 +536,11 @@ slot may still exist in old stores but is no longer read by any auth path.
 | `POST /oauth2/token grant_type=password` | live | `PasswordGrantAuthenticationConverter` + `…Provider` |
 | `GET /api/auth/oauth/config`, `POST /api/auth/oauth/exchange/{id}` | live | `OAuthConfigController`, `OAuthExchangeController` |
 | `POST`/`GET`/`DELETE` `/api/auth/api-keys[/{id}]` | live | `ApiKeyController` |
-| `POST /api/auth/impersonate` | live (PRD 051) | `ImpersonationController` — mints impersonation access token (`act` claim, no refresh) |
-| `GET /api/users` | live (PRD 051) | `UsersController` — narrow `{username, displayName}[]` filtered by `canAdminUser`; typeahead source for the "Switch to user" dialog |
-| `POST /api/auth/login` (old `AuthController`) | **removed** — PRD 041, commit `d64e8553` | none — no replacement route |
-| `POST /api/auth/session/refresh`, `/api/auth/session/logout` | **live** (PRD 072) | `AuthCookieController` — cookie-model refresh + logout |
-| `POST /api/auth/oauth/token-exchange/{id}` | live (PRD 072) | `OAuthExchangeController` — RFC 8693: external id_token → rapla token |
+| `POST /api/auth/impersonate` | live ([PRD 051](prd/done/051-switch-user-with-oauth.md)) | `ImpersonationController` — mints impersonation access token (`act` claim, no refresh) |
+| `GET /api/users` | live ([PRD 051](prd/done/051-switch-user-with-oauth.md)) | `UsersController` — narrow `{username, displayName}[]` filtered by `canAdminUser`; typeahead source for the "Switch to user" dialog |
+| `POST /api/auth/login` (old `AuthController`) | **removed** — [PRD 041](prd/041-openapi-runtime-removal.md), commit `d64e8553` | none — no replacement route |
+| `POST /api/auth/session/refresh`, `/api/auth/session/logout` | **live** ([PRD 072](prd/072-server-side-login-dialog.md)) | `AuthCookieController` — cookie-model refresh + logout |
+| `POST /api/auth/oauth/token-exchange/{id}` | live ([PRD 072](prd/072-server-side-login-dialog.md)) | `OAuthExchangeController` — RFC 8693: external id_token → rapla token |
 
 ## API keys (Personal Access Tokens)
 
@@ -646,7 +646,7 @@ and is the only key-management action an api-key can perform (and only on itself
 The API key itself becomes usable on **every** authenticated rapla endpoint once
 minted, subject to its data scope on writes (see below).
 
-### Scopes + self-rotation (PRD 076)
+### Scopes + self-rotation ([PRD 076](prd/076-scoped-api-keys-self-rotation.md))
 
 Each key carries a **scope set** that bounds the blast radius of a leak. Two axes:
 
@@ -658,14 +658,14 @@ Each key carries a **scope set** that bounds the blast radius of a leak. Two axe
 - **Default for a new key is `{read}`** (least privilege); `access_details`, any write, and
   `rotate_self` are explicit opt-in. `read` is always present on a created key (auto-added — a
   stored scopes array is never write-only).
-- **No legacy fallback (changed 2026-06-25, PRD 076 Phase 4):** a stored entry with no `scopes`
+- **No legacy fallback (changed 2026-06-25, [PRD 076](prd/076-scoped-api-keys-self-rotation.md) Phase 4):** a stored entry with no `scopes`
   field resolves to `{read}`, NOT `write_all`. Pre-scopes keys are therefore **read-only**; the one
   legacy key that writes (dualis) is exempted at its own endpoint via
   `ApiKeyScopeContext.callUnrestricted`.
 - **Config reads are interactive-session-only** (token-kind gate): the plugin system/admin config
   endpoints that surface SMTP/LDAP/Exchange credentials (`MailConfigController` etc.) reject
   api-keys outright via `ApiKeyScopeContext.requireInteractiveSession(...)`, regardless of scope.
-- **Direction (PRD 076 Phase 5, planned):** api-keys become **GraphQL-only** (deny-by-default on
+- **Direction ([PRD 076](prd/076-scoped-api-keys-self-rotation.md) Phase 5, planned):** api-keys become **GraphQL-only** (deny-by-default on
   the REST/RemoteOperator surface; allow-list = `graphql` + `users/*` + `dhbwsync` + `rotate`), and
   `access_details` is enforced field-level at the GraphQL seam via a `@requiresAccessDetails`
   directive. Until then api-key writes still go through REST.
@@ -674,7 +674,7 @@ Each key carries a **scope set** that bounds the blast radius of a leak. Two axe
   or `write_all`; resources (Allocatable) need `write_resources` or `write_all`; anything else
   (User, DynamicType, …) needs `write_all`. A denied write returns the SAME 401 a permission
   denial does — indistinguishable.
-- **Rotation** (`POST /{id}/rotate`) — PRD 076 Phase 6:
+- **Rotation** (`POST /{id}/rotate`) — [PRD 076](prd/076-scoped-api-keys-self-rotation.md) Phase 6:
   - **Rotation requires the target key to hold `rotate_self` (D15, Model B)** — uniformly, whether
     the caller is an **api-key** or a **logged-in user** (cookie/Bearer access token). A `read`-only
     key is **not** rotatable; delete it and create a fresh one. Scopes are read from the server-side
@@ -770,13 +770,17 @@ migrate scopes and shorten expiry (`rotate`) without re-minting the key.
   iteration.
 - **Lifetime**: capped only by the user-supplied `expiresInDays`
   (omit it for never-expire). No server-side ceiling.
-- **Per-key scopes**: not supported — every key carries the issuing
-  user's full access. Scope-restricted keys are a future PRD.
-- **No rotation**: to "rotate" a key, mint a fresh one and revoke the
-  old (two calls).
+- **Per-key scopes**: **shipped ([PRD 076](prd/076-scoped-api-keys-self-rotation.md)).** A created key is scoped —
+  it defaults to `{read}` (least-privilege), not the issuing user's full
+  access; management/write scopes (`rotate_self`, etc.) are explicit
+  opt-in. See the api-key scopes section above.
+- **Rotation**: **shipped ([PRD 076](prd/076-scoped-api-keys-self-rotation.md) Phase 6)** — `POST /api/auth/api-keys/{id}/rotate`
+  issues a same-scope successor with a grace window; no mint-and-revoke
+  dance required (the key must hold `rotate_self`).
 - **No `last_used_at` tracking** — there's no "abandoned key" report
   in v1.
-- **No UI yet** — Angular + Swing dialogs land in a follow-up PRD.
+- **UI shipped** — the Angular self-service dialog (`api-keys-dialog`)
+  is live; a Swing dialog remains a follow-up.
 
 ## Migration from `/api/auth/*` (pre-PRD-041)
 
@@ -784,12 +788,12 @@ migrate scopes and shorten expiry (`rotate`) without re-minting the key.
 |---|---|---|
 | `POST /api/auth/login` JSON `{username, password}` | `POST /oauth2/token` form-encoded `grant_type=password&username=…&password=…&client_id=rapla-client` | snake_case response (`access_token`, `refresh_token`, `expires_in`, `token_type`) |
 | `GET /api/auth/oauth/config` | **Unchanged** — discovery endpoint stays | unchanged |
-| `POST /api/auth/oauth/exchange/{providerId}` | **Changed** — still the BFF for external IdPs, but as of PRD 072 it re-mints a rapla session token rather than brokering the raw external token | unchanged |
-| (none) | `POST /api/auth/oauth/token-exchange/{providerId}` (PRD 072 — external `id_token` → rapla token, RFC 8693) | new |
-| (none) | `POST /api/auth/api-keys` (mint), `GET /api/auth/api-keys` (list), `DELETE /api/auth/api-keys/{id}` (revoke) | new — PRD 043 |
+| `POST /api/auth/oauth/exchange/{providerId}` | **Changed** — still the BFF for external IdPs, but as of [PRD 072](prd/072-server-side-login-dialog.md) it re-mints a rapla session token rather than brokering the raw external token | unchanged |
+| (none) | `POST /api/auth/oauth/token-exchange/{providerId}` ([PRD 072](prd/072-server-side-login-dialog.md) — external `id_token` → rapla token, RFC 8693) | new |
+| (none) | `POST /api/auth/api-keys` (mint), `GET /api/auth/api-keys` (list), `DELETE /api/auth/api-keys/{id}` (revoke) | new — [PRD 043](prd/043-api-keys-jwt-pat.md) |
 
 Note: `POST /api/auth/session/refresh` and `POST /api/auth/logout` are **not**
-removed — as of PRD 072 these paths exist again as the SPA
+removed — as of [PRD 072](prd/072-server-side-login-dialog.md) these paths exist again as the SPA
 cookie-credential endpoints (`AuthCookieController` / `AuthCookieService`),
 distinct from the old PRD-041 Bearer-JSON forms. The OAuth
 password / refresh / revoke flow via `/oauth2/*` remains for Swing / API
@@ -815,7 +819,7 @@ completes the token exchange. No per-deployment OAuth config required.
 The Angular SPA at `/app/` uses the conformant redirect
 `/login/oauth2/code/{registrationId}`; the legacy DHBW callback
 `/app/auth/callback` is supported via the per-provider
-`rapla.oauth.external.<id>.legacy-callback: true` flag (PRD 036 Phase 3 —
+`rapla.oauth.external.<id>.legacy-callback: true` flag ([PRD 036](prd/036-external-idp-oauth-login.md) Phase 3 —
 formerly the global `rapla.oauth.web.dhbw-legacy-callback`) and
 `LegacyAppCallbackBridgeFilter` — also zero-config.
 
@@ -838,10 +842,13 @@ be overridden with the matching env var.
 | `rapla.oauth.allow-wsl-bridge-redirects` | `RAPLA_OAUTH_ALLOW_WSL_BRIDGE_REDIRECTS` | `true` | **Dev-only**: accept any port for redirect URIs in `172.16.0.0/12` (Hyper-V WSL2 bridge). Lets developers run the Swing client in WSL2 without enabling mirrored networking. **Set to `false` in production.** |
 | `rapla.oauth.allow-same-origin-redirects` | `RAPLA_OAUTH_ALLOW_SAME_ORIGIN_REDIRECTS` | `true` | Accept any redirect URI whose scheme/host/port match the public origin (honoring `X-Forwarded-*`), path gated by the `same-origin-callback-paths` allowlist. Lets a prod deployment auto-accept its own `/app/auth/callback` without registering it. Safe with PKCE — recommend keeping on. |
 | `rapla.oauth.public-base-url` | `RAPLA_OAUTH_PUBLIC_BASE_URL` | *(empty)* | Origin the SPA / Swing call for the OAuth2/OIDC endpoints (authorize, token, jwks, userinfo, end-session); returned by `/api/auth/oauth/config`. Empty → falls back to the request-derived (same-origin) origin. Set to the IdP origin for external IdPs, or `http://localhost:8051` for the dev `ng serve` proxy split. |
-| `rapla.oauth.trust-external-issuers` | `RAPLA_OAUTH_TRUST_EXTERNAL_ISSUERS` | `false` | PRD 072 Phase 6 single-issuer cutover. When `false`, `/api` trusts **only** rapla-issued tokens; external IdP tokens are consumed once at login and re-minted. Set `true` only as a transitional escape hatch to restore legacy multi-issuer acceptance (wires `IssuerAwareJwtDecoder`). (Commented out in `application.yml` — the effective default is the `JwtConfig` `@Value` fallback `false`.) |
+| `rapla.oauth.trust-external-issuers` | `RAPLA_OAUTH_TRUST_EXTERNAL_ISSUERS` | `false` | [PRD 072](prd/072-server-side-login-dialog.md) Phase 6 single-issuer cutover. When `false`, `/api` trusts **only** rapla-issued tokens; external IdP tokens are consumed once at login and re-minted. Set `true` only as a transitional escape hatch to restore legacy multi-issuer acceptance (wires `IssuerAwareJwtDecoder`). (Commented out in `application.yml` — the effective default is the `JwtConfig` `@Value` fallback `false`.) |
 | `rapla.oauth.allow-loopback-redirects` | `RAPLA_OAUTH_ALLOW_LOOPBACK_REDIRECTS` | `true` | Accept `127.0.0.1` / `[::1]` redirect URIs at any port (RFC 8252 §7.3), gated by the `same-origin-callback-paths` allowlist. (Also listed above under validation order.) |
 | `rapla.oauth.same-origin-callback-paths` | *(list)* | `[/login/oauth2/code/rapla, /app/auth/callback]` | Single source-of-truth path allowlist consumed by **both** the WSL-bridge and same-origin redirect validators. |
-| `rapla.oauth.external.<id>.legacy-callback` | *(per provider)* | `false` | **Dev-only, per-provider** (PRD 036 Phase 3; was the global `rapla.oauth.web.dhbw-legacy-callback`). Set on the one external-IdP entry whose realm can't register the conformant redirect URI (DHBW Keycloak on localhost). When `true`: that provider's `ClientRegistration` sends the registered `/app/auth/callback` `redirect_uri`, and `LegacyAppCallbackBridgeFilter` server-side-redirects `/app/auth/callback` → that provider's `/login/oauth2/code/{id}`. At most one provider may set it (single `/app/auth/callback` path). A second Keycloak keeps its conformant per-provider callback. Not for production. (Lives in `application-local.yml`, not committed `application.yml`.) |
+| `rapla.oauth.local-accounts-enabled` | `RAPLA_OAUTH_LOCAL_ACCOUNTS_ENABLED` | `true` | Gate for the rapla-local password grant. When `false`, `/oauth2/token grant_type=password` is refused with `unsupported_grant_type` — only the browser/OAuth (external IdP) path can authenticate. Leave `true` for the default single-admin / rapla-local-user deployment. |
+| `rapla.auth.impersonation.enabled` | `RAPLA_AUTH_IMPERSONATION_ENABLED` | `true` | Master switch for admin impersonation ("switch to user"). When `false`, **both** `POST /api/auth/impersonate` (Swing Bearer) and `POST /api/auth/impersonate/switch` (SPA cookie) are refused. Default `true` preserves current behaviour. |
+| `rapla.oauth.external.<id>.auto-provision` | *(per provider)* | `true` | Per external IdP: on first sign-in with no matching rapla user, `true` auto-creates the user; `false` **rejects** the unknown external identity, requiring admin pre-provisioning. Previously only a configured `hosted-domain` bounded who could be auto-created — this knob is the explicit gate. See the per-provider rows below for the recommended value. |
+| `rapla.oauth.external.<id>.legacy-callback` | *(per provider)* | `false` | **Dev-only, per-provider** ([PRD 036](prd/036-external-idp-oauth-login.md) Phase 3; was the global `rapla.oauth.web.dhbw-legacy-callback`). Set on the one external-IdP entry whose realm can't register the conformant redirect URI (DHBW Keycloak on localhost). When `true`: that provider's `ClientRegistration` sends the registered `/app/auth/callback` `redirect_uri`, and `LegacyAppCallbackBridgeFilter` server-side-redirects `/app/auth/callback` → that provider's `/login/oauth2/code/{id}`. At most one provider may set it (single `/app/auth/callback` path). A second Keycloak keeps its conformant per-provider callback. Not for production. (Lives in `application-local.yml`, not committed `application.yml`.) |
 
 ### Spring redirect URIs
 
@@ -875,7 +882,7 @@ deployment URI — the three custom validators above carry the load.)
 #### Production override — almost never needed
 
 A deployment at `https://rapla.yourdomain.com` works out of the box.
-Since PRD 072 Phase 4 the SPA no longer computes its own OAuth redirect:
+Since [PRD 072](prd/072-server-side-login-dialog.md) Phase 4 the SPA no longer computes its own OAuth redirect:
 login is the server-rendered `/login` page (`oauth2Login` +
 `OidcLoginSuccessHandler`), and the OAuth redirect URI is the conformant
 `/login/oauth2/code/{registrationId}`. The same-origin validator matches
@@ -1132,8 +1139,8 @@ session produces one initial line plus one renewal line per hour.
 
 ### What's NOT stored anywhere
 
-The 2026-05-21 design (PRD 051) deliberately ships *zero* impersonation
-state outside the issued JWT itself. PRD 029 Phase 5 (2026-05-25) wires
+The 2026-05-21 design ([PRD 051](prd/done/051-switch-user-with-oauth.md)) deliberately ships *zero* impersonation
+state outside the issued JWT itself. [PRD 029](prd/029-swing-oauth-login.md) Phase 5 (2026-05-25) wires
 the client-side dual-slot model so the in-memory storage matches the
 Angular SPA's pattern:
 
@@ -1141,7 +1148,7 @@ Angular SPA's pattern:
 |---|---|
 | Impersonation **refresh** token | **Nowhere.** Not issued. |
 | Impersonation **access** token (Swing) | In-memory only on `RemoteConnectionInfo.impersonationAccessToken` — a sidecar slot distinct from admin's `accessToken`. Discarded on client cold restart, on logout, and on switch-back. |
-| Impersonation **access** token (Angular) | **Not client-side.** Since PRD 072 Phase 4 the SPA holds no token; impersonation state is server-side, surfaced via `GET /api/auth/me` (`{impersonating, actor, target}`). The `access_token` is an HttpOnly cookie JS cannot read. |
+| Impersonation **access** token (Angular) | **Not client-side.** Since [PRD 072](prd/072-server-side-login-dialog.md) Phase 4 the SPA holds no token; impersonation state is server-side, surfaced via `GET /api/auth/me` (`{impersonating, actor, target}`). The `access_token` is an HttpOnly cookie JS cannot read. |
 | Admin's password | Never stored anywhere by the impersonation feature (Phase 5 removed all password caching — the admin's refresh token is the only credential needed for renewal) |
 | Per-impersonation server-side session record | **None.** Each `/api/auth/impersonate` call is independent; authorization is re-checked from scratch |
 
@@ -1149,7 +1156,7 @@ Angular SPA's pattern:
 
 The Swing client still uses the two-slot bearer model (admin slot +
 impersonation sidecar slot on `RemoteConnectionInfo`). The Angular SPA
-(PRD 072 Phase 4) has **one cookie credential, not two slots** — admin
+([PRD 072](prd/072-server-side-login-dialog.md) Phase 4) has **one cookie credential, not two slots** — admin
 vs impersonation identity is tracked server-side and read from
 `GET /api/auth/me`; there is no client-held token.
 
@@ -1198,7 +1205,7 @@ of active impersonation; the renewal is invisible to the user (no UI
 prompt) until and unless the admin's refresh token has also expired —
 then the auth-error dialog opens.
 
-On the **Angular** SPA (PRD 072), impersonation is cookie-based: the
+On the **Angular** SPA ([PRD 072](prd/072-server-side-login-dialog.md)), impersonation is cookie-based: the
 interceptor calls `POST /api/auth/session/refresh` once on a 401 (cookie
 refresh), and impersonation start/swap goes through
 `POST /api/auth/impersonate/switch` — there is no client-side Bearer
@@ -1225,7 +1232,7 @@ If an admin is impersonating user A and wants to switch to user B
 3. The dialog's typeahead — `GET /api/users` — must reflect the
    **admin's** admin-scope, not A's. On Swing this means attaching the
    admin's Bearer (not the impersonation Bearer); on the Angular SPA
-   (PRD 072) there is no client-held token — the request relies on the
+   ([PRD 072](prd/072-server-side-login-dialog.md)) there is no client-held token — the request relies on the
    `access_token` cookie, and the cookie/identity model surfaces the
    admin actor server-side so `canAdminUser` runs against the admin.
 4. The admin picks B; the SPA POSTs `/api/auth/impersonate/switch`
@@ -1235,29 +1242,36 @@ If an admin is impersonating user A and wants to switch to user B
 5. On success, the impersonation is replaced (A → B). One uninterrupted
    session.
 
-**Authoritative rule: impersonation tokens cannot themselves invoke
-the impersonation endpoints.** Specifically:
+**Authoritative rule: the *Bearer* impersonation-token path cannot
+re-invoke impersonation — but the SPA cookie `switch` endpoint
+deliberately can, by re-resolving the admin from the token's `act`
+claim.** Specifically:
 
-- `GET /api/users` called with an impersonation Bearer returns the
-  *target's* admin-scope (usually empty for non-admin targets) —
-  never the original admin's scope. On the Angular SPA (PRD 072)
+- `GET /api/users` during an active impersonation returns the **real
+  admin's** admin-scope — not the target's. `UsersController` calls
+  `resolveRealActor`, which unwraps the impersonation credential and
+  resolves the underlying admin (via the `act.sub` claim), so the
+  listing reflects the admin's "switch to another user" scope even while
+  B is the effective subject. On the Angular SPA ([PRD 072](prd/072-server-side-login-dialog.md))
   `UsersService.list()` (`rapla-angular/src/app/auth/users.service.ts`)
-  no longer attaches an admin Bearer — it does a plain
-  `GET /api/users` and relies on the `access_token` cookie; the
-  cookie/identity model must surface the admin actor so the listing
-  reflects the admin's scope during an active impersonation.
-- `POST /api/auth/impersonate` called with an impersonation Bearer
+  does a plain `GET /api/users` relying on the `access_token` cookie;
+  `resolveRealActor` is what surfaces the admin actor server-side.
+- `POST /api/auth/impersonate` called with an impersonation **Bearer**
   resolves the actor to the impersonated user; if that user isn't
   themselves admin/group-admin (the typical case), the server returns
-  403. On the SPA the cookie-based `POST /api/auth/impersonate/switch`
-  validates the admin's cookie instead.
-- This is intentional: an impersonation token grants *exactly* the
-  target user's permissions for the duration of the impersonation.
-  It does NOT grant the admin's "switch to another user" capability
-  — that authority belongs to the admin alone, and is reachable only
-  through the admin's own Bearer.
+  403. The SPA cookie endpoint `POST /api/auth/impersonate/switch` is
+  the deliberate exception: it **accepts an impersonation cookie** and
+  re-resolves the original admin via the `act.sub` claim (CSRF-protected),
+  so an admin can switch A → B → C without dropping back to an admin
+  Bearer first.
+- This is intentional: as a **Bearer**, an impersonation token grants
+  *exactly* the target user's permissions — the "switch to another user"
+  capability is not reachable that way. The one seam back to the admin's
+  authority is the cookie `switch` endpoint above, which re-derives the
+  admin from `act.sub` under CSRF protection rather than trusting the
+  effective subject.
 
-Implementation cross-reference (Angular, PRD 072): the SPA holds no
+Implementation cross-reference (Angular, [PRD 072](prd/072-server-side-login-dialog.md)): the SPA holds no
 token, so there is no `AuthService.adminToken()` / `renewImpersonation()`.
 Impersonation switch/end go through `AuthService.impersonate()` /
 `AuthService.endImpersonation()` via
@@ -1273,7 +1287,7 @@ impersonation" cue while the override is active:
 |---|---|---|
 | Angular SPA | Top-right of the toolbar | The user chip text is the impersonation target (not the admin's name); chip icon flips to Material `person_search` (a magnifying-glass-over-head); the right-hand action button changes from "Sign out" to "Switch back" (the two are mutually exclusive — there is no "Sign out" available while impersonating) |
 | Angular SPA — admin-not-yet-impersonating | Same chip | When the admin can impersonate but isn't currently, the chip stays on the admin's name and the icon shows `swap_horiz` to signal the chip is clickable; the button remains "Sign out" |
-| Swing | Right side of the menu bar | Status label "Acting as &lt;target&gt;" plus a "Switch back" link. Implementation rides PRD 052's close+recreate session channel (PRD 051 Plan §7–§8 was superseded — see PRD 051 § "Closed scope") |
+| Swing | Right side of the menu bar | Status label "Acting as &lt;target&gt;" plus a "Switch back" link. Implementation rides [PRD 052](prd/052-client-clean-restart.md)'s close+recreate session channel ([PRD 051](prd/done/051-switch-user-with-oauth.md) Plan §7–§8 was superseded — see [PRD 051](prd/done/051-switch-user-with-oauth.md) § "Closed scope") |
 
 Clicking the chip in the SPA opens the "Switch to user" dialog
 (when `canImpersonate` is true OR an impersonation is active —
@@ -1284,7 +1298,7 @@ switch to.
 
 ### Why not RFC 8693 token exchange?
 
-PRD 051 § "Alternatives Considered" lists ten established
+[PRD 051](prd/done/051-switch-user-with-oauth.md) § "Alternatives Considered" lists ten established
 impersonation patterns and the reasons each was rejected. Short
 answer: RFC 8693 token-exchange requires either the target's token
 (unbuildable — admin doesn't know the target's password) or a
@@ -1371,22 +1385,23 @@ picked up by the default `@SpringBootApplication` component scan because
 it lives in the scanned base package `org.rapla.server.spring`. If it
 didn't load, the `jwkSource` `@Bean` it declares is missing and no
 tokens can be issued in the first place. With external IdPs configured
-(PRD 036) **and** `rapla.oauth.trust-external-issuers=true`, the decoder
+([PRD 036](prd/036-external-idp-oauth-login.md)) **and** `rapla.oauth.trust-external-issuers=true`, the decoder
 wraps an `IssuerAwareJwtDecoder` that routes by `iss` claim (check the
 provider's JWKS URL is reachable from the rapla server); in the default
 single-issuer mode (`trust-external-issuers=false`) external tokens are
 not accepted at `/api` at all — see the "Single-issuer `/api`" section
 below.
 
-### After server restart, sessions survive (PRD 029 Option A)
+### After server restart, sessions survive ([PRD 029](prd/029-swing-oauth-login.md) Option A)
 
 The auth server's RSA keypair is **persisted** in `RaplaKeyStorage`
 (rapla preferences, same data file as the rest of the application
 state). A token issued before a JVM restart still validates after the
-restart — same key, same signature. The refresh-token hash is also in
-preferences, so refresh requests after a restart also succeed.
+restart — same key, same signature. The refresh token itself (the full
+JWT, stored unhashed by `RefreshSessionService`) is also in preferences,
+so refresh requests after a restart also succeed.
 
-## Single-issuer `/api` (PRD 072, default since 2026-06-20)
+## Single-issuer `/api` ([PRD 072](prd/072-server-side-login-dialog.md), default since 2026-06-20)
 
 rapla's `/api` resource server trusts **only rapla-issued tokens** by
 default. The flag **`rapla.oauth.trust-external-issuers`** (default
@@ -1493,7 +1508,7 @@ always uses the embedded SAS (deprecation context — see
 > claims case-insensitively against `user.getUsername()`. Falls back to
 > email-against-`user.getEmail()`; otherwise (and if `auto-provision: true`)
 > creates a new rapla user with the lowercased UPN/preferred_username/email
-> as the username. See PRD 036 "Why we keep the rapla User".
+> as the username. See [PRD 036](prd/036-external-idp-oauth-login.md) "Why we keep the rapla User".
 >
 > *History (2026-05-21)*: previously rapla matched on a per-provider
 > `org.rapla.auth.external-id.<provider>` preference holding the IdP's
@@ -1531,7 +1546,7 @@ configure `client-secret` and the BFF takes over. Both work.
 > **Legacy multi-issuer model (`rapla.oauth.trust-external-issuers=true`).**
 > The table below describes the pre-PRD-072 SPA, which presented the IdP's
 > `id_token` directly to `/api` under the `IssuerAwareJwtDecoder`. The
-> default since PRD 072 is **single-issuer** (§ "Single-issuer `/api`"):
+> default since [PRD 072](prd/072-server-side-login-dialog.md) is **single-issuer** (§ "Single-issuer `/api`"):
 > the SPA is cookie-based, every surface presents a **rapla** token, and
 > `/api` validates only rapla's issuer. This subsection applies only when
 > the escape-hatch flag is turned back on.
@@ -1557,9 +1572,9 @@ JWKS. The Angular `AuthService.token()` picks `id_token` vs
 |---|---|
 | rapla SAS | OIDC RP-initiated logout at `/connect/logout` — accepts `id_token_hint` + `post_logout_redirect_uri`, terminates the rapla session and bounces back to `/app/`. |
 | Microsoft Entra | OIDC RP-initiated logout at `/oauth2/v2.0/logout` — same shape. |
-| Google | **No proper RP-initiated OIDC logout.** SPA clears local tokens and navigates back to `/login` without redirecting anywhere external. Optionally, set `rapla.oauth.external.google.revoke-on-logout=true` to revoke the Google grant via `/revoke` on logout (off by default — users typically expect "log out of rapla", not "uncouple my Google account"). |
+| Google | **No proper RP-initiated OIDC logout.** SPA clears local tokens and navigates back to `/login` without redirecting anywhere external. |
 
-> **PRD 072 cookie model.** The per-provider logout above describes the
+> **[PRD 072](prd/072-server-side-login-dialog.md) cookie model.** The per-provider logout above describes the
 > legacy multi-issuer SPA. Under the default single-issuer cookie model
 > the SPA no longer drives any per-provider IdP logout: `AuthService.signOut()`
 > does `POST /api/auth/session/logout` (which **revokes the server-side
@@ -1593,7 +1608,7 @@ JWKS. The Angular `AuthService.token()` picks `id_token` vs
 
 ### 401 handling on the SPA — refresh-then-retry, redirect on real rejection
 
-Under the PRD 072 cookie model the SPA holds no OAuth client, no
+Under the [PRD 072](prd/072-server-side-login-dialog.md) cookie model the SPA holds no OAuth client, no
 `AuthService.token()`, and attaches **no** `Authorization: Bearer`
 header — the rapla JWT rides the httpOnly `access_token` cookie
 (`rapla-angular/src/app/auth/auth.interceptor.ts`). There is no
@@ -1651,7 +1666,6 @@ All settable via the matching `RAPLA_OAUTH_EXTERNAL_*` env vars.
 | `rapla.oauth.external.google.client-secret` | *(empty)* | **Required when using Google Web application client type** (Google enforces it even with PKCE). Leave empty for Google Desktop app type (no secret needed). When set, the BFF route is used. |
 | `rapla.oauth.external.google.hosted-domain` | *(empty)* | Restrict to a Google Workspace domain via the `hd` claim. |
 | `rapla.oauth.external.google.auto-provision` | `true` | Create a rapla `User` on first sign-in if no match. **For consumer Google (no `hosted-domain`), set this to `false`** — otherwise any verified Google account on Earth becomes a rapla user. With a `hosted-domain` set, this is scoped to your Workspace. |
-| `rapla.oauth.external.google.revoke-on-logout` | `false` | POST to Google's `/revoke` on sign-out (off by default — logging out of rapla shouldn't uncouple the user's other Google services). |
 | `rapla.oauth.external.keycloak.enabled` | `false` | Enable the Keycloak provider. |
 | `rapla.oauth.external.keycloak.base-url` | *(required)* | The Keycloak server's public base URL, e.g. `https://keycloak.example.com`. Every OIDC endpoint is derived from `base-url` + `realm`. |
 | `rapla.oauth.external.keycloak.realm` | *(required)* | The Keycloak realm name. A realm is already a tenant — one rapla deployment maps to one realm. |
@@ -1676,7 +1690,7 @@ Entra (China, GovCloud) or other special cases.
 > and are added by the BFF on outbound token requests. The Angular SPA
 > never sees them. See "Managing secrets" below.
 
-> **Redirect URIs are server-side now (PRD 072).** After the
+> **Redirect URIs are server-side now ([PRD 072](prd/072-server-side-login-dialog.md)).** After the
 > `oauth2Login()` refactor rapla redeems the authorization code
 > **server-side**, so every external IdP registration uses rapla's
 > server-side callback **`{baseUrl}/login/oauth2/code/{registrationId}`**
@@ -1702,14 +1716,14 @@ callback is only appropriate when there is exactly one upstream broker;
 rapla is the broker-RP to *multiple* IdPs (Keycloak / Microsoft / Google),
 so per-provider is the correct shape.
 
-#### TEMPORARY DHBW dev bridge — per-provider `legacy-callback` (PRD 036 Phase 3)
+#### TEMPORARY DHBW dev bridge — per-provider `legacy-callback` ([PRD 036](prd/036-external-idp-oauth-login.md) Phase 3)
 
 A dev-only workaround exists for the DHBW production Keycloak
 (`login.mosbach.dhbw.de`, realm `dhbwmos-lehre`, client `rapla-app`):
 that realm only whitelists the **legacy** `/app/auth/callback` redirect
 for localhost, and the maintainer has no admin on the prod realm to
 register the conformant `/login/oauth2/code/keycloak`. The bridge is a
-**per-provider** flag (PRD 036 Phase 3 — formerly the global
+**per-provider** flag ([PRD 036](prd/036-external-idp-oauth-login.md) Phase 3 — formerly the global
 `rapla.oauth.web.dhbw-legacy-callback`): set
 **`rapla.oauth.external.<id>.legacy-callback: true`** on the one provider
 entry that needs it (only in the gitignored `application-local.yml`). Then:
@@ -1744,7 +1758,7 @@ be the **Web platform** (a confidential client) **with a client secret**.
 The SPA platform fails with `AADSTS9002326` ("cross-origin token
 redemption is permitted only for the 'Single-Page Application' client
 type") — Entra refuses the server-side redemption an SPA-platform client
-makes (verified live, PRD 072).
+makes (verified live, [PRD 072](prd/072-server-side-login-dialog.md)).
 
 1. **Register the application** in Entra:
    - Azure portal → Microsoft Entra ID → App registrations → New registration.
@@ -1775,7 +1789,7 @@ token endpoint even with PKCE. The BFF route handles this.
    - https://console.cloud.google.com → APIs & Services → Credentials → Create credentials → OAuth client ID.
    - Application type: **Web application**.
    - **Authorised JavaScript origins**: `https://rapla.yourdomain.com` (and `http://localhost:4200` for Angular dev, `http://localhost:8051` for rapla direct).
-   - **Authorised redirect URIs**: `https://rapla.yourdomain.com/login/oauth2/code/google` (and for dev `http://localhost:4200/login/oauth2/code/google` + `http://localhost:8051/login/oauth2/code/google`). This is rapla's server-side callback — **not** the old `/app/auth/callback`. Verified live (PRD 072).
+   - **Authorised redirect URIs**: `https://rapla.yourdomain.com/login/oauth2/code/google` (and for dev `http://localhost:4200/login/oauth2/code/google` + `http://localhost:8051/login/oauth2/code/google`). This is rapla's server-side callback — **not** the old `/app/auth/callback`. Verified live ([PRD 072](prd/072-server-side-login-dialog.md)).
 2. **Configure the OAuth consent screen** (one-time): User type Internal (Workspace) or External (consumer Gmail). Scopes: `openid`, `profile`, `email`.
 3. **Copy both**:
    - **Client ID** → `RAPLA_OAUTH_EXTERNAL_GOOGLE_CLIENT_ID`.
@@ -1793,7 +1807,7 @@ token endpoint even with PKCE. The BFF route handles this.
    `@gmail.com` consumers) can authenticate. With it, the server
    rejects tokens whose `hd` claim doesn't match.
 
-> **No more Google "Desktop app" route (PRD 072).** Because rapla
+> **No more Google "Desktop app" route ([PRD 072](prd/072-server-side-login-dialog.md)).** Because rapla
 > redeems the code server-side, Google must be a **Web application**
 > client with a registered redirect URI + secret (above). The former
 > secret-less Desktop-app path relied on the SPA doing the loopback
@@ -1820,7 +1834,7 @@ realm. Unlike Microsoft/Google, rapla derives every OIDC endpoint from just
        (for dev also `http://localhost:4200/login/oauth2/code/keycloak` and
        `http://localhost:8051/login/oauth2/code/keycloak`). This is rapla's
        server-side callback — **not** `/app/auth/callback`. Verified live
-       against the DHBW Mosbach realm (PRD 072).
+       against the DHBW Mosbach realm ([PRD 072](prd/072-server-side-login-dialog.md)).
      - **Web origins**: the rapla origin(s), or `+` to reuse the redirect-URI
        origins (CORS).
 3. **Run rapla** with:
@@ -1860,9 +1874,9 @@ Keycloak emits **two different kinds of refresh tokens**:
 | **SSO-session refresh** | none — issued by default with any login | governed by realm's *SSO Session Idle/Max* (typically ~8 h sliding) | no — invalidated on logout | normal interactive web/SPA login |
 | **Offline refresh** | `offline_access` (must be in client's allowed scopes AND requested) | governed by realm's *Offline Session Idle/Max* (typically days to months) | yes — survives logout | CLI tools, background jobs |
 
-> **Under PRD 072 the IdP refresh-token kind is moot — rapla discards all IdP tokens.** rapla is an identity-only broker (#7=a): the server-side `oauth2Login` HEAD verifies the IdP `id_token` *once* at login, then `RaplaClientRegistrationConfig` actively **strips `offline_access`** from the outgoing IdP scopes, so rapla never receives an IdP refresh token it would only throw away. The SPA/Swing session is governed entirely by **rapla's own** refresh token — `RefreshSessionService.REFRESH_TOKEN_TTL_SECONDS` (21 d), delivered to the SPA as the httpOnly `refresh_token` cookie and consumed reactively via `POST /api/auth/session/refresh`. There is **no** `setupAutomaticSilentRefresh` and **no** silent-iframe refresh (see the SPA cookie-model section above). The realm's SSO Session Max and the IdP refresh lifetimes in the table above do **not** bound a rapla session — the table is background only, explaining why rapla requests the *minimal* identity scopes and not `offline_access`.
+> **Under [PRD 072](prd/072-server-side-login-dialog.md) the IdP refresh-token kind is moot — rapla discards all IdP tokens.** rapla is an identity-only broker (#7=a): the server-side `oauth2Login` HEAD verifies the IdP `id_token` *once* at login, then `RaplaClientRegistrationConfig` actively **strips `offline_access`** from the outgoing IdP scopes on *that* path. Note this stripping is **path-specific, not blanket**: the discovery/BFF exchange surface still advertises the provider defaults unfiltered via `/api/auth/oauth/config` — `ProviderDef` defaults Microsoft to `offline_access` and Google to `access_type=offline` — so on the BFF exchange path the IdP **does** mint a refresh token, which transits the exchange and is then discarded server-side. Either way rapla keeps no IdP refresh token. The SPA/Swing session is governed entirely by **rapla's own** refresh token — `RefreshSessionService.REFRESH_TOKEN_TTL_SECONDS` (21 d), delivered to the SPA as the httpOnly `refresh_token` cookie and consumed reactively via `POST /api/auth/session/refresh`. There is **no** `setupAutomaticSilentRefresh` and **no** silent-iframe refresh (see the SPA cookie-model section above). The realm's SSO Session Max and the IdP refresh lifetimes in the table above do **not** bound a rapla session — the table is background only, explaining why rapla requests the *minimal* identity scopes and not `offline_access`.
 
-Adding `offline_access` to a provider's `rapla.oauth.external.<id>.scopes` has **no effect under the broker model** — `RaplaClientRegistrationConfig` strips it before the authorize call. The block below is retained only for a hypothetical future *non-broker* deployment that needs the IdP's own offline refresh token; in today's PRD 072 model it is a no-op:
+Adding `offline_access` to a provider's `rapla.oauth.external.<id>.scopes` has **no effect under the broker model** — `RaplaClientRegistrationConfig` strips it before the authorize call. The block below is retained only for a hypothetical future *non-broker* deployment that needs the IdP's own offline refresh token; in today's [PRD 072](prd/072-server-side-login-dialog.md) model it is a no-op:
 
 ```yaml
 rapla.oauth.external.keycloak.scopes:
@@ -1959,7 +1973,7 @@ design are now dead data — the new resolver doesn't read them. Safe to
 leave in place; they don't affect anything.
 
 When all users are migrated, set
-`RAPLA_OAUTH_LOCAL_ACCOUNTS_ENABLED=false` (planned — see PRD 029
+`RAPLA_OAUTH_LOCAL_ACCOUNTS_ENABLED=false` (planned — see [PRD 029](prd/029-swing-oauth-login.md)
 Phase 2 OQ §5) to disable the password grant. Today the password grant
 stays available; remove rapla-local passwords from `data.xml` to
 disable per-user as a stopgap.

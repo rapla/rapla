@@ -53,21 +53,30 @@ public class ImpersonationController implements ImpersonationService
     private final RaplaFacade facade;
     private final JwtConfig.JwtIssuer jwtIssuer;
     private final HttpServletRequest request;
+    private final boolean impersonationEnabled;
 
     public ImpersonationController(RemoteSession session,
                                     RaplaFacade facade,
                                     JwtConfig.JwtIssuer jwtIssuer,
-                                    HttpServletRequest request)
+                                    HttpServletRequest request,
+                                    @org.springframework.beans.factory.annotation.Value("${rapla.auth.impersonation.enabled:true}") boolean impersonationEnabled)
     {
         this.session = session;
         this.facade = facade;
         this.jwtIssuer = jwtIssuer;
         this.request = request;
+        this.impersonationEnabled = impersonationEnabled;
     }
 
     @Override
     public ImpersonationResponse impersonate(String targetUsername) throws RaplaException
     {
+        // security-audit A0c / PRD 051: impersonation can be disabled entirely for a
+        // deployment (rapla.auth.impersonation.enabled=false) — the kill switch.
+        if (!impersonationEnabled)
+        {
+            throw new RaplaSecurityException("Impersonation is disabled (rapla.auth.impersonation.enabled=false)");
+        }
         // 1. Resolve the actor from the incoming Bearer. Goes through
         //    SpringSecurityRemoteSession.resolveJwtOrThrow → works
         //    uniformly for rapla-SAS, Keycloak, Entra, and Google tokens

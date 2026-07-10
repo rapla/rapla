@@ -66,9 +66,9 @@ import { API_KEY_SCOPES, ApiKeyMetadata, ApiKeysService } from './api-keys.servi
             <div class="kmeta">
               <div class="klabel">{{ k.label || '(unlabeled)' }}</div>
               <div class="ksub">
-                Created {{ k.createdAt | slice: 0 : 10 }} ·
-                {{ expiryLabel(k.expiresAt) }} ·
-                …{{ k.thumbprint | slice: -4 }}
+                Created {{ k.createdAt | slice: 0 : 10 }} · {{ expiryLabel(k.expiresAt) }} · …{{
+                  k.thumbprint | slice: -4
+                }}
               </div>
               <div class="scopes">
                 @for (s of k.scopes; track s) {
@@ -86,7 +86,12 @@ import { API_KEY_SCOPES, ApiKeyMetadata, ApiKeysService } from './api-keys.servi
                 <mat-icon>autorenew</mat-icon>
               </button>
             }
-            <button matIconButton matTooltip="Revoke" (click)="revoke(k)" [disabled]="busyId() === k.id">
+            <button
+              matIconButton
+              matTooltip="Revoke"
+              (click)="revoke(k)"
+              [disabled]="busyId() === k.id"
+            >
               <mat-icon>delete</mat-icon>
             </button>
           </div>
@@ -98,7 +103,11 @@ import { API_KEY_SCOPES, ApiKeyMetadata, ApiKeysService } from './api-keys.servi
                 <input matInput type="number" min="0" max="2880" [formControl]="graceControl" />
               </mat-form-field>
               <button matButton (click)="cancelRotate()">Cancel</button>
-              <button matButton="filled" [disabled]="graceControl.invalid || busyId() === k.id" (click)="confirmRotate(k)">
+              <button
+                matButton="filled"
+                [disabled]="graceControl.invalid || busyId() === k.id"
+                (click)="confirmRotate(k)"
+              >
                 Rotate
               </button>
             </div>
@@ -151,38 +160,129 @@ import { API_KEY_SCOPES, ApiKeyMetadata, ApiKeysService } from './api-keys.servi
           }
         </button>
       } @else {
-        <button matButton="filled" (click)="startCreate()">
-          <mat-icon>add</mat-icon> New key
-        </button>
+        <button matButton="filled" (click)="startCreate()"><mat-icon>add</mat-icon> New key</button>
       }
     </mat-dialog-actions>
   `,
   styles: [
     `
-      h2 { display: flex; align-items: center; gap: 0.5rem; }
-      .title-icon { color: #1565c0; }
-      .full-width { width: 100%; }
-      .centered { display: flex; justify-content: center; padding: 1rem; }
-      .hint { color: rgba(0, 0, 0, 0.6); font-size: 0.9rem; }
-      .error { color: #c62828; font-size: 0.9rem; margin-top: 0.5rem; }
-      .key-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0; border-bottom: 1px solid rgba(0, 0, 0, 0.08); }
-      .key-row:last-of-type { border-bottom: none; }
-      .key-icon { color: #1565c0; }
-      .kmeta { flex: 1; }
-      .klabel { font-weight: 500; }
-      .ksub { font-size: 0.78rem; color: rgba(0, 0, 0, 0.6); }
-      .scopes { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.25rem; }
-      .scope { font-size: 0.7rem; background: #e8eef7; color: #0d47a1; border-radius: 10px; padding: 0.1rem 0.5rem; }
-      .scope.write { background: #fdecea; color: #c62828; }
-      .secret-box { background: #f1f8e9; border: 1px solid #aed581; border-radius: 8px; padding: 0.75rem; margin-bottom: 1rem; }
-      .secret-head { display: flex; align-items: center; gap: 0.4rem; color: #33691e; font-size: 0.85rem; margin-bottom: 0.5rem; }
-      .secret { display: block; word-break: break-all; font-size: 0.72rem; background: #fff; border-radius: 4px; padding: 0.5rem; margin-bottom: 0.5rem; }
-      .rotate-bar { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; padding: 0 0 0.6rem 2rem; }
-      .rotate-hint { font-size: 0.78rem; color: rgba(0, 0, 0, 0.6); flex: 1 1 12rem; }
-      .grace-field { width: 9rem; }
-      .create-form { margin-top: 1rem; }
-      .scope-pick { display: flex; flex-direction: column; gap: 0.2rem; }
-      .scope-label { font-size: 0.78rem; color: rgba(0, 0, 0, 0.6); margin-bottom: 0.2rem; }
+      h2 {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .title-icon {
+        color: #1565c0;
+      }
+      .full-width {
+        width: 100%;
+      }
+      .centered {
+        display: flex;
+        justify-content: center;
+        padding: 1rem;
+      }
+      .hint {
+        color: rgba(0, 0, 0, 0.6);
+        font-size: 0.9rem;
+      }
+      .error {
+        color: #c62828;
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+      }
+      .key-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.6rem 0;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+      }
+      .key-row:last-of-type {
+        border-bottom: none;
+      }
+      .key-icon {
+        color: #1565c0;
+      }
+      .kmeta {
+        flex: 1;
+      }
+      .klabel {
+        font-weight: 500;
+      }
+      .ksub {
+        font-size: 0.78rem;
+        color: rgba(0, 0, 0, 0.6);
+      }
+      .scopes {
+        display: flex;
+        gap: 0.35rem;
+        flex-wrap: wrap;
+        margin-top: 0.25rem;
+      }
+      .scope {
+        font-size: 0.7rem;
+        background: #e8eef7;
+        color: #0d47a1;
+        border-radius: 10px;
+        padding: 0.1rem 0.5rem;
+      }
+      .scope.write {
+        background: #fdecea;
+        color: #c62828;
+      }
+      .secret-box {
+        background: #f1f8e9;
+        border: 1px solid #aed581;
+        border-radius: 8px;
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+      }
+      .secret-head {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        color: #33691e;
+        font-size: 0.85rem;
+        margin-bottom: 0.5rem;
+      }
+      .secret {
+        display: block;
+        word-break: break-all;
+        font-size: 0.72rem;
+        background: #fff;
+        border-radius: 4px;
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+      }
+      .rotate-bar {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+        padding: 0 0 0.6rem 2rem;
+      }
+      .rotate-hint {
+        font-size: 0.78rem;
+        color: rgba(0, 0, 0, 0.6);
+        flex: 1 1 12rem;
+      }
+      .grace-field {
+        width: 9rem;
+      }
+      .create-form {
+        margin-top: 1rem;
+      }
+      .scope-pick {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+      }
+      .scope-label {
+        font-size: 0.78rem;
+        color: rgba(0, 0, 0, 0.6);
+        margin-bottom: 0.2rem;
+      }
     `,
   ],
 })

@@ -1,6 +1,6 @@
 # PRD 079 — GraphQL grouped aggregates (utilization analytics)
 
-**Status:** **Shape A chosen + v1 implemented (2026-06-21).** Carved out of the PRD 074 table-view
+**Status:** **Shape A chosen + v1 implemented (2026-06-21).** Carved out of the [PRD 074](074-graphql-declarative-views.md) table-view
 work. After exploring directives-in-`extensions` (Shape B) vs a typed query field (Shape A), we chose
 **A**: aggregation/grouping belongs in typed `data` ("like compute"), not an untyped side-channel.
 The interim `@aggregate`/`@group` directives + `extensions.view.totals/groups` were **removed** in
@@ -24,21 +24,21 @@ no-`groupBy` case.**
   cost-guarded (mandatory window + 5000-bucket cap). Tier-3 tests: global sum, group-by-week
   partition, custom-expr key. `ReservationGraphQLControllerTest`.
 
-**Update 2026-06-21 (PRD 074 A + Stufe b):**
+**Update 2026-06-21 ([PRD 074](074-graphql-declarative-views.md) A + Stufe b):**
 - The `groupBy.allocatables` dimension now takes the **full `AllocatableFilter`** (incl. `where<TypeKey>`)
-  via the unified nested filter (PRD 074 A) — so "Auslastung pro Raum, Standort Mosbach" filters
+  via the unified nested filter ([PRD 074](074-graphql-declarative-views.md) A) — so "Auslastung pro Raum, Standort Mosbach" filters
   server-side through `whereRaum.Gebaeude` (no client join).
 - `BlockAggregate` gained **`expr`** (Stufe b): a *single numeric* metric expression, coerced to a
   number. Covers most metric needs (e.g. `expr:"attribute(item,\"<num>\")"`, constants).
 
 **Deferred:** in-**expression** arithmetic for metrics (`div(a,b)`, `sum({…})`) needs the EL
-**number-model (PRD 073, Stufe c)** — group *keys* are fully flexible now (strings); single numeric
+**number-model ([PRD 073](073-graphql-function-equivalents.md), Stufe c)** — group *keys* are fully flexible now (strings); single numeric
 metric values work (Stufe b); only *composing* numbers inside the expr is pending. Optimisation
 (per-request block-set cache / pre-aggregation) deferred — analytics run infrequently.
 
 ## Motivating use cases (from the user, 2026-06-21)
 
-1. **Global total** — total duration of all queried blocks. ✅ *already shipped* in PRD 074 as
+1. **Global total** — total duration of all queried blocks. ✅ *already shipped* in [PRD 074](074-graphql-declarative-views.md) as
    `extensions.view.totals { count, wallClockMinutes, wallClockHours, unitMinutes, unit }` over the
    full matched set (O(1) memory in the block loop). This PRD does **not** re-do that.
 2. **Grouped/bucketed** — *hours per week per room over a year*: `group by (ISO-week, room)` →
@@ -87,7 +87,7 @@ enum BlockMetric   { COUNT  WALL_CLOCK  UNIT }
 - `ALLOCATABLE` grouping needs a scope (which allocatables form the dimension) — reuse
   `AppointmentAllocatableFilter` (`typeKeyIn:["room"]`).
 
-### Shape B — render-meta `@group` directive on the existing table (consistent with PRD 074)
+### Shape B — render-meta `@group` directive on the existing table (consistent with [PRD 074](074-graphql-declarative-views.md))
 
 ```graphql
 query Auslastung @view(title:"Raum-Auslastung") {
@@ -119,8 +119,8 @@ Shape B as a future ergonomic layer if the SPA wants "table that collapses into 
 
 ## Out of scope
 
-Global totals (done, PRD 074). Charts/visualisation (SPA, future). Persistence of saved analytic
-views (PRD 077). The function-catalog/descriptor-SPI (PRD 073).
+Global totals (done, [PRD 074](074-graphql-declarative-views.md)). Charts/visualisation (SPA, future). Persistence of saved analytic
+views ([PRD 077](077-calendar-model-graphql.md)). The function-catalog/descriptor-SPI ([PRD 073](073-graphql-function-equivalents.md)).
 
 ## Tests (when implemented)
 

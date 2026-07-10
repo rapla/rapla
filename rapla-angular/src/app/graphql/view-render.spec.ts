@@ -3,7 +3,11 @@ import { renderCell } from './view-render';
 import { ViewColumn } from './graphql.service';
 
 describe('renderCell', () => {
-  const col = (over: Partial<ViewColumn> = {}): ViewColumn => ({ alias: 'x', header: 'X', ...over });
+  const col = (over: Partial<ViewColumn> = {}): ViewColumn => ({
+    alias: 'x',
+    header: 'X',
+    ...over,
+  });
 
   it('renders a plain scalar as-is', () => {
     expect(renderCell({ x: 'hello' }, col())).toBe('hello');

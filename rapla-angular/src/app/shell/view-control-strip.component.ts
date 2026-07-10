@@ -85,7 +85,10 @@ function firstOfMonth(year: number, month: number): string {
 }
 
 /** Re-anchor a window to this week's Monday, preserving its span (the "Heute" jump). */
-export function todayWindow(current: { from: string; to: string }, now: Date): {
+export function todayWindow(
+  current: { from: string; to: string },
+  now: Date,
+): {
   from: string;
   to: string;
 } {
@@ -136,13 +139,23 @@ export function todayWindow(current: { from: string; to: string }, now: Date): {
         <div class="range-edit">
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>Von</mat-label>
-            <input matInput [matDatepicker]="fromPicker" [value]="fromDate()" (dateChange)="onFrom($event)" />
+            <input
+              matInput
+              [matDatepicker]="fromPicker"
+              [value]="fromDate()"
+              (dateChange)="onFrom($event)"
+            />
             <mat-datepicker-toggle matIconSuffix [for]="fromPicker" />
             <mat-datepicker #fromPicker />
           </mat-form-field>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>Bis</mat-label>
-            <input matInput [matDatepicker]="toPicker" [value]="toDate()" (dateChange)="onTo($event)" />
+            <input
+              matInput
+              [matDatepicker]="toPicker"
+              [value]="toDate()"
+              (dateChange)="onTo($event)"
+            />
             <mat-datepicker-toggle matIconSuffix [for]="toPicker" />
             <mat-datepicker #toPicker />
           </mat-form-field>
@@ -244,7 +257,9 @@ export class ViewControlStripComponent {
    *  layout (editable from/to, no nav). */
   protected readonly isWeek = computed(() => {
     const m = this.viewState.renderMode();
-    return (m === 'week' || m === 'grouped' || m === 'day') && this.viewState.renderModes().includes(m);
+    return (
+      (m === 'week' || m === 'grouped' || m === 'day') && this.viewState.renderModes().includes(m)
+    );
   });
 
   /** DAY grid — navigates by a single day (week/grouped step by a week). */
@@ -282,12 +297,14 @@ export class ViewControlStripComponent {
 
   onFrom(event: MatDatepickerInputEvent<Date>): void {
     const w = this.viewState.window();
-    if (w && event.value) this.viewState.setWindow({ from: `${toDateOnly(event.value)}T00:00:00`, to: w.to });
+    if (w && event.value)
+      this.viewState.setWindow({ from: `${toDateOnly(event.value)}T00:00:00`, to: w.to });
   }
 
   onTo(event: MatDatepickerInputEvent<Date>): void {
     const w = this.viewState.window();
-    if (w && event.value) this.viewState.setWindow({ from: w.from, to: `${toDateOnly(event.value)}T00:00:00` });
+    if (w && event.value)
+      this.viewState.setWindow({ from: w.from, to: `${toDateOnly(event.value)}T00:00:00` });
   }
 
   prev(): void {

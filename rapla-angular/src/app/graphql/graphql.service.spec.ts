@@ -1,10 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
-import {
-  HttpTestingController,
-  provideHttpClientTesting,
-} from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { GraphqlService, GqlResponse } from './graphql.service';
 import { MutationBus } from './mutation-bus';
 
@@ -23,7 +20,8 @@ describe('GraphqlService', () => {
   afterEach(() => httpMock.verify());
 
   it('POSTs { query, variables } to /api/graphql', () => {
-    const doc = 'query Q($filter: ReservationFilter!){ appointmentBlocks(filter:$filter){ start } }';
+    const doc =
+      'query Q($filter: ReservationFilter!){ appointmentBlocks(filter:$filter){ start } }';
     const vars = { filter: { from: '2026-01-01T00:00:00', to: '2026-12-31T00:00:00' } };
 
     service.query(doc, vars).subscribe();
@@ -38,13 +36,13 @@ describe('GraphqlService', () => {
 
   it('passes through data + extensions.view', () => {
     let result: GqlResponse<{ appointmentBlocks: unknown[] }> | undefined;
-    service
-      .query<{ appointmentBlocks: unknown[] }>('query{ x }')
-      .subscribe((r) => (result = r));
+    service.query<{ appointmentBlocks: unknown[] }>('query{ x }').subscribe((r) => (result = r));
 
     httpMock.expectOne('/api/graphql').flush({
       data: { appointmentBlocks: [{ start: '2026-06-15T08:00:00' }] },
-      extensions: { view: { key: 'appointments', columns: [{ alias: 'start', header: 'Beginn' }] } },
+      extensions: {
+        view: { key: 'appointments', columns: [{ alias: 'start', header: 'Beginn' }] },
+      },
     });
 
     expect(result?.data?.appointmentBlocks).toHaveLength(1);

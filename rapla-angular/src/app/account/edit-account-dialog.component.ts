@@ -44,15 +44,17 @@ import { ProfileService } from './profile.service';
           <div class="banner">
             <mat-icon aria-hidden="true">info</mat-icon>
             <div>
-              Your profile is managed by your identity provider
-              (<b>{{ externalIdpLabel() }}</b>). Name, e-mail and password are read-only here.
+              Your profile is managed by your identity provider (<b>{{ externalIdpLabel() }}</b
+              >). Name, e-mail and password are read-only here.
             </div>
           </div>
         }
 
         @if (canChangeName()) {
           <section [formGroup]="nameForm">
-            <h3>Name <span class="hint">(current: {{ currentName() }})</span></h3>
+            <h3>
+              Name <span class="hint">(current: {{ currentName() }})</span>
+            </h3>
             <div class="name-row">
               <mat-form-field appearance="outline" class="title-field">
                 <mat-label>Title</mat-label>
@@ -80,7 +82,11 @@ import { ProfileService } from './profile.service';
               <mat-label>New e-mail</mat-label>
               <input matInput type="email" formControlName="email" />
             </mat-form-field>
-            <button matButton="filled" [disabled]="emailForm.invalid || busy() === 'email'" (click)="saveEmail()">
+            <button
+              matButton="filled"
+              [disabled]="emailForm.invalid || busy() === 'email'"
+              (click)="saveEmail()"
+            >
               Save e-mail
             </button>
           </section>
@@ -128,21 +134,73 @@ import { ProfileService } from './profile.service';
   `,
   styles: [
     `
-      h2 { display: flex; align-items: center; gap: 0.5rem; }
-      .title-icon { color: #1565c0; }
-      section { border-top: 1px solid rgba(0, 0, 0, 0.08); padding-top: 0.75rem; margin-top: 0.5rem; }
-      section:first-of-type { border-top: none; }
-      h3 { font-size: 0.95rem; margin: 0 0 0.5rem; }
-      .hint { font-weight: 400; color: rgba(0, 0, 0, 0.55); font-size: 0.8rem; }
-      .full-width { width: 100%; }
-      .name-row { display: flex; gap: 0.5rem; }
-      .name-row mat-form-field { flex: 1; }
-      .title-field { flex: 0 0 6rem; }
-      .centered { display: flex; justify-content: center; padding: 1rem; }
-      .banner { display: flex; gap: 0.6rem; align-items: flex-start; background: #fff8e1; border: 1px solid #ffe082; border-radius: 8px; padding: 0.75rem; font-size: 0.85rem; margin-bottom: 1rem; }
-      .banner mat-icon { color: #f9a825; }
-      .error { color: #c62828; font-size: 0.9rem; margin-top: 0.4rem; }
-      .success { color: #2e7d32; font-size: 0.9rem; margin-top: 0.4rem; }
+      h2 {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .title-icon {
+        color: #1565c0;
+      }
+      section {
+        border-top: 1px solid rgba(0, 0, 0, 0.08);
+        padding-top: 0.75rem;
+        margin-top: 0.5rem;
+      }
+      section:first-of-type {
+        border-top: none;
+      }
+      h3 {
+        font-size: 0.95rem;
+        margin: 0 0 0.5rem;
+      }
+      .hint {
+        font-weight: 400;
+        color: rgba(0, 0, 0, 0.55);
+        font-size: 0.8rem;
+      }
+      .full-width {
+        width: 100%;
+      }
+      .name-row {
+        display: flex;
+        gap: 0.5rem;
+      }
+      .name-row mat-form-field {
+        flex: 1;
+      }
+      .title-field {
+        flex: 0 0 6rem;
+      }
+      .centered {
+        display: flex;
+        justify-content: center;
+        padding: 1rem;
+      }
+      .banner {
+        display: flex;
+        gap: 0.6rem;
+        align-items: flex-start;
+        background: #fff8e1;
+        border: 1px solid #ffe082;
+        border-radius: 8px;
+        padding: 0.75rem;
+        font-size: 0.85rem;
+        margin-bottom: 1rem;
+      }
+      .banner mat-icon {
+        color: #f9a825;
+      }
+      .error {
+        color: #c62828;
+        font-size: 0.9rem;
+        margin-top: 0.4rem;
+      }
+      .success {
+        color: #2e7d32;
+        font-size: 0.9rem;
+        margin-top: 0.4rem;
+      }
     `,
   ],
 })
@@ -167,11 +225,17 @@ export class EditAccountDialogComponent implements OnInit {
     lastname: new FormControl('', { nonNullable: true }),
   });
   readonly emailForm = new FormGroup({
-    email: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] }),
+    email: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.email],
+    }),
   });
   readonly passwordForm = new FormGroup({
     oldPassword: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    newPassword: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(1)] }),
+    newPassword: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.minLength(1)],
+    }),
     confirm: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
   });
 
@@ -203,20 +267,35 @@ export class EditAccountDialogComponent implements OnInit {
   }
 
   saveName(): void {
-    this.run('name', this.profile.changeName(
-      this.username,
-      this.nameForm.controls.title.value,
-      this.nameForm.controls.firstname.value,
-      this.nameForm.controls.lastname.value,
-    ), 'Name updated.', () => this.currentName.set(
-      [this.nameForm.controls.title.value, this.nameForm.controls.firstname.value, this.nameForm.controls.lastname.value]
-        .filter((s) => s.trim()).join(' '),
-    ));
+    this.run(
+      'name',
+      this.profile.changeName(
+        this.username,
+        this.nameForm.controls.title.value,
+        this.nameForm.controls.firstname.value,
+        this.nameForm.controls.lastname.value,
+      ),
+      'Name updated.',
+      () =>
+        this.currentName.set(
+          [
+            this.nameForm.controls.title.value,
+            this.nameForm.controls.firstname.value,
+            this.nameForm.controls.lastname.value,
+          ]
+            .filter((s) => s.trim())
+            .join(' '),
+        ),
+    );
   }
 
   saveEmail(): void {
     if (this.emailForm.invalid) return;
-    this.run('email', this.profile.changeEmail(this.username, this.emailForm.controls.email.value), 'E-mail updated.');
+    this.run(
+      'email',
+      this.profile.changeEmail(this.username, this.emailForm.controls.email.value),
+      'E-mail updated.',
+    );
   }
 
   savePassword(): void {
@@ -233,7 +312,12 @@ export class EditAccountDialogComponent implements OnInit {
     );
   }
 
-  private run(section: string, call: import('rxjs').Observable<void>, ok: string, after?: () => void): void {
+  private run(
+    section: string,
+    call: import('rxjs').Observable<void>,
+    ok: string,
+    after?: () => void,
+  ): void {
     this.busy.set(section);
     this.errorMessage.set(null);
     this.successMessage.set(null);
@@ -246,7 +330,9 @@ export class EditAccountDialogComponent implements OnInit {
       error: (err) => {
         this.busy.set(null);
         const serverMsg = err?.error?.message ?? err?.error ?? null;
-        this.errorMessage.set(typeof serverMsg === 'string' && serverMsg ? serverMsg : 'Update failed.');
+        this.errorMessage.set(
+          typeof serverMsg === 'string' && serverMsg ? serverMsg : 'Update failed.',
+        );
       },
     });
   }

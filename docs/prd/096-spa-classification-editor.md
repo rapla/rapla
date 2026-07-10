@@ -2,26 +2,26 @@
 
 **Status:** draft — 2026-07-07; Phases 1–4 landed, layout redesign + main/extended
 split + server-locale fix 2026-07-08
-**Related:** PRD 091 (event sheet — §2.4 defers exactly this), PRD 035 §5 (widget-mapping
-table + descriptor-on-edit, done), PRD 055 (schema-as-data β refactor — SDL directives
-are the descriptor), PRD 056 (typed `<TypeKey>ClassificationInput @oneOf`, events),
-PRD 063 (allocatable mutations — server side already implemented,
+**Related:** [PRD 091](091-spa-reservation-edit-and-availability.md) (event sheet — §2.4 defers exactly this), [PRD 035](done/035-graphql-foundations.md) §5 (widget-mapping
+table + descriptor-on-edit, done), [PRD 055](055-graphql-events-read-api.md) (schema-as-data β refactor — SDL directives
+are the descriptor), [PRD 056](056-graphql-events-write-api.md) (typed `<TypeKey>ClassificationInput @oneOf`, events),
+[PRD 063](063-graphql-allocatables-write-api.md) (allocatable mutations — server side already implemented,
 `AllocatableMutationController`)
 
 ## Abstract
 
 One reusable Angular component renders and edits the DynamicType-driven
 classification attributes of BOTH Reservations and Allocatables. Today the SPA
-edits only the event-type select + the fixed `name` attribute (PRD 091 §2.4
+edits only the event-type select + the fixed `name` attribute ([PRD 091](091-spa-reservation-edit-and-availability.md) §2.4
 slice); every other attribute rides along untouched via the 2.0b pass-through.
 End state: the event sheet renders a full attribute form, and a thin allocatable
-editor reuses the identical component against the PRD 063 mutations.
+editor reuses the identical component against the [PRD 063](063-graphql-allocatables-write-api.md) mutations.
 
 ## Implementation
 
 Three building blocks, all under `rapla-angular/src/app/classification/`:
 
-1. **`ClassificationSchemaService`** — the client-side consumer of the PRD 055 β
+1. **`ClassificationSchemaService`** — the client-side consumer of the [PRD 055](055-graphql-events-read-api.md) β
    schema-as-data decision. Fetches the SDL once from `GET /api/graphql/schema`
    (printer enabled, verified live), parses the generated
    `<TypeKey>Classification` type blocks into
@@ -37,7 +37,7 @@ Three building blocks, all under `rapla-angular/src/app/classification/`:
    Inputs: `typeKey`, `values: Record<string, unknown>`, `disabled`. Output:
    one patch event `{ key, value, label, coalesceKey }`. The HOST owns the
    draft and routes the patch through its own mutation funnel — the event
-   sheet through `mutateDraft(fn, label, coalesceKey)` so PRD 091 D5 memento
+   sheet through `mutateDraft(fn, label, coalesceKey)` so [PRD 091](091-spa-reservation-edit-and-availability.md) D5 memento
    undo keeps working (label = `@displayName`, coalesceKey =
    `values:<key>` for text bursts); the allocatable editor does the same with
    its own draft. The component never holds a copy of the values.
@@ -45,7 +45,7 @@ Three building blocks, all under `rapla-angular/src/app/classification/`:
    attributes with the same key keep their values (Swing
    `ReservationInfoEdit` parity). The type select itself stays with the host.
 
-Widget mapping follows the PRD 035 §5 table (valueType + constraints →
+Widget mapping follows the [PRD 035](done/035-graphql-foundations.md) §5 table (valueType + constraints →
 widget; server stays validation-authoritative, `ValidationError
 {path, code, message}` maps back to fields). v1 concretely:
 
@@ -68,7 +68,7 @@ data loss, just no widget yet.
 - Event sheet renders every classification attribute of the event's type as a
   form field (v1 widget set), values round-trip through save.
 - An allocatable can be created/edited from the SPA using the SAME component
-  against `createAllocatable`/`updateAllocatable` (PRD 063).
+  against `createAllocatable`/`updateAllocatable` ([PRD 063](063-graphql-allocatables-write-api.md)).
 - `EventDataService` no longer carries its own introspection-fragment builder.
 
 ## Scope
@@ -76,15 +76,15 @@ data loss, just no widget yet.
 ### In scope
 - `ClassificationSchemaService` (SDL parse + cache), descriptor model.
 - `<app-classification-edit>` with the v1 widget set.
-- Event-sheet integration (closes the PRD 091 §2.4 deferral) incl. memento wiring.
-- Minimal allocatable editor dialog (consumer 2) on PRD 063 mutations.
+- Event-sheet integration (closes the [PRD 091](091-spa-reservation-edit-and-availability.md) §2.4 deferral) incl. memento wiring.
+- Minimal allocatable editor dialog (consumer 2) on [PRD 063](063-graphql-allocatables-write-api.md) mutations.
 - Type-change value remapping helper.
 
 ### Out of scope
 - Tree-category picker, allocatable-reference picker, LIST chips (later phases here).
-- DynamicType administration (attribute schema editing) — PRD 057 territory.
+- DynamicType administration (attribute schema editing) — [PRD 057](done/057-graphql-dt-mutations-v1.md) territory.
 - Permission tab of the Swing edit dialogs.
-- Further server-side changes to the mutation surface (PRD 056/063 cover both
+- Further server-side changes to the mutation surface (PRD [056](056-graphql-events-write-api.md)/[063](063-graphql-allocatables-write-api.md) cover both
   kinds; the type-change prerequisite below already landed).
 
 ## Plan
@@ -93,7 +93,7 @@ data loss, just no widget yet.
 - [x] 0.1 DONE (2026-07-07) — `updateReservation` (direct + `applyChanges`
       batch op) accepts a `typeKey` differing from stored: `@oneOf` variant
       must match the NEW typeKey (`MISMATCHED_TYPE` otherwise), caller passes
-      the `createReservation` create-gate on the target type. Revises PRD 056
+      the `createReservation` create-gate on the target type. Revises [PRD 056](056-graphql-events-write-api.md)
       OQ1.c (no `reshapeReservation` mutation — the drop-preview is this PRD's
       editor). Tests: `ReservationMutationControllerTest.updateReservationChangesType`
       + `...MismatchedVariantRejected` (fixture gets a second reservation type
@@ -178,9 +178,9 @@ data loss, just no widget yet.
       on the update mutation.
 - [x] 4.2 DONE (2026-07-07) — entry point: hover ⋮ on `kind==='resource'`
       rows of the left ResourceSelection (all three tabs) with
-      Bearbeiten/Anzeigen mat-menu (mirrors the PRD 094 row-menu labels);
+      Bearbeiten/Anzeigen mat-menu (mirrors the [PRD 094](094-spa-main-view-actions-and-popups.md) row-menu labels);
       user rows get no menu; ⋮ never steps the filter. Spec added.
-      Further entry points (PRD 094 view rows for allocatable subjects)
+      Further entry points ([PRD 094](094-spa-main-view-actions-and-popups.md) view rows for allocatable subjects)
       can reuse the same dialog.
 - [x] 4.3 DONE (2026-07-07, user request) — allocatable type change:
       `updateAllocatable` (server) now accepts a differing typeKey (same
@@ -188,7 +188,7 @@ data loss, just no widget yet.
       target type; 2 tier-3 tests, red→green). Dialog got a type select
       (same-`classificationType` options via `types` query, only in edit
       mode with >1 option) with client-side `remapValues` — supersedes the
-      "no type select" note in 4.1. Updates PRD 063's reject stance.
+      "no type select" note in 4.1. Updates [PRD 063](063-graphql-allocatables-write-api.md)'s reject stance.
 - [x] 4.4 DONE (2026-07-08) — dialog scroll. `.dlg` had no `max-height`/
       `overflow`, so a resource/person with many attributes overflowed the
       MatDialog surface and pushed Speichern/Abbrechen off-screen. Split into a
@@ -213,7 +213,7 @@ data loss, just no widget yet.
       UpdateEvent), so a runtime "Server Sprache" change needs a restart or type
       edit to take effect; names still fall back to English where the type/
       attribute data carries no German translation (data, not code). Touches the
-      PRD 035 §5 / PRD 055 β SDL generator — cross-ref PRD 035 (done).
+      [PRD 035](done/035-graphql-foundations.md) §5 / [PRD 055](055-graphql-events-read-api.md) β SDL generator — cross-ref [PRD 035](done/035-graphql-foundations.md) (done).
 
 ### Bugfix ride-along (2026-07-07)
 - [x] False "zwischenzeitlich geändert" on every save of a persisted entity:
@@ -243,18 +243,18 @@ data loss, just no widget yet.
   "Weitere Felder" expander (no longer rendered like main).
 - **OQ2** — expected-rows/columns annotations (textarea sizing) — emit in SDL
   or ignore? *Resolution:* pending.
-- **OQ3** — allocatable editor entry point placement (PRD 094 command layer
+- **OQ3** — allocatable editor entry point placement ([PRD 094](094-spa-main-view-actions-and-popups.md) command layer
   vs. plain button in resource views). *Resolution:* pending.
 
 ## Decisions locked
 
 **D1 — Descriptor = parsed SDL from `/api/graphql/schema`.** Implements the
-PRD 055 β decision client-side; plain introspection lacks the directives.
+[PRD 055](055-graphql-events-read-api.md) β decision client-side; plain introspection lacks the directives.
 Rejected: a new `dynamicType(key){attributes{…}}` server query — would reopen
-the PRD 055 β rejection of a parallel descriptor surface; hand parsing the
+the [PRD 055](055-graphql-events-read-api.md) β rejection of a parallel descriptor surface; hand parsing the
 format-stable generated SDL is cheap.
 
-**D2 — Controlled component; host owns the draft.** Precondition for PRD 091
+**D2 — Controlled component; host owns the draft.** Precondition for [PRD 091](091-spa-reservation-edit-and-availability.md)
 D5 memento undo (single `mutateDraft` funnel) and for reuse across entity
 kinds with different draft models. Rejected: component-internal form state
 with ngModel two-way binding — would fork the undo funnel.
@@ -309,7 +309,7 @@ the loan lifecycle category) must always hold a value. If a deployment needs
 clearable optional enums later, gate the placeholder's `disabled` on
 `!required` — don't silently re-add it for all.
 
-**D3 — Widget spec = PRD 035 §5, not reinvented.** The table there is the
+**D3 — Widget spec = [PRD 035](done/035-graphql-foundations.md) §5, not reinvented.** The table there is the
 locked mapping; this PRD only phases it (v1 subset, pickers later). The
-descriptor *transport* in PRD 035 §4 (`AttributeDescriptor` query) is
-superseded by PRD 055 β — D1 here is the replacement.
+descriptor *transport* in [PRD 035](done/035-graphql-foundations.md) §4 (`AttributeDescriptor` query) is
+superseded by [PRD 055](055-graphql-events-read-api.md) β — D1 here is the replacement.

@@ -210,7 +210,7 @@ and `rapla-server/.../plugin/<id>/...`.
 | `exchangeconnector` | server | Bidirectional Microsoft Exchange sync. | `SynchronisationManager` (manual wiring), `ExchangeConfigExtensionPoint` |
 | `urlencryption` | server | Encrypts iCal subscription URLs (so the URL itself is the secret). | `ServletRequestPreprocessor` |
 | `jndi` | server | LDAP/JNDI-based authentication. | `AuthenticationStore` |
-| `adminpanels` | both | Server-driven admin panels framework. See PRD 020. | — |
+| `adminpanels` | both | Server-driven admin panels framework. See [PRD 020](../prd/020-server-driven-admin-panels.md). | — |
 
 Many plugins are **off by default** (`matchIfMissing=false`):
 notification, mail, archiver, exchangeconnector, urlencryption, jndi,
@@ -345,5 +345,5 @@ in turn.
 - [dynamic-types.md](dynamic-types.md) — `FunctionFactory` for
   ParsedText formulas
 - [permissions.md](permissions.md) — `AuthenticationStore` slot
-- PRD 020 — server-driven admin panels (the `adminpanels` plugin)
+- [PRD 020](../prd/020-server-driven-admin-panels.md) — server-driven admin panels (the `adminpanels` plugin)
 - AGENTS.md §4 — Spring DI patterns, the client/server scan footgun

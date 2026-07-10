@@ -133,7 +133,9 @@ public class ArtifactCatalogService
         return true;
     }
 
-    private void checkWrite(User caller) throws RaplaSecurityException
+    /** The single authorization seam for artifact writes (PRD 098 D6). Public so consumers that
+     *  validate before storing (e.g. the document catalog) gate the caller first. */
+    public void checkWrite(User caller) throws RaplaSecurityException
     {
         if (caller == null || !caller.isAdmin())
         {

@@ -103,116 +103,125 @@ export function hasScope(chips: FilterEntry[]): boolean {
       <h2 class="view-title">{{ printTitle() }}</h2>
 
       @if (noScope()) {
-          <p class="empty">
-            Wähle links eine Ressource, Gruppe oder Person als <strong>Scope</strong> (oder
-            füge über die Suche einen Scope-Chip hinzu), um Termine zu laden.
-          </p>
-        } @else if (loading()) {
-          <p class="meta">lädt…</p>
-        } @else if (error()) {
-          <p class="error">{{ error() }}</p>
-        } @else {
-          @if (isMonth()) {
-            <!-- PRD 095 — month calendar grid (spanning bars); replaces the table. -->
-            <app-month-grid
-              [rows]="displayRows()"
-              [anchor]="monthAnchor()"
-              (openRow)="onRowDblClick($event)"
-              (openMenu)="onChipMenu($event)"
-              (moveBlock)="onMoveBlock($event)"
-              (createRange)="openCreateRange($event)"
-            />
-          } @else if (isWeekGrid() || isDayGrid()) {
-            <!-- PRD 077 — time grid with dynamic lanes; 7 columns (week) or 1 (day). -->
-            <app-week-grid
-              [rows]="displayRows()"
-              [anchor]="weekAnchor()"
-              [dayCount]="isDayGrid() ? 1 : 7"
-              [scopeResources]="scopeResources()"
-              (openRow)="onRowDblClick($event)"
-              (openMenu)="onChipMenu($event)"
-              (moveBlock)="onMoveBlock($event)"
-              (resizeBlock)="onResizeBlock($event)"
-              (createTimeRange)="openCreateTimeRange($event)"
-            />
-          } @else if (total() > 0) {
-            <table
-              mat-table
-              [dataSource]="dataSource"
-              matSort
-              [matSortDisabled]="isGrouped()"
-              [matSortActive]="isGrouped() ? '' : defaultSortAlias()"
-              matSortDirection="asc"
-              class="grid"
-              tabindex="0"
-              aria-multiselectable="true"
-              [attr.aria-activedescendant]="activeRowId()"
-              (keydown)="onTableKeydown($event)"
-            >
-              @for (col of tableColumns(); track col.alias) {
-                <ng-container [matColumnDef]="col.alias">
-                  <th mat-header-cell *matHeaderCellDef mat-sort-header [disabled]="isGrouped()">
-                    {{ col.header ?? col.alias }}
-                  </th>
-                  <td mat-cell *matCellDef="let row">{{ cell(row, col) }}</td>
-                </ng-container>
-              }
-              <!-- Row actions (PRD 094): ⋮ opens the shared row menu; only rows
+        <p class="empty">
+          Wähle links eine Ressource, Gruppe oder Person als <strong>Scope</strong> (oder füge über
+          die Suche einen Scope-Chip hinzu), um Termine zu laden.
+        </p>
+      } @else if (loading()) {
+        <p class="meta">lädt…</p>
+      } @else if (error()) {
+        <p class="error">{{ error() }}</p>
+      } @else {
+        @if (isMonth()) {
+          <!-- PRD 095 — month calendar grid (spanning bars); replaces the table. -->
+          <app-month-grid
+            [rows]="displayRows()"
+            [anchor]="monthAnchor()"
+            (openRow)="onRowDblClick($event)"
+            (openMenu)="onChipMenu($event)"
+            (moveBlock)="onMoveBlock($event)"
+            (createRange)="openCreateRange($event)"
+          />
+        } @else if (isWeekGrid() || isDayGrid()) {
+          <!-- PRD 077 — time grid with dynamic lanes; 7 columns (week) or 1 (day). -->
+          <app-week-grid
+            [rows]="displayRows()"
+            [anchor]="weekAnchor()"
+            [dayCount]="isDayGrid() ? 1 : 7"
+            [scopeResources]="scopeResources()"
+            (openRow)="onRowDblClick($event)"
+            (openMenu)="onChipMenu($event)"
+            (moveBlock)="onMoveBlock($event)"
+            (resizeBlock)="onResizeBlock($event)"
+            (createTimeRange)="openCreateTimeRange($event)"
+          />
+        } @else if (total() > 0) {
+          <table
+            mat-table
+            [dataSource]="dataSource"
+            matSort
+            [matSortDisabled]="isGrouped()"
+            [matSortActive]="isGrouped() ? '' : defaultSortAlias()"
+            matSortDirection="asc"
+            class="grid"
+            tabindex="0"
+            aria-multiselectable="true"
+            [attr.aria-activedescendant]="activeRowId()"
+            (keydown)="onTableKeydown($event)"
+          >
+            @for (col of tableColumns(); track col.alias) {
+              <ng-container [matColumnDef]="col.alias">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header [disabled]="isGrouped()">
+                  {{ col.header ?? col.alias }}
+                </th>
+                <td mat-cell *matCellDef="let row">{{ cell(row, col) }}</td>
+              </ng-container>
+            }
+            <!-- Row actions (PRD 094): ⋮ opens the shared row menu; only rows
                    with a typed subject (D4) get a button. -->
-              <ng-container matColumnDef="__actions">
-                <th mat-header-cell *matHeaderCellDef class="actions-col"></th>
-                <td mat-cell *matCellDef="let row" class="actions-col">
-                  @if (rowItems(row).length > 0) {
-                    <button
-                      type="button"
-                      class="row-menu-btn"
-                      aria-label="Aktionen"
-                      [matMenuTriggerFor]="rowMenu"
-                      (click)="prepareMenu(row); $event.stopPropagation()"
-                    >
-                      ⋮
-                    </button>
-                  }
-                </td>
-              </ng-container>
-              <!-- Group-header row (grouped views): one cell spanning all columns. -->
-              <ng-container matColumnDef="__groupHeader">
-                <td mat-cell *matCellDef="let g" [attr.colspan]="displayedColumns().length" class="group-cell">
-                  {{ g['__label'] }} <span class="cnt">({{ g['__count'] }})</span>
-                </td>
-              </ng-container>
-              <tr mat-header-row *matHeaderRowDef="displayedColumns()"></tr>
-              <tr mat-row *matRowDef="let row; columns: ['__groupHeader']; when: isGroupRow" class="group-row"></tr>
-              <tr
-                mat-row
-                *matRowDef="let row; columns: displayedColumns(); when: isDataRow"
-                [attr.id]="rowId(row)"
-                [class.selected]="selection.isSelected(row)"
-                [class.active-row]="selection.active() === row"
-                [attr.aria-selected]="selection.isSelected(row)"
-                (mousedown)="onRowMousedown($event)"
-                (click)="onRowClick($event, row)"
-                (contextmenu)="onContextMenu($event, row)"
-                (dblclick)="onRowDblClick(row)"
-              ></tr>
-            </table>
-          } @else {
-            <p class="empty">Keine Termine im Zeitraum.</p>
-          }
+            <ng-container matColumnDef="__actions">
+              <th mat-header-cell *matHeaderCellDef class="actions-col"></th>
+              <td mat-cell *matCellDef="let row" class="actions-col">
+                @if (rowItems(row).length > 0) {
+                  <button
+                    type="button"
+                    class="row-menu-btn"
+                    aria-label="Aktionen"
+                    [matMenuTriggerFor]="rowMenu"
+                    (click)="prepareMenu(row); $event.stopPropagation()"
+                  >
+                    ⋮
+                  </button>
+                }
+              </td>
+            </ng-container>
+            <!-- Group-header row (grouped views): one cell spanning all columns. -->
+            <ng-container matColumnDef="__groupHeader">
+              <td
+                mat-cell
+                *matCellDef="let g"
+                [attr.colspan]="displayedColumns().length"
+                class="group-cell"
+              >
+                {{ g['__label'] }} <span class="cnt">({{ g['__count'] }})</span>
+              </td>
+            </ng-container>
+            <tr mat-header-row *matHeaderRowDef="displayedColumns()"></tr>
+            <tr
+              mat-row
+              *matRowDef="let row; columns: ['__groupHeader']; when: isGroupRow"
+              class="group-row"
+            ></tr>
+            <tr
+              mat-row
+              *matRowDef="let row; columns: displayedColumns(); when: isDataRow"
+              [attr.id]="rowId(row)"
+              [class.selected]="selection.isSelected(row)"
+              [class.active-row]="selection.active() === row"
+              [attr.aria-selected]="selection.isSelected(row)"
+              (mousedown)="onRowMousedown($event)"
+              (click)="onRowClick($event, row)"
+              (contextmenu)="onContextMenu($event, row)"
+              (dblclick)="onRowDblClick(row)"
+            ></tr>
+          </table>
+        } @else {
+          <p class="empty">Keine Termine im Zeitraum.</p>
         }
-      </section>
-      <mat-menu #rowMenu="matMenu">
-        @for (item of menuItems(); track item.id) {
-          <button mat-menu-item type="button" (click)="item.run()">{{ item.label }}</button>
-        }
-      </mat-menu>
-      <span
-        class="ctx-anchor"
-        [style.left.px]="menuX()"
-        [style.top.px]="menuY()"
-        [matMenuTriggerFor]="rowMenu"
-        #ctxTrigger="matMenuTrigger"
-      ></span>
+      }
+    </section>
+    <mat-menu #rowMenu="matMenu">
+      @for (item of menuItems(); track item.id) {
+        <button mat-menu-item type="button" (click)="item.run()">{{ item.label }}</button>
+      }
+    </mat-menu>
+    <span
+      class="ctx-anchor"
+      [style.left.px]="menuX()"
+      [style.top.px]="menuY()"
+      [matMenuTriggerFor]="rowMenu"
+      #ctxTrigger="matMenuTrigger"
+    ></span>
   `,
   styles: [
     `
@@ -597,14 +606,17 @@ export class ViewHostComponent {
   }
 
   private readonly hasRowMenu = computed(
-    () => this.menuProviders.length > 0 && this.displayRows().some((r) => this.rowItems(r).length > 0),
+    () =>
+      this.menuProviders.length > 0 && this.displayRows().some((r) => this.rowItems(r).length > 0),
   );
   /** Table columns incl. the trailing actions column when any row has a menu. */
   readonly displayedColumns = computed(() =>
     this.hasRowMenu() ? [...this.columnAliases(), '__actions'] : this.columnAliases(),
   );
   /** Default sort: the date/group column (chronological), else the first column. */
-  readonly defaultSortAlias = computed(() => this.groupAlias() || this.tableColumns()[0]?.alias || '');
+  readonly defaultSortAlias = computed(
+    () => this.groupAlias() || this.tableColumns()[0]?.alias || '',
+  );
 
   /** Material table source — built-in client sort via {@link MatSort} (no hand-rolled
    *  sorting). Fed from {@link displayRows} by an effect in the constructor. */
@@ -682,8 +694,10 @@ export class ViewHostComponent {
   });
 
   /** Row-template predicates for the grouped Material table. */
-  readonly isGroupRow = (_i: number, row: Record<string, unknown>): boolean => row['__group'] === true;
-  readonly isDataRow = (_i: number, row: Record<string, unknown>): boolean => row['__group'] !== true;
+  readonly isGroupRow = (_i: number, row: Record<string, unknown>): boolean =>
+    row['__group'] === true;
+  readonly isDataRow = (_i: number, row: Record<string, unknown>): boolean =>
+    row['__group'] !== true;
 
   /** Monotonic request id — a slow (e.g. 500-row firehose) response from an OLDER
    *  query must not clobber a newer, filtered one. Stale responses are ignored. */
@@ -823,9 +837,7 @@ export class ViewHostComponent {
         this.meta.set(viewMeta);
         this.total.set(rows.length);
         const groupAlias = viewMeta?.groupBy;
-        this.groupCount.set(
-          groupAlias ? new Set(rows.map((r) => r[groupAlias])).size : 0,
-        );
+        this.groupCount.set(groupAlias ? new Set(rows.map((r) => r[groupAlias])).size : 0);
         this.rows.set(rows);
         this.loading.set(false);
         // Apply the view's supported render modes — keeps the user's remembered mode
@@ -894,9 +906,9 @@ export class ViewHostComponent {
       return;
     }
     this.gql
-      .query<{ types: { key: string; classificationType: string }[] }>(
-        `query { types { key classificationType } }`,
-      )
+      .query<{
+        types: { key: string; classificationType: string }[];
+      }>(`query { types { key classificationType } }`)
       .subscribe((resp) => {
         const key =
           (resp.data?.types ?? []).find((t) => t.classificationType === 'RESERVATION')?.key ??

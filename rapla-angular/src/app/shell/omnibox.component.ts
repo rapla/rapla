@@ -39,7 +39,7 @@ import { entityIcon } from './entity-icon';
                   <span class="meta">
                     <span class="lbl">
                       {{ r.label }}
-                      @if (r.count != null) {
+                      @if (r.count !== undefined && r.count !== null) {
                         <span class="cnt">({{ r.count }})</span>
                       }
                     </span>
@@ -259,9 +259,13 @@ export class OmniboxComponent {
     this.open.set(false); // a terminal action closes the dropdown
   }
 
-  navigate(_r: SearchResult): void {}
+  navigate(r: SearchResult): void {
+    void r; // TODO: wire result navigation
+  }
 
-  edit(_r: SearchResult): void {}
+  edit(r: SearchResult): void {
+    void r; // TODO: wire result edit
+  }
 
   /** A found resource OR user the user acted on lands in the ResourceSelection
    *  "Zuletzt" list — so it can be pulled in again (a user steps as a `user`

@@ -145,7 +145,11 @@ export function buildMoveCommand(
     gql.mutate<{ moveReservations: { overallStatus: string } }>(
       `mutation ($ids: [ID!]!, $ref: LocalDateTime!, $target: Target!) {
          moveReservations(ids: $ids, reference: $ref, target: $target) { overallStatus } }`,
-      { ids: [reservationId], ref: MOVE_PIVOT, target: { dateTime: shiftIso(MOVE_PIVOT, minutes) } },
+      {
+        ids: [reservationId],
+        ref: MOVE_PIVOT,
+        target: { dateTime: shiftIso(MOVE_PIVOT, minutes) },
+      },
     ) as Observable<MutationResult<unknown>>;
   return {
     label: `„${name}" verschoben`,

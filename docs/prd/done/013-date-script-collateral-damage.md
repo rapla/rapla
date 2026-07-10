@@ -1,6 +1,6 @@
 # PRD 013: Recover collateral damage from Date migration scripts
 
-**Status:** done (2026-05-11). The ~1,068 lines of collateral damage from the PRD 001-A Phase 4 scripts were recovered via the file-reset + re-script approach. PRD 015 records the final state: "100 % of the diff is Date migration work. All script collateral has been recovered." Reactor compiles green and `mvn test` runs end-to-end.
+**Status:** done (2026-05-11). The ~1,068 lines of collateral damage from the PRD 001-A Phase 4 scripts were recovered via the file-reset + re-script approach. [PRD 015](015-finish-date-migration-rapla-client.md) records the final state: "100 % of the diff is Date migration work. All script collateral has been recovered." Reactor compiles green and `mvn test` runs end-to-end.
 **Date:** 2026-05-09 (closed: 2026-05-11)
 
 ## Goal

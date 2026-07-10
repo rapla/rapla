@@ -7,7 +7,7 @@
 Set up the Playwright **Agents** layer (Planner / Generator / Healer, Playwright
 1.56+) for `rapla-angular`, so tier-7 browser e2e specs (AGENTS.md §10) can be
 authored and maintained agentically. This is distinct from the Playwright **MCP**
-server (PRD 033, done) which drives a browser interactively — Agents author and
+server ([PRD 033](033-playwright-mcp-browser-testing.md), done) which drives a browser interactively — Agents author and
 heal `*.spec.ts` files.
 
 ## Scope
@@ -17,7 +17,7 @@ heal `*.spec.ts` files.
 - Add `@playwright/test` as a `rapla-angular` devDependency.
 - `rapla-angular/playwright.config.ts` — `testDir: tests/`, system Chrome via
   `channel: 'chrome'` (no bundled Chromium — none exists for Ubuntu 26.04, see
-  PRD 033 / `docs/development.md`).
+  [PRD 033](033-playwright-mcp-browser-testing.md) / `docs/development.md`).
 - `npx playwright init-agents --loop claude` — scaffold the Claude-Code agent
   definitions + seed.
 - A first smoke spec under `rapla-angular/tests/`.
@@ -27,7 +27,7 @@ heal `*.spec.ts` files.
 
 **Out of scope (deferred):**
 
-- Wiring Playwright e2e into CI — PRD 034 Phase 4.
+- Wiring Playwright e2e into CI — [PRD 034](../034-ci-baseline-workflow.md) Phase 4.
 - A broad e2e suite. AGENTS.md §10 caps tier 7 at ~5–15 critical-path tests;
   this PRD lands the harness + one smoke test, not the suite.
 - `webServer` auto-start in the config — the rapla dev server start is the
@@ -64,6 +64,6 @@ heal `*.spec.ts` files.
 
 ## Follow-ups
 
-- Wire `npm run e2e` into CI — PRD 034 Phase 4.
+- Wire `npm run e2e` into CI — [PRD 034](../034-ci-baseline-workflow.md) Phase 4.
 - Grow the suite to the ~5–15 critical-path tests AGENTS.md §10 allows for
   tier 7 (this PRD landed only the harness + smoke test).

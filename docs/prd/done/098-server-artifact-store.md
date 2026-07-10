@@ -1,17 +1,17 @@
 # PRD 098 — Server artifact store (views, templates, CSS)
 
 **Status:** done — 2026-07-08 (entity + both backends + catalog + view switch-over, 25 tests green;
-client-exclusion test landed). PRD 097 consumes the store (kind=TEMPLATE/CSS/PARTIAL/IMAGE) — the
+client-exclusion test landed). [PRD 097](../097-event-html-templates-mustache.md) consumes the store (kind=TEMPLATE/CSS/PARTIAL/IMAGE) — the
 generic artifact CRUD/upload endpoint and the IMAGE mimeType guard land with that first consumer.
-**Related:** PRD 074 (declarative GraphQL views — its `ViewCatalogService` preferences storage is what
-this replaces), PRD 097 (Mustache event templates — first new consumer; its `DocumentTemplate`
-storage lands directly here instead of a second preferences key), PRD 077 (saved calendar views —
-explicitly NOT moved, see out-of-scope), PRDs 082–087 (storage modernization — sequencing note in D5)
+**Related:** [PRD 074](../074-graphql-declarative-views.md) (declarative GraphQL views — its `ViewCatalogService` preferences storage is what
+this replaces), [PRD 097](../097-event-html-templates-mustache.md) (Mustache event templates — first new consumer; its `DocumentTemplate`
+storage lands directly here instead of a second preferences key), [PRD 077](../077-calendar-model-graphql.md) (saved calendar views —
+explicitly NOT moved, see out-of-scope), [PRDs 082](../082-storage-memory-model.md)–087 (storage modernization — sequencing note in D5)
 
 ## Abstract
 
-Admin-authored server-side artifacts — stored GraphQL view queries (PRD 074), Mustache templates
-(PRD 097), CSS/partials — currently live as one JSON array per kind inside the single system
+Admin-authored server-side artifacts — stored GraphQL view queries ([PRD 074](../074-graphql-declarative-views.md)), Mustache templates
+([PRD 097](../097-event-html-templates-mustache.md)), CSS/partials — currently live as one JSON array per kind inside the single system
 `Preferences` entity. That gives whole-entity conflict granularity, ships template/CSS bodies to
 every Swing client via preferences sync, has no per-artifact metadata, and breeds one copy-pasted
 catalog service per kind. This PRD introduces a dedicated **server-only entity type**
@@ -31,7 +31,7 @@ appears in a client `UpdateEvent`.
    bodies are KB–tens-of-KB server-side render inputs no client needs.
 3. **No per-artifact metadata.** No lastChanged, no author — "who broke the Leihschein template" is
    unanswerable.
-4. **N parallel catalog services.** Views, then templates (PRD 097), then CSS/partials — each with
+4. **N parallel catalog services.** Views, then templates ([PRD 097](../097-event-html-templates-mustache.md)), then CSS/partials — each with
    its own `TypedComponentRole` key and hand-rolled visibility JSON.
 
 What preferences quietly provides and any replacement must keep: multi-pod freshness (preferences
@@ -64,15 +64,15 @@ An artifact is admitted when ALL hold: (1) **application-scoped content** — on
 no per-user rows (D7 prepares the schema for a later user scope, but the store's identity is
 application content); (2) **server-side input to rendering/querying** — never synced to clients
 as-is; (3) **small and few** — text or logo-sized binary, dozens of rows, under the OQ2 cap;
-(4) **runtime-editable content, not code** — no rebuild to change, no executable logic (the PRD 097
+(4) **runtime-editable content, not code** — no rebuild to change, no executable logic (the [PRD 097](../097-event-html-templates-mustache.md)
 no-eval line). The store is a "content customization without code customization" mechanism —
-long-term it reduces what `custom/`-overlay deployments (PRD 003) exist for.
+long-term it reduces what `custom/`-overlay deployments ([PRD 003](../003-custom-deployments-after-spring-migration.md)) exist for.
 
-Intended consumers: view queries (PRD 074), document templates + CSS + partials + same-origin
-images (PRD 097), later plausibly HTML mail/notification templates, SPA branding (different trust
-surface — needs its own review), admin announcements, stored-views-as-MCP-tools (PRD 060).
+Intended consumers: view queries ([PRD 074](../074-graphql-declarative-views.md)), document templates + CSS + partials + same-origin
+images ([PRD 097](../097-event-html-templates-mustache.md)), later plausibly HTML mail/notification templates, SPA branding (different trust
+surface — needs its own review), admin announcements, stored-views-as-MCP-tools ([PRD 060](../060-graphql-mcp-foundations.md)).
 Explicitly NOT: user attachments (large, user-authored, per-entity — own PRD if ever), per-user UI
-state (user preferences: PRD 077 saved views, PRD 089 recents), plugin/system settings
+state (user preferences: [PRD 077](../077-calendar-model-graphql.md) saved views, [PRD 089](../089-server-side-recents-favorites.md) recents), plugin/system settings
 (system preferences hold *settings*; this store holds *content*), executable content of any kind.
 BUILTIN views stay hardcoded in `ViewCatalogService` — not seeded/overridable in the store (upgrade
 conflicts; revisit only with a concrete need).
@@ -106,7 +106,7 @@ String body across backends and the migration channel; ~4/5 of the content is te
 templates, CSS, JSON); `TEXT` reuses the existing dialect mapping + `setText` helpers
 (`ExternalSyncEntity.DATA` precedent); and a text column stays inspectable in SQL clients/exports.
 The +33 % base64 overhead only matters if images become large/numerous — at which point the answer
-is the PRD 097 multipart upload endpoint (binary never rides a GraphQL string), not a column retype. XML = `ArtifactWriter`/`ArtifactReader` (cf. `ImportExportWriter`):
+is the [PRD 097](../097-event-html-templates-mustache.md) multipart upload endpoint (binary never rides a GraphQL string), not a column retype. XML = `ArtifactWriter`/`ArtifactReader` (cf. `ImportExportWriter`):
 section `<rapla:artifacts>` written by a `RaplaMainWriter.printArtifacts()` (cf.
 `printImportExport()`), read via `localnameTable.put("artifacts", ...)` in `RaplaMainReader` +
 `IOContext` registration; small fields as attributes, `body`/`metadata` as `printEncode`d child
@@ -134,7 +134,7 @@ to be discarded; the cache was two-tier but the SQL read behind it was not): rea
 **demand-driven**, process-local, 10 s TTL, invalidated locally on every write.
 - **`find(kind, name)`** — the hot path (view execution, template render) — is a **point read on
   the natural-key PK** (`WHERE ID = ?`), cached per entry when the body is ≤ 1 MiB; larger bodies
-  are deliberately uncached and read-through per use (PRD 097's serving endpoint adds JDBC
+  are deliberately uncached and read-through per use ([PRD 097](../097-event-html-templates-mustache.md)'s serving endpoint adds JDBC
   streaming + ETag/304 for those). 500 users requesting the same template = one point query per
   10 s per pod.
 - **`list(kind)`** — the rare path (catalog/admin listings) — is **metadata-only**: the SQL
@@ -157,7 +157,7 @@ view document — keyed by body content hash (self-invalidating, §16-safe pure 
 One generic `ArtifactCatalogService` (CRUD + visibility + per-kind validation hook) replaces the
 preferences `loadStored()`/`persist()` in `ViewCatalogService`; view-specific logic (GraphQL parse +
 schema validation, `@view` title extraction, BUILTIN list) stays in `ViewCatalogService`, now
-delegating storage. PRD 097's `DocumentCatalogService` becomes a thin kind=TEMPLATE consumer.
+delegating storage. [PRD 097](../097-event-html-templates-mustache.md)'s `DocumentCatalogService` becomes a thin kind=TEMPLATE consumer.
 
 ### No migration
 
@@ -181,15 +181,15 @@ entry is ignored.
 ### In scope
 - `StoredArtifact` entity + full storage wiring (XML, SQL, update history, client exclusion).
 - Generic `ArtifactCatalogService`; `ViewCatalogService` switched onto it.
-- Kind registry open for PRD 097 (TEMPLATE, CSS, PARTIAL).
+- Kind registry open for [PRD 097](../097-event-html-templates-mustache.md) (TEMPLATE, CSS, PARTIAL).
 
 ### Out of scope
 - Migration of existing preferences-stored views (D2).
-- PRD 077 saved calendar views (`CalendarModelConfiguration` in **user** preferences) — per-user
+- [PRD 077](../077-calendar-model-graphql.md) saved calendar views (`CalendarModelConfiguration` in **user** preferences) — per-user
   UI state, correctly placed; not an admin-authored server artifact.
 - Artifact version history / audit trail beyond lastChanged+lastChangedBy.
 - SPA management UI changes beyond re-pointing the existing view CRUD (no new editor surfaces).
-- GraphQL schema for artifact CRUD beyond what PRD 074 already exposes for views.
+- GraphQL schema for artifact CRUD beyond what [PRD 074](../074-graphql-declarative-views.md) already exposes for views.
 
 ## Plan
 
@@ -223,7 +223,9 @@ entry is ignored.
 - **PRD054 drift-check exclusion:** artifacts never appear in the history replay, so
   `DBOperator.dispatch`'s post-save drift warning skips `StoredArtifact` ids.
 - **`mimeType` guard for kind=IMAGE is NOT yet implemented** — no image consumer exists yet; add it
-  in the same change that introduces the first IMAGE writer/serving endpoint (PRD 097 Phase 4+).
+  in the same change that introduces the first IMAGE writer/serving endpoint ([PRD 097](../097-event-html-templates-mustache.md) — whichever
+  phase first lets a template reference an uploaded image; don't cite a phase number, 097's plan was
+  re-cut 2026-07-09).
 
 ### Implementation findings (pull-based read redesign, 2026-07-09)
 - Operator API grew two read methods (defaults on `CachableStorageOperator` delegate to the full
@@ -242,8 +244,8 @@ entry is ignored.
   `StoredArtifactDbRoundTripTest` 4 (+ point read & projection on HSQLDB), file round-trip /
   client exclusion / `ViewCatalogControllerTest` unchanged green.
 
-### Phase 3 — Hand-off to PRD 097
-- [ ] PRD 097 Phase 1 re-pointed: `DocumentTemplate` = kind=TEMPLATE artifact, no new
+### Phase 3 — Hand-off to [PRD 097](../097-event-html-templates-mustache.md)
+- [ ] [PRD 097](../097-event-html-templates-mustache.md) Phase 1 re-pointed: `DocumentTemplate` = kind=TEMPLATE artifact, no new
       preferences key. (Work tracked there.)
 
 ## Tests
@@ -296,7 +298,7 @@ entry is ignored.
     does not exist, and the `ExternalSyncEntity` precedent we mirror uses caller-composed
     natural-key ids too (`NotificationStorage.setId(raplaId)`, Exchange's derived string —
     FOREIGN_ID is not store-generated). Fits because the side channel has NO inbound entity
-    references and PRD 097's `viewName` reference is admin-maintained config, warnable at rename.
+    references and [PRD 097](../097-event-html-templates-mustache.md)'s `viewName` reference is admin-maintained config, warnable at rename.
     Costs: rename resets identity/audit (`CREATED_AT`, change history); any future by-id
     addressing sticks to the name.
   - **Pole B — surrogate id + business key beside it.** Store-generated `ID` PRIMARY KEY,
@@ -326,7 +328,7 @@ entry is ignored.
     above stays as the documented step-up path.
 - **OQ3 — name uniqueness scope.** *Resolution:* **resolved 2026-07-08 — unique per
   `(kind, owner)`.** With owner always null (D7) this is per-kind uniqueness today (a view and a
-  template may share a name; PRD 097's `DocumentTemplate.viewName` always means kind=VIEW), and a
+  template may share a name; [PRD 097](../097-event-html-templates-mustache.md)'s `DocumentTemplate.viewName` always means kind=VIEW), and a
   later user scope needs no key migration.
 
 ## Decisions locked
@@ -370,7 +372,7 @@ Pre-designed extension (NOT built): per-kind delegation — views are structural
 delegate (they execute as the *caller*, §12-scoped at the resolvers; worst case is an expensive
 query, bounded by DEPTH_CAP), while templates/CSS/images render into other users' browsers
 (stored-XSS/CSS-exfiltration surface), so presentation kinds would stay admin-only even then.
-Corollary for PRD 097: the D6 stripping + CSP + `nosniff` are **unconditional from day one**, never
+Corollary for [PRD 097](../097-event-html-templates-mustache.md): the D6 stripping + CSP + `nosniff` are **unconditional from day one**, never
 keyed on author trust — so loosening the write rule never changes the security posture (resolves
 097 OQ6 to "no admin raw-JS exception").
 - *Rejected — group-admin (`canAdminUsers`) writes across all kinds:* would silently promote
@@ -382,11 +384,11 @@ keyed on author trust — so loosening the write rule never changes the security
 Phase 1 writes only null (= application-scoped). Uniqueness `(kind, owner, name)` (OQ3); catalog
 reads filter `owner == null` explicitly so future owned rows can't leak into the application
 catalog. Being a real referenced entity also means user deletion runs through standard store
-dependency handling — no orphaned-JSON problem (cf. PRD 089's no-propagation scar). NOT built now:
+dependency handling — no orphaned-JSON problem (cf. [PRD 089](../089-server-side-recents-favorites.md)'s no-propagation scar). NOT built now:
 any user-scope read path, owned-artifact visibility semantics, quotas, or UI.
 
-**D5 — Sequencing: lands before PRD 097 Phase 1, coordinated with storage modernization
-(PRDs 082–087).** PRD 097 templates should not ship on a storage mechanism scheduled for
-replacement. The entity wiring mirrors today's `ExternalSyncEntity` shape; if PRD 082+ reshapes the
+**D5 — Sequencing: lands before [PRD 097](../097-event-html-templates-mustache.md) Phase 1, coordinated with storage modernization
+([PRDs 082](../082-storage-memory-model.md)–087).** [PRD 097](../097-event-html-templates-mustache.md) templates should not ship on a storage mechanism scheduled for
+replacement. The entity wiring mirrors today's `ExternalSyncEntity` shape; if [PRD 082](../082-storage-memory-model.md)+ reshapes the
 storage foundation first, the artifact store follows that shape instead — check 082–087 status
 before starting Phase 1.

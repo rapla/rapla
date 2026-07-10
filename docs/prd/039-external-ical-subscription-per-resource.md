@@ -36,19 +36,19 @@ The existing `org.rapla.plugin.ical.ICalImport` (`POST /api/ical/import`) is **a
 - iCal4j 4.2.0 parses; recurring `VEVENT`s expanded within lookahead window (default 365 days forward + 30 days back); `VAVAILABILITY` (RFC 7953) parsed as `AvailabilityWindow` records.
 - Parsed busy events stored as `ExternalAppointment` — read-only, server-managed. Carries `originStatus` (`FOREIGN` | `RAPLA_ORIGIN_CONFIRMED` | `RAPLA_ORIGIN_PROBABLE_EXACT` | `RAPLA_ORIGIN_PROBABLE_FUZZY`) from loopback filter.
 - Parsed availability windows stored as `AvailabilityWindow` — also read-only.
-- **Rapla-origin loopback filter**: at parse time every `ExternalAppointment` matched against PRD 038's `RaplaExportedEvent` to identify rapla's own writes. Rapla-origin events are **excluded from conflict detection**. See dedicated section below.
+- **Rapla-origin loopback filter**: at parse time every `ExternalAppointment` matched against [PRD 038](038-graph-calendar-sync.md)'s `RaplaExportedEvent` to identify rapla's own writes. Rapla-origin events are **excluded from conflict detection**. See dedicated section below.
 - Calendar view: `ExternalAppointment` renders as visually-distinct busy blocks (e.g. diagonal-hatched, no title for non-privileged). Existing `RaplaBuilder` extension handles rendering.
-- `AllocationConflictModel` (PRD 023) extended via a single **constraint projection**: `ExternalAppointment` rows + *complement* of `AvailabilityWindow` rows project into unified "constrained time" set per allocatable. Existing conflict path treats them like any other conflicting reservation. **No new severity enum.**
+- `AllocationConflictModel` ([PRD 023](023-presenter-view-extraction.md)) extended via a single **constraint projection**: `ExternalAppointment` rows + *complement* of `AvailabilityWindow` rows project into unified "constrained time" set per allocatable. Existing conflict path treats them like any other conflicting reservation. **No new severity enum.**
 - Admin UI: subscription management in existing allocatable edit panel (Swing `AllocatableEditUI`, equivalent Angular). Add/remove/test.
 - User self-service: resource owner (Person linked to the allocatable via `ownerUser`) manages subscriptions for their *own* resource without admin permission.
-- **Owner-accessible subscription health.** Owner sees last fetch, last error, event count, refresh interval, `originStatus` breakdown — through PRD 026 allocatable detail page (and Swing equivalent). Same data as admin status page (Phase 5), scoped to owned allocatables. Cross-allocatable/deployment-wide health stays admin-only.
+- **Owner-accessible subscription health.** Owner sees last fetch, last error, event count, refresh interval, `originStatus` breakdown — through [PRD 026](026-angular-frontend.md) allocatable detail page (and Swing equivalent). Same data as admin status page (Phase 5), scoped to owned allocatables. Cross-allocatable/deployment-wide health stays admin-only.
 - REST endpoints under `/api/external-calendars/*` (per AGENTS.md §15): `GET ?resource={id}`, `POST`, `PUT /{id}`, `DELETE /{id}`, `POST /{id}/refresh`, `GET /{id}/health`. All admin OR owner.
 - iCal4j strict: no external entity resolution, no nested URLs. Hard cap feed size (10 MB) and event count (5000 per fetch).
 - Privacy invariants — see dedicated section below.
-- **Shared infrastructure for future iCal-import rewrite.** The iCal parsing surface — iCal4j strict-mode, size/event caps, `BUSYSTATUS`/`TRANSP` filtering, recurrence expansion, UTC normalisation, parse-error reporting — built as standalone `IcalFeedParser` in `rapla-core`. Consumed by PRD 042 (Mode 1 + 2). Subscription-specific concerns (loopback filter, privacy projection, per-allocatable storage) stay in the fetcher.
-- **Relationship to PRD 042's two modes** (full comparison in PRD 042 §"Three-way comparison"): this PRD produces **sidecar entities** visible only in conflict detection; PRD 042 produces **Reservations** appearing everywhere. PRD 039 is right for *availability constraints on a person* (personal calendars); PRD 042 is right for *the schedule itself* (administrative calendars). Axis: "is this event rapla business, or background information that affects my planning?"
+- **Shared infrastructure for future iCal-import rewrite.** The iCal parsing surface — iCal4j strict-mode, size/event caps, `BUSYSTATUS`/`TRANSP` filtering, recurrence expansion, UTC normalisation, parse-error reporting — built as standalone `IcalFeedParser` in `rapla-core`. Consumed by [PRD 042](042-ical-import-modes.md) (Mode 1 + 2). Subscription-specific concerns (loopback filter, privacy projection, per-allocatable storage) stay in the fetcher.
+- **Relationship to [PRD 042](042-ical-import-modes.md)'s two modes** (full comparison in [PRD 042](042-ical-import-modes.md) §"Three-way comparison"): this PRD produces **sidecar entities** visible only in conflict detection; [PRD 042](042-ical-import-modes.md) produces **Reservations** appearing everywhere. PRD 039 is right for *availability constraints on a person* (personal calendars); [PRD 042](042-ical-import-modes.md) is right for *the schedule itself* (administrative calendars). Axis: "is this event rapla business, or background information that affects my planning?"
 
-**Out of scope:** two-way sync (PRD 038); auth for external feeds (v1 supports only public/secret-URL feeds; full OAuth belongs in PRD 038's territory); CalDAV; promoting external events to rapla reservations (`ICalImport` does this for one-shot); per-user subscriptions (subscriptions belong to *resources*); URL-level fetch dedup (Phase 4); historic backfill (use `ICalImport`).
+**Out of scope:** two-way sync ([PRD 038](038-graph-calendar-sync.md)); auth for external feeds (v1 supports only public/secret-URL feeds; full OAuth belongs in [PRD 038](038-graph-calendar-sync.md)'s territory); CalDAV; promoting external events to rapla reservations (`ICalImport` does this for one-shot); per-user subscriptions (subscriptions belong to *resources*); URL-level fetch dedup (Phase 4); historic backfill (use `ICalImport`).
 
 ## Interpretation modes — busy vs availability
 
@@ -84,11 +84,11 @@ External conflicts inherit rapla's existing severity model: advisory by default,
 
 ## Rapla-origin loopback filter
 
-When customer configures both **PRD 038** (rapla writes bookings into a mailbox via Graph/EWS) AND a PRD 039 subscription on that mailbox's published iCal URL, rapla's own writes loop back and would naively appear as external constraints — phantom conflicts where rapla conflicts with itself. The filter identifies these and excludes them.
+When customer configures both **[PRD 038](038-graph-calendar-sync.md)** (rapla writes bookings into a mailbox via Graph/EWS) AND a PRD 039 subscription on that mailbox's published iCal URL, rapla's own writes loop back and would naively appear as external constraints — phantom conflicts where rapla conflicts with itself. The filter identifies these and excludes them.
 
-Opt-in per subscription via `loopbackTargetMailbox`: if set to a mailbox address `M`, fetcher matches events against PRD 038's `RaplaExportedEvent` rows where `targetMailbox = M`. If unset (default), subscription is treated as fully foreign.
+Opt-in per subscription via `loopbackTargetMailbox`: if set to a mailbox address `M`, fetcher matches events against [PRD 038](038-graph-calendar-sync.md)'s `RaplaExportedEvent` rows where `targetMailbox = M`. If unset (default), subscription is treated as fully foreign.
 
-Mailbox-keyed (not user-keyed) because PRD 038's writes target a *mailbox* (the value `SynchronisationManager.getMailbox(Allocatable)` returns), not the rapla planner who triggered the write.
+Mailbox-keyed (not user-keyed) because [PRD 038](038-graph-calendar-sync.md)'s writes target a *mailbox* (the value `SynchronisationManager.getMailbox(Allocatable)` returns), not the rapla planner who triggered the write.
 
 ### Three-pass row-consumption algorithm
 
@@ -114,7 +114,7 @@ Consumption also makes Pass 3 self-limiting. Pass 3 only fires when (a) Pass 1 f
 
 ### Why three tiers, not just UID
 
-PRD 038's Phase 1 spike will quantify it, but Microsoft's published-iCal pipeline *may* strip/synthesise the `UID:` at lower publish-detail levels — and at "Availability only" (the privacy default), UID is plausibly anonymized per-fetch. The time-window tier rescues those cases.
+[PRD 038](038-graph-calendar-sync.md)'s Phase 1 spike will quantify it, but Microsoft's published-iCal pipeline *may* strip/synthesise the `UID:` at lower publish-detail levels — and at "Availability only" (the privacy default), UID is plausibly anonymized per-fetch. The time-window tier rescues those cases.
 
 **Tier 2 is guaranteed to have data to match against** — independent of spike outcome — because:
 
@@ -127,11 +127,11 @@ Worst case at "Availability only" is "Tier 1 fails, Tier 2 still works" — neve
 
 - **User manually moved a rapla-written event in Outlook** (e.g. 14:00–16:00 → 14:30–16:30). Tier 1 fails (UID rewrite possible). Tier 2 falls outside tolerance → `FOREIGN`. Planner sees phantom conflict at 14:30–16:30. **Correct** — user diverged their copy; rapla can't silently absorb. Surface "drifted exported event" status so user notices.
 
-- **Reservation deleted in rapla, subscription cache hasn't caught up.** PRD 038 marks `RaplaExportedEvent` row with `deletedAt = now()` but keeps it for tombstone window (default `2 × max(refreshIntervalMinutes across the user's subscriptions)` or 2 hours, whichever is greater). Filter still matches tombstoned rows during the window. After expiry, hard-delete; if iCal feed is still stuck, the event becomes `FOREIGN` and triggers a real conflict — staleness is bigger than refresh interval and the conflict is informative.
+- **Reservation deleted in rapla, subscription cache hasn't caught up.** [PRD 038](038-graph-calendar-sync.md) marks `RaplaExportedEvent` row with `deletedAt = now()` but keeps it for tombstone window (default `2 × max(refreshIntervalMinutes across the user's subscriptions)` or 2 hours, whichever is greater). Filter still matches tombstoned rows during the window. After expiry, hard-delete; if iCal feed is still stuck, the event becomes `FOREIGN` and triggers a real conflict — staleness is bigger than refresh interval and the conflict is informative.
 
 - **Real personal event coincidentally at the same time as a rapla export to the same calendar.** Handled by row consumption — rapla-owned VEVENT claims its row in Pass 1; personal event has no unconsumed row → `FOREIGN` → surfaces correctly. Planner sees both conflicts at that time.
 
-- **No PRD 038 export history (`RaplaExportedEvent` empty for U)**: every event resolves to `FOREIGN`. Filter dormant.
+- **No [PRD 038](038-graph-calendar-sync.md) export history (`RaplaExportedEvent` empty for U)**: every event resolves to `FOREIGN`. Filter dormant.
 
 - **Subscription points at a calendar rapla DOESN'T write to.** User leaves `loopbackTargetMailbox` unset; filter never runs.
 
@@ -158,7 +158,7 @@ Highest-stakes part of the PRD. ICS feeds typically contain private titles — "
 
 1. **API output filter**: `ExternalCalendarController` runs a `BusyOnlyProjection` stripping title/description/location/URL when requester is not owner/admin and visibility is `BUSY_ONLY`. Full record never leaves the server unsanitised.
 2. **Existence check inheritance** (AGENTS.md §12): non-readable resource's subscriptions and events must be indistinguishable from "resource doesn't exist". Standard reflexive 404 pattern.
-3. **Calendar rendering on the server (PRD 030 SSR)**: HTML/SVG for non-owner viewers must not include external event title in DOM, alt-text, ARIA, tooltips, or print output. Renderer takes the `BusyOnlyProjection`.
+3. **Calendar rendering on the server ([PRD 030](030-server-side-view-rendering.md) SSR)**: HTML/SVG for non-owner viewers must not include external event title in DOM, alt-text, ARIA, tooltips, or print output. Renderer takes the `BusyOnlyProjection`.
 4. **Audit logging**: log subscription fetch URL + event count, but **never event titles or descriptions** at any level. `AuditLogPrivacyTest` grep-tests this.
 5. **Tier-3 leak test** (AGENTS.md §12 mandatory): non-admin user, mixed visible/hidden/non-existent resource ids, assert response body byte-identical to visible-only subset.
 
@@ -166,10 +166,10 @@ Highest-stakes part of the PRD. ICS feeds typically contain private titles — "
 
 PRD 039 is **both consumer and producer** within the iCal/Exchange family:
 
-- **Consumes** `RaplaExportedEvent` from **PRD 038** for the loopback filter. Soft dependency: filter degrades cleanly to "everything is `FOREIGN`" when missing. PRD 039 can ship before PRD 038.
-- **Produces** `IcalFeedParser` as shared infrastructure. Consumed by **PRD 042** (both modes) for all iCal parsing concerns. PRD 042 cannot reasonably ship without it; deliver alongside Phase 1.
+- **Consumes** `RaplaExportedEvent` from **[PRD 038](038-graph-calendar-sync.md)** for the loopback filter. Soft dependency: filter degrades cleanly to "everything is `FOREIGN`" when missing. PRD 039 can ship before [PRD 038](038-graph-calendar-sync.md).
+- **Produces** `IcalFeedParser` as shared infrastructure. Consumed by **[PRD 042](042-ical-import-modes.md)** (both modes) for all iCal parsing concerns. [PRD 042](042-ical-import-modes.md) cannot reasonably ship without it; deliver alongside Phase 1.
 
-**Recommended order**: PRD 039 first (delivers `IcalFeedParser` + full subscription functionality), then PRD 038 (upgrades loopback filter from "all FOREIGN" to full three-pass), then PRD 042. PRD 038 can also slot before PRD 039 — both directions work.
+**Recommended order**: PRD 039 first (delivers `IcalFeedParser` + full subscription functionality), then [PRD 038](038-graph-calendar-sync.md) (upgrades loopback filter from "all FOREIGN" to full three-pass), then [PRD 042](042-ical-import-modes.md). [PRD 038](038-graph-calendar-sync.md) can also slot before PRD 039 — both directions work.
 
 ## Plan
 
@@ -194,7 +194,7 @@ PRD 039 is **both consumer and producer** within the iCal/Exchange family:
 
 Two parsing paths collapse to **one constraint projection**. Conflict model never sees two flavours — it sees a single "constrained time" interval set per allocatable.
 
-1. Extend `AllocationConflictModel` (PRD 023) with `ExternalConstraintProvider` that, for allocatable + time window `[T0, T1]`, returns union of:
+1. Extend `AllocationConflictModel` ([PRD 023](023-presenter-view-extraction.md)) with `ExternalConstraintProvider` that, for allocatable + time window `[T0, T1]`, returns union of:
    - All `ExternalAppointment` rows overlapping `[T0, T1]` **with `originStatus = FOREIGN`** (rapla-origin skipped — loopback filter at work). Indexed `(allocatableId, start, end, originStatus)` makes the filter free.
    - For each subscription with `interpretationMode IN (AVAILABILITY_TIMES, MIXED)` and at least one `AvailabilityWindow` row touching `[T0, T1]`: the *complement* of that subscription's `AvailabilityWindow` rows within `[T0, T1]`. Sub-second interval operation on small set.
 2. Conflict-check path treats resulting intervals identically to a conflicting reservation — same severity, same suppress/ignore, same permission. **No** new conflict-kind enum; report tags external constraints with `originSubscriptionId` + human-readable origin string ("External calendar: Office hours") for drill-down only.
@@ -204,7 +204,7 @@ Two parsing paths collapse to **one constraint projection**. Conflict model neve
 ### Phase 3 — Subscription management UI
 
 1. Swing: extend `AllocatableEditUI` with "External calendars" tab — subscriptions, add/edit/delete, "Test fetch now" surfacing parse errors. Default `BUSY_ONLY` highlighted as recommended.
-2. Angular (PRD 026): add section to allocatable detail page (`rapla-angular/src/app/allocatable/`) reusing OpenAPI codegen against `/api/external-calendars/*`.
+2. Angular ([PRD 026](026-angular-frontend.md)): add section to allocatable detail page (`rapla-angular/src/app/allocatable/`) reusing OpenAPI codegen against `/api/external-calendars/*`.
 3. Owner-self-service: current user linked to resource via `ownerUser` → permission passes without admin role.
 4. **Owner-accessible health panel** (same UI tab, both Swing + Angular): per subscription, show last fetch, last error, parsed event count, refresh interval, and — when `loopbackTargetMailbox` is set — `originStatus` breakdown (count of `FOREIGN` / `RAPLA_ORIGIN_*` over latest fetch). "Test fetch now" writes into same panel. New endpoint `GET /api/external-calendars/{id}/health` returns this data; same auth rule (admin OR owner).
 
@@ -213,7 +213,7 @@ Two parsing paths collapse to **one constraint projection**. Conflict model neve
 1. `BusyOnlyProjection` as server-side projection at every controller emitting `ExternalAppointment`. Unit tests cover full-detail → busy-only round-trip.
 2. `ExternalCalendarLeakTest` — AGENTS.md §12 mandatory tier-3 MockMvc. Non-admin user, mixed visible/hidden resources, mixed visibilities. Asserts byte-identical responses for visible-only subset and (separately) all-non-existent ids.
 3. `AuditLogPrivacyTest` — grep-style failing CI if any log statement in `org.rapla.plugin.externalical.*` references `ExternalAppointment.summary` or `.description`.
-4. Calendar SSR (PRD 030) integration test: render calendar view as non-owner with external events, parse HTML/SVG, assert no event titles anywhere.
+4. Calendar SSR ([PRD 030](030-server-side-view-rendering.md)) integration test: render calendar view as non-owner with external events, parse HTML/SVG, assert no event titles anywhere.
 
 ### Phase 5 — Operations & docs
 
@@ -285,7 +285,7 @@ Per AGENTS.md §10 pyramid.
 - **URL-level fetch caching when multiple resources share a feed.** Deferred to Phase 4.
 - **Real-world `VAVAILABILITY` emitter coverage.** RFC 7953 supported by Apple Calendar / FastMail / Calendly (since 2024) / Cyrus IMAP; Google and Outlook do **not** emit it (as of May 2026). Realistic Dozent scenario is the `VEVENT`-as-availability sub-case. *Resolution: ship both code paths in v1; emphasise VEVENT path in docs.*
 - **Surfacing origin of external constraint in conflict UI.** v1 displays origin as plain text in conflict detail; future could surface last-fetched timestamp inline.
-- **Loopback fuzzy-match tolerance window.** Default ±5 minutes. Row-consumption bounds false-positive blast radius regardless. Open to adjustment after PRD 038's spike measures real drift.
+- **Loopback fuzzy-match tolerance window.** Default ±5 minutes. Row-consumption bounds false-positive blast radius regardless. Open to adjustment after [PRD 038](038-graph-calendar-sync.md)'s spike measures real drift.
 - **Mailbox switched from EWS to Graph during hybrid migration?** Loopback looks up `RaplaExportedEvent` by `targetMailbox` agnostic of `backendType` — pre-cutover rows keep working until underlying reservations deleted and age out via tombstone.
 
 ## References

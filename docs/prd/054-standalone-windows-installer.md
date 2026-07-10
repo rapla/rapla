@@ -145,7 +145,7 @@ No tier-7 browser e2e for standalone in v1 — adds CI complexity without catchi
 
 ## Open Questions
 
-1. **Where does `rapla-standalone/` live?** Sibling to `rapla-angular/` (outside the Maven reactor) — it's not Java, not Maven-built, has its own toolchain (Rust + Tauri CLI). Follow PRD 026 precedent.
+1. **Where does `rapla-standalone/` live?** Sibling to `rapla-angular/` (outside the Maven reactor) — it's not Java, not Maven-built, has its own toolchain (Rust + Tauri CLI). Follow [PRD 026](026-angular-frontend.md) precedent.
 
 2. **Signing on CI vs maintainer's Windows machine.** v1 is "maintainer builds + signs locally on Windows with YubiKey plugged in." If release cadence picks up (>monthly), add a GH Actions windows-latest job that signs via SSL.com eSigner cloud (no physical YubiKey in CI). For infrequent trial-install releases, manual is fine.
 

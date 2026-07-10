@@ -98,16 +98,18 @@ describe('ResourceSelectionComponent', () => {
     const first = (f.nativeElement as HTMLElement).querySelector('.item') as HTMLElement;
     first.click();
     await f.whenStable();
-    expect(filter.entries()).toEqual([{ id: 'u1', kind: 'user', label: 'Burns Monty', color: undefined }]);
+    expect(filter.entries()).toEqual([
+      { id: 'u1', kind: 'user', label: 'Burns Monty', color: undefined },
+    ]);
   });
 
   it('toggling the star pins to Favoriten WITHOUT stepping the row', async () => {
     resources.pushRecent({ id: 'C348', label: 'C348' });
     const f = TestBed.createComponent(ResourceSelectionComponent);
     await f.whenStable();
-    (f.nativeElement as HTMLElement).querySelector('.fav')!.dispatchEvent(
-      new MouseEvent('click', { bubbles: true }),
-    );
+    (f.nativeElement as HTMLElement)
+      .querySelector('.fav')!
+      .dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await f.whenStable();
     expect(resources.isFavorite('C348')).toBe(true);
     expect(resources.activeId()).toBeNull(); // star did not step
@@ -151,7 +153,11 @@ describe('ResourceSelectionComponent', () => {
       Array.from(f.nativeElement.querySelectorAll<HTMLElement>('.item'));
     const click = (el: HTMLElement, init: MouseEventInit = {}) =>
       el.dispatchEvent(new MouseEvent('click', { bubbles: true, ...init }));
-    const keydown = (f: { nativeElement: HTMLElement }, key: string, init: KeyboardEventInit = {}) =>
+    const keydown = (
+      f: { nativeElement: HTMLElement },
+      key: string,
+      init: KeyboardEventInit = {},
+    ) =>
       (f.nativeElement.querySelector('.stepper') as HTMLElement).dispatchEvent(
         new KeyboardEvent('keydown', { key, bubbles: true, ...init }),
       );
@@ -246,7 +252,9 @@ describe('ResourceSelectionComponent', () => {
 
     (el.querySelector('.act') as HTMLButtonElement).click();
     await f.whenStable();
-    const menuItems = Array.from(document.querySelectorAll<HTMLButtonElement>('.mat-mdc-menu-item'));
+    const menuItems = Array.from(
+      document.querySelectorAll<HTMLButtonElement>('.mat-mdc-menu-item'),
+    );
     expect(menuItems.map((m) => m.textContent?.trim())).toEqual(['Bearbeiten', 'Anzeigen']);
 
     menuItems[0].click();

@@ -20,9 +20,7 @@ export const routes: Routes = [
     pathMatch: 'full',
     canActivate: [authGuard],
     loadComponent: () =>
-      import('./views/default-view-redirect.component').then(
-        (m) => m.DefaultViewRedirectComponent,
-      ),
+      import('./views/default-view-redirect.component').then((m) => m.DefaultViewRedirectComponent),
   },
   {
     path: 'views/:viewName',
@@ -54,8 +52,6 @@ export const routes: Routes = [
     path: '**',
     canActivate: [authGuard],
     loadComponent: () =>
-      import('./views/default-view-redirect.component').then(
-        (m) => m.DefaultViewRedirectComponent,
-      ),
+      import('./views/default-view-redirect.component').then((m) => m.DefaultViewRedirectComponent),
   },
 ];

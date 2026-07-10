@@ -167,7 +167,7 @@ Per single store on a graph of N reservations across K allocatables:
 
 Class: [`ConflictPerformanceTest`](../rapla-server/src/test/java/org/rapla/storage/impl/server/ConflictPerformanceTest.java),
 tagged `@Tag("perf")`. **Excluded from the default test lane** (per
-PRD 017 BOM config: `<test.excludedGroups>db,e2e,perf</test.excludedGroups>`).
+[PRD 017](prd/017-test-coverage-strategy.md) BOM config: `<test.excludedGroups>db,e2e,perf</test.excludedGroups>`).
 Run on demand only.
 
 ### Running it

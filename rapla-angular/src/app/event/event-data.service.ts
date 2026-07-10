@@ -43,7 +43,10 @@ interface ShellWire {
       allDay: boolean;
       repeating: RepeatingRule | null;
     }[];
-    allocations: { allocatable: { id: string; name: string | null }; appointmentIds: string[] | null }[];
+    allocations: {
+      allocatable: { id: string; name: string | null };
+      appointmentIds: string[] | null;
+    }[];
   } | null;
 }
 
@@ -63,7 +66,6 @@ const SHELL_QUERY = `
       allocations { allocatable { id name } appointmentIds }
     }
   }`;
-
 
 @Injectable({ providedIn: 'root' })
 export class EventDataService {

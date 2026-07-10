@@ -1,7 +1,7 @@
 # PRD 082 — Storage memory model: foundation (read-model architecture, engine, scope)
 
-**Status:** draft — 2026-06-22 (restructured 2026-06-24 into the foundation; index implementations split to PRDs 083/085/086/087)
-**Related:** PRD 035 (GraphQL foundations — per-field perf hot-spots), PRD 066 (allocatable scope union on ReservationFilter), PRD 079/080 (grouped aggregates / typed-entity stats — the `appointmentBlockStats` fan-out), PRD 081 (omnibox multisearch), PRD 067 (server operator split), PRD 083 (user change-subscription — consumes Workstream B), PRD 084 (H2 persistence engine), PRD 085 (search & name indexing — the name-search split out of Workstream A)
+**Status:** draft — 2026-06-22 (restructured 2026-06-24 into the foundation; index implementations split to PRDs [083](083-user-change-subscription.md)/[085](085-search-name-indexing.md)/[086](086-appointment-block-index.md)/[087](087-classification-type-indices.md))
+**Related:** [PRD 035](done/035-graphql-foundations.md) (GraphQL foundations — per-field perf hot-spots), [PRD 066](066-graphql-reservation-allocatable-matching.md) (allocatable scope union on ReservationFilter), PRD [079](079-graphql-grouped-aggregates.md)/[080](080-typed-entity-stats.md) (grouped aggregates / typed-entity stats — the `appointmentBlockStats` fan-out), [PRD 081](081-graphql-omnibox-multisearch.md) (omnibox multisearch), [PRD 067](067-server-mutation-unification.md) (server operator split), [PRD 083](083-user-change-subscription.md) (user change-subscription — consumes Workstream B), [PRD 084](084-replace-hsqldb-with-h2.md) (H2 persistence engine), [PRD 085](085-search-name-indexing.md) (search & name indexing — the name-search split out of Workstream A)
 
 **Scope note (restructured 2026-06-24): this PRD is now the FOUNDATION.** It holds the shared
 substrate — the Bestandsaufnahme, the modernization thesis (CQRS in-memory SQL read-model), the
@@ -9,11 +9,11 @@ substrate — the Bestandsaufnahme, the modernization thesis (CQRS in-memory SQL
 drift-safety, boot rebuild, index classes), the all-in-memory scope, and the workload-shape
 measurement. The concrete index implementations were split out into their own PRDs and reference
 this foundation:
-- **PRD 086** — appointment block index (dual-API: old RemoteStorage + GraphQL).
-- **PRD 087** — classification & type indices (GraphQL-only).
-- **PRD 083 Part A** — permission-scoped read index (GraphQL-only); Part B consumes it.
-- **PRD 085** — search & name indexing (GraphQL-only).
-- **PRD 084** — HSQLDB→H2 persistence backend (orthogonal; same engine).
+- **[PRD 086](086-appointment-block-index.md)** — appointment block index (dual-API: old RemoteStorage + GraphQL).
+- **[PRD 087](087-classification-type-indices.md)** — classification & type indices (GraphQL-only).
+- **[PRD 083](083-user-change-subscription.md) Part A** — permission-scoped read index (GraphQL-only); Part B consumes it.
+- **[PRD 085](085-search-name-indexing.md)** — search & name indexing (GraphQL-only).
+- **[PRD 084](084-replace-hsqldb-with-h2.md)** — HSQLDB→H2 persistence backend (orthogonal; same engine).
 
 **Primary objective: read performance (efficient GraphQL queries).** Footprint/memory is a
 *secondary, potential* benefit — **not** the driver of this PRD. The measured pain is read latency
@@ -117,7 +117,7 @@ non-regression — before committing or deleting any legacy path.**
 
 ## Program execution plan & live status
 
-The full program spans PRDs 082/083/085/086/087 (084 orthogonal). Build order and gating decisions
+The full program spans PRDs 082/[083](083-user-change-subscription.md)/[085](085-search-name-indexing.md)/[086](086-appointment-block-index.md)/[087](087-classification-type-indices.md) (084 orthogonal). Build order and gating decisions
 (all locked 2026-06-24): test-harness backend = **FileOperator on `data.xml` copy** (086 OQ4); 087
 Class 1 lives on the **H2 read-model** (087 OQ1); **H2 confirmed** as engine (MQ7); appointment
 materialization **cap = 52** = one year weekly (086 OQ1).
@@ -144,9 +144,9 @@ Phase-0 test battery / adversarial gate review), then **stop for review**.
 | P1 | **In-memory `IntervalIndex` ×2** wired into `AppointmentMapClass` (alloc+owner); read+conflict flips served from it; expansion via `getDependentRef` | ✅ done (2026-06-24) | equivalence proven; owner path has no fallback; 304 fast-lane green |
 | P2 | **In-memory `BucketIndex` ×2** on the operator; `getAllocatables` type-bucket served from it | ✅ done (2026-06-24) | `ReadModelFlipDifferentialTest` flag-on==flag-off |
 | P3 | **Delete the H2 detour** (`ReadModel`/`Projection`/3 projections/`blockDerived*`/`shadowCompare*`/H2 dep/7 tests) | ✅ done (2026-06-24) | reactor compiles; no dangling refs |
-| P4 | `PermissionIndex` → GraphQL `canRead` boundary (all list/per-request-amortized sites) | ✅ done (2026-06-24) | measured **26.6 ms→0.0003 ms warm** (real store, non-admin, 48k allocatables). Wired behind the flag: `ClassificationGraphQLController.allocatables` (inline gate) + `AttributeDataFetcher` / `ConflictGraphQLController` / `StructuralTypeFetchers` (×3) via a single per-request `RequestCtx.canReadAllocatable` gate (readable-id set resolved once per request in `RequestContextInstrumentation`). Invalidation at the operator seam. **Single-entity gates left on `canRead`** (`allocatable(id)`, `WhereEvaluator` ref-recursion) — building the 48k set to check one id would pessimize when cold. Validation: §12 flip-equivalence MockMvc test (non-admin) + **all 82 GraphQL §12 leak tests re-run with `-Drapla.readmodel.authoritative=true` green** (monty restricted-view / idIn / where-predicate / anonymous / PRD 069 access) + flag-off suites green (no regression). |
+| P4 | `PermissionIndex` → GraphQL `canRead` boundary (all list/per-request-amortized sites) | ✅ done (2026-06-24) | measured **26.6 ms→0.0003 ms warm** (real store, non-admin, 48k allocatables). Wired behind the flag: `ClassificationGraphQLController.allocatables` (inline gate) + `AttributeDataFetcher` / `ConflictGraphQLController` / `StructuralTypeFetchers` (×3) via a single per-request `RequestCtx.canReadAllocatable` gate (readable-id set resolved once per request in `RequestContextInstrumentation`). Invalidation at the operator seam. **Single-entity gates left on `canRead`** (`allocatable(id)`, `WhereEvaluator` ref-recursion) — building the 48k set to check one id would pessimize when cold. Validation: §12 flip-equivalence MockMvc test (non-admin) + **all 82 GraphQL §12 leak tests re-run with `-Drapla.readmodel.authoritative=true` green** (monty restricted-view / idIn / where-predicate / anonymous / [PRD 069](069-graphql-resource-access-read-api.md) access) + flag-off suites green (no regression). |
 | P5 | Run in-memory perf matrix (dhbwrapla real store) | ✅ done (2026-06-24) | **18.5× faster**: legacy 14.55 ms/query → in-memory 0.79 ms/query (dense 50 allocatables, top=2433, 1-wk late window); results byte-identical. Inverse of the H2 detour (1.1–3.7× slower). |
-| P6 | **Window-first global read** (full-admin unscoped) — global singleton-key `IntervalIndex` + `reservationsInWindowGlobal` | ✅ done (2026-06-24) | one O(log N+k) lookup replaces the ~48k-allocatable loop for `isAdmin()` unscoped; filter-free (admin short-circuits canRead). Tier-1 singleton-key + tier-3 differential (window-first == resource-first) green. Merged from draft into PRD 086. |
+| P6 | **Window-first global read** (full-admin unscoped) — global singleton-key `IntervalIndex` + `reservationsInWindowGlobal` | ✅ done (2026-06-24) | one O(log N+k) lookup replaces the ~48k-allocatable loop for `isAdmin()` unscoped; filter-free (admin short-circuits canRead). Tier-1 singleton-key + tier-3 differential (window-first == resource-first) green. Merged from draft into [PRD 086](086-appointment-block-index.md). |
 | 4b-iii | Delete `appointmentMap` (irreversible end-state) | ⛔ blocked | gated on P5 win + field-clean run |
 
 Status legend: ⬜ not started · 🔄 in progress · ✅ done · ⚠️ blocked/needs decision. This table is the
@@ -161,7 +161,7 @@ Built in **the plugin-deployment repo** under `src/test/java/org/rapla/test/brut
 - `AppointmentQueryOracle` + `QueryAppointmentsDifferentialTest` — **windowing-invariance** differential
   (all-time bindings filtered by plain-Java `overlaps()` == windowed query). Chosen over a binding-
   re-derivation oracle because `getAllocatablesFor` ≠ the `appointmentMap` binding (template-alloc +
-  restriction divergence — see PRD 086 "Binding semantics").
+  restriction divergence — see [PRD 086](086-appointment-block-index.md) "Binding semantics").
 - `MutationBatteryTest` — 6 tests: create-with-conflict, delete, move-appointment, move-repeating,
   reassign-allocatable, fresh-allocatable create/use/remove; each re-asserts the invariant + conflict
   expectations through the mutation.
@@ -191,7 +191,7 @@ New package `rapla-server/.../storage/impl/server/readmodel/`:
 **Design decision (option C, agreed with user):** the foundation is entity-agnostic at the row level;
 the only place real entities appear is the concrete projections' `rows()` (Phase 2). This removed the
 hand-rolled `Entity` stub entirely — no fake rapla types in tests or production (§13). The generic
-"delete-by-entity-id + insert rows" core is the same drift-safe maintenance PRD 086/087 specify and
+"delete-by-entity-id + insert rows" core is the same drift-safe maintenance PRD [086](086-appointment-block-index.md)/[087](087-classification-type-indices.md) specify and
 Phase 0.5 proved is the hot path.
 
 ### Phase 4b-ii (2026-06-24) — appointment + conflict flips built, then MEASURED — ⚠️ do not flip
@@ -269,7 +269,7 @@ operator's `ReadModel`, so it's maintained at the same seam.
 `appointmentMap` raw result and logs drift *counts only* (§17) — but returns the authoritative result
 unchanged (zero behavioural change). The hot path is not doubled: throttled calls cost only a few
 skip-guards + a `long` compare. Read-time **dependent expansion** (`getDependent`) mirrors
-`getAppointments`'s belongs-to expansion (see the *Two implementation findings* in PRD 086).
+`getAppointments`'s belongs-to expansion (see the *Two implementation findings* in [PRD 086](086-appointment-block-index.md)).
 
 **Verification:** `AppointmentBlockProjectionTest` (equivalence: block window == `queryAppointments`,
 red→green) + `AppointmentBlockSeamTest` (boot/store/remove populate the table) green; rapla-server
@@ -323,7 +323,7 @@ bulk projection + per-mutation re-projection. H2 added to **rapla-bom** (`h2.ver
   re-INSERT) — beats the "< ~1 ms" gate by ~10×.
 - **Finding:** the benchmark first ran at **28.35 ms/mutation** because the delete-by-appointment had
   no index → full table scan. Added `ix_block_appointment ON appointment_block(appointment_id)` → 290×
-  faster. **PRD 086 schema corrected** to make that index mandatory (the maintenance key). Verdict: H2
+  faster. **[PRD 086](086-appointment-block-index.md) schema corrected** to make that index mandatory (the maintenance key). Verdict: H2
   write-path is comfortably fast enough; engine choice confirmed by measurement, not just assertion.
 
 ### Stage A findings (seam map + module placement) — locked 2026-06-24
@@ -350,7 +350,7 @@ read-model is in rapla-server. Resolution: `LocalAbstractCachableOperator` (rapl
 untouched, server adds the indexed path. Same override pattern for any core read method an index
 accelerates.
 
-**H2 is absent from the reactor** (HSQLDB 2.7.1 is current, PRD 084). Phase 1 adds
+**H2 is absent from the reactor** (HSQLDB 2.7.1 is current, [PRD 084](084-replace-hsqldb-with-h2.md)). Phase 1 adds
 `com.h2database:h2` to **rapla-bom** (version management) + **rapla-server** (compile scope) — a
 flagged POM change, surfaced before it lands.
 
@@ -449,7 +449,7 @@ levels, and a hand-rolled index only addresses one:
 | Level | rapla today | Hand-rolled index helps? |
 |---|---|---|
 | **Root resolution** (`@QueryMapping allocatables(filter:)`) | full scan (901 ms) | **yes** — this is Workstream A |
-| **Field resolution** (`@SchemaMapping` per derived field) | N+1 fan-out — **28 `@QueryMapping` + 18 `@SchemaMapping`, zero `@BatchMapping`** (no DataLoader/batching anywhere) | **no** — an index does nothing here (this is PRD 035's per-field hot-spots) |
+| **Field resolution** (`@SchemaMapping` per derived field) | N+1 fan-out — **28 `@QueryMapping` + 18 `@SchemaMapping`, zero `@BatchMapping`** (no DataLoader/batching anywhere) | **no** — an index does nothing here (this is [PRD 035](done/035-graphql-foundations.md)'s per-field hot-spots) |
 
 So even after hand-rolling every index, the `@SchemaMapping`/N+1 level stays slow → next you
 hand-roll DataLoaders, then projection, then the next index. The treadmill never ends **because
@@ -486,7 +486,7 @@ by hand on put/remove). It also fixes the level (field N+1) that no hand-rolled 
 **Decided forks for this direction** (engine choice + where the domain logic lives):
 - **Engine: H2 in-memory — LOCKED (MQ7 resolved 2026-06-24).** In-process, SQL, MVStore/MVCC
   (clean fit for the Stage-Y sync write-through), JSON column for Class-2 attributes, and a
-  built-in full-text index. It is also the engine PRD 084 consolidates the *persistence* backend
+  built-in full-text index. It is also the engine [PRD 084](084-replace-hsqldb-with-h2.md) consolidates the *persistence* backend
   onto, so the whole stack runs one embedded engine. DuckDB (columnar analytics fit) and Calcite
   (SQL-over-objects, no data movement) are noted as future levers if the analytics path
   (`appointmentBlockStats`) ever needs a columnar engine, but the default and the prototyping
@@ -646,9 +646,9 @@ The one catch keeping this from being a clean single-step win on *every* backend
 stays resident regardless. So the all-axes win is real but scoped to **Role B on DB backends**;
 `FileOperator` keeps the full-load model (acceptable — it is the dev/small-install backend).
 
-### The central query is the appointment block — moved to PRD 086
+### The central query is the appointment block — moved to [PRD 086](086-appointment-block-index.md)
 
-The slim/heavy split (the hot query needs only ids+time, not classifications) and the decoupling of the slim appointment projection from the heavy payload are the heart of the **appointment block index** — see **PRD 086**. The *Workload shape* measurement below stays here as the program-wide fact base it informs.
+The slim/heavy split (the hot query needs only ids+time, not classifications) and the decoupling of the slim appointment projection from the heavy payload are the heart of the **appointment block index** — see **[PRD 086](086-appointment-block-index.md)**. The *Workload shape* measurement below stays here as the program-wide fact base it informs.
 
 ### Workload shape: the store is overwhelmingly single-appointment (measured)
 
@@ -693,15 +693,15 @@ Net: **rapla is at its core a single-appointment store with a small recurrence a
 index should be optimized for the dated single as the overwhelming common case, with repeating as a
 small annotated (or materialized) subset.
 
-### Appointment index — moved to PRD 086
+### Appointment index — moved to [PRD 086](086-appointment-block-index.md)
 
-The flat `appointment_block` table, the `is_rule` representation decision, the index-exact slot filter, dual-API (RemoteStorage + GraphQL), conflict detection, and the migration/test strategy now live in **PRD 086 — appointment block index**.
+The flat `appointment_block` table, the `is_rule` representation decision, the index-exact slot filter, dual-API (RemoteStorage + GraphQL), conflict detection, and the migration/test strategy now live in **[PRD 086](086-appointment-block-index.md) — appointment block index**.
 
 ### Options (smallest → largest)
 
 > **Program map (2026-06-24):** these options are now realized across PRDs — option 0/the appointment
-> lever = **PRD 086**; option 1 (type-bucket) = **PRD 087** + name search = **PRD 085**; the permission
-> index = **PRD 083 Part A**; option 3 (parking) = **deferred** (all-in-memory scope). The table stays
+> lever = **[PRD 086](086-appointment-block-index.md)**; option 1 (type-bucket) = **[PRD 087](087-classification-type-indices.md)** + name search = **[PRD 085](085-search-name-indexing.md)**; the permission
+> index = **[PRD 083](083-user-change-subscription.md) Part A**; option 3 (parking) = **deferred** (all-in-memory scope). The table stays
 > as the conceptual overview the split was derived from.
 
 | # | Option | Faster | Smaller | More standard | Effort | At target (alloc ×2 / resv ×5) |
@@ -737,9 +737,9 @@ which stays resident cheaply in slim form).
    self-contained (and partly shipped, see D4) — cheapest immediate latency win for the
    catalog/search path, now partly subsumed by option 0.
 
-### Migration approach & write-path validation — moved to PRD 086
+### Migration approach & write-path validation — moved to [PRD 086](086-appointment-block-index.md)
 
-Stage X→Y (read-model beside the conflict core, then conflict onto the engine with the `appointmentMap` shadow oracle), the sync-local feed model, and the write-path benchmark are in **PRD 086**. The cross-pod poll→push deprioritization stays a foundation note (see MQ-list / transport below).
+Stage X→Y (read-model beside the conflict core, then conflict onto the engine with the `appointmentMap` shadow oracle), the sync-local feed model, and the write-path benchmark are in **[PRD 086](086-appointment-block-index.md)**. The cross-pod poll→push deprioritization stays a foundation note (see MQ-list / transport below).
 
 ### Open questions (modernization)
 
@@ -774,7 +774,7 @@ Stage X→Y (read-model beside the conflict core, then conflict onto the engine 
   parking design.
 - **MQ7** (strategic direction) — Engine choice for the CQRS read-model. *Resolution:* **H2
   in-memory — LOCKED 2026-06-24.** In-process SQL, MVStore/MVCC (fits Stage-Y sync write-through),
-  JSON column (Class-2 attributes), built-in full-text; and the same engine PRD 084 consolidates
+  JSON column (Class-2 attributes), built-in full-text; and the same engine [PRD 084](084-replace-hsqldb-with-h2.md) consolidates
   the persistence backend onto. DuckDB (columnar `appointmentBlockStats`) and Calcite (SQL over the
   live object graph, no data movement) retained only as future levers if the analytics path needs a
   columnar engine — not the default.
@@ -795,13 +795,13 @@ Stage X→Y (read-model beside the conflict core, then conflict onto the engine 
 
 ---
 
-# Workstream A (type-bucket index) — moved to PRD 087
+# Workstream A (type-bucket index) — moved to [PRD 087](087-classification-type-indices.md)
 
-The in-memory type-bucket index, the `buildStorageFilter` `typeKeyIn`/B′ pushdown, and the on-the-fly Class-2 classification-attribute indices are now **PRD 087 — classification & type indices** (GraphQL-only). The name/full-text search index is **PRD 085**.
+The in-memory type-bucket index, the `buildStorageFilter` `typeKeyIn`/B′ pushdown, and the on-the-fly Class-2 classification-attribute indices are now **[PRD 087](087-classification-type-indices.md) — classification & type indices** (GraphQL-only). The name/full-text search index is **[PRD 085](085-search-name-indexing.md)**.
 
 # Read-model architecture (technical foundation)
 
-The technical substrate the strategic direction (CQRS in-memory SQL read-model) and both workstreams sit on. Engine: **H2 in-memory** (in-process, SQL, JSON, MVCC, full-text) — **LOCKED, MQ7 resolved 2026-06-24** (same engine PRD 084 consolidates persistence onto).
+The technical substrate the strategic direction (CQRS in-memory SQL read-model) and both workstreams sit on. Engine: **H2 in-memory** (in-process, SQL, JSON, MVCC, full-text) — **LOCKED, MQ7 resolved 2026-06-24** (same engine [PRD 084](084-replace-hsqldb-with-h2.md) consolidates persistence onto).
 
 ## Data flow & roles
 
@@ -856,6 +856,6 @@ Drift = two things mutated independently that are expected to agree. The read-mo
 
 ---
 
-# Workstream B (permission-scoped read index) — moved to PRD 083
+# Workstream B (permission-scoped read index) — moved to [PRD 083](083-user-change-subscription.md)
 
-The inverted `access_grant` index (carrying the access *level*), caller-side hierarchy expansion, the stateless caller-context cache, and the §12 correctness bar are now part of **PRD 083 — permission-scoped read index + user change-subscription** (GraphQL-only; the old RemoteStorage path keeps its amortized per-session permission filtering). PRD 083 both *owns* this read index and *consumes* it for the `changesSince` subscription.
+The inverted `access_grant` index (carrying the access *level*), caller-side hierarchy expansion, the stateless caller-context cache, and the §12 correctness bar are now part of **[PRD 083](083-user-change-subscription.md) — permission-scoped read index + user change-subscription** (GraphQL-only; the old RemoteStorage path keeps its amortized per-session permission filtering). [PRD 083](083-user-change-subscription.md) both *owns* this read index and *consumes* it for the `changesSince` subscription.

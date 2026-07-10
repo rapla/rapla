@@ -26,9 +26,9 @@ Phase 2 shipped 2026-05-12:
 Landed 2026-05-13 (signout bug fixes):
 - **`/connect/logout` now clears the remember-me cookie.** Spring SAS's `OidcLogoutAuthenticationSuccessHandler` only clears HttpSession + SecurityContext by default, so the surviving `rapla-remember-me` cookie silently re-authed the next `/oauth2/authorize` ("sign out → instantly signed back in"). Fix: promote `RememberMeServices` to `@Bean`; `authorizationServerSecurityFilterChain` attaches a custom success handler whose `logoutHandler = CompositeLogoutHandler(SecurityContextLogoutHandler, rememberMeServices)`. Verified live: `Set-Cookie: rapla-remember-me=; Max-Age=0` and the persistent row is removed.
 - **`logoutUrl` in discovery flipped from `/logout` to `/connect/logout`** — both clients now use OIDC RP-initiated logout; the prior split is collapsed.
-- **Swing plumbs `id_token` through to logout.** OIDC RP-initiated logout requires `id_token_hint`; without it Spring SAS returns 404 and the cookie-clearing handler never runs. Fix: `OAuthTokens` + `RemoteConnectionInfo` gained `idToken`; `SwingOAuthLoginFlow.exchangeCodeForTokens` parses it (scope=openid already enabled); `logout()` appends `?id_token_hint=<urlencoded>` before opening the browser tab.
+- **Swing plumbs `id_token` through to logout.** OIDC RP-initiated logout requires `id_token_hint`; without it Spring SAS returns 404 and the cookie-clearing handler never runs. Fix: `OAuthTokens` + `RemoteConnectionInfo` gained `idToken`; `SwingOAuthLoginFlow.exchangeCodeForTokens` parses it (scope=openid already enabled); `logout()` appends `?id_token_hint=<urlencoded>` before opening the browser tab. **Superseded by [PRD 072](072-server-side-login-dialog.md) ("M2 broker model").** `RaplaClientServiceImpl.logout()` no longer appends `?id_token_hint=<...>` nor opens a `/connect/logout` browser tab — logout is now a best-effort `POST /oauth2/revoke` plus `prompt=login` on the next OAuth flow. The captured `idToken` is now unused on the logout path.
 
-Setup doc: `docs/authentication.md`. PRD 031 covers refresh-token mechanics; PRD 032 handles external IdP.
+Setup doc: `docs/authentication.md`. PRD 031 covers refresh-token mechanics; [PRD 032](done/032-angular-ui-library-evaluation.md) handles external IdP.
 
 **Known gotcha — server-restart invalidates id_token `sid` claims.** Spring SAS's `OidcSessionRegistry` is in-memory only. After restart the registry is empty, so pre-restart id_tokens have a `sid` no longer tracked; `/connect/logout` returns 404. Workaround: re-login. Proper fix: persistent `OidcSessionRegistry` over `RaplaFacade` system preferences (same pattern as `RaplaKeyStorage` / `RaplaTokenRepository`). Deferred — non-urgent in dev.
 
@@ -83,7 +83,7 @@ Add a second sign-in path to `LoginDialog`: a **"Sign in with browser…"** butt
   the discovery endpoint return whichever IdP the deployment configures;
   no client changes needed.
 - Storing tokens on disk. Tokens live in process memory only.
-- An OAuth-aware Web/Angular front-end (PRD 026). Different surface;
+- An OAuth-aware Web/Angular front-end ([PRD 026](026-angular-frontend.md)). Different surface;
   share the discovery endpoint when we get there.
 
 ## Architecture
@@ -240,15 +240,15 @@ Matches modern desktop OAuth UX (Slack/Zoom/GitHub Desktop/JetBrains/Teams all b
 
 #### Out of scope (Phase 2)
 
-- External IdP wiring itself (PRD 032) — Phase 2 is client UX shift.
-- Federated identity reconciliation (Keycloak `sub` → rapla UUID) — PRD 032.
+- External IdP wiring itself ([PRD 032](done/032-angular-ui-library-evaluation.md)) — Phase 2 is client UX shift.
+- Federated identity reconciliation (Keycloak `sub` → rapla UUID) — [PRD 032](done/032-angular-ui-library-evaluation.md).
 - Persistent token revocation / "log out everywhere" admin surface — future PRD.
 - API key UI from PRD 031 §6 — tracked there.
 
 ### Plan
 
 1. ✅ **Server: `/rapla/login` remember-me.** Shipped 2026-05-12 — `PersistentTokenBasedRememberMeServices` with `RaplaTokenRepository` backing (system preferences). Checkbox in `LoginPageController` HTML. TTL `rapla.auth.remember-me-days` (default 30).
-2. ⏸ **Server: `localAccountsEnabled` flag in discovery.** Not yet wired — defer until PRD 032 (external IdP) needs it; the embedded SAS path doesn't gate on this today.
+2. ✅ **Server: `localAccountsEnabled` flag in discovery.** Implemented as `rapla.oauth.local-accounts-enabled` (env `RAPLA_OAUTH_LOCAL_ACCOUNTS_ENABLED`), default `true`. When `false`, the server refuses the `grant_type=password` login (no local password path) and discovery reports the flag so clients hide the credential fields.
 3. ✅ **Client: auto-start OAuth flow on launch when enabled.** Shipped 2026-05-12 — `startLogin` probes discovery; if enabled, runs `runOauthLogin` directly and only shows the dialog for fallbacks/waiting state.
 4. ✅ **Client: OAuth retry on 401 when refresh fails.** Shipped 2026-05-12 — `MyCustomConnector.reauth` tries refresh-token first via `connectionInfo.refreshUrl`, falls through to password reauth, eventually to OAuth flow.
 5. ⏸ **Client: hide password fields by default, show "Other options" expander.** Phase 2 chose a simpler shape — the dialog is hidden entirely when OAuth is enabled (auto-fires the browser flow); a "waiting for browser sign-in" variant of the dialog replaces field-hiding. Collapsible expander deferred — revisit when `localAccountsEnabled=false` configurations land.
@@ -350,7 +350,7 @@ Replaces Phase 3's single SSO button with a **sign-in method dropdown** so Swing
 ### Scope (Phase 4) — Keycloak only
 
 - **Client only.** The server already emits a per-provider `providers[]`
-  array (PRD 036), the resource server already validates external-IdP
+  array ([PRD 036](036-external-idp-oauth-login.md)), the resource server already validates external-IdP
   JWTs by `iss` (`IssuerAwareJwtDecoder`), and the Keycloak realm's
   `rapla-app` client already lists the Swing loopback redirect URI
   (`http://127.0.0.1/login/oauth2/code/rapla`) — so no server or realm
@@ -373,13 +373,13 @@ Replaces Phase 3's single SSO button with a **sign-in method dropdown** so Swing
   needed no `SwingOAuthLoginFlow` change: it POSTs the standard
   `authorization_code` form body to whatever `tokenUrl` discovery gives, and
   the BFF already accepts that shape.
-- **Provider-aware refresh.** `RemoteConnectionInfo` gained `refreshUrl` +
-  `oauthClientId`; `runOauthLogin` stores the chosen provider's token endpoint
-  + client_id; `MyCustomConnector.refreshUsingToken` refreshes against them
-  (the BFF, for Keycloak), falling back to rapla SAS `/oauth2/token` +
-  `rapla-client` for password / rapla-SAS sessions. Closes the pre-existing
-  gap where every external-IdP Swing session silently re-logged-in on
-  access-token expiry.
+- **Provider-aware refresh.** *(Reverted by [PRD 072](072-server-side-login-dialog.md) Phase 5 — historical.)* This
+  originally routed refresh to a per-provider `refreshUrl` + `oauthClientId` on
+  `RemoteConnectionInfo`. [PRD 072](072-server-side-login-dialog.md) Phase 5 made rapla the single federating
+  Authorization Server, so both refresh paths now hardcode rapla's `/oauth2/token`
+  with `client_id=rapla-client` (`MyCustomConnector.refreshUsingToken`,
+  `ClientProxyConfig`); `refreshUrl`/`oauthClientId` are no longer read. The gap it
+  closed is now moot — every Swing login yields a rapla-issuer token.
 - **Login dialog remembers language + method.** The `TokenStore` (file /
   JNLP-`PersistenceService`) was extended from a single-token store to a
   flat key/value document — refresh token plus `language` and `loginMethod`
@@ -391,7 +391,7 @@ Replaces Phase 3's single SSO button with a **sign-in method dropdown** so Swing
 
 ### Why Keycloak first
 
-Keycloak's `providers[]` entry is directly Swing-usable: public PKCE client (no `client_secret`), `tokenUrl` is real Keycloak endpoint (no BFF), loopback redirects need only a realm redirect-URI entry. Microsoft/Google can't reuse SPA discovery — Entra rejects desktop loopback (SPA-platform), Google routes through BFF. Both need separate native/desktop OAuth client registrations; deferred until asked. Reopens what PRD 036 deferred ("Swing always uses embedded SAS") for Keycloak only.
+Keycloak's `providers[]` entry is directly Swing-usable: public PKCE client (no `client_secret`), `tokenUrl` is real Keycloak endpoint (no BFF), loopback redirects need only a realm redirect-URI entry. Microsoft/Google can't reuse SPA discovery — Entra rejects desktop loopback (SPA-platform), Google routes through BFF. Both need separate native/desktop OAuth client registrations; deferred until asked. Reopens what [PRD 036](036-external-idp-oauth-login.md) deferred ("Swing always uses embedded SAS") for Keycloak only.
 
 ### Out of scope (Phase 4)
 
@@ -420,6 +420,15 @@ Fix: `RemoteOperator.refresh(UpdateEvent)` / `refreshAll()` compute `UpdateResul
    `MyCustomConnector.refreshUsingToken()` was already doing on the RPC
    tier. Regression test: `RefreshOn401InterceptorAuthDeadTest.whenProviderRefreshUrlIsSet_thenRefreshHitsThatUrlNotRaplaSas`.
 
+   **Reverted by [PRD 072](072-server-side-login-dialog.md) Phase 5.** Per-provider refresh routing is gone:
+   both refresh paths (`RefreshOn401Interceptor.doRefresh()` and
+   `MyCustomConnector.refreshUsingToken()`) now hardcode rapla's own
+   `/oauth2/token` with `client_id=rapla-client`; they no longer read
+   `refreshUrl` / `oauthClientId`. The `whenProviderRefreshUrlIsSet...`
+   test above no longer exists — the current regression test pins the
+   opposite (refresh always hits rapla SAS regardless of stashed
+   provider URL).
+
 2. **Persist rotated refresh tokens.** Keycloak rotates the refresh
    token on each refresh by default. The interceptor updated
    `RemoteConnectionInfo` but never wrote the new token to `TokenStore`
@@ -432,7 +441,7 @@ Fix: `RemoteOperator.refresh(UpdateEvent)` / `refreshAll()` compute `UpdateResul
 3. **Fix cold-startup silent reauth wire format.** Pre-Phase-5,
    `RaplaClientServiceImpl.tryRestoreFromCachedRefreshToken()` POSTed
    `{"refreshToken":"..."}` JSON to `/api/auth/refresh` — both the
-   endpoint and the wire format had been deleted by PRD 041. Result:
+   endpoint and the wire format had been deleted by [PRD 041](041-openapi-runtime-removal.md). Result:
    every Swing cold start with a cached token 404'd and fell through to
    the login dialog, defeating the whole point of caching. Phase 5
    switches to OAuth2-standard `grant_type=refresh_token` form body
@@ -551,14 +560,14 @@ Fix: `RemoteOperator.refresh(UpdateEvent)` / `refreshAll()` compute `UpdateResul
    **CLI bootstrap change**: `SpringRaplaClient.parseConnectInfo(args)`
    used to accept `args=[username, password]`; now accepts a single
    API token JWT (`args=[jwt]`). The bootstrap workflow is to mint an
-   API key once via `POST /api/auth/api-keys` (PRD 043, via Scalar UI
+   API key once via `POST /api/auth/api-keys` ([PRD 043](043-api-keys-jwt-pat.md), via Scalar UI
    at `/scalar`), copy the returned JWT, and use
    `-Dexec.args="$RAPLA_DEV_TOKEN"`. No password handling in the
    launcher.
 
    Touchpoints (~20 files): `ConnectInfo` (slim 4-tuple), `LoginCredentials` (`password: char[]`, dropped `connectAs`), `RemoteAuthentificationService` (interface deleted), `OAuth2PasswordLogin` (new top-level in rapla-core, replaces nested impl + deleted interface), `RemoteConnectionInfo` (harmonization renames + Angular cross-reference Javadoc), `RemoteOperator.connect()` (token-only, drop auth-seam ctor param), `RemoteSessionImpl` (drop dead `?username=...&password=...` request-param branch + ctor param), `RaplaAuthentificationService` (3-arg → 2-arg `authenticate`, drop `getUserWithPassword` + `checkConnectAsRights`), `ClientFacade` / `ClientFacadeImpl` (`login(String, char[])` → `connect(ConnectInfo)`), `RaplaClientServiceImpl.startLoginInThread` (inline password→tokens; drop `" su "` parsing), `login(ConnectInfo)` (token-only + 4-tuple), `switchTo()` (admin 4-tuple + impersonation token via `NextSession`), `setImpersonation()` (new), `finishOauthLogin` + `tryRestoreFromCachedRefreshToken` (build 4-tuple), `SpringRaplaClient.parseConnectInfo()` (CLI takes JWT only), `.main()` (apply impersonation post-start), `stop()` (drop placeholder password), `NextSession` (carry impersonation separately), `ClientService.setImpersonation` (new default), `ClientConfig` / `ClientProxyConfig` / `ServerServiceConfig` (drop dead ctor params), caller renames: `hasImpersonationToken` → `isImpersonating`, `setImpersonationToken` → `setImpersonationAccessToken`, `getAccessToken` → `adminToken` at impersonation-renewal call site (`MyCustomConnector` / `ClientProxyConfig` / `ApplicationViewSwing`), `AuthorizationServerConfig` / `RaplaAuthentificationService` (bridge String↔`char[]` at request-scope boundary). Tests: `LogoutSignalTest` (switchTo signature), `SwingClientStartIntegrationTest` / `HeadlessClientNameResolutionIntegrationTest` (mint via `RefreshSessionService.issueAndPersist` + `facade.connect`), `BadLoginErrorMessageTest` (use `OAuth2PasswordLogin` directly, expect `RaplaSecurityException` carrying server body), `OAuth2PasswordLoginTest` (renamed + moved to rapla-core).
 
-   **Dual-slot impersonation correctness**: pre-Phase-5, PRD 052 Phase 2's close+recreate context model put the impersonation token in the regular `accessToken` slot of the new context, leaving `impersonationAccessToken` unused. `tryRenewImpersonation()` gated on `isImpersonating()` → always false → renewal never fired → admin kicked back to login dialog after 1h. Worse, admin's Keycloak refresh URL wasn't carried across the context boundary, so switch-back-after-expiry also failed. Phase 5 carries admin's full 4-tuple via `NextSession` and applies the impersonation token to its dedicated slot post-start. Mirrors the Angular SPA's two-slot model (`oauth.getAccessToken()` admin in `localStorage` + `AuthService.impersonationOverride` in `sessionStorage`).
+   **Dual-slot impersonation correctness**: pre-Phase-5, [PRD 052](052-client-clean-restart.md) Phase 2's close+recreate context model put the impersonation token in the regular `accessToken` slot of the new context, leaving `impersonationAccessToken` unused. `tryRenewImpersonation()` gated on `isImpersonating()` → always false → renewal never fired → admin kicked back to login dialog after 1h. Worse, admin's Keycloak refresh URL wasn't carried across the context boundary, so switch-back-after-expiry also failed. Phase 5 carries admin's full 4-tuple via `NextSession` and applies the impersonation token to its dedicated slot post-start. Mirrors the Angular SPA's two-slot model (`oauth.getAccessToken()` admin in `localStorage` + `AuthService.impersonationOverride` in `sessionStorage`).
 
    **Harmonization renames for cross-client parity**: `impersonationToken` → `impersonationAccessToken` (matches Angular `override.accessToken`), `hasImpersonationToken()` → `isImpersonating()`, added `adminToken()` alias for `getAccessToken()`. `RemoteConnectionInfo` Javadoc cross-references the Angular file.
 
@@ -610,7 +619,7 @@ in-app path. (See `logs/rapla-client.log`, 18:42:41 entry, 2026-05-25.)
    transmitted over the wire one HTTP-encode step ago. Not pursuing.
 
 4. **Dual-slot impersonation across context restart — resolved.**
-   Originally a gap: PRD 052 Phase 2's close+recreate context model
+   Originally a gap: [PRD 052](052-client-clean-restart.md) Phase 2's close+recreate context model
    put the impersonation token in the regular `accessToken` slot,
    leaving `impersonationAccessToken` unused → `tryRenewImpersonation()`
    never fired → kicked back to login dialog after 1h. Resolved by

@@ -97,7 +97,9 @@ describe('RecentsFavoritesService (PRD 089)', () => {
     const post = http.expectOne('/api/recents');
     expect(post.request.method).toBe('POST');
     expect(post.request.body).toEqual({ id: 'r5', kind: 'resource' });
-    post.flush([{ id: 'r5', kind: 'resource', label: 'Room 5 (server)', color: null, typeKey: null }]);
+    post.flush([
+      { id: 'r5', kind: 'resource', label: 'Room 5 (server)', color: null, typeKey: null },
+    ]);
     await Promise.resolve();
 
     expect(store.recents().map((x) => x.label)).toEqual(['Room 5 (server)']);
@@ -107,7 +109,9 @@ describe('RecentsFavoritesService (PRD 089)', () => {
     const store = TestBed.inject(ResourceSelectionStore);
     auth.identity.set(identity('u1'));
     TestBed.tick();
-    http.expectOne('/api/recents').flush([{ id: 'r1', kind: 'resource', label: 'R1', color: null, typeKey: null }]);
+    http
+      .expectOne('/api/recents')
+      .flush([{ id: 'r1', kind: 'resource', label: 'R1', color: null, typeKey: null }]);
     http.expectOne('/api/favorites').flush([]);
     await Promise.resolve();
     await Promise.resolve();
@@ -149,7 +153,9 @@ describe('RecentsFavoritesService (PRD 089)', () => {
     const svc = TestBed.inject(RecentsFavoritesService);
     auth.identity.set(identity('u1'));
     TestBed.tick();
-    http.expectOne('/api/recents').flush([{ id: 'r1', kind: 'resource', label: 'R1', color: null, typeKey: null }]);
+    http
+      .expectOne('/api/recents')
+      .flush([{ id: 'r1', kind: 'resource', label: 'R1', color: null, typeKey: null }]);
     http.expectOne('/api/favorites').flush([]);
     await Promise.resolve();
     await Promise.resolve();

@@ -258,7 +258,7 @@ A single shared `HttpServiceProxyFactory` with a `RestClient.Builder.requestInit
 
 **Step 1 (2026-05-06)** — `spring.http.converters.preferred-json-mapper=gson` removed from `application.yml`; Spring Boot 3.x defaults to Jackson with `spring-boot-starter-web`. Wire format is largely compatible (both serialize `java.util.Date` as ISO-8601 by default).
 
-**Step 2 (2026-05-08)** — Jackson default swap + full Gson removal landed alongside the Jackson 2 → Jackson 3 cutover under PRD 011:
+**Step 2 (2026-05-08)** — Jackson default swap + full Gson removal landed alongside the Jackson 2 → Jackson 3 cutover under [PRD 011](011-spring-boot-4-jackson-3.md):
 - `rapla-core/pom.xml` declared `jackson-datatype-jsr310` (later dropped — Jackson 3 has built-in `java.time.*`); `JacksonParserWrapper.defaultObjectMapper()` registers `JavaTimeModule` + disables `WRITE_DATES_AS_TIMESTAMPS`. `JsonParserWrapper.factory` defaults to `JacksonParserWrapper` (was `GsonParserWrapper`).
 - `gson` dropped from `rapla-bom/pom.xml`. Final Gson consumers (`HTTPWithJsonConnector`, `HTTPWithJsonMailConnector`, `MailapiClient`, `JacksonMergePatch` (renamed from `JsonMergePatch`), `RestAPIExample`) migrated to Jackson API.
 - Stale `gson`-named locals/fields renamed (`mapper`, `parser`, etc.) across `JacksonParserWrapper`, `JavaJsonSerializer`, `EntityHistory`, `NotificationStorage`, `RaplaSQL`, `LocalAbstractCachableOperator`. `ExchangeAppointmentStorage` deferred pending parallel Exchange-connector session.

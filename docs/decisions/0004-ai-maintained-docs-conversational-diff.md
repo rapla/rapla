@@ -115,14 +115,14 @@ This is a process decision, so the check is softer than an arch-test, but it is 
 
 ## Future possibilities
 
-- Pressure-test + finalize the **`doc-coauthoring` skill** once the workflow is proven on one architecture page (PRD 088 Phase 1).
+- Pressure-test + finalize the **`doc-coauthoring` skill** once the workflow is proven on one architecture page ([PRD 088](../prd/088-spec-graph-formalization.md) Phase 1).
 - Add the **advisory drift-check** as a glob-based PR comment if drift recurs despite the announce workflow.
 - An **admin/ops spine**: consolidate the scattered `deployment.md` / `signing.md` / `sslconfig.md` /
   `setup-wsl.md` / `plugins.md` under one index — the admin audience's keep-current entry point.
 
 ## More Information
 
-- PRD 088 **D6** (rigidity, not binary, is the objection to SDD tooling) and **D7** (this decision).
+- [PRD 088](../prd/088-spec-graph-formalization.md) **D6** (rigidity, not binary, is the objection to SDD tooling) and **D7** (this decision).
 - Evidence: "The Documentation Problem: How AI Changes Technical Writing" (shellnetsecurity, 2026) —
   regeneration-wipe + hallucination; Fern "Generated vs Manual Documentation" — the generate/author split;
   "Living Architecture for AI Agents" (ceaksan) — the advisory glob drift-check; Red Hat "code diff → docs PR

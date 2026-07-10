@@ -15,39 +15,50 @@ import org.springframework.security.web.header.HeaderWriter;
  *       user-controlled data. Strict {@link CspPolicyBuilder#serverPagePolicy()}
  *       ({@code default-src 'none'}), <b>enforced</b> — an injected script cannot
  *       run, killing the A6 reflected-XSS class.</li>
- *   <li>everything else (the Angular SPA at {@code /app}, the {@code /login}
- *       page) — the {@link CspPolicyBuilder#build} SPA policy, <b>report-only</b>:
- *       Material/CDK inline styles and the login page's inline script would break
- *       under enforce, so these wait for the report-only walk.</li>
+ *   <li>{@code /app/**} — the Angular SPA. The {@link CspPolicyBuilder#build} SPA
+ *       policy, <b>enforced</b> (PRD 102 Phase 1). Side-effect-free: that policy
+ *       carries NO {@code script-src}/{@code style-src} (the Angular {@code autoCsp}
+ *       {@code <meta>} owns {@code script-src}; PRD 102 Phase 6), so Material/CDK
+ *       inline styles and any inline bootstrap script are untouched. It enforces the
+ *       non-script directives ({@code connect-src 'self'} exfil-confinement,
+ *       {@code object-src}/{@code base-uri}/{@code frame-*}/{@code form-action}).</li>
+ *   <li>everything else — the {@code /login} page (server-rendered, inline script) and
+ *       the explorer tools ({@code /swagger-ui/**}, {@code /graphiql/**}, CDN-loaded) —
+ *       the same SPA policy, <b>report-only</b>: they wait for their own enforce pass.</li>
  * </ul>
- *
- * <p>The explorer tools ({@code /swagger-ui/**}, {@code /graphiql/**}) load from a
- * CDN and are handled separately; they get the report-only fall-through here, which
- * never blocks.
  */
 public class RaplaCspHeaderWriter implements HeaderWriter
 {
     private static final String ENFORCE = "Content-Security-Policy";
     private static final String REPORT_ONLY = "Content-Security-Policy-Report-Only";
 
-    private final String spaReportOnlyPolicy;
+    private final String spaPolicy;
     private final String apiPolicy = CspPolicyBuilder.jsonApiPolicy();
     private final String serverPagePolicy = CspPolicyBuilder.serverPagePolicy();
-    /** MOCK (PRD 097 Leihschein preview, not for commit) — document pages need inline
-     *  style + the inline print-button handler; PRD 097 D6/D6a will replace this with
-     *  the nonce'd shell + {@code sandbox} policy. */
+    /**
+     * PRD 097 D6a — a rendered Mustache document is admin-authored HTML shown to other users.
+     * It is served into an <b>opaque origin</b> ({@code sandbox} with no {@code allow-same-origin}),
+     * so even if authored markup were hostile it holds no rapla origin and cannot read the session.
+     * {@code script-src 'none'} is affordable because the shell is script-free by construction
+     * (printing is the browser's own Ctrl+P), and {@code connect-src 'none'} means a document can
+     * never call back into the API with the reader's credentials.
+     * {@code style-src 'unsafe-inline'} stays: a document IS its inline layout CSS.
+     */
     private final String documentPagePolicy = String.join("; ",
+            "sandbox",
             "default-src 'none'",
+            "script-src 'none'",
+            "connect-src 'none'",
             "style-src 'unsafe-inline'",
-            "script-src 'unsafe-inline'",
             "img-src 'self' data:",
+            "font-src 'self' data:",
             "base-uri 'none'",
             "frame-ancestors 'none'",
             "form-action 'none'");
 
-    public RaplaCspHeaderWriter(String spaReportOnlyPolicy)
+    public RaplaCspHeaderWriter(String spaPolicy)
     {
-        this.spaReportOnlyPolicy = spaReportOnlyPolicy;
+        this.spaPolicy = spaPolicy;
     }
 
     @Override
@@ -66,9 +77,17 @@ public class RaplaCspHeaderWriter implements HeaderWriter
         {
             response.setHeader(ENFORCE, serverPagePolicy);
         }
+        else if (path.startsWith("/app"))
+        {
+            // PRD 102 Phase 1: the SPA's non-script policy is enforced (no script-src/style-src in
+            // it, so Material inline styles + inline bootstrap are untouched; this enforces
+            // connect-src exfil-confinement + object-src/base-uri/frame-*/form-action).
+            response.setHeader(ENFORCE, spaPolicy);
+        }
         else
         {
-            response.setHeader(REPORT_ONLY, spaReportOnlyPolicy);
+            // /login (inline script) + explorers (CDN) stay report-only until their own enforce pass.
+            response.setHeader(REPORT_ONLY, spaPolicy);
         }
     }
 

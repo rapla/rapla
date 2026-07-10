@@ -42,7 +42,10 @@ const WIRE: ReservationWire = {
   ],
   allocations: [
     { allocatable: { id: 'r-room-1', name: 'Raum A66' }, appointmentIds: null },
-    { allocatable: { id: 'r-beamer-4', name: 'Beamer 04' }, appointmentIds: ['a1111111-1111-4111-8111-111111111111'] },
+    {
+      allocatable: { id: 'r-beamer-4', name: 'Beamer 04' },
+      appointmentIds: ['a1111111-1111-4111-8111-111111111111'],
+    },
   ],
 };
 

@@ -76,6 +76,9 @@ secrets.yaml
 /tools/keycloak/
 /.agents/scheduled_tasks.lock
 
+# Per-agent git worktrees (parallel-session isolation, git-worktrees skill) — local, transient
+.agents/worktrees/
+
 # Obsidian vault config — local app state (UI layout, plugins), not project content
 docs/.obsidian/
 

@@ -21,7 +21,7 @@ client; no server-side reservation construction or persistence.
 
 ## Prime directive (why the refactoring happened)
 
-The whole point of the PRD 003/012 refactoring was **no dhbw-specific code in
+The whole point of the PRD [003](003-custom-deployments-after-spring-migration.md)/[012](012-dhbwrapla-client-migration.md) refactoring was **no dhbw-specific code in
 the rapla client** — so there is no dhbw rapla client to build/ship. Master
 violated this with a full dhbw Swing wizard in the client
 (`DhbwImportDialog`, `DualisImportWizard`, `DualisReservationCreator`,
@@ -209,7 +209,7 @@ multi-reservation edit (already exists).
 import; the resource (allocatable) sync — that stays the separate scheduled
 `DualisImportJob`/`DualisRaplaMapping` path.
 
-## Relationship to PRD 067
+## Relationship to [PRD 067](067-server-mutation-unification.md)
 
 The server side here is pure mapping — it does **not** need `EntityLifecycle`
 (no server-side reservation construction at all). The client side uses the

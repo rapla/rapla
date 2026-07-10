@@ -58,7 +58,9 @@ export class ClassificationSchemaService {
           }
           const fragment = `... on ${typeKey}Classification { ${valueSelections(type.attributes)} }`;
           return this.gql
-            .query<{ reservationPrototype: { classification: Record<string, unknown> } | null }>(
+            .query<{
+              reservationPrototype: { classification: Record<string, unknown> } | null;
+            }>(
               `query ($k: String!) { reservationPrototype(typeKey: $k) { classification { ${fragment} } } }`,
               { k: typeKey },
             )

@@ -18,7 +18,7 @@ need to introspect the expression vocabulary for SDL/schema-boundary documentati
 Candidate engines in scope for evaluation: **CEL** (cel-java), **JSONata**, **JMESPath**, **JEXL**,
 **restricted SpEL** (locked-down `SimpleEvaluationContext`), a **formalized rapla DSL** (rapla's
 own grammar, cleaned up and specified), and **keeping rapla Functions as-is**. The earlier framing
-that "the engine stays rapla's own (CEL evaluated and rejected — PRD 073/074)" is **no longer a
+that "the engine stays rapla's own (CEL evaluated and rejected — PRD [073](073-graphql-function-equivalents.md)/[074](074-graphql-declarative-views.md))" is **no longer a
 premise** — it is now one of the outcomes this PRD must justify or overturn. A different engine may
 fit *some* surfaces (e.g. predicate/filter use cases) even if rapla Functions remain best for
 *others* (e.g. text composition); a per-use-case verdict is acceptable.
@@ -39,15 +39,15 @@ introspection constraints as gates.
 
 **Expression use cases to cover** (the full surface inventory the engine choice must serve):
 
-- **View compute cells** — derived per-row column values in GraphQL/SPA views (PRD 074).
+- **View compute cells** — derived per-row column values in GraphQL/SPA views ([PRD 074](074-graphql-declarative-views.md)).
 - **nameformat / `displayName` / export / planning compositions** — the four named composition
-  annotations (PRD 073).
-- **`ClassificationFilter` predicates** and the generated `where<TypeKey>` typed filters (PRD 059).
-- **SPA / query search expressions** — `searchText` / `matchKind` ranked matching (PRD 059).
+  annotations ([PRD 073](073-graphql-function-equivalents.md)).
+- **`ClassificationFilter` predicates** and the generated `where<TypeKey>` typed filters ([PRD 059](done/059-graphql-typed-where-predicates.md)).
+- **SPA / query search expressions** — `searchText` / `matchKind` ranked matching ([PRD 059](done/059-graphql-typed-where-predicates.md)).
 - **Export / template formatting** — iCal (`Export2iCalController` / `CalendarPageController`),
   CSV, `AllocatableExporter`.
 - **Attribute validation constraints** — expression-based field rules.
-- **External-import field mapping** — Dualis import wizard source→attribute mapping (PRD 068).
+- **External-import field mapping** — Dualis import wizard source→attribute mapping ([PRD 068](068-dualis-import-wizard-redesign.md)).
 - (Watching brief) notification / mail templates (`MailInterface`) — dynamic text; conditional
   permission / conflict-exemption rules if rapla ever expresses these as expressions.
 
@@ -62,7 +62,7 @@ introspection constraints as gates.
 4. **Use-case coverage** — does the language express what the surface needs without contortion.
 5. **Migration cost** — converting stored expressions, aliasing/back-compat, dual-engine burden.
 6. **SDL-introspection / doc story** — can the vocabulary be enumerated and documented at the
-   GraphQL schema boundary (the catalog requirement from PRD 073/074).
+   GraphQL schema boundary (the catalog requirement from PRD [073](073-graphql-function-equivalents.md)/[074](074-graphql-declarative-views.md)).
 
 **Sub-question (applies only if rapla Functions are kept, for all or some surfaces) — naming
 alignment.** The catalog splits cleanly (verified against `StandardFunctions`):
@@ -96,7 +96,7 @@ search). For each surface: does it already use `ParsedText`? would a shared voca
 over-couple? what is the cost of *not* sharing?
 
 **Out of scope.** Changing GraphQL **query** syntax (the GraphQL transport itself). Any
-view-design decision already locked in PRD 073/074 *except* the engine choice, which this PRD
+view-design decision already locked in PRD [073](073-graphql-function-equivalents.md)/[074](074-graphql-declarative-views.md) *except* the engine choice, which this PRD
 reopens. (Engine replacement was previously listed out of scope; it is now the central question.)
 
 ## Plan
@@ -207,11 +207,11 @@ dynamic text). **Predicates (`ClassificationFilter`/`WhereEvaluator`) and SPA se
 languages.**
 
 **Engine unchanged** — rapla's `ParsedText`/`Function` tree stays; CEL remains rejected as an
-engine (PRD 073/074). This is naming + scope only.
+engine (PRD [073](073-graphql-function-equivalents.md)/[074](074-graphql-declarative-views.md)). This is naming + scope only.
 
 ### (d) Implementation path for the renames (decided 2026-06-20)
 
-1. **Catalog advertises canonical names only.** The generated `ComputeFunctions` catalog (PRD 073)
+1. **Catalog advertises canonical names only.** The generated `ComputeFunctions` catalog ([PRD 073](073-graphql-function-equivalents.md))
    lists the canonical/standard names (`EQ`, `interval`, `CONCAT`, …) and **omits legacy names
    entirely** — no `@deprecated`, no noise. "So much as needed, no more."
 2. **Legacy names stay as silent input aliases** in `FunctionFactory.createFunction` (the dispatch
@@ -250,13 +250,13 @@ the formalized-rapla-DSL baseline. Source-verified where claimed (e.g. `ParsedTe
 
 | Use case | Best fit | Beats rapla Functions? |
 |---|---|---|
-| **View compute cells (PRD 074)** | **rapla Functions** (already locked: server-side ParsedText) | **No.** Single-value prefix composition is exactly ParsedText's shape; CEL/JEXL only add infix ergonomics + a dual runtime. |
-| **nameformat / displayName / export / planning (PRD 073)** | **rapla Functions** | **No — and decisively.** All candidates lack a template/interpolation mode; CEL/JMESPath fight non-string values; ParsedText's literal-text-with-holes model is the right tool. |
-| **ClassificationFilter + where<TypeKey> (PRD 059, done)** | **Structured GraphQL where-inputs (already shipped)** | **No.** CEL is the *predicate-shaped* candidate that could theoretically win, but PRD 059 already ships a typed, SDL-introspectable, permission-aware, depth-capped evaluator; a free-text EL is a regression on introspection + leak-safety. Keep structured filters; CEL only if a free-text predicate surface is ever needed. |
+| **View compute cells ([PRD 074](074-graphql-declarative-views.md))** | **rapla Functions** (already locked: server-side ParsedText) | **No.** Single-value prefix composition is exactly ParsedText's shape; CEL/JEXL only add infix ergonomics + a dual runtime. |
+| **nameformat / displayName / export / planning ([PRD 073](073-graphql-function-equivalents.md))** | **rapla Functions** | **No — and decisively.** All candidates lack a template/interpolation mode; CEL/JMESPath fight non-string values; ParsedText's literal-text-with-holes model is the right tool. |
+| **ClassificationFilter + where<TypeKey> ([PRD 059](done/059-graphql-typed-where-predicates.md), done)** | **Structured GraphQL where-inputs (already shipped)** | **No.** CEL is the *predicate-shaped* candidate that could theoretically win, but [PRD 059](done/059-graphql-typed-where-predicates.md) already ships a typed, SDL-introspectable, permission-aware, depth-capped evaluator; a free-text EL is a regression on introspection + leak-safety. Keep structured filters; CEL only if a free-text predicate surface is ever needed. |
 | **SPA / query search** | **Neither — it's a ranked fuzzy-matcher** (`SearchMatcher`, Levenshtein) | **No EL applies.** Scoring/ranking algorithm, not boolean/scalar eval. Wrong tool category for every candidate. |
 | **Export / template formatting (iCal, CSV, AllocatableExporter)** | **rapla Functions** | **No.** Already routes through `KEY_NAME_FORMAT_EXPORT`; same text-composition weakness sinks CEL/JMESPath; SpEL/JEXL are lateral. |
 | **Attribute validation constraints** | **CEL** (capability) / **SpEL** (zero-dep pragmatics) | **Yes — narrowly, greenfield.** No incumbent rapla expression facility exists. CEL is the best-fit tool (non-Turing + cost budget = the k8s CRD-validation idiom); SpEL `forReadOnlyDataBinding` is the zero-new-dep pragmatic pick. rapla Functions *could* back booleans but the surface doesn't exist yet. |
-| **External-import field mapping (Dualis, PRD 068)** | **JSONata / SpEL / JMESPath** (per-field transform) | **Partial.** JSONata's home turf (JSON→target reshaping) but needs a hardened profile; SpEL greenfield per-field infix is cleanest given zero new dep. Even here a small bounded mapping DSL may beat pulling in a dependency. Pure-expression core only — orchestration stays outside any EL. |
+| **External-import field mapping (Dualis, [PRD 068](068-dualis-import-wizard-redesign.md))** | **JSONata / SpEL / JMESPath** (per-field transform) | **Partial.** JSONata's home turf (JSON→target reshaping) but needs a hardened profile; SpEL greenfield per-field infix is cleanest given zero new dep. Even here a small bounded mapping DSL may beat pulling in a dependency. Pure-expression core only — orchestration stays outside any EL. |
 
 ### Overall recommendation — **keep rapla Functions for all composition/export/view surfaces; reconsider a bounded EL only for the two greenfield predicate/transform surfaces**
 
@@ -281,7 +281,7 @@ the hard non-Turing safety gate. SpEL is the most CVE-laden EL on the JVM and is
 fragile configuration.
 
 **The defensible exception — a deliberate, narrow second engine for two greenfield surfaces:**
-(1) **attribute validation constraints** and (2) **Dualis import field-mapping (PRD 068)**. Both
+(1) **attribute validation constraints** and (2) **Dualis import field-mapping ([PRD 068](068-dualis-import-wizard-redesign.md))**. Both
 have **no incumbent rapla-Function usage** and **no SDL-introspection requirement**, so adopting a
 bounded EL there costs near-zero migration and introduces no parity burden on the stored-expression
 corpus. For validation, **CEL** is the best-fit tool (bounded + cost budget); for both, **restricted
@@ -290,7 +290,7 @@ the pragmatic pick if a single new engine is preferred over CEL's protobuf-bindi
 committing to either, weigh a small bounded mapping/validation DSL on the existing `Function` tree —
 it may suffice and keeps the engine count at one.
 
-This **confirms the PRD 073/074/075 conclusion on evidence, not by rubber-stamp**: the engine stays
+This **confirms the PRD [073](073-graphql-function-equivalents.md)/[074](074-graphql-declarative-views.md)/075 conclusion on evidence, not by rubber-stamp**: the engine stays
 rapla Functions everywhere it is incumbent. The genuine update is that the door PRD 075 left
 open — "an alternative may fit *some* surfaces" — resolves to exactly two greenfield surfaces
 (validation, import mapping), and CEL (not the SQL-naming layer) is the right design template if
@@ -319,6 +319,6 @@ either is ever built.
    for capability, restricted SpEL for zero-dep pragmatics) is worth adopting is the **two greenfield
    surfaces** (attribute validation, Dualis import mapping) where there is no stored corpus to
    migrate and no parity burden — see "Candidate EL evaluation" above.
-4. Where does the catalog/naming doc live — PRD 073 (catalog) vs here? **Still open** — defer to the
+4. Where does the catalog/naming doc live — [PRD 073](073-graphql-function-equivalents.md) (catalog) vs here? **Still open** — defer to the
    implementation PRD that lands the aliases; the catalog (073) is the likely home since it already
    documents the curated function set at the schema boundary.

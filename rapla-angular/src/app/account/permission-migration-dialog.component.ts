@@ -35,9 +35,9 @@ import {
     </h2>
     <mat-dialog-content>
       <p class="intro">
-        Switching to additive permissions raised access on these resources (a previous
-        “soft deny” no longer applies). Review each, then mark it resolved — this prunes
-        the obsolete <code>DENIED</code> rows and clears it from the list.
+        Switching to additive permissions raised access on these resources (a previous “soft deny”
+        no longer applies). Review each, then mark it resolved — this prunes the obsolete
+        <code>DENIED</code> rows and clears it from the list.
       </p>
 
       @if (loading()) {
@@ -61,7 +61,9 @@ import {
                 @for (e of f.escalations; track e.principalName + e.additiveLevel) {
                   <li>
                     <span class="user">{{ e.principalName }}</span>
-                    <span class="levels">{{ levelLabel(e.currentLevel) }} → {{ e.additiveLevel }}</span>
+                    <span class="levels"
+                      >{{ levelLabel(e.currentLevel) }} → {{ e.additiveLevel }}</span
+                    >
                     @if (e.form === 'DENIED') {
                       <span class="badge denied">was denied</span>
                     }
@@ -83,21 +85,74 @@ import {
   `,
   styles: [
     `
-      h2 { display: flex; align-items: center; gap: 0.5rem; }
-      .title-icon { color: #1565c0; }
-      .intro { font-size: 0.85rem; color: rgba(0, 0, 0, 0.7); }
-      .centered { display: flex; justify-content: center; padding: 1rem; }
-      .done { display: flex; align-items: center; gap: 0.4rem; color: #33691e; }
-      .error { color: #c62828; font-size: 0.9rem; margin-top: 0.5rem; }
-      .finding { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.6rem 0; border-bottom: 1px solid rgba(0, 0, 0, 0.08); }
-      .finding:last-of-type { border-bottom: none; }
-      .fmeta { flex: 1; }
-      .fname { font-weight: 500; }
-      .who { list-style: none; margin: 0.25rem 0 0; padding: 0; }
-      .who li { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; }
-      .user { font-weight: 500; }
-      .levels { color: rgba(0, 0, 0, 0.6); }
-      .badge.denied { font-size: 0.68rem; background: #fdecea; color: #c62828; border-radius: 10px; padding: 0.05rem 0.45rem; }
+      h2 {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .title-icon {
+        color: #1565c0;
+      }
+      .intro {
+        font-size: 0.85rem;
+        color: rgba(0, 0, 0, 0.7);
+      }
+      .centered {
+        display: flex;
+        justify-content: center;
+        padding: 1rem;
+      }
+      .done {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        color: #33691e;
+      }
+      .error {
+        color: #c62828;
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+      }
+      .finding {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 0.6rem 0;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+      }
+      .finding:last-of-type {
+        border-bottom: none;
+      }
+      .fmeta {
+        flex: 1;
+      }
+      .fname {
+        font-weight: 500;
+      }
+      .who {
+        list-style: none;
+        margin: 0.25rem 0 0;
+        padding: 0;
+      }
+      .who li {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.8rem;
+      }
+      .user {
+        font-weight: 500;
+      }
+      .levels {
+        color: rgba(0, 0, 0, 0.6);
+      }
+      .badge.denied {
+        font-size: 0.68rem;
+        background: #fdecea;
+        color: #c62828;
+        border-radius: 10px;
+        padding: 0.05rem 0.45rem;
+      }
     `,
   ],
 })

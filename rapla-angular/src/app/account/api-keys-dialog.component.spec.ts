@@ -120,8 +120,12 @@ describe('ApiKeysDialogComponent', () => {
     const c = TestBed.createComponent(ApiKeysDialogComponent).componentInstance;
     expect(c.expiryLabel(null)).toBe('no expiry');
     expect(c.expiryLabel(new Date(Date.now() - 1000).toISOString())).toBe('expired');
-    expect(c.expiryLabel(new Date(Date.now() + 30 * 60_000).toISOString())).toBe('expires in 30 min');
-    expect(c.expiryLabel(new Date(Date.now() + 5 * 86_400_000).toISOString())).toBe('expires in 5 days');
+    expect(c.expiryLabel(new Date(Date.now() + 30 * 60_000).toISOString())).toBe(
+      'expires in 30 min',
+    );
+    expect(c.expiryLabel(new Date(Date.now() + 5 * 86_400_000).toISOString())).toBe(
+      'expires in 5 days',
+    );
   });
 
   it('read scope cannot be removed from the selection', () => {

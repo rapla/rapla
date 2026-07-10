@@ -21,7 +21,10 @@ describe('ProfileService', () => {
 
   it('GETs profile capabilities', () => {
     const caps: ProfileEditCapabilities = {
-      canChangePassword: true, canChangeName: true, canChangeEmail: true, externalIdpLabel: null,
+      canChangePassword: true,
+      canChangeName: true,
+      canChangeEmail: true,
+      externalIdpLabel: null,
     };
     let received: ProfileEditCapabilities | undefined;
     service.capabilities().subscribe((r) => (received = r));
@@ -36,7 +39,10 @@ describe('ProfileService', () => {
     const req = http.expectOne('/api/storage/change/name');
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual({
-      username: 'homer', newTitle: 'Mr', newSurename: 'Homer', newLastname: 'Simpson',
+      username: 'homer',
+      newTitle: 'Mr',
+      newSurename: 'Homer',
+      newLastname: 'Simpson',
     });
     req.flush(null);
   });

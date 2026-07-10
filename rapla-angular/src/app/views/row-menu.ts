@@ -70,8 +70,7 @@ export class EventRowMenuProvider implements RowMenuProvider {
   private multiItems(ctx: RowContext): RowMenuItem[] {
     const seen = new Set<string>();
     const events = ctx.subjects.filter(
-      (s): s is EntityRef =>
-        s.kind === 'reservation' && !seen.has(s.id) && Boolean(seen.add(s.id)),
+      (s): s is EntityRef => s.kind === 'reservation' && !seen.has(s.id) && Boolean(seen.add(s.id)),
     );
     const deletable = events.filter((s) => s.canModify);
     if (deletable.length === 0) return [];

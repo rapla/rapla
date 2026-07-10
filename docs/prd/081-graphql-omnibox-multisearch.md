@@ -37,7 +37,7 @@ an action list. This keeps the server contract lean and the action taxonomy in o
 ## Current state (2026-06-21)
 
 - **Resource search SHIPS:** `Query.allocatables(filter: { searchText, matchKind, limit })`
-  (PRD 028) — §12-scoped, returns `id / name / isPerson / classification.typeKey`. The SPA's
+  ([PRD 028](028-angular-power-search.md)) — §12-scoped, returns `id / name / isPerson / classification.typeKey`. The SPA's
   `SearchService` **already fans out to this today** (resources only): it maps each hit to a
   `resource` result with `sublabel = typeKey`. Verified live against the dhbw store.
 - **Everything else is missing:** no event/occurrence search in the omnibox, no group results,
@@ -120,14 +120,14 @@ chip** to the rail. The chip carries the user **id**; the SPA binds it into
 `ReservationFilter.ownerEq` (the user's own events) — see [PRD 078](078-spa-graphql-view-renderer.md)
 §"Scope". §12: search must only surface users the caller may see (mirror the `users(filter:)`
 visibility — `canAdminUser` / self), and the per-kind count must not leak hidden users. The
-own logged-in user does **not** need search — it is pinned in the SPA selection (PRD 078); this
+own logged-in user does **not** need search — it is pinned in the SPA selection ([PRD 078](078-spa-graphql-view-renderer.md)); this
 kind covers finding *other* users (admin/planner scoping to someone else's events, which on the
-read path is `ownerEq` for owned events, or PRD 069 `accessibleByUsername` for access-scoped).
+read path is `ownerEq` for owned events, or [PRD 069](069-graphql-resource-access-read-api.md) `accessibleByUsername` for access-scoped).
 
 ### Why `GroupHit.memberFilter` (the hard part)
 
 Groups are the reason multisearch needs the server. A group is `ClassificationFilter[]`
-(PRD 077) — three flavours: **type-groups** ("alle Räume"), **hierarchical**
+([PRD 077](077-calendar-model-graphql.md)) — three flavours: **type-groups** ("alle Räume"), **hierarchical**
 (Gebäude → seine Räume, Studiengang → seine Kurse), **self-defined** filters. Expanding a
 group to its members for "in Liste laden" needs **deployment-specific relation knowledge**
 (`Raum.Gebaeude`, `Kurs.Studiengang`) the SPA must not hardcode.
@@ -181,7 +181,7 @@ recall is not worth the cost on that path.
 
 ### Performance — naive scan first, indices second
 
-Phase 1 deliberately does the **naive full scan** (RESOURCE reuses the PRD 028 evaluator; EVENT
+Phase 1 deliberately does the **naive full scan** (RESOURCE reuses the [PRD 028](028-angular-power-search.md) evaluator; EVENT
 scans all §12-readable reservations by name). **We measure performance after the implementation
 lands** against the dhbw store, then decide on a name index (a second step / follow-up) for
 effective matching if the scan is too slow. Do not pre-optimize with an index in Phase 1.
@@ -189,7 +189,7 @@ effective matching if the scan is too slow. Do not pre-optimize with an index in
 ## Plan — phased (server)
 
 1. **Phase 1 — unify resources + events + users. ✅ DONE 2026-06-21 (RESOURCE+EVENT), USER added
-   2026-06-24.** `search(query, kinds, limit)` over RESOURCE (reuses the PRD 028 `allocatables`
+   2026-06-24.** `search(query, kinds, limit)` over RESOURCE (reuses the [PRD 028](028-angular-power-search.md) `allocatables`
    evaluator, FUZZY) + EVENT (windowless name scan over `CachableStorageOperator.getReservations()`,
    SUBSTRING-only, edit-gated) + USER (name/username FUZZY scan, §12 = self + `canAdminUser`).
    Ranking + per-kind cap + truncation log. RESOURCE/EVENT/USER are all in the **default** kind set.
@@ -227,7 +227,7 @@ effective matching if the scan is too slow. Do not pre-optimize with an index in
 2. **Phase 2 — groups.** `GroupHit` + `memberFilter` + readable `count`: type-groups first,
    then hierarchical (Gebäude/Studiengang) via the existing `whereXxx` evaluators.
 3. **Phase 3 — occurrences + SAVED_VIEW.** OCCURRENCE kind (block name match); SAVED_VIEW once
-   PRD 077 persists views.
+   [PRD 077](077-calendar-model-graphql.md) persists views.
 
 ## Open questions
 
@@ -238,7 +238,7 @@ effective matching if the scan is too slow. Do not pre-optimize with an index in
 - ~~**OQ3** — Fuzzy on by default, or opt-in?~~ **RESOLVED → fuzzy on by default** (FUZZY ranks
   below PREFIX/SUBSTRING; see Ranking).
 - **OQ4** — Group identity: what is `GroupHit.id` (stable key for a hierarchical group)? Needed
-  if groups become favouritable / saveable (PRD 077). *Deferred to Phase 2 (groups).*
+  if groups become favouritable / saveable ([PRD 077](077-calendar-model-graphql.md)). *Deferred to Phase 2 (groups).*
 
 ## Tests
 

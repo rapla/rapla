@@ -24,11 +24,11 @@ Cut wall-clock time for the two commands developers and CI run most:
 
 ## Why now (and multi-module sequencing)
 
-PRD 004 recommends a 5-module split, with pom-property/dependencyManagement/plugin config moving from `parent/pom.xml` into `rapla-bom`. Most surefire/compiler/resources tweaks land cleanly in that BOM and are easier to verify per-module. Doing them before the split means re-doing them after. **So the bulk of this PRD waits for PRD 005.**
+[PRD 004](done/004-multi-module-architecture-analysis.md) recommends a 5-module split, with pom-property/dependencyManagement/plugin config moving from `parent/pom.xml` into `rapla-bom`. Most surefire/compiler/resources tweaks land cleanly in that BOM and are easier to verify per-module. Doing them before the split means re-doing them after. **So the bulk of this PRD waits for PRD 005.**
 
 Two items ship **before** PRD 005:
 
-1. **Add `junit-vintage-engine`.** PRD 004 cycle audit needs the suite to actually exercise touched code. Restructuring with 60% of tests silently muted is dangerous.
+1. **Add `junit-vintage-engine`.** [PRD 004](done/004-multi-module-architecture-analysis.md) cycle audit needs the suite to actually exercise touched code. Restructuring with 60% of tests silently muted is dangerous.
 2. **Fix `mvn test` non-idempotence.** Same reason: if the suite can't be re-run, every migration step requiring "did tests still pass" is unreliable.
 
 Everything else waits.

@@ -4,7 +4,10 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 
-import { ClassificationEditComponent, type ClassificationPatch } from './classification-edit.component';
+import {
+  ClassificationEditComponent,
+  type ClassificationPatch,
+} from './classification-edit.component';
 
 const SDL = `
 type meetingClassification implements Classification & ReservationClassification {
@@ -78,11 +81,7 @@ describe('ClassificationEditComponent (PRD 096 Phase 2)', () => {
     expect(el.querySelector('input[type="number"]')).toBeTruthy();
     expect(el.querySelector('input[type="checkbox"]')).toBeTruthy();
     const select = el.querySelector('select')!;
-    expect(Array.from(select.options).map((o) => o.textContent?.trim())).toEqual([
-      '',
-      'Rot',
-      'c2',
-    ]);
+    expect(Array.from(select.options).map((o) => o.textContent?.trim())).toEqual(['', 'Rot', 'c2']);
     // unset placeholder is visible but NOT pickable (deliberate Swing deviation)
     expect(select.options[0].disabled).toBe(true);
     // ALLOCATABLE → read-only in v1, value still visible

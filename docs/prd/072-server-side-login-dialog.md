@@ -1,6 +1,6 @@
 # PRD 072 — Server-side login dialog with provider chooser (SPA + secured pages)
 
-**Status:** in-progress — **reopened 2026-07-08** for Phase 8 (memory-token hardening; see the 2026-07-08 follow-up at the end). Original scope done (2026-06-20) — all 7 phases shipped; Phases 5 + 6 verified live 2026-06-19/20, docs (Phase 7) landed in `docs/authentication.md` 2026-06-20
+**Status:** almost done — original scope **done (2026-06-20)** — all 7 phases shipped; Phases 5 + 6 verified live 2026-06-19/20, docs (Phase 7) in `docs/authentication.md`. The [PRD 097](097-event-html-templates-mustache.md)-driven **credential-hardening** discussion (2026-07-08/09) was **split out to [PRD 102](102-browser-credential-hardening.md)** on 2026-07-09 (keep the cookie, sandbox + capability for untrusted pages). 072 moves to `docs/prd/done/` once 102 is under way. See the 2026-07-09 follow-up at the end.
 
 ## Goal
 
@@ -13,8 +13,8 @@ Replace the SPA-piggyback login on the **browser** surfaces — the Angular SPA
 3. hands the browser a credential that works without the localStorage piggyback.
 
 This decouples GraphiQL/Swagger from the SPA's `localStorage.access_token` (today a
-bespoke, origin-bound, refresh-less, fake-logout hack — see PRD 071 thread). It is also
-the **BFF direction** from the PRD 071 CSP research that structurally closes **H4** (JWT
+bespoke, origin-bound, refresh-less, fake-logout hack — see [PRD 071](done/071-web-security-hardening.md) thread). It is also
+the **BFF direction** from the [PRD 071](done/071-web-security-hardening.md) CSP research that structurally closes **H4** (JWT
 out of `localStorage`).
 
 **Phasing (2026-06-19) — full M2 program, explorer-first de-risking:** this PRD now carries the
@@ -145,7 +145,7 @@ stateful single-slot refresh record giving revocation at the refresh boundary �
 stateless, not the instant-revoke opaque-session BFF. See Open Questions for the analysis
 that produced this decision.)
 
-**Why A.** It keeps `/api` stateless (the constraint locked in the PRD 071 thread),
+**Why A.** It keeps `/api` stateless (the constraint locked in the [PRD 071](done/071-web-security-hardening.md) thread),
 removes `localStorage` (no JS-readable token → not exfiltratable by XSS; the honest delta
 is "not exfiltratable", not "token left the browser" — the JWT still lives in the browser,
 just in a JS-unreadable cookie), is uniform for SPA + explorers, and works in the
@@ -242,9 +242,13 @@ refresh **proactively** before expiry instead of reacting to a 401. Not required
 ### Revocation, session cap & IdP-token handling — DECIDED 2026-06-19: #7 = (a)
 
 Under the broker model rapla **owns the session**, so the upstream IdP refresh tokens are
-**discarded** (option (a), *not* (b) token-mediating). Cleanest form: rapla **does not even
-request** them — no `offline_access` (Keycloak), no `access_type=offline`+`prompt=consent`
-(Google); only the `id_token` (identity) is needed. **No external secrets at rest.**
+**discarded** (option (a), *not* (b) token-mediating). Cleanest form: on the **server-side
+`oauth2Login()` path** rapla **does not even request** them — no `offline_access` (Keycloak),
+no `access_type=offline`+`prompt=consent` (Google); only the `id_token` (identity) is needed.
+**No external secrets at rest.** (Qualification: this holds for the `oauth2Login()` login path
+only — the discovery/BFF exchange surface still advertises the offline scopes: `OAuthConfigController`
+at `/api/auth/oauth/config` publishes Microsoft `offline_access` and Google `access_type=offline`
+for the client-side PKCE/exchange flow, so a client using that surface *does* request IdP refresh tokens.)
 
 | IdP token | Fate under (a) |
 |---|---|
@@ -268,7 +272,7 @@ IdP-disable worst-case window. At the cap the user is forced back through the Id
 IdP-side disable is finally caught.
 
 The one residual gap — an **IdP-only** disable of a user still present in rapla — is bounded by the
-21 d cap; tighten further by mirroring the disable **into rapla** (deprovisioning, cross-ref PRD 050
+21 d cap; tighten further by mirroring the disable **into rapla** (deprovisioning, cross-ref [PRD 050](050-external-auth-user-lifecycle.md)
 JIT provisioning) so the ≤ 1 h `clearSession` axis applies.
 
 **Precedent — every brokered system does exactly this:** short access token + absolute refresh cap +
@@ -457,7 +461,7 @@ single-slot is also what couples to risk #1 above.
      impersonation model; no "which kind of token" branching in resolvers/controllers.
 
    **`OAuthExchangeController` — investigated, left untouched (no work invented).** It still forwards
-   the raw IdP token response to the caller (and provisions as a side effect, PRD 050). But the shipped
+   the raw IdP token response to the caller (and provisions as a side effect, [PRD 050](050-external-auth-user-lifecycle.md)). But the shipped
    SPA (Phase 4) is fully cookie-based and dropped `angular-oauth2-oidc` + client-side PKCE, so **no
    live client calls `/api/auth/oauth/exchange/*` anymore** (no Angular `.ts` reference; only docs,
    `OAuthConfigController`'s legacy chooser config, and `OAuthExchangeStaleTokenAnonymousTest`).
@@ -496,13 +500,13 @@ single-slot is also what couples to risk #1 above.
      provider, `/api` validates one issuer; framed as RFC 8693 token-exchange (Backstage / Cognito
      / Auth0 precedent);
    - the **server orchestration (#2 = Hybrid)**: Spring `oauth2Login()` for the head + an
-     `AuthenticationSuccessHandler` for the rapla tail; the `OAuthExchangeController` (PRD 036 BFF)
-     **stays** untouched for the SPA path; provisioning (PRD 050) shared in the success handler;
+     `AuthenticationSuccessHandler` for the rapla tail; the `OAuthExchangeController` ([PRD 036](036-external-idp-oauth-login.md) BFF)
+     **stays** untouched for the SPA path; provisioning ([PRD 050](050-external-auth-user-lifecycle.md)) shared in the success handler;
    - **credential model A** (HttpOnly access cookie + path-scoped refresh cookie) + the
      **cookie-based reactive-401 refresh**, CSRF wiring, logout policy;
    - the **revocation & session-cap story (#7 = a)**: IdP tokens discarded, revoke-in-rapla
      (`clearSession`, ≤ 1 h), **21 d absolute non-sliding cap**, the two-axis revoke table, and the
-     optional idle-timeout/rotation hardenings (cross-ref PRD 036 § "Refresh path");
+     optional idle-timeout/rotation hardenings (cross-ref [PRD 036](036-external-idp-oauth-login.md) § "Refresh path");
    - which clients use what (SPA/explorers = cookie; Swing = re-minted rapla Bearer; iCal/API-keys = Bearer);
    - the **single-issuer cutover** (#6 step): `/api` drops external-issuer trust once all clients re-mint.
 
@@ -550,7 +554,7 @@ single-slot is also what couples to risk #1 above.
    ≤1 h refresh boundary. See the Credential-model section for the full trade-off.
 2. ~~**OAuth orchestration**~~ — **RESOLVED 2026-06-19: Hybrid.** Split the flow into the
    security-critical **head** (authorize-redirect, state, PKCE, nonce, callback, `code`→token,
-   `id_token` validation) and the rapla-specific **tail** (provision per PRD 050, mint the rapla
+   `id_token` validation) and the rapla-specific **tail** (provision per [PRD 050](050-external-auth-user-lifecycle.md), mint the rapla
    JWT via `RefreshSessionService.issueAndPersist`, set cookie). Use Spring **`oauth2Login()`** for
    the head (framework handles the dangerous parts correctly; OIDC `scope=openid` → `id_token`-only,
    aligns with M2/(a)); reuse rapla's building blocks for the tail in an
@@ -655,86 +659,24 @@ Real upstream single-logout (ending the KC session via a fresh `id_token_hint`) 
 and **deferred**: it would require keeping the IdP token server-side to mint a fresh hint at
 logout, and `prompt=login` already covers the silent-re-login + account-switch needs.
 
-## Follow-up (2026-07-08) — DECIDED: memory-token hardening (Phase 8) — supersedes the path-narrowing idea
+## Follow-up (2026-07-09) — credential *hardening* split out to [PRD 102](102-browser-credential-hardening.md)
 
-**Status: decided 2026-07-08, implementation open (Phase 8 below).** Raised while designing PRD 097
-(server-rendered semi-trusted HTML documents at standalone URLs on the main origin). Recorded here
-because PRD 072 owns the browser credential model (`CookieAuthSupport`).
+The 2026-07-08/09 discussion about **hardening the browser session cookie against untrusted
+same-origin content** (semi-trusted [PRD 097](097-event-html-templates-mustache.md) document pages + the template editor) grew past the scope
+of "server-side login dialog". It was extracted to **[PRD 102 — Browser credential hardening vs.
+untrusted same-origin content](102-browser-credential-hardening.md)** on 2026-07-09.
 
-### The threat, and why path narrowing was dropped
+What 072 still owns (all shipped): the login dialog + chooser, `oauth2Login` head + rapla tail, the M2
+identity-broker token model, **credential model A** (the `access_token` + `refresh_token` HttpOnly
+cookies) and its cookie-based reactive refresh, revocation/session-cap, the single-issuer cutover, the
+Swing SSO flow, and the 2026-06-24 logout follow-up above.
 
-With PRD 097, the main origin gains **semi-trusted pages** (author-written document templates).
-A cookie's `Path` controls only *which destination URLs* the browser attaches it to — never *which
-page* a request originates from. Any script that executes on any same-origin page can
-`fetch('/api/graphql', {credentials:'include'})` and the browser attaches the `access_token`
-cookie (HttpOnly prevents *reading*, not *riding*), and the double-submit XSRF cookie is
-deliberately JS-readable, so same-origin XSS can satisfy CSRF for mutations too. The originally
-proposed narrowing of `access_token` to `Path=/api` would have shrunk transport exposure
-(logs/proxies/referrers) but provides **zero** protection against this session-riding — the
-destination `/api` always matches. The idea is therefore **obsolete**: Phase 8 removes the SPA
-access-token cookie entirely.
+What moved to [PRD 102](102-browser-credential-hardening.md): the memory-token question **and its 2026-07-09 reversal** (the cookie *stays*),
+the `CSP: sandbox`/opaque-origin decision for untrusted pages, scoped **capability tokens** ([PRD 076](076-scoped-api-keys-self-rotation.md)
+`{read}` reuse), the end-state security matrices, the refresh-per-surface flows, the `/app` CSP
+report-only → enforced fix, and the GraphiQL `gqlFetch` refresh-gap finding. [PRD 102](102-browser-credential-hardening.md) `Related:`-links
+back here as the credential model it hardens.
 
-### Hardening options evaluated (2026-07-08 dialog)
-
-1. **Prevent script execution on semi-trusted pages** (sanitize + strict CSP) — PRD 097 D6; owned by
-   the template engine, out of scope here.
-2. **Devalue the semi-trusted context: `Content-Security-Policy: sandbox`** on document responses.
-   The document gets an **opaque origin**: its requests are cross-origin → no cookies attached
-   (SameSite + CORS), no storage, no readable API responses. Even a sanitizer bypass yields nothing.
-   Never combine `allow-same-origin` with `allow-scripts` (restores the real origin = disables the
-   protection). → **accepted**, lands in PRD 097 (D6a).
-3. **Separate origin (sandbox subdomain)** — the hard SOP boundary (githubusercontent pattern).
-   → **rejected: rapla deployments have no control over subdomains.**
-4. **Non-ambient credential: access token held in SPA memory only**, sent as `Authorization` header.
-   No cookie exists that rides; a JS variable is document-bound, so semi-trusted origin neighbours
-   can neither read nor use it (unlike `localStorage`, which was origin-wide readable — the reason
-   PRD 072 left it). Residual: XSS *inside the trusted SPA itself* can read the in-memory token —
-   but such XSS can act as the user under any model; the raw-token exfiltration delta is bounded by
-   the 1 h TTL. Reload/browser-restart survival comes from the already path-scoped `refresh_token`
-   cookie (bootstrap refresh at SPA start). → **accepted as Phase 8.**
-
-**Decision: 2 + 4 combined.** Complementary layers that cover each other's residual holes: the
-sandbox seals the one gap of the memory model (a semi-trusted page calling the refresh endpoint
-and *reading* the token from the response body — under sandbox that call is cross-origin and
-unreadable); the memory model bounds the damage of a forgotten/bypassed sandbox header (no ambient
-credential left to ride). The refresh endpoint becomes the origin's single ambient-credential
-target and is hardened threefold (CSRF header + narrowed XSRF cookie + sandbox).
-
-### Phase 8 — memory-token migration (partial rollback of the Phase 2 cookie model)
-
-- [ ] **Server:** `POST /api/auth/session/refresh` returns the access token in the **response body**
-      (instead of `Set-Cookie: access_token`); login TAIL sets only the `refresh_token` cookie;
-      keep/tighten the CSRF-header requirement on the refresh endpoint. Retire the access-cookie
-      path of `CookieToBearerFilter`/`CookieAuthSupport` (the `Authorization`-header path already
-      serves Swing / iCal / API keys — unaffected).
-- [ ] **XSRF cookie scope:** the double-submit XSRF cookie must not be readable by document pages —
-      narrow its `Path` (e.g. `/app`) so semi-trusted pages cannot lift it to forge the refresh
-      call's CSRF header.
-- [ ] **SPA:** access token in a module-scope closure (never `localStorage`/`sessionStorage`/
-      cookie/`window`); `HttpClient` interceptor sets `Authorization: Bearer`; bootstrap refresh on
-      app start; the existing 401 → refresh → replay logic keeps its shape.
-- [ ] **Explorers (`/graphiql`, `/swagger-ui`):** lose cookie auth again — same choreography as the
-      SPA: shell JS calls the refresh endpoint on load, holds the token in memory, sends the header
-      (their auth-bar already has the 401→refresh→replay loop). Their SecurityConfig
-      `.authenticated()` page gate then becomes ineffective for cookie-less browsers — flip the
-      static shells to `permitAll` (they are data-free HTML; auth is enforced at `/api/graphql` /
-      `/v3/api-docs`).
-- [ ] **Verify refresh-token rotation:** confirm Spring AS rotation is active AND reuse-detection
-      revokes the token family (the class-B "stolen persistent cookie" defense); document findings
-      in `docs/authentication.md`.
-- [ ] **Docs:** update `docs/authentication.md` (credential model section) when the flip lands.
-
-**Tests:** tier-3 MockMvc — refresh response carries token in body + no `Set-Cookie: access_token`;
-`/api/graphql` 401s without `Authorization` header even with all cookies present; XSRF cookie path
-assertion; explorer shells 200 unauthenticated while their data endpoints stay gated. Playwright —
-injected `fetch('/api/graphql', {credentials:'include'})` from a PRD 097 document page gets no
-usable response.
-
-**Open questions (Phase 8):**
-- **OQ-P8.1 — `JSESSIONID` lifetime/scope.** The form-login session cookie is `Path=/` and ambient;
-  clarify how long it lives after the login TAIL and whether it can authenticate `/api` requests —
-  if so it re-opens the riding hole and needs the same treatment. *Resolution:* pending.
-- **OQ-P8.2 — refresh-token reuse detection.** Rotation without family-revoke-on-reuse leaves the
-  stolen-cookie scenario silent; verify actual SAS behaviour in rapla's config. *Resolution:* pending.
-- **OQ-P8.3 — Web-Worker token isolation** (token held in a worker so even SPA-XSS cannot read the
-  string, only ride). Noted as the known escalation step; not planned. *Resolution:* deferred.
+**Net for 072:** original scope is done; only the "almost-done" residual is that [PRD 102](102-browser-credential-hardening.md) (which depends
+on [PRD 097](097-event-html-templates-mustache.md)) is not yet implemented. 072 moves to `docs/prd/done/` once 102 is under way and nothing
+here needs re-touching.

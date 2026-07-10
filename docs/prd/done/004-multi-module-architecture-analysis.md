@@ -8,7 +8,7 @@
 Evaluate **module structure and build layout** for Rapla absorbing three converging pressures:
 
 1. **Spring Boot migration (PRD 001)** — single fat JAR with server `@SpringBootApplication`, Swing client driven by separate `AnnotationConfigApplicationContext` (Phase 4 partial), JNLP preserved.
-2. **Custom deployments (PRD 003, e.g. `../dhbwrapla`)** — need a clean library form (not WAR overlay) plus own beans, config, REST endpoints, Swing UI.
+2. **Custom deployments ([PRD 003](../003-custom-deployments-after-spring-migration.md), e.g. `../dhbwrapla`)** — need a clean library form (not WAR overlay) plus own beans, config, REST endpoints, Swing UI.
 3. **Future Angular client** — takes over main frontend from Swing, consuming same REST API.
 
 This PRD does **not** prescribe an implementation plan. It compares options across three independent axes (module layout, build tool, frontend integration) and lands on a recommended target so PRDs 005+ can flesh out phases.
@@ -160,7 +160,7 @@ Each rapla layer in its own git repo, own version, depend via Maven coords.
 | **Incremental builds** | Limited (`-pl`/`-amd`/incremental compile) | Strong (build cache, configuration cache, incremental tasks) | Strongest (hermetic, remote cache) |
 | **Plugin ecosystem (jarsigner, JNLP, archetype, license, GPG)** | Complete | Complete | Sparse |
 | **Custom-build complexity** | Declarative XML — verbose but predictable | Imperative Groovy/Kotlin DSL — flexible but easy to over-engineer | Bzl/Starlark — steepest learning curve |
-| **PRD 003 custom-deployment ergonomics** | `<dependency>` + `<parent>` well-understood | Same model, slightly nicer DSL | Forces consumers onto Bazel — non-starter |
+| **[PRD 003](../003-custom-deployments-after-spring-migration.md) custom-deployment ergonomics** | `<dependency>` + `<parent>` well-understood | Same model, slightly nicer DSL | Forces consumers onto Bazel — non-starter |
 | **Concurrent invocations on the *same* workspace / `target/` directory** | **Unsafe — and silently so.** Maven holds no project-level lock. Two `mvn compile` runs race on `target/classes/`; `mvn compile` + `mvn test` overlapping causes `NoClassDefFoundError` / stale-class failures; two `mvn package` can truncate the same `target/*.jar` mid-write. The local-repo install step *does* take per-artifact lock, so `~/.m2/repository` stays consistent — but mismatched artifact versions from interleaved builds can still land there. | **Unsafe but loud.** Gradle takes explicit project lock; second invocation blocks with "Waiting for an exclusive lock on project '…'". Slower (serialised) but correct. Daemon contention still applies on top. | Same workspace serialises on output-base lock — same "blocks but doesn't corrupt" as Gradle. |
 | **Concurrent invocations on *different worktrees* of the same repo (the recommended pattern)** | **Excellent.** Each `git worktree` has its own absolute path → its own `target/`. Only shared state is `~/.m2/repository` (proper per-artifact locks). Where Maven's stateless model shines for parallel agents. | Better than same-workspace but not great. Daemon keys project state by absolute path so worktrees look like separate projects, but daemon JVM is shared (memory pressure) and `~/.gradle/caches/` is contended. Poisoned daemon affects every in-flight build. | Excellent if each worktree has its own output base; remote cache amplifies. |
 | **Migration cost from current Maven setup** | None | Moderate — POMs convert mechanically with `gradle init`, but jarsigner/JNLP/Spring-Boot/sign-pkcs11 profiles need rewriting | High — full rewrite, no automated migration |
@@ -215,21 +215,21 @@ Angular at `rapla-web/` — separate git repo, CDN/static-bucket. Talks via CORS
 - Plugin extensions need a "web-client" sibling alongside `client/swing` — `plugin/<name>/client/web/`. Each plugin can ship Swing, web, both, or neither.
 - `PluginOptionPanel` is Swing-specific. Web equivalent needed (separate `WebPluginOptionPanel` or polymorphic keyed by render target).
 
-## Custom Deployment Fit (relation to PRD 003)
+## Custom Deployment Fit (relation to [PRD 003](../003-custom-deployments-after-spring-migration.md))
 
-PRD 003 lays out how `dhbwrapla` migrates to Spring Boot. Multi-module split simplifies:
+[PRD 003](../003-custom-deployments-after-spring-migration.md) lays out how `dhbwrapla` migrates to Spring Boot. Multi-module split simplifies:
 
-| PRD 003 concern | Single-module today | Multi-module (this PRD) |
+| [PRD 003](../003-custom-deployments-after-spring-migration.md) concern | Single-module today | Multi-module (this PRD) |
 |---|---|---|
 | Custom project parent POM | `org.rapla:custom` (WAR overlay) | `org.rapla:rapla-archetype` (archetype) — or declare deps directly |
 | Custom project dependencies | `org.rapla:rapla` (everything) | `org.rapla:rapla-server` + `org.rapla:rapla-client` (or only what's needed) |
 | Pulling Spring Security for Swing-only customization | Forced | Avoided — declare `rapla-client` only |
 | Pulling Swing for server-only customization | Forced | Avoided — declare `rapla-server` only |
-| `@Import(RaplaSpringBootApplication.class)` foot-gun (PRD 003 OQ6) | Required | Replaced by depending on `rapla-server` which exposes `RaplaServerAutoConfiguration` |
+| `@Import(RaplaSpringBootApplication.class)` foot-gun ([PRD 003](../003-custom-deployments-after-spring-migration.md) OQ6) | Required | Replaced by depending on `rapla-server` which exposes `RaplaServerAutoConfiguration` |
 | JNLP `webclient/` content | All rapla classes | `rapla-core` + `rapla-client` + custom JAR — well-defined, smaller |
 | Custom Angular extensions | Nowhere | Next to `rapla-client-web/` (separate npm under `dhbwrapla/web/`) — consumes same OpenAPI spec |
 
-Multi-module split is **not just internal cleanup** — directly resolves three of PRD 003's open questions (OQ2 archetype, OQ5 client `@ComponentScan`, OQ6 auto-configuration).
+Multi-module split is **not just internal cleanup** — directly resolves three of [PRD 003](../003-custom-deployments-after-spring-migration.md)'s open questions (OQ2 archetype, OQ5 client `@ComponentScan`, OQ6 auto-configuration).
 
 ## Recommendation (proposed target architecture)
 
@@ -367,7 +367,7 @@ Same shape, same source — cost of switching is in those descriptors, especiall
 
 4. **Angular learning curve.** No Angular code today. C-axis decision needs a small spike (one page consuming `/resources`). Evaluate React/Vue/Svelte/HTMX in same spike — Angular is reasonable default but not only choice.
 
-5. **JNLP signing across modules.** With `webclient/` content from multiple Maven artifacts, signing operates on assembled set in `rapla-app` or `dhbwrapla`'s build — not per module. PRD 003's signing-chain section already assumes this.
+5. **JNLP signing across modules.** With `webclient/` content from multiple Maven artifacts, signing operates on assembled set in `rapla-app` or `dhbwrapla`'s build — not per module. [PRD 003](../003-custom-deployments-after-spring-migration.md)'s signing-chain section already assumes this.
 
 6. **Maven Central coordinates.** Independent `rapla-client`/`rapla-server` opens version skew in downstream. **Mitigate** by publishing `rapla-bom` and requiring consumers to import it. `dhbwrapla` and any future custom deployment imports BOM, never specifies individual versions.
 
@@ -378,7 +378,7 @@ Same shape, same source — cost of switching is in those descriptors, especiall
 3. **Angular framework choice.** Angular vs React vs Vue vs Svelte vs HTMX. User named Angular, but spike in Risk 4 should validate.
 4. **Authentication for Angular client.** JWT (already used by Swing per PRD 001 Phase 3), or session cookies? **Recommendation:** JWT in `Authorization: Bearer`, `sessionStorage` (not `localStorage`). Decide before C-work.
 5. **i18n source of truth.** Swing uses `RaplaResources` (Java `ResourceBundle`). Angular needs translations — share `.properties` via build step, or maintain separate `.json`? **Recommendation:** generate `.json` from `.properties` at build time, one source of truth.
-6. **Should `rapla-archetype` be created, or is a documented `pom.xml` template enough?** PRD 003 leaned "documentation only — 1–2 custom deployments." `rapla-archetype` listed *optional*.
+6. **Should `rapla-archetype` be created, or is a documented `pom.xml` template enough?** [PRD 003](../003-custom-deployments-after-spring-migration.md) leaned "documentation only — 1–2 custom deployments." `rapla-archetype` listed *optional*.
 7. **Repository layout.** Stay one repo with 5-module reactor, or split per module (A3)? **Recommendation:** stay. If one module attracts external contributors at different cadence, split *that one* later.
 
 ## Dependencies on Other PRDs
@@ -388,6 +388,6 @@ Same shape, same source — cost of switching is in those descriptors, especiall
 | **001: Spring Boot Migration** | **Hard prerequisite.** Wait for Phases 1–7 + 8 cleanup before any module split (Risk 3). |
 | **001-A: Date → LocalDateTime** | Independent; parallel ok. Touches signatures inside `rapla-core`, won't move once modules exist. |
 | **002: Multi-Tenancy** | Independent. `TenantAwareFacade` lives in `rapla-server`; doesn't cross module boundaries. |
-| **003: Custom Deployments** | **Bidirectional.** PRD 003 assumes single-module today; this PRD simplifies three of its open questions (OQ2, OQ5, OQ6). If approved, PRD 003 should target multi-module shape. If deferred, PRD 003 proceeds against single-module and is not blocked. |
+| **003: Custom Deployments** | **Bidirectional.** [PRD 003](../003-custom-deployments-after-spring-migration.md) assumes single-module today; this PRD simplifies three of its open questions (OQ2, OQ5, OQ6). If approved, [PRD 003](../003-custom-deployments-after-spring-migration.md) should target multi-module shape. If deferred, [PRD 003](../003-custom-deployments-after-spring-migration.md) proceeds against single-module and is not blocked. |
 | **(future) PRD 005: Multi-Module Split** | This PRD's recommendation is the input. PRD 005 lays out actual phased split: cycle audit, module creation, package moves, dependency declarations, CI updates. |
 | **(future) PRD 006: Angular Client** | Depends on PRD 005 having created `rapla-client-web/` or a clearly-defined home. Could proceed against single-module by living under `src/main/angular/` — less clean. |

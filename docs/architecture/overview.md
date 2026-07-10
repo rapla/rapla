@@ -142,4 +142,4 @@ you trace bean wiring.
 - [docs/conflict-detection.md](../conflict-detection.md) — overlap algorithm in detail
 - [docs/development.md](../development.md) — WSL2 / Windows / OpenWebStart specifics
 - PRD 005 (multi-module split), PRD 008 (sync server / async client),
-  PRD 011 (Spring Boot 4 + Jackson 3) for historical context
+  [PRD 011](../prd/done/011-spring-boot-4-jackson-3.md) (Spring Boot 4 + Jackson 3) for historical context

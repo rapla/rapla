@@ -46,7 +46,7 @@
 
 | File | Title | Status |
 |---|---|---|
-| [done/035-graphql-foundations.md](done/035-graphql-foundations.md) | GraphQL foundations (architecture + classification gen + filter language + LocalDateTime/typeKey + auth) | done 2026-05-29; active work split into PRDs 056/059/060/061 |
+| [done/035-graphql-foundations.md](done/035-graphql-foundations.md) | GraphQL foundations (architecture + classification gen + filter language + LocalDateTime/typeKey + auth) | done 2026-05-29; active work split into PRDs [056](056-graphql-events-write-api.md)/[059](done/059-graphql-typed-where-predicates.md)/[060](060-graphql-mcp-foundations.md)/[061](061-graphql-dt-mutations-v2.md) |
 | [056-graphql-events-write-api.md](056-graphql-events-write-api.md) | GraphQL events write API (reservation mutations) | in-progress (design) |
 | [060-graphql-mcp-foundations.md](060-graphql-mcp-foundations.md) | GraphQL discovery + compute operations + MCP transport | draft 2026-05-29 |
 | [061-graphql-dt-mutations-v2.md](061-graphql-dt-mutations-v2.md) | GraphQL DynamicType mutations v2 (deferred follow-ups) | draft 2026-05-29 |
@@ -95,7 +95,7 @@
 | File | Title | Done |
 |---|---|---|
 | [done/001-spring-boot-migration.md](done/001-spring-boot-migration.md) | Spring Boot Migration | Phases 1–9 complete 2026-05-08 |
-| [done/098-server-artifact-store.md](done/098-server-artifact-store.md) | Server artifact store (views, templates, CSS) — replaces preferences-blob storage | done 2026-07-08; views switched, PRD 097 consumes |
+| [done/098-server-artifact-store.md](done/098-server-artifact-store.md) | Server artifact store (views, templates, CSS) — replaces preferences-blob storage | done 2026-07-08; views switched, [PRD 097](097-event-html-templates-mustache.md) consumes |
 | [done/002-swing-spring-di.md](done/002-swing-spring-di.md) | Swing UI Spring DI Migration | Phases A–F complete 2026-05-08 |
 | [done/011-spring-boot-4-jackson-3.md](done/011-spring-boot-4-jackson-3.md) | Upgrade to Spring Boot 4 + Jackson 3 | Phases 1–5 landed 2026-05-08; Phase 6 2026-05-11 |
 | [done/019-spring-boot-lifecycle-migration.md](done/019-spring-boot-lifecycle-migration.md) | Spring Boot Lifecycle Migration — Replacing `ServerExtension` | Phases 1–4 landed 2026-05-10 |
@@ -137,7 +137,7 @@
 
 | File | Title | Done |
 |---|---|---|
-| [done/031-token-refresh-and-api-keys.md](done/031-token-refresh-and-api-keys.md) | Refresh Tokens & API Keys — IdP-portable design | refresh half consolidated onto `/oauth2/token` (PRD 041); API-keys half superseded by PRD 043; moved 2026-07-05 |
+| [done/031-token-refresh-and-api-keys.md](done/031-token-refresh-and-api-keys.md) | Refresh Tokens & API Keys — IdP-portable design | refresh half consolidated onto `/oauth2/token` ([PRD 041](041-openapi-runtime-removal.md)); API-keys half superseded by [PRD 043](043-api-keys-jwt-pat.md); moved 2026-07-05 |
 | [done/059-graphql-typed-where-predicates.md](done/059-graphql-typed-where-predicates.md) | GraphQL typed `<TypeKey>Where` predicates on `allocatables(filter:)` + `ReservationFilter` (`whereEvent`), single `typeIn: [DynamicTypeKey!]` selector | phases 1–5 2026-05-29; phases 6+7 2026-07-07 |
 
 ## How to add a PRD

@@ -5,13 +5,13 @@
 
 ## Goal
 
-Support SAML 2.0 / Shibboleth IdPs for rapla deployments that cannot use Keycloak SAML brokering (PRD 036 §2.2), **without implementing SAML inside rapla.** Apache + the Shibboleth SP module (de-facto standard in academic IT) handles the full SAML protocol; rapla picks up the resulting identity from trusted HTTP headers and immediately switches to rapla-native auth (JWT for SPA, existing `ExternalUserResolver` for user lookup, existing refresh-token / API-key infrastructure for downstream).
+Support SAML 2.0 / Shibboleth IdPs for rapla deployments that cannot use Keycloak SAML brokering ([PRD 036](036-external-idp-oauth-login.md) §2.2), **without implementing SAML inside rapla.** Apache + the Shibboleth SP module (de-facto standard in academic IT) handles the full SAML protocol; rapla picks up the resulting identity from trusted HTTP headers and immediately switches to rapla-native auth (JWT for SPA, existing `ExternalUserResolver` for user lookup, existing refresh-token / API-key infrastructure for downstream).
 
 > **In one sentence:** Shibboleth does the credential check at a reverse proxy in front of rapla; rapla reads identity headers, resolves to a rapla `User`, mints a rapla-local JWT, and from that point on the SPA and API surface are 100% rapla-native — Shibboleth never enters the rapla codebase.
 
 ## Why this is needed
 
-PRD 036 §2.2 already covers SAML for most deployments via Keycloak brokering (zero rapla code). This PRD addresses the narrower segment that wants SAML federation but cannot or won't run Keycloak:
+[PRD 036](036-external-idp-oauth-login.md) §2.2 already covers SAML for most deployments via Keycloak brokering (zero rapla code). This PRD addresses the narrower segment that wants SAML federation but cannot or won't run Keycloak:
 
 1. **Deployment already runs Apache + Shibboleth** for other institutional apps and wants rapla to fit the same operational pattern. Adding Keycloak would mean a second auth service.
 2. **Federation registration is in the institution's name**, SP entity ID `https://rapla.uni.de/shibboleth` (Apache's metadata) — not Keycloak's. Re-registering through Keycloak's metadata adds federation paperwork.
@@ -23,8 +23,8 @@ This pattern is the **standard SAML integration for legacy academic webapps**: A
 
 ### In scope
 
-- **A "shibboleth" provider type** in rapla's external IdP config, alongside PRD 036's OIDC providers (Microsoft, Google, Keycloak). Discriminator: `saml-proxy`.
-- **`/api/auth/shibboleth/handshake/{providerId}`** endpoint that reads identity attributes from configurable HTTP headers, resolves to a rapla `User` via PRD 036's `ExternalUserResolver`, mints a rapla-local JWT via existing `JwtIssuer`, and redirects the browser to `/app/auth/saml-callback?token=<jwt>` (existing JWT-bridge UX).
+- **A "shibboleth" provider type** in rapla's external IdP config, alongside [PRD 036](036-external-idp-oauth-login.md)'s OIDC providers (Microsoft, Google, Keycloak). Discriminator: `saml-proxy`.
+- **`/api/auth/shibboleth/handshake/{providerId}`** endpoint that reads identity attributes from configurable HTTP headers, resolves to a rapla `User` via [PRD 036](036-external-idp-oauth-login.md)'s `ExternalUserResolver`, mints a rapla-local JWT via existing `JwtIssuer`, and redirects the browser to `/app/auth/saml-callback?token=<jwt>` (existing JWT-bridge UX).
 - **Trust-boundary enforcement**: rapla refuses identity headers unless the request originated from a configured trusted proxy IP/CIDR. Defense in depth on top of the assumption that rapla is not directly exposed to the public internet.
 - **Attribute-to-claim mapping** configurable per-provider (academic defaults: `eppn` → username, `mail` → email, `persistent-id` → external-id, `cn` → name).
 - **Logout coordination**: SPA's sign-out clears its rapla JWT and redirects the browser through Apache's `/Shibboleth.sso/Logout`, which handles SAML SLO with the upstream IdP and bounces back to rapla's `/app/login`.
@@ -38,7 +38,7 @@ This pattern is the **standard SAML integration for legacy academic webapps**: A
 - **Discovery service / WAYF** — runs at Apache+Shib layer (`SessionInitiator` discovery profile, or federation's central WAYF). Rapla sees one Shibboleth provider entry.
 - **Embedded SAML SP for deployments without a reverse proxy** — documented as deferred alternative in Appendix. Add only if a real deployment specifically requires "rapla as a single deployment artifact" AND cannot run Apache in front. Native SAML in rapla is ~3x higher cost (~1700 LOC).
 - **Native multi-Shibboleth-IdP routing.** One Apache+Shib instance handles one institutional SP identity.
-- **Keycloak migration tools.** Switching between Keycloak brokering (PRD 036 §2.2) and Shibboleth-via-proxy requires re-keying `external-id` preferences; manual SQL/data-file edit for the rare migration.
+- **Keycloak migration tools.** Switching between Keycloak brokering ([PRD 036](036-external-idp-oauth-login.md) §2.2) and Shibboleth-via-proxy requires re-keying `external-id` preferences; manual SQL/data-file edit for the rare migration.
 
 ## Architecture
 
@@ -123,7 +123,7 @@ The whole design assumes rapla is not directly reachable from the public interne
 
 If someone misconfigures and exposes rapla directly, Apache's auth is bypassed; the trusted-proxy IP check is the second line of defense. Defence-in-depth combination is the same one used by every header-trust-based webapp in the academic world.
 
-### Reuse from PRD 036
+### Reuse from [PRD 036](036-external-idp-oauth-login.md)
 
 | Component | Reused? |
 |---|---|
@@ -140,7 +140,7 @@ If someone misconfigures and exposes rapla directly, Apache's auth is bypassed; 
 | Logout | ⚠️ — branches. SPA's `signOut()` for SAML-proxy navigates to `provider.shibbolethLogoutUrl`, which is Apache's `/Shibboleth.sso/Logout?return=<post-logout-redirect>`. |
 | New SPA route `/app/auth/saml-callback` | ✅ — same one we'd build for any "JWT delivered via redirect" pattern (already needed for native SAML in option A as well). |
 
-Rule of thumb: **~85% reuses PRD 036 infrastructure**; new parts are the handshake endpoint, trusted-proxy guard, attribute-map adapter, and ~80 lines of Angular for picker / saml-callback.
+Rule of thumb: **~85% reuses [PRD 036](036-external-idp-oauth-login.md) infrastructure**; new parts are the handshake endpoint, trusted-proxy guard, attribute-map adapter, and ~80 lines of Angular for picker / saml-callback.
 
 ### Config shape
 
@@ -182,7 +182,7 @@ rapla:
 
 ### Discovery shape extension
 
-PRD 036's discovery JSON gets a `type` discriminator field per provider entry:
+[PRD 036](036-external-idp-oauth-login.md)'s discovery JSON gets a `type` discriminator field per provider entry:
 
 ```json
 {
@@ -246,7 +246,7 @@ Combined with `server.address: 127.0.0.1` in rapla's config, the deployment surf
 1. **Config + provider model**
    - New `ShibbolethProvidersProperties` `@ConfigurationProperties` class with `Map<String, ShibbolethProvider>` (keyed by admin-chosen id, repeatable).
    - `ShibbolethProvider` POJO with the fields from the Config shape section above.
-   - `ShibbolethProvider.toProviderConfig()` returns a `ProviderConfig` (the same type from PRD 036) with `type = SAML_PROXY`. `ProviderConfig.type` enum: `OIDC` (default) | `SAML_PROXY`.
+   - `ShibbolethProvider.toProviderConfig()` returns a `ProviderConfig` (the same type from [PRD 036](036-external-idp-oauth-login.md)) with `type = SAML_PROXY`. `ProviderConfig.type` enum: `OIDC` (default) | `SAML_PROXY`.
    - Validation: `trusted-proxies` non-empty when enabled.
 
 2. **Handshake endpoint**
@@ -254,13 +254,13 @@ Combined with `server.address: 127.0.0.1` in rapla's config, the deployment surf
    - `GET /api/auth/shibboleth/handshake/{providerId}`:
      - Reject if request's peer IP isn't in the provider's `trusted-proxies` CIDR list. Return 403 with a clear message.
      - Read the configured headers, build a `Map<String,String>` of claims.
-     - Call `ExternalUserResolver.resolve(claims, providerConfig)` (existing PRD 036 resolver).
+     - Call `ExternalUserResolver.resolve(claims, providerConfig)` (existing [PRD 036](036-external-idp-oauth-login.md) resolver).
      - On success: `JwtIssuer.issueAccessToken(user.getId(), 3600)`, 302 to `/app/auth/saml-callback?token=<urlencoded>&provider=<id>`.
      - On user-resolution failure: 302 to `/app/login?error=<reason>`.
 
 3. **Discovery endpoint update**
    - `OAuthConfigController.buildProviders()` adds enabled Shibboleth providers to `providers[]` with `type: "saml-proxy"` and `loginUrl: "/api/auth/shibboleth/handshake/<id>"` plus `shibbolethLogoutUrl`.
-   - Flat top-level fields stay rapla-SAS (unchanged Swing regression-guard, same as PRD 036).
+   - Flat top-level fields stay rapla-SAS (unchanged Swing regression-guard, same as [PRD 036](036-external-idp-oauth-login.md)).
 
 4. **Angular: `OAuthProviderEntry` discriminator + click handler branching**
    - Add `type: 'oidc' | 'saml-proxy'` to `OAuthProviderEntry` in `auth.service.ts`.
@@ -284,7 +284,7 @@ Combined with `server.address: 127.0.0.1` in rapla's config, the deployment surf
 
 7. **Manual e2e** against a real or stubbed Shibboleth setup. Easiest local dev: SimpleSAMLphp container as the IdP + `shibboleth/sp` Apache image in front of rapla. Tagged `e2e`, manual only.
 
-8. **PRD close**: when status hits `done`, `git mv` to `docs/prd/done/`. Cross-reference from PRD 036 §2.2.
+8. **PRD close**: when status hits `done`, `git mv` to `docs/prd/done/`. Cross-reference from [PRD 036](036-external-idp-oauth-login.md) §2.2.
 
 ## Tests
 
@@ -305,7 +305,7 @@ Combined with `server.address: 127.0.0.1` in rapla's config, the deployment surf
 | e2e (manual) | SimpleSAMLphp IdP + Apache+mod_shib container | Full round-trip on a developer machine. |
 | e2e (manual) | DFN-AAI Test or local Shibboleth IdP | Federation-membership round-trip. |
 
-Total: 8 new tier-3 MockMvc tests, 3 tier-1/2 unit tests, 2 Angular tier-6 tests, 2 manual e2e. Reuses PRD 036's `ExternalUserResolverTest` and `IssuerAwareJwtDecoderTest` (unchanged).
+Total: 8 new tier-3 MockMvc tests, 3 tier-1/2 unit tests, 2 Angular tier-6 tests, 2 manual e2e. Reuses [PRD 036](036-external-idp-oauth-login.md)'s `ExternalUserResolverTest` and `IssuerAwareJwtDecoderTest` (unchanged).
 
 ## Open Questions
 
@@ -322,7 +322,7 @@ Total: 8 new tier-3 MockMvc tests, 3 tier-1/2 unit tests, 2 Angular tier-6 tests
 
 5. **Federation membership: WHO publishes SP metadata?** Apache+mod_shib publishes at `https://rapla.uni.de/Shibboleth.sso/Metadata`. Rapla's own URL becomes the SP entity ID. **Operationally cleaner than Keycloak brokering** (where Keycloak's URL would be the SP entity).
 
-6. **Migrating users between Keycloak brokering and Shibboleth-via-proxy.** Existing `external-id` preferences are under `org.rapla.auth.external-id.keycloak` (or `.shibboleth`). Switching requires either re-resolving by email on next login (slightly slower but works automatically thanks to PRD 036's three-step lookup) or admin SQL/XML editing to copy preferences. Document this; no migration tool in v1.
+6. **Migrating users between Keycloak brokering and Shibboleth-via-proxy.** Existing `external-id` preferences are under `org.rapla.auth.external-id.keycloak` (or `.shibboleth`). Switching requires either re-resolving by email on next login (slightly slower but works automatically thanks to [PRD 036](036-external-idp-oauth-login.md)'s three-step lookup) or admin SQL/XML editing to copy preferences. Document this; no migration tool in v1.
 
 ## Effort estimate
 
@@ -350,7 +350,7 @@ Build when a deployment formally requests SAML federation AND either:
 - They want SAML without Keycloak as a separate auth service for operational reasons (next most common), OR
 - Their federation registration is in their own SP-metadata name and Keycloak brokering would shift it.
 
-If the deployment is open to running Keycloak, **prefer PRD 036 §2.2 (Keycloak brokering)** — zero rapla code, same operational outcome.
+If the deployment is open to running Keycloak, **prefer [PRD 036](036-external-idp-oauth-login.md) §2.2 (Keycloak brokering)** — zero rapla code, same operational outcome.
 
 If the deployment must avoid a reverse proxy entirely AND must avoid Keycloak — fall through to the native-SAML alternative in the Appendix.
 

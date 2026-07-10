@@ -143,7 +143,9 @@ describe('buildMoveScopeCommand — verb selection', () => {
 
   it('MOVE / SINGLE repeating → splitOccurrence(occurrence, shifted start)', () => {
     const { gql, calls } = captureGql();
-    buildMoveScopeCommand(gql, facts({ repeating: true }), 'single', move).execute().subscribe();
+    buildMoveScopeCommand(gql, facts({ repeating: true }), 'single', move)
+      .execute()
+      .subscribe();
     expect(calls[0].query).toContain('splitOccurrence');
     expect(calls[0].vars).toEqual({
       id: 'a-1',
@@ -154,7 +156,9 @@ describe('buildMoveScopeCommand — verb selection', () => {
 
   it('MOVE / SINGLE non-repeating → moveAppointment (nothing to split)', () => {
     const { gql, calls } = captureGql();
-    buildMoveScopeCommand(gql, facts({ multi: true }), 'single', move).execute().subscribe();
+    buildMoveScopeCommand(gql, facts({ multi: true }), 'single', move)
+      .execute()
+      .subscribe();
     expect(calls[0].query).toContain('moveAppointment');
   });
 
@@ -165,7 +169,9 @@ describe('buildMoveScopeCommand — verb selection', () => {
       newEnd: '2031-03-05T11:30:00',
       oldEnd: '2031-03-05T11:00:00',
     };
-    buildMoveScopeCommand(gql, facts({ repeating: true }), 'serie', resize).execute().subscribe();
+    buildMoveScopeCommand(gql, facts({ repeating: true }), 'serie', resize)
+      .execute()
+      .subscribe();
     expect(calls[0].query).toContain('moveAppointment');
     expect(calls[0].vars).toEqual({
       id: 'a-1',
@@ -181,7 +187,9 @@ describe('buildMoveScopeCommand — verb selection', () => {
       newEnd: '2031-03-05T11:30:00',
       oldEnd: '2031-03-05T11:00:00',
     };
-    buildMoveScopeCommand(gql, facts({ repeating: true }), 'single', resize).execute().subscribe();
+    buildMoveScopeCommand(gql, facts({ repeating: true }), 'single', resize)
+      .execute()
+      .subscribe();
     expect(calls[0].query).toContain('splitOccurrence');
     expect((calls[0].vars as { target: unknown }).target).toEqual({
       dateTime: { start: '2031-03-05T10:00:00', end: '2031-03-05T11:30:00' },

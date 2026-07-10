@@ -1,13 +1,13 @@
 # PRD 091 — SPA reservation editing & availability search
 
 **Status:** draft — 2026-07-05 (updated 2026-07-06: equipment-lending archetype prioritized as first implementation target; 2026-07-07: in-sheet undo/redo decided — D5; 2026-07-08: recurrence editor shipped — Phase 4.0–4.3 + 4.5 done, D6 block-level availability permanently deferred, OQ6 → GraphQL `expandOccurrences`)
-**Related:** PRD 024 (server-side edit services — the `/api/edit` REST trio), PRD 026 (Angular umbrella), PRD 056/057/063 (GraphQL mutations, shipped), PRD 060 (GraphQL MCP foundations — designed `whoIsFree`/`findFreeSlots`/`checkConflicts`, unbuilt), PRD 067 (mutation unification, D7: GraphQL write surface still adjustable — SPA is the first real consumer), PRD 077/078 (view model + renderer, the read side), PRD 086 (appointment block index — the availability substrate), **PRD 092 (free-slot search — the fixed-resources/variable-time axis, split from this PRD)**, **PRD 093 (loan lifecycle — status/blocking rules the availability query must honor)**, PRD 094 (main-view actions & popups — command-pattern undo past the save boundary; D5 covers only in-sheet)
+**Related:** [PRD 024](024-server-side-edit-services.md) (server-side edit services — the `/api/edit` REST trio), [PRD 026](026-angular-frontend.md) (Angular umbrella), PRD [056](056-graphql-events-write-api.md)/[057](done/057-graphql-dt-mutations-v1.md)/[063](063-graphql-allocatables-write-api.md) (GraphQL mutations, shipped), [PRD 060](060-graphql-mcp-foundations.md) (GraphQL MCP foundations — designed `whoIsFree`/`findFreeSlots`/`checkConflicts`, unbuilt), [PRD 067](067-server-mutation-unification.md) (mutation unification, D7: GraphQL write surface still adjustable — SPA is the first real consumer), PRD [077](077-calendar-model-graphql.md)/[078](078-spa-graphql-view-renderer.md) (view model + renderer, the read side), [PRD 086](086-appointment-block-index.md) (appointment block index — the availability substrate), **[PRD 092](092-free-slot-search.md) (free-slot search — the fixed-resources/variable-time axis, split from this PRD)**, **[PRD 093](093-loan-lifecycle.md) (loan lifecycle — status/blocking rules the availability query must honor)**, [PRD 094](094-spa-main-view-actions-and-popups.md) (main-view actions & popups — command-pattern undo past the save boundary; D5 covers only in-sheet)
 
 **Focus (clarified 2026-07-06): the sheet is the GENERAL event editor** — the
 lending archetype (`docs/usecases/equipment-planning.md`, UC-C1/C2) is a *special
 case* (one event type among many, plus a deployment table lens), not the design
 driver. It drives only the *ordering*: UC-C2 ("free camera Mon–Fri") is
-`resourceAvailability` with a fixed multi-day window — *not* PRD 092, which stays
+`resourceAvailability` with a fixed multi-day window — *not* [PRD 092](092-free-slot-search.md), which stays
 parked; loans are single-appointment, so the finder (C) moves ahead of the matrix
 (D) and the sheet ships its single-appointment slice before the recurrence editor.
 **Every Swing dialog capability keeps a place in the design**
@@ -28,7 +28,7 @@ resources, assigning resources to occurrences on long series) become the SPA's
 strongest, built on capabilities the market doesn't have (per-occurrence assignment
 via the sparse restriction map). The complementary axis — finding free *time* for a
 fixed resource set — is a separate design problem (new gap-enumeration algorithm,
-its own UX) and lives in **PRD 092**.
+its own UX) and lives in **[PRD 092](092-free-slot-search.md)**.
 
 Requirements ground truth: `docs/usecases/reservation-editing.md` (UC-E1…E16).
 Swing capability checklist: `docs/architecture/reservation-edit-ui-inventory.md`.
@@ -38,20 +38,20 @@ Swing capability checklist: `docs/architecture/reservation-edit-ui-inventory.md`
 - **GraphQL writes exist, unused:** `createReservation` / `updateReservation`
   (full-state + `expectedLastChanged`) / `deleteReservations` / `applyChanges`
   ship server-side; the SPA has **no** mutation method in `graphql.service.ts` and
-  no edit component at all. PRD 067 D7: the mutation contract may still be reshaped
+  no edit component at all. [PRD 067](067-server-mutation-unification.md) D7: the mutation contract may still be reshaped
   for its first real consumer.
 - **Availability primitives exist only as legacy RPC:** `getAllocatableBindings`
   (busy-map for candidate resources × proposed appointments,
   `LocalAbstractCachableOperator:4399`) and `getNextAllocatableDate` (brute-force
-  linear scan up to a year, `:4451`) over `/api/storage/*` — not in GraphQL. PRD 024
+  linear scan up to a year, `:4451`) over `/api/storage/*` — not in GraphQL. [PRD 024](024-server-side-edit-services.md)
   added `/api/edit/check-conflicts` (proposed-reservation dry-run, §12-filtered),
   `/validate-recurrence`, `/expand-blocks`.
 - **No free-resource or multi-slot search anywhere.** "Which rooms are free in
   window W" requires client-side inversion of the busy map; "give me ranked
   candidate slots" doesn't exist (only first-hit next-free-date).
-- **PRD 086 block index** (behind `rapla.readmodel.authoritative`) provides the
+- **[PRD 086](086-appointment-block-index.md) block index** (behind `rapla.readmodel.authoritative`) provides the
   in-memory interval index an efficient availability resolver should use.
-- **Pure-Java edit models** (PRD 023/024: `RepeatingRuleValidator`,
+- **Pure-Java edit models** (PRD [023](023-presenter-view-extraction.md)/[024](024-server-side-edit-services.md): `RepeatingRuleValidator`,
   `AllocationConflictModel`, `AllocatableRowStatusModel`, `ExceptionListMutator`)
   encode the domain rules and stay the single source of truth.
 
@@ -90,11 +90,11 @@ Swing capability checklist: `docs/architecture/reservation-edit-ui-inventory.md`
 ## Proposals
 
 Ordered; A+B are the foundation, C/D/F are UI surfaces consuming them (E moved to
-PRD 092). Each UI proposal is independently shippable.
+[PRD 092](092-free-slot-search.md)). Each UI proposal is independently shippable.
 
 ### A — GraphQL availability queries (server foundation)
 
-Extend the schema (aligning with PRD 060's sketch so MCP gets it for free).
+Extend the schema (aligning with [PRD 060](060-graphql-mcp-foundations.md)'s sketch so MCP gets it for free).
 **v1 (2026-07-06) is appointment-granular — exactly the Swing semantics** of
 `getAllAllocatableBindings`: per candidate, *which appointments* clash. No block
 enumeration, no evaluation window — series overlap is computed analytically on the
@@ -143,9 +143,9 @@ input PotentialConflictInput {
 
 **One `Conflict` type for realized AND potential conflicts (2026-07-06).** A
 potential conflict is a `Conflict` whose side 1 is not persisted (yet) — same
-symmetric pair semantics, different realization state. The shipped PRD 064 type is
+symmetric pair semantics, different realization state. The shipped [PRD 064](064-graphql-conflicts-read-api.md) type is
 reshaped into an id-based superset (SPA is the sole consumer — cheap now, expensive
-later, PRD 067 D7 spirit):
+later, [PRD 067](067-server-mutation-unification.md) D7 spirit):
 
 ```graphql
 type Conflict {
@@ -173,7 +173,7 @@ type Conflict {
   technical: `reservation1` null = brand-new draft; `reservation2`/`appointment2`
   null = §12-masked.
 - **§12: drop vs. mask.** `conflicts(reservationId:)` keeps dropping unreadable
-  conflicts entirely (PRD 064 contract). `potentialConflicts` must NOT drop — the
+  conflicts entirely ([PRD 064](064-graphql-conflicts-read-api.md) contract). `potentialConflicts` must NOT drop — the
   resource IS busy — it masks: side 2 fields null, `description` generic ("belegt").
   Readable counterparty → name + time in `description` (server-localized).
 - **Continuity across save:** appointment ids are stable (D3), so the potential
@@ -216,10 +216,10 @@ the data-leak-prevention rules. Reshaping the `Conflict` type touches
 `ConflictGraphQLController` (@SchemaMapping fields) + the SPA's existing `conflicts`
 consumers — audit them in the same change.
 
-**Shared schema vocabulary (PRD 092 must reuse, not redefine):** `TimeWindow`
-(defined with the first consumer — PRD 092 or the future `occurrences` field,
+**Shared schema vocabulary ([PRD 092](092-free-slot-search.md) must reuse, not redefine):** `TimeWindow`
+(defined with the first consumer — [PRD 092](092-free-slot-search.md) or the future `occurrences` field,
 whichever lands first), `AppointmentInput` (already shared with mutations), the
-block-identity convention, `AllocationStatus`, and — when PRD 092 introduces worktime constraints —
+block-identity convention, `AllocationStatus`, and — when [PRD 092](092-free-slot-search.md) introduces worktime constraints —
 `WorktimeInput` is defined there and referenced here if ever needed.
 
 ### B — SPA mutation layer + event sheet skeleton
@@ -267,7 +267,7 @@ coupling between header and add mode (implicit collapsing that removes input
 context reads as a bug). Both states are draft-local: reopening the sheet starts
 collapsed.
 Open: auto-recheck vs. on-demand; draft-local vs. per-user-remembered
-pins (PRD 089 favorites adjacency).
+pins ([PRD 089](089-server-side-recents-favorites.md) favorites adjacency).
 
 **Entry points (locked 2026-07-06):** (a) row edit in the table view — a row
 carrying an event id opens `/app/event/:id` directly; a row carrying only an
@@ -282,7 +282,7 @@ from the first second (no redirect on first save). The sheet has ONE state
 AND isNew flag → empty draft with that id; id unknown WITHOUT the flag →
 "nicht gefunden" (a mistyped/foreign URL must never silently become a create
 form; §12 keeps unknown ≡ hidden, the collision case fails uniformly at save
-via PRD 056 §9). No calendar-drag entry in this phase (PRD 077's render mode
+via [PRD 056](056-graphql-events-write-api.md) §9). No calendar-drag entry in this phase ([PRD 077](077-calendar-model-graphql.md)'s render mode
 owns that).
 
 ### C — Tri-state resource finder (UC-E5; Swing picker successor)
@@ -319,14 +319,14 @@ and non-uniform assignment (complex multi-resource split bookings, read-only "wh
 in when" overview of big series). Not a core edit surface; loans (1 appointment) and
 the default empty restriction map (all-on-all) get nothing from it.
 
-### E — Ranked free-slot finder → moved to PRD 092
+### E — Ranked free-slot finder → moved to [PRD 092](092-free-slot-search.md)
 
 The fixed-resources/variable-time axis (UC-E6, the "free appointment >>" successor:
 `freeSlots` query + slot-finder UI + heatmap/availability-strip increments) is a
 separate design problem — new gap-enumeration algorithm over the block index, its
 own mode question (concrete slots vs. weekly-pattern search) — and lives in
-**PRD 092**. No dependency in either direction: C/D/F consume only
-`resourceAvailability`; PRD 092's UI can land before or after this PRD's phases 3+.
+**[PRD 092](092-free-slot-search.md)**. No dependency in either direction: C/D/F consume only
+`resourceAvailability`; [PRD 092](092-free-slot-search.md)'s UI can land before or after this PRD's phases 3+.
 
 ### F — Split-booking repair suggestions (UC-E8 stretch)
 
@@ -339,8 +339,8 @@ a similarity ranking. Beyond current market state; explicitly a later phase.
 ### Lightweight variants considered (not primary)
 
 - **Room-lane day timeline** for single-occurrence repair (drag block to another
-  room lane) — powerful but needs the calendar surface; defer until PRD 077 ships.
-- Availability strip while dragging + weekday×hour heatmap → moved to PRD 092
+  room lane) — powerful but needs the calendar surface; defer until [PRD 077](077-calendar-model-graphql.md) ships.
+- Availability strip while dragging + weekday×hour heatmap → moved to [PRD 092](092-free-slot-search.md)
   (they consume `freeSlots`-side data).
 
 ## Scope
@@ -356,18 +356,18 @@ a similarity ranking. Beyond current market state; explicitly a later phase.
 
 ### Out of scope
 - **Free-time search (UC-E6): `freeSlots` query, slot finder, heatmap,
-  availability strip → PRD 092**
+  availability strip → [PRD 092](092-free-slot-search.md)**
 - Templates + multi-event batch edit (UC-E16) — Swing keeps them
 - Split-booking suggestions (F) — stretch/follow-up phase
-- Calendar drag-editing — belongs to PRD 077's render mode
+- Calendar drag-editing — belongs to [PRD 077](077-calendar-model-graphql.md)'s render mode
 - Swing changes of any kind; permissions *editor* parity beyond read/gate (UC-E11
   minimal: show, edit only for `canAdmin`)
 - **Undo past the save boundary** — a post-action "Rückgängig" toast (compensating
   server mutation, Google-Calendar style) is an **app-shell** concern, not a sheet
   concern: it fires on committed actions from any surface (sheet save, future
-  table-lens delete, PRD 077 calendar drag, PRD 093 loan actions) and needs its own
+  table-lens delete, [PRD 077](077-calendar-model-graphql.md) calendar drag, [PRD 093](093-loan-lifecycle.md) loan actions) and needs its own
   building blocks (toast surface, inverse retention, CONCURRENT_MODIFICATION
-  handling on the inverse mutation). → **PRD 094** (main-view actions & popups,
+  handling on the inverse mutation). → **[PRD 094](094-spa-main-view-actions-and-popups.md)** (main-view actions & popups,
   command pattern). The Swing analog is the *global* `CommandHistory` (menu
   bar); D5 covers only the *dialog* history.
 
@@ -378,7 +378,7 @@ single-appointment sheet before recurrence. UC-C2 (candidates = `typeKeyIn`, one
 multi-day appointment) is the acceptance case for Phases 1+3.
 
 ### Phase 1 — Availability API (A) — DONE 2026-07-06
-- [x] Reshape `Conflict` type to the id-based superset (PRD 064 follow-up). SPA audit:
+- [x] Reshape `Conflict` type to the id-based superset ([PRD 064](064-graphql-conflicts-read-api.md) follow-up). SPA audit:
       zero Angular consumers existed — no migration needed. `@SchemaMapping` field
       resolvers replaced by the materialized `ConflictRow` record (both queries share it);
       realized rows are side-normalized (side 1 = queried reservation).
@@ -387,7 +387,7 @@ multi-day appointment) is the acceptance case for Phases 1+3.
       `CandidateInput @oneOf` (filter delegates to the §12-scoped `allocatables(filter:)`
       resolver; ids resolved with hidden ≡ nonexistent drop). Appointment ids REQUIRED
       (loud REQUIRED error); `repeating` rejected loudly (UNSUPPORTED — the mutation path
-      doesn't materialize recurrence yet either, PRD 056 v1).
+      doesn't materialize recurrence yet either, [PRD 056](056-graphql-events-write-api.md) v1).
 - [x] `potentialConflicts` resolver (full enumeration; `startDate` via
       `ConflictImpl.getFirstConflictDate`; side-1 appointments materialized from input;
       §12 masking: unreadable counterparty → side-2 fields null + `not_visible` i18n text)
@@ -396,7 +396,7 @@ multi-day appointment) is the acceptance case for Phases 1+3.
       masked-counterparty tier-3 test — testdefault.xml gives the event type
       `read=everyone` and mutations can't set restrictive permissions, so an
       unreadable-to-monty reservation needs a fixture extension (restricted-read event
-      type) first; PRD 064 precedent.
+      type) first; [PRD 064](064-graphql-conflicts-read-api.md) precedent.
 - [x] Integration test: UC-C2 shape — `typeKeyIn` filter, single multi-day appointment
       (`AvailabilityGraphQLControllerTest.ucC2FinderSingleMultiDayAppointment`) +
       drill-down counterparty test. GraphQL package suite green (244 tests).
@@ -420,7 +420,7 @@ Order matters — each step is independently verifiable before the next starts.
       ORIGINAL SPEC (kept for reference):
       Full-state save must NEVER destroy state the UI can't display/edit yet.
       (a) Server: `updateReservation`/`createReservation` must materialize
-      `AppointmentInput.repeating` + `allDay` (today a PRD 056 v1 TODO in
+      `AppointmentInput.repeating` + `allDay` (today a [PRD 056](056-graphql-events-write-api.md) v1 TODO in
       `ReservationMutationController.buildAppointment` — a full-state update of
       a recurring event would silently flatten the series). Test-first
       regression: load event with weekly rule → save unchanged → rule intact.
@@ -485,16 +485,16 @@ Order matters — each step is independently verifiable before the next starts.
 - [x] **2.6 DONE** — assigned list with live status pills + editable "gilt für" date picker; add mode per prototype (ONE Auswählbar list, pins on top, debounced `AvailabilitySearchService`: filter query + ids query in parallel, Fertig/Esc/save close). **2.6 With-what minimal** — add/remove allocations via the existing
       `search` query (person + items for UC-C1); chips list; no finder yet
       (Phase 3 replaces the picker interior, the section shell stays).
-- [x] **2.7 DONE** — CONCURRENT_MODIFICATION banner (reload-discarding vs. overwrite); ID_COLLISION on own create id mapped to "already applied" (PRD 056 §9 retry contract); save reloads for fresh lastChanged. NOTE: `lastModifiedAt` (DateTime) is offset-stripped to LocalDateTime for `expectedLastChanged` — verify against a live server probe. **2.7 Concurrency** — `updateReservation` with `expectedLastChanged`;
+- [x] **2.7 DONE** — CONCURRENT_MODIFICATION banner (reload-discarding vs. overwrite); ID_COLLISION on own create id mapped to "already applied" ([PRD 056](056-graphql-events-write-api.md) §9 retry contract); save reloads for fresh lastChanged. NOTE: `lastModifiedAt` (DateTime) is offset-stripped to LocalDateTime for `expectedLastChanged` — verify against a live server probe. **2.7 Concurrency** — `updateReservation` with `expectedLastChanged`;
       CONCURRENT_MODIFICATION → reload-and-reapply dialog (UC-E15). Tier-5 test
       for the reapply merge (fresh lastChanged + kept draft edits).
-- [x] **2.8 DONE** — toolbar "Neu" button (client-minted id + isNew state) DONE 2026-07-06; table-lens ROW EDIT landed 2026-07-07 via PRD 094 Phase 1 (row context menu Bearbeiten/Anzeigen in the view host). **2.8 Table-lens entry points** — row edit action (event id direct;
+- [x] **2.8 DONE** — toolbar "Neu" button (client-minted id + isNew state) DONE 2026-07-06; table-lens ROW EDIT landed 2026-07-07 via [PRD 094](094-spa-main-view-actions-and-popups.md) Phase 1 (row context menu Bearbeiten/Anzeigen in the view host). **2.8 Table-lens entry points** — row edit action (event id direct;
       appointment-id rows resolve the owning event) + "new" toolbar action on
       the table lens (UC-C1 "Neue Ausleihe").
 
 Out of this slice (explicit): recurrence editor (Phase 4), finder interior
 (Phase 3), availability strip, permissions tab beyond read-only gating,
-loan-status chip (PRD 093 Phase 3 — the sheet must merely not preclude it).
+loan-status chip ([PRD 093](093-loan-lifecycle.md) Phase 3 — the sheet must merely not preclude it).
 
 ### Phase 2b — Material date/time + quick-create window (DONE 2026-07-07)
 
@@ -653,7 +653,7 @@ Recurrence sub-plan detailed 2026-07-08 (Swing→SPA migration research):
 ## Open Questions
 
 - **OQ1** — Does `updateReservation` (full-state) suffice for the sheet, or does the
-  matrix want a fine-grained `updateAllocations` patch mutation (PRD 067 D7 allows
+  matrix want a fine-grained `updateAllocations` patch mutation ([PRD 067](067-server-mutation-unification.md) D7 allows
   reshaping)? *Resolution 2026-07-06:* **full-state** for the Phase 2 slice — the
   sheet holds the complete draft anyway, full-state keeps abort free (UC-E14) and
   `expectedLastChanged` gives clean CONCURRENT_MODIFICATION semantics. A patch
@@ -662,7 +662,7 @@ Recurrence sub-plan detailed 2026-07-08 (Swing→SPA migration research):
 - **OQ2** — Finder ranking: free-fraction only, or attribute fit (capacity vs.
   enrolled) too? UniTime-style consequence annotations ("free, but capacity 20 <
   35")? *Resolution:* pending.
-- **OQ3** — Should `resourceAvailability` require the PRD 086 flag
+- **OQ3** — Should `resourceAvailability` require the [PRD 086](086-appointment-block-index.md) flag
   (`rapla.readmodel.authoritative`) or fall back to the legacy per-allocatable scan?
   *Resolution:* pending — likely fallback with the index as fast path.
 - **OQ4** — Where does UC-E4 (cancel one occurrence) live on mobile: sheet or a
@@ -670,7 +670,7 @@ Recurrence sub-plan detailed 2026-07-08 (Swing→SPA migration research):
 - **OQ5** — Request-only (UC-E9): does the SPA v1 surface REQUESTED as read-only
   status or full request workflow? *Resolution:* pending.
 - **OQ6** — Occurrence-preview transport: new GraphQL `expandOccurrences` query
-  vs. PRD 024 REST `/api/edit/expand-blocks` (predates the SPA GraphQL-only
+  vs. [PRD 024](024-server-side-edit-services.md) REST `/api/edit/expand-blocks` (predates the SPA GraphQL-only
   decision). *Resolution 2026-07-08:* **GraphQL** — shipped as Phase 4.1. The
   REST trio stays for now (Swing/third parties); retiring it is a separate
   decision.
@@ -685,16 +685,16 @@ Recurrence sub-plan detailed 2026-07-08 (Swing→SPA migration research):
 ## Decisions locked
 
 **D1 — Availability API is GraphQL, not REST (2026-07-05).** The SPA is
-GraphQL-only for data (AGENTS.md §14), PRD 067 D3/D4 make GraphQL the server API,
-and MCP clients (PRD 060) get the query for free. Rejected: extending
+GraphQL-only for data (AGENTS.md §14), [PRD 067](067-server-mutation-unification.md) D3/D4 make GraphQL the server API,
+and MCP clients ([PRD 060](060-graphql-mcp-foundations.md)) get the query for free. Rejected: extending
 `/api/edit/*` (would reopen a second data transport in the SPA and be rebuilt on
 GraphQL later anyway); exposing the legacy `/api/storage` RPC (Swing wire protocol,
 raw `ReservationImpl` payloads — §12 leak-by-design for a browser client).
-Constraint: the resolver is a thin layer over the PRD 024 service path
+Constraint: the resolver is a thin layer over the [PRD 024](024-server-side-edit-services.md) service path
 (`getAllAllocatableBindingsSync` + `AllocationConflictModel`) — no parallel
 conflict logic.
 
-**D2 — Free-time search split out to PRD 092 (2026-07-05).** `freeSlots` shares no
+**D2 — Free-time search split out to [PRD 092](092-free-slot-search.md) (2026-07-05).** `freeSlots` shares no
 implementation with `resourceAvailability` (new gap-enumeration algorithm vs.
 composition of existing services), has no dependency link to the finder/matrix, and
 carries its own unresolved mode question (concrete slots vs. weekly-pattern
@@ -708,13 +708,13 @@ though the mutation contract only requires them when subset restrictions are
 present. Why: (a) the restriction map joins on appointment ids — subset
 allocations at create time are inexpressible without them (the matrix's normal
 case); (b) stable matrix/availability identity across draft edits (index-based
-identity is fragile); (c) create becomes retry-idempotent (PRD 056 OQ5).
+identity is fragile); (c) create becomes retry-idempotent ([PRD 056](056-graphql-events-write-api.md) OQ5).
 Swing's server-roundtrip id allocation (`/api/storage/identifier`) is NOT
 copied — rapla ids are stateless typed UUIDs, so client generation is safe.
 The *contract* rule (ids optional for third parties, subset restrictions force
 appointment ids) and the `checkIdIntegrity` operator guard (collision +
 foreign-reservation appointment ids, §12-uniform rejection) are owned by
-**PRD 056 locked decision §9** — this PRD only consumes them.
+**[PRD 056](056-graphql-events-write-api.md) locked decision §9** — this PRD only consumes them.
 Alternatives rejected: server pre-allocation mutation (roundtrip per appointment
 add, no gain — server ids are random UUIDs too, uniqueness comes from the
 save-time guard either way); strictly required ids for all consumers (hurts

@@ -3,7 +3,7 @@
 **Status:** reference. **Purpose:** the legacy Swing/HTML **TableView** configs become
 legacy with the Angular SPA. This doc captures the *existing* table views (ground truth
 from the dhbw deployment + the rapla code) as a **capability benchmark** for the new
-GraphQL-native view system (PRD 074): _can the new GraphQL views reproduce exactly what
+GraphQL-native view system ([PRD 074](../prd/074-graphql-declarative-views.md)): _can the new GraphQL views reproduce exactly what
 the existing tables do?_ It exists so future discussions don't re-derive the table config
 or argue about whether GraphQL can match it.
 
@@ -80,7 +80,7 @@ grouping, **not** an aggregation: no row is collapsed, nothing is counted or sum
 
 ## 3. GraphQL reproduction (the benchmark)
 
-Each legacy column maps to a GraphQL construct (PRD 074): **selection** (rooms / courses /
+Each legacy column maps to a GraphQL construct ([PRD 074](../prd/074-graphql-declarative-views.md)): **selection** (rooms / courses /
 persons are referenced *allocatables*, split by `typeKeyIn` / `isPersonEq`) →
 `allocatables(filter:)`; **projection / derivation** (name, start, end, times, duration,
 lastchanged) → a **server-evaluated field** that reuses rapla's existing `ParsedText`
@@ -140,12 +140,12 @@ was what previously forced `@flatten`/`@column(order:)` — an artifact, now gon
   (`Kurs` = `typeKeyIn:["Kurs","Teilkurs","Kursgruppe"]`, `Raum` = room types, `Person` =
   `isPersonEq:true`) comes from the column annotation and defines *which allocatables the
   column shows*. It stays **inline** and is exactly the shipped
-  **`Appointment.allocatables(filter: AppointmentAllocatableFilter)`** field (PRD 073
+  **`Appointment.allocatables(filter: AppointmentAllocatableFilter)`** field ([PRD 073](../prd/073-graphql-function-equivalents.md)
   Phase 0, 2026-06-19).
 - **`CalendarModel` filters → query variable** (`$filter: ReservationFilter!`). The saved
   GUI filter — reservation type (`typeKeyEq`), *neue Regel für* classification rules (the
-  generated `where<TypeKey>` predicates, AND/OR/NOT, PRD 059 — richer than a flat type
-  list), the resource-tree selection (`allocatableMatching`, PRD 066), and the date range
+  generated `where<TypeKey>` predicates, AND/OR/NOT, [PRD 059](../prd/done/059-graphql-typed-where-predicates.md) — richer than a flat type
+  list), the resource-tree selection (`allocatableMatching`, [PRD 066](../prd/066-graphql-reservation-allocatable-matching.md)), and the date range
   (`from`/`to`) — is **user state**, carried in the root's `filter: $filter`.
 
 ```graphql
@@ -174,9 +174,9 @@ is untouched.
 | `appointments` (Name, Beginn, Ende, Kurs, Person, Raum, Dauer) | ✅ flat, 0 directives | `appointmentBlocks(filter:$filter)` + type-split annotation `allocatables(filter:)` + server-eval `start`/`end`/`duration` |
 | `appointments_per_day` (Zeiten, Name, Ressourcen, Personen) | ✅ flat | same `appointmentBlocks` + hidden `day` column (`@group(by:DAY) @hidden`) sorts/groups |
 
-**Open data-layer dependencies** the benchmark relies on (PRD 073): nested
+**Open data-layer dependencies** the benchmark relies on ([PRD 073](../prd/073-graphql-function-equivalents.md)): nested
 `Appointment.allocatables(filter:)` (shipped 2026-06-19); a server-evaluated `duration`
-field; `times` field; the `typeKeyIn` room/course groups (or PRD 065 `typeGroup` instead
+field; `times` field; the `typeKeyIn` room/course groups (or [PRD 065](../prd/065-graphql-declared-type-groups.md) `typeGroup` instead
 of the hard-coded `["Raum","Teilraum",…]` lists).
 
 ## 4. What this means

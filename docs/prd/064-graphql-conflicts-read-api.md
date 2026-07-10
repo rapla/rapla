@@ -24,7 +24,7 @@ In v1 (this PRD):
 Out of scope (deferred to follow-ups):
 - `Reservation.conflicts: [Conflict!]!` field (the full list inline on each reservation) — still deferred per the original per-row dispatch cost reasoning. The cheaper boolean variant `Reservation.hasConflicts: Boolean!` SHIPPED 2026-05-29 via [PRD 028 Phase 1 §"GraphQL substrate augmentations"](028-angular-power-search.md#phase-1--name-only-search-no-group--classification-dependencies--shipped-2026-05-29) — power-search badge UX justified the per-row cost; calendar view consumers should consume `hasConflicts` for badging and use `Query.conflicts(reservationId:)` for the editor's full list. The full-list inline field stays deferred until a concrete consumer needs it.
 - `Query.allConflicts(filter: ConflictFilter!)` — admin overview across all reservations. Useful but the filter shape needs design (time window + allocatable + user).
-- `checkConflicts(input)` dry-run — compute operation, lives in PRD 060.
+- `checkConflicts(input)` dry-run — compute operation, lives in [PRD 060](060-graphql-mcp-foundations.md).
 
 ## Locked design
 

@@ -89,7 +89,7 @@ an arbitrary row).
   ids**. The inverse is best-effort: a mid-list failure (concurrent edit) does
   not stop the remaining restores — failures are reported loudly
   („k von N wiederhergestellt; ‚X' nicht wiederhergestellt (inzwischen
-  geändert)") and the history entry is dropped (PRD 094 D2 drop-on-stale).
+  geändert)") and the history entry is dropped ([PRD 094](../prd/094-spa-main-view-actions-and-popups.md) D2 drop-on-stale).
   `UndoToastService.undo()` fires `mutated$` even on a failed inverse, because
   a bulk inverse may have partially applied and the view must show reality.
 
@@ -121,6 +121,6 @@ stale anchor.
   `ctx.subjects` (kind + `canModify`), build one `SpaCommand`, run it through
   `UndoToastService` — see `buildBulkDeleteCommand` (`actions/event-commands.ts`)
   for the composite-inverse pattern.
-- Calendar surfaces (PRD 077) reuse `TableSelection` for block multi-select when
+- Calendar surfaces ([PRD 077](../prd/077-calendar-model-graphql.md)) reuse `TableSelection` for block multi-select when
   they arrive; the month grid's drag-create day-range selection is a different
-  concept (PRD 095) and stays separate.
+  concept ([PRD 095](../prd/095-month-grid-render-mode.md)) and stays separate.

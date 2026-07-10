@@ -12,8 +12,8 @@ status: reference — evidence base, not a decision (decisions live in docs/deci
 
 # Spec-driven development & spec-as-source — research findings
 
-Evidence base for rapla's spec-as-source / spec-graph work (PRD 088). External research only —
-the decisions this evidence supports live in `docs/decisions/` (MADRs) and PRD 088. Every claim
+Evidence base for rapla's spec-as-source / spec-graph work ([PRD 088](../prd/088-spec-graph-formalization.md)). External research only —
+the decisions this evidence supports live in `docs/decisions/` (MADRs) and [PRD 088](../prd/088-spec-graph-formalization.md). Every claim
 is cited; this file is a durable reference so future sessions don't re-research the same ground.
 
 ## 1. Why this matters for rapla
@@ -97,12 +97,12 @@ OpenSpec's own checked-in [`openspec-parallel-merge-plan.md`](https://github.com
 
 ## 8. Implications for rapla (how the evidence maps to decisions)
 
-1. **No tool adoption; plunder ideas** — vindicated by the ~10× ceremony cost (Scott Logic) and the "I'd rather review code" verbosity critique. ([[0002-no-sdd-framework-as-tool]])
-2. **Target = spec-as-review-gate + durable contract, not generation** — the convergent mid-2026 position; generation is non-deterministic and the "you just wrote a program" paradox bites. (PRD 088 D2)
-3. **Three-artifact model** (change PRD / capability spec / MADR) — directly the intent-driven.dev fix for OpenSpec's archived-rationale gap. ([[0001-use-madr-for-architecture-decisions]])
+1. **No tool adoption; plunder ideas** — vindicated by the ~10× ceremony cost (Scott Logic) and the "I'd rather review code" verbosity critique. ([ADR 0002](../decisions/0002-no-sdd-framework-as-tool.md))
+2. **Target = spec-as-review-gate + durable contract, not generation** — the convergent mid-2026 position; generation is non-deterministic and the "you just wrote a program" paradox bites. ([PRD 088](../prd/088-spec-graph-formalization.md) D2)
+3. **Three-artifact model** (change PRD / capability spec / MADR) — directly the intent-driven.dev fix for OpenSpec's archived-rationale gap. ([ADR 0001](../decisions/0001-use-madr-for-architecture-decisions.md))
 4. **Capability-dependent format**: rule-enumerable capabilities (permissions, REST) suit atomic requirements + examples; narrative capabilities (locking, storage) keep prose + diagrams. No single format.
 5. **Author specs for human AND AI the same way**: worked examples (input→output) **in** the spec, text-encoded diagrams (Mermaid/PlantUML source, never image-only to the agent), verification anchors (✅ PINNED), typed semantic blocks, specificity over volume.
-6. **Merge is human-gated**: the promote/archive step may be agent-*drafted* but is human-*reviewed* before it updates a capability spec — never a silent LLM merge. Our spec-lint (PRD 088 Phase 0) is the deterministic guardrail (the rapla analogue of `specs-apply.js` validation gates).
+6. **Merge is human-gated**: the promote/archive step may be agent-*drafted* but is human-*reviewed* before it updates a capability spec — never a silent LLM merge. Our spec-lint ([PRD 088](../prd/088-spec-graph-formalization.md) Phase 0) is the deterministic guardrail (the rapla analogue of `specs-apply.js` validation gates).
 
 ## Sources
 

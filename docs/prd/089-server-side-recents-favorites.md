@@ -1,7 +1,7 @@
 # PRD 089 — Server-side recents & favorites (+ search-rank boost)
 
 **Status:** in progress — 2026-06-27 (Phases 1, 3, 4 landed; Phase 2 deferred by design)
-**Related:** PRD 081 (omnibox multisearch — the rank-boost target), PRD 078 (SPA GraphQL view renderer — the consumer), PRD 074/077 (saved views — same Preferences persistence), PRD 067 (server mutation unification / EntityLifecycle — the delete seam), PRD 049 (interface-`@HttpExchange` routing), PRD 072 (cookie auth, `/api/auth/me`, per-user prefs precedent)
+**Related:** [PRD 081](081-graphql-omnibox-multisearch.md) (omnibox multisearch — the rank-boost target), [PRD 078](078-spa-graphql-view-renderer.md) (SPA GraphQL view renderer — the consumer), PRD [074](074-graphql-declarative-views.md)/[077](077-calendar-model-graphql.md) (saved views — same Preferences persistence), [PRD 067](067-server-mutation-unification.md) (server mutation unification / EntityLifecycle — the delete seam), [PRD 049](049-controller-interface-deduplication.md) (interface-`@HttpExchange` routing), [PRD 072](072-server-side-login-dialog.md) (cookie auth, `/api/auth/me`, per-user prefs precedent)
 
 ## Abstract
 
@@ -60,7 +60,7 @@ Read/write goes through the facade edit/store pattern already used by
 `putEntry` → `facade.store`). A small `UserListsService` (server) owns the
 JSON (de)serialization, the cap/promote logic, and **§12-filtering on read**.
 
-### REST surface (PRD 049 interface-implements)
+### REST surface ([PRD 049](049-controller-interface-deduplication.md) interface-implements)
 New `@HttpExchange("/api/recents")` + `@HttpExchange("/api/favorites")`
 interfaces in `rapla-core/.../rest/`, implemented by a controller in
 `rapla-server/.../web/` next to `SettingsController`. Reads are side-effect-free
@@ -191,7 +191,7 @@ unbounded prefs growth becomes a measured problem.
   want a persistent "Zuletzt/Favoriten" row even without a matching term, add a
   bucket later. *Resolution:* pending — ship the re-rank, gather feedback.
 - **OQ4 — favorites of deleted-then-recreated / cross-store ids.** `kind=user`
-  entries on user delete are covered; confirm group ids (Phase 2 of PRD 081) when
+  entries on user delete are covered; confirm group ids (Phase 2 of [PRD 081](081-graphql-omnibox-multisearch.md)) when
   GROUP search lands. *Resolution:* pending — out of scope until GROUP exists.
 
 ## Decisions locked

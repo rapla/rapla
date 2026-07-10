@@ -53,14 +53,14 @@ MADR complements the change→capability spec flow rather than competing with it
 
 - Good, because rejected alternatives + rationale survive the PRD's move to `done/`.
 - Good, because the `Future possibilities` section gives future ideas a home outside the contract.
-- Good, because it dovetails with PRD 088's spec graph — MADRs are `decision` nodes with
+- Good, because it dovetails with [PRD 088](../prd/088-spec-graph-formalization.md)'s spec graph — MADRs are `decision` nodes with
   `supersedes`/`superseded-by` and `refines` edges.
 - Bad, because there are now two decision homes during the transition (PRD `D-locks` + MADRs)
   until extraction catches up — mitigated by extracting only durable, cross-cutting decisions.
 
 ### Confirmation
 
-A spec-lint check (PRD 088 Phase 0) validates every MADR: required sections present
+A spec-lint check ([PRD 088](../prd/088-spec-graph-formalization.md) Phase 0) validates every MADR: required sections present
 (`Context and Problem Statement`, `Considered Options`, `Decision Outcome`), a valid `status`,
 and no dangling `ADR-NNNN` / PRD cross-references. Runs in CI alongside the PRD dangling-link check.
 
@@ -91,7 +91,7 @@ and no dangling `ADR-NNNN` / PRD cross-references. Runs in CI alongside the PRD 
 
 - Good, because formal linking and queries.
 - Bad, because GUI-centric, not git/agent-native, massive overhead for a solo maintainer — rejected
-  in PRD 088 D3 for the same reasons.
+  in [PRD 088](../prd/088-spec-graph-formalization.md) D3 for the same reasons.
 
 ## Future possibilities
 
@@ -107,4 +107,4 @@ and no dangling `ADR-NNNN` / PRD cross-references. Runs in CI alongside the PRD 
   durable tree. https://intent-driven.dev/blog/2026/04/29/spec-driven-development-with-adr/
 - Forward-looking sections modelled on the Rust RFC template (`Rationale and alternatives` vs
   `Unresolved questions` vs `Future possibilities`): https://github.com/rust-lang/rfcs/blob/master/0000-template.md
-- Extracted from / supersedes the inline reasoning that motivated PRD 088.
+- Extracted from / supersedes the inline reasoning that motivated [PRD 088](../prd/088-spec-graph-formalization.md).

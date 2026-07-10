@@ -1,6 +1,6 @@
 # PRD 057 — GraphQL DynamicType Mutations v1 (create / replace / delete)
 
-**Status:** done — v1 controller shipped 2026-05-29; deferred items spun out to PRD 061
+**Status:** done — v1 controller shipped 2026-05-29; deferred items spun out to [PRD 061](../061-graphql-dt-mutations-v2.md)
 
 **Parent:** [PRD 035 §"Schema design — structural-static + classification-generated"](035-graphql-foundations.md)
 + §"Rebuild on admin change". **Siblings:** [PRD 055](../055-graphql-events-read-api.md) (events read),
@@ -14,12 +14,12 @@ is the work that prompts implementation.
 
 Land the **write-side mutation surface for DynamicTypes themselves** —
 admin operations that change the deployment's data model (create/replace/
-delete DynamicTypes and their Attributes). Distinct from PRD 056 which
+delete DynamicTypes and their Attributes). Distinct from [PRD 056](../056-graphql-events-write-api.md) which
 mutates *data within* DynamicTypes (reservations, allocatables) using the
 existing schema as a fixed contract.
 
 When an admin saves a DynamicType change:
-1. Server's existing hot-swap fires (PRD 055 Cut C `GraphQlSchemaRebuilder`)
+1. Server's existing hot-swap fires ([PRD 055](../055-graphql-events-read-api.md) Cut C `GraphQlSchemaRebuilder`)
 2. Schema regenerates within ~10s; generated `<TypeKey>Classification`
    types reflect the new attribute set
 3. The admin's SPA can immediately query against the new shape
@@ -42,7 +42,7 @@ In (shipped):
 Out:
 - **Real-time notifications** for other connected SPAs that the schema
   changed — GraphQL subscriptions are out of scope. Other users see the
-  new schema on their next descriptor refresh (PRD 035 §4 edit-open pattern)
+  new schema on their next descriptor refresh ([PRD 035](035-graphql-foundations.md) §4 edit-open pattern)
   or on a SPA reload. Skew matches existing rapla operational model.
 - **Migration tooling** for existing data when an attribute is removed
   or its valueType changes — rapla's storage layer handles drop / coerce
@@ -67,8 +67,8 @@ type Mutation {
 }
 ```
 
-Two mutations. `saveDynamicType` is an upsert (matches PRD 056 update
-full-state style); `deleteDynamicTypes` is uniform bulk (matches PRD 056
+Two mutations. `saveDynamicType` is an upsert (matches [PRD 056](../056-graphql-events-write-api.md) update
+full-state style); `deleteDynamicTypes` is uniform bulk (matches [PRD 056](../056-graphql-events-write-api.md)
 delete consolidation lesson). **No `ChangeOp` extension in v1** — admin
 doesn't need atomic cross-type schema + data workflows that often; if
 needed later, ChangeOp gains additive variants.
@@ -189,7 +189,7 @@ belongs-to-tree).
 | `classificationType` change with existing instances | `REFERENCE_EXISTS` or `INVALID_VALUE` |
 | BELONGS_TO / PACKAGE on non-ALLOCATABLE valueType | `INVALID_VALUE` |
 
-Note: `valueType` change with incompatible existing data is deferred to PRD 061.
+Note: `valueType` change with incompatible existing data is deferred to [PRD 061](../061-graphql-dt-mutations-v2.md).
 
 ## Hot-swap visibility
 
@@ -200,7 +200,7 @@ in the runtime schema at the moment the response is sent: rebuild runs
 on the next `GraphQlSchemaRebuilder` poll (within ~10s). SPA workarounds:
 poll `__type(name: "RaumClassification")` until the new shape is live,
 or wait a fixed ~15s safety margin before typed-narrow reads. Tightening
-the poll rate (from 10s to ~2s) is deferred to PRD 061 (OQ1).
+the poll rate (from 10s to ~2s) is deferred to [PRD 061](../061-graphql-dt-mutations-v2.md) (OQ1).
 
 ## Reordering attributes
 
@@ -213,13 +213,13 @@ stores it. No special "reorder" verb.
 `deleteDynamicTypes(ids: [id])` rejects with `REFERENCE_EXISTS` (first 50
 referring ids in the extension) if any data instance uses the type — any
 Reservation for reservation types, any Allocatable for resource/person
-types. Admin must delete instances first (PRD 056 mutations) before
-removing the type. Per-type referrer breakdown is deferred to PRD 061.
+types. Admin must delete instances first ([PRD 056](../056-graphql-events-write-api.md) mutations) before
+removing the type. Per-type referrer breakdown is deferred to [PRD 061](../061-graphql-dt-mutations-v2.md).
 Soft-delete / "deprecation" semantics are out of scope.
 
 ## CategoryKind cascade
 
-PRD 035 §5b's CategoryKind discrimination locked 2026-05-28 — Categories
+[PRD 035](035-graphql-foundations.md) §5b's CategoryKind discrimination locked 2026-05-28 — Categories
 are classified as `VALUE_LIST` (flat picklist), `ORGANIZATION` (hierarchical
 tree), or `SYSTEM` (rapla-internal). Cascading consequence for this PRD:
 
@@ -370,7 +370,7 @@ If 42 allocatables exist of this type, server rejects:
 ```
 
 Admin must reassign or delete the instances first (via reservation/allocatable
-mutations from PRD 056).
+mutations from [PRD 056](../056-graphql-events-write-api.md)).
 
 ### Example 5 — Create DynamicType then first instance (two roundtrips)
 
@@ -395,31 +395,31 @@ The original atomic-batch sketch (preserved for design-history): a single
 `applyChanges([{ createDynamicType: {...} }, { createAllocatable: { typeId:
 "<new-dt-uuid>", ... } }])` call with the same-batch reference from
 operation #1 to operation #0 using the client-assigned UUID — exactly the
-pattern PRD 056 locked. Both succeed or both reject. Dropped from v1 in
+pattern [PRD 056](../056-graphql-events-write-api.md) locked. Both succeed or both reject. Dropped from v1 in
 favor of two roundtrips.
 
 **Hot-swap caveat:** between the mutation's response and the rebuild, the
 SPA can't query `... on StehtischClassification { name }`. Workaround:
 SPA polls `__type(name: "StehtischClassification")` every 1-2s after
 save, proceeds when it appears (or falls back to generic interface
-fields). Hot-swap UX tightening deferred to PRD 061.
+fields). Hot-swap UX tightening deferred to [PRD 061](../061-graphql-dt-mutations-v2.md).
 
-### Example 6 — Change attribute valueType (STRING → INT) — DEFERRED to PRD 061
+### Example 6 — Change attribute valueType (STRING → INT) — DEFERRED to [PRD 061](../061-graphql-dt-mutations-v2.md)
 
 The hard case: existing data has string values that may not parse as INT.
 v1 does not handle this — rapla's existing `AttributeImpl.commitChange`
 silently drops unparseable values, which is a documented footgun. Per-type
 coercion semantics, the documented behavior contract, and a tier-3 test
-that locks the behavior land in PRD 061.
+that locks the behavior land in [PRD 061](../061-graphql-dt-mutations-v2.md).
 
-### Example 7 — Delete an attribute (forces data drop) — DEFERRED to PRD 061
+### Example 7 — Delete an attribute (forces data drop) — DEFERRED to [PRD 061](../061-graphql-dt-mutations-v2.md)
 
-Full-state semantics from PRD 056 update style: an attribute absent from
+Full-state semantics from [PRD 056](../056-graphql-events-write-api.md) update style: an attribute absent from
 the input list is **deleted**. All existing classifications drop their value
 for that attribute. The "absence = deletion" rule is dangerous if the SPA
 accidentally submits an incomplete list (stale form state); mitigations
 (SPA-side defensive build from current descriptor, server-side warning logs
-with affected-entity counts, dry-run preview) are deferred to PRD 061.
+with affected-entity counts, dry-run preview) are deferred to [PRD 061](../061-graphql-dt-mutations-v2.md).
 
 ## Plan (shipped)
 
@@ -431,13 +431,13 @@ with affected-entity counts, dry-run preview) are deferred to PRD 061.
    admin gate, multiplicity-vs-valueType (shipped)
 5. **`AttributeImpl.commitChange(DynamicType)` integration** — rapla's
    existing storage-layer integration (shipped; basic round-trip; valueType-change
-   migration deferred to PRD 061)
-6. *(deferred — hot-swap poll-rate tuning → PRD 061 OQ1)*
+   migration deferred to [PRD 061](../061-graphql-dt-mutations-v2.md))
+6. *(deferred — hot-swap poll-rate tuning → [PRD 061](../061-graphql-dt-mutations-v2.md) OQ1)*
 7. **Tier-3 tests** — 9 tests shipped (see below)
 
 ## Tests (tier-3 spec — shipped)
 
-Same patterns as PRD 056 — `@SpringBootTest` + `@AutoConfigureMockMvc(addFilters
+Same patterns as [PRD 056](../056-graphql-events-write-api.md) — `@SpringBootTest` + `@AutoConfigureMockMvc(addFilters
 = false)` + `@WithMockUser(roles = "ADMIN")` for happy path; non-admin
 variants for §12 rejection tests.
 
@@ -454,19 +454,19 @@ Shipped:
 
 ## Open questions
 
-### OQ1 — Hot-swap poll-rate adjustment — DEFERRED to PRD 061
+### OQ1 — Hot-swap poll-rate adjustment — DEFERRED to [PRD 061](../061-graphql-dt-mutations-v2.md)
 
-PRD 055 Cut C ships with 10s polling. Schema-editor UX wants ~2s for
+[PRD 055](../055-graphql-events-read-api.md) Cut C ships with 10s polling. Schema-editor UX wants ~2s for
 admin feedback responsiveness. Open: lower it globally, or add a
 faster post-mutation poll trigger?
 
-### OQ2 — Multi-locale name editing — DEFERRED to PRD 061
+### OQ2 — Multi-locale name editing — DEFERRED to [PRD 061](../061-graphql-dt-mutations-v2.md)
 
 Single-locale `name: String!` in v1. When multi-locale becomes a real
 need, switch to `name: MultiLanguageStringInput!`. Backward-incompat —
 deserves its own design pass.
 
-### OQ3 — Annotation allow-list — DEFERRED to PRD 061
+### OQ3 — Annotation allow-list — DEFERRED to [PRD 061](../061-graphql-dt-mutations-v2.md)
 
 Limit to well-known annotations (`name-format`, `classification-type`, …)
 or accept arbitrary `[KeyValueInput!]`? Lean: strict v1 known-set;
@@ -475,7 +475,7 @@ expand as new admin features need them.
 ### OQ4 — Constraint shape for ALLOCATABLE attributes — RESOLVED 2026-05-29
 
 **Resolved: `expectedTypeKey`** (the human-meaningful key). Aligned with
-the PRD 035 §11 final decision that dropped `typeId` from
+the [PRD 035](035-graphql-foundations.md) §11 final decision that dropped `typeId` from
 Classification + generated typed impls — keys are the deployment-wide
 identifier and the read-side `@expectedType(key:)` directive already
 uses the key. Verbatim key emission to the SDL means a key rename is
@@ -491,18 +491,18 @@ DynamicType + first instance) is uncommon enough that two roundtrips +
 ~10s hot-swap wait between them are acceptable. If demand emerges,
 extending `ChangeOp` later is additive.
 
-## Deferred / next (→ PRD 061)
+## Deferred / next (→ [PRD 061](../061-graphql-dt-mutations-v2.md))
 
-- valueType-change-with-data migration (Example 6 footgun) — deferred to PRD 061
-- DefaultValueInput per-type coercion semantics (input shape in v1, behavior contract not) — deferred to PRD 061
-- Full annotation allow-list (OQ3) — deferred to PRD 061
-- Hot-swap UX tightening — drop poll from 10s to ~2s for schema-editor responsiveness (OQ1) — deferred to PRD 061
-- Per-type referrer breakdown in `deleteDynamicTypes` (today: flat 50-cap list) — deferred to PRD 061
+- valueType-change-with-data migration (Example 6 footgun) — deferred to [PRD 061](../061-graphql-dt-mutations-v2.md)
+- DefaultValueInput per-type coercion semantics (input shape in v1, behavior contract not) — deferred to [PRD 061](../061-graphql-dt-mutations-v2.md)
+- Full annotation allow-list (OQ3) — deferred to [PRD 061](../061-graphql-dt-mutations-v2.md)
+- Hot-swap UX tightening — drop poll from 10s to ~2s for schema-editor responsiveness (OQ1) — deferred to [PRD 061](../061-graphql-dt-mutations-v2.md)
+- Per-type referrer breakdown in `deleteDynamicTypes` (today: flat 50-cap list) — deferred to [PRD 061](../061-graphql-dt-mutations-v2.md)
 
 ## Decision log
 
 - **2026-05-28** — PRD opened as draft / placeholder. Triggered by the
-  PRD 056 discussion of "how does the read/write API behave when admin
+  [PRD 056](../056-graphql-events-write-api.md) discussion of "how does the read/write API behave when admin
   edits a DynamicType?" Surface sketched; implementation deferred until
   Angular schema editor work begins.
 - **2026-05-28** — Surface consolidated to 2 mutations:
@@ -530,4 +530,4 @@ extending `ChangeOp` later is additive.
   validation, REFERENCE_NOT_FOUND on unknown id, 9 tier-3 tests. Five
   deferred items (valueType migration, DefaultValueInput coercion semantics,
   annotation allow-list, hot-swap UX tightening, per-type referrer
-  breakdown) spun out to PRD 061. PRD archived to `docs/prd/done/`.
+  breakdown) spun out to [PRD 061](../061-graphql-dt-mutations-v2.md). PRD archived to `docs/prd/done/`.

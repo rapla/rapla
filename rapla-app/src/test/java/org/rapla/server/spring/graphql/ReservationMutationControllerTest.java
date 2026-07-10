@@ -499,8 +499,8 @@ class ReservationMutationControllerTest
     @WithMockUser(username = "homer", roles = "ADMIN")
     void moveAppointmentResizeExtendsEnd()
     {
-        String apptId = "a4444444-4444-4444-8444-444444444444";
-        createEvent("e4444444-4444-4444-8444-444444444444", apptId,
+        String apptId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+        createEvent("eaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", apptId,
                 "2030-09-03T10:00:00", "2030-09-03T11:00:00", null);
         Map<String, Object> res = tester.document("""
                 mutation ($aid: ID!) {
@@ -523,9 +523,9 @@ class ReservationMutationControllerTest
     @WithMockUser(username = "homer", roles = "ADMIN")
     void splitOccurrenceDetachesAndAddsException()
     {
-        String apptId = "a5555555-5555-4555-8555-555555555555";
+        String apptId = "abbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
         // weekly, 4 occurrences from Wed 2030-09-04
-        createEvent("e5555555-5555-4555-8555-555555555555", apptId,
+        createEvent("ebbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", apptId,
                 "2030-09-04T10:00:00", "2030-09-04T11:00:00",
                 "repeating: { type: WEEKLY, interval: 1, count: 4, exceptions: [] }");
         Map<String, Object> res = tester.document("""

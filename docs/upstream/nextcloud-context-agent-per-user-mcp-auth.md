@@ -145,11 +145,11 @@ When ready to post (after empirical verification):
 - [ ] (Optional) Adjust the "Happy to PR this" closing if you don't want to commit to authoring.
 - [ ] `gh issue create -R nextcloud/context_agent --title "Support per-user authentication when calling outbound MCP servers" --body-file <this-section>`
 - [ ] Record the resulting issue URL in the **Filed as:** field at the top of this doc.
-- [ ] Cross-link from PRD 035's Nextcloud track (Track 5 once added).
+- [ ] Cross-link from [PRD 035](../prd/done/035-graphql-foundations.md)'s Nextcloud track (Track 5 once added).
 
 ## Cross-references
 
-- PRD 035 — rapla MCP server. The use case driving this issue.
+- [PRD 035](../prd/done/035-graphql-foundations.md) — rapla MCP server. The use case driving this issue.
 - AGENTS.md §12 — the permission-leak invariant this gap would force rapla to violate.
 - `ex_app/lib/all_tools/mcp.py` — the file that needs the change upstream.
 - [App: Context Agent — Nextcloud Administration Manual](https://docs.nextcloud.com/server/stable/admin_manual/ai/app_context_agent.html)

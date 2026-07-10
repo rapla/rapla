@@ -2,7 +2,7 @@
 
 **Status:** done (shipped 2026-05-24)
 **Date:** 2026-05-23 → 2026-05-24
-**Related:** PRD 011 (Spring Boot 4 / Jackson 3), PRD 027 (mock-framework policy)
+**Related:** [PRD 011](011-spring-boot-4-jackson-3.md) (Spring Boot 4 / Jackson 3), [PRD 027](../027-mock-framework-policy.md) (mock-framework policy)
 
 ## Result (2026-05-24)
 

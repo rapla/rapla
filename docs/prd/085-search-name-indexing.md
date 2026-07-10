@@ -1,18 +1,18 @@
 # PRD 085 — search & name indexing (in-memory derived-name index over computed names)
 
 **Status:** draft — 2026-06-24 (rewritten: Lucene/H2 dropped in favour of an in-memory derived-name index; see *Direction*)
-**Related:** PRD 082 (storage memory model — provides the put/remove seam `updateIndizes` this builds on, and the "index = disposable in-RAM projection" rule; name search was split out of Workstream A into here), PRD 084 (H2 engine — was the candidate full-text store; now only a conditional fallback), PRD 081 (omnibox multisearch — the consumer), PRD 028 (allocatable evaluator / `searchText`), PRD 035 (GraphQL foundations), AGENTS.md §12 (data-leak prevention)
+**Related:** [PRD 082](082-storage-memory-model.md) (storage memory model — provides the put/remove seam `updateIndizes` this builds on, and the "index = disposable in-RAM projection" rule; name search was split out of Workstream A into here), [PRD 084](084-replace-hsqldb-with-h2.md) (H2 engine — was the candidate full-text store; now only a conditional fallback), [PRD 081](081-graphql-omnibox-multisearch.md) (omnibox multisearch — the consumer), [PRD 028](028-angular-power-search.md) (allocatable evaluator / `searchText`), [PRD 035](done/035-graphql-foundations.md) (GraphQL foundations), AGENTS.md §12 (data-leak prevention)
 
-**Split from PRD 082.** Workstream A originally bundled a hand-rolled name index next to the
+**Split from [PRD 082](082-storage-memory-model.md).** Workstream A originally bundled a hand-rolled name index next to the
 structural type-bucket index. Name search is a *different* problem (the name is **computed, not
-stored**) and gets its own PRD. PRD 082 keeps the structural type-bucket index; this PRD owns all
+stored**) and gets its own PRD. [PRD 082](082-storage-memory-model.md) keeps the structural type-bucket index; this PRD owns all
 name search.
 
 ## Scope & priority — this is a planner-only secondary feature
 
 **Decided 2026-06-24:** name search must only be *approximately* performant and must *scale*, not be
 super-performant. It serves **planners** (the omnibox), **not** the bulk calendar/Belegungs-queries
-that are rapla's primary focus (those are PRD 082's read-model territory). This bar is what justifies
+that are rapla's primary focus (those are [PRD 082](082-storage-memory-model.md)'s read-model territory). This bar is what justifies
 the lightweight in-memory direction below over a real search engine.
 
 **In-memory stays (decided 2026-06-24).** The server holds the dataset in `LocalCache` (RAM); name
@@ -56,7 +56,7 @@ parsed once per type and shared across instances. Consequences:
      back to the scan (or aren't indexed); a guard test asserts this.
 3. **Per-locale** — one entity has N display names; the index is keyed per locale.
 4. **Functions make it non-invertible** — index serves *name-text search only*, never attribute
-   filtering (that is PRD 082's read-model path). Keep the two strictly separate.
+   filtering (that is [PRD 082](082-storage-memory-model.md)'s read-model path). Keep the two strictly separate.
 
 ## Measurements (2026-06-24, this machine, 300k synthetic event names)
 
@@ -73,10 +73,10 @@ Standalone benchmark replicating `SearchMatcher` 1:1:
 - The per-keystroke `getName()`/`ParsedText` eval is the cost, not the string compare. **Materialise
   the derived names once** → SUBSTRING is ~3 ms.
 - FUZZY must run **over the distinct-token vocabulary, not over the documents** (a few thousand
-  tokens, not 300k) → ~1 ms. The "hand-rolled `Map`" PRD 082 dismissed is exactly the right tool for
+  tokens, not 300k) → ~1 ms. The "hand-rolled `Map`" [PRD 082](082-storage-memory-model.md) dismissed is exactly the right tool for
   fuzzy *when fuzzy runs over the vocabulary* — no Lucene needed to get this in the RAM model.
 
-## Direction — in-memory derived-name index on the PRD 082 seam
+## Direction — in-memory derived-name index on the [PRD 082](082-storage-memory-model.md) seam
 
 A shared, in-memory, per-locale index, maintained at the existing chokepoint
 `LocalAbstractCachableOperator.updateIndizes(UpdateResult)` (where the conflict index + appointment
@@ -96,7 +96,7 @@ NameIndex (per active locale):
   `toLowerCase(ROOT)`-only matcher lacks.
 
 **Engine: deferred.** Lucene / H2 full-text (`FullTextLucene`) is **not** built now. It becomes
-relevant only if (i) PRD 082 moves reservations out of full RAM residency (CQRS-SQL read-model) — then
+relevant only if (i) [PRD 082](082-storage-memory-model.md) moves reservations out of full RAM residency (CQRS-SQL read-model) — then
 the name projection folds into *that* read-model, not a separate store — or (ii) the measured
 in-memory scan proves insufficient. Documented as a conditional fallback, not a v1 dependency.
 
@@ -115,7 +115,7 @@ count. Because `rank` is permission-free, bound the permission-walk set with a *
 (e.g. 500) before the walk, then final top-N (e.g. 20) — caps `canModify` walks while keeping order
 correct (K≫N makes the displacement risk negligible for a planner omnibox).
 - **EVENT** → `canModify(r, caller)` (omnibox events are editable-only — *stricter* than §12 read).
-- **RESOURCE** → the PRD 028 `canRead`/evaluator gate.
+- **RESOURCE** → the [PRD 028](028-angular-power-search.md) `canRead`/evaluator gate.
 The index is never trusted for permission or for the final score.
 
 ## When to recompute (drift triggers)

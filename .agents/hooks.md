@@ -89,6 +89,26 @@ Starts the clipboard-watching daemon at the beginning of every session. Idempote
 
 Cleans up the daemon on session exit so it doesn't accumulate across long-running shells.
 
+### `SessionEnd` — retrospective friction scan
+
+```json
+{ "type": "command", "command": "~/.claude/retrospective/scan-session.sh 2>/dev/null || true", "timeout": 30 }
+```
+
+Greps the finished session's transcript for friction markers (user interrupts, rejected tool uses, tool errors) and appends a one-line summary to the private queue at `~/.claude/retrospective/<project-slug>/queue.jsonl`. Deterministic, no LLM. Feeds the `retrospective` skill (2026-07-10).
+
+### `SessionStart` — retrospective reminder
+
+```json
+{ "type": "command", "command": "~/.claude/retrospective/notify.sh 2>/dev/null || true" }
+```
+
+Prints a context line when ≥3 queued sessions have friction ("run /retrospective") or when analyzed findings await review ("run /retrospective review"). All queue/findings/ledger data stays private under `~/.claude/retrospective/` — never in the repo.
+
+### `PreToolUse: Bash` — YubiKey guard for signed builds (maintainer's machine only)
+
+`~/.claude/hooks/yubikey-sign-guard.sh` — commands containing `-Psign-pkcs11` auto-attach the YubiKey to WSL (idempotent `usbipd.exe attach`) and are blocked (exit 2) only if the erdkante token still isn't visible, so the signing step can't fail late after a full compile. Deliberately user-level, NOT in this repo's `.agents/settings.json`: `-Psign-pkcs11` is tied to the maintainer's hardware; other developers sign with `-Psign-jks` and never hit this guard (2026-07-10).
+
 ## `autoMode` policy lines — not hooks, but related
 
 `~/.claude/settings.json` also carries `autoMode.environment` and `autoMode.soft_deny` arrays. These are *policy text* the agent reads as context — they aren't enforced by a hook, just inform the agent's behaviour. Examples:

@@ -69,7 +69,7 @@ appointmentBlockStats(
 
 ## Invariants
 
-- **§12:** the group entity is always `canRead`-gated before exposure (it comes from the §12 resolver / `filterAllocatables`); recursive reference resolution (PRD 074 b) already gates.
+- **§12:** the group entity is always `canRead`-gated before exposure (it comes from the §12 resolver / `filterAllocatables`); recursive reference resolution ([PRD 074](074-graphql-declarative-views.md) b) already gates.
 - **Genericity preserved:** ad-hoc `groupBy`/`aggregate` stays; no fixed-report deploy per analysis.
 - **One generic result** over all families — only the per-family `…GroupKey` + `…MetricField` differ.
 
@@ -109,9 +109,9 @@ appointmentBlockStats(
 
 - Union `TypeResolver` resolves Allocatable/Reservation/Category correctly.
 - §12: a hidden group entity ⇒ bucket dropped / entity not exposed.
-- Carries over from PRD 074 b: a fixture with a reference attribute for the reference-recursion + §12-leak regression test (unit fixture currently has none).
+- Carries over from [PRD 074](074-graphql-declarative-views.md) b: a fixture with a reference attribute for the reference-recursion + §12-leak regression test (unit fixture currently has none).
 
 ## Out of scope
 
-Stufe c (EL number-model / in-expr arithmetic, PRD 073); the ComputeFunctions catalog (PRD 073);
+Stufe c (EL number-model / in-expr arithmetic, [PRD 073](073-graphql-function-equivalents.md)); the ComputeFunctions catalog ([PRD 073](073-graphql-function-equivalents.md));
 fixed typed reports (Y).

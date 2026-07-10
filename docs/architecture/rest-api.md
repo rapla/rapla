@@ -48,7 +48,7 @@ The OpenAPI spec is split into four groups via
 |---|---|---|---|
 | `auth` | `/api/v3/api-docs/auth` | External integrators wiring SSO | `/api/auth/**` |
 | `client` | `/api/v3/api-docs/client` | The rapla SPA / Swing client (codegen target) | `/api/auth/**` + every SPA-internal + admin-UI controller |
-| `rest` | `/api/v3/api-docs/rest` | Scripts / third-party integrators | `/api/events/**`, `/api/resources/**` (PRD 009 bulk REST) |
+| `rest` | `/api/v3/api-docs/rest` | Scripts / third-party integrators | `/api/events/**`, `/api/resources/**` ([PRD 009](../prd/009-server-bulk-storage-rest-api.md) bulk REST) |
 | `exports` | `/api/v3/api-docs/exports` | Anyone doing data in/out | `/api/export/**`, `/api/ical/import**`, external-event import, legacy `/rapla/{calendar,ical}` feeds |
 
 **The default `/api/v3/api-docs` URL continues to serve a merged
@@ -116,9 +116,9 @@ the source. Getter-based discovery → infinite recursion →
 `StackOverflowError`. The `transient`-marker contract is exactly
 the rapla wire contract.
 
-### OpenAPI / Swagger spec caveat (resolved 2026-05-16 by PRD 041)
+### OpenAPI / Swagger spec caveat (resolved 2026-05-16 by [PRD 041](../prd/041-openapi-runtime-removal.md))
 
-> **Historical record.** PRD 041 moved OpenAPI spec generation out of
+> **Historical record.** [PRD 041](../prd/041-openapi-runtime-removal.md) moved OpenAPI spec generation out of
 > runtime entirely. The captured specs in
 > `rapla-app/src/main/resources/openapi/{auth,client,rest,exports}.json`
 > are produced by `OpenApiSpecCaptureTest` (build-time, in the test
@@ -130,7 +130,7 @@ the rapla wire contract.
 > `StaticOpenApiController` serves the captured JSON directly; no
 > SpringDoc, no swagger-core, no Jackson 2 on the production classpath.
 > The CI byte-equality check (`OpenApiSpecCaptureTest` default mode)
-> catches spec drift in PRs. See PRD 041 for the design.
+> catches spec drift in PRs. See [PRD 041](../prd/041-openapi-runtime-removal.md) for the design.
 >
 > The historical caveat below is retained for context; everything in it
 > is now solved.
@@ -163,7 +163,7 @@ don't:
   *deserialization* time, the JSON's `name` has nowhere to land
   (no field, setter ignored).
 - **Missing properties.** A `public final` field with no getter
-  (a pattern that rapla uses since PRD 011) shows up on the wire
+  (a pattern that rapla uses since [PRD 011](../prd/done/011-spring-boot-4-jackson-3.md)) shows up on the wire
   but doesn't appear in the spec.
 - **False conflicts.** `DefaultConfiguration` has three overloaded
   `setValue(String|int|boolean)` methods. The runtime ignores all
@@ -283,18 +283,18 @@ this only if you build a stripped-down deployment.
 
 ---
 
-## 1. Auth — OAuth 2.0 / OIDC only (PRD 041, 2026-05-16)
+## 1. Auth — OAuth 2.0 / OIDC only ([PRD 041](../prd/041-openapi-runtime-removal.md), 2026-05-16)
 
 All token issuance, refresh, and revocation goes through Spring
 Authorization Server's `/oauth2/*` endpoints. The legacy rapla-custom
-`AuthController` (`/api/auth/login`) is **deleted** — see PRD 041's
+`AuthController` (`/api/auth/login`) is **deleted** — see [PRD 041](../prd/041-openapi-runtime-removal.md)'s
 adjacent-work section for the migration story. `/api/auth/refresh` and
 `/api/auth/logout` exist as cookie-based endpoints on `AuthCookieController`
-(PRD 072 — SPA reactive-401 refresh + sign-out). `/api/auth/oauth/config`
+([PRD 072](../prd/072-server-side-login-dialog.md) — SPA reactive-401 refresh + sign-out). `/api/auth/oauth/config`
 (discovery), `/api/auth/oauth/exchange/{providerId}` (BFF for external
 IdPs), `/api/auth/oauth/token-exchange/{providerId}` (external-id-token →
-rapla-token, PRD 072), and `/api/auth/api-keys/*` (personal access tokens,
-PRD 043) also remain under `/api/auth/`.
+rapla-token, [PRD 072](../prd/072-server-side-login-dialog.md)), and `/api/auth/api-keys/*` (personal access tokens,
+[PRD 043](../prd/043-api-keys-jwt-pat.md)) also remain under `/api/auth/`.
 
 ### Token endpoints (`/oauth2/*`)
 
@@ -314,7 +314,7 @@ chain so SpringDoc doesn't list them. Wire-shape is OAuth 2.0 standard
 All tokens are **RSA-signed JWTs** (RS256). The signing key is
 persistent (`RaplaKeyStorage`-backed) — tokens survive server restart.
 The `sub` claim is the user UUID; `typ` is `access`, `refresh`, or
-`api_key` (PRD 043).
+`api_key` ([PRD 043](../prd/043-api-keys-jwt-pat.md)).
 
 ### Refresh + revocation model
 
@@ -362,7 +362,7 @@ copies it like a GitHub PAT and uses it as `Authorization: Bearer
 stored public key (lookup by `kid` thumbprint) and confirms the key
 hasn't been revoked. Backup leak yields useless public keys.
 
-**Scopes + self-rotation (PRD 076).** Each key carries a scope set
+**Scopes + self-rotation ([PRD 076](../prd/076-scoped-api-keys-self-rotation.md)).** Each key carries a scope set
 (`read` default; `write_events`/`write_resources`/`write_all`;
 `rotate_self`) bounding a leak. Write enforcement lives at the operator
 chokepoint so REST + GraphQL are covered uniformly. `POST
@@ -414,7 +414,7 @@ and PKCE methods.
   client-credentials for end-user logins).
 - Scopes: `openid` + `profile`. No custom scopes today.
 
-**External IdP (PRD 036).** When `rapla.oauth.external.providers[]`
+**External IdP ([PRD 036](../prd/036-external-idp-oauth-login.md)).** When `rapla.oauth.external.providers[]`
 is configured (Google, Microsoft Entra, etc.), the SPA's login
 picker also lists those — and Google/Microsoft confidential-client
 secrets are handled by the BFF
@@ -488,7 +488,7 @@ cadence that matches your UX (5–30 s is reasonable).
 
 ---
 
-## 3. Bulk REST (PRD 009) — `RaplaEventsController`, `RaplaResourcesController`
+## 3. Bulk REST ([PRD 009](../prd/009-server-bulk-storage-rest-api.md)) — `RaplaEventsController`, `RaplaResourcesController`
 
 Resource-style REST sugar on top of `/storage/dispatch`. Useful
 for scripting and as a friendlier API for SPAs that prefer
@@ -578,7 +578,7 @@ chain equivalent — advisory, call before dispatch to surface a confirm
 dialog. `expand-blocks` materialises a single appointment's blocks
 within a time window (same semantics as `Appointment.createBlocks`).
 
-See PRD 024 for the server-side edit-services rationale.
+See [PRD 024](../prd/024-server-side-edit-services.md) for the server-side edit-services rationale.
 
 ---
 
@@ -624,7 +624,7 @@ an admin (server-side check inside the handler; not enforced by
 `SecurityConfig`). Treat 401 from them as "not admin" rather than
 "not logged in."
 
-### Server-driven panels (PRD 020) — `/api/admin/panels`
+### Server-driven panels ([PRD 020](../prd/020-server-driven-admin-panels.md)) — `/api/admin/panels`
 
 | Method | Path | Body / Query | Returns |
 |---|---|---|---|
@@ -634,7 +634,7 @@ an admin (server-side check inside the handler; not enforced by
 | POST | `/api/admin/panels/{id}/action/{actionId}` | `Map<String, Object>` | `ActionResult` |
 
 The server declares its admin panels declaratively; the SPA renders
-the panel from the returned `PanelDefinition`. See PRD 020 for the
+the panel from the returned `PanelDefinition`. See [PRD 020](../prd/020-server-driven-admin-panels.md) for the
 schema and the "field types" enum.
 
 ### Plugin config endpoints

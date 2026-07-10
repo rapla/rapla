@@ -8,7 +8,7 @@
 
 A stable **reference** for Rapla's architecture that (a) lets a new/returning contributor build a correct mental model in an afternoon without `git grep` archaeology, (b) pins down load-bearing-but-under-documented parts (dynamic-type schema, reservation-edit clone semantics, permission resolution, Spring-DI plugin wiring), and (c) primes future AI agent sessions so they don't rediscover layering each time.
 
-**Reference, not tutorial** — pick a topic, jump in, leave with file:line pointers. PRDs 005 / 008 / 011 and `docs/conflict-detection.md` cover their narrow slices in depth; this set links rather than duplicates.
+**Reference, not tutorial** — pick a topic, jump in, leave with file:line pointers. PRDs 005 / 008 / [011](done/011-spring-boot-4-jackson-3.md) and `docs/conflict-detection.md` cover their narrow slices in depth; this set links rather than duplicates.
 
 ## Scope
 
@@ -30,7 +30,7 @@ Out of scope (covered elsewhere):
 
 - Build/test discipline — `AGENTS.md` §5–§9
 - Conflict-overlap algorithm — `docs/conflict-detection.md` (kept; referenced)
-- Spring Boot migration history — PRD 001, 011, 018, 019
+- Spring Boot migration history — PRD 001, [011](done/011-spring-boot-4-jackson-3.md), 018, [019](done/019-spring-boot-lifecycle-migration.md)
 - WSL2 / OpenWebStart — `docs/development.md`
 
 ## Non-goals

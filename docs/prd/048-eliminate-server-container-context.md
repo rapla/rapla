@@ -27,7 +27,7 @@ A mutable plain-Java bag from pre-Spring rapla's hand-rolled DI container, carry
 
 | Facet | State | Replacement |
 |---|---|---|
-| `Map<String,DataSource>` | real content; built by `LegacyServerBridgeConfig` (PRD 045 Phase 3) | proper `@Bean DataSource`(s) |
+| `Map<String,DataSource>` | real content; built by `LegacyServerBridgeConfig` ([PRD 045](045-end-user-deployment-and-db-config.md) Phase 3) | proper `@Bean DataSource`(s) |
 | `shutdownService` | dead — default throws `"Restart not implemented"` | real `ReloadService` |
 | `shutdownCommand` | dead — never set | dropped |
 | `mailSession` (`Object`) | dead — `mailSessionProvider` returns null | `@Bean Supplier<Object>` → null |
@@ -77,7 +77,7 @@ Out of scope:
 - **Qualifier hardening.** `serverStorageSelector` injects `raplaDataSource` via `@Qualifier("raplaDataSource")`-narrowed `ObjectProvider` so deployment-private secondaries (dhbwrapla's `dualisDataSource`) can't be mistaken for the rapla store.
 
 **Phase 1 — rapla-server: replace facets, delete the type.**
-- Expose `DataSource`(s) as `@Bean`s (move PRD 045 Phase 3 logic from `LegacyServerBridgeConfig`).
+- Expose `DataSource`(s) as `@Bean`s (move [PRD 045](045-end-user-deployment-and-db-config.md) Phase 3 logic from `LegacyServerBridgeConfig`).
 - `ServerStorageSelector` ctor takes nullable primary `DataSource` + file path + `RaplaServerProperties`.
 - `mailSessionProvider` → `() -> null` (no behaviour change).
 - `RaplaStatusPageGenerator`, `RaplaIndexPageGenerator`, `JavascriptPatcher` → inject `RaplaServerProperties`; `isServiceEnabled(key)` looks up `getServices()` (absent ⇒ true).
@@ -97,7 +97,7 @@ Out of scope:
 
 ## Tests
 
-- Phase 1: existing `DbDatasourceBootIntegrationTest` (PRD 045) must still pass
+- Phase 1: existing `DbDatasourceBootIntegrationTest` ([PRD 045](045-end-user-deployment-and-db-config.md)) must still pass
   — DB datasource still wired, `ServerStorageSelector` still picks `DBOperator`.
   Tier-2/3 coverage that file-mode and db-mode both still boot.
 - Phase 2: a test that `ReloadService.reload()` reloads data and clears the
@@ -117,7 +117,7 @@ All resolved 2026-05-18:
 3. **Multi-pod** — `reload()` reloads only the serving pod; other pods re-sync via update history.
 4. **dhbwrapla Dualis datasource** — keep dhbw-private `@Bean DataSource` with `@Qualifier`, not in vanilla rapla's `rapla.db-datasources` map.
 5. **`raplaLogger()` home** — `ServerCoreConfig`.
-6. **Sequencing vs PRD 003** — Phases 1+3 land together (delete breaks dhbwrapla compile immediately). Phase 2 with or just after.
+6. **Sequencing vs [PRD 003](003-custom-deployments-after-spring-migration.md)** — Phases 1+3 land together (delete breaks dhbwrapla compile immediately). Phase 2 with or just after.
 
 ## Adjacent cleanup — commons-collections4 → in-tree helpers (2026-05-24)
 

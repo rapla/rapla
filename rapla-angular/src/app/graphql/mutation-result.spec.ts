@@ -25,7 +25,10 @@ describe('toMutationResult (PRD 091 Phase 2.1)', () => {
     const r = toMutationResult(
       resp({
         errors: [
-          { message: 'stale', extensions: { code: 'CONCURRENT_MODIFICATION', path: 'expectedLastChanged' } },
+          {
+            message: 'stale',
+            extensions: { code: 'CONCURRENT_MODIFICATION', path: 'expectedLastChanged' },
+          },
           { message: 'other', extensions: { code: 'REQUIRED', path: 'x' } },
         ],
       }),
@@ -35,7 +38,9 @@ describe('toMutationResult (PRD 091 Phase 2.1)', () => {
 
   it('maps pure permission errors to denied', () => {
     for (const code of ['PERMISSION_DENIED', 'FORBIDDEN', 'UNAUTHENTICATED']) {
-      const r = toMutationResult(resp({ errors: [{ message: 'no', extensions: { code, path: '' } }] }));
+      const r = toMutationResult(
+        resp({ errors: [{ message: 'no', extensions: { code, path: '' } }] }),
+      );
       expect(r.kind).toBe('denied');
     }
   });
@@ -54,7 +59,11 @@ describe('toMutationResult (PRD 091 Phase 2.1)', () => {
     expect(r.kind).toBe('invalid');
     if (r.kind === 'invalid') {
       expect(r.issues).toEqual([
-        { code: 'REQUIRED', path: 'input.appointments[0].id', message: 'appointment id is required' },
+        {
+          code: 'REQUIRED',
+          path: 'input.appointments[0].id',
+          message: 'appointment id is required',
+        },
       ]);
     }
   });

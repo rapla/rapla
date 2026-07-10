@@ -1,11 +1,11 @@
 # PRD 016: Pre-check-in audit of `git diff HEAD` after Date migration
 
-**Status:** done (2026-05-11). The audit drove six follow-up commits (`4a6b6603` … `bcaceb88`) that systematically restored Pattern-2 collateral and finished the per-file verdict pass. Working-tree file count dropped from 242 at audit start to ~48 today (the remainder are intentional Date-migration edits plus the architecture docs from PRD 022). No outstanding "unsure" verdicts remain.
+**Status:** done (2026-05-11). The audit drove six follow-up commits (`4a6b6603` … `bcaceb88`) that systematically restored Pattern-2 collateral and finished the per-file verdict pass. Working-tree file count dropped from 242 at audit start to ~48 today (the remainder are intentional Date-migration edits plus the architecture docs from [PRD 022](../022-architecture-documentation.md)). No outstanding "unsure" verdicts remain.
 **Date:** 2026-05-09 (closed: 2026-05-11)
 
 ## Goal
 
-Before the next commit on `spring-boot`, get a confident verdict — *intentional / collateral / unsure* — for every line the working tree changes vs `HEAD`. The Date-migration scripts (PRD 001-A Phase 4, catalogued in PRD 013) intentionally rewrote thousands of `Date`-typed sites but also dropped ~700–1,000 lines of unrelated code. We want every collateral line restored before commit, every intentional change kept, zero "unsure" lines remaining.
+Before the next commit on `spring-boot`, get a confident verdict — *intentional / collateral / unsure* — for every line the working tree changes vs `HEAD`. The Date-migration scripts (PRD 001-A Phase 4, catalogued in [PRD 013](013-date-script-collateral-damage.md)) intentionally rewrote thousands of `Date`-typed sites but also dropped ~700–1,000 lines of unrelated code. We want every collateral line restored before commit, every intentional change kept, zero "unsure" lines remaining.
 
 ## Scope
 
@@ -43,7 +43,7 @@ Files with **only** mechanical/pure-rename hunks are auto-accept. Files with any
 | Logic-bearing candidates | **175** |
 | Logic-bearing hunks across candidates | **497** |
 | Pass B duplicate-line findings | 14 |
-| Pass C move-with-drops findings | 252 (227 in `UtilConcurrentCommandScheduler` known to PRD 013) |
+| Pass C move-with-drops findings | 252 (227 in `UtilConcurrentCommandScheduler` known to [PRD 013](013-date-script-collateral-damage.md)) |
 | Pass D non-import pure-adds | 4 |
 | Pass E semantic-drift pairs (after filtering clean retypes) | 379 |
 | Pass F compile errors | 22 unique (14 BLIND-SPOTs in `RaplaSQL.java`) |
@@ -52,7 +52,7 @@ Files with **only** mechanical/pure-rename hunks are auto-accept. Files with any
 
 **Intentional (Date migration):** `Date`-typed declarations → `LocalDateTime`; `*AsLocalDateTime` overloads collapsed; `DateTools.toDate(...)`/`toMilli(...)`/`toLocalDateTime(...)` bridges stripped; `import java.util.Date` removed; `cutDate(...)` removed when target field is now `LocalDate`; `SerializableDateTimeFormat`/`ISODateTimeFormat` adapters removed; Spring 4 import path moves.
 
-**Collateral patterns** (PRD 013 + new):
+**Collateral patterns** ([PRD 013](013-date-script-collateral-damage.md) + new):
 
 - Pattern 1 — anonymous-class `Promise<Void> execute()/undo()` / `getCommandoName` triplets dropped from `CommandUndo` instances.
 - Pattern 2 — method-call statements dropped between control-flow lines (`removeOldConflicts(); setLastRefreshed(...);` etc.). The `FileOperator` case the user flagged is this pattern.
@@ -101,7 +101,7 @@ Mechanical: delete duplicate `+` line. One-line edit each.
 
 ### Phase 6 — Close
 
-`git mv` to `docs/prd/done/`; flip PRD 013 to `done`.
+`git mv` to `docs/prd/done/`; flip [PRD 013](013-date-script-collateral-damage.md) to `done`.
 
 ## Tests
 - `mvn -pl <module> -am compile` per restore batch.
@@ -111,10 +111,10 @@ Mechanical: delete duplicate `+` line. One-line edit each.
 ## Open questions
 
 1. **Pass E noise floor.** 379 semantic-drift pairs is mostly clean `Date→LocalDateTime` operand rewrites the filter doesn't catch. An AST-level diff would be better but expensive. **Acceptance: hand-eyeball.**
-2. **`UtilConcurrentCommandScheduler.java` got auto-accepted** despite PRD 013 naming it worst-damaged (188 lines collateral). Now shows balanced +424/−423; every delete pairs with a same-token add. **Spot-check before final commit** — confirm the file was reset and re-applied (PRD 013 plan 2) rather than coincidental pairing.
+2. **`UtilConcurrentCommandScheduler.java` got auto-accepted** despite [PRD 013](013-date-script-collateral-damage.md) naming it worst-damaged (188 lines collateral). Now shows balanced +424/−423; every delete pairs with a same-token add. **Spot-check before final commit** — confirm the file was reset and re-applied ([PRD 013](013-date-script-collateral-damage.md) plan 2) rather than coincidental pairing.
 3. **Pass F coverage gap.** Logic bugs that compile cleanly slip through (e.g. ternary flip in `FileOperator.getHistoryValidStart` silently drops `HISTORY_DURATION` from one branch). Only tests catch these. **Targeted tests during Phase 2 for any pair flagged by Pass E with sim < 0.6.**
 
 ## Related PRDs
 - **PRD 001-A** — parent migration.
-- **PRD 013** — catalog of collateral damage. This PRD is the audit-and-fix execution that 013 scoped.
-- **PRD 015** — touches same file set; coordinate restore order.
+- **[PRD 013](013-date-script-collateral-damage.md)** — catalog of collateral damage. This PRD is the audit-and-fix execution that 013 scoped.
+- **[PRD 015](015-finish-date-migration-rapla-client.md)** — touches same file set; coordinate restore order.

@@ -71,13 +71,13 @@ public class StoredArtifactFileRoundTripTest extends FacadeTestSupport
     @Test
     public void upsertByNaturalKeyOverwrites() throws Exception
     {
-        operator.storeAndRemove(List.of(newArtifact(StoredArtifact.KIND_TEMPLATE, "doc", "v1")), Collections.emptyList(), admin());
-        operator.storeAndRemove(List.of(newArtifact(StoredArtifact.KIND_TEMPLATE, "doc", "v2")), Collections.emptyList(), admin());
+        operator.storeAndRemove(List.of(newArtifact(StoredArtifact.KIND_DOCUMENT, "doc", "v1")), Collections.emptyList(), admin());
+        operator.storeAndRemove(List.of(newArtifact(StoredArtifact.KIND_DOCUMENT, "doc", "v2")), Collections.emptyList(), admin());
 
         operator.reload();
 
         List<StoredArtifact> matching = operator.getStoredArtifacts().stream()
-                .filter(a -> a.getId().equals("TEMPLATE:doc")).toList();
+                .filter(a -> a.getId().equals("DOCUMENT:doc")).toList();
         assertEquals(1, matching.size(), "same natural key -> single row");
         assertEquals("v2", matching.get(0).getBody());
     }
@@ -87,12 +87,12 @@ public class StoredArtifactFileRoundTripTest extends FacadeTestSupport
     {
         operator.storeAndRemove(List.of(
                 newArtifact(StoredArtifact.KIND_VIEW, "leihschein", "query"),
-                newArtifact(StoredArtifact.KIND_TEMPLATE, "leihschein", "<div/>")), Collections.emptyList(), admin());
+                newArtifact(StoredArtifact.KIND_DOCUMENT, "leihschein", "<div/>")), Collections.emptyList(), admin());
 
         operator.reload();
 
         assertTrue(find("VIEW:leihschein").isPresent());
-        assertTrue(find("TEMPLATE:leihschein").isPresent());
+        assertTrue(find("DOCUMENT:leihschein").isPresent());
     }
 
     @Test

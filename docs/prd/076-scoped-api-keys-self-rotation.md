@@ -6,7 +6,7 @@ config token-gate, bootstrap strip, dualis exemption) is **landed + green**; Pha
 GraphQL-only + `access_details` at the GraphQL seams) is **planned, not yet built**.
 **Phase 6** (interactive human rotation from the SPA + grace cap + expired-entry compaction,
 from the 2026-06-27 SPA key-management UI) is **in progress** — see Plan §Phase 6, D7 update, D11/D12.
-**Related:** PRD 043 (API key mechanism — server-minted asymmetric JWT, this builds on it), PRD 071 §H7 (origin: "API key has no server-side max TTL")
+**Related:** [PRD 043](043-api-keys-jwt-pat.md) (API key mechanism — server-minted asymmetric JWT, this builds on it), [PRD 071](done/071-web-security-hardening.md) §H7 (origin: "API key has no server-side max TTL")
 
 **Follow-up findings (2026-06-24, code-smell audit):** two limits of the "one write chokepoint" model surfaced and are recorded here so they aren't re-discovered:
 
@@ -112,7 +112,7 @@ superseded and will be reworked to the GraphQL path.
    *automation* mints that key with `access_details`).
 
    **Resource permissions today:** as of 2026-06-25 the GraphQL `Allocatable` type exposes NO
-   permission-list field (only `owner`, itself covered; `accessLevel` occurrences are PRD 069 filter
+   permission-list field (only `owner`, itself covered; `accessLevel` occurrences are [PRD 069](069-graphql-resource-access-read-api.md) filter
    *inputs*, not output) — no current resource-permission leak. The directive is the guardrail: when
    such a field is added it gets `@requiresAccessDetails(kind: PERMISSIONS)` and is gated by the same
    `access_details` scope from day one.
@@ -205,7 +205,7 @@ Three invariants:
 ### Out of scope
 - Fine-grained per-resource scopes (only the coarse read/write axis here).
 - Forced max-TTL (rejected — see Background).
-- Changing the asymmetric mint/discard mechanism (PRD 043 owns that).
+- Changing the asymmetric mint/discard mechanism ([PRD 043](043-api-keys-jwt-pat.md) owns that).
 - Swing client changes.
 
 ## Plan
@@ -254,7 +254,7 @@ Three invariants:
       cannot reach the generic create endpoint (D10)**, old key valid within grace then rejected.
 
 ### Phase 6 — interactive rotation + key lifecycle ⏳ (2026-06-27)
-Driven by the SPA "Manage API keys" UI (PRD 043 §Angular UI). The shipped rotate (Phase 3) is
+Driven by the SPA "Manage API keys" UI ([PRD 043](043-api-keys-jwt-pat.md) §Angular UI). The shipped rotate (Phase 3) is
 machine-only — endpoint-bound to the api-key's own credential (D10). The SPA user needs to rotate
 their own keys from the browser cookie session, and expired entries must not accumulate.
 - [x] **Unified rotate endpoint (D12).** `POST /api/auth/api-keys/{id}/rotate` accepts EITHER an
@@ -273,7 +273,7 @@ their own keys from the browser cookie session, and expired entries must not acc
       predecessor is still live → **409**. Pure anti-sprawl, explicitly NOT a compromise control.
 - [x] **Expired-entry compaction (D11).** On every keystore write (create / rotate / revoke), prune
       stored entries whose `exp` is already past; `list()` filters expired entries out. No
-      decoder-side deletion (§16 — reads stay side-effect-free), no scheduled sweep (PRD 089 D6 pattern).
+      decoder-side deletion (§16 — reads stay side-effect-free), no scheduled sweep ([PRD 089](089-server-side-recents-favorites.md) D6 pattern).
 - [x] Tier-3 `ApiKeyInteractiveRotationTest` (5/5): human rotates own key (old valid during grace);
       `graceMinutes > 2880` → 400; cross-user id → not-found (§12); chain capped at 2 (409 then ok
       after delete); expired entry pruned + absent from `list()`. `ApiKeySelfRotationTest` (6/6)
@@ -287,7 +287,7 @@ their own keys from the browser cookie session, and expired entries must not acc
 ## Tests
 
 `ApiKeyScopeTest` (read-only key write → 403; write key → ok; existing no-`scopes` entry ⇒
-`write_all`), `ApiKeySelfRotationTest` (rotate issues same-scope successor, old key valid
+`{read}` read-only per Phase 4, write → 403), `ApiKeySelfRotationTest` (rotate issues same-scope successor, old key valid
 within grace then rejected after, no cross-user, no escalation), and `ApiKeyExpiryTest` —
 **the backward-compat guard**: an existing stored entry with NO `exp` field still authenticates
 after D9 (missing `stored.exp` must not be read as expired). Existing `ApiKeyController`/
@@ -310,13 +310,15 @@ after D9 (missing `stored.exp` must not be read as expired). Existing `ApiKeyCon
   shared key cached across pods needs a brief window to pick up the successor. Enabled by D9
   (decoder enforces `min(jwt.exp, stored.exp)`, tightening-only). Indefinite overlap stays the
   manual create→migrate→`DELETE` path. See D7 + D9.
-- **OQ3 — backward compat.** ✅ **Resolved → missing `scopes` ⇒ `write_all` for existing
-  keys; `{read}` default only for newly-created keys.** Scope lives in the **stored key entry**
+- **OQ3 — backward compat.** ✅ **Resolved → missing `scopes` ⇒ `{read}` (fail-safe read-only),
+  for both existing and newly-created keys.** ~~missing `scopes` ⇒ `write_all` for existing
+  keys; `{read}` default only for newly-created keys~~ — **superseded by Phase 4** (`LEGACY_FULL`
+  removed; pre-scopes keys are now read-only). Scope lives in the **stored key entry**
   (the `serialiseEntry` JSON blob the decoder already parses for the membership check), not
   the signed JWT claim — so it is server-side migratable and read for free at verify time. A
-  pre-existing entry simply has no `scopes` field; the decoder defaults that to `write_all`,
-  which is behaviour-identical to today (existing keys already carry the user's full write
-  power). Non-breaking. See D8.
+  pre-existing entry simply has no `scopes` field; `ApiKeyScopes.resolveStored(empty)` and the
+  decoder default that to `{read}`, so a leaked pre-scopes key can no longer write. The one
+  legacy writer (dualis) is exempted via `ApiKeyScopeContext.callUnrestricted`. See D8.
 
 ## Decisions locked
 
@@ -342,7 +344,7 @@ resource permissions.
 
 **D4 — rotation needs no new mint mechanism, scoping does.** Overlap rotation already works
 via create+delete (AWS/GCP model); the `rotate` endpoint is a same-scope convenience over
-it. PRD 043 stays the base mint mechanism.
+it. [PRD 043](043-api-keys-jwt-pat.md) stays the base mint mechanism.
 
 **D5 — default `{read}` (least privilege) for new keys; any write/`rotate_self` scope is
 explicit.** (Existing keys' default handled by D8.)
@@ -395,13 +397,14 @@ immutable JWT `exp` claim only (`claims.getExpirationTime()`, line 147–150) an
   field ⇒ preserve current behaviour). A mandatory regression test asserts an existing
   no-`exp` entry still authenticates after D9 lands.
 
-**D8 — scope is stored in the key entry, not the JWT; missing scope ⇒ `write_all`.** The
+**D8 — scope is stored in the key entry, not the JWT; missing scope ⇒ `{read}` (fail-safe).** The
 authoritative scope source is the per-key `serialiseEntry` JSON blob (already parsed by
 `ApiKeyJwtDecoder` during the membership check), so it is server-side migratable and read at no
 extra cost. The signed JWT is immutable in the client's hand and is NOT the scope source. An
-existing key's blob has no `scopes` field → defaults to `write_all`, behaviour-identical to
-today (full write power) → backward-compatible, non-breaking. Only newly-minted keys get the
-`{read}` default (D5).
+existing key's blob has no `scopes` field → defaults to `{read}` (read-only), as fixed by Phase 4
+(`LEGACY_FULL` removed). ~~defaults to `write_all`, behaviour-identical to today~~ — **superseded
+by Phase 4**: pre-scopes keys can no longer write; the sole legacy writer (dualis) is exempted via
+`ApiKeyScopeContext.callUnrestricted`. New keys get the same `{read}` default (D5).
 
 **D11 — expired key entries are pruned by opportunistic write-time compaction, not a scheduled
 sweep or a read-path delete (Phase 6).** D9 makes an expired key *unusable* (decoder rejects on
@@ -410,7 +413,7 @@ keystore and still showed in `list()`. Fix: on every keystore write (create / ro
 drop entries whose `exp` is already past, and filter expired entries out of `list()`. Rejected
 alternatives: (a) **decoder-side deletion** — the decoder is a read/verify path; deleting there
 violates AGENTS.md §16 (reads stay side-effect-free); (b) **scheduled sweep** — heavier, and the
-codebase favours opportunistic compaction (this is exactly the PRD 089 D6 / `UserListsService`
+codebase favours opportunistic compaction (this is exactly the [PRD 089](089-server-side-recents-favorites.md) D6 / `UserListsService`
 pattern). Accepted tradeoff: a user who rotates once and never touches keys again leaves one dead
 entry (unusable, invisible in the UI) until their next write — bounded, not unbounded growth.
 

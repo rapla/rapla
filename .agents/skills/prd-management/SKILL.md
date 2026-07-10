@@ -24,6 +24,14 @@ git mv docs/prd/NNN-name.md docs/prd/done/NNN-name.md
 ```
 Update cross-references in still-active PRDs that link to it.
 
+## When a decision is overturned mid-session
+
+Grep the PRD for **every** statement of the old decision and rewrite them all in the same
+edit — never append the new winner as a section while a stale "Recommendation:"/decision
+header stands above it. Scar (2026-06-20, PRD 074): the directives-vs-CEL winner was
+appended, CEL stayed "the decision" in four places, and a day of examples was authored
+against the dead decision before the user caught it twice.
+
 ## Before ending a session
 Update any PRD touched this session: close resolved open questions, mark phases done/in-progress, note direction changes. Stale PRDs cause the next session to re-litigate decisions already made.
 

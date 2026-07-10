@@ -14,7 +14,7 @@ A **saved view** lets an admin define a data view by storing a **GraphQL documen
 convention isn't enough) — with **no client redeploy and no server-side column config**.
 The Angular SPA is a generic renderer over the GraphQL response; server-rendered export
 (CSV/HTML/iCal) renders the *same* data. Replaces TableView's per-deployment column
-config (`/table/*`, PRD 030 — deprecated, frozen, **no migration**; the new path is
+config (`/table/*`, [PRD 030](030-server-side-view-rendering.md) — deprecated, frozen, **no migration**; the new path is
 greenfield).
 
 ## Architecture at a glance
@@ -28,7 +28,7 @@ best tool for *its* output:
 |---|---|---|---|
 | **Read tables** (SPA + CSV/HTML/iCal) | server-eval fields + presentation | **none** — rapla `ParsedText`, server-side; `cdk-table` + `ngComponentOutlet` registry | this PRD |
 | **Charts** | client only | **Vega-Lite** (interpreter mode, CSP-safe) | companion |
-| **Edit forms** | client only | **ngx-formly** → GraphQL mutations | companion / future PRD 075 |
+| **Edit forms** | client only | **ngx-formly** → GraphQL mutations | companion / future [PRD 075](075-expression-language-standardization.md) |
 
 **Adaptive Cards is dropped** (cross-host portability isn't needed for an Angular-only
 SPA — ngx-formly replaces it for forms; server-side `displayName`/composition fields +
@@ -91,7 +91,7 @@ server-side by rapla's own engine, so no dual-runtime / client engine is needed 
    state.
 8. **GraphiQL is the view authoring editor.** Rapla already ships `/api/graphiql` with schema
    introspection, variable autocompletion, and full cookie-based auth (HttpOnly `access_token`
-   cookie + XSRF double-submit + 401→refresh→replay — PRD 072 Phase 3/4). The admin authors
+   cookie + XSRF double-submit + 401→refresh→replay — [PRD 072](072-server-side-login-dialog.md) Phase 3/4). The admin authors
    views directly in GraphiQL (load query text, edit, validate, save under a name). No separate
    view-editor is built. GraphiQL gains two toolbar actions — **Load view** (populate editor
    from a stored view) and **Save view** (call `saveView` with the current query text + a name)
@@ -121,13 +121,13 @@ sources with two homes:**
   the `Raum` column's room-type filter, etc. define *which allocatables each column shows*;
   they come from the column annotation and **never** become variables. This is exactly the
   shipped **`Appointment.allocatables(filter: AppointmentAllocatableFilter)`** field
-  (PRD 073 Phase 0, 2026-06-19) — `typeKeyIn`/`isPersonEq` were its v1 scalars (renamed `typeIn` + per-kind enums, PRD 059 Phase 7 / ADR 0005).
+  ([PRD 073](073-graphql-function-equivalents.md) Phase 0, 2026-06-19) — `typeKeyIn`/`isPersonEq` were its v1 scalars (renamed `typeIn` + per-kind enums, [PRD 059](done/059-graphql-typed-where-predicates.md) Phase 7 / ADR 0005).
 - **CalendarModel filters become *variables*** — all user state, carried in the root's
   `filter: $filter` (`ReservationFilter`, SDL below):
   - **reservation type** (checkbox) → `typeIn`; per-type **classification rules**
     (*neue Regel für*) → the generated `where<TypeKey>` predicates (AND/OR/NOT + attribute
-    comparisons, PRD 059) — richer than a flat type list
-  - **resource-tree selection** → `allocatableMatching` (PRD 066) or `allocatableIdsIn`
+    comparisons, [PRD 059](done/059-graphql-typed-where-predicates.md)) — richer than a flat type list
+  - **resource-tree selection** → `allocatableMatching` ([PRD 066](066-graphql-reservation-allocatable-matching.md)) or `allocatableIdsIn`
   - **date range** (from/to control) → `from` / `to`
 
 ```graphql
@@ -167,10 +167,10 @@ list), and `allocatableMatching` carries the resource-tree selection.
 
 ## Data = GraphQL (prediction + navigation only)
 
-The query decides **what data is in the result**: prediction (`where` PRD 059 +
-`searchText`/`matchKind` PRD 028 + access selectors PRD 069), navigation
+The query decides **what data is in the result**: prediction (`where` [PRD 059](done/059-graphql-typed-where-predicates.md) +
+`searchText`/`matchKind` [PRD 028](028-angular-power-search.md) + access selectors [PRD 069](069-graphql-resource-access-read-api.md)), navigation
 (selection), and **server-computed scalars** the client can't derive
-(`displayName`, `durationMinutes`, typed attributes — the PRD 073 gaps). It selects
+(`displayName`, `durationMinutes`, typed attributes — the [PRD 073](073-graphql-function-equivalents.md) gaps). It selects
 raw nested data; it does **not** shape a table.
 
 **Trust precondition for "maximize GraphQL".** A view may push a filter into the
@@ -195,8 +195,8 @@ see §"If a view ever needs more". CEL was evaluated and dropped.)
 
 The three building blocks:
 
-- **Selection + filter → GraphQL** — `where` (PRD 059), the nested `allocatables`
-  filter (shipped 2026-06-19), access selectors (PRD 069). In the dhbw model
+- **Selection + filter → GraphQL** — `where` ([PRD 059](done/059-graphql-typed-where-predicates.md)), the nested `allocatables`
+  filter (shipped 2026-06-19), access selectors ([PRD 069](069-graphql-resource-access-read-api.md)). In the dhbw model
   **rooms, courses and lecturers are referenced *allocatables*, not classification
   attributes**: `Raum`/`Teilraum`/`virtuellerRaum`, `Kurs`/`Teilkurs`/`Kursgruppe`,
   `Person` — split per column by `typeIn`. Rows are **AppointmentBlocks**
@@ -557,7 +557,7 @@ annotations + the `tableview.config` preference). The **real** col annotations a
 | `times` | `{p->times(p)}` | server-evaluated `times` field (rapla engine) | no |
 | `persons` | `{p->filter(resources(p),r->isPerson(r))}` | `allocatables(filter:{ isPersonEq:true })` (join by convention) | no |
 | `resources` | `{p->filter(resources(p),r->not(isPerson(r)))}` | `allocatables(filter:{ isPersonEq:false })` (join by convention) | no |
-| `duration` | `{p->org.rapla.eventtimecalculator:duration(p)}` | server-evaluated `duration` field; raw `durationMinutes` (PRD 073 Ph2) for aggregation | no |
+| `duration` | `{p->org.rapla.eventtimecalculator:duration(p)}` | server-evaluated `duration` field; raw `durationMinutes` ([PRD 073](073-graphql-function-equivalents.md) Ph2) for aggregation | no |
 | `lastchanged` | `{p->lastchanged(p)}` | `lastModifiedAt` + `@format(DATETIME)` | no |
 
 **Decisive finding — no client engine is needed even for the *real* compositions.**
@@ -640,7 +640,7 @@ op-set case (vs type-level **derived fields** like `displayName` / `Raum.effecti
 which are reusable and stay on the type). Placement rule: **reusable → type-level derived
 field; one-off → view-level column.**
 
-**Governance + composition fields (converged 2026-06-20 — see PRD 073 § Composition
+**Governance + composition fields (converged 2026-06-20 — see [PRD 073](073-graphql-function-equivalents.md) § Composition
 fields):** rapla Functions are **kept** as the (bounded, server-side) composition engine;
 no new engine. The gap GraphQL closes is the **composition-field bridge** (admin rapla
 composition → server-evaluated GraphQL field):
@@ -692,7 +692,7 @@ schema-rebuild hook to re-check every view **eagerly, in the same save**:
 
 1. A type / attribute / category edit is saved → `UpdateEvent` → **`HotSwappableGraphQlSource.rebuild()`**
    regenerates the schema (the per-DynamicType Classification types; SDL-hash skip on no-op).
-   *This hook already exists* (PRD 035 §5b: "admin add/remove/rename of children triggers
+   *This hook already exists* ([PRD 035](done/035-graphql-foundations.md) §5b: "admin add/remove/rename of children triggers
    schema rebuild").
 2. **Immediately after a successful rebuild** (schema must be current first), iterate **all
    stored views** and validate each against the **new** `GraphQLSchema` with graphql-java's
@@ -744,7 +744,7 @@ path must reach the same bar):
    fragments valid, arguments well-typed. Catches a selection on a deleted/renamed field.
 2. **Each `compute(...)` EL** — `ParsedText.init` (brackets, parens, function exists,
    attribute exists, arity via `assertArgs`) **+** the return-/arg-type check against the
-   curated function catalog (see PRD 073 — the one new type layer).
+   curated function catalog (see [PRD 073](073-graphql-function-equivalents.md) — the one new type layer).
 
 The validation walks the query against the schema's own type structure (block → reservation →
 allocatable types), so cross-type selections are checked in their own scope for free — no
@@ -783,7 +783,7 @@ GraphiQL gains two thin toolbar extensions — a **Load** selector and a **Save*
 by the mutations below. Both are optional progressive enhancements over the base GraphiQL build
 (the mutations are usable via any GraphQL client even without the toolbar).
 
-### Admin save/delete/list API (contract — persistence mechanics in PRD 077)
+### Admin save/delete/list API (contract — persistence mechanics in [PRD 077](077-calendar-model-graphql.md))
 
 ```graphql
 type Mutation {
@@ -898,7 +898,7 @@ building `ExecutionInput`:
 | `filter.to` | end of same week (Monday + 7 days) |
 
 Only the above two are merged; all other absent variables surface as normal GraphQL validation
-errors. This resolves PRD 078's open question (server-merge, option 1).
+errors. This resolves [PRD 078](078-spa-graphql-view-renderer.md)'s open question (server-merge, option 1).
 
 ### `extensions.view.inputs` — input metadata for the SPA
 
@@ -944,10 +944,10 @@ Static defaults (sort, limit) are concrete values, not anchor specs.
 
 Each view is addressable by name — the route is `/app/views/:viewName`. SPA routing details
 (URL param strategy, back/forward navigation, control-state sync) are a client concern →
-**PRD 078**. The server contract here is: `operationName` in the POST body identifies the
+**[PRD 078](078-spa-graphql-view-renderer.md)**. The server contract here is: `operationName` in the POST body identifies the
 view; server defaults fill missing variables. The URL is never parsed server-side.
 
-**SPA transport — two methods, one service (PRD 078):**
+**SPA transport — two methods, one service ([PRD 078](078-spa-graphql-view-renderer.md)):**
 
 ```ts
 // Consumer path — named operation; client never holds query text
@@ -1019,7 +1019,7 @@ already the bounded-language answer.)
 ## Server-side rendering — in-process GraphQL execution + request context (load-bearing)
 
 Once server-side exports (calendar / table / CSV / iCal) are **generated from GraphQL views**
-(the PRD 035/074 direction "exports go through GraphQL too"), the export endpoints must execute
+(the PRD [035](done/035-graphql-foundations.md)/074 direction "exports go through GraphQL too"), the export endpoints must execute
 the stored view query **in-process via `GraphQlSource`** — **not** by proxying the public
 `POST /api/graphql`. This is load-bearing because the set of server-rendered exports includes the
 **unencrypted public exports**, where person-name privacy depends on a server-set context flag the
@@ -1044,7 +1044,7 @@ render(graphQlSource.graphQl().executeAsync(in).join().getData());  // → HTML 
 ```
 
 The composition `DataFetcher` reads `internal_request` (& siblings) from `getThreadContextMap()`
-into `EvalContext.environment` (the **environment bridge**, PRD 073 §"Server mechanics") — so
+into `EvalContext.environment` (the **environment bridge**, [PRD 073](073-graphql-function-equivalents.md) §"Server mechanics") — so
 `exportName`'s `env("internal_request")` renders person names on/off. **One** stored view query
 serves both internal and public export; the difference is **only** the server-set context.
 
@@ -1074,9 +1074,9 @@ serves both internal and public export; the difference is **only** the server-se
 - **Edit forms → Adaptive Cards → mutations.** AC's actual strength (inputs +
   `Action.Submit`) fits the *write* side: an admin-defined form binds existing data
   (GraphQL query + AC templating, client-side) and submits to a **GraphQL mutation**
-  (PRDs 056/057/061/063). No JVM needed (forms are client-rendered; the server only
+  (PRDs [056](056-graphql-events-write-api.md)/[057](done/057-graphql-dt-mutations-v1.md)/[061](061-graphql-dt-mutations-v2.md)/[063](063-graphql-allocatables-write-api.md)). No JVM needed (forms are client-rendered; the server only
   runs the mutation, which enforces `canModify`/`canAdmin` per §12/§16). Candidate
-  **PRD 075**. Complex types (repeating appointments, allocatable refs) may exceed a
+  **[PRD 075](075-expression-language-standardization.md)**. Complex types (repeating appointments, allocatable refs) may exceed a
   flat form.
 
 ## Dependencies
@@ -1084,9 +1084,9 @@ serves both internal and public export; the difference is **only** the server-se
 - **Data-layer gaps — verified against live `rapla-test.dhbw.de` (2026-06-19).** To
   push filtering/computed-values into GraphQL: `Appointment.allocatables` takes **no
   arguments** (so aliased filtered sub-selections aren't expressible); **no
-  `durationMinutes`**; **no `typeGroup`** / declared type-groups (PRD 065). Present:
+  `durationMinutes`**; **no `typeGroup`** / declared type-groups ([PRD 065](065-graphql-declared-type-groups.md)). Present:
   `AllocatableFilter` (`typeIn`/`isPersonEq` + per-type `where*`,
-  PRD 059) on `Query.allocatables` only. Closing these (PRD 073 + 065) keeps the
+  [PRD 059](done/059-graphql-typed-where-predicates.md)) on `Query.allocatables` only. Closing these (PRD [073](073-graphql-function-equivalents.md) + [065](065-graphql-declared-type-groups.md)) keeps the
   transform thin.
 - **Pagination + prev/next + server-side `aggregate`** are future. Client-side
   aggregation covers non-paginated admin tables; once paginated, full-set totals
@@ -1101,7 +1101,7 @@ serves both internal and public export; the difference is **only** the server-se
 > the **week/month calendar render-modes** are **carved out to
 > [PRD 077 — Calendar model & saved views over GraphQL](077-calendar-model-graphql.md)** so the
 > table win isn't blocked. For the first cut, standard table views may ship as **code-shipped
-> defaults** (full saved-view authoring/persistence comes with PRD 077).
+> defaults** (full saved-view authoring/persistence comes with [PRD 077](077-calendar-model-graphql.md)).
 
 **In (server only):** the GraphQL-native read-**table** view model — the generator that
 compiles each col annotation to a server-evaluated composition field (reusing rapla's
@@ -1109,7 +1109,7 @@ compiles each col annotation to a server-evaluated composition field (reusing ra
 (`@column`/`@flatten`/`@groupBy`) as optional overrides; **the `@view` directive + the
 `extensions.view` render-meta the SPA consumes** (incl. the `inputs` block the SPA infers
 controls from); per-user §12 execution; save-time validation; XSS hardening; sort +
-pagination (decided). **074 owns the server contract; the Angular consumer is PRD 078.**
+pagination (decided). **074 owns the server contract; the Angular consumer is [PRD 078](078-spa-graphql-view-renderer.md).**
 
 **Out:** any client expression engine / CEL / dual-runtime parity (evaluated and dropped
 — compositions run server-side); the rapla DSL / Swing-HTML TableView (deprecated, not
@@ -1118,7 +1118,7 @@ Vega-Lite note; **the SPA render/control layer — GraphQL transport, generic `c
 renderer, control rendering/inference, component registry, `monaco-graphql` authoring
 → [PRD 078 — SPA GraphQL view renderer](078-spa-graphql-view-renderer.md)**; **SavedView
 persistence, CalendarModel replacement, view-switching/conversion, week/month calendar
-render-modes → PRD 077**; **the global unified/power-search across views → PRD 077 / 060**
+render-modes → [PRD 077](077-calendar-model-graphql.md)**; **the global unified/power-search across views → PRD [077](077-calendar-model-graphql.md) / [060](060-graphql-mcp-foundations.md)**
 (it is a shared cross-view selector and conflicts with Locked Decision #6's per-view inputs).
 
 ## Plan — phased
@@ -1136,7 +1136,7 @@ render-modes → PRD 077**; **the global unified/power-search across views → P
 >   reusing the shared §12-gated + per-appointment-restriction resolver from `Appointment.allocatables`.
 > - **Baustein 4** — `AppointmentBlock.duration` + `.times`, server-evaluated via the **rapla
 >   function bridge** (`evalBlockFunction`: factory-by-namespace → `createFunction` with an identity
->   arg → `EvalContext` over the real block → `toString`). The bridge is the runtime half of PRD 073.
+>   arg → `EvalContext` over the real block → `toString`). The bridge is the runtime half of [PRD 073](073-graphql-function-equivalents.md).
 > - **Baustein 5** — `AppointmentBlock.compute(expr:)`, inline composition reusing the table-column
 >   machinery (`ParsedText` over the block's `DynamicType` parse context). Max 2000 chars; invalid → null.
 > - **Baustein 6** — `Reservation.name(variant: NameVariant = DISPLAY)` (model A; `displayName`
@@ -1146,15 +1146,15 @@ render-modes → PRD 077**; **the global unified/power-search across views → P
 >   extensions). Each column carries a schema-derived **`type`** hint and the descriptors are
 >   **sorted by `@column(order:)`** — the GUI renders left-to-right without re-deriving anything.
 
-#### `extensions.view` contract v1 (GUI consumer — PRD 078)
+#### `extensions.view` contract v1 (GUI consumer — [PRD 078](078-spa-graphql-view-renderer.md))
 
 **Directives are CLIENT/render-only (locked 2026-06-21).** `@column`/`@hidden`/`@join`/`@flatten`
 are pure presentation hints in `extensions.view.columns`; they never touch `data`. Server-side
 **evaluation** is NOT done via directives — it lives in **query args** (`filter`/`sort`/`offset` on
 the flat table) and in the **separate typed field `appointmentBlockStats`** (aggregation + grouping,
-PRD 079). The earlier `@aggregate`/`@group` directives + `extensions.view.totals`/`.groups` were
+[PRD 079](079-graphql-grouped-aggregates.md)). The earlier `@aggregate`/`@group` directives + `extensions.view.totals`/`.groups` were
 **removed**: aggregates belong in typed `data` ("like compute"), not an untyped side-channel.
-Rationale (incl. the "footer in one pass" trade-off we accepted): PRD 079.
+Rationale (incl. the "footer in one pass" trade-off we accepted): [PRD 079](079-graphql-grouped-aggregates.md).
 
 The render directives shape `extensions.view` only and never alter `data`. A query without `@view`
 returns no `extensions.view` (zero overhead). `extensions.view.page` (pagination meta of the flat
@@ -1229,7 +1229,7 @@ query Termine @view(title: "Termine KW") {
 >   nested object/list column to a flat value. Data stays nested.
 > - **Baustein 12** — numeric per-block field `AppointmentBlock.durationMinutes` (wall-clock end−start),
 >   the aggregatable basis for analytics.
-> - **Aggregation/grouping → moved to PRD 079 (Shape A).** An interim `@aggregate`/`@group` directive
+> - **Aggregation/grouping → moved to [PRD 079](079-graphql-grouped-aggregates.md) (Shape A).** An interim `@aggregate`/`@group` directive
 >   pass (totals/groups in `extensions.view`) was built and then **reverted**: aggregates belong in
 >   typed `data`, delivered by the dedicated `appointmentBlockStats` field (global total = no-groupBy).
 >   074's directives are now render-only.
@@ -1254,7 +1254,7 @@ query Termine @view(title: "Termine KW") {
 >   formatted results are skipped → feeds the existing reduction. Constant/numeric exprs work now.
 > - **a — reference by name.** `AllocatableWhere` gains `nameContains` → filter a reference by the
 >   referenced entity's display name in ONE query (`whereRaum: { Gebaeude: { nameContains: "MOS" } }`).
-> - **b — typed reference recursion (PRD 059/065).** Reference attributes with a `KEY_DYNAMIC_TYPE`
+> - **b — typed reference recursion (PRD [059](done/059-graphql-typed-where-predicates.md)/[065](065-graphql-declared-type-groups.md)).** Reference attributes with a `KEY_DYNAMIC_TYPE`
 >   constraint now generate a `<RefType>RefWhere` ( `eq/ne/in/isNull/nameContains` + `where: <RefType>Where` )
 >   and the field targets it. `WhereEvaluator` resolves the referenced allocatable, **§12-`canRead`-gates it**
 >   (caller/pc threaded through evaluate→…→matchAllocatable; hidden ref ⇒ row dropped, no attribute leak),
@@ -1265,21 +1265,21 @@ query Termine @view(title: "Termine KW") {
 >   so the recursion is **verified live** against dhbw (`Raum.Gebaeude`) after a server restart — owed: a
 >   fixture with a reference attribute for a tier-2/3 b regression + §12-leak test.
 >
-> **Remaining (server):** the `ComputeFunctions` SDL catalog (PRD 073 descriptor-SPI). **Deferred:**
-> **Stufe c** — in-expression arithmetic (`add/sub/mul/div`), the EL number-model (PRD 073), which then
-> serves all expr surfaces; persistence / SavedView / switching / week-month → PRD 077; the Angular
-> table renderer → PRD 078.
+> **Remaining (server):** the `ComputeFunctions` SDL catalog ([PRD 073](073-graphql-function-equivalents.md) descriptor-SPI). **Deferred:**
+> **Stufe c** — in-expression arithmetic (`add/sub/mul/div`), the EL number-model ([PRD 073](073-graphql-function-equivalents.md)), which then
+> serves all expr surfaces; persistence / SavedView / switching / week-month → [PRD 077](077-calendar-model-graphql.md); the Angular
+> table renderer → [PRD 078](078-spa-graphql-view-renderer.md).
 
 1. **Phase 1 — Generator + render-meta.** Compile col annotations → server-evaluated
    composition fields (reuse `ParsedText`) + GraphQL filters; the `@view` directive +
    `extensions.view` emission for `events` + `appointments`. §12 via existing resolvers.
-   (The Angular `cdk-table` renderer that *consumes* `extensions.view` is **PRD 078**.)
+   (The Angular `cdk-table` renderer that *consumes* `extensions.view` is **[PRD 078](078-spa-graphql-view-renderer.md)**.)
 2. **Phase 2 — Grouping + server export.** The `appointmentBlocks(filter:)` query root
    (flat block rows); the hidden `day` group/sort column (`@group(by: DAY) @hidden`) for
    `appointments_per_day`; CSV/HTML/iCal export reuse the same **server-side** evaluation.
    (`@flatten`/`@column(order:)` are *not* needed once each view roots at the right level.)
 3. **Phase 3 — Authoring + polish.** Override directives (`@column`/`@when`) — server side.
-   (The component registry + `monaco-graphql` authoring editor are SPA → **PRD 078**.)
+   (The component registry + `monaco-graphql` authoring editor are SPA → **[PRD 078](078-spa-graphql-view-renderer.md)**.)
 4. **Phase 4 — Authoring scope + shared views** (global vs group-admin; personal vs
    shared).
 5. **Future — pagination/prev-next; optional aggregate-field convention; companion
@@ -1294,10 +1294,10 @@ query Termine @view(title: "Termine KW") {
 - **Tier 3 (MockMvc) §12 leak test** — two users run the same saved view; each sees
   only their readable rows (byte-identical to visible-only subset); the view can't
   widen scope.
-- **Renderer (tier 5/6)** — convention rendering, grouping, the multi-level case → **PRD 078**
+- **Renderer (tier 5/6)** — convention rendering, grouping, the multi-level case → **[PRD 078](078-spa-graphql-view-renderer.md)**
   (Angular consumer tests; 074 stops at the `extensions.view` contract).
 - **Server/client equivalence** — SPA render and CSV/HTML/iCal export over the *same*
-  GraphQL response produce the same rows (the SPA half lives in **PRD 078**).
+  GraphQL response produce the same rows (the SPA half lives in **[PRD 078](078-spa-graphql-view-renderer.md)**).
 - **Save-time validation** — invalid GraphQL / unknown directive / over-deep query rejected.
 
 ## Open questions

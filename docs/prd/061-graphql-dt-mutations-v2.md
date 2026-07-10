@@ -1,6 +1,6 @@
 # PRD 061 — GraphQL DynamicType Mutations v2 (deferred follow-ups)
 
-**Status:** draft — opened 2026-05-29; picks up 5 items deferred from PRD 057 v1
+**Status:** draft — opened 2026-05-29; picks up 5 items deferred from [PRD 057](done/057-graphql-dt-mutations-v1.md) v1
 
 **Date:** 2026-05-29
 
@@ -8,7 +8,7 @@
 v1 shipped 9 tier-3 tests covering create + replace + delete + admin gate +
 key collision + multiplicity validation + REFERENCE_NOT_FOUND on unknown id.
 
-**Triggered by:** the Angular schema editor UI (PRD 057 trigger) needs the
+**Triggered by:** the Angular schema editor UI ([PRD 057](done/057-graphql-dt-mutations-v1.md) trigger) needs the
 deferred behaviour before admins can safely run real type changes against
 live data. Specifically Example 6 (valueType migration) is the
 highest-risk gap — silent data loss footgun.
@@ -25,7 +25,7 @@ happy-path schema-from-scratch fixtures".
 ## Scope
 
 In:
-1. valueType-change-with-data — Example 6 from PRD 057 — explicit policy
+1. valueType-change-with-data — Example 6 from [PRD 057](done/057-graphql-dt-mutations-v1.md) — explicit policy
    (reject vs coerce vs silent-drop) + tier-3 tests + admin warning UX
 2. DefaultValueInput coercion semantics — variant-vs-valueType matching
    rules + invalid-combo rejection
@@ -37,20 +37,20 @@ In:
    counts, paginated drill-down
 
 Out:
-- Multi-locale name editing — OQ2 in PRD 057, separate concern, defer to
+- Multi-locale name editing — OQ2 in [PRD 057](done/057-graphql-dt-mutations-v1.md), separate concern, defer to
   a localization PRD
 - Per-attribute permissions / read-only-on-edit fields — defer until a
   real consumer asks
 - Soft-delete / "deprecation" semantics for DynamicTypes — defer
 - DynamicType migration tooling for renaming/restructuring (beyond what
-  PRD 057 v1 ships)
+  [PRD 057](done/057-graphql-dt-mutations-v1.md) v1 ships)
 - Cross-deployment schema sync / template DynamicTypes
 
 ## Items
 
 ### 1. valueType-change-with-data migration
 
-PRD 057 Example 6 is the worked case (STRING → INT on
+[PRD 057](done/057-graphql-dt-mutations-v1.md) Example 6 is the worked case (STRING → INT on
 `AnzahlPlaetzeInsgesamt`). v1 inherits rapla's `AttributeImpl.commitChange`
 behaviour — silently drops unparseable values. Footgun: admin clicks
 "save", 50 entities silently lose data.
@@ -146,7 +146,7 @@ covering the likely admin mistake (`stringValue` on INT, etc.).
 
 ### 3. Annotation governance
 
-PRD 057 OQ3: v1 accepts open-ended `[KeyValueInput!]`. v2 locks to a
+[PRD 057](done/057-graphql-dt-mutations-v1.md) OQ3: v1 accepts open-ended `[KeyValueInput!]`. v2 locks to a
 strict allow-list. Known annotation keys (best-effort survey from
 `DynamicTypeAnnotations` / `AttributeAnnotations` / `Annotatable` —
 reconcile against actual constants at implementation time):
@@ -192,7 +192,7 @@ path if introspection-surfaced docs are needed later.
 
 ### 4. Hot-swap UX tightening
 
-PRD 057 OQ1. v1 inherits PRD 055 Cut C's 10s `GraphQlSchemaRebuilder`
+[PRD 057](done/057-graphql-dt-mutations-v1.md) OQ1. v1 inherits [PRD 055](055-graphql-events-read-api.md) Cut C's 10s `GraphQlSchemaRebuilder`
 poll. Schema editor wants ~2s for admin feedback.
 
 Options:
@@ -241,7 +241,7 @@ next poll catches up within 10s.
 ### 5. `deleteDynamicTypes` referrer reporting
 
 v1's `REFERENCE_EXISTS` extension is a flat list of 50 referrer ids
-(Example 4 in PRD 057). v2 enriches for the admin UI:
+(Example 4 in [PRD 057](done/057-graphql-dt-mutations-v1.md)). v2 enriches for the admin UI:
 
 - **Per-kind breakdown** — referrers can be reservations (reservation
   type), allocatables (resource/person type), or attributes on OTHER
@@ -250,7 +250,7 @@ v1's `REFERENCE_EXISTS` extension is a flat list of 50 referrer ids
 - **Total counts** — `"1247 reservations, 23 allocatables"` — useful
   without paging through ids.
 - **Paginated drill-down** — `referrersOf(dynamicTypeId, first, after)`
-  with cursor pagination per PRD 055's connection pattern.
+  with cursor pagination per [PRD 055](055-graphql-events-read-api.md)'s connection pattern.
 
 **Locked v2 error extension shape:**
 
@@ -392,6 +392,6 @@ existence-leak rules) — out of scope for v2.
 ## Decision log
 
 - **2026-05-29** — PRD opened as draft, capturing the 5 deferred items
-  from PRD 057 v1's status header. Triggered by the same Angular schema
-  editor UI work that prompted PRD 057 itself — v1 unblocks the basic
+  from [PRD 057](done/057-graphql-dt-mutations-v1.md) v1's status header. Triggered by the same Angular schema
+  editor UI work that prompted [PRD 057](done/057-graphql-dt-mutations-v1.md) itself — v1 unblocks the basic
   CRUD; v2 unblocks safe operation against live data.

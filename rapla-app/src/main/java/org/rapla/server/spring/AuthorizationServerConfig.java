@@ -147,7 +147,8 @@ public class AuthorizationServerConfig
                                                                       RaplaFacade facade,
                                                                       org.springframework.security.oauth2.jwt.JwtDecoder jwtDecoder,
                                                                       LoginRateLimitFilter loginRateLimitFilter,
-                                                                      CookieAuthSupport cookieAuthSupport) throws Exception
+                                                                      CookieAuthSupport cookieAuthSupport,
+                                                                      @Value("${rapla.oauth.local-accounts-enabled:true}") boolean localAccountsEnabled) throws Exception
     {
         OAuth2AuthorizationServerConfigurer authServerConfigurer =
                 new OAuth2AuthorizationServerConfigurer();
@@ -216,7 +217,7 @@ public class AuthorizationServerConfig
                     c.tokenEndpoint(token -> {
                         token.accessTokenRequestConverter(new PasswordGrantAuthenticationConverter());
                         token.authenticationProvider(new RaplaRefreshTokenAuthenticationProvider(refreshSessionService));
-                        token.authenticationProvider(new PasswordGrantAuthenticationProvider(refreshSessionService, raplaAuthService));
+                        token.authenticationProvider(new PasswordGrantAuthenticationProvider(refreshSessionService, raplaAuthService, localAccountsEnabled));
                     });
                     c.tokenRevocationEndpoint(revoke ->
                             revoke.authenticationProvider(new RaplaTokenRevocationAuthenticationProvider(refreshSessionService, facade, jwtDecoder)));
@@ -904,21 +905,53 @@ public class AuthorizationServerConfig
      * then issues access + refresh JWTs via {@link RefreshSessionService}
      * (sharing storage + format with {@code authorization_code} flows).
      */
-    private static final class PasswordGrantAuthenticationProvider implements AuthenticationProvider
+    static final class PasswordGrantAuthenticationProvider implements AuthenticationProvider
     {
         private final RefreshSessionService refreshSessionService;
         private final RaplaAuthentificationService raplaAuthService;
+        private final boolean localAccountsEnabled;
+
+        /**
+         * Maps a credential-lookup failure to the correct OAuth2 error (security-audit A1):
+         * a genuine auth failure ({@link RaplaSecurityException}) → {@code invalid_grant};
+         * any other fault (store/provisioner/DB error) is NOT a credentials problem → logged
+         * at ERROR and surfaced as {@code server_error}. Mirrors {@code raplaAuthenticationProvider}
+         * on the form-login path so the two token endpoints behave identically.
+         */
+        static OAuth2AuthenticationException mapCredentialLookupFailure(String username, Exception e)
+        {
+            if (e instanceof RaplaSecurityException)
+            {
+                return new OAuth2AuthenticationException(new org.springframework.security.oauth2.core.OAuth2Error(
+                        OAuth2ErrorCodes.INVALID_GRANT, "Bad credentials", null));
+            }
+            LOGGER.error("Password grant for '{}' failed due to a server-side error (not a credentials problem): {}",
+                    username, e.getMessage(), e);
+            return new OAuth2AuthenticationException(new org.springframework.security.oauth2.core.OAuth2Error(
+                    OAuth2ErrorCodes.SERVER_ERROR, "Authentication failed on the server (not a credentials problem): "
+                            + e.getMessage(), null));
+        }
 
         PasswordGrantAuthenticationProvider(RefreshSessionService refreshSessionService,
-                                            RaplaAuthentificationService raplaAuthService)
+                                            RaplaAuthentificationService raplaAuthService,
+                                            boolean localAccountsEnabled)
         {
             this.refreshSessionService = refreshSessionService;
             this.raplaAuthService = raplaAuthService;
+            this.localAccountsEnabled = localAccountsEnabled;
         }
 
         @Override
         public Authentication authenticate(Authentication authentication) throws AuthenticationException
         {
+            // security-audit A0c / PRD 029: the local-password grant can be turned off centrally
+            // (rapla.oauth.local-accounts-enabled=false) in SSO-only deployments.
+            if (!localAccountsEnabled)
+            {
+                throw new OAuth2AuthenticationException(new org.springframework.security.oauth2.core.OAuth2Error(
+                        OAuth2ErrorCodes.UNSUPPORTED_GRANT_TYPE,
+                        "The password grant is disabled (rapla.oauth.local-accounts-enabled=false)", null));
+            }
             PasswordGrantAuthenticationToken auth = (PasswordGrantAuthenticationToken) authentication;
             // The OAuth2ClientAuthenticationFilter has already validated the client_id
             // and bound the registered client into the security context as the principal
@@ -942,8 +975,7 @@ public class AuthorizationServerConfig
             }
             catch (Exception e)
             {
-                throw new OAuth2AuthenticationException(new org.springframework.security.oauth2.core.OAuth2Error(
-                        OAuth2ErrorCodes.INVALID_GRANT, "Bad credentials", null));
+                throw mapCredentialLookupFailure(auth.username, e);
             }
             if (user == null)
             {

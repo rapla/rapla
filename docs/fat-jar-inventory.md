@@ -15,7 +15,7 @@ module via `mvn -pl rapla-app -am clean package -DskipTests -Psign-pkcs11`.
 | `org/springframework/boot/loader/` | 399 KB | 0.75 % | 112 | Spring Boot's PropertiesLauncher / JarLauncher |
 | `BOOT-INF/classes/` (rapla-app classes + resources) | 237 KB | 0.45 % | 47 | rapla-app's own Spring config + entry point |
 | `BOOT-INF/classes/static/` (root) | 167 KB | 0.31 % | 6 | CSS for server-rendered pages (`/server`, `/login`, `/rapla/*`) |
-| `BOOT-INF/classes/openapi/` | 97 KB | 0.18 % | 3 | Captured OpenAPI specs (PRD 041) |
+| `BOOT-INF/classes/openapi/` | 97 KB | 0.18 % | 3 | Captured OpenAPI specs ([PRD 041](prd/041-openapi-runtime-removal.md)) |
 | `META-INF/` | 48 KB | 0.09 % | 4 | Manifest, AutoConfiguration.imports, pom.xml |
 | `BOOT-INF/classes/static/swagger-ui/` | 6 KB | 0.01 % | 1 | Swagger UI bootstrap (UI loaded from CDN) |
 | `BOOT-INF/{classpath,layers}.idx` | 7 KB | 0.01 % | 2 | Spring Boot layered-jar index |
@@ -90,7 +90,7 @@ Loaded by Spring Boot's PropertiesLauncher when the fat JAR boots
 | `tomcat-embed-websocket-11.0.21.jar` | 286 KB | Websocket support |
 | `tomcat-embed-el-11.0.21.jar` | 270 KB | JSP EL expression engine |
 
-### GraphQL (4 jars, 4.74 MB) — PRD 035
+### GraphQL (4 jars, 4.74 MB) — [PRD 035](prd/done/035-graphql-foundations.md)
 
 | Jar | Size | Role |
 |---|---:|---|
@@ -250,12 +250,12 @@ for the application entry point.
 | Class | Size | Role |
 |---|---:|---|
 | `org/rapla/server/spring/AuthorizationServerConfig.class` | 41 KB | Embedded Spring Authorization Server: form login, OAuth2 endpoints, JWT signing, password grant, refresh-token rotation, revocation |
-| `org/rapla/server/spring/graphql/ClassificationGraphQLController.class` | 16 KB | GraphQL controller for the classification-system queries (PRD 035) |
+| `org/rapla/server/spring/graphql/ClassificationGraphQLController.class` | 16 KB | GraphQL controller for the classification-system queries ([PRD 035](prd/done/035-graphql-foundations.md)) |
 | `org/rapla/server/spring/graphql/GeneratedClassificationWiring.class` | 13 KB | Generated SDL-to-resolver wiring |
 | `org/rapla/server/spring/graphql/HotSwappableGraphQlSource.class` | 12 KB | Hot-reloads GraphQL schema at runtime (dev only) |
 | `org/rapla/server/spring/graphql/HelloGraphQLController.class` | 10 KB | Stub controller (smoke-test queries) |
 | `org/rapla/server/spring/graphql/ClassificationSdlGenerator.class` | 10 KB | Generates `.graphqls` SDL from rapla's `DynamicType`s at runtime |
-| `org/rapla/server/spring/web/StaticOpenApiController.class` | 7.8 KB | Serves the captured `openapi/*.json` specs at `/api/v3/api-docs/*` when SpringDoc absent (PRD 041) |
+| `org/rapla/server/spring/web/StaticOpenApiController.class` | 7.8 KB | Serves the captured `openapi/*.json` specs at `/api/v3/api-docs/*` when SpringDoc absent ([PRD 041](prd/041-openapi-runtime-removal.md)) |
 | `org/rapla/server/spring/AuthorizationServerConfig$PasswordGrantAuthenticationProvider.class` | 6.3 KB | OAuth2 password-grant impl (`grant_type=password`) |
 | `org/rapla/server/spring/graphql/ClassificationGraphQLController$AttributeValueDto.class` | 6.3 KB | GraphQL DTO |
 | `org/rapla/server/spring/AuthorizationServerConfig$RaplaRefreshTokenAuthenticationProvider.class` | 5.5 KB | Refresh-token flow handler |
@@ -288,10 +288,10 @@ for the application entry point.
 | File | Size | Role |
 |---|---:|---|
 | `application.yml` | 16 KB | Default Spring Boot config (overridden by `/opt/rapla/config/application.yml`) |
-| `graphql/schema.graphqls` | 12 KB | GraphQL schema definition (PRD 035) |
+| `graphql/schema.graphqls` | 12 KB | GraphQL schema definition ([PRD 035](prd/done/035-graphql-foundations.md)) |
 | `logback-spring.xml` | 6.5 KB | Logback config (Spring-profile-aware) |
 | `application-local.yml` | 5.3 KB | Default dev-profile overrides |
-| `application-standalone.yml` | 2.2 KB | Defaults for the standalone (PRD 054) Tauri build |
+| `application-standalone.yml` | 2.2 KB | Defaults for the standalone ([PRD 054](prd/054-standalone-windows-installer.md)) Tauri build |
 | `clientlibs.properties` | 558 B | Semicolon-separated JNLP webclient jar names — read by JNLP descriptor template |
 | `ical4j.properties` | 129 B | iCal4j defaults (compatibility mode, etc.) |
 | `commons-logging.properties` | 70 B | Routes commons-logging to SLF4J |
@@ -324,7 +324,7 @@ CSS for the server-rendered HTML pages (the non-SPA endpoints).
 
 ## `BOOT-INF/classes/openapi/` (3 files, 97 KB)
 
-Captured at build time by `OpenApiSpecCaptureTest` (PRD 041) and served by
+Captured at build time by `OpenApiSpecCaptureTest` ([PRD 041](prd/041-openapi-runtime-removal.md)) and served by
 `StaticOpenApiController` when SpringDoc is absent on the runtime classpath
 (i.e. always in production).
 
@@ -408,7 +408,7 @@ at browser request time — not bundled.
 ## Trim opportunities (largest → smallest impact)
 
 1. **Material Icons font variants** — 1.85 MB across 10 files. If the SPA uses only one variant (most apps do), 4 variants × ~330 KB each = ~1.3 MB savings. Change the Angular `@angular/material` font import config.
-2. **GraphQL stack** — `graphql-java` (3.81 MB) + `spring-graphql` (715 KB) + `reactor-core` (1.94 MB) ≈ 6.5 MB. Only used if `/api/graphql` is wanted (PRD 035 still in design). Removing `spring-boot-starter-graphql` from `rapla-app/pom.xml` excises the whole subtree if you're not shipping GraphQL yet.
+2. **GraphQL stack** — `graphql-java` (3.81 MB) + `spring-graphql` (715 KB) + `reactor-core` (1.94 MB) ≈ 6.5 MB. Only used if `/api/graphql` is wanted ([PRD 035](prd/done/035-graphql-foundations.md) still in design). Removing `spring-boot-starter-graphql` from `rapla-app/pom.xml` excises the whole subtree if you're not shipping GraphQL yet.
 3. **Exchange connector** — `ews-java-api` (1.20 MB) + `joda-time` (622 KB) ≈ 1.8 MB. Loaded only if `rapla.exchange.enabled=true` (off on rapla-test). If a node will never enable Exchange, `<exclusion>` on the Exchange transitive in `rapla-server/pom.xml` saves it.
 4. **Bootstrap CSS** — `bootstrap.min.css` (126 KB) is bundled but the SPA doesn't use it; only the server-rendered pages (`/server`, `/login`, `/rapla/calendar`) do. If those pages move into the SPA, the file can go.
 5. **`webclient/rxjava-3.1.5.jar`** — 2.82 MB, Swing-only. Trim path goes through eliminating RxJava from the Swing client (large refactor).

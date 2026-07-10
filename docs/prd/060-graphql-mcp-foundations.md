@@ -1,24 +1,24 @@
 # PRD 060 — GraphQL Discovery, Compute Operations, and MCP Transport
 
-**Status:** draft — extracted from PRD 035 on 2026-05-29; design locked, MCP transport gated on Spring AI starter SB4 alignment
+**Status:** draft — extracted from [PRD 035](done/035-graphql-foundations.md) on 2026-05-29; design locked, MCP transport gated on Spring AI starter SB4 alignment
 
 **Date:** 2026-05-29
 
-**Parent:** PRD 035 (foundations) — [done/035-graphql-foundations.md](done/035-graphql-foundations.md). This PRD picks up the MCP-side work and the cross-type discovery / compute primitives that didn't ship as part of PRD 035 Phase 1-2.
+**Parent:** [PRD 035](done/035-graphql-foundations.md) (foundations) — [done/035-graphql-foundations.md](done/035-graphql-foundations.md). This PRD picks up the MCP-side work and the cross-type discovery / compute primitives that didn't ship as part of [PRD 035](done/035-graphql-foundations.md) Phase 1-2.
 
 **Siblings:**
 - [PRD 055 — Events Read API](055-graphql-events-read-api.md) — single-type reservation reads
-- [PRD 056 — Events Write API](056-graphql-events-write-api.md) — curated `book` mutation tool wraps PRD 056's `createReservation`
+- [PRD 056 — Events Write API](056-graphql-events-write-api.md) — curated `book` mutation tool wraps [PRD 056](056-graphql-events-write-api.md)'s `createReservation`
 - [PRD 028 — Angular Power Search](028-angular-power-search.md) — substrate for the search root in §"Search & discovery"
 - [PRD 043 — API Keys (JWT/PAT)](043-api-keys-jwt-pat.md) — the scoped-key mechanism the MCP transport sits on
 
 ## Goal
 
-The original PRD 035 goal was an MCP server exposing rapla's scheduling
+The original [PRD 035](done/035-graphql-foundations.md) goal was an MCP server exposing rapla's scheduling
 primitives to AI assistants. The 2026-05-15 design review broadened that to
-a shared GraphQL + MCP substrate; PRD 035 Phase 1-2 shipped the structural
+a shared GraphQL + MCP substrate; [PRD 035](done/035-graphql-foundations.md) Phase 1-2 shipped the structural
 schema, classification generation, and the read surface for single-type
-queries (PRD 055). This PRD lands the remaining surface needed before the
+queries ([PRD 055](055-graphql-events-read-api.md)). This PRD lands the remaining surface needed before the
 MCP transport itself is worth wiring: cross-type discovery (search), the
 three compute primitives (`findFreeSlots` / `checkConflicts` / `whoIsFree`),
 the new query roots that close the SPA's scheduling-domain needs, and the
@@ -38,16 +38,16 @@ SPA surface first is the right ordering.
 - §"MCP transport" — `graphql_query` + `graphql_schema` + curated mutation tools (`book` etc.)
 
 **Out:**
-- Subscriptions / streaming (Phase 2 of PRD 035)
+- Subscriptions / streaming (Phase 2 of [PRD 035](done/035-graphql-foundations.md))
 - Multi-pool `findFreeSlots` / embedded `poolFilter` (v1 single explicit-id `poolIds`)
 - `whoIsFree` by category (v1 takes explicit `subjectIds`)
-- M365 Copilot deployment — deferred to PRD 036
+- M365 Copilot deployment — deferred to [PRD 036](036-external-idp-oauth-login.md)
 - A GraphQL mutation passthrough for MCP (per-op safety markers lost)
 
 ## New query roots — completing the SPA's scheduling-domain needs
 
 Each maps 1-1 to an existing `RaplaFacade` operation, was implicit in
-PRD 035, now made explicit:
+[PRD 035](done/035-graphql-foundations.md), now made explicit:
 
 ```graphql
 type Query {
@@ -113,13 +113,13 @@ enum MatchKind  { PREFIX  SUBSTRING  FUZZY }
   today, just exposed via GraphQL). Full-text indexing is follow-on.
 - §12: drop hits where the matched field is unreadable; entity-level §12
   also applies (a hit's entity must be readable).
-- The PRD 028 tier model (A1/A2/A3 for allocatables, E1–E4 for
+- The [PRD 028](028-angular-power-search.md) tier model (A1/A2/A3 for allocatables, E1–E4 for
   reservations) is **client-side** — depends on calendar selection +
-  viewport + recency, all client state. PRD 028 composes tiers from
+  viewport + recency, all client state. [PRD 028](028-angular-power-search.md) composes tiers from
   multiple aliased calls to the per-type `searchText` roots (now
-  documented in PRD 028 itself).
+  documented in [PRD 028](028-angular-power-search.md) itself).
 
-PRD 028 OQ#3 (bounded window) and OQ#10 (§12) are resolved by the
+[PRD 028](028-angular-power-search.md) OQ#3 (bounded window) and OQ#10 (§12) are resolved by the
 cross-domain root above + the per-type augmentations specified in PRD
 028.
 
@@ -208,14 +208,14 @@ buckets for display. `findFreeSlots` *computes the answer*, `whoIsFree`
 - `checkConflicts.withReservation` → null if the caller cannot read the
   conflicting reservation; the conflict (allocatable + window) still surfaces.
 - `whoIsFree.busy` is **time-only** — no reservation identity (privacy;
-  matches PRD 039 `BusyOnlyProjection`).
+  matches [PRD 039](039-external-ical-subscription-per-resource.md) `BusyOnlyProjection`).
 
 ### Execution
 
 No new core algorithms — these compose existing facade operations + interval
 math: `whoIsFree` / `findFreeSlots` from `queryReservations(allocatables,
 window)` + `getNextAllocatableDate`; `checkConflicts` from `ConflictFinder`.
-Once PRD 039 lands, external-calendar `ExternalAppointment` busy times feed
+Once [PRD 039](039-external-ical-subscription-per-resource.md) lands, external-calendar `ExternalAppointment` busy times feed
 into all three.
 
 ## Operation surface — Query / Mutation roots and MCP mapping
@@ -251,9 +251,9 @@ The three computes are **Query** fields — side-effect-free, even
 
 ### Out of scope for v1
 
-Resource (allocatable) writes — admin-managed via Swing/SPA + PRD 009's
+Resource (allocatable) writes — admin-managed via Swing/SPA + [PRD 009](009-server-bulk-storage-rest-api.md)'s
 `/api/resources`; the external API is booking-focused. Subscriptions /
-streaming (Phase 2). Calendar-sync operations (PRDs 038/039).
+streaming (Phase 2). Calendar-sync operations (PRDs [038](038-graph-calendar-sync.md)/[039](039-external-ical-subscription-per-resource.md)).
 
 ### MCP mapping
 
@@ -271,7 +271,7 @@ the shape is **read/traverse vs. compute/act**, not REST vs. GraphQL:
 | Read / traverse | **One `graphql_query` tool** (read-only) | Frontier model authors GraphQL well; on-demand field selection keeps the agent's context lean; §12 enforced once in field resolvers covers every query shape |
 | Schema discovery | **`graphql_schema` tool** | Returns the (scoped) introspection result so the agent knows the deployment's types/attributes |
 | Compute | GraphQL **fields with arguments** (`freeSlots(window,duration,resources)`, `conflicts(...)`) reachable through `graphql_query` | Free/busy is an algorithm; GraphQL fields wrap arbitrary resolvers, so it still fits the one read tool |
-| Write / act | **Curated, individually named mutation tools** (`book`, …) | MCP confirmation UX is *per-tool*. PRD 035 Phase 3 requires `book` marked `cautious` so the host prompts. A generic `graphql_mutation` tool collapses every mutation to one risk class — unacceptable. Named tools stay confirm-gated, logged, auditable. |
+| Write / act | **Curated, individually named mutation tools** (`book`, …) | MCP confirmation UX is *per-tool*. [PRD 035](done/035-graphql-foundations.md) Phase 3 requires `book` marked `cautious` so the host prompts. A generic `graphql_mutation` tool collapses every mutation to one risk class — unacceptable. Named tools stay confirm-gated, logged, auditable. |
 
 So: **not** six fixed RPC tools (the original draft), and **not** a full
 GraphQL passthrough. A `graphql_query` read tool + `graphql_schema` +
@@ -279,10 +279,10 @@ curated, safety-marked mutation tools.
 
 **Caveat (recorded):** a `graphql_query` passthrough is a *broad* capability,
 less legible to the human approving the MCP server than a curated tool list.
-Mitigation: server-side query logging (PRD 035 already logs `book`) + the
+Mitigation: server-side query logging ([PRD 035](done/035-graphql-foundations.md) already logs `book`) + the
 resolver-level §12 filter bounds "any query" to the caller's read scope.
 
-**Design note — `graphql_schema` payload shape.** (Downgraded from PRD 035
+**Design note — `graphql_schema` payload shape.** (Downgraded from [PRD 035](done/035-graphql-foundations.md)
 OQ#13.) The schema is small (~10–15 core types + one per DynamicType,
 ~25–40 total). Not a context problem. The `graphql_schema` tool returns
 **SDL** (~200–300 lines), not raw introspection JSON (the verbose form).
@@ -301,7 +301,7 @@ in §"Compute operations").
 ### Phase 2 — MCP transport spike
 
 Verify the Spring AI MCP starter's Spring Boot 4 / Jackson 3 alignment
-(residual OQ#2 from PRD 035 — the **implementation-gating item** from the
+(residual OQ#2 from [PRD 035](done/035-graphql-foundations.md) — the **implementation-gating item** from the
 2026-05-16 design handoff: "the Spring AI MCP starter's Spring Boot 4 /
 Jackson 3 alignment is a Phase-1 spike — verify before committing to the
 MCP transport").
@@ -317,7 +317,7 @@ host that can hand-roll a `graphql_query` tool over HTTP.
 
 ### Phase 3 — Showcase tracks
 
-The three Phase 0 showcase tracks from PRD 035 still apply, all sharing the
+The three Phase 0 showcase tracks from [PRD 035](done/035-graphql-foundations.md) still apply, all sharing the
 same Phase 1+2 surface:
 
 | # | Track | Stack |
@@ -351,7 +351,7 @@ Record each (~60–90 s, shared script). Pin under `docs/showcases/`.
 ### OQ-A — `Conflict` GraphQL type: symmetry + N-way + compute "self" perspective
 
 *Opened 2026-05-24 during the §"2026-05-24 design refinement" §9 search work
-(PRD 035 OQ#15).* Three coupled sub-questions:
+([PRD 035](done/035-graphql-foundations.md) OQ#15).* Three coupled sub-questions:
 
 (a) **Symmetric** `Conflict { reservation1, reservation2 }` — one type
     shared across `search`, `checkConflicts`, `conflicts(...)` — vs.
@@ -378,12 +378,12 @@ for search hits, `checkConflicts` return shape.
 
 ### OQ-B — §12 on Conflict search hits where one side is unreadable
 
-*Opened 2026-05-24 (PRD 035 OQ#16).* When a conflict surfaces in search
+*Opened 2026-05-24 ([PRD 035](done/035-graphql-foundations.md) OQ#16).* When a conflict surfaces in search
 and one of the paired reservations is §12-unreadable (private to a group
 the caller doesn't belong to), two options:
 
 - **Privacy-first drop** — exclude the conflict entirely. Consistent with
-  PRD 035's §12 doctrine ("behave as if response were a CSV emailed to the
+  [PRD 035](done/035-graphql-foundations.md)'s §12 doctrine ("behave as if response were a CSV emailed to the
   user"). Default lean.
 - **Utility-first null-render** — return the conflict with the unreadable
   reservation as `null` ("Room 101 14:00–15:30 conflicts with: <Public
@@ -396,12 +396,12 @@ real; needs explicit decision rather than implicit default.
 
 ### OQ-C — Window-match semantic for `search` / `reservations(from, to)`
 
-*Opened 2026-05-24 (PRD 035 OQ#17).* Settle: (a) half-open `[from, to)`
+*Opened 2026-05-24 ([PRD 035](done/035-graphql-foundations.md) OQ#17).* Settle: (a) half-open `[from, to)`
 boundaries with intersection rule (`appointment.end > from AND
 appointment.start < to`); (b) "a reservation matches if ANY of its
 appointments intersects the window" — matches rapla's existing
 `getReservations(allocatables, from, to)` rule; (c) `DateTime` is
-wall-time / `LocalDateTime` per PRD 014, in the deployment timezone.
+wall-time / `LocalDateTime` per [PRD 014](done/014-appointment-long-to-java-time.md), in the deployment timezone.
 Mostly documentation, but worth landing so the SPA doesn't use `<=` on
 the boundary. Implementation note: resolver should pre-compute
 per-reservation `[firstStart, lastEnd]` bounds to cheaply reject
@@ -411,7 +411,7 @@ windows).
 
 ### OQ-D — Default window — value + partial-input handling
 
-*Opened 2026-05-24 (PRD 035 OQ#18).* When the client doesn't supply
+*Opened 2026-05-24 ([PRD 035](done/035-graphql-foundations.md) OQ#18).* When the client doesn't supply
 `from`/`to`:
 
 (a) **Value**: `search.defaultWindowDays` deployment config; fallback 730
@@ -427,7 +427,7 @@ windows).
 
 ### OQ-E — Max-range cap — value + admin override + cap target
 
-*Opened 2026-05-24 (PRD 035 OQ#19).* To prevent DoS via unbounded searches:
+*Opened 2026-05-24 ([PRD 035](done/035-graphql-foundations.md) OQ#19).* To prevent DoS via unbounded searches:
 
 (a) **Value**: `search.maxWindowDays` deployment config; fallback 1825
     (~5 years).
@@ -442,21 +442,21 @@ windows).
     clearer this way. Implementations may also have a defensive
     time/count budget on top.
 
-### OQ-F — PRD 028 viewport-centered default — cross-PRD
+### OQ-F — [PRD 028](028-angular-power-search.md) viewport-centered default — cross-PRD
 
-*Opened 2026-05-24 (PRD 035 OQ#20).* The SPA's calendar viewport is client
+*Opened 2026-05-24 ([PRD 035](done/035-graphql-foundations.md) OQ#20).* The SPA's calendar viewport is client
 state; the server default centers on `serverTime`. A user viewing the March
 2025 calendar in June 2026 expects "search Algorithms" to find the
 Algorithms course in March 2025 — needs the SPA to pass viewport-derived
-`from`/`to` rather than rely on the server default. Decision is PRD 028
+`from`/`to` rather than rely on the server default. Decision is [PRD 028](028-angular-power-search.md)
 territory (not PRD 060): does the SPA always pass viewport, never pass, or
-conditionally? Flag for whenever PRD 028 resumes. PRD 060's contract is
+conditionally? Flag for whenever [PRD 028](028-angular-power-search.md) resumes. PRD 060's contract is
 unchanged either way — server default is `serverTime`-centered for
 headless callers.
 
 ### OQ-G — `whoIsFree` by category
 
-*From PRD 035 §"Compute operations → Open questions" #2.* v1 takes
+*From [PRD 035](done/035-graphql-foundations.md) §"Compute operations → Open questions" #2.* v1 takes
 explicit `subjectIds`; expanding a category (e.g. a department) to subject
 ids is the agent's job for v1. Whether to grow a category-expanding
 convenience (e.g. `whoIsFree(categoryId: ID, window: TimeWindow!)`) is
@@ -467,13 +467,13 @@ follow-on; for v1 the agent composes
 
 | Risk | Mitigation |
 |---|---|
-| Spring AI MCP starter not yet aligned to Spring Boot 4 / Jackson 3 | Verify Phase 2 (the spike). Spring for GraphQL itself is clean (PRD 035 OQ#2). Worst case the starter drags Jackson 2 — survivable, isolate it like `SwaggerJacksonConfig` does for springdoc. If the starter remains blocked, fall back to a thinner direct integration or defer the MCP transport. |
+| Spring AI MCP starter not yet aligned to Spring Boot 4 / Jackson 3 | Verify Phase 2 (the spike). Spring for GraphQL itself is clean ([PRD 035](done/035-graphql-foundations.md) OQ#2). Worst case the starter drags Jackson 2 — survivable, isolate it like `SwaggerJacksonConfig` does for springdoc. If the starter remains blocked, fall back to a thinner direct integration or defer the MCP transport. |
 | `book` invoked autonomously without confirmation | Curated tool marked `cautious`; host prompts; all `book` calls logged; `created_via=mcp` flag on the reservation for fast revert. |
 
 ## Cross-references
 
 - [PRD 035 (done) — Foundations](done/035-graphql-foundations.md)
-- [PRD 028 — Angular Power Search](028-angular-power-search.md) — `search` root resolves PRD 028 OQ#3 (bounded window) and OQ#10 (§12)
+- [PRD 028 — Angular Power Search](028-angular-power-search.md) — `search` root resolves [PRD 028](028-angular-power-search.md) OQ#3 (bounded window) and OQ#10 (§12)
 - [PRD 036 — External IdP OAuth Login](036-external-idp-oauth-login.md) — M365 Copilot showcase track
 - [PRD 040 — dispatch validate before lock](040-dispatch-validate-before-lock.md) — multi-pod lock semantics
 - [PRD 043 — API Keys JWT/PAT](043-api-keys-jwt-pat.md) — scoped key mechanism

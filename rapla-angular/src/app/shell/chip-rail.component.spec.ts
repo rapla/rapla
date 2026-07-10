@@ -25,9 +25,9 @@ describe('ChipRailComponent', () => {
     store.add({ id: 'B', kind: 'event', label: 'Programmieren II' });
     const f = TestBed.createComponent(ChipRailComponent);
     await f.whenStable();
-    const labels = Array.from(
-      (f.nativeElement as HTMLElement).querySelectorAll('mat-chip'),
-    ).map((c) => c.textContent?.trim() ?? '');
+    const labels = Array.from((f.nativeElement as HTMLElement).querySelectorAll('mat-chip')).map(
+      (c) => c.textContent?.trim() ?? '',
+    );
     expect(labels.length).toBe(2);
     expect(labels[0]).toContain('C348');
     expect(labels[1]).toContain('Programmieren II');
