@@ -457,9 +457,12 @@ no code, no migration). The platform's only hard opinions remain the security on
 - [ ] Schema + resolvers: `strips(filter:)`, per-block `segments`/`bars` (list-scoped lane/row
       computation, lazy on selection; `bars(scope: ALL|BANNER)`), `banner` (Rule B) + `wholeDay`,
       numeric fields.
-- [ ] A stored week + month template + CSS proving the contract end-to-end — covering **both
-      authoring shapes**: one unified view rendered through two templates AND split sibling
-      views, so neither path rots.
+- [ ] Seed templates proving the contract end-to-end: **Wochenprogramm** (needs NO Phase-5
+      fields — Phase-3 `groups` only, buildable today; ships as the simplest docs example),
+      **week** and **month** — covering **both authoring shapes**: one unified view rendered
+      through multiple templates AND split sibling views, so neither path rots. (Compact view:
+      deferred — an authoring task over `groups` × `dayIndex` when wanted, plus at most a
+      timeslot-classification field.)
 - [ ] Golden tests against the current `AbstractHTMLCalendarPage` for a fixture calendar —
       **content parity** (which block, which day, which lane, which colour), not byte parity: the
       old `<table>` geometry is not reproducible by a template that does its own layout, by design.
