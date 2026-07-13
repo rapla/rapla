@@ -303,14 +303,14 @@ query Kalender($filter: ReservationFilter!) @view(...) {
   appointmentBlocks(filter: $filter) {
     name  color  times
     segments { dayIndex startMin endMin lane laneCount clippedStart clippedEnd }
-    spans    { strip startDay span row }
+    bars     { strip startDay span row }
   }
 }
 ```
 
 - **Two primitives, both already proven in the SPA** (this is a port of shipped TS semantics, not
   speculation): `segments` = midnight-split day columns with collision lanes — exactly
-  `week-lanes.ts` `DayBlock` (clipped minutes + continuation markers); `spans` = day-strip bars
+  `week-lanes.ts` `DayBlock` (clipped minutes + continuation markers); `bars` = day-strip bars
   with stacking rows — exactly `month-chunks.ts` `WeekChunk` (longer-first, push-down). A normal
   single-day block is one segment, so the template has no special cases.
 - **`lane`/`row` are list-scoped fields**: not per-block pure functions — the `appointmentBlocks`
@@ -321,12 +321,22 @@ query Kalender($filter: ReservationFilter!) @view(...) {
   template (or the SPA's render mode) is what picks the rendering. One view + two templates
   (`kalender-woche`, `kalender-monat`) is the default shape for documents.
 - **…but not a dogma**: renderer-specific fields are fine, and when selections diverge too far,
-  **two views with different selections** (same body, one selects `segments`, the other `spans`)
+  **two views with different selections** (same body, one selects `segments`, the other `bars`)
   are the cheap escape hatch — that also avoids computing an unselected primitive.
-- **Multi-day in the week view = split into per-day segments with continuation markers**, matching
-  the SPA and old rapla. NO Google/Outlook-style header-banner band in v1 — the SPA doesn't have
-  one, and the same event must not render differently in `/app` vs a document. (If a banner band
-  ever comes, it lands in both renderers at once; it is just `spans` painted in a header strip.)
+- **Multi-day handling = the Google model, Rule B (decided 2026-07-14).** Per-block
+  `banner: Boolean!` classifies: `wholeDay` OR **a full calendar day lies inside `[start, end)`**
+  (an end at exactly 00:00 belongs to the previous day). NOT a duration threshold — Mon 16:00 →
+  Tue 16:00 is 24h but covers no full day → grid; Mon 08:00 → Wed 17:00 covers all of Tuesday →
+  banner. Consequences: banner blocks emit `segments: []` (they live in the header band, not the
+  columns — lanes automatically pack column-dwellers only); shorter midnight-crossers (night
+  shift 22:00→06:00) keep the midnight-split; the week template paints
+  `bandBars: bars(scope: BANNER)` in a header strip (band-only stacking — `bars(scope: ALL)`
+  stays month semantics); `wholeDay: Boolean!` is exposed as a field (templates want "ganztägig"
+  regardless). No rule argument in v1 — Rule B is the semantics, doc-commented; a `BannerRule`
+  enum (`WHOLE_DAY_ONLY`/`CROSSES_MIDNIGHT` variants) is a non-breaking future arg if ever
+  needed. ⚠️ This changes what a week view MEANS, so the SPA week grid must adopt the band in
+  the same arc ([PRD 077](077-calendar-model-graphql.md) OQ7 — now a committed companion, not an option); ideally the SPA
+  consumes the same `banner`/`bars` fields, beginning the `week-lanes.ts` retirement.
 - **Collision algorithm reuse**: the swing-free `BestFitStrategy`/`AbstractGroupStrategy`
   (`rapla-core/components/calendarview`, zero awt imports; the 2006 `BuildStrategy`/
   `BlockContainer#addBlock(Block, column, slot)` seam) position a 3-method `Block` interface —
@@ -379,7 +389,7 @@ query Wochenplan($filter: ReservationFilter!) @view(title: "Wochenplan")
 </div>
 ```
 
-*Monthview (`strips` ≈ 5, `spans`; a 3-day event crossing the weekend arrives pre-chunked as
+*Monthview (`strips` ≈ 5, `bars`; a 3-day event crossing the weekend arrives pre-chunked as
 `{strip:0, startDay:5, span:2, row:0}` + `{strip:1, startDay:0, span:1, row:0}`):*
 
 ```graphql
@@ -387,21 +397,21 @@ query Monatsplan($filter: ReservationFilter!) @view(title: "Monatsplan")
   @window(from: {anchor: MONTH_START, offset: 0}, to: {anchor: MONTH_START, offset: 1, unit: MONTHS})
 {
   strips(filter: $filter) { days { index label } }
-  appointmentBlocks(filter: $filter) { name  color  spans { strip startDay span row } }
+  appointmentBlocks(filter: $filter) { name  color  bars { strip startDay span row } }
 }
 ```
 ```mustache
 {{#strips}}<div class="weekrow">
   {{#days}}<div class="daycell" style="grid-column: {{index}}">{{label}}</div>{{/days}}
 </div>{{/strips}}
-{{#appointmentBlocks}}{{#spans}}
+{{#appointmentBlocks}}{{#bars}}
   <div class="bar" style="grid-row: calc({{strip}} * 4 + {{row}});
       grid-column: {{startDay}} / span {{span}}; background: {{color}}">{{name}}</div>
-{{/spans}}{{/appointmentBlocks}}
+{{/bars}}{{/appointmentBlocks}}
 ```
 
 **Mechanism, not policy — the author decides the view granularity.** The same GraphQL supports
-both shapes: ONE `Kalender` view selecting the union (`groups` + `segments` + `spans`; documents
+both shapes: ONE `Kalender` view selecting the union (`groups` + `segments` + `bars`; documents
 pair template + window via `defaultVariables` — `Kalender_woche` pins a week, `Kalender_monat` a
 month; the SPA switches via `renderModes`) — or SPLIT sibling views with the same body and
 trimmed selections. Lane/row resolve lazily off the selection, so a view pays only for what it
@@ -411,8 +421,9 @@ no code, no migration). The platform's only hard opinions remain the security on
 
 **Plan (contours; sized ~600–1,000 LOC total, algorithmic risk zero):**
 
-- [ ] Schema + resolvers: `strips(filter:)`, per-block `segments`/`spans` (list-scoped lane/row
-      computation, lazy on selection), numeric fields.
+- [ ] Schema + resolvers: `strips(filter:)`, per-block `segments`/`bars` (list-scoped lane/row
+      computation, lazy on selection; `bars(scope: ALL|BANNER)`), `banner` (Rule B) + `wholeDay`,
+      numeric fields.
 - [ ] A stored week + month template + CSS proving the contract end-to-end — covering **both
       authoring shapes**: one unified view rendered through two templates AND split sibling
       views, so neither path rots.
@@ -421,7 +432,7 @@ no code, no migration). The platform's only hard opinions remain the security on
       old `<table>` geometry is not reproducible by a template that does its own layout, by design.
 - [ ] **Template-authoring documentation** (`docs/templates.md`): how a document = view + template
       + window works end-to-end; the Mustache subset (logic-less, sections, `{{-index}}`); what the
-      model contains (`data` roots, `groups`, `strips`, `segments`/`spans`, `params`); the
+      model contains (`data` roots, `groups`, `strips`, `segments`/`bars`, `params`); the
       number-substitution + CSS-grid technique; the worked examples above as copy-paste starters;
       `@param`/`@window` from the author's perspective (public names, URL surface, required);
       the unified-vs-split view choice. Written alongside the first templates, linked from the

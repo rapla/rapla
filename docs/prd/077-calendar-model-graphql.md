@@ -124,12 +124,15 @@ for tables) — that ships first. The function/composition engine ([PRD 073](073
      the header text's min-content would otherwise drift the columns apart —
      `week-grid.component.ts`); inside (`position: sticky` on row 1) keeps one grid but
      constrains chrome/print handling (`@media print` currently relies on the autofit layout).
-   - **All-day / multi-day banner band** in the header: all-day events and blocks spanning ≥ ~1
-     day render as spanning bars in a stacked band (FullCalendar's `allDaySlot` rule), while
-     shorter overnight blocks keep the midnight-split. ⚠️ Coupled to
-     [PRD 097 § Phase 5](097-event-html-templates-mustache.md#phase-5--2d-time-grid-rendering-the-layout-engine-half):
-     v1 there deliberately has NO banner band so documents match the SPA — if the SPA adopts
-     banners, the document week template must adopt them in the same change (the banner is just
-     the `spans` primitive painted in a header strip, so the mechanism will already exist).
+   - **All-day / multi-day banner band** in the header — **decided 2026-07-14: Rule B is the
+     model** (`banner` ⇔ `wholeDay` OR a full calendar day lies inside `[start, end)`; NOT a
+     duration threshold — Mon 16:00→Tue 16:00 is 24h without a covered day → grid; night shifts
+     keep the midnight-split). ⚠️ Coupled to
+     [PRD 097 § Phase 5](097-event-html-templates-mustache.md#phase-5--2d-time-grid-rendering-the-layout-engine-half),
+     which now ships the fields (`banner`, `wholeDay`, `bars(scope: BANNER)` for band-only
+     stacking, banner blocks emit no `segments`): this item is a **committed companion, not an
+     option** — the SPA week grid must adopt the band in the same arc so the same event never
+     renders differently in `/app` vs a document; ideally the SPA consumes the same fields,
+     beginning the `week-lanes.ts` retirement.
    - Also in the Google bundle, to be scoped then: current-time indicator, scroll-to-now on open,
      fixed hour raster (scrolling replaces autofit).
