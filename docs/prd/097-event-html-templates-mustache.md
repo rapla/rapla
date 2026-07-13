@@ -313,20 +313,25 @@ query Kalender($filter: ReservationFilter!) @view(...) {
   `week-lanes.ts` `DayBlock` (clipped minutes + continuation markers); `bars` = day-strip bars
   with stacking rows — exactly `month-chunks.ts` `WeekChunk` (longer-first, push-down). A normal
   single-day block is one segment, so the template has no special cases.
-- **Which view needs what (decided 2026-07-14; goes into `docs/templates.md` verbatim — it is
-  the author's orientation table):**
+- **Which view needs what (decided 2026-07-14, terminology corrected same day; goes into
+  `docs/templates.md` verbatim — it is the author's orientation table).** Naming per the Swing
+  ground truth: **Wochenprogramm** = `week_timeslot` (`RaplaResources_de.properties:485`), the
+  timeslot plugin's week view — a **timeslot × day matrix** of stacked cards
+  (`GroupStartTimesStrategy`), NOT a list. The day-sectioned list is the SPA's grouped mode —
+  called **Tagesliste** here.
 
   | view | selects | explicitly does NOT need |
   |---|---|---|
-  | **Wochenprogramm** (day-sectioned list) | `groups` (via `@column(group: true)`) + plain fields (`times`, `name`, …; `wholeDay` for "ganztägig") | no `strips`, no `segments`, no `bars`, no `banner` — a list has no geometry; renderable **before** Phase 5 exists (the null case: the simple view pays nothing) |
+  | **Tagesliste** (day-sectioned list, SPA "grouped"/"day" mode) | `groups` (via `@column(group: true)`) + plain fields (`times`, `name`, …; `wholeDay` for "ganztägig") | no `strips`, no `segments`, no `bars`, no `banner` — a list has no geometry; renderable **before** Phase 5 exists (the null case: the simple view pays nothing) |
+  | **Wochenprogramm** (timeslot × day matrix, dhbw's standard weekly view) | `strips` (with `weekdays:` for Mo–Fr) + `dayIndex` + **`band(startMinutes: [0, 480, 720]): Int!`** — the block's 1-based time band, bands declared BY THE AUTHOR in the query; cards stack in query sort order via CSS flow (cell = `grid-column: dayIndex; grid-row: band`) | no minute geometry (`startMin`/`endMin` unused), no lanes, no `bars`, no `banner`; band row labels are static template markup (the author chose the bands) |
   | **Monthview** | `strips` + `bars(scope: ALL)` | no `segments`; **no `banner`** — month paints *every* block as a bar, banner or not (Google's month behaves the same) |
-  | **Weekview** | `strips` + `segments` + `banner` + `bandBars: bars(scope: BANNER)` | — the only view needing everything, because it is the only one with **two regions** (header band + time columns) and therefore the only one that must *route* blocks |
+  | **Weekview** (minute-proportional time grid) | `strips` + `segments` + `banner` + `bandBars: bars(scope: BANNER)` | — the only view needing everything, because it is the only one with **two regions** (header band + time columns) and therefore the only one that must *route* blocks |
 
-  Mental model: `segments` = time-column geometry · `bars` = day-spanning geometry · `banner` =
-  the router (needed only where a view has both regions) · `strips` = the frame (any 2D view,
-  never a list). A non-banner multi-day block (night shift) legitimately appears in
-  `bars(scope: ALL)` *and* has `segments` — different templates consume different primitives;
-  that is routing, not double-rendering.
+  Mental model: `segments` = time-column geometry · `bars` = day-spanning geometry · `band` =
+  categorical row (coarse time bands) · `banner` = the router (needed only where a view has both
+  regions) · `strips` = the frame (any 2D view, never a list). A non-banner multi-day block
+  (night shift) legitimately appears in `bars(scope: ALL)` *and* has `segments` — different
+  templates consume different primitives; that is routing, not double-rendering.
 - **`strips` signature (decided 2026-07-14): `strips(filter: ReservationFilter!)` — the SAME
   `$filter` variable as the data field.** The frame and the data must share one window by
   construction (separate `from`/`to` variables would dodge the whole `@window`/`?from=`/
@@ -380,10 +385,10 @@ query Kalender($filter: ReservationFilter!) @view(...) {
 **Worked examples (2026-07-14) — the three classic renderings.** Calibration: the simplest one
 needs *nothing new*.
 
-*Wochenprogramm (day-sectioned list — Phase 3's `RowGrouping` already covers it):*
+*Tagesliste (day-sectioned list — Phase 3's `RowGrouping` already covers it):*
 
 ```graphql
-query Wochenprogramm($filter: ReservationFilter!) @view(title: "Wochenprogramm")
+query Tagesliste($filter: ReservationFilter!) @view(title: "Tagesliste")
   @window(from: {anchor: WEEK_START, offset: 0}, to: {anchor: WEEK_START, offset: 7})
 {
   appointmentBlocks(filter: $filter) {
@@ -455,14 +460,15 @@ no code, no migration). The platform's only hard opinions remain the security on
 **Plan (contours; sized ~600–1,000 LOC total, algorithmic risk zero):**
 
 - [ ] Schema + resolvers: `strips(filter:)`, per-block `segments`/`bars` (list-scoped lane/row
-      computation, lazy on selection; `bars(scope: ALL|BANNER)`), `banner` (Rule B) + `wholeDay`,
-      numeric fields.
-- [ ] Seed templates proving the contract end-to-end: **Wochenprogramm** (needs NO Phase-5
-      fields — Phase-3 `groups` only, buildable today; ships as the simplest docs example),
-      **week** and **month** — covering **both authoring shapes**: one unified view rendered
-      through multiple templates AND split sibling views, so neither path rots. (Compact view:
-      deferred — an authoring task over `groups` × `dayIndex` when wanted, plus at most a
-      timeslot-classification field.)
+      computation, lazy on selection; `bars(scope: ALL|BANNER)`), `banner` (Rule B) + `wholeDay`
+      + `band(startMinutes:)`, numeric fields; `ReservationFilter.weekdays`.
+- [ ] Seed templates proving the contract end-to-end: **Tagesliste** (needs NO Phase-5 fields —
+      Phase-3 `groups` only, buildable today; ships as the simplest docs example),
+      **Wochenprogramm** (timeslot × day matrix — dhbw's standard weekly view; `strips` +
+      `dayIndex` + `band(startMinutes:)`), **week** and **month** — covering **both authoring
+      shapes**: one unified view rendered through multiple templates AND split sibling views, so
+      neither path rots. (Resource × day compact view: deferred — an authoring task over
+      `groups` × `dayIndex` when wanted.)
 - [ ] Golden tests against the current `AbstractHTMLCalendarPage` for a fixture calendar —
       **content parity** (which block, which day, which lane, which colour), not byte parity: the
       old `<table>` geometry is not reproducible by a template that does its own layout, by design.
@@ -476,16 +482,19 @@ no code, no migration). The platform's only hard opinions remain the security on
       (public names, URL surface, required); the unified-vs-split view choice. Written alongside
       the first templates, linked from the template editor.
 - **Indices are 1-based and CSS-ready (decided 2026-07-14):** `dayIndex`, `startDay`, `strip`,
-  `lane`, `row` all start at 1 and substitute verbatim into `grid-column`/`grid-row` (Mustache
-  cannot add 1; CSS grid lines are 1-based). `Bar` keeps `strip` + `row` separate — no
+  `lane`, `row`, `band` all start at 1 and substitute verbatim into `grid-column`/`grid-row`
+  (Mustache cannot add 1; CSS grid lines are 1-based). `Bar` keeps `strip` + `row` separate — no
   precomputed `gridRow`, which would bake a band-height formula into the schema; the template's
   `calc()` composes them.
-- **`HTMLCompactWeekView` — deferred, and defused (decided 2026-07-14).** It is NOT the
-  Wochenprogramm list: it renders a **matrix** of named slot-rows × day-columns (compactweekview
-  plugin: one row per resource; timeslot plugin: one row per timeslot). Decomposed against the
-  primitives it is ~90% covered already — rows = `groups` (group by resource), columns =
-  `segments.dayIndex`, cells stack chips via CSS flow (no lanes, no minutes). When wanted, it is
-  a *template* plus at most one classification field (timeslot) — no new primitive family.
+- **`band(startMinutes: [Int!]!): Int!` — in Phase-5 scope (added 2026-07-14).** The
+  Wochenprogramm (`week_timeslot`) turned out to be dhbw's standard weekly view, not a deferrable
+  exotic: a timeslot × day matrix of stacked cards. Its one gap over the other primitives is the
+  band classification (a comparison — not template-doable). The author declares the band starts
+  in the query (visible, no hidden server config in v1; the Swing `TimeslotProvider` admin config
+  can feed the argument later). Per-block, pure — not list-scoped.
+- **`HTMLCompactWeekView` (resource × day matrix, compactweekview plugin) — deferred.**
+  Decomposes into `groups` (row per resource) × `dayIndex` with chip-stacking cells — an
+  authoring task when wanted, no new primitives expected.
 
 ### Phase 6 — Calendar-export page replacement (the primary strategic goal)
 - [ ] Swap the hand-assembled HTML in `AbstractHTMLCalendarPage` for a stored template rendered by
