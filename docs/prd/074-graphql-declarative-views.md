@@ -1052,16 +1052,21 @@ query Leihschein($eventId: ID!) @view(title: "Leihschein")
   GraphQL validator on every `saveView` — `into` must resolve variable→input-object path in the
   schema, public names unique and plain (no dots), no `from`/`to` shadowing when `@window` is
   declared, `@window` target must carry `from`/`to`. Tier-3: `ViewParamSaveValidationTest`.
-- *`into` authoring affordance.* GraphiQL is CDN-loaded (`static/graphiql/index.html` pulls
-  GraphiQL 5 from esm.sh) and exposes no completion hook for a directive's **String** argument —
-  so `into` cannot be autocompleted there, and we do not try. Instead the **validation error names
-  the alternatives** (`… ReservationFilter has no field 'allocatableIdsInX' — available: …`),
-  which works in any editor. **Real completion folds into Phase 4's monaco-graphql editor**:
-  register a `graphql` completion provider that fires inside `@param(into: "…")` and offers the
-  paths from a server endpoint reusing `ViewParamDirectives.resolveIntoPath` — the exact pattern
-  the template editor already uses for `{{field}}` completion off `ResultShapeService`
-  (`static/template-editor/index.html`, `registerCompletionItemProvider`). Single walk, so
-  completion and validation cannot disagree.
+- *`into` authoring affordance.* Today the **validation error names the alternatives**
+  (`… ReservationFilter has no field 'allocatableIdsInX' — available: …`), which works in any
+  editor — GraphiQL cannot mark it inline, because `into` is a **String** argument and GraphiQL's
+  validation only checks the query against the schema (a bogus path is a perfectly valid String).
+  **The affordance belongs in `/graphiql` itself, not in a second editor** — decision #8 above
+  stands (no separate view-editor; cf. [PRD 078](078-spa-graphql-view-renderer.md) Phase 4, which
+  contradicts it and is blocked pending that resolution). Feasible because **GraphiQL 5.2.1 is
+  Monaco-based** (`static/graphiql/index.html` loads it from esm.sh with `setup-workers`): share
+  the Monaco instance via the importmap, then (a) a `validateView(query)` server call returning
+  errors **with line/column** (`Directive.getSourceLocation()` — today's messages carry no
+  position, which is exactly why nothing can go red) drives `setModelMarkers`, and (b) a
+  `graphql` `registerCompletionItemProvider` firing inside `@param(into: "…")` offers the paths
+  from a server endpoint reusing `ViewParamDirectives.resolveIntoPath`. Same pattern the template
+  editor already proves for `{{field}}` completion + red markers off `ResultShapeService`
+  (`static/template-editor/index.html`). One walk, so completion and validation cannot disagree.
 - *Still open*: projecting `@param` into `extensions.view` for future SPA controls (deferred
   with `ParamControl`).
 

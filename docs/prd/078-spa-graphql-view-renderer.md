@@ -30,17 +30,26 @@ over recurrence blocks.
 078 is **downstream of 074's `extensions.view` contract** and an **upstream dependency of
 077** (the calendar render-modes reuse the same transport + renderer + selection).
 
-## Current state (2026-06-21)
+## Current state (2026-07-13)
 
-- **Server data layer — done** (074, committed): `Query.appointmentBlocks(filter)`,
+- **Server data layer — done** (074): `Query.appointmentBlocks(filter)`,
   `AppointmentBlock.{reservation, allocatables(filter:), duration, times, compute(expr:)}`,
   `name(variant: DISPLAY|EXPORT|PLANNING)` (`displayName` `@deprecated`), power search
-  (`searchText`/`matchKind`). The **`appointments` query runs end-to-end on the wire** —
-  verifiable in GraphiQL at `/graphiql`.
-- **Server render-meta — in flight** (074): `@view` directive + `extensions.view` emission
-  (columns/title/sort/window) not yet present.
-- **SPA — greenfield.** No GraphQL transport, no renderer. `reservations.component` still
-  uses the legacy `/api/table/*` REST ([PRD 030](030-server-side-view-rendering.md), deprecated). This PRD is all of it.
+  (`searchText`/`matchKind`).
+- **Server render-meta — done** (074): `ViewMetaInstrumentation` emits `extensions.view`
+  (`key`/`title`/`columns`/`groupBy`/`groupFormat`/`renderModes`/`variables`/`window`/`page`);
+  the stored-view transport (`StoredViewInterceptor`) and the **server-resolved `view.window`**
+  are live.
+- **SPA — live, and well past this PRD's original scope.** `graphql.service.ts` (transport) plus
+  the generic `ViewHostComponent` render every stored view by name at `/app/views/:viewName`.
+  Beyond Phases 1–3 below, the renderer has since absorbed the render-modes and interaction work
+  owned by other PRDs: week/day time grid ([PRD 077](077-calendar-model-graphql.md)), month grid
+  ([PRD 095](095-month-grid-render-mode.md)), stats projection
+  ([PRD 079](079-graphql-grouped-aggregates.md)/[PRD 080](080-typed-entity-stats.md)),
+  table selection ([PRD 099](099-spa-table-selection.md)), event sheet + edit
+  ([PRD 091](091-spa-reservation-edit-and-availability.md)), row actions + undo
+  ([PRD 094](094-spa-main-view-actions-and-popups.md)), print support. Those are tracked in their
+  own PRDs; this one owns the transport, the generic renderer, and the binding contract.
 
 ## Architecture — the connection is cheap (cookie auth)
 
@@ -192,23 +201,41 @@ mode default; no client-side anchor computation).
 
 ## Plan — phased
 
-1. **Phase 1 — transport + render the `appointments` table.** `graphql.service.ts`; generic
-   `cdk-table` renderer from `extensions.view.columns` (order/header/join/format); date-range
-   control → `$filter.from/to`; route swap. Depends on 074's `extensions.view` landing.
-2. **Phase 2 — seed from `view.window`; delete the TS anchor resolver.** Seed the date-nav from
-   server-resolved `extensions.view.window`, dropping `resolveAnchorOffset`/
-   `resolveWindowFromInputs` (`view-inputs.ts`). Variable binding stays **type-driven**
-   (`buildVariablesByType`). **`@param` input controls (resource-search picker, name-search box)
-   are deferred** (074 §"Window and inputs directives" — `ParamControl` not built in v1).
-3. **Phase 3 — grouping + component registry.** **Client-side** day/weekday sectioning —
-   the server has NO grouping directive (`@group`/`@aggregate` were removed from 074 on
-   2026-06-21 → [PRD 079](079-graphql-grouped-aggregates.md); render directives are `@column`/`@hidden`/`@join`/`@flatten` only).
-   Day-grouping is a pure SPA renderer concern: `groupByWeekday()` over the flat `start`
-   column (`graphql/weekday-grouping.ts`), buckets ordered Montag→Sonntag. `ngComponentOutlet`
-   cell-component registry (safe allowlist, no raw HTML); sort-on-header-click → `$sort`;
-   pagination UX (next/prev / infinite scroll).
-4. **Phase 4 — authoring.** `monaco-graphql` query editor + live SPA preview over the
-   validator (server save-time validation is 074).
+- [x] **Phase 1 — transport + generic table.** `graphql.service.ts` (plain `HttpClient.post`, no
+      Apollo); generic Material-table renderer driven by `extensions.view.columns`
+      (order/header/join/format/type/hidden); the stored-view consumer path
+      (`executeView(name)` + `storedView` extension flag); route `/app/views/:viewName`
+      (`ViewHostComponent`). No code-shipped fallback `ViewMeta` — the server is the single
+      source of truth for what a view looks like.
+- [x] **Phase 2 — server-resolved window + type-driven binding.** *(2026-07-12)*
+  - [x] The date-nav seeds from `extensions.view.window`; the client-side anchor resolver
+        (`view-inputs.ts` — `resolveAnchorOffset`/`resolveWindowFromInputs`) is **deleted**, and
+        `ViewMeta.inputs` is replaced by `ViewMeta.window`.
+  - [x] Variable binding is **type-driven** (`variable-binder.ts` `buildVariablesByType`):
+        `ReservationFilter` ← window + resource-selection + owner; `AllocatableFilter` ← selection.
+  - [x] `@window`/`@param` are consumed **server-side only** — the SPA reads neither. **`@param`
+        input controls (`ParamControl`: resource-picker, search box, …) are deferred**
+        ([074 § Window and inputs directives](074-graphql-declarative-views.md#window-and-inputs-directives-decided-2026-07-12)).
+- [ ] **Phase 3 — grouping + component registry + pagination.** *(partially landed)*
+  - [x] **Client-side** day/weekday sectioning (`graphql/weekday-grouping.ts` `groupByWeekday`,
+        buckets Montag→Sonntag). The server has **no** grouping directive (`@group`/`@aggregate`
+        were removed from 074 on 2026-06-21 → [PRD 079](079-graphql-grouped-aggregates.md); the
+        render directives are `@column`/`@hidden`/`@join`/`@flatten` only), so day-grouping is a
+        pure SPA renderer concern.
+  - [x] Sort-on-header-click (Material `matSort`; disabled in grouped mode).
+  - [ ] `ngComponentOutlet` cell-component registry (safe allowlist, no raw HTML) — **not built**.
+  - [ ] Pagination UX (next/prev / infinite scroll) over the server's `offset` / `view.page`
+        meta — **not built**.
+- [ ] **Phase 4 — authoring.** ⚠️ **Blocked on a contradiction, do not start.** This phase says
+      "`monaco-graphql` query editor + live SPA preview", but [PRD 074](074-graphql-declarative-views.md)
+      § "Admin authoring — GraphiQL + save/load" is a **locked decision**: *the shipped GraphiQL is
+      the authoring surface; no separate view-editor is built.* Resolve first — either reopen that
+      074 decision, or **drop this phase** and let view authoring stay in `/graphiql`, with the
+      `@param`/`@window` affordances (`into` completion, red markers) landing **there** instead.
+      GraphiQL 5.2.1 is Monaco-based, so that is feasible without a second editor. Note the
+      *template* authoring UI already exists and is done — it is
+      [PRD 097](097-event-html-templates-mustache.md) Phase 4 (`static/template-editor/`), a
+      separate page for the presentation layer, not this.
 
 ## Tests (AGENTS.md §10 pyramid)
 

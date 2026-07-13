@@ -1,4 +1,4 @@
-no# PRD 097 — Event HTML templates (stored Mustache over GraphQL views)
+# PRD 097 — Event HTML templates (stored Mustache over GraphQL views)
 
 **Status:** draft — 2026-07-08
 **Related:** [PRD 074](074-graphql-declarative-views.md) (declarative GraphQL views — the stored-view + `@view` mechanism this reuses),
