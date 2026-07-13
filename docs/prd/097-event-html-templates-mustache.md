@@ -313,6 +313,32 @@ query Kalender($filter: ReservationFilter!) @view(...) {
   `week-lanes.ts` `DayBlock` (clipped minutes + continuation markers); `bars` = day-strip bars
   with stacking rows — exactly `month-chunks.ts` `WeekChunk` (longer-first, push-down). A normal
   single-day block is one segment, so the template has no special cases.
+- **Which view needs what (decided 2026-07-14; goes into `docs/templates.md` verbatim — it is
+  the author's orientation table):**
+
+  | view | selects | explicitly does NOT need |
+  |---|---|---|
+  | **Wochenprogramm** (day-sectioned list) | `groups` (via `@column(group: true)`) + plain fields (`times`, `name`, …; `wholeDay` for "ganztägig") | no `strips`, no `segments`, no `bars`, no `banner` — a list has no geometry; renderable **before** Phase 5 exists (the null case: the simple view pays nothing) |
+  | **Monthview** | `strips` + `bars(scope: ALL)` | no `segments`; **no `banner`** — month paints *every* block as a bar, banner or not (Google's month behaves the same) |
+  | **Weekview** | `strips` + `segments` + `banner` + `bandBars: bars(scope: BANNER)` | — the only view needing everything, because it is the only one with **two regions** (header band + time columns) and therefore the only one that must *route* blocks |
+
+  Mental model: `segments` = time-column geometry · `bars` = day-spanning geometry · `banner` =
+  the router (needed only where a view has both regions) · `strips` = the frame (any 2D view,
+  never a list). A non-banner multi-day block (night shift) legitimately appears in
+  `bars(scope: ALL)` *and* has `segments` — different templates consume different primitives;
+  that is routing, not double-rendering.
+- **`strips` signature (decided 2026-07-14): `strips(filter: ReservationFilter!)` — the SAME
+  `$filter` variable as the data field.** The frame and the data must share one window by
+  construction (separate `from`/`to` variables would dodge the whole `@window`/`?from=`/
+  `defaultVariables` fill machinery, which targets `filter.from/to`, and could drift). `strips`
+  reads only `from`/`to`/`weekdays` and ignores the scope fields (doc-commented; §12-clean — the
+  scaffold is pure calendar math). **Weekend hiding lives IN the filter:**
+  `ReservationFilter.weekdays: [Weekday!]` (null = all 7) — it filters blocks (a Saturday event
+  in a Mo–Fr view is dropped, not ghosted), `strips` builds the scaffold from it, and
+  `dayIndex`/`startDay` are computed against the same day set — one declaration, both consumers,
+  consistent by construction, no cross-field validation needed. (Resolver edge: a Fr→Mo bar in a
+  Mo–Fr view clips at Friday and continues Monday of the next strip — day-set gaps chunk like
+  strip edges.)
 - **`lane`/`row` are list-scoped fields**: not per-block pure functions — the `appointmentBlocks`
   resolver computes them over the returned list (lazily, only when selected). Lanes are relative
   to the result set, which is exactly right for rendering that result; doc-comment it.
@@ -433,10 +459,12 @@ no code, no migration). The platform's only hard opinions remain the security on
 - [ ] **Template-authoring documentation** (`docs/templates.md`): how a document = view + template
       + window works end-to-end; the Mustache subset (logic-less, sections, `{{-index}}`); what the
       model contains (`data` roots, `groups`, `strips`, `segments`/`bars`, `params`); the
-      number-substitution + CSS-grid technique; the worked examples above as copy-paste starters;
-      `@param`/`@window` from the author's perspective (public names, URL surface, required);
-      the unified-vs-split view choice. Written alongside the first templates, linked from the
-      template editor.
+      number-substitution + CSS-grid technique; **the which-view-needs-what table above,
+      verbatim** (the author's orientation table) + the mental model line (`segments` = column
+      geometry, `bars` = spanning geometry, `banner` = router, `strips` = frame); the worked
+      examples above as copy-paste starters; `@param`/`@window` from the author's perspective
+      (public names, URL surface, required); the unified-vs-split view choice. Written alongside
+      the first templates, linked from the template editor.
 - [ ] Open: `HTMLCompactWeekView` (timeslot/compact mode, 202 LOC) in scope or deferred?
 
 ### Phase 6 — Calendar-export page replacement (the primary strategic goal)
