@@ -174,6 +174,9 @@ public class ViewCatalogService
             if (b.name().equals(name))
                 return List.of("'" + name + "' is a built-in view name and cannot be overwritten");
         }
+        List<String> nameErrors = validateName(name, queryText);
+        if (!nameErrors.isEmpty()) return nameErrors;
+
         GraphQLSchema schema = graphQlSource.schema();
         List<String> errors = validate(queryText, schema);
         if (!errors.isEmpty()) return errors;
@@ -249,6 +252,44 @@ public class ViewCatalogService
         return false;
     }
 
+    /**
+     * A GraphQL identifier — the grammar has no unicode, so an umlaut cannot be an operation name.
+     * Also excludes the ':' that separates the {@link org.rapla.entities.storage.StoredArtifact}
+     * natural key, and anything that would need escaping in a URL path segment.
+     */
+    private static final java.util.regex.Pattern VIEW_NAME =
+            java.util.regex.Pattern.compile("[_A-Za-z][_0-9A-Za-z]*");
+
+    /**
+     * A view's name is a <b>key</b>, not a label: it is the GraphQL <b>operation name</b> the
+     * stored-view transport looks up ({@link StoredViewInterceptor} swaps in the stored query but
+     * keeps the request's {@code operationName}), the artifact natural key {@code kind:name}, and a
+     * URL path segment. So it must be a plain GraphQL identifier AND match the operation the stored
+     * query actually declares — otherwise the view saves happily and fails only at render, with
+     * "Unknown operation named …".
+     */
+    private static List<String> validateName(String name, String queryText)
+    {
+        if (name == null || name.isBlank())
+        {
+            return List.of("A view name is required");
+        }
+        if (!VIEW_NAME.matcher(name).matches())
+        {
+            return List.of("View name '" + name + "' is not a valid GraphQL identifier — it is the"
+                    + " operation name and a storage/URL key. Use letters, digits and underscore,"
+                    + " starting with a letter or underscore (e.g. 'Uebersicht', not 'Übersicht').");
+        }
+        String operation = extractOperationName(queryText);
+        if (operation != null && !operation.equals(name))
+        {
+            return List.of("View name '" + name + "' must match the query's operation name '"
+                    + operation + "' — the stored view is executed by operation name, so a mismatch"
+                    + " renders as \"Unknown operation named '" + name + "'\".");
+        }
+        return List.of();
+    }
+
     private List<String> validate(String queryText, GraphQLSchema schema)
     {
         try
@@ -267,6 +308,21 @@ public class ViewCatalogService
         {
             return List.of("Parse error: " + e.getMessage());
         }
+    }
+
+    /** The first operation's name, or null when absent/anonymous/unparseable. */
+    static String extractOperationName(String queryText)
+    {
+        try
+        {
+            Document doc = Parser.parse(queryText);
+            for (Definition<?> def : doc.getDefinitions())
+            {
+                if (def instanceof OperationDefinition op) return op.getName();
+            }
+        }
+        catch (Exception ignored) { }
+        return null;
     }
 
     /** Parse {@code @view(title: "...")} from the query text; null if absent or parse fails. */
