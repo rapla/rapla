@@ -1052,21 +1052,32 @@ query Leihschein($eventId: ID!) @view(title: "Leihschein")
   GraphQL validator on every `saveView` — `into` must resolve variable→input-object path in the
   schema, public names unique and plain (no dots), no `from`/`to` shadowing when `@window` is
   declared, `@window` target must carry `from`/`to`. Tier-3: `ViewParamSaveValidationTest`.
-- *`into` authoring affordance.* Today the **validation error names the alternatives**
-  (`… ReservationFilter has no field 'allocatableIdsInX' — available: …`), which works in any
-  editor — GraphiQL cannot mark it inline, because `into` is a **String** argument and GraphiQL's
-  validation only checks the query against the schema (a bogus path is a perfectly valid String).
-  **The affordance belongs in `/graphiql` itself, not in a second editor** — decision #8 above
-  stands (no separate view-editor; cf. [PRD 078](078-spa-graphql-view-renderer.md) Phase 4, which
-  contradicts it and is blocked pending that resolution). Feasible because **GraphiQL 5.2.1 is
-  Monaco-based** (`static/graphiql/index.html` loads it from esm.sh with `setup-workers`): share
-  the Monaco instance via the importmap, then (a) a `validateView(query)` server call returning
-  errors **with line/column** (`Directive.getSourceLocation()` — today's messages carry no
-  position, which is exactly why nothing can go red) drives `setModelMarkers`, and (b) a
-  `graphql` `registerCompletionItemProvider` firing inside `@param(into: "…")` offers the paths
-  from a server endpoint reusing `ViewParamDirectives.resolveIntoPath`. Same pattern the template
-  editor already proves for `{{field}}` completion + red markers off `ResultShapeService`
-  (`static/template-editor/index.html`). One walk, so completion and validation cannot disagree.
+- *`into` authoring affordance — **landed 2026-07-13**, in `/graphiql` itself.* Decision #8 above
+  stands: no separate view-editor (and [PRD 078](078-spa-graphql-view-renderer.md) Phase 4, which
+  proposed one, is **dropped**). The problem: `into` is a **String** argument, so GraphiQL's
+  schema-driven validation and completion are structurally blind to it — a bogus path is a
+  perfectly valid String, and a typo only surfaced as a failed save. Shipped:
+  - `validateView(query)` — dry-runs the exact `saveView` validation, stores nothing, and returns
+    each issue **with line/column** (`Directive.getSourceLocation()`; without a position nothing
+    can be marked). Errors name the alternatives (`… has no field 'allocatableIdsInX' — available:
+    allocatableIdsIn, ownerEq, …`).
+  - `intoPaths(query)` — the completion source, enumerated by the **same walk** the validator uses
+    (`ViewParamDirectives.resolveIntoPath`), so completion can never suggest something `saveView`
+    would reject.
+  - `MonacoBridge` in `static/graphiql/index.html` — a headless component using the **public
+    `useMonaco()` hook** from `@graphiql/react` to capture GraphiQL's OWN Monaco. (The hook yields
+    a store slice `{ actions, monaco, monacoGraphQL }`; the namespace is `.monaco`.) That gives
+    real `setModelMarkers` (red line on Validate) and `registerCompletionItemProvider` (Ctrl+Space
+    inside `@param(into: "…")`) on the live `graphql` model.
+
+  **Routes that do NOT work — do not retry:** (a) externalising `monaco-editor` via the importmap
+  — esm.sh rewrites each package's internal relative imports to its own canonical URLs, so
+  `editor.api` reached through the importmap is a *different module instance* than GraphiQL's; the
+  json contribution registers `languages.json` on a copy GraphiQL never reads and its variables
+  editor dies on `jsonDefaults`; (b) a Monaco global — GraphiQL exposes none; (c) the plugin API —
+  side-panels only, no editor providers. Self-hosting GraphiQL (~2.5 MB ≈ 5% of the server
+  artifact, plus a JS bundler in this Java repo) was considered and **rejected** — and is
+  unnecessary given `useMonaco()`.
 - *Still open*: projecting `@param` into `extensions.view` for future SPA controls (deferred
   with `ParamControl`).
 
