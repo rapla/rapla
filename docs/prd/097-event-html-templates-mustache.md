@@ -334,15 +334,98 @@ query Kalender($filter: ReservationFilter!) @view(...) {
 - **Consolidation option (later)**: once these fields exist, the SPA can consume them and retire
   `week-lanes.ts`/`month-chunks.ts` — one server implementation for every renderer.
 
+**Worked examples (2026-07-14) — the three classic renderings.** Calibration: the simplest one
+needs *nothing new*.
+
+*Wochenprogramm (day-sectioned list — Phase 3's `RowGrouping` already covers it):*
+
+```graphql
+query Wochenprogramm($filter: ReservationFilter!) @view(title: "Wochenprogramm")
+  @window(from: {anchor: WEEK_START, offset: 0}, to: {anchor: WEEK_START, offset: 7})
+{
+  appointmentBlocks(filter: $filter) {
+    tag: start @column(group: true, format: "EEEE dd.MM.")
+    times  name  raum: allocatables(filter: {isPersonEq: false}) @join { name }
+  }
+}
+```
+```mustache
+{{#groups}}<h2>{{label}}</h2>
+  <ul>{{#rows}}<li><b>{{times}}</b> {{name}} — {{raum}}</li>{{/rows}}</ul>{{/groups}}
+```
+
+*Weekview (`strips` = 1, `segments`; ALL geometry is number substitution + CSS grid):*
+
+```graphql
+query Wochenplan($filter: ReservationFilter!) @view(title: "Wochenplan")
+  @window(from: {anchor: WEEK_START, offset: 0}, to: {anchor: WEEK_START, offset: 7})
+  @param(name: "resource", into: "filter.allocatableIdsIn")
+{
+  strips(filter: $filter) { days { index label } }
+  appointmentBlocks(filter: $filter) {
+    name  color  times
+    segments { dayIndex startMin endMin lane laneCount clippedStart }
+  }
+}
+```
+```mustache
+<div class="week">  <!-- CSS grid: 7 columns, minute rows; time axis = static markup -->
+  {{#strips}}{{#days}}<div class="hdr" style="grid-column: {{index}}">{{label}}</div>{{/days}}{{/strips}}
+  {{#appointmentBlocks}}{{#segments}}
+    <div class="block" style="grid-column: {{dayIndex}}; grid-row: {{startMin}} / {{endMin}};
+        width: calc(100% / {{laneCount}}); margin-left: calc(100% / {{laneCount}} * {{lane}});
+        background: {{color}}">{{^clippedStart}}<b>{{times}}</b>{{/clippedStart}} {{name}}</div>
+  {{/segments}}{{/appointmentBlocks}}
+</div>
+```
+
+*Monthview (`strips` ≈ 5, `spans`; a 3-day event crossing the weekend arrives pre-chunked as
+`{strip:0, startDay:5, span:2, row:0}` + `{strip:1, startDay:0, span:1, row:0}`):*
+
+```graphql
+query Monatsplan($filter: ReservationFilter!) @view(title: "Monatsplan")
+  @window(from: {anchor: MONTH_START, offset: 0}, to: {anchor: MONTH_START, offset: 1, unit: MONTHS})
+{
+  strips(filter: $filter) { days { index label } }
+  appointmentBlocks(filter: $filter) { name  color  spans { strip startDay span row } }
+}
+```
+```mustache
+{{#strips}}<div class="weekrow">
+  {{#days}}<div class="daycell" style="grid-column: {{index}}">{{label}}</div>{{/days}}
+</div>{{/strips}}
+{{#appointmentBlocks}}{{#spans}}
+  <div class="bar" style="grid-row: calc({{strip}} * 4 + {{row}});
+      grid-column: {{startDay}} / span {{span}}; background: {{color}}">{{name}}</div>
+{{/spans}}{{/appointmentBlocks}}
+```
+
+**Mechanism, not policy — the author decides the view granularity.** The same GraphQL supports
+both shapes: ONE `Kalender` view selecting the union (`groups` + `segments` + `spans`; documents
+pair template + window via `defaultVariables` — `Kalender_woche` pins a week, `Kalender_monat` a
+month; the SPA switches via `renderModes`) — or SPLIT sibling views with the same body and
+trimmed selections. Lane/row resolve lazily off the selection, so a view pays only for what it
+selects; switching shapes is a pure authoring act (copy view, trim selection, repoint document —
+no code, no migration). The platform's only hard opinions remain the security ones
+(§12, D3, the `@param` gate).
+
 **Plan (contours; sized ~600–1,000 LOC total, algorithmic risk zero):**
 
 - [ ] Schema + resolvers: `strips(filter:)`, per-block `segments`/`spans` (list-scoped lane/row
       computation, lazy on selection), numeric fields.
-- [ ] A stored week + month template + CSS proving the contract end-to-end (one view, two
-      templates).
+- [ ] A stored week + month template + CSS proving the contract end-to-end — covering **both
+      authoring shapes**: one unified view rendered through two templates AND split sibling
+      views, so neither path rots.
 - [ ] Golden tests against the current `AbstractHTMLCalendarPage` for a fixture calendar —
       **content parity** (which block, which day, which lane, which colour), not byte parity: the
       old `<table>` geometry is not reproducible by a template that does its own layout, by design.
+- [ ] **Template-authoring documentation** (`docs/templates.md`): how a document = view + template
+      + window works end-to-end; the Mustache subset (logic-less, sections, `{{-index}}`); what the
+      model contains (`data` roots, `groups`, `strips`, `segments`/`spans`, `params`); the
+      number-substitution + CSS-grid technique; the worked examples above as copy-paste starters;
+      `@param`/`@window` from the author's perspective (public names, URL surface, required);
+      the unified-vs-split view choice. Written alongside the first templates, linked from the
+      template editor.
 - [ ] Open: `HTMLCompactWeekView` (timeslot/compact mode, 202 LOC) in scope or deferred?
 
 ### Phase 6 — Calendar-export page replacement (the primary strategic goal)
