@@ -323,12 +323,12 @@ query Kalender($filter: ReservationFilter!) @view(...) {
   | view | selects | explicitly does NOT need |
   |---|---|---|
   | **Tagesliste** (day-sectioned list, SPA "grouped"/"day" mode) | `groups` (via `@column(group: true)`) + plain fields (`times`, `name`, …; `wholeDay` for "ganztägig") | no `strips`, no `segments`, no `bars`, no `banner` — a list has no geometry; renderable **before** Phase 5 exists (the null case: the simple view pays nothing) |
-  | **Wochenprogramm** (timeslot × day matrix, dhbw's standard weekly view) | `strips` (with `weekdays:` for Mo–Fr) + `dayIndex` + **`band(startMinutes: [0, 480, 720]): Int!`** — the block's 1-based time band, bands declared BY THE AUTHOR in the query; cards stack in query sort order via CSS flow (cell = `grid-column: dayIndex; grid-row: band`) | no minute geometry (`startMin`/`endMin` unused), no lanes, no `bars`, no `banner`; band row labels are static template markup (the author chose the bands) |
+  | **Wochenprogramm** (timeslot × day matrix, dhbw's standard weekly view) | `strips` (with `weekdays:` for Mo–Fr) + `band: timeslot @column(group: true)` (server-configured bands → `{{#groups}}`, incl. empty ones; left column = `{{label}}`) + `segments { dayIndex }`; cards stack in query sort order via CSS flow; recommended: `bandBars: bars(scope: BANNER)` as a spanning row so whole-day events (Feiertag) stay visible | no minute geometry (`startMin`/`endMin` unused), no lanes; bands are DATA, never template structure |
   | **Monthview** | `strips` + `bars(scope: ALL)` | no `segments`; **no `banner`** — month paints *every* block as a bar, banner or not (Google's month behaves the same) |
   | **Weekview** (minute-proportional time grid) | `strips` + `segments` + `banner` + `bandBars: bars(scope: BANNER)` | — the only view needing everything, because it is the only one with **two regions** (header band + time columns) and therefore the only one that must *route* blocks |
 
-  Mental model: `segments` = time-column geometry · `bars` = day-spanning geometry · `band` =
-  categorical row (coarse time bands) · `banner` = the router (needed only where a view has both
+  Mental model: `segments` = time-column geometry · `bars` = day-spanning geometry · `timeslot`
+  = categorical row label (coarse bands, grouped) · `banner` = the router (needed only where a view has both
   regions) · `strips` = the frame (any 2D view, never a list). A non-banner multi-day block
   (night shift) legitimately appears in `bars(scope: ALL)` *and* has `segments` — different
   templates consume different primitives; that is routing, not double-rendering.
@@ -461,11 +461,12 @@ no code, no migration). The platform's only hard opinions remain the security on
 
 - [ ] Schema + resolvers: `strips(filter:)`, per-block `segments`/`bars` (list-scoped lane/row
       computation, lazy on selection; `bars(scope: ALL|BANNER)`), `banner` (Rule B) + `wholeDay`
-      + `band(startMinutes:)`, numeric fields; `ReservationFilter.weekdays`.
+      + `timeslot` (TimeslotProvider-configured), numeric fields; `ReservationFilter.weekdays`;
+      `RowGrouping` empty groups for configured-domain grouping fields.
 - [ ] Seed templates proving the contract end-to-end: **Tagesliste** (needs NO Phase-5 fields —
       Phase-3 `groups` only, buildable today; ships as the simplest docs example),
       **Wochenprogramm** (timeslot × day matrix — dhbw's standard weekly view; `strips` +
-      `dayIndex` + `band(startMinutes:)`), **week** and **month** — covering **both authoring
+      grouped `timeslot` + `segments { dayIndex }`), **week** and **month** — covering **both authoring
       shapes**: one unified view rendered through multiple templates AND split sibling views, so
       neither path rots. (Resource × day compact view: deferred — an authoring task over
       `groups` × `dayIndex` when wanted.)
@@ -482,16 +483,41 @@ no code, no migration). The platform's only hard opinions remain the security on
       (public names, URL surface, required); the unified-vs-split view choice. Written alongside
       the first templates, linked from the template editor.
 - **Indices are 1-based and CSS-ready (decided 2026-07-14):** `dayIndex`, `startDay`, `strip`,
-  `lane`, `row`, `band` all start at 1 and substitute verbatim into `grid-column`/`grid-row`
+  `lane`, `row` all start at 1 and substitute verbatim into `grid-column`/`grid-row`
   (Mustache cannot add 1; CSS grid lines are 1-based). `Bar` keeps `strip` + `row` separate — no
   precomputed `gridRow`, which would bake a band-height formula into the schema; the template's
-  `calc()` composes them.
-- **`band(startMinutes: [Int!]!): Int!` — in Phase-5 scope (added 2026-07-14).** The
-  Wochenprogramm (`week_timeslot`) turned out to be dhbw's standard weekly view, not a deferrable
-  exotic: a timeslot × day matrix of stacked cards. Its one gap over the other primitives is the
-  band classification (a comparison — not template-doable). The author declares the band starts
-  in the query (visible, no hidden server config in v1; the Swing `TimeslotProvider` admin config
-  can feed the argument later). Per-block, pure — not list-scoped.
+  `calc()` composes them. Where an axis column offsets the day columns, templates use **named
+  grid lines** (`grid-column: d{{dayIndex}}` — string concatenation, no arithmetic; `calc()`
+  inside grid-line numbers is not portable) — a `docs/templates.md` technique.
+- **`timeslot: String` — in Phase-5 scope (redesigned 2026-07-14; supersedes an interim
+  `band(startMinutes:)` per-query design that scattered the band definition across query,
+  template labels and CSS named lines AND lost the admin config).** The Wochenprogramm
+  (`week_timeslot`) is dhbw's standard weekly view — a timeslot × day matrix of stacked cards —
+  so its classification joins the scope, shaped as **data, not template structure**:
+  - `timeslot: String` on `AppointmentBlock` — the block's band **label** ("08:00"/"vormittags"),
+    classified by block start against the **server-configured** timeslots (the Swing
+    `TimeslotProvider` config, restored as the source of truth; an override arg for one-off views
+    stays possible later). Per-block, pure.
+  - The template never declares bands: it selects `band: timeslot @column(group: true)` and
+    iterates `{{#groups}}` — each band-row is its own container (left column = `{{label}}`
+    from data, inner 5-col day grid via `segments { dayIndex }`). Zero sync points.
+  - **Build residue:** `RowGrouping` learns to emit **empty groups** when the grouping field has
+    a configured domain (an empty nachmittags row must still render — the frame argument, band
+    edition). Small, well-defined, part of Phase 5.
+- **Placement test (decided 2026-07-14) — the decision procedure for every model/schema addition,
+  here and in Phase 9:** (1) *entity-derived?* → GraphQL field (§12/D3 governance, selection-
+  driven cost); (2) *needs a join / whole-result computation?* → server-side, as a list-scoped
+  field on the entity — never two parallel lists the template must align; (3) *config/context
+  that never joins?* → pipeline model entry (like `groups`, Step E's `params`) — **unless the
+  SPA should consume it too, then GraphQL** (the pipeline model is document-only; GraphQL is the
+  shared contract). Audit: every Phase-5 field passes by rule 1/2; **`strips` passes only by the
+  rule-3 tiebreaker** (shared with the SPA for the `week-lanes.ts`/`month-chunks.ts`
+  consolidation; structurally consistent with `dayIndex` by sharing `$filter` in one execution;
+  author-visible and GraphiQL-testable) — it is the tiebreaker's motivating case. Known
+  asymmetry, recorded: `groups` is a pipeline pass while the SPA groups client-side
+  (`groupByWeekday`) — a future consolidation candidate like the geometry. Small open:
+  `StripDay.label` is server-side formatting; format/locale should eventually be
+  author-controllable like `@column(format:)`.
 - **`HTMLCompactWeekView` (resource × day matrix, compactweekview plugin) — deferred.**
   Decomposes into `groups` (row per resource) × `dayIndex` with chip-stacking cells — an
   authoring task when wanted, no new primitives expected.
