@@ -83,7 +83,7 @@ class DocumentParamGateTest
         String scoped = """
                 query pg_scoped($filter: ReservationFilter!) @view(title: "Scoped")
                   @param(name: "resource", into: "filter.allocatableIdsIn")
-                { reservations(filter: $filter) { titel: displayName } }""";
+                { reservations(filter: $filter) { titel: name } }""";
         assertEquals(List.of(), views.saveView("pg_scoped", scoped, true, List.of(), WIDE_WINDOW, admin));
         assertEquals(List.of(), documents.save("pg_scoped_doc", "pg_scoped", LIST_TEMPLATE,
                 true, List.of(), WIDE_WINDOW, admin));
@@ -92,7 +92,7 @@ class DocumentParamGateTest
         String required = """
                 query pg_required($filter: ReservationFilter!) @view(title: "Required")
                   @param(name: "resource", into: "filter.allocatableIdsIn", required: true)
-                { reservations(filter: $filter) { titel: displayName } }""";
+                { reservations(filter: $filter) { titel: name } }""";
         assertEquals(List.of(), views.saveView("pg_required", required, true, List.of(), WIDE_WINDOW, admin));
         assertEquals(List.of(), documents.save("pg_required_doc", "pg_required", LIST_TEMPLATE,
                 true, List.of(), WIDE_WINDOW, admin));
@@ -101,7 +101,7 @@ class DocumentParamGateTest
         String windowed = """
                 query pg_windowed($filter: ReservationFilter!) @view(title: "Windowed")
                   @window(from: { anchor: TODAY, offset: 0 }, to: { anchor: TODAY, offset: 1 })
-                { reservations(filter: $filter) { titel: displayName } }""";
+                { reservations(filter: $filter) { titel: name } }""";
         assertEquals(List.of(), views.saveView("pg_windowed", windowed, true, List.of(), null, admin));
         assertEquals(List.of(), documents.save("pg_windowed_doc", "pg_windowed", LIST_TEMPLATE,
                 true, List.of(), null, admin));

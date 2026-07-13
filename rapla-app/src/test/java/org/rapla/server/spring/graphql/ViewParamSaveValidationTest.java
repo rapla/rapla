@@ -54,7 +54,7 @@ class ViewParamSaveValidationTest
     @Autowired ViewCatalogService views;
     @Autowired StorageOperator operator;
 
-    private static final String BODY = "{ reservations(filter: $filter) { titel: displayName } }";
+    private static final String BODY = "{ reservations(filter: $filter) { titel: name } }";
 
     private List<String> save(String name, String query) throws Exception
     {
@@ -79,7 +79,7 @@ class ViewParamSaveValidationTest
         String query = """
                 query psv_whole($eventId: ID!) @view(title: "ok")
                   @param(name: "eventId", into: "eventId", required: true)
-                { reservation(id: $eventId) { titel: displayName } }""";
+                { reservation(id: $eventId) { titel: name } }""";
         assertEquals(List.of(), save("psv_whole", query));
     }
 
@@ -163,7 +163,7 @@ class ViewParamSaveValidationTest
         String query = """
                 query psv_nofromto($eventId: ID!) @view(title: "x")
                   @window(into: "eventId", from: { anchor: TODAY, offset: 0 }, to: { anchor: TODAY, offset: 7 })
-                { reservation(id: $eventId) { titel: displayName } }""";
+                { reservation(id: $eventId) { titel: name } }""";
         List<String> errors = save("psv_nofromto", query);
         assertFalse(errors.isEmpty());
         assertTrue(errors.get(0).contains("eventId"), errors.toString());
@@ -180,7 +180,7 @@ class ViewParamSaveValidationTest
         String query = """
                 query psv_dry($filter: ReservationFilter!) @view(title: "x")
                   @param(name: "resource", into: "filter.allocatableIdsInX")
-                { reservations(filter: $filter) { titel: displayName } }""";
+                { reservations(filter: $filter) { titel: name } }""";
 
         List<ViewParamDirectives.Issue> issues = views.validateQuery(query);
 
@@ -200,7 +200,7 @@ class ViewParamSaveValidationTest
                 query psv_dry_ok($filter: ReservationFilter!) @view(title: "ok")
                   @window(from: { anchor: WEEK_START, offset: 0 }, to: { anchor: WEEK_START, offset: 7 })
                   @param(name: "resource", into: "filter.allocatableIdsIn")
-                { reservations(filter: $filter) { titel: displayName } }""";
+                { reservations(filter: $filter) { titel: name } }""";
         assertEquals(List.of(), views.validateQuery(query));
     }
 

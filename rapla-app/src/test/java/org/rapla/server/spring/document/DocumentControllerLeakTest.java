@@ -117,7 +117,7 @@ class DocumentControllerLeakTest
                 query leaktest_grouped($filter: ReservationFilter!) @view(title: "Gruppiert") {
                   reservations(filter: $filter) {
                     tag: firstDate @column(header: "Tag", order: 1, group: true, format: "EE dd.MM")
-                    titel: displayName @column(header: "Titel", order: 2)
+                    titel: name @column(header: "Titel", order: 2)
                   }
                 }""";
         String window = "{\"filter\":{\"from\":\"2000-01-01T00:00:00\",\"to\":\"2035-01-01T00:00:00\"}}";
@@ -151,7 +151,7 @@ class DocumentControllerLeakTest
                 query leaktest_by_resource($filter: ReservationFilter!) @view(title: "Nach Ressource")
                   @window(from: { anchor: TODAY, offset: -9999 }, to: { anchor: TODAY, offset: 9999 })
                   @param(name: "resource", into: "filter.allocatableIdsIn") {
-                  reservations(filter: $filter) { titel: displayName }
+                  reservations(filter: $filter) { titel: name }
                 }""";
         assertEquals(List.of(), views.saveView("leaktest_by_resource", byResource, true, List.of(), null, admin));
         assertEquals(List.of(), documents.save("leaktest_by_resource_doc", "leaktest_by_resource",

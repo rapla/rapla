@@ -71,7 +71,7 @@ public class ViewCatalogService
             ViewEntry.builtin("rapla_reservations", "Veranstaltungen",
                     "query rapla_reservations($filter: ReservationFilter!) @view(title: \"Veranstaltungen\", rowLabel: \"Veranstaltung|Veranstaltungen\") {\n"
                     + "  reservations(filter: $filter) {\n"
-                    + "    name: displayName\n"
+                    + "    name\n"
                     + "    start: firstDate\n"
                     + "    lastChanged: lastModifiedAt\n"
                     + "    reservationId: id @hidden\n"
