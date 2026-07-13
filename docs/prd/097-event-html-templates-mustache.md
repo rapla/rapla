@@ -274,13 +274,68 @@ Qute→param declarations) — ours is the referenced view's selection set, the 
   against our server engine/§12 data, hence the server-backed preview.
 
 ### Phase 5 — 2D time-grid rendering (the layout engine half)
-- [ ] Resurrect/port `CalendarLayoutEngine` ([PRD 030](030-server-side-view-rendering.md) / [PRD 024](024-server-side-edit-services.md) Phase 3 read-side core) so it emits a
-      **positioned model** — lanes, slots, block geometry — as a plain data tree.
-- [ ] A stored template paints week/month from that model; the template does no layout maths (a
-      logic-less engine cannot, by construction). Colour resolution + always-black text per
-      `docs/architecture/calendar-rendering.md`.
-- [ ] Golden-output tests against the current `AbstractHTMLCalendarPage` rendering for a fixture
-      calendar — the diff is the migration's acceptance criterion.
+
+> **DESIGN OPEN (2026-07-13).** The `CalendarLayoutEngine` concept referenced below comes from
+> [PRD 030](030-server-side-view-rendering.md)/[PRD 024](024-server-side-edit-services.md) — designed **before** the template+GraphQL model existed (stored views,
+> D3, `@param`, `RowGrouping`, the document render pipeline). It must be **rethought from
+> scratch against that model**, not resurrected; nothing in this section is a locked decision.
+> What follows is the recorded design discussion (premise candidate + verified code findings)
+> as *input* to that rethink.
+
+**Premise candidate — whatever the template CAN do, the engine should not do.** The engine would
+emit only what a logic-less template cannot derive — semantic positions — never presentation
+geometry. Consequences *if adopted*:
+
+- The model carries `(column, slot, span, day, times, colors, name, ids)` per block; the template
+  + CSS (grid) turn that into pixels. No rowspan/height/time-axis maths in Java — that was the
+  bulk of `HTMLWeekView`'s 406 lines, and it would stay out.
+- **Parity with `AbstractHTMLCalendarPage` would be VISUAL, not byte-level** — the old
+  `<table>`-geometry output cannot be reproduced by a template that does its own layout, by
+  design. Golden tests would compare the *content* (which block, which day, which lane, which
+  colour), not the markup.
+
+**Scoping findings (2026-07-13, verified in code):** the hard part already exists and is reused,
+not ported. `BuildStrategy.build(BlockContainer, blocks, start)` with
+`BlockContainer#addBlock(Block, column, slot)` — a one-method functional interface — is the 2006
+seam; `BestFitStrategy`/`GroupStartTimesStrategy`/`AbstractGroupStrategy` (overlap grouping, lane
+packing) are **Swing-free** (`rapla-core/components/calendarview`, zero awt/swing imports) and
+both `HTMLWeekView` and `HTMLMonthView` consume them through that same callback. Estimated
+~600–1,000 LOC total (~150–300 Java engine + records + wiring, 200–400 template, 150–250 tests),
+**zero algorithmic risk**. Open: whether `HTMLCompactWeekView` (timeslot/compact, 202 LOC) is in
+scope.
+
+**Input-boundary candidate — the engine consumes the view's GraphQL RESULT, never server
+entities.** `RaplaBuilder`/`RaplaBlock` walk `Reservation`/`Appointment` objects — feeding
+the engine from them would open a second data path around the view, bypassing D3 ("the template
+can only render what the query already released"), the query's filters, and the `@param` gate.
+Instead: the `Block` interface the strategies position is three methods
+(`getStart`/`getEnd`/`getName`), so each GraphQL row (`appointmentBlocks { start end name … }`)
+is wrapped in a tiny adapter and the **algorithms** are reused, not the entity plumbing.
+Enrichment (colour, times, ids) comes from the query's own selection — colour is already a
+GraphQL field (the SPA's grids colour from it, [PRD 095](095-month-grid-render-mode.md)) — so the
+positioned model is a pure re-arrangement of released data, and §12 stays enforced by the query
+execution alone.
+
+**Pushed to its end, the engine may be a lane-annotator, not a layout engine.** A
+Mustache template CAN place blocks in time — it substitutes *numbers* into inline styles
+(`style="grid-row: {{startMin}} / {{endMin}}; grid-column: {{weekday}}"`) and CSS grid does the
+geometry; day sections are Phase 3's `RowGrouping`; colours/times/names are selected fields. The
+single thing neither CSS nor a logic-less template can do is decide that two blocks **collide**
+and must split side-by-side. Under this sketch the engine's whole output is a per-block
+annotation — `{lane, laneCount}` (`column`/`slot` from the strategy) stamped onto the view's
+result rows, same pipeline family as `RowGrouping`; ~60–100 lines of Java plus `Block` adapters.
+
+**Plan placeholder — written AFTER the rethink settles the design** (candidate steps, not
+commitments):
+
+- [ ] Settle the design against the template+GraphQL model: annotation-pass vs positioned-model
+      vs something else; where it runs (render pipeline? view extension?); what the template
+      contract is. Revisit the premise + boundary candidates above.
+- [ ] Lane/collision computation (reusing the existing swing-free `BuildStrategy` algorithms over
+      whatever input shape the design picks).
+- [ ] A stored week/month template + CSS proving the contract end-to-end.
+- [ ] Golden tests against the current `AbstractHTMLCalendarPage` for a fixture calendar —
+      parity criterion per the settled design (content vs byte).
 
 ### Phase 6 — Calendar-export page replacement (the primary strategic goal)
 - [ ] Swap the hand-assembled HTML in `AbstractHTMLCalendarPage` for a stored template rendered by
