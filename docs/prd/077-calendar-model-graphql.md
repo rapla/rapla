@@ -112,3 +112,24 @@ for tables) — that ships first. The function/composition engine ([PRD 073](073
    `AppointmentBlock.color` field sufficed; `extensions.view` stays column-shaped
    and the month grid renders client-side from the flat rows.
 6. Migration path for existing CalendarModels.
+7. **Week grid → standard Google-Calendar behaviour** (noted 2026-07-14; own session — it has its
+   own challenges). Today the SPA week grid autofits the whole day into the viewport
+   (`week-grid-autofit`) and splits multi-day blocks into per-day segments with continuation
+   markers (`week-lanes.ts`). The Google-standard model differs:
+   - **Scrollable time grid, fixed chrome** — the day/date header (and an all-day band) stay
+     pinned while the hour grid scrolls to a sensible default (e.g. 07:00), instead of squeezing
+     00–24 into the viewport. The named challenge: **is the header inside or outside the scroll
+     container?** Outside = sticky header + a separate scroll area, but then column widths must
+     be kept in sync across two grids (the current template deliberately uses ONE grid because
+     the header text's min-content would otherwise drift the columns apart —
+     `week-grid.component.ts`); inside (`position: sticky` on row 1) keeps one grid but
+     constrains chrome/print handling (`@media print` currently relies on the autofit layout).
+   - **All-day / multi-day banner band** in the header: all-day events and blocks spanning ≥ ~1
+     day render as spanning bars in a stacked band (FullCalendar's `allDaySlot` rule), while
+     shorter overnight blocks keep the midnight-split. ⚠️ Coupled to
+     [PRD 097 § Phase 5](097-event-html-templates-mustache.md#phase-5--2d-time-grid-rendering-the-layout-engine-half):
+     v1 there deliberately has NO banner band so documents match the SPA — if the SPA adopts
+     banners, the document week template must adopt them in the same change (the banner is just
+     the `spans` primitive painted in a header strip, so the mechanism will already exist).
+   - Also in the Google bundle, to be scoped then: current-time indicator, scroll-to-now on open,
+     fixed hour raster (scrolling replaces autofit).
