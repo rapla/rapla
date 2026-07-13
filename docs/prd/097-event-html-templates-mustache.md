@@ -1,4 +1,4 @@
-what i# PRD 097 — Event HTML templates (stored Mustache over GraphQL views)
+no# PRD 097 — Event HTML templates (stored Mustache over GraphQL views)
 
 **Status:** draft — 2026-07-08
 **Related:** [PRD 074](074-graphql-declarative-views.md) (declarative GraphQL views — the stored-view + `@view` mechanism this reuses),
@@ -83,6 +83,25 @@ render(docName, variables, caller):
 The GraphQL result JSON tree **is** the Mustache data model — no impedance mismatch: lists → sections
 `{{#appointmentBlocks}}…{{/appointmentBlocks}}`, fields → `{{name}}`, booleans → conditional sections
 `{{#canModify}}…{{/canModify}}`, null → renders empty.
+
+### Security — ownership boundary (read this first)
+
+Security here splits across two PRDs, and keeping the split straight is what keeps both readable:
+
+- **097 (this PRD) owns the engine side:** the logic-less no-SSTI guarantee (D2/D3), the jsoup
+  **sanitizer** that strips `<script>`/handlers from the author body (D6), the HTML-escaping rule for
+  interpolated data (D6), and the document = view + template pairing model.
+- **[PRD 102](102-browser-credential-hardening.md) owns the browser-containment side:** the
+  `CSP: sandbox` opaque origin, `connect-src 'none'`, the **script allowlist** (102 D5 — a
+  deployment-owned path allowlist, **not** a nonce), the two CSP tiers (102 D4), interactive
+  components (102 D6), native-form save + write-capability tokens (102 D7), and the `{read}`
+  capability bearers for data (102 D3). Every CSP directive and every token is 102's; 097 Phase 9
+  *implements* that spec where the document-engine code lives.
+
+The rule of thumb: if it is an **HTTP response header or a credential**, it is 102's; if it is what
+the **template engine does to the author's markup and the query's data**, it is 097's. The
+subsections below cover the 097 side; they reference 102 for the containment they rely on rather than
+restating it.
 
 ### Security — two "no-eval" layers in series
 
@@ -341,6 +360,24 @@ unaffected (they keep `script-src 'none'`; see the current `RaplaCspHeaderWriter
       *declared* save (entity+fields+action, short TTL); performs only that save, §12/§16 enforced; POST
       not GET. `allow-forms` + `form-action <endpoint>` for standalone docs; embedded docs `postMessage`
       to the SPA parent instead (**OQ4 in 102** decides embedded vs standalone).
+- [ ] **Form authoring — how a template names its submit target (097's side of 102 D7's registry).**
+      The author writes a native `<form action="pluginname.submitMyAvailableTimes">` — a **literal
+      registry key**, never a URL. Validate-on-save resolves the key against the submit-endpoint
+      registry (102): **hit** → the renderer sets the real `action`, pins `form-action`, injects the
+      sealed capability (hidden field), flips to `sandbox allow-forms`; **miss** → invalid document,
+      surfaced not deleted (same as a dangling view reference). Hard rules: the action key must be a
+      **literal, never `{{interpolated}}`** (a render-time value could aim the form after save-time
+      validation ran); **strip `formaction`** on buttons (it would override the pinned target — use
+      `name`/`value` to distinguish sub-actions, e.g. `<button name="decision" value="accept">`);
+      forbid `type=password`. The author never writes a URL, a credential, or a CSP directive — only a
+      form the server has already aimed, sealed, and contained. Worked shapes: the two write-back use
+      cases in [`docs/usecases/htmltemplates.md`](../usecases/htmltemplates.md) § "Formulare & Workflows".
+- [ ] **Render-as-service with baked-in data** — the render pipeline (`DocumentRenderService`) is a
+      plugin-callable bean that renders a template (mail body, decision page) from **caller-supplied
+      data**, not only a view executed in the caller's §12 scope. The approval/slot flows have **no
+      caller scope** (the clicker may not be logged in); the plugin resolves the request's details with
+      its own authority and passes them as the model, the seal bounding what that data is. The preview
+      route already renders from a supplied map, so the seam exists.
 - [ ] **Sanitizer / validate-on-save** (102 **D8**): strip author `<script>`/`on*`/unknown tags +
       `javascript:`/`data:` hrefs; allowlist registered component tags+attributes + safe layout HTML;
       `href` scheme-allowlist (`http`/`https`/`mailto`/`#`); forbid sensitive inputs (`type=password`).
@@ -476,6 +513,205 @@ render path resolve the date window identically).
   body IS the Mustache template; its metadata carries `viewName` + visibility + the parameter
   contract. `KIND_CSS`/`KIND_PARTIAL`/`KIND_IMAGE` keep their names (no collision).
 
+- **OQ9 — the parameter contract: how a document's URL maps onto the view's GraphQL variables.**
+  *Resolution:* **decided 2026-07-11 — a declared `@param` contract on the view (public name ↔ private
+  path), NOT raw dotted GraphQL paths.** (The `@param` directive + the `inputs`-projection are a
+  [PRD 074](074-declarative-graphql-views.md) *view-mechanism* change that this PRD consumes; document
+  `pins`/`clamp` are this PRD's. Recorded here because 097 is where it was designed and where the
+  document side lives — mirror the mechanism into 074 when 074 is next touched.)
+
+  **The problem with the shipped provisional (dotted paths).** Phase-2 shipped `RequestVariables`
+  (labelled OQ9 in its own Javadoc): `?filter.allocatableIdsIn=r1` — the URL names the **raw GraphQL
+  input field**, dotted into the variables. Three faults: (1) it welds a public, long-lived URL (door
+  signs, QR codes, printed links — the §15 lesson) to a schema field name, so renaming
+  `allocatableIdsIn` breaks every link; (2) it leaks the query shape; (3) caller variables **override**
+  the document's stored defaults, so a reader appends `&filter.limit=5000` /
+  `&filter.accessibleByUsername=x` — harmless while every document is session-scoped (the caller's own
+  §12 bounds it), a real data-exposure the moment Phase 8 publishes an anonymous, publisher-scope
+  document (the class OQ1 killed Option B over).
+
+  **The decision.** The **view declares its public parameters** with `@param`; the URL speaks only
+  public names; anything undeclared is **rejected**, never merged:
+
+  ```graphql
+  query uebersicht($filter: ReservationFilter!)
+    @view(title: "Übersicht", renderModes: [week, day, table])
+    @param(name: "in",   into: "filter.allocatableIdsIn", type: ID_LIST,  role: RESOURCE_SELECTION)
+    @param(name: "from", into: "filter.from",             type: DATETIME, role: DATE_RANGE_START,
+           default: { anchor: WEEK_START, offset: 0 })
+    @param(name: "to",   into: "filter.to",               type: DATETIME, role: DATE_RANGE_END,
+           default: { anchor: WEEK_START, offset: 7 })
+  { appointmentBlocks(filter: $filter) { … } }
+  ```
+
+  - **`name` public ↔ `into` private.** The URL is `?in=<id>`, not `?filter.allocatableIdsIn=<id>`.
+    Rename the schema field → only `into:` changes; the URL survives. `?filter.limit=…` is rejected
+    (undeclared). The query body is unchanged — the SPA still passes the whole `$filter`.
+  - **`inputs` becomes a projection of `@param`** (unifying the two half-mechanisms). Today
+    `extensions.view.inputs` is a *heuristic* ("a variable named `filter` of type `ReservationFilter`
+    → two date controls") and its `name` is secretly the dotted path; the resource picker is
+    inexpressible (bound implicitly by type via `variables`). After: `inputs` carries `param` (public
+    name) + `into` + `type` + `control` + `default` per declared parameter — including a
+    `RESOURCE_SELECTION` control the heuristic can't emit. One source drives **both** the URL contract
+    and the SPA widgets, so they cannot drift; `variables` folds away.
+  - **`role` (data) vs `control` (presentation) vs `default` (position).** `role` is what the parameter
+    *is* in the variables (`DATE_RANGE_START`) — stable. The **widget is the renderer's**, per render
+    mode: a *table* render draws two date fields; a *week* render draws a `◀ ▶` pager over the same
+    `from`/`to`. The view declares the role; it never declares the widget.
+
+  **The window / anchor split (decided 2026-07-11).** Window **shape + navigation step** is the
+  *renderer's* (a week is 7 days stepping by 7; a month is the anchor month — mode-intrinsic, the SPA
+  already owns it). The `@param default` is only the **declarative starting position**, and it is
+  required wherever there is no renderer to decide:
+
+  | Consumer | shape + step | starting position |
+  |---|---|---|
+  | SPA week/month/day grid | renderer (mode-intrinsic) | renderer defaults to *now*; anchor only for a non-now default |
+  | SPA table / agenda | — (no implied shape) | **anchor required** — no window otherwise |
+  | server document / print / email | — (no renderer) | **anchor required** — one-shot, nothing decides |
+
+  Consequence: the anchor **must be evaluated server-side** (a Java twin of the SPA's
+  `resolveAnchorOffset`), because the document render is the consumer that has no renderer and cannot
+  run the client TS. This also fixes a **live bug**: `ViewVariables.mergeDefaults` today hardcodes
+  Monday→Monday+7 and ignores `@view(fromAnchor:…)`, so a `TODAY,-7…+7` view renders one window in a
+  document and another in the SPA. The Übersicht renders correctly only by coincidence.
+
+  **Document-side scoping — `pins` + `clamp` (this PRD's half).** A document pins values a reader may
+  not replace; `clamp` says whether a reader's URL value may *narrow* a pin:
+
+  ```jsonc
+  // document "fakultaet-tuerschild"
+  { "viewName": "uebersicht", "pins": { "in": ["r1", "r2", "r3"] } }   // @param in has clamp: SUBSET
+  ```
+  ```
+  ?in=r2   → shows r2        (r2 ∈ pinned set)
+  ?in=r9   → shows nothing   (r9 ∉ pinned set — clamped out, not an error)
+  (none)   → shows r1,r2,r3  (the pin)
+  ```
+  `clamp: SUBSET` for id sets (intersect), `NOT_AFTER`/`NOT_BEFORE` for date windows (shrink only). A
+  parameter with no clamp is either pinned-and-closed or open. This is what makes a published
+  document's scope a *guarantee* rather than a hope — the exact hole in the shipped dotted-path code.
+
+  **Three declaration layers, three sinks (decided 2026-07-11).** A URL parameter is routed by *where
+  it is declared*; undeclared → rejected. This partitions the URL namespace cleanly:
+
+  | Declared on | What it is | Sink |
+  |---|---|---|
+  | **View `@param`** (PRD 074) | a data input | GraphQL query variable (`into: filter…`) — and also exposed in the model |
+  | **Document `templateParams`** (this PRD) | a presentation / plugin / action / component input | the **Mustache model** — never GraphQL |
+  | **Document policy** (this PRD) | `pins`, `clamp`, `requiresScope`, per-param `required` | the render gate |
+
+  `templateParams` is the third layer we hadn't named: a value a plugin/action/component *referenced in
+  the template* needs but the query does not (e.g. `?showPrices=true` → `{{#showPrices}}`; `?signWith=x`
+  → a hidden field a submit plugin reads). It lives on the **template**, not `@param`, because the
+  reference lives in the template and the view must not know the template's plugin/presentation
+  concerns. Distinguish a template *param* (a value: `signWith`) from template *wiring* (the reference
+  itself: `<form action="plugin.method">`, `<rapla-*>` tags — validated against the registries, not a
+  reader input). Near-term minimal step: expose resolved params in the model as `{{params.x}}`; full
+  `templateParams` declarations land with Phase 9 (plugins/actions/components).
+
+  **Three scope entry points, all resolving to the one allocatable scope (decided 2026-07-11).** Decide
+  group-vs-id **by the declared param, never by the value** — value-guessing (UUID vs name) is the
+  polymorphic oracle OQ1 warns of. So:
+
+  - **`in`** (`type: ID_LIST` → `filter.allocatableIdsIn`) — explicit ids.
+  - **`group`** (`type: GROUP` → `filter.allocatableMatching`) — a named handle for a **stored
+    `AllocatableFilter`**. A group is a *live predicate*, not a frozen id-set — "all rooms > 50 seats"
+    (`typeIn:[Raum], whereRaum:{seats gt 50}`) forced this; a hand-picked set is just `idIn:[…]`.
+    Referenced by a **namespaced unique name** (`all-rooms` global / `owner_name` user-defined, the
+    calendar `userName_exportName` convention). Unifies with the export-alias idea (an export is a named
+    filter too). **Groups are deferred** — forward-declared in schema+docs now, resolver wired later.
+  - **declared dimension params** (`minSeats` → `whereRaum.seats.gt`, `q` → `searchText`) — ad-hoc
+    tuning of a *specific* predicate the author chose to expose. An arbitrary predicate the author did
+    NOT declare is deliberately not URL-expressible (make it a group instead).
+
+  **Two kinds of `required` (decided 2026-07-11).** They are different primitives:
+
+  - **Param-level `required: true`** — one *specific mandatory* input. The event-document case: a
+    Leihschein / booking-request is *about* one `eventId` (`query leihschein($eventId: ID!)` — also
+    GraphQL non-null). Missing → empty render, not a firehose, not a crash.
+  - **Document `requiresScope`** — *at least one* RESOURCE_SELECTION input (`in`/`group`/dimension) or a
+    pin must resolve non-empty; else render empty. Enforced by **short-circuiting to an empty render
+    before the query runs** — never by passing an empty filter (an empty scope reads as *unscoped =
+    all*, §12-checked below). This reinstates the legacy "no selection → nothing" at the document layer.
+
+  **SPA-exempt by construction.** `pins`/`clamp`/`requiresScope`/`required` live in
+  `DocumentRenderService`; the SPA reaches views via `/api/graphql` → `StoredViewInterceptor` and never
+  runs that code, so it obeys none of the policy (it defaults to "all readable", browse-then-filter) —
+  no `if (spa)` branch needed. The only shared obligation is GraphQL's own non-null (`$eventId: ID!`),
+  which is the query's, not the document's.
+
+  **§12 verified (2026-07-11) — the resolver is correct as-is; do not change it.** Every reservation
+  passes `pc.canRead(r, caller)` (`ReservationGraphQLController:262`) and every contained allocatable
+  passes `canReadAllocatable` (`StructuralTypeFetchers`), so an unresolvable/unreadable scope → empty
+  (never everything), and an unreadable resource on a readable event is dropped from its column.
+  GraphQL's "no filter = all readable" is intended and differs from old Swing's "no selection =
+  nothing"; the legacy convention is restored at the **document** layer via `requiresScope`, NOT by
+  changing the resolver.
+
+  **Interim scoping — what works TODAY, before groups + `@param`:**
+  - **Single-id documents** (Leihschein) — `?eventId=<id>` already works (top-level scalar via
+    `RequestVariables`); §12-safe; missing → empty via the GraphQL error path (`required` cleans it).
+  - **Author-fixed scope** — pin it inline in the document's `defaultVariables` (the save API carries
+    the field; the editor UI does not expose it yet). "Large rooms" = an inline `allocatableMatching`
+    filter. **Soft default, not a hard pin** (overridable via raw dotted paths until `reject-undeclared`
+    + true pins land) — "scoped, not sealed"; fine in practice, closed properly by the two fixes.
+  - **Reader-supplied resources** — `?filter.allocatableIdsIn=<id>` (provisional dotted path).
+  - **Reader-choose-else-nothing** — a sentinel bogus-id in `defaultVariables` fakes `requiresScope`
+    today (empty when unscoped, overridden by a real reader id); a hack, replaced by the real
+    short-circuit later.
+  - **Migration is clean**: an inline `defaultVariables` filter → `pins: { group: "…" }` when groups
+    land (same resolved scope, named+reusable+live); `?filter.allocatableIdsIn=` → `?in=`; no reader URL
+    changes for the id case.
+  - **Discipline until `requiresScope` exists**: *always* pin a scope (or the sentinel) — a document
+    with neither a pin nor a reader param firehoses.
+
+  **Two fixes that land regardless of the full `@param` adoption** (both independent of the redesign,
+  both worth doing now): (a) the `ViewVariables` server-side anchor evaluation (a shipped defect); (b)
+  **reject-undeclared** parameters (closes the override hole before Phase 8). The shipped
+  `RequestVariables` (dotted paths) is the **provisional Option C**, superseded in design by this
+  resolution; migrating the render path to `@param` is a follow-up (naturally lands with Phase 6, the
+  first consumer that genuinely needs pinned/clamped published documents).
+
+### OQ9 — implementation plan (the parameter contract)
+
+Ordered by dependency and value. Steps A–B are the `@window`/`@param` mechanism (PRD 074 —
+final contract: [074 § Window and inputs directives](074-graphql-declarative-views.md#window-and-inputs-directives-decided-2026-07-12),
+which supersedes the arg lists sketched here); C–E are document policy (this PRD); groups (D)
+are deferred. Each step is independently shippable and test-first.
+
+- **Step A — window server-side** *(✅ landed 2026-07-12)*
+  - [x] `WindowResolver` — Java anchor evaluation (three anchors × three units) with a tier-1
+        parity suite; `ViewVariables.mergeDefaults` resolves the view's `@window`/mode default
+        instead of hardcoding Monday; `extensions.view.window` emitted; the SPA seeds from it and
+        the client-side anchor resolver (`view-inputs.ts`) is **deleted**.
+- **Step B — `@param` gate** *(✅ landed 2026-07-12 — final shape is `@param(name, into, required)`;
+  `type` is derived from `into`, no `role`/`clamp`, `@window` is its own directive)*
+  - [x] `@window`/`WindowAnchor`/`@param` in the SDL; `@view` anchor args deleted.
+  - [x] Render path maps **public name → `into` path** (`ViewParamDirectives` +
+        `DocumentRenderService.gateParams`); **undeclared → 400**; `from`/`to` accepted iff
+        `@window`; missing `required` → the same 404 (§12). Raw dotted paths are gone from the
+        URL surface. Lists via repeated keys, never comma-split. Tier-3: `DocumentParamGateTest`.
+  - [ ] Save-time validation (`into` resolves against the schema, unique public names).
+  - SPA: consumes nothing — binds by type + `view.window`; controls (`ParamControl`) deferred.
+- **Step C — document policy** *(remaining; the first consumer is Phase 6's calendar-export replacement)*
+  - [ ] Document metadata + editor UI: `pins`, `requiresScope` (the ≥1-of-a-set scope gate —
+        per-param `required` landed in Step B).
+  - [ ] `DocumentRenderService` resolution order: `@window` default → view defaults →
+        document defaults → URL params → `pins`. `requiresScope` unmet → **short-circuit
+        to empty render** (no query).
+  - [ ] Clamping (subset for id sets, not-before/after for windows) — deferred with the trust tiers.
+  - [x] Tier-3 leak tests: unreadable/nonexistent id → empty render, never an error; missing
+        required byte-identical to 404 (`DocumentParamGateTest`, `DocumentControllerLeakTest`).
+- **Step D — groups** *(deferred; forward-declared in schema+docs now)*
+  - [ ] `@param(type: GROUP)`, the group entity = a stored `AllocatableFilter` addressed by a namespaced
+        name; resolver expands name → `allocatableMatching` (live). Migrate inline `defaultVariables`
+        filters → `pins: { group }`.
+- **Step E — `templateParams`** *(Phase 9, with plugins/actions/components)*
+  - [ ] Near-term: expose resolved params in the model as `{{params.x}}`.
+  - [ ] `templateParams` declaration on the document → Mustache model (never GraphQL); routed separately
+        from `@param`; undeclared rejected. Feeds plugin/action/component inputs referenced in the template.
+
 ## Decisions locked
 
 **D1 — Server-side rendering, reusing the stored-view storage mechanism.** Consistent with PRD
@@ -516,9 +752,10 @@ template filters (liqp/Handlebars) are unnecessary. Mustache inherits the view's
 because it can only render the already-filtered result.
 
 **D4 — PDF via browser `window.print()` + `@media print`; no server PDF, no JS PDF lib.** Best
-quality (native vector, selectable), zero dependency, universal across browsers. The print trigger
-lives in the **standalone page's server-authored shell** (auto-print on load or a print button —
-see D7), NOT in the SPA. (Revisit only if OQ2 flips.)
+quality (native vector, selectable), zero dependency, universal across browsers. Printing is the
+**browser's own Ctrl+P**, invoked by the reader — the script-free shell shows a self-hiding hint
+rather than an auto-print or button (D6a: no script in the static response), NOT the SPA.
+(Revisit only if OQ2 flips.)
 
 **D5 — Feasibility tiers: flat + grouped (1D) ship first; 2D grids are a separate gated phase.**
 Mustache can paint a positioned grid but cannot compute layout; only true time-grids (week/month)
@@ -531,11 +768,13 @@ response CSP.** Mustache emits any text including full pages with `<script>`/CSS
 SSTI, which logic-less already eliminates) if a semi-trusted (group-scoped) author can embed JS that
 runs in every viewer's browser. Because the document is served as a **standalone top-level page**
 (D7), there is no parent SPA iframe to sandbox it in — so protection is: (a) strip `<script>` +
-event-handler attributes from the **author template body** (jsoup safelist) so only the
-server-authored page shell may carry script; (b) set a **response `Content-Security-Policy`** header
-forbidding inline/external script except the trusted shell's print snippet (nonce-allowlisted). CSS
-is permitted (cannot execute code); external `url(...)` loads are constrained by the same CSP
-(`img-src`/`font-src`/`style-src`). Escaping rule for interpolated data: `{{ }}` (HTML-escaped) only;
+event-handler attributes from the **author template body** (jsoup safelist) so no author-supplied
+script reaches the browser; (b) a **response `Content-Security-Policy`** (owned by
+[PRD 102](102-browser-credential-hardening.md), see the ownership boundary above) that forbids
+inline/external script save what its **deployment-owned allowlist** admits (102 D5 — a path
+allowlist of vetted rapla/plugin component sources, **not** a nonce; the static shell carries no
+script at all). CSS is permitted (cannot execute code); external `url(...)` loads are constrained by
+the same CSP (`img-src`/`font-src`/`style-src`). Escaping rule for interpolated data: `{{ }}` (HTML-escaped) only;
 never `{{{ }}}` for query-derived values, and never interpolate untrusted values into `<script>`/
 attribute/URL contexts (HTML-escaping ≠ JS/URL-context escaping — the gap Soy's contextual
 autoescaping fills and Mustache does not). Admin-only raw-HTML+JS is left open (OQ6).
@@ -549,9 +788,11 @@ onto same-host documents. This defends the *user's session*, complementing D6 wh
 *content* (defacement/phishing stay a sanitizing concern). Flags: none by default (static HTML
 needs no scripts); **never `allow-same-origin` together with `allow-scripts`** — that restores the
 real origin and voids the layer. Set centrally (path-matched in `RaplaCspHeaderWriter`) so no
-per-controller response can forget it; note the shell's nonce'd print snippet (D6) must fit the
-sandbox policy (script blocked unless `allow-scripts` — resolve when the shell lands: either
-`allow-scripts` + nonce-CSP, or a script-free print affordance). A **separate sandbox origin**
+per-controller response can forget it. *Resolved (2026-07-10): the shipped shell is **script-free** —
+printing is the browser's own Ctrl+P behind a self-hiding hint, so the static document response
+carries `script-src 'none'` with no `allow-scripts` and no nonce. Scripts return only in the
+**interactive tier** (102 D4/D5): documents that use registered `<rapla-*>` components get the
+deployment **allowlist** + `sandbox allow-scripts`; static documents keep `'none'`.* A **separate sandbox origin**
 (githubusercontent pattern) was evaluated and rejected — rapla deployments have no control over
 subdomains; `CSP: sandbox` is the in-origin approximation. The `access_token` cookie **is** ambient
 on the origin ([PRD 102](102-browser-credential-hardening.md) D1, 2026-07-09, kept it and rejected the memory-only token), so the sandbox
@@ -567,10 +808,11 @@ HTTP response header (D6/D6a) enforced by the browser. Mustache's only CSP-relev
 context-aware; the gap Soy's contextual autoescaping fills, ruled out for weight and unneeded for
 HTML-text documents) and (b) it emits exactly the authored text and **injects no runtime
 script/inline handlers of its own** — so a logic-less engine is inherently CSP-friendly (nothing to
-allow-list). The CSP nonce (D6, author-script case) is threaded as an ordinary data-model variable
-(`{{meta.cspNonce}}`), not an engine feature — identical in Handlebars. Consequence: the CSP posture
-is unchanged by the engine-selection flag (D2); switching Mustache↔Handlebars neither strengthens nor
-weakens it.
+allow-list). Because the script model is a **deployment allowlist, not a nonce** (102 D5), the engine
+threads no CSP token into the template at all — there is no `{{meta.cspNonce}}`; the allowlist is
+matched against the response's script sources server-side, independent of the template text.
+Consequence: the CSP posture is unchanged by the engine-selection flag (D2); switching
+Mustache↔Handlebars neither strengthens nor weakens it.
 
 **D7 — Served as a standalone page-generator URL, session-cookie authenticated, §12-scoped.** The
 document is opened directly in the browser at its own human-navigable URL (like the existing
@@ -586,7 +828,8 @@ document is opened directly in the browser at its own human-navigable URL (like 
   rejected the memory-only token — so OQ7 is moot). (`CSP: sandbox` (D6a) is unaffected: cookies are
   attached on the *request*; the sandbox constrains the resulting document.)
 - **Server-authored shell** wraps the (stripped) author body: doctype, `@media print`/`@page` CSS,
-  the print trigger (auto-print or button), and the CSP nonce. Aligns with [PRD 030](030-server-side-view-rendering.md)'s parked
+  and a script-free print hint (Ctrl+P — no auto-print, no button, no CSP nonce; the shell carries no
+  script, per D6a). Aligns with [PRD 030](030-server-side-view-rendering.md)'s parked
   "HTML autoexport calendar pages" migration — the same standalone-server-rendered-HTML shape.
 
 ## Appendix A — Worked example: Leihschein (single reservation → loan slip)

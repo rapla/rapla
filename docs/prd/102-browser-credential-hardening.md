@@ -88,8 +88,9 @@ The only reason to remove the access *cookie* was that a same-origin untrusted p
   (1 h) + path-scoped `refresh_token` cookie (21 d, `Path=/api/auth/session`). Seamless reloads, silent
   refresh, best posture against SPA-XSS (token never JS-readable).
 - **Untrusted pages (097 documents + template preview)** are served `CSP: sandbox` (opaque origin) +
-  `connect-src 'none'` + `script-src 'none'`/nonce (sanitize at the engine, 097 D6). No cookie
-  attachable, nothing exfiltratable.
+  `connect-src 'none'` + a **script policy by tier** (D4: static docs `script-src 'none'`; component
+  docs a deployment **allowlist**, never a nonce — D5) with the engine sanitizer stripping author
+  script (097 D6). No cookie attachable, nothing exfiltratable.
 - **When an untrusted page needs real data**, it gets a capability token (below) — never the session
   cookie/token. Ideally data is baked in server-side and it needs no credential.
 - **`/app` CSP moved report-only → enforced** — deferred to Phase 5 (last); does not gate the
@@ -253,6 +254,50 @@ dedicated submit endpoint validates the token (not cookies), performs only the d
 enforced. **POST not GET** (§16). Embedded docs may instead `postMessage` the save to the SPA parent
 (keep `form-action 'none'`); standalone docs use the native-form path.
 
+**Submit-endpoint registry (the `form-action` allowlist).** The sibling of the component registry and
+the script allowlist: `key → { url, allowed document names, capability scope, declared-save shape }`,
+namespaced `pluginname.method`, populated by rapla + plugins + deployment. A template names its target
+by **key** (`<form action="pluginname.submitMyAvailableTimes">` — 097's authoring side), and the
+renderer resolves key→url server-side to (a) pin `form-action` to that one url, (b) allow the `<form>`
+through the sanitizer, (c) mint the capability. **Reference by key, never URL**; an unknown key is a
+resolve-or-reject at save (invalid document, surfaced — never fall through to treating the value as a
+URL). Plugins own their `pluginname.*` half of the namespace (cannot forge into another plugin's).
+
+**The capability seal — contract.** The hidden-field token is trusted **because it is sealed, not
+because it is hidden** (a hidden field is view-source-visible and editable): `UrlCipherV2` (AES-256-GCM
+— editing breaks the auth tag) or a signed JWT. Rules:
+- **`exp` lives inside the sealed plaintext** (a `?exp=` param or clear field would be editable), so the
+  holder cannot extend the window. Two independent deactivation conditions, both checked: **by action**
+  (the context was acted on) and **by time** (`exp` passed).
+- **Trust only what is inside the seal** for authorization-bearing values (`contextId`/`allowedActions`/
+  subject). Never pass a *clear* `contextId` alongside — and if one exists, read it from the seal, never
+  the clear field (else a valid seal for R + clear `id=R'` is a confused deputy).
+- **Authorization vs choice are separate.** The seal carries *authorization* (which object, which
+  actions permitted, `exp`, minted-for-whom — known at mint). The visible fields carry the user's
+  *choice* (accept/deny, which slot — not known at mint). The endpoint validates **choice ⊆ the seal's
+  permitted set**; the choice field is freely editable but bounded by the seal.
+- **Mintable by a server event, not only at render.** The email-approval flow mints the seal when the
+  request is created and mails the link; render just re-presents it. So the write-capability primitive
+  must accept `mintWrite(subject, object, allowedActions, exp, …)` from a lifecycle event, not only a
+  browsing session.
+
+**Consumption — state-based, not a revocation store.** A decision seal is **stateless**; consumption is
+enforced by the **domain object's state**, not by tracking the token (stateless → validates on any pod,
+no cleanup, no shared store). The endpoint asks "has this context already been acted on?" and the
+object's status answers — a second submit for the same context fails. Requirements:
+- **Atomic check-and-act.** "Still pending?" and "record the decision" are **one** operation — rapla's
+  optimistic concurrency (version-precondition `storeAndRemove` / `RaplaNewVersionException`): the
+  concurrent loser gets a version conflict → mapped to "already decided". Check-then-act would let two
+  submits both pass (double-click, re-clicked mail).
+- **Context, not token instance, is consumed.** Two seals for the same `contextId` (re-sent mail) both
+  fail once the context is acted on — the shared state check needs no explicit seal invalidation.
+- **Fallback for stateless actions.** Where the action has no checkable "already done" state (append-only,
+  legitimately repeatable), fall back to an explicit single-use marker (`jti`/nonce tracked server-side).
+  State-based for decisions on stateful objects; explicit tracking otherwise.
+- **Graceful failure without a leak.** A *valid* seal on an already-acted context → show the outcome
+  ("already decided on <date>"); an *invalid/forged* seal → generic failure (never confirm the context
+  exists).
+
 **Navigation:** `<a href>` links allowed but sanitizer **scheme-allowlists** `http`/`https`/`mailto`/`#`
 (strips `javascript:`/`data:`); native `<details>`/`<select>` need no scripts; `target="_blank"` needs
 `allow-popups`; rich nav = a component.
@@ -391,7 +436,22 @@ sanitization is the interim in-SPA defense.
 
 - **OQ1 — `JSESSIONID` reach.** The form-login session cookie is `Path=/` and ambient; confirm (tier-3
   test) it **cannot** authenticate `/api` (bearer-only) — if it can, it is itself a ridable ambient
-  credential and needs `SessionCreationPolicy.STATELESS` on the `/api` chain. *Resolution:* pending.
+  credential and needs `SessionCreationPolicy.STATELESS` on the `/api` chain. *Resolution: **verified — a
+  bare `JSESSIONID` cannot read `/api` data**, but NOT via the mechanism this OQ guessed.* The chain is
+  **not** stateless — a form-login session *does* satisfy Spring's `.authenticated()` gate (the explorer
+  pages `/graphiql` + `/swagger-ui` deliberately rely on exactly that). The guard is a **second layer**:
+  `SpringSecurityRemoteSession.checkAndGetUser` derives the rapla `User` **only** from a
+  `JwtAuthenticationToken` (Bearer header or `access_token` cookie promoted by `CookieToBearerFilter`); a
+  form-login session carries a `UsernamePasswordAuthenticationToken`, so every `/api` data controller
+  resolves *no* rapla user and answers `RaplaSecurityException` → **401**. Locked by
+  `SessionCookieCannotAuthApiTest` (tier-3): one test proves the session is a *live* chain authentication
+  (`/graphiql` → 200), the other proves that live session still can't read `/api/users` (→ 401). **Caveat
+  / follow-up:** because the protection is the JWT-identity requirement and *not* statelessness, any future
+  `/api` endpoint gated by `.authenticated()` alone — one that does NOT call `checkAndGetUser`/resolve a
+  JWT — would be reachable by a bare `JSESSIONID`. Every data controller today routes identity through
+  `checkAndGetUser` (or the GraphQL `JwtUserResolver`), so the surface is closed now; a broad audit +
+  optionally flipping the `/api` matcher to `SessionCreationPolicy.STATELESS` as defence-in-depth is a
+  worthwhile future hardening, tracked here rather than done now.
 - **OQ2 — refresh-token rotation/reuse detection.** *Resolution: NOT for rapla — architecturally
   incompatible with the single-slot policy, not merely deferred.* Rotation changes the slot's value on
   every refresh; rapla runs **one shared slot per user** (logout-everywhere), where the token being
@@ -433,7 +493,14 @@ rapla already has).
 
 **D4 — two document CSP tiers, selected per document by component usage.** Static (no component tags) →
 `script-src 'none'` (unchanged 097 D6a); interactive (uses `<rapla-*>` tags) → allowlist + `sandbox
-allow-scripts`. `connect-src 'none'` in both. Least privilege; renderer decides from validated content.
+allow-scripts`. `connect-src 'none'` in both. The renderer picks the tier at validate-on-save from
+whether the template references registered component tags.
+*Why keep a `script-src 'none'` tier at all, given we do allow (allowlisted) scripts?* Because the
+tiers are **automatic and least-privilege, not a burden on the author**: the ~majority of documents
+(Leihschein, lists, signage) use no component, so they get `'none'` and pay nothing; only a document
+that actually uses a `<rapla-*>` component opts into the allowlist tier. A blanket allowlist on every
+document would widen the script surface of pages that never needed it — the static tier is free
+hardening, not an obstacle.
 
 **D5 — script loading via a deployment-owned path-scoped ALLOWLIST, not nonce.** The sandbox neutralizes
 the gadget payoff, so the nonce's gadget-resistance isn't needed here, and skipping it removes the nonce
@@ -448,7 +515,11 @@ authoring Angular templates (reintroduces SSTI).
 
 **D7 — save via native `<form>` POST + scoped write-capability.** Cookieless (opaque origin → no session
 ride), capability minted server-side for a *declared* save, short TTL, dedicated submit endpoint, §12/§16
-enforced, POST not GET. Embedded docs may `postMessage`-to-parent instead.
+enforced, POST not GET. Embedded docs may `postMessage`-to-parent instead. Full write-path contract —
+the **submit-endpoint registry** (`form-action` allowlist, keyed `pluginname.method`), the **capability
+seal** (sealed-not-hidden, `exp`-in-plaintext, trust-only-the-seal, choice-bounded-by-the-seal,
+server-event-mintable), and **state-based consumption** (atomic optimistic-concurrency check; explicit
+`jti` fallback for stateless actions) — is specified in § "Interactive document tier".
 
 **D8 — untrusted-author model.** Authors (AI/user) untrusted; safety is structural (logic-less JMustache
 template + declarative components); AI prefers structured-tree emission over raw HTML. Links allowed but

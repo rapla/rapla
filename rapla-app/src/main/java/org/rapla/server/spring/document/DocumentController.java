@@ -53,7 +53,19 @@ public class DocumentController implements DocumentApi
     public ResponseEntity<String> render(String name, MultiValueMap<String, String> variables)
     {
         User caller = jwtUserResolver.resolveCurrentUserOrNull();
-        Optional<String> page = renderService.render(name, RequestVariables.expand(variables), caller);
+        Optional<String> page;
+        try
+        {
+            // Raw params go through — the render service gates them against the view's
+            // declared @param/@window surface (PRD 074 §"Window and inputs directives").
+            page = renderService.render(name, variables, caller);
+        }
+        catch (DocumentRenderService.UndeclaredParameterException e)
+        {
+            return ResponseEntity.badRequest()
+                    .header(HttpHeaders.CACHE_CONTROL, "no-store")
+                    .build();
+        }
         if (page.isEmpty()) return notFound();
         return ResponseEntity.ok()
                 .contentType(new MediaType(MediaType.TEXT_HTML, java.nio.charset.StandardCharsets.UTF_8))

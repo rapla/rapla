@@ -813,17 +813,40 @@ directive @displayName(value: String!) on FIELD_DEFINITION
 
 """
 PRD 074 — marks an operation as a renderable view; triggers extensions.view (key/title/columns).
-The window seed for a $filter: ReservationFilter! view is configurable here:
-fromAnchor/toAnchor are TODAY | WEEK_START | MONTH_START, fromOffset/toOffset are integer
-offsets in `unit` (DAYS | WEEKS | MONTHS). A Monday-to-Monday week is
-fromAnchor: WEEK_START, fromOffset: 0, toAnchor: WEEK_START, toOffset: 7.
-Omitted → the default TODAY -7 … +7 window.
+The date window comes from @window when declared, else the render-mode default
+(week → current ISO week, month → current month, else TODAY −7 … +7); the server
+resolves it at request time and emits it as extensions.view.window.
 """
 directive @view(
   title: String, rowLabel: String, groupLabel: String,
-  renderModes: [ViewRenderMode],
-  fromAnchor: ViewAnchor, fromOffset: Int, toAnchor: ViewAnchor, toOffset: Int, unit: ViewDateUnit
+  renderModes: [ViewRenderMode]
 ) on QUERY
+
+"One end of a @window — resolved server-side at request time so it is never stale. offset is a signed integer; 0 = the anchor itself."
+input WindowAnchor {
+  anchor: ViewAnchor!
+  offset: Int! = 0
+  unit: ViewDateUnit! = DAYS
+}
+
+"""
+PRD 074 §"Window and inputs directives" — the view's declared date window. Both ends are
+anchor triples resolved per request (a Monday two-week span is
+from: {anchor: WEEK_START, offset: 0}, to: {anchor: WEEK_START, offset: 14}).
+On the document path (PRD 097) ?from=/?to= overrides it. `into` names the filter
+variable; omitted = the sole ReservationFilter variable.
+"""
+directive @window(into: String, from: WindowAnchor!, to: WindowAnchor!) repeatable on QUERY
+
+"""
+PRD 074 §"Window and inputs directives" — declares one public value input. `name` is the
+public URL key (document path, PRD 097), `into` the private dotted variable path it fills
+(e.g. "filter.allocatableIdsIn"); the coercion type is derived from `into` via the schema.
+On the document path, query params outside the declared set are rejected, and a missing
+`required` param short-circuits to an empty render. The SPA fills variables by type and
+does not enforce `required`.
+"""
+directive @param(name: String!, into: String!, required: Boolean = false) repeatable on QUERY
 "PRD 074 — column fetched but not displayed (e.g. a group/sort key)."
 directive @hidden on FIELD
 "PRD 074 — list-cell join separator (default \", \")."

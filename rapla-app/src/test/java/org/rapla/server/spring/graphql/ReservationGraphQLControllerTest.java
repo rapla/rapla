@@ -1569,29 +1569,46 @@ class ReservationGraphQLControllerTest
     }
 
     /**
-     * PRD 074 — the per-view window seed: {@code @view(fromAnchor/fromOffset/toAnchor/toOffset)}
-     * sets the DATE_RANGE inputs so a week view can anchor on Monday (WEEK_START + 0 … + 7)
-     * instead of the default TODAY ±7d window.
+     * PRD 074 §"Window and inputs directives" — the {@code @window} directive is resolved
+     * server-side at request time and emitted as {@code extensions.view.window} (the SPA seeds
+     * its date-nav from it; no client-side anchor resolution). A Monday week resolves to the
+     * current ISO week's Monday → next Monday, both at 00:00:00.
      */
     @Test
     @WithMockUser(username = "homer", roles = "ADMIN")
-    void viewWindowAnchorFromDirective() throws Exception
+    void viewWindowResolvedFromWindowDirective() throws Exception
     {
         String query = """
                 query Wochenplan($filter: ReservationFilter! = { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00", limit: 1 })
-                  @view(title: "Wochenplan", fromAnchor: WEEK_START, fromOffset: 0, toAnchor: WEEK_START, toOffset: 7) {
+                  @view(title: "Wochenplan")
+                  @window(from: { anchor: WEEK_START, offset: 0 }, to: { anchor: WEEK_START, offset: 7 }) {
                   appointmentBlocks(filter: $filter) { start }
                 }
                 """;
+        java.time.LocalDate monday = java.time.LocalDate.now().with(java.time.DayOfWeek.MONDAY);
         mockMvc.perform(post("/api/graphql").contentType(MediaType.APPLICATION_JSON).content(gqlBody(query)))
-                .andExpect(jsonPath("$.extensions.view.inputs[?(@.control=='DATE_RANGE_START')].default.anchor")
-                        .value(hasItem("WEEK_START")))
-                .andExpect(jsonPath("$.extensions.view.inputs[?(@.control=='DATE_RANGE_START')].default.offset")
-                        .value(hasItem(0)))
-                .andExpect(jsonPath("$.extensions.view.inputs[?(@.control=='DATE_RANGE_END')].default.anchor")
-                        .value(hasItem("WEEK_START")))
-                .andExpect(jsonPath("$.extensions.view.inputs[?(@.control=='DATE_RANGE_END')].default.offset")
-                        .value(hasItem(7)));
+                .andExpect(jsonPath("$.extensions.view.window.from").value(monday + "T00:00:00"))
+                .andExpect(jsonPath("$.extensions.view.window.to").value(monday.plusDays(7) + "T00:00:00"))
+                .andExpect(jsonPath("$.extensions.view.inputs").doesNotExist());
+    }
+
+    /**
+     * PRD 074 §"Window and inputs directives" — no {@code @window} → the render-mode default
+     * window (table → TODAY −7 … +7), still resolved server-side and emitted.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void viewWindowDefaultsToTableModeWithoutDirective() throws Exception
+    {
+        String query = """
+                query Termine @view(title: "Termine") {
+                  appointmentBlocks(filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00", limit: 1 }) { start }
+                }
+                """;
+        java.time.LocalDate today = java.time.LocalDate.now();
+        mockMvc.perform(post("/api/graphql").contentType(MediaType.APPLICATION_JSON).content(gqlBody(query)))
+                .andExpect(jsonPath("$.extensions.view.window.from").value(today.minusDays(7) + "T00:00:00"))
+                .andExpect(jsonPath("$.extensions.view.window.to").value(today.plusDays(7) + "T00:00:00"));
     }
 
     /**

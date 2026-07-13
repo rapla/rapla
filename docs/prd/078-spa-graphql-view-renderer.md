@@ -3,7 +3,7 @@
 **Status:** in progress — 2026-06-21; updated 2026-06-22. The Angular consumer of [PRD 074](074-graphql-declarative-views.md)'s
 server-side view contract. Carved out of [PRD 074](074-graphql-declarative-views.md) so the
 server view model (schema, `@view`, `extensions.view` emission, §12) and the SPA rendering
-layer (transport, generic renderer, control inference) evolve as separate concerns. The
+layer (transport, generic renderer, type-driven variable binding) evolve as separate concerns. The
 generic `ViewHostComponent` (one component renders every server-declared view by name),
 type-driven variable binding, and the **scope gate** (§"Scope") are built; see that section
 for the selection model and what remains (`user`/`group` chips, own-user pin).
@@ -21,7 +21,7 @@ over recurrence blocks.
 | Concern | PRD |
 |---|---|
 | `@view` directive, composition-field generator, **`extensions.view` emission**, §12 execution, save-time validation, sort/pagination semantics | **074** (server) |
-| **GraphQL transport** (`graphql.service.ts`), **generic table renderer** from `extensions.view`, **control inference/rendering** from `extensions.view.inputs`, component registry, sort/pagination UX, `monaco-graphql` authoring editor | **078** (this PRD — SPA) |
+| **GraphQL transport** (`graphql.service.ts`), **generic table renderer** from `extensions.view`, **type-driven variable binding** (`buildVariablesByType`) + **`view.window` date-nav seeding**, component registry, sort/pagination UX, `monaco-graphql` authoring editor | **078** (this PRD — SPA) |
 | SavedView persistence, CalendarModel replacement, week/month render-modes, view-switching | **077** |
 | Global unified/power-search across views | **077 / 060** |
 | Omnibox multisearch (typed, ranked, §12-scoped search resolver) | **081** (server) — the omnibox's `SearchService.search` seam |
@@ -38,7 +38,7 @@ over recurrence blocks.
   (`searchText`/`matchKind`). The **`appointments` query runs end-to-end on the wire** —
   verifiable in GraphiQL at `/graphiql`.
 - **Server render-meta — in flight** (074): `@view` directive + `extensions.view` emission
-  (columns/title/sort/inputs) not yet present.
+  (columns/title/sort/window) not yet present.
 - **SPA — greenfield.** No GraphQL transport, no renderer. `reservations.component` still
   uses the legacy `/api/table/*` REST ([PRD 030](030-server-side-view-rendering.md), deprecated). This PRD is all of it.
 
@@ -68,18 +68,26 @@ query<T>(document: string, variables: Record<string, unknown>) {
 
 `ViewMeta` is **hand-typed** (it is runtime `extensions`, not in the GraphQL schema, so no
 codegen reaches it): `{ key, title, columns: {alias, header, type, sort?, join?, hidden?,
-group?}[], inputs: {name, control, default?}[], page?: {...} }`.
+group?}[], window?: {from, to}, page?: {...} }` (2026-07-12: `inputs` removed — see §Inputs).
 
-## Inputs = query variables, controls inferred ([PRD 074](074-graphql-declarative-views.md) §"Inputs")
+## Inputs — type-driven binding + `view.window` ([PRD 074](074-graphql-declarative-views.md) §"Window and inputs directives")
 
-A view's inputs **are** its GraphQL variables (`$filter`, `$sort`). The SPA renders one
-**control per input**, by convention (name + type): `from`+`to` → date-range; a search
-string → combobox; an id-list → resource picker. The inference rule is 074's; **078 renders
-the controls.** Two transport shapes:
+> **Revised 2026-07-12.** The "controls inferred from `extensions.view.inputs`" model below is
+> superseded by 074's two-directive decision (`@window` + `@param`). `inputs` is removed as a
+> wire concept; the SPA fills variables **by type** and seeds the window from a **server-resolved**
+> `view.window`.
 
-1. **SPA holds the query** → it reads the variable list from the query text itself.
-2. **Server holds the query** (`executeView(name)`) → the SPA can't see the text, so the
-   server must report the input-meta in **`extensions.view.inputs`** (parallel to `columns`).
+The SPA does **not** render per-view input controls in v1. It fills a view's GraphQL variables
+from ambient shell state, **by type** (`variable-binder.ts` `buildVariablesByType`):
+`ReservationFilter` ← window + resource-selection + owner; `AllocatableFilter` ← selection. The
+date window is **not** computed client-side — the server resolves it (from a view's `@window`
+directive or the render-mode default) and emits `extensions.view.window { from, to }`, which the
+SPA seeds into its date-nav.
+
+`@window`/`@param` are consumed **server-side** (coercion, public→private mapping, the
+document/URL reject-undeclared gate — 097). The SPA reads only `view.window` + the variable
+type signature. **SPA input controls (`ParamControl`: resource-picker, search box, …) are
+deferred** — added when a view genuinely needs an input with no shell source (074 §"Deferred").
 
 ## First slice — `appointments` table, **no power search**
 
@@ -178,17 +186,20 @@ query<T>(document: string,      variables: Record<string, unknown>): Observable<
 + render). Date controls (`from`/`to`) are synced to URL query params so browser back/forward
 moves through date windows (`pushState` on each navigation). Complex filters (resource tree,
 `searchText`, `where` predicates) stay in component state — lost on reload, which is
-acceptable. On first visit (no URL params) the SPA uses `default` sentinels from
-`extensions.view.inputs` to compute the initial window client-side (no extra round-trip).
+acceptable. On first visit (no URL params) the SPA seeds the initial window from the
+server-resolved `extensions.view.window` (2026-07-12 — resolved server-side from `@window`/the
+mode default; no client-side anchor computation).
 
 ## Plan — phased
 
 1. **Phase 1 — transport + render the `appointments` table.** `graphql.service.ts`; generic
    `cdk-table` renderer from `extensions.view.columns` (order/header/join/format); date-range
    control → `$filter.from/to`; route swap. Depends on 074's `extensions.view` landing.
-2. **Phase 2 — control inference + per-view inputs.** Render controls from
-   `extensions.view.inputs`; the resource-search picker (`allocatables(filter:{searchText})`
-   → `allocatableIdsIn`) and the per-view name-search box; the date-window pre-fill decision.
+2. **Phase 2 — seed from `view.window`; delete the TS anchor resolver.** Seed the date-nav from
+   server-resolved `extensions.view.window`, dropping `resolveAnchorOffset`/
+   `resolveWindowFromInputs` (`view-inputs.ts`). Variable binding stays **type-driven**
+   (`buildVariablesByType`). **`@param` input controls (resource-search picker, name-search box)
+   are deferred** (074 §"Window and inputs directives" — `ParamControl` not built in v1).
 3. **Phase 3 — grouping + component registry.** **Client-side** day/weekday sectioning —
    the server has NO grouping directive (`@group`/`@aggregate` were removed from 074 on
    2026-06-21 → [PRD 079](079-graphql-grouped-aggregates.md); render directives are `@column`/`@hidden`/`@join`/`@flatten` only).
@@ -202,8 +213,8 @@ acceptable. On first visit (no URL params) the SPA uses `default` sentinels from
 ## Tests (AGENTS.md §10 pyramid)
 
 - **Tier 5 (Vitest, no TestBed)** — `graphql.service` request/response + error unwrap;
-  `extensions.view` → column-descriptor mapping; control inference from `inputs`; list-join
-  + datetime formatting.
+  `extensions.view` → column-descriptor mapping; type-driven variable binding
+  (`buildVariablesByType`); list-join + datetime formatting.
 - **Tier 6 (TestBed)** — the table component renders columns in `extensions.view` order,
   joins list cells, hides `hidden` columns, renders day sections via client-side
   `groupByWeekday` (no `@group` directive — see Phase 3).
@@ -214,7 +225,7 @@ acceptable. On first visit (no URL params) the SPA uses `default` sentinels from
 
 ## Dependencies
 
-- **074** — the `@view` directive + `extensions.view` emission (columns/title/sort/inputs/
+- **074** — the `@view` directive + `extensions.view` emission (columns/title/sort/window/
   page) must land before Phase 1 can render generically. Until then, a throwaway hardcoded
   column list can prove the transport, but is not the deliverable.
 - **072** — cookie auth + the refresh interceptor (already shipped; the transport relies on it).

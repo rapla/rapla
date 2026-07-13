@@ -41,7 +41,6 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { groupByWeekday, groupByColumn } from '../graphql/weekday-grouping';
 import { ViewStateStore, type DateWindow } from '../state/view-state-store';
 import { FilterStore, type FilterEntry } from '../state/filter-store';
-import { resolveWindowFromInputs } from './view-inputs';
 import { buildVariablesByType } from './variable-binder';
 import { LastViewStore } from './last-view-store';
 import { formatGroupLabel } from './group-format';
@@ -83,8 +82,8 @@ export function hasScope(chips: FilterEntry[]): boolean {
 /**
  * The generic view host (PRD 078 routing — {@code /app/views/:viewName}). One
  * component renders EVERY view: it looks up the view definition, resolves the
- * date window (runtime {@link ViewStateStore} window, else the view's
- * {@code inputs} defaults), executes the {@code @view} query, and renders
+ * date window (runtime {@link ViewStateStore} window, else the server-resolved
+ * {@code extensions.view.window}), executes the {@code @view} query, and renders
  * generically from {@code extensions.view}. Day-grouped views (no server
  * directive — PRD 074) get client-side {@link groupByWeekday} sectioning.
  *
@@ -845,9 +844,10 @@ export class ViewHostComponent {
         // default. Idempotent per response.
         const renderModes = viewMeta?.renderModes ?? ['table' as const];
         untracked(() => this.viewState.applyViewModes(renderModes));
-        // Seed the date-nav window from the server's input metadata, once.
+        // Seed the date-nav window from the server-resolved view window, once
+        // (PRD 074 §"Window and inputs directives" — no client-side anchor math).
         if (!window) {
-          const seeded = resolveWindowFromInputs(res.extensions?.view?.inputs ?? []);
+          const seeded = res.extensions?.view?.window;
           if (seeded) untracked(() => this.viewState.setWindow(seeded));
         }
       },

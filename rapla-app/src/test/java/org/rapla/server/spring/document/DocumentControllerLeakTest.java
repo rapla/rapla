@@ -136,18 +136,21 @@ class DocumentControllerLeakTest
     }
 
     /**
-     * PRD 097 OQ9 — a dotted query parameter reaches a nested GraphQL input, which is what makes a
-     * per-resource link ({@code ?filter.allocatableIdsIn=<id>}) expressible at all. An id nobody can
-     * read must still not leak: the view runs in the caller's scope, so a wrong id yields an empty
-     * document, never an error that confirms the id exists.
+     * PRD 074 §"Window and inputs directives" — a declared {@code @param} maps its public URL key
+     * to the nested GraphQL input, which is what makes a per-resource link
+     * ({@code ?resource=<id>}) expressible at all. An id nobody can read must still not leak: the
+     * view runs in the caller's scope, so a wrong id yields an empty document, never an error that
+     * confirms the id exists. (The undotted/undeclared cases live in {@code DocumentParamGateTest}.)
      */
     @Test
     @WithMockUser(username = "homer")
-    void aDottedQueryParameterReachesANestedFilterInput() throws Exception
+    void aDeclaredParamReachesANestedFilterInput() throws Exception
     {
         User admin = operator.getUser("homer");
         String byResource = """
-                query leaktest_by_resource($filter: ReservationFilter!) @view(title: "Nach Ressource") {
+                query leaktest_by_resource($filter: ReservationFilter!) @view(title: "Nach Ressource")
+                  @window(from: { anchor: TODAY, offset: -9999 }, to: { anchor: TODAY, offset: 9999 })
+                  @param(name: "resource", into: "filter.allocatableIdsIn") {
                   reservations(filter: $filter) { titel: displayName }
                 }""";
         assertEquals(List.of(), views.saveView("leaktest_by_resource", byResource, true, List.of(), null, admin));
@@ -155,9 +158,7 @@ class DocumentControllerLeakTest
                 "<ul>{{#reservations}}<li>{{titel}}</li>{{/reservations}}</ul>", true, List.of(), null, admin));
 
         MvcResult result = mockMvc.perform(get("/api/documents/leaktest_by_resource_doc")
-                .param("filter.allocatableIdsIn", "no-such-resource-id")
-                .param("filter.from", "2000-01-01T00:00:00")
-                .param("filter.to", "2035-01-01T00:00:00")).andReturn();
+                .param("resource", "no-such-resource-id")).andReturn();
 
         assertEquals(200, result.getResponse().getStatus());
         // the filter was applied (not ignored): an unknown resource id matches nothing

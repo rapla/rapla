@@ -886,6 +886,8 @@ found in either: HTTP 200 + `errors: [{ message: "View 'X' not found", extension
 
 ### Server-side variable defaults
 
+> **Superseded 2026-07-11** by [§ Window and inputs directives](#window-and-inputs-directives-decided-2026-07-12). The Monday-week merge below is replaced by the render-mode-intrinsic default plus a server-resolved `extensions.view.window`. Kept for history.
+
 `ReservationFilter.from/to` are `LocalDateTime!` (required). GraphQL validates variables
 before any resolver runs so the server cannot silently fill a missing required field on the
 normal `/api/graphql` path — but the named-operation path intercepts before validation. The
@@ -901,6 +903,8 @@ Only the above two are merged; all other absent variables surface as normal Grap
 errors. This resolves [PRD 078](078-spa-graphql-view-renderer.md)'s open question (server-merge, option 1).
 
 ### `extensions.view.inputs` — input metadata for the SPA
+
+> **Superseded 2026-07-11** by [§ Window and inputs directives](#window-and-inputs-directives-decided-2026-07-12). `inputs` is removed as a wire concept and the client-side anchor resolver (`resolveAnchorOffset`/`resolveWindowFromInputs`) is deleted: the window is server-resolved into `extensions.view.window`, and explicit inputs are declared with `@param`. Kept for history.
 
 Because the SPA never sees the query text, the server reports the view's input-variable
 metadata in `extensions.view.inputs` (parallel to `columns`). Shape added to the v1 contract:
@@ -939,6 +943,114 @@ Examples:
 - This month: `{ anchor: MONTH_START, offset: 0, unit: DAYS }` / `{ anchor: MONTH_START, offset: 30, unit: DAYS }`
 
 Static defaults (sort, limit) are concrete values, not anchor specs.
+
+### Window and inputs directives (decided 2026-07-12)
+
+Supersedes the 2026-06-21 `inputs`/client-anchor design in the two subsections above. Two
+observations fixed the shape: the window is the **only** input needing a computed (non-stale,
+per-request) default, and every other input is just `name` + `into` (+ `required`). So there
+are **two directives, one per kind** — the datetime baggage lives only on `@window`.
+
+```graphql
+directive @window(
+  into: String         # the filter variable; optional — defaults to the sole ReservationFilter var
+  from: WindowAnchor   # { anchor, offset, unit }
+  to:   WindowAnchor
+) repeatable on QUERY
+
+directive @param(
+  name: String!        # public input name — URL key (+ future SPA control id)
+  into: String!        # private dotted variable path it fills, e.g. "filter.allocatableIdsIn"
+  required: Boolean = false
+) repeatable on QUERY
+
+input WindowAnchor {
+  anchor: ViewAnchor   # TODAY | WEEK_START | MONTH_START      (existing enum)
+  offset: Int          # signed; 0 = the anchor itself
+  unit:   ViewDateUnit # DAYS | WEEKS | MONTHS  (DAYS in Phase 1; others reserved)
+}
+```
+
+**Derived, not declared.** A param's coercion type is **derived from `into`** by walking the
+schema from the operation's variable type — `into: "filter.allocatableIdsIn"` ⇒ `[ID!]`; no
+restated `type`. Static defaults (string/int/enum) come from the **GraphQL variable's own
+default** (`query Suche($q: String = "Seminar", …)`), never a directive.
+
+**The window (`@window`).** The clean replacement for the deleted
+`@view(fromAnchor/fromOffset/…)` args: a structured anchor triple (not five flat args),
+explicit `into` (not the `isReservationFilter` sniff in `ViewMetaInstrumentation.inputsFrom`),
+URL-overridable, server-resolved. `from`/`to` are the URL keys; `offset` is a free signed
+integer, so any span — `to: { WEEK_START, 14, DAYS }` is a two-week default, `{ TODAY, 3, DAYS }`
+is three days.
+
+- **Neither directive** → the render-mode default window (`table` → `TODAY−7 … +7`, `week` →
+  current ISO week, `month` → current month), resolved server-side.
+- **`@window` present** → its anchors seed the window; a template `?from=…&to=…` overrides.
+
+**The value inputs (`@param`).** Scope (`room` ← `filter.allocatableIdsIn`), single id
+(`eventId`, `required: true`), owner, search (`q` ← `filter.searchText`). Two consumers:
+
+- **SPA (078)** fills each variable from ambient shell state (window / resource-selection /
+  owner) **by type** (`buildVariablesByType`, unchanged). `@param` is the explicit form, used
+  only to open the URL surface (and, once controls exist, to disambiguate). The SPA never
+  enforces `required` — it constructs its own variables.
+- **Document validator (097)** coerces each URL value, maps public `name` → private `into`,
+  **rejects any query-param not in the `@param` allowlist** (reject-undeclared, document path
+  only), and short-circuits to an empty render if a `required` param is absent.
+
+**Transport.** The server resolves the window at request time and emits
+`extensions.view.window { from, to }`. The SPA seeds its date-nav from `view.window` and no
+longer resolves anchors client-side — `resolveAnchorOffset` / `resolveWindowFromInputs` and the
+`view-inputs.ts` date logic are deleted. `inputs` is removed as a wire concept.
+
+**Worked — six on Übersicht** (body `reservations(filter: $filter) { name appointments { start end } resources { name } }`):
+
+```graphql
+# 1 baseline — mode-default window, SPA type-fills, no URL inputs
+query Uebersicht($filter: ReservationFilter!) @view(title: "Übersicht") { …body… }
+# 2 room scope
+… @param(name: "room", into: "filter.allocatableIdsIn")
+# 3 overridable two-week window — one directive
+… @window(from: { anchor: WEEK_START, offset: 0, unit: DAYS }, to: { anchor: WEEK_START, offset: 14, unit: DAYS })
+# 4 required single id (Leihschein)
+query Leihschein($eventId: ID!) @view(title: "Leihschein")
+  @param(name: "eventId", into: "eventId", required: true)
+{ reservation(id: $eventId) { …fields… } }
+# 5 two scopes (second not SPA-fillable until controls land; both URL-addressable)
+… @param(name: "rooms", into: "rooms")  @param(name: "equipment", into: "equipment")
+# 6 search
+… @param(name: "q", into: "filter.searchText")
+```
+
+**Deferred — declared as a known shape, not built in v1:**
+
+- **SPA input controls** (`ParamControl`: `RESOURCE_PICKER` / `TEXT` / `DATE_RANGE` / `SELECT`).
+  The only audience is exotic multi-input SPA views, and 078's controls are deferred; until then
+  a scalar/id with no shell source is simply not SPA-fillable (still works via URL on templates).
+  Add when 078 builds controls.
+- **Computed identity default** (`CURRENT_USER` for a "my bookings" template's `ownerEq`) — a
+  non-breaking future addition; no such template exists yet.
+- **Free-span grids.** `@window` sets the *filter* window to any span, and **tables/lists honor
+  it today** (they list whatever rows return). **Grid geometry stays mode-fixed for v1** — the
+  week grid draws 7 columns (`dayCount=7`) and steps 7 days, the month grid draws its month,
+  regardless of a non-standard span (`view-host.component.ts:130`,
+  `view-control-strip.component.ts:311`). "Window-follows-geometry" (a week grid drawing
+  `ceil(span/7)` rows, step = span) is a later PRD 077/095 render enhancement, not this contract.
+
+**Status — implemented 2026-07-12** (both phases, test-first):
+
+- *Window*: `WindowResolver` (anchor eval + mode default, 15-test tier-1 parity suite),
+  `@window`/`WindowAnchor`/`@param` in the schema, `@view` anchor args deleted,
+  `ViewVariables` Monday hardcode replaced, `extensions.view.window` emitted,
+  SPA seeds from it, `view-inputs.ts` + client anchor resolver deleted.
+- *Gate*: `ViewParamDirectives` (parse `@param`/`@window` off the view) +
+  `DocumentRenderService.gateParams` — undeclared URL key → 400, public `name` →
+  private `into` translation, `from`/`to` accepted iff `@window`, missing `required`
+  → the same 404 (§12). List values via repeated keys (`?resource=a&resource=b`),
+  never comma-split (`RequestVariables` scar). Tier-3 suite: `DocumentParamGateTest`.
+- *Still open*: save-time validation of the directives (`into` resolves, `@window` only on
+  datetime paths, unique names); projecting `@param` into `extensions.view` for future SPA
+  controls (deferred with `ParamControl`).
 
 ### SPA routing — `/app/views/:viewName`
 

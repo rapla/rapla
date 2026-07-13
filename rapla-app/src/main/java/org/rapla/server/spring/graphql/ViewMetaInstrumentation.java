@@ -114,8 +114,12 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
         }
         meta.put("renderModes", renderModeNames);
 
-        List<Map<String, Object>> inputs = inputsFrom(op.getVariableDefinitions(), view);
-        if (!inputs.isEmpty()) meta.put("inputs", inputs);
+        // PRD 074 §"Window and inputs directives" — the server-resolved date window (@window
+        // directive, else the render-mode default). The SPA seeds its date-nav from this; no
+        // client-side anchor resolution.
+        WindowResolver.Window window = WindowResolver.fromOperation(op, java.time.LocalDate.now());
+        if (window == null) window = WindowResolver.defaultWindow(renderModeNames, java.time.LocalDate.now());
+        meta.put("window", Map.of("from", window.from(), "to", window.to()));
 
         // PRD 074/078 — the variable signature (name + GraphQL type) is the type-driven
         // binding contract: the SPA fills each variable by TYPE without seeing the query.
@@ -177,41 +181,6 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
     }
 
     /**
-     * Infer {@code inputs} from the operation's variable definitions.
-     * {@code $filter: ReservationFilter!} → from/to date-range controls with
-     * anchor+offset defaults (Monday-week window, PRD 074 §inputs).
-     */
-    private static List<Map<String, Object>> inputsFrom(List<VariableDefinition> vars, Directive view)
-    {
-        if (vars == null) return List.of();
-        for (VariableDefinition v : vars)
-        {
-            if ("filter".equals(v.getName()) && isReservationFilter(v))
-            {
-                // Per-view window seed from @view(fromAnchor/fromOffset/toAnchor/toOffset/unit);
-                // omitted args fall back to the default TODAY -7 … +7 window. A Monday week is
-                // fromAnchor: "WEEK_START", fromOffset: 0, toAnchor: "WEEK_START", toOffset: 7.
-                ViewAnchor fromAnchor = typedEnumArg(view, "fromAnchor", ViewAnchor.class);
-                ViewAnchor toAnchor = typedEnumArg(view, "toAnchor", ViewAnchor.class);
-                ViewDateUnit unit = typedEnumArg(view, "unit", ViewDateUnit.class);
-                Integer fromOffset = intArg(view, "fromOffset");
-                Integer toOffset = intArg(view, "toOffset");
-                List<Map<String, Object>> inputs = new ArrayList<>();
-                inputs.add(dateInput("filter.from", "DATE_RANGE_START",
-                        (fromAnchor != null ? fromAnchor : ViewAnchor.TODAY).name(),
-                        fromOffset != null ? fromOffset : -7,
-                        (unit != null ? unit : ViewDateUnit.DAYS).name()));
-                inputs.add(dateInput("filter.to", "DATE_RANGE_END",
-                        (toAnchor != null ? toAnchor : ViewAnchor.TODAY).name(),
-                        toOffset != null ? toOffset : 7,
-                        (unit != null ? unit : ViewDateUnit.DAYS).name()));
-                return inputs;
-            }
-        }
-        return List.of();
-    }
-
-    /**
      * The operation's variable signature ({@code name} + GraphQL {@code type} as an
      * SDL string, e.g. {@code ReservationFilter!}). The SPA binds each variable by
      * TYPE — ReservationFilter ← window+selection, AllocatableFilter ← selection —
@@ -239,23 +208,6 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
         if (t instanceof graphql.language.ListType lt) return "[" + typeName(lt.getType()) + "]";
         if (t instanceof graphql.language.TypeName tn) return tn.getName();
         return "";
-    }
-
-    private static boolean isReservationFilter(VariableDefinition v)
-    {
-        graphql.language.Type<?> t = v.getType();
-        while (t instanceof graphql.language.NonNullType nn) t = nn.getType();
-        return t instanceof graphql.language.TypeName tn
-                && "ReservationFilter".equals(tn.getName());
-    }
-
-    private static Map<String, Object> dateInput(String name, String control, String anchor, int offset, String unit)
-    {
-        Map<String, Object> in = new LinkedHashMap<>();
-        in.put("name", name);
-        in.put("control", control);
-        in.put("default", Map.of("anchor", anchor, "offset", offset, "unit", unit));
-        return in;
     }
 
     /**
@@ -598,14 +550,6 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
     {
         Argument a = argByName(d, name);
         return (a != null && a.getValue() instanceof StringValue sv) ? sv.getValue() : null;
-    }
-
-    private static <E extends Enum<E>> E typedEnumArg(Directive d, String name, Class<E> type)
-    {
-        Argument a = argByName(d, name);
-        if (a == null || !(a.getValue() instanceof EnumValue ev)) return null;
-        try { return Enum.valueOf(type, ev.getName()); }
-        catch (IllegalArgumentException ex) { return null; }
     }
 
     private static <E extends Enum<E>> List<E> typedEnumListArg(Directive d, String name, Class<E> type)

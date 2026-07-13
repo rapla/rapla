@@ -2,7 +2,6 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, map, of, tap } from 'rxjs';
 
-import type { ViewInput } from '../views/view-inputs';
 import { toMutationResult, type MutationIssue, type MutationResult } from './mutation-result';
 import { MutationBus } from './mutation-bus';
 
@@ -72,8 +71,9 @@ export interface ViewMeta {
   groupBy?: string;
   /** Opaque date-format token for the GROUP header (client-interpreted, e.g. {@code "EE dd.MM"}). */
   groupFormat?: string;
-  /** PRD 074 — input-control metadata (date-range anchor/offset defaults). */
-  inputs?: ViewInput[];
+  /** PRD 074 — the server-resolved date window ({@code @window} directive, else the
+   *  render-mode default); seeds the date-nav on first load. */
+  window?: { from: string; to: string };
   /** Singular|plural label for the row count line, e.g. "Termin|Termine". Falls back to "Eintrag|Einträge". */
   rowLabel?: string;
   /** Singular|plural label for the group count, e.g. "Tag|Tage". When set, a secondary "· N Tag(e)" is shown. */

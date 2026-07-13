@@ -12,6 +12,7 @@ import org.rapla.entities.User;
 import org.rapla.server.spring.graphql.HotSwappableGraphQlSource;
 import org.rapla.server.spring.graphql.ViewCatalogService;
 import org.rapla.server.spring.graphql.ViewEntry;
+import org.rapla.server.spring.graphql.ViewParamDirectives;
 import org.rapla.server.spring.graphql.ViewVariables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,9 +61,13 @@ public class DocumentRenderService
 
     /**
      * Render a document to a complete HTML page. Empty when the caller may not see the document
-     * or its view, or when either is invalid — the caller cannot tell these apart.
+     * or its view, when either is invalid, or when a {@code required @param} is absent — the
+     * caller cannot tell these apart (§12). Raw URL parameters are gated by the view's declared
+     * {@code @param}/{@code @window} surface: an undeclared key is a 400
+     * ({@link UndeclaredParameterException}), a declared public {@code name} is translated to its
+     * private {@code into} path before variable expansion.
      */
-    public Optional<String> render(String documentName, Map<String, Object> requestVariables, User caller)
+    public Optional<String> render(String documentName, Map<String, List<String>> rawParams, User caller)
     {
         Optional<DocumentEntry> document = documents.findVisible(documentName, caller);
         if (document.isEmpty()) return Optional.empty();
@@ -81,8 +86,61 @@ public class DocumentRenderService
             return Optional.empty();
         }
 
-        Map<String, Object> model = executeView(referenced.get(), doc.defaultVariables(), doc.name(), requestVariables);
+        Optional<Map<String, Object>> requestVariables = gateParams(referenced.get(), rawParams);
+        if (requestVariables.isEmpty()) return Optional.empty();   // required @param absent → same 404
+
+        Map<String, Object> model = executeView(referenced.get(), doc.defaultVariables(), doc.name(), requestVariables.get());
         return Optional.of(page(title(referenced.get(), doc.name()), doc.template(), model));
+    }
+
+    /** Thrown for a URL parameter outside the view's declared {@code @param}/{@code @window} surface → 400. */
+    public static class UndeclaredParameterException extends RuntimeException
+    {
+        UndeclaredParameterException() { super("undeclared request parameter"); }
+    }
+
+    /**
+     * PRD 074 §"Window and inputs directives" — the document-path input gate. The view's
+     * {@code @param} names (plus {@code from}/{@code to} iff it declares {@code @window}) are the
+     * ONLY accepted URL keys; each is translated public {@code name} → private {@code into} path,
+     * then expanded to nested variables. Empty when a {@code required} param is absent — the
+     * caller sees the same 404 as for a document that does not exist. Fires only on this path:
+     * the SPA transport and the authoring preview construct their own variables.
+     */
+    private static Optional<Map<String, Object>> gateParams(ViewEntry view, Map<String, List<String>> rawParams)
+    {
+        ViewParamDirectives.Declarations decl = ViewParamDirectives.parse(view.queryText());
+        Map<String, List<String>> translated = new LinkedHashMap<>();
+        if (rawParams != null)
+        {
+            for (Map.Entry<String, List<String>> entry : rawParams.entrySet())
+            {
+                String key = entry.getKey();
+                ViewParamDirectives.Param param = decl.byName(key);
+                if (param != null)
+                {
+                    translated.put(param.into(), entry.getValue());
+                }
+                else if (decl.hasWindow() && ("from".equals(key) || "to".equals(key)))
+                {
+                    translated.put(decl.windowInto() + "." + key, entry.getValue());
+                }
+                else
+                {
+                    throw new UndeclaredParameterException();
+                }
+            }
+        }
+        for (ViewParamDirectives.Param p : decl.params())
+        {
+            if (!p.required()) continue;
+            List<String> values = rawParams == null ? null : rawParams.get(p.name());
+            if (values == null || values.isEmpty() || values.stream().allMatch(String::isBlank))
+            {
+                return Optional.empty();
+            }
+        }
+        return Optional.of(RequestVariables.expand(translated));
     }
 
     /**
@@ -118,7 +176,7 @@ public class DocumentRenderService
         String defaults = documentDefaults != null ? documentDefaults : view.defaultVariables();
         ExecutionInput input = ExecutionInput.newExecutionInput()
                 .query(view.queryText())
-                .variables(ViewVariables.mergeDefaults(requestVariables, defaults))
+                .variables(ViewVariables.mergeDefaults(requestVariables, defaults, view.queryText()))
                 .build();
 
         ExecutionResult result = graphQlSource.graphQl().execute(input);

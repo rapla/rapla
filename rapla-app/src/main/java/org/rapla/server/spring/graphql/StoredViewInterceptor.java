@@ -22,8 +22,9 @@ import reactor.core.publisher.Mono;
  * proper GraphQL error.
  *
  * <p>From/to defaults: when {@code filter.from}/{@code filter.to} are absent from
- * the variables, the interceptor injects the current Monday → Monday+7 window so
- * the SPA can render meaningful first-load data without knowing the right date range.
+ * the variables, the interceptor injects the view's resolved window ({@code @window}
+ * directive, else the render-mode default — {@link WindowResolver}) so the SPA can
+ * render meaningful first-load data without knowing the right date range.
  */
 @Component
 public class StoredViewInterceptor implements WebGraphQlInterceptor
@@ -84,7 +85,7 @@ public class StoredViewInterceptor implements WebGraphQlInterceptor
         String storedDefaults = view.defaultVariables();
         request.configureExecutionInput((input, builder) ->
                 builder.query(storedQuery)
-                        .variables(ViewVariables.mergeDefaults(input.getVariables(), storedDefaults))
+                        .variables(ViewVariables.mergeDefaults(input.getVariables(), storedDefaults, storedQuery))
                         .build());
         return chain.next(request);
     }
