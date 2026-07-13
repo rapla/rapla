@@ -226,16 +226,23 @@ mode default; no client-side anchor computation).
   - [ ] `ngComponentOutlet` cell-component registry (safe allowlist, no raw HTML) — **not built**.
   - [ ] Pagination UX (next/prev / infinite scroll) over the server's `offset` / `view.page`
         meta — **not built**.
-- [ ] **Phase 4 — authoring.** ⚠️ **Blocked on a contradiction, do not start.** This phase says
-      "`monaco-graphql` query editor + live SPA preview", but [PRD 074](074-graphql-declarative-views.md)
-      § "Admin authoring — GraphiQL + save/load" is a **locked decision**: *the shipped GraphiQL is
-      the authoring surface; no separate view-editor is built.* Resolve first — either reopen that
-      074 decision, or **drop this phase** and let view authoring stay in `/graphiql`, with the
-      `@param`/`@window` affordances (`into` completion, red markers) landing **there** instead.
-      GraphiQL 5.2.1 is Monaco-based, so that is feasible without a second editor. Note the
-      *template* authoring UI already exists and is done — it is
-      [PRD 097](097-event-html-templates-mustache.md) Phase 4 (`static/template-editor/`), a
-      separate page for the presentation layer, not this.
+- ~~**Phase 4 — authoring.** `monaco-graphql` query editor + live SPA preview.~~ **DROPPED
+      2026-07-13.** It contradicted two locked decisions — [PRD 074](074-graphql-declarative-views.md)
+      § "Admin authoring — GraphiQL + save/load" (*the shipped GraphiQL is the authoring surface;
+      no separate view-editor is built*) and [PRD 097](097-event-html-templates-mustache.md)
+      Phase 4's delivery shape (*authoring tools are static CDN pages, explicitly **not** part of
+      the Angular SPA, to avoid the Monaco-in-Angular embedding cost*). It was written 2026-06-21,
+      before either landed, and was never reconciled. Both halves of what it wanted already exist:
+  - **Schema-aware editing + validation** → `/graphiql`, which *is* the purpose-built GraphQL
+    editor. The `@param`/`@window` affordances (`into` completion, red markers on a bad path) land
+    **there** — feasible because GraphiQL 5.2.1 is itself Monaco-based. See
+    [074 § Window and inputs directives](074-graphql-declarative-views.md#window-and-inputs-directives-decided-2026-07-12)
+    → the `into` authoring affordance.
+  - **"Live SPA preview"** → already free: the SPA renders **any** stored view by name at
+    `/app/views/:viewName`. Save in GraphiQL, open the URL. Nothing to build.
+
+  (The *template*-authoring UI is a different thing and is done — 097 Phase 4,
+  `static/template-editor/`, the presentation layer's own static page.)
 
 ## Tests (AGENTS.md §10 pyramid)
 

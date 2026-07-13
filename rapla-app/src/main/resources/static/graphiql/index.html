@@ -82,9 +82,15 @@
     <div id="graphiql"><div class="loading">Loading GraphiQL…</div></div>
 </div>
 <script type="module">
+    // PRD 074: GraphiQL 5 IS Monaco-based. Externalising `monaco-editor` in the importmap above
+    // makes GraphiQL and this page share ONE Monaco instance — so we can drive its model markers
+    // (red squiggles for a bad @param/@window) and register a completion provider for
+    // `@param(into: "…")`. Without the sharing we would get a second, disconnected Monaco.
+    //
     import React from 'react';
     import ReactDOM from 'react-dom/client';
     import { GraphiQL } from 'graphiql';
+    import { useMonaco } from '@graphiql/react';
     import { createGraphiQLFetcher } from '@graphiql/toolkit';
     import { explorerPlugin } from '@graphiql/plugin-explorer';
     import 'graphiql/setup-workers/esm.sh';
@@ -159,6 +165,131 @@
         }
     });
 
+    // ---- PRD 074: @param/@window authoring affordances ------------------------------------
+    // GraphiQL 5 is Monaco-based, but its Monaco is welded inside the esm.sh `?standalone`
+    // bundle: there is NO global, and externalising `monaco-editor` via the importmap does not
+    // work (esm.sh rewrites each package's internal relative imports to its own canonical URLs,
+    // so `editor.api` reached through the importmap is a DIFFERENT module instance than the one
+    // GraphiQL uses — the json language contribution then registers on a copy GraphiQL never
+    // reads, and its variables editor dies on `jsonDefaults`; verified 2026-07-13).
+    //
+    // The supported way in is `useMonaco()` from @graphiql/react: a React hook handing us
+    // GraphiQL's OWN Monaco namespace. Since we render GraphiQL, we mount a headless bridge
+    // component beside it to capture that instance — which gives us real model markers and a
+    // completion provider, with no self-hosting and no bundler.
+    let monacoApi = null;
+    let completionRegistered = false;
+
+    function onMonacoReady(monaco) {
+        monacoApi = monaco;
+        if (completionRegistered) return;
+        completionRegistered = true;
+        // Completion inside `@param(into: "…")`. GraphiQL completes from schema introspection,
+        // which cannot see INTO a String argument, so `into` paths are otherwise un-completable.
+        // Candidates come from the server (`intoPaths`) via the SAME walk the validator uses, so
+        // completion can never suggest something `saveView` would reject.
+        monaco.languages.registerCompletionItemProvider('graphql', {
+            triggerCharacters: ['"', '.'],
+            async provideCompletionItems(model, position) {
+                const lineUntilCursor = model.getValueInRange({
+                    startLineNumber: position.lineNumber, startColumn: 1,
+                    endLineNumber: position.lineNumber, endColumn: position.column
+                });
+                if (!/@param\s*\([^)]*\binto:\s*"[^"]*$/.test(lineUntilCursor)) return { suggestions: [] };
+                const typed = (lineUntilCursor.match(/"([^"]*)$/) || ['', ''])[1];
+                const range = {
+                    startLineNumber: position.lineNumber, endLineNumber: position.lineNumber,
+                    startColumn: position.column - typed.length, endColumn: position.column
+                };
+                try {
+                    const result = await gqlFetch(
+                        'query($q:String!){ intoPaths(query:$q){ path type } }', { q: model.getValue() });
+                    const paths = (result.data && result.data.intoPaths) || [];
+                    return {
+                        suggestions: paths.map((p) => ({
+                            label: p.path,
+                            kind: monaco.languages.CompletionItemKind.Field,
+                            detail: p.type,
+                            insertText: p.path,
+                            range
+                        }))
+                    };
+                } catch (e) {
+                    return { suggestions: [] };
+                }
+            }
+        });
+    }
+
+    /**
+     * Headless: captures GraphiQL's Monaco instance via the public hook. Renders nothing.
+     * `useMonaco()` yields a store slice — {@code { actions, monaco, monacoGraphQL }} — so the
+     * namespace itself is the `.monaco` property, not the hook's return value.
+     */
+    function MonacoBridge() {
+        const store = useMonaco();
+        const monaco = store && store.monaco;
+        React.useEffect(() => { if (monaco) onMonacoReady(monaco); }, [monaco]);
+        return null;
+    }
+
+    const MARKER_OWNER = 'rapla-view';
+
+    function queryModel() {
+        if (!monacoApi) return null;
+        return monacoApi.editor.getModels().find((m) => m.getLanguageId() === 'graphql') || null;
+    }
+
+    /**
+     * Dry-run the server's save validation and paint the result as Monaco markers. The server
+     * returns a line/column per issue (a bare message could not be marked), so a bad
+     * `@param(into:)` goes red on its own line instead of only failing at save. Falls back to a
+     * dialog if the Monaco bridge did not come up.
+     */
+    async function validateCurrentView() {
+        const model = queryModel();
+        const query = model ? model.getValue() : (localStorage.getItem('graphiql:query') || '');
+        if (!query.trim()) { alert('Editor is empty — nothing to validate.'); return; }
+        try {
+            const result = await gqlFetch(
+                'query($q:String!){ validateView(query:$q){ message line column } }', { q: query });
+            if (result.errors && result.errors.length) {
+                alert('Validation failed: ' + result.errors.map((e) => e.message).join('; '));
+                return;
+            }
+            const issues = (result.data && result.data.validateView) || [];
+            if (model && monacoApi) {
+                monacoApi.editor.setModelMarkers(model, MARKER_OWNER, issues.map((i) => ({
+                    severity: monacoApi.MarkerSeverity.Error,
+                    message: i.message,
+                    startLineNumber: i.line,
+                    startColumn: i.column,
+                    endLineNumber: i.line,
+                    endColumn: model.getLineMaxColumn(i.line)
+                })));
+            }
+            if (!issues.length) {
+                setValidateStatus('✓ valid', '#34d399');
+                return;
+            }
+            setValidateStatus('✗ ' + issues.length + ' issue' + (issues.length > 1 ? 's' : ''), '#f87171');
+            if (!(model && monacoApi)) {
+                alert(issues.map((i) => 'line ' + i.line + ', column ' + i.column + ':\n' + i.message).join('\n\n'));
+            }
+        } catch (e) {
+            alert('Validation request failed: ' + e.message);
+        }
+    }
+
+    function setValidateStatus(text, color) {
+        const el = document.getElementById('validate-status');
+        if (!el) return;
+        el.textContent = text;
+        el.style.color = color;
+        clearTimeout(setValidateStatus._t);
+        setValidateStatus._t = setTimeout(() => { el.textContent = ''; }, 6000);
+    }
+
     // PRD 074 — view Load/Save toolbar (admin).
     // GraphiQL is remounted via root.unmount() + recreate to pick up updated localStorage query.
     let graphiqlRoot = null;
@@ -167,7 +298,11 @@
         if (graphiqlRoot) { graphiqlRoot.unmount(); }
         graphiqlRoot = ReactDOM.createRoot(el);
         const explorer = explorerPlugin();
-        graphiqlRoot.render(React.createElement(GraphiQL, { fetcher, plugins: [explorer] }));
+        // MonacoBridge is headless — it only captures GraphiQL's Monaco via useMonaco().
+        graphiqlRoot.render(React.createElement(React.Fragment, null,
+            React.createElement(MonacoBridge),
+            React.createElement(GraphiQL, { fetcher, plugins: [explorer] })
+        ));
     }
 
     // Cache for view metadata (name → {source, defaultVariables}) populated by populateViewSelect.
@@ -320,6 +455,19 @@
             if (sel.value) { loadViewIntoEditor(sel.value); sel.value = ''; }
         });
         bar.appendChild(sel);
+
+        // PRD 074 — dry-run the save validation and mark the offending line red in the editor.
+        const validateBtn = document.createElement('a');
+        validateBtn.href = '#';
+        validateBtn.textContent = 'Validate';
+        validateBtn.title = 'Check @param/@window (and the schema) without saving — errors are marked in the editor';
+        validateBtn.addEventListener('click', (e) => { e.preventDefault(); validateCurrentView(); });
+        bar.appendChild(validateBtn);
+
+        const validateStatus = document.createElement('span');
+        validateStatus.id = 'validate-status';
+        validateStatus.style.fontSize = '12px';
+        bar.appendChild(validateStatus);
 
         const saveBtn = document.createElement('a');
         saveBtn.href = '#';

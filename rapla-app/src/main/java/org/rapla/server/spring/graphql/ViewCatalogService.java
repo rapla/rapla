@@ -5,7 +5,9 @@ import graphql.language.Definition;
 import graphql.language.Directive;
 import graphql.language.Document;
 import graphql.language.OperationDefinition;
+import graphql.language.SourceLocation;
 import graphql.language.StringValue;
+import graphql.parser.InvalidSyntaxException;
 import graphql.parser.Parser;
 import graphql.schema.GraphQLSchema;
 import graphql.validation.ValidationError;
@@ -179,6 +181,46 @@ public class ViewCatalogService
         ViewMeta meta = new ViewMeta(isPublic, groups == null ? List.of() : groups, defaultVariables);
         artifactCatalog.save(StoredArtifact.KIND_VIEW, name, queryText, MAPPER.writeValueAsString(meta), callerUser);
         return List.of();
+    }
+
+    /**
+     * PRD 074 — dry-run the exact validation {@link #saveView} applies, storing nothing, and
+     * report each problem with its <b>line/column</b>. The editor (GraphiQL, which is Monaco-based)
+     * turns these into red markers: without a position nothing can be marked, which is why a bad
+     * {@code @param(into:)} could previously only be reported after a save attempt.
+     */
+    public List<ViewParamDirectives.Issue> validateQuery(String queryText)
+    {
+        GraphQLSchema schema = graphQlSource.schema();
+        try
+        {
+            Document doc = Parser.parse(queryText);
+            List<ValidationError> errors = new Validator().validateDocument(schema, doc, Locale.getDefault());
+            if (!errors.isEmpty())
+            {
+                return errors.stream().map(e -> new ViewParamDirectives.Issue(
+                        e.getMessage(),
+                        e.getLocations().isEmpty() ? 1 : e.getLocations().get(0).getLine(),
+                        e.getLocations().isEmpty() ? 1 : e.getLocations().get(0).getColumn())).toList();
+            }
+            return ViewParamDirectives.validateWithPositions(queryText, schema);
+        }
+        catch (InvalidSyntaxException e)
+        {
+            SourceLocation loc = e.getLocation();
+            return List.of(new ViewParamDirectives.Issue("Parse error: " + e.getMessage(),
+                    loc != null ? loc.getLine() : 1, loc != null ? loc.getColumn() : 1));
+        }
+        catch (Exception e)
+        {
+            return List.of(new ViewParamDirectives.Issue("Parse error: " + e.getMessage(), 1, 1));
+        }
+    }
+
+    /** PRD 074 — legal {@code @param(into:)} targets for the query being edited (editor completion). */
+    public List<ViewParamDirectives.IntoPath> intoPathsFor(String queryText)
+    {
+        return ViewParamDirectives.intoPaths(queryText, graphQlSource.schema());
     }
 
     /** Delete a CUSTOM view. Returns false when BUILTIN or not found. */

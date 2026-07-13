@@ -1616,11 +1616,37 @@ type SaveViewResult {
     invalidReason: [String!]!
 }
 
+"PRD 074 — one validation problem, positioned so a Monaco-based editor can mark it red."
+type ViewIssue {
+    message: String!
+    "1-based line of the offending directive."
+    line:    Int!
+    "1-based column of the offending directive."
+    column:  Int!
+}
+
+"PRD 074 — a legal `@param(into:)` target: a dotted variable path plus the GraphQL type it lands on."
+type ViewIntoPath {
+    path: String!
+    type: String!
+}
+
 extend type Query {
     "List all views visible to the caller (BUILTIN + permitted CUSTOM)."
     listViews: [ViewMeta!]!
     "Return stored query text for a view (admin-only for CUSTOM; readable for BUILTIN)."
     getViewQuery(name: String!): String
+    """
+    PRD 074 — dry-run the exact validation saveView applies, storing nothing. Each issue carries
+    a line/column so the editor can mark it red. Admin-only. Empty list = the query would save.
+    """
+    validateView(query: String!): [ViewIssue!]!
+    """
+    PRD 074 — the completion source for `@param(into: "…")`: every dotted variable path the query
+    being edited could legally target. Same walk as the validator, so completion and validation
+    cannot disagree. Admin-only.
+    """
+    intoPaths(query: String!): [ViewIntoPath!]!
 }
 
 extend type Mutation {

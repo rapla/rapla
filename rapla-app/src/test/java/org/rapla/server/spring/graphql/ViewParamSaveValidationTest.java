@@ -168,4 +168,51 @@ class ViewParamSaveValidationTest
         assertFalse(errors.isEmpty());
         assertTrue(errors.get(0).contains("eventId"), errors.toString());
     }
+
+    /**
+     * A dry-run check for the editor: same validation as {@code saveView}, but it stores nothing
+     * and reports the offending <b>line/column</b>. Without a position nothing can be marked red —
+     * which is exactly why the editor could only alert() before.
+     */
+    @Test
+    void validateDryRunsWithoutStoringAndReportsThePosition()
+    {
+        String query = """
+                query psv_dry($filter: ReservationFilter!) @view(title: "x")
+                  @param(name: "resource", into: "filter.allocatableIdsInX")
+                { reservations(filter: $filter) { titel: displayName } }""";
+
+        List<ViewParamDirectives.Issue> issues = views.validateQuery(query);
+
+        assertEquals(1, issues.size(), issues.toString());
+        ViewParamDirectives.Issue issue = issues.get(0);
+        assertEquals(2, issue.line(), "the @param directive is on line 2");
+        assertTrue(issue.column() > 0, "column must be 1-based, was " + issue.column());
+        assertTrue(issue.message().contains("available:"), issue.message());
+        // dry run: nothing was stored
+        assertTrue(views.findView("psv_dry").isEmpty(), "validate must not store the view");
+    }
+
+    @Test
+    void validateReturnsNoIssuesForAGoodQuery()
+    {
+        String query = """
+                query psv_dry_ok($filter: ReservationFilter!) @view(title: "ok")
+                  @window(from: { anchor: WEEK_START, offset: 0 }, to: { anchor: WEEK_START, offset: 7 })
+                  @param(name: "resource", into: "filter.allocatableIdsIn")
+                { reservations(filter: $filter) { titel: displayName } }""";
+        assertEquals(List.of(), views.validateQuery(query));
+    }
+
+    /** A plain GraphQL error (unknown field) must also carry a position, so it marks red too. */
+    @Test
+    void validateReportsPlainGraphQLErrorsWithAPositionToo()
+    {
+        String query = """
+                query psv_dry_bad($filter: ReservationFilter!) @view(title: "x")
+                { reservations(filter: $filter) { nosuchfield } }""";
+        List<ViewParamDirectives.Issue> issues = views.validateQuery(query);
+        assertFalse(issues.isEmpty());
+        assertTrue(issues.get(0).line() > 0, "expected a line for a schema error");
+    }
 }

@@ -5,6 +5,7 @@ import graphql.language.BooleanValue;
 import graphql.language.Directive;
 import graphql.language.Document;
 import graphql.language.OperationDefinition;
+import graphql.language.SourceLocation;
 import graphql.language.StringValue;
 import graphql.language.VariableDefinition;
 import graphql.parser.Parser;
@@ -73,6 +74,9 @@ public final class ViewParamDirectives
         return new Declarations(List.copyOf(params), hasWindow, windowInto);
     }
 
+    /** One validation problem, anchored to the offending directive so an editor can mark it red. */
+    public record Issue(String message, int line, int column) {}
+
     /**
      * Save-time validation of the declared input surface (PRD 074): every {@code @param.into}
      * must resolve to a real variable path in the schema, public names must be unique (and not
@@ -82,47 +86,117 @@ public final class ViewParamDirectives
      */
     public static List<String> validate(String queryText, GraphQLSchema schema)
     {
+        return validateWithPositions(queryText, schema).stream().map(Issue::message).toList();
+    }
+
+    /**
+     * Same checks as {@link #validate}, but each issue carries the source position of the
+     * directive that caused it — an editor cannot mark a line red without one. Walks the
+     * directives directly (rather than the parsed {@link Declarations}) precisely to keep hold
+     * of each {@link SourceLocation}.
+     */
+    public static List<Issue> validateWithPositions(String queryText, GraphQLSchema schema)
+    {
         OperationDefinition op = firstOperation(queryText);
         if (op == null) return List.of();
-        Declarations decl = parse(queryText);
-        if (decl.params().isEmpty() && !decl.hasWindow()) return List.of();
 
-        List<String> errors = new ArrayList<>();
+        List<Issue> issues = new ArrayList<>();
         Set<String> seen = new HashSet<>();
-        for (Param p : decl.params())
+        boolean hasWindow = op.getDirectives().stream().anyMatch(d -> "window".equals(d.getName()));
+
+        for (Directive d : op.getDirectives())
         {
-            if (p.name().isBlank() || p.name().contains("."))
+            SourceLocation loc = d.getSourceLocation();
+            if ("param".equals(d.getName()))
             {
-                errors.add("@param name '" + p.name() + "' must be a plain public key");
+                String name = stringArg(d, "name");
+                String into = stringArg(d, "into");
+                if (name == null || into == null)
+                {
+                    issues.add(issue(loc, "@param requires both 'name' and 'into'"));
+                    continue;
+                }
+                if (name.isBlank() || name.contains("."))
+                {
+                    issues.add(issue(loc, "@param name '" + name + "' must be a plain public key"));
+                }
+                if (!seen.add(name))
+                {
+                    issues.add(issue(loc, "@param name '" + name + "' is declared twice"));
+                }
+                if (hasWindow && ("from".equals(name) || "to".equals(name)))
+                {
+                    issues.add(issue(loc, "@param name '" + name
+                            + "' collides with the @window URL keys from/to"));
+                }
+                String pathError = resolveIntoPath(into, op, schema);
+                if (pathError != null) issues.add(issue(loc, pathError));
             }
-            if (!seen.add(p.name()))
+            else if ("window".equals(d.getName()))
             {
-                errors.add("@param name '" + p.name() + "' is declared twice");
+                String into = stringArg(d, "into");
+                String target = into != null ? into : "filter";
+                GraphQLType type = variableType(target, op, schema);
+                if (type == null)
+                {
+                    issues.add(issue(loc, "@window targets '" + target + "', which is not a declared"
+                            + " variable — declared variables: " + declaredVariableNames(op)));
+                }
+                else if (!(type instanceof GraphQLInputObjectType obj)
+                        || obj.getField("from") == null || obj.getField("to") == null)
+                {
+                    issues.add(issue(loc, "@window targets '" + target
+                            + "', whose type carries no from/to fields (a @window needs a date-range"
+                            + " input such as ReservationFilter)"));
+                }
             }
-            if (decl.hasWindow() && ("from".equals(p.name()) || "to".equals(p.name())))
-            {
-                errors.add("@param name '" + p.name() + "' collides with the @window URL keys from/to");
-            }
-            String pathError = resolveIntoPath(p.into(), op, schema);
-            if (pathError != null) errors.add(pathError);
         }
-        if (decl.hasWindow())
+        return issues;
+    }
+
+    private static Issue issue(SourceLocation loc, String message)
+    {
+        return new Issue(message, loc != null ? loc.getLine() : 1, loc != null ? loc.getColumn() : 1);
+    }
+
+    /** One legal {@code @param(into:)} target — a dotted path plus the GraphQL type it lands on. */
+    public record IntoPath(String path, String type) {}
+
+    /**
+     * PRD 074 — every dotted path a {@code @param(into:)} could legally target in this query:
+     * each declared variable, plus (one level down) the fields of any input-object variable.
+     * Feeds the editor's completion so it offers exactly what {@link #validate} would accept —
+     * one walk, so the two cannot disagree.
+     *
+     * <p>Depth is one level: rapla's filters are flat ({@code filter.allocatableIdsIn}), and
+     * nesting deeper ({@code filter.allocatableMatching.…}) would enumerate a combinatorial tree
+     * for no present use case.
+     */
+    public static List<IntoPath> intoPaths(String queryText, GraphQLSchema schema)
+    {
+        OperationDefinition op = firstOperation(queryText);
+        if (op == null) return List.of();
+
+        List<IntoPath> paths = new ArrayList<>();
+        for (VariableDefinition v : op.getVariableDefinitions())
         {
-            GraphQLType target = variableType(decl.windowInto(), op, schema);
-            if (target == null)
+            GraphQLType type = variableType(v.getName(), op, schema);
+            if (type == null) continue;
+            if (type instanceof GraphQLInputObjectType obj)
             {
-                errors.add("@window targets '" + decl.windowInto() + "', which is not a declared variable"
-                        + " — declared variables: " + declaredVariableNames(op));
+                for (GraphQLInputObjectField f : obj.getFields())
+                {
+                    paths.add(new IntoPath(v.getName() + "." + f.getName(),
+                            GraphQLTypeUtil.simplePrint(f.getType())));
+                }
             }
-            else if (!(target instanceof GraphQLInputObjectType obj)
-                    || obj.getField("from") == null || obj.getField("to") == null)
+            else
             {
-                errors.add("@window targets '" + decl.windowInto()
-                        + "', whose type carries no from/to fields (a @window needs a date-range input"
-                        + " such as ReservationFilter)");
+                // a scalar/enum variable is itself a legal target (e.g. into: "eventId")
+                paths.add(new IntoPath(v.getName(), GraphQLTypeUtil.simplePrint(type)));
             }
         }
-        return errors;
+        return paths;
     }
 
     /**

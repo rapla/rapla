@@ -62,6 +62,47 @@ public class ViewGraphQLController
         return v.queryText();
     }
 
+    /**
+     * PRD 074 — dry-run validation for the editor. Same checks as {@link #saveView}, stores
+     * nothing, and every issue carries a line/column so GraphiQL (Monaco-based) can mark it red.
+     * Admin-only: it reflects the schema shape, and authoring is an admin action.
+     */
+    @QueryMapping
+    public List<Map<String, Object>> validateView(@Argument("query") String query,
+            DataFetchingEnvironment env)
+    {
+        requireAdmin(env);
+        return catalog.validateQuery(query).stream()
+                .map(i -> Map.<String, Object>of(
+                        "message", i.message(), "line", i.line(), "column", i.column()))
+                .toList();
+    }
+
+    /**
+     * PRD 074 — the completion source for {@code @param(into: "…")}. Given the query being
+     * edited, enumerate the dotted variable paths it could legally target — the same walk the
+     * validator uses, so completion and validation cannot disagree.
+     */
+    @QueryMapping
+    public List<Map<String, Object>> intoPaths(@Argument("query") String query,
+            DataFetchingEnvironment env)
+    {
+        requireAdmin(env);
+        return catalog.intoPathsFor(query).stream()
+                .map(p -> Map.<String, Object>of("path", p.path(), "type", p.type()))
+                .toList();
+    }
+
+    private void requireAdmin(DataFetchingEnvironment env)
+    {
+        RequestCtx rc = RequestContextInstrumentation.from(env.getGraphQlContext());
+        User caller = rc.caller();
+        if (caller == null || !caller.isAdmin())
+        {
+            throw new IllegalStateException("admin required");
+        }
+    }
+
     @MutationMapping
     public Map<String, Object> saveView(
             @Argument("name") String name,
