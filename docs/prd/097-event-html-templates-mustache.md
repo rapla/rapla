@@ -339,6 +339,13 @@ query Kalender($filter: ReservationFilter!) @view(...) {
   consistent by construction, no cross-field validation needed. (Resolver edge: a Fr→Mo bar in a
   Mo–Fr view clips at Friday and continues Monday of the next strip — day-set gaps chunk like
   strip edges.)
+- **Grid window ⊇ filter window (decided 2026-07-14).** `strips` always snaps *outward* to full
+  strip boundaries (week start/end, respecting `weekdays`) — a July window starting Wednesday
+  gets the Mo 29.06. padding, and blocks on padding days ARE included (grid days show their
+  events; the SPA's `monthGridWindow` already behaves this way). **Larger grids are demand-driven
+  through the window itself, no extra argument**: widen `from`/`to` via `@window`/`?from=`/
+  `defaultVariables` — e.g. a Google-style stable 6-row month is
+  `@window(from: {anchor: MONTH_START}, to: {anchor: MONTH_START, offset: 6, unit: WEEKS})`.
 - **`lane`/`row` are list-scoped fields**: not per-block pure functions — the `appointmentBlocks`
   resolver computes them over the returned list (lazily, only when selected). Lanes are relative
   to the result set, which is exactly right for rendering that result; doc-comment it.
@@ -465,7 +472,17 @@ no code, no migration). The platform's only hard opinions remain the security on
       examples above as copy-paste starters; `@param`/`@window` from the author's perspective
       (public names, URL surface, required); the unified-vs-split view choice. Written alongside
       the first templates, linked from the template editor.
-- [ ] Open: `HTMLCompactWeekView` (timeslot/compact mode, 202 LOC) in scope or deferred?
+- **Indices are 1-based and CSS-ready (decided 2026-07-14):** `dayIndex`, `startDay`, `strip`,
+  `lane`, `row` all start at 1 and substitute verbatim into `grid-column`/`grid-row` (Mustache
+  cannot add 1; CSS grid lines are 1-based). `Bar` keeps `strip` + `row` separate — no
+  precomputed `gridRow`, which would bake a band-height formula into the schema; the template's
+  `calc()` composes them.
+- **`HTMLCompactWeekView` — deferred, and defused (decided 2026-07-14).** It is NOT the
+  Wochenprogramm list: it renders a **matrix** of named slot-rows × day-columns (compactweekview
+  plugin: one row per resource; timeslot plugin: one row per timeslot). Decomposed against the
+  primitives it is ~90% covered already — rows = `groups` (group by resource), columns =
+  `segments.dayIndex`, cells stack chips via CSS flow (no lanes, no minutes). When wanted, it is
+  a *template* plus at most one classification field (timeslot) — no new primitive family.
 
 ### Phase 6 — Calendar-export page replacement (the primary strategic goal)
 - [ ] Swap the hand-assembled HTML in `AbstractHTMLCalendarPage` for a stored template rendered by
