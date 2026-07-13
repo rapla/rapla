@@ -6,9 +6,17 @@ import graphql.language.Directive;
 import graphql.language.Document;
 import graphql.language.OperationDefinition;
 import graphql.language.StringValue;
+import graphql.language.VariableDefinition;
 import graphql.parser.Parser;
+import graphql.schema.GraphQLInputObjectField;
+import graphql.schema.GraphQLInputObjectType;
+import graphql.schema.GraphQLSchema;
+import graphql.schema.GraphQLType;
+import graphql.schema.GraphQLTypeUtil;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * PRD 074 §"Window and inputs directives" — the declared public-input surface of a stored view:
@@ -63,6 +71,127 @@ public final class ViewParamDirectives
             }
         }
         return new Declarations(List.copyOf(params), hasWindow, windowInto);
+    }
+
+    /**
+     * Save-time validation of the declared input surface (PRD 074): every {@code @param.into}
+     * must resolve to a real variable path in the schema, public names must be unique (and not
+     * shadow {@code from}/{@code to} when {@code @window} is declared), and a {@code @window}
+     * target variable must be an input object carrying {@code from}/{@code to}. A typo'd path
+     * is rejected here instead of surfacing as a silently-empty document render.
+     */
+    public static List<String> validate(String queryText, GraphQLSchema schema)
+    {
+        OperationDefinition op = firstOperation(queryText);
+        if (op == null) return List.of();
+        Declarations decl = parse(queryText);
+        if (decl.params().isEmpty() && !decl.hasWindow()) return List.of();
+
+        List<String> errors = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        for (Param p : decl.params())
+        {
+            if (p.name().isBlank() || p.name().contains("."))
+            {
+                errors.add("@param name '" + p.name() + "' must be a plain public key");
+            }
+            if (!seen.add(p.name()))
+            {
+                errors.add("@param name '" + p.name() + "' is declared twice");
+            }
+            if (decl.hasWindow() && ("from".equals(p.name()) || "to".equals(p.name())))
+            {
+                errors.add("@param name '" + p.name() + "' collides with the @window URL keys from/to");
+            }
+            String pathError = resolveIntoPath(p.into(), op, schema);
+            if (pathError != null) errors.add(pathError);
+        }
+        if (decl.hasWindow())
+        {
+            GraphQLType target = variableType(decl.windowInto(), op, schema);
+            if (target == null)
+            {
+                errors.add("@window targets '" + decl.windowInto() + "', which is not a declared variable"
+                        + " — declared variables: " + declaredVariableNames(op));
+            }
+            else if (!(target instanceof GraphQLInputObjectType obj)
+                    || obj.getField("from") == null || obj.getField("to") == null)
+            {
+                errors.add("@window targets '" + decl.windowInto()
+                        + "', whose type carries no from/to fields (a @window needs a date-range input"
+                        + " such as ReservationFilter)");
+            }
+        }
+        return errors;
+    }
+
+    /**
+     * Walk a dotted {@code into} path from its variable's declared type; null when it resolves.
+     * A failure names the alternatives ("available: …") — GraphiQL is CDN-loaded and cannot be
+     * given a completion provider for a directive's String argument, so the error message is the
+     * authoring affordance. (Monaco-side completion reuses this same walk — PRD 074 Phase 4.)
+     */
+    private static String resolveIntoPath(String into, OperationDefinition op, GraphQLSchema schema)
+    {
+        String[] path = into.split("\\.");
+        GraphQLType type = variableType(path[0], op, schema);
+        if (type == null)
+        {
+            return "@param into '" + into + "': '" + path[0] + "' is not a declared variable"
+                    + " — declared variables: " + declaredVariableNames(op);
+        }
+        for (int i = 1; i < path.length; i++)
+        {
+            if (!(type instanceof GraphQLInputObjectType obj))
+            {
+                return "@param into '" + into + "': '" + path[i - 1] + "' is not an input object,"
+                        + " so '" + path[i] + "' cannot be reached";
+            }
+            GraphQLInputObjectField field = obj.getField(path[i]);
+            if (field == null)
+            {
+                return "@param into '" + into + "': " + obj.getName() + " has no field '" + path[i]
+                        + "' — available: " + fieldNames(obj);
+            }
+            type = GraphQLTypeUtil.unwrapAll(field.getType());
+        }
+        return null;
+    }
+
+    /** The input object's field names, for the "available: …" hint. */
+    private static String fieldNames(GraphQLInputObjectType obj)
+    {
+        return obj.getFields().stream().map(GraphQLInputObjectField::getName)
+                .sorted().collect(java.util.stream.Collectors.joining(", "));
+    }
+
+    /** The operation's declared variable names, for the "declared variables: …" hint. */
+    private static String declaredVariableNames(OperationDefinition op)
+    {
+        return op.getVariableDefinitions().stream().map(VariableDefinition::getName)
+                .sorted().collect(java.util.stream.Collectors.joining(", "));
+    }
+
+    /** The unwrapped schema type of the operation variable {@code name}, or null if undeclared. */
+    private static GraphQLType variableType(String name, OperationDefinition op, GraphQLSchema schema)
+    {
+        for (VariableDefinition v : op.getVariableDefinitions())
+        {
+            if (!name.equals(v.getName())) continue;
+            graphql.language.Type<?> t = v.getType();
+            while (true)
+            {
+                if (t instanceof graphql.language.NonNullType nn) t = nn.getType();
+                else if (t instanceof graphql.language.ListType lt) t = lt.getType();
+                else break;
+            }
+            if (t instanceof graphql.language.TypeName tn)
+            {
+                return schema.getType(tn.getName());
+            }
+            return null;
+        }
+        return null;
     }
 
     private static OperationDefinition firstOperation(String queryText)

@@ -1048,9 +1048,22 @@ query Leihschein($eventId: ID!) @view(title: "Leihschein")
   private `into` translation, `from`/`to` accepted iff `@window`, missing `required`
   → the same 404 (§12). List values via repeated keys (`?resource=a&resource=b`),
   never comma-split (`RequestVariables` scar). Tier-3 suite: `DocumentParamGateTest`.
-- *Still open*: save-time validation of the directives (`into` resolves, `@window` only on
-  datetime paths, unique names); projecting `@param` into `extensions.view` for future SPA
-  controls (deferred with `ParamControl`).
+- *Save-time validation* (2026-07-13): `ViewParamDirectives.validate` runs after the standard
+  GraphQL validator on every `saveView` — `into` must resolve variable→input-object path in the
+  schema, public names unique and plain (no dots), no `from`/`to` shadowing when `@window` is
+  declared, `@window` target must carry `from`/`to`. Tier-3: `ViewParamSaveValidationTest`.
+- *`into` authoring affordance.* GraphiQL is CDN-loaded (`static/graphiql/index.html` pulls
+  GraphiQL 5 from esm.sh) and exposes no completion hook for a directive's **String** argument —
+  so `into` cannot be autocompleted there, and we do not try. Instead the **validation error names
+  the alternatives** (`… ReservationFilter has no field 'allocatableIdsInX' — available: …`),
+  which works in any editor. **Real completion folds into Phase 4's monaco-graphql editor**:
+  register a `graphql` completion provider that fires inside `@param(into: "…")` and offers the
+  paths from a server endpoint reusing `ViewParamDirectives.resolveIntoPath` — the exact pattern
+  the template editor already uses for `{{field}}` completion off `ResultShapeService`
+  (`static/template-editor/index.html`, `registerCompletionItemProvider`). Single walk, so
+  completion and validation cannot disagree.
+- *Still open*: projecting `@param` into `extensions.view` for future SPA controls (deferred
+  with `ParamControl`).
 
 ### SPA routing — `/app/views/:viewName`
 

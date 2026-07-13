@@ -213,7 +213,13 @@ public class ViewCatalogService
         {
             Document doc = Parser.parse(queryText);
             List<ValidationError> errors = new Validator().validateDocument(schema, doc, Locale.getDefault());
-            return errors.stream().map(ValidationError::getMessage).toList();
+            if (!errors.isEmpty())
+            {
+                return errors.stream().map(ValidationError::getMessage).toList();
+            }
+            // PRD 074 §"Window and inputs directives" — the @param/@window contract: a typo'd
+            // `into` path is rejected here, not discovered as a silently-empty document render.
+            return ViewParamDirectives.validate(queryText, schema);
         }
         catch (Exception e)
         {
