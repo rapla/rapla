@@ -219,7 +219,10 @@ The dev server is a Spring Boot application started via `mvn spring-boot:run` (n
 Quick essentials that stay inline:
 - Stop: `pkill -f 'RaplaSpringBoot[A]pplication'` (10 s graceful window — never `kill -9` first). The `[A]` avoids pkill matching the wrapping shell's own command line; **exit 144 from a compound stop command = pkill killed its own shell** — run pkill in its own Bash call, not chained with wait/status logic.
 - One server per checkout (port 8051 binds once); use a worktree per §7 for parallel work.
-- **Is the running server fresh (does it have your latest code)?** `curl -s localhost:8051/server | grep -o '[0-9-]\{10\} [0-9:]\{5\} GMT' | head -1` prints the build timestamp — compare against your last compile before assuming the process is stale; don't guess.
+- **Is the running server fresh (does it have your latest code)? Check yourself — never ask the user "did you restart?" and never assume they didn't.** One self-contained probe (empty output = server is fresh; listed files = it predates them):
+  `find rapla-app/target/classes -name '*.class' -newermt "$(curl -s localhost:8051/server | grep -o '[0-9-]\{10\} [0-9:]\{5\} GMT' | head -1 | sed 's/ GMT/:00Z/; s/ /T/')" | head`
+  *(the ISO-8601 conversion is required — `find` is `bfs` on this machine and rejects the raw `… GMT` string)*
+  Run it FIRST whenever (a) a user reports a server-side fix "doesn't work", or (b) you're about to attribute any symptom to a stale/restarted-or-not server. Only if it proves staleness may you mention restarting — with the probe output, not a hunch.
 - Never start the server during a `mvn package` build (`spring-boot:repackage` rewrites the same JAR).
 - **Testing an external plugin (e.g. dhbwrapla):** run `spring-boot:run` through the *plugin's* aggregator pom with `workingDirectory` pinned to the plugin checkout root — otherwise the plugin's relative-path dataset (`./data`, `./local`) resolves against rapla-app and boot fails on a missing plugin-seeded resource. Full recipe + the `-P<plugin-id>` runtime-dep wiring: `server-lifecycle` skill. Working inside a plugin checkout, read **that repo's `AGENTS.md` first** — it has plugin-specific knobs rapla's doesn't.
 

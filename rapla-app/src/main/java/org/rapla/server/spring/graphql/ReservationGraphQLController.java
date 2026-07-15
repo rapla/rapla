@@ -322,6 +322,10 @@ public class ReservationGraphQLController
         int keep = (int) Math.min(keepL, 20_000);
         java.util.PriorityQueue<AppointmentBlockDto> heap =
                 new java.util.PriorityQueue<>(cmp.reversed());   // max by cmp
+        // PRD 097 Phase 5 — the rendered day set DROPS blocks touching none of its days
+        // (a Saturday event in a Mo–Fr view disappears, it is not ghosted).
+        java.util.Set<java.time.DayOfWeek> daySet =
+                CalendarGridGraphQLController.parseWeekdays(filter.weekdays());
         List<AppointmentBlock> blocks = new ArrayList<>();
         for (Reservation r : visible)
         {
@@ -331,6 +335,8 @@ public class ReservationGraphQLController
                 a.createBlocks(from, to, blocks);
                 for (AppointmentBlock b : blocks)
                 {
+                    if (daySet != null && !CalendarGridLayout.touchesWeekdays(
+                            b.getStartDateTime(), b.getEndDateTime(), daySet)) continue;
                     AppointmentBlockDto dto = new AppointmentBlockDto(
                             b.getStartDateTime(), b.getEndDateTime(), b.isException(), r, a, b);
                     if (heap.size() < keep)
@@ -359,6 +365,10 @@ public class ReservationGraphQLController
         pageMeta.put("returned", page.size());
         pageMeta.put("hasMore", hasMore);
         env.getGraphQlContext().put(ViewMetaInstrumentation.PAGE_CTX_KEY, pageMeta);
+        // PRD 097 Phase 5 — stash the page + its window so the list-scoped geometry fields
+        // (AppointmentBlock.segments/bars) can lay out THIS result lazily on first selection.
+        env.getGraphQlContext().put(CalendarGridGraphQLController.GRID_PAGE_CTX_KEY, page);
+        env.getGraphQlContext().put(CalendarGridGraphQLController.GRID_FILTER_CTX_KEY, filter);
         return page;
     }
 
@@ -1123,7 +1133,8 @@ public class ReservationGraphQLController
                 (String) m.get("accessibleByUserId"),
                 (List<String>) m.get("accessibleByGroup"),
                 (String) m.get("accessLevel"),
-                (Integer) m.get("limit"));
+                (Integer) m.get("limit"),
+                (List<String>) m.get("weekdays"));
     }
 
     /** Mirror of {@code ReservationFilter} input from schema.graphqls. */
@@ -1141,7 +1152,8 @@ public class ReservationGraphQLController
             String accessibleByUserId,          // PRD 069
             List<String> accessibleByGroup,     // PRD 069
             String accessLevel,                 // PRD 069 — AccessLevel enum name
-            Integer limit) {}
+            Integer limit,
+            List<String> weekdays) {}           // PRD 097 Phase 5 — rendered day set (Weekday enum names)
 
     /** PRD 074 — sort direction, mirrors schema {@code SortDir}. */
     public enum SortDir { ASC, DESC }

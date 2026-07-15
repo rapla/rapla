@@ -44,7 +44,26 @@ final class RowGrouping
      */
     static List<Group> groupByColumn(List<Map<String, Object>> rows, String alias, String format)
     {
+        return groupByColumn(rows, alias, format, null);
+    }
+
+    /**
+     * PRD 097 Phase 5 — variant for grouping fields with a CONFIGURED domain (the timeslot bands):
+     * {@code domain} seeds one group per configured value, in configured order, so an empty band
+     * still renders as an empty section (the frame argument, band edition). Values outside the
+     * domain trail in first-seen order; the missing-value bucket stays last.
+     */
+    static List<Group> groupByColumn(List<Map<String, Object>> rows, String alias, String format,
+            List<String> domain)
+    {
         Map<String, List<Map<String, Object>>> buckets = new LinkedHashMap<>();
+        if (domain != null)
+        {
+            for (String value : domain)
+            {
+                if (value != null && !value.isEmpty()) buckets.put(value, new ArrayList<>());
+            }
+        }
         for (Map<String, Object> row : rows)
         {
             Object raw = row.get(alias);

@@ -72,26 +72,28 @@ public interface DocumentApi
     ResultShapeService.ShapeNode resultShape(@RequestBody ShapeRequest body) throws RaplaException;
 
     /** {@code variables} are the same request parameters the rendered document takes. */
-    record PreviewRequest(String viewName, String template, String defaultVariables,
+    record PreviewRequest(String viewName, String template, String defaultVariables, String window,
             Map<String, List<String>> variables) { }
 
-    /** Exactly one of {@code html} / {@code errorMessage} is set. {@code errorLine} drives the editor marker. */
-    record PreviewResult(String html, Integer errorLine, String errorMessage) { }
+    /** Exactly one of {@code html} / {@code errorMessage} is set. {@code errorLine} drives the editor
+     *  marker; {@code resolvedVariables} (pretty JSON) feeds the editor's variables pane. */
+    record PreviewResult(String html, Integer errorLine, String errorMessage, String resolvedVariables) { }
 
     /** Which view's shape to project. */
     record ShapeRequest(String viewName) { }
 
-    /** Catalog entry: everything but the template body. */
-    record DocumentSummary(String name, String viewName, boolean isPublic, List<String> groups,
+    /** Catalog entry: everything but the template body. {@code builtin} = shipped default, name-reserved. */
+    record DocumentSummary(String name, String viewName, boolean builtin, boolean isPublic, List<String> groups,
             boolean valid, List<String> invalidReason) { }
 
-    /** Editor payload. */
-    record DocumentSource(String name, String viewName, String template, boolean isPublic,
-            List<String> groups, String defaultVariables, boolean valid, List<String> invalidReason) { }
+    /** Editor payload. {@code builtin} documents load as starter kits — saving needs a NEW name. */
+    record DocumentSource(String name, String viewName, String template, boolean builtin, boolean isPublic,
+            List<String> groups, String defaultVariables, String window, boolean valid,
+            List<String> invalidReason) { }
 
-    /** Editor save payload; {@code name} comes from the path. */
+    /** Editor save payload; {@code name} comes from the path. {@code window} = document-level anchors. */
     record SaveDocumentRequest(String viewName, String template, boolean isPublic, List<String> groups,
-            String defaultVariables) { }
+            String defaultVariables, String window) { }
 
     /** Empty {@code errors} means stored. */
     record SaveResult(List<String> errors) { }

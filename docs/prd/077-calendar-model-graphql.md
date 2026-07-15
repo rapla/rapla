@@ -112,18 +112,13 @@ for tables) — that ships first. The function/composition engine ([PRD 073](073
    `AppointmentBlock.color` field sufficed; `extensions.view` stays column-shaped
    and the month grid renders client-side from the flat rows.
 6. Migration path for existing CalendarModels.
-7. **Week grid → standard Google-Calendar behaviour** (noted 2026-07-14; own session — it has its
-   own challenges). Today the SPA week grid autofits the whole day into the viewport
-   (`week-grid-autofit`) and splits multi-day blocks into per-day segments with continuation
-   markers (`week-lanes.ts`). The Google-standard model differs:
-   - **Scrollable time grid, fixed chrome** — the day/date header (and an all-day band) stay
-     pinned while the hour grid scrolls to a sensible default (e.g. 07:00), instead of squeezing
-     00–24 into the viewport. The named challenge: **is the header inside or outside the scroll
-     container?** Outside = sticky header + a separate scroll area, but then column widths must
-     be kept in sync across two grids (the current template deliberately uses ONE grid because
-     the header text's min-content would otherwise drift the columns apart —
-     `week-grid.component.ts`); inside (`position: sticky` on row 1) keeps one grid but
-     constrains chrome/print handling (`@media print` currently relies on the autofit layout).
+7. **Week grid → standard Google-Calendar behaviour** — *Resolved 2026-07-14.* Full SPA render
+   model in [§ SPA week grid render model (OQ7 resolved 2026-07-14)](#spa-week-grid-render-model-oq7-resolved-2026-07-14).
+   Autofit is replaced by a **full-day fixed raster scrolled to worktime** — Swing's own behaviour
+   (`SwingWeekView.scrollToStart()`), not a Google divergence — on a **one-grid, three-sticky-region**
+   skeleton (day-header / hour-gutter / corner, settling "header inside or outside the scroll?" as
+   *inside, as sticky regions of one grid*), with **worktime shading** fed by a new `CalendarOptions`
+   GraphQL query, and an **all-day/multi-day banner band**:
    - **All-day / multi-day banner band** in the header — **decided 2026-07-14: Rule B is the
      model** (`banner` ⇔ `wholeDay` OR a full calendar day lies inside `[start, end)`; NOT a
      duration threshold — Mon 16:00→Tue 16:00 is 24h without a covered day → grid; night shifts
@@ -134,5 +129,124 @@ for tables) — that ships first. The function/composition engine ([PRD 073](073
      option** — the SPA week grid must adopt the band in the same arc so the same event never
      renders differently in `/app` vs a document; ideally the SPA consumes the same fields,
      beginning the `week-lanes.ts` retirement.
-   - Also in the Google bundle, to be scoped then: current-time indicator, scroll-to-now on open,
-     fixed hour raster (scrolling replaces autofit).
+   - Rest of the Google bundle — current-time indicator, scroll-to-worktime on open, fixed hour
+     raster replacing autofit — all resolved in the section.
+
+## SPA week grid render model (OQ7 resolved 2026-07-14)
+
+The SPA week grid's rendering half of OQ7, locked in the 2026-07-14 design session. It **consumes
+the [PRD 097 § Phase 5](097-event-html-templates-mustache.md#phase-5--2d-time-grid-rendering-the-layout-engine-half)
+server geometry** (`segments`, `banner`, `bandBars: bars(scope: BANNER)`, `wholeDay`) instead of
+computing layout client-side — so the *same* event never renders differently in `/app` vs a
+document, and `week-lanes.ts` (then `month-chunks.ts`) retire. This section owns the half 097 does
+**not**: the on-screen render/scroll model, worktime, the banner *interaction*, and print. (The
+multi-day classification is server-side and settled — Rule B; there is no client-side Rule A/B
+staging.)
+
+### Vertical model — full-day fixed raster + scroll-to-worktime (Swing parity)
+
+Replaces **autofit** (`week-grid-autofit` — the whole day squeezed into the viewport). The axis is
+a **fixed** hour raster (`rowSize × rowsPerHour`); the body renders the **full day 00:00–24:00**
+and the scroller is positioned to **worktime-start** on open — a direct port of
+`SwingWeekView.scrollToStart()` (`y = rowScale.getStartWorktimePixel()`), plus a live per-minute
+**now-line** (the red line + `nowTop()` exist today, static). Rejected alternatives: *Model 1
+clamped range* (axis = worktime ∪ data-extent — jitters as data loads / pages change) and *Model 3
+hybrid collapse* (collapsible empty-night strips — most code). Full-24 wins on **zero layout
+jitter** and is what Swing / Google / Outlook all do.
+
+### Worktime shading + `CalendarOptions` over GraphQL (new server slice)
+
+Hours inside `[worktimeStart, worktimeEnd]` render normal; outside greyed
+(`LargeDaySlot.NON_WORKTIME_BACKGROUND` parity), overnight-aware via `WorktimeRange.isOvernight`.
+This needs calendar options the SPA **cannot see today** — a new read query exposing per-user
+(→ system fallback) `worktimeStartMinutes`, `worktimeEndMinutes`, `rowsPerHour` (rapla default
+**4**; the SPA currently hardcodes a local 2), `firstDayOfWeek`, `excludedDays`, `worktimeOvernight`.
+Read-only for v1 — the SPA calendar-options **editor** is a separate future item (the
+`WorktimeRange` javadoc already anticipates "the Angular calendar-options form"). The grid's
+`rowsPerHour` `<select>` becomes a **per-session override** of the configured default (ephemeral
+runtime state). `firstDayOfWeek` + `excludedDays` are honoured (the grid hardcodes Monday via
+`mondayOf` today; excluded days drop their column, Swing-style).
+
+### Layout skeleton — one grid, three sticky regions
+
+Today's **two** grids (`.hdr` + `.body`, column-aligned by duplicated `minmax(px,fr)`) unify into
+**one** CSS grid with `position: sticky` on the day-header row (`top:0`), the hour-gutter column
+(`left:0`), and the corner cell — the CSS equivalent of Swing's `JScrollPane`
+column-header / row-header / corner. This settles OQ7's "header inside or outside the scroll?"
+question: **inside, as sticky regions of one grid** — columns can't drift (single grid) and
+horizontal scroll stays synced for free. This unification is the **long pole** of the feature and a
+prerequisite for the sticky banner band.
+
+### Banner band — interaction (classification + geometry are server-side, Rule B)
+
+Classification (`banner`) and geometry (`bandBars`, `segments`) come from the server; the SPA
+renders the band as sticky chrome between the day header and the time grid, and owns the
+**interaction**, resolved so a date-granular band never edits a time it can't express:
+
+- **Move** a bar → whole-day steps (changes dates, preserves time-of-day; reuses the grid's
+  `moveBlock` with `minuteDelta: 0`).
+- **Resize** a bar → whole-day `+24h` steps — a **new verb shape** `{endDayDelta}`, distinct from
+  the grid's minute-of-day `resizeBlock`. Both map to the PRD 101 `moveAppointment` / resize verbs.
+- **Minute/time edits** happen in the **grid**; the multi-day case opens the **editor**
+  (double-click). This is interaction-complete **and** eliminates mid-gesture band↔grid migration
+  (day-steps can't cross the "covers a full day" threshold; shrinking below it only happens in the
+  editor, where a full re-layout is expected).
+
+### Band overflow (#3) + print (#4)
+
+- **#3 — band too tall on screen.** Cap at ~3 rows; overflow into a per-day **"+N more"** chip that
+  expands the band (Google model). Expanding shrinks the sticky chrome → **re-run
+  scroll-to-worktime** so working hours aren't pushed out of view. `expanded` is ephemeral; the cap
+  is **screen-only**. A resource scheduler makes this real (many multi-day bars).
+- **#4 — stacked print can't span.** Banner-class blocks render per target, all from the server
+  fields:
+
+  | Target | Banner render | Cap |
+  |---|---|---|
+  | Screen | spanning bars in the sticky band (`bandBars`) | capped (#3), expandable |
+  | Print — grid | same band, days side by side | **uncapped** (paper has no "+N more") |
+  | Print — stacked | per-day **strip** of that day's `segments` + ‹ › markers | n/a |
+
+  Grid vs stacked print is unchanged (`printMode()` — side-by-side while every lane keeps
+  ≥ `PRINT_MIN_LANE_PX`, else stack days). **Print clamps the hour range** to `worktime ∪
+  data-extent` (not the full-24 screen raster) so stacked days stay compact and empty nights aren't
+  printed; print continues to pin `--wg-hpx: 48px`. The shared week axis keeps full horizontal
+  time-comparison in grid print; stacked print keeps the identical per-day scale but loses the
+  horizontal sweep (an existing property of stacked mode, not new).
+
+### Robustness — the SPA must render when the server hasn't set everything
+
+The SPA **prefers server data, never hard-depends on it.** Three "not set" cases, each with a
+fallback so the grid always renders:
+
+1. **`CalendarOptions` absent/partial** (old server, or unconfigured deployment/user) → client
+   defaults: worktime 8–18, `rowsPerHour` 4, Monday first, no excluded days. The options query is
+   an enhancement, not a gate.
+2. **Geometry fields absent** (`segments` / `banner` / `bandBars` — a server without
+   [PRD 097 § Phase 5](097-event-html-templates-mustache.md#phase-5--2d-time-grid-rendering-the-layout-engine-half),
+   *or* a custom `@view` that doesn't select them; 097 makes them lazy-on-selection) → compute
+   client-side via the existing `week-lanes.ts` (`layoutWeek` for segments + Rule B for `banner` +
+   bars stacking for `bandBars`).
+3. **Mixed** → per-field: use the server value when present, else compute that one field.
+
+**Committing to Rule B is what makes this safe:** it is a single fixed semantics (no per-view rule
+argument — 097), so the client fallback (`wholeDay || fullDayCovered`) reproduces the server's
+`banner` classification **identically**. A configurable rule would let `/app` diverge from a
+document; one rule cannot.
+
+**Consequence for `week-lanes.ts`:** it is **demoted to the fallback tier, not deleted.** Phase C
+adds a "prefer-server-geometry" consumption path; full retirement is a **later** step gated on the
+server *always* providing geometry *and* every view selecting it (never guaranteed for arbitrary
+custom views). The earlier "retiring `week-lanes.ts`" framing (and 097's "consolidation option")
+is the aspiration, not a Phase-C deliverable.
+
+### Plan (phased)
+
+- **Phase A — scrollable grid core.** `CalendarOptions` GraphQL query (+ client defaults per the
+  robustness note) + client threading; one-grid three-sticky-region skeleton; full-day fixed raster
+  + scroll-to-worktime; worktime shading; live now-line; print range-clamp. *(No banners.)*
+- **Phase B — week composition options.** Honour `firstDayOfWeek` + `excludedDays`.
+- **Phase C — banner band, prefer server geometry.** Consume server `segments` / `banner` /
+  `bandBars` (Rule B) when present, else client fallback (`week-lanes.ts`); screen spanning bars;
+  #3 overflow cap + reclamp; #4 print routing; banner day-granular move/resize verbs. Lands **with**
+  PRD 097 Phase 5 so `/app` and documents share one geometry implementation for the builtin view.

@@ -93,6 +93,48 @@ class DocumentRendererTest
                 "Handlebars-only syntax must not silently compile");
     }
 
+    /**
+     * PRD 097 partials, step 1 (2026-07-15) — BUILTIN partials only: {@code {{> rapla/nav}}}
+     * resolves against the server-shipped catalog, so templates share the nav block without
+     * copy-paste. Custom partials (admin-saved, editor mode, dependency tracking) are a later
+     * step.
+     */
+    @Test
+    void builtinNavPartialRendersTheSharedNavBlock()
+    {
+        Map<String, Object> model = Map.of("nav", Map.of(
+                "prevUrl", "?date=2026-03-01", "todayUrl", "?",
+                "nextUrl", "?date=2026-03-09", "label", "02.03.2026 – 08.03.2026"));
+
+        String html = renderer.render("{{> rapla/nav}}", model);
+
+        assertTrue(html.contains("<nav class=\"rapla-nav\">"), html);
+        // {{ }} escapes '=' to &#x3D; — browsers decode entities in attributes, and the
+        // sanitizer re-serializes to a plain '=', so the link is intact on the wire.
+        assertTrue(html.contains("2026-03-09"), html);
+        assertTrue(html.contains("Heute"), html);
+    }
+
+    @Test
+    void unknownPartialFailsValidationWithItsLine()
+    {
+        // JMustache loads partials lazily at EXECUTE (self-inclusion guard), so plain compile
+        // would accept a dangling name — validate() must catch it itself, engine-truthfully.
+        Optional<DocumentRenderer.TemplateError> error = renderer.validate("ok\n{{> rapla/nope}}");
+
+        assertTrue(error.isPresent(), "a dangling partial reference must not validate");
+        assertEquals(2, error.get().line());
+        assertTrue(error.get().message().contains("rapla/nope"), error.get().message());
+    }
+
+    @Test
+    void unknownPartialInsideANeverExecutedSectionStillFailsValidation()
+    {
+        // Lazy loading means render(empty data) never resolves a partial inside an empty
+        // section — validation must not depend on execution reaching the reference.
+        assertTrue(renderer.validate("{{#rows}}{{> nope}}{{/rows}}").isPresent());
+    }
+
     @Test
     void compiledTemplatesAreMemoizedByContentHash()
     {

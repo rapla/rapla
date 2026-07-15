@@ -14,9 +14,13 @@ public record DocumentEntry(
         String name,
         String viewName,
         String template,
+        boolean builtin,
         boolean isPublic,
         List<String> groups,
         String defaultVariables,
+        /** PRD 097 (2026-07-15) — document-level window anchors JSON (presentation policy;
+         *  wins over the view's {@code @window} default). Null = inherit the view's default. */
+        String window,
         boolean valid,
         List<String> invalidReason)
 {

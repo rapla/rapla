@@ -92,6 +92,7 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
             {
                 meta.put("groupBy", c.get("alias"));
                 if (c.get("format") != null) meta.put("groupFormat", c.get("format"));
+                if (c.get("field") != null) meta.put("groupField", c.get("field"));
                 hasGroup = true;
                 break;
             }
@@ -484,6 +485,9 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
         Map<String, Object> c = new LinkedHashMap<>();
         String alias = col.getAlias() != null ? col.getAlias() : col.getName();
         c.put("alias", alias);
+        // PRD 097 Phase 5 — the underlying field name (alias-independent): lets the document
+        // pipeline recognize configured-domain grouping fields (`band: timeslot @column(group:true)`).
+        c.put("field", col.getName());
         Directive column = findDirective(col.getDirectives(), "column");
         boolean hidden = findDirective(col.getDirectives(), "hidden") != null;
         applyPresentation(c,

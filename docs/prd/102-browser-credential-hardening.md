@@ -251,8 +251,10 @@ URL to validate/get wrong).
 → **can't ride the reader's session**; it authenticates via a **capability token** (hidden field) minted
 server-side at render, bound to a **declared** save (entity+fields+action), `write` scope, short TTL. A
 dedicated submit endpoint validates the token (not cookies), performs only the declared save, §12/§16
-enforced. **POST not GET** (§16). Embedded docs may instead `postMessage` the save to the SPA parent
-(keep `form-action 'none'`); standalone docs use the native-form path.
+enforced. **POST not GET** (§16). ~~Embedded docs may instead `postMessage` the save to the SPA parent
+(keep `form-action 'none'`); standalone docs use the native-form path.~~ *(Dead per OQ4, 2026-07-15:
+the embedded surface is read-only static-tier — [PRD 097 Phase 7](097-event-html-templates-mustache.md#phase-7--spa-integration) — so saves only ever
+happen standalone via the native-form path.)*
 
 **Submit-endpoint registry (the `form-action` allowlist).** The sibling of the component registry and
 the script allowlist: `key → { url, allowed document names, capability scope, declared-save shape }`,
@@ -471,7 +473,14 @@ sanitization is the interim in-SPA defense.
 - **OQ4 — interactive documents: embedded vs standalone.** Are they shown **inside the SPA** (→
   `postMessage`-brokered data/save, keep `form-action`/`connect-src` at `'none'`) or at **standalone
   URLs** (→ native-form save + capability + `form-action <endpoint>`)? Decides the save/data plumbing for
-  the interactive tier. *Resolution:* pending.
+  the interactive tier. *Resolution (2026-07-15):* **standalone.** The question collapsed under
+  [PRD 097 Phase 7](097-event-html-templates-mustache.md#phase-7--spa-integration) (reshaped
+  2026-07-14): the embedded SPA surface — itself a later stage, unbuilt — is decided as
+  **read-only static-tier**: components and saves never render inside the SPA. Interactive documents therefore exist only at standalone URLs, and the save
+  plumbing is exactly D7's native `<form>` POST + sealed write-capability. The `postMessage`-to-parent
+  save branch in D7 is dead, not deferred. This also fit the driving use cases independently: the
+  mail-approval / external-borrower / available-times flows have a clicker with no SPA and no session,
+  which only the standalone capability path can serve.
 
 ## Decisions locked
 
@@ -515,7 +524,8 @@ authoring Angular templates (reintroduces SSTI).
 
 **D7 — save via native `<form>` POST + scoped write-capability.** Cookieless (opaque origin → no session
 ride), capability minted server-side for a *declared* save, short TTL, dedicated submit endpoint, §12/§16
-enforced, POST not GET. Embedded docs may `postMessage`-to-parent instead. Full write-path contract —
+enforced, POST not GET. ~~Embedded docs may `postMessage`-to-parent instead.~~ *(dead per OQ4: saves are
+standalone-only — the embedded surface, when it lands, is read-only)*. Full write-path contract —
 the **submit-endpoint registry** (`form-action` allowlist, keyed `pluginname.method`), the **capability
 seal** (sealed-not-hidden, `exp`-in-plaintext, trust-only-the-seal, choice-bounded-by-the-seal,
 server-event-mintable), and **state-based consumption** (atomic optimistic-concurrency check; explicit

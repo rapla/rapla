@@ -1,4 +1,4 @@
-# PRD 097 — Event HTML templates (stored Mustache over GraphQL views)
+eva# PRD 097 — Event HTML templates (stored Mustache over GraphQL views)
 
 **Status:** draft — 2026-07-08
 **Related:** [PRD 074](074-graphql-declarative-views.md) (declarative GraphQL views — the stored-view + `@view` mechanism this reuses),
@@ -278,8 +278,9 @@ Qute→param declarations) — ours is the referenced view's selection set, the 
 > **Design rethought 2026-07-13** — the `CalendarLayoutEngine` concept from
 > [PRD 030](030-server-side-view-rendering.md)/[PRD 024](024-server-side-edit-services.md) predates the template+GraphQL model (stored views, D3,
 > `@param`, `RowGrouping`, the document pipeline) and is **superseded by the leading design
-> below**: there is no layout engine at all. Leading candidate, not yet implementation-locked —
-> details may shift when the first template is built against it.
+> below**: there is no layout engine at all. **Implemented 2026-07-14** (schema + resolvers +
+> seed templates + `docs/templates.md`; see the plan checkboxes) — only the golden
+> content-parity tests vs `AbstractHTMLCalendarPage` remain open, as Phase-6 preparation.
 
 **Premise — whatever the template CAN do, the server must not do.** A Mustache template CAN do
 geometry: it substitutes *numbers* into inline styles (`style="grid-row: {{startMin}} /
@@ -459,21 +460,38 @@ no code, no migration). The platform's only hard opinions remain the security on
 
 **Plan (contours; sized ~600–1,000 LOC total, algorithmic risk zero):**
 
-- [ ] Schema + resolvers: `strips(filter:)`, per-block `segments`/`bars` (list-scoped lane/row
-      computation, lazy on selection; `bars(scope: ALL|BANNER)`), `banner` (Rule B) + `wholeDay`
-      + `timeslot` (TimeslotProvider-configured), numeric fields; `ReservationFilter.weekdays`;
-      `RowGrouping` empty groups for configured-domain grouping fields.
-- [ ] Seed templates proving the contract end-to-end: **Tagesliste** (needs NO Phase-5 fields —
-      Phase-3 `groups` only, buildable today; ships as the simplest docs example),
-      **Wochenprogramm** (timeslot × day matrix — dhbw's standard weekly view; `strips` +
-      grouped `timeslot` + `segments { dayIndex }`), **week** and **month** — covering **both authoring
-      shapes**: one unified view rendered through multiple templates AND split sibling views, so
-      neither path rots. (Resource × day compact view: deferred — an authoring task over
-      `groups` × `dayIndex` when wanted.)
-- [ ] Golden tests against the current `AbstractHTMLCalendarPage` for a fixture calendar —
-      **content parity** (which block, which day, which lane, which colour), not byte parity: the
-      old `<table>` geometry is not reproducible by a template that does its own layout, by design.
-- [ ] **Template-authoring documentation** (`docs/templates.md`): how a document = view + template
+- [x] Schema + resolvers (landed 2026-07-14): `strips(filter:)`, per-block `segments`/`bars`
+      (list-scoped lane/row computation, lazy on selection + memoized per request via
+      `GraphQlContext`; `bars(scope: ALL|BANNER)`), `banner` (Rule B) + `wholeDay`
+      + `timeslot` (TimeslotProvider-configured); `ReservationFilter.weekdays`;
+      `RowGrouping` empty groups for configured-domain grouping fields
+      (`ViewMetaInstrumentation` now emits `groupField`; domain = timeslot labels).
+      Pure layout core: `CalendarGridLayout` (rapla-app graphql pkg) — the faithful Java port of
+      `week-lanes.ts` (resolveConflicts + mergeSlots + 5-min collision floor) and
+      `month-chunks.ts` (EventCalendar stacking with unit row heights). 31 plain-JUnit layout
+      tests + 6 tier-3 GraphQL tests (`CalendarGridLayoutTest`, `CalendarGridGraphQLTest`).
+      Two small implementation-time shifts from the sketch: `Segment` also carries `strip`
+      (multi-strip windows would otherwise make `dayIndex` ambiguous), and blocks outside the
+      flat `appointmentBlocks` list (nested `Appointment.blocks`) answer empty geometry.
+- [x] Seed templates proving the contract end-to-end (landed 2026-07-14 as the test-pinned
+      copy-paste starters in `docs/templates.md` + `CalendarTemplateRenderingTest` — there is no
+      artifact-store seeding mechanism, deliberately: seeds are docs, not migrations):
+      **Tagesliste** (needs NO Phase-5 fields), **Wochenprogramm** (timeslot × day matrix,
+      grouped `timeslot` bands incl. empty ones, Mo–Fr via `weekdays`), **week** and **month** —
+      covering **both authoring shapes**: one unified `seed_kalender` view rendered through week
+      AND month templates (window pinned per document) plus split sibling views.
+      ⚠️ Convention pinned: the DATA field is selected FIRST, `strips` after — columns/`groupBy`
+      derive from the first root field (pre-existing `ViewMetaInstrumentation` behavior).
+      (Resource × day compact view: deferred — an authoring task over `groups` × `dayIndex`.)
+- [ ] ~~Golden tests against the current `AbstractHTMLCalendarPage`~~ **downgraded 2026-07-14**:
+      Phase 6 became a two-path migration (legacy renderer stays the default, template path is a
+      per-calendar opt-in), so an exhaustive which-lane/which-colour parity harness is no longer
+      a launch gate. What remains is content-sanity tests for the Phase-6 default template
+      (every block present, right day, right label); `CalendarTemplateRenderingTest` already
+      pins the template pipeline itself.
+- [x] **Template-authoring documentation** (`docs/templates.md`, landed 2026-07-14 with the
+      orientation table + mental model verbatim, the named-grid-lines technique + calc()-in-
+      grid-lines caveat, `@param`/`@window` author view, unified-vs-split): how a document = view + template
       + window works end-to-end; the Mustache subset (logic-less, sections, `{{-index}}`); what the
       model contains (`data` roots, `groups`, `strips`, `segments`/`bars`, `params`); the
       number-substitution + CSS-grid technique; **the which-view-needs-what table above,
@@ -518,32 +536,205 @@ no code, no migration). The platform's only hard opinions remain the security on
   (`groupByWeekday`) — a future consolidation candidate like the geometry. Small open:
   `StripDay.label` is server-side formatting; format/locale should eventually be
   author-controllable like `@column(format:)`.
+- **Block CONTENT (what renders inside a block box) — decided 2026-07-14, split by surface.**
+  Documents: solved by construction — the template lays out any selected fields inside the
+  segment/bar div, free markup. SPA chips: the view's visible `@column`s render as structured
+  lines with a dedicated LOCATION slot (`isLocation`), author owns content-never-markup — the
+  full design is [PRD 100 D8](100-spa-block-renderer-unification.md#decisions-locked)
+  (view-columns-driven chip content; `@column(inBlock:)` parked as the non-breaking divergence
+  escape hatch). One `@column` contract drives table, grouped list, chip, and document data.
 - **`HTMLCompactWeekView` (resource × day matrix, compactweekview plugin) — deferred.**
   Decomposes into `groups` (row per resource) × `dayIndex` with chip-stacking cells — an
   authoring task when wanted, no new primitives expected.
 
-### Phase 6 — Calendar-export page replacement (the primary strategic goal)
-- [ ] Swap the hand-assembled HTML in `AbstractHTMLCalendarPage` for a stored template rendered by
-      the Phase-5 model, **behind the existing routes**: `/rapla/calendar(.csv)?`,
-      `/rapla/internal_calendar(.csv)?`. These URLs are 🔒-frozen (AGENTS.md §15 — external
-      subscribers depend on them literally); the migration changes the renderer, not the address.
-- [ ] **Authorization is inherited, not rebuilt**: `CalendarPageController` already gates on the
-      per-calendar publish flag (`AutoExportPlugin.HTML_EXPORT`, `CalendarPageController.java:169`)
-      and the URL-encryption preprocessor decrypts params before the controller sees them
-      (`ServerServiceConfig.java:221`). That is why this phase can land long before Phase 8.
-- [ ] Ship a default template reproducing today's output, so an untouched deployment sees no change;
-      the win is that an admin can now edit it.
+### Phase 6 — Calendar-export template path (the primary strategic goal) — ⏸ BLOCKED on OQ10
+
+> **Reshaped twice on 2026-07-14.** First: two-path migration, NOT a hard swap — a logic-less
+> template doing its own CSS-grid layout cannot visually reproduce the legacy rowspan-`<table>`
+> week page (conceded above: content parity, not byte parity); a hard swap would ship a visible
+> regression to every subscriber on day one. Then: **no switch yet either** — a per-calendar
+> renderer switch silently assumes the CalendarModel stays the publishing carrier, and that is
+> exactly what OQ10 has not decided. Until then the legacy path stays **completely untouched**
+> (no controller branch, no config surface) and Phase 6 does not start.
+
+**OQ10 — does CalendarModel survive as the publish carrier, or do documents replace it?**
+The frozen `/rapla/calendar?key=…` URLs resolve a stored per-user CalendarModel (selection tree,
+classification filters, view type, exclude days) and `AbstractHTMLCalendarPage` renders from it.
+The new world's publishing unit is the **document** (view + template + `defaultVariables`).
+Options, undecided 2026-07-14:
+
+- **(A) CalendarModel survives as carrier** — a per-calendar renderer switch ("Klassisch" vs
+  named template); at render time the controller DERIVES GraphQL variables from the CalendarModel
+  (selection → `filter`, exclude days → `weekdays`). Cost: the derivation bridge is real work, a
+  second variable-production path besides documents, and it entrenches CalendarModel.
+- **(B) CalendarModel legacy-frozen; documents are the only new path** — old URLs keep serving
+  existing subscribers through the untouched legacy renderer, forever byte-stable; anything
+  template-rendered is a document with its own URL (Phase 8 publish semantics). Optional
+  authoring aid: "create document from this calendar" converting the selection into
+  `defaultVariables` ONCE at authoring time. Cost: existing subscriber URLs never get the new
+  look — subscribers re-subscribe to a document URL.
+- **(C) Full replacement** — migrate exports into documents; `/rapla/calendar?key=` becomes a
+  shim resolving key → document. Cleanest end state, riskiest transition (live subscriber URLs,
+  incl. the encrypted-param semantics).
+
+Current lean (not decided): **B** — no derivation bridge, strongest URL-stability promise, ONE
+new-world publish concept; the "old vs new" boundary becomes old URL vs new document URL instead
+of a renderer flag. Decide in a dedicated session (dhbw subscriber-migration reality is the
+deciding input).
+
+**Idea feeding the B lean — the navigable document tree ("browse portal", 2026-07-15, not
+scheduled).** A seed set of interlinked documents mimics a browsable drill-down over the data:
+Fakultät → Studiengang → Kurse → Termine → Veranstaltung → Dozent. Every mechanism already
+exists: each level is a document; navigation is plain relative links carrying gated `@param`
+ids (`<a href="kurse?studiengang={{id}}">` — same static-tier CSP, script-free); §12 holds
+structurally (ids resolve in the reader's scope; unreadable = empty page = nonexistent). The
+data is a GRAPH, not a tree (a Dozent sits on many paths), so the breadcrumb shows the path
+TAKEN, carried **stateless in the URL as a `trail` param** (ids only; server resolves them to
+§12-checked names; a `rapla/breadcrumb` partial renders; the server model supplies the extended
+trail for downward links). **Session-held breadcrumbs were considered and rejected**: two tabs
+share one session (wrong crumbs), multi-pod would need store-backed UI state, and it breaks the
+"URL is the whole state" property (bookmark/share/back). Pages without a trail show their
+CANONICAL context as data ("hält Veranstaltungen in: …") instead. Prerequisites to verify:
+GraphQL vocabulary for category-tree pages (children-of-category, category path on an entity)
+and entity-by-id focus views. Right-sized pilot: two levels + breadcrumb (`kurse` list →
+`wochenplan?resource=…`). Strategic weight: a navigable document tree IS the published
+read-surface — something `/rapla/calendar` never was — strengthening option B.
+
+Landed ahead of the OQ10 decision ("just the default templates so we can test — we route later",
+2026-07-14):
+
+- [x] **Default templates shipped as BUILTIN views + documents** — 4 builtin views
+      (`rapla_wochenplan/_monatsplan/_tagesliste/_wochenprogramm`, each with a `@window` so they
+      render the CURRENT week/month untouched) + 4 builtin documents (`/api/documents/wochenplan`,
+      `monatsplan`, `tagesliste`, `wochenprogramm` — Wochenprogramm pins Mo–Fr via
+      `defaultVariables.weekdays`). `BuiltinDocuments.java`; name-reserved against save/delete;
+      listed alongside custom documents; `BuiltinDocumentsTest` is the schema-drift alarm for all
+      builtin view bodies. Instantly testable on a fresh server, NO routing — `/rapla/calendar`
+      stays untouched pending OQ10. The month template demonstrates the named-row-lines
+      technique; the month view aliases `s: index` on Strip (Mustache context-stack shadowing —
+      documented in `BuiltinDocuments`).
+
+- [x] **Document-level window anchors + view consolidation (decided + landed 2026-07-15).** The
+      window anchor is presentation POLICY and lives on the DOCUMENT (`DocumentMeta.window`, same
+      `{anchor, offset, unit}` JSON shape as the directive, resolved via `WindowResolver`); the
+      view's `@window` is demoted to a DEFAULT (fresh-document preview, GraphiQL, SPA seed — the
+      SPA drives its own window anyway and only reads the seed). Precedence, highest first: URL
+      `?from/?to` (gate opens when view OR document declares a window; document windows target
+      `filter`) → absolute dates in `defaultVariables` → document window → view `@window` →
+      render-mode default. A view's `@window` must never be semantically REQUIRED (windows scope
+      data, they don't define meaning). Consequence: builtin views consolidated **6 → 4** —
+      `rapla_wochenplan`/`rapla_monatsplan`/`rapla_tagesliste` merged into ONE **`rapla_kalender`**
+      (union selection + `tag` group column + `s: index` strip alias; week `@window` default);
+      only the `monatsplan` document carries a window override (one declaration per DIFFERENCE).
+      `rapla_wochenprogramm` stays separate (one group column per view — a future group-column
+      override would take the catalog to 3); `rapla_appointments`/`rapla_reservations` stay as
+      SPA contracts (interactive pole: raw material + plumbing vs. the declarative pole's
+      finished geometry — they may converge after PRD 077 OQ7, blocked on per-consumer selection
+      trimming). Accepted trade: every rapla_kalender document computes the union selection.
+      Editor carries `window` through save like `defaultVariables` (no UI yet — residue).
+      Regression: `BuiltinDocumentsTest` (monatsplan must render a month grid off the
+      week-default view).
+
+- [x] **Ad-hoc navigation via `?date=` — template-placed, not chrome (2026-07-15).** Windowed
+      documents get a `nav` MODEL entry (`prevUrl`/`todayUrl`/`nextUrl`/`label`, script-free
+      relative links — CSP and sandbox untouched); the template renders `{{#nav}}…{{/nav}}`
+      wherever it wants (`.rapla-nav` in the shell CSS is the offered default look; all builtin
+      templates lead with the block; renders in the editor preview too). *A first shell-chrome
+      bar was built and rejected same day — nav placement/look is presentation, and presentation
+      is the author's; chrome was invisible to the preview and needed a hidden enablement
+      trigger.* `?date=YYYY-MM-DD` = "resolve the window as if today were this day", gated like
+      `?from/?to` (windowed only, malformed → 400), and **ranked like them: a caller gesture
+      OUTRANKS stored defaults** — pinned-dates documents show their pinned range on the bare URL
+      but navigate away on click (no defaults surgery to enable nav). Prev/next are **unit-free**:
+      prev = window start − 1 day (the anchor snaps into the previous period), next = the
+      exclusive window end (first day of the next period) — weeks, months (Feb→Mar) and day-set
+      windows step correctly without knowing the unit. Declared `@param`s carry through the
+      links; explicit `?from/?to` are dropped (nav = back to anchored). Also fixed: caller
+      variables now **deep-merge** like the defaults layers (a `?resource=` no longer wipes
+      pinned `filter.weekdays`/dates — `ViewVariablesLayeringTest`). This front-runs the Phase 9
+      `<rapla-nav>` component deliberately: the `?date=` resolution is the substrate a rich nav
+      component would build on. `DocumentNavTest`; authoring guide: `docs/templates.md` § Navigation.
+      **Preview nav works and is a variables edit** ("full transparency", 2026-07-15): no href can
+      navigate the sandboxed srcdoc iframe (ANY relative href — even `#` — resolves against the
+      PARENT page URL and dead-ends in a browser error page; Playwright-verified), so the preview
+      shell carries the document system's ONE server-authored script — it prevents every link
+      click, postMessages nav targets (`data-nav-*` contract, neighbor windows resolved
+      server-side in `putNav`) to the editor, which writes `from/to` into the vars field and
+      re-previews; author absolute `http(s)` links escalate the same way and open in a new tab.
+      Editor iframe went `sandbox` → `sandbox="allow-scripts"` — still opaque-origin/cookieless,
+      author scripts still sanitized out (deliberate deviation from the fully-locked D6a preview
+      sandbox, same containment argument as 102 D4). Editor also gained a **Live ↗** link to the
+      saved document's real URL (carries `filter.from/to` as `?from/?to`).
+      *Open (design-dialogued 2026-07-15, not yet decided/built): shell-vs-template split — option
+      C "`<!doctype` = whole-page template, shell steps aside", shell slims to invariants, print
+      hint moves into the builtin templates. See conversation; implement on explicit go.*
+
+- [x] **URL-params unification + GET filter forms (2026-07-15, "anything that goes into the
+      params").** The editor's vars field now IS the document URL's query string: the preview
+      routes it through the SAME `gateParams` as the live render (public `@param` names +
+      `from/to/date` on windowed views; undeclared keys — including the old private-path style —
+      come back as editor messages where the live URL 400s; `?date=` navigates the preview
+      window identically). `Live ↗` (new toolbar link, saved documents only) opens the real URL
+      with the field verbatim. Static-tier documents may carry native **GET filter forms**
+      submitting to self: document CSP went `sandbox` → `sandbox allow-forms`, `form-action
+      'none'` → `'self'` (a GET to self reads, never writes — §16-clean; deliberately far short
+      of Phase 9's cross-origin capability-sealed write forms). In preview, a GET-form submit
+      escalates via `postMessage` (`rapla-preview-params`) and lands visibly in the vars field.
+      Form testing ladder (design, for Phase 9): validate-on-save (action key resolves) →
+      preview dry-run inspector (would-submit payload, never a real write) → Live ↗ (real
+      capability-sealed submit). `BuiltinDocumentsTest.previewSpeaksTheDocumentUrlParamLanguage`.
+
+- [x] **Builtin Mustache partials, step 1 (2026-07-15).** `{{> rapla/nav}}` +
+      `{{> rapla/print-hint}}` — the JMustache compiler got a template loader resolving the
+      server-shipped `BuiltinPartials` catalog (`rapla/*` reserved); all four builtin templates
+      lead with the nav partial instead of inlining the block. **The print hint thereby moved OUT
+      of the shell** (the first concrete piece of the shell-slims-to-invariants direction) and is
+      **opt-in only** — not even the default templates carry it (everyone knows Ctrl+P); hand-out
+      documents (Leihschein) reference it per template. Its `.rapla-print-hint` default styling
+      (incl. print-time hide) stays in the shell CSS. ⚠ JMustache resolves partials **lazily at execute** (self-inclusion guard),
+      so `DocumentRenderer.validate` scans `{{> name}}` references itself — a dangling name fails
+      validate-on-save with its line + the available catalog, even inside a never-executed
+      section. Builtin-only by design: static sources, no partial-in-partial (no cycles), no
+      editor mode needed. **Step 2 (custom, admin-saved partials) is deliberately deferred** — it
+      brings the editor consequences: a partial editing mode (no view/window controls,
+      preview-against-a-view), error *attribution* ("in partial X line 3" vs a wrong marker in
+      the host buffer), `{{>` autocomplete, and the dependency graph (partial save re-validates
+      dependents; delete needs a "used by N documents" guard) — the same shape the Phase 9
+      component registry will need. `DocumentRendererTest`.
+
+Retained regardless of the OQ10 outcome:
+
+- [ ] **Authorization is inherited, not rebuilt** on whatever bridge/shim exists:
+      `CalendarPageController` already gates on the per-calendar publish flag
+      (`AutoExportPlugin.HTML_EXPORT`, `CalendarPageController.java:169`) and the URL-encryption
+      preprocessor decrypts params before the controller sees them (`ServerServiceConfig.java:221`).
 - [ ] Free request parameters stay validated against the published artifact's own configuration —
       the existing `allocatable_id` ∈ `model.getSelectedAllocatablesAsList()` check
-      (`CalendarPageController.java:176-199`) is the pattern to preserve, not to loosen.
+      (`CalendarPageController.java:176-199`) is the pattern to preserve, not to loosen — on
+      every renderer path that ever exists.
+- [ ] Legacy deletion is a NON-goal: `AbstractHTMLCalendarPage` goes away only when it is dead in
+      practice or at a major release — never as a precondition for shipping the template path.
 
-### Phase 7 — SPA integration (secondary, drip-in)
-- [ ] Render the **static** parts of SPA view surfaces through stored templates where it buys
-      admin-editability. Interactive behaviour (drag-create, drag-move, selection, popups, undo
-      toasts — PRDs [094](094-spa-main-view-actions-and-popups.md)/[095](095-month-grid-render-mode.md)/[100](100-spa-block-renderer-unification.md)/[101](101-transpose-anchors-move-copy-paste.md)) stays in TypeScript: a logic-less template cannot carry it, and
-      forcing it in would trade a working interaction model for an editable one.
-- [ ] Deliberately last: nothing above depends on it, and the boundary between "static enough for a
-      template" and "must stay TS" is best drawn once the engine and editor exist in practice.
+### Phase 7 — SPA integration: READ-ONLY template rendering (reshaped 2026-07-14)
+
+> **Feasibility verdict (2026-07-14):** template-rendering INTERACTIVE SPA surfaces is rejected —
+> drag-move/resize re-layouts per gesture frame (client needs the layout algorithms anyway),
+> hybrid rendering creates two sources of geometry truth, and admin-editable DOM under hard-coded
+> interaction wiring makes the test matrix (interactions × arbitrary DOM) untestable by
+> construction. Interactive behaviour (drag-create/move, selection, popups, undo — PRDs
+> [094](094-spa-main-view-actions-and-popups.md)/[095](095-month-grid-render-mode.md)/[100](100-spa-block-renderer-unification.md)/[101](101-transpose-anchors-move-copy-paste.md)) stays TypeScript, with chip content author-controlled via
+> [PRD 100 D8](100-spa-block-renderer-unification.md#decisions-locked) (data, not markup).
+> What SURVIVES is the read-only half:
+
+- [ ] **"Document" as a read-only SPA render mode**: when a view has a template (a document
+      references it), the SPA can offer it as an additional read-only rendering — fetch the
+      server-rendered document and show it in a sandboxed container (the PRD 102 static-tier CSP
+      model: `script-src 'none'`, opaque origin). Print/reading/display surfaces get the admin's
+      styling; one renderer (the server's), no duplicated template engine in the browser.
+      Interaction limited to navigation-level affordances the SPA owns OUTSIDE the rendered HTML
+      (date nav re-requests with `?from=/?to=`, `@param` inputs from the view's declared surface).
+- [ ] Deliberately last, unchanged: nothing above depends on it, and which surfaces want the
+      document mode is best learned from real usage of the builtin documents.
 
 ### Phase 8 — Publish + capability URLs for document routes (last)
 - [ ] Only needed for **new** document URLs that must serve callers who cannot log in (an external
@@ -627,8 +818,9 @@ unaffected (they keep `script-src 'none'`; see the current `RaplaCspHeaderWriter
       default OFF, high-trust deployments only, never for AI/open-user content.
 
 Depends on: the shared **capability-mint primitive** ([PRD 102](102-browser-credential-hardening.md) Phase 2 — `{read}` base; this phase adds
-the **write**-scoped save capability on top). Blocked on **102 OQ4** (embedded-vs-standalone) for the
-save/data plumbing.
+the **write**-scoped save capability on top). ~~Blocked on **102 OQ4** (embedded-vs-standalone) for the
+save/data plumbing.~~ *(102 OQ4 resolved 2026-07-15: **standalone** — the embedded surface is read-only
+by Phase 7's reshape, so saves are native-form-only. No longer a blocker.)*
 
 ## Tests
 

@@ -75,10 +75,10 @@ public class DocumentCatalogService
         this.views = views;
     }
 
-    /** All documents visible to the caller, validated against the current view catalog. */
+    /** All documents visible to the caller: BUILTIN first, then validated CUSTOM. */
     public List<DocumentEntry> list(User caller)
     {
-        List<DocumentEntry> result = new ArrayList<>();
+        List<DocumentEntry> result = new ArrayList<>(BuiltinDocuments.ENTRIES);
         for (StoredArtifact listed : artifacts.list(StoredArtifact.KIND_DOCUMENT))
         {
             find(listed.getName()).filter(doc -> isVisible(doc, caller)).ifPresent(result::add);
@@ -86,9 +86,13 @@ public class DocumentCatalogService
         return result;
     }
 
-    /** Find by name, ignoring visibility (the render path gates separately). */
+    /** Find by name, ignoring visibility (the render path gates separately). BUILTIN first. */
     public Optional<DocumentEntry> find(String name)
     {
+        for (DocumentEntry b : BuiltinDocuments.ENTRIES)
+        {
+            if (b.name().equals(name)) return Optional.of(b);
+        }
         return artifacts.find(StoredArtifact.KIND_DOCUMENT, name).map(this::toEntry);
     }
 
@@ -108,12 +112,27 @@ public class DocumentCatalogService
     public List<String> save(String name, String viewName, String template, boolean isPublic,
             List<String> groups, String defaultVariables, User caller) throws RaplaException
     {
+        return save(name, viewName, template, isPublic, groups, defaultVariables, null, caller);
+    }
+
+    /** Variant carrying the document-level {@code window} anchors (PRD 097, 2026-07-15). */
+    public List<String> save(String name, String viewName, String template, boolean isPublic,
+            List<String> groups, String defaultVariables, String window, User caller) throws RaplaException
+    {
         // gate first: a non-admin must not be able to probe template/view validity through the
         // error channel (§12 — the response must not reveal what the caller may not see)
         artifacts.checkWrite(caller);
+        for (DocumentEntry b : BuiltinDocuments.ENTRIES)
+        {
+            if (b.name().equals(name))
+                return List.of("'" + name + "' is a built-in document name and cannot be overwritten");
+        }
         List<String> errors = validateForSave(viewName, template);
+        String windowError = DocumentWindow.validate(window);
+        if (windowError != null) errors = concat(errors, windowError);
         if (!errors.isEmpty()) return errors;
-        DocumentMeta meta = new DocumentMeta(viewName, isPublic, groups == null ? List.of() : groups, defaultVariables);
+        DocumentMeta meta = new DocumentMeta(viewName, isPublic, groups == null ? List.of() : groups,
+                defaultVariables, window);
         artifacts.save(StoredArtifact.KIND_DOCUMENT, name, template, MAPPER.writeValueAsString(meta), caller);
         return List.of();
     }
@@ -128,9 +147,13 @@ public class DocumentCatalogService
         artifacts.checkWrite(caller);
     }
 
-    /** Delete a document. Admin-only. False when it does not exist. */
+    /** Delete a document. Admin-only. False when it does not exist (or is BUILTIN). */
     public boolean delete(String name, User caller) throws RaplaException
     {
+        for (DocumentEntry b : BuiltinDocuments.ENTRIES)
+        {
+            if (b.name().equals(name)) return false;
+        }
         return artifacts.delete(StoredArtifact.KIND_DOCUMENT, name, caller);
     }
 
@@ -168,18 +191,18 @@ public class DocumentCatalogService
         {
             String metadata = artifact.getMetadata();
             meta = metadata == null || metadata.isBlank()
-                    ? new DocumentMeta(null, false, List.of(), null)
+                    ? new DocumentMeta(null, false, List.of(), null, null)
                     : MAPPER.readValue(metadata, DocumentMeta.class);
         }
         catch (Exception e)
         {
             LOGGER.warn("Ignoring unparseable metadata of document artifact {}", artifact.getId(), e);
-            meta = new DocumentMeta(null, false, List.of(), null);
+            meta = new DocumentMeta(null, false, List.of(), null, null);
         }
         List<String> errors = validateForRead(meta.viewName(), artifact.getBody());
-        return new DocumentEntry(artifact.getName(), meta.viewName(), artifact.getBody(),
+        return new DocumentEntry(artifact.getName(), meta.viewName(), artifact.getBody(), false,
                 meta.isPublic(), meta.groups() == null ? List.of() : meta.groups(), meta.defaultVariables(),
-                errors.isEmpty(), errors);
+                meta.window(), errors.isEmpty(), errors);
     }
 
     /**
@@ -204,6 +227,14 @@ public class DocumentCatalogService
         return false;
     }
 
+    private static List<String> concat(List<String> errors, String extra)
+    {
+        List<String> combined = new ArrayList<>(errors);
+        combined.add(extra);
+        return combined;
+    }
+
     /** Visibility + data-source metadata persisted as the artifact's metadata JSON. */
-    record DocumentMeta(String viewName, boolean isPublic, List<String> groups, String defaultVariables) { }
+    record DocumentMeta(String viewName, boolean isPublic, List<String> groups, String defaultVariables,
+            String window) { }
 }

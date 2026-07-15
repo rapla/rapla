@@ -78,7 +78,7 @@ public class DocumentController implements DocumentApi
     {
         User caller = jwtUserResolver.resolveCurrentUserOrNull();
         return documents.list(caller).stream()
-                .map(d -> new DocumentSummary(d.name(), d.viewName(), d.isPublic(), d.groups(),
+                .map(d -> new DocumentSummary(d.name(), d.viewName(), d.builtin(), d.isPublic(), d.groups(),
                         d.valid(), d.invalidReason()))
                 .toList();
     }
@@ -90,8 +90,8 @@ public class DocumentController implements DocumentApi
         documents.requireAuthor(caller);
         DocumentEntry d = documents.find(name)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        return new DocumentSource(d.name(), d.viewName(), d.template(), d.isPublic(), d.groups(),
-                d.defaultVariables(), d.valid(), d.invalidReason());
+        return new DocumentSource(d.name(), d.viewName(), d.template(), d.builtin(), d.isPublic(), d.groups(),
+                d.defaultVariables(), d.window(), d.valid(), d.invalidReason());
     }
 
     @Override
@@ -99,7 +99,7 @@ public class DocumentController implements DocumentApi
     {
         User caller = jwtUserResolver.resolveCurrentUserOrNull();
         List<String> errors = documents.save(name, body.viewName(), body.template(), body.isPublic(),
-                body.groups(), body.defaultVariables(), caller);
+                body.groups(), body.defaultVariables(), body.window(), caller);
         return errors.isEmpty()
                 ? ResponseEntity.ok(new SaveResult(List.of()))
                 : ResponseEntity.badRequest().body(new SaveResult(errors));
@@ -123,14 +123,44 @@ public class DocumentController implements DocumentApi
         Optional<DocumentRenderer.TemplateError> parseError = renderer.validate(body.template());
         if (parseError.isPresent())
         {
-            return new PreviewResult(null, parseError.get().line(), parseError.get().message());
+            return new PreviewResult(null, parseError.get().line(), parseError.get().message(), null);
         }
-        return renderService
-                .preview(body.viewName(), body.template(), body.defaultVariables(),
-                        RequestVariables.expand(body.variables()), author)
-                .map(html -> new PreviewResult(html, null, null))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "No such view, or it is not visible to you"));
+        try
+        {
+            // The vars field carries the document URL's raw query params — gated identically to
+            // the live render (PRD 097 § params, 2026-07-15). Gate problems become editor
+            // messages, not HTTP errors: the author is mid-edit, not mid-attack.
+            return renderService
+                    .preview(body.viewName(), body.template(), body.defaultVariables(), body.window(),
+                            body.variables(), author)
+                    .map(p -> new PreviewResult(p.html(), null, null, prettyVariables(p.variables())))
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                            "No such view, or it is not visible to you"));
+        }
+        catch (DocumentRenderService.UndeclaredParameterException e)
+        {
+            return new PreviewResult(null, null, "Unknown URL parameter — the vars field takes the "
+                    + "document URL's query params: declared @param names, plus from/to/date on "
+                    + "windowed views", null);
+        }
+        catch (DocumentRenderService.PreviewProblemException e)
+        {
+            return new PreviewResult(null, null, e.getMessage(), null);
+        }
+    }
+
+    /** The variables pane content: the resolved variables of the preview, pretty-printed. */
+    private static String prettyVariables(java.util.Map<String, Object> variables)
+    {
+        try
+        {
+            return tools.jackson.databind.json.JsonMapper.builder().build()
+                    .writerWithDefaultPrettyPrinter().writeValueAsString(variables);
+        }
+        catch (Exception e)
+        {
+            return String.valueOf(variables);
+        }
     }
 
     @Override

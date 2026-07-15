@@ -78,7 +78,46 @@ public class ViewCatalogService
                     + "    canModify @hidden\n"
                     + "    appointmentCount @hidden\n"
                     + "  }\n"
-                    + "}")
+                    + "}"),
+            // PRD 097 Phase 5 — the default calendar views behind the BUILTIN documents
+            // (DocumentCatalogService.BUILTIN_DOCUMENTS). Convention: data field FIRST, strips
+            // after (columns/groupBy derive from the first root field). rapla_kalender is the
+            // UNIFIED data contract (2026-07-15): its @window is only the DEFAULT — a document's
+            // own window anchors win (DocumentWindow), so wochenplan/tagesliste inherit the week
+            // and monatsplan overrides to the month. rapla_wochenprogramm stays separate for its
+            // timeslot group column (one group column per view). Strip.index is aliased `s` so
+            // the month template reaches the STRIP index from day/bar context (Mustache context-
+            // stack shadowing).
+            ViewEntry.builtin("rapla_kalender", "Kalender", """
+                    query rapla_kalender($filter: ReservationFilter!) @view(title: "Kalender")
+                      @window(from: {anchor: WEEK_START}, to: {anchor: WEEK_START, offset: 7})
+                      @param(name: "resource", into: "filter.allocatableIdsIn")
+                    {
+                      appointmentBlocks(filter: $filter) {
+                        tag: start @column(group: true, format: "EE dd.MM.")
+                        times @column(header: "Zeit", order: 1)
+                        name  @column(header: "Titel", order: 2)
+                        banner  color
+                        segments { dayIndex startMin endMin lane laneCount clippedStart clippedEnd }
+                        bars { strip startDay span row clippedStart clippedEnd }
+                        bandBars: bars(scope: BANNER) { startDay span row }
+                      }
+                      strips(filter: $filter) { index  s: index  days { index label } }
+                    }"""),
+            ViewEntry.builtin("rapla_wochenprogramm", "Wochenprogramm", """
+                    query rapla_wochenprogramm($filter: ReservationFilter!) @view(title: "Wochenprogramm")
+                      @window(from: {anchor: WEEK_START}, to: {anchor: WEEK_START, offset: 7})
+                      @param(name: "resource", into: "filter.allocatableIdsIn")
+                    {
+                      appointmentBlocks(filter: $filter) {
+                        name  times  color
+                        raum: allocatables(filter: {isPersonEq: false}) @join(separator: ", ") { name }
+                        band: timeslot @column(group: true)
+                        segments { dayIndex }
+                        bandBars: bars(scope: BANNER) { startDay span }
+                      }
+                      strips(filter: $filter) { days { index label } }
+                    }""")
     );
 
     private final ArtifactCatalogService artifactCatalog;

@@ -38,7 +38,17 @@ public class DocumentRenderer
             // what makes an injection payload inert instead of an error channel. Unknown-field
             // warnings are an editor concern (Phase 4), not a render-time failure.
             .nullValue("")
-            .defaultValue("");
+            .defaultValue("")
+            // {{> rapla/nav}} — builtin partials only (PRD 097 partials step 1). Loaded lazily
+            // at execute by JMustache; validate() checks references itself (see below).
+            .withLoader(name -> {
+                String source = BuiltinPartials.find(name);
+                if (source == null)
+                {
+                    throw new MustacheException("Unknown partial '" + name + "'");
+                }
+                return new java.io.StringReader(source);
+            });
 
     private final ConcurrentMap<String, Template> compiled = new ConcurrentHashMap<>();
 
@@ -48,18 +58,35 @@ public class DocumentRenderer
         return compile(templateBody).execute(data == null ? Map.of() : data);
     }
 
+    private static final Pattern PARTIAL_REF = Pattern.compile("\\{\\{\\s*>\\s*([^}\\s]+)\\s*\\}\\}");
+
     /** Engine-truthful validation: empty when the real compiler accepts the body. */
     public Optional<TemplateError> validate(String templateBody)
     {
         try
         {
             compile(templateBody);
-            return Optional.empty();
         }
         catch (MustacheException e)
         {
             return Optional.of(new TemplateError(lineOf(e), e.getMessage()));
         }
+        // JMustache resolves {{> partial}} lazily at EXECUTE (its self-inclusion guard), so a
+        // dangling name passes compile and would fail mid-render — or never, inside an empty
+        // section. Save-time truth requires checking the references here.
+        String body = templateBody == null ? "" : templateBody;
+        Matcher partial = PARTIAL_REF.matcher(body);
+        while (partial.find())
+        {
+            String name = partial.group(1);
+            if (BuiltinPartials.find(name) == null)
+            {
+                int line = 1 + (int) body.substring(0, partial.start()).chars().filter(c -> c == '\n').count();
+                return Optional.of(new TemplateError(line, "Unknown partial '" + name
+                        + "' — available: " + String.join(", ", BuiltinPartials.SOURCES.keySet())));
+            }
+        }
+        return Optional.empty();
     }
 
     int cacheSize()

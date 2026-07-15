@@ -113,6 +113,15 @@ type Query {
   # `{ offset, limit, returned, hasMore }`. Default sort = START ASC.
   appointmentBlocks(filter: ReservationFilter!, sort: [BlockSort!], offset: Int): [AppointmentBlock!]!
 
+  # PRD 097 Phase 5 — the day scaffold for 2D templates: the window snapped
+  # OUTWARD to full Monday-first weeks (grid window ⊇ filter window), one strip
+  # per week, days restricted by `weekdays`. Pass the SAME $filter variable as
+  # the data field so frame and data share one window by construction; only
+  # `from`/`to`/`weekdays` are read, every scope field is ignored (pure
+  # calendar math — §12-clean, no entity data). Larger grids are demand-driven
+  # through the window itself (e.g. a stable 6-row month via @window offsets).
+  strips(filter: ReservationFilter!): [Strip!]!
+
   # PRD 079 — grouped/bucketed analytics over the full matched set, as typed `data`
   # (not extensions). `groupBy` = dimensions (date bucket / §12 allocatable / custom
   # compute `expr`); `aggregate` = metrics (numeric block field × fn). Empty `groupBy`
@@ -348,7 +357,21 @@ input ReservationFilter {
   accessLevel:          AccessLevel = READ
   "Cap result size. Default 500, hard cap 5000."
   limit:             Int
+  """
+  PRD 097 Phase 5 — the rendered day set (null = all seven). One declaration,
+  both consumers: block-level queries DROP blocks touching none of these days
+  (a Saturday event in a Mo–Fr view disappears, it is not ghosted), and
+  `strips` builds its scaffold from the same set, so `dayIndex`/`startDay`
+  stay consistent by construction. Day-set gaps chunk `bars` like strip edges
+  (a Fr→Mo bar clips at Friday and continues Monday of the next strip).
+  Ignored by the reservation-level `reservations` query (a reservation has no
+  single day).
+  """
+  weekdays:          [Weekday!]
 }
+
+"PRD 097 Phase 5 — day-set selector for `ReservationFilter.weekdays` (ISO days, Monday-first weeks)."
+enum Weekday { MONDAY  TUESDAY  WEDNESDAY  THURSDAY  FRIDAY  SATURDAY  SUNDAY }
 
 """
 PRD 028 Phase 1 — string-match algorithm for power search.
@@ -1139,6 +1162,81 @@ type AppointmentBlock {
   durationMinutes: Int
   "PRD 074 — inline composition column: evaluates an arbitrary rapla expression (same language as a nameformat; p = the block) against this block, e.g. {p->concat(substring(times(p),0,5),substring(times(p),8,13))}. Invalid expr returns null. Max 2000 chars."
   compute(expr: String!): String
+  "PRD 097 Phase 5 — the appointment's whole-day flag ('ganztägig'), exposed regardless of banner routing."
+  wholeDay: Boolean!
+  """
+  PRD 097 Phase 5 — the Google-model router (Rule B, decided 2026-07-14): true iff the block is
+  whole-day OR a full calendar day lies inside [start, end) — an end at exactly 00:00 belongs to
+  the previous day. NOT a duration threshold: Mon 16:00 → Tue 16:00 is 24h but covers no full day
+  → grid. Banner blocks emit `segments: []` (they live in the header band, not the time columns);
+  shorter midnight-crossers keep the midnight split. Needed only where a view has BOTH regions
+  (header band + time columns, i.e. the week view).
+  """
+  banner: Boolean!
+  """
+  PRD 097 Phase 5 — the block's band LABEL ('08:00' / 'vormittags'): its start classified against
+  the server-configured timeslots (the Swing TimeslotProvider config — bands are DATA, never
+  template structure). Consumed via `band: timeslot @column(group: true)` → `{{#groups}}`; the
+  configured-but-empty bands still render as empty groups. Null when the timeslot plugin is absent.
+  """
+  timeslot: String
+  """
+  PRD 097 Phase 5 — time-column geometry (week-view region): one segment per covered rendered day,
+  minutes clipped to the day, continuation markers at day edges, compact collision lanes. LIST-
+  SCOPED: `lane`/`laneCount` are computed over this query's own returned block list (exactly right
+  for rendering that result); computed lazily, only when selected. Banner blocks answer `[]`.
+  Empty on blocks outside the flat `appointmentBlocks` list (e.g. nested `Appointment.blocks`).
+  """
+  segments: [Segment!]!
+  """
+  PRD 097 Phase 5 — day-spanning geometry (month/band region): bars chunked at strip boundaries
+  and day-set gaps, stacked longer-first with push-down (`row`). LIST-SCOPED like `segments`.
+  `scope: BANNER` = only banner blocks participate (the week template's header band — band-only
+  stacking); `ALL` = month semantics, every block paints as a bar. The two scopes stack
+  independently. A non-banner multi-day block legitimately has BOTH `bars(scope: ALL)` and
+  `segments` — different templates consume different primitives (routing, not double-rendering).
+  """
+  bars(scope: BarScope = ALL): [Bar!]!
+}
+
+"PRD 097 Phase 5 — participation scope for `AppointmentBlock.bars`."
+enum BarScope { ALL  BANNER }
+
+"PRD 097 Phase 5 — one rendered day of a strip. `index` is 1-based within the strip's day set, CSS-grid-ready (substitutes verbatim into grid-column; use named grid lines like `d{{index}}` when an axis column offsets the day columns)."
+type StripDay {
+  index: Int!
+  date:  Date!
+  "Server-formatted day header, e.g. 'Mo 13.07.'. Format/locale authorability is a recorded open (PRD 097)."
+  label: String!
+}
+
+"PRD 097 Phase 5 — one day-strip of the grid (a week row): 1 strip for a week window, ~5 for a month. Week is the degenerate 1-strip case of month — the window's cardinality decides the shape, nothing in the query says 'week' or 'month'."
+type Strip {
+  "1-based, CSS-grid-ready."
+  index: Int!
+  days:  [StripDay!]!
+}
+
+"PRD 097 Phase 5 — time-column geometry of one block on one rendered day. Minutes since the day's 00:00, clipped to the day; `clippedStart`/`clippedEnd` mark midnight-split continuations. `lane`/`laneCount` are 1-based collision lanes within the day (width: calc(100%/{{laneCount}}); margin-left: calc(100%/{{laneCount}}*({{lane}} - 1)))."
+type Segment {
+  strip:        Int!
+  dayIndex:     Int!
+  startMin:     Int!
+  endMin:       Int!
+  lane:         Int!
+  laneCount:    Int!
+  clippedStart: Boolean!
+  clippedEnd:   Boolean!
+}
+
+"PRD 097 Phase 5 — day-spanning geometry of one block within one strip. `startDay`/`span` in strip day-set positions (1-based); `row` is the 1-based stacking row. `strip` + `row` stay separate — the template's calc() composes them (no baked band-height formula)."
+type Bar {
+  strip:        Int!
+  startDay:     Int!
+  span:         Int!
+  row:          Int!
+  clippedStart: Boolean!
+  clippedEnd:   Boolean!
 }
 
 enum RepeatingType { DAILY  WEEKLY  MONTHLY  YEARLY }

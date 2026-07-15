@@ -29,12 +29,19 @@
         #status { margin-left: auto; font-size: .8rem; opacity: .8; }
         #status.error { color: #c00; opacity: 1; }
         main { flex: 1; display: grid; grid-template-columns: 15rem 1fr 1fr; min-height: 0; }
-        #fields, #editor, #preview { min-height: 0; }
+        #fields, #editorcol, #preview { min-height: 0; }
+        #editorcol { display: flex; flex-direction: column; border-right: 1px solid #8884; }
+        #editor { flex: 1; min-height: 0; }
+        /* GraphiQL-style variables pane: the RESOLVED variables of the last preview (view baseline
+           + document overrides + window fill; later also resolved @params). */
+        #varsbox { height: 11rem; border-top: 1px solid #8884; display: flex; flex-direction: column; }
+        #varsbox label { font-size: .75rem; opacity: .75; padding: .2rem .5rem; }
+        #varsout { flex: 1; overflow: auto; margin: 0; padding: 0 .5rem .4rem;
+                   font-size: .8rem; font-family: ui-monospace, monospace; }
         #fields { overflow: auto; border-right: 1px solid #8884; padding: .5rem; font-size: .85rem; }
         #fields ul { list-style: none; margin: 0; padding-left: .8rem; }
         #fields code { cursor: pointer; }
         #fields .section > code::before { content: "▸ "; opacity: .6; }
-        #editor { border-right: 1px solid #8884; }
         #preview { border: 0; width: 100%; height: 100%; background: #fff; }
     </style>
 </head>
@@ -45,16 +52,24 @@
     <input id="name" placeholder="document name" size="18">
     <label>View <select id="view"></select></label>
     <label><input type="checkbox" id="public"> public</label>
-    <input id="vars" placeholder="variables: a=1&amp;b=2" size="20">
+    <!-- The document URL's query string, verbatim: declared @param names + from/to/date on
+         windowed views. Gated identically to the live render; Live ↗ carries it unchanged. -->
+    <input id="vars" placeholder="URL params: resource=…&amp;date=…" size="20">
     <button id="render">Preview</button>
     <button id="save">Save</button>
     <button id="delete">Delete</button>
+    <a id="live" target="_blank" hidden>Live ↗</a>
     <span id="status"></span>
 </header>
 <main>
     <aside id="fields"><em>Pick a view to see its fields.</em></aside>
-    <div id="editor"></div>
-    <iframe id="preview" sandbox title="Preview"></iframe>
+    <div id="editorcol">
+        <div id="editor"></div>
+        <div id="varsbox"><label>Variables (resolved)</label><pre id="varsout"></pre></div>
+    </div>
+    <!-- allow-scripts: the preview shell's server-authored nav script (postMessage to this
+         editor). Still an opaque origin without cookies; author scripts are sanitized out. -->
+    <iframe id="preview" sandbox="allow-scripts" title="Preview"></iframe>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"></script>
@@ -256,9 +271,13 @@
         const viewName = el('view').value;
         if (!viewName || !editor) return;
         try {
+            /* Preview must not diverge from the real render: it carries the loaded document's
+               pinned defaultVariables + window anchors alongside the ad-hoc vars field. */
             const result = await api('POST', '/api/documents/preview', {
                 viewName,
                 template: editor.getValue(),
+                defaultVariables: currentDefaultVariables,
+                window: currentWindow,
                 variables: parseVariables(el('vars').value)
             });
             if (result.errorMessage) {
@@ -268,6 +287,7 @@
             }
             showParseError(null);
             el('preview').srcdoc = result.html;
+            el('varsout').textContent = result.resolvedVariables || '';
             status('Preview updated ' + new Date().toLocaleTimeString());
         } catch (e) {
             status(e.message, true);
@@ -283,23 +303,114 @@
         await loadShape(el('view').value);
     }
 
+    /* Mirrors the GraphiQL view picker: optgroups "Built-in (read-only)" / "Custom". */
     async function loadDocuments() {
         const documents = await api('GET', '/api/documents');
         el('doc').innerHTML = '';
         el('doc').append(new Option('— new —', ''));
-        for (const d of documents) el('doc').append(new Option(d.name + (d.valid ? '' : ' ⚠'), d.name));
+        const builtinGroup = document.createElement('optgroup');
+        builtinGroup.label = 'Built-in (read-only)';
+        const customGroup = document.createElement('optgroup');
+        customGroup.label = 'Custom';
+        let hasCustom = false;
+        for (const d of documents) {
+            const opt = new Option(d.name + (d.valid ? '' : ' ⚠'), d.name);
+            if (d.builtin) builtinGroup.append(opt);
+            else { customGroup.append(opt); hasCustom = true; }
+        }
+        el('doc').append(builtinGroup);
+        if (hasCustom) el('doc').append(customGroup);
     }
+
+    /* Carried through save so a copy keeps its pinned variables (e.g. the builtin
+       wochenprogramm's Mo–Fr weekdays) — the editor has no UI for them yet. */
+    let currentDefaultVariables = null;
+    let currentWindow = null;
+
+    /* Save follows the name field: a loaded builtin empties it, so Save stays disabled
+       until a save-as name is typed (GraphiQL parity — builtins are save-as only). */
+    function updateSaveEnabled() {
+        el('save').disabled = !el('name').value.trim();
+    }
+    el('name').oninput = updateSaveEnabled;
+    updateSaveEnabled();
+
+    /* "Live ↗" opens the SAVED document at its real URL (working nav links, real CSP shell).
+       Only meaningful for a selected saved document — hidden for "— new —" / unsaved work.
+       The vars field IS the query string, so it carries over verbatim. */
+    function updateLiveLink() {
+        const name = el('doc').value;
+        el('live').hidden = !name;
+        if (!name) return;
+        const query = new URLSearchParams(el('vars').value || '').toString();
+        el('live').href = '/api/documents/' + encodeURIComponent(name) + (query ? '?' + query : '');
+    }
+    el('vars').addEventListener('input', updateLiveLink);
+
+    /* Preview nav (full transparency, 2026-07-15): a nav click inside the sandboxed preview
+       cannot navigate, so the shell script postMessages the target window here — we write it
+       into the vars box (visible, hand-editable — a nav click IS a variables edit) and re-run
+       the preview. The neighbor windows were resolved server-side; no date math here. */
+    window.addEventListener('message', e => {
+        const d = e.data;
+        if (!d || e.source !== el('preview').contentWindow) return;
+        /* Author-written absolute links: the sandboxed preview cannot navigate, so the editor
+           opens them in a new tab. Relative links stay inert — test those via "Live ↗". */
+        if (d.type === 'rapla-preview-open') {
+            if (/^https?:\/\//i.test(d.href || '')) window.open(d.href, '_blank', 'noopener');
+            return;
+        }
+        if (d.type === 'rapla-preview-params' && d.params && typeof d.params === 'object') {
+            /* A GET filter form submitted inside the preview: its fields ARE URL params. */
+            const vars = new URLSearchParams(el('vars').value || '');
+            for (const [k, v] of Object.entries(d.params)) vars.set(k, String(v));
+            el('vars').value = vars.toString().replace(/%3A/gi, ':');
+            updateLiveLink();
+            preview();
+            return;
+        }
+        if (d.type !== 'rapla-preview-nav') return;
+        const vars = new URLSearchParams(el('vars').value || '');
+        vars.delete('from');
+        vars.delete('to');
+        vars.delete('date');
+        if (!d.today && d.from && d.to) {
+            vars.set('from', d.from);
+            vars.set('to', d.to);
+        }
+        el('vars').value = vars.toString().replace(/%3A/gi, ':');
+        updateLiveLink();
+        preview();
+    });
 
     el('doc').onchange = async () => {
         const name = el('doc').value;
-        if (!name) { el('name').value = ''; return; }
+        if (!name) {
+            el('name').value = '';
+            el('name').placeholder = 'document name';
+            currentDefaultVariables = null;
+            currentWindow = null;
+            el('delete').disabled = false;
+            updateSaveEnabled();
+            updateLiveLink();
+            return;
+        }
         const source = await api('GET', '/api/documents/' + encodeURIComponent(name) + '/source');
-        el('name').value = source.name;
+        currentDefaultVariables = source.defaultVariables || null;
+        currentWindow = source.window || null;
+        /* Built-ins are save-as only (GraphiQL parity): the name field starts EMPTY so Save
+           forces a new name; the server-side name reservation stays the actual guard. */
+        el('name').value = source.builtin ? '' : source.name;
+        el('name').placeholder = source.builtin ? 'save as… (built-in is read-only)' : 'document name';
         el('view').value = source.viewName;
         el('public').checked = source.isPublic;
         editor.setValue(source.template);
+        el('delete').disabled = !!source.builtin;
+        updateSaveEnabled();
+        updateLiveLink();
         await loadShape(source.viewName);
-        preview();
+        await preview();
+        if (source.builtin) status('🔒 Built-in (read-only) — Save requires a new name (save as)');
     };
 
     el('view').onchange = async () => { await loadShape(el('view').value); preview(); };
@@ -313,7 +424,9 @@
                 viewName: el('view').value,
                 template: editor.getValue(),
                 isPublic: el('public').checked,
-                groups: []
+                groups: [],
+                defaultVariables: currentDefaultVariables,
+                window: currentWindow
             });
             status('Saved ' + name);
             await loadDocuments();

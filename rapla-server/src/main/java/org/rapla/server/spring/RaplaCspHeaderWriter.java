@@ -43,9 +43,16 @@ public class RaplaCspHeaderWriter implements HeaderWriter
      * (printing is the browser's own Ctrl+P), and {@code connect-src 'none'} means a document can
      * never call back into the API with the reader's credentials.
      * {@code style-src 'unsafe-inline'} stays: a document IS its inline layout CSS.
+     *
+     * <p>{@code allow-forms} + {@code form-action 'self'} (2026-07-15, PRD 097 § params): a
+     * native GET form submitting to the document's own URL is the script-free way a document
+     * carries filter controls (resource picker, date field) — the same gated {@code ?param=}
+     * surface as a typed URL, §16-clean (a GET to self reads, never writes). This is far short
+     * of Phase 9's write forms (cross-origin POST + capability): {@code 'self'} keeps every
+     * submit on rapla's own origin, where the /api/documents/* gate rejects undeclared keys.
      */
     private final String documentPagePolicy = String.join("; ",
-            "sandbox",
+            "sandbox allow-forms",
             "default-src 'none'",
             "script-src 'none'",
             "connect-src 'none'",
@@ -54,7 +61,7 @@ public class RaplaCspHeaderWriter implements HeaderWriter
             "font-src 'self' data:",
             "base-uri 'none'",
             "frame-ancestors 'none'",
-            "form-action 'none'");
+            "form-action 'self'");
 
     public RaplaCspHeaderWriter(String spaPolicy)
     {

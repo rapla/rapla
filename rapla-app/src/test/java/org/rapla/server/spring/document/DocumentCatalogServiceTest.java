@@ -189,9 +189,11 @@ class DocumentCatalogServiceTest
         assertTrue(catalog.findVisible("oeffentlich", null).isPresent(), "anonymous callers see public documents");
         assertTrue(catalog.findVisible("intern", null).isEmpty());
 
-        List<String> visibleToHomer = catalog.list(homer).stream().map(DocumentEntry::name).toList();
+        // PRD 097 Phase 5 — the BUILTIN documents are always listed; filter to the CUSTOM ones here.
+        List<String> visibleToHomer = catalog.list(homer).stream()
+                .filter(d -> !d.builtin()).map(DocumentEntry::name).toList();
         assertEquals(List.of("oeffentlich"), visibleToHomer, "listing filters by the same rule");
-        assertEquals(2, catalog.list(admin).size());
+        assertEquals(2, catalog.list(admin).stream().filter(d -> !d.builtin()).count());
     }
 
     @Test

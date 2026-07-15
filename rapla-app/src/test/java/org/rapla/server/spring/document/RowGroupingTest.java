@@ -59,6 +59,40 @@ class RowGroupingTest
         assertEquals(2, groups.get(1).rows().size(), "null and \"\" share one bucket");
     }
 
+    /**
+     * PRD 097 Phase 5 — configured-domain grouping (the timeslot band case): an empty
+     * "nachmittags" row must still render (the frame argument, band edition), and the group order
+     * is the CONFIGURED order, not first-seen.
+     */
+    @Test
+    void aConfiguredDomainSeedsEmptyGroupsInDomainOrder()
+    {
+        List<Map<String, Object>> rows = List.of(row("abends", "spät"), row("vormittags", "früh"));
+
+        List<RowGrouping.Group> groups = RowGrouping.groupByColumn(rows, "tag", null,
+                List.of("vormittags", "nachmittags", "abends"));
+
+        assertEquals(List.of("vormittags", "nachmittags", "abends"),
+                groups.stream().map(RowGrouping.Group::key).toList(),
+                "configured order wins; the empty nachmittags band still renders");
+        assertEquals(0, groups.get(1).rows().size());
+        assertEquals(List.of("früh"), groups.get(0).rows().stream().map(r -> r.get("name")).toList());
+    }
+
+    @Test
+    void valuesOutsideTheDomainTrailInFirstSeenOrder()
+    {
+        List<Map<String, Object>> rows = new ArrayList<>();
+        rows.add(row("fremd", "x"));
+        rows.add(row("vormittags", "früh"));
+        rows.add(row(null, "kein band"));
+
+        List<RowGrouping.Group> groups = RowGrouping.groupByColumn(rows, "tag", null,
+                List.of("vormittags"));
+
+        assertEquals(List.of("vormittags", "fremd", ""), groups.stream().map(RowGrouping.Group::key).toList());
+    }
+
     @Test
     void labelIsTheRawValueWhenNoFormatIsDeclared()
     {

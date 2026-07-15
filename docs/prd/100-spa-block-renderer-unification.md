@@ -200,9 +200,10 @@ canRead-gated allocatables, so only readable, already-scoped resources surface).
       `SwingWeekView.updateSize`/`minBlockWidth` parity): lanes floor at 80 px
       (`MIN_LANE_PX`), busy weeks overflow the container and scroll horizontally
       instead of squeezing chips into slivers.
-- [ ] Rich chip text (Swing parity): multi-line block content — time range,
-      title, person names (italic), resources — when the lane is wide/tall
-      enough; the persons/resources cells are already in the builtin selection.
+- [ ] Rich chip text — **design locked 2026-07-14 as D8 (view-columns-driven chip
+      content, location special-cased); see Decisions locked.** Implementation:
+      chip-content component consuming `extensions.view.columns` + row values;
+      zero server changes (the meta already ships with every view execution).
 - [ ] Auto-scroll during drag (Swing `scrollTo` parity).
 - [ ] Control-strip week label.
 - [ ] Field-contract table in `docs/architecture/tableview-and-graphql-views.md`.
@@ -321,3 +322,33 @@ query. Rationale:
 Alternative kept in mind: an *optional* `ids` arg for callers wanting provenance
 against an arbitrary set (highlighting, counts) — deferred (YAGNI) until a consumer
 needs it.
+
+**D8 — chip content is the VIEW's visible columns, rendered as structured lines;
+location gets a dedicated slot.** (2026-07-14, designed with [PRD 097 § Phase 5](097-event-html-templates-mustache.md#phase-5--2d-time-grid-rendering-the-layout-engine-half).)
+The sweet spot between Swing (rich but fixed) and templates (free but markup-owning):
+in the SPA the author owns CONTENT, never markup — documents own markup, the SPA owns
+interaction.
+
+- The chip renders an ordered stack of **lines** from the view's visible
+  (non-`@hidden`) columns in `@column(order)`: `start`/`end`-typed columns collapse
+  into the bold times line, `name` is the title line, every further visible column is
+  one content line (`@join`-joined lists). CSS overflow truncates — taller blocks
+  show more lines, exactly Swing's behavior.
+- **Location special handling**: values carrying `isLocation: true` (rooms) do NOT
+  flow as a generic line — they render in a dedicated location slot (compact,
+  distinct styling, location glyph; the "where you go" affordance). The builtin
+  selection already fetches `isLocation` per allocatable cell.
+- **Author control = edit the view, nothing else.** Add/remove/reorder a `@column`
+  → every chip follows. One contract drives table, grouped list, chip, and document
+  data. Swing parity falls out: the builtin `rapla_appointments` columns
+  (Von/Bis/Titel/Personen/Ressourcen) reproduce Swing's fixed chip as the default.
+- **No server changes**: `extensions.view.columns` (alias, header, order, hidden,
+  join, type) already ships with every view execution; the chip component is pure
+  SPA work.
+- **Structural safety** (the [PRD 102](102-browser-credential-hardening.md) D8 pattern, and why Phase-7-style admin
+  markup in chips was rejected): no admin markup enters the interactive DOM — the
+  test matrix stays interactions × ONE chip component.
+- **Deferred, non-breaking**: `@column(inBlock: true/false)` as an opt-in override
+  for when table and chip selections diverge (10-column table, 2-line chip); absent
+  = all visible columns, so adding it later breaks nothing (the `BannerRule`
+  parking trick).
