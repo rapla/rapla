@@ -22,6 +22,7 @@ public class LogoutSignal
 {
     private final BlockingQueue<NextSession> queue = new ArrayBlockingQueue<>(1);
     private volatile boolean impersonationSession;
+    private volatile boolean forceOauthLoginNext;
 
     /** Non-blocking: drop the signal if one is already queued (logout is idempotent). */
     public void next(NextSession ns)
@@ -49,5 +50,26 @@ public class LogoutSignal
     public boolean isImpersonationSession()
     {
         return impersonationSession;
+    }
+
+    /**
+     * Set by {@link SpringRaplaClient#main(String[])} from
+     * {@link NextSession#isForceOauthLogin()} when building the context that
+     * follows an explicit logout. The first OAuth flow in this context consumes
+     * it via {@link #consumeForceOauthLoginNext()} and sends {@code prompt=login}
+     * so the server terminates the browser's still-live session instead of
+     * silently re-authenticating the old user.
+     */
+    public void setForceOauthLoginNext(boolean forceOauthLoginNext)
+    {
+        this.forceOauthLoginNext = forceOauthLoginNext;
+    }
+
+    /** One-shot read: returns the flag and clears it. */
+    public boolean consumeForceOauthLoginNext()
+    {
+        boolean force = forceOauthLoginNext;
+        forceOauthLoginNext = false;
+        return force;
     }
 }

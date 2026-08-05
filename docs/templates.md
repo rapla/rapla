@@ -5,6 +5,10 @@ calendar shapes (list, week, month, Wochenprogramm) are built from it. This is t
 companion to [PRD 097](prd/097-event-html-templates-mustache.md); the copy-paste starters below
 are pinned end-to-end by `CalendarTemplateRenderingTest` — if the test moves, this file moves.
 
+> **Naming trap:** these Mustache *document templates* are unrelated to rapla's **event
+> templates (Vorlagen)** — the reusable event blueprints behind the "Neu" flow; those are
+> documented in [architecture/event-templates.md](architecture/event-templates.md).
+
 ## The model: document = view + template + window
 
 - A **view** is a stored GraphQL query (edited in `/graphiql`, saved via the view catalog). It

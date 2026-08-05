@@ -1,7 +1,15 @@
 package org.rapla.server.spring;
 
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.rapla.RaplaResources;
+import org.rapla.components.i18n.BundleManager;
+import org.rapla.components.util.LocaleTools;
+import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.internal.AbstractRaplaLocale;
 import org.rapla.server.spring.oauth.external.ExternalProviderId;
 import org.rapla.server.spring.oauth.external.ExternalProvidersProperties;
 import org.rapla.server.spring.oauth.external.ProviderConfig;
@@ -18,7 +26,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.util.HtmlUtils;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Replaces Spring Security's DefaultLoginPageGeneratingFilter with the ONE
@@ -51,17 +61,93 @@ public class LoginPageController
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoginPageController.class);
 
+    /** Explicit language choice from the login page's chooser (per-browser). */
+    static final String LANG_COOKIE = "raplaLocale";
+
     private final ExternalProvidersProperties externalProviders;
     private final boolean passwordLoginEnabled;
     private final RaplaFacade facade;
+    private final RaplaResources i18n;
+    private final BundleManager bundleManager;
 
     public LoginPageController(ExternalProvidersProperties externalProviders,
                               @Value("${rapla.oauth.web.password-login:true}") boolean passwordLoginEnabled,
-                              RaplaFacade facade)
+                              RaplaFacade facade,
+                              RaplaResources i18n,
+                              BundleManager bundleManager)
     {
         this.externalProviders = externalProviders;
         this.passwordLoginEnabled = passwordLoginEnabled;
         this.facade = facade;
+        this.i18n = i18n;
+        this.bundleManager = bundleManager;
+    }
+
+    /** @return {@code lang} if it is one of the shipped bundle languages, else {@code null}. */
+    private String validLanguage(String lang)
+    {
+        return lang != null && bundleManager.getAvailableLanguages().contains(lang) ? lang : null;
+    }
+
+    private String cookieLanguage(HttpServletRequest request)
+    {
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null)
+        {
+            for (Cookie c : cookies)
+            {
+                if (LANG_COOKIE.equals(c.getName()))
+                {
+                    return c.getValue();
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Resolution order: the {@code ?lang} chooser param, then the
+     * {@value #LANG_COOKIE} cookie (both restricted to shipped bundle
+     * languages), then the admin "Server Sprache" setting
+     * ({@link AbstractRaplaLocale#LOCALE} system preference, e.g.
+     * {@code de_DE}), finally the browser's {@code Accept-Language}. NOT
+     * {@link RaplaLocale#LANGUAGE_ENTRY} — that key is the per-user language
+     * preference and never set on system prefs.
+     */
+    private Locale resolveLocale(HttpServletRequest request, String langParam)
+    {
+        String chosen = validLanguage(langParam);
+        if (chosen == null)
+        {
+            chosen = validLanguage(cookieLanguage(request));
+        }
+        if (chosen != null)
+        {
+            return LocaleTools.getLocale(chosen);
+        }
+        try
+        {
+            Preferences sys = facade.getOperator().getPreferences(null, false);
+            if (sys != null)
+            {
+                String localeId = sys.getEntryAsString(AbstractRaplaLocale.LOCALE, null);
+                if (localeId != null && !localeId.isBlank())
+                {
+                    return LocaleTools.getLocale(localeId);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            LOGGER.warn("Could not read the server language setting: {}", e.getMessage());
+        }
+        Locale browser = request.getLocale();
+        return browser != null ? browser : Locale.ENGLISH;
+    }
+
+    private String msg(String key, Locale locale)
+    {
+        return HtmlUtils.htmlEscape(i18n.getString(key, locale));
     }
 
     /** B3: only advertise the default admin/empty credential while it is actually in effect. */
@@ -82,16 +168,29 @@ public class LoginPageController
     @ResponseBody
     public String loginPage(@RequestParam(value = "error", required = false) String error,
                             @RequestParam(value = "logout", required = false) String logout,
-                            HttpServletRequest request)
+                            @RequestParam(value = "lang", required = false) String lang,
+                            HttpServletRequest request,
+                            HttpServletResponse response)
     {
+        String chosenLang = validLanguage(lang);
+        if (chosenLang != null)
+        {
+            Cookie cookie = new Cookie(LANG_COOKIE, chosenLang);
+            cookie.setMaxAge(365 * 24 * 3600);
+            cookie.setPath("/login");
+            cookie.setHttpOnly(true);
+            cookie.setSecure(request.isSecure());
+            response.addCookie(cookie);
+        }
+        Locale locale = resolveLocale(request, lang);
         String banner = "";
         if (error != null)
         {
-            banner = "<p style=\"color:#c00;\">Invalid username or password</p>";
+            banner = "<p style=\"color:#c00;\">" + msg("error.login", locale) + "</p>";
         }
         else if (logout != null)
         {
-            banner = "<p style=\"color:#080;\">You have been logged out</p>";
+            banner = "<p style=\"color:#080;\">" + msg("login.logged_out", locale) + "</p>";
         }
         // PRD 072 follow-up: after an explicit logout (/login?logout), re-prompt at
         // the IdP so the next SSO login can't silently re-use the still-live Keycloak
@@ -101,13 +200,13 @@ public class LoginPageController
         boolean reprompt = logout != null;
         return """
                 <!doctype html>
-                <html lang="en">
+                <html lang="%LANG%">
                 <head>
                   <meta charset="utf-8">
-                  <title>Rapla — Sign in</title>
+                  <title>%TITLE%</title>
                   <style>
                     body { font-family: system-ui, sans-serif; background: #f4f4f4; margin: 0; padding: 0; display: flex; min-height: 100vh; align-items: center; justify-content: center; }
-                    .card { background: #fff; padding: 2rem 2.5rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.08); min-width: 320px; }
+                    .card { background: #fff; padding: 2rem 2.5rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.08); min-width: 320px; position: relative; }
                     h1 { margin: 0 0 1rem; font-size: 1.4rem; color: #333; }
                     label { display: block; margin: 0.8rem 0 0.2rem; color: #555; font-size: 0.9rem; }
                     input[type=text], input[type=password] { width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; box-sizing: border-box; }
@@ -120,11 +219,14 @@ public class LoginPageController
                     .sso { display: block; text-decoration: none; text-align: center; margin: 0.5rem 0; padding: 0.6rem 1.2rem; background: #345; color: #fff; border-radius: 4px; font-size: 1rem; }
                     .sso:hover { background: #234; }
                     .divider { text-align: center; color: #aaa; margin: 1.2rem 0 0.4rem; font-size: 0.8rem; }
+                    .langrow { position: absolute; top: 0.8rem; right: 0.8rem; }
+                    .langrow select { padding: 0.2rem 0.3rem; border: 1px solid #ddd; border-radius: 4px; color: #777; font-size: 0.8rem; background: #fff; }
                   </style>
                 </head>
                 <body>
                   <div class="card">
-                    <h1>Rapla — Sign in</h1>
+                    <div class="langrow">%CHOOSER%</div>
+                    <h1>%TITLE%</h1>
                     %BANNER%
                     %SSO%
                     %PASSWORD%
@@ -134,19 +236,55 @@ public class LoginPageController
                     if (f) {
                       f.addEventListener('submit', function () {
                         var b = document.getElementById('btn');
-                        if (b) { b.disabled = true; b.textContent = 'Signing in...'; }
+                        if (b) { b.disabled = true; b.textContent = b.dataset.busy; }
+                      });
+                    }
+                    var s = document.getElementById('lang');
+                    if (s) {
+                      s.addEventListener('change', function () {
+                        location.href = '/login?lang=' + encodeURIComponent(this.value);
                       });
                     }
                   </script>
                 </body>
                 </html>
                 """
+                .replace("%LANG%", HtmlUtils.htmlEscape(locale.getLanguage()))
+                .replace("%TITLE%", msg("logindialog.title", locale))
                 .replace("%BANNER%", banner)
-                .replace("%SSO%", ssoButtonsHtml(reprompt))
-                .replace("%PASSWORD%", passwordLoginEnabled ? passwordFormHtml(request) : "");
+                .replace("%SSO%", ssoButtonsHtml(reprompt, locale))
+                .replace("%PASSWORD%", passwordLoginEnabled ? passwordFormHtml(request, locale) : "")
+                .replace("%CHOOSER%", languageChooserHtml(locale));
     }
 
-    private String ssoButtonsHtml(boolean reprompt)
+    /** Language chooser — every shipped bundle language, labeled with its autonym. */
+    private String languageChooserHtml(Locale locale)
+    {
+        List<String> languages = new ArrayList<>(bundleManager.getAvailableLanguages());
+        languages.sort(String::compareTo);
+        StringBuilder sb = new StringBuilder();
+        sb.append("<select id=\"lang\" aria-label=\"").append(msg("language", locale)).append("\">\n");
+        for (String l : languages)
+        {
+            Locale option = new Locale(l);
+            String label = option.getDisplayLanguage(option);
+            sb.append("<option value=\"").append(HtmlUtils.htmlEscape(l)).append('"')
+              .append(l.equals(locale.getLanguage()) ? " selected" : "")
+              .append('>').append(HtmlUtils.htmlEscape(label)).append("</option>\n");
+        }
+        sb.append("</select>");
+        return sb.toString();
+    }
+
+    /**
+     * Provider displayNames follow the {@code "Sign in with <name>"} convention
+     * (the ProviderDef defaults and most deployment configs). Localize that
+     * prefix via the {@code login.method} key; displayNames that don't match
+     * the convention render as configured.
+     */
+    private static final String EN_SSO_PREFIX = "Sign in with ";
+
+    private String ssoButtonsHtml(boolean reprompt, Locale locale)
     {
         List<ProviderConfig> providers = externalProviders == null
                 ? List.of() : externalProviders.enabledProviders();
@@ -158,7 +296,12 @@ public class LoginPageController
         for (ProviderConfig p : providers)
         {
             String id = HtmlUtils.htmlEscape(p.id());
-            String label = HtmlUtils.htmlEscape(p.displayName());
+            String displayName = p.displayName();
+            if (displayName != null && displayName.startsWith(EN_SSO_PREFIX))
+            {
+                displayName = i18n.getString("login.method", locale) + " " + displayName.substring(EN_SSO_PREFIX.length());
+            }
+            String label = HtmlUtils.htmlEscape(displayName);
             // Keycloak ALWAYS re-prompts: its SSO-session survives rapla's local
             // logout, and the ?logout marker (one-shot signal) is not reliably
             // present on every entry to this page — so silent SSO would defeat
@@ -175,7 +318,7 @@ public class LoginPageController
         return sb.toString();
     }
 
-    private String passwordFormHtml(HttpServletRequest request)
+    private String passwordFormHtml(HttpServletRequest request, Locale locale)
     {
         // CSRF hidden field — POST /login is gated by CookieAuthCsrfMatcher whenever
         // an access_token cookie is present (e.g. a prior/partial login), so the form
@@ -189,21 +332,27 @@ public class LoginPageController
                     + "\" value=\"" + HtmlUtils.htmlEscape(token.getToken()) + "\">\n";
         }
         return """
-                <div class="divider">— or —</div>
+                <div class="divider">%OR%</div>
                 <form method="post" action="/login">
                   %CSRF%
-                  <label for="u">Username</label>
+                  <label for="u">%USERNAME%</label>
                   <input id="u" type="text" name="username" autofocus required>
-                  <label for="p">Password</label>
+                  <label for="p">%PASSWORD%</label>
                   <input id="p" type="password" name="password">
                   <label class="remember">
                     <input type="checkbox" name="remember-me" value="on">
-                    Remember me on this device
+                    %REMEMBER%
                   </label>
-                  <button type="submit" id="btn">Sign in</button>
+                  <button type="submit" id="btn" data-busy="%SIGNING_IN%">%LOGIN%</button>
                 </form>
                 %HINT%
-                """.replace("%CSRF%", csrfField)
+                """.replace("%OR%", msg("login.or_divider", locale))
+                   .replace("%USERNAME%", msg("username", locale))
+                   .replace("%PASSWORD%", msg("password", locale))
+                   .replace("%REMEMBER%", msg("login.remember_me", locale))
+                   .replace("%SIGNING_IN%", msg("login.signing_in", locale))
+                   .replace("%LOGIN%", msg("login", locale))
+                   .replace("%CSRF%", csrfField)
                    .replace("%HINT%", showDefaultAdminHint()
                            ? "<p class=\"note\">Dev default: <code>admin</code> with empty password.</p>" : "");
     }

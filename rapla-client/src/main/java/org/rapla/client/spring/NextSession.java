@@ -49,10 +49,16 @@ public final class NextSession
     private final String impersonationTargetUsername;
     private final boolean exit;
     private final boolean switchBack;
+    /** True only after an explicit logout: the next context's first OAuth flow
+     *  must send {@code prompt=login} so the server terminates the browser's
+     *  still-live session instead of silently re-authenticating the old user.
+     *  Must travel here — a flag on a context-internal bean dies with the
+     *  context this signal tears down. */
+    private final boolean forceOauthLogin;
 
     private NextSession(ConnectInfo info, ConnectInfo restoreInfo,
                         String impersonationAccessToken, String impersonationTargetUsername,
-                        boolean exit, boolean switchBack)
+                        boolean exit, boolean switchBack, boolean forceOauthLogin)
     {
         this.info = info;
         this.restoreInfo = restoreInfo;
@@ -60,6 +66,7 @@ public final class NextSession
         this.impersonationTargetUsername = impersonationTargetUsername;
         this.exit = exit;
         this.switchBack = switchBack;
+        this.forceOauthLogin = forceOauthLogin;
     }
 
     public ConnectInfo info() { return info; }
@@ -70,10 +77,14 @@ public final class NextSession
     public String impersonationTargetUsername() { return impersonationTargetUsername; }
     public boolean isExit() { return exit; }
     public boolean isSwitchBack() { return switchBack; }
+    public boolean isForceOauthLogin() { return forceOauthLogin; }
 
-    public static NextSession showLoginDialog() { return new NextSession(null, null, null, null, false, false); }
-    public static NextSession exit() { return new NextSession(null, null, null, null, true, false); }
-    public static NextSession reconnectAs(ConnectInfo info) { return new NextSession(info, null, null, null, false, false); }
+    public static NextSession showLoginDialog() { return new NextSession(null, null, null, null, false, false, false); }
+    /** Like {@link #showLoginDialog()} but marks the session as following an
+     *  explicit logout — see {@link #isForceOauthLogin()}. */
+    public static NextSession showLoginDialogAfterLogout() { return new NextSession(null, null, null, null, false, false, true); }
+    public static NextSession exit() { return new NextSession(null, null, null, null, true, false, false); }
+    public static NextSession reconnectAs(ConnectInfo info) { return new NextSession(info, null, null, null, false, false, false); }
     /**
      * Admin → user impersonation: launcher should use {@code adminFullInfo}
      * for the next context (admin's tokens as primary) AND apply the
@@ -93,9 +104,9 @@ public final class NextSession
                                        String impersonationTargetUsername)
     {
         return new NextSession(adminFullInfo, adminFullInfo,
-                impersonationAccessToken, impersonationTargetUsername, false, false);
+                impersonationAccessToken, impersonationTargetUsername, false, false, false);
     }
     /** Return to the previously-saved admin session. The launcher uses
      *  its remembered {@code adminFullInfo}, not {@link #info()}. */
-    public static NextSession switchBack() { return new NextSession(null, null, null, null, false, true); }
+    public static NextSession switchBack() { return new NextSession(null, null, null, null, false, true, false); }
 }

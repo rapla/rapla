@@ -218,6 +218,15 @@ through the lifecycle client-side like everything else. So 068 is largely
 independent of 067 and can land first; the Dualis import's only server
 responsibility is the classification mapper.
 
+## Multi-reservation templates — matching (2026-07-30)
+
+`createReservations` currently truncates a multi-reservation template to its FIRST copied
+reservation. The design for matching m import items against the n reservations of a blueprint
+template (interactive assignment, prefilled by the generic `ImportItem.matchKey` — dhbw:
+`Unitcode` — plus fuzzy name suggestion) lives in
+[PRD 104 § Templates as import blueprints](104-spa-template-picker.md#templates-as-import-blueprints-external-event-import)
+(D10, Phase 6, OQ3/OQ4).
+
 ## Open questions
 
 1. **Appointments/times:** confirmed generic — from template + user-selected

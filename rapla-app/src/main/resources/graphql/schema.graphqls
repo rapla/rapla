@@ -102,6 +102,22 @@ type Query {
   # identically (§12, no existence leak).
   reservationPrototype(typeKey: String!): ReservationPrototype!
 
+  # PRD 099 D6 slice — the caller's "Neu" options, Swing-parity gated:
+  # `eventTypes` = RESERVATION types the caller may CREATE, empty when the
+  # defaultwizard plugin is disabled (like Swing's DefaultWizard). `templates`
+  # = the event templates the caller may READ (§12 — an unreadable template is
+  # absent, indistinguishable from nonexistent), empty when the templatewizard
+  # plugin is disabled or the caller cannot create reservations at all.
+  newEventOptions: NewEventOptions!
+
+  # PRD 104 D8 — the reservations stored inside an event template, as plain
+  # Reservation entities (the SPA picker selects { id } and loads the rest via
+  # `reservation(id:)` — canRead of a template reservation delegates to
+  # canRead(template)). §12: unknown ids and unreadable templates answer
+  # identically with an empty list. Instantiation is a CLIENT act: fresh ids,
+  # date shift, nothing persisted until the sheet saves.
+  reservationsFromTemplate(templateId: ID!): [Reservation!]!
+
   # PRD 074 — block-rooted read: materializes recurrence blocks across all
   # caller-visible reservations in the window into a FLAT list (one row = one
   # block), sorted ascending by start. Same §12 + window/limit semantics as
@@ -1067,6 +1083,25 @@ gap-fill) from it; the create mutation persists.
 type ReservationPrototype {
   typeKey:        String!
   classification: Classification!
+}
+
+# PRD 099 D6 slice — see Query.newEventOptions.
+type NewEventOptions {
+  eventTypes: [DynamicType!]!
+  templates:  [EventTemplate!]!
+}
+
+"An event template (rapla:template) the caller may instantiate from."
+type EventTemplate {
+  id:   ID!
+  "Locale-resolved template name."
+  name: String!
+  # PRD 104 — server-computed grouping path for the picker's browse mode, root
+  # first; [] = ungrouped top level. Token-prefix clustering with alphabetic
+  # range-chunk fallback (Swing BalancedHierarchicalMenu parity, max 25/node).
+  # Snapshot of THIS response: range-bucket labels depend on siblings — never
+  # cache paths across differently-filtered lists.
+  path: [String!]!
 }
 
 """

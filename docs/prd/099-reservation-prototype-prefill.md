@@ -1,8 +1,9 @@
 # PRD 099 — Reservation prototype: server-computed prefill for new events
 
-**Status:** implemented — 2026-07-08 (Phases 1–4 done, uncommitted on
-spring-boot; open: live browser smoke + the optional dropdown hardening;
-templates/permission-preview deferred per D6/OQ1)
+**Status:** implemented — 2026-07-08 (Phases 1–4 done), Phase 5
+(`newEventOptions` query, first D6 slice) 2026-07-22; open: SPA "Neu" menu
+consumption, live browser smoke + the optional dropdown hardening;
+instantiate-from-template/permission-preview still deferred per D6/OQ1
 **Related:** [PRD 096](096-spa-classification-editor.md) (classification editor — consumes the prototype in the sheet),
 [PRD 056](056-graphql-events-write-api.md) (events write API — create/update semantics, client-minted ids §9),
 [PRD 090](090-additive-permission-resolution.md) (additive permissions — the permission model the create-seed feeds into)
@@ -113,6 +114,26 @@ value-faithful copy).
 - [x] Tier-6 specs: seeding (not dirty, no history, nulls omitted),
       type-switch gap-fill + one-step undo, remap-only fallback (prototype
       null). Explicit-null clearing is covered tier-3 (Phase 2).
+
+### Phase 5 — `newEventOptions` query (first D6 slice) — DONE 2026-07-22
+
+- [x] `newEventOptions { eventTypes { key name } templates { id name } }`
+      in `ReservationGraphQLController`: the caller's "Neu" menu options.
+      `eventTypes` = RESERVATION types with `canCreate`, empty when the
+      defaultwizard plugin is disabled (Swing `DefaultWizard` parity).
+      `templates` = `rapla:template` Allocatables filtered by `canRead` at
+      the output boundary (§12), name-sorted (server-locale Collator),
+      empty when the templatewizard plugin is disabled or the caller lacks
+      `canCreateReservation`. Plugin flags read from system preferences
+      (same keys/defaults as `PluginRegistry`).
+- [x] Tier 3: `NewEventOptionsGraphQLTest` — creatable types, §12 template
+      visibility (private vs blanket-READ), both plugin gates.
+- [x] SPA consumption + template picker + `reservationsFromTemplate` landed
+      via [PRD 104](104-spa-template-picker.md) (2026-07-24). D6 deviation,
+      documented in [PRD 104 § D8](104-spa-template-picker.md#decisions-locked):
+      the verb returns plain `Reservation`s (no sanitized prototype wrapper) —
+      re-key/date-shift/sanitization happen in the client draft construction;
+      multi-reservation instantiation stays deferred (104 D9).
 
 ## Tests
 

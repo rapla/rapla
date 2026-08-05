@@ -190,6 +190,14 @@ public class AuthorizationServerConfig
                 // H2: throttle the password grant (POST /oauth2/token, grant_type=password)
                 .addFilterBefore(loginRateLimitFilter,
                         org.springframework.security.web.context.SecurityContextHolderFilter.class)
+                // OIDC prompt=login re-authentication for rapla's OWN session. Spring AS
+                // only errors on prompt=none; without this filter an authenticated browser
+                // session at /oauth2/authorize?prompt=login silently got a code for the
+                // old user — the Swing SSO "logout doesn't let me change user" bug. Must
+                // run after SecurityContextHolderFilter (needs the session's
+                // Authentication) and before the authorize endpoint.
+                .addFilterAfter(new PromptLoginReauthenticationFilter(rememberMeServices),
+                        org.springframework.security.web.context.SecurityContextHolderFilter.class)
                 .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
                 .csrf(csrf -> csrf.ignoringRequestMatchers(endpointsMatcher))
                 // CORS for cross-origin SPA → OAuth endpoint calls. In dev the

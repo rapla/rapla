@@ -14,6 +14,7 @@ import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatMenuModule, MatMenuTrigger } from '@angular/material/menu';
 
 import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 import { GraphqlService, type ViewMeta, type ViewColumn } from '../graphql/graphql.service';
 import { renderCell } from '../graphql/view-render';
@@ -26,6 +27,10 @@ import { WeekGridComponent } from './week-grid.component';
 import { dayGridWindow, weekGridWindow } from './week-lanes';
 import { EventSheetComponent, type EventSheetDialogData } from '../event/event-sheet.component';
 import { rangeScopedDraft, timeScopedDraft, type EventDraft } from '../event/event-draft';
+import { NewEventOptionsService } from '../event/new-event-options.service';
+import { NewEventPickerComponent } from '../event/new-event-picker.component';
+import { type PickItem, type PlacementTarget } from '../event/new-event-picker-model';
+import { TemplateInstantiationService } from '../event/template-instantiation.service';
 import { MutationBus } from '../graphql/mutation-bus';
 import { UndoToastService } from '../actions/undo-toast.service';
 import { shiftIso } from '../actions/event-commands';
@@ -340,6 +345,9 @@ export function hasScope(chips: FilterEntry[]): boolean {
 export class ViewHostComponent {
   private readonly gql = inject(GraphqlService);
   private readonly dialog = inject(MatDialog);
+  private readonly newOptions = inject(NewEventOptionsService);
+  private readonly templateInstantiation = inject(TemplateInstantiationService);
+  private readonly snackBar = inject(MatSnackBar);
   private readonly toast = inject(UndoToastService);
   private readonly viewState = inject(ViewStateStore);
   private readonly filter = inject(FilterStore);
@@ -865,14 +873,15 @@ export class ViewHostComponent {
     return renderCell(row, col);
   }
 
-  /** Memoized first creatable event type (same query the toolbar's "Neu" uses). */
-  private eventTypeKey: string | null = null;
 
   /** PRD 095 Phase 3 — month-grid drag-create: day-range selection opens the
    *  event sheet PREFILLED (range-seeded scoped draft; nothing persists until save). */
   openCreateRange(range: { from: string; to: string }): void {
     const chips = this.filter.entries();
-    this.openWithEventType((typeKey) => rangeScopedDraft(typeKey, chips, range.from, range.to));
+    this.openCreate((typeKey) => rangeScopedDraft(typeKey, chips, range.from, range.to), {
+      day: range.from,
+      startMin: null,
+    });
   }
 
   /** PRD 077 week grid — drag-create: a snapped (possibly multi-day) time-range
@@ -884,37 +893,67 @@ export class ViewHostComponent {
     endMin: number;
   }): void {
     const chips = this.filter.entries();
-    this.openWithEventType((typeKey) =>
-      timeScopedDraft(typeKey, chips, sel.fromDay, sel.startMin, sel.toDay, sel.endMin),
+    this.openCreate(
+      (typeKey) => timeScopedDraft(typeKey, chips, sel.fromDay, sel.startMin, sel.toDay, sel.endMin),
+      { day: sel.fromDay, startMin: sel.startMin },
     );
   }
 
-  /** Resolve the first creatable event type (memoized), build the draft, open the sheet. */
-  private openWithEventType(makeDraft: (typeKey: string) => EventDraft): void {
-    const open = (typeKey: string) => {
-      const draft = makeDraft(typeKey);
-      this.dialog.open(EventSheetComponent, {
-        data: { id: draft.id, isNew: true, draft } satisfies EventSheetDialogData,
-        width: '960px',
-        maxWidth: '95vw',
-        height: '90vh',
-        restoreFocus: false,
-      });
-    };
-    if (this.eventTypeKey) {
-      open(this.eventTypeKey);
-      return;
-    }
-    this.gql
-      .query<{
-        types: { key: string; classificationType: string }[];
-      }>(`query { types { key classificationType } }`)
-      .subscribe((resp) => {
-        const key =
-          (resp.data?.types ?? []).find((t) => t.classificationType === 'RESERVATION')?.key ??
-          'event';
-        this.eventTypeKey = key;
-        open(key);
-      });
+  /**
+   * PRD 104 D7 — drag-create opens the unified picker whenever more than one
+   * option exists (Swing pops the wizard menu after a drag); exactly one type
+   * and no templates stays click-free. A type pick keeps the dragged range
+   * (the seeded draft); a template pick instantiates ONTO the dragged slot.
+   */
+  private openCreate(makeDraft: (typeKey: string) => EventDraft, target: PlacementTarget): void {
+    this.newOptions.ensureLoaded().subscribe((options) => {
+      if (options.eventTypes.length === 0 && options.templates.length === 0) return;
+      if (options.eventTypes.length === 1 && options.templates.length === 0) {
+        this.openSheet(makeDraft(options.eventTypes[0].key));
+        return;
+      }
+      this.dialog
+        .open(NewEventPickerComponent, {
+          width: '560px',
+          maxWidth: '95vw',
+          autoFocus: false,
+          restoreFocus: false,
+        })
+        .afterClosed()
+        .subscribe((item?: PickItem) => {
+          if (!item) return;
+          if (item.kind === 'type') {
+            this.openSheet(makeDraft(item.id));
+            return;
+          }
+          this.templateInstantiation.instantiate(item.id, target).subscribe({
+            next: (draft) => {
+              if (!draft) {
+                this.snackBar.open(
+                  'Die Vorlage enthält keine Termine — bitte zuerst Termine in der Vorlage anlegen.',
+                  undefined,
+                  { duration: 4000 },
+                );
+                return;
+              }
+              this.openSheet(draft);
+            },
+            error: () =>
+              this.snackBar.open('Vorlage konnte nicht geladen werden (Serverfehler).', undefined, {
+                duration: 4000,
+              }),
+          });
+        });
+    });
+  }
+
+  private openSheet(draft: EventDraft): void {
+    this.dialog.open(EventSheetComponent, {
+      data: { id: draft.id, isNew: true, draft } satisfies EventSheetDialogData,
+      width: '960px',
+      maxWidth: '95vw',
+      height: '90vh',
+      restoreFocus: false,
+    });
   }
 }

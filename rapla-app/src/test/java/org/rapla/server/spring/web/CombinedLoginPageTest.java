@@ -67,6 +67,18 @@ class CombinedLoginPageTest
     MockMvc mockMvc;
 
     @Test
+    void ssoButtonPrefixIsLocalized() throws Exception
+    {
+        // the conventional "Sign in with <name>" displayName gets its prefix
+        // localized; the provider name part stays as configured
+        mockMvc.perform(get("/login").header("Accept-Language", "de"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Anmelden mit Keycloak")))
+                .andExpect(content().string(containsString("Anmelden mit Google")))
+                .andExpect(content().string(not(containsString("Sign in with"))));
+    }
+
+    @Test
     void loginPageShowsSsoLinksForEachEnabledProvider() throws Exception
     {
         mockMvc.perform(get("/login"))

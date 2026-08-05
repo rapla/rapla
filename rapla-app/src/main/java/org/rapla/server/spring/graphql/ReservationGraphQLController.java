@@ -129,6 +129,103 @@ public class ReservationGraphQLController
         return new ReservationPrototype(dt.getKey(), dt.newClassification());
     }
 
+    /** PRD 099 D6 slice / PRD 104 — see Query.newEventOptions in the schema. {@code path} is
+     *  the server-computed grouping path (root first, empty = ungrouped), a snapshot of THIS
+     *  §12-filtered response — range-bucket labels depend on siblings (PRD 104 D2). */
+    public record EventTemplate(String id, String name, List<String> path) {}
+
+    public record NewEventOptions(List<org.rapla.entities.dynamictype.DynamicType> eventTypes,
+            List<EventTemplate> templates) {}
+
+    /** Registry defaults for the two wizard plugins (PluginRegistry: defaultEnabled=true). */
+    private static final org.rapla.framework.TypedComponentRole<Boolean> DEFAULTWIZARD_ENABLED =
+            new org.rapla.framework.TypedComponentRole<>("org.rapla.plugin.defaultwizard.enabled");
+    private static final org.rapla.framework.TypedComponentRole<Boolean> TEMPLATEWIZARD_ENABLED =
+            new org.rapla.framework.TypedComponentRole<>("org.rapla.plugin.templatewizard.enabled");
+
+    @QueryMapping
+    public NewEventOptions newEventOptions(graphql.schema.DataFetchingEnvironment env)
+            throws RaplaException
+    {
+        var rc = RequestContextInstrumentation.from(env.getGraphQlContext());
+        User caller = UnauthenticatedException.require(rc.caller());
+        PermissionController pc = rc.permissionController() != null
+                ? rc.permissionController() : operator.getPermissionController();
+        org.rapla.entities.configuration.Preferences prefs = operator.getPreferences(null, true);
+
+        List<org.rapla.entities.dynamictype.DynamicType> eventTypes = new ArrayList<>();
+        if (prefs.getEntryAsBoolean(DEFAULTWIZARD_ENABLED, true))
+        {
+            for (org.rapla.entities.dynamictype.DynamicType dt : operator.getDynamicTypes())
+            {
+                if (org.rapla.entities.dynamictype.DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION
+                        .equals(dt.getAnnotation(
+                                org.rapla.entities.dynamictype.DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE))
+                        && pc.canCreate(dt, caller))
+                {
+                    eventTypes.add(dt);
+                }
+            }
+        }
+
+        List<EventTemplate> templates = new ArrayList<>();
+        if (prefs.getEntryAsBoolean(TEMPLATEWIZARD_ENABLED, true) && pc.canCreateReservation(caller))
+        {
+            org.rapla.entities.dynamictype.DynamicType templateType =
+                    operator.getDynamicType(StorageOperator.RAPLA_TEMPLATE);
+            java.util.Locale locale = StructuralTypeFetchers.serverLocale();
+            java.text.Collator collator = java.text.Collator.getInstance(locale);
+            // §12 — canRead at the output boundary: an unreadable template is absent,
+            // indistinguishable from a nonexistent one. Paths are computed AFTER this filter
+            // so no group label or bucket reflects an invisible template (PRD 104).
+            List<EventTemplate> visible = operator
+                    .getAllocatables(templateType.newClassificationFilter().toArray())
+                    .stream()
+                    .filter(a -> a != null && pc.canRead(a, caller))
+                    .map(a -> new EventTemplate(a.getId(), a.getName(locale), List.of()))
+                    .sorted((x, y) -> collator.compare(x.name(), y.name()))
+                    .collect(Collectors.toList());
+            java.util.Map<String, List<String>> paths = TemplatePathBuilder.paths(visible, locale, 25);
+            templates = visible.stream()
+                    .map(t -> new EventTemplate(t.id(), t.name(), paths.getOrDefault(t.id(), List.of())))
+                    .collect(Collectors.toList());
+        }
+        return new NewEventOptions(eventTypes, templates);
+    }
+
+    /** PRD 104 D8 — see Query.reservationsFromTemplate in the schema. */
+    @QueryMapping
+    public List<Reservation> reservationsFromTemplate(@Argument("templateId") String templateId,
+            graphql.schema.DataFetchingEnvironment env) throws RaplaException
+    {
+        var rc = RequestContextInstrumentation.from(env.getGraphQlContext());
+        User caller = UnauthenticatedException.require(rc.caller());
+        PermissionController pc = rc.permissionController() != null
+                ? rc.permissionController() : operator.getPermissionController();
+        if (templateId == null || templateId.isBlank()) return List.of();
+        Allocatable template;
+        try
+        {
+            template = operator.tryResolve(new ReferenceInfo<>(templateId, Allocatable.class));
+        }
+        catch (RuntimeException e)
+        {
+            return List.of();
+        }
+        // §12 — unknown, non-template and unreadable ids answer IDENTICALLY.
+        if (template == null
+                || template.getClassification() == null
+                || !StorageOperator.RAPLA_TEMPLATE.equals(template.getClassification().getType().getKey())
+                || !pc.canRead(template, caller))
+        {
+            return List.of();
+        }
+        org.rapla.entities.domain.AppointmentMapping mapping =
+                ((org.rapla.storage.SyncStorageOperator) operator)
+                        .queryAppointmentsSync(null, List.of(template), null, null, null, null, null, false);
+        return new ArrayList<>(mapping.getAllReservations());
+    }
+
     @QueryMapping
     public List<Reservation> reservations(@Argument("filter") java.util.Map<String, Object> filterMap,
             graphql.schema.DataFetchingEnvironment env) throws RaplaException

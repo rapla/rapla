@@ -151,6 +151,11 @@ public class SpringRaplaClient implements AutoCloseable
                     EditTaskPresenterConfig.class, PluginResourcesConfig.class))
             {
                 ctx.getBean(LogoutSignal.class).setImpersonationSession(isImpersonationSession);
+                // After an explicit logout the fresh context must force
+                // prompt=login on its first OAuth flow — the intent can only
+                // travel via NextSession because the previous context (and any
+                // flag on its beans) is gone.
+                ctx.getBean(LogoutSignal.class).setForceOauthLoginNext(next.isForceOauthLogin());
                 ClientService clientService = ctx.getBean(ClientService.class);
                 clientService.start(currentInfo);
 

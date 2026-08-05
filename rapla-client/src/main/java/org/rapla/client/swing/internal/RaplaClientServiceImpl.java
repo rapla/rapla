@@ -111,10 +111,6 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     final org.rapla.client.spring.LogoutSignal logoutSignal;
     @Autowired
     org.rapla.storage.dbrm.ImpersonationService impersonationService;
-    /** Set by logout(); read+cleared by the next runOauthLogin call. Adds
-     *  prompt=login to the authorize URL to defeat the cookie-reuse race
-     *  when logout-and-restart happen in quick succession in the same JVM. */
-    private volatile boolean nextOauthForcesLogin = false;
 
     /** The login dialog's language chooser for the current login attempt, so a
      *  successful login can persist the chosen language (PRD 029 Phase 4). */
@@ -1085,8 +1081,12 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                 connectionInfo.setLogoutUrl(provider.getLogoutUrl());
             }
             SwingOAuthLoginFlow flow = new SwingOAuthLoginFlow(provider);
-            boolean force = nextOauthForcesLogin;
-            nextOauthForcesLogin = false;
+            // One-shot: set on the fresh context's LogoutSignal by the launcher
+            // when the previous session ended in an explicit logout. A field on
+            // this bean would NOT survive the context rebuild that logout()
+            // triggers — that was the "logout keeps auto-logging-in the old
+            // user" SSO bug.
+            boolean force = logoutSignal.consumeForceOauthLoginNext();
             if (force)
             {
                 flow.forceLogin(true);
@@ -1360,11 +1360,6 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         // session. Becomes redundant when Phase 2 lands (the whole context dies
         // on logout — the bus's @PreDestroy fires for free).
         eventBus.reset();
-        // Tell the next OAuth flow to force the IdP login form regardless of the
-        // browser's session cookie. We no longer open a /connect/logout tab, so the
-        // browser may still hold a live SSO session; prompt=login forces a fresh
-        // prompt deterministically on the next /oauth2/authorize.
-        nextOauthForcesLogin = true;
         stop(null);
         // PRD 052 Phase 2 — signal SpringRaplaClient.main() to close this
         // Spring context and build a fresh one for the next login. main()
@@ -1372,7 +1367,14 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         // @PreDestroy across every bean), and rebuilds the context. The user
         // sees a fresh login dialog in a fresh context with zero carry-over
         // of cached entities, UI state, or singleton listener registrations.
-        logoutSignal.next(org.rapla.client.spring.NextSession.showLoginDialog());
+        //
+        // showLoginDialogAfterLogout (not showLoginDialog): the next context's
+        // first OAuth flow must send prompt=login so the server terminates the
+        // browser's still-live session — we no longer open a /connect/logout
+        // tab, and without the prompt the next /oauth2/authorize silently
+        // re-authenticates the old user. The intent has to ride on NextSession;
+        // a field on this bean dies with the context this signal tears down.
+        logoutSignal.next(org.rapla.client.spring.NextSession.showLoginDialogAfterLogout());
     }
 
     /**

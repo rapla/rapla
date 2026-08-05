@@ -4,6 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 import { AuthService } from '../auth/auth.service';
 import { UsersService } from '../auth/users.service';
@@ -15,8 +16,12 @@ import { PermissionMigrationDialogComponent } from '../account/permission-migrat
 import { PermissionMigrationService } from '../account/permission-migration.service';
 import { OmniboxComponent } from './omnibox.component';
 import { EventSheetComponent, type EventSheetDialogData } from '../event/event-sheet.component';
-import { newScopedDraft } from '../event/event-draft';
-import { GraphqlService } from '../graphql/graphql.service';
+import { newScopedDraft, type EventDraft } from '../event/event-draft';
+import { NewEventOptionsService } from '../event/new-event-options.service';
+import { NewEventPickerComponent } from '../event/new-event-picker.component';
+import { type PickItem } from '../event/new-event-picker-model';
+import { TemplateInstantiationService } from '../event/template-instantiation.service';
+import { ViewStateStore } from '../state/view-state-store';
 import { UndoToastService } from '../actions/undo-toast.service';
 import { FilterStore } from '../state/filter-store';
 
@@ -46,26 +51,8 @@ import { FilterStore } from '../state/filter-store';
     <mat-toolbar color="primary" class="appbar">
       <span class="app-title">Rapla</span>
       <app-omnibox class="toolbar-search" />
-      @if (eventTypes().length > 1) {
-        <button
-          matButton
-          class="new-event"
-          [matMenuTriggerFor]="newMenu"
-          title="Neue Veranstaltung anlegen"
-        >
-          <mat-icon>add</mat-icon>
-          <span class="new-event-label">Neu</span>
-          <mat-icon class="caret">arrow_drop_down</mat-icon>
-        </button>
-        <mat-menu #newMenu="matMenu">
-          @for (t of eventTypes(); track t.key) {
-            <button mat-menu-item (click)="newEvent(t.key)">
-              <span>{{ t.name }}</span>
-            </button>
-          }
-        </mat-menu>
-      } @else {
-        <button matButton class="new-event" (click)="newEvent()" title="Neue Veranstaltung anlegen">
+      @if (canCreate()) {
+        <button matButton class="new-event" (click)="newEvent()" title="Neues Ereignis anlegen">
           <mat-icon>add</mat-icon>
           <span class="new-event-label">Neu</span>
         </button>
@@ -228,14 +215,21 @@ export class AppToolbarComponent implements OnInit {
   private readonly profile = inject(ProfileService);
   private readonly permissionMigration = inject(PermissionMigrationService);
   private readonly dialog = inject(MatDialog);
-  private readonly gql = inject(GraphqlService);
+  private readonly snackBar = inject(MatSnackBar);
+  private readonly templateInstantiation = inject(TemplateInstantiationService);
+  private readonly viewState = inject(ViewStateStore);
   /** PRD 094 D2 — main-view command history behind the header ↶/↷ buttons. */
   protected readonly undo = inject(UndoToastService);
   private readonly filter = inject(FilterStore);
 
-  /** PRD 094 Phase 2 — creatable event types; >1 turns "Neu" into a type menu
-   *  (the Swing wizard-submenu analog), exactly 1 keeps the plain button. */
-  readonly eventTypes = signal<{ key: string; name: string }[]>([]);
+  /** PRD 104 D6 — creatable event types + templates from newEventOptions
+   *  (canCreate-filtered + wizard-plugin-gated server-side). ONE "Neu" button;
+   *  it opens the unified picker dialog, except for the classic exactly-1-type/
+   *  0-templates case (direct-open). Hidden when the caller can create nothing. */
+  protected readonly newOptions = inject(NewEventOptionsService);
+  protected readonly canCreate = computed(
+    () => this.newOptions.eventTypes().length > 0 || this.newOptions.templates().length > 0,
+  );
 
   /** Effective user shown in the chip (impersonation target when active, else self). */
   readonly effectiveUsername = computed(() => this.auth.identity()?.username ?? '');
@@ -274,19 +268,8 @@ export class AppToolbarComponent implements OnInit {
       next: (caps) => this.showEditAccount.set(caps.externalIdpLabel == null),
       error: () => this.showEditAccount.set(false),
     });
-    // PRD 094 — creatable event types for the type-aware "Neu" (wizard analog).
-    this.gql
-      .query<{
-        types: { key: string; name: string; classificationType: string }[];
-      }>(`query { types { key name classificationType } }`)
-      .subscribe((resp) => {
-        const all = resp.data?.types ?? [];
-        this.eventTypes.set(
-          all
-            .filter((t) => t.classificationType === 'RESERVATION')
-            .map((t) => ({ key: t.key, name: t.name })),
-        );
-      });
+    // PRD 104 — the caller's "Neu" options (types canCreate-filtered server-side).
+    this.newOptions.ensureLoaded().subscribe();
     // PRD 090 — only surface the migration entry when there is at least one open item.
     if (this.isAdmin()) {
       this.permissionMigration.findings().subscribe({
@@ -297,18 +280,63 @@ export class AppToolbarComponent implements OnInit {
   }
 
   /**
-   * PRD 091 — "Neu" opens the FULL event editor as a dialog over the current
-   * view (2026-07-07 direction: the editor is not its own page; the
-   * /app/event/:id route stays as the deep link only). Id minted client-side
-   * per D3. The quick-create window (QuickEventDialogComponent) is reserved
-   * for the future calendar-click entry point.
+   * PRD 104 D6 — "Neu" opens the unified picker (types + templates); only the
+   * exactly-1-type/0-templates case skips the dialog. A type pick opens the
+   * FULL event editor as a dialog over the current view (PRD 091); a template
+   * pick instantiates onto the current calendar window date (D8 cascade —
+   * window date > today; the drag entry point in view-host supplies the slot).
    */
-  newEvent(typeKey?: string): void {
-    const key = typeKey ?? this.eventTypes()[0]?.key ?? 'event';
+  newEvent(): void {
+    const types = this.newOptions.eventTypes();
+    if (types.length === 1 && this.newOptions.templates().length === 0) {
+      this.openTypeSheet(types[0].key);
+      return;
+    }
+    this.dialog
+      .open(NewEventPickerComponent, {
+        width: '560px',
+        maxWidth: '95vw',
+        autoFocus: false,
+        restoreFocus: false,
+      })
+      .afterClosed()
+      .subscribe((item?: PickItem) => {
+        if (!item) return;
+        if (item.kind === 'type') this.openTypeSheet(item.id);
+        else this.instantiateTemplate(item.id);
+      });
+  }
+
+  private openTypeSheet(typeKey: string): void {
     // Swing parity: the view's selected resources become allocations of the new
     // event. The mapping lives in newScopedDraft so every "new from a scoped
-    // view" entry point (quick-create later) shares one implementation.
-    const draft = newScopedDraft(key, new Date(), this.filter.entries());
+    // view" entry point shares one implementation.
+    this.openSheet(newScopedDraft(typeKey, new Date(), this.filter.entries()));
+  }
+
+  private instantiateTemplate(templateId: string): void {
+    const windowFrom = this.viewState.window()?.from;
+    const day = (windowFrom ?? new Date().toISOString()).slice(0, 10);
+    this.templateInstantiation.instantiate(templateId, { day, startMin: null }).subscribe({
+      next: (draft) => {
+        if (!draft) {
+          this.snackBar.open(
+            'Die Vorlage enthält keine Termine — bitte zuerst Termine in der Vorlage anlegen.',
+            undefined,
+            { duration: 4000 },
+          );
+          return;
+        }
+        this.openSheet(draft);
+      },
+      error: () =>
+        this.snackBar.open('Vorlage konnte nicht geladen werden (Serverfehler).', undefined, {
+          duration: 4000,
+        }),
+    });
+  }
+
+  private openSheet(draft: EventDraft): void {
     this.dialog.open(EventSheetComponent, {
       data: { id: draft.id, isNew: true, draft } satisfies EventSheetDialogData,
       width: '960px',

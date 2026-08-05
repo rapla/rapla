@@ -1603,8 +1603,24 @@ JWKS. The Angular `AuthService.token()` picks `id_token` vs
 > **refresh token** (robust even when the access token has expired — the standard
 > revoke resolves the user from the durable refresh token), clears its local
 > `TokenStore`, and re-enters the login flow. It no longer opens a background
-> `/connect/logout` browser tab; `nextOauthForcesLogin` (→ `prompt=login`) handles
-> the surviving IdP SSO session at the next login.
+> `/connect/logout` browser tab; the force-login intent rides on
+> `NextSession.showLoginDialogAfterLogout()` across the PRD 052 context rebuild
+> into the fresh context's `LogoutSignal`, whose one-shot flag makes the next
+> OAuth flow send `prompt=login`. (A plain field on `RaplaClientServiceImpl`
+> doesn't survive the rebuild — that was the "logout keeps auto-logging-in the
+> old user" bug, fixed 2026-07-21.)
+>
+> **`prompt=login` against rapla's OWN `/oauth2/authorize` is honored by
+> `PromptLoginReauthenticationFilter`** (rapla-app, wired into the SAS chain in
+> `AuthorizationServerConfig`). Spring Authorization Server itself only acts on
+> `prompt=none` — it validates but ignores `prompt=login`, so `/oauth2/revoke`
+> alone left the browser's rapla session cookie live and the next authorize
+> silently re-issued a code for the old user. The filter logs the session out
+> (HttpSession + SecurityContext + remember-me cookie/token) and redirects to
+> the same authorize URL with the `login` prompt value stripped, so the saved
+> request replayed after `/login` can't loop. Regression tests:
+> `PromptLoginReauthenticationTest` (tier 3) and
+> `LogoutForceReauthenticationTest` (client).
 
 ### 401 handling on the SPA — refresh-then-retry, redirect on real rejection
 
