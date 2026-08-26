@@ -60,9 +60,13 @@ public class AllocatableMutationController
     private final StorageOperator operator;
     private final org.rapla.server.spring.JwtUserResolver jwtUserResolver;
 
+    private final org.rapla.server.internal.SecurityManager security;
+
     public AllocatableMutationController(StorageOperator operator,
-            org.rapla.server.spring.JwtUserResolver jwtUserResolver)
+            org.rapla.server.spring.JwtUserResolver jwtUserResolver,
+            org.rapla.server.internal.SecurityManager security)
     {
+        this.security = security;
         this.operator = operator;
         this.jwtUserResolver = jwtUserResolver;
     }
@@ -136,7 +140,7 @@ public class AllocatableMutationController
         event.setUserId(caller.getId());
         event.addStore(a);
         event.addCreate(a.getReference());
-        ((CachableStorageOperator) operator).dispatch(event);
+        dispatchChecked(event);
 
         return operator.tryResolve(new ReferenceInfo<>(a.getId(), Allocatable.class));
     }
@@ -217,7 +221,7 @@ public class AllocatableMutationController
         UpdateEvent event = new UpdateEvent();
         event.setUserId(caller.getId());
         event.addStore(draft);
-        ((CachableStorageOperator) operator).dispatch(event);
+        dispatchChecked(event);
 
         return operator.tryResolve(new ReferenceInfo<>(id, Allocatable.class));
     }
@@ -272,7 +276,7 @@ public class AllocatableMutationController
         {
             try
             {
-                ((CachableStorageOperator) operator).dispatch(event);
+                dispatchChecked(event);
             }
             catch (RaplaException re)
             {
@@ -301,6 +305,12 @@ public class AllocatableMutationController
     /** Same seam as {@link ReservationMutationController} — the JwtUserResolver
      *  handles external-IdP tokens; the earlier hand-rolled preferred_username
      *  lookup silently failed for Keycloak/Entra logins (dedup 2026-07-08). */
+    private void dispatchChecked(UpdateEvent event) throws RaplaException
+    {
+        WriteGate.check(security, operator, event);
+        ((CachableStorageOperator) operator).dispatch(event);
+    }
+
     private User requireCaller()
     {
         User caller = jwtUserResolver.resolveCurrentUserOrNull();

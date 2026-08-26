@@ -37,12 +37,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.Locale;
 import java.util.Map;
-import java.util.SimpleTimeZone;
 
 /**
  * Preserves the legacy iCal subscription URL contract:
@@ -71,7 +68,6 @@ public class Export2iCalController
     private final int globalDaysAfter;
     private final boolean globalInterval;
     private final int lastModifiedIntervall;
-    private final SimpleDateFormat rfc1123DateFormat;
 
     public Export2iCalController(RaplaFacade facade,
                                   RaplaLocale raplaLocale,
@@ -97,8 +93,6 @@ public class Export2iCalController
         this.globalDaysAfter = config.getChild(Export2iCalPlugin.DAYS_AFTER).getValueAsInteger(Export2iCalPlugin.DEFAULT_daysAfter);
         this.lastModifiedIntervall = config.getChild(Export2iCalPlugin.LAST_MODIFIED_INTERVALL).getValueAsInteger(10);
 
-        this.rfc1123DateFormat = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z", Locale.US);
-        this.rfc1123DateFormat.setTimeZone(new SimpleTimeZone(0, "GMT"));
     }
 
     @RequestMapping(path = "/ical", method = { RequestMethod.GET, RequestMethod.HEAD })
@@ -155,7 +149,7 @@ public class Export2iCalController
                 return;
             }
 
-            response.setHeader("Last-Modified", rfc1123DateFormat.format(getLastModified(calModel)));
+            response.setHeader("Last-Modified", java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME.format(getLastModified(calModel).atOffset(java.time.ZoneOffset.UTC)));
             final Object isSet = calModel.getOption(Export2iCalPlugin.ICAL_EXPORT);
 
             if (isSet == null || isSet.equals("false"))

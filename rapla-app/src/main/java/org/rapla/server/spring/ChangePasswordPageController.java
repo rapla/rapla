@@ -74,6 +74,14 @@ public class ChangePasswordPageController
             return "redirect:/change-password?error";
         }
         User user = session.checkAndGetUser(request);
+        // This page only SETS a missing password. A user who has one must go through the
+        // old-password-checked path; an externally managed identity gets no local password.
+        if (user.getAuthenticationSource() != null
+                || !((org.rapla.storage.SyncStorageOperator) operator).isPasswordChangeRequired(user))
+        {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN, "password already set");
+        }
         operator.changePassword(user, new char[0], newPassword.toCharArray());
         LOGGER.info("User '{}' set a password via the change-password nag page", user.getUsername());
         return "redirect:" + afterUrl(request, response);

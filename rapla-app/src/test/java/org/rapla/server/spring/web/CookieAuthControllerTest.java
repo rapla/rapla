@@ -586,4 +586,25 @@ class CookieAuthControllerTest
                         .cookie(new Cookie("refresh_token", second)))
                 .andExpect(status().isOk());
     }
+    @Test
+    void impersonateSwitchRejectsApiKeyPrincipal() throws Exception
+    {
+        // An api_key JWT (even read-scoped) must not mint an unscoped impersonation cookie.
+        String adminAccess = login("homer", "duffs").accessToken();
+        MvcResult created = mockMvc.perform(post("/api/auth/api-keys")
+                        .header("Authorization", "Bearer " + adminAccess)
+                        .contentType("application/json")
+                        .content("{\"label\":\"audit\"}"))
+                .andExpect(status().isOk())
+                .andReturn();
+        String apiKey = tools.jackson.databind.json.JsonMapper.builder().build()
+                .readTree(created.getResponse().getContentAsString()).get("key").asText();
+
+        mockMvc.perform(post("/api/auth/impersonate/switch")
+                        .with(csrf())
+                        .cookie(new Cookie("access_token", apiKey))
+                        .param("target_username", "homer"))
+                .andExpect(status().isForbidden());
+    }
+
 }

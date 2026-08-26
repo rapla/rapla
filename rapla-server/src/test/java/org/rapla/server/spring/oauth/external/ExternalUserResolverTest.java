@@ -499,4 +499,37 @@ class ExternalUserResolverTest extends FacadeTestSupport
         if (sb.toString().equalsIgnoreCase(s) && !sb.toString().equals(s)) return sb.toString();
         return sb.toString().toLowerCase(Locale.ROOT).equals(s) ? sb.toString().toUpperCase(Locale.ROOT) : sb.toString();
     }
+    /** The provisioning path must apply the same rule as {@code resolve()}: an identity derived
+     *  from the email claim is only trusted when the IdP vouches for it ({@code email_verified}). */
+    @Test
+    void claimsForRejectsEmailDerivedUsernameWhenEmailVerifiedFalse()
+    {
+        Jwt unverified = Jwt.withTokenValue("tok")
+                .header("alg", "RS256")
+                .claim("iss", google.issuer())
+                .claim("email", "victim@example.com")
+                .claim("email_verified", false)
+                .issuedAt(Instant.now())
+                .expiresAt(Instant.now().plusSeconds(60))
+                .build();
+
+        assertThrows(RaplaSecurityException.class, () -> resolver.claimsFor(unverified, google),
+                "email_verified=false must not yield a provisionable identity");
+    }
+
+    @Test
+    void claimsForAcceptsEmailDerivedUsernameWhenEmailVerifiedTrue() throws Exception
+    {
+        Jwt verified = Jwt.withTokenValue("tok")
+                .header("alg", "RS256")
+                .claim("iss", google.issuer())
+                .claim("email", "Someone@example.com")
+                .claim("email_verified", true)
+                .issuedAt(Instant.now())
+                .expiresAt(Instant.now().plusSeconds(60))
+                .build();
+
+        assertEquals("someone@example.com", resolver.claimsFor(verified, google).username());
+    }
+
 }

@@ -218,7 +218,7 @@ public class TableViewController implements TableViewService
             for (String id : body.owners())
             {
                 User u = facade.tryResolve(new ReferenceInfo<>(id, User.class));
-                if (u != null) selection.add(u);
+                if (u != null && RemoteStorageController.canSeeUser(user, u)) selection.add(u);
             }
         }
 

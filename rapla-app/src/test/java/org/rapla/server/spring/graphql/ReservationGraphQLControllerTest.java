@@ -142,6 +142,9 @@ class ReservationGraphQLControllerTest
     @Autowired
     MockMvc mockMvc;
 
+    @Autowired
+    org.rapla.storage.CachableStorageOperator operator;
+
     HttpGraphQlTester tester;
 
     @BeforeEach
@@ -195,6 +198,52 @@ class ReservationGraphQLControllerTest
         assertTrue(names.contains("owner"),        () -> "missing Reservation.owner in " + names);
         assertTrue(names.contains("appointments"), () -> "missing Reservation.appointments in " + names);
         assertTrue(names.contains("allocations"),  () -> "missing Reservation.allocations in " + names);
+    }
+
+    /**
+     * PRD 104 v3 — Reservation.externalId surfaces the `externalid` annotation
+     * (the external-source binding stamp): null when unbound, the raw value once
+     * stamped. Drives the SPA's linked-events view independent of the staging worklist.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void reservationExternalIdExposesTheAnnotation() throws Exception
+    {
+        List<Map<String, Object>> rows = tester.document("""
+                query {
+                  reservations(filter: {
+                    from: "2000-01-01T00:00:00",
+                    to:   "2040-01-01T00:00:00"
+                  }) { id externalId }
+                }
+                """)
+                .execute()
+                .path("reservations")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
+                .get();
+        assertFalse(rows.isEmpty(), "fixture should contain reservations");
+        assertTrue(rows.stream().allMatch(r -> r.get("externalId") == null),
+                () -> "fixture reservations must carry no stamp; got " + rows);
+
+        String id = (String) rows.get(0).get("id");
+        org.rapla.entities.domain.Reservation stored = operator.tryResolve(
+                new org.rapla.entities.storage.ReferenceInfo<>(id, org.rapla.entities.domain.Reservation.class));
+        assertNotNull(stored);
+        org.rapla.entities.domain.Reservation draft = (org.rapla.entities.domain.Reservation) stored.clone();
+        draft.setAnnotation(org.rapla.entities.domain.RaplaObjectAnnotations.KEY_EXTERNALID, "test-source:4711");
+        operator.storeAndRemove(List.of(draft),
+                List.<org.rapla.entities.storage.ReferenceInfo<org.rapla.entities.domain.Reservation>> of(),
+                operator.getUser("homer"));
+
+        String value = tester.document("""
+                query($id: ID!) { reservation(id: $id) { externalId } }
+                """)
+                .variable("id", id)
+                .execute()
+                .path("reservation.externalId")
+                .entity(String.class)
+                .get();
+        assertEquals("test-source:4711", value);
     }
 
     // ============================================================ §12 leak tests
@@ -2077,6 +2126,141 @@ class ReservationGraphQLControllerTest
     }
 
     /**
+     * `minCount` (HAVING) drops buckets whose population is below the threshold — so a duplicate
+     * report can show only groups that occur more than once. `self:true` makes every allocatable
+     * its own bucket (count==1); minCount:2 must therefore remove all of them.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void allocatableStatsMinCountFiltersSingletonBuckets()
+    {
+        String q = """
+                query($min: Int) {
+                  allocatableStats(
+                    filter:    { typeIn: [room] },
+                    groupBy:   [ { key: "res", self: true } ],
+                    aggregate: [ { key: "n", fn: COUNT } ],
+                    minCount:  $min
+                  ) { count }
+                }
+                """;
+        List<Map<String, Object>> all = tester.document(q).variable("min", null)
+                .execute().path("allocatableStats")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
+        assertFalse(all.isEmpty(), "fixture should have room allocatables (each a count=1 bucket)");
+        assertTrue(all.stream().allMatch(b -> ((Number) b.get("count")).intValue() == 1),
+                "self-grouped buckets are singletons");
+        List<Map<String, Object>> filtered = tester.document(q).variable("min", 2)
+                .execute().path("allocatableStats")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
+        assertTrue(filtered.isEmpty(), "minCount:2 must remove all count=1 buckets");
+    }
+
+    /**
+     * {@code Allocatable.compute(expr:)} evaluates a rapla expression per allocatable (same engine as
+     * {@code AppointmentBlock.compute} / the stats group-key expr), so a view can lift a
+     * classification attribute onto a row-level, groupable column. Deterministic literal expr here.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void allocatableComputeEvaluatesAnExpressionPerRow()
+    {
+        List<Map<String, Object>> rows = tester.document("""
+                query {
+                  allocatables(filter: { typeIn: [room] }) {
+                    lit: compute(expr: "concat('a','b')")
+                  }
+                }
+                """)
+                .execute().path("allocatables")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
+        assertFalse(rows.isEmpty(), "fixture has room allocatables");
+        for (Map<String, Object> r : rows)
+        {
+            assertEquals("ab", r.get("lit"), "compute must evaluate the expr against the allocatable");
+        }
+    }
+
+    /**
+     * {@code Allocatable.attributeValue(keys:)} reads the FIRST of several attribute keys the row's
+     * type actually has. A {@code compute(expr:)} cannot do this: the expression binds its attribute
+     * names against one DynamicType at parse time, so naming a key another type lacks nulls the whole
+     * expression. Deployments spell the same datum differently per type ({@code email} on persons,
+     * {@code Email} on rooms) — one groupable column across both types is what a duplicate report
+     * over mixed types needs.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void allocatableAttributeValueReadsTheFirstKeyTheRowsTypeActuallyHas()
+    {
+        List<Map<String, Object>> rows = tester.document("""
+                query {
+                  allocatables(filter: { typeIn: [room, lecturer] }) {
+                    typ: classification { typeKey }
+                    wert: attributeValue(keys: ["surname", "name"])
+                    fehlt: attributeValue(keys: ["gibtesnicht"])
+                  }
+                }
+                """)
+                .execute().path("allocatables")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
+
+        assertFalse(rows.isEmpty(), "fixture has rooms and lecturers");
+        boolean sawRoom = false;
+        boolean sawLecturer = false;
+        for (Map<String, Object> r : rows)
+        {
+            String typeKey = (String) ((Map<?, ?>) r.get("typ")).get("typeKey");
+            assertNull(r.get("fehlt"), "a key no type has is null, not an error");
+            if ("lecturer".equals(typeKey))
+            {
+                sawLecturer = true;
+                // "surname" wins on the type that HAS it, although "name" is listed too
+                assertTrue(List.of("Simpson", "Burns").contains(r.get("wert")), String.valueOf(r));
+            }
+            else
+            {
+                sawRoom = true;
+                // rooms have no "surname" — the unknown key is skipped, "name" answers
+                assertNotNull(r.get("wert"), "the room's name must survive the unknown first key: " + r);
+            }
+        }
+        assertTrue(sawRoom && sawLecturer, "both types must be in the result");
+    }
+
+    /**
+     * The {@code expr} fallback of {@code attributeValue}: when no key matched, a rapla expression
+     * answers. That keeps ONE switchable grouping column — a duplicate report toggles between
+     * "same attribute" (keys) and "same composed name" ({@code name()}) without a second view.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void attributeValueFallsBackToAnExpressionWhenNoKeyMatches()
+    {
+        List<Map<String, Object>> rows = tester.document("""
+                query {
+                  allocatables(filter: { typeIn: [room, lecturer] }) {
+                    bez: name
+                    wert: attributeValue(keys: [], expr: "name()")
+                    vorrang: attributeValue(keys: ["surname"], expr: "concat('fallback')")
+                  }
+                }
+                """)
+                .execute().path("allocatables")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
+
+        assertFalse(rows.isEmpty(), "fixture has rooms and lecturers");
+        for (Map<String, Object> r : rows)
+        {
+            assertEquals(r.get("bez"), r.get("wert"), "no keys given → the expression is the value");
+            // a matching key wins over the fallback; a type without it falls back
+            assertEquals("fallback".equals(r.get("vorrang")), r.get("bez").toString().contains("Room")
+                    || r.get("bez").toString().equals("erwin") || r.get("bez").toString().equals("DozGruppe"),
+                    "only types lacking 'surname' may fall back: " + r);
+        }
+    }
+
+    /**
      * PRD 080 item 7 — reservationStats groups the §12-visible reservation set in the window by
      * DynamicType and counts.
      */
@@ -2708,4 +2892,34 @@ class ReservationGraphQLControllerTest
             assertNotNull(r.get("hasConflicts"), "hasConflicts must populate on every row");
         }
     }
+    /**
+     * §12 — the nested {@code owner} must not expose other users. Swing ships a non-admin only
+     * itself plus the users it can admin ({@code LocalCache.getVisibleEntities}); monty is a
+     * group admin but homer (isAdmin) is never adminable, so homer-owned events resolve to
+     * {@code owner: null} for monty — no username, no email, no isAdmin flag.
+     */
+    @Test
+    @WithMockUser(username = "monty", roles = "USER")
+    void nestedOwnerIsNullUnlessSelfOrAdminable()
+    {
+        List<Map<String, Object>> got = tester.document("""
+                { reservations(filter: { from: "2001-01-01T00:00:00", to: "2020-12-31T00:00:00" })
+                  { id owner { username email isAdmin } } }
+                """)
+                .execute()
+                .path("reservations")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
+                .get();
+        assertFalse(got.isEmpty(), "fixture: monty must see homer-owned readable reservations");
+        boolean sawForeign = false;
+        for (Map<String, Object> r : got)
+        {
+            Object owner = r.get("owner");
+            if (owner == null) { sawForeign = true; continue; }
+            assertEquals("monty", ((Map<?, ?>) owner).get("username"),
+                    () -> "owner of " + r.get("id") + " leaked: " + owner);
+        }
+        assertTrue(sawForeign, "fixture: at least one homer-owned event expected → owner null");
+    }
+
 }

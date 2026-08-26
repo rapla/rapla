@@ -41,6 +41,12 @@ public class UrlEncryptionServletRequestResponsePreprocessor  implements Servlet
     
     public HttpServletRequest handleRequest( ServletContext servletContext, HttpServletRequest request, HttpServletResponse response) throws RaplaException {
         try {
+            // Only the calendar export pages take encrypted parameters. Everything else is left
+            // untouched, so a ?key= can never smuggle parameters into another controller.
+            if (!isCalendarExportPath(request))
+            {
+                return request;
+            }
             // check if the page was called via encrypted parameters
             if (request.getParameter(UrlEncryption.ENCRYPTED_PARAMETER_NAME) != null && request.getParameter("page") == null )
             {
@@ -90,14 +96,18 @@ public class UrlEncryptionServletRequestResponsePreprocessor  implements Servlet
      * @param request Page request Object
      * @return boolean true if page was called illegally
      */
+    /** The DispatcherServlet is mapped to "/", so getPathInfo() is null — the request URI is
+     *  the only reliable path source. */
+    static boolean isCalendarExportPath(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        if (uri == null) return false;
+        String path = uri.toLowerCase();
+        return path.contains("/calendar") || path.contains("/ical");
+    }
+
     public boolean isCalendarExportCalledIllegally(HttpServletRequest request) throws RaplaException {
     	 String username = request.getParameter("user");
-        final String contextPath = request.getPathInfo();
-        if ( contextPath != null && contextPath.toLowerCase().contains("terminal-export") ) {
-            return true;
-        }
-
-        if ( contextPath == null || (!contextPath.toLowerCase().contains("cal") )) {
+        if (!isCalendarExportPath(request)) {
             return false;
         }
 

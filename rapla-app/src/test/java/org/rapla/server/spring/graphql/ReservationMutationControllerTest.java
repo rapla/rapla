@@ -1302,4 +1302,155 @@ class ReservationMutationControllerTest
                 .get();
         graphQlSource.rebuild();
     }
+
+    // ============================================================ PRD 091 OQ5 — request-only allocations
+
+    /**
+     * PRD 091 OQ5 / PRD 105 D5 — a user who may only REQUEST a resource must be able to save.
+     *
+     * <p>{@code SecurityManager} lets such an allocation through only when the reservation carries
+     * {@code RequestStatus.REQUESTED} for it ({@code canRequest && getRequestStatus(alloc) == null}
+     * throws {@code warning.no_reserve_permission}). Swing sets that status client-side when
+     * assigning ({@code RaplaComponent.addAllocatables}); over GraphQL nobody could, so the save was
+     * a dead end for request-only users. The server now derives it, and the status is readable back.
+     */
+    @Test
+    @WithMockUser(username = "monty")
+    void aRequestOnlyAllocatableIsSavedAsRequestedAndReadsBack() throws Exception
+    {
+        org.rapla.entities.User monty = operator.getUser("monty");
+        org.rapla.entities.domain.Allocatable requestOnly = facade.edit(
+                facade.getAllocatables()[0]);
+        for (org.rapla.entities.domain.Permission p : requestOnly.getPermissionList()
+                .toArray(new org.rapla.entities.domain.Permission[0]))
+        {
+            requestOnly.removePermission(p);
+        }
+        org.rapla.entities.domain.Permission request = requestOnly.newPermission();
+        request.setUser(monty);
+        request.setAccessLevel(org.rapla.entities.domain.Permission.AccessLevel.REQUEST);
+        requestOnly.addPermission(request);
+        facade.storeObjects(new org.rapla.entities.Entity[] { requestOnly });
+
+        String eventId = "e9999999-9999-4999-8999-999999999991";
+        tester.document("""
+                mutation ($input: CreateReservationInput!) {
+                  createReservation(input: $input) { id }
+                }
+                """)
+                .variable("input", Map.of(
+                        "id", eventId,
+                        "typeKey", "event",
+                        "classification", Map.of("event", Map.of("name", "Antragstermin")),
+                        "appointments", List.of(Map.of(
+                                "id", "a9999999-9999-4999-8999-999999999991",
+                                "start", "2026-09-01T10:00:00",
+                                "end", "2026-09-01T11:00:00",
+                                "allDay", false)),
+                        "allocations", List.of(Map.of("allocatableId", requestOnly.getId()))))
+                .execute()
+                .path("createReservation.id")
+                .entity(String.class)
+                .isEqualTo(eventId);
+
+        tester.document("""
+                query ($id: ID!) {
+                  reservation(id: $id) { allocations { allocatable { id } requestStatus } }
+                }
+                """)
+                .variable("id", eventId)
+                .execute()
+                .path("reservation.allocations[0].requestStatus")
+                .entity(String.class)
+                .isEqualTo("REQUESTED");
+    }
+
+    /**
+     * The derivation is not a blanket stamp: a user who may allocate outright gets a normal
+     * allocation, otherwise every admin booking would look like a pending request.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void anAllocatableTheCallerMayAllocateCarriesNoRequestStatus() throws Exception
+    {
+        String eventId = "e9999999-9999-4999-8999-999999999992";
+        tester.document("""
+                mutation ($input: CreateReservationInput!) {
+                  createReservation(input: $input) { id }
+                }
+                """)
+                .variable("input", Map.of(
+                        "id", eventId,
+                        "typeKey", "event",
+                        "classification", Map.of("event", Map.of("name", "Normaler Termin")),
+                        "appointments", List.of(Map.of(
+                                "id", "a9999999-9999-4999-8999-999999999992",
+                                "start", "2026-09-02T10:00:00",
+                                "end", "2026-09-02T11:00:00",
+                                "allDay", false)),
+                        "allocations", List.of(Map.of(
+                                "allocatableId", facade.getAllocatables()[0].getId()))))
+                .execute()
+                .path("createReservation.id")
+                .entity(String.class)
+                .isEqualTo(eventId);
+
+        tester.document("""
+                query ($id: ID!) {
+                  reservation(id: $id) { allocations { requestStatus } }
+                }
+                """)
+                .variable("id", eventId)
+                .execute()
+                .path("reservation.allocations[0].requestStatus")
+                .valueIsNull();
+    }
+    /**
+     * GraphQL writes must pass the same {@code SecurityManager} gate as the Swing wire
+     * ({@code RemoteStorageController.dispatch_}): READ on a resource is not ALLOCATE. A room whose
+     * only permission is READ can be seen by monty but must not be bookable by him.
+     */
+    @Test
+    @WithMockUser(username = "monty", roles = "USER")
+    void createReservationOnReadOnlyResourceIsDenied() throws Exception
+    {
+        org.rapla.entities.User homer = facade.getUser("homer");
+        org.rapla.entities.dynamictype.Classification c = facade.getDynamicType("room").newClassification();
+        c.setValue("name", "read-only room");
+        org.rapla.entities.domain.Allocatable room = facade.newAllocatable(c, homer);
+        for (org.rapla.entities.domain.Permission p : new java.util.ArrayList<>(room.getPermissionList()))
+        {
+            room.removePermission(p);
+        }
+        org.rapla.entities.domain.Permission read = room.newPermission();
+        read.setAccessLevel(org.rapla.entities.domain.Permission.AccessLevel.READ);
+        room.addPermission(read);
+        facade.store(room);
+
+        tester.document("""
+                mutation {
+                  createReservation(input: {
+                    id: "e5555555-5555-4555-8555-555555555555",
+                    typeKey: "event",
+                    classification: { event: {} },
+                    appointments: [
+                      { id: "a5555555-5555-4555-8555-555555555555",
+                        start: "2030-06-01T10:00:00", end: "2030-06-01T11:00:00", allDay: false }
+                    ],
+                    allocations: [ { allocatableId: "%s" } ]
+                  }) { id }
+                }
+                """.formatted(room.getId()))
+                .execute()
+                .errors()
+                .satisfy(errs -> {
+                    assertFalse(errs.isEmpty(), "READ-only resource must not be bookable");
+                    assertTrue(errs.toString().contains("PERMISSION_DENIED"),
+                            () -> "expected PERMISSION_DENIED; got " + errs);
+                });
+        assertTrue(operator.tryResolve(new org.rapla.entities.storage.ReferenceInfo<>(
+                "e5555555-5555-4555-8555-555555555555", org.rapla.entities.domain.Reservation.class)) == null,
+                "nothing may be stored");
+    }
+
 }

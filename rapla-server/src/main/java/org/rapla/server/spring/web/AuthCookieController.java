@@ -13,6 +13,7 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.spring.CookieAuthSupport;
+import org.rapla.server.spring.ApiKeyScopeContextInitializer;
 import org.rapla.server.spring.JwtConfig;
 import org.rapla.server.spring.RefreshSessionService;
 import org.rapla.storage.PermissionController;
@@ -156,6 +157,10 @@ public class AuthCookieController implements AuthCookieService
         // 401 if anonymous. The EFFECTIVE user is the impersonation target when an
         // act-claim token is presented (a chained switch).
         session.checkAndGetUser(request);
+        if (ApiKeyScopeContextInitializer.isApiKeyPrincipal())
+        {
+            throw new ImpersonationForbiddenException();
+        }
         // Review B2: the REAL actor must be the original admin, not the effective
         // (impersonated) user. If the current token already carries an act claim
         // (already impersonating), resolve the admin from act.sub so canAdminUser +

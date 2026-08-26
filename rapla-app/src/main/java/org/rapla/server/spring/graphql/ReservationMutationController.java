@@ -44,7 +44,7 @@ import org.springframework.stereotype.Controller;
  * single-entity full-state create/update, four bulk transforms (changeOwner,
  * move, copy, deleteMany), and the generic applyChanges escape hatch.
  *
- * <p>All writes flow through {@code operator.dispatch(UpdateEvent)} — one
+ * <p>All writes flow through {@code dispatchChecked(UpdateEvent)} — one
  * UpdateEvent per call (ATOMIC-only in v1; PARTIAL deferred to PRD 058).
  *
  * <p>§12 gates are inline per-verb. Anonymous → reject; non-admin →
@@ -70,9 +70,13 @@ public class ReservationMutationController
     private final CachableStorageOperator operator;
     private final org.rapla.server.spring.JwtUserResolver jwtUserResolver;
 
+    private final org.rapla.server.internal.SecurityManager security;
+
     public ReservationMutationController(StorageOperator operator,
-            org.rapla.server.spring.JwtUserResolver jwtUserResolver)
+            org.rapla.server.spring.JwtUserResolver jwtUserResolver,
+            org.rapla.server.internal.SecurityManager security)
     {
+        this.security = security;
         if (!(operator instanceof CachableStorageOperator c))
         {
             throw new IllegalStateException(
@@ -81,6 +85,15 @@ public class ReservationMutationController
         }
         this.operator = c;
         this.jwtUserResolver = jwtUserResolver;
+    }
+
+    /** Same write gate as the Swing wire ({@code RemoteStorageController.dispatch_}): the
+     *  {@code requireCan*} pre-checks are cheap hints only — {@code SecurityManager} owns
+     *  canAllocate, conflict rights and the allocation-change-needs-admin rule. */
+    private void dispatchChecked(UpdateEvent event) throws RaplaException
+    {
+        WriteGate.check(security, operator, event);
+        operator.dispatch(event);
     }
 
     private Reservation editObject(Reservation source)
@@ -160,7 +173,7 @@ public class ReservationMutationController
         event.setUserId(caller.getId());
         event.addStore(r);
         event.addCreate(r.getReference());
-        operator.dispatch(event);
+        dispatchChecked(event);
 
         // Re-resolve to get the stored reservation (with all derived fields populated)
         return (Reservation) operator.tryResolve(r.getReference());
@@ -252,7 +265,7 @@ public class ReservationMutationController
         UpdateEvent event = new UpdateEvent();
         event.setUserId(caller.getId());
         event.addStore(draft);
-        operator.dispatch(event);
+        dispatchChecked(event);
 
         return (Reservation) operator.tryResolve(draft.getReference());
     }
@@ -289,7 +302,7 @@ public class ReservationMutationController
             event.addStore(draft);
             results.add(bulkEntry(i, draft, null, null, null));
         }
-        operator.dispatch(event);
+        dispatchChecked(event);
         return bulkResult("SUCCESS", results);
     }
 
@@ -334,7 +347,7 @@ public class ReservationMutationController
             event.addStore(draft);
             results.add(bulkEntry(i, draft, null, null, null));
         }
-        operator.dispatch(event);
+        dispatchChecked(event);
         return bulkResult("SUCCESS", results);
     }
 
@@ -360,6 +373,65 @@ public class ReservationMutationController
         appt.move(appt.getStart().plus(d[0]), appt.getEnd().plus(d[1]));
         dispatchStore(caller, draft);
         return draft;
+    }
+
+    /**
+     * PRD 105 — the state {@link #moveAppointment} WOULD store, without storing it: same resolution,
+     * same permission gate, same shift arithmetic, no dispatch. The pre-save checks run against this,
+     * so the SPA never rebuilds a move payload itself (PRD 101 keeps move semantics server-side).
+     */
+    Reservation prospectiveAppointmentMove(String appointmentId, LocalDateTime occurrence,
+            Map<String, Object> target, User caller) throws RaplaException
+    {
+        Appointment stored = resolveAppointment(appointmentId);
+        Reservation r = stored.getReservation();
+        requireCanModify(r, caller);
+        LocalDateTime occ = occurrence != null ? occurrence : stored.getStart();
+        if (occurrence != null) requireOccurrence(stored, occurrence);
+        LocalDateTime occEnd = occ.plus(Duration.between(stored.getStart(), stored.getEnd()));
+        Duration[] d = resolveTargetDeltas(target, occ, occEnd);
+        Reservation draft = editObject(r);
+        Appointment appt = findAppointment(draft, appointmentId);
+        appt.move(appt.getStart().plus(d[0]), appt.getEnd().plus(d[1]));
+        ((ReservationImpl) draft).setResolver(operator);
+        return draft;
+    }
+
+    /** PRD 105 — the same for a whole-reservation shift ({@link #moveReservations}); no dispatch. */
+    List<Reservation> prospectiveReservationsMove(List<String> ids, LocalDateTime reference,
+            Map<String, Object> target, User caller) throws RaplaException
+    {
+        List<Reservation> drafts = new ArrayList<>(ids.size());
+        LocalDateTime pivot = reference;
+        List<Reservation> resolved = new ArrayList<>(ids.size());
+        for (int i = 0; i < ids.size(); i++)
+        {
+            Reservation r = operator.tryResolve(new ReferenceInfo<>(ids.get(i), Reservation.class));
+            if (r == null) throw new ReservationMutationException("REFERENCE_NOT_FOUND",
+                    "ids[" + i + "]", "Reservation " + ids.get(i) + " not found");
+            requireCanModify(r, caller);
+            resolved.add(r);
+            if (pivot == null)
+            {
+                for (Appointment a : r.getAppointments())
+                    if (pivot == null || a.getStart().isBefore(pivot)) pivot = a.getStart();
+            }
+        }
+        if (pivot == null) throw new ReservationMutationException("REQUIRED", "reference",
+                "no appointments to derive a reference from");
+        for (Reservation r : resolved)
+        {
+            Reservation draft = editObject(r);
+            for (Appointment a : draft.getAppointments())
+            {
+                LocalDateTime end = pivot.plus(Duration.between(a.getStart(), a.getEnd()));
+                Duration[] d = resolveTargetDeltas(target, pivot, end);
+                a.move(a.getStart().plus(d[0]), a.getEnd().plus(d[1]));
+            }
+            ((ReservationImpl) draft).setResolver(operator);
+            drafts.add(draft);
+        }
+        return drafts;
     }
 
     @MutationMapping
@@ -406,7 +478,7 @@ public class ReservationMutationController
                 UpdateEvent del = new UpdateEvent();
                 del.setUserId(caller.getId());
                 del.putRemoveId(new ReferenceInfo<>(r.getId(), Reservation.class));
-                operator.dispatch(del);
+                dispatchChecked(del);
                 return r; // pre-delete snapshot
             }
         }
@@ -500,7 +572,7 @@ public class ReservationMutationController
             event.addCreate(copy.getReference());
             results.add(bulkEntry(i, copy, null, null, null));
         }
-        operator.dispatch(event);
+        dispatchChecked(event);
         return bulkResult("SUCCESS", results);
     }
 
@@ -588,7 +660,7 @@ public class ReservationMutationController
         UpdateEvent event = new UpdateEvent();
         event.setUserId(caller.getId());
         event.addStore(draft);
-        operator.dispatch(event);
+        dispatchChecked(event);
     }
 
     /** True if the appointment still produces ≥1 block (mirrors isNotEmptyWithExceptions). */
@@ -616,7 +688,7 @@ public class ReservationMutationController
             event.putRemoveId(new ReferenceInfo<>(id, Reservation.class));
             results.add(bulkEntry(i, null, "RESERVATION", id, null));
         }
-        operator.dispatch(event);
+        dispatchChecked(event);
         return bulkResult("SUCCESS", results);
     }
 
@@ -685,7 +757,7 @@ public class ReservationMutationController
             }
         }
 
-        operator.dispatch(event);
+        dispatchChecked(event);
         return bulkResult("SUCCESS", results);
     }
 
@@ -758,11 +830,25 @@ public class ReservationMutationController
             }
             if (caller != null && !operator.getPermissionController().canRead(a, caller))
             {
-                throw new ReservationMutationException("PERMISSION_DENIED",
+                // §12 / security-audit A0d — an unreadable id must answer EXACTLY like an unknown
+                // one. A distinct PERMISSION_DENIED here was an existence oracle: probing guessed
+                // allocatable ids told the caller which of them exist behind their read scope.
+                // Same masking MutationExistenceLeakTest already pins for entity ids.
+                throw new ReservationMutationException("REFERENCE_NOT_FOUND",
                         pathBase + "[" + i + "].allocatableId",
-                        "No read permission on allocatable " + allocId);
+                        "Allocatable " + allocId + " not found");
             }
             r.addAllocatable(a);
+            // PRD 091 OQ5 — mark an allocation the caller may only REQUEST, exactly as Swing does
+            // on assignment (RaplaComponent.addAllocatables). Derived here rather than taken from
+            // the input: whether a resource is request-only is a permission verdict, and a client
+            // could only echo it. Without the marker SecurityManager rejects the whole save
+            // (warning.no_reserve_permission), which is what made request-only users stuck.
+            if (caller != null
+                    && operator.getPermissionController().isRequestOnly(a, caller, operator.today()))
+            {
+                r.setRequestStatus(a, org.rapla.entities.domain.RequestStatus.REQUESTED);
+            }
             List<String> apptIds = (List<String>) alloc.get("appointmentIds");
             if (apptIds != null && !apptIds.isEmpty())
             {
@@ -784,6 +870,22 @@ public class ReservationMutationController
     }
 
     @SuppressWarnings("unchecked")
+    /**
+     * PRD 105 — the transient reservation a pre-save CHECK runs against, built by the same mapper a
+     * save uses (a check that sees a differently-built object is not a check of that save).
+     * Package-private: the checks controller lives next door; nothing here is persisted.
+     */
+    Reservation buildTransientForCheck(Map<String, Object> input, User caller) throws RaplaException
+    {
+        Reservation r = buildReservationFromCreateInput(input, caller, "reservationChecks.draft");
+        // A draft built here has never been through dispatch, so its references are unresolved and
+        // getAllocatables() throws "Resolver not set". The write path gets the resolver during
+        // dispatch; a check runs BEFORE that and must attach it itself (StorageOperator IS the
+        // EntityResolver — same pattern as NotificationService/DefaultUserProvisioner).
+        ((ReservationImpl) r).setResolver(operator);
+        return r;
+    }
+
     private Reservation buildReservationFromCreateInput(Map<String, Object> input, User caller, String path)
             throws RaplaException
     {

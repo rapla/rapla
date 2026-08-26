@@ -211,12 +211,13 @@ public class RemoteStorageController implements RemoteStorage
         LOGGER.debug("A RemoteAuthentificationService wants to reservations from .{} to {}", start, end);
         User user = null;
         List<Allocatable> allocatables = new ArrayList<>();
+        // §12: unknown and unreadable ids are dropped identically — never an existence oracle.
         if (allocatableIds != null)
         {
             for (String id : allocatableIds)
             {
-                Allocatable allocatable = operator.resolve(id, Allocatable.class);
-                if (security.getPermissionController().canReadInformation(allocatable, sessionUser))
+                Allocatable allocatable = operator.tryResolve(new ReferenceInfo<>(id, Allocatable.class));
+                if (allocatable != null && security.getPermissionController().canReadInformation(allocatable, sessionUser))
                 {
                     allocatables.add(allocatable);
                 }
@@ -227,14 +228,17 @@ public class RemoteStorageController implements RemoteStorage
         {
             for (String id : ownerIds)
             {
-                User owner = operator.resolve(id, User.class);
-                owners.add(owner);
+                User owner = operator.tryResolve(new ReferenceInfo<>(id, User.class));
+                if (owner != null && canSeeUser(sessionUser, owner))
+                {
+                    owners.add(owner);
+                }
             }
         }
         ClassificationFilter[] classificationFilters = null;
         boolean requestsOnly = job.isRequestsOnly();
         AppointmentMapping reservations = syncOperator.queryAppointmentsSync(user, allocatables, owners, start, end, classificationFilters, annotationQuery, requestsOnly);
-        AppointmentMap list = new AppointmentMap(reservations);
+        AppointmentMap list = new AppointmentMap(anonymizeUnreadable(sessionUser, reservations));
         LOGGER.debug("Get reservations {} {}: ,{}", start, end, list);
         return list;
     }
@@ -569,6 +573,38 @@ public class RemoteStorageController implements RemoteStorage
             processor.postProcess(sessionUser, result);
         }
         return result;
+    }
+
+    /** The users a client holds in its cache ({@code LocalCache.getVisibleEntities}): self + adminable. */
+    static boolean canSeeUser(User sessionUser, User other)
+    {
+        return sessionUser.getId().equals(other.getId()) || PermissionController.canAdminUser(sessionUser, other);
+    }
+
+    /** Same output rule as {@link #getEntityRecursive}: unreadable reservations ship as anonymous clones. */
+    private AppointmentMapping anonymizeUnreadable(User sessionUser, AppointmentMapping mapping)
+    {
+        PermissionController permissionController = operator.getPermissionController();
+        Map<String, ReservationImpl> anonymous = new LinkedHashMap<>();
+        Map<Entity, Collection<Appointment>> result = new LinkedHashMap<>();
+        for (Map.Entry<Entity, Collection<Appointment>> entry : mapping.entrySet())
+        {
+            Collection<Appointment> appointments = new LinkedHashSet<>();
+            for (Appointment app : entry.getValue())
+            {
+                Reservation reservation = app.getReservation();
+                if (reservation == null || permissionController.canRead(reservation, sessionUser))
+                {
+                    appointments.add(app);
+                    continue;
+                }
+                ReservationImpl clone = anonymous.computeIfAbsent(reservation.getId(),
+                        id -> checkAndMakeReservationsAnonymous(sessionUser, reservation));
+                clone.getAppointmentStream().filter(a -> a.getId().equals(app.getId())).findFirst().ifPresent(appointments::add);
+            }
+            result.put(entry.getKey(), appointments);
+        }
+        return new AppointmentMapping(result);
     }
 
     private ReservationImpl checkAndMakeReservationsAnonymous(User sessionUser, Entity entity)

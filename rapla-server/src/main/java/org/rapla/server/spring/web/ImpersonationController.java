@@ -11,6 +11,7 @@ import org.rapla.framework.RaplaException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.rapla.server.RemoteSession;
+import org.rapla.server.spring.ApiKeyScopeContextInitializer;
 import org.rapla.server.spring.JwtConfig;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.RaplaSecurityException;
@@ -82,6 +83,10 @@ public class ImpersonationController implements ImpersonationService
         //    uniformly for rapla-SAS, Keycloak, Entra, and Google tokens
         //    via the existing ExternalUserResolver pipeline.
         User actor = session.checkAndGetUser(request);
+        if (ApiKeyScopeContextInitializer.isApiKeyPrincipal())
+        {
+            throw new RaplaSecurityException("api keys cannot impersonate");
+        }
 
         // 2. Resolve the target by username. canAdminUser's scoping
         //    means we want a 404 (not 403) for "unknown user" — leaking

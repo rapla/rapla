@@ -332,4 +332,26 @@ class ImpersonationControllerTest
                     "impersonation must not alter the target's refresh-token slot");
         }
     }
+    @Test
+    void apiKeyPrincipalCannotImpersonate() throws Exception
+    {
+        // An api_key JWT (even read-scoped) must not mint an
+        // unscoped impersonation token — that would escalate a scoped credential to full access.
+        String adminToken = loginAs("homer", "duffs");
+        MvcResult created = mockMvc.perform(post("/api/auth/api-keys")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType("application/json")
+                        .content("{\"label\":\"audit\"}"))
+                .andExpect(status().isOk())
+                .andReturn();
+        String apiKey = JsonMapper.builder().build()
+                .readTree(created.getResponse().getContentAsString()).get("key").asText();
+
+        mockMvc.perform(post("/api/auth/impersonate")
+                        .header("Authorization", "Bearer " + apiKey)
+                        .contentType("application/x-www-form-urlencoded")
+                        .content("target_username=homer"))
+                .andExpect(status().isForbidden());
+    }
+
 }

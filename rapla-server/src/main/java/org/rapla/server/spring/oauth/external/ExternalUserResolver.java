@@ -122,13 +122,16 @@ public class ExternalUserResolver
 
         // upn → usernameClaim → emailClaim, matching the resolve() priority.
         String username = asString(claims, "upn");
+        boolean fromEmail = false;
         if (username == null || username.isEmpty())
         {
             username = asString(claims, provider.usernameClaim());
+            fromEmail = provider.usernameClaim().equals(provider.emailClaim());
         }
         if (username == null || username.isEmpty())
         {
             username = asString(claims, provider.emailClaim());
+            fromEmail = true;
         }
         if (username == null || username.isEmpty())
         {
@@ -136,6 +139,13 @@ public class ExternalUserResolver
                     "Cannot extract identity claims: neither 'upn', '"
                             + provider.usernameClaim() + "' nor '"
                             + provider.emailClaim() + "' claim is present");
+        }
+        // Same rule as resolve(): an identity taken from the email claim is only trusted when the
+        // IdP vouches for the address — otherwise anyone can claim another user's username.
+        if (fromEmail && Boolean.FALSE.equals(claims.get("email_verified")))
+        {
+            throw new RaplaSecurityException(
+                    "Cannot extract identity claims: email address is not verified by " + provider.id());
         }
         username = username.toLowerCase(Locale.ROOT);
 

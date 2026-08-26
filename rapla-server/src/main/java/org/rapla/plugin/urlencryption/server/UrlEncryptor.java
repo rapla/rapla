@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.rapla.plugin.urlencryption.UrlEncryption;
 import org.rapla.plugin.urlencryption.UrlEncryptionPlugin;
 import org.rapla.server.RaplaKeyStorage;
+import org.rapla.storage.RaplaSecurityException;
 import org.rapla.server.RemoteSession;
 
 import javax.crypto.BadPaddingException;
@@ -61,6 +62,15 @@ public class UrlEncryptor
     public synchronized String encrypt(String plain, HttpServletRequest request, String algo) throws RaplaException
     {
         final User user = session.checkAndGetUser(request);
+        // A key is a capability for "user=X&file=Y": only mint it for the caller's own calendars,
+        // otherwise any user could open every encrypted-only calendar on the server.
+        for (String pair : plain.split("&"))
+        {
+            if (pair.startsWith("user=") && !pair.substring("user=".length()).equals(user.getUsername()))
+            {
+                throw new RaplaSecurityException("Encrypted calendar URLs can only be created for the own user");
+            }
+        }
         return encrypt(plain, user.getId(), algo);
     }
 

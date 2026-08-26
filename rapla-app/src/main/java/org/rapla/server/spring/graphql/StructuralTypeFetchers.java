@@ -133,6 +133,66 @@ public final class StructuralTypeFetchers
                 }
             };
 
+    /**
+     * {@code Allocatable.compute(expr:)} — the allocatable pendant of {@code AppointmentBlock.compute}.
+     * Evaluates a rapla expression against the allocatable via {@link #computeEntityExpr}, so a view
+     * can lift a classification attribute (e.g. {@code compute("email")}) onto a row-level column that
+     * {@code @column(group: true)} can then group by. Invalid/blank expr → null.
+     */
+    static final LightDataFetcher<String> ALLOCATABLE_COMPUTE =
+            new LightSourceFetcher<Allocatable, String>(Allocatable.class)
+            {
+                @Override protected String read(Allocatable a, Supplier<DataFetchingEnvironment> env)
+                {
+                    if (a == null) return null;
+                    DataFetchingEnvironment dfe = env.get();
+                    String expr = dfe.getArgument("expr");
+                    var rc = RequestContextInstrumentation.from(dfe.getGraphQlContext());
+                    return computeEntityExpr(a, expr, rc.caller());
+                }
+            };
+
+    /**
+     * {@code Allocatable.attributeValue(keys:)} — the first of several attribute keys the row's own
+     * DynamicType actually has, formatted like the typed classification fields.
+     *
+     * <p>Why this is not expressible as {@code compute(expr:)}: an expression binds its attribute
+     * names against ONE DynamicType at parse time, so naming a key another type lacks makes the whole
+     * expression evaluate to null — {@code concat(email,Email)} yields nothing on either type.
+     * Deployments spell the same datum differently per type ({@code email} on persons, {@code Email}
+     * on rooms), and a duplicate report over mixed types needs them in ONE groupable column.
+     *
+     * <p>{@code expr} answers when no key matched — so the same column can also group by a COMPOSED
+     * value ({@code name()}), which no attribute key expresses. That keeps a switchable report
+     * (attribute vs. name) on one view instead of two.
+     */
+    static final LightDataFetcher<String> ALLOCATABLE_ATTRIBUTE_VALUE =
+            new LightSourceFetcher<Allocatable, String>(Allocatable.class)
+            {
+                @Override protected String read(Allocatable a, Supplier<DataFetchingEnvironment> env)
+                {
+                    if (a == null) return null;
+                    DataFetchingEnvironment dfe = env.get();
+                    List<String> keys = dfe.getArgument("keys");
+                    org.rapla.entities.dynamictype.Classification cls = a.getClassification();
+                    if (cls != null && keys != null)
+                    {
+                        for (String key : keys)
+                        {
+                            if (key == null) continue;
+                            org.rapla.entities.dynamictype.Attribute attribute = cls.getAttribute(key);
+                            if (attribute == null) continue;   // not this type's spelling — try the next
+                            String value = cls.getValueAsString(attribute, serverLocale);
+                            if (value != null && !value.isEmpty()) return value;
+                        }
+                    }
+                    String expr = dfe.getArgument("expr");
+                    if (expr == null || expr.isBlank()) return null;
+                    var rc = RequestContextInstrumentation.from(dfe.getGraphQlContext());
+                    return computeEntityExpr(a, expr, rc.caller());
+                }
+            };
+
     /** PRD 080 — true when the allocatable's DynamicType carries the {@code location=true} annotation
      * (the same room/location marker {@code Export2iCalConverter} uses). Deployment-configured, but
      * the annotation key is universal — no instance-specific type key in the query. */
@@ -191,17 +251,28 @@ public final class StructuralTypeFetchers
      * operator dependency comes from the singleton {@link StorageOperator}
      * captured at wiring time (see {@link #wire}).
      */
-    static LightDataFetcher<User> allocatableOwner(StorageOperator operator)
+    static LightDataFetcher<HelloGraphQLController.UserDto> allocatableOwner(StorageOperator operator)
     {
-        return new LightSourceFetcher<Allocatable, User>(Allocatable.class)
+        return new LightSourceFetcher<Allocatable, HelloGraphQLController.UserDto>(Allocatable.class)
         {
-            @Override protected User read(Allocatable a, Supplier<DataFetchingEnvironment> env)
+            @Override protected HelloGraphQLController.UserDto read(Allocatable a, Supplier<DataFetchingEnvironment> env)
                     throws RaplaException
             {
-                ReferenceInfo<User> ref = a.getOwnerRef();
-                return ref == null ? null : operator.tryResolve(ref);
+                return visibleOwner(operator, a.getOwnerRef(), ctxFrom(env).caller());
             }
         };
+    }
+
+    /** §12 — mirrors {@code LocalCache.getVisibleEntities}: a caller only ever sees itself and the
+     *  users it can admin; every other owner (admins included) resolves to null. */
+    private static HelloGraphQLController.UserDto visibleOwner(StorageOperator operator,
+            ReferenceInfo<User> ref, User caller)
+    {
+        if (ref == null || caller == null) return null;
+        User owner = operator.tryResolve(ref);
+        if (owner == null) return null;
+        boolean visible = caller.getId().equals(owner.getId()) || PermissionController.canAdminUser(caller, owner);
+        return visible ? HelloGraphQLController.UserDto.from(owner) : null;
     }
 
     // === DynamicType field fetchers ===========================================
@@ -593,6 +664,19 @@ public final class StructuralTypeFetchers
                 }
             };
 
+    /** PRD 104 v3 — the `externalid` annotation (external-source binding stamp,
+     *  e.g. Dualis); null when the reservation is not externally bound. */
+    static final LightDataFetcher<String> RESERVATION_EXTERNAL_ID =
+            new LightSourceFetcher<org.rapla.entities.domain.Reservation, String>(
+                    org.rapla.entities.domain.Reservation.class)
+            {
+                @Override protected String read(org.rapla.entities.domain.Reservation r,
+                        Supplier<DataFetchingEnvironment> env)
+                {
+                    return r.getAnnotation(org.rapla.entities.domain.RaplaObjectAnnotations.KEY_EXTERNALID);
+                }
+            };
+
     static final LightDataFetcher<LocalDateTime> RESERVATION_LAST_DATE =
             new LightSourceFetcher<org.rapla.entities.domain.Reservation, LocalDateTime>(
                     org.rapla.entities.domain.Reservation.class)
@@ -653,16 +737,15 @@ public final class StructuralTypeFetchers
                 }
             };
 
-    static LightDataFetcher<User> reservationOwner(StorageOperator operator)
+    static LightDataFetcher<HelloGraphQLController.UserDto> reservationOwner(StorageOperator operator)
     {
-        return new LightSourceFetcher<org.rapla.entities.domain.Reservation, User>(
+        return new LightSourceFetcher<org.rapla.entities.domain.Reservation, HelloGraphQLController.UserDto>(
                 org.rapla.entities.domain.Reservation.class)
         {
-            @Override protected User read(org.rapla.entities.domain.Reservation r,
+            @Override protected HelloGraphQLController.UserDto read(org.rapla.entities.domain.Reservation r,
                     Supplier<DataFetchingEnvironment> env) throws RaplaException
             {
-                ReferenceInfo<User> ref = r.getOwnerRef();
-                return ref == null ? null : operator.tryResolve(ref);
+                return visibleOwner(operator, r.getOwnerRef(), ctxFrom(env).caller());
             }
         };
     }
@@ -778,7 +861,8 @@ public final class StructuralTypeFetchers
                             }
                         }
                     }
-                    out.add(new ReservationGraphQLController.AllocationDto(a, appointmentIds));
+                    out.add(new ReservationGraphQLController.AllocationDto(a, appointmentIds,
+                            r.getRequestStatus(a)));
                 }
                 return out;
             }
@@ -1305,6 +1389,8 @@ public final class StructuralTypeFetchers
                 .dataFetcher("createdAt",      ALLOCATABLE_CREATED_AT)
                 .dataFetcher("lastModifiedAt", ALLOCATABLE_LAST_MODIFIED_AT)
                 .dataFetcher("canModify",      ALLOCATABLE_CAN_MODIFY)
+                .dataFetcher("compute",        ALLOCATABLE_COMPUTE)
+                .dataFetcher("attributeValue", ALLOCATABLE_ATTRIBUTE_VALUE)
                 .dataFetcher("owner",          allocatableOwner(operator)));
         b.type("DynamicType", t -> t
                 .dataFetcher("name",               DYNAMIC_TYPE_NAME)
@@ -1323,6 +1409,7 @@ public final class StructuralTypeFetchers
                 .dataFetcher("displayName",    RESERVATION_DISPLAY_NAME)
                 .dataFetcher("firstDate",      RESERVATION_FIRST_DATE)
                 .dataFetcher("lastDate",       RESERVATION_LAST_DATE)
+                .dataFetcher("externalId",     RESERVATION_EXTERNAL_ID)
                 .dataFetcher("canModify",      RESERVATION_CAN_MODIFY)
                 .dataFetcher("hasConflicts",   reservationHasConflicts(operator))
                 .dataFetcher("owner",          reservationOwner(operator))

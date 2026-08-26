@@ -30,6 +30,11 @@ public class ApiKeyScopeContextInitializer
         ApiKeyScopeContext.setSource(ApiKeyScopeContextInitializer::currentApiKeyScopes);
     }
 
+    public static boolean isApiKeyPrincipal()
+    {
+        return currentApiKeyScopes() != null;
+    }
+
     static Set<String> currentApiKeyScopes()
     {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();

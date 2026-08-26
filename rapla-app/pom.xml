@@ -343,6 +343,17 @@
                 </executions>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <!-- Developer-only secrets file (git-ignored). Must stay in target/classes for
+                         spring-boot:run but never ship: repackage builds BOOT-INF/classes from this jar. -->
+                    <excludes>
+                        <exclude>application-local*.yml</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <!-- version inherited from rapla-bom <pluginManagement>;
