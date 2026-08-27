@@ -40,7 +40,7 @@
       "Bash(mv /home/chris/git/rapla/.claude/settings.local.json /home/chris/git/rapla/.agents/)",
       "Bash(rm /home/chris/git/rapla/.claude/.agents)",
       "Bash(rmdir /home/chris/git/rapla/.claude)",
-      "Bash(find /home/chris/git/dhbwrapla/src/main/resources* -type f)",
+      "Bash(find /home/chris/git/dhbwrapla/src/main/resources:*)",
       "Bash(grep -E \"/\\(client|server|swing|gwt|web|shared|common|api\\)$\")"
     ]
   },

@@ -23,7 +23,7 @@ highest-risk surfaces. **45 doc↔code drifts surfaced**; the highest-severity a
 > `/api/auth/impersonate` and `/api/auth/impersonate/switch`).
 
 > **Docs reconciled 2026-07-10:** the §A/§F documentation issues were corrected across `deployment.md`,
-> `sslconfig.md`, `graphql.md`, `authentication.md`, and PRDs [029](prd/029-swing-oauth-login.md)/[035](prd/done/035-graphql-foundations.md)/[036](prd/036-external-idp-oauth-login.md)/[051](prd/done/051-switch-user-with-oauth.md)/[071](prd/done/071-web-security-hardening.md)/[072](prd/072-server-side-login-dialog.md)/[076](prd/076-scoped-api-keys-self-rotation.md)/[097](prd/097-event-html-templates-mustache.md) — A0b
+> `sslconfig.md`, `graphql.md`, `authentication.md`, and PRDs [029](prd/029-swing-oauth-login.md)/[035](prd/done/035-graphql-foundations.md)/[036](prd/036-external-idp-oauth-login.md)/[051](prd/done/051-switch-user-with-oauth.md)/[071](prd/done/071-web-security-hardening.md)/[072](prd/done/072-server-side-login-dialog.md)/[076](prd/076-scoped-api-keys-self-rotation.md)/[097](prd/097-event-html-templates-mustache.md) — A0b
 > (`FRAMEWORK`→`native`), A0 (GraphQL permitAll is the intended §12-gating model, not a 401), A3/F2
 > (impersonation scope contradiction), A4 (offline_access is path-specific), A5/F3 (refresh-token
 > storage: plaintext JWT / 21d / no rotation), A6/A7 (removed `id_token_hint`/`refreshUrl` mechanisms),
@@ -102,7 +102,7 @@ A cluster of security switches the docs tell operators to set **do not exist in 
 | `rapla.auth.impersonation.enabled=false` (disable impersonation entirely) | [PRD 051](prd/done/051-switch-user-with-oauth.md) | Kill switch **does not exist**; the endpoint is always reachable, gated only by `canAdminUser`. |
 | `rapla.oauth.external.<id>.revoke-on-logout=true` | PRD [051](prd/done/051-switch-user-with-oauth.md)/[036](prd/036-external-idp-oauth-login.md) | Config binding is **dead** — `AuthService.signOut()` never revokes at the IdP. |
 | `typ:"impersonation"` JWT claim for SIEM/ops alerting | [PRD 051](prd/done/051-switch-user-with-oauth.md) | `JwtConfig.issueImpersonationToken:360` sets `typ:"access"` — identical to a normal token. Alerting on `typ=="impersonation"` **never fires**; only the `act` claim distinguishes them. |
-| Client-secret restricted to microsoft/google provider types | [PRD 072](prd/072-server-side-login-dialog.md) | `ProviderDef` exposes one `clientSecret` to **all** provider types; the restriction is unenforced convention. |
+| Client-secret restricted to microsoft/google provider types | [PRD 072](prd/done/072-server-side-login-dialog.md) | `ProviderDef` exposes one `clientSecret` to **all** provider types; the restriction is unenforced convention. |
 
 - **Impact:** the worst class of security-doc bug — an operator *believes* a control is active. The
   `local-accounts-enabled` and `impersonation.enabled` cases in particular mean documented
@@ -165,7 +165,7 @@ endpoints and that `GET /api/users` returns the *target's* scope "never the admi
   paragraph is the real defect.
 
 ### A4. "Server never requests IdP refresh tokens" is false for the BFF/discovery surface — HIGH
-`docs/authentication.md` / [PRD 072](prd/072-server-side-login-dialog.md) claim rapla "does not even request" IdP refresh tokens. True for
+`docs/authentication.md` / [PRD 072](prd/done/072-server-side-login-dialog.md) claim rapla "does not even request" IdP refresh tokens. True for
 the server-side `oauth2Login` path (`RaplaClientRegistrationConfig` strips `offline_access`,
 146-153). **False** for the discovery/exchange surface: `ProviderDef` defaults Microsoft to
 `offline_access` (183) and Google to `access_type=offline` (250-256), and `OAuthConfigController`
@@ -198,7 +198,7 @@ no main-code readers.
 
 ### A7. [PRD 029](prd/029-swing-oauth-login.md) provider-aware refresh routing (`refreshUrl`) documented but deleted — LOW (drift only)
 [PRD 029](prd/029-swing-oauth-login.md) asserts per-provider refresh routing + a named test
-(`whenProviderRefreshUrlIsSet_thenRefreshHitsThatUrlNotRaplaSas`). Removed by [PRD 072](prd/072-server-side-login-dialog.md) Phase 5:
+(`whenProviderRefreshUrlIsSet_thenRefreshHitsThatUrlNotRaplaSas`). Removed by [PRD 072](prd/done/072-server-side-login-dialog.md) Phase 5:
 both refresh paths hardcode rapla's `/oauth2/token` (`MyCustomConnector:116-117`,
 `ClientProxyConfig:304-305`); the test file pins the *opposite*
 (`refreshAlwaysHitsRaplaOauth2TokenWithRaplaClientId`). No security impact (architecturally moot) —
@@ -288,7 +288,7 @@ implemented + other statuses):
 - Persistent-token "log out everywhere" admin revocation deferred ([PRD 029](prd/029-swing-oauth-login.md)).
 - OQ1 ([PRD 102](prd/102-browser-credential-hardening.md)): JSESSIONID is `Path=/` ambient — unverified whether it reaches `/api`. Needs the
   tier-3 test the doc calls for.
-- Sliding idle timeout deferred ([PRD 072](prd/072-server-side-login-dialog.md)).
+- Sliding idle timeout deferred ([PRD 072](prd/done/072-server-side-login-dialog.md)).
 
 **Multi-tenancy (all Phase-0 open, PRD 002 draft):** ThreadLocal cross-tenant leak risk,
 static-per-tenant-state audit, tenant-ID format validation (feeds filesystem paths → traversal),
@@ -308,9 +308,9 @@ file-tenant data-dir rooting, per-tenant heap/DB-pool exhaustion.
 These are **decided**, not gaps — but they define the residual risk surface and should be revisited
 if the threat model changes:
 
-- **No refresh-token rotation / reuse detection** ([PRD 072](prd/072-server-side-login-dialog.md), [PRD 102](prd/102-browser-credential-hardening.md) OQ2, `RefreshSessionService`) —
+- **No refresh-token rotation / reuse detection** ([PRD 072](prd/done/072-server-side-login-dialog.md), [PRD 102](prd/102-browser-credential-hardening.md) OQ2, `RefreshSessionService`) —
   leaked refresh token usable to TTL (21d). *Accepted.*
-- **No instant access-token revocation** — 1h TTL accepted as the revocation window ([PRD 072](prd/072-server-side-login-dialog.md)).
+- **No instant access-token revocation** — 1h TTL accepted as the revocation window ([PRD 072](prd/done/072-server-side-login-dialog.md)).
 - **GraphQL introspection kept fully on in production** — recon surface accepted ([PRD 035](prd/done/035-graphql-foundations.md)).
 - **rapla logout does not propagate to upstream IdP** — `prompt=login` compensates (`authentication.md`).
 - **No IdP-pushed revocation** — disabled IdP users retain access until refresh expiry ([PRD 036](prd/036-external-idp-oauth-login.md)).

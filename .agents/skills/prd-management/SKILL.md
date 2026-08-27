@@ -32,6 +32,17 @@ header stands above it. Scar (2026-06-20, PRD 074): the directives-vs-CEL winner
 appended, CEL stayed "the decision" in four places, and a day of examples was authored
 against the dead decision before the user caught it twice.
 
+## Multi-session PRD areas
+
+Assert only decisions the PRD records. A decision you remember (or infer) that isn't
+written down is flagged as unconfirmed — "the PRD doesn't record this; I recall X, please
+confirm" — never re-proposed as if open or asserted as settled. Scar (2026-07): a
+discarded CSP design was re-proposed because the decision lived only in a parallel
+session's context; the user had to point at the other transcript.
+
+Phase plans always carry checkbox status (`- [ ]` / `- [x]`, per the Template below) —
+a PRD where "what's already implemented" isn't visible from the Plan section is stale.
+
 ## Before ending a session
 Update any PRD touched this session: close resolved open questions, mark phases done/in-progress, note direction changes. Stale PRDs cause the next session to re-litigate decisions already made.
 

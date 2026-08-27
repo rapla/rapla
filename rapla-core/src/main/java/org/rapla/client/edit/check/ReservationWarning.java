@@ -31,22 +31,48 @@ public record ReservationWarning(Code code, List<String> args)
         return new ReservationWarning(code, args == null ? List.of() : List.of(args));
     }
 
+    /**
+     * PRD 105 D7 — how a client must treat the warning. Carried by the CODE so both tiers agree:
+     * a warning that stops the save in one client and shrugs in the other would make the same
+     * event creatable or not depending on which UI the user happens to hold.
+     */
+    public enum Severity
+    {
+        /** The save cannot proceed (Swing: {@code EventCheck} returns false). */
+        BLOCKING,
+        /** The user may save anyway (Swing: continue/cancel dialog). */
+        CONFIRMABLE
+    }
+
     /** Stable codes — the view layer dispatches on these. */
     public enum Code
     {
         /** Reservation has no name and is not a template. i18n: {@code error.no_reservation_name}. */
-        NO_RESERVATION_NAME,
+        NO_RESERVATION_NAME(Severity.BLOCKING),
         /** Two appointments in the same reservation are identical. i18n: {@code warning.duplicated_appointments}, arg0 = short summary. */
-        DUPLICATED_APPOINTMENTS,
+        DUPLICATED_APPOINTMENTS(Severity.CONFIRMABLE),
         /** Reservation has zero allocatables (and is not a template). i18n: {@code warning.no_allocatables_selected}. */
-        NO_ALLOCATABLES_SELECTED,
+        NO_ALLOCATABLES_SELECTED(Severity.CONFIRMABLE),
         /** Reservation will not appear in the currently visible calendar. i18n: {@code warning.not_in_calendar}, arg0 = reservation name. */
-        NOT_IN_CALENDAR,
+        NOT_IN_CALENDAR(Severity.CONFIRMABLE),
         /** Reservation creates conflicts the user can't ignore. i18n: {@code warning.conflict}. */
-        CONFLICT,
+        CONFLICT(Severity.CONFIRMABLE),
         /** At least one allocatable is in REQUEST mode. i18n: {@code warning.request_pending}. */
-        REQUEST_PENDING,
+        REQUEST_PENDING(Severity.CONFIRMABLE),
         /** Appointment falls on a configured holiday. i18n: {@code warning.holiday}, arg0 = appointment summary. */
-        HOLIDAY_ON_APPOINTMENT
+        HOLIDAY_ON_APPOINTMENT(Severity.CONFIRMABLE);
+
+        private final Severity severity;
+
+        Code(Severity severity)
+        {
+            this.severity = severity;
+        }
+
+        /** PRD 105 D7 — read off Swing's four {@code EventCheck} impls; see {@code ReservationWarningSeverityTest}. */
+        public Severity severity()
+        {
+            return severity;
+        }
     }
 }

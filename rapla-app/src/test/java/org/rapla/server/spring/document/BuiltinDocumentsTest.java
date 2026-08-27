@@ -73,10 +73,13 @@ class BuiltinDocumentsTest
     void everyBuiltinViewValidatesAgainstTheLiveSchema() throws Exception
     {
         User admin = operator.getUser("homer");
-        List<org.rapla.server.spring.graphql.ViewEntry> builtins = views.listViewsForCaller(admin)
-                .stream().filter(org.rapla.server.spring.graphql.ViewEntry::builtin).toList();
-        // 2 SPA contracts + rapla_kalender (unified, 2026-07-15) + rapla_wochenprogramm.
-        assertEquals(4, builtins.size(), "expected 4 builtin views, got " + builtins);
+        // 2 SPA contracts + rapla_kalender (unified, 2026-07-15); rapla_wochenprogramm is
+        // listed:false (2026-08-12) and validated via its by-name lookup below.
+        List<org.rapla.server.spring.graphql.ViewEntry> builtins = new java.util.ArrayList<>(
+                views.listViewsForCaller(admin)
+                        .stream().filter(org.rapla.server.spring.graphql.ViewEntry::builtin).toList());
+        assertEquals(3, builtins.size(), "expected 3 listed builtin views, got " + builtins);
+        builtins.add(views.findView("rapla_wochenprogramm").orElseThrow());
         for (var view : builtins)
         {
             assertEquals(List.of(), views.validateQuery(view.queryText()).stream()
@@ -87,10 +90,17 @@ class BuiltinDocumentsTest
 
     @Test
     @WithMockUser(username = "homer")
-    void theBuiltinDocumentsRenderOutOfTheBox() throws Exception
+    void theBuiltinDocumentsRenderOutOfTheBoxWithAResourceScope() throws Exception
     {
-        // Current-week/month windows — the fixture's 2001 blocks are absent, but the frame renders.
-        String woche = render("wochenplan");
+        // 2026-08-11 — the builtin views declare @param(resource, required: true): a bare URL
+        // renders the hint page, a scoped URL the frame (current-week/month windows — the
+        // fixture's 2001 blocks are absent, but the frame renders; §12: an unresolvable id
+        // scopes to nothing, indistinguishable from an empty week).
+        String bare = render("wochenplan");
+        assertTrue(bare.contains("rapla-missing-param"), bare);
+        assertTrue(bare.contains("resource"), bare);
+
+        String woche = render("wochenplan?resource=a1");
         assertTrue(woche.contains("<style>"), woche);
         assertTrue(woche.contains("Mo "), "week header expected: " + woche);
         // The print hint is an opt-in partial ({{> rapla/print-hint}}), not shell chrome and
@@ -100,14 +110,14 @@ class BuiltinDocumentsTest
         // monatsplan is the ONE document with a window override (PRD 097 2026-07-15): the shared
         // rapla_kalender view defaults to a week; the document's MONTH_START anchors must win —
         // a month grid has at least 28 day cells, a week only 7.
-        String monat = render("monatsplan");
+        String monat = render("monatsplan?resource=a1");
         int daycells = monat.split("class=\"daycell\"", -1).length - 1;
         assertTrue(daycells >= 28, "document window override must yield a month grid, got "
                 + daycells + " day cells");
 
-        render("tagesliste");
+        render("tagesliste?resource=a1");
 
-        String programm = render("wochenprogramm");
+        String programm = render("wochenprogramm?resource=a1");
         // Default TimeslotProvider config = 7 bands; all render (empty groups included),
         // and the Mo–Fr day set pinned in defaultVariables shapes the header.
         assertEquals(7, programm.split("<section class=\"band\">", -1).length - 1, programm);
@@ -138,7 +148,7 @@ class BuiltinDocumentsTest
                 "viewName", monatsplan.viewName(),
                 "template", monatsplan.template(),
                 "window", monatsplan.window(),
-                "variables", java.util.Map.of()));
+                "variables", java.util.Map.of("resource", List.of("does-not-exist"))));
         var response = mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
                         .post("/api/documents/preview")
                         .contentType(org.springframework.http.MediaType.APPLICATION_JSON)

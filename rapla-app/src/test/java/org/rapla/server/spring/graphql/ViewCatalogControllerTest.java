@@ -97,6 +97,58 @@ class ViewCatalogControllerTest
         assertTrue(names.contains("rapla_reservations"), "BUILTIN rapla_reservations must appear");
     }
 
+    /**
+     * 2026-08-12 — a builtin marked {@code listed: false} (currently {@code rapla_wochenprogramm},
+     * parked until it has a decent render view) is hidden from every chooser fed by listViews
+     * (GraphiQL load dialog, SPA view dropdown) but stays EXECUTABLE by name — the builtin
+     * document {@code wochenprogramm} keeps rendering.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void unlistedBuiltinIsHiddenFromListViewsButStaysExecutable()
+    {
+        List<String> names = tester
+                .document("{ listViews { name } }")
+                .execute()
+                .path("listViews[*].name")
+                .entityList(String.class)
+                .get();
+        assertFalse(names.contains("rapla_wochenprogramm"),
+                "listed:false builtin must not appear in listViews: " + names);
+        assertTrue(viewCatalogService.findView("rapla_wochenprogramm").isPresent(),
+                "unlisted builtin must stay executable by name");
+    }
+
+    /**
+     * 2026-08-12 — GraphiQL's load dialog is the AUTHORING surface: an unlisted view must stay
+     * loadable/editable there, or a {@code listed: false} report becomes uneditable. GraphiQL
+     * queries {@code listViews(includeUnlisted: true)}; end-user choosers (SPA dropdown) keep
+     * the default filtering.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void includeUnlistedReturnsUnlistedViewsForTheAuthoringDialog()
+    {
+        String query = "query unlistedAuthoring($filter: ReservationFilter!)"
+                + " @view(title: \"Bericht\", listed: false)"
+                + " { reservations(filter: $filter) { name: displayName } }";
+        tester.document("mutation($n:String!,$q:String!){saveView(name:$n,query:$q){ok invalidReason}}")
+                .variable("n", "unlistedAuthoring").variable("q", query)
+                .execute()
+                .path("saveView.ok").entity(Boolean.class).isEqualTo(true);
+
+        List<String> names = tester
+                .document("{ listViews(includeUnlisted: true) { name } }")
+                .execute()
+                .path("listViews[*].name")
+                .entityList(String.class)
+                .get();
+        assertTrue(names.contains("unlistedAuthoring"),
+                "the authoring listing must include unlisted custom views: " + names);
+        assertTrue(names.contains("rapla_wochenprogramm"),
+                "the authoring listing must include unlisted builtins: " + names);
+    }
+
     @Test
     @WithMockUser(username = "homer", roles = "ADMIN")
     void builtinViewsAreValid()
@@ -164,6 +216,60 @@ class ViewCatalogControllerTest
               .variable("q", "query rapla_appointments($filter: ReservationFilter!) { reservations(filter:$filter) { displayName } }")
               .execute()
               .path("saveView.ok").entity(Boolean.class).isEqualTo(false);
+    }
+
+    /**
+     * A view is a working tool as much as a screen: a report a document renders is not something
+     * anyone should have to scroll past in the view switcher. {@code @view(listed: false)} keeps it
+     * out of the catalog listing WITHOUT touching who may read it — the document that renders it
+     * still resolves, and the operation still runs.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void anUnlistedViewIsAbsentFromListViewsButStillResolves()
+    {
+        String query = "query unlistedReport($filter: ReservationFilter!)"
+                + " @view(title: \"Bericht\", listed: false)"
+                + " { reservations(filter: $filter) { name: displayName } }";
+        tester.document("mutation($n:String!,$q:String!){saveView(name:$n,query:$q){ok invalidReason}}")
+              .variable("n", "unlistedReport").variable("q", query)
+              .execute()
+              .path("saveView.ok").entity(Boolean.class).isEqualTo(true);
+
+        List<String> names = tester.document("{ listViews { name } }").execute()
+              .path("listViews[*].name").entityList(String.class).get();
+        assertFalse(names.contains("unlistedReport"), "an unlisted view must not appear in listViews");
+
+        // Reachable by name — that is what the document render path uses.
+        assertTrue(viewCatalogService.findViewForCaller("unlistedReport", adminUser()).isPresent(),
+                "an unlisted view must still resolve for a caller who may read it");
+    }
+
+    /** The default — no {@code listed} argument at all — keeps a view in the listing. */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void aViewWithoutTheListedArgumentStaysListed()
+    {
+        String query = "query plainListedView($filter: ReservationFilter!) @view(title: \"Sichtbar\")"
+                + " { reservations(filter: $filter) { name: displayName } }";
+        tester.document("mutation($n:String!,$q:String!){saveView(name:$n,query:$q){ok}}")
+              .variable("n", "plainListedView").variable("q", query).execute();
+
+        List<String> names = tester.document("{ listViews { name } }").execute()
+              .path("listViews[*].name").entityList(String.class).get();
+        assertTrue(names.contains("plainListedView"), "a view without listed: false must stay listed");
+    }
+
+    private User adminUser() throws RuntimeException
+    {
+        try
+        {
+            return operator.getUser("homer");
+        }
+        catch (RaplaException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     @Test

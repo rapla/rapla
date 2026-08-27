@@ -261,7 +261,7 @@ Tier-5 `ApiKeysService` spec + tier-6 `ApiKeysDialogComponent` spec. No new serv
 
 ## Cross-references
 
-- [PRD 031 — Refresh Tokens & API Keys](031-token-refresh-and-api-keys.md) — API-key half superseded by this PRD's asymmetric design; refresh-token half stays canonical (consolidated onto `/oauth2/token` per [PRD 041](041-openapi-runtime-removal.md)).
+- [PRD 031 — Refresh Tokens & API Keys](done/031-token-refresh-and-api-keys.md) — API-key half superseded by this PRD's asymmetric design; refresh-token half stays canonical (consolidated onto `/oauth2/token` per [PRD 041](041-openapi-runtime-removal.md)).
 - [PRD 041 — OpenAPI runtime removal](041-openapi-runtime-removal.md) — established `RefreshSessionService` as unified refresh-token store; this PRD shares the same prefs persistence model.
 - [PRD 035 (done) — GraphQL foundations](done/035-graphql-foundations.md) + [PRD 060 — MCP foundations](060-graphql-mcp-foundations.md) — natural consumer for AI-agent service tokens.
 - [PRD 039 — external iCal subscriptions per resource](039-external-ical-subscription-per-resource.md) — consumer for per-user feed credentials.

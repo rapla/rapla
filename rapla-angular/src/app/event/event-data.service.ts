@@ -46,6 +46,7 @@ interface ShellWire {
     allocations: {
       allocatable: { id: string; name: string | null };
       appointmentIds: string[] | null;
+      requestStatus: 'REQUESTED' | null;
     }[];
   } | null;
 }
@@ -63,7 +64,7 @@ const SHELL_QUERY = `
       canModify
       classification { typeKey }
       appointments { id start end allDay repeating { type interval end count weekdays exceptions } }
-      allocations { allocatable { id name } appointmentIds }
+      allocations { allocatable { id name } appointmentIds requestStatus }
     }
   }`;
 

@@ -140,7 +140,7 @@ gq() {
 ```
 
 GraphiQL / Scalar / Swagger UI authenticate via the browser session, not a
-JS-readable token. Since [PRD 072](prd/072-server-side-login-dialog.md) Phase 4 the SPA holds NO `access_token` —
+JS-readable token. Since [PRD 072](prd/done/072-server-side-login-dialog.md) Phase 4 the SPA holds NO `access_token` —
 it's an HttpOnly cookie JS cannot read. Log in via the SPA at `/app/login`
 first; the explorer requests then carry the `access_token` cookie
 automatically plus an `X-XSRF-TOKEN` double-submit header (from the
@@ -582,7 +582,7 @@ Fragment cannot be spread here as objects of type 'AllocatableClassification'
 can never be of type '<ReservationKey>Classification'
 ```
 
-### 10a. reservationPrototype — birth state of a new event (PRD 099)
+### 10a. reservationPrototype — birth state of a new event (PRD 107)
 
 `reservationPrototype(typeKey:)` returns the classification a create of
 this type would be born with — the server runs `newClassification()`
@@ -1211,7 +1211,7 @@ Erläuterung:
   Render-/Edit-Key = `reservation.id` + `start`; `canModify` gated den Edit-Button ohne 2. Request.
 - **Ressourcen-Lanes:** rein über `isPersonEq: true|false` getrennt (server-seitig, kein deployment-Key).
   Innerhalb „Nicht-Personen" weiter über `isLocation` lanen (Raum/Ort vs. Sonstiges). `isPerson`/
-  `isLocation` sind universelle Felder ([PRD 080](prd/080-typed-entity-stats.md)): `isPerson` == `type: PERSON`, `isLocation` == die
+  `isLocation` sind universelle Felder ([PRD 080](prd/done/080-typed-entity-stats.md)): `isPerson` == `type: PERSON`, `isLocation` == die
   DynamicType-Annotation `location=true` (derselbe Marker wie der iCal-Export).
 - **`matchedBy` — Lane-Gruppierung im Wochengrid ([PRD 100](prd/100-spa-block-renderer-unification.md) Phase 5, Server ab 2026-07-09):**
   `matchedBy @hidden { id }` (KEIN Argument) liefert die *Match-Provenienz* — welche der
@@ -1331,7 +1331,7 @@ ist), `maxArgs: -1` = variadisch (`concat`). Der Katalog wird aus der Descriptor
 numeric values work (Stufe b); composing numbers inside the expr needs a numeric type in the EL,
 which would then serve every `expr` slot.
 
-## Raumauslastung — kanonische Query (`appointmentBlockStats`, PRD [079](prd/079-graphql-grouped-aggregates.md)/[080](prd/080-typed-entity-stats.md))
+## Raumauslastung — kanonische Query (`appointmentBlockStats`, PRD [079](prd/079-graphql-grouped-aggregates.md)/[080](prd/done/080-typed-entity-stats.md))
 
 Auslastung pro Raum: **Gebäude-Scope in ZWEI Variablen** — `$filter` (effiziente Suche, lädt nur
 betroffene Reservierungen) **und** `$allocatableFilter` (Raumauswahl: welcher Raum eine Zeile wird),
@@ -1422,7 +1422,7 @@ Schichtung von `whereRaum`: `RaumWhere` → `Gebaeude` (= `GebaeudeRefWhere`: `e
 - **Gelöschtes Gebäude:** ein Raum, dessen `Gebaeude`-Referenz auf eine **gelöschte** Ressource zeigt,
   matcht `whereRaum.Gebaeude…` **nicht** (kein Fail-open auf den Platzhalter) und liefert
   `entity.Gebaeude: null` — statt die Query zu killen.
-- **Raumgröße + Gebäudename ohne Join** über `keys.entity` (typisierte Gruppen-Entität, [PRD 080](prd/080-typed-entity-stats.md));
+- **Raumgröße + Gebäudename ohne Join** über `keys.entity` (typisierte Gruppen-Entität, [PRD 080](prd/done/080-typed-entity-stats.md));
   unauflösbare Referenz → Feld `null` (TypeResolver/Fetcher-Guard).
 - **`@view` über Stats** ⇒ flache `extensions.view.columns` aus `groupBy`/`aggregate` (`raum` +
   Entity-Felder + `minuten`/`termine`), **nicht** die generischen `keys/values/count`. `count` nur,
@@ -1468,7 +1468,7 @@ whereRaum:          RaumWhere          # Attribute des Raums
 - **Raumgröße ohne Join:** `keys.entity` trägt das **echte, typisierte Gruppen-Objekt** — siehe nächster
   Abschnitt; `AnzahlPlaetzeInsgesamt` ist direkt im Bucket selektierbar, **kein** zweiter Request nötig.
 
-## Typisierte Gruppen-Entität im Stats-Bucket (`StatKey.entity`, [PRD 080](prd/080-typed-entity-stats.md))
+## Typisierte Gruppen-Entität im Stats-Bucket (`StatKey.entity`, [PRD 080](prd/done/080-typed-entity-stats.md))
 
 Ein Stats-Bucket bleibt generisch (`keys` + `values` + `count`), **aber** jeder Gruppenschlüssel trägt
 zusätzlich die **echte, typisierte Entität**, nach der gruppiert wurde — als Union `StatEntity`:
@@ -1534,4 +1534,4 @@ appointmentBlockStats(
   bleiben; nur der Schlüssel ist jetzt zusätzlich typisiert navigierbar.
 - **Status:** `appointmentBlockStats` (Allocatable- + Reservation-Dimension) ist umgesetzt; eigene
   `allocatableStats`/`reservationStats`-Felder, die Category-Dimension und `expr → Entity` sind in
-  [PRD 080](prd/080-typed-entity-stats.md) als ⏳ offen geführt.
+  [PRD 080](prd/done/080-typed-entity-stats.md) als ⏳ offen geführt.

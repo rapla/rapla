@@ -68,9 +68,18 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
             InstrumentationExecuteOperationParameters parameters, InstrumentationState state)
     {
         OperationDefinition op = parameters.getExecutionContext().getOperationDefinition();
-        if (op == null) return SimpleInstrumentationContext.noOp();
+        Map<String, Object> meta = buildMeta(op, parameters.getExecutionContext().getGraphQLSchema());
+        if (meta == null) return SimpleInstrumentationContext.noOp();
+        parameters.getExecutionContext().getGraphQLContext().put(CTX_KEY, meta);
+        return SimpleInstrumentationContext.noOp();
+    }
+
+    /** The {@code extensions.view} payload for a {@code @view} operation; null when not a view. */
+    private static Map<String, Object> buildMeta(OperationDefinition op, GraphQLSchema schema)
+    {
+        if (op == null) return null;
         Directive view = findDirective(op.getDirectives(), "view");
-        if (view == null) return SimpleInstrumentationContext.noOp();
+        if (view == null) return null;
 
         Map<String, Object> meta = new LinkedHashMap<>();
         if (op.getName() != null) meta.put("key", op.getName());
@@ -80,8 +89,7 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
         if (rowLabel != null) meta.put("rowLabel", rowLabel);
         String groupLabel = stringArg(view, "groupLabel");
         if (groupLabel != null) meta.put("groupLabel", groupLabel);
-        List<Map<String, Object>> columns = columnsFrom(op.getSelectionSet(),
-                parameters.getExecutionContext().getGraphQLSchema());
+        List<Map<String, Object>> columns = columnsFrom(op.getSelectionSet(), schema);
         meta.put("columns", columns);
         // PRD 074 — render-hint: the column marked @column(group: true) is the row-grouping key.
         // Emitted as the column's alias so a generic renderer reads one field (row[view.groupBy]).
@@ -92,6 +100,7 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
             {
                 meta.put("groupBy", c.get("alias"));
                 if (c.get("format") != null) meta.put("groupFormat", c.get("format"));
+                if (c.get("minGroupSize") != null) meta.put("groupMin", c.get("minGroupSize"));
                 if (c.get("field") != null) meta.put("groupField", c.get("field"));
                 hasGroup = true;
                 break;
@@ -126,9 +135,7 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
         // binding contract: the SPA fills each variable by TYPE without seeing the query.
         List<Map<String, Object>> variables = variablesFrom(op.getVariableDefinitions());
         if (!variables.isEmpty()) meta.put("variables", variables);
-
-        parameters.getExecutionContext().getGraphQLContext().put(CTX_KEY, meta);
-        return SimpleInstrumentationContext.noOp();
+        return meta;
     }
 
     @Override
@@ -164,6 +171,15 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
             }
         }
         Object meta = ctx != null ? ctx.get(CTX_KEY) : null;
+        if (meta == null && executionResult != null && !executionResult.getErrors().isEmpty())
+        {
+            // 2026-08-12 — a variable-coercion failure aborts BEFORE beginExecuteOperation, so a
+            // @view query that fails this way would lose its meta. The SPA's first stored-view
+            // query sends {} (signature unknown) and RELIES on extensions.view.variables arriving
+            // with the error to re-query with properly bound variables (Raumauslastung shape:
+            // a second NonNull filter). Rebuild the meta from the query text on this error path.
+            meta = metaFromQueryText(parameters);
+        }
         if (meta == null)
         {
             return CompletableFuture.completedFuture(executionResult);
@@ -179,6 +195,24 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
         if (executionResult.getExtensions() != null) ext.putAll(executionResult.getExtensions());
         ext.put("view", meta);
         return CompletableFuture.completedFuture(executionResult.transform(b -> b.extensions(ext)));
+    }
+
+    /** Parse the request's query text and build the {@code @view} meta; null when not a view / unparseable. */
+    private static Map<String, Object> metaFromQueryText(InstrumentationExecutionParameters parameters)
+    {
+        try
+        {
+            graphql.language.Document doc = new graphql.parser.Parser().parseDocument(parameters.getQuery());
+            OperationDefinition op = doc.getDefinitions().stream()
+                    .filter(d -> d instanceof OperationDefinition)
+                    .map(d -> (OperationDefinition) d)
+                    .findFirst().orElse(null);
+            return buildMeta(op, parameters.getSchema());
+        }
+        catch (Exception e)
+        {
+            return null;
+        }
     }
 
     /**
@@ -498,6 +532,9 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
                 column != null ? stringArg(column, "format") : null,
                 idx);
         if (!c.containsKey("header")) c.put("header", alias); // alias fallback
+        // Grouping HAVING — directive-only (no input-field twin), so it stays out of applyPresentation.
+        Integer minGroupSize = column != null ? intArg(column, "minGroupSize") : null;
+        if (minGroupSize != null) c.put("minGroupSize", minGroupSize);
         String type = resolveType(container, col.getName());
         if (type != null) c.put("type", type);
         Directive join = findDirective(col.getDirectives(), "join");

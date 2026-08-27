@@ -19,12 +19,75 @@
 .nav .view-switch {
   flex: 0 0 auto;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 8px;
+}
+
+/* One row instead of one row per view — everything the picker frees goes to the
+   resource selection below, which is the part that grows with real work. */
+.nav .view-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  font: inherit;
+  font-weight: 500;
+  color: var(--mat-sys-on-surface);
+  background: var(--mat-sys-surface);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.nav .view-trigger:hover {
+  background: var(--mat-sys-surface-container);
+}
+
+.nav .view-trigger:focus-visible {
+  outline: 2px solid var(--mat-sys-primary);
+  outline-offset: 2px;
+}
+
+.nav .view-trigger .view-glyph,
+.nav .view-trigger .view-chevron {
+  flex: 0 0 auto;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.nav .view-trigger .view-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The menu overlay is not bound to the 290px drawer, so a long view title is
+   readable in full here even when the trigger has to truncate it. */
+::ng-deep .view-menu.mat-mdc-menu-panel {
+  max-width: min(420px, 90vw);
 }
 
 .nav app-resource-selection {
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
+}
+
+/* PRD 104 v2 — Dualis-Import entry pinned below the resource selection. */
+.nav .import-entry {
+  flex: 0 0 auto;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.import-badge {
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 1px 8px;
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
 }
 
 .active-link {

@@ -151,20 +151,19 @@ Commit the diff under `rapla-app/src/main/resources/openapi/`. CI runs the same 
 
 ## Documented exceptions where class-level `@RequestMapping` is still acceptable
 
-The interface-implements pattern doesn't fit every case. Four exception categories are allowed and recognised by `ApiPrefixArchitectureTest`:
+The interface-implements pattern doesn't fit every case. Three exception categories are allowed and recognised by `ApiPrefixArchitectureTest`:
 
 1. **Plugin SPI controllers that aggregate over a `Set<XxxImpl>` SPI** — e.g. `PreferencesAdminController` aggregates over `Set<PreferencesPanel>`. The controller `implements PreferencesAdminService` and IS the aggregator; no separate Impl bean.
 
 2. **Controllers whose impl class has real in-process callers outside the controller** — examples:
    - `ArchiverController` / `ArchiverServiceImpl` — used by `ArchiverServiceTask` + `ArchiverPreferencesPanel`
-   - `MailToUserController` / `MailToUserImpl` — used by `NotificationService` + `SynchronisationManager`
    - `ExternalEventImportController` / `ExternalEventImportService` impls — plugin SPI with deployment-custom impls
    
    Making the controller `implements` would cause "multiple beans of type X" conflicts with the existing `@Bean` impl. Keep the impl as a separate `@Bean`; the controller stays as a thin delegator with explicit `@RequestMapping("/api/...")` + method-level `@GetMapping`/`@PostMapping`. Until in-process callers are migrated to depend on the interface (then the controller can be the sole impl), this is the only viable shape.
 
 3. **HTML/iCal/JNLP-returning page controllers** — `IndexPageController`, `StatusPageController`, `RaplaJNLPController`, `CalendarPageController`, `Export2iCalController`. Not on the SPA-codegen / Swing-proxy surface and have no `@HttpExchange` interface; they use class-level `@RequestMapping` directly. `CalendarPageController` dispatches into the `HTMLViewPage` plugin SPI for view rendering.
 
-4. **`ResponseEntity`-returning download endpoints** — `ExportController.csvDownload` returns `ResponseEntity<byte[]>` with `Content-Disposition: attachment` headers. Incompatible with a simple `@HttpExchange` return type (which would be plain `String` or DTO), so there is no `ExportService` interface — the controller uses class-level `@RequestMapping("/api/export")` directly.
+`ResponseEntity`-returning download endpoints are NOT an exception (anymore): an `@HttpExchange` interface method can declare `ResponseEntity<byte[]>` directly — see `DocumentApi.csv` (`@HttpExchange("/api/documents")`) implemented by `DocumentController` with `Content-Disposition: attachment` headers.
 
 ## JAX-RS is gone
 

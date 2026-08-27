@@ -160,6 +160,8 @@ type Query {
     filter: AllocatableFilter,
     groupBy: [AllocatableGroupKey!],
     aggregate: [AllocatableAggregate!]!,
+    "HAVING — drop buckets whose population (count) is below this threshold. minCount: 2 = only groups that occur more than once (duplicate report). Applied before `limit`."
+    minCount: Int,
     limit: Int
   ): [BlockStatBucket!]!
 
@@ -209,6 +211,24 @@ type Query {
   # through). Pure function of the input — no stored data touched (§12 has no
   # surface); capped at `limit` (default 30, max 100) within a 2-year horizon.
   expandOccurrences(appointment: AppointmentInput!, limit: Int = 30): [Occurrence!]!
+
+  """
+  PRD 105 — pre-save checks over a DRAFT, before it is written: the same seven rules Swing runs in
+  its `EventCheck` chain, from one implementation. Advisory (D2) — the server returns codes, the
+  client decides; nothing is persisted and nothing is refused here. The draft is built with the
+  same mapper `createReservation` uses, so a check sees exactly what a save would write.
+  §12: the draft's own ids are checked against the caller's read scope like any mutation input.
+  """
+  reservationChecks(input: ReservationCheckInput!): [ReservationWarning!]!
+
+  """
+  PRD 105 — the same checks for a MOVE that has not happened yet (calendar drag / resize). The
+  server computes the state the move verb would store (same resolution, permission gate and shift
+  arithmetic, no dispatch) and runs the chain over it, so the client never rebuilds a move payload
+  to ask "would this clash?" (PRD 101 keeps move semantics server-side). Advisory like
+  `reservationChecks`. SINGLE-on-repeating (`splitOccurrence`) is NOT covered yet — see PRD 105.
+  """
+  moveChecks(input: MoveCheckInput!): [ReservationWarning!]!
 
   # PRD 081 — omnibox multisearch. Turns a free-text term into typed, ranked,
   # §12-scoped result rows bucketed per kind. Phase 1 implements RESOURCE +
@@ -727,6 +747,23 @@ type Allocatable {
   classification: AllocatableClassification!
   "Server-derived per caller — gates the SPA's edit affordance without a second roundtrip (mirror of Reservation.canModify, PRD 096)."
   canModify:      Boolean!
+  "Evaluate a rapla expression against this allocatable (same engine as AppointmentBlock.compute and the stats group-key expr). Lifts a classification attribute onto a row-level, groupable column — e.g. compute(expr: \"email\") so @column(group: true) can group by it. Invalid/blank expr → null."
+  compute(expr: String!): String
+  """
+  The first of `keys` this row's own DynamicType actually has, formatted like the typed
+  classification fields; keys the type lacks are skipped, all-missing → null.
+
+  Why not `compute(expr:)`: an expression binds its attribute names against ONE DynamicType at
+  parse time, so naming a key another type lacks nulls the WHOLE expression — `concat(email,Email)`
+  yields nothing on either type. Deployments spell the same datum differently per type (`email` on
+  persons, `Email` on rooms); this puts both in one row-level, groupable column, which is what a
+  duplicate report across mixed types needs.
+
+  `expr` answers when no key matched, so the same column can group by a COMPOSED value
+  (`attributeValue(keys: [], expr: "name()")`) — which no attribute key expresses. One switchable
+  column, one view.
+  """
+  attributeValue(keys: [String!]!, expr: String): String
 }
 
 # === DynamicType + descriptors (PRD 035 §4) =================================
@@ -858,7 +895,14 @@ resolves it at request time and emits it as extensions.view.window.
 """
 directive @view(
   title: String, rowLabel: String, groupLabel: String,
-  renderModes: [ViewRenderMode]
+  renderModes: [ViewRenderMode],
+  """
+  Whether the view appears in the catalog listing (`listViews`) — the SPA's view switcher.
+  `false` keeps a working view (a report rendered by a document, a building block) out of the
+  switcher. This is presentation, NOT permission: an unlisted view resolves by name exactly as
+  before, and who may read it is still decided by its public/groups visibility alone.
+  """
+  listed: Boolean = true
 ) on QUERY
 
 "One end of a @window — resolved server-side at request time so it is never stale. offset is a signed integer; 0 = the anchor itself."
@@ -881,9 +925,11 @@ directive @window(into: String, from: WindowAnchor!, to: WindowAnchor!) repeatab
 PRD 074 §"Window and inputs directives" — declares one public value input. `name` is the
 public URL key (document path, PRD 097), `into` the private dotted variable path it fills
 (e.g. "filter.allocatableIdsIn"); the coercion type is derived from `into` via the schema.
-On the document path, query params outside the declared set are rejected, and a missing
-`required` param short-circuits to an empty render. The SPA fills variables by type and
-does not enforce `required`.
+On the document path, query params outside the declared set are rejected. `required` means
+the target must be filled from SOMEWHERE after the variable merge — a URL value, a document
+pin, or (authoring preview only) a default derived from the view's example defaultVariables;
+still unfilled → a hint page naming the param, never an unscoped everything-query. The SPA
+fills variables by type and does not enforce `required`.
 """
 directive @param(name: String!, into: String!, required: Boolean = false) repeatable on QUERY
 "PRD 074 — column fetched but not displayed (e.g. a group/sort key)."
@@ -1130,6 +1176,8 @@ type Reservation {
   firstDate:      LocalDateTime!
   "max(appointment.maxEnd)"
   lastDate:       LocalDateTime!
+  "PRD 104 v3 — the `externalid` annotation (external-source binding stamp, e.g. Dualis); null when the reservation is not externally bound."
+  externalId:     String
   "Server-derived per caller — controls edit-button gating in the SPA without a second roundtrip."
   canModify:      Boolean!
   """
@@ -1294,7 +1342,17 @@ appointments (default). Non-null = restricted to those appointment ids
 type Allocation {
   allocatable:    Allocatable!
   appointmentIds: [ID!]
+  """
+  PRD 091 OQ5 — pending-request marker. `REQUESTED` = the allocation was made by someone who may
+  only REQUEST this allocatable, not allocate it outright; null = an ordinary allocation. The
+  server derives it on write (`PermissionController.isRequestOnly`) exactly as Swing does on
+  assignment, and `SecurityManager` refuses a request-only allocation that lacks it.
+  """
+  requestStatus:  RequestStatus
 }
+
+"Pending-approval marker on an allocation (`Reservation.getRequestStatus`). One value today."
+enum RequestStatus { REQUESTED }
 
 scalar Date
 
@@ -1642,6 +1700,64 @@ input CreateReservationInput {
 }
 
 """
+PRD 105 — a draft to check. `draft` is the same shape `createReservation` takes (id optional here:
+nothing is written). `scopeAllocatableIds` are the caller's current view-scope resources — supplying
+them enables the NOT_IN_CALENDAR check (D3: the intersection half of Swing's
+`isMatchingSelectionAndFilter`; the classification-filter half is Swing-only). Omit or leave empty
+and that check is skipped — an absent scope is not an empty scope.
+"""
+input ReservationCheckInput {
+  draft:               CreateReservationInput!
+  scopeAllocatableIds: [ID!]
+}
+
+"""
+PRD 105 — a prospective move. Exactly one of `appointmentId` (one appointment shifts — the SERIE
+gesture) or `reservationIds` (every appointment of those reservations shifts — the EVENT gesture);
+`target`/`occurrence`/`reference` mirror the corresponding move verb's arguments.
+"""
+input MoveCheckInput {
+  appointmentId:       ID
+  occurrence:          LocalDateTime
+  reservationIds:      [ID!]
+  reference:           LocalDateTime
+  "The appointment gesture may also resize; a whole-reservation shift uses the day/dateTime variants only."
+  target:              ResizableTarget!
+  scopeAllocatableIds: [ID!]
+}
+
+"""
+PRD 105 — one pre-save finding. `code` is the stable identity (the i18n key follows from it);
+`args` are the positional format arguments; `severity` says whether a client may save anyway —
+copied 1:1 from Swing so the same event is creatable, or not, in both clients (D7).
+"""
+type ReservationWarning {
+  code:     ReservationWarningCode!
+  args:     [String!]!
+  severity: WarningSeverity!
+  """
+  The evidence behind the finding — populated for `CONFLICT`, empty otherwise: WHICH booking
+  blocks WHICH resource WHEN (Swing shows the same list; a bare "erzeugt Konflikte" tells the user
+  nothing they can act on). Same `Conflict` rows and the same §12 masking as `potentialConflicts`:
+  an unreadable counterparty keeps the row but loses its name.
+  """
+  conflicts: [Conflict!]!
+}
+
+enum WarningSeverity { BLOCKING CONFIRMABLE }
+
+"The seven checks (`org.rapla.client.edit.check.ReservationWarning.Code`)."
+enum ReservationWarningCode {
+  NO_RESERVATION_NAME
+  DUPLICATED_APPOINTMENTS
+  NO_ALLOCATABLES_SELECTED
+  NOT_IN_CALENDAR
+  CONFLICT
+  REQUEST_PENDING
+  HOLIDAY_ON_APPOINTMENT
+}
+
+"""
 Update a Reservation's content. A typeKey differing from the stored one is
 an in-place type change (PRD 056 OQ1.c revised 2026-07-07, PRD 096): the
 classification @oneOf variant must match the NEW typeKey, and the caller
@@ -1765,8 +1881,12 @@ type ViewIntoPath {
 }
 
 extend type Query {
-    "List all views visible to the caller (BUILTIN + permitted CUSTOM)."
-    listViews: [ViewMeta!]!
+    """
+    List all views visible to the caller (BUILTIN + permitted CUSTOM). By default views marked
+    `@view(listed: false)` are dropped (end-user choosers); `includeUnlisted: true` returns them
+    too — the authoring surface (GraphiQL load dialog) needs unlisted views to stay editable.
+    """
+    listViews(includeUnlisted: Boolean = false): [ViewMeta!]!
     "Return stored query text for a view (admin-only for CUSTOM; readable for BUILTIN)."
     getViewQuery(name: String!): String
     """
@@ -1865,3 +1985,155 @@ type UserHit implements SearchHit {
   user: User!
 }
 
+
+extend type Mutation {
+    """
+    PRD 104 v3 "Sync": create STORED reservations from staged external events in one
+    transaction (deployment mapping + per-type template copy + external-id stamp).
+    Authorization per item = booking right on its group allocatable; unknown ≡ forbidden.
+    Placement v1: everything materializes at `defaultStart` (ISO LocalDateTime) and is
+    placed via the normal calendar. Errors when no deployment provides the create service.
+    """
+    createFromStagedEvents(
+        sourceItemIds: [ID!]!
+        lectureTemplateId: ID
+        examTemplateId: ID
+        defaultStart: String!
+    ): [ID!]!
+}
+
+extend type Query {
+    """
+    PRD 104 v3 — deployment-resolved DEFAULT structure templates for the sync dialog
+    (naming conventions / matching rules live server-side, exchangeable without client
+    changes). Null fields = no suitable template; null result = no deployment resolver.
+    """
+    externalEventDefaultTemplates(groupIds: [ID!]!): ExternalEventDefaultTemplates
+    """
+    PRD 104 v3 — of the given reservation ids, the subset durably bound to THE deployment's
+    import source (ExternalSyncEntity join — NOT the bare `externalid` annotation, which other
+    importers like the iCal import also write). Unknown/hidden ids drop silently (§12).
+    Empty when no import source is deployed.
+    """
+    externalEventLinkedReservationIds(reservationIds: [ID!]!): [ID!]!
+}
+
+type ExternalEventDefaultTemplates {
+    lectureTemplateId: ID
+    lectureTemplateName: String
+    examTemplateId: ID
+    examTemplateName: String
+}
+
+extend type Mutation {
+    """
+    Bind an OPEN staged event to a reservation that already exists — the manual counterpart to
+    creating one. Stamps the source id onto that reservation, so the next reconciliation sees it
+    as done instead of offering it again.
+
+    Returns false for every rejection alike (unknown item, not open, no booking right on its
+    group, reservation not usable, deployment refused): the outcomes must not be distinguishable.
+    """
+    bindStagedEvent(sourceItemId: ID!, reservationId: ID!): Boolean!
+
+    """
+    Clear the "changed in the source" marker on staged items — says a human has seen it, nothing
+    more. Neither a source change nor a binding change.
+
+    Returns how many rows were actually cleared. Items the caller may not book, unknown ids and
+    items without a marker are silently not counted.
+    """
+    dismissStagedChanges(sourceItemIds: [ID!]!): Int!
+}
+
+extend type Query {
+    """
+    Reservations in the given window that could be the staged item — a SUGGESTION list, ordered
+    by a crude similarity score. The score ranks, it never decides: two source records can share
+    an event number and be different events, so a human picks.
+
+    Only reservations of a group the caller may book, only readable ones, and never one that
+    already carries an external id. Window is the caller's calendar range.
+
+    Weakly matching candidates are omitted rather than listed: the source's own identifiers
+    (event number, unit) weigh far more than name words, and a shared everyday word suggests
+    nothing. An empty list means "nothing convincing in this window", not "no match exists".
+    """
+    bindCandidates(sourceItemId: ID!, from: String!, to: String!, limit: Int): [BindCandidate!]!
+}
+
+type BindCandidate {
+    reservationId: ID!
+    name: String!
+    "Start of the earliest appointment, ISO local date-time."
+    firstDate: String
+    score: Float!
+}
+
+extend type Query {
+    """
+    Staged external events for the given group allocatables — the Kurse the caller is working on.
+
+    Always scoped: there is no "everything I may book" mode, because the work happens per Kurs.
+    Scope is BOOKING RIGHTS on each requested allocatable — stricter than the §12 read floor.
+    Allocatables the caller may not book are dropped entirely, so an unknown one and a forbidden
+    one are indistinguishable. Empty when no deployment provides a staging source.
+    """
+    externalEventWorklist(allocatableIds: [ID!]!, scopeKey: String): ExternalEventWorklist!
+}
+
+"Derived state of a staged item — only the timestamps are stored on the row."
+enum StagedEventState {
+    "Unbound: no entity carries this external id yet."
+    OPEN
+    "Bound to an existing entity."
+    LINKED
+    "Bound, but the source changed since — 'apply changes' candidate."
+    CHANGED
+    "Explicitly ignored by a user."
+    IGNORED
+}
+
+type ExternalEventWorklist {
+    groups: [ExternalEventGroup!]!
+    counts: ExternalEventCounts!
+    "Epoch millis of the last completed reconciliation; null if it never ran."
+    lastRefresh: Float
+    "Error text of the last failed reconciliation; null when the last run succeeded."
+    lastError: String
+}
+
+type ExternalEventGroup {
+    "The allocatable the caller's booking rights were checked against."
+    allocatableId: ID!
+    name: String!
+    items: [ExternalEventItem!]!
+    counts: ExternalEventCounts!
+}
+
+type ExternalEventItem {
+    "Natural key of the staged item, as issued by the source."
+    sourceItemId: ID!
+    "Retention scope, e.g. a semester. Null when the source declares none."
+    scopeKey: String
+    state: StagedEventState!
+    "Display values, keyed as declared by the deployment's import metadata."
+    columns: [ExternalEventColumn!]!
+    changedSince: String
+    ignoredSince: String
+    "The bound reservation — null when unbound OR when the caller may not read it."
+    boundReservationId: ID
+}
+
+type ExternalEventColumn {
+    key: String!
+    value: String
+}
+
+type ExternalEventCounts {
+    open: Int!
+    linked: Int!
+    changed: Int!
+    ignored: Int!
+    total: Int!
+}

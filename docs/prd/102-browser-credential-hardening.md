@@ -1,9 +1,9 @@
 # PRD 102 — Browser credential hardening vs. untrusted same-origin content
 
-**Status:** proposed — 2026-07-09 (awaiting maintainer sign-off). Split out of [PRD 072](072-server-side-login-dialog.md) on 2026-07-09
+**Status:** in progress — Phase 1 (/app CSP enforce) landed 2026-07-10; later phases open. Split out of [PRD 072](done/072-server-side-login-dialog.md) on 2026-07-09
 (072 was "server-side login dialog"; issuing/refreshing the session cookie is 072's shipped scope,
 *hardening that credential against untrusted same-origin pages* is this PRD).
-**Related:** [PRD 072](072-server-side-login-dialog.md) (the browser credential model — `CookieAuthSupport`/`CookieToBearerFilter` — that
+**Related:** [PRD 072](done/072-server-side-login-dialog.md) (the browser credential model — `CookieAuthSupport`/`CookieToBearerFilter` — that
 this PRD hardens), [PRD 097](097-event-html-templates-mustache.md) (server-rendered semi-trusted HTML document templates + the template editor
 that create the untrusted surface), [PRD 076](076-scoped-api-keys-self-rotation.md) (api-key scope vocabulary reused for capability tokens),
 [PRD 071](done/071-web-security-hardening.md) (the CSP research this builds on).
@@ -84,7 +84,7 @@ The only reason to remove the access *cookie* was that a same-origin untrusted p
 
 ## Adopted model
 
-- **Trusted SPA (`/app`)** keeps [PRD 072](072-server-side-login-dialog.md) credential model A unchanged: `access_token` HttpOnly cookie
+- **Trusted SPA (`/app`)** keeps [PRD 072](done/072-server-side-login-dialog.md) credential model A unchanged: `access_token` HttpOnly cookie
   (1 h) + path-scoped `refresh_token` cookie (21 d, `Path=/api/auth/session`). Seamless reloads, silent
   refresh, best posture against SPA-XSS (token never JS-readable).
 - **Untrusted pages (097 documents + template preview)** are served `CSP: sandbox` (opaque origin) +
@@ -327,7 +327,7 @@ all-or-nothing (CSP has no "onclick-only" granularity), **never** for AI/open-us
 ### Out of scope
 - The document-template engine, storage, Mustache rendering, editor UX, **component catalog/registry
   feature** — **[PRD 097](097-event-html-templates-mustache.md)** (this PRD owns only the security/CSP/capability model for it).
-- Login/OAuth/session issuance/refresh/revocation/single-issuer — **[PRD 072](072-server-side-login-dialog.md)** (shipped).
+- Login/OAuth/session issuance/refresh/revocation/single-issuer — **[PRD 072](done/072-server-side-login-dialog.md)** (shipped).
 - API-key scope vocabulary itself — **[PRD 076](076-scoped-api-keys-self-rotation.md)** (reused, not changed).
 
 ## Plan

@@ -26,7 +26,8 @@ public final class ColumnPresentation
             new Attr("header", "String",  "Column header label (falls back to alias/key).",       true, true),
             new Attr("order",  "Int",     "Column position left to right (lower = leftmost).",    true, true),
             new Attr("group",  "Boolean", "Mark as the row-grouping column (flat views only).",   true, false),
-            new Attr("format", "String",  "Opaque date-format token, client-interpreted.",        true, false)
+            new Attr("format", "String",  "Opaque date-format token, client-interpreted.",        true, false),
+            new Attr("minGroupSize", "Int", "Row-grouping only (HAVING): drop groups with fewer than this many rows — e.g. 2 shows only duplicates. Absent = keep every group.", true, false)
     );
 
     /** Input types that receive the {@link Attr#forInput()} attributes. */

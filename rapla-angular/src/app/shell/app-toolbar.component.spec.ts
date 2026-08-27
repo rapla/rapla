@@ -17,6 +17,7 @@ import { GraphqlService } from '../graphql/graphql.service';
 import { MatDialog } from '@angular/material/dialog';
 import { UndoToastService } from '../actions/undo-toast.service';
 import { FilterStore } from '../state/filter-store';
+import { ImportWorklistService } from '../import/import-worklist.service';
 import { signal as ngSignal } from '@angular/core';
 
 const dialogOpen = vi.fn();
@@ -47,12 +48,10 @@ function configure(
       {
         provide: GraphqlService,
         useValue: {
-          query: () =>
-            of({
-              data: {
-                types: eventTypes.map((t) => ({ ...t, classificationType: 'RESERVATION' })),
-              },
-            }),
+          query: (doc: string) =>
+            doc.includes('newEventOptions')
+              ? of({ data: { newEventOptions: { eventTypes, templates: [] } } })
+              : of({ data: {} }),
         },
       },
       { provide: MatDialog, useValue: { open: dialogOpen } },
@@ -187,6 +186,79 @@ describe('AppToolbarComponent', () => {
   });
 });
 
+describe('AppToolbarComponent — Dualis-Sync button (0/0 rule, 2026-08-11)', () => {
+  beforeEach(() => TestBed.resetTestingModule());
+
+  function setupImport(over: Record<string, unknown> = {}) {
+    configure(LOGGED_IN, []);
+    TestBed.overrideProvider(ImportWorklistService, {
+      useValue: {
+        sourceName: ngSignal('Dualis'),
+        loadFailed: ngSignal(false),
+        linked: ngSignal([]),
+        worklist: ngSignal(null),
+        windowRange: ngSignal(null),
+        ensureLoaded: () => of(null),
+        ...over,
+      },
+    });
+    const fixture = TestBed.createComponent(AppToolbarComponent);
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  const badge = (fixture: ReturnType<typeof TestBed.createComponent>) =>
+    (
+      fixture.nativeElement.querySelector('.import-sync-badge') as HTMLElement | null
+    )?.textContent?.trim() ?? null;
+
+  it('stays visible with 0/0 when a source exists but nothing is staged', () => {
+    expect(badge(setupImport())).toBe('0/0');
+  });
+
+  it('hides entirely when no import source is deployed', () => {
+    expect(badge(setupImport({ sourceName: ngSignal('') }))).toBeNull();
+  });
+
+  it('shows ! when the load failed — never masquerades as 0/0', () => {
+    expect(badge(setupImport({ loadFailed: ngSignal(true) }))).toBe('!');
+  });
+
+  it('counts linked from the reservations, not the Halde', () => {
+    const linked = ngSignal([
+      {
+        id: 'r1',
+        name: 'Mathe',
+        externalId: 'v:1',
+        firstDate: '2026-04-20T08:00:00',
+        allocatableIds: ['g1'],
+      },
+    ]);
+    expect(badge(setupImport({ linked }))).toBe('1/1');
+  });
+
+  it('turns green (done) when everything is linked, never on error', () => {
+    const linked = ngSignal([
+      {
+        id: 'r1',
+        name: 'Mathe',
+        externalId: 'v:1',
+        firstDate: '2026-04-20T08:00:00',
+        allocatableIds: ['g1'],
+      },
+    ]);
+    const el = (f: ReturnType<typeof TestBed.createComponent>) =>
+      f.nativeElement.querySelector('.import-sync-badge') as HTMLElement;
+    expect(el(setupImport({ linked })).classList.contains('done')).toBe(true);
+    TestBed.resetTestingModule();
+    expect(el(setupImport({})).classList.contains('done')).toBe(false); // 0/0 is not done
+    TestBed.resetTestingModule();
+    expect(el(setupImport({ linked, loadFailed: ngSignal(true) })).classList.contains('done')).toBe(
+      false,
+    );
+  });
+});
+
 describe('AppToolbarComponent — header undo/redo (PRD 094 D2)', () => {
   beforeEach(() => TestBed.resetTestingModule());
 
@@ -312,35 +384,33 @@ describe('AppToolbarComponent — type-aware Neu (PRD 094 Phase 2)', () => {
               allocatableId: string;
               allocatableName: string;
               appointmentIds: string[] | null;
+              requestStatus: 'REQUESTED' | null;
             }[];
           };
         };
       },
     ];
+    // requestStatus is the server's verdict (PRD 091 OQ5); a locally built allocation carries
+    // none yet, which scopeAllocations spells out as null.
     expect(config.data.draft?.allocations).toEqual([
-      { allocatableId: 'r1', allocatableName: 'Kamera G40', appointmentIds: null },
+      {
+        allocatableId: 'r1',
+        allocatableName: 'Kamera G40',
+        appointmentIds: null,
+        requestStatus: null,
+      },
     ]);
   });
 
-  it('several creatable types: Neu opens a type menu, choice pre-selects the type', () => {
+  it('several creatable types: Neu opens the unified picker dialog (PRD 104 D6)', () => {
     configure(LOGGED_IN, [], undefined, [], TWO_TYPES);
+    dialogOpen.mockReturnValue({ afterClosed: () => of(undefined) });
     const fixture = TestBed.createComponent(AppToolbarComponent);
     fixture.detectChanges();
     const btn = fixture.nativeElement.querySelector('.new-event') as HTMLButtonElement;
     btn.click();
-    fixture.detectChanges();
-    expect(dialogOpen).not.toHaveBeenCalled(); // menu first, no direct open
-    const items = Array.from(
-      document.querySelectorAll<HTMLButtonElement>('button.mat-mdc-menu-item'),
-    );
-    const labels = items.map((b) => (b.textContent ?? '').trim());
-    expect(labels).toEqual(['Veranstaltung', 'Ausleihe']);
-    items[1].click();
     expect(dialogOpen).toHaveBeenCalledTimes(1);
-    const [, config] = dialogOpen.mock.calls[0] as [
-      unknown,
-      { data: { draft?: { typeKey: string } } },
-    ];
-    expect(config.data.draft?.typeKey).toBe('ausleihe');
+    const [component] = dialogOpen.mock.calls[0] as [{ name?: string }];
+    expect(String(component)).toContain('NewEventPickerComponent');
   });
 });

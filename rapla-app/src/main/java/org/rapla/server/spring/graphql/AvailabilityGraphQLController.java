@@ -197,6 +197,19 @@ public class AvailabilityGraphQLController
         }
         if (allocatables.isEmpty()) return List.of();
 
+        return buildConflictRows(draftReservationId, allocatables, appointments, ignoreList,
+                ownStored, caller, pc, locale);
+    }
+
+    /**
+     * The shared row builder behind {@code potentialConflicts} — also used by the PRD 105 pre-save
+     * checks, so a CONFLICT finding can name WHAT it clashes with instead of only that it does.
+     * §12 masking (unreadable counterparty → null fields + generic description) lives here, once.
+     */
+    List<ConflictRow> buildConflictRows(String draftReservationId, List<Allocatable> allocatables,
+            List<Appointment> appointments, Collection<Reservation> ignoreList, Reservation ownStored,
+            User caller, PermissionController pc, Locale locale) throws RaplaException
+    {
         Map<ReferenceInfo<Allocatable>, Map<Appointment, Collection<Appointment>>> raw =
                 ((SyncStorageOperator) operator).getAllAllocatableBindingsSync(
                         allocatables, appointments, ignoreList);

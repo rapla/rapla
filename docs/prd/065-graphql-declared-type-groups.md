@@ -9,7 +9,7 @@
 **Siblings:**
 - [PRD 055 — Events Read API](055-graphql-events-read-api.md) — provides the structural `Reservation` type that the group interfaces sit above
 - [PRD 057 (done) — DT mutations v1](done/057-graphql-dt-mutations-v1.md) + [PRD 061 — DT mutations v2](061-graphql-dt-mutations-v2.md) — annotation surface needed to admin-edit group membership; this PRD reads the annotation, [PRD 061](061-graphql-dt-mutations-v2.md) owns the writing
-- [PRD 059 — Typed Where Predicates](059-graphql-typed-where-predicates.md) — per-type `<TypeKey>Where` predicate pattern this PRD reuses verbatim for the group filters (`<Group>Filter` is the union shape; `where<TypeKey>` from [PRD 059](done/059-graphql-typed-where-predicates.md) is per-type)
+- [PRD 059 — Typed Where Predicates](done/059-graphql-typed-where-predicates.md) — per-type `<TypeKey>Where` predicate pattern this PRD reuses verbatim for the group filters (`<Group>Filter` is the union shape; `where<TypeKey>` from [PRD 059](done/059-graphql-typed-where-predicates.md) is per-type)
 - [PRD 060 — MCP foundations](060-graphql-mcp-foundations.md) — declared group queries are the obvious MCP-friendly cross-type primitive (one schema-typed entry point vs ad-hoc cross-type filters)
 
 ## Goal

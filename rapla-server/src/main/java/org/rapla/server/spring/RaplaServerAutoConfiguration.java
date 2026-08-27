@@ -22,6 +22,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @Import({
         ServerCoreConfig.class,
         ServerServiceConfig.class,
+        org.rapla.plugin.externaleventimport.server.ExternalEventStagingConfig.class,
         JwtConfig.class,
         SecurityConfig.class,
         org.rapla.server.spring.oauth.RaplaClientRegistrationConfig.class,

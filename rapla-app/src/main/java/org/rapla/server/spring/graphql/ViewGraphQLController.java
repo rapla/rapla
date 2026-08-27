@@ -29,10 +29,11 @@ public class ViewGraphQLController
     }
 
     @QueryMapping
-    public List<Map<String, Object>> listViews(DataFetchingEnvironment env)
+    public List<Map<String, Object>> listViews(@Argument("includeUnlisted") Boolean includeUnlisted,
+            DataFetchingEnvironment env)
     {
         RequestCtx rc = RequestContextInstrumentation.from(env.getGraphQlContext());
-        List<ViewEntry> views = catalog.listViewsForCaller(rc.caller());
+        List<ViewEntry> views = catalog.listViewsForCaller(rc.caller(), Boolean.TRUE.equals(includeUnlisted));
         List<Map<String, Object>> result = new ArrayList<>(views.size());
         for (ViewEntry v : views)
         {

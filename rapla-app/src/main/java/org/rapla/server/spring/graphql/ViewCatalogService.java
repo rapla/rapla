@@ -1,12 +1,14 @@
 package org.rapla.server.spring.graphql;
 
 import graphql.language.Argument;
+import graphql.language.BooleanValue;
 import graphql.language.Definition;
 import graphql.language.Directive;
 import graphql.language.Document;
 import graphql.language.OperationDefinition;
 import graphql.language.SourceLocation;
 import graphql.language.StringValue;
+import graphql.language.Value;
 import graphql.parser.InvalidSyntaxException;
 import graphql.parser.Parser;
 import graphql.schema.GraphQLSchema;
@@ -91,7 +93,7 @@ public class ViewCatalogService
             ViewEntry.builtin("rapla_kalender", "Kalender", """
                     query rapla_kalender($filter: ReservationFilter!) @view(title: "Kalender")
                       @window(from: {anchor: WEEK_START}, to: {anchor: WEEK_START, offset: 7})
-                      @param(name: "resource", into: "filter.allocatableIdsIn")
+                      @param(name: "resource", into: "filter.allocatableIdsIn", required: true)
                     {
                       appointmentBlocks(filter: $filter) {
                         tag: start @column(group: true, format: "EE dd.MM.")
@@ -104,10 +106,14 @@ public class ViewCatalogService
                       }
                       strips(filter: $filter) { index  s: index  days { index label } }
                     }"""),
+            // listed: false (2026-08-12) — parked out of the choosers (GraphiQL load dialog, SPA
+            // dropdown) until it has a decent render view; the builtin DOCUMENT wochenprogramm
+            // still resolves it by name and keeps rendering.
             ViewEntry.builtin("rapla_wochenprogramm", "Wochenprogramm", """
-                    query rapla_wochenprogramm($filter: ReservationFilter!) @view(title: "Wochenprogramm")
+                    query rapla_wochenprogramm($filter: ReservationFilter!)
+                      @view(title: "Wochenprogramm", listed: false)
                       @window(from: {anchor: WEEK_START}, to: {anchor: WEEK_START, offset: 7})
-                      @param(name: "resource", into: "filter.allocatableIdsIn")
+                      @param(name: "resource", into: "filter.allocatableIdsIn", required: true)
                     {
                       appointmentBlocks(filter: $filter) {
                         name  times  color
@@ -129,14 +135,29 @@ public class ViewCatalogService
         this.graphQlSource = graphQlSource;
     }
 
-    /** All views visible to caller: BUILTIN first, then validated CUSTOM. */
+    /**
+     * All views visible to caller that ask to be listed: BUILTIN first, then validated CUSTOM.
+     * {@code @view(listed: false)} drops a view from this listing only — {@link #findViewForCaller}
+     * still resolves it, so documents keep rendering and the operation keeps running.
+     */
     public List<ViewEntry> listViewsForCaller(User caller)
     {
-        List<ViewEntry> result = new ArrayList<>(BUILTIN_VIEWS);
+        return listViewsForCaller(caller, false);
+    }
+
+    /** {@code includeUnlisted = true} — the authoring surface (GraphiQL load dialog) sees unlisted views too. */
+    public List<ViewEntry> listViewsForCaller(User caller, boolean includeUnlisted)
+    {
+        List<ViewEntry> result = new ArrayList<>();
+        for (ViewEntry b : BUILTIN_VIEWS)
+        {
+            if (includeUnlisted || isListed(b.queryText())) result.add(b);
+        }
         GraphQLSchema schema = graphQlSource.schema();
         for (StoredViewData stored : loadStored())
         {
             if (!isVisible(stored, caller)) continue;
+            if (!includeUnlisted && !isListed(stored.queryText())) continue;
             List<String> errors = validate(stored.queryText(), schema);
             result.add(new ViewEntry(
                     stored.name(), extractTitle(stored.queryText()), stored.queryText(),
@@ -367,6 +388,21 @@ public class ViewCatalogService
     /** Parse {@code @view(title: "...")} from the query text; null if absent or parse fails. */
     static String extractTitle(String queryText)
     {
+        return viewArg(queryText, "title") instanceof StringValue sv ? sv.getValue() : null;
+    }
+
+    /**
+     * {@code @view(listed:)} — whether the view belongs in the catalog listing. Absent means yes
+     * (the schema default), so every view authored before this argument existed keeps listing.
+     */
+    static boolean isListed(String queryText)
+    {
+        return !(viewArg(queryText, "listed") instanceof BooleanValue bv) || bv.isValue();
+    }
+
+    /** The value of one {@code @view} argument in the query's operation; null if absent or unparsable. */
+    private static Value<?> viewArg(String queryText, String argName)
+    {
         try
         {
             Document doc = Parser.parse(queryText);
@@ -378,8 +414,7 @@ public class ViewCatalogService
                     if (!"view".equals(d.getName())) continue;
                     for (Argument a : d.getArguments())
                     {
-                        if ("title".equals(a.getName()) && a.getValue() instanceof StringValue sv)
-                            return sv.getValue();
+                        if (argName.equals(a.getName())) return a.getValue();
                     }
                 }
             }

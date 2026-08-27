@@ -13,7 +13,7 @@
 | [029-swing-oauth-login.md](029-swing-oauth-login.md) | Swing Login via OAuth 2.0 (Browser-based, PKCE Loopback) | phase 1 done 2026-05-12; phase 2 mostly landed |
 | [036-external-idp-oauth-login.md](036-external-idp-oauth-login.md) | External IdP OAuth 2.0 Login (Microsoft Entra ID + Google) | draft 2026-05-14 |
 | [037-native-saml-shibboleth.md](037-native-saml-shibboleth.md) | Shibboleth via Reverse-Proxy Trusted Headers | draft 2026-05-15 |
-| [072-server-side-login-dialog.md](072-server-side-login-dialog.md) | Server-side login dialog (SPA committed cutover) | reopened 2026-07-08 for Phase 8 (memory-token hardening); original 7 phases shipped 2026-06-20 |
+| [072-server-side-login-dialog.md](done/072-server-side-login-dialog.md) | Server-side login dialog (SPA committed cutover) | reopened 2026-07-08 for Phase 8 (memory-token hardening); original 7 phases shipped 2026-06-20 |
 
 ### REST API / wire format
 
@@ -40,7 +40,7 @@
 |---|---|---|
 | [026-angular-frontend.md](026-angular-frontend.md) | Angular frontend (reservation editing) | Phase 0 prototype landed 2026-05-12 |
 | [047-angular-frontend-plugin-model.md](047-angular-frontend-plugin-model.md) | Angular frontend plugin model (Native Federation remotes) | draft 2026-05-18 |
-| [099-spa-table-selection.md](099-spa-table-selection.md) | SPA table selection & multi-select actions (Swing/Excel parity) | draft 2026-07-08 |
+| [099-spa-table-selection.md](done/099-spa-table-selection.md) | SPA table selection & multi-select actions (Swing/Excel parity) | draft 2026-07-08 |
 
 ### External integrations / sync
 

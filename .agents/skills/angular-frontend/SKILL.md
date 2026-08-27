@@ -13,7 +13,7 @@ The SPA lives in `rapla-angular/` (Angular 21, served at `/app/`). Full layout +
 |---|---|---|
 | Type-check after an edit | `cd rapla-angular && npm run build:fast` (= `ng build --configuration development`) | After every edit. ~15–25 s cold, ~5–10 s warm. The Angular equivalent of `mvn compile`. |
 | Full lint + build | `npm run build` (= `npm run lint && ng build`) | Session end or before handoff. Confirms a clean state. |
-| Auto-fix formatting | `npm run format` | When lint flags Prettier-fixable noise. |
+| Auto-fix formatting | `npm run format` | When lint flags Prettier-fixable noise. Run `npx prettier --write <touched files>` before presenting edits — unformatted output round-trips through the lint gate otherwise. |
 
 **Don't run `npm test` / `ng test` during a session** — Vitest + jsdom is slow and noisy; the user runs it at session end or in CI. Same rationale as AGENTS.md §5's "`mvn test` only at session end" rule.
 
@@ -150,6 +150,7 @@ Setup is in `docs/development.md` § "Playwright MCP — install" (one-off: syst
 
 **Canonical debug loop:**
 
+0. If the user says they already have the view open ("i already opened the view"), trust it — probe the current tab (`browser_snapshot`) instead of re-navigating.
 1. `browser_navigate` to the page where the bug shows.
 2. `browser_console_messages` — read JS errors first (90% of SPA bugs surface here).
 3. `browser_network_requests` — find the failing request, inspect status + body.
@@ -158,11 +159,17 @@ Setup is in `docs/development.md` § "Playwright MCP — install" (one-off: syst
 
 **Login shortcut for the dev server:** with `--user-data-dir` enabled (see setup doc), one OAuth login persists for the session. With `--isolated` (default for unattended), each navigate triggers a fresh OAuth roundtrip — fine for one-shot probes, painful for iteration. Logging in via Playwright is EASY (drive the form / OAuth redirect like any page) — "login is too hard for a smoke test" is a named non-excuse for skipping self-verification.
 
-**Browser-visible = browser-verified.** A fix to anything the user sees or touches (layout, drag, click, print, resize, login) counts as verified ONLY after you drove or screenshotted it via Playwright against a freshly-built, freshly-restarted server. `tsc`/`build:fast`, unit tests, and DOM-presence queries do NOT count — an element can be in the DOM and pushed off-screen by CSS, and a compile proves nothing about pointer behavior. Verify yourself BEFORE telling the user it's fixed (AGENTS.md §1); five sessions in a row needed the user to demand this.
+**Browser-visible = browser-verified.** A fix to anything the user sees or touches (layout, drag, click, print, resize, login) counts as verified ONLY after you drove or screenshotted it via Playwright against a freshly-built, freshly-restarted server. `tsc`/`build:fast`, unit tests, and DOM-presence queries do NOT count — an element can be in the DOM and pushed off-screen by CSS, and a compile proves nothing about pointer behavior; iframe/`srcdoc` previews especially (href/base resolution inside the iframe is invisible to unit tests — scar: a nav "fix" declared done twice on green tests, broken in the browser both times). Verify yourself BEFORE telling the user it's fixed (AGENTS.md §1); five sessions in a row needed the user to demand this.
 
 **Whose browser is this?** The MCP owns its own Chrome instance — the user may watch it via WSLg, but an MCP reconnect/restart spawns a NEW window, so you and the user can silently look at different browsers (cost ~40 min once). When demonstrating a fix: take a screenshot (ground truth) or tell the user explicitly which window to watch, and reload the page first to clear any `browser_evaluate` monkey-patches you injected while debugging.
 
 **Profile-lock recovery** — any `browser_*` call failing with `Browser is already in use for ~/.cache/ms-playwright-mcp/mcp-chrome-*, use --isolated`: do NOT retry browser tools (even `browser_close` fails). Either fall back to `curl` probing (`api-testing`/`graphql-api` skills), or clear the stale lock: `pkill -f mcp-chrome` (exit 144 = pkill self-match, benign) then `rm ~/.cache/ms-playwright-mcp/mcp-chrome-*/Singleton*`.
+
+**Other Playwright-MCP failure modes** (each burned turns in past sessions):
+- `Page crashed` / `Target page … has been closed` / `Failed to open a new tab` — the browser process died; treat like a profile lock: recover via the recipe above, then re-navigate from scratch.
+- `browser_run_code_unsafe` runs in **page** context — no Node globals (`require`, `Buffer`, `process` are all undefined). Browser APIs only.
+- `browser_file_upload` can only reach files inside the MCP's **allowed roots** (the rapla checkout + `.playwright-mcp/`) — copy the file into an allowed root first; anything under `/mnt/…` or `~` fails with "outside allowed roots".
+- An open modal (file chooser, dialog) blocks `browser_snapshot` — handle it first (`browser_file_upload` / `browser_handle_dialog`).
 
 **Artefacts (`.playwright-mcp/*.yml`, `*.png`) are gitignored.** Don't commit them.
 

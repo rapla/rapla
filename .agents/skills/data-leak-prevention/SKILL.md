@@ -96,7 +96,7 @@ Half-redacted server-derived data is worse than no data — the shape itself is 
 
 ## Reference implementation
 
-`CalendarViewController.resolveResourceFilter` (in `rapla-server`) is the canonical example. The class-level comment spells out the enumeration risk and shows the silent-drop pattern in production code. Read it before designing a new id-list endpoint.
+`AccessTargetFilter` (rapla-app, `org.rapla.server.spring.graphql`) is the canonical example. Its class-level comment spells out the enumeration risk (unknown handle and out-of-scope handle raise the *same* `ForbiddenException`) and the intersection pattern (target's access ∩ caller's own `canRead`). Read it before designing a new id-list or handle-resolving endpoint.
 
 ## The leak test — mandatory tier-3 MockMvc pattern
 
@@ -181,5 +181,5 @@ For an id-list endpoint, the safe response is structurally identical regardless 
 - AGENTS.md §12 — the always-loaded nevers (this skill expands them).
 - AGENTS.md §13 + `testing-conventions` skill — tier-3 MockMvc test framework, mock policy (use real `RaplaFacade`, not `mock(PermissionController.class)`).
 - AGENTS.md §10 — pyramid; leak tests live at tier 3.
-- `CalendarViewController.resolveResourceFilter` (rapla-server) — reference implementation.
+- `AccessTargetFilter` (rapla-app graphql) — reference implementation.
 - `PreferencesAdminControllerIntegrationTest` — example tier-3 MockMvc test class with non-admin user fixtures (look at the `loginAs` helper).

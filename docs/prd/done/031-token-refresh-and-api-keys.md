@@ -1,6 +1,6 @@
 # PRD 031: Refresh Tokens & API Keys — IdP-portable design
 
-**Status:** effectively complete / supersedable — refresh-token half consolidated onto `/oauth2/token` 2026-05-16 ([PRD 041](../041-openapi-runtime-removal.md)); API-keys half **superseded by [PRD 043](043-api-keys-jwt-pat.md)** (server-minted asymmetric JWT, GitHub-PAT flow); legacy HMAC token path **removed 2026-06-24**. Only residual is the PRD-043-tracked API-key UI. Candidate for `done/`.
+**Status:** effectively complete / supersedable — refresh-token half consolidated onto `/oauth2/token` 2026-05-16 ([PRD 041](../041-openapi-runtime-removal.md)); API-keys half **superseded by [PRD 043](../043-api-keys-jwt-pat.md)** (server-minted asymmetric JWT, GitHub-PAT flow); legacy HMAC token path **removed 2026-06-24**. Only residual is the PRD-043-tracked API-key UI. Candidate for `done/`.
 **Date:** 2026-05-12
 
 > **2026-06-24 update — legacy HMAC token path removed (final cleanup).** The last
@@ -31,7 +31,7 @@
 - Discovery endpoint (`/api/auth/oauth/config`) emits `refreshUrl` and `logoutUrl` — IdP swap becomes a one-env-var change (`RAPLA_OAUTH_ISSUER`).
 - Client-side refresh-token cache: hybrid `TokenStore` (JNLP `PersistenceService` → `~/.rapla/tokens.json` 0600 → NoOp) — see [PRD 029](../029-swing-oauth-login.md) OQ 10.
 
-**Open / API-keys half:** mechanism landed via [PRD 043](043-api-keys-jwt-pat.md) (server-side complete); only the end-user **UI** (Swing dialog / Angular admin panel) is still pending — tracked in [PRD 043](../043-api-keys-jwt-pat.md), not here.
+**Open / API-keys half:** mechanism landed via [PRD 043](../043-api-keys-jwt-pat.md) (server-side complete); only the end-user **UI** (Swing dialog / Angular admin panel) is still pending — tracked in [PRD 043](../043-api-keys-jwt-pat.md), not here.
 
 ## Goal
 
@@ -102,7 +102,7 @@ Trade-offs (accepted): constant-size storage, multi-device trivial, no rotation 
 
 ### Custom Spring AS wiring (`AuthorizationServerConfig`)
 
-Six pieces — see [PRD 041](041-openapi-runtime-removal.md#oauth-refresh-consolidation--final-architecture-added-2026-05-16) for the full table. Summary:
+Six pieces — see [PRD 041](../041-openapi-runtime-removal.md#oauth-refresh-consolidation--final-architecture-added-2026-05-16) for the full table. Summary:
 
 1. `tokenGenerator()` bean → `DelegatingOAuth2TokenGenerator` with custom `JwtRefreshTokenGenerator` (issues via `RefreshSessionService`).
 2. `PublicClientRefreshTokenAuthenticationConverter` + `Provider` — public-client auth for refresh/password/revoke (Spring AS stock only handles PKCE).

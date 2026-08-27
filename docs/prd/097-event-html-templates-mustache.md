@@ -1,6 +1,6 @@
-eva# PRD 097 — Event HTML templates (stored Mustache over GraphQL views)
+# PRD 097 — Event HTML templates (stored Mustache over GraphQL views)
 
-**Status:** draft — 2026-07-08
+**Status:** in progress — Phases 1–5 committed (db3c398ab/fba59dcf9, 2026-07-14/15; Phase 5 spec closed); next = Phase 6
 **Related:** [PRD 074](074-graphql-declarative-views.md) (declarative GraphQL views — the stored-view + `@view` mechanism this reuses),
 [PRD 077](077-calendar-model-graphql.md) (calendar-model & saved views over GraphQL — render-modes, saved-view persistence),
 [PRD 078](078-spa-graphql-view-renderer.md) (SPA view renderer), [PRD 030](030-server-side-view-rendering.md) (server-side view rendering — `CalendarLayoutEngine`, parks
@@ -33,7 +33,7 @@ shapes: **event documents** (Leihschein, lists, letters — the new capability) 
 through Mustache is explicitly **secondary** and drips in last (Phase 7): the SPA's calendar surfaces
 are interactive (drag-create, drag-move, selection, popups) and most of that dynamism does not want to
 live in a logic-less template. Engine + editor come first; the publish/anonymous-URL authorization
-model comes last (Phase 8 below — *this* PRD's Phase 8; every reference to [PRD 072](072-server-side-login-dialog.md)'s Phase 8 is
+model comes last (Phase 8 below — *this* PRD's Phase 8; every reference to [PRD 072](done/072-server-side-login-dialog.md)'s Phase 8 is
 spelled out with its PRD number), because the calendar replacement can inherit the existing routes'
 auth unchanged.
 
@@ -580,7 +580,9 @@ Options, undecided 2026-07-14:
 Current lean (not decided): **B** — no derivation bridge, strongest URL-stability promise, ONE
 new-world publish concept; the "old vs new" boundary becomes old URL vs new document URL instead
 of a renderer flag. Decide in a dedicated session (dhbw subscriber-migration reality is the
-deciding input).
+deciding input). *Revisited 2026-08-11: still deliberately undecided — next step is the dhbw
+subscriber inventory (how many external subscriptions hang off `/rapla/calendar?key=` URLs and
+whether a one-time re-subscribe is acceptable); the lean stays B.*
 
 **Idea feeding the B lean — the navigable document tree ("browse portal", 2026-07-15, not
 scheduled).** A seed set of interlinked documents mimics a browsable drill-down over the data:
@@ -925,7 +927,7 @@ render path resolve the date window identically).
   2026-07-08 — stripping is unconditional** ([PRD 098](done/098-server-artifact-store.md) D6): never keyed on author trust, so a later
   loosening of the write rule cannot change the security posture; "an admin authored it" is not
   "an admin's session wasn't riding". No admin raw-JS exception.
-- **OQ7 — document-page auth after [PRD 072](072-server-side-login-dialog.md) Phase 8.** *Resolution:* **moot 2026-07-09 ([PRD 102](102-browser-credential-hardening.md)
+- **OQ7 — document-page auth after [PRD 072](done/072-server-side-login-dialog.md) Phase 8.** *Resolution:* **moot 2026-07-09 ([PRD 102](102-browser-credential-hardening.md)
   D1).** The premise was that Phase 8 would remove the `access_token` cookie, leaving a top-level
   navigation with no credential. [PRD 102](102-browser-credential-hardening.md) D1 reversed that: the HttpOnly `access_token` cookie
   **stays** (the memory-only-token plan was rejected). D7's top-level navigation is therefore
@@ -948,7 +950,7 @@ render path resolve the date window identically).
 - **OQ9 — the parameter contract: how a document's URL maps onto the view's GraphQL variables.**
   *Resolution:* **decided 2026-07-11 — a declared `@param` contract on the view (public name ↔ private
   path), NOT raw dotted GraphQL paths.** (The `@param` directive + the `inputs`-projection are a
-  [PRD 074](074-declarative-graphql-views.md) *view-mechanism* change that this PRD consumes; document
+  [PRD 074](074-graphql-declarative-views.md) *view-mechanism* change that this PRD consumes; document
   `pins`/`clamp` are this PRD's. Recorded here because 097 is where it was designed and where the
   document side lives — mirror the mechanism into 074 when 074 is next touched.)
 
@@ -1091,7 +1093,8 @@ render path resolve the date window identically).
   - **Reader-supplied resources** — `?filter.allocatableIdsIn=<id>` (provisional dotted path).
   - **Reader-choose-else-nothing** — a sentinel bogus-id in `defaultVariables` fakes `requiresScope`
     today (empty when unscoped, overridden by a real reader id); a hack, replaced by the real
-    short-circuit later.
+    short-circuit later. *Superseded 2026-08-11 by [D8](#decisions-locked): `@param(required: true)`
+    now checks the effective value after the merge and renders a hint page — no sentinel needed.*
   - **Migration is clean**: an inline `defaultVariables` filter → `pins: { group: "…" }` when groups
     land (same resolved scope, named+reusable+live); `?filter.allocatableIdsIn=` → `?in=`; no reader URL
     changes for the id case.
@@ -1212,7 +1215,7 @@ attribute/URL contexts (HTML-escaping ≠ JS/URL-context escaping — the gap So
 autoescaping fills and Mustache does not). Admin-only raw-HTML+JS is left open (OQ6).
 
 **D6a — Document responses carry `Content-Security-Policy: sandbox` (decided 2026-07-08, dialog
-recorded in [PRD 072](072-server-side-login-dialog.md)'s 2026-07-08 follow-up).** Second, independent layer under D6: the `sandbox`
+recorded in [PRD 072](done/072-server-side-login-dialog.md)'s 2026-07-08 follow-up).** Second, independent layer under D6: the `sandbox`
 directive gives the top-level document an **opaque origin**, so even a script that survives
 stripping + CSP executes in a devalued context — its `fetch`es are cross-origin (no cookies
 attached, responses unreadable under CORS), no `localStorage`/`sessionStorage`, no window handles
@@ -1263,6 +1266,35 @@ document is opened directly in the browser at its own human-navigable URL (like 
   and a script-free print hint (Ctrl+P — no auto-print, no button, no CSP nonce; the shell carries no
   script, per D6a). Aligns with [PRD 030](030-server-side-view-rendering.md)'s parked
   "HTML autoexport calendar pages" migration — the same standalone-server-rendered-HTML shape.
+
+**D8 — View `defaultVariables` are authoring EXAMPLE data, not runtime pins (2026-08-11).**
+Saving a view from GraphiQL stores the variables-pane content as `defaultVariables` — example data
+so the preview/GraphiQL render something without typing parameters. Until 2026-08-11 they were
+ALSO a runtime merge layer (deep-merged under SPA queries, baseline layer of the document render) —
+so an example `filter.allocatableIdsIn` silently scoped every SPA query and every bare-URL document
+render to the example resource (the triggering bug: the dhbw view `Uebersicht`). New model:
+
+- **Runtime (SPA `StoredViewInterceptor` + document render):** view `defaultVariables` are **never**
+  merged. Runtime defaults an author actually wants belong in the query text (GraphQL variable
+  defaults, e.g. `$sort: [BlockSort!] = […]`), in the `@window` directive, or in the **document's**
+  `defaultVariables` (whose layering — document pins over view `@window`, caller wins per key — is
+  unchanged, incl. `ViewVariablesLayeringTest`).
+- **Preview (template editor):** the example data yields **derived param defaults** — only values
+  sitting at a declared `@param`'s `into` path act as the lowest layer
+  (`ViewParamDirectives.deriveParamDefaults`). Example keys without a declared `@param` have no
+  effect anywhere. GraphiQL still preloads the example data client-side into its variables pane.
+- **`required` checks the effective value, not URL-parameter presence** (revises OQ9's
+  "missing required → masked 404"): after the merge the `into` target must be filled — from the
+  URL, a document pin, or (preview only) a derived default. Still unfilled → a **hint page**
+  (`<p class="rapla-missing-param">`, names the missing public param) instead of an
+  everything-in-the-window query; CSV keeps the masked 404. Leak-safe: the §12 visibility masking
+  fires before the param check, so only callers who may see the document reach the hint.
+- **The builtins `rapla_kalender`/`rapla_wochenprogramm` declare `resource` as `required: true`** —
+  bare builtin document URLs (`wochenplan` …) render the hint page instead of all events. The
+  earlier "sentinel bogus-id fakes requiresScope" idea (OQ note) is obsolete.
+
+Tests: `DocumentParamGateTest` (example data never scopes, pins satisfy `required`, hint page,
+preview derivation), `BuiltinDocumentsTest`, `ViewVariablesLayeringTest`.
 
 ## Appendix A — Worked example: Leihschein (single reservation → loan slip)
 

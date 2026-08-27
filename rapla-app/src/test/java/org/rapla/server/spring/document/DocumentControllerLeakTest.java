@@ -26,7 +26,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
@@ -166,6 +169,60 @@ class DocumentControllerLeakTest
                 result.getResponse().getContentAsString());
     }
 
+    /**
+     * PRD 097 — the CSV twin of the page. It must carry the view's column headers and the rows the
+     * page shows, which for a grouped view means the surviving groups only: a duplicate report that
+     * exports the singletons it deliberately dropped is worse than no export.
+     */
+    @Test
+    @WithMockUser(username = "homer")
+    void theCsvExportCarriesTheViewColumnsAndTheGroupedRows() throws Exception
+    {
+        User admin = operator.getUser("homer");
+        String duplicates = """
+                query leaktest_dupes @view(title: "Dubletten") {
+                  allocatables {
+                    wert: compute(expr: "name()") @column(header: "Wert", order: 1, group: true, minGroupSize: 999)
+                    bez: name @column(header: "Bezeichnung", order: 2)
+                  }
+                }""";
+        assertEquals(List.of(), views.saveView("leaktest_dupes", duplicates, true, List.of(), null, admin));
+        assertEquals(List.of(), documents.save("leaktest_dupes_doc", "leaktest_dupes",
+                "{{#groups}}<h2>{{label}}</h2>{{/groups}}", true, List.of(), null, admin));
+
+        MockHttpServletResponse response = mockMvc.perform(get("/api/documents/leaktest_dupes_doc/csv"))
+                .andReturn().getResponse();
+
+        assertEquals(200, response.getStatus());
+        assertTrue(response.getContentType().startsWith("text/csv"), response.getContentType());
+        assertTrue(response.getHeader("Content-Disposition")
+                .contains("attachment; filename=\"leaktest_dupes_doc.csv\""),
+                response.getHeader("Content-Disposition"));
+        String body = response.getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+        assertTrue(body.contains("Wert,Bezeichnung\r\n"), body);
+        // minGroupSize 999: no name occurs that often, so the header stands alone — the HAVING the
+        // page applies is the one the export applies.
+        assertEquals("﻿Wert,Bezeichnung\r\n", body);
+    }
+
+    /** §12 — the CSV route is a second read surface on the same documents and masks identically. */
+    @Test
+    @WithMockUser(username = "monty")
+    void theCsvExportOfAHiddenDocumentIsIndistinguishableFromANonExistentOne() throws Exception
+    {
+        MvcResult hidden = mockMvc.perform(get("/api/documents/leaktest_hidden/csv")).andReturn();
+        MvcResult onHiddenView = mockMvc.perform(get("/api/documents/leaktest_on_hidden_view/csv")).andReturn();
+        MvcResult missing = mockMvc.perform(get("/api/documents/leaktest_no_such_document/csv")).andReturn();
+
+        assertEquals(404, missing.getResponse().getStatus());
+        for (MvcResult masked : List.of(hidden, onHiddenView))
+        {
+            assertEquals(missing.getResponse().getStatus(), masked.getResponse().getStatus());
+            assertEquals(missing.getResponse().getContentAsString(), masked.getResponse().getContentAsString());
+            assertEquals(missing.getResponse().getContentType(), masked.getResponse().getContentType());
+        }
+    }
+
     @Test
     @WithMockUser(username = "monty")
     void hiddenDocumentIsIndistinguishableFromANonExistentOne() throws Exception
@@ -178,6 +235,50 @@ class DocumentControllerLeakTest
     void aDocumentOverAHiddenViewIsIndistinguishableFromANonExistentOne() throws Exception
     {
         assertIdenticalTo404("/api/documents/leaktest_on_hidden_view");
+    }
+
+    /**
+     * An unauthenticated caller (no rapla user resolves — e.g. logged out with only a stale
+     * remember-me cookie left) is handed back to Spring Security (→ /login for a browser
+     * navigation), not the misleading 404. Still leak-safe: a private-but-existing and a
+     * never-stored document raise the identical exception, so existence does not leak. (The
+     * authenticated-but-unauthorized case above keeps its masked 404.) The security filters are
+     * disabled in this class, so the exception surfaces here rather than the 302 —
+     * {@code LoginReturnUrlTest} covers the filtered end of it.
+     */
+    @Test
+    void anUnauthenticatedCallerIsSentToLoginIndistinguishablyForHiddenAndMissing() throws Exception
+    {
+        Throwable hidden = authFailureFor("/api/documents/leaktest_hidden");
+        Throwable missing = authFailureFor("/api/documents/leaktest_no_such_document");
+        assertEquals(AuthenticationCredentialsNotFoundException.class, hidden.getClass());
+        assertEquals(hidden.getClass(), missing.getClass());
+        assertEquals(hidden.getMessage(), missing.getMessage());
+    }
+
+    /** The unhandled exception MockMvc rethrows out of {@code perform}, unwrapped. */
+    private Throwable authFailureFor(String url)
+    {
+        Throwable t = assertThrows(Exception.class, () -> mockMvc.perform(get(url)));
+        while (t.getCause() != null)
+        {
+            t = t.getCause();
+        }
+        return t;
+    }
+
+    /**
+     * The login redirect returns the browser to {@code <document-url>?continue} — Spring Security's
+     * saved-request marker, appended by {@code HttpSessionRequestCache}. It is transport, not a
+     * document parameter, so the {@code @param} gate must not reject it as undeclared (400).
+     */
+    @Test
+    @WithMockUser(username = "monty")
+    void theSavedRequestMarkerOfTheLoginRedirectIsNotAnUndeclaredParam() throws Exception
+    {
+        MvcResult result = mockMvc.perform(get("/api/documents/leaktest_visible").param("continue", "")).andReturn();
+        assertEquals(200, result.getResponse().getStatus(),
+                "?continue comes from the login redirect and must render, not 400");
     }
 
     @Test

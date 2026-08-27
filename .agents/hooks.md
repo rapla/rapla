@@ -69,6 +69,10 @@ A second hook in the same `Bash` matcher (`.agents/settings.json`, `hooks.PreToo
 
 **How to verify it's live.** Run `git restore .` (or `git reset --hard`, or `git stash`) — you should see `BLOCKED by AGENTS.md §6:` on stderr, nothing discarded.
 
+### `PreToolUse: Bash` — no chained `pkill` (§8)
+
+Blocks any Bash command where `pkill` is chained with further commands (`;`, `&&`, `|`) — pkill matches the wrapping shell and kills it (exit 144), silently skipping the chained wait/status logic. Quoted strings are stripped first, so `pkill -f 'a|b'` (pipe inside the pattern) still passes. Retrospective 2026-08-11: fired 6× across 3 sessions despite the §8 prose rule. Verify: `pkill -f foo; echo done` → `BLOCKED by AGENTS.md §8:`.
+
 ## User-level — `~/.claude/settings.json`
 
 These apply to every project, not just rapla. Documented here for completeness so you know what fires on session start/end.

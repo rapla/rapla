@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,7 +36,9 @@ import org.springframework.test.web.servlet.MvcResult;
  *   <li>an undeclared query parameter → 400 (reject-undeclared),</li>
  *   <li>a declared {@code @param} maps public {@code name} → private {@code into} path,</li>
  *   <li>{@code ?from=/?to=} are accepted only when the view declares {@code @window},</li>
- *   <li>a missing {@code required} param short-circuits — byte-identical to a 404,</li>
+ *   <li>a {@code required} param must be filled from SOMEWHERE (URL, document pins; preview also
+ *       derives from the view's example defaultVariables) — else a hint page, not a query,</li>
+ *   <li>a view's stored defaultVariables are authoring example data and never scope a render,</li>
  *   <li>§12: an unreadable/unresolvable id in a declared param yields an EMPTY render, never an
  *       error that confirms the id exists.</li>
  * </ul>
@@ -72,6 +75,7 @@ class DocumentParamGateTest
     @Autowired MockMvc mockMvc;
     @Autowired ViewCatalogService views;
     @Autowired DocumentCatalogService documents;
+    @Autowired DocumentRenderService renderService;
     @Autowired StorageOperator operator;
 
     @BeforeEach
@@ -142,17 +146,119 @@ class DocumentParamGateTest
                 result.getResponse().getContentAsString());
     }
 
+    /**
+     * 2026-08-11 — a missing {@code required} param is NOT a 404 anymore: the caller already
+     * passed the visibility gate (§12 masking fires before the param check), so the document
+     * renders a hint page naming the missing public param instead of a query over everything.
+     */
     @Test
     @WithMockUser(username = "homer")
-    void aMissingRequiredParamIsIndistinguishableFromA404() throws Exception
+    void aMissingRequiredParamRendersAHintPageNamingTheParam() throws Exception
     {
         MvcResult missingParam = mockMvc.perform(get("/api/documents/pg_required_doc")).andReturn();
-        MvcResult noSuchDoc = mockMvc.perform(get("/api/documents/pg_no_such_doc")).andReturn();
+        assertEquals(200, missingParam.getResponse().getStatus());
+        String html = missingParam.getResponse().getContentAsString();
+        assertTrue(html.contains("resource"), html);
+        assertTrue(html.contains("rapla-missing-param"), html);
 
-        assertEquals(404, noSuchDoc.getResponse().getStatus());
-        assertEquals(noSuchDoc.getResponse().getStatus(), missingParam.getResponse().getStatus());
-        assertEquals(noSuchDoc.getResponse().getContentAsString(),
-                missingParam.getResponse().getContentAsString());
+        // The CSV twin stays machine-shaped: no hint body, the masked 404.
+        assertEquals(404, mockMvc.perform(get("/api/documents/pg_required_doc/csv"))
+                .andReturn().getResponse().getStatus());
+    }
+
+    /**
+     * 2026-08-11 — {@code required} means "this scope must come from SOMEWHERE", not "the URL
+     * must carry it": a document pinning the param's target path in its own defaultVariables
+     * satisfies the requirement.
+     */
+    @Test
+    @WithMockUser(username = "homer")
+    void aRequiredParamIsSatisfiedByDocumentPins() throws Exception
+    {
+        User admin = operator.getUser("homer");
+        String pins = "{\"filter\":{\"from\":\"2000-01-01T00:00:00\",\"to\":\"2035-01-01T00:00:00\","
+                + "\"allocatableIdsIn\":[\"no-such-resource-id\"]}}";
+        assertEquals(List.of(), documents.save("pg_pinned_doc", "pg_required", LIST_TEMPLATE,
+                true, List.of(), pins, admin));
+
+        MvcResult result = mockMvc.perform(get("/api/documents/pg_pinned_doc")).andReturn();
+        assertEquals(200, result.getResponse().getStatus());
+        String html = result.getResponse().getContentAsString();
+        assertTrue(html.contains("<ul></ul>"), html);
+        assertTrue(!html.contains("rapla-missing-param"), html);
+    }
+
+    /**
+     * 2026-08-11 — a view's stored defaultVariables are GraphiQL EXAMPLE data, not runtime pins:
+     * an example {@code allocatableIdsIn} saved from the variables pane must not scope the live
+     * document render (it previously deep-merged underneath and silently filtered everything).
+     */
+    @Test
+    @WithMockUser(username = "homer")
+    void viewDefaultVariablesAreExampleDataAndDoNotScopeTheRender() throws Exception
+    {
+        User admin = operator.getUser("homer");
+        String exampleDefaults = "{\"filter\":{\"from\":\"2000-01-01T00:00:00\","
+                + "\"to\":\"2035-01-01T00:00:00\",\"allocatableIdsIn\":[\"no-such-resource-id\"]}}";
+        String scoped = """
+                query pg_example($filter: ReservationFilter!) @view(title: "Example")
+                  @param(name: "resource", into: "filter.allocatableIdsIn")
+                { reservations(filter: $filter) { titel: name } }""";
+        assertEquals(List.of(), views.saveView("pg_example", scoped, true, List.of(), exampleDefaults, admin));
+        assertEquals(List.of(), documents.save("pg_example_doc", "pg_example", LIST_TEMPLATE,
+                true, List.of(), WIDE_WINDOW, admin));
+
+        String html = mockMvc.perform(get("/api/documents/pg_example_doc"))
+                .andReturn().getResponse().getContentAsString();
+        assertTrue(html.contains("<li>"), "the example scope must not filter the live render: " + html);
+    }
+
+    /**
+     * 2026-08-11 — the authoring preview derives param defaults from the view's example
+     * defaultVariables THROUGH the declared {@code @param} holes only: the example fills the
+     * required param (preview renders), but an example key that corresponds to no declared
+     * param does not leak into the resolved variables.
+     */
+    @Test
+    @WithMockUser(username = "homer")
+    void previewDerivesParamDefaultsFromExampleDataThroughDeclaredParamsOnly() throws Exception
+    {
+        User admin = operator.getUser("homer");
+        String exampleDefaults = "{\"filter\":{\"allocatableIdsIn\":[\"no-such-resource-id\"],"
+                + "\"nameContains\":\"not-a-param\"}}";
+        assertEquals(List.of(), views.saveView("pg_required", """
+                query pg_required($filter: ReservationFilter!) @view(title: "Required")
+                  @param(name: "resource", into: "filter.allocatableIdsIn", required: true)
+                { reservations(filter: $filter) { titel: name } }""",
+                true, List.of(), exampleDefaults, admin));
+
+        DocumentRenderService.Preview preview = renderService
+                .preview("pg_required", LIST_TEMPLATE, null, null, Map.of(), admin).orElseThrow();
+        Map<String, Object> filter = filterOf(preview.variables());
+        assertEquals(List.of("no-such-resource-id"), filter.get("allocatableIdsIn"),
+                "the example fills the declared param: " + preview.variables());
+        assertEquals(null, filter.get("nameContains"),
+                "example keys without a declared param must not apply: " + preview.variables());
+        assertTrue(!preview.html().contains("rapla-missing-param"), preview.html());
+    }
+
+    /** 2026-08-11 — no source at all for a required param: the preview shows the same hint page. */
+    @Test
+    @WithMockUser(username = "homer")
+    void previewWithoutAnySourceForARequiredParamShowsTheHint() throws Exception
+    {
+        User admin = operator.getUser("homer");
+        DocumentRenderService.Preview preview = renderService
+                .preview("pg_required", LIST_TEMPLATE, null, null, Map.of(), admin).orElseThrow();
+        assertTrue(preview.html().contains("rapla-missing-param"), preview.html());
+        assertTrue(preview.html().contains("resource"), preview.html());
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> filterOf(Map<String, Object> variables)
+    {
+        return variables.get("filter") instanceof Map<?, ?> m
+                ? (Map<String, Object>) m : Map.of();
     }
 
     @Test

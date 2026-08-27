@@ -56,6 +56,19 @@ final class RowGrouping
     static List<Group> groupByColumn(List<Map<String, Object>> rows, String alias, String format,
             List<String> domain)
     {
+        return groupByColumn(rows, alias, format, domain, 0);
+    }
+
+    /**
+     * Variant with a HAVING threshold: groups with fewer than {@code minGroupSize} rows are dropped
+     * ({@code @column(minGroupSize:)}). {@code minGroupSize <= 1} keeps every group (the default).
+     * Used for duplicate reports — {@code minGroupSize: 2} leaves only values that occur more than
+     * once, each carrying its member rows. Also removes configured-but-empty domain groups and the
+     * missing-value bucket (a row with no value is not a duplicate of another row with no value).
+     */
+    static List<Group> groupByColumn(List<Map<String, Object>> rows, String alias, String format,
+            List<String> domain, int minGroupSize)
+    {
         Map<String, List<Map<String, Object>>> buckets = new LinkedHashMap<>();
         if (domain != null)
         {
@@ -78,6 +91,10 @@ final class RowGrouping
         }
         List<Map<String, Object>> empty = buckets.get("");
         if (empty != null) result.add(new Group("", EMPTY_LABEL, empty));
+        // A HAVING threshold asks "which VALUE occurs at least n times". Rows without a value share
+        // nothing, so the missing-value bucket goes regardless of its size — it is typically the
+        // largest one (every row whose column is empty) and would dwarf a duplicate report.
+        if (minGroupSize > 1) result.removeIf(g -> g.key().isEmpty() || g.rows().size() < minGroupSize);
         return result;
     }
 

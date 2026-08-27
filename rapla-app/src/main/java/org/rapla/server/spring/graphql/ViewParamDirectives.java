@@ -16,7 +16,9 @@ import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLTypeUtil;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -72,6 +74,47 @@ public final class ViewParamDirectives
             }
         }
         return new Declarations(List.copyOf(params), hasWindow, windowInto);
+    }
+
+    /** The value a dotted {@code into} path points at in a nested variables map; null when absent. */
+    public static Object valueAt(Map<String, Object> vars, String path)
+    {
+        Object current = vars;
+        for (String key : path.split("\\."))
+        {
+            if (!(current instanceof Map<?, ?> m)) return null;
+            current = m.get(key);
+        }
+        return current;
+    }
+
+    /**
+     * 2026-08-11 — per-param defaults derived from a view's stored {@code defaultVariables}: those
+     * are GraphiQL EXAMPLE data, so at most the values reachable through a declared {@code @param}'s
+     * {@code into} path may act as defaults (authoring preview only — never at document render or
+     * SPA execution). An example key with no declared param has no effect anywhere.
+     */
+    public static Map<String, Object> deriveParamDefaults(Map<String, Object> exampleVars, List<Param> params)
+    {
+        Map<String, Object> out = new LinkedHashMap<>();
+        for (Param p : params)
+        {
+            Object value = valueAt(exampleVars, p.into());
+            if (value != null) putAt(out, p.into(), value);
+        }
+        return out;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void putAt(Map<String, Object> target, String path, Object value)
+    {
+        String[] keys = path.split("\\.");
+        Map<String, Object> current = target;
+        for (int i = 0; i < keys.length - 1; i++)
+        {
+            current = (Map<String, Object>) current.computeIfAbsent(keys[i], k -> new LinkedHashMap<>());
+        }
+        current.put(keys[keys.length - 1], value);
     }
 
     /** One validation problem, anchored to the offending directive so an editor can mark it red. */

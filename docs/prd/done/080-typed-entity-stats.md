@@ -1,6 +1,6 @@
 # PRD 080 — Typed-entity stats across entity families
 
-**Status:** implemented (2026-06-21) — all 8 items built + tested (item 4 verify-live-only; see Status block). Extends [PRD 079](079-graphql-grouped-aggregates.md) (generic grouped
+**Status:** implemented (2026-06-21) — all 8 items built + tested (item 4 verify-live-only; see Status block). Extends [PRD 079](../079-graphql-grouped-aggregates.md) (generic grouped
 aggregates) with **typed, selectable group entities** and **per-family stats fields**. Carved out of a
 long design discussion: the generic `keys/values` bucket couldn't carry entity fields (e.g. room size),
 and aggregation existed only on `appointmentBlockStats`.
@@ -69,7 +69,7 @@ appointmentBlockStats(
 
 ## Invariants
 
-- **§12:** the group entity is always `canRead`-gated before exposure (it comes from the §12 resolver / `filterAllocatables`); recursive reference resolution ([PRD 074](074-graphql-declarative-views.md) b) already gates.
+- **§12:** the group entity is always `canRead`-gated before exposure (it comes from the §12 resolver / `filterAllocatables`); recursive reference resolution ([PRD 074](../074-graphql-declarative-views.md) b) already gates.
 - **Genericity preserved:** ad-hoc `groupBy`/`aggregate` stays; no fixed-report deploy per analysis.
 - **One generic result** over all families — only the per-family `…GroupKey` + `…MetricField` differ.
 
@@ -109,9 +109,9 @@ appointmentBlockStats(
 
 - Union `TypeResolver` resolves Allocatable/Reservation/Category correctly.
 - §12: a hidden group entity ⇒ bucket dropped / entity not exposed.
-- Carries over from [PRD 074](074-graphql-declarative-views.md) b: a fixture with a reference attribute for the reference-recursion + §12-leak regression test (unit fixture currently has none).
+- Carries over from [PRD 074](../074-graphql-declarative-views.md) b: a fixture with a reference attribute for the reference-recursion + §12-leak regression test (unit fixture currently has none).
 
 ## Out of scope
 
-Stufe c (EL number-model / in-expr arithmetic, [PRD 073](073-graphql-function-equivalents.md)); the ComputeFunctions catalog ([PRD 073](073-graphql-function-equivalents.md));
+Stufe c (EL number-model / in-expr arithmetic, [PRD 073](../073-graphql-function-equivalents.md)); the ComputeFunctions catalog ([PRD 073](../073-graphql-function-equivalents.md));
 fixed typed reports (Y).

@@ -2,7 +2,7 @@
 
 How rapla's **event templates** work — the storage model, the permission rules, the Swing
 instantiation semantics, and the SPA "Neu" picker built on top
-([PRD 104](../prd/104-spa-template-picker.md), [PRD 099 § D6](../prd/099-reservation-prototype-prefill.md#decisions-locked)).
+([PRD 104](../prd/104-spa-template-picker.md), [PRD 107 § D6](../prd/107-reservation-prototype-prefill.md#decisions-locked)).
 
 > **Naming trap:** this page is about *Vorlagen* — reusable event blueprints a user
 > instantiates from the "Neu" flow. The other "templates" in rapla are the **Mustache

@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, effect, inject, signal, computed, OnInit } from '@angular/core';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -16,14 +16,25 @@ import { PermissionMigrationDialogComponent } from '../account/permission-migrat
 import { PermissionMigrationService } from '../account/permission-migration.service';
 import { OmniboxComponent } from './omnibox.component';
 import { EventSheetComponent, type EventSheetDialogData } from '../event/event-sheet.component';
-import { newScopedDraft, type EventDraft } from '../event/event-draft';
+import { newScopedDraft, withScopeAllocations, type EventDraft } from '../event/event-draft';
 import { NewEventOptionsService } from '../event/new-event-options.service';
 import { NewEventPickerComponent } from '../event/new-event-picker.component';
+import { ImportWorklistService } from '../import/import-worklist.service';
+import {
+  ImportSyncDialogComponent,
+  type ImportSyncDialogData,
+} from '../import/import-sync-dialog.component';
 import { type PickItem } from '../event/new-event-picker-model';
 import { TemplateInstantiationService } from '../event/template-instantiation.service';
 import { ViewStateStore } from '../state/view-state-store';
 import { UndoToastService } from '../actions/undo-toast.service';
 import { FilterStore } from '../state/filter-store';
+import {
+  currentSemester,
+  openItemsOfGroups,
+  semesterRange,
+  windowSemesterDate,
+} from '../import/import-models';
 
 /**
  * PRD 078 — the global app toolbar (account chrome). The right-hand side is now
@@ -55,6 +66,20 @@ import { FilterStore } from '../state/filter-store';
         <button matButton class="new-event" (click)="newEvent()" title="Neues Ereignis anlegen">
           <mat-icon>add</mat-icon>
           <span class="new-event-label">Neu</span>
+        </button>
+      }
+      @if (importSyncAvailable()) {
+        <button
+          matButton
+          class="new-event"
+          (click)="openImportSync()"
+          title="Externe Veranstaltungen der aktuellen Auswahl: übernehmen, Verknüpfte und Auffällige ansehen"
+        >
+          <mat-icon>move_to_inbox</mat-icon>
+          <span class="new-event-label">{{ importSyncLabel() }}</span>
+          <span class="import-sync-badge" [class.done]="importSyncDone()">{{
+            importSyncBadge()
+          }}</span>
         </button>
       }
       <button
@@ -161,6 +186,19 @@ import { FilterStore } from '../state/filter-store';
       .spacer {
         flex: 1 1 auto;
       }
+      .import-sync-badge {
+        font-size: 11px;
+        font-weight: 700;
+        border-radius: 9px;
+        padding: 0 7px;
+        margin-left: 4px;
+        background: var(--mat-sys-error-container);
+        color: var(--mat-sys-on-error-container);
+      }
+      .import-sync-badge.done {
+        background: #d3e8d0;
+        color: #1e4620;
+      }
       .user-trigger {
         display: inline-flex;
         align-items: center;
@@ -231,6 +269,71 @@ export class AppToolbarComponent implements OnInit {
     () => this.newOptions.eventTypes().length > 0 || this.newOptions.templates().length > 0,
   );
 
+  /** PRD 104 v3 — "Dualis-Sync" next to "Neu" (toolbar = home of global creator
+   *  actions). Visibility (user rule 2026-08-11, sharpened same day): the button
+   *  shows WHENEVER an import source is deployed — an empty selection or a
+   *  semester with nothing to do reads "0/0" instead of vanishing (a hidden
+   *  button is indistinguishable from a broken query). A failed load shows "!". */
+  private readonly importWorklist = inject(ImportWorklistService);
+  private readonly chipIds = computed(() =>
+    this.filter
+      .entries()
+      .filter((c) => c.kind === 'resource')
+      .map((c) => c.id),
+  );
+  private readonly importSyncGroups = computed(() => {
+    const wl = this.importWorklist.worklist();
+    if (!wl) return [];
+    const ids = new Set(this.chipIds());
+    return wl.groups.filter((g) => ids.has(g.id));
+  });
+  protected readonly importSyncAvailable = computed(() => this.importWorklist.sourceName() !== '');
+  /** Open items of the visible semester in the selection (worklist is unscoped). */
+  private readonly importOpenCount = computed(() => {
+    const w = this.viewState.window();
+    const semester = w ? currentSemester(windowSemesterDate(w)) : undefined;
+    return openItemsOfGroups(this.importWorklist.worklist()?.items ?? [], this.chipIds(), semester)
+      .length;
+  });
+  /** "24/27" — linked of total (linked + open) in the selection; "!" = query
+   *  failed (must never masquerade as 0/0). Linked counts come from the
+   *  reservations themselves (durable stamp), not the Halde. */
+  protected readonly importSyncBadge = computed(() => {
+    if (this.importWorklist.loadFailed()) return '!';
+    const linked = this.importWorklist.linked().length;
+    return `${linked}/${linked + this.importOpenCount()}`;
+  });
+  /** All linked, nothing open → the badge turns green (done), never in the
+   *  error case (done and broken must not share a color). */
+  protected readonly importSyncDone = computed(
+    () =>
+      !this.importWorklist.loadFailed() &&
+      this.importOpenCount() === 0 &&
+      this.importWorklist.linked().length > 0,
+  );
+  protected readonly importSyncLabel = computed(
+    () => `${this.importWorklist.sourceName() || 'Import'}-Sync`,
+  );
+
+  protected openImportSync(): void {
+    const groups = this.importSyncGroups();
+    const w = this.viewState.window();
+    const data: ImportSyncDialogData = {
+      groupIds: groups.length > 0 ? groups.map((g) => g.id) : this.chipIds(),
+      groupLabel: groups.map((g) => g.name).join(', ') || 'aktuelle Auswahl',
+      semester: currentSemester(w ? windowSemesterDate(w) : new Date()),
+      defaultStart: `${(this.viewState.window()?.from ?? new Date().toISOString()).slice(0, 10)}T08:00:00`,
+    };
+    this.dialog
+      .open(ImportSyncDialogComponent, { data, autoFocus: false })
+      .afterClosed()
+      .subscribe((outcome) => {
+        // Post-park flow: nothing is stored yet — just make sure the Parkstreifen
+        // is visible (week render mode); placement happens by drag from there.
+        if (outcome === 'parked') this.viewState.setRenderMode('week');
+      });
+  }
+
   /** Effective user shown in the chip (impersonation target when active, else self). */
   readonly effectiveUsername = computed(() => this.auth.identity()?.username ?? '');
 
@@ -259,6 +362,26 @@ export class AppToolbarComponent implements OnInit {
   readonly hasMigrationItems = signal(false);
   private readonly isAdmin = computed(() => this.auth.identity()?.admin ?? false);
   readonly showPermissionMigration = computed(() => this.isAdmin() && this.hasMigrationItems());
+
+  /** Kurs-Scope worklist: reload whenever the selected resource chips change
+   *  (ensureLoaded reads the chip signal, so this effect tracks it). Must never
+   *  break the toolbar — swallow errors, the button just stays hidden. */
+  private readonly worklistSync = effect(() => {
+    try {
+      // The linked-reservations query spans the SEMESTER of the visible window
+      // (user decision 2026-08-12, option A): list, badge and dismiss share one
+      // scope. The worklist itself loads unscoped (join safety, 2026-08-11).
+      const w = this.viewState.window();
+      if (w) this.importWorklist.windowRange.set(semesterRange(windowSemesterDate(w)));
+      // Swallow (button stays hidden) but LOG — a silent schema/validation error
+      // here cost a live debugging round (2026-08-11, verwaist field removal).
+      this.importWorklist.ensureLoaded().subscribe({
+        error: (e: unknown) => console.error('[import] worklist load failed', e),
+      });
+    } catch {
+      /* toolbar works without the sync button */
+    }
+  });
 
   ngOnInit(): void {
     // PRD 051 — non-empty /api/users (server-filtered by canAdminUser) ⇒ enable switch.
@@ -318,7 +441,8 @@ export class AppToolbarComponent implements OnInit {
     const windowFrom = this.viewState.window()?.from;
     const day = (windowFrom ?? new Date().toISOString()).slice(0, 10);
     this.templateInstantiation.instantiate(templateId, { day, startMin: null }).subscribe({
-      next: (draft) => {
+      next: (instantiated) => {
+        const draft = instantiated && withScopeAllocations(instantiated, this.filter.entries());
         if (!draft) {
           this.snackBar.open(
             'Die Vorlage enthält keine Termine — bitte zuerst Termine in der Vorlage anlegen.',

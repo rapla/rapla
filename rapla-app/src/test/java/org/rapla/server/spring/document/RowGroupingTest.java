@@ -135,4 +135,48 @@ class RowGroupingTest
         assertEquals(List.of("Mo 13.07.", "Di 14.07."), groups.stream().map(RowGrouping.Group::label).toList());
         assertEquals("2026-07-13", groups.get(0).key(), "the key stays the raw value; only the label is formatted");
     }
+
+    /**
+     * {@code @column(minGroupSize:)} — the HAVING for row grouping. A duplicate report keeps only
+     * groups whose value occurs at least {@code minGroupSize} times, each still carrying its members.
+     */
+    @Test
+    void minGroupSizeDropsSingletonGroupsButKeepsMembers()
+    {
+        List<Map<String, Object>> rows = List.of(
+                row("a@x", "A1"), row("a@x", "A2"), row("b@x", "B1"));   // b@x occurs once
+
+        assertEquals(2, RowGrouping.groupByColumn(rows, "tag", null, null, 0).size(),
+                "minGroupSize 0 keeps every group");
+        assertEquals(2, RowGrouping.groupByColumn(rows, "tag", null, null, 1).size(),
+                "minGroupSize 1 is a no-op");
+
+        List<RowGrouping.Group> dupOnly = RowGrouping.groupByColumn(rows, "tag", null, null, 2);
+        assertEquals(1, dupOnly.size(), "only the value occurring >1 survives");
+        assertEquals("a@x", dupOnly.get(0).key());
+        assertEquals(2, dupOnly.get(0).rows().size(), "the duplicate group still carries its members");
+    }
+
+    /**
+     * A duplicate report asks "which VALUE occurs more than once" — rows that carry no value at all
+     * share nothing. The missing-value bucket is big (every person without an email) and would
+     * dwarf the report, so a HAVING threshold drops it regardless of its size.
+     */
+    @Test
+    void minGroupSizeAlsoDropsTheMissingValueBucketHoweverLargeItIs()
+    {
+        List<Map<String, Object>> rows = new ArrayList<>();
+        rows.add(row("a@x", "A1"));
+        rows.add(row("a@x", "A2"));
+        rows.add(row(null, "ohne1"));
+        rows.add(row("", "ohne2"));
+        rows.add(row(null, "ohne3"));
+
+        List<RowGrouping.Group> dupOnly = RowGrouping.groupByColumn(rows, "tag", null, null, 2);
+        assertEquals(List.of("a@x"), dupOnly.stream().map(RowGrouping.Group::key).toList(),
+                "3 rows without a value are not 3 duplicates of the same value");
+
+        assertEquals(2, RowGrouping.groupByColumn(rows, "tag", null, null, 0).size(),
+                "without a threshold the missing-value bucket still renders");
+    }
 }

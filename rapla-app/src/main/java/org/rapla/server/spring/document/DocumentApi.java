@@ -39,6 +39,15 @@ public interface DocumentApi
     ResponseEntity<String> render(@PathVariable("name") String name,
             @RequestParam MultiValueMap<String, String> variables);
 
+    /**
+     * The same document as a downloadable CSV: same view, same parameters, same rows the page
+     * shows (grouping and {@code minGroupSize} included). The columns are the view's own
+     * {@code @column} metadata — a template is HTML, not a table, so it cannot define them.
+     */
+    @GetExchange(value = "/{name}/csv", accept = "text/csv")
+    ResponseEntity<byte[]> csv(@PathVariable("name") String name,
+            @RequestParam MultiValueMap<String, String> variables);
+
     /** The documents the caller may see — metadata only, no template bodies. */
     @GetExchange
     List<DocumentSummary> list();

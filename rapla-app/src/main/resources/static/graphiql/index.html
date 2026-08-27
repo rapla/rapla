@@ -311,7 +311,9 @@
     async function populateViewSelect(sel) {
         sel.innerHTML = '<option value="">— Load view —</option>';
         try {
-            const result = await gqlFetch('{ listViews { name title valid source defaultVariables } }');
+            // includeUnlisted — this dialog is the AUTHORING surface: @view(listed: false)
+            // views must stay loadable/editable here (end-user choosers keep filtering).
+            const result = await gqlFetch('{ listViews(includeUnlisted: true) { name title valid source defaultVariables } }');
             const views = (result.data && result.data.listViews) || [];
             const builtinGroup = document.createElement('optgroup');
             builtinGroup.label = 'Built-in (read-only)';

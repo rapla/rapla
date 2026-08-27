@@ -14,7 +14,7 @@
   registered `FunctionFactory`'s descriptors (core + active plugins), dedupes by `namespace:name`,
   sorts. SDL type `ComputeFunction`. Tier-3 test asserts core fns + metadata (`concat` variadic,
   `attribute` CLASSIFIABLE/2-arg, `start` EVENT). **62 GraphQL tests green.**
-- ✅ **`isLocation` / `isPerson`** surfaced as `Allocatable` fields ([PRD 080](080-typed-entity-stats.md) work) — closes row #22's
+- ✅ **`isLocation` / `isPerson`** surfaced as `Allocatable` fields ([PRD 080](done/080-typed-entity-stats.md) work) — closes row #22's
   field gap (filter `isLocationEq` still open; `isPersonEq` already shipped).
 - ✅ **Descriptor-driven generated fields (first cut).** `FunctionFieldGenerator` derives eligible
   fields from the same descriptors and emits them BOTH as `extend type … { }` SDL (appended in

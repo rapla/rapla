@@ -67,13 +67,53 @@ public class DocumentRenderService
 
     /**
      * Render a document to a complete HTML page. Empty when the caller may not see the document
-     * or its view, when either is invalid, or when a {@code required @param} is absent — the
-     * caller cannot tell these apart (§12). Raw URL parameters are gated by the view's declared
-     * {@code @param}/{@code @window} surface: an undeclared key is a 400
-     * ({@link UndeclaredParameterException}), a declared public {@code name} is translated to its
-     * private {@code into} path before variable expansion.
+     * or its view, or when either is invalid — the caller cannot tell these apart (§12). Raw URL
+     * parameters are gated by the view's declared {@code @param}/{@code @window} surface: an
+     * undeclared key is a 400 ({@link UndeclaredParameterException}), a declared public
+     * {@code name} is translated to its private {@code into} path before variable expansion.
+     *
+     * <p>2026-08-11 — a {@code required @param} whose target stays unfilled after the merge (no
+     * URL value, no document pin) renders a hint page naming the missing public param instead of
+     * an everything-in-the-window query. Leak-safe: the §12 visibility masking fires first, so
+     * only callers who may see the document reach the hint.
      */
     public Optional<String> render(String documentName, Map<String, List<String>> rawParams, User caller)
+    {
+        try
+        {
+            return prepare(documentName, rawParams, caller)
+                    .map(r -> page(title(r.view(), r.document().name()), r.document().template(), r.model()));
+        }
+        catch (MissingRequiredParamsException e)
+        {
+            return Optional.of(hintPage(e.title, e.missing));
+        }
+    }
+
+    /**
+     * The same document as a CSV body — same view, same variables, same §12 read-scope, same
+     * grouping/HAVING as the page. Projected from the view's {@code @column} metadata, not from
+     * the template (which is free-form HTML). Empty exactly where {@link #render} is empty —
+     * except a missing {@code required} param, which stays a plain 404 here (a machine-format
+     * body carries no hint page).
+     */
+    public Optional<String> renderCsv(String documentName, Map<String, List<String>> rawParams, User caller)
+    {
+        try
+        {
+            return prepare(documentName, rawParams, caller).map(r -> DocumentCsv.toCsv(r.viewMeta(), r.model()));
+        }
+        catch (MissingRequiredParamsException e)
+        {
+            return Optional.empty();
+        }
+    }
+
+    /** A document executed against its view: everything both output formats need. */
+    private record Prepared(DocumentEntry document, ViewEntry view, Map<String, Object> model,
+            Map<String, Object> viewMeta) { }
+
+    private Optional<Prepared> prepare(String documentName, Map<String, List<String>> rawParams, User caller)
     {
         Optional<DocumentEntry> document = documents.findVisible(documentName, caller);
         if (document.isEmpty()) return Optional.empty();
@@ -92,21 +132,22 @@ public class DocumentRenderService
             return Optional.empty();
         }
 
-        Optional<Map<String, Object>> requestVariables = gateParams(referenced.get(), doc.window(), rawParams);
-        if (requestVariables.isEmpty()) return Optional.empty();   // required @param absent → same 404
-
         ViewEntry view = referenced.get();
+        Map<String, Object> requestVariables = gateParams(view, doc.window(), rawParams);
         java.time.LocalDate dateParam = parseReferenceDate(rawParams);
         java.time.LocalDate referenceDate = dateParam != null ? dateParam : java.time.LocalDate.now();
         // ?date= is a CALLER gesture, ranked like ?from/?to: it outranks stored defaults. An
         // explicitly navigated window is injected at the caller layer (explicit ?from/?to still win).
-        Map<String, Object> callerVars = dateParam == null ? requestVariables.get()
-                : withNavigatedWindow(requestVariables.get(), view, doc.window(), dateParam);
-        Map<String, Object> variables = resolveVariables(view, doc.defaultVariables(), doc.window(),
+        Map<String, Object> callerVars = dateParam == null ? requestVariables
+                : withNavigatedWindow(requestVariables, view, doc.window(), dateParam);
+        Map<String, Object> variables = resolveVariables(view, null, doc.defaultVariables(), doc.window(),
                 callerVars, referenceDate);
-        Map<String, Object> model = executeResolved(view, variables, doc.name());
-        putNav(model, view, doc.window(), rawParams, variables, false);
-        return Optional.of(page(title(view, doc.name()), doc.template(), model));
+        ViewParamDirectives.Declarations decl = ViewParamDirectives.parse(view.queryText());
+        List<String> missing = missingRequired(decl, variables);
+        if (!missing.isEmpty()) throw new MissingRequiredParamsException(title(view, doc.name()), missing);
+        Executed executed = executeResolved(view, variables, doc.name());
+        putNav(executed.model(), view, doc.window(), rawParams, variables, false);
+        return Optional.of(new Prepared(doc, view, executed.model(), executed.viewMeta()));
     }
 
     /** The {@code ?date=} reference day (nav, 2026-07-15); malformed → 400, absent → null. */
@@ -250,11 +291,10 @@ public class DocumentRenderService
      * PRD 074 §"Window and inputs directives" — the document-path input gate. The view's
      * {@code @param} names (plus {@code from}/{@code to} iff it declares {@code @window}) are the
      * ONLY accepted URL keys; each is translated public {@code name} → private {@code into} path,
-     * then expanded to nested variables. Empty when a {@code required} param is absent — the
-     * caller sees the same 404 as for a document that does not exist. Fires only on this path:
-     * the SPA transport and the authoring preview construct their own variables.
+     * then expanded to nested variables. {@code required} is NOT checked here (2026-08-11): it
+     * fires on the effective value after the variable merge — a document pin satisfies it too.
      */
-    private static Optional<Map<String, Object>> gateParams(ViewEntry view, String documentWindow,
+    private static Map<String, Object> gateParams(ViewEntry view, String documentWindow,
             Map<String, List<String>> rawParams)
     {
         ViewParamDirectives.Declarations decl = ViewParamDirectives.parse(view.queryText());
@@ -287,16 +327,61 @@ public class DocumentRenderService
                 }
             }
         }
+        return RequestVariables.expand(translated);
+    }
+
+    /**
+     * 2026-08-11 — {@code required} means "this scope must come from somewhere": the check runs on
+     * the MERGED variables, so a URL value, a document pin, or (preview only) a derived example
+     * default all satisfy it. Unfilled → the public param names for the hint page.
+     */
+    private static List<String> missingRequired(ViewParamDirectives.Declarations decl,
+            Map<String, Object> variables)
+    {
+        List<String> missing = new ArrayList<>();
         for (ViewParamDirectives.Param p : decl.params())
         {
             if (!p.required()) continue;
-            List<String> values = rawParams == null ? null : rawParams.get(p.name());
-            if (values == null || values.isEmpty() || values.stream().allMatch(String::isBlank))
-            {
-                return Optional.empty();
-            }
+            Object value = ViewParamDirectives.valueAt(variables, p.into());
+            boolean filled = value != null
+                    && !(value instanceof String s && s.isBlank())
+                    && !(value instanceof List<?> l && l.isEmpty());
+            if (!filled) missing.add(p.name());
         }
-        return Optional.of(RequestVariables.expand(translated));
+        return missing;
+    }
+
+    /** Signals a required param left unfilled after the merge — mapped per output format. */
+    static class MissingRequiredParamsException extends RuntimeException
+    {
+        final String title;
+        final transient List<String> missing;
+
+        MissingRequiredParamsException(String title, List<String> missing)
+        {
+            super("required parameter missing: " + missing);
+            this.title = title;
+            this.missing = missing;
+        }
+    }
+
+    /** The hint page a visible document renders instead of an unscoped everything-query. */
+    private static String hintPage(String title, List<String> missing)
+    {
+        StringBuilder names = new StringBuilder();
+        for (String name : missing)
+        {
+            if (names.length() > 0) names.append(", ");
+            names.append("<code>").append(escapeHtml(name)).append("</code>");
+        }
+        return DocumentShell.wrap(title, "<p class=\"rapla-missing-param\">"
+                + (missing.size() == 1 ? "Erforderlicher Parameter fehlt: " : "Erforderliche Parameter fehlen: ")
+                + names + "</p>");
+    }
+
+    private static String escapeHtml(String s)
+    {
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 
     /**
@@ -307,12 +392,6 @@ public class DocumentRenderService
      */
     /** Preview outcome: the page plus the RESOLVED variables the render actually used (editor pane). */
     public record Preview(String html, Map<String, Object> variables) { }
-
-    /** A preview input problem the editor should show as a message (not an HTTP error). */
-    public static class PreviewProblemException extends RuntimeException
-    {
-        PreviewProblemException(String message) { super(message); }
-    }
 
     /**
      * PRD 097 § params (2026-07-15) — the preview takes the SAME raw URL params as the rendered
@@ -328,17 +407,27 @@ public class DocumentRenderService
         if (referenced.isEmpty()) return Optional.empty();
         ViewEntry view = referenced.get();
 
-        Optional<Map<String, Object>> requestVariables = gateParams(view, window, rawParams);
-        if (requestVariables.isEmpty())
-        {
-            throw new PreviewProblemException("A required parameter is missing — the live URL responds 404");
-        }
+        Map<String, Object> requestVariables = gateParams(view, window, rawParams);
         java.time.LocalDate dateParam = parseReferenceDate(rawParams);
         java.time.LocalDate referenceDate = dateParam != null ? dateParam : java.time.LocalDate.now();
-        Map<String, Object> callerVars = dateParam == null ? requestVariables.get()
-                : withNavigatedWindow(requestVariables.get(), view, window, dateParam);
-        Map<String, Object> variables = resolveVariables(view, defaultVariables, window, callerVars, referenceDate);
-        Map<String, Object> model = executeResolved(view, variables, "<preview>");
+        Map<String, Object> callerVars = dateParam == null ? requestVariables
+                : withNavigatedWindow(requestVariables, view, window, dateParam);
+        // 2026-08-11 — the preview (and only the preview) derives param defaults from the view's
+        // example defaultVariables, through the declared @param holes: authors see example data
+        // without typing params, while example keys outside the @param surface stay inert.
+        ViewParamDirectives.Declarations decl = ViewParamDirectives.parse(view.queryText());
+        Map<String, Object> derived = ViewParamDirectives.deriveParamDefaults(
+                ViewVariables.parseDefaults(view.defaultVariables()), decl.params());
+        String baseline = derived.isEmpty() ? null : ViewVariables.toJson(derived);
+        Map<String, Object> variables = resolveVariables(view, baseline, defaultVariables, window,
+                callerVars, referenceDate);
+        List<String> missing = missingRequired(decl, variables);
+        if (!missing.isEmpty())
+        {
+            // The author sees the SAME hint page a subscriber would get on the live URL.
+            return Optional.of(new Preview(hintPage(title(view, viewName), missing), variables));
+        }
+        Map<String, Object> model = executeResolved(view, variables, "<preview>").model();
         // Nav renders in the preview too — preview mode: clicks postMessage to the editor.
         putNav(model, view, window, null, variables, true);
         return Optional.of(new Preview(page(title(view, viewName), template, model, true), variables));
@@ -362,16 +451,18 @@ public class DocumentRenderService
 
     /** Execute the view in-process; the security context of the current request supplies the caller. */
     /**
-     * PRD 097 (2026-07-15) — the effective variables of a render: the view's defaultVariables are
-     * the BASELINE, the document's deep-merge on top (per key, nested objects merged), caller
-     * variables win over both, the window (document anchors over view {@code @window} default)
-     * fills any still-missing {@code filter.from/to}.
+     * The effective variables of a render: {@code baselineDefaults} (preview only — the param
+     * defaults derived from the view's example {@code defaultVariables}, 2026-08-11; the live
+     * render passes null, a view's stored defaults never scope it), the document's defaults
+     * deep-merged on top (per key, nested objects merged), caller variables win over both, the
+     * window (document anchors over view {@code @window} default) fills any still-missing
+     * {@code filter.from/to}.
      */
-    private Map<String, Object> resolveVariables(ViewEntry view, String documentDefaults, String documentWindow,
-            Map<String, Object> requestVariables, java.time.LocalDate referenceDate)
+    private Map<String, Object> resolveVariables(ViewEntry view, String baselineDefaults, String documentDefaults,
+            String documentWindow, Map<String, Object> requestVariables, java.time.LocalDate referenceDate)
     {
         List<String> layers = new ArrayList<>();
-        if (view.defaultVariables() != null) layers.add(view.defaultVariables());
+        if (baselineDefaults != null) layers.add(baselineDefaults);
         if (documentDefaults != null) layers.add(documentDefaults);
         org.rapla.server.spring.graphql.WindowResolver.Window window =
                 DocumentWindow.resolve(documentWindow, referenceDate).orElse(null);
@@ -379,7 +470,11 @@ public class DocumentRenderService
                 referenceDate);
     }
 
-    private Map<String, Object> executeResolved(ViewEntry view, Map<String, Object> variables, String documentName)
+    /** The executed view: the render model plus {@code extensions.view} (the column metadata). */
+    private record Executed(Map<String, Object> model, Map<String, Object> viewMeta) { }
+
+    @SuppressWarnings("unchecked")
+    private Executed executeResolved(ViewEntry view, Map<String, Object> variables, String documentName)
     {
         ExecutionInput input = ExecutionInput.newExecutionInput()
                 .query(view.queryText())
@@ -398,8 +493,11 @@ public class DocumentRenderService
 
         Map<String, Object> data = result.getData();
         Map<String, Object> model = new LinkedHashMap<>(data == null ? Map.of() : data);
-        applyGrouping(model, result.getExtensions());
-        return model;
+        Map<Object, Object> extensions = result.getExtensions();
+        applyGrouping(model, extensions);
+        Map<String, Object> viewMeta = extensions != null && extensions.get("view") instanceof Map<?, ?> m
+                ? (Map<String, Object>) m : Map.of();
+        return new Executed(model, viewMeta);
     }
 
     /**
@@ -419,8 +517,9 @@ public class DocumentRenderService
         if (rows == null) return;
 
         Object format = viewMeta.get("groupFormat");
+        int minGroupSize = viewMeta.get("groupMin") instanceof Number n ? n.intValue() : 0;
         model.put(GROUPS_KEY, RowGrouping.groupByColumn(rows, alias,
-                format instanceof String f ? f : null, domainFor(viewMeta.get("groupField"))));
+                format instanceof String f ? f : null, domainFor(viewMeta.get("groupField")), minGroupSize));
     }
 
     /**
@@ -438,7 +537,7 @@ public class DocumentRenderService
 
     /** The one root field that carries the row list (e.g. {@code appointmentBlocks}). */
     @SuppressWarnings("unchecked")
-    private static List<Map<String, Object>> rootRowList(Map<String, Object> model)
+    static List<Map<String, Object>> rootRowList(Map<String, Object> model)
     {
         for (Object value : model.values())
         {

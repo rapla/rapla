@@ -1,7 +1,7 @@
 # PRD 086 — appointment block index (in-memory `IntervalIndex` over blocks, dual-API)
 
 **Status:** draft — 2026-06-24 (**pivoted to in-memory** — the H2 design below was built, measured, and lost; see *The H2 detour*)
-**Related:** [PRD 082](082-storage-memory-model.md) (storage memory model — the in-memory index catalog + shared `IntervalIndex`/`BucketIndex` kinds + the put/remove maintenance seam this builds on; the H2 pivot is recorded there), [PRD 064](064-graphql-conflicts-read-api.md) (GraphQL conflicts read API), PRD [079](079-graphql-grouped-aggregates.md)/[080](080-typed-entity-stats.md) (grouped aggregates / typed-entity stats — `appointmentBlockStats`), [PRD 055](055-graphql-events-read-api.md) (GraphQL events read), `docs/architecture/locking.md`
+**Related:** [PRD 082](082-storage-memory-model.md) (storage memory model — the in-memory index catalog + shared `IntervalIndex`/`BucketIndex` kinds + the put/remove maintenance seam this builds on; the H2 pivot is recorded there), [PRD 064](064-graphql-conflicts-read-api.md) (GraphQL conflicts read API), PRD [079](079-graphql-grouped-aggregates.md)/[080](done/080-typed-entity-stats.md) (grouped aggregates / typed-entity stats — `appointmentBlockStats`), [PRD 055](055-graphql-events-read-api.md) (GraphQL events read), `docs/architecture/locking.md`
 
 **Split from [PRD 082](082-storage-memory-model.md), then pivoted from H2 to in-memory.** The appointment index is the largest piece
 of the storage read-path modernization, and — unlike the classification ([PRD 087](087-classification-type-indices.md)), permission (PRD
@@ -420,7 +420,7 @@ safe to commit. (A `DBOperator`-on-hsqldb-copy variant — the exact server back
 - Layer 2 record/replay (Phase 0/1) — behavioral + persisted-data parity across the migration.
 - Stage-Y differential oracle — engine conflict sets == `appointmentMap` conflict sets over a
   generated corpus.
-- Existing GraphQL tier-3 (PRD [064](064-graphql-conflicts-read-api.md)/[079](079-graphql-grouped-aggregates.md)/[080](080-typed-entity-stats.md)) + §12 leak tests stay green (the GraphQL surface).
+- Existing GraphQL tier-3 (PRD [064](064-graphql-conflicts-read-api.md)/[079](079-graphql-grouped-aggregates.md)/[080](done/080-typed-entity-stats.md)) + §12 leak tests stay green (the GraphQL surface).
 - Write-path JMH benchmark (Phase 2 gate).
 
 ## Open Questions

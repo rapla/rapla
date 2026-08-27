@@ -91,7 +91,7 @@ server-side by rapla's own engine, so no dual-runtime / client engine is needed 
    state.
 8. **GraphiQL is the view authoring editor.** Rapla already ships `/api/graphiql` with schema
    introspection, variable autocompletion, and full cookie-based auth (HttpOnly `access_token`
-   cookie + XSRF double-submit + 401→refresh→replay — [PRD 072](072-server-side-login-dialog.md) Phase 3/4). The admin authors
+   cookie + XSRF double-submit + 401→refresh→replay — [PRD 072](done/072-server-side-login-dialog.md) Phase 3/4). The admin authors
    views directly in GraphiQL (load query text, edit, validate, save under a name). No separate
    view-editor is built. GraphiQL gains two toolbar actions — **Load view** (populate editor
    from a stored view) and **Save view** (call `saveView` with the current query text + a name)
@@ -996,7 +996,11 @@ is three days.
   enforces `required` — it constructs its own variables.
 - **Document validator (097)** coerces each URL value, maps public `name` → private `into`,
   **rejects any query-param not in the `@param` allowlist** (reject-undeclared, document path
-  only), and short-circuits to an empty render if a `required` param is absent.
+  only). *Revised 2026-08-11 ([PRD 097 D8](097-event-html-templates-mustache.md#decisions-locked)):*
+  `required` checks the **effective value after the variable merge** (URL, document pin, or —
+  preview only — a default derived from the view's example `defaultVariables`); still unfilled →
+  a hint page naming the param, not a masked 404. View `defaultVariables` themselves are
+  authoring example data and are never merged at runtime (neither here nor on the SPA transport).
 
 **Transport.** The server resolves the window at request time and emits
 `extensions.view.window { from, to }`. The SPA seeds its date-nav from `view.window` and no

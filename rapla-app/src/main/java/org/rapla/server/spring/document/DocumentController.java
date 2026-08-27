@@ -10,6 +10,8 @@ import org.rapla.server.spring.graphql.ViewCatalogService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
@@ -58,7 +60,7 @@ public class DocumentController implements DocumentApi
         {
             // Raw params go through — the render service gates them against the view's
             // declared @param/@window surface (PRD 074 §"Window and inputs directives").
-            page = renderService.render(name, variables, caller);
+            page = renderService.render(name, withoutSavedRequestMarker(variables), caller);
         }
         catch (DocumentRenderService.UndeclaredParameterException e)
         {
@@ -66,11 +68,55 @@ public class DocumentController implements DocumentApi
                     .header(HttpHeaders.CACHE_CONTROL, "no-store")
                     .build();
         }
-        if (page.isEmpty()) return notFound();
+        if (page.isEmpty())
+        {
+            // No authenticated rapla user (logged out with only a remember-me cookie left, expired
+            // access token, …) → send to login instead of the misleading 404. Leak-safe: a
+            // private-but-existing and a nonexistent document both redirect, so existence still
+            // never leaks (an authenticated-but-unauthorized caller keeps the masked 404 below).
+            if (caller == null) throw notAuthenticated();
+            return notFound();
+        }
         return ResponseEntity.ok()
                 .contentType(new MediaType(MediaType.TEXT_HTML, java.nio.charset.StandardCharsets.UTF_8))
                 .header(HttpHeaders.CACHE_CONTROL, "no-store")
                 .body(page.get());
+    }
+
+    @Override
+    public ResponseEntity<byte[]> csv(String name, MultiValueMap<String, String> variables)
+    {
+        User caller = jwtUserResolver.resolveCurrentUserOrNull();
+        Optional<String> csv;
+        try
+        {
+            csv = renderService.renderCsv(name, withoutSavedRequestMarker(variables), caller);
+        }
+        catch (DocumentRenderService.UndeclaredParameterException e)
+        {
+            return ResponseEntity.badRequest()
+                    .header(HttpHeaders.CACHE_CONTROL, "no-store")
+                    .build();
+        }
+        if (csv.isEmpty())
+        {
+            // Same three-way masking as render(): unknown, hidden and invalid are one response.
+            if (caller == null) throw notAuthenticated();
+            return ResponseEntity.notFound().header(HttpHeaders.CACHE_CONTROL, "no-store").build();
+        }
+        return ResponseEntity.ok()
+                .contentType(new MediaType("text", "csv", java.nio.charset.StandardCharsets.UTF_8))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + downloadName(name) + "\"")
+                .header(HttpHeaders.CACHE_CONTROL, "no-store")
+                // Excel reads UTF-8 only with a BOM; without it every umlaut in a name breaks.
+                .body(("﻿" + csv.get()).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+
+    /** Document names are catalog keys, but the header is quoted — keep it to the safe alphabet. */
+    private static String downloadName(String name)
+    {
+        return name.replaceAll("[^A-Za-z0-9._-]", "_") + ".csv";
     }
 
     @Override
@@ -143,10 +189,6 @@ public class DocumentController implements DocumentApi
                     + "document URL's query params: declared @param names, plus from/to/date on "
                     + "windowed views", null);
         }
-        catch (DocumentRenderService.PreviewProblemException e)
-        {
-            return new PreviewResult(null, null, e.getMessage(), null);
-        }
     }
 
     /** The variables pane content: the resolved variables of the preview, pretty-printed. */
@@ -181,5 +223,36 @@ public class DocumentController implements DocumentApi
                 .header(HttpHeaders.CACHE_CONTROL, "no-store")
                 .build();
     }
+
+    /**
+     * Unauthenticated + not renderable → hand the request back to Spring Security instead of the
+     * misleading 404. This covers the gap where a stale remember-me cookie passes the
+     * {@code authenticated()} gate but no access-token user resolves. Throwing (rather than
+     * building the 302 here) is what lets {@code ExceptionTranslationFilter} cache the request, so
+     * the login returns to this document URL instead of dumping the browser into {@code /app/}; it
+     * also yields the pinned entry-point contract — 302 {@code /login} for a browser navigation,
+     * 401 for XHR/curl. Uniform for a private-existing and a nonexistent document, so it stays
+     * existence-leak-safe (§12).
+     */
+    private static AuthenticationException notAuthenticated()
+    {
+        return new AuthenticationCredentialsNotFoundException("login required");
+    }
+
+    /**
+     * Spring Security's {@code HttpSessionRequestCache} appends {@code ?continue} to the saved
+     * request, so the post-login redirect lands on {@code <document-url>?continue}. That marker is
+     * transport, not a document input — drop it before the {@code @param} gate sees it, or every
+     * deep-linked document 400s right after login.
+     */
+    private static MultiValueMap<String, String> withoutSavedRequestMarker(MultiValueMap<String, String> variables)
+    {
+        if (variables == null || !variables.containsKey(SAVED_REQUEST_MARKER)) return variables;
+        MultiValueMap<String, String> copy = new org.springframework.util.LinkedMultiValueMap<>(variables);
+        copy.remove(SAVED_REQUEST_MARKER);
+        return copy;
+    }
+
+    private static final String SAVED_REQUEST_MARKER = "continue";
 
 }

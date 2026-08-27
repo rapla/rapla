@@ -52,7 +52,7 @@ In:
 - Mandatory window arg + default limit + window-size cap
 
 Out (future PRDs):
-- **Mutations (create/update/delete/bulk)** — covered by [PRD 056](../056-graphql-events-write-api.md)
+- **Mutations (create/update/delete/bulk)** — covered by [PRD 056](056-graphql-events-write-api.md)
   (sibling). Supersedes [PRD 035](done/035-graphql-foundations.md) §6 with named-verbs + `applyChanges` design.
   Symmetric β² (2026-05-28): write side gets typed per-DynamicType
   classification inputs mirroring this PRD's typed reads — same
@@ -69,7 +69,7 @@ Out (future PRDs):
 | 1 | Name `Reservation` (not `Event`) | Matches rapla internal naming + already locked in [PRD 035](done/035-graphql-foundations.md) schema (`ReservationClassification`) |
 | 2 | `AppointmentBlock` is id-less | Block ids aren't stable across recurring expansions; use parent ids + start for addressing |
 | 3 | `Appointment.repeating` nullable (not `RepeatingType.NONE`) | Cleaner: "no recurrence" is its own state, not an enum value |
-| 4 | `Reservation.allocations[]` (restriction-aware, editor-only) + `Appointment.allocatables[]` (pre-resolved, everyone else). Block has no `allocatables` field — traverses via `block.appointment.allocatables`. Block is a sub-resolution on Appointment (`Appointment.blocks(from:, to:)`), not a peer query root. | Use-case driven: editor needs lossless restriction structure for round-trip save; listviews / iCal / calendar need pre-resolved per-appointment lists with no client-side join. Restrictions are appointment-level in rapla's domain (see [domain-model.md §Reservation](../../architecture/domain-model.md#reservation)), so blocks inherit allocatables from their parent appointment with no duplication. Architectural rationale lives in [PRD 035 §"Consumer-driven read surfaces"](035-graphql-foundations.md#consumer-driven-read-surfaces-locked-2026-05-27). |
+| 4 | `Reservation.allocations[]` (restriction-aware, editor-only) + `Appointment.allocatables[]` (pre-resolved, everyone else). Block has no `allocatables` field — traverses via `block.appointment.allocatables`. Block is a sub-resolution on Appointment (`Appointment.blocks(from:, to:)`), not a peer query root. | Use-case driven: editor needs lossless restriction structure for round-trip save; listviews / iCal / calendar need pre-resolved per-appointment lists with no client-side join. Restrictions are appointment-level in rapla's domain (see [domain-model.md §Reservation](../architecture/domain-model.md#reservation)), so blocks inherit allocatables from their parent appointment with no duplication. Architectural rationale lives in [PRD 035 §"Consumer-driven read surfaces"](done/035-graphql-foundations.md#consumer-driven-read-surfaces-locked-2026-05-27). |
 | 5 | `RepeatingRule.exceptions: [LocalDate!]!` (not LocalDateTime) | Exceptions are calendar-date concept, not wall-time |
 
 ## Allocation / restriction model — locked 2026-05-27 (see Q4)
@@ -80,15 +80,15 @@ of truth). `Appointment.allocatables[]` carries the pre-resolved
 per-appointment list (every other consumer). Blocks have no
 `allocatables` field — they inherit via traversal
 `block.appointment.allocatables`. See
-[PRD 035 §"Consumer-driven read surfaces"](035-graphql-foundations.md#consumer-driven-read-surfaces-locked-2026-05-27)
-for the per-consumer rationale; [PRD 035 §"Per-type shape"](035-graphql-foundations.md#per-type-shape)
+[PRD 035 §"Consumer-driven read surfaces"](done/035-graphql-foundations.md#consumer-driven-read-surfaces-locked-2026-05-27)
+for the per-consumer rationale; [PRD 035 §"Per-type shape"](done/035-graphql-foundations.md#per-type-shape)
 for the locked SDL fragments.
 
 The Options A–E discussion below is preserved as decision-log
 context; resolution maps to **Option C with refinement** — pre-resolved
 allocatables live on `Appointment` (not on Block, because rapla
 restrictions are appointment-level — see
-[domain-model.md §Reservation](../../architecture/domain-model.md#reservation)).
+[domain-model.md §Reservation](../architecture/domain-model.md#reservation)).
 
 ### The rapla legacy model
 
@@ -324,7 +324,7 @@ query ICalExport($from: LocalDateTime!, $to: LocalDateTime!) {
 Week / month view. Server expands the recurrence via
 `Appointment.createBlocks(...)` so the SPA doesn't reimplement rapla's
 recurrence semantics (MONTHLY = Nth-weekday, YEARLY = leap-year skip,
-etc. — see [domain-model.md §Appointment](../../architecture/domain-model.md#appointment--repeating--appointmentblock)).
+etc. — see [domain-model.md §Appointment](../architecture/domain-model.md#appointment--repeating--appointmentblock)).
 
 ```graphql
 query CalendarWeek($from: LocalDateTime!, $to: LocalDateTime!) {
@@ -444,7 +444,7 @@ sections above).
 **Cross-PRD dependency:** the **β read simplification** (drop
 `Classification.attributes` + `DynamicType.attributes`, introspection
 + directives in place of descriptor data) is owned by
-[PRD 035 Phase 2](035-graphql-foundations.md#phase-2--classification-schema-generation)
+[PRD 035 Phase 2](done/035-graphql-foundations.md#phase-2--classification-schema-generation)
 items 5-7. It is not gated on the 055 Reservation surface and can ship
 independently — but the example queries in this PRD (specifically
 query 1, editor open) reflect the post-β shape, so a pre-β
@@ -569,7 +569,7 @@ closest analogue.
   shapes, and asserts the join equation across the three sub-cases
   (wide allocation, restricted allocation, §12-dropped allocatable).
 - **Reservation mutations** (`createReservation`, `updateReservation`,
-  `bulkCreateReservations`, etc.) — [PRD 056](../056-graphql-events-write-api.md)
+  `bulkCreateReservations`, etc.) — [PRD 056](056-graphql-events-write-api.md)
   owns the implementation cuts.
 - **Conflicts** — `conflicts(reservationId:)` + `Reservation.conflicts`
   field. Derived data; non-trivial perf considerations.

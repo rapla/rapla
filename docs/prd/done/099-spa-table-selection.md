@@ -2,27 +2,27 @@
 
 **Status:** done — all 4 phases landed 2026-07-08 (live probe of the bulk-delete
 Goal §4 scenario still outstanding; OQ3–OQ5 remain open as later increments)
-**Related:** [PRD 094](094-spa-main-view-actions-and-popups.md) (row actions + command/undo infra — D3 explicitly deferred
-multi-select actions until "table selection exists"; this PRD supplies it), [PRD 091](091-spa-reservation-edit-and-availability.md)
-(event sheet — the edit target rows open into), [PRD 077](077-calendar-model-graphql.md) (calendar surfaces — block
+**Related:** [PRD 094](../094-spa-main-view-actions-and-popups.md) (row actions + command/undo infra — D3 explicitly deferred
+multi-select actions until "table selection exists"; this PRD supplies it), [PRD 091](../091-spa-reservation-edit-and-availability.md)
+(event sheet — the edit target rows open into), [PRD 077](../077-calendar-model-graphql.md) (calendar surfaces — block
 multi-select on calendar grids is NOT here, but must be able to reuse the selection
-model), [PRD 078](078-spa-graphql-view-renderer.md) (view host — the mat-table this lands on)
+model), [PRD 078](../078-spa-graphql-view-renderer.md) (view host — the mat-table this lands on)
 
 ## Abstract
 
 Give the SPA table views Swing/Excel-like row selection: plain click selects,
 Ctrl/⌘-click toggles, Shift-click range-selects, arrow keys navigate with
-Shift-extension — and feed the selection into the [PRD 094](094-spa-main-view-actions-and-popups.md) row-action system so
+Shift-extension — and feed the selection into the [PRD 094](../094-spa-main-view-actions-and-popups.md) row-action system so
 multi-row commands (bulk Löschen first) work from the context menu. Swing gets all
 of this free from `JTable` (`MULTIPLE_INTERVAL_SELECTION` default) +
 `SelectionMenuContext`; the web gives none of it, so the SPA needs an explicit
 selection model. The `RowContext.rows` array has been multi-select-ready since
-[PRD 094](094-spa-main-view-actions-and-popups.md) D3/D4 ("v1 always carries exactly one row") — this PRD makes it carry N.
+[PRD 094](../094-spa-main-view-actions-and-popups.md) D3/D4 ("v1 always carries exactly one row") — this PRD makes it carry N.
 
 ## Implementation
 
 Behaviour reference (keyboard map, per-surface semantics, extension recipe):
-[`docs/architecture/spa-selection-and-actions.md`](../architecture/spa-selection-and-actions.md).
+[`docs/architecture/spa-selection-and-actions.md`](../../architecture/spa-selection-and-actions.md).
 
 | Piece | Where | Pattern |
 |---|---|---|
@@ -64,7 +64,7 @@ Primary reference per repo convention — interaction semantics to mirror:
   `DISCONTIGUOUS_TREE_SELECTION`, multi-selection flows into the same
   `addObjectMenu` → bulk actions on resources from the left rail.
 - **NOT this PRD:** `SelectionHandler` (calendarview) selects contiguous *time
-  ranges* — the SPA analog is the month-grid drag-create ([PRD 095](095-month-grid-render-mode.md), shipped).
+  ranges* — the SPA analog is the month-grid drag-create ([PRD 095](../095-month-grid-render-mode.md), shipped).
 
 ## SPA state today
 
@@ -87,7 +87,7 @@ Primary reference per repo convention — interaction semantics to mirror:
    `RowContext` carries all selected rows, `primary` only at size 1 (Swing's
    `focused` rule).
 3. Multi-row **Löschen** from the context menu runs as ONE undoable entry in the
-   [PRD 094](094-spa-main-view-actions-and-popups.md) command history.
+   [PRD 094](../094-spa-main-view-actions-and-popups.md) command history.
 4. Measurable: select 3 events via Shift-click, right-click → "Löschen (3)",
    confirm → all 3 gone, ONE toast, one ↶ click restores all 3 with identical
    ids; a keyboard-only user can reach and extend the same selection with
@@ -117,10 +117,10 @@ Primary reference per repo convention — interaction semantics to mirror:
   2026-07-08
 - Bulk EDIT dialog (Swing `EDIT_SELECTION`) — no SPA bulk-edit surface exists;
   revisit when a consumer asks
-- Calendar-surface block multi-select (month grid chips, week grid) — [PRD 077](077-calendar-model-graphql.md)
+- Calendar-surface block multi-select (month grid chips, week grid) — [PRD 077](../077-calendar-model-graphql.md)
   territory; must reuse `TableSelection` when it arrives
 - Copy/cut/paste of selected rows as *entities* (paste targets are a calendar
-  concern, [PRD 077](077-calendar-model-graphql.md)); Ctrl+C-as-text is OQ4
+  concern, [PRD 077](../077-calendar-model-graphql.md)); Ctrl+C-as-text is OQ4
 - Drag-select (rubber-band) over table rows — Shift-click covers range selection
 - Swing changes
 
@@ -237,7 +237,7 @@ navigation.
   CDK `SelectionModel` (a bare `Set` wrapper) + hand-written click handlers /
   checkbox column — no shift-range, no keyboard grid navigation, no touch mode.
   `@angular/cdk-experimental` selection directives add checkbox-toggle +
-  select-all only. [PRD 032](done/032-angular-ui-library-evaluation.md) already flagged this ("CDK Table is a toolkit, not a
+  select-all only. [PRD 032](032-angular-ui-library-evaluation.md) already flagged this ("CDK Table is a toolkit, not a
   finished grid") and locked **no second general component library** — PrimeNG
   (`p-table selectionMode="multiple"` with ctrl/shift built in) and AG Grid
   Community (row multi-select + keyboard) do ship selection, but adopting either
@@ -256,7 +256,7 @@ navigation.
   as an internal upgrade of the same headless model, not a reason to wait.
 
 A pure-TS model is tier-5-testable and shared across mat-table, the rail list,
-future calendar surfaces ([PRD 077](077-calendar-model-graphql.md)), and the future mobile layout.
+future calendar surfaces ([PRD 077](../077-calendar-model-graphql.md)), and the future mobile layout.
 
 **D4 — the rail unifies on Swing tree selection semantics; FilterStore stays
 the source of truth (2026-07-08, maintainer).** The old rail's shift-click

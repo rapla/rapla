@@ -131,6 +131,50 @@ the storage lock.
 **Defer trigger:** first observed denial-of-service incident OR
 multi-tenant deployment.
 
+#### 3a. Per-user concurrency limit on read queries (design, 2026-08-12)
+
+Narrower and cheaper than general rate limiting, and the concrete variant
+[PRD 106](106-query-request-lifecycle.md) asks for: cap the number of GraphQL **read**
+queries a single principal may have executing at once.
+
+**Who it protects against.** Not the SPA — [PRD 078](078-spa-graphql-view-renderer.md)
+Phase 5 makes it stop firing superseded requests. This is for clients that cannot be fixed
+by shipping SPA code: API-key scripts, a runaway poll, the Swing client, a second browser
+tab, an older SPA version still in a user's cache.
+
+**Sketch.** A `WebGraphQlInterceptor` — the same seam `StoredViewInterceptor`
+(`rapla-app/.../graphql/StoredViewInterceptor.java:34`) already occupies — holding a
+`ConcurrentHashMap<userId, Semaphore>`.
+
+- **Keyed on the authenticated principal, not the session or transport.** Cookie session,
+  bearer token and API key all share one slot; otherwise a script sidesteps the limit by
+  minting a second key.
+- **Reads only** ([106 D1](106-query-request-lifecycle.md#decisions-locked)). A shared pool
+  would queue a save in the event sheet behind a slow view query.
+- **Reject, don't wait.** The MVC stack runs the interceptor's `Mono` on the servlet
+  thread, so blocking on `acquire()` pins exactly the Tomcat thread the limit is meant to
+  protect. `tryAcquire()` → GraphQL error with `extensions.code = TOO_MANY_REQUESTS` is
+  both cheaper and the right signal to a script (back off). A "latest wins" variant
+  (newcomer evicts the incumbent, which gets an `AbortExecutionException`) is strictly
+  nicer but depends on § 5's cancellation handle.
+- **Detection without a parser:** the heavy read path is exactly
+  `extensions.storedView == true` — a boolean on the request, no document parsing. An
+  interceptor that reads the *document* instead must be ordered **after**
+  `StoredViewInterceptor`, which swaps the dummy `{ __typename }` for the stored query.
+- **Process-local, deliberately.** Each pod limits for itself; a global limit would have to
+  go through the store/lock layer, which is wildly disproportionate. Document it so nobody
+  later files it as a bug.
+- **Never hold a permit across a store-lock acquisition** — that would serialise exactly
+  what the lock layer already coordinates.
+- Configurable with a sane default (≈2 concurrent reads/user), disablable in
+  `application.yml`: deployments with legitimate batch jobs (dhbwrapla) must be able to
+  raise it without a code change.
+
+**Cost:** ~60 lines plus a tier-3 MockMvc test (two concurrent reads, the second rejected).
+
+**Defer trigger:** first observed incident where one principal's read traffic degrades
+service for others — or the first external integrator whose client we don't control.
+
 ### 4. Query / mutation complexity limits
 
 **Problem:** Pathological GraphQL queries (deep nesting, large
@@ -169,6 +213,44 @@ timeout via `CompletableFuture.orTimeout`.
 
 **Defer trigger:** first long-query incident affecting overall server
 responsiveness.
+
+#### 5a. Cancellation on client disconnect (design, 2026-08-12)
+
+The cancellation half of § 5, as scoped by [PRD 106](106-query-request-lifecycle.md):
+when a client aborts an in-flight **read**, stop executing it.
+
+**The engine can already do it.** graphql-java **25.0** (the version resolved in the
+reactor) exposes `ExecutionInput.cancel()` / `isCancelled()` and
+`EngineRunningState.throwIfCancelled()` → `AbortExecutionException` — verified against
+`graphql-java-25.0.jar`. The work is in the two steps before that:
+
+1. **Noticing the disconnect — the expensive step, and the open risk.** Rapla serves
+   GraphQL from blocking Spring MVC on Tomcat 11. A blocking servlet thread is never told
+   the client went away; it finds out when it writes the response and gets a broken pipe —
+   i.e. after doing all the work. Learning earlier requires the request to run
+   asynchronously so `AsyncListener.onError` fires. Whether Spring GraphQL's MVC handler
+   already does this in our configuration is [106 OQ1](106-query-request-lifecycle.md#open-questions),
+   and it is what separates "a day" from "a week".
+2. **Wiring the signal — small.** A `WebGraphQlInterceptor` parks the `ExecutionInput`
+   (or a cancel handle) in the `GraphQLContext`; the listener calls `cancel()`. ~100 lines
+   on an existing seam.
+
+**What it would actually save.** Cancellation bites *between field fetches*, not inside a
+blocking resolver — so the root fetch (`queryAppointmentsSync` via `StorageOperator`) runs
+to completion regardless. That is not where the time goes, though: for a 500-row response
+the cost is per-row, per-field resolution (see [PRD 035](done/035-graphql-foundations.md)'s
+profiled hot spots — Micrometer context, `HandlerMethod`, `Classification.getType`), which
+*is* field-granular. Realistically a large share of a 4–7 s response is abortable.
+
+**Reads only** ([106 D1](106-query-request-lifecycle.md#decisions-locked)) — a mutation
+aborted part-way can leave partially applied writes.
+
+**Explicitly not worth it:** threading a cancellation token down through `StorageOperator`
+into the query loops. Invasive, multi-pod-relevant, weeks of work, for the one part that
+the field-level cancellation above mostly covers anyway.
+
+**Defer trigger:** same as § 5 — plus [106 OQ1](106-query-request-lifecycle.md#open-questions)
+answered first.
 
 ### 6. Distributed tracing on mutations
 

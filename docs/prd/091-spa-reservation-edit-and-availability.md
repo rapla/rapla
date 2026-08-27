@@ -668,7 +668,23 @@ Recurrence sub-plan detailed 2026-07-08 (Swing→SPA migration research):
 - **OQ4** — Where does UC-E4 (cancel one occurrence) live on mobile: sheet or a
   block context action in the view host? *Resolution:* pending.
 - **OQ5** — Request-only (UC-E9): does the SPA v1 surface REQUESTED as read-only
-  status or full request workflow? *Resolution:* pending.
+  status or full request workflow? *Resolution:* **read-only status, server-derived — shipped
+  2026-08-12.** The problem was not cosmetic: `requestStatus` appeared NOWHERE in the schema, and
+  `SecurityManager` (~line 478) refuses an allocation whose booker may only request it when the
+  marker is absent (`canRequest && getRequestStatus(alloc) == null` → `warning.no_reserve_permission`).
+  A request-only user therefore could not save that event from the SPA at all, and had no way to fix
+  it. What shipped:
+  - `Allocation.requestStatus: RequestStatus` (enum `REQUESTED`; null = ordinary allocation) — read.
+  - The server **derives** it in `ReservationMutationController.applyAllocations` via
+    `PermissionController.isRequestOnly`, mirroring Swing's `RaplaComponent.addAllocatables`.
+    Deliberately NOT an input field: whether a resource is request-only is a permission verdict, and
+    a client could only echo it. `AllocationInput` stays unchanged.
+  - SPA: the draft carries it display-only (never written back) and the sheet shows a `beantragt`
+    pill, independent of the live availability pill (an approver sees the request, not the verdict).
+  - Tests: `ReservationMutationControllerTest` — request-only user creates and reads back `REQUESTED`
+    (fails without the derivation), and an allocatable the caller may allocate stays null.
+  Still out: the approval workflow (clearing the status — `SecurityManager` already validates that
+  transition, only a UI is missing).
 - **OQ6** — Occurrence-preview transport: new GraphQL `expandOccurrences` query
   vs. [PRD 024](024-server-side-edit-services.md) REST `/api/edit/expand-blocks` (predates the SPA GraphQL-only
   decision). *Resolution 2026-07-08:* **GraphQL** — shipped as Phase 4.1. The
@@ -681,6 +697,14 @@ Recurrence sub-plan detailed 2026-07-08 (Swing→SPA migration research):
   inline error (shipped in 4.3); auto-correction only for the established
   date/time couplings (2b.1). Remaining cases (until < start) decided as they
   come up.
+- **OQ8** — Load errors are indistinguishable from "does not exist" (raised 2026-08-12, from a live
+  incident). `EventDataService.load` collapses EVERY failure to `null`, and the sheet renders that as
+  „Nicht gefunden": a GraphQL validation error, a transport failure and a genuinely missing/invisible
+  reservation all look identical. It cost a debugging round when a SPA query named a server field the
+  running server did not have yet — every sheet load silently claimed the event was gone. Wanted:
+  only a `null` result of the `reservation` query means "does not exist / not visible"; validation and
+  transport failures get their own state („Laden fehlgeschlagen" + retry). Reference pattern: the
+  toolbar sync badge shows `!` on `loadFailed` instead of hiding. *Resolution:* pending.
 
 ## Decisions locked
 

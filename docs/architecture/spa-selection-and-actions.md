@@ -3,7 +3,7 @@
 **Status:** reference (behaviour + architecture). **Scope:** how row/item selection
 works in the Angular SPA — the generic table view (`ViewHostComponent`), the left
 resource rail (`ResourceSelectionComponent`) — and how a multi-row selection feeds
-the row-action/command system. Design PRDs: [099](../prd/099-spa-table-selection.md)
+the row-action/command system. Design PRDs: [099](../prd/done/099-spa-table-selection.md)
 (selection + bulk actions), [094](../prd/094-spa-main-view-actions-and-popups.md)
 (row menu + command/undo infra). Swing analogs: `SwingTableView` (JTable
 `MULTIPLE_INTERVAL_SELECTION`), `RaplaTree`/`ResourceSelectionViewSwing`

@@ -99,7 +99,7 @@ Full rationale in PRD 027. AGENTS.md §13 has the one-line headline; the lists b
 
 **Allowed:**
 
-- Mockito for Servlet-API types you don't own (`HttpServletRequest`/`Response`/`ServletContext`) — see `RaplaJNLPPageGeneratorTest` for the canonical shape.
+- Mockito for Servlet-API types you don't own (`HttpServletRequest`/`Response`/`ServletContext`) — see `RaplaJNLPControllerTest` for the canonical shape.
 - Hand-rolled test doubles for external integrations behind a rapla-owned interface — see `MockMailer` (`MailInterface`), `RecordingPanel` (`PreferencesPanel`). Prefer these over Mockito when the interface has < ~6 methods.
 
 **Not allowed:**
@@ -116,4 +116,4 @@ Audit grep at PR-review time:
 grep -rE "mock\(.*(Facade|Operator|Cache|Permission|Conflict)\.class\)" rapla-*/src/test
 ```
 
-Expected: zero matches outside `RaplaJNLPPageGeneratorTest`.
+Expected: zero matches outside `RaplaJNLPControllerTest` (its `mock(RaplaFacade.class)` is a grandfathered exception).

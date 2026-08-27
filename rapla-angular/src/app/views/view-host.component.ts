@@ -11,23 +11,55 @@ import {
 } from '@angular/core';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatSort, MatSortModule } from '@angular/material/sort';
+import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule, MatMenuTrigger } from '@angular/material/menu';
 
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
-import { GraphqlService, type ViewMeta, type ViewColumn } from '../graphql/graphql.service';
+import {
+  EMPTY,
+  Subject,
+  asyncScheduler,
+  catchError,
+  map,
+  of,
+  switchMap,
+  tap,
+  throttleTime,
+} from 'rxjs';
+
+import {
+  GraphqlService,
+  type GqlResponse,
+  type ViewMeta,
+  type ViewColumn,
+} from '../graphql/graphql.service';
 import { renderCell } from '../graphql/view-render';
 import { extractRowContext, extractSelectionContext } from './row-context';
 import { TableSelection } from './table-selection';
+import {
+  BindConfirmDialogComponent,
+  type BindConfirmDialogData,
+} from '../import/bind-confirm-dialog.component';
+import { BindPickService } from '../import/bind-pick.service';
+import { ImportWorklistService } from '../import/import-worklist.service';
+import { draftWithGroups } from '../import/import-models';
+import { ParkedEventsService, type ParkedItem } from '../import/parked-events.service';
 import { ROW_MENU_PROVIDERS, type RowMenuItem } from './row-menu';
 import { MonthGridComponent } from './month-grid.component';
 import { monthGridWindow } from './month-chunks';
 import { WeekGridComponent } from './week-grid.component';
 import { dayGridWindow, weekGridWindow } from './week-lanes';
 import { EventSheetComponent, type EventSheetDialogData } from '../event/event-sheet.component';
-import { rangeScopedDraft, timeScopedDraft, type EventDraft } from '../event/event-draft';
+import {
+  rangeScopedDraft,
+  timeScopedDraft,
+  withScopeAllocations,
+  type EventDraft,
+} from '../event/event-draft';
 import { NewEventOptionsService } from '../event/new-event-options.service';
+import { ReservationChecksService } from '../event/reservation-checks.service';
 import { NewEventPickerComponent } from '../event/new-event-picker.component';
 import { type PickItem, type PlacementTarget } from '../event/new-event-picker-model';
 import { TemplateInstantiationService } from '../event/template-instantiation.service';
@@ -37,6 +69,7 @@ import { shiftIso } from '../actions/event-commands';
 import {
   buildMoveScopeCommand,
   moveBlockFacts,
+  moveCheckInput,
   moveScopeOptions,
   type MoveBlockFacts,
   type MoveGesture,
@@ -61,6 +94,24 @@ interface Section {
 /** The data envelope — root-field-agnostic: we take whatever array `data` carries
  *  (appointmentBlocks, appointmentBlockStats, …). */
 type ViewData = Record<string, unknown>;
+
+/** PRD 106 — one view query, fully built at trigger time so the throttle's
+ *  trailing emission carries the LAST state, not a stale re-read. */
+interface QueryArgs {
+  viewName: string;
+  variables: Record<string, unknown>;
+  /** No window was bound yet → seed the date-nav from `extensions.view.window`. */
+  seedWindow: boolean;
+}
+
+interface HttpFailure {
+  status?: number;
+  error?: { message?: string };
+}
+
+/** Date-nav burst window. Matches the SPA precedent in `event-sheet.component.ts`;
+ *  a calibration knob, not a constant of nature (PRD 106 D3). */
+const QUERY_THROTTLE_MS = 250;
 
 /**
  * The column to group weekday sections by: the first {@code Date}/
@@ -99,121 +150,143 @@ export function hasScope(chips: FilterEntry[]): boolean {
  */
 @Component({
   selector: 'app-view-host',
-  imports: [MatTableModule, MatSortModule, MatMenuModule, MonthGridComponent, WeekGridComponent],
+  imports: [
+    MatIconModule,
+    MatTableModule,
+    MatSortModule,
+    MatMenuModule,
+    MonthGridComponent,
+    WeekGridComponent,
+  ],
   template: `
-    <section class="content" [class.grid]="isMonth() || isWeekGrid() || isDayGrid()">
-      <!-- Print-only: on screen the title lives in the view tabs and the count in the
-           control strip; print shows only this pane, so both go into the heading. -->
-      <h2 class="view-title">{{ printTitle() }}</h2>
-
-      @if (noScope()) {
-        <p class="empty">
-          Wähle links eine Ressource, Gruppe oder Person als <strong>Scope</strong> (oder füge über
-          die Suche einen Scope-Chip hinzu), um Termine zu laden.
-        </p>
-      } @else if (loading()) {
-        <p class="meta">lädt…</p>
-      } @else if (error()) {
-        <p class="error">{{ error() }}</p>
-      } @else {
-        @if (isMonth()) {
-          <!-- PRD 095 — month calendar grid (spanning bars); replaces the table. -->
-          <app-month-grid
-            [rows]="displayRows()"
-            [anchor]="monthAnchor()"
-            (openRow)="onRowDblClick($event)"
-            (openMenu)="onChipMenu($event)"
-            (moveBlock)="onMoveBlock($event)"
-            (createRange)="openCreateRange($event)"
-          />
-        } @else if (isWeekGrid() || isDayGrid()) {
-          <!-- PRD 077 — time grid with dynamic lanes; 7 columns (week) or 1 (day). -->
-          <app-week-grid
-            [rows]="displayRows()"
-            [anchor]="weekAnchor()"
-            [dayCount]="isDayGrid() ? 1 : 7"
-            [scopeResources]="scopeResources()"
-            (openRow)="onRowDblClick($event)"
-            (openMenu)="onChipMenu($event)"
-            (moveBlock)="onMoveBlock($event)"
-            (resizeBlock)="onResizeBlock($event)"
-            (createTimeRange)="openCreateTimeRange($event)"
-          />
-        } @else if (total() > 0) {
-          <table
-            mat-table
-            [dataSource]="dataSource"
-            matSort
-            [matSortDisabled]="isGrouped()"
-            [matSortActive]="isGrouped() ? '' : defaultSortAlias()"
-            matSortDirection="asc"
-            class="grid"
-            tabindex="0"
-            aria-multiselectable="true"
-            [attr.aria-activedescendant]="activeRowId()"
-            (keydown)="onTableKeydown($event)"
-          >
-            @for (col of tableColumns(); track col.alias) {
-              <ng-container [matColumnDef]="col.alias">
-                <th mat-header-cell *matHeaderCellDef mat-sort-header [disabled]="isGrouped()">
-                  {{ col.header ?? col.alias }}
-                </th>
-                <td mat-cell *matCellDef="let row">{{ cell(row, col) }}</td>
-              </ng-container>
-            }
-            <!-- Row actions (PRD 094): ⋮ opens the shared row menu; only rows
-                   with a typed subject (D4) get a button. -->
-            <ng-container matColumnDef="__actions">
-              <th mat-header-cell *matHeaderCellDef class="actions-col"></th>
-              <td mat-cell *matCellDef="let row" class="actions-col">
-                @if (rowItems(row).length > 0) {
-                  <button
-                    type="button"
-                    class="row-menu-btn"
-                    aria-label="Aktionen"
-                    [matMenuTriggerFor]="rowMenu"
-                    (click)="prepareMenu(row); $event.stopPropagation()"
-                  >
-                    ⋮
-                  </button>
-                }
-              </td>
-            </ng-container>
-            <!-- Group-header row (grouped views): one cell spanning all columns. -->
-            <ng-container matColumnDef="__groupHeader">
-              <td
-                mat-cell
-                *matCellDef="let g"
-                [attr.colspan]="displayedColumns().length"
-                class="group-cell"
-              >
-                {{ g['__label'] }} <span class="cnt">({{ g['__count'] }})</span>
-              </td>
-            </ng-container>
-            <tr mat-header-row *matHeaderRowDef="displayedColumns()"></tr>
-            <tr
-              mat-row
-              *matRowDef="let row; columns: ['__groupHeader']; when: isGroupRow"
-              class="group-row"
-            ></tr>
-            <tr
-              mat-row
-              *matRowDef="let row; columns: displayedColumns(); when: isDataRow"
-              [attr.id]="rowId(row)"
-              [class.selected]="selection.isSelected(row)"
-              [class.active-row]="selection.active() === row"
-              [attr.aria-selected]="selection.isSelected(row)"
-              (mousedown)="onRowMousedown($event)"
-              (click)="onRowClick($event, row)"
-              (contextmenu)="onContextMenu($event, row)"
-              (dblclick)="onRowDblClick(row)"
-            ></tr>
-          </table>
-        } @else {
-          <p class="empty">Keine Termine im Zeitraum.</p>
+    <div class="host-row">
+      <section class="content" [class.grid]="isMonth() || isWeekGrid() || isDayGrid()">
+        @if (bindPick.pending(); as p) {
+          <div class="bind-banner">
+            <mat-icon inline>link</mat-icon>
+            „{{ p.label }}" verknüpfen — Ziel-Veranstaltung im Kalender anklicken
+            <button type="button" (click)="bindPick.cancel()">Abbrechen</button>
+          </div>
         }
-      }
-    </section>
+        <!-- Print-only: on screen the title lives in the view tabs and the count in the
+           control strip; print shows only this pane, so both go into the heading. -->
+        <h2 class="view-title">{{ printTitle() }}</h2>
+
+        @if (noScope()) {
+          <p class="empty">
+            Wähle links eine Ressource, Gruppe oder Person als <strong>Scope</strong> (oder füge
+            über die Suche einen Scope-Chip hinzu), um Termine zu laden.
+          </p>
+        } @else if (loading()) {
+          <p class="meta">lädt…</p>
+        } @else if (error()) {
+          <p class="error">{{ error() }}</p>
+        } @else {
+          @if (isMonth()) {
+            <!-- PRD 095 — month calendar grid (spanning bars); replaces the table. -->
+            <app-month-grid
+              [rows]="displayRows()"
+              [anchor]="monthAnchor()"
+              (openRow)="onRowDblClick($event)"
+              (openMenu)="onChipMenu($event)"
+              (moveBlock)="onMoveBlock($event)"
+              (createRange)="openCreateRange($event)"
+            />
+          } @else if (isWeekGrid() || isDayGrid()) {
+            <!-- PRD 077 — time grid with dynamic lanes; 7 columns (week) or 1 (day). -->
+            <app-week-grid
+              [rows]="displayRows()"
+              [anchor]="weekAnchor()"
+              [dayCount]="isDayGrid() ? 1 : 7"
+              [scopeResources]="scopeResources()"
+              [parkedItems]="parked.items()"
+              [linkedIds]="linkedIds()"
+              (placeParked)="onPlaceParked($event)"
+              (bindParked)="onBindParked($event)"
+              (parkCancel)="parked.clear()"
+              (openRow)="onRowDblClick($event)"
+              (chipClick)="onChipClick($event)"
+              (openMenu)="onChipMenu($event)"
+              (moveBlock)="onMoveBlock($event)"
+              (resizeBlock)="onResizeBlock($event)"
+              (createTimeRange)="openCreateTimeRange($event)"
+            />
+          } @else if (total() > 0) {
+            <table
+              mat-table
+              [dataSource]="dataSource"
+              matSort
+              [matSortDisabled]="isGrouped()"
+              [matSortActive]="isGrouped() ? '' : defaultSortAlias()"
+              matSortDirection="asc"
+              class="grid"
+              tabindex="0"
+              aria-multiselectable="true"
+              [attr.aria-activedescendant]="activeRowId()"
+              (keydown)="onTableKeydown($event)"
+            >
+              @for (col of tableColumns(); track col.alias) {
+                <ng-container [matColumnDef]="col.alias">
+                  <th mat-header-cell *matHeaderCellDef mat-sort-header [disabled]="isGrouped()">
+                    {{ col.header ?? col.alias }}
+                  </th>
+                  <td mat-cell *matCellDef="let row">{{ cell(row, col) }}</td>
+                </ng-container>
+              }
+              <!-- Row actions (PRD 094): ⋮ opens the shared row menu; only rows
+                   with a typed subject (D4) get a button. -->
+              <ng-container matColumnDef="__actions">
+                <th mat-header-cell *matHeaderCellDef class="actions-col"></th>
+                <td mat-cell *matCellDef="let row" class="actions-col">
+                  @if (rowItems(row).length > 0) {
+                    <button
+                      type="button"
+                      class="row-menu-btn"
+                      aria-label="Aktionen"
+                      [matMenuTriggerFor]="rowMenu"
+                      (click)="prepareMenu(row); $event.stopPropagation()"
+                    >
+                      ⋮
+                    </button>
+                  }
+                </td>
+              </ng-container>
+              <!-- Group-header row (grouped views): one cell spanning all columns. -->
+              <ng-container matColumnDef="__groupHeader">
+                <td
+                  mat-cell
+                  *matCellDef="let g"
+                  [attr.colspan]="displayedColumns().length"
+                  class="group-cell"
+                >
+                  {{ g['__label'] }} <span class="cnt">({{ g['__count'] }})</span>
+                </td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="displayedColumns()"></tr>
+              <tr
+                mat-row
+                *matRowDef="let row; columns: ['__groupHeader']; when: isGroupRow"
+                class="group-row"
+              ></tr>
+              <tr
+                mat-row
+                *matRowDef="let row; columns: displayedColumns(); when: isDataRow"
+                [attr.id]="rowId(row)"
+                [class.selected]="selection.isSelected(row)"
+                [class.active-row]="selection.active() === row"
+                [attr.aria-selected]="selection.isSelected(row)"
+                (mousedown)="onRowMousedown($event)"
+                (click)="onRowClick($event, row)"
+                (contextmenu)="onContextMenu($event, row)"
+                (dblclick)="onRowDblClick(row)"
+              ></tr>
+            </table>
+          } @else {
+            <p class="empty">Keine Termine im Zeitraum.</p>
+          }
+        }
+      </section>
+    </div>
     <mat-menu #rowMenu="matMenu">
       @for (item of menuItems(); track item.id) {
         <button mat-menu-item type="button" (click)="item.run()">{{ item.label }}</button>
@@ -231,6 +304,15 @@ export function hasScope(chips: FilterEntry[]): boolean {
     `
       :host {
         display: block;
+      }
+      .host-row {
+        display: flex;
+        align-items: stretch;
+        position: relative;
+      }
+      .host-row > .content {
+        flex: 1;
+        min-width: 0;
       }
       .content {
         margin: 1.25rem 0;
@@ -310,6 +392,27 @@ export function hasScope(chips: FilterEntry[]): boolean {
         color: rgba(0, 0, 0, 0.5);
         font-style: italic;
       }
+      .bind-banner {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        margin-bottom: 4px;
+        border: 1px dashed var(--mat-sys-primary);
+        border-radius: 4px;
+        background: var(--mat-sys-primary-container);
+        color: var(--mat-sys-on-primary-container);
+        font-size: 13px;
+      }
+      .bind-banner button {
+        margin-left: auto;
+        font: inherit;
+        border: 0;
+        background: none;
+        color: inherit;
+        text-decoration: underline;
+        cursor: pointer;
+      }
       .error {
         color: #c62828;
       }
@@ -346,9 +449,14 @@ export class ViewHostComponent {
   private readonly gql = inject(GraphqlService);
   private readonly dialog = inject(MatDialog);
   private readonly newOptions = inject(NewEventOptionsService);
+  private readonly preflight = inject(ReservationChecksService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly templateInstantiation = inject(TemplateInstantiationService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly toast = inject(UndoToastService);
+  readonly parked = inject(ParkedEventsService);
+  readonly bindPick = inject(BindPickService);
+  private readonly worklist = inject(ImportWorklistService);
   private readonly viewState = inject(ViewStateStore);
   private readonly filter = inject(FilterStore);
   private readonly lastView = inject(LastViewStore);
@@ -548,6 +656,128 @@ export class ViewHostComponent {
 
   /** Block-chip context menu (PRD 100/094): chips feed the SAME shared row menu
    *  as table rows — single-row context (block selection is future PRD 094 work). */
+  /** Externally linked reservation ids — marks their calendar chips (🔗).
+   *  Sourced from the reservations' durable stamp (2026-08-11 redesign), so
+   *  markers survive the Halde row leaving the export window. */
+  readonly linkedIds = computed(() => new Set(this.worklist.linked().map((e) => e.id)));
+
+  /** Parked chip dropped on a FREE slot: NOW the event is created — the one
+   *  undoable "platziert" action (inverse deletes; the Halde item re-opens
+   *  because the stamp dies with the reservation). */
+  onPlaceParked(e: { item: ParkedItem; day: string; startMin: number }): void {
+    // STANDING rule (user, 2026-08-11): a drop must NEVER save directly — the
+    // RESERVATION EDITOR opens first (template instantiated client-side, times
+    // from the slot, Kurs allocations from the item; nothing persisted).
+    // Speichern in the sheet creates normally; then bindStagedEvent stamps the
+    // Dualis binding + fields onto the created reservation. See PRD 104.
+    const templateId = e.item.kind === 'p' ? e.item.examTemplateId : e.item.lectureTemplateId;
+    if (!templateId) {
+      this.snackBar.open(
+        `„${e.item.name}": keine Vorlage aufgelöst — bitte im Sync-Dialog eine wählen`,
+        undefined,
+        { duration: 5000 },
+      );
+      return;
+    }
+    this.templateInstantiation
+      .instantiate(templateId, { day: e.day, startMin: e.startMin })
+      .subscribe((templateDraft) => {
+        if (!templateDraft) {
+          this.snackBar.open(`Vorlage für „${e.item.name}" nicht ladbar`, undefined, {
+            duration: 5000,
+          });
+          return;
+        }
+        const draft = draftWithGroups(templateDraft, e.item.groups);
+        this.dialog
+          .open(EventSheetComponent, {
+            data: { id: draft.id, isNew: true, draft } satisfies EventSheetDialogData,
+            width: '960px',
+            maxWidth: '95vw',
+            height: '90vh',
+          })
+          .afterClosed()
+          .subscribe((outcome) => {
+            if (outcome !== 'saved') return; // cancel keeps the chip parked
+            // D3 id-first: the draft id IS the stored reservation id.
+            this.worklist.bindStagedEvent(e.item.sourceId, draft.id).subscribe((ok) => {
+              if (ok) this.parked.remove(e.item.sourceId);
+              this.snackBar.open(
+                ok
+                  ? `„${e.item.name}" angelegt und mit Dualis verknüpft`
+                  : `„${e.item.name}": angelegt, aber Verknüpfung fehlgeschlagen — Eintrag bleibt offen`,
+                undefined,
+                { duration: 5000 },
+              );
+            });
+          });
+      });
+  }
+
+  /** Parked chip dropped ONTO an existing event: verknüpfen (confirmed) —
+   *  nothing to delete, the parked entry was never stored. */
+  onBindParked(e: { item: ParkedItem; targetReservationId: string }): void {
+    const target = this.displayRows().find((r) => {
+      const res = r['reservation'] as Record<string, unknown> | null | undefined;
+      return res?.['id'] === e.targetReservationId;
+    });
+    const targetName = String(target?.['name'] ?? '') || 'Veranstaltung';
+    this.dialog
+      .open(BindConfirmDialogComponent, {
+        data: {
+          sourceLabel: e.item.name,
+          targetName,
+        } satisfies BindConfirmDialogData,
+        autoFocus: false,
+      })
+      .afterClosed()
+      .subscribe((confirmed) => {
+        if (!confirmed) return;
+        this.worklist.bindStagedEvent(e.item.sourceId, e.targetReservationId).subscribe((ok) => {
+          if (ok) this.parked.remove(e.item.sourceId);
+          this.snackBar.open(
+            ok
+              ? `„${e.item.name}" mit „${targetName}" verknüpft`
+              : `„${e.item.name}" konnte nicht verknüpft werden`,
+            undefined,
+            { duration: 5000 },
+          );
+        });
+      });
+  }
+
+  /** Chip click completes the "verknüpfen" target pick (PRD 104 v3); outside
+   *  pick mode a plain click stays inert (dblclick edits, drag moves). */
+  onChipClick(row: Record<string, unknown>): void {
+    const pending = this.bindPick.pending();
+    if (!pending) return;
+    const reservation = row['reservation'] as Record<string, unknown> | null | undefined;
+    const reservationId = typeof reservation?.['id'] === 'string' ? reservation['id'] : null;
+    if (!reservationId) return;
+    // Confirm before firing: the bind overwrites the target's fields and has no
+    // undo yet — and the manual pick is exactly where same-number mix-ups happen.
+    const targetName = String(row['name'] ?? '') || 'Veranstaltung';
+    this.dialog
+      .open(BindConfirmDialogComponent, {
+        data: { sourceLabel: pending.label, targetName } satisfies BindConfirmDialogData,
+        autoFocus: false,
+      })
+      .afterClosed()
+      .subscribe((confirmed) => {
+        if (!confirmed) return; // banner stays armed — pick another target or cancel
+        this.bindPick.cancel();
+        this.worklist.bindStagedEvent(pending.sourceItemId, reservationId).subscribe((ok) => {
+          this.snackBar.open(
+            ok
+              ? `„${pending.label}" verknüpft`
+              : `„${pending.label}" konnte nicht verknüpft werden`,
+            undefined,
+            { duration: 4000 },
+          );
+        });
+      });
+  }
+
   onChipMenu(e: { row: Record<string, unknown>; x: number; y: number }): void {
     const items = this.rowItems(e.row);
     if (items.length === 0) return;
@@ -586,8 +816,16 @@ export class ViewHostComponent {
    *  EVENT/SERIE/SINGLE dialog (Swing `showDialog` parity). */
   private dispatchScopedMove(facts: MoveBlockFacts, gesture: MoveGesture): void {
     const options = moveScopeOptions(facts, gesture);
+    // PRD 105 — the same checks the sheet runs, before a drag/resize is committed. Swing does the
+    // same (`checkEvents` fires from every write path); an inline panel in the sheet could not
+    // serve this path at all, which is why the findings live in a dialog.
     const run = (scope: (typeof options)[number]['scope']) =>
-      this.toast.run(buildMoveScopeCommand(this.gql, facts, scope, gesture));
+      this.preflight
+        .confirmMove(moveCheckInput(facts, scope, gesture))
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe((proceed) => {
+          if (proceed) this.toast.run(buildMoveScopeCommand(this.gql, facts, scope, gesture));
+        });
     if (options.length <= 1) {
       run(options[0]?.scope ?? 'event');
       return;
@@ -706,9 +944,12 @@ export class ViewHostComponent {
   readonly isDataRow = (_i: number, row: Record<string, unknown>): boolean =>
     row['__group'] !== true;
 
-  /** Monotonic request id — a slow (e.g. 500-row firehose) response from an OLDER
-   *  query must not clobber a newer, filtered one. Stale responses are ignored. */
-  private reqToken = 0;
+  /** PRD 106 — the view-query trigger. Every state change that needs a re-query
+   *  pushes the ready-built args here; `null` means "no scope, cancel whatever
+   *  runs". The pipe (see constructor) throttles bursts and `switchMap` aborts
+   *  the superseded request, so a slow 500-row response can neither clobber a
+   *  newer one nor keep running after it was superseded. */
+  private readonly trigger$ = new Subject<QueryArgs | null>();
 
   /** Bumped by MutationBus.mutated$ (any own mutation landed — edit / delete /
    *  undo / quick-create) → re-query. Interim manual trigger; a server change
@@ -719,6 +960,36 @@ export class ViewHostComponent {
     inject(MutationBus)
       .mutated$.pipe(takeUntilDestroyed())
       .subscribe(() => this.refreshTick.update((n) => n + 1));
+    // PRD 106 — one request stream for the whole view. Leading+trailing throttle:
+    // the first date-nav click goes out at once (a single click must not feel
+    // laggy) and a burst collapses to one trailing query on the FINAL window.
+    // switchMap then unsubscribes the superseded request, which makes Angular's
+    // HttpXhrBackend call xhr.abort() — so it is cancelled, not merely ignored.
+    this.trigger$
+      .pipe(
+        throttleTime(QUERY_THROTTLE_MS, asyncScheduler, { leading: true, trailing: true }),
+        // `loading` tracks the REQUEST, not the trigger: during the throttle
+        // window nothing is in flight, and the previous result stays on screen.
+        tap((args) => {
+          if (!args) return;
+          this.loading.set(true);
+          this.error.set(null);
+        }),
+        switchMap((args) =>
+          args
+            ? this.gql.executeView<ViewData>(args.viewName, args.variables).pipe(
+                map((res) => ({ args, res, err: null as HttpFailure | null })),
+                // Keep the outer stream alive — an error must not tear down the
+                // trigger pipe, or the view would stop querying for good.
+                catchError((err: HttpFailure) => of({ args, res: null, err })),
+              )
+            : EMPTY,
+        ),
+        takeUntilDestroyed(),
+      )
+      .subscribe(({ args, res, err }) =>
+        err ? this.onQueryError(err) : this.onQueryResult(args, res!),
+      );
     // Material client sort: sort by the displayed text, EXCEPT date columns sort
     // by their raw ISO value (chronological, not by the formatted label).
     this.dataSource.sortingDataAccessor = (row, id) => {
@@ -798,9 +1069,9 @@ export class ViewHostComponent {
     });
   }
 
-  /** No scope: drop any in-flight result, clear the table, show the hint. */
+  /** No scope: abort any in-flight query, clear the table, show the hint. */
   private clearForNoScope(): void {
-    this.reqToken++; // invalidate any in-flight response
+    this.trigger$.next(null); // switchMap → EMPTY: cancels whatever is running
     this.loading.set(false);
     this.error.set(null);
     this.rows.set([]);
@@ -810,14 +1081,12 @@ export class ViewHostComponent {
   }
 
   private run(viewName: string, window: DateWindow | null, chips: FilterEntry[]): void {
-    const token = ++this.reqToken;
-    this.loading.set(true);
-    this.error.set(null);
     // Type-driven binding: fill each declared variable BY TYPE (ReservationFilter ←
     // window+selection, AllocatableFilter ← selection). The server emits the
     // variable signature on extensions.view.variables; the FIRST query (before meta
-    // lands) sends {} → the server merges its stored defaults, then bindingKey
-    // re-queries with the resolved signature.
+    // lands) sends {} → the server fills only the @window/render-mode date range
+    // (stored defaultVariables are authoring example data, never merged at runtime —
+    // PRD 097 D8), then bindingKey re-queries with the resolved signature.
     // untracked: run() executes INSIDE the query effect — reading meta() tracked
     // here would make the effect re-fire on every response (meta.set) → infinite
     // loop. The one-time re-query when the signature lands is driven by bindingKey.
@@ -827,52 +1096,55 @@ export class ViewHostComponent {
     // self is the common case; multi-user scope would need ownerIdsIn server-side).
     const ownerId = chips.find((c) => c.kind === 'user')?.id ?? null;
     const variables = buildVariablesByType(signature, { window, resourceIds, ownerId });
-    this.gql.executeView<ViewData>(viewName, variables).subscribe({
-      next: (res) => {
-        if (token !== this.reqToken) return; // a newer query superseded this one
-        if (res.errors?.length) {
-          this.error.set(res.errors.map((e) => e.message).join('; '));
-          this.loading.set(false);
-          return;
-        }
-        // Root-agnostic: take whatever array `data` carries, not a fixed field name.
-        const rows =
-          (Object.values(res.data ?? {}).find(Array.isArray) as
-            | Record<string, unknown>[]
-            | undefined) ?? [];
-        const viewMeta = res.extensions?.view ?? null;
-        this.meta.set(viewMeta);
-        this.total.set(rows.length);
-        const groupAlias = viewMeta?.groupBy;
-        this.groupCount.set(groupAlias ? new Set(rows.map((r) => r[groupAlias])).size : 0);
-        this.rows.set(rows);
-        this.loading.set(false);
-        // Apply the view's supported render modes — keeps the user's remembered mode
-        // (restored from localStorage) when this view supports it, else the view's
-        // default. Idempotent per response.
-        const renderModes = viewMeta?.renderModes ?? ['table' as const];
-        untracked(() => this.viewState.applyViewModes(renderModes));
-        // Seed the date-nav window from the server-resolved view window, once
-        // (PRD 074 §"Window and inputs directives" — no client-side anchor math).
-        if (!window) {
-          const seeded = res.extensions?.view?.window;
-          if (seeded) untracked(() => this.viewState.setWindow(seeded));
-        }
-      },
-      error: (err: { status?: number; error?: { message?: string } }) => {
-        if (token !== this.reqToken) return; // superseded — ignore its failure too
-        // 401 is owned by the auth refresh interceptor (PRD 072) — stay loading.
-        if (err?.status === 401) return;
-        this.error.set(err?.error?.message ?? `Request failed (HTTP ${err?.status ?? '?'})`);
-        this.loading.set(false);
-      },
-    });
+    this.trigger$.next({ viewName, variables, seedWindow: !window });
+  }
+
+  private onQueryResult(args: QueryArgs, res: GqlResponse<ViewData>): void {
+    if (res.errors?.length) {
+      // Signature recovery (PRD 097 D8): the {} first query of a view with a second
+      // NonNull variable fails coercion, but the server still sends extensions.view.
+      // Bind it so bindingKey flips and the re-query goes out with filled variables.
+      const errMeta = res.extensions?.view;
+      if (errMeta && !untracked(() => this.meta())) this.meta.set(errMeta);
+      this.error.set(res.errors.map((e) => e.message).join('; '));
+      this.loading.set(false);
+      return;
+    }
+    // Root-agnostic: take whatever array `data` carries, not a fixed field name.
+    const rows =
+      (Object.values(res.data ?? {}).find(Array.isArray) as
+        | Record<string, unknown>[]
+        | undefined) ?? [];
+    const viewMeta = res.extensions?.view ?? null;
+    this.meta.set(viewMeta);
+    this.total.set(rows.length);
+    const groupAlias = viewMeta?.groupBy;
+    this.groupCount.set(groupAlias ? new Set(rows.map((r) => r[groupAlias])).size : 0);
+    this.rows.set(rows);
+    this.loading.set(false);
+    // Apply the view's supported render modes — keeps the user's remembered mode
+    // (restored from localStorage) when this view supports it, else the view's
+    // default. Idempotent per response.
+    const renderModes = viewMeta?.renderModes ?? ['table' as const];
+    untracked(() => this.viewState.applyViewModes(renderModes));
+    // Seed the date-nav window from the server-resolved view window, once
+    // (PRD 074 §"Window and inputs directives" — no client-side anchor math).
+    if (args.seedWindow) {
+      const seeded = res.extensions?.view?.window;
+      if (seeded) untracked(() => this.viewState.setWindow(seeded));
+    }
+  }
+
+  private onQueryError(err: HttpFailure): void {
+    // 401 is owned by the auth refresh interceptor (PRD 072) — stay loading.
+    if (err?.status === 401) return;
+    this.error.set(err?.error?.message ?? `Request failed (HTTP ${err?.status ?? '?'})`);
+    this.loading.set(false);
   }
 
   cell(row: Record<string, unknown>, col: ViewColumn): string {
     return renderCell(row, col);
   }
-
 
   /** PRD 095 Phase 3 — month-grid drag-create: day-range selection opens the
    *  event sheet PREFILLED (range-seeded scoped draft; nothing persists until save). */
@@ -894,7 +1166,8 @@ export class ViewHostComponent {
   }): void {
     const chips = this.filter.entries();
     this.openCreate(
-      (typeKey) => timeScopedDraft(typeKey, chips, sel.fromDay, sel.startMin, sel.toDay, sel.endMin),
+      (typeKey) =>
+        timeScopedDraft(typeKey, chips, sel.fromDay, sel.startMin, sel.toDay, sel.endMin),
       { day: sel.fromDay, startMin: sel.startMin },
     );
   }
@@ -927,7 +1200,9 @@ export class ViewHostComponent {
             return;
           }
           this.templateInstantiation.instantiate(item.id, target).subscribe({
-            next: (draft) => {
+            next: (instantiated) => {
+              const draft =
+                instantiated && withScopeAllocations(instantiated, this.filter.entries());
               if (!draft) {
                 this.snackBar.open(
                   'Die Vorlage enthält keine Termine — bitte zuerst Termine in der Vorlage anlegen.',

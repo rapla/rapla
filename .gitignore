@@ -93,3 +93,6 @@ jitdump.*.dmp
 Snap.*.trc
 hs_err_pid*.log
 *.hprof
+
+# production data dump (PII) — never commit
+/template-names.json

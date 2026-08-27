@@ -26,7 +26,7 @@ Phase 2 shipped 2026-05-12:
 Landed 2026-05-13 (signout bug fixes):
 - **`/connect/logout` now clears the remember-me cookie.** Spring SAS's `OidcLogoutAuthenticationSuccessHandler` only clears HttpSession + SecurityContext by default, so the surviving `rapla-remember-me` cookie silently re-authed the next `/oauth2/authorize` ("sign out → instantly signed back in"). Fix: promote `RememberMeServices` to `@Bean`; `authorizationServerSecurityFilterChain` attaches a custom success handler whose `logoutHandler = CompositeLogoutHandler(SecurityContextLogoutHandler, rememberMeServices)`. Verified live: `Set-Cookie: rapla-remember-me=; Max-Age=0` and the persistent row is removed.
 - **`logoutUrl` in discovery flipped from `/logout` to `/connect/logout`** — both clients now use OIDC RP-initiated logout; the prior split is collapsed.
-- **Swing plumbs `id_token` through to logout.** OIDC RP-initiated logout requires `id_token_hint`; without it Spring SAS returns 404 and the cookie-clearing handler never runs. Fix: `OAuthTokens` + `RemoteConnectionInfo` gained `idToken`; `SwingOAuthLoginFlow.exchangeCodeForTokens` parses it (scope=openid already enabled); `logout()` appends `?id_token_hint=<urlencoded>` before opening the browser tab. **Superseded by [PRD 072](072-server-side-login-dialog.md) ("M2 broker model").** `RaplaClientServiceImpl.logout()` no longer appends `?id_token_hint=<...>` nor opens a `/connect/logout` browser tab — logout is now a best-effort `POST /oauth2/revoke` plus `prompt=login` on the next OAuth flow. The captured `idToken` is now unused on the logout path.
+- **Swing plumbs `id_token` through to logout.** OIDC RP-initiated logout requires `id_token_hint`; without it Spring SAS returns 404 and the cookie-clearing handler never runs. Fix: `OAuthTokens` + `RemoteConnectionInfo` gained `idToken`; `SwingOAuthLoginFlow.exchangeCodeForTokens` parses it (scope=openid already enabled); `logout()` appends `?id_token_hint=<urlencoded>` before opening the browser tab. **Superseded by [PRD 072](done/072-server-side-login-dialog.md) ("M2 broker model").** `RaplaClientServiceImpl.logout()` no longer appends `?id_token_hint=<...>` nor opens a `/connect/logout` browser tab — logout is now a best-effort `POST /oauth2/revoke` plus `prompt=login` on the next OAuth flow. The captured `idToken` is now unused on the logout path.
 
 Setup doc: `docs/authentication.md`. PRD 031 covers refresh-token mechanics; [PRD 032](done/032-angular-ui-library-evaluation.md) handles external IdP.
 
@@ -373,9 +373,9 @@ Replaces Phase 3's single SSO button with a **sign-in method dropdown** so Swing
   needed no `SwingOAuthLoginFlow` change: it POSTs the standard
   `authorization_code` form body to whatever `tokenUrl` discovery gives, and
   the BFF already accepts that shape.
-- **Provider-aware refresh.** *(Reverted by [PRD 072](072-server-side-login-dialog.md) Phase 5 — historical.)* This
+- **Provider-aware refresh.** *(Reverted by [PRD 072](done/072-server-side-login-dialog.md) Phase 5 — historical.)* This
   originally routed refresh to a per-provider `refreshUrl` + `oauthClientId` on
-  `RemoteConnectionInfo`. [PRD 072](072-server-side-login-dialog.md) Phase 5 made rapla the single federating
+  `RemoteConnectionInfo`. [PRD 072](done/072-server-side-login-dialog.md) Phase 5 made rapla the single federating
   Authorization Server, so both refresh paths now hardcode rapla's `/oauth2/token`
   with `client_id=rapla-client` (`MyCustomConnector.refreshUsingToken`,
   `ClientProxyConfig`); `refreshUrl`/`oauthClientId` are no longer read. The gap it
@@ -420,7 +420,7 @@ Fix: `RemoteOperator.refresh(UpdateEvent)` / `refreshAll()` compute `UpdateResul
    `MyCustomConnector.refreshUsingToken()` was already doing on the RPC
    tier. Regression test: `RefreshOn401InterceptorAuthDeadTest.whenProviderRefreshUrlIsSet_thenRefreshHitsThatUrlNotRaplaSas`.
 
-   **Reverted by [PRD 072](072-server-side-login-dialog.md) Phase 5.** Per-provider refresh routing is gone:
+   **Reverted by [PRD 072](done/072-server-side-login-dialog.md) Phase 5.** Per-provider refresh routing is gone:
    both refresh paths (`RefreshOn401Interceptor.doRefresh()` and
    `MyCustomConnector.refreshUsingToken()`) now hardcode rapla's own
    `/oauth2/token` with `client_id=rapla-client`; they no longer read

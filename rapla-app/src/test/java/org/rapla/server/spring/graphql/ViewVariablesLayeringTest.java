@@ -1,6 +1,7 @@
 package org.rapla.server.spring.graphql;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Map;
@@ -73,6 +74,31 @@ class ViewVariablesLayeringTest
         assertEquals("2026-06-22T00:00:00", filter.get("to"), "defaults' dates survive a caller filter key");
         assertEquals(List.of("MONDAY", "FRIDAY"), filter.get("weekdays"), "pinned weekdays survive ?resource=");
         assertEquals(List.of("a1"), filter.get("allocatableIdsIn"), "the caller's key wins");
+    }
+
+    /**
+     * SPA transport ({@code StoredViewInterceptor} → {@code withWindowDefaults}, 2026-08-11): a
+     * view's stored defaultVariables are GraphiQL EXAMPLE data and are never merged at runtime —
+     * an example {@code filter.allocatableIdsIn} saved from the GraphiQL variables pane must not
+     * leak into an SPA query. The interceptor only fills a missing window; caller variables pass
+     * through untouched.
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    void spaExecutionOnlyFillsTheWindowAndNeverStoredDefaults()
+    {
+        Map<String, Object> vars = ViewVariables.withWindowDefaults(
+                Map.of("filter", Map.of("from", "2026-07-15T00:00:00", "to", "2026-07-22T00:00:00"),
+                        "limit", 5),
+                QUERY);
+        Map<String, Object> filter = (Map<String, Object>) vars.get("filter");
+        assertEquals("2026-07-15T00:00:00", filter.get("from"), "caller variables pass through");
+        assertEquals(5, vars.get("limit"), "caller variables pass through");
+
+        Map<String, Object> firstLoad = ViewVariables.withWindowDefaults(Map.of(), QUERY);
+        Map<String, Object> filled = (Map<String, Object>) firstLoad.get("filter");
+        assertTrue(filled.containsKey("from") && filled.containsKey("to"),
+                "a missing window is filled from the view's @window/render-mode default: " + firstLoad);
     }
 
     @Test

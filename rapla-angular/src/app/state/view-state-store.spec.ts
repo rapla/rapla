@@ -12,10 +12,9 @@ describe('ViewStateStore', () => {
     store = TestBed.inject(ViewStateStore);
   });
 
-  it('defaults to the table render mode and no window/view', () => {
+  it('defaults to the table render mode and no window', () => {
     expect(store.renderMode()).toBe('table');
     expect(store.window()).toBeNull();
-    expect(store.activeView()).toBeNull();
   });
 
   it('setRenderMode() switches the render mode', () => {
@@ -28,11 +27,6 @@ describe('ViewStateStore', () => {
     expect(store.window()).toEqual({ from: '2026-06-15T00:00:00', to: '2026-06-22T00:00:00' });
   });
 
-  it('setActiveView() records the active view definition key', () => {
-    store.setActiveView('Termine');
-    expect(store.activeView()).toBe('Termine');
-  });
-
   it('remembers the user render mode + window across a reload (new store from localStorage)', () => {
     store.setRenderMode('week');
     store.setWindow({ from: '2026-06-15T00:00:00', to: '2026-06-22T00:00:00' });
@@ -41,6 +35,15 @@ describe('ViewStateStore', () => {
     const reloaded = TestBed.inject(ViewStateStore);
     expect(reloaded.renderMode()).toBe('week');
     expect(reloaded.window()).toEqual({ from: '2026-06-15T00:00:00', to: '2026-06-22T00:00:00' });
+  });
+
+  it('remembers the week raster (rows per hour) across a reload', () => {
+    expect(store.weekRaster()).toBe(2);
+    store.setWeekRaster(4);
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [ViewStateStore, AuthService] });
+    const reloaded = TestBed.inject(ViewStateStore);
+    expect(reloaded.weekRaster()).toBe(4);
   });
 
   it('applyViewModes keeps the remembered mode when the view supports it', () => {

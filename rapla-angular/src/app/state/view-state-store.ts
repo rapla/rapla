@@ -8,6 +8,7 @@ export type { ViewRenderMode as RenderMode };
 
 const RENDER_MODE_KEY = 'rapla.renderMode';
 const WINDOW_KEY = 'rapla.window';
+const WEEK_RASTER_KEY = 'rapla.weekRaster';
 
 /** A zoneless LocalDateTime window (e.g. {@code 2026-06-21T00:00:00}) for the ReservationFilter. */
 export interface DateWindow {
@@ -25,6 +26,7 @@ export class ViewStateStore {
   private readonly auth = inject(AuthService);
   private readonly modeStorage = new ScopedStorage(this.auth, RENDER_MODE_KEY);
   private readonly windowStorage = new ScopedStorage(this.auth, WINDOW_KEY);
+  private readonly rasterStorage = new ScopedStorage(this.auth, WEEK_RASTER_KEY);
 
   // The user's EXPLICIT render-mode choice, remembered across reloads (null = none
   // yet → a view uses its own default). window is likewise restored so the chosen
@@ -37,7 +39,6 @@ export class ViewStateStore {
   private readonly _window = signal<DateWindow | null>(
     this.windowStorage.load<DateWindow | null>(null),
   );
-  private readonly _activeView = signal<string | null>(null);
   /** Render modes supported by the active view — emitted by the server via
    *  {@code extensions.view.renderModes}. Drives which toggle buttons are shown. */
   private readonly _renderModes = signal<ViewRenderMode[]>(['table']);
@@ -45,9 +46,13 @@ export class ViewStateStore {
    *  view host after each load, shown right-aligned in the control strip. Ephemeral. */
   private readonly _resultInfo = signal<string | null>(null);
 
+  /** Week-grid slot raster (Swing "rows per hour"): 1 = 60m, 2 = 30m, 4 = 15m.
+   *  Persisted per user — the grid component remounts on every view load. */
+  private readonly _weekRaster = signal<number>(this.rasterStorage.load(2));
+
   readonly renderMode = this._renderMode.asReadonly();
+  readonly weekRaster = this._weekRaster.asReadonly();
   readonly window = this._window.asReadonly();
-  readonly activeView = this._activeView.asReadonly();
   readonly renderModes = this._renderModes.asReadonly();
   readonly resultInfo = this._resultInfo.asReadonly();
 
@@ -57,7 +62,13 @@ export class ViewStateStore {
       this._userMode.set(mode);
       this._renderMode.set(mode ?? 'table');
       this._window.set(this.windowStorage.load<DateWindow | null>(null));
+      this._weekRaster.set(this.rasterStorage.load(2));
     });
+  }
+
+  setWeekRaster(rowsPerHour: number): void {
+    this._weekRaster.set(rowsPerHour);
+    this.rasterStorage.save(rowsPerHour);
   }
 
   /** User picks a mode (control strip) → current + remembered choice. */
@@ -83,10 +94,6 @@ export class ViewStateStore {
   setWindow(window: DateWindow): void {
     this._window.set(window);
     this.windowStorage.save(window);
-  }
-
-  setActiveView(key: string): void {
-    this._activeView.set(key);
   }
 
   setResultInfo(info: string | null): void {

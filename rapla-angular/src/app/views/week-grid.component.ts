@@ -11,6 +11,8 @@ import {
 } from '@angular/core';
 
 import { CHIP_BASE_CSS, chipColor, chipName, chipTime, isDraggableRow } from './block-style';
+import { type ParkedItem } from '../import/parked-events.service';
+import { ViewStateStore } from '../state/view-state-store';
 import {
   layoutWeek,
   printMode,
@@ -94,6 +96,25 @@ function rowMatchedRefs(row: Row): NamedRef[] {
   selector: 'app-week-grid',
   host: { '[class.print-stacked]': 'printStacked()' },
   template: `
+    <!-- PRD 104 v3 Parkstreifen (client-only): NOTHING is stored while parked.
+         Drop on a free slot = create there (undoable "platziert"); drop on an
+         existing chip = verknüpfen. Abbrechen/Reload forgets the list. -->
+    @if (parkedItems().length > 0) {
+      <div class="park">
+        <span class="park-label">Parkstreifen — per Drag platzieren oder verknüpfen:</span>
+        @for (item of parkedItems(); track item.sourceId) {
+          <span
+            class="chip parked neutral"
+            role="button"
+            tabindex="0"
+            (pointerdown)="armParked($event, item)"
+          >
+            <span class="n">{{ item.name }}</span>
+          </span>
+        }
+        <button type="button" class="park-cancel" (click)="parkCancel.emit()">Abbrechen</button>
+      </div>
+    }
     <div
       class="wg"
       [style.maxHeight.px]="maxHeight()"
@@ -202,12 +223,19 @@ function rowMatchedRefs(row: Row): NamedRef[] {
                 [style.height]="blockHeight(b.startMin, b.endMin)"
                 [style.left]="chipLeft(b.lane, d.lanes)"
                 [style.width]="chipWidth(d.lanes)"
+                [attr.data-resid]="rowKey(b.row)"
+                (click)="chipClick.emit(b.row)"
                 (dblclick)="openRow.emit(b.row)"
                 (keydown.enter)="openRow.emit(b.row)"
                 (contextmenu)="onChipMenu($event, b.row)"
                 (pointerdown)="armMove($event, b, d.day)"
               >
-                <span class="t">{{ b.contLeft ? '‹ ' : '' }}{{ timeOf(b.row) }}</span>
+                <span class="t"
+                  >{{ b.contLeft ? '‹ ' : '' }}{{ timeOf(b.row) }}
+                  @if (linkedIds().has(rowKey(b.row))) {
+                    <span class="linked-mark" title="Mit Dualis verknüpft">🔗</span>
+                  }
+                </span>
                 <span class="n">{{ nameOf(b.row) }}{{ b.contRight ? ' ›' : '' }}</span>
                 @if (movable(b)) {
                   <span class="rz" (pointerdown)="armResize($event, b, d.day)"></span>
@@ -224,6 +252,48 @@ function rowMatchedRefs(row: Row): NamedRef[] {
     `
       :host {
         display: block;
+      }
+      .park {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 6px 8px;
+        margin-bottom: 4px;
+        border: 1px dashed rgba(0, 0, 0, 0.35);
+        border-radius: 4px;
+        background: rgba(255, 235, 59, 0.12);
+      }
+      .park-label {
+        font-size: 12px;
+        color: rgba(0, 0, 0, 0.6);
+        margin-right: 4px;
+      }
+      .linked-mark {
+        font-size: 9px;
+        margin-left: 3px;
+      }
+      .chip.parked {
+        position: static;
+        cursor: grab;
+        padding: 3px 8px;
+        border-radius: 3px;
+        touch-action: none;
+      }
+      .park-cancel {
+        margin-left: auto;
+        font: inherit;
+        font-size: 12px;
+        border: 0;
+        background: none;
+        color: inherit;
+        text-decoration: underline;
+        cursor: pointer;
+      }
+      @media print {
+        .park {
+          display: none;
+        }
       }
       .wg {
         border: 1px solid rgba(0, 0, 0, 0.12);
@@ -444,8 +514,22 @@ export class WeekGridComponent {
   readonly dayCount = input(7);
   /** Scope resources (PRD 100 D3) — >1 enables Swing fixed-slots lanes. */
   readonly scopeResources = input<NamedRef[]>([]);
+  /** PRD 104 v3: client-only staged items waiting in the Parkstreifen — nothing
+   *  is stored server-side until one is dropped. */
+  readonly parkedItems = input<readonly ParkedItem[]>([]);
+  /** Reservation ids that are externally LINKED (Dualis-verknüpft) — their chips
+   *  carry a link marker so bound and unbound events are distinguishable. */
+  readonly linkedIds = input<ReadonlySet<string>>(new Set());
+  /** Parked chip dropped on a FREE slot → create the event there. */
+  readonly placeParked = output<{ item: ParkedItem; day: string; startMin: number }>();
+  /** Parked chip dropped ONTO an existing event's chip → verknüpfen. */
+  readonly bindParked = output<{ item: ParkedItem; targetReservationId: string }>();
+  /** Abbrechen in the strip — forget the parked list (nothing was stored). */
+  readonly parkCancel = output<void>();
   /** Double-click / Enter on a chip — the view host runs the shared edit path. */
   readonly openRow = output<Row>();
+  /** Plain click on a chip (no drag) — target pick for "verknüpfen" (PRD 104 v3). */
+  readonly chipClick = output<Row>();
   /** Right-click on a chip — the view host opens the SHARED row menu (PRD 094). */
   readonly openMenu = output<{ row: Row; x: number; y: number }>();
   /** Drag-move drop (gated by {@link isDraggableRow}): day + minute shift. */
@@ -514,11 +598,14 @@ export class WeekGridComponent {
     });
   }
 
-  /** Slot raster (Swing "rows per hour" calendar option): 1 = 60m, 2 = 30m, 4 = 15m. */
-  readonly rowsPerHour = signal(2);
+  /** Slot raster (Swing "rows per hour" calendar option): 1 = 60m, 2 = 30m, 4 = 15m.
+   *  Lives in the ViewStateStore (per-user persisted) — the grid remounts on
+   *  every view load and a local signal would silently reset the choice. */
+  private readonly viewState = inject(ViewStateStore);
+  readonly rowsPerHour = this.viewState.weekRaster;
 
   onRaster(ev: Event): void {
-    this.rowsPerHour.set(Number((ev.target as HTMLSelectElement).value) || 2);
+    this.viewState.setWeekRaster(Number((ev.target as HTMLSelectElement).value) || 2);
   }
 
   /** Hour-fractions of the sub-hour gridlines within one hour row. */
@@ -538,6 +625,16 @@ export class WeekGridComponent {
     if (mh === null || hours <= 0) return HOUR_PX;
     return Math.max(HOUR_PX, Math.floor((mh - this.headerPx() - this.chromePx() - 16) / hours));
   });
+
+  /** Reservation id of a wire row (`reservation { id }` hidden field). */
+  private static reservationIdOf(row: Row): string | null {
+    const r = row['reservation'] as Record<string, unknown> | null | undefined;
+    return typeof r?.['id'] === 'string' ? r['id'] : null;
+  }
+
+  rowKey(row: Row): string {
+    return WeekGridComponent.reservationIdOf(row) ?? String(row['start'] ?? '');
+  }
 
   readonly layout = computed(() => {
     const selected = this.scopeResources();
@@ -679,6 +776,7 @@ export class WeekGridComponent {
     grabOffsetMin: number;
     startX: number;
     startY: number;
+    parkedItem?: ParkedItem;
   } | null = null;
   private readonly onMvMove = (ev: PointerEvent) => this.mvMove(ev);
   private readonly onMvUp = () => this.mvUp();
@@ -711,8 +809,40 @@ export class WeekGridComponent {
     document.addEventListener('keydown', this.onMvKey);
   }
 
+  /** Parkstreifen chip drag: same state machine as {@link armMove} with a
+   *  SYNTHETIC source (the item exists nowhere yet) — the ghost previews a
+   *  default 90-min block; the drop decides create-here vs verknüpfen. */
+  armParked(ev: PointerEvent, item: ParkedItem): void {
+    if (ev.button !== 0 || this.mv) return;
+    const col = this.host.nativeElement.querySelector('.daycol') as HTMLElement | null;
+    if (!col) return;
+    const chip = ev.currentTarget as HTMLElement;
+    ev.preventDefault();
+    ev.stopPropagation();
+    chip.setPointerCapture?.(ev.pointerId);
+    this.mv = {
+      row: { name: item.name },
+      parkedItem: item,
+      day: this.layout().days[0]?.day ?? localToday(),
+      startMin: 8 * 60,
+      endMin: 9 * 60 + 30,
+      chip,
+      colTop: col.getBoundingClientRect().top,
+      grabOffsetMin: 0,
+      startX: ev.clientX,
+      startY: ev.clientY,
+    };
+    chip.addEventListener('pointermove', this.onMvMove);
+    chip.addEventListener('pointerup', this.onMvUp);
+    chip.addEventListener('pointercancel', this.onMvCancel);
+    document.addEventListener('keydown', this.onMvKey);
+  }
+
+  private lastPointer = { x: 0, y: 0 };
+
   private mvMove(ev: PointerEvent): void {
     if (!this.mv) return;
+    this.lastPointer = { x: ev.clientX, y: ev.clientY };
     if (
       this.movePreview() === null &&
       Math.hypot(ev.clientX - this.mv.startX, ev.clientY - this.mv.startY) <
@@ -736,6 +866,33 @@ export class WeekGridComponent {
     const source = this.mv;
     this.teardownMove();
     if (!preview) return;
+    // Parked drop (PRD 104 v3, client-only strip): over an existing chip →
+    // verknüpfen; over a free slot → create there. Never a moveBlock.
+    if (source.parkedItem) {
+      const target = document
+        .elementsFromPoint(this.lastPointer.x, this.lastPointer.y)
+        .find(
+          (el): el is HTMLElement =>
+            el instanceof HTMLElement &&
+            el.classList.contains('chip') &&
+            !el.classList.contains('ghost') &&
+            !el.classList.contains('parked') &&
+            !!el.dataset['resid'],
+        );
+      if (target) {
+        this.bindParked.emit({
+          item: source.parkedItem,
+          targetReservationId: target.dataset['resid']!,
+        });
+      } else {
+        this.placeParked.emit({
+          item: source.parkedItem,
+          day: preview.day,
+          startMin: preview.startMin,
+        });
+      }
+      return;
+    }
     const dayDelta = daysBetween(source.day, preview.day);
     const minuteDelta = preview.startMin - source.startMin;
     if (dayDelta === 0 && minuteDelta === 0) return;

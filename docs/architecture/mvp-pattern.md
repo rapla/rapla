@@ -214,7 +214,6 @@ See `RecordingViewTest` (12 cases) for the recorder semantics.
 `@SpringBootTest` + `@AutoConfigureMockMvc` + the same `testdefault.xml`
 fixture. Examples:
 
-- `CalendarViewControllerIntegrationTest` (8 cases)
 - `ReservationEditControllerIntegrationTest` (11 cases)
 - `PreferencesAdminControllerIntegrationTest` (11 cases — [PRD 020](../prd/020-server-driven-admin-panels.md))
 
@@ -259,10 +258,6 @@ Reference implementations:
 
 Reference tests:
 
-- `CalendarViewControllerIntegrationTest` —
-  `unknownAllocatableIdIsSilentlyDroppedFromResourceColumns`,
-  `unknownAllocatableIdAlsoDroppedForNonAdmin`,
-  `onlyUnknownAllocatablesYieldEmptyColumnsNotAnError`.
 - `ReservationEditControllerIntegrationTest` —
   `checkConflictsUnknownAllocatableSilentlyDropped`,
   `checkConflictsOnlyUnknownIdsReturnsEmptyOutcomesNotError`.

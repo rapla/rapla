@@ -335,6 +335,12 @@
             {{ al.allocatableName }}
           </span>
           <span class="right">
+            <!-- PRD 091 OQ5 — persisted request state: the server marked this allocation as a
+                 pending request because the booker may only REQUEST the resource. Independent of
+                 the live availability pill below (an approver sees the request, not the verdict). -->
+            @if (al.requestStatus === 'REQUESTED') {
+              <span class="pill requested">beantragt</span>
+            }
             @if (statusFor(al.allocatableId); as st) {
               <span class="pill" [class]="'pill ' + st.status">
                 @switch (st.status) {
@@ -525,6 +531,9 @@
       >
         ↷
       </button>
+    }
+    @if (canModify() && draft()?.persisted) {
+      <button type="button" class="delete-btn" (click)="deleteEvent()">Löschen</button>
     }
     <button type="button" (click)="cancel()">Abbrechen</button>
     @if (canModify()) {

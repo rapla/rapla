@@ -100,6 +100,42 @@ export function moveScopeOptions(facts: MoveBlockFacts, gesture: MoveGesture): M
 }
 
 /** Build the {@link SpaCommand} for a chosen scope + gesture. */
+/**
+ * PRD 105 — the `moveChecks` input for the SAME gesture the command below will send, or null when
+ * the gesture has no dry-run (SINGLE on a repeating appointment goes through `splitOccurrence`,
+ * whose prospective state the server does not compute yet). Keeping this next to the command
+ * builder is deliberate: whoever adds a gesture sees both halves at once.
+ */
+export function moveCheckInput(
+  facts: MoveBlockFacts,
+  scope: MoveScope,
+  gesture: MoveGesture,
+): Record<string, unknown> | null {
+  const { appointmentId, occurrence, reservationId } = facts;
+  if (scope === 'single' && facts.repeating) return null;
+
+  if (gesture.kind === 'resize') {
+    if (!appointmentId) return null;
+    return {
+      appointmentId,
+      occurrence,
+      target: { dateTime: { start: occurrence, end: gesture.newEnd } },
+    };
+  }
+  if (scope === 'event' || !appointmentId) {
+    return {
+      reservationIds: [reservationId],
+      reference: occurrence,
+      target: { dateTime: { start: shiftIso(occurrence, gesture.totalMinutes) } },
+    };
+  }
+  return {
+    appointmentId,
+    occurrence,
+    target: { dateTime: { start: shiftIso(occurrence, gesture.totalMinutes) } },
+  };
+}
+
 export function buildMoveScopeCommand(
   gql: GraphqlService,
   facts: MoveBlockFacts,

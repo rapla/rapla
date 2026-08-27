@@ -4,10 +4,10 @@
 
 **Date:** 2026-05-29 (reopened 2026-07-07)
 
-**Parent:** [PRD 035 (done) — GraphQL foundations](done/035-graphql-foundations.md) §"Filter & query language" for the broader filter-axis model this PRD extends.
+**Parent:** [PRD 035 (done) — GraphQL foundations](035-graphql-foundations.md) §"Filter & query language" for the broader filter-axis model this PRD extends.
 
 **Siblings:**
-- [PRD 055 — Events Read API](055-graphql-events-read-api.md) — establishes the typed-classification interface pattern this extends to filtering (reopened 2026-05-29 for Tier-1 perf migration)
+- [PRD 055 — Events Read API](../055-graphql-events-read-api.md) — establishes the typed-classification interface pattern this extends to filtering (reopened 2026-05-29 for Tier-1 perf migration)
 - Reservation where-predicates: now **Phase 6** of this PRD (added 2026-07-07). Nested `AllocatableWhere` stays deferred (see Out of scope)
 
 ## Goal
@@ -94,7 +94,7 @@ input AllocatableFilter {
    - Extend the `ClassificationSdlGenerator.appendWhereInputs(...)` loop to also accept `VALUE_CLASSIFICATION_TYPE_RESERVATION` DTs → emit `<eventTypeKey>Where` inputs (same attribute→predicate mapping, same AND/OR/NOT combinators).
    - Emit `extend input ReservationFilter { where<EventTypeKey>: <eventTypeKey>Where ... }` analog to the existing `extend input AllocatableFilter`.
    - Wire the existing `WhereEvaluator` into the reservation query path (`appointmentBlocks(filter:)` / `reservations(filter:)`) — evaluate against `Reservation.getClassification()`. Same semantics: a `where<OtherType>` against a non-matching event DT contributes no constraint; combines with `typeIn`.
-   - Consumer demand (why now): archetype C equipment lending ([usecases/equipment-planning.md](../usecases/equipment-planning.md)) — loan-status filtering on the reservation ([PRD 093](../093-loan-lifecycle.md) loan lifecycle, UC-C4 "what's out / overdue" table) needs "reservations where attribute X = Y" server-side; also general SPA event-table filtering (PRD [074](../074-graphql-declarative-views.md)/[077](../077-calendar-model-graphql.md) views).
+   - Consumer demand (why now): archetype C equipment lending ([usecases/equipment-planning.md](../../usecases/equipment-planning.md)) — loan-status filtering on the reservation ([PRD 093](../093-loan-lifecycle.md) loan lifecycle, UC-C4 "what's out / overdue" table) needs "reservations where attribute X = Y" server-side; also general SPA event-table filtering (PRD [074](../074-graphql-declarative-views.md)/[077](../077-calendar-model-graphql.md) views).
 7. **Phase 7 — consolidate type selection: generated per-kind type enums + single `typeIn` field.** [DONE 2026-07-07 — hard cut, no deprecation cycle (nothing in production).] The old selection was redundant and inconsistent: `AllocatableFilter` carried BOTH `typeKeyEq: String` and `typeKeyIn: [String!]` (with an eq-takes-precedence special rule); `ReservationFilter` carried only `typeKeyEq` (no list form at all). `typeKeyEq: "X"` ≡ `typeKeyIn: ["X"]` — one field suffices.
    - **Landed:** `typeKeyEq` + `typeKeyIn` REMOVED from both static inputs. `ClassificationSdlGenerator.appendTypeInEnum(...)` emits **per-kind enums** (2026-07-08 refinement — one shared enum would let an allocatable key validate on `ReservationFilter` and silently yield empty, the exact failure mode Phase 7 removes): `enum AllocatableTypeKey` (resource+person DTs) → `extend input AllocatableFilter { typeIn: [AllocatableTypeKey!] }`, and `enum ReservationTypeKey` (reservation DTs) → `extend input ReservationFilter { typeIn: [ReservationTypeKey!] }` (ReservationFilter thereby gains list/union type selection for the first time). Wrong-kind keys are validation errors (`typeInEnumsAreSplitPerKind` test).
    - Semantics: `typeIn` = union over listed types; combines with `where<TypeKey>` exactly like `typeKeyIn` did (explicit gate authoritative — `WhereEvaluator.hasExplicitTypeGate` now reads `typeIn`; where-blocks refine). The storage pre-filter (`buildStorageFilter`) now builds one `ClassificationFilter` per listed type — list selection pre-filters at the storage layer (previously only the Eq form did).

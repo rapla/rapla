@@ -176,6 +176,12 @@ button.primary:disabled {
   opacity: 0.5;
   cursor: default;
 }
+button.delete-btn {
+  margin-right: auto;
+  color: var(--mat-sys-error, #b3261e);
+  border-color: var(--mat-sys-error, #b3261e);
+  background: none;
+}
 button.linkish {
   background: none;
   border: none;
@@ -221,6 +227,12 @@ button.star.on {
 .pill.REQUEST_ONLY {
   background: #ffe9b8;
   color: #7a5900;
+}
+/* PRD 091 OQ5 — persisted pending request; stronger than the availability hint next to it. */
+.pill.requested {
+  background: #d8c4f0;
+  color: #4a2a7a;
+  font-weight: 600;
 }
 .dot {
   width: 0.55rem;
@@ -302,18 +314,6 @@ button.star.on {
   color: #ba1a1a;
   font-size: 0.85rem;
 }
-.savebar {
-  position: sticky;
-  bottom: 0;
-  background: var(--mat-sys-surface, #fff);
-  border-top: 1px solid rgba(0, 0, 0, 0.12);
-  padding: 0.6rem 1rem;
-  display: flex;
-  gap: 0.7rem;
-  justify-content: flex-end;
-  align-items: center;
-}
-
 .fields {
   flex-wrap: wrap;
   row-gap: 4px;

@@ -1,7 +1,7 @@
 # PRD 104 — SPA "Neu" picker: unified types + templates dialog
 
 **Status:** in-progress — 2026-07-24
-**Related:** [PRD 099](099-reservation-prototype-prefill.md) (Phase 5 `newEventOptions` is the data source; D6 defines `reservationsFromTemplate`),
+**Related:** [PRD 107](107-reservation-prototype-prefill.md) (Phase 5 `newEventOptions` is the data source; D6 defines `reservationsFromTemplate`),
 [PRD 089](089-server-side-recents-favorites.md) (recents mechanism the picker adopts later),
 [PRD 094](094-spa-main-view-actions-and-popups.md) (main-view actions — the "Neu" entry point lives there),
 [PRD 068](068-dualis-import-wizard-redesign.md) (external event import — the second template consumer, see § Templates as import blueprints)
@@ -143,6 +143,23 @@ dualisIds of the same unit) may share one blueprint, each producing its own copy
 > bulk selection, and the per-row action buttons are all deleted. The section below is kept
 > for the concepts that survive (three resolution paths, states/buckets, scope rules,
 > matching cascade) — their INTERACTION is now the v2 gesture model.
+>
+> **Genericity (locked 2026-08-05, user decision):** the worklist is GENERIC, PRD 068 style —
+> the read contract (`externalEventWorklist`: sourceName, stand, booking-rights-filtered
+> groups + items) belongs to rapla's externaleventimport plugin family; the deployment
+> (dhbwrapla PRD 004 Halde) provides the implementation. The SPA carries ZERO
+> source-specific strings — every visible label derives from the server's `sourceName`
+> ("Dualis-Import" at dhbw, hidden entirely where no impl answers = the plugin gate).
+> GUI landed + LIVE-VERIFIED 2026-08-05 (Playwright against the dhbw stack, generic
+> `externalEventWorklist` API + staging engine from the parallel session, 45k staged items):
+> `src/app/import/` (models tier-5-tested; worklist service = the ONE wire-shape adapter;
+> cockpit route `/app/import` with semester filter defaulting to the current semester,
+> Kurs search, virtual-scrolled group rows), sidenav entry with compact open badge
+> ("33k"), deep-link `?importGroup=<allocatableId>` (preserved through the landing
+> redirect) opening the virtual-scrolled import tray beside the view — draggable chips
+> with payload type `application/x-rapla-import-item`. STILL MISSING: the drop layer +
+> ghosts (blocked on the generic bind/create/ignore mutations), Erledigt/Verwaist/Geändert
+> lists, auto-tray from calendar selection.
 
 The import UI is a **reconciliation worklist** ("Dualis-Abgleich", own SPA route, plugin-gated),
 not a wizard: it permanently shows every staged external event without a rapla counterpart,
@@ -175,10 +192,10 @@ reaches zero). Tabs: Offen / **Erledigt** (already-reconciled entries with their
 reservation, actions "öffnen" + "Verknüpfung aufheben" — unbinding removes the external id
 and returns the entry to Offen, the reservation itself stays; entries whose source data
 changed after binding carry a **"Geändert" badge** with "Änderungen übernehmen" =
-`syncClassification` re-merge, undoable, or "Verwerfen") / Verwaist / Ignoriert. The full
-staging lifecycle table (insert/update/delete rules incl. semester-scoped Verwaist) lives
-in dhbwrapla PRD 004.
-The Verwaist bucket (imported but gone from the source) falls out of the staging diff.
+`syncClassification` re-merge, undoable, or "Verwerfen") / Ignoriert. The full
+staging lifecycle table (insert/update/delete rules) lives in dhbwrapla PRD 004.
+~~The Verwaist bucket (imported but gone from the source) falls out of the staging diff.~~
+**Verwaist REMOVED entirely 2026-08-11 (user decision)** — see the decision note below.
 I12 (push notification) later deep-links into this view.
 
 **D12 — Halde: channel-decoupled staging store (locked 2026-07-30, user decision).** Staged
@@ -214,6 +231,257 @@ never a silent auto-pick — and the template selector must scale to admin visib
 Open: reverse re-bind of an already-bound reservation (correction case), Halde
 retention/cleanup per semester.
 
+### Import UX v3 — "Dualis-Sync: Ein Dialog + Parkstreifen" (design CONFIRMED 2026-08-11)
+
+> Status: design direction confirmed by the user 2026-08-11 ("sieht sehr gut aus") after
+> prototype iteration (type-split templates, per-row verknüpfen/neu proposals, checkbox =
+> participation semantics). STILL no teardown of the built v2 surface (tray, chips, badge
+> button, cockpit, `?importGroup`) — user decision 2026-08-10: "baue noch nichts zurück";
+> the teardown decision falls separately once v3 is usable end-to-end.
+>
+> **Implementation 2026-08-11 (live-verified):** v2 teardown EXECUTED (user go): tray
+> component + chip drag payload + `?importGroup` deep link deleted; cockpit shrunk to the
+> status page (Stand + semester + summary line + Erledigt/Geändert/Verwaist lists). Built:
+> `ImportSyncDialogComponent` — the "Dualis-Sync ⑬" button in week/day views (scope ≡
+> selection, semester ≡ scope service) opens the dialog with tabs Offen (template search
+> over `newEventOptions` + type-grouped checkbox list, real worklist data) / Verknüpft /
+> Auffällig. "Übernehmen" is honestly disabled pending the server building block
+> (`createFromStagedItems`); bind proposals, plan option, Parkstreifen and the Kurs
+> counters in the resource list follow with the deployment API (parked semantics + semester
+> heuristic in dhbwrapla, both to be concretized there). Prototype: artifact `0ce323e9`
+> (v3 label). Driver: the v2 surface grew to seven UI concepts with zero create capability —
+> objectively more complex FOR THE USER than Swing's one menu + one dialog.
+
+**Design principle:** *create real reservations as early as possible; everything after that
+is the normal calendar.* Swing never had a matching UI — template pick, checkbox table,
+create, refine in the editor. v3 keeps that shape and upgrades only the refine step:
+visual placement instead of editor typing. No new gestures, no new object kinds — after
+"Anlegen" everything IS a reservation and the existing move/resize/sheet machinery applies.
+
+**Complete user-visible surface (the whole feature, by design):**
+
+1. **Offen-Zähler am Kurs** in the left resource list ("STG-TINF23B ⑬") — bookable Kurse
+   only, scoped to the semester of the visible week (so "13", never "33k"). This replaces
+   the cockpit as the working overview; no separate page on the create path.
+2. **Ein Button** — **"Dualis-Sync ⑬" in the TOOLBAR next to "Neu"** (corrected 2026-08-11
+   after first real use; originally placed inside the week pane, which violated the shell's
+   layout grammar — global creator actions live in the toolbar — and scrolled/vanished with
+   the pane). Visible whenever the current selection contains bookable groups with open
+   items, in any render mode. Context = selection, semester = scope; no own search, no
+   semester dropdown.
+   **Post-create flow (corrected same day — the deferred Parkstreifen had silently amputated
+   the after-the-click half of the design):** after Übernehmen the app switches to WEEK mode
+   and refreshes — the created events appear stacked at the default slot, immediately
+   movable (the v1 stand-in for the Parkstreifen until the parked API lands). And the
+   create REGISTERS UNDO in the standard toast (PRD 094 rule: every mutating action):
+   inverse = `deleteReservations(createdIds)` — deleting removes the external-id stamp with
+   the reservation, so the derived binding automatically reopens the staged items.
+   Design lesson recorded: prototypes validated interaction but never EMBEDDING (toolbar
+   grammar, post-action flow, undo system) — integration properties need a pass against the
+   real shell, and deferring a design piece requires re-checking the whole flow.
+3. **Ein Dialog**, Swing-shaped:
+   - *Vorlage*: the EXISTING Neu-picker mechanics (search + recents), preselected by the
+     name convention (type + orga path, e.g. "Lehrveranstaltung STG/T/INF"); Semestervorlagen
+     appear in the same list, annotated "Semesterplan · matcht 8 von 13".
+   - *Veranstaltungen*: the open staged items as a checkbox list (all preselected,
+     master toggle) — Swing's table, slimmed. **Grouped by type** ("Veranstaltungen (10)" /
+     "Prüfungen (3)"); the visible template selector applies only to ITS type, the other
+     type resolves its own name-convention default automatically, shown as an overridable
+     footnote on that section header ("Vorlage: Pruefung STG/T (automatisch)") — the D10
+     type filter as UI rule: one selector visible, one template EFFECTIVE per type, never a
+     lecture template on an exam. A Semestervorlage may carry both types; the type filter
+     keeps exam items matching only exam blueprints despite the shared Unitcode.
+   - *Option (only when a Semestervorlage is selected)*: "An Vorlagen-Zeiten platzieren
+     (Auto-Match per Unit/Name)" — matched items are created AT the plan times, the rest
+     goes to the Parkstreifen. The whole assignment matrix collapses into
+     create-then-correct-in-the-calendar.
+   - *Per-row ACTION proposal* (2026-08-10 — handles weeks already built by hand): each
+     open item is matched against the Kurs's EXISTING unlinked reservations in the
+     semester window (D10 cascade: type filter → Unitcode if the manual event carries one →
+     fuzzy name). Match → row tag "→ verknüpft mit ‚<event · slot>'" (bind: classification
+     merge + id stamp, NO duplicate); no match → tag "→ neu" (create per template/plan/
+     Parkstreifen). Tag click overrides (pick another candidate / force new). Resolves
+     OQ-v3-2: bind-to-existing IS in scope, but as a per-row proposal inside the ONE
+     dialog — needs `bindStagedEvent` from the mutations contract (create-only can ship
+     first).
+   - Footer states the split honestly: "13 übernehmen · 5 verknüpfen · 8 neu".
+   - *Overview tabs* (2026-08-11 — brings the original cockpit concepts back per Kurs):
+     the dialog carries three tabs — **Offen** (the sync content above), **Verknüpft**
+     (already-reconciled entries with their bound slot + actions öffnen/aufheben),
+     **Auffällig** (Geändert — ~~+ Verwaist~~ removed 2026-08-11, with übernehmen/öffnen). One entry point
+     answers every per-Kurs Dualis question. The GLOBAL overview across Kurse stays the
+     (already built) cockpit status lists; placed events additionally carry their ✓ marker
+     in the calendar blocks.
+4. **Parkstreifen** ("Noch nicht platziert") above the week grid: the created-but-unplaced
+   reservations as compact blocks; dragging one into the grid is the NORMAL move gesture.
+   Strip disappears when empty.
+
+Nothing else. ~~The cockpit shrinks to an admin status page~~ **REMOVED 2026-08-11 (user
+decision, relayed via halde session): the global overview panel (`/app/import`, the
+cockpit) is torn down entirely** — "auf Dualis-Sync-Ebene bleiben". Rationale: the panel
+was a number, not a task list (no trigger, work happens at the Kurs); anyone wanting such
+a display builds it per template editor over GraphQL (PRD 074). In the same sweep the
+worklist read went **Kurs-scoped**: `externalEventWorklist(allocatableIds: [ID!]!,
+scopeKey: String)` — no "everything I may book" mode anymore; the SPA passes the selected
+resource-chip ids and reloads on chip change. ~~Verwaist is parked as a future topic~~
+**Verwaist REMOVED from the whole Halde concept (2026-08-11, user decision):** rows leave
+the Dualis export routinely when they are no longer current (export window covers only the
+running semesters) — "gone from the source" is the normal end of life, not a drift signal,
+so a Verwaist state is noise and the removal simplifies staging. SPA side done same day
+(no vanished bucket/tab labels, `vanishedSince`/`vanishedCount` dropped, ORPHANED wire
+rows filtered out until the server drops the state); server/staging removal (ORPHANED
+state, `counts.orphaned`, `vanishedSince` in schema + assembler, dhbwrapla staging) is
+with the halde session. Consequence: bindings whose source vanished are simply no longer
+listed — deliberate, there is no reliable "deleted in Dualis" signal to distinguish from
+"outside the export window".
+
+**Verknüpft redesign (2026-08-11, same day, user go):** the Halde is now by definition
+volatile ("not in the snapshot ⇒ row deleted"), so it is the wrong source for anything
+durable. New split — **Halde = what Dualis currently says** (Offen + geändert markers),
+**reservations = what is durably bound** (the `externalid` annotation):
+- New generic GraphQL field `Reservation.externalId` (rapla-app StructuralTypeFetchers,
+  reads the `externalid` annotation; §12-safe: hangs off the already canRead-filtered
+  `reservations(filter:)` query; tier-3 test `reservationExternalIdExposesTheAnnotation`).
+- SPA Verknüpft tab, 🔗 chip markers and the badge count come from a
+  `reservations(filter: {from,to,allocatableIdsIn})` query filtered to `externalId != null`
+  (`ImportWorklistService.linked`). Semester display derives from the reservation's
+  `firstDate` — fixes the wrong-semester display the Halde `scopeKey` produced.
+- **"nicht mehr im Export"** is a client-side JOIN, not a state: stamped reservation with
+  no Halde row carrying its `boundReservationId`. Join safety: the worklist loads
+  **unscoped** (no `scopeKey` — both axes must cover the same set); the Offen tab narrows
+  to the visible semester client-side (`openItemsOfGroups(…, semester)`).
+- **Auffällig tab removed** — after the Verwaist removal it only carried "geändert",
+  which the Verknüpft tab now shows inline (warning icon + "geändert seit").
+  The bulk **"n ‚geändert' verwerfen" button was removed too (user, 2026-08-12)**:
+  its count mixed two semester notions (Halde `scopeKey` vs reservation `firstDate`)
+  and the marker has no attached action yet ("Änderungen übernehmen" doesn't exist) —
+  dismissing was bookkeeping without benefit. Server mutation `dismissStagedChanges`
+  stays (halde's); re-wire per-row when the übernehmen flow lands.
+- **Sync button always visible when a source is deployed** (user: "ansonsten 0/0
+  anzeigen"): visibility = metadata `sourceName` non-empty; empty selection/semester
+  shows `0/0`; a failed load shows `!` (never masquerades as 0/0 — lesson from the
+  silent stale-bundle incident the same evening). Vanilla deployments (no source) keep
+  no button.
+- **Binding discriminator sharpened (2026-08-12, holidays bug):** the bare `externalid`
+  annotation is NOT proof of a source binding — the iCal import stamps UIDs (holidays)
+  without sync entities, and the operator's `tryResolveExternalId` index is annotation-fed,
+  so it can't discriminate either. The truth is the `ExternalSyncEntity` row of the
+  deployment's system id: new SPI default `ExternalEventImportService.getExternalSystemId()`
+  (dhbw → "DUALIS") + generic query `externalEventLinkedReservationIds(reservationIds)`
+  (§12 silent-drop, tier-3-tested incl. the annotation-only negative case); the SPA chains
+  its linked candidates through it.
+- SPA-dead code removed in the same sweep: `createFromStagedEvents` service method (the
+  editor-flow replaced bulk create; the SERVER mutation still exists — removal to be
+  decided), `available` signal, `WorklistStand`/`Worklist.sourceName`, `itemsOfBucket`/
+  `StatusBucket` (→ `changedItems`), `ALL_SCOPES`.
+
+**Data model "geparkt" — SUPERSEDED 2026-08-11 (user decisions, same day):** first the
+marker event was rejected in favor of a deployment "parked API"; then the user relaxed the
+requirements further — parked state may be **invisible to other users** and should NOT
+persist across reloads (a persistent store would leak stale state into later sync runs).
+Result: **client-only, in-memory** — `ParkedEventsService` (signal, session-lifetime)
+collects the created ids; the week grid renders those rows in a Parkstreifen strip above
+the grid (IMPLEMENTED 2026-08-11: strip chips drive the NORMAL armMove machinery, drop =
+scoped move, first placement or undo un-parks; F5 simply drops the strip and the events
+sit movable at Mo 08:00). No deployment parked API needed — removed from the contract.
+
+**Parken/Platzieren — FINAL model (user rules 2026-08-11, third iteration):**
+1. **Parken speichert NICHTS.** Übernehmen im Sync-Dialog legt keine Reservierungen an —
+   es füllt nur den client-seitigen Parkstreifen (`ParkedEventsService`: sourceId + Name +
+   aufgelöste Template-Ids). Kein Undo-Eintrag (es gibt nichts zurückzunehmen); Reload
+   oder der Abbrechen-Knopf im Streifen verwerfen folgenlos, die Halde-Items bleiben OPEN.
+2. **STANDING RULE — ein Drop speichert NIE direkt, und der Review-Schritt ist der
+   VOLLE Reservierungseditor** (zweimal verletzt + einmal eigenmächtig durch einen
+   Minimal-Dialog ersetzt am 2026-08-11 — alle drei vom User zurückgewiesen; ein
+   Ersatz-Design braucht IMMER Rückfrage). Konkret: Drop auf freien Slot → die
+   Vorlage wird CLIENTSEITIG instanziiert (`TemplateInstantiationService`, gleiche
+   Mechanik wie der „Neu"-Picker; Zeiten vom Slot via `PlacementTarget`, Kurs-
+   Allocations via `draftWithGroups`) → der Event-Editor öffnet mit dem
+   UNGESPEICHERTEN Entwurf → Speichern legt normal an (`createReservation`,
+   D3 id-first: die Draft-Id ist die Reservierungs-Id) → danach ruft die SPA
+   `bindStagedEvent(sourceItemId, draftId)` — Stempel + Dualis-Felder kommen aufs
+   frisch gespeicherte Event. Abbrechen im Editor lässt den Chip geparkt. Ohne
+   aufgelöste Vorlage: Hinweis-Snackbar, Item bleibt geparkt. Einschränkung: Dualis-
+   Personen-Zuordnungen kommen erst mit dem späteren Attribut-Sync, nicht beim Bind.
+3. Drop auf einen BESTEHENDEN Kalender-Chip → Verknüpfen-Bestätigung (`bindStagedEvent`,
+   Felder-Überschreib-Warnung); kein Duplikat zu löschen, da nichts vorab angelegt war.
+4. Kalender-Chips verknüpfter Events tragen einen 🔗-Marker (`linkedIds` aus
+   `boundReservationId`); der manuelle Pick-Modus („verknüpfen…" an der Offen-Zeile →
+   Banner → Chip-Klick) und der Server-Vorschlag (`bindCandidates`, nie Auto-Match)
+   ergänzen die Drag-Geste.
+
+**Server needs (single new building block):** batch create from staged items —
+`createFromStagedItems(sourceItemIds, templateId, placement)` returning the created
+reservation ids (server does mapping + template copy + external-id stamp in ONE
+transaction; placement = PLAN_TIMES | PARKED). Everything else (worklist read, states,
+reconciliation) exists. The v2 gesture mutations (bind/ignore/…) stay in the contract for
+the status lists, but are NOT needed for the v3 create path.
+
+**Matching in v3:** only the plan option uses it (unit exact > fuzzy name, type-filtered —
+D10 cascade unchanged); wrong matches are corrected by MOVING the created event, not by a
+matrix. I1 memory/I2 write-back plug in behind the option later without UI change.
+
+**Decision criteria v2 vs v3 (to be evaluated with real use):** number of UI concepts on
+the create path (v3: 4 vs v2: 7+), taps from "Kurs offen" to "alle angelegt" (v3: 3),
+does placement-by-drag beat chip-drag in practice, does the Parkstreifen model (a/b) hold
+up against conflicts/exports.
+
+**Open questions:** ~~OQ-v3-1 parked data model~~ RESOLVED 2026-08-11 → deployment API,
+no marker event (see above); ~~OQ-v3-2 bind-to-existing~~ RESOLVED → per-row proposal in
+the one dialog; OQ-v3-3 where exactly the Kurs counter renders in the resource list rows.
+
+### Staging mutations — consumer contract (GUI requirements, 2026-08-10)
+
+What the v2 gestures need from the generic staging engine (rapla GraphQL, same genericity
+rule as the read API; every operation authorizes via BOOKING RIGHT on the item's group
+allocatable, unknown ≡ forbidden):
+
+| Operation | Semantics | GUI gesture it serves |
+|---|---|---|
+| `bindStagedEvent(sourceItemId, reservationId)` | Merge the staged item's mapped classification into the EXISTING reservation (the PRD 068 `syncClassification` merge — editor-undoable) and stamp its external id. Fails when the reservation already carries a different external id of this system. → state LINKED | chip → existing block ("verknüpfen") |
+| `unbindStagedEvent(sourceItemId)` | Remove the external-id stamp from the bound reservation (reservation itself stays untouched). → state OPEN | Erledigt list "Verknüpfung aufheben" (correction case) |
+| `applyStagedChanges(sourceItemId)` | Re-run the classification merge into the bound reservation, clear `changedSince`. → CHANGED → LINKED | "Änderungen übernehmen" badge action |
+| `ignoreStagedEvent(sourceItemId)` / `restoreStagedEvent(sourceItemId)` | Set/clear `ignoredSince`. → IGNORED ↔ OPEN | tray/list "Ignorieren" + Ignoriert list |
+
+**Deliberately NOT a mutation — the create path:** chip → free slot builds a CLIENT draft in
+the event sheet (v2 model); saving goes through the normal reservation save, and the
+deployment's existing dispatch processor stamps the external id when the saved
+classification carries the source id (dhbw: `DualisImportEventsPrePostDispatchProcessor`).
+What the GUI needs for that is READ data, not a mutation:
+
+- `stagedEventDraftData(sourceItemId)`: the deployment-mapped classification (typeKey +
+  values, the same mapping `createReservations` does server-side today), the resolved
+  Kurs/Person allocatable ids, and (later, matching phase) the suggested basis template /
+  blueprint. Without it the chip drop can only prefill the display name.
+- Read-API addition: `ExternalEventItem.boundReservationId` — needed for "Veranstaltung
+  öffnen" in the Erledigt/Verwaist lists and as the bind-target sanity check.
+- Read-API addition (2026-08-11, user idea): **template-matching RULES live deployment-side**
+  — DONE 2026-08-11: SPI `ExternalEventTemplateResolver` (rapla-core) + GraphQL query
+  `externalEventDefaultTemplates(groupIds)` (rapla-app, null when no deployment resolver) +
+  dhbwrapla `DualisDefaultTemplateResolver` (§12 canRead-filtered); the SPA interim heuristic
+  is DELETED — the dialog only displays the server answer. Rules derived from the real
+  template corpus (1474 templates, 281 LV / 255 Prüfung): dominant `<Typ> <Standort>/<Fak>/<Fach>`
+  with multi-letter faculties at CAS (`CAS/TM/INF`) → exact cascade tries EVERY split of the
+  Kurs code (corpus decides the segmentation), separator variants (`FN-T-INF`) normalized,
+  then LCS fuzzy with type-prefix bonus. Known unresolved corpus shapes (need stored
+  per-deployment mapping rules, the planned extension): bare-code templates (`Lehrveranstaltung AG`),
+  color variants (`blau MOS/W/HD`), multi-word sites (`DHBW virtuell/T/INFO`), `Extern (DAA)`.
+  Rules can then also feed the Semesterplan ranking (I1 memory's natural home).
+- Read-API addition (2026-08-11, user decision): **semester/scope resolution is a
+  DEPLOYMENT heuristic, not a client rule** — semester boundaries differ per Studiengang.
+  Signature (locked 2026-08-11): **input = the selected date + the selected resource
+  (allocatable) ids; output = ONE semester (scopeKey)** — e.g.
+  `resolveScope(date, allocatableIds): String` on the deployment SPI in dhbwrapla,
+  initially a simple heuristic, exchangeable later (per-Studiengang semester calendars)
+  without any SPA change. The SPA calls it with the visible week's date + the current
+  selection and feeds the returned semester into the worklist query. The SPA's own
+  `currentSemester()` date rule is an INTERIM until this lands; the explicit scopeKey
+  argument stays for the cockpit's manual semester choice.
+
+Undo model: bind/apply are editor-undoable via the classification-merge command;
+unbind/ignore/restore are their own inverses — the GUI offers snackbar-undo by calling the
+inverse operation, no server-side undo stack required.
+
 ### Import ideas backlog (brainstorm 2026-07-30, user-rated)
 
 **Promising (user-confirmed):**
@@ -225,8 +493,9 @@ retention/cleanup per semester.
   template reservation (needs `canModify` on the template) — the template maintains itself.
 - **I11 — Reconciliation buckets, incl. AFTER-the-fact matching:** unassigned Dualis events must
   be matchable later against EXISTING reservations (bind + dualisId stamp via the
-  `syncClassification` path), not only at create time. Plus the today-missing orphan bucket
-  (imported but gone from Dualis → cancellation candidate).
+  `syncClassification` path), not only at create time. ~~Plus the today-missing orphan bucket
+  (imported but gone from Dualis → cancellation candidate)~~ — orphan/Verwaist rejected
+  2026-08-11 (export-window noise, see decision above).
 - **I12 — Push (scheduled diff → notification with deep link):** promising, but requires a
   process that STARTS from events, not from Kurs selection — see the Abgleich workflow below.
 
@@ -261,7 +530,7 @@ server-computed paths; no group label/count reflects an invisible template.
 ### Out of scope
 - Grouping steering config (separator convention, `maxPerNode`/`minGroupSize` knobs, strategy
   switch, category attribute on `rapla:template`) — the expansion stage, see OQ1.
-- Multi-reservation template instantiation from the PICKER (batch create — PRD 099 D6 keeps it
+- Multi-reservation template instantiation from the PICKER (batch create — PRD 107 D6 keeps it
   deferred); the import-side multi-reservation consumer is in scope via
   [§ Templates as import blueprints](#templates-as-import-blueprints-external-event-import) / Phase 6.
 - Swing adoption of the server-computed paths.
@@ -399,7 +668,7 @@ stays click-free (type → seeded draft directly). A template picked after a dra
 onto the dragged slot.
 
 **D8 — Instantiation reuses the Reservation read path, no prototype wrapper** (deviation from
-PRD 099 D6's letter, same spirit): `reservationsFromTemplate` returns plain `Reservation`s;
+PRD 107 D6's letter, same spirit): `reservationsFromTemplate` returns plain `Reservation`s;
 the client builds the fresh draft (re-key, shift, `persisted=false`). Sanitization via
 selection-set + client draft construction — no server-side strip step, because the caller may
 read these reservations anyway (§12 via template canRead). Target cascade per Swing:

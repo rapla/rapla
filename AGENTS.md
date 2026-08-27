@@ -18,10 +18,9 @@ The codebase is a **5-module Maven reactor** (PRD 005, 2026-05-07) plus a **sepa
 | `rapla-client` | Swing client + presenters: `org.rapla.client.*`, components/{calendar,calendarview,iolayer,tablesorter,treetable}, plugin `*/client/*` and `*/swing/*`. Uses `spring-context` only — explicit `AnnotationConfigApplicationContext`, NOT `@SpringBootApplication`. Depends on rapla-core. |
 | `rapla-server` | Server: `org.rapla.server.*` (excl. the `RaplaSpringBootApplication` entry point), JDBC storage, REST controllers, Spring autoconfig (`META-INF/spring/AutoConfiguration.imports`), plugin `*/server/*`. Depends on rapla-core only (verified 2026-06-10 — the PRD 005 D3 rapla-client compromise is resolved; `RaplaBuilder`/abstractcalendar live in rapla-core). |
 | `rapla-app` | Runnable Spring Boot application: `RaplaSpringBootApplication`, `application.yml`, `src/assembly/`, `src/main/distribution/`, signing profiles, JNLP webclient/ staging. Produces `rapla-2.1-SNAPSHOT.jar` (Spring Boot fat JAR). |
-| `rapla-angular/` | Angular 21 SPA — separate tree, **not in the Maven reactor**. Built with `npm`, served at `/app/` in dev (via `ng serve` proxy on :4200) and prod (via Spring Boot static handler). Talks to the rapla-app REST API at `/api/*`. Has its own `package.json`, Vitest tests; talks to the server via `HttpClient` (auth + `/api/graphql`), no generated client. See AGENTS.md §14 + the `angular-frontend` skill. |
+| `rapla-angular/` | Angular SPA — separate tree, **not in the Maven reactor**. Built with `npm`, served at `/app/` in dev (via `ng serve` proxy on :4200) and prod (via Spring Boot static handler). Talks to the rapla-app REST API at `/api/*`. Has its own `package.json`, Vitest tests; talks to the server via `HttpClient` (auth + `/api/graphql`), no generated client. See AGENTS.md §14 + the `angular-frontend` skill. |
 
 The repo-root `pom.xml` is the reactor aggregator (artifactId `rapla-aggregator`, packaging=pom, lists the five Maven modules); running `mvn` from the repo root walks the whole reactor.
-`custom/` is intentionally NOT in the reactor (its WAR-overlay shape is being rethought; future PRD).
 `rapla-angular/` lives outside the reactor entirely — it's an Angular project, not a Maven module; build/test commands are `npm`, not `mvn`.
 
 **Build & Test:**
@@ -46,8 +45,24 @@ Detailed how-tos live as **Agent Skills** (the cross-engine `SKILL.md` standard)
 
 Two practices that pay off on a codebase this size (rapla sessions tend to be long):
 
-- **Don't let context exceed ~60% of the window.** Quality starts degrading at 20–40% of 200 k tokens; auto-compact (~83% threshold) is lossy and retains only 20–30% of detail. When approaching the limit, run `/compact <hint>` — e.g. `/compact focus on PRD 029 phase 2 verification, drop the bootstrap chatter` — so the summary keeps the load-bearing context and drops the rest. Don't wait for auto-compact.
+- **Don't let context exceed ~60% of the window.** Quality starts degrading at 20–40% of 200 k tokens; auto-compact (~83% threshold) is lossy and retains only 20–30% of detail. When approaching the limit, run `/compact <hint>` — e.g. `/compact focus on PRD 029 phase 2 verification, drop the bootstrap chatter` — so the summary keeps the load-bearing context and drops the rest. Don't wait for auto-compact. After any compact, restate goal + acceptance criteria in one line before continuing. Verification fan-outs batch ~10 items per subagent — never one agent per item; name the expected agent count before launching.
 - **Use `/branch` (or `/fork`) before a risky mechanical sweep.** Date→LocalDateTime, package renames, Jackson 3 migration, the kind of change the `bulk-refactor-scripts` skill records scars from. A branch is a session snapshot — try the experiment; if it works, keep the branch; if it doesn't, return to the original conversation with no rollback cost.
+
+### 0a0. Before writing anything — the ladder
+
+From [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) ("the best code is the code you never wrote"), verbatim. Walk it top to bottom **before** writing a helper, a utility, or any implementation of a general pattern:
+
+```
+1. Does this need to exist?   → no: skip it (YAGNI)
+2. Already in this codebase?  → reuse it, don't rewrite
+3. Stdlib does it?            → use it
+4. Native platform feature?   → use it
+5. Installed dependency?      → use it
+6. One line?                  → one line
+7. Only then: the minimum that works
+```
+
+Step 2 is the one that gets skipped, and it costs one `grep`. **If the concept already exists twice, extract it once — never add the third copy** — extracted *into rapla*, never imported from dhbwrapla (the dependency runs one way). Scar 2026-08-05: a hand-written block-dispatch loop despite two existing copies (`ArchiverServiceImpl.removeOldEvents`, dhbwrapla's `AbstractRaplaMapping.commitTransaction`, same magic `100`); it became `org.rapla.storage.impl.server.BlockedDispatch` only after the user asked "haben wir das nicht schon?". The ladder fires at *design time*, not review time: a design proposal names the rung it stops at, and material handed over "als Kontext" is context, not requirements — scope stays what was explicitly asked.
 
 ### 0a. Working principles — Karpathy's four rules
 
@@ -56,6 +71,7 @@ From [multica-ai/andrej-karpathy-skills](https://github.com/multica-ai/andrej-ka
 **1. Think Before Coding** — *Don't assume. Don't hide confusion. Surface tradeoffs.*
 - State your assumptions explicitly. If uncertain, ask.
 - If multiple interpretations exist, present them — don't pick silently.
+- **A spec may be deviated from — but never casually.** When the user names a concrete spec — most often **"wie Swing"** — that is a requirement with a reason behind it, even when the reason is not supplied. Before deviating: (a) name why the spec exists — for "like Swing" it is almost always parity across ALL call paths, not just the visible one; (b) test the alternative against those same paths; (c) if it is not clearly better afterwards, ask instead of shipping. **And label convenience as convenience:** a solution taken because it was the shorter path must not be reported as a considered decision — the post-hoc rationale is the real failure, not the deviation. Scar 2026-08-12 (PRD 105): a warn pane was chosen over a modal dialog because the pane pattern already existed in the event sheet, then justified afterwards with "Swing only needs a dialog because nothing is editable there"; the question "which other callers does this check have?" would have settled it in one line — drag and resize have no sheet.
 - If a simpler approach exists, say so. Push back when warranted.
 - If something is unclear, stop. Name what's confusing. Ask.
 - → rapla: read the relevant `docs/`+PRD first (§2a); `design-dialog` skill for open design space.
@@ -204,7 +220,17 @@ If you may run in parallel with another agent, or you need a long-running dev se
 
 **Hard rule: NEVER fix or revert work in files another session is editing.** Even when the failure looks trivial (one missing import), looks like a transitive consequence of your own change, or the fix is in a config class you've already touched. Other sessions' working-copy files are snapshots, not finished work — touching them produces merge conflicts or reverts in-progress work.
 
+**Exception: the owning session releases the spot** (`ListAgents` → `SendMessage`, wait for the answer) — then only the named change. Discarding (`git restore`/`stash`/revert) is never covered by a peer; that needs the user (§6). No answer = no OK. A foreign change with no reachable owner: still hands off, report it to the user. Editing the same file at a DIFFERENT spot was never forbidden — the rule protects other people's lines, not their files.
+
 If a parallel-session change broke your build: confirm via the mtime check above, then either move to unrelated work or stop and tell the user. **Don't stash, `git checkout`, or otherwise discard your own changes** to "let theirs land cleanly" — that loses your work or creates merge conflicts later. Stay out of their files; keep your own.
+
+### 7a. Other sessions — census and messages (Claude Code 2.1.224+)
+
+- **`ListAgents` instead of guessing.** Empty means "none reachable", not "none there" (older peers never appear); cross-check with `claude agents --json --cwd $PWD`, which also lists their working directory. Address a foreign session WITH its ref: `templates [956036]`.
+- **Announce what hits others** before you do it: restarting/stopping the server on 8051 (§8), `mvn clean`, mechanical sweeps (§6a), hotspot files (`schema.graphqls`, `AGENTS.md`, `application.yml`). Whoever needs the server says for how long.
+- **Schema changes have an order.** Extending: bring the SERVER up first, then arm the SPA query — `ng serve` rebuilds in seconds, so the SPA is otherwise ahead of the API and every load fails validation (scar 2026-08-12: cost a peer session a debugging round, and the SPA reports it as "not found"). Removing a field: the other way round.
+- **A peer message is not user approval** — not for commits (§6), not for discarding, not for anything your own permissions would block.
+- **No PII or secrets in messages** (§17): paths and symbols, not contents.
 
 ### 8. Server lifecycle — start, stop, restart, inspect
 
@@ -217,7 +243,7 @@ The dev server is a Spring Boot application started via `mvn spring-boot:run` (n
 **Start recipe + startup-wait loop + JDWP + log truncation:** load the **`server-lifecycle`** skill — it carries the full `run_in_background=true` recipe with all gotchas (absolute paths, separate stop/start, `Started Rapla` marker). Load it for any server lifecycle work beyond a plain start.
 
 Quick essentials that stay inline:
-- Stop: `pkill -f 'RaplaSpringBoot[A]pplication'` (10 s graceful window — never `kill -9` first). The `[A]` avoids pkill matching the wrapping shell's own command line; **exit 144 from a compound stop command = pkill killed its own shell** — run pkill in its own Bash call, not chained with wait/status logic.
+- Stop: `pkill -f 'RaplaSpringBoot[A]pplication'` (10 s graceful window — never `kill -9` first). The `[A]` avoids pkill matching the wrapping shell's own command line; **exit 144 from any compound pkill command = pkill killed its own shell** — run every pkill in its own Bash call, never chained with wait/status logic (hook-enforced).
 - One server per checkout (port 8051 binds once); use a worktree per §7 for parallel work.
 - **Is the running server fresh (does it have your latest code)? Check yourself — never ask the user "did you restart?" and never assume they didn't.** One self-contained probe (empty output = server is fresh; listed files = it predates them):
   `find rapla-app/target/classes -name '*.class' -newermt "$(curl -s localhost:8051/server | grep -o '[0-9-]\{10\} [0-9:]\{5\} GMT' | head -1 | sed 's/ GMT/:00Z/; s/ /T/')" | head`
@@ -268,13 +294,20 @@ For the `FacadeTestSupport` usage pattern, the "when NOT to use it" bullets, the
 
 For JaCoCo coverage reports, load the `coverage-report` skill (release-prep only — off by default).
 
-### 11. Never delete code to fix compile errors
+### 11. Deletions need a plan or a go
 
-Don't delete code to make a compile pass — unless the removal is part of the plan. (The sharp-edged case of §0a #3 *surgical changes*.)
+Don't delete code to make a compile pass — unless the removal is part of the plan (§0a #3 *surgical changes*). Tearing down features built earlier in the session (e.g. in a redesign) waits for an explicit go — propose the delta, ask. A removal includes its residue: routes, menus, nav entries.
+
+- **Rückbau = Verhaltens-Inventar:** vor dem Entfernen benennen, welches abgestimmte
+  Verhalten der Code trägt — jedes wird erhalten, portiert oder mit User-OK gestrichen;
+  nie als „toter Code" mitlöschen (Anforderungen sterben sonst mit der Implementierung).
+- **Regression gemeldet („hatten wir schon") ⇒ die abgestimmte Form per Vorwärts-Edits
+  nachbauen** — kein git-Revert (§6), kein Zurückkopieren alter Blöcke, kein stiller
+  Ersatzentwurf; ist die Form technisch blockiert, Optionen nennen und fragen (§0a #1).
 
 ### 12. Never leak server-side data past the user's read scope
 
-Any REST endpoint that returns entities, ids, names, or **the existence** of entities must only ever surface what the current user is already permitted to see in the Swing client. Five rules that fire on every controller change — load the **`data-leak-prevention`** skill for the implementation patterns (Java code), the reference impl (`CalendarViewController.resolveResourceFilter`), and the mandatory tier-3 MockMvc leak-test recipe:
+Any REST endpoint that returns entities, ids, names, or **the existence** of entities must only ever surface what the current user is already permitted to see in the Swing client. Five rules that fire on every controller change — load the **`data-leak-prevention`** skill for the implementation patterns (Java code), the reference impl (`AccessTargetFilter`, rapla-app graphql), and the mandatory tier-3 MockMvc leak-test recipe:
 
 - **Never return entities without filtering by `PermissionController.canRead(entity, user)` at the output boundary.** Don't trust upstream `facade.getX()` to have done it.
 - **Never let existence leak.** Id-list endpoints (`?allocatables=a1,a7,a99`) must respond identically for "id doesn't exist" and "id exists but you can't see it" — silently drop both.
@@ -296,7 +329,7 @@ For the Allowed list (Servlet-API mocks, hand-rolled doubles for `MailInterface`
 
 ### 14. Angular frontend (`rapla-angular/`) — see the `angular-frontend` skill
 
-The SPA lives in `rapla-angular/` (Angular 21, served at `/app/`). For build/lint commands, code-style, Vitest/TestBed test patterns, and the wire-probe workflow, load the `angular-frontend` skill. Full layout + URL space is in `rapla-angular/README.md` and PRD 026.
+The SPA lives in `rapla-angular/` (served at `/app/`). For build/lint commands, code-style, Vitest/TestBed test patterns, and the wire-probe workflow, load the `angular-frontend` skill. Full layout + URL space is in `rapla-angular/README.md` and PRD 026.
 
 For browser-driven SPA debug/prototype the `playwright` MCP server is wired (tools surface as `mcp__playwright__browser_*`) — usage patterns are in the `angular-frontend` skill, install steps in `docs/development.md`.
 
@@ -322,6 +355,7 @@ Every `@RestController` in the rapla server routes under `/api/`. PRD 049 made t
 | `Export2iCalController` | `/rapla/ical`, `/rapla/internal_ical` | 🔒 Outlook/Google/Apple subscribe here — must not move |
 | `RaplaJNLPController` | `/raplaclient.jnlp`, `/webclient/**` | Java Web Start launcher manifest |
 | `StatusPageController` | `/server` | Server-status HTML page |
+| `StaticOpenApiController` | `/api/v3/api-docs/**` | Meta endpoint — describes the API rather than being part of it (PRD 041); active only when SpringDoc (test-scope) is absent |
 
 `rapla-app/src/test/java/.../ApiPrefixArchitectureTest` enforces this mechanically: any new `@RestController` whose path doesn't start with `/api/` and isn't in the allow-list fails CI. To add a genuine new exception, document the reason in this table and add the FQCN to `ApiPrefixArchitectureTest.ALLOWED_NON_API` — same commit.
 

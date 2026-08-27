@@ -130,9 +130,10 @@
     }
 
     /**
-     * "filter.allocatableIdsIn=r1&filter.allocatableIdsIn=r2" → { "filter.allocatableIdsIn": ["r1","r2"] }
-     * Values stay grouped per key so the server's RequestVariables sees the repeats a real URL would
-     * carry — the dot-nesting is the server's job, not ours.
+     * "resource=r1&resource=r2" → { "resource": ["r1","r2"] } — public @param names only, exactly
+     * what the document URL accepts (a private dotted path like filter.allocatableIdsIn would 400
+     * at the gate). Values stay grouped per key so the server sees the repeats a real URL carries;
+     * name→into translation and dot-nesting are the server's job, not ours.
      */
     function parseVariables(text) {
         const out = {};
@@ -295,7 +296,10 @@
     }
 
     async function loadViews() {
-        const data = await gql('{ listViews { name title valid } }');
+        // includeUnlisted — like the GraphiQL load dialog, this is an AUTHORING surface:
+        // a document is written FOR a @view(listed: false) view (a report, a parked view),
+        // so it must be selectable here. End-user choosers keep filtering.
+        const data = await gql('{ listViews(includeUnlisted: true) { name title valid } }');
         el('view').innerHTML = '';
         for (const v of data.listViews.filter(v => v.valid)) {
             el('view').append(new Option(v.title ? v.title + ' (' + v.name + ')' : v.name, v.name));

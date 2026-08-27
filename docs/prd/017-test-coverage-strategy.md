@@ -66,7 +66,7 @@ Phase 4 ✅ done. Phase 5 began same day with `DbOperatorBootTest` (above). Rema
 
 Reference numbers (Linux WSL2, May 2026): build 1000 reservations ~130 ms; bulk `storeObjects(1000)` ~7-13 s; `getConflicts()` returning 16,259 conflicts ~280-700 ms; `getConflictsForReservation(pivot)` ~10-15 ms; incremental store ~1.3-3.6 s; `overlapsAppointment(daily-365, weekly-52)` ~30-60 µs/call.
 
-**Docs:** [`docs/conflict-detection.md`](conflict-detection.md) covers algorithm (closed-open intervals, gcd fast-path, sweep-line), the Nth-weekday MONTHLY semantic, perf-test fixture, sanity-budgets, live-output flag.
+**Docs:** [`docs/conflict-detection.md`](../conflict-detection.md) covers algorithm (closed-open intervals, gcd fast-path, sweep-line), the Nth-weekday MONTHLY semantic, perf-test fixture, sanity-budgets, live-output flag.
 
 **Real bug (#3):** `LocalAbstractCachableOperator.storeAndRemoveAsync(...)` is an empty stub ([source](../../rapla-server/src/main/java/org/rapla/storage/impl/server/LocalAbstractCachableOperator.java#L214)) — `scheduler.run(() -> { })`. So `facade.dispatch(Collection, Collection)` silently no-ops on file-operator backend. ConflictPerformanceTest's first run dispatched 1000 reservations in 54 ms with 0 persisted; switched to `facade.storeObjects(T[])` (sync works). **Affected callers:** anyone calling `facade.dispatch(...)` on a file-backed operator. **Workaround:** sync APIs work.
 

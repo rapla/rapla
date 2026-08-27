@@ -352,7 +352,7 @@ Planer druckt eine Terminliste eines Zeitfensters, gruppiert nach Tag (oder Ress
 Campus-Admin erzeugt einen Auslastungsbericht: Stunden (wall-clock oder UE) pro Raum pro ISO-Woche/Monat über ein Semester, optional mit Raumgröße als Spalte ohne Client-Join. Als druckbares Dokument statt GraphiQL-Rohdaten.
 
 - **Tier:** gruppiert (1D) · **Auth:** Session · **mehrere Dokumente pro View:** ja
-- **Datenquelle:** appointmentBlockStats(filter, groupBy:[date/allocatables/expr], aggregate:[DURATION_MINUTES×SUM,…]) — [PRD 079](../prd/079-graphql-grouped-aggregates.md) implementiert (v1 2026-06-21) inkl. voller AllocatableFilter auf der Raum-Dimension; StatKey.entity ([PRD 080](../prd/080-typed-entity-stats.md)) macht Raumfelder wie AnzahlPlaetzeFest selektierbar
+- **Datenquelle:** appointmentBlockStats(filter, groupBy:[date/allocatables/expr], aggregate:[DURATION_MINUTES×SUM,…]) — [PRD 079](../prd/079-graphql-grouped-aggregates.md) implementiert (v1 2026-06-21) inkl. voller AllocatableFilter auf der Raum-Dimension; StatKey.entity ([PRD 080](../prd/done/080-typed-entity-stats.md)) macht Raumfelder wie AnzahlPlaetzeFest selektierbar
 - **Link-Navigation:** optional: Raum-Zeile → Raum-Wochenplan-Dokument
 - **Uni-Beleg:** [PRD 079](../prd/079-graphql-grouped-aggregates.md): 'Auslastung pro Raum, Standort <Standort>' via whereRaum.Gebaeude startsWith MOS — der Uni-Deployment-Fall war die motivierende Query; GraphQL-Playbook verifiziert die Kapazitätspflege via AnzahlPlaetzeFest
 
@@ -361,7 +361,7 @@ Campus-Admin erzeugt einen Auslastungsbericht: Stunden (wall-clock oder UE) pro 
 Admin druckt ein Ressourcenverzeichnis: Räume pro Gebäude gezählt, Sitzplatzsummen, Ausstattungslisten — Entity-Statistik über die Allocatable-Population statt über Buchungen.
 
 - **Tier:** gruppiert (1D) · **Auth:** Session · **mehrere Dokumente pro View:** ja
-- **Datenquelle:** allocatableStats(filter, groupBy, aggregate) ([PRD 080](../prd/080-typed-entity-stats.md) Item 6, implementiert — 'Plätze pro Gebäude') + allocatables(filter:) für die Detailliste; kein Zeitfenster nötig
+- **Datenquelle:** allocatableStats(filter, groupBy, aggregate) ([PRD 080](../prd/done/080-typed-entity-stats.md) Item 6, implementiert — 'Plätze pro Gebäude') + allocatables(filter:) für die Detailliste; kein Zeitfenster nötig
 - **Link-Navigation:** Gebäude-Sektion → Raum-Tagesplan/Türschild-Dokumente der enthaltenen Räume (optional)
 - **Uni-Beleg:** GraphQL-Playbook Use-Case 7b 'Inventar-Report: Räume je Gebäude zählen' — als Live-Query gegen die Uni-Deployment-DB dokumentiert
 

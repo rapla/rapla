@@ -25,6 +25,10 @@ import reactor.core.publisher.Mono;
  * the variables, the interceptor injects the view's resolved window ({@code @window}
  * directive, else the render-mode default — {@link WindowResolver}) so the SPA can
  * render meaningful first-load data without knowing the right date range.
+ *
+ * <p>The view's stored {@code defaultVariables} are GraphiQL authoring EXAMPLE data
+ * (2026-08-11) and are never merged here — runtime defaults belong in the query text
+ * (GraphQL variable defaults) or the {@code @window} directive.
  */
 @Component
 public class StoredViewInterceptor implements WebGraphQlInterceptor
@@ -82,10 +86,9 @@ public class StoredViewInterceptor implements WebGraphQlInterceptor
         }
 
         String storedQuery = view.queryText();
-        String storedDefaults = view.defaultVariables();
         request.configureExecutionInput((input, builder) ->
                 builder.query(storedQuery)
-                        .variables(ViewVariables.mergeDefaults(input.getVariables(), storedDefaults, storedQuery))
+                        .variables(ViewVariables.withWindowDefaults(input.getVariables(), storedQuery))
                         .build());
         return chain.next(request);
     }

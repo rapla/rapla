@@ -52,8 +52,12 @@ export class DefaultViewRedirectComponent implements OnInit {
           views.map((v) => v.name),
         );
         if (target) {
-          // replaceUrl so the catch-all landing does not pollute browser history.
-          this.router.navigate(['/views', target], { replaceUrl: true });
+          // replaceUrl so the catch-all landing does not pollute browser history;
+          // preserve query params so deep links survive the redirect.
+          this.router.navigate(['/views', target], {
+            replaceUrl: true,
+            queryParamsHandling: 'preserve',
+          });
         } else {
           this.empty.set(true);
         }

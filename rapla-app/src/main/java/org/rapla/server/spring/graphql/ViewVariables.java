@@ -24,28 +24,17 @@ public final class ViewVariables
     private ViewVariables() {}
 
     /**
-     * Merge variable defaults: stored defaults form the base, caller-supplied vars override them,
-     * then the view's resolved window (PRD 074 §"Window and inputs directives") fills any
-     * still-missing {@code filter.from}/{@code filter.to}.
+     * SPA stored-view execution (2026-08-11): a view's stored {@code defaultVariables} are GraphiQL
+     * EXAMPLE data (the variables-pane content at save time) and are NEVER merged at runtime — an
+     * example {@code filter.allocatableIdsIn} must not scope the SPA's own queries. Runtime
+     * defaults an author actually wants belong in the query text ({@code $limit: Int = 10}) or the
+     * {@code @window} directive. This fills only a still-missing {@code filter.from}/{@code filter.to}
+     * from the view's resolved window (PRD 074 §"Window and inputs directives").
      */
-    public static Map<String, Object> mergeDefaults(Map<String, Object> callerVars, String storedDefaultsJson,
-            String queryText)
+    public static Map<String, Object> withWindowDefaults(Map<String, Object> callerVars, String queryText)
     {
-        return mergeDefaults(callerVars, storedDefaultsJson, queryText, null);
-    }
-
-    /**
-     * PRD 097 (2026-07-15) — variant with a DOCUMENT-level window override: anchors are
-     * presentation policy and live on the document; the view's {@code @window} is only the
-     * default. A non-null {@code overrideWindow} wins over the view's directive; absolute dates
-     * already present in the variables still win over both.
-     */
-    @SuppressWarnings("unchecked")
-    public static Map<String, Object> mergeDefaults(Map<String, Object> callerVars, String storedDefaultsJson,
-            String queryText, WindowResolver.Window overrideWindow)
-    {
-        return mergeLayeredDefaults(callerVars, List.of(storedDefaultsJson == null ? "" : storedDefaultsJson),
-                queryText, overrideWindow);
+        Map<String, Object> vars = callerVars == null ? new LinkedHashMap<>() : new LinkedHashMap<>(callerVars);
+        return fillWindow(vars, queryText, null, LocalDate.now());
     }
 
     /**
@@ -65,7 +54,6 @@ public final class ViewVariables
      * window anchors resolve as if today were {@code referenceDate}, which is how the shell's
      * prev/today/next links navigate an anchored window.
      */
-    @SuppressWarnings("unchecked")
     public static Map<String, Object> mergeLayeredDefaults(Map<String, Object> callerVars,
             List<String> defaultsLowToHigh, String queryText, WindowResolver.Window overrideWindow,
             LocalDate referenceDate)
@@ -76,7 +64,14 @@ public final class ViewVariables
             deepMerge(vars, parseDefaults(layer));
         }
         if (callerVars != null) deepMerge(vars, callerVars);
+        return fillWindow(vars, queryText, overrideWindow, referenceDate);
+    }
 
+    /** Fill a still-missing {@code filter.from}/{@code filter.to} from the resolved window. */
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> fillWindow(Map<String, Object> vars, String queryText,
+            WindowResolver.Window overrideWindow, LocalDate referenceDate)
+    {
         Map<String, Object> filter = vars.get("filter") instanceof Map<?, ?> m
                 ? (Map<String, Object>) m : Map.of();
         if (filter.containsKey("from") && filter.containsKey("to")) return vars;
@@ -143,6 +138,19 @@ public final class ViewVariables
         catch (Exception e)
         {
             return Map.of();
+        }
+    }
+
+    /** Serialize a variables map back to JSON (a {@code mergeLayeredDefaults} layer is a JSON string). */
+    public static String toJson(Map<String, Object> vars)
+    {
+        try
+        {
+            return MAPPER.writeValueAsString(vars);
+        }
+        catch (Exception e)
+        {
+            return "{}";
         }
     }
 

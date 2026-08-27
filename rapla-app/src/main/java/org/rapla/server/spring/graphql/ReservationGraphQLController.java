@@ -591,6 +591,7 @@ public class ReservationGraphQLController
             @Argument("filter") java.util.Map<String, Object> filter,
             @Argument("groupBy") List<AllocatableGroupKey> groupBy,
             @Argument("aggregate") List<AllocatableAggregate> aggregate,
+            @Argument("minCount") Integer minCount,
             @Argument("limit") Integer limit,
             graphql.schema.DataFetchingEnvironment env) throws RaplaException
     {
@@ -668,6 +669,10 @@ public class ReservationGraphQLController
                         acc.sum[i], acc.cnt[i], acc.min[i], acc.max[i]));
             }
             out.add(new BlockStatBucket(acc.keys, values, (int) acc.count));
+        }
+        if (minCount != null && minCount > 1)
+        {
+            out.removeIf(bk -> bk.count() < minCount);
         }
         out.sort(java.util.Comparator.comparing(bk -> bk.keys().toString()));
         if (limit != null && limit > 0 && out.size() > limit)
@@ -1261,8 +1266,9 @@ public class ReservationGraphQLController
     /** PRD 074 — one block sort key, mirrors schema input {@code BlockSort}. */
     public record BlockSort(BlockSortField field, SortDir dir) {}
 
-    /** Mirror of {@code Allocation} output type. */
-    public record AllocationDto(Allocatable allocatable, List<String> appointmentIds) {}
+    /** Mirror of {@code Allocation} output type. {@code requestStatus} null = ordinary allocation. */
+    public record AllocationDto(Allocatable allocatable, List<String> appointmentIds,
+            org.rapla.entities.domain.RequestStatus requestStatus) {}
 
     /** Mirror of {@code AppointmentBlock} output type. Carries the owning {@code reservation}
      * (block → reservation → displayName, Baustein 2) and the source {@code appointment}

@@ -210,7 +210,7 @@ Original plan for the record:
 2. **`CalendarLayoutAssembler`** — queries reservations, builds blocks via `RaplaBuilder`, runs strategy, flattens to `RenderedBlock` records.
 3. **`CalendarViewController`** — thin: params → assembler → return. Per-reservation permission filter.
 4. **`CalendarViewServiceContractTest`** (tier 1).
-5. **`CalendarViewControllerIntegrationTest`** (tier 3, MockMvc): strategy × groupBy combinations against `FacadeTestSupport`'s `testdefault.xml`.
+5. **`CalendarViewControllerIntegrationTest`** (tier 3, MockMvc): strategy × groupBy combinations against `FacadeTestSupport`'s `testdefault.xml`. *(Removed 2026-08-12 — its controller was deleted with the 2026-06-19 login rework.)*
 6. **Permission-filter integration test**: non-admin user gets only their own + readable reservations.
 
 Swing widget unchanged; deliverable is the contract + headless assembler, validated by MockMvc. Swing migration is a follow-up PRD (and may never happen).

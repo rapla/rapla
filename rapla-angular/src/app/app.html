@@ -1,14 +1,29 @@
 <app-toolbar />
 <mat-sidenav-container class="shell">
   <mat-sidenav mode="side" opened class="nav">
-    <mat-nav-list class="view-switch">
-      @for (v of views(); track v.name) {
-        <a mat-list-item [routerLink]="['/views', v.name]" routerLinkActive="active-link">
-          <mat-icon matListItemIcon>calendar_view_week</mat-icon>
-          <span matListItemTitle>{{ v.title ?? v.name }}</span>
-        </a>
-      }
-    </mat-nav-list>
+    <div class="view-switch">
+      <!-- A plain button, not matButton: the Material button hoists its icons ahead of the
+           label, which would put the chevron on the left of the view name. -->
+      <button
+        type="button"
+        class="view-trigger"
+        [matMenuTriggerFor]="viewMenu"
+        [title]="activeTitle()"
+        aria-label="Sicht wechseln"
+      >
+        <mat-icon class="view-glyph">calendar_view_week</mat-icon>
+        <span class="view-label">{{ activeTitle() }}</span>
+        <mat-icon class="view-chevron">arrow_drop_down</mat-icon>
+      </button>
+      <mat-menu #viewMenu="matMenu" class="view-menu">
+        @for (v of views(); track v.name) {
+          <a mat-menu-item [routerLink]="['/views', v.name]" routerLinkActive="active-link">
+            <mat-icon>calendar_view_week</mat-icon>
+            <span>{{ v.title ?? v.name }}</span>
+          </a>
+        }
+      </mat-menu>
+    </div>
     <app-resource-selection />
   </mat-sidenav>
   <mat-sidenav-content>

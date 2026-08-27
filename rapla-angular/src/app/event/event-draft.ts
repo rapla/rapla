@@ -37,6 +37,12 @@ export interface DraftAllocation {
   allocatableName: string;
   /** null = applies to ALL appointments (empty restriction). */
   appointmentIds: string[] | null;
+  /**
+   * PRD 091 OQ5 — server-owned pending-request marker, display only. The server derives it from
+   * the caller's permission on every write (`isRequestOnly`), so it is never sent back. Optional:
+   * an allocation a client just built locally simply has no server verdict yet.
+   */
+  requestStatus?: 'REQUESTED' | null;
 }
 
 export interface EventDraft {
@@ -102,16 +108,39 @@ export interface ScopeChip {
 }
 
 /**
- * Swing parity — the view's selected RESOURCE scope chips become allocations of
- * a new event (applies-to-all, null restriction). A `user` chip is an owner
- * filter, not an allocatable, and is skipped. Shared by every "new event from a
- * scoped view" entry point (toolbar "Neu" today, the quick-create window once
- * the month view lands) so the pre-allocation logic lives in ONE place.
+ * Swing parity — the view's selected RESOURCE scope chip becomes an allocation of a new
+ * event (applies-to-all, null restriction). A `user` chip is an owner filter, not an
+ * allocatable, and is skipped. Shared by every "new event from a scoped view" entry point
+ * so the pre-allocation logic lives in ONE place.
+ *
+ * `RaplaComponent.addAllocatables` (rapla-core) pre-allocates the MARKED allocatables —
+ * the calendar cells the user clicked — and falls back to the selection only when it is
+ * EXACTLY ONE; two or more selected resources pre-allocate nothing, because guessing
+ * which of them this event means would silently book resources the user never picked.
+ * The SPA has no marked-cell concept yet, so only the fallback applies here.
  */
 export function scopeAllocations(chips: ScopeChip[]): DraftAllocation[] {
-  return chips
-    .filter((c) => c.kind === 'resource')
-    .map((c) => ({ allocatableId: c.id, allocatableName: c.label, appointmentIds: null }));
+  const resources = chips.filter((c) => c.kind === 'resource');
+  if (resources.length !== 1) return [];
+  return resources.map((c) => ({
+    allocatableId: c.id,
+    allocatableName: c.label,
+    appointmentIds: null,
+    requestStatus: null,
+  }));
+}
+
+/**
+ * The scope resource ADDED to an existing draft — the template path. Swing runs the same
+ * `addAllocatables` rule after instantiating a template (`EditTaskPresenter` →
+ * `RaplaComponent.addAllocatables` on the copied reservations), so a template-created event
+ * lands in the scoped resource too. Never replaces what the template brought; a resource the
+ * template already allocates is not duplicated.
+ */
+export function withScopeAllocations(draft: EventDraft, chips: ScopeChip[]): EventDraft {
+  const known = new Set(draft.allocations.map((a) => a.allocatableId));
+  const added = scopeAllocations(chips).filter((a) => !known.has(a.allocatableId));
+  return added.length === 0 ? draft : { ...draft, allocations: [...draft.allocations, ...added] };
 }
 
 /** A new draft pre-seeded with the view scope's resources (see {@link scopeAllocations}). */
@@ -207,6 +236,7 @@ export interface ReservationWire {
   }[];
   allocations: {
     allocatable: { id: string; name?: string | null };
+    requestStatus?: 'REQUESTED' | null;
     appointmentIds: string[] | null;
   }[];
 }
@@ -233,6 +263,7 @@ export function fromReservation(wire: ReservationWire): EventDraft {
       allocatableId: al.allocatable.id,
       allocatableName: al.allocatable.name ?? al.allocatable.id,
       appointmentIds: al.appointmentIds ? [...al.appointmentIds] : null,
+      requestStatus: al.requestStatus ?? null,
     })),
     lastChanged: wire.lastChanged ?? null,
   };

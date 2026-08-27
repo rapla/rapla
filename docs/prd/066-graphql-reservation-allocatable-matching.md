@@ -5,7 +5,7 @@
 **Date:** 2026-05-29
 
 **Siblings:**
-- [PRD 055 (done) — Events Read API](done/055-graphql-events-read-api.md) — the `reservations(filter:)` resolver this PRD extends
+- [PRD 055 (done) — Events Read API](055-graphql-events-read-api.md) — the `reservations(filter:)` resolver this PRD extends
 - [PRD 059 (done) — Typed Where Predicates](done/059-graphql-typed-where-predicates.md) — emits the per-type `whereXxx` shapes this PRD reuses verbatim
 - [PRD 028 — Power Search](028-angular-power-search.md) — `searchText` + `matchKind` on the same filter; lands independently
 
@@ -176,7 +176,7 @@ None — design locked.
 
 ## Cross-references
 
-- [PRD 055 done — Events Read API](done/055-graphql-events-read-api.md)
+- [PRD 055 done — Events Read API](055-graphql-events-read-api.md)
 - [PRD 059 done — Typed Where Predicates](done/059-graphql-typed-where-predicates.md)
 - [PRD 028 — Power Search](028-angular-power-search.md)
 - [AGENTS.md §12](../../AGENTS.md) — `idIn` does not bypass `canRead`

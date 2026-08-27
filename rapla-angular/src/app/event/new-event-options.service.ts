@@ -47,9 +47,9 @@ export class NewEventOptionsService {
   ensureLoaded(): Observable<NewEventOptions> {
     if (!this.load$) {
       this.load$ = this.gql
-        .query<{ newEventOptions: NewEventOptions }>(
-          `query { newEventOptions { eventTypes { key name } templates { id name path } } }`,
-        )
+        .query<{
+          newEventOptions: NewEventOptions;
+        }>(`query { newEventOptions { eventTypes { key name } templates { id name path } } }`)
         .pipe(
           map((resp) => resp.data?.newEventOptions ?? EMPTY),
           tap((options) => {

@@ -67,6 +67,14 @@ async function settle(f: ComponentFixture<ViewHostComponent>): Promise<void> {
   f.detectChanges();
 }
 
+/** PRD 106 — the follow-up query (bindingKey, window change) rides the leading+
+ *  trailing throttle, so waiting past the throttle window is required to see it. */
+async function settlePastThrottle(f: ComponentFixture<ViewHostComponent>): Promise<void> {
+  await settle(f);
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  await settle(f);
+}
+
 function makeHost(viewName: string): ComponentFixture<ViewHostComponent> {
   const f = TestBed.createComponent(ViewHostComponent);
   f.componentRef.setInput('viewName', viewName);
@@ -132,7 +140,7 @@ describe('ViewHostComponent', () => {
   it('binds a resource chip into the ReservationFilter by type (allocatableMatching.idIn)', async () => {
     filter.replace({ id: 'C348', kind: 'resource', label: 'C348' });
     const f = makeHost('Wochenansicht');
-    await settle(f);
+    await settlePastThrottle(f); // binding lands on the re-query once meta arrives
     expect(captured.vars?.['filter']).toMatchObject({
       from: '2026-06-15T00:00:00',
       to: '2026-06-22T00:00:00',
@@ -196,7 +204,10 @@ describe('ViewHostComponent — stale response handling', () => {
     f.detectChanges(); // query #1 → calls[0]
     await f.whenStable();
     viewState.setWindow({ from: '2026-06-22T00:00:00', to: '2026-06-29T00:00:00' });
-    f.detectChanges(); // query #2 → calls[1]
+    f.detectChanges();
+    // PRD 106 — query #2 is the throttle's trailing emission, so wait it out.
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    f.detectChanges();
     await f.whenStable();
     expect(calls.length).toBeGreaterThanOrEqual(2);
 

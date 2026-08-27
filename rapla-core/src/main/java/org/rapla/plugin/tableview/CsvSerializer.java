@@ -46,6 +46,32 @@ public final class CsvSerializer
         return out.toString();
     }
 
+    /**
+     * Serialise already-stringified rows (PRD 097 — the document CSV export, whose cells come out
+     * of a GraphQL view result rather than a {@link TablePage}). Rows shorter than {@code headers}
+     * pad with empty cells; escaping and line endings are the ones above.
+     */
+    public static String serialize(List<String> headers, List<List<String>> rows)
+    {
+        StringBuilder out = new StringBuilder();
+        for (int i = 0; i < headers.size(); i++)
+        {
+            if (i > 0) out.append(',');
+            out.append(escape(headers.get(i)));
+        }
+        out.append("\r\n");
+        for (List<String> row : rows)
+        {
+            for (int i = 0; i < headers.size(); i++)
+            {
+                if (i > 0) out.append(',');
+                out.append(escape(i < row.size() ? row.get(i) : null));
+            }
+            out.append("\r\n");
+        }
+        return out.toString();
+    }
+
     private static void writeHeader(StringBuilder out, List<TableColumnDescriptor> columns)
     {
         for (int i = 0; i < columns.size(); i++)

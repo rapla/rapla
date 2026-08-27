@@ -48,4 +48,16 @@ public interface ExternalEventImportService
      */
     @PostExchange("/syncClassification")
     SyncClassificationResult syncClassification(@RequestBody SyncClassificationRequest request) throws RaplaException;
+
+    /**
+     * The {@code ExternalSyncEntity.externalSystem} id this deployment's import writes
+     * (e.g. "DUALIS") — lets generic server code tell THIS source's bindings apart from
+     * other {@code externalid}-annotation writers (iCal import stamps UIDs but creates
+     * no sync entities). Not a wire endpoint. Null (the default) disables the
+     * distinction → {@code externalEventLinkedReservationIds} returns empty.
+     */
+    default String getExternalSystemId()
+    {
+        return null;
+    }
 }

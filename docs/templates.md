@@ -39,8 +39,17 @@ query kalender($filter: ReservationFilter!) @view(title: "Kalender")
 - `@window` resolves the date window server-side per request and makes `?from=` / `?to=`
   overridable on the document URL.
 - `@param(name:, into:, required:)` maps a public URL key onto a private variable path
-  (`?resource=…` → `filter.allocatableIdsIn`). `required: true` → a missing param renders the
-  same 404 as a nonexistent document.
+  (`?resource=…` → `filter.allocatableIdsIn`). `required: true` (2026-08-11) means the target
+  must be filled from SOMEWHERE after the merge — the URL, a document pin, or (preview only) a
+  default derived from the view's example `defaultVariables`; still unfilled → the document
+  renders a hint page naming the missing param instead of querying everything in the window.
+  The builtin calendar views declare `resource` as required, so bare `wochenplan`/`monatsplan`/…
+  URLs show the hint until a `?resource=` (or a pinning document) supplies the scope.
+- A **view's** `defaultVariables` (the GraphiQL variables pane at save time) are authoring
+  EXAMPLE data: they preload the GraphiQL pane and fill declared `@param`s in the editor preview,
+  but never scope a live render or SPA query ([PRD 097 D8](prd/097-event-html-templates-mustache.md#decisions-locked)).
+  Runtime pins belong in the **document's** `defaultVariables` or in GraphQL variable defaults in
+  the query text.
 - **GET filter forms (2026-07-15):** a document may carry a native
   `<form method="get">` submitting to its own URL — a script-free resource picker / date field.
   The fields are ordinary URL params, gated like a typed URL (undeclared key → 400). The

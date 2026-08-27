@@ -12,7 +12,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Location } from '@angular/common';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -28,6 +28,14 @@ import { remapValues } from '../classification/classification-schema';
 import { ClassificationSchemaService } from '../classification/classification-schema.service';
 import { GraphqlService } from '../graphql/graphql.service';
 import type { MutationIssue } from '../graphql/mutation-result';
+import { UndoToastService } from '../actions/undo-toast.service';
+import {
+  DeleteScopeDialogComponent,
+  type DeleteScopeDialogData,
+} from '../views/delete-scope-dialog.component';
+import { FilterStore } from '../state/filter-store';
+import { ReservationChecksService } from './reservation-checks.service';
+import { buildDeleteCommand } from '../actions/event-commands';
 import { AvailabilitySearchService, type AvailabilityRow } from './availability-search.service';
 import { DraftHistory, type DraftContent } from './draft-history';
 import { EventDataService } from './event-data.service';
@@ -121,6 +129,10 @@ export class EventSheetComponent {
   private readonly occurrences = inject(OccurrencePreviewService);
   private readonly classificationSchema = inject(ClassificationSchemaService);
   private readonly gql = inject(GraphqlService);
+  private readonly toast = inject(UndoToastService);
+  private readonly preflight = inject(ReservationChecksService);
+  private readonly dialog = inject(MatDialog);
+  private readonly filter = inject(FilterStore);
   private readonly location = inject(Location);
   private readonly destroyRef = inject(DestroyRef);
   private readonly dialogData = inject<EventSheetDialogData | null>(MAT_DIALOG_DATA, {
@@ -851,10 +863,33 @@ export class EventSheetComponent {
     else this.undo();
   }
 
-  save(overwrite = false): void {
+  /**
+   * PRD 105 — the shared pre-save checks run FIRST (D1 dry run, D2 advisory): a blocking finding
+   * stops the save, confirmable ones ask once, and `confirmedWarnings` carries the user's yes into
+   * the second call so the dialog cannot loop. A check that errors yields no findings and saves as
+   * before — the checks make saving safer, never less possible.
+   */
+  save(overwrite = false, confirmedWarnings = false): void {
     const d = this.draft();
     if (!d || this.saving()) return;
     if (overwrite) d.lastChanged = null;
+    if (!confirmedWarnings) {
+      this.saving.set(true);
+      this.preflight
+        .confirm(
+          d,
+          this.filter
+            .entries()
+            .filter((c) => c.kind === 'resource')
+            .map((c) => c.id),
+        )
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe((proceed) => {
+          this.saving.set(false);
+          if (proceed) this.save(overwrite, true);
+        });
+      return;
+    }
     this.saving.set(true);
     this.issues.set([]);
     this.concurrent.set(false);
@@ -946,5 +981,40 @@ export class EventSheetComponent {
       return;
     }
     this.location.back();
+  }
+
+  /** Whole-event delete from the edit sheet (undoable via the shared command —
+   *  the toast's Rückgängig re-creates with the SAME ids). Reload first so the
+   *  undo restores the SERVER state, not unsaved sheet edits. */
+  deleteEvent(): void {
+    const d = this.draft();
+    if (!d?.persisted || !this.canModify()) return;
+    this.data
+      .load(d.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((loaded) => {
+        if (!loaded) return;
+        // Same action, same question: the row menu asks with this dialog before deleting, so the
+        // sheet's button must too. One option → it degrades to a plain confirm. The sheet always
+        // deletes the WHOLE event (there is no grabbed occurrence here), hence the single scope.
+        this.dialog
+          .open(DeleteScopeDialogComponent, {
+            data: {
+              eventName: String(loaded.draft.values['name'] ?? '') || 'Veranstaltung',
+              options: [{ scope: 'event' as const, label: 'Ganze Veranstaltung' }],
+            } satisfies DeleteScopeDialogData,
+            width: '420px',
+            autoFocus: false,
+          })
+          .afterClosed()
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe((scope) => {
+            if (!scope) return;
+            this.toast.run(
+              buildDeleteCommand(this.gql, this.data, loaded.draft, { kind: 'deleteEvent' }),
+            );
+            this.cancel();
+          });
+      });
   }
 }

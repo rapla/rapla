@@ -1087,14 +1087,14 @@ default window, max-range cap, viewport-centered) are owned by [PRD 060](../060-
 - [PRD 028 — Angular power search](../028-angular-power-search.md) — substrate provided by [PRD 060](../060-graphql-mcp-foundations.md).
 - [PRD 029 — Swing OAuth login](../029-swing-oauth-login.md) — the OAuth surface.
 - [PRD 030 — Server-side view rendering](../030-server-side-view-rendering.md) — `renderedBlocks` wraps its substrate.
-- [PRD 031 — Token refresh & API keys](../031-token-refresh-and-api-keys.md) — the API-keys half (now [PRD 043](../043-api-keys-jwt-pat.md)).
+- [PRD 031 — Token refresh & API keys](031-token-refresh-and-api-keys.md) — the API-keys half (now [PRD 043](../043-api-keys-jwt-pat.md)).
 - [PRD 040 — Dispatch validate before lock](../040-dispatch-validate-before-lock.md) — coupled dependency for bulk; lock-set computation includes allocatables across the batch.
 - [PRD 043 — API keys (JWT PAT)](../043-api-keys-jwt-pat.md) — scoped API key mechanism.
 - [PRD 055 — GraphQL Events Read API](../055-graphql-events-read-api.md) — Reservation/Appointment/Allocation read surface, β read simplification (reopened 2026-05-29 for Tier-1 perf migration).
 - [PRD 056 — GraphQL Events Write API](../056-graphql-events-write-api.md) — supersedes the former §6 bulk-mutations design; ATOMIC-only v1, named verbs + `applyChanges` escape hatch.
 - [PRD 057 (done) — DT mutations v1](057-graphql-dt-mutations-v1.md) — `@expectedType` directive consumers; v2 follow-ups in [PRD 061](../061-graphql-dt-mutations-v2.md).
 - [PRD 058 — GraphQL key spec migration](../058-graphql-key-spec-migration.md) — guarantees verbatim emission is safe.
-- [PRD 059 — Typed `<TypeKey>Where` predicates](../059-graphql-typed-where-predicates.md) — per-attribute filtering on `allocatables(filter:)`.
+- [PRD 059 — Typed `<TypeKey>Where` predicates](059-graphql-typed-where-predicates.md) — per-attribute filtering on `allocatables(filter:)`.
 - [PRD 060 — GraphQL MCP foundations](../060-graphql-mcp-foundations.md) — new query roots, search, `findFreeSlots`/`checkConflicts`/`whoIsFree`, MCP transport shape.
 - [PRD 061 — GraphQL DT mutations v2](../061-graphql-dt-mutations-v2.md) — see this PRD's tree for active mutation work.
 - [domain-model.md §Conflict](../../architecture/domain-model.md#conflict-facade-level-computed) — conflict aggregation.

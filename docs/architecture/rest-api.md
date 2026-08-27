@@ -290,10 +290,10 @@ Authorization Server's `/oauth2/*` endpoints. The legacy rapla-custom
 `AuthController` (`/api/auth/login`) is **deleted** — see [PRD 041](../prd/041-openapi-runtime-removal.md)'s
 adjacent-work section for the migration story. `/api/auth/refresh` and
 `/api/auth/logout` exist as cookie-based endpoints on `AuthCookieController`
-([PRD 072](../prd/072-server-side-login-dialog.md) — SPA reactive-401 refresh + sign-out). `/api/auth/oauth/config`
+([PRD 072](../prd/done/072-server-side-login-dialog.md) — SPA reactive-401 refresh + sign-out). `/api/auth/oauth/config`
 (discovery), `/api/auth/oauth/exchange/{providerId}` (BFF for external
 IdPs), `/api/auth/oauth/token-exchange/{providerId}` (external-id-token →
-rapla-token, [PRD 072](../prd/072-server-side-login-dialog.md)), and `/api/auth/api-keys/*` (personal access tokens,
+rapla-token, [PRD 072](../prd/done/072-server-side-login-dialog.md)), and `/api/auth/api-keys/*` (personal access tokens,
 [PRD 043](../prd/043-api-keys-jwt-pat.md)) also remain under `/api/auth/`.
 
 ### Token endpoints (`/oauth2/*`)

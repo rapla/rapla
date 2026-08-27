@@ -72,7 +72,7 @@ class DocumentNavTest
     void dateParameterResolvesTheWindowAsIfTodayWereThatDay() throws Exception
     {
         // 2026-03-04 is a Wednesday; the wochenplan week window snaps to Mo 2026-03-02.
-        String page = render("/api/documents/wochenplan?date=2026-03-04");
+        String page = render("/api/documents/wochenplan?resource=a1&date=2026-03-04");
         assertTrue(page.contains("Mo 02.03."), "week of the reference date expected: " + page);
     }
 
@@ -80,9 +80,9 @@ class DocumentNavTest
     @WithMockUser(username = "homer")
     void weekNavLinksStepOneWeek() throws Exception
     {
-        String page = render("/api/documents/wochenplan?date=2026-03-04");
-        assertTrue(page.contains("?date=2026-03-01"), "prev = window start minus 1 day: " + page);
-        assertTrue(page.contains("?date=2026-03-09"), "next = exclusive window end: " + page);
+        String page = render("/api/documents/wochenplan?resource=a1&date=2026-03-04");
+        assertTrue(page.contains("date=2026-03-01"), "prev = window start minus 1 day: " + page);
+        assertTrue(page.contains("date=2026-03-09"), "next = exclusive window end: " + page);
         assertTrue(page.contains("02.03.2026") && page.contains("08.03.2026"),
                 "range label expected: " + page);
     }
@@ -92,9 +92,9 @@ class DocumentNavTest
     void monthNavLinksStepCalendarMonthsNotDurations() throws Exception
     {
         // February 2026 has 28 days — duration-shifting would land next on Mar 29, not Mar 1.
-        String page = render("/api/documents/monatsplan?date=2026-02-10");
-        assertTrue(page.contains("?date=2026-01-31"), "prev = Feb 1 minus 1 day: " + page);
-        assertTrue(page.contains("?date=2026-03-01"), "next = the exclusive month end: " + page);
+        String page = render("/api/documents/monatsplan?resource=a1&date=2026-02-10");
+        assertTrue(page.contains("date=2026-01-31"), "prev = Feb 1 minus 1 day: " + page);
+        assertTrue(page.contains("date=2026-03-01"), "next = the exclusive month end: " + page);
     }
 
     @Test
@@ -134,10 +134,10 @@ class DocumentNavTest
         assertEquals(List.of(), errors);
         try
         {
-            String pinned = render("/api/documents/nav_pinned");
+            String pinned = render("/api/documents/nav_pinned?resource=a1");
             assertTrue(pinned.contains("15.06.2026 – 21.06.2026"),
                     "bare URL shows the pinned range: " + pinned);
-            String navigated = render("/api/documents/nav_pinned?date=2026-03-04");
+            String navigated = render("/api/documents/nav_pinned?resource=a1&date=2026-03-04");
             assertTrue(navigated.contains("02.03.2026 – 08.03.2026"),
                     "?date= outranks the pinned defaults: " + navigated);
         }
@@ -157,7 +157,7 @@ class DocumentNavTest
         assertEquals(List.of(), errors);
         try
         {
-            String page = render("/api/documents/nav_less");
+            String page = render("/api/documents/nav_less?resource=a1");
             assertFalse(page.contains("<nav"), "no {{#nav}} in the template = no nav: " + page);
             // Affordances are template content: without the partials the page has NO chrome —
             // the signage case (print hint moved out of the shell 2026-07-15).
@@ -174,7 +174,7 @@ class DocumentNavTest
     @WithMockUser(username = "homer")
     void builtinTemplatesRenderTheNavBlock() throws Exception
     {
-        String page = render("/api/documents/wochenplan");
+        String page = render("/api/documents/wochenplan?resource=a1");
         assertTrue(page.contains("<nav class=\"rapla-nav\""),
                 "builtin templates carry the nav block: " + page);
         assertTrue(page.contains("Heute"), page);

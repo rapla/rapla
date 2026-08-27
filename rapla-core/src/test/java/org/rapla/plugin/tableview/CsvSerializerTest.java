@@ -183,4 +183,25 @@ class CsvSerializerTest
         String csv = CsvSerializer.serialize(page, Locale.ROOT);
         assertEquals("Name,Age\r\nEve,42\r\n", csv);
     }
+
+    /**
+     * PRD 097 — the document CSV export brings its own rows (a GraphQL view result, already
+     * stringified by the render pipeline), but must not bring its own escaping: same RFC-4180
+     * quoting and CRLF endings as the table export, one implementation.
+     */
+    @Test
+    void plainRowsShareTheEscapingOfTheTableExport()
+    {
+        String csv = CsvSerializer.serialize(
+                List.of("Wert", "Name"),
+                List.of(List.of("a@x", "Simpson, Homer"), List.of("a@x", "\"Monty\"")));
+
+        assertEquals("Wert,Name\r\na@x,\"Simpson, Homer\"\r\na@x,\"\"\"Monty\"\"\"\r\n", csv);
+    }
+
+    @Test
+    void plainRowsShorterThanTheHeaderPadWithEmptyCells()
+    {
+        assertEquals("A,B\r\nx,\r\n", CsvSerializer.serialize(List.of("A", "B"), List.of(List.of("x"))));
+    }
 }

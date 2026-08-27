@@ -45,8 +45,8 @@ over recurrence blocks.
   Beyond Phases 1–3 below, the renderer has since absorbed the render-modes and interaction work
   owned by other PRDs: week/day time grid ([PRD 077](077-calendar-model-graphql.md)), month grid
   ([PRD 095](095-month-grid-render-mode.md)), stats projection
-  ([PRD 079](079-graphql-grouped-aggregates.md)/[PRD 080](080-typed-entity-stats.md)),
-  table selection ([PRD 099](099-spa-table-selection.md)), event sheet + edit
+  ([PRD 079](079-graphql-grouped-aggregates.md)/[PRD 080](done/080-typed-entity-stats.md)),
+  table selection ([PRD 099](done/099-spa-table-selection.md)), event sheet + edit
   ([PRD 091](091-spa-reservation-edit-and-availability.md)), row actions + undo
   ([PRD 094](094-spa-main-view-actions-and-popups.md)), print support. Those are tracked in their
   own PRDs; this one owns the transport, the generic renderer, and the binding contract.
@@ -56,7 +56,7 @@ over recurrence blocks.
 The whole transport is a plain `HttpClient.post` — **no Apollo, no token wiring, no CORS**:
 
 - **Endpoint:** `POST /api/graphql` (`spring.graphql.http.path`), body `{ query, variables }`.
-- **Auth — free.** The SPA holds **no token** ([PRD 072](072-server-side-login-dialog.md) Phase 4): the JWT lives in an
+- **Auth — free.** The SPA holds **no token** ([PRD 072](done/072-server-side-login-dialog.md) Phase 4): the JWT lives in an
   HttpOnly `access_token` cookie the browser auto-sends same-origin. GraphQL calls carry it
   with **no `Authorization` header**, and the existing `auth.interceptor` already handles
   **401 → `/api/auth/refresh` → replay** for any `/api/*` request.
@@ -243,12 +243,32 @@ mode default; no client-side anchor computation).
 
   (The *template*-authoring UI is a different thing and is done — 097 Phase 4,
   `static/template-editor/`, the presentation layer's own static page.)
+- [x] **Phase 5 — query lifecycle: abort superseded reads, coalesce click bursts.** *(2026-08-12,
+      [PRD 106](106-query-request-lifecycle.md) Phase 1)* Rapid date-navigation used to fire one
+      un-cancelled POST per click; the monotonic `reqToken` guard discarded stale *responses* but
+      let every stale *request* run to completion server-side.
+  - [x] The query effect feeds a `Subject` piped through
+        `throttleTime(250, {leading: true, trailing: true})` → `switchMap`. The leading click goes
+        out at once (a single click must not feel laggy), the burst collapses, and one trailing
+        request lands on the final window. `switchMap`'s unsubscribe makes Angular's
+        `HttpXhrBackend` call `xhr.abort()`, so superseded requests are genuinely cancelled.
+  - [x] `reqToken` and both `token !== this.reqToken` checks **deleted** — `switchMap` subsumes
+        them, so the change is net-negative in lines.
+  - [x] **Reads only.** `GraphqlService.mutate()` keeps its own independent subscriptions;
+        nothing throttles or cancels a write ([106 D1](106-query-request-lifecycle.md#decisions-locked)).
+  - **Convention** ([106 D2](106-query-request-lifecycle.md#decisions-locked)): no central
+        cancellation registry in `graphql.service.ts` — a repeatable user-driven trigger gets its
+        own `Subject` + `switchMap` at the call site, as `event-sheet.component.ts:233,256`
+        already does. Id-keyed one-shot loads need nothing.
 
 ## Tests (AGENTS.md §10 pyramid)
 
 - **Tier 5 (Vitest, no TestBed)** — `graphql.service` request/response + error unwrap;
   `extensions.view` → column-descriptor mapping; type-driven variable binding
   (`buildVariablesByType`); list-join + datetime formatting.
+- **Tier 5 — query lifecycle (Phase 5)** — a burst of window changes against a stubbed
+  `GraphqlService` yields the leading + trailing request only, and the superseded
+  subscription is torn down (`view-host-query-lifecycle.spec.ts`).
 - **Tier 6 (TestBed)** — the table component renders columns in `extensions.view` order,
   joins list cells, hides `hidden` columns, renders day sections via client-side
   `groupByWeekday` (no `@group` directive — see Phase 3).

@@ -1,4 +1,4 @@
-# PRD 099 — Reservation prototype: server-computed prefill for new events
+# PRD 107 — Reservation prototype: server-computed prefill for new events
 
 **Status:** implemented — 2026-07-08 (Phases 1–4 done), Phase 5
 (`newEventOptions` query, first D6 slice) 2026-07-22; open: SPA "Neu" menu

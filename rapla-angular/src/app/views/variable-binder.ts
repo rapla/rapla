@@ -8,9 +8,12 @@ import type { ViewVariable } from '../graphql/graphql.service';
  * {@code $rooms} bind identically, and a view that declares two AllocatableFilter
  * sinks gets the selection in BOTH (no special-casing, no required-var failures).
  *
- * Unknown types are left unset → the server's stored defaults apply (graceful).
- * New types (conflict ids, user, …) are added here as new fillers; views need no
- * change. This is the implicit contract: the meaning of the rapla input types.
+ * Unknown types are left unset → the server falls back to the query text's own
+ * variable defaults ({@code $limit: Int = 10}) and the {@code @window} fill (a
+ * view's stored defaultVariables are authoring example data, never merged at
+ * runtime — PRD 097 D8). New types (conflict ids, user, …) are added here as new
+ * fillers; views need no change. This is the implicit contract: the meaning of
+ * the rapla input types.
  */
 
 /** The ambient state the GUI binds from (grows: groups, conflicts, …). */
