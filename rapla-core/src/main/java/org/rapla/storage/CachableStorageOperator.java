@@ -98,6 +98,12 @@ public interface CachableStorageOperator extends StorageOperator {
     //Collection<Entity> getUpdatedEntities(final User user,LocalDateTime timestamp) throws RaplaException;
     //Collection<ReferenceInfo> getDeletedEntities(finaldf User user, final LocalDateTime timestamp) throws RaplaException;
 
+    /** Resolves an {@code externalid} annotation through the operator's index, which keeps
+     *  exactly ONE reference per id. Valid only where the external source maps 1:1 to a
+     *  rapla entity (the Dualis binding path). Where an external id groups several
+     *  entities — e.g. a seminar number carried by every event copied from one template —
+     *  this returns an arbitrary member; walk {@link #getReservations()} instead.
+     *  See {@code docs/architecture/event-template-import.md}. */
     ReferenceInfo tryResolveExternalId(String externalId);
 
     TimeZone getTimeZone();

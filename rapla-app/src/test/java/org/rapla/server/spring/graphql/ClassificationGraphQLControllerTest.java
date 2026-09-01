@@ -184,7 +184,7 @@ class ClassificationGraphQLControllerTest
                 .orElseThrow(() -> new AssertionError("belongsto field missing on roomClassification"));
         @SuppressWarnings("unchecked")
         Map<String, Object> fieldType = (Map<String, Object>) belongsto.get("type");
-        assertEquals("department", fieldType.get("name"),
+        assertEquals("departmentEnum", fieldType.get("name"),
                 () -> "belongsto field should be typed Department enum (VALUE_LIST root), got " + fieldType);
         assertEquals("ENUM", fieldType.get("kind"));
     }
@@ -465,7 +465,7 @@ class ClassificationGraphQLControllerTest
         for (Map<String, Object> f : fields) attrFieldTypes.put((String) f.get("name"), leafTypeName(f.get("type")));
         assertEquals("StringWhere",     attrFieldTypes.get("name"),       () -> "got: " + attrFieldTypes);
         assertEquals("IntWhere",        attrFieldTypes.get("seats"),      () -> "got: " + attrFieldTypes);
-        assertEquals("departmentWhere", attrFieldTypes.get("belongsto"),  () -> "got: " + attrFieldTypes);
+        assertEquals("departmentEnumWhere", attrFieldTypes.get("belongsto"),  () -> "got: " + attrFieldTypes);
         assertEquals("roomWhere",       attrFieldTypes.get("AND"),        () -> "got: " + attrFieldTypes);
         assertEquals("roomWhere",       attrFieldTypes.get("OR"),         () -> "got: " + attrFieldTypes);
         assertEquals("roomWhere",       attrFieldTypes.get("NOT"),        () -> "got: " + attrFieldTypes);
@@ -508,7 +508,7 @@ class ClassificationGraphQLControllerTest
     {
         Map<String, Object> single = tester.document("""
                 {
-                  __type(name: "departmentWhere") {
+                  __type(name: "departmentEnumWhere") {
                     kind
                     inputFields { name type { name ofType { name } } }
                   }
@@ -529,7 +529,7 @@ class ClassificationGraphQLControllerTest
 
         Map<String, Object> list = tester.document("""
                 {
-                  __type(name: "departmentListWhere") {
+                  __type(name: "departmentEnumListWhere") {
                     kind
                     inputFields { name }
                   }
@@ -1219,7 +1219,7 @@ class ClassificationGraphQLControllerTest
     {
         Map<String, Object> result = tester.document("""
                 {
-                  __type(name: "department") {
+                  __type(name: "departmentEnum") {
                     name
                     kind
                     enumValues { name description }
@@ -1277,7 +1277,7 @@ class ClassificationGraphQLControllerTest
                 .orElseThrow(() -> new AssertionError("belongsto field missing on roomClassification"));
         @SuppressWarnings("unchecked")
         Map<String, Object> fieldType = (Map<String, Object>) belongsto.get("type");
-        assertEquals("department", fieldType.get("name"));
+        assertEquals("departmentEnum", fieldType.get("name"));
         assertEquals("ENUM", fieldType.get("kind"));
     }
 

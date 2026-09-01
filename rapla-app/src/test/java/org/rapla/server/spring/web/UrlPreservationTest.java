@@ -11,6 +11,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.method.HandlerMethod;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -64,20 +66,31 @@ class UrlPreservationTest
     @Autowired
     MockMvc mockMvc;
 
+    // The two iCal probes assert on the resolved handler, not on the status:
+    // Export2iCalController answers 404 by design for a calendar that does not
+    // exist OR is not published for that user (AGENTS.md §12 — existence must not
+    // leak), so "status != 404" cannot tell a missing route from a missing
+    // calendar. Naming the handler method also makes the test fail if the path
+    // moves to another controller instead of disappearing.
+
     @Test
     void icalPathRoutes() throws Exception
     {
-        int status = mockMvc.perform(get("/rapla/ical").param("file", "x").param("user", "homer"))
-                .andReturn().getResponse().getStatus();
-        assertNotEquals(404, status, "/rapla/ical must route — got 404");
+        Object handler = mockMvc.perform(get("/rapla/ical").param("file", "x").param("user", "homer"))
+                .andReturn().getHandler();
+        assertNotNull(handler, "/rapla/ical must route to a controller — got null handler");
+        assertEquals("icalExport", ((HandlerMethod) handler).getMethod().getName());
+        assertEquals(Export2iCalController.class, ((HandlerMethod) handler).getBeanType());
     }
 
     @Test
     void internalIcalPathRoutes() throws Exception
     {
-        int status = mockMvc.perform(get("/rapla/internal_ical").param("file", "x").param("user", "homer"))
-                .andReturn().getResponse().getStatus();
-        assertNotEquals(404, status, "/rapla/internal_ical must route — got 404");
+        Object handler = mockMvc.perform(get("/rapla/internal_ical").param("file", "x").param("user", "homer"))
+                .andReturn().getHandler();
+        assertNotNull(handler, "/rapla/internal_ical must route to a controller — got null handler");
+        assertEquals("internalIcalExport", ((HandlerMethod) handler).getMethod().getName());
+        assertEquals(Export2iCalController.class, ((HandlerMethod) handler).getBeanType());
     }
 
     @Test

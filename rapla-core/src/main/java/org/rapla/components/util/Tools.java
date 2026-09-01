@@ -61,7 +61,8 @@ public abstract class Tools
     public static boolean isSpecCompliant(String key)
     {
         if (key == null || key.isEmpty()) return false;
-        if (key.equals("true") || key.equals("false")) return false;
+        if (key.equals("true") || key.equals("false") || key.equals("null")) return false;
+        if (endsWithReservedGraphqlSuffix(key)) return false;
         char first = key.charAt(0);
         if (!isAsciiLetter(first) && first != '_') return false;
         for (int i = 1; i < key.length(); i++)
@@ -112,9 +113,47 @@ public abstract class Tools
      * </ol>
      * Callers that don't care about uniqueness pass {@link java.util.Collections#emptySet()}.
      */
+    /**
+     * Suffix words the GraphQL schema generator appends to admin keys
+     * ({@code raumClassification}, {@code raumWhere}, {@code farbeEnum}, …).
+     * A key may not END with one of them, so no key can impersonate a
+     * generated name of another key ({@code intern} + {@code EnumWhere} vs.
+     * {@code internEnum} + {@code Where}). {@code Rapla} is reserved for future
+     * generated families. Hand-written schema types obey the same rule
+     * (see {@code GeneratedNameNamespaceArchitectureTest}).
+     */
+    public static final Set<String> RESERVED_GRAPHQL_SUFFIXES = Set.of("Classification", "Where", "Enum", "Rapla");
+
+    /** DynamicType keys whose {@code <key>Where} would shadow a hand-written predicate type. */
+    private static final Set<String> RESERVED_TYPE_KEYS = Set.of("String", "Int", "Boolean", "LocalDateTime", "Category", "Allocatable");
+
+    /** Attribute keys that would shadow the fixed fields of generated classification / where types. */
+    private static final Set<String> RESERVED_ATTRIBUTE_KEYS = Set.of("typeKey", "type", "AND", "OR", "NOT");
+
+    public static boolean endsWithReservedGraphqlSuffix(String key)
+    {
+        if (key == null) return false;
+        for (String suffix : RESERVED_GRAPHQL_SUFFIXES)
+        {
+            if (key.endsWith(suffix)) return true;
+        }
+        return false;
+    }
+
+    public static boolean isReservedTypeKey(String key)
+    {
+        return key != null && RESERVED_TYPE_KEYS.contains(key);
+    }
+
+    public static boolean isReservedAttributeKey(String key)
+    {
+        return key != null && RESERVED_ATTRIBUTE_KEYS.contains(key);
+    }
+
     public static String toSpecKey(String input, Set<String> taken)
     {
         String candidate = toSpecKeyCore(input);
+        while (endsWithReservedGraphqlSuffix(candidate)) candidate = candidate + "_";
         if (taken == null || taken.isEmpty() || !taken.contains(candidate)) return candidate;
         for (int suffix = 2; ; suffix++)
         {

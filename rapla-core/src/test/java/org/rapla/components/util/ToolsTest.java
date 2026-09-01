@@ -173,4 +173,40 @@ public class ToolsTest
     public void isValidEntityId_rejectsLeadingHyphen() {
         Assert.assertFalse(Tools.isValidEntityId("-47ac10b-58cc-4372"));
     }
+
+    // === reserved GraphQL suffix words (generated-name namespace, 2026-08-29) ===
+
+    @Test
+    public void isSpecCompliant_rejectsReservedSuffixWords() {
+        Assert.assertFalse(Tools.isSpecCompliant("fooClassification"));
+        Assert.assertFalse(Tools.isSpecCompliant("fooWhere"));
+        Assert.assertFalse(Tools.isSpecCompliant("fooEnum"));
+        Assert.assertFalse(Tools.isSpecCompliant("fooRapla"));
+        Assert.assertFalse(Tools.isSpecCompliant("Enum"));
+    }
+
+    @Test
+    public void isSpecCompliant_suffixRuleIsCaseSensitiveAndSuffixOnly() {
+        Assert.assertTrue(Tools.isSpecCompliant("fooenum"));
+        Assert.assertTrue(Tools.isSpecCompliant("Enumeration"));
+        Assert.assertTrue(Tools.isSpecCompliant("whereabouts"));
+        Assert.assertTrue(Tools.isSpecCompliant("exportrapla"));
+    }
+
+    @Test
+    public void toSpecKey_escapesReservedSuffix() {
+        Assert.assertEquals("fooEnum_", Tools.toSpecKey("fooEnum", java.util.Collections.emptySet()));
+        Assert.assertEquals("foo_Where_", Tools.toSpecKey("foo Where", java.util.Collections.emptySet()));
+        Assert.assertTrue(Tools.isSpecCompliant(Tools.toSpecKey("fooRapla", java.util.Collections.emptySet())));
+    }
+
+    @Test
+    public void reservedTypeAndAttributeKeys() {
+        Assert.assertTrue(Tools.isReservedTypeKey("String"));
+        Assert.assertTrue(Tools.isReservedTypeKey("Category"));
+        Assert.assertFalse(Tools.isReservedTypeKey("raum"));
+        Assert.assertTrue(Tools.isReservedAttributeKey("AND"));
+        Assert.assertTrue(Tools.isReservedAttributeKey("typeKey"));
+        Assert.assertFalse(Tools.isReservedAttributeKey("name"));
+    }
 }

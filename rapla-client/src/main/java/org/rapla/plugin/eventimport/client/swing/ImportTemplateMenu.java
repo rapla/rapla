@@ -40,6 +40,8 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.eventimport.ParsedTemplateResult;
 import org.rapla.plugin.eventimport.TemplateImport;
+import org.rapla.rest.ExternalIdLookup;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 
@@ -85,6 +87,7 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
     private final RaplaResources i18n;
     private final RaplaLocale raplaLocale;
     private final TemplateImport importService;
+    private final ExternalIdLookup externalIdLookup;
     private final DialogUiFactory dialogFactory;
     private final IOInterface ioInterface;
     boolean enabled;
@@ -93,6 +96,7 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
     public ImportTemplateMenu(
         final RaplaResources i18n,
         final TemplateImport importService,
+        final ExternalIdLookup externalIdLookup,
         final ClientFacade clientFacade,
         final RaplaLocale raplaLocale,
         final DialogUiFactory dialogFactory,
@@ -100,6 +104,7 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
     {
         this.ioInterface = ioInterface;
         this.importService = importService;
+        this.externalIdLookup = externalIdLookup;
         this.raplaLocale = raplaLocale;
         this.facade = clientFacade.getRaplaFacade();
         this.clientFacade = clientFacade;
@@ -284,6 +289,16 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
         {
             fireEditingStopped();
         }
+    }
+
+    /** Preselected are the rows that act on an event which already exists.
+     *  Creating events stays a deliberate click: {@code template} would silently
+     *  bring a new event into the calendar, and {@code template_waehlen} needs a
+     *  template picked first anyway. {@code aktuell}, {@code geloescht} and the two
+     *  date-error stati are no-ops in {@link Entry#process}. */
+    static boolean preselected( final Status status )
+    {
+        return status == Status.aktuallisieren || status == Status.zu_loeschen;
     }
 
     enum Status
@@ -532,7 +547,7 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
 
     private void confirmImport( final PopupContext popupContext, final String[] header, final List<Entry> entries ) throws RaplaException
     {
-        getImportedReservations().thenAccept(( keyMap ) -> confirmImport(popupContext, header, entries, keyMap)).exceptionally(ex ->
+        getImportedReservations(entries).thenAccept(( keyMap ) -> confirmImport(popupContext, header, entries, keyMap)).exceptionally(ex ->
             dialogFactory.showException(ex, popupContext)
         );
     }
@@ -588,7 +603,7 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
             final Status status = row.getStatus();
             tableContent[i][statusCol] = status;
             tableContent[i][templateCol] = row.template;
-            tableContent[i][selectCol] = status != Status.aktuell && status != Status.template_waehlen && status != Status.template;
+            tableContent[i][selectCol] = preselected(status);
         }
 
         final JTable table = new JTable();
@@ -717,32 +732,44 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
 //							}
 //		});
 
-    protected Promise<Map<String, List<Reservation>>> getImportedReservations() throws RaplaException
+    /** Which of the imported rows already exist in rapla? Resolved through the
+     *  server-side {@code externalid} index — the previous implementation queried
+     *  every event from today onwards and grouped them here, which silently missed
+     *  events that lie completely in the past (they showed up as "not imported yet"
+     *  and a second run would have created them twice). */
+    protected Promise<Map<String, List<Reservation>>> getImportedReservations( final List<Entry> entries ) throws RaplaException
     {
-        final User user = clientFacade.getUser();
-        final LocalDateTime start = facade.today().atStartOfDay();
-        final LocalDateTime end = null;
-        Allocatable[] allocatables =facade.getAllocatables();
-        User[] owners = new User[] {};
-        final Promise<Map<String, List<Reservation>>> result = facade.getReservationsAsync(user, allocatables, owners,start, end, null).thenApply((reservations ) -> {
-            final Map<String, List<Reservation>> keyMap = new LinkedHashMap<>();
-            for ( final Reservation r : reservations )
+        final List<String> externalIds = new ArrayList<>();
+        for ( final Entry entry : entries )
+        {
+            final Object primaryKey = entry.get(TemplateImport.PRIMARY_KEY);
+            if ( primaryKey != null )
             {
-                final String key = r.getAnnotation(RaplaObjectAnnotations.KEY_EXTERNALID);
-                if ( key != null )
+                externalIds.add(primaryKey.toString());
+            }
+        }
+        final Map<String, List<String>> found = externalIdLookup.resolve(externalIds);
+        final Map<ReferenceInfo<Reservation>, String> keyByReference = new LinkedHashMap<>();
+        for ( final Map.Entry<String, List<String>> entry : found.entrySet() )
+        {
+            for ( final String reservationId : entry.getValue() )
+            {
+                keyByReference.put(new ReferenceInfo<>(reservationId, Reservation.class), entry.getKey());
+            }
+        }
+        final boolean throwEntityNotFound = false;
+        return facade.getOperator().getFromIdAsync(keyByReference.keySet(), throwEntityNotFound).thenApply(( resolved ) -> {
+            final Map<String, List<Reservation>> keyMap = new LinkedHashMap<>();
+            for ( final Map.Entry<ReferenceInfo<Reservation>, String> entry : keyByReference.entrySet() )
+            {
+                final Reservation reservation = resolved.get(entry.getKey());
+                if ( reservation != null )
                 {
-                    List<Reservation> list = keyMap.get(key);
-                    if ( list == null )
-                    {
-                        list = new ArrayList<>();
-                        keyMap.put(key, list);
-                    }
-                    list.add(r);
+                    keyMap.computeIfAbsent(entry.getValue(), ( key ) -> new ArrayList<>()).add(reservation);
                 }
             }
             return keyMap;
         });
-        return result;
     }
 
 }

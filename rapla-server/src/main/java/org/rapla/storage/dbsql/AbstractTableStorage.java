@@ -352,14 +352,15 @@ public class AbstractTableStorage implements TableStorage
 	}
 
 	protected LocalDateTime getTimestamp(ResultSet rset, int column, boolean checkCurrent) throws SQLException {
-        LocalDateTime currentTimestamp = getConnectionTimestamp();
         java.sql.Timestamp timestamp = rset.getTimestamp( column, datetimeCal);
         if (rset.wasNull() || timestamp == null)
         {
             return null;
         }
         LocalDateTime date = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(timestamp.getTime()), java.time.ZoneOffset.UTC);
-		if ( date.isAfter( currentTimestamp) && checkCurrent)
+		// checkCurrent first: callers that pass false may have no connection
+		// timestamp at all — the daily history cleanup runs with setConnection(con, null).
+		if ( checkCurrent && date.isAfter( getConnectionTimestamp()))
 		{
 			LOGGER.error("Timestamp in table {} in the future. Something went wrong", getTableName());
 			return null;

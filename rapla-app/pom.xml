@@ -716,6 +716,23 @@
                                     <goal>sign</goal>
                                 </goals>
                             </execution>
+                            <!-- Same for the rxjava + rapla-client copies that
+                                 bundle-client-only-into-static staged BEFORE this
+                                 profile plugin ran (profile plugins append last in
+                                 prepare-package). Mirrors SignWebclientJars' second
+                                 directory; without it the fat JAR ships them unsigned
+                                 and JNLP fails with "Cannot grant permissions to
+                                 unsigned jars". -->
+                            <execution>
+                                <id>sign-static-webclient-jks</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                                <configuration>
+                                    <archiveDirectory>${project.build.directory}/classes/static/webclient</archiveDirectory>
+                                </configuration>
+                            </execution>
                         </executions>
                         <configuration>
                             <alias>${keystore.alias}</alias>

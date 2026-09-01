@@ -196,7 +196,7 @@ and `rapla-server/.../plugin/<id>/...`.
 | `export2ical` | both | iCal (RFC 5545) export. | `ExportMenuExtension` (client), REST `/ical` + `/internal_ical` (server), `UserOptionPanel`, `SystemOptionPanel` |
 | `ical` | both | iCal **import**. | `ImportMenuExtension` (client), REST endpoint (server) |
 | `externaleventimport` | both | Pull events from external feeds (CalDAV, Google, …). | Wizard + service |
-| `eventimport` | both | Bulk import via templates. | `ReservationWizardExtension`, server `RaplaTemplateImport` |
+| `eventimport` | both | Bulk import via templates ([details](event-template-import.md)). | `ReservationWizardExtension`, server `RaplaTemplateImport` |
 | `tempatewizard` | client | "Create from template" wizard. | `ReservationWizardExtension` |
 | `periodcopy` | client | Copy a series of events into a new period. | `ReservationWizardExtension` |
 | `setowner` | client | Right-click "Change owner". | `ObjectMenuFactory` |

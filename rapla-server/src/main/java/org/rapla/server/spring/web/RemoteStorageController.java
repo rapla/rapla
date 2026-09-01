@@ -675,6 +675,13 @@ public class RemoteStorageController implements RemoteStorage
                 {
                     security.checkDeletePermissions(user, entity);
                 }
+                else
+                {
+                    // The client asked to delete something this server doesn't know. Nothing
+                    // is deleted, and the only later trace is an unexplained "scheduled to
+                    // delete not found" from the binding update — name the ids here instead.
+                    LOGGER.warn("Remove requested for unknown {} {}", id.getType().getSimpleName(), id.getId());
+                }
             }
 
             LOGGER.debug("Processing plugin-update processors ");

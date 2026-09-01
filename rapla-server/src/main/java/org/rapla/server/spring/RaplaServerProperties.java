@@ -26,6 +26,7 @@ public class RaplaServerProperties
     private String patchScript;
     private Merge merge = new Merge();
     private boolean fixAdminPassword = false;
+    private String legacyContextPath = "";
     private Readmodel readmodel = new Readmodel();
 
     public Map<String, DataSourceProperties> getDbDatasources()
@@ -52,6 +53,23 @@ public class RaplaServerProperties
     public void setFixAdminPassword(boolean fixAdminPassword)
     {
         this.fixAdminPassword = fixAdminPassword;
+    }
+
+    /**
+     * {@code rapla.legacy-context-path} &mdash; PRD 109. The servlet context path a
+     * Rapla 2.0 deployment used to run under (e.g. {@code /wochenplan}). When set, the
+     * published calendar and index URLs keep answering under that prefix and every other
+     * path below it is 301'd onto the canonical path. Empty (the default) = no legacy
+     * URL handling at all; the filter is not registered.
+     */
+    public String getLegacyContextPath()
+    {
+        return legacyContextPath;
+    }
+
+    public void setLegacyContextPath(String legacyContextPath)
+    {
+        this.legacyContextPath = legacyContextPath;
     }
 
     public Map<String, String> getFileDatasources()

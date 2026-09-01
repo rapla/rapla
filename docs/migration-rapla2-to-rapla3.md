@@ -189,6 +189,44 @@ one Rapla has always used:
 After the first successful boot in DB mode, the database is the source of truth;
 the `data.xml` seed is no longer read.
 
+> **In-place upgrade of a 1.8+ schema: the `CHANGES` history needs no manual step.**
+> Rapla 3 writes `CHANGES.CHANGED_AT` with the same wall-clock convention Rapla 2
+> used (and the same one every other timestamp column uses), so the history rows
+> your Rapla 2 instance left behind stay correctly ordered against Rapla 3's own
+> writes. Builds before [PRD 108](prd/108-changes-history-timestamp-convention.md)
+> stored that one column shifted by the local UTC offset; on those, legacy rows
+> from the last one to two hours before the copy were replayed as if they lay in
+> the future and could revert freshly migrated entities in the cache. If you are
+> on such a build the workaround was `TRUNCATE TABLE changes` before the first
+> start — on current builds, don't.
+
+### Generic keys (`c1`, `reservation10`, …)
+
+Rapla 2 installations often carry auto-generated keys — categories `c1`, `c2`, …
+and event types `reservation10`, `reservation12`, …. Rapla 3 exposes every key
+verbatim in the GraphQL schema (`c5` becomes `enum c5Enum`, `reservation12`
+becomes `reservation12Classification`), so you will want speaking keys.
+
+**Migrate first, rename afterwards in Rapla 3.** Two reasons:
+
+1. **Key shape is migrated automatically.** On the first Rapla 3 boot,
+   [PRD 058](prd/058-graphql-key-spec-migration.md) renames every key that is
+   not GraphQL-safe (`ü` → `ue`, `-` → `_`, reserved suffix → trailing `_`) and
+   rewrites the references. No manual step.
+2. **Renaming is safe in Rapla 3, unsafe in Rapla 2.** Type definitions and
+   calendar preferences (including published export calendars) store categories
+   and types *by key path* (see
+   [dynamic-types § Keys are persisted as references](architecture/dynamic-types.md#keys-are-persisted-as-references--renaming-has-blast-radius)).
+   Rapla 3 re-stores every referencing definition and preference in the same
+   transaction ([PRD 110](prd/110-safe-key-rename.md)); Rapla 2 rewrites only
+   the edited entity, and the stale paths surface on its next restart — category
+   filters silently stop filtering, a renamed type key aborts the boot.
+
+So: don't touch keys in the Rapla 2 admin client once you plan the migration;
+after the switch, rename them in the Rapla 3 admin client at your leisure. Keys an
+external integration still uses stay until that integration talks to the GraphQL
+API.
+
 ## 3. The new permission model ([PRD 090](prd/090-additive-permission-resolution.md))
 
 This is the one **behaviour** change in the migration that can affect who sees
@@ -285,6 +323,7 @@ migrated.
 - [ ] Create the install layout (`config/`, `data/`, `lib/`, `logs/`).
 - [ ] Translate your `raplaserver.xml` / sysprop settings into
       `config/application.yml` (§1 key table).
+- [ ] Don't rename keys in Rapla 2 from now on; speaking keys come after the switch (§2 *Generic keys*).
 - [ ] Export Rapla 2 data to `data.xml`; place at `data/data.xml`.
 - [ ] If using a database: configure `rapla.db-datasources.rapladb`, drop the
       driver in `./lib/`, point at an **empty** database for first boot.

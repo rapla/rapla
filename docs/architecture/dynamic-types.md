@@ -308,6 +308,43 @@ re-parse the old string into the new type).
 mixin for entities that need to react to schema changes — Allocatable,
 Reservation, Preferences, and Classification all implement it.
 
+### Keys are persisted as references — renaming has blast radius
+
+Attribute *values* reference entities by id, but the persisted schema and the
+persisted preferences reference **DynamicTypes and Categories by key path**
+(surfaced during a Rapla 2 → 3 migration in 2026-08; the application-side fix is
+[PRD 110](../prd/110-safe-key-rename.md)):
+
+| Where | Reference form | Resolved relative to |
+|---|---|---|
+| `DYNAMIC_TYPE.DEFINITION` — `root-category` constraint, `<rapla:default>` | `category[key='a']/category[key='b']` | super category (absolute) |
+| `DYNAMIC_TYPE.DEFINITION` — type permissions `group="…"` | `category[key='g']` | `user-groups` |
+| `DYNAMIC_TYPE.DEFINITION` — `<relax:define name>`, `dynatt:<key>` element | the type key itself | — |
+| `PREFERENCE.XML_VALUE` — calendar filter rules `<rapla:orCond>` | `category[key='x']` | the attribute's root category (**no** absolute fallback — `KeyAndPathResolver.getIdForCategory(parent, keyref)`) |
+| `PREFERENCE.XML_VALUE` — `<rapla:classificationfilter dynamictype="…">`, `<rapla:dynamictype keyref="…"/>` | the type key | — |
+| `EVENT.TYPE_KEY`, `RAPLA_RESOURCE.TYPE_KEY` (JDBC) | the type key | — |
+| `*_ATTRIBUTE_VALUE` (JDBC) / classification `data` | entity **id** | — |
+
+Consequences:
+
+- **Rapla 2** rewrites only the edited entity on a key rename (plus, for type
+  keys, the reservations/resources of that type); referencing DynamicTypes and
+  Preferences keep the **old** key path until they are saved again. The live cache
+  holds ids, so nothing breaks until the next **restart**. **Rapla 3** re-stores
+  every referer in the same dispatch — `addChangedDynamicTypeDependant` for type
+  and attribute keys, `addCategoryKeyPathReferers` for category keys
+  ([PRD 110](../prd/110-safe-key-rename.md), `DbOperatorKeyRenameTest`).
+- On load, an unresolvable **category** path is dropped silently
+  (`DynamicTypeReader`: constraint/default → `null`; filter rule → gone). An
+  unresolvable **type** key in a preference aborts the boot
+  (`Dynamic type with name 'x' not found`).
+- The `changes` history keeps the old keys in its JSON payload (`"key":"c5"`,
+  `"type":"reservation12"`) next to the ids — usable to reconstruct what a
+  stale path meant.
+
+Rule of thumb: rename keys in Rapla 3, never in Rapla 2 on a live system
+([migration-rapla2-to-rapla3 § Generic keys](../migration-rapla2-to-rapla3.md#generic-keys-c1-reservation10-)).
+
 ## Worked example: a course reservation, end to end
 
 **Schema:**

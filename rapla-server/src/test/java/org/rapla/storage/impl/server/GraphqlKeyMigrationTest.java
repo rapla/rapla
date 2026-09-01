@@ -12,6 +12,7 @@ import org.rapla.test.util.FacadeTestSupport;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -154,4 +155,24 @@ class GraphqlKeyMigrationTest extends FacadeTestSupport
                 "nameformat annotation must auto-update via AttributeFunction.getRepresentation");
     }
 
+
+    /** Reserved suffix words / reserved field names are refused on the write path (2026-08-29). */
+    @Test
+    void writeGuardRejectsReservedGraphqlNames() throws Exception
+    {
+        assertThrows(RaplaException.class, () -> storeRoomWithAttributeKey("nameEnum"), "key ending with reserved suffix");
+        assertThrows(RaplaException.class, () -> storeRoomWithAttributeKey("AND"), "reserved where-combinator field");
+        assertThrows(RaplaException.class, () -> storeRoomWithAttributeKey("typeKey"), "reserved classification field");
+        storeRoomWithAttributeKey("nameEnumeration"); // suffix rule is exact-word
+    }
+
+    private void storeRoomWithAttributeKey(String key) throws Exception
+    {
+        org.rapla.entities.dynamictype.DynamicType room = operator.getDynamicType("room");
+        org.rapla.entities.dynamictype.DynamicType editable =
+                (org.rapla.entities.dynamictype.DynamicType) operator.editObject((org.rapla.entities.Entity) room, null);
+        editable.getAttribute("name").setKey(key);
+        operator.storeAndRemove(java.util.Collections.singletonList((org.rapla.entities.Entity) editable),
+                java.util.Collections.emptyList(), null);
+    }
 }

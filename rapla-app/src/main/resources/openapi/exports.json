@@ -111,6 +111,108 @@
         }
       }
     },
+    "/api/documents/{name}" : {
+      "get" : {
+        "tags" : [ "document-controller" ],
+        "operationId" : "render",
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "arg1",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/MultiValueMapStringString"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "text/html" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "document-controller" ],
+        "operationId" : "save",
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SaveDocumentRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SaveResult"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "document-controller" ],
+        "operationId" : "delete",
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/templateimport/importFromServer" : {
+      "post" : {
+        "tags" : [ "template-import-controller" ],
+        "operationId" : "importFromServer",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ParsedTemplateResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/ical/import" : {
       "post" : {
         "tags" : [ "i-cal-import-controller" ],
@@ -136,6 +238,99 @@
                     "type" : "integer",
                     "format" : "int32"
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/externalids/resolve" : {
+      "post" : {
+        "tags" : [ "external-id-lookup-controller" ],
+        "operationId" : "resolve",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "array",
+                "items" : {
+                  "type" : "string"
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object",
+                  "additionalProperties" : {
+                    "type" : "array",
+                    "items" : {
+                      "type" : "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/result-shape" : {
+      "post" : {
+        "tags" : [ "document-controller" ],
+        "operationId" : "resultShape",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ShapeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ShapeNode"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/preview" : {
+      "post" : {
+        "tags" : [ "document-controller" ],
+        "operationId" : "preview",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PreviewRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PreviewResult"
                 }
               }
             }
@@ -186,10 +381,171 @@
           }
         }
       }
+    },
+    "/api/documents" : {
+      "get" : {
+        "tags" : [ "document-controller" ],
+        "operationId" : "list",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/DocumentSummary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{name}/source" : {
+      "get" : {
+        "tags" : [ "document-controller" ],
+        "operationId" : "source",
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DocumentSource"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{name}/csv" : {
+      "get" : {
+        "tags" : [ "document-controller" ],
+        "operationId" : "csv",
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "arg1",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/MultiValueMapStringString"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "text/csv" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "byte"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/leihschein" : {
+      "get" : {
+        "tags" : [ "leihschein-mock-controller" ],
+        "operationId" : "leihschein",
+        "parameters" : [ {
+          "name" : "reservationId",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "text/html" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components" : {
     "schemas" : {
+      "SaveDocumentRequest" : {
+        "properties" : {
+          "viewName" : {
+            "type" : "string"
+          },
+          "template" : {
+            "type" : "string"
+          },
+          "isPublic" : {
+            "type" : "boolean"
+          },
+          "groups" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "defaultVariables" : {
+            "type" : "string"
+          },
+          "window" : {
+            "type" : "string"
+          }
+        }
+      },
+      "SaveResult" : {
+        "properties" : {
+          "errors" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "ParsedTemplateResult" : {
+        "properties" : {
+          "header" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "templateList" : {
+            "type" : "array",
+            "items" : {
+              "type" : "object",
+              "additionalProperties" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      },
       "Import" : {
         "properties" : {
           "content" : {
@@ -209,6 +565,154 @@
           },
           "eventTypeNameAttributeKey" : {
             "type" : "string"
+          }
+        }
+      },
+      "ShapeRequest" : {
+        "properties" : {
+          "viewName" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ShapeNode" : {
+        "properties" : {
+          "key" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string"
+          },
+          "list" : {
+            "type" : "boolean"
+          },
+          "fields" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ShapeNode"
+            }
+          }
+        }
+      },
+      "PreviewRequest" : {
+        "properties" : {
+          "viewName" : {
+            "type" : "string"
+          },
+          "template" : {
+            "type" : "string"
+          },
+          "defaultVariables" : {
+            "type" : "string"
+          },
+          "window" : {
+            "type" : "string"
+          },
+          "variables" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      },
+      "PreviewResult" : {
+        "properties" : {
+          "html" : {
+            "type" : "string"
+          },
+          "errorLine" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "errorMessage" : {
+            "type" : "string"
+          },
+          "resolvedVariables" : {
+            "type" : "string"
+          }
+        }
+      },
+      "DocumentSummary" : {
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "viewName" : {
+            "type" : "string"
+          },
+          "builtin" : {
+            "type" : "boolean"
+          },
+          "isPublic" : {
+            "type" : "boolean"
+          },
+          "groups" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "valid" : {
+            "type" : "boolean"
+          },
+          "invalidReason" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "MultiValueMapStringString" : {
+        "type" : "object",
+        "additionalProperties" : {
+          "type" : "array",
+          "items" : {
+            "type" : "string"
+          }
+        }
+      },
+      "DocumentSource" : {
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "viewName" : {
+            "type" : "string"
+          },
+          "template" : {
+            "type" : "string"
+          },
+          "builtin" : {
+            "type" : "boolean"
+          },
+          "isPublic" : {
+            "type" : "boolean"
+          },
+          "groups" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "defaultVariables" : {
+            "type" : "string"
+          },
+          "window" : {
+            "type" : "string"
+          },
+          "valid" : {
+            "type" : "boolean"
+          },
+          "invalidReason" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
           }
         }
       }

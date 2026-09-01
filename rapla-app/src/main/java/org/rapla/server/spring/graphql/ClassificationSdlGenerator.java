@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 import org.rapla.components.util.Tools;
 import org.rapla.entities.Category;
+import org.rapla.entities.domain.Permission;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.AttributeType;
@@ -369,7 +370,7 @@ public final class ClassificationSdlGenerator
         {
             Object root = attr.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
             String enumName = (root instanceof Category cat) ? enumNameFor(cat) : "";
-            base = (!enumName.isEmpty() && valueListEnums.containsKey(enumName))
+            base = (root instanceof Category cat && isValueListEnum(valueListEnums, enumName, cat))
                     ? enumName       // VALUE_LIST shares the enum with reads
                     : "ID";          // ORGANIZATION → reference by id
         }
@@ -597,7 +598,7 @@ public final class ClassificationSdlGenerator
         {
             Object root = attr.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
             String enumName = (root instanceof Category cat) ? enumNameFor(cat) : "";
-            boolean valueList = !enumName.isEmpty() && valueListEnums.containsKey(enumName);
+            boolean valueList = root instanceof Category cat && isValueListEnum(valueListEnums, enumName, cat);
             if (valueList)
             {
                 return multi ? (enumName + "ListWhere") : (enumName + "Where");
@@ -674,7 +675,12 @@ public final class ClassificationSdlGenerator
                     continue;
                 String enumName = enumNameFor(cat);
                 if (enumName.isEmpty()) continue;
-                sorted.putIfAbsent(enumName, cat);
+                Category prior = sorted.putIfAbsent(enumName, cat);
+                if (prior != null && !prior.getId().equals(cat.getId()))
+                {
+                    LOGGER.warn("Root categories {} and {} both map to GraphQL enum '{}' (ambiguous '_' path join); attribute {}.{} falls back to Category",
+                            prior.getId(), cat.getId(), enumName, dt.getKey(), attr.getKey());
+                }
             }
         }
         out.putAll(sorted);
@@ -693,6 +699,7 @@ public final class ClassificationSdlGenerator
     static String enumNameFor(Category root)
     {
         if (root == null || root.getParent() == null) return "";
+        if (isInUserGroupsSubtree(root)) return "";
         java.util.Deque<String> segs = new java.util.ArrayDeque<>();
         Category cur = root;
         while (cur != null && cur.getParent() != null)
@@ -702,7 +709,44 @@ public final class ClassificationSdlGenerator
             segs.push(seg);
             cur = cur.getParent();
         }
-        return String.join("_", segs);
+        return String.join("_", segs) + ENUM_SUFFIX;
+    }
+
+    /**
+     * Suffix family of enum-derived names ({@code Enum}, {@code EnumWhere},
+     * {@code EnumListWhere}) — disjoint from the DynamicType family
+     * ({@code Classification}, {@code Where}, {@code RefWhere}) so a DynamicType
+     * key and a root-category key may be equal. Keys may not end with a reserved
+     * suffix word (see {@code Tools.endsWithReservedGraphqlSuffix}).
+     */
+    static final String ENUM_SUFFIX = "Enum";
+
+    /** True when {@code cat} is THE category behind {@code enumName} (not a same-named collision victim). */
+    static boolean isValueListEnum(Map<String, Category> valueListEnums, String enumName, Category cat)
+    {
+        Category owner = enumName.isEmpty() ? null : valueListEnums.get(enumName);
+        return owner != null && owner.getId().equals(cat.getId());
+    }
+
+    /**
+     * PRD 058 exempts the rapla-internal {@code user-groups} subtree from key
+     * migration (group keys stay legacy-validated), so a CATEGORY attribute rooted
+     * there can never back a generated enum — it is exposed as an ID reference like
+     * an ORGANIZATION root. Mirrors {@code LocalAbstractCachableOperator.isInUserGroupsSubtree}.
+     */
+    static boolean isInUserGroupsSubtree(Category cat)
+    {
+        Category c = cat;
+        for (int guard = 0; c != null && guard < 100; guard++)
+        {
+            Category parent = c.getParent();
+            if (Permission.GROUP_CATEGORY_KEY.equals(c.getKey()) && parent != null && parent.getParent() == null)
+            {
+                return true;
+            }
+            c = parent;
+        }
+        return false;
     }
 
     /**
@@ -766,17 +810,12 @@ public final class ClassificationSdlGenerator
                 String localized = child.getName(locale);
                 if (localized != null && !localized.isBlank())
                 {
-                    sb.append("  \"\"\"").append(escapeDescription(localized)).append("\"\"\"\n");
+                    sb.append("  \"").append(escapeStringLiteral(localized.trim())).append("\"\n");
                 }
                 sb.append("  ").append(value).append("\n");
             }
         }
         sb.append("}\n\n");
-    }
-
-    private static String escapeDescription(String s)
-    {
-        return s.replace("\"", "\\\"").replace("\n", " ").trim();
     }
 
     private static List<DynamicType> sortedByKey(Collection<DynamicType> types)
@@ -999,7 +1038,7 @@ public final class ClassificationSdlGenerator
     /** Escape a Java string for embedding in a GraphQL string literal. */
     private static String escapeStringLiteral(String s)
     {
-        return s.replace("\\", "\\\\").replace("\"", "\\\"");
+        return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\r", "\\r").replace("\n", "\\n");
     }
 
     /**
@@ -1048,7 +1087,7 @@ public final class ClassificationSdlGenerator
         {
             Object root = attr.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
             String enumName = (root instanceof Category cat) ? enumNameFor(cat) : "";
-            base = (!enumName.isEmpty() && valueListEnums.containsKey(enumName))
+            base = (root instanceof Category cat && isValueListEnum(valueListEnums, enumName, cat))
                     ? enumName       // VALUE_LIST → use the generated enum type
                     : "Category";    // ORGANIZATION or no root constraint → generic
         }

@@ -272,6 +272,32 @@ key `prüfer-extern` round-trips; storing one with a space / slash / `true` stil
 fails legacy; a *non-group* category with an umlaut still fails strict (unchanged).
 Pin red-green by reverting the relax.
 
+## Update 2026-08-28 — group keys DO reach the SDL generator (fixed)
+
+The 2026-06-24 note assumed *"Group keys never reach the SDL generator"*. A migrated
+Rapla 2 dataset disproved it: an event DynamicType had a CATEGORY attribute with
+`root-category = user-groups` (booker picks a user group). `CategoryKindClassifier`
+classified that root as VALUE_LIST, `ClassificationSdlGenerator.enumNameFor` built the
+enum name from the path and `checkGraphQlCompliantName("user-groups")` threw
+`PRD 058 invariant violated` on every boot — the migration exemption and the generator's
+invariant contradicted each other.
+
+**Fix:** `enumNameFor` returns `""` for roots inside the `user-groups` subtree
+(`ClassificationSdlGenerator.isInUserGroupsSubtree`, mirror of the operator helper), so
+all four call sites fall back to the existing ORGANIZATION handling (`ID` /
+`Category` / `CategoryWhere`, no enum). Test:
+`rapla-app/.../ClassificationSdlGeneratorUserGroupsTest` (plain JUnit, in-memory
+`EntityStore`). Group *values* of such an attribute stay reachable by id; a typed enum
+for user groups is out of scope (group keys are legacy-validated by design, see above).
+
+**Second finding, same dataset:** enum-value descriptions were emitted as block strings
+(`"""…"""`) with `"` escaped as `\"` — GraphQL block strings have no such escape, so a
+category display name containing a double quote produced `\""""` and the schema parser
+failed on boot (`SchemaProblem … InvalidSyntaxError`). Now emitted as a regular string
+literal via `escapeStringLiteral` (`escapeDescription` removed). Covered by the second
+test in `ClassificationSdlGeneratorUserGroupsTest` (parses the SDL with graphql-java's
+`SchemaParser`).
+
 ## Phasing — as shipped
 
 All phases below landed in one session (2026-05-28) except Phase 5.
@@ -282,3 +308,33 @@ All phases below landed in one session (2026-05-28) except Phase 5.
 - ✅ **Phase 4** — `sanitizeTypeName` band-aid removed; defensive throw on non-spec input. Matching `isRaplaInternal` skip added to `GeneratedClassificationWiring`. 4 SDL unit tests updated.
 - ⏳ **Phase 5** — dhbw deploy verification. Pending: run migration against dhbw test DB, capture key-count delta, verify dualis re-import lands cleanly on the renamed `Pruefer__extern_` akteurtyp category.
 - ✅ **Phase 6** (2026-06-24) — group-key legacy validation (Option A). Landed: `Tools.isLegacyKey` (rapla-core); `DynamicTypeImpl.checkKey(i18n, key, boolean legacy)` overload; `LocalAbstractCachableOperator.isInUserGroupsSubtree(cat)` ancestry helper; both write-path category validators (`checkGraphqlKeySpecCompliance` + `checkConsitency` → `checkKey`) now use legacy validation for the user-groups subtree, strict spec elsewhere. Migration exemption unchanged. Tier-2 `GroupKeyLegacyValidationTest` (5 tests: hyphen + umlaut group keys round-trip; space / slash group keys still rejected; non-group hyphen still rejected by strict spec). `DynamicTypeKeyValidatorTest` + `GraphqlKeyMigrationTest` stay green.
+
+## Update 2026-08-29 — one type namespace: reserved suffix words
+
+**Found:** a DynamicType `intern` and a root category renamed to `intern` both produced
+`internWhere` → `SchemaProblem` at boot, crashloop (found on a migrated Rapla 2 dataset). Generated names from DT keys
+(`KClassification`, `KWhere`, `KRefWhere`) and from root-category paths (`E`, `EWhere`,
+`EListWhere`) shared the suffix `Where`; enum↔enum (`a/b` vs `a_b`) and generated↔core
+collisions were unguarded too. A collision-free naming scheme is impossible on a shared
+alphabet with free keys — so the namespace is shared by construction and controlled by rule.
+
+**Decision (Option 1 of the 2026-08-29 discussion):**
+- Enum-derived names get their own suffix family: `EEnum`, `EEnumWhere`, `EEnumListWhere`
+  (values stay verbatim keys). DT-derived names unchanged.
+- Reserved suffix words `Classification`, `Where`, `Enum`, `Rapla` (`Rapla` kept free for
+  future generated families): no key may END with one — `Tools.isSpecCompliant` rejects,
+  `Tools.toSpecKey` appends `_` (so `GraphqlKeyMigration` migrates existing offenders).
+  Reserved DT keys (`String`, `Int`, `Boolean`, `LocalDateTime`, `Category`, `Allocatable`)
+  and reserved attribute keys (`typeKey`, `type`, `AND`, `OR`, `NOT`) are refused on write.
+- Core side: `GeneratedNameNamespaceArchitectureTest` — no hand-written type in
+  `schema.graphqls` ends with a reserved suffix (fixed predicate types excepted), no
+  `AllocatableFilter`/`ReservationFilter` field shaped `where<Key>`.
+- Fail-safe: the generator never breaks the boot on a name collision. Ambiguous enum path
+  → first root keeps the enum, later roots fall back to `Category`, WARN with both ids.
+
+**Consumers:** SPA parser (`classification-schema.ts`) resolves enums by SDL type name —
+unchanged. Docs `docs/graphql.md` updated (`RaumartEnum`). dhbwrapla docs mention
+`<EnumName>Where` generically — still true.
+
+Tests: `ClassificationSdlGeneratorNamespaceTest`, `ToolsTest` (suffix rules),
+`GeneratedNameNamespaceArchitectureTest`, `GraphqlKeyMigrationTest` (suffix migration).

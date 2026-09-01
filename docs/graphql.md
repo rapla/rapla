@@ -274,8 +274,20 @@ For every root with `kind: VALUE_LIST`, the schema also generates a
 GraphQL enum whose values mirror the root's children. Classification
 typed fields targeting those roots use the enum directly:
 
+**Namensraum der generierten Typen (2026-08-29).** Alle generierten Namen sind
+`<Admin-Key> + reserviertes Suffix`; die Suffix-Familien sind disjunkt:
+DynamicType-Key `K` → `KClassification`, `KClassificationInput`, `KWhere`, `KRefWhere`
+(+ Filterfeld `whereK`); Root-Kategorie-Pfad `E` → `EEnum`, `EEnumWhere`, `EEnumListWhere`.
+Keys dürfen nicht auf `Classification`, `Where`, `Enum` oder `Rapla` enden
+(`Tools.isSpecCompliant`, Migration hängt `_` an), handgeschriebene Core-Typen ebenso
+(`GeneratedNameNamespaceArchitectureTest`). Damit dürfen ein Typ und eine Root-Kategorie
+denselben Key tragen (`intern` → `internWhere` vs. `internEnumWhere`), und ein neuer
+Core-Typ kann kein Kunden-Schema mehr brechen. Enum-*Werte* bleiben verbatim Keys. Einziger
+Restfall: zwei Roots mit gleichem `_`-Pfad (`a/b` vs. Key `a_b`) — der Generator behält
+den ersten und loggt WARN, das zweite Attribut fällt auf `Category` zurück.
+
 ```graphqls
-enum Raumart {
+enum RaumartEnum {
   """Büroräume allgemein"""
   Bueroraeume
   """Hörsaal"""
@@ -289,8 +301,8 @@ enum Raumart {
 type roomClassification implements Classification & AllocatableClassification {
   typeKey: String!
   type: DynamicType!
-  Raumart:          Raumart                 @displayName(value: "Raumart")    @rootCategory(path: "Raumtypen")
-  AusstattungListe: [Ausstattung!]          @displayName(value: "Ausstattung") @rootCategory(path: "Ausstattungen") @multiplicity(value: LIST)
+  Raumart:          RaumartEnum             @displayName(value: "Raumart")    @rootCategory(path: "Raumtypen")
+  AusstattungListe: [AusstattungEnum!]      @displayName(value: "Ausstattung") @rootCategory(path: "Ausstattungen") @multiplicity(value: LIST)
   SyncStatus:       SyncStatus              @displayName(value: "Sync-Status")
   Gebaeude:         Allocatable             @displayName(value: "Gebäude")     @expectedType(key: "building")
 }
@@ -316,7 +328,7 @@ hot-swap window.
 
 **Why enums for VALUE_LIST roots specifically:**
 
-- AI / GraphiQL discoverability — `__type(name: "Raumart")` introspection
+- AI / GraphiQL discoverability — `__type(name: "RaumartEnum")` introspection
   returns the full value space; autocomplete shows values inline when
   typing predicates. No separate descriptor query for value discovery.
 - Type-safe filtering — `{ Raumart: { eq: Bueroraeume } }` is validated
@@ -429,7 +441,7 @@ The field `name` is the attribute key. The field `type` (unwrapping
 through `ofType` for `[X!]` / `!` wrappers) tells you the value type:
 
 - `name: "String" | "Int" | "Boolean"` etc. — scalar attribute
-- `name: "<EnumName>"`, `kind: "ENUM"` — VALUE_LIST CATEGORY attribute
+- `name: "<RootPath>Enum"`, `kind: "ENUM"` — VALUE_LIST CATEGORY attribute
 - `name: "Category"` — ORGANIZATION CATEGORY attribute
 - `name: "Allocatable"` — ALLOCATABLE attribute (server validates the
   expected DynamicType per the `@expectedType` directive)

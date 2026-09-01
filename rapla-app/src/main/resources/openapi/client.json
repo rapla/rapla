@@ -231,6 +231,9 @@
           "required" : true
         },
         "responses" : {
+          "403" : {
+            "description" : "Forbidden"
+          },
           "200" : {
             "description" : "OK",
             "content" : {
@@ -1420,7 +1423,7 @@
             "type" : "string"
           }
         }, {
-          "name" : "graceSeconds",
+          "name" : "graceMinutes",
           "in" : "query",
           "required" : false,
           "schema" : {
@@ -1496,6 +1499,38 @@
         "responses" : {
           "200" : {
             "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/permission-migration/{allocatableId}/resolve" : {
+      "post" : {
+        "tags" : [ "permission-migration-controller" ],
+        "operationId" : "resolve",
+        "parameters" : [ {
+          "name" : "allocatableId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/PermissionMigrationFinding"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -2068,6 +2103,30 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/IdentityResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/permission-migration/findings" : {
+      "get" : {
+        "tags" : [ "permission-migration-controller" ],
+        "operationId" : "getFindings",
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/PermissionMigrationFinding"
+                  }
                 }
               }
             }
@@ -3109,6 +3168,42 @@
           }
         }
       },
+      "StoredArtifactImpl" : {
+        "properties" : {
+          "links" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              }
+            }
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "kind" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "body" : {
+            "type" : "string"
+          },
+          "metadata" : {
+            "type" : "string"
+          },
+          "createDate" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "lastChanged" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
       "TimeInterval" : {
         "properties" : {
           "start" : {
@@ -3177,7 +3272,20 @@
               "$ref" : "#/components/schemas/ExternalSyncEntityImpl"
             }
           },
+          "artifacts" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/StoredArtifactImpl"
+            }
+          },
           "removeSet" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SerializableReferenceInfo"
+            },
+            "uniqueItems" : true
+          },
+          "createSet" : {
             "type" : "array",
             "items" : {
               "$ref" : "#/components/schemas/SerializableReferenceInfo"
@@ -3690,6 +3798,44 @@
             }
           },
           "key" : {
+            "type" : "string"
+          }
+        }
+      },
+      "PermissionMigrationFinding" : {
+        "properties" : {
+          "allocatableId" : {
+            "type" : "string"
+          },
+          "allocatableName" : {
+            "type" : "string"
+          },
+          "escalations" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PrincipalEscalation"
+            }
+          }
+        }
+      },
+      "PrincipalEscalation" : {
+        "properties" : {
+          "principalType" : {
+            "type" : "string"
+          },
+          "principalName" : {
+            "type" : "string"
+          },
+          "currentLevel" : {
+            "type" : "string"
+          },
+          "additiveLevel" : {
+            "type" : "string"
+          },
+          "form" : {
+            "type" : "string"
+          },
+          "explanation" : {
             "type" : "string"
           }
         }

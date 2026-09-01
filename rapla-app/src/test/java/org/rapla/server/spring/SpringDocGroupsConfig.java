@@ -208,6 +208,10 @@ public class SpringDocGroupsConfig
                         "/api/ical/import/**",
                         "/api/externaleventimport",
                         "/api/externaleventimport/**",
+                        "/api/templateimport",
+                        "/api/templateimport/**",
+                        "/api/externalids",
+                        "/api/externalids/**",
                         // PRD 097 — server-rendered HTML documents (Leihschein, notices, and the
                         // Phase-6 successor of the /rapla/calendar pages listed below)
                         "/api/documents",

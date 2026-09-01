@@ -1536,7 +1536,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 {
                     continue;  // rapla-internal types (rapla:period, rapla:template)
                 }
-                if (!Tools.isSpecCompliant(dt.getKey()))
+                if (!Tools.isSpecCompliant(dt.getKey()) || Tools.isReservedTypeKey(dt.getKey()))
                 {
                     throw new RaplaException(i18n.format("error.invalid_key",
                             new Object[] { dt.getKey(), "'_'", "'_'" }));
@@ -1544,7 +1544,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 for (Attribute a : dt.getAttributes())
                 {
                     if (a == null) continue;
-                    if (!Tools.isSpecCompliant(a.getKey()))
+                    if (!Tools.isSpecCompliant(a.getKey()) || Tools.isReservedAttributeKey(a.getKey()))
                     {
                         throw new RaplaException(i18n.format("error.invalid_key",
                                 new Object[] { a.getKey(), "'_'", "'_'" }));
@@ -3256,6 +3256,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 DynamicTypeImpl dynamicType = (DynamicTypeImpl) entity;
                 addChangedDynamicTypeDependant(evt, user, store, dynamicType, false);
             }
+            if (raplaType == Category.class)
+            {
+                addCategoryKeyPathReferers(evt, user, store, (CategoryImpl) entity);
+            }
             if (entity instanceof Classifiable)
             {
                 processOldPermssionModify(store, entity);
@@ -3479,6 +3483,49 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         Class<? extends Entity> clazz = (entity instanceof Reservation) ? Reservation.class : Allocatable.class;
         Classifiable persistant = (Classifiable) tryResolve(entity.getId(), clazz);
         Util.processOldPermissionModify((Classifiable) entity, persistant);
+    }
+
+    /**
+     * PRD 110 — a category KEY rename invalidates every persisted key path that runs through
+     * this category: root-category constraints and default values in DynamicType definitions,
+     * and calendar filter rules in preferences. The JDBC store keeps one row per entity, so
+     * those referers must be re-stored in the same dispatch or the paths go stale until the
+     * next boot (where they are dropped silently). Descendants are included because their
+     * paths contain the renamed key too.
+     */
+    private void addCategoryKeyPathReferers(UpdateEvent evt, User user, EntityStore store, CategoryImpl category) throws RaplaException
+    {
+        Category persistant = cache.tryResolve(category.getId(), Category.class);
+        if (persistant == null || Objects.equals(persistant.getKey(), category.getKey()))
+        {
+            return;
+        }
+        Set<ReferenceInfo> subtree = new HashSet<>();
+        subtree.add(persistant.getReference());
+        for (Category descendant : CategoryImpl.getRecursive(persistant))
+        {
+            subtree.add(descendant.getReference());
+        }
+        Map<ReferenceInfo, Set<Entity>> referers = getReferencingEntities(subtree, store);
+        for (Set<Entity> entities : referers.values())
+        {
+            for (Entity entity : entities)
+            {
+                Class<? extends Entity> typeClass = entity.getTypeClass();
+                if (typeClass != DynamicType.class && typeClass != Preferences.class)
+                {
+                    continue;
+                }
+                if (evt.findEntity(entity) != null)
+                {
+                    continue;
+                }
+                Entity persistantReferer = store.tryResolve(entity.getId(), entity.getTypeClass());
+                Entity editable = editObject(entity, persistantReferer, user);
+                evt.addToStoreIfNotExisitant(editable);
+                LOGGER.debug("Category key {} -> {}: re-storing referer {}", persistant.getKey(), category.getKey(), entity.getId());
+            }
+        }
     }
 
     protected void addChangedDynamicTypeDependant(UpdateEvent evt, User user, EntityStore store, DynamicTypeImpl type, boolean toRemove) throws RaplaException

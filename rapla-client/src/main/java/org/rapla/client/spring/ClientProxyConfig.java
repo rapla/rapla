@@ -500,6 +500,12 @@ public class ClientProxyConfig
     }
 
     @Bean
+    public org.rapla.rest.ExternalIdLookup externalIdLookupProxy(HttpServiceProxyFactory factory)
+    {
+        return factory.createClient(org.rapla.rest.ExternalIdLookup.class);
+    }
+
+    @Bean
     public org.rapla.endpoints.RemoteLogger remoteLoggerProxy(HttpServiceProxyFactory factory)
     {
         return factory.createClient(org.rapla.endpoints.RemoteLogger.class);
