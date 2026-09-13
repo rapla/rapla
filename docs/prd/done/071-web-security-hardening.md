@@ -85,8 +85,8 @@ adapters (belong with their deployment, not this core PRD).
 - `connect-src` (SPA policy) derived from the configured OAuth IdP endpoints
   (`ExternalProvidersProperties.enabledProviders()` → issuer/authorize/token/jwks
   origins) → **zero CSP-specific config**. Effective policy boot-logged (auditable).
-- **Live-verified on the dhbwrapla deployment (Mosbach Keycloak):** the SPA report-only
-  header automatically carries `connect-src 'self' … https://login.mosbach.dhbw.de`
+- **Live-verified on the dhbwrapla deployment (production Keycloak):** the SPA report-only
+  header automatically carries `connect-src 'self' … https://idp.example.org`
   (+ Microsoft/Google when configured) — no CSP config touched.
 - Tests: `CspPolicyBuilderTest`, `SecurityHeadersTest` (MockMvc: `/rapla/calendar` +
   `/api/**` enforced `default-src 'none'`, `/login` report-only).

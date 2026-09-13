@@ -1735,7 +1735,7 @@ so per-provider is the correct shape.
 #### TEMPORARY DHBW dev bridge — per-provider `legacy-callback` ([PRD 036](prd/036-external-idp-oauth-login.md) Phase 3)
 
 A dev-only workaround exists for the DHBW production Keycloak
-(`login.mosbach.dhbw.de`, realm `dhbwmos-lehre`, client `rapla-app`):
+(`idp.example.org`, realm `<realm>`, client `rapla-app` — real values: dhbwrapla `docs/infrastructure.md`):
 that realm only whitelists the **legacy** `/app/auth/callback` redirect
 for localhost, and the maintainer has no admin on the prod realm to
 register the conformant `/login/oauth2/code/keycloak`. The bridge is a
@@ -1850,7 +1850,7 @@ realm. Unlike Microsoft/Google, rapla derives every OIDC endpoint from just
        (for dev also `http://localhost:4200/login/oauth2/code/keycloak` and
        `http://localhost:8051/login/oauth2/code/keycloak`). This is rapla's
        server-side callback — **not** `/app/auth/callback`. Verified live
-       against the DHBW Mosbach realm ([PRD 072](prd/done/072-server-side-login-dialog.md)).
+       against the DHBW production realm ([PRD 072](prd/done/072-server-side-login-dialog.md)).
      - **Web origins**: the rapla origin(s), or `+` to reuse the redirect-URI
        origins (CORS).
 3. **Run rapla** with:

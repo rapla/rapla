@@ -603,14 +603,14 @@ for the admin's and adds `requested_subject=alice`.
    needs (a) admin's role with `impersonate-users` realm-management
    permission and (b) `token-exchange` permission on the rapla client.
    In typical university/municipal deployments the realm admin is
-   central IT (e.g. DHBW IT for `dhbwmos-lehre`), separate from rapla
+   central IT (e.g. the university's IT for its production realm), separate from rapla
    admins. They'll (rightly) refuse: it would let rapla admins
    impersonate users in *any* application federating through that Keycloak.
 3. **Rapla's per-group admin model isn't expressible at the IdP.**
    `canAdminUser` reads `can_admin_parent` annotation +
    `getGroupsToAdmin` scope; Keycloak's `impersonate-users` is
    realm-global, all-or-nothing. No concept of "this admin can
-   impersonate Mosbach students only". Even if reason #2 were solved,
+   impersonate the students of one campus only". Even if reason #2 were solved,
    every rapla group-admin would effectively get realm-wide impersonation.
 
 Reason #3 is most fundamental: the authorization scoping rapla wants

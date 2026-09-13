@@ -9,7 +9,7 @@ server:
   # + all RFC1918 private ranges 10/8, 172.16/12, 192.168/16, 169.254/16). A
   # client connecting directly can no longer spoof X-Forwarded-Host to hijack
   # the OAuth redirect-URI same-origin check. No proxy list to maintain.
-  #   - DHBW: LB 172.31.81.90 -> rapla-app (rapla-www1); the LB is in 172.16/12,
+  #   - customer deployment: LB <private ip> -> rapla-app; the LB is in 172.16/12,
   #     covered by the default -> zero extra config.
   #   - dev `ng serve` proxy (xfwd:true) connects over loopback -> trusted ->
   #     :4200 forwarded host still honoured, SPA same-origin login still works.

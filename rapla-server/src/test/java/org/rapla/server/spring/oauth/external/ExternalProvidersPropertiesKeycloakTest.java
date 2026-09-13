@@ -143,12 +143,12 @@ class ExternalProvidersPropertiesKeycloakTest
     @Test
     void twoKeycloaksRegisterUnderDistinctIdsWithDistinctIssuers()
     {
-        // Phase 3 core case: DHBW Mosbach + a second realm, both type keycloak.
+        // Phase 3 core case: a production Keycloak + a second realm, both type keycloak.
         ProviderDef mos = new ProviderDef();
         mos.setEnabled(true);
         mos.setType("keycloak");
-        mos.setBaseUrl("https://login.mosbach.dhbw.de");
-        mos.setRealm("dhbwmos-lehre");
+        mos.setBaseUrl("https://idp.example.org");
+        mos.setRealm("prod-realm");
         mos.setClientId("rapla-app");
 
         Map<String, ProviderDef> entries = new LinkedHashMap<>();
@@ -160,7 +160,7 @@ class ExternalProvidersPropertiesKeycloakTest
         assertEquals(2, enabled.size());
         assertTrue(props.byId("keycloak").isPresent());
         assertTrue(props.byId("dhbw").isPresent());
-        assertEquals("https://login.mosbach.dhbw.de/realms/dhbwmos-lehre", props.byId("keycloak").get().issuer());
+        assertEquals("https://idp.example.org/realms/prod-realm", props.byId("keycloak").get().issuer());
         assertEquals("http://localhost:8080/realms/rapla", props.byId("dhbw").get().issuer());
     }
 

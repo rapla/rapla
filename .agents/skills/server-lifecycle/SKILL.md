@@ -41,7 +41,7 @@ Stop in one Bash call (returns immediately), then start in a separate Bash call 
 **A restart replays the exact previous start command — never reconstruct it from memory.**
 Profiles, `-P<plugin-id>`, run arguments: dropping any of them silently changes server
 behavior (scar 2026-06-24: a restart without `profiles=local` lost an OAuth flag and broke
-the Mosbach-Keycloak login; the user found out via screenshot 30 min later). Recipe: on
+the production-Keycloak login; the user found out via screenshot 30 min later). Recipe: on
 every start, first write the full command to `logs/rapla.cmd` (`echo "<full mvn command>"
 > logs/rapla.cmd`); on restart, `cat logs/rapla.cmd` and reuse it verbatim. If there is no
 `.cmd` file (server started by the user), ask or check `ps -eo args` for the running
@@ -131,6 +131,19 @@ the plugin off the classpath and its beans (auth stores, sync services, …) nev
 Never `java -jar` the packaged fat JAR for routine dev — that's deployment testing only (see the
 `test-deployment` skill). And read the plugin repo's own `AGENTS.md` first — it carries the
 plugin-specific knobs (workingDirectory, additional config locations, conditional beans).
+
+## Traps (2026-09-02, Siegen delivery)
+
+- **`MAVEN_OPTS` never reaches the app** — `spring-boot:run` forks a second JVM even with
+  `-Dspring-boot.run.fork=false`; JVM flags go in `-Dspring-boot.run.jvmArguments="…"` only.
+  Symptom when missed: locale stays English (weekdays "Tue", `Appointment.times` "0:00 PM").
+- **`rapla.file-datasources.raplafile` resolves against the CWD, which is `rapla-app/`** under
+  `spring-boot:run` — a repo-root relative path silently creates an EMPTY default system
+  instead of failing. Use `../data/<file>.xml` in profiles run from the repo root.
+- **`spring-boot:run` test-compiles first** — a red test-first file anywhere in the reactor
+  blocks the dev restart; start with `-Dmaven.test.skip=true` only as a stop-gap and say so.
+- **Port answers but no WSL process:** a Windows instance of the packaged JAR on mirrored
+  networking owns 8051; `pkill` finds nothing. Stop it on the Windows side.
 
 ## Conventions
 

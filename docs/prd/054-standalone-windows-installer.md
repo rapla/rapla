@@ -11,7 +11,7 @@ Rapla per its actual use case is **multi-user**: shared resources, multiple sche
 
 The standalone build is **distributed separately from the server distribution** — its own MSI artifact, its own release cadence. The server distribution (`rapla-app` fat JAR) is unchanged.
 
-**Not in scope: dhbwrapla.** Institutional deployments (DHBW Mosbach + similar) need NTLM/Keycloak federation, multi-user permissions, server's auth surface. Those are handled by the full server build with the dhbwrapla plugin — standalone is explicitly trial-only.
+**Not in scope: dhbwrapla.** Institutional deployments (universities such as DHBW) need NTLM/Keycloak federation, multi-user permissions, server's auth surface. Those are handled by the full server build with the dhbwrapla plugin — standalone is explicitly trial-only.
 
 ## Scope
 

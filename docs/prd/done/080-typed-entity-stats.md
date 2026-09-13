@@ -35,10 +35,10 @@ type StatKey {
 `StatKey.entity` is **per-dimension** (per key), populated only for entity-resolving dimensions; null for
 `date`/`expr`-string dimensions. `StatValue`/`BlockStatBucket` (`keys`/`values`/`count`) stay shared + generic.
 
-Example — Mosbach utilization **with room size, no join**:
+Example — site utilization **with room size, no join**:
 ```graphql
 appointmentBlockStats(
-  groupBy:   [ { key:"raum", allocatables:{ typeKeyIn:["Raum"], whereRaum:{ Gebaeude:{ where:{ Gebaeudename:{ startsWith:"MOS" } } } } } } ],
+  groupBy:   [ { key:"raum", allocatables:{ typeKeyIn:["Raum"], whereRaum:{ Gebaeude:{ where:{ Gebaeudename:{ startsWith:"HAUPT" } } } } } } ],
   aggregate: [ { key:"stunden", field:DURATION_MINUTES, fn:SUM } ]
 ) {
   keys { value entity { ... on Allocatable { classification { ... on RaumClassification { AnzahlPlaetzeInsgesamt } } } } }

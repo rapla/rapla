@@ -26,7 +26,7 @@ no-`groupBy` case.**
 
 **Update 2026-06-21 ([PRD 074](074-graphql-declarative-views.md) A + Stufe b):**
 - The `groupBy.allocatables` dimension now takes the **full `AllocatableFilter`** (incl. `where<TypeKey>`)
-  via the unified nested filter ([PRD 074](074-graphql-declarative-views.md) A) — so "Auslastung pro Raum, Standort Mosbach" filters
+  via the unified nested filter ([PRD 074](074-graphql-declarative-views.md) A) — so "Auslastung pro Raum, Standort X" filters
   server-side through `whereRaum.Gebaeude` (no client join).
 - `BlockAggregate` gained **`expr`** (Stufe b): a *single numeric* metric expression, coerced to a
   number. Covers most metric needs (e.g. `expr:"attribute(item,\"<num>\")"`, constants).

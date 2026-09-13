@@ -8,7 +8,7 @@
 
 ## Abstract
 
-Deployments carry up to ~1000 event templates (`rapla:template` Allocatables); Swing renders a
+Deployments carry many hundreds of event templates (`rapla:template` Allocatables); Swing renders a
 balanced multi-level menu tree (`BalancedHierarchicalMenu`, max 25/node, alphabetic range labels).
 The SPA gets ONE unified "Neu" dialog (D1/D6, discussion 2026-07-24): **search + recents + one
 flat scrollable list carrying event TYPES and TEMPLATES together**, each row marked by kind —
@@ -25,7 +25,7 @@ and §12 filtering happens before any label/count is computed.
   The SPA folds the (already name-sorted) list into a tree in one pass. Precedent:
   `DocumentApi.DocumentSummary.groups` is the same flat-hierarchy-tag shape.
 - **Grouping algorithm** (D3): `TemplatePathBuilder` (rapla-app, `org.rapla.server.spring.graphql`)
-  — token-prefix clustering (first name token = semantic bucket, e.g. course keys like `TINF23B4`;
+  — token-prefix clustering (first name token = semantic bucket, e.g. course keys like `ABC23X4`;
   oversized buckets recurse into the next token), falling back to alphabetic range chunks
   (labels like `Raumplan10 – Raumplan21`) where tokens don't split — the
   `BalancedHierarchicalMenu` mechanic (rapla-core), max 25 per node. Separators as in Swing:
@@ -104,132 +104,49 @@ Both matching edge cases are decided (2026-07-30): unmatched items trigger a war
 "Back" / "Create anyway" (OQ3); n:1 assignment is allowed — several import items (distinct
 dualisIds of the same unit) may share one blueprint, each producing its own copy (OQ4).
 
-### Dualis-Abgleich workflow + Halde (design direction 2026-07-30)
+### External-event reconciliation workflow + staging ("Halde") — generic design of record
 
-> Implementation home since 2026-08-05: **dhbwrapla PRD 004** (`docs/prd/004-dualis-halde.md`
-> in the dhbwrapla repo) — carries the H1–H5 plan, the fill-job query design with live-verified
-> view semantics (per-Kurs row explosion, volumes/timings, Orga scoping), and the open
-> questions. This section stays the UI/consumer-side design of record.
+> Deployment-specific design (Dualis-Abgleich UI v1/v2 history, Kurs/Studiengang/Orga
+> scoping rules, corpus-derived template conventions, live-verification volumes) moved to
+> **dhbwrapla PRD 004** (`docs/prd/004-dualis-halde.md`, § "Aus rapla PRD 104 verschoben")
+> on 2026-09-13 (AGENTS.md §17). What stays here is the generic principle the SPA and the
+> `externaleventimport` plugin family implement.
 
-> **UI redesign 2026-08-05 (v2, user decision: "the SPA must not be more complicated than
-> Swing")** — the dialog-based worklist below is SUPERSEDED. The calendar becomes the
-> assignment surface: (1) the overview page shrinks to a **cockpit** (one row per Kurs:
-> progress + open count → click opens that Kurs's week view; footer = Verwaist/Geändert
-> counters; semester filter + Kurs search stay); (2) the week view gains a **Dualis tray**
-> (open items of the Kurs as draggable chips) and, when a template is selected (ONE selector,
-> unit-overlap-preselected, once per Kurs), the template reservations render as **ghost
-> blocks** labeled with their auto-matched Dualis event. Gestures replace every dialog:
-> ghost click = create that copy · "Alle übernehmen" = bulk · chip → ghost = manual
-> assignment · chip → free slot = create there (details in the sheet) · chip → existing
-> reservation = verknüpfen (classification merge + id stamp). Unmatched ghosts stay dashed,
-> unmatched chips stay in the tray — the m×n matching is SEEN, not answered.
-> **The NORMAL case is template-IMPLICIT** (refined 2026-08-05 against the real dhbw corpus):
-> the bulk of the ~1500 templates are single-reservation **structure defaults named by
-> convention** — `<TypeName> <Standort>/<Fakultät>/<Studiengang>` (e.g. "Lehrveranstaltung
-> MGH/T/INF", "Pruefung MA/…"; 281 hits for "lehrver" alone). A chip-drop silently
-> instantiates the matching structure default — picked DETERMINISTICALLY by item type +
-> the Kurs's orga path, no scoring — as the base (structure/duration/rooms from the
-> template, classification from Dualis, slot from the drop, `PRUEFUNGSDAUER` for exams,
-> details in the sheet); name-match fallback cascade: exact path → parent path → generic
-> type template → bare create. The tray shows it as a footnote ("Basis: …"), never as a
-> question. Chip-onto-existing = verknüpfen, unchanged. **Semestervorlagen (multi-
-> reservation) are the ONLY family the ghost/ranking machinery considers** — structure
-> defaults are excluded from the ranking (they would only be noise).
-> Ghosts appear ONLY when the template ranking is unambiguous (clear unit-overlap/memory
-> winner above a threshold) or the user picks a template deliberately — templates are an
-> accelerator for the semester-start bulk, never a required step; gestures always win over
-> ghosts. The create
-> dialog (template search + blueprint radios + time-source radio + mini week grid), checkbox
-> bulk selection, and the per-row action buttons are all deleted. The section below is kept
-> for the concepts that survive (three resolution paths, states/buckets, scope rules,
-> matching cascade) — their INTERACTION is now the v2 gesture model.
->
-> **Genericity (locked 2026-08-05, user decision):** the worklist is GENERIC, PRD 068 style —
-> the read contract (`externalEventWorklist`: sourceName, stand, booking-rights-filtered
-> groups + items) belongs to rapla's externaleventimport plugin family; the deployment
-> (dhbwrapla PRD 004 Halde) provides the implementation. The SPA carries ZERO
-> source-specific strings — every visible label derives from the server's `sourceName`
-> ("Dualis-Import" at dhbw, hidden entirely where no impl answers = the plugin gate).
-> GUI landed + LIVE-VERIFIED 2026-08-05 (Playwright against the dhbw stack, generic
-> `externalEventWorklist` API + staging engine from the parallel session, 45k staged items):
-> `src/app/import/` (models tier-5-tested; worklist service = the ONE wire-shape adapter;
-> cockpit route `/app/import` with semester filter defaulting to the current semester,
-> Kurs search, virtual-scrolled group rows), sidenav entry with compact open badge
-> ("33k"), deep-link `?importGroup=<allocatableId>` (preserved through the landing
-> redirect) opening the virtual-scrolled import tray beside the view — draggable chips
-> with payload type `application/x-rapla-import-item`. STILL MISSING: the drop layer +
-> ghosts (blocked on the generic bind/create/ignore mutations), Erledigt/Verwaist/Geändert
-> lists, auto-tray from calendar selection.
-
-The import UI is a **reconciliation worklist** ("Dualis-Abgleich", own SPA route, plugin-gated),
-not a wizard: it permanently shows every staged external event without a rapla counterpart,
-grouped by hierarchy node (Kurs; CAS events group under their Studiengang), with per-group
-progress and a **quick search over the Kurs/group names** (a planner may have many bookable
-Kurse): a query matching a group name shows that whole group expanded; otherwise it filters
-by event name/unitcode. Three resolution paths per entry: **Verknüpfen** (bind to an EXISTING reservation of
-the group without an external id — suggested via I1/D10 matching, executed over the existing
-`syncClassification` path; the candidate set is ALL not-yet-bound reservations of the group in
-the semester window, searchable, ranked suggestions pinned on top — same scaling pattern as
-the template selector, never a short hard-coded suggestion menu), **Aus Vorlage erstellen**
-(single → auto-match + prefilled sheet; bulk selection → the D10 assignment matrix → batch
-create; additionally a per-GROUP action "Kurs abgleichen…" takes ALL open entries of a group
-into the matrix at once — the template is PRE-SELECTED per group via the **unit-overlap
-score**: the template whose blueprint unitcodes cover the most open items wins, shown as
-"deckt X von Y ab". Templates carry NO Kurs, and the Kurs↔template association changes every
-semester (a Kurs advances through the curriculum; a first-semester Kurs is brand new) — so
-Kurs is the WRONG key for template selection and for the assignment memory. Unit is the
-stable key: I1 memory is keyed `unit → (template-family, blueprint)`, which survives semester
-rollover and covers new Kurse automatically (unit overlap needs no history at all). When NO
-units are present in the templates, the fallback is a **fuzzy name RANKING**: score per
-template = aggregated best name similarity of its blueprint names vs the group's open items
-("Namensdeckung X %"), presented as a ranked top list (chips under the template search) —
-never a silent single pick, since many templates may qualify; `fixedtimeandduration=true` and
-multi-reservation (plan-like) templates get a score BOOST, not a hard filter. Optional
-later: template metadata (Studiengang + Fachsemester attributes, Phase 5 family) for
-deterministic preselection; Dualis `JAHRGANG` on the Kurs could derive the current
-curriculum semester), **Ignorieren** (persisted, undoable — without it the list never
-reaches zero). Tabs: Offen / **Erledigt** (already-reconciled entries with their bound
-reservation, actions "öffnen" + "Verknüpfung aufheben" — unbinding removes the external id
-and returns the entry to Offen, the reservation itself stays; entries whose source data
-changed after binding carry a **"Geändert" badge** with "Änderungen übernehmen" =
-`syncClassification` re-merge, undoable, or "Verwerfen") / Ignoriert. The full
-staging lifecycle table (insert/update/delete rules) lives in dhbwrapla PRD 004.
-~~The Verwaist bucket (imported but gone from the source) falls out of the staging diff.~~
-**Verwaist REMOVED entirely 2026-08-11 (user decision)** — see the decision note below.
-I12 (push notification) later deep-links into this view.
-
-**D12 — Halde: channel-decoupled staging store (locked 2026-07-30, user decision).** Staged
-external events live in the shared store as `ExternalSyncEntity` rows (`externalSystem=DUALIS`,
-own staging context, `data` = sourceData JSON, `raplaId` = bound reservation or empty = OPEN —
-the worklist is `raplaId IS NULL`; binding later refined to DERIVED via
-`tryResolveExternalId`, see dhbwrapla PRD 004). The Abgleich UI reads ONLY the Halde and
-never knows the fill channel. Fill side (revised 2026-08-05, dhbwrapla PRD 004 § Fill side):
-**v1 = periodic full reconciliation every ~20 min** (the only path allowed to infer
-"gone"); **later** a Dualis change notification adds live latency, treated as
-invalidation-only (targeted re-read, never a pushed payload). The formerly planned
-admin-triggered manual refresh is **dropped** — obsolete at that cadence. The reconciliation diff yields new/changed/gone → the buckets;
-multi-pod-safe and SPA-visible via the update history; the view opens without a campusnet
-round trip and shows "Stand: vor X min" from the job's meta row.
-
-**Scope = booking rights (locked 2026-07-30, user decision):** the worklist shows ONLY events
-of Kurse/Studiengänge the caller may BOOK (allocate right on the group's allocatable), not
-merely read — stricter than the §12 read floor.
-
-**Time/day determination (2026-07-30, refined after prototype review):** a list view cannot
-place events, so the create dialog carries an explicit **time source**: (a) **weekday + time
-of day** of the matched blueprint, re-anchored into the CURRENT semester — never the
-blueprint's stored dates (templates may stem from last year); this is exactly the
-`fixedtimeandduration`/keepTime semantics of D8/D9 (series length may derive from
-`SOLLSTUNDEN_SEMESTER`); or (b) **im Kalender platzieren** — hand over to the group's
-calendar / a slot picker, mandatory when no blueprint matches. Multi-appointment blueprint
-reservations ride WHOLE: all series are copied, relative day/time offsets kept; manual
-placement anchors the FIRST appointment, the rest keep their distance. The template match
-must be VISIBLE in the dialog (template + blueprint row + all slots + hours plausibility),
-never a silent auto-pick — and the template selector must scale to admin visibility
-(hundreds of templates → searchable, same pattern as the "Neu" picker, not a dropdown).
-
-Open: reverse re-bind of an already-bound reservation (correction case), Halde
-retention/cleanup per semester.
+- **Worklist, not wizard.** The import UI is a reconciliation worklist: every staged external
+  event without a rapla counterpart, grouped by the source's hierarchy node, with per-group
+  progress and a search over group names. Three resolution paths per entry: **Verknüpfen**
+  (bind to an existing unbound reservation of the group, suggested via the D10 matching
+  cascade, executed over `syncClassification`), **Aus Vorlage erstellen** (template
+  instantiation — single or per-group bulk; the template is pre-selected by the
+  deployment-side resolver, see § Staging mutations), **Ignorieren** (persisted, undoable).
+  Templates carry no group; the stable matching key is the source's unit key
+  (`ImportItem.matchKey`), never the group — group↔template associations change every
+  period.
+- **Genericity (locked 2026-08-05, user decision):** the read contract
+  (`externalEventWorklist`: sourceName, stand, booking-rights-filtered groups + items) belongs
+  to rapla's externaleventimport plugin family; the deployment provides the implementation.
+  The SPA carries ZERO source-specific strings — every visible label derives from the
+  server's `sourceName`; no deployed source ⇒ the feature is hidden (plugin gate).
+- **D12 — Halde: channel-decoupled staging store (locked 2026-07-30, user decision).** Staged
+  external events live in the shared store as `ExternalSyncEntity` rows (`externalSystem=<id>`,
+  own staging context, `data` = source JSON, binding DERIVED via `tryResolveExternalId`). The
+  UI reads ONLY the staging store and never knows the fill channel. Fill side: periodic full
+  reconciliation (the only path allowed to infer "gone"), later invalidation-only change
+  notifications; the diff yields new/changed → the buckets; multi-pod-safe and SPA-visible via
+  the update history. **Verwaist (orphaned) removed 2026-08-11 (user decision)** — absence from
+  the export is the normal end of life, not a drift signal.
+- **Scope = booking rights (locked 2026-07-30, user decision):** the worklist shows ONLY events
+  of groups the caller may BOOK (allocate right on the group's allocatable) — stricter than
+  the §12 read floor.
+- **Time/day determination:** a list view cannot place events, so creation carries an explicit
+  time source — (a) weekday + time of day of the matched blueprint re-anchored into the
+  CURRENT period (the `fixedtimeandduration`/keepTime semantics of D8/D9; never the
+  blueprint's stored dates), or (b) placement in the calendar (mandatory when no blueprint
+  matches). Multi-appointment blueprints ride whole, relative offsets kept. The template match
+  must be VISIBLE, never a silent auto-pick, and the selector must scale to hundreds of
+  templates (searchable, same pattern as the "Neu" picker).
+- Open: reverse re-bind of an already-bound reservation (correction case), staging
+  retention/cleanup per period.
 
 ### Import UX v3 — "Dualis-Sync: Ein Dialog + Parkstreifen" (design CONFIRMED 2026-08-11)
 
@@ -260,8 +177,8 @@ visual placement instead of editor typing. No new gestures, no new object kinds 
 
 **Complete user-visible surface (the whole feature, by design):**
 
-1. **Offen-Zähler am Kurs** in the left resource list ("STG-TINF23B ⑬") — bookable Kurse
-   only, scoped to the semester of the visible week (so "13", never "33k"). This replaces
+1. **Offen-Zähler am Kurs** in the left resource list ("<Kurs> ⑬") — bookable Kurse
+   only, scoped to the semester of the visible week (so "13", never "<n>k"). This replaces
    the cockpit as the working overview; no separate page on the create path.
 2. **Ein Button** — **"Dualis-Sync ⑬" in the TOOLBAR next to "Neu"** (corrected 2026-08-11
    after first real use; originally placed inside the week pane, which violated the shell's
@@ -281,13 +198,13 @@ visual placement instead of editor typing. No new gestures, no new object kinds 
    real shell, and deferring a design piece requires re-checking the whole flow.
 3. **Ein Dialog**, Swing-shaped:
    - *Vorlage*: the EXISTING Neu-picker mechanics (search + recents), preselected by the
-     name convention (type + orga path, e.g. "Lehrveranstaltung STG/T/INF"); Semestervorlagen
+     name convention (type + orga path, e.g. "<Typ> <Standort>/<Fak>/<Fach>"); Semestervorlagen
      appear in the same list, annotated "Semesterplan · matcht 8 von 13".
    - *Veranstaltungen*: the open staged items as a checkbox list (all preselected,
      master toggle) — Swing's table, slimmed. **Grouped by type** ("Veranstaltungen (10)" /
      "Prüfungen (3)"); the visible template selector applies only to ITS type, the other
      type resolves its own name-convention default automatically, shown as an overridable
-     footnote on that section header ("Vorlage: Pruefung STG/T (automatisch)") — the D10
+     footnote on that section header ("Vorlage: <Typ> <orga path> (automatisch)") — the D10
      type filter as UI rule: one selector visible, one template EFFECTIVE per type, never a
      lecture template on an exam. A Semestervorlage may carry both types; the type filter
      keeps exam items matching only exam blueprints despite the shared Unitcode.
@@ -460,12 +377,12 @@ What the GUI needs for that is READ data, not a mutation:
   `externalEventDefaultTemplates(groupIds)` (rapla-app, null when no deployment resolver) +
   dhbwrapla `DualisDefaultTemplateResolver` (§12 canRead-filtered); the SPA interim heuristic
   is DELETED — the dialog only displays the server answer. Rules derived from the real
-  template corpus (1474 templates, 281 LV / 255 Prüfung): dominant `<Typ> <Standort>/<Fak>/<Fach>`
-  with multi-letter faculties at CAS (`CAS/TM/INF`) → exact cascade tries EVERY split of the
-  Kurs code (corpus decides the segmentation), separator variants (`FN-T-INF`) normalized,
+  template corpus (figures + real name shapes: dhbwrapla PRD 004): dominant `<Typ> <orga path>`
+  with multi-letter path segments → exact cascade tries EVERY split of the
+  group code (corpus decides the segmentation), separator variants normalized,
   then LCS fuzzy with type-prefix bonus. Known unresolved corpus shapes (need stored
-  per-deployment mapping rules, the planned extension): bare-code templates (`Lehrveranstaltung AG`),
-  color variants (`blau MOS/W/HD`), multi-word sites (`DHBW virtuell/T/INFO`), `Extern (DAA)`.
+  per-deployment mapping rules, the planned extension): bare-code templates,
+  color variants, multi-word sites, external providers.
   Rules can then also feed the Semesterplan ranking (I1 memory's natural home).
 - Read-API addition (2026-08-11, user decision): **semester/scope resolution is a
   DEPLOYMENT heuristic, not a client rule** — semester boundaries differ per Studiengang.
@@ -562,7 +479,7 @@ server-computed paths; no group label/count reflects an invisible template.
 - [x] Drag-create (month range + week time-range) opens the dialog when >1 option (D7); the
       dragged slot becomes the placement target; tier-5 specs for model + placement math
       (`new-event-picker-model.spec.ts`, 8 green).
-- [x] Browser-verified against the dhbw dataset (1474 templates, 0 types): picker, search,
+- [x] Browser-verified against the production-sized dhbw dataset (well over a thousand templates, 0 types): picker, search,
       recents chip, virtual scroll.
 
 ### Phase 4 — Instantiation — DONE 2026-07-24

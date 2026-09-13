@@ -152,7 +152,7 @@ was what previously forced `@flatten`/`@column(order:)` — an artifact, now gon
 query Termine($filter: ReservationFilter!) {
   appointmentBlocks(filter: $filter) {    # $filter ← CalendarModel, e.g.
         # { from, to, typeKeyEq:"Lehrveranstaltung",
-        #   whereLehrveranstaltung:{ AND:[{campus:{eq:"KA"}},{year:{eq:2024}}] },   # neue Regel für
+        #   whereLehrveranstaltung:{ AND:[{campus:{eq:"X"}},{year:{eq:2024}}] },   # neue Regel für
         #   allocatableMatching:{ typeKeyIn:["Raum","Teilraum"], idIn:["room-1"] } }  # resource tree
     name: reservation { displayName }
     kurs: allocatables(filter:{ typeKeyIn:["Kurs","Teilkurs","Kursgruppe"] }) { displayName }   # annotation filter — INLINE
@@ -176,7 +176,7 @@ is untouched.
 
 **Open data-layer dependencies** the benchmark relies on ([PRD 073](../prd/073-graphql-function-equivalents.md)): nested
 `Appointment.allocatables(filter:)` (shipped 2026-06-19); a server-evaluated `duration`
-field; `times` field; the `typeKeyIn` room/course groups (or [PRD 065](../prd/065-graphql-declared-type-groups.md) `typeGroup` instead
+field; `times` field; the `typeKeyIn` room/course groups (or [PRD 065](../prd/wont-fix/065-graphql-declared-type-groups.md) `typeGroup` instead
 of the hard-coded `["Raum","Teilraum",…]` lists).
 
 ## 4. What this means

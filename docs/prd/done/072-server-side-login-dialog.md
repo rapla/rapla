@@ -483,7 +483,7 @@ single-slot is also what couples to risk #1 above.
    PKCE would now get a token that 401s at `/api`. Follow-up (Phase 7 or a small PRD): mint a rapla
    token there via `RefreshSessionService.issueAndPersist`, or retire the endpoint.
 7. ✅ **DONE (2026-06-20). Deployment + docs.** Redirect-URI registration is **NOT** a blanket no-op:
-   the **fremdverwaltete DHBW prod realm** (`login.mosbach.dhbw.de`, realm `dhbwmos-lehre`) only
+   the **fremdverwaltete DHBW prod realm** (`idp.example.org`, realm `<realm>`) only
    whitelists the **legacy** `/app/auth/callback` for localhost and the maintainer has no admin to add
    the conformant `/login/oauth2/code/keycloak` — so it needs the **TEMPORARY dev bridge**
    (`rapla.oauth.web.dhbw-legacy-callback=true` → keycloak `ClientRegistration` sends the legacy URI, and
@@ -562,7 +562,7 @@ single-slot is also what couples to risk #1 above.
    exchange for the server dialog (Spring already does `code`→token) — it **stays untouched** for
    the current SPA path. Rationale: the reuse appeal of the controller is only the *tail* (the easy,
    already-existing part); the *head* is the risky part you must not hand-roll. Couples to #6: needs
-   the `…/login/oauth2/code/{id}` callback registered (empirically already accepted at Mosbach; dev
+   the `…/login/oauth2/code/{id}` callback registered (empirically already accepted by the production Keycloak; dev
    wildcard covers it).
 3. ~~**`/api` auth source**~~ — **RESOLVED by A**: `/api` accepts the JWT from the
    `access_token` cookie **and** still from the `Authorization` header (so Swing / iCal /
@@ -584,9 +584,9 @@ single-slot is also what couples to risk #1 above.
    from `ExternalProvidersProperties` (this is the only "confidential" that the BFF position meant — per
    external provider, not a rapla-AS client).
 6. ~~**IdP redirect-URI**~~ — **LARGELY RESOLVED 2026-06-19 (empirical).** A live test against
-   Mosbach Keycloak showed the server callback `https://rapla-test.dhbw.de/login/oauth2/code/keycloak`
+   the production Keycloak showed the server callback `https://rapla-test.example.org/login/oauth2/code/keycloak`
    is **already accepted** (login form shown, no `Invalid redirect_uri`) — the `rapla-app` client
-   has a path wildcard for that host; dev is covered by the `172.24.157.92:*` wildcard. So **if we
+   has a path wildcard for that host; dev is covered by a `<dev-ip>:*` wildcard. So **if we
    reuse the existing public `rapla-app` client** (server-side `oauth2Login` with PKCE,
    `client-authentication-method=none`), **no new client and no new redirect-URI registration are
    needed** (dev + prod-test already covered). A *new confidential* client would instead start with

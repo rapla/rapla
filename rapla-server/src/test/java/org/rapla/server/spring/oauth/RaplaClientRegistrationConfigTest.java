@@ -32,16 +32,16 @@ class RaplaClientRegistrationConfigTest
     void legacyKeycloakSendsAppCallbackTheOtherStaysConformant()
     {
         ExternalProvidersProperties props = new ExternalProvidersProperties();
-        props.getExternal().put("keycloak", keycloak("https://login.mosbach.dhbw.de", "dhbwmos-lehre", true));
+        props.getExternal().put("keycloak", keycloak("https://idp.example.org", "prod-realm", true));
         props.getExternal().put("dhbw", keycloak("http://localhost:8080", "rapla", false));
 
         ClientRegistrationRepository repo =
                 new RaplaClientRegistrationConfig().clientRegistrationRepository(props);
 
-        ClientRegistration mosbach = repo.findByRegistrationId("keycloak");
+        ClientRegistration prod = repo.findByRegistrationId("keycloak");
         ClientRegistration local = repo.findByRegistrationId("dhbw");
 
-        assertEquals("{baseUrl}/app/auth/callback", mosbach.getRedirectUri(),
+        assertEquals("{baseUrl}/app/auth/callback", prod.getRedirectUri(),
                 "the legacy-callback keycloak must send /app/auth/callback");
         assertEquals("{baseUrl}/login/oauth2/code/{registrationId}", local.getRedirectUri(),
                 "a keycloak without legacy-callback keeps the conformant per-provider callback");

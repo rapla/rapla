@@ -245,7 +245,7 @@ implemented + other statuses):
   untrusted pages, interactive-document two-tier CSP model (D4-D9). Phase 1 (`/app` enforce) landed.
 - **[PRD 060](prd/060-graphql-mcp-foundations.md) — GraphQL MCP foundations** (15 planned; *draft*): search-window DoS caps, §12 handling
   of half-readable conflict hits, bounded default time windows.
-- **[PRD 037](prd/037-native-saml-shibboleth.md) — native SAML/Shibboleth** (12 planned; *draft*): trusted-proxy header trust model.
+- **[PRD 037](prd/wont-fix/037-native-saml-shibboleth.md) — native SAML/Shibboleth** (12 planned; *draft*): trusted-proxy header trust model.
 - **[PRD 074](prd/074-graphql-declarative-views.md) — GraphQL declarative views** (11 planned; *draft*): untrusted expression evaluation.
 - **PRD 002 — multi-tenancy** (7 planned; *draft*): tenant isolation, ThreadLocal context clearing,
   tenant-ID validation, per-tenant resource caps.
@@ -299,7 +299,7 @@ file-tenant data-dir rooting, per-tenant heap/DB-pool exhaustion.
   production-mode lockout forcing a change. Operator-dependent.
 - Legacy unsalted sha-1/md5 migration is rehash-on-login-only (no forced reset) — open question.
 
-**iCal / external:** Shibboleth 8h session vs rapla 1h JWT mismatch accepted for v1 ([PRD 037](prd/037-native-saml-shibboleth.md)).
+**iCal / external:** Shibboleth 8h session vs rapla 1h JWT mismatch accepted for v1 ([PRD 037](prd/wont-fix/037-native-saml-shibboleth.md)).
 
 ---
 

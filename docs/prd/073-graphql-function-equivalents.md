@@ -60,7 +60,7 @@
 Rapla has a small server-side **expression language** — the
 `org.rapla.entities.extensionpoints.Function` tree — used inside DynamicType
 nameformats, classification filters, and annotations (e.g. a room's
-`nameformat` `{if(Gebaeude startsWith "MOS", Raumnummer+" "+Raumname, …)}`).
+`nameformat` `{if(building startsWith "MAIN", roomNumber+" "+roomName, …)}`).
 The GraphQL API ([PRD 035](done/035-graphql-foundations.md) family) is the modern read/query surface. This PRD
 answers: **for each rapla Function, what can a GraphQL caller do today, and
 where are the gaps?** It is the reference for deciding which Function semantics
@@ -110,7 +110,7 @@ belong on a read/query API).
 |---|---|---|---|---|
 | 1 | `and` / `or` / `not` | filter | `<TypeKey>Where.AND:[…] / OR:[…] / NOT:{…}` ([PRD 059](done/059-graphql-typed-where-predicates.md), depth-cap 10, `WhereEvaluator`) | ✅ |
 | 2 | `equals` | filter | `*Where.eq` / `.ne` on every typed predicate (`StringWhere`, `IntWhere`, `BooleanWhere`, `LocalDateTimeWhere`, `CategoryWhere`, `AllocatableWhere`) | ✅ |
-| 3 | `stringComparator` | sort | no comparator; closest is `searchText` + `matchKind` ranking ([PRD 028](028-angular-power-search.md)) | ◐ |
+| 3 | `stringComparator` | sort | no comparator; closest is `searchText` + `matchKind` ranking ([PRD 028](done/028-angular-power-search.md)) | ◐ |
 | 4 | `attribute(obj,"key")` | projection | generated `<TypeKey>Classification` typed per-attribute fields (`ClassificationSdlGenerator`); §12-gated for reference attrs | ✅ |
 | 5 | `type(obj)` | projection | `Classification.type: DynamicType!` + `Classification.typeKey: String!` | ✅ |
 | 6 | `key(category\|type)` | projection | `Category.key: String!`, `DynamicType.key: String!` | ✅ |
@@ -266,7 +266,7 @@ resolve** — variants only *override* `displayName` where set. *(This candidate
 locked — the storage/definition form is the open discussion.)*
 
 The op-set / catalog below is the **repertoire the bridge evaluates** (and the optional
-future clean re-implementation), derived from the *real* dhbw + wochenplan compositions.
+future clean re-implementation), derived from the *real* compositions of two deployments (dhbwrapla `docs/graphql.md`; `docs/yogavidya/`).
 
 ### Server mechanics — how the bridge evaluates (thin DataFetcher over `ParsedText`)
 
@@ -321,17 +321,17 @@ So "computes on the server" = **a thin GraphQL DataFetcher over rapla's existing
 engine**; the only real integration is mapping the **request context → `EvalContext.environment`**
 (for `env(...)`).
 
-### Ground truth — the dhbw display derivations (four variants per type)
+### Ground truth — one deployment's display derivations (four variants per type; anonymised, real expressions in dhbwrapla `docs/graphql.md`)
 
 | Type | variant | composition |
 |---|---|---|
-| Lehrveranstaltung | `nameformat` | `{if(not(status),"*","")} {Name} {Beschreibung} {format("<%s>",appointment:note())}` |
-| | `nameformat_export` / `descriptionformat_export` | …+ `{filter(event:allocatables, r->or(equals(key(type(r)),"Kurs"),"Teilkurs","Kursgruppe"))}` |
-| Pruefung | `nameformat` | `{if(not(status),"*","")} {Pruefungsart} {Name} {Beschreibung} {format("<%s>",note())}` |
-| Person | `nameformat` / `_planning` | `{surname}, {firstname}` · `{surname}, {firstname} - {campusnetId}: {hinweis_dualis}` |
+| lecture | `nameformat` | `{if(not(status),"*","")} {name} {description} {format("<%s>",appointment:note())}` |
+| | `nameformat_export` / `descriptionformat_export` | …+ `{filter(event:allocatables, r->or(equals(key(type(r)),"course"),"courseGroup"))}` |
+| exam | `nameformat` | `{if(not(status),"*","")} {examType} {name} {description} {format("<%s>",note())}` |
+| person | `nameformat` / `_planning` | `{surname}, {firstname}` · `{surname}, {firstname} - {externalId}: {note}` |
 | | `nameformat_export` | `{if(env("internal_request"), concat(firstname," ",surname), concat())}` |
-| Raum | `nameformat` | `{if(or(equals(substring(Gebaeude,0,3),"MOS"),equals(substring(Gebaeude,0,2),"KA")), concat(Raumnummer," ",Raumname), concat(SekundaereRaumnummer," ",Raumname))}` |
-| Kurs / Gebaeude | `nameformat` | `{Kursname}` / `{Gebaeudename}` |
+| room | `nameformat` | `{if(equals(substring(building,0,4),"MAIN"), concat(roomNumber," ",roomName), concat(secondaryRoomNumber," ",roomName))}` |
+| course / building | `nameformat` | `{courseName}` / `{buildingName}` |
 
 ### The name field — one parameterized field, variant resolved by context (decided 2026-06-20)
 
@@ -462,9 +462,9 @@ it never surfaces to the consumer.
   appointments to blocks from `getFirstDate()`, counts `headSet(block).size()+1`. Source =
   AppointmentBlock (EVENT), returns String (semantically Int). Name/class consistent (class works
   over the block; `number` = the block's number).
-- **Raum** `nameformat` `or(MOS,KA)` in the ground-truth table **is correct** (the wochenplan
+- **room** `nameformat` site-prefix condition in the ground-truth table **is correct** (the second
   dataset is older).
-- **`nameformat_planing`** (one-`n`) in wochenplan `personen` is **dead data** — the code constant
+- **`nameformat_planing`** (one-`n`) in the second deployment's person type is **dead data** — the code constant
   is `nameformat_planning` (two-`n`); the typo'd annotation is never read (harmless orphan).
 
 ### The op-set (≈7 ops — the whole string/logic residual)
@@ -509,25 +509,25 @@ server-side** — no CEL, no client runtime, no TS↔Java parity.
     complementary stores** — the per-type **`tablecolumn_*` annotations** (the column
     *compositions*, `defaultValue` per column, incl. type-specific custom columns) **+** the
     **`tableview.config`** preference (the *view configuration* — which views, which columns
-    each shows, ordering, sorting). Both are present in both datasets (wochenplan: 121
-    annotations + config; dhbw: 50 + config). They complement, not replace, each other.
+    each shows, ordering, sorting). Both are present in both datasets (each: dozens to ~100
+    annotations + config; counts in the deployment docs). They complement, not replace, each other.
     Both predate the GraphQL views; the new views replace the **combination** — no migration.
 
-### Use-case catalog — display derivations (dhbw + wochenplan, verified 2026-06-20)
+### Use-case catalog — display derivations (two real deployments, verified 2026-06-20; anonymised)
 
 Across both datasets the derivations fall into **five complexity tiers** — the first two
 are simple naming, the rest need the op-set:
 
 | Tier | Example | mechanism |
 |---|---|---|
-| 1 **single field** | `{name}` · `{title}` · `{Kursname}` | field |
-| 2 **field-list** | `{name} {title}` · `{title} {thema}` · `{name}: "{title}" - {hinweis}` | interpolation (simple naming) |
-| 3 **optional suffix** | `{name}{if(equals("",substring(ebene,0,1)),"",concat(":",ebene))}` | `if`+`substring`+`concat` (skip-if-empty) |
-| 4 **format + plugin** | `{zusatz} {title} {format("<%s>",appointment:note())}` | `format` + `note` |
-| 5 **marker chains** | `{angezeigter_name} {surname} {if(im_haus," # ","")}{if(equals(key(dispo-modus),"anfrage"),"*","")}…{if(ausdrucksstarke_yl,"+","")}` | `if`+`equals`+`key`+`<bool field>` |
-| (Raum) **conditional value** | `{if(or(equals(substring(Gebaeude,0,3),"MOS"),…"KA"), concat(Raumnummer," ",Raumname), concat(SekundaereRaumnummer," ",Raumname))}` | `if`+`or`+`equals`+`substring`+`concat` |
+| 1 **single field** | `{name}` · `{title}` · `{courseName}` | field |
+| 2 **field-list** | `{name} {title}` · `{title} {topic}` · `{name}: "{title}" - {hint}` | interpolation (simple naming) |
+| 3 **optional suffix** | `{name}{if(equals("",substring(level,0,1)),"",concat(":",level))}` | `if`+`substring`+`concat` (skip-if-empty) |
+| 4 **format + plugin** | `{extra} {title} {format("<%s>",appointment:note())}` | `format` + `note` |
+| 5 **marker chains** | `{displayName} {surname} {if(inHouse," # ","")}{if(equals(key(mode),"request"),"*","")}…{if(flagX,"+","")}` | `if`+`equals`+`key`+`<bool field>` |
+| (room) **conditional value** | `{if(equals(substring(building,0,4),"MAIN"), concat(roomNumber," ",roomName), concat(secondaryRoomNumber," ",roomName))}` | `if`+`or`+`equals`+`substring`+`concat` |
 
-**Consolidated op-set** (everything tiers 3–5 + Raum need):
+**Consolidated op-set** (everything tiers 3–5 + room need):
 ```
 if · not · or · equals          concat · substring · format
 key(enum) · type                <bool field> as condition
@@ -540,32 +540,32 @@ optional(field, separator)  # = if(isEmpty(field), "", concat(separator, field))
 ```
 
 **Placement** (per the reusability rule): tiers 1–2 → simple field-list naming
-(type-level); tiers 3–5 + the Raum conditional → op-set in a **named derived field**
-(type-level, reusable — e.g. `Raum.effectiveRoomNumber`, `Person.planningName`) or
+(type-level); tiers 3–5 + the room conditional → op-set in a **named derived field**
+(type-level, reusable — e.g. `room.effectiveRoomNumber`, `person.planningName`) or
 view-level for a one-off.
 
-### Worked example — the hardest case (`Raum`), factored
+### Worked example — the hardest case (room), factored
 
-The **real** `Raum` nameformat (today's `displayName`) packs everything into one rapla
-composition:
+The **real** room nameformat (today's `displayName`; anonymised here, original in dhbwrapla
+`docs/graphql.md`) packs everything into one rapla composition:
 ```
-{if(or(equals(substring(Gebaeude,0,3),"MOS"),equals(substring(Gebaeude,0,2),"KA")),
-    concat(Raumnummer," ",Raumname),
-    concat(SekundaereRaumnummer," ",Raumname))}
+{if(equals(substring(building,0,4),"MAIN"),
+    concat(roomNumber," ",roomName),
+    concat(secondaryRoomNumber," ",roomName))}
 ```
 The pattern — **factor the complex value selection into a named derived field, keep the
 display trivial** — stays in **rapla syntax** (no new format, no migration):
 ```
 # derived field (reusable) — picks the right room number:
-effectiveRoomNumber = {if(or(equals(substring(Gebaeude,0,3),"MOS"),equals(substring(Gebaeude,0,2),"KA")),Raumnummer,SekundaereRaumnummer)}
+effectiveRoomNumber = {if(equals(substring(building,0,4),"MAIN"),roomNumber,secondaryRoomNumber)}
 # displayName then just concatenates:
-displayName         = {concat(effectiveRoomNumber," ",Raumname)}
+displayName         = {concat(effectiveRoomNumber," ",roomName)}
 ```
 The logic lives in one named, bounded, reusable field; `displayName` stays trivial.
 (*How `displayName` is stored/defined is still under discussion — see below.*)
-(Data note: `substring(Gebaeude,…)` really derives the *campus* — missing structured data;
-a real `Campus` field shrinks it to
-`{if(or(equals(Campus,"KA"),equals(Campus,"MOS")),Raumnummer,SekundaereRaumnummer)}`.)
+(Data note: `substring(building,…)` really derives the *campus* — missing structured data;
+a real `campus` field shrinks it to
+`{if(equals(campus,"MAIN"),roomNumber,secondaryRoomNumber)}`.)
 
 ## Plan — phased (each phase is independently shippable)
 
@@ -681,7 +681,7 @@ predicate truly runs** — see [PRD 074](074-graphql-declarative-views.md).
    request-context values (deployment id, locale) the nameformat `env()` exposes?
 4. **Pagination/sort (rows 3/19/20)** — split into a dedicated cursor-pagination +
    `orderBy` PRD rather than per-function patches? (Recommended.)
-5. **Cross-check** against [PRD 028](028-angular-power-search.md) (power search) and [PRD 069](069-graphql-resource-access-read-api.md) (resource-access) so
+5. **Cross-check** against [PRD 028](done/028-angular-power-search.md) (power search) and [PRD 069](069-graphql-resource-access-read-api.md) (resource-access) so
    new filters compose with `searchText`/`matchKind` and the access-by-target
    selectors rather than duplicating them.
 6. **Admin-defined saved GraphQL table views (follow-on PRD).** The strategic

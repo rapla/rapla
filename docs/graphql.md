@@ -1209,7 +1209,7 @@ Variablen (mit `AllocatableFilter` in Aktion — schränkt die Termine auf passe
     "to":   "2026-06-22T00:00:00",
     "allocatableMatching": {
       "typeIn": ["Raum"],
-      "whereRaum": { "Gebaeude": { "where": { "Gebaeudename": { "startsWith": "MOS" } } } }
+      "whereRaum": { "Gebaeude": { "where": { "Gebaeudename": { "startsWith": "HAUPT" } } } }
     },
     "limit": 2000
   },
@@ -1446,15 +1446,15 @@ Schichtung von `whereRaum`: `RaumWhere` → `Gebaeude` (= `GebaeudeRefWhere`: `e
 **eigene Attribut ihres Gebäudes** eingeschränkt (`Raum.Gebaeude` → `Gebaeude.Gebaeudename`). Der
 Referenz-Filter `<RefType>RefWhere` trägt id/name-Prädikate **und** ein verschachteltes
 `where: <RefType>Where`; der `WhereEvaluator` löst die Referenz §12-`canRead`-gegated auf und wertet
-das typisierte where rekursiv aus (tiefen-gedeckelt). Live verifiziert gegen dhbw (DHBW Mosbach).
+das typisierte where rekursiv aus (tiefen-gedeckelt). Live verifiziert gegen eine Produktionsinstallation (Original mit echtem Standort: dhbwrapla `docs/graphql.md`).
 
 ```graphql
-query RaumauslastungMosbach {
+query RaumauslastungStandort {
   appointmentBlockStats(
     filter: { from: "2026-03-21T00:00:00", to: "2026-06-21T00:00:00" },
     groupBy:   [ { key: "raum", allocatables: {
                    typeIn: [Raum],
-                   whereRaum: { Gebaeude: { where: { Gebaeudename: { startsWith: "MOS" } } } }
+                   whereRaum: { Gebaeude: { where: { Gebaeudename: { startsWith: "HAUPT" } } } }
                  } } ],
     aggregate: [ { key: "stunden", field: DURATION_MINUTES, fn: SUM },
                  { key: "termine", field: DURATION_MINUTES, fn: COUNT } ]
@@ -1499,7 +1499,7 @@ Damit ist **jedes Feld der Gruppen-Entität im selben Request selektierbar** (ke
 `allocatables`-Dimension liefert ein `Allocatable`, die `reservation: true`-Dimension eine
 `Reservation`; Zeit-Buckets (`date`/`by`) und reine `expr`-Strings haben `entity: null`.
 
-Mosbach-Auslastung **mit Raumgröße, eine Query**:
+Standort-Auslastung **mit Raumgröße, eine Query**:
 
 ```graphql
 query RaumauslastungMitGroesse {
@@ -1507,7 +1507,7 @@ query RaumauslastungMitGroesse {
     filter: { from: "2026-03-21T00:00:00", to: "2026-06-21T00:00:00" },
     groupBy:   [ { key: "raum", allocatables: {
                    typeIn: [Raum],
-                   whereRaum: { Gebaeude: { where: { Gebaeudename: { startsWith: "MOS" } } } }
+                   whereRaum: { Gebaeude: { where: { Gebaeudename: { startsWith: "HAUPT" } } } }
                  } } ],
     aggregate: [ { key: "stunden", field: DURATION_MINUTES, fn: SUM } ]
   ) {

@@ -134,7 +134,7 @@ sources with two homes:**
 query Termine($filter: ReservationFilter!) {
   appointmentBlocks(filter: $filter) {    # $filter ← CalendarModel, e.g.
         # { from, to, typeIn:[Lehrveranstaltung],
-        #   whereLehrveranstaltung:{ AND:[{campus:{eq:"KA"}},{year:{eq:2024}}] },   # neue Regel für
+        #   whereLehrveranstaltung:{ AND:[{campus:{eq:"X"}},{year:{eq:2024}}] },   # neue Regel für
         #   allocatableMatching:{ typeIn:[Raum,Teilraum], idIn:["room-1"] } }  # resource tree
     name: reservation { displayName }
     kurs: allocatables(filter:{ typeIn:[Kurs,Teilkurs,Kursgruppe] }) { displayName }  # annotation filter — INLINE
@@ -168,7 +168,7 @@ list), and `allocatableMatching` carries the resource-tree selection.
 ## Data = GraphQL (prediction + navigation only)
 
 The query decides **what data is in the result**: prediction (`where` [PRD 059](done/059-graphql-typed-where-predicates.md) +
-`searchText`/`matchKind` [PRD 028](028-angular-power-search.md) + access selectors [PRD 069](069-graphql-resource-access-read-api.md)), navigation
+`searchText`/`matchKind` [PRD 028](done/028-angular-power-search.md) + access selectors [PRD 069](069-graphql-resource-access-read-api.md)), navigation
 (selection), and **server-computed scalars** the client can't derive
 (`displayName`, `durationMinutes`, typed attributes — the [PRD 073](073-graphql-function-equivalents.md) gaps). It selects
 raw nested data; it does **not** shape a table.
@@ -543,7 +543,7 @@ op-set** in its two homes — **view-level** (`zeitspanne`, one-off) and **type-
 derived field** (`planningName`, reusable). The op-set language + catalog: [PRD 073 §
 Composition op-set](073-graphql-function-equivalents.md).
 
-### Validated against the real dhbw tables (data.xml, 2026-06-20)
+### Validated against a real deployment's tables (data.xml, 2026-06-20; the real expressions: dhbwrapla `docs/graphql.md`)
 
 The three real table views — `org.rapla.plugin.tableview.{events, appointments,
 appointments_per_day}` — use eight standard rapla columns (column `defaultValue`
@@ -564,13 +564,13 @@ annotations + the `tableview.config` preference). The **real** col annotations a
 The event-type nameformats are not trivial — they carry conditionals, predicates,
 printf and lambda-filters:
 ```
-Lehrveranstaltung name:  {if(not(status),"*","")} {Name} {Beschreibung} {format("<%s>",appointment:note())}
-Pruefung export:         … {filter(event:allocatables, r->or(equals(key(type(r)),"Kurs"),
-                                                             equals(key(type(r)),"Teilkurs"),
-                                                             equals(key(type(r)),"Kursgruppe")))}
-Raum name:               {if(or(equals(substring(Gebaeude,0,3),"MOS"),equals(substring(Gebaeude,0,2),"KA")),
-                              concat(Raumnummer," ",Raumname), concat(SekundaereRaumnummer," ",Raumname))}
+lecture name:   {if(not(status),"*","")} {name} {description} {format("<%s>",appointment:note())}
+exam export:    … {filter(event:allocatables, r->or(equals(key(type(r)),"course"),
+                                                    equals(key(type(r)),"courseGroup")))}
+room name:      {if(equals(substring(building,0,4),"MAIN"),
+                    concat(roomNumber," ",roomName), concat(secondaryRoomNumber," ",roomName))}
 ```
+(anonymised shapes — attribute names, type keys and site prefixes of the real deployment are in dhbwrapla `docs/graphql.md`)
 But these `if`/`or`/`equals`/`substring`/`concat`/`format`/`note` expressions live in
 **nameformats, which rapla already evaluates server-side** into `displayName` — the
 client gets a finished string, so the conditional/string logic **never runs
@@ -830,7 +830,7 @@ returns HTTP 200 with `errors: [{ message: "View 'X' not found", extensions: { c
 
 **Visibility (locked 2026-06-21):** each CUSTOM view carries `public` + `groups`.
 - `public: true` → every authenticated user sees it in `listViews` and can execute it.
-- `groups: ["dhbw-ka"]` → only members of listed groups (plus admins) see and execute it.
+- `groups: ["planners-site-a"]` → only members of listed groups (plus admins) see and execute it.
 - Both false/empty → admin-only (visible only to `isAdmin` users).
 - `listViews` returns only views the calling user is entitled to see; admins see all.
 
@@ -1226,12 +1226,12 @@ serves both internal and public export; the difference is **only** the server-se
 
 ## Dependencies
 
-- **Data-layer gaps — verified against live `rapla-test.dhbw.de` (2026-06-19).** To
+- **Data-layer gaps — verified against the live test server `rapla-test.example.org` (2026-06-19).** To
   push filtering/computed-values into GraphQL: `Appointment.allocatables` takes **no
   arguments** (so aliased filtered sub-selections aren't expressible); **no
-  `durationMinutes`**; **no `typeGroup`** / declared type-groups ([PRD 065](065-graphql-declared-type-groups.md)). Present:
+  `durationMinutes`**; **no `typeGroup`** / declared type-groups ([PRD 065](wont-fix/065-graphql-declared-type-groups.md)). Present:
   `AllocatableFilter` (`typeIn`/`isPersonEq` + per-type `where*`,
-  [PRD 059](done/059-graphql-typed-where-predicates.md)) on `Query.allocatables` only. Closing these (PRD [073](073-graphql-function-equivalents.md) + [065](065-graphql-declared-type-groups.md)) keeps the
+  [PRD 059](done/059-graphql-typed-where-predicates.md)) on `Query.allocatables` only. Closing these (PRD [073](073-graphql-function-equivalents.md) + [065](wont-fix/065-graphql-declared-type-groups.md)) keeps the
   transform thin.
 - **Pagination + prev/next + server-side `aggregate`** are future. Client-side
   aggregation covers non-paginated admin tables; once paginated, full-set totals
@@ -1388,7 +1388,7 @@ query Termine @view(title: "Termine KW") {
 >   + `idIn` + `AccessTargetFilter` (`accessibleBy*`/`accessLevel`, e.g. "resources of this event I may edit")
 >   + `limit`. **Option 2** (apply everything; no ignored fields). §12: `canRead` runs FIRST → narrowing
 >   can't leak. The lean type was only a guardrail against silent no-ops; once every field is honored it's
->   unneeded. → enables "Raumauslastung Standort Mosbach" server-side via `whereRaum.Gebaeude`.
+>   unneeded. → enables "Raumauslastung Standort X" server-side via `whereRaum.Gebaeude`.
 > - **V2 — one rapla-expression surface.** Subject **`item`**; **bare body** auto-wraps as `{item -> …}`
 >   in `computeBlockExpr`; **0-arg default** on unary subject functions (`start`/`times`/`end` extended,
 >   additive; `name`/`duration`/`resources` already supported it) → `times()`; arrow **`->` and `=>`**
@@ -1398,13 +1398,13 @@ query Termine @view(title: "Termine KW") {
 >   evaluates the expr (`computeBlockExpr`) and coerces the result to a double (canonical `.`); non-numeric/
 >   formatted results are skipped → feeds the existing reduction. Constant/numeric exprs work now.
 > - **a — reference by name.** `AllocatableWhere` gains `nameContains` → filter a reference by the
->   referenced entity's display name in ONE query (`whereRaum: { Gebaeude: { nameContains: "MOS" } }`).
-> - **b — typed reference recursion (PRD [059](done/059-graphql-typed-where-predicates.md)/[065](065-graphql-declared-type-groups.md)).** Reference attributes with a `KEY_DYNAMIC_TYPE`
+>   referenced entity's display name in ONE query (`whereRaum: { Gebaeude: { nameContains: "X" } }`).
+> - **b — typed reference recursion (PRD [059](done/059-graphql-typed-where-predicates.md)/[065](wont-fix/065-graphql-declared-type-groups.md)).** Reference attributes with a `KEY_DYNAMIC_TYPE`
 >   constraint now generate a `<RefType>RefWhere` ( `eq/ne/in/isNull/nameContains` + `where: <RefType>Where` )
 >   and the field targets it. `WhereEvaluator` resolves the referenced allocatable, **§12-`canRead`-gates it**
 >   (caller/pc threaded through evaluate→…→matchAllocatable; hidden ref ⇒ row dropped, no attribute leak),
 >   then recurses into its typed `where` (depth-capped). → filter rooms by the building's OWN typed
->   attributes, e.g. `whereRaum: { Gebaeude: { Standort: { eq: "Mosbach" } } }`. **Schema cost bounded**:
+>   attributes, e.g. `whereRaum: { Gebaeude: { Standort: { eq: "X" } } }`. **Schema cost bounded**:
 >   one small `<T>RefWhere` per referenced allocatable type. **Test caveat:** the unit fixture
 >   (`testdefault.xml`) has no allocatable-reference attribute → b is inert there (no regression; 53 green),
 >   so the recursion is **verified live** against dhbw (`Raum.Gebaeude`) after a server restart — owed: a

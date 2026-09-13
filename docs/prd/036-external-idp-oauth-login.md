@@ -11,8 +11,8 @@
 **Date:** 2026-05-14
 
 > **Progress (2026-05-21):** v1 (Microsoft + Google) and Phase 2.1 (Keycloak)
-> landed, exercised end-to-end against DHBW Mosbach realm
-> `dhbwmos-lehre`. Two design pivots from the original draft:
+> landed, exercised end-to-end against the DHBW production realm
+> (name: dhbwrapla `docs/infrastructure.md`). Two design pivots from the original draft:
 >
 > 1. **Identity keyed on rapla username**, not per-provider
 >    `external-id.<provider>` preference. Lookup: token's
@@ -867,7 +867,7 @@ beyond Phase 2.1.
 > **Added 2026-06-24.** Phase 2.1 shipped Keycloak as a single fixed slot
 > (`rapla.oauth.external.keycloak`). That conflated *provider type* with
 > *registration identity*: a deployment can run **one** Keycloak, not two
-> (e.g. DHBW Mosbach **and** a second realm), and an arbitrary key like
+> (e.g. a production realm **and** a second one), and an arbitrary key like
 > `rapla.oauth.external.dhbw` binds to nothing and is silently ignored — the
 > bug that surfaced 2026-06-24 (a `dhbw` SSO button silently absent from the
 > picker). Spring Security's native model is a **map keyed by an arbitrary
@@ -896,11 +896,11 @@ rapla:
     external:
       keycloak:                 # registrationId; type inferred from key
         type: keycloak
-        base-url: https://login.mosbach.dhbw.de
-        realm: dhbwmos-lehre
+        base-url: https://idp.example.org
+        realm: <realm>
       dhbw:                     # second Keycloak, parallel — needs explicit type
         type: keycloak
-        base-url: https://keycloak.dhbw.de
+        base-url: https://idp2.example.org
         realm: rapla
 ```
 
@@ -956,13 +956,13 @@ original bug; a missing SSO button is a confusing outage, not a safe default).
       Keycloak `dhbw`, plus `docs/application-{web,test}.yml`) — explicit `type:`
       on every entry.
 
-**Verified live (dhbw dev server):** `keycloak` (Mosbach) + `dhbw` (local
+**Verified live (dhbw dev server):** `keycloak` (production realm) + `dhbw` (local
 `localhost:8080`) both in `GET /api/auth/oauth/config` with distinct ids and
 callbacks; CSP `connect-src` carries both issuer hosts. Phase 3 goal met.
 
 ### Phase 3 goal
 
-With `keycloak` (Mosbach) + `dhbw` (local) both enabled,
+With `keycloak` (production realm) + `dhbw` (local) both enabled,
 `curl localhost:8051/api/auth/oauth/config` lists **both** with distinct `id`s,
 and the CSP `connect-src` contains both issuer hosts.
 
@@ -988,7 +988,7 @@ and the CSP `connect-src` contains both issuer hosts.
   (hardcoded `/login/oauth2/code/keycloak`) → `LegacyAppCallbackBridgeFilter`
   (target `registrationId` injected from the single provider that sets the flag).
   At most one provider may set it — the `/app/auth/callback` path is singular.
-  Verified live 2026-06-25: `keycloak` (Mosbach, flag) sends `/app/auth/callback`,
+  Verified live 2026-06-25: `keycloak` (production realm, flag) sends `/app/auth/callback`,
   `dhbw` (local, no flag) sends `/login/oauth2/code/dhbw`.
 
 ## Open Questions

@@ -87,7 +87,7 @@ the "intentionally NOT wired" deferral comment in `ServerServiceConfig` dates fr
    the `REFRESH_MAILBOXES` / `RESYNC_USER` preference flag that the sync pod's scheduler
    consumes (and resets) to perform the heavy box-map rebuild + appointment push. Read
    for immediate feedback + DB-write to trigger the sync pod = both, as on master.
-   Reachability to `ex.dhbw.de` on every pod is a deployment/network fact, not designed
+   Reachability to the Exchange host (`exchange.example.org`) on every pod is a deployment/network fact, not designed
    around.
 
 ## Plan

@@ -278,9 +278,9 @@ you review any real escalations, a **one-shot migration runs at first boot**:
 1. It compares the old precedence calculation against the new additive one and
    finds the **true escalation set** — `(allocatable, principal)` pairs where a
    user/group now gets *more* than precedence would have given them. The
-   owner/admin/expired/multi-group cases are filtered out automatically (in the
-   dhbw audit this took ~2,778 structural soft-denies down to **1** real
-   escalation).
+   owner/admin/expired/multi-group cases are filtered out automatically (in one
+   production audit this took thousands of structural soft-denies down to a
+   single real escalation — figures: dhbwrapla `docs/user-access-downgrades.md`).
 2. It freezes the affected **allocatable ids** into a worklist (a system
    preference). Nothing sensitive is stored — names, levels, and the
    explanation are recomputed live for display.

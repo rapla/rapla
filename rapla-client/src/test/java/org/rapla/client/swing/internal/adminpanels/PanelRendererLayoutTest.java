@@ -83,7 +83,7 @@ class PanelRendererLayoutTest
                         new Field("timezone", "Timezone", FieldType.SELECT, null, false,
                                 Map.of("options", tzOptions))),
                 List.of(),
-                Map.of("enabled", false, "fqdn", "https://ex.dhbw.de",
+                Map.of("enabled", false, "fqdn", "https://exchange.example.org",
                         "timezone", "America/Argentina/ComodRivadavia_0"));
     }
 
