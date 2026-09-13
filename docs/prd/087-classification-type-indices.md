@@ -1,7 +1,7 @@
 # PRD 087 — classification & type indices (GraphQL read-path, server-side filter pushdown)
 
 **Status:** draft — 2026-06-24 (split from [PRD 082](082-storage-memory-model.md) Workstream A)
-**Related:** [PRD 082](082-storage-memory-model.md) (storage memory model — foundation: H2 read-model + put/remove projection seam; this is its first low-risk consumer), [PRD 066](066-graphql-reservation-allocatable-matching.md) (allocatable scope union on ReservationFilter), [PRD 059](done/059-graphql-typed-where-predicates.md) (GraphQL typed where-predicates), [PRD 028](028-angular-power-search.md) (allocatable evaluator), [PRD 085](085-search-name-indexing.md) (search/name — sibling GraphQL-only index), [PRD 086](086-appointment-block-index.md) (appointment index — the dual-API sibling)
+**Related:** [PRD 082](082-storage-memory-model.md) (storage memory model — foundation: H2 read-model + put/remove projection seam; this is its first low-risk consumer), [PRD 066](066-graphql-reservation-allocatable-matching.md) (allocatable scope union on ReservationFilter), [PRD 059](done/059-graphql-typed-where-predicates.md) (GraphQL typed where-predicates), [PRD 028](done/028-angular-power-search.md) (allocatable evaluator), [PRD 085](085-search-name-indexing.md) (search/name — sibling GraphQL-only index), [PRD 086](086-appointment-block-index.md) (appointment index — the dual-API sibling)
 
 **Split from [PRD 082](082-storage-memory-model.md) (Workstream A).** Unlike the appointment index ([PRD 086](086-appointment-block-index.md), dual-API), these
 indices are **GraphQL-only**: they accelerate server-side *classification/type filtering*, which

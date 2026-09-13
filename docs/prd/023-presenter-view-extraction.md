@@ -14,7 +14,7 @@ Edit-tier Swing classes (`AppointmentController` 1972 LOC, `AllocatableSelection
 
 ### Goal 2 — Identify logic worth reusing in the Angular client
 
-The Angular UI ([PRD 026](026-angular-frontend.md) / [PRD 028](028-angular-power-search.md)) **will look very different** from Swing (power-search shell, different edit-flow surfaces, different layout). This PRD does **not** produce presenter classes that Angular drives. It produces **pure-Java decision/computation classes** in rapla-core that Angular calls via REST ([PRD 024](024-server-side-edit-services.md)), and that the existing Swing classes also delegate to. Same `RepeatingRuleValidator.validate(...)` decides "is this recurrence rule valid" regardless of UI.
+The Angular UI ([PRD 026](026-angular-frontend.md) / [PRD 028](done/028-angular-power-search.md)) **will look very different** from Swing (power-search shell, different edit-flow surfaces, different layout). This PRD does **not** produce presenter classes that Angular drives. It produces **pure-Java decision/computation classes** in rapla-core that Angular calls via REST ([PRD 024](wont-fix/024-server-side-edit-services.md)), and that the existing Swing classes also delegate to. Same `RepeatingRuleValidator.validate(...)` decides "is this recurrence rule valid" regardless of UI.
 
 ### Anti-goals
 
@@ -25,7 +25,7 @@ The Angular UI ([PRD 026](026-angular-frontend.md) / [PRD 028](028-angular-power
 ## Why this is needed now
 
 1. **Testability gap.** Client-side coverage <5%. Recurring regressions (Jackson-3 `final` fields hit 5×, date-migration collateral, undo-stack drift) are missing-test symptoms.
-2. **Angular rework on the horizon.** A web client needs the same conflict checks, recurrence validation, layout math and permission filtering — and won't have access to a Java `JPanel`. Either extract into REST endpoints ([PRD 024](024-server-side-edit-services.md)) or pure-Java classes the REST layer reuses. Doing it now gives Angular a working contract; not doing it means reimplementing four years of subtle scheduling behaviour from scratch.
+2. **Angular rework on the horizon.** A web client needs the same conflict checks, recurrence validation, layout math and permission filtering — and won't have access to a Java `JPanel`. Either extract into REST endpoints ([PRD 024](wont-fix/024-server-side-edit-services.md)) or pure-Java classes the REST layer reuses. Doing it now gives Angular a working contract; not doing it means reimplementing four years of subtle scheduling behaviour from scratch.
 3. **Pattern already works.** [PRD 020](020-server-driven-admin-panels.md)'s `FieldRenderer` / `PanelRenderer` produced 10 tier-1 tests. `CalendarPlacePresenter` / `ConflictSelectionPresenter` / `ResourceSelectionPresenter` already exhibit the inner-`Presenter`-in-View shape — the precedents this PRD piggy-backs on.
 4. **Direction lock-in.** PRD 005 marked the `rapla-server` → `rapla-client` back-edge (for `RaplaBuilder` / `abstractcalendar`) as a known compromise. The classes the server depends on are where layout/rendering is tangled with Swing. Carving pure modules lets us re-evaluate that dependency later.
 
@@ -38,7 +38,7 @@ A focused first wave — each item is one Swing god-class plus one pure model ca
 | # | Source (Swing-coupled) | Extracted (pure) | Why this one first |
 |---|---|---|---|
 | 1 | `AppointmentController` (1972 LOC) — repeating-rule branch | `RepeatingRuleModel` + `RepeatingRuleValidator` (rapla-core) | Single-largest hot spot of pure logic buried in UI. Recurrence rules drive most date bugs. |
-| 2 | `AllocatableSelection` (2463 LOC) — `calcConflictingAppointments` + `isAllowed` + binding assembly | `AllocationConflictModel` (rapla-core) | Conflict math; first candidate to expose as a REST pre-check ([PRD 024](024-server-side-edit-services.md)). |
+| 2 | `AllocatableSelection` (2463 LOC) — `calcConflictingAppointments` + `isAllowed` + binding assembly | `AllocationConflictModel` (rapla-core) | Conflict math; first candidate to expose as a REST pre-check ([PRD 024](wont-fix/024-server-side-edit-services.md)). |
 | 3 | `AbstractRaplaSwingCalendar` + `SwingRaplaBlock` (~900 LOC combined) — block geometry | `CalendarBlockLayout` (rapla-core) | Shared by weekview / monthview / dayresource / compactweek / timeslot. Single extraction unlocks five plugins. |
 | 4 | `SwingRaplaBlock` — color decision | `ReservationBlockStyle` (rapla-core) | Permission/status → colour code. Trivially testable; reused by Angular. |
 | 5 | `ClassifiableFilterEdit` (938 LOC) — filter assembly | `ClassificationFilterBuilder` (rapla-core) | Schema-driven filter construction. Heavy logic, no tests today. |
@@ -52,7 +52,7 @@ Each extraction includes: a new pure class in `rapla-core/src/main/java/...` (no
 ### Explicitly out of scope
 
 - No Swing → JavaFX / SwingX / FXML migration. The view stays Swing.
-- No REST endpoints (that's [PRD 024](024-server-side-edit-services.md)).
+- No REST endpoints (that's [PRD 024](wont-fix/024-server-side-edit-services.md)).
 - No rewrite of `RaplaGUIComponent` (509-LOC god-class, 64 subclasses; deprecation is future work).
 - No retroactive `*View` interfaces added to every Swing component just to call it "MVP". Add when there's a presenter to pair with.
 - No Eclipse-MVP / GWT-MVP framework adoption.
@@ -139,11 +139,11 @@ The larger `ClassifiableFilterEdit.getFilter()` / `mapFrom(...)` flow is already
 
 ### Phase 6 — Continued opportunistic carve-outs from edit-tier classes (re-aimed 2026-05-11)
 
-**Original framing dropped.** PRD [026](026-angular-frontend.md) / [028](028-angular-power-search.md) confirm Angular UI will look very different from the Swing edit dialog (power-search shell, redesigned edit flow). No production `ReservationEditPresenter` to build — Angular will not drive the sample's `ReservationView` interface. Promoting the sample would produce a presenter shaped for a UI that's not going to exist.
+**Original framing dropped.** PRD [026](026-angular-frontend.md) / [028](done/028-angular-power-search.md) confirm Angular UI will look very different from the Swing edit dialog (power-search shell, redesigned edit flow). No production `ReservationEditPresenter` to build — Angular will not drive the sample's `ReservationView` interface. Promoting the sample would produce a presenter shaped for a UI that's not going to exist.
 
 Swing `ReservationEditImpl` and friends therefore **stay as they are** until the Swing tier is retired (anti-goal #2).
 
-Phase 6 actually becomes: **keep extracting pure-logic chunks from edit-tier god-classes**, on the same terms as Phases 1–5 and 8 — Swing class delegates to a rapla-core class, tier-1 tests pin the behaviour, REST endpoint ([PRD 024](024-server-side-edit-services.md)) consumes the same class if Angular needs the decision. No `*View` interfaces added; no dialog rewrites.
+Phase 6 actually becomes: **keep extracting pure-logic chunks from edit-tier god-classes**, on the same terms as Phases 1–5 and 8 — Swing class delegates to a rapla-core class, tier-1 tests pin the behaviour, REST endpoint ([PRD 024](wont-fix/024-server-side-edit-services.md)) consumes the same class if Angular needs the decision. No `*View` interfaces added; no dialog rewrites.
 
 #### Audit — remaining extractables (each independently shippable)
 
@@ -179,7 +179,7 @@ Also landed (`ResourceSelectionViewSwing` sidebar):
   - Status line tells user how many selections are hidden.
   - Plain click on a visible result still triggers `JTree`'s default "replace selection" — status line is **informational, not protective**. Option (b) — sticky additive selection while search is active — discussed but deferred.
 
-Not landed (deferred): `ClassifiableFilterEdit` doesn't have its own search field yet (dialog heavier, rule list typically small). **Event search in the calendar view (`MultiCalendarViewSwing`) explicitly dropped on Swing tier** — initial attempt added a transient `eventNameSearch` field to `CalendarSelectionModel` + `CalendarModelImpl` and filtered the appointment binding map at query time; reverted 2026-05-11 after design discussion — per-view search is a UX affordance, not a calendar-model concept. Event search will land in Angular as part of [PRD 028](028-angular-power-search.md)'s power-search. Sticky additive selection (Option b) not landed.
+Not landed (deferred): `ClassifiableFilterEdit` doesn't have its own search field yet (dialog heavier, rule list typically small). **Event search in the calendar view (`MultiCalendarViewSwing`) explicitly dropped on Swing tier** — initial attempt added a transient `eventNameSearch` field to `CalendarSelectionModel` + `CalendarModelImpl` and filtered the appointment binding map at query time; reverted 2026-05-11 after design discussion — per-view search is a UX affordance, not a calendar-model concept. Event search will land in Angular as part of [PRD 028](done/028-angular-power-search.md)'s power-search. Sticky additive selection (Option b) not landed.
 
 **Origin:** extracted from PRD 021 (`wont-fix`) when the stub-mode redesign was dropped in favor of Angular ([PRD 026](026-angular-frontend.md)).
 

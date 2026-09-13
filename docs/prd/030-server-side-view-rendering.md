@@ -23,7 +23,7 @@ Phases:
 - Phase 6: `LocalCache.cachedReservations` documented as Swing-legacy + `NoRaplaClientImportInServerTest` arch-test pinning the no-back-edge state + three stale `javax.swing.table.TableColumn` imports cleaned out of the table-view-server pages
 **Author:** Christopher Kohlhaas (with AI assistance)
 **Created:** 2026-05-12
-**Related:** [PRD 020](020-server-driven-admin-panels.md) (server-driven admin panels — already-done piece), [PRD 024](024-server-side-edit-services.md) (server-side edit services, calendar layout done), [PRD 026](026-angular-frontend.md) (Angular frontend, primary consumer), [PRD 028](028-angular-power-search.md) (Angular power search), PRD 021 wont-fix (resource stubs, historical motivation), PRD 005 (multi-module split, D3 back-edge), PRD 008 (server-sync update events), [PRD 009](009-server-bulk-storage-rest-api.md) (bulk storage REST, other thin-client foundation)
+**Related:** [PRD 020](020-server-driven-admin-panels.md) (server-driven admin panels — already-done piece), [PRD 024](wont-fix/024-server-side-edit-services.md) (server-side edit services, calendar layout done), [PRD 026](026-angular-frontend.md) (Angular frontend, primary consumer), [PRD 028](done/028-angular-power-search.md) (Angular power search), PRD 021 wont-fix (resource stubs, historical motivation), PRD 005 (multi-module split, D3 back-edge), PRD 008 (server-sync update events), [PRD 009](009-server-bulk-storage-rest-api.md) (bulk storage REST, other thin-client foundation)
 
 ## The big idea
 
@@ -45,16 +45,16 @@ This is an **architecture-of-information project**. Done well:
 |---|---|---|
 | **Admin panel rendering** | **Done** — [PRD 020](020-server-driven-admin-panels.md) | Server publishes structured panel definitions; client renders. 5/11 vanilla + 4 dhbw panels migrated. |
 | **External-event-import wizard** | **Done** — [PRD 012](012-dhbwrapla-client-migration.md) | Server-driven metadata + render. Pattern for plugin-contributed views. |
-| **Calendar layout (read-side core)** | **Done** — [PRD 024](024-server-side-edit-services.md) Phase 3, 2026-05-11 | `CalendarLayoutEngine` (rapla-core) + `CalendarViewController` + 16 tier-1 + 7 MockMvc tests. Returns `CalendarPage` with positioned `RenderedBlock`s. Used by nobody yet. |
+| **Calendar layout (read-side core)** | **Done** — [PRD 024](wont-fix/024-server-side-edit-services.md) Phase 3, 2026-05-11 | `CalendarLayoutEngine` (rapla-core) + `CalendarViewController` + 16 tier-1 + 7 MockMvc tests. Returns `CalendarPage` with positioned `RenderedBlock`s. Used by nobody yet. |
 | **HTML export** | **Partial — server-side already** | Autoexport plugin server-renders HTML; re-implements parts of `RaplaBuilder`. Phase 5 harmonises. |
 | **iCal export** | **Done — server-side already** | `org.rapla.plugin.export2ical`. No change. |
 | **Bulk allocatable / reservation fetch** | **Done** — [PRD 009](009-server-bulk-storage-rest-api.md) | Thin-client foundation. Serves full entities — this PRD adds projected-view endpoints alongside. |
 
 ## What's still on the client
 
-After PRD 030 lands, client keeps: dynamic types + categories (small, static-ish, eager-load); the currently-edited entity graph (lazy via `/storage/reservation/{id}`); per-form transient state; recently-touched IDs ([PRD 028](028-angular-power-search.md)); user identity + JWT.
+After PRD 030 lands, client keeps: dynamic types + categories (small, static-ish, eager-load); the currently-edited entity graph (lazy via `/storage/reservation/{id}`); per-form transient state; recently-touched IDs ([PRD 028](done/028-angular-power-search.md)); user identity + JWT.
 
-Does **not** keep: full reservation graph for visible date range; full allocatable graph ([PRD 028](028-angular-power-search.md) server-side); locally-computed layout/sort/projection/color; row cache for tables.
+Does **not** keep: full reservation graph for visible date range; full allocatable graph ([PRD 028](done/028-angular-power-search.md) server-side); locally-computed layout/sort/projection/color; row cache for tables.
 
 ## Concrete sizing — why this is worth doing
 
@@ -64,7 +64,7 @@ Does **not** keep: full reservation graph for visible date range; full allocatab
 | Month calendar, 800 reservations | ~1.5 MB | ~80 KB |
 | Reservation table, semester (5 000 × 6 cols) | ~10 MB | ~500 KB |
 | CSV export, semester | ~10 MB JSON → client formats | ~700 KB CSV streamed |
-| Large admin sidebar (~30 000 allocatables) | ~5 MB (PRD 021 wont-fix) | ~0 — [PRD 028](028-angular-power-search.md) server-driven |
+| Large admin sidebar (~30 000 allocatables) | ~5 MB (PRD 021 wont-fix) | ~0 — [PRD 028](done/028-angular-power-search.md) server-driven |
 
 Wire reduction is the headline; **memory** reduction on the client is just as important. A browser tab holding a megabyte JSON in JS heap costs you.
 
@@ -113,7 +113,7 @@ PRD 030 is one of a constellation:
 
 PRDs map to verticals: **028** → search; **024 P3** → calendar (done); **030** → table + CSV export + arch cleanup (this PRD); **009** → bulk read for edit hydration (done); **020** → admin panel structure (done).
 
-PRD 030 specifically: builds table-view engine + endpoints (heaviest payload area), adds column-config endpoint, refactors block coloring as shared helper (closes duplication [PRD 024](024-server-side-edit-services.md) P3 deferred), migrates CSV export, does post-Angular architectural cleanup (LocalCache de-emphasis, D3 deletion).
+PRD 030 specifically: builds table-view engine + endpoints (heaviest payload area), adds column-config endpoint, refactors block coloring as shared helper (closes duplication [PRD 024](wont-fix/024-server-side-edit-services.md) P3 deferred), migrates CSV export, does post-Angular architectural cleanup (LocalCache de-emphasis, D3 deletion).
 
 ## Goal
 
@@ -139,13 +139,13 @@ Net: Angular renders the full reservation-table flow without re-deriving column 
 
 ### Explicitly out of scope (separate PRDs)
 
-- **Edit-time services** — [PRD 024](024-server-side-edit-services.md) Phases 1+2.
-- **Power search / sidebar allocatable listing** — [PRD 028](028-angular-power-search.md).
+- **Edit-time services** — [PRD 024](wont-fix/024-server-side-edit-services.md) Phases 1+2.
+- **Power search / sidebar allocatable listing** — [PRD 028](done/028-angular-power-search.md).
 - **Angular UI implementation** — [PRD 026](026-angular-frontend.md).
 - **Real-time push.** Polling stays.
 - ~~**GraphQL / aggregated queries.**~~ **Narrowed 2026-05-24 by [PRD 035 (done)](done/035-graphql-foundations.md).** Per-view shape principle still applies (no cross-view aggregation). GraphQL is now the SPA's transport for per-view reads: `renderedBlocks` is a thin wrapper over `CalendarLayoutEngine` + `CalendarViewController`. REST endpoints stay for direct callers (including Swing); CSV/iCal export stays REST permanently.
 - ~~**Swing migration to REST.**~~ **REVERSED 2026-05-12.** Swing has always been a REST consumer via `RemoteOperator`; there was no in-process path for table views. Phases 7+8 migrate Swing table views to `/table/*`. Swing *calendar* views still keep `RaplaBuilder` pipeline.
-- **Calendar surface itself** — already [PRD 024](024-server-side-edit-services.md) P3. Phase 4 (block-color sharing) is the only calendar-touching item here (sits at Swing/server seam).
+- **Calendar surface itself** — already [PRD 024](wont-fix/024-server-side-edit-services.md) P3. Phase 4 (block-color sharing) is the only calendar-touching item here (sits at Swing/server seam).
 - **Swing calendar views** (week/month/day/compactweek/dayresource/timeslot) — out of scope. Only **Swing table views** migrate.
 
 ## Plan
@@ -170,7 +170,7 @@ Mirrors `CalendarLayoutEngine`. Pure-Java, no facade, no Swing.
 - `TableViewService` `@HttpExchange` in rapla-core. Two `@GetExchange`: `/table/appointments`, `/table/reservations`.
 - Request: `from`, `to`, `columns[]`, `sort[]`, `cursor?`, `pageSize?`, `allocatables[]?`, `reservationTypes[]?`.
 - Response: `TablePage`.
-- `TableViewController` (rapla-server): parse → `facade.getReservations` → engine → return. Permission filter via facade (per [PRD 024](024-server-side-edit-services.md) P3).
+- `TableViewController` (rapla-server): parse → `facade.getReservations` → engine → return. Permission filter via facade (per [PRD 024](wont-fix/024-server-side-edit-services.md) P3).
 - Contract test (rapla-core); MockMvc test (rapla-app) covering: requires-auth, happy path, pagination boundaries, AGENTS.md §12 leak probe (unknown ids silently dropped), permission filter.
 
 ### Phase 3 — Column config endpoint (≈3 days)
@@ -265,7 +265,7 @@ client                                            server
   │   renderer paints (Angular table component, or Swing JTable post-Phase 7+8)
 ```
 
-Mirrors [PRD 024](024-server-side-edit-services.md) P3 `/calendar/view`, same JWT, same permission gate, same cursor pagination. Both Angular and Swing (post-7+8) consume the same endpoint; differences are pagination shape (Angular paginates, Swing fetches all) and entity-rehydrate strategy (Angular never rehydrates, Swing lazy-fetches via `/storage/reservation/{id}`).
+Mirrors [PRD 024](wont-fix/024-server-side-edit-services.md) P3 `/calendar/view`, same JWT, same permission gate, same cursor pagination. Both Angular and Swing (post-7+8) consume the same endpoint; differences are pagination shape (Angular paginates, Swing fetches all) and entity-rehydrate strategy (Angular never rehydrates, Swing lazy-fetches via `/storage/reservation/{id}`).
 
 ## Migration strategy — Swing and Angular both consume `/table/*`
 
@@ -279,7 +279,7 @@ Revised: **both clients consume `/table/*` for table views**. One server-side pr
 
 ### Calendar views still aren't migrated
 
-This PRD only migrates Swing **table views**. Swing **calendar views** (week/month/day/compactweek/dayresource/timeslot/appointments-per-day-grid) keep their existing `RaplaBuilder` pipeline. The Swing calendar uses local layout via `AbstractRaplaSwingCalendar` + `SwingRaplaBlock`. Migrating to consume `CalendarPage` ([PRD 024](024-server-side-edit-services.md) P3) requires a parallel set of view adapters; multi-week effort. Future PRD.
+This PRD only migrates Swing **table views**. Swing **calendar views** (week/month/day/compactweek/dayresource/timeslot/appointments-per-day-grid) keep their existing `RaplaBuilder` pipeline. The Swing calendar uses local layout via `AbstractRaplaSwingCalendar` + `SwingRaplaBlock`. Migrating to consume `CalendarPage` ([PRD 024](wont-fix/024-server-side-edit-services.md) P3) requires a parallel set of view adapters; multi-week effort. Future PRD.
 
 ### Pagination — Swing keeps monolithic-scroll, opt-in for Angular
 
@@ -352,7 +352,7 @@ Reuse `PreferencesAdminControllerIntegrationTest` as MockMvc template — same S
 
 8. **`LocalCache` permanent retention. RESOLVED 2026-05-12: retain indefinitely for Swing.** Document `cachedReservations` as Swing-legacy; never remove. Phase 6 reduces to back-edge deletion only.
 
-9. **Phase ordering vs Angular v1. RESOLVED 2026-05-12.** Angular v1 ([PRD 026](026-angular-frontend.md)) is reservation **edit**; Phases 1–3 not on critical path. Schedule: Phase 1+2 in parallel with [PRD 024](024-server-side-edit-services.md) P1+2 (Angular v1 prep); Phases 3+4+5 during v1.1; Phase 6 only after Angular ships and stabilises.
+9. **Phase ordering vs Angular v1. RESOLVED 2026-05-12.** Angular v1 ([PRD 026](026-angular-frontend.md)) is reservation **edit**; Phases 1–3 not on critical path. Schedule: Phase 1+2 in parallel with [PRD 024](wont-fix/024-server-side-edit-services.md) P1+2 (Angular v1 prep); Phases 3+4+5 during v1.1; Phase 6 only after Angular ships and stabilises.
 
 10. **Lazy vs eager entity rehydration (Phase 7.3).** Options:
     - **Lazy on first touch** (recommended): zero up-front cost, 50-300 ms latency on first interaction. Matches "you only edit a few rows per session."
@@ -370,9 +370,9 @@ Reuse `PreferencesAdminControllerIntegrationTest` as MockMvc template — same S
 ## Cross-references
 
 - **[PRD 020](020-server-driven-admin-panels.md)** — server-driven admin panels. Pattern template.
-- **[PRD 024](024-server-side-edit-services.md)** — server-side edit services (sibling, edit-side). P3's `/calendar/view` is the prior art.
+- **[PRD 024](wont-fix/024-server-side-edit-services.md)** — server-side edit services (sibling, edit-side). P3's `/calendar/view` is the prior art.
 - **[PRD 026](026-angular-frontend.md)** — Angular frontend. Primary consumer.
-- **[PRD 028](028-angular-power-search.md)** — Angular power search. Parallel PRD on allocatable surface.
+- **[PRD 028](done/028-angular-power-search.md)** — Angular power search. Parallel PRD on allocatable surface.
 - **PRD 021 wont-fix** — client resource stubs. Motivation subsumed.
 - **PRD 005** — multi-module split. Phase 6 deletes D3 back-edge.
 - **PRD 008** — server-sync update events. Phase 2's cache-invalidation rides on this.

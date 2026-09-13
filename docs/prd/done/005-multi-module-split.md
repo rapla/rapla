@@ -11,7 +11,7 @@ Reactor aggregates 5 modules. `mvn -f master/pom.xml clean test` → **94 pass /
 
 Source distribution after Phase D6: `rapla-core` 380 files; `rapla-client` 440 files; `rapla-server` 156 files; `rapla-app` ~3 files. Tests all in `rapla-app/src/test/` (D5 pragmatic placement; per-module redistribution is Phase E follow-up).
 
-D3 compromise resolved 2026-05-07: 27 toolkit-agnostic files moved from rapla-client to rapla-core eliminated the original rapla-server → rapla-client edge. **`rapla-server` now depends only on `rapla-core`.** Detail in `005-cycle-audit.md` §0. The `rapla-client-api` extraction is **permanently off the table** per [PRD 003](../003-custom-deployments-after-spring-migration.md) direction change 2026-05-07 — dhbwrapla becomes server-only.
+D3 compromise resolved 2026-05-07: 27 toolkit-agnostic files moved from rapla-client to rapla-core eliminated the original rapla-server → rapla-client edge. **`rapla-server` now depends only on `rapla-core`.** Detail in `005-cycle-audit.md` §0. The `rapla-client-api` extraction is **permanently off the table** per [PRD 003](003-custom-deployments-after-spring-migration.md) direction change 2026-05-07 — dhbwrapla becomes server-only.
 
 ## Goal
 
@@ -91,7 +91,7 @@ Eight phases. Each ends green; full `mvn test` at session end per AGENTS.md §5.
   - **D5 (tests):** move alongside the package they test; resolve shared fixtures per Phase B.
   - **D6:** delete `<module>.</module>` from root pom; move/delete root `src/` stragglers.
 - **Phase E — Build hygiene & per-module deps (1–2d)**: audit BOM (third-party pins only); `mvn dependency:analyze -pl <module>`; manifest entries per module; rename `rapla-app/pom.xml` to `<artifactId>rapla-app</artifactId>` + `<finalName>rapla-2.1-SNAPSHOT</finalName>` (preserves on-disk JAR filename); move signing profiles from `parent/pom.xml` to `rapla-app/pom.xml`.
-- **Phase F — Documentation (0.5d)**: AGENTS.md build commands + §7 worktree notes; module-map table in README or `docs/architecture.md`; [PRD 003](../003-custom-deployments-after-spring-migration.md) supersedes notes; [PRD 004](004-multi-module-architecture-analysis.md) status flip.
+- **Phase F — Documentation (0.5d)**: AGENTS.md build commands + §7 worktree notes; module-map table in README or `docs/architecture.md`; [PRD 003](003-custom-deployments-after-spring-migration.md) supersedes notes; [PRD 004](004-multi-module-architecture-analysis.md) status flip.
 - **Phase G — `dhbwrapla` update — DEFERRED with custom/**. Originally to update dhbwrapla to depend on `rapla-server` directly. Per user direction 2026-05-07, deferred to a future PRD. dhbwrapla build does NOT need to keep working through PRD 005's lifetime. When done: replace `<parent>org.rapla:custom</parent>` with `rapla-bom`; replace `<dependency>org.rapla:rapla</dependency>` with `rapla-server` (+ `rapla-client` if Swing customisations); verify `dhbwrapla-container/pom.xml` resolves `../../rapla`.
 - **Phase H — Maven Central readiness (out of scope; tracked here)**: source + Javadoc JARs per module; `nexus-staging-maven-plugin`; GPG signing in CI; POM metadata; per-module license tagging.
 
@@ -178,7 +178,7 @@ If cycle audit surfaces >50 cycles, Phase B grows to 3–5 days and total to ~3 
 | **001** Spring Boot Migration | **Hard prerequisite** — Phases 1–8 done on `spring-boot` branch. Phase 4 follow-up runs independently in parallel. |
 | **001-A** Date → LocalDateTime | Independent; touches `rapla-core` signatures. |
 | **002** Multi-Tenancy | Independent; `TenantAwareFacade` lives in `rapla-server`. |
-| **003** Custom Deployments | **Bidirectional.** PRD 005 simplifies [PRD 003](../003-custom-deployments-after-spring-migration.md)'s OQ2/OQ5/OQ6; update [PRD 003](../003-custom-deployments-after-spring-migration.md) in Phase F. |
+| **003** Custom Deployments | **Bidirectional.** PRD 005 simplifies [PRD 003](003-custom-deployments-after-spring-migration.md)'s OQ2/OQ5/OQ6; update [PRD 003](003-custom-deployments-after-spring-migration.md) in Phase F. |
 | **004** Multi-Module Architecture Analysis | **Decision document.** PRD 005 implements it. |
 | **006** Angular Client (future) | Depends on PRD 005 for clean home as peer of Java reactor. |
 | **007** Build & Test Performance | Likely benefits from split but doesn't block. |

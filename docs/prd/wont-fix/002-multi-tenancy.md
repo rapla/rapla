@@ -5,7 +5,7 @@
 > Any future tenant-awareness work attaches to `SpringSecurityRemoteSession` +
 > `JwtUserResolver` (JWT-only auth) instead.
 
-**Status:** draft
+**Status:** wont-fix — 2026-09-13 — never built; multi-pod instances on one shared store (see `docs/architecture/locking.md`) cover the deployment need, and a delegating `TenantAwareFacade` contradicts [PRD 067](../067-server-mutation-unification.md) (server drops `RaplaFacade`).
 **Date:** 2026-05-05
 
 ## Goal

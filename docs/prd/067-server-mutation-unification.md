@@ -234,7 +234,7 @@ The Swing import wizard (and its `/api/externaleventimport/*` REST contract)
 lives only as long as the Swing client needs it. Its internals migrate to
 `EntityLifecycle` (cheap, shared), but **no investment in the REST endpoint
 shape** — the replacement is an Angular wizard driving GraphQL mutations
-(future PRD; the external-event-import metadata-driven contract from PRD [003](003-custom-deployments-after-spring-migration.md)/[012](012-dhbwrapla-client-migration.md)
+(future PRD; the external-event-import metadata-driven contract from PRD [003](done/003-custom-deployments-after-spring-migration.md)/[012](012-dhbwrapla-client-migration.md)
 can inform the GraphQL schema). Same reasoning applies to other Swing-serving
 import REST endpoints (iCal import) as their SPA successors arrive.
 

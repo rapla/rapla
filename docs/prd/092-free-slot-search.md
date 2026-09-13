@@ -5,7 +5,7 @@
 complementary axis, split out of 091; shared schema vocabulary defined there),
 [PRD 060](060-graphql-mcp-foundations.md) (GraphQL MCP foundations — sketched `findFreeSlots`), [PRD 086](086-appointment-block-index.md) (appointment
 block index — the enumeration substrate), [PRD 077](077-calendar-model-graphql.md) (calendar render mode — future
-home of the availability strip), [PRD 024](024-server-side-edit-services.md) (server-side edit services)
+home of the availability strip), [PRD 024](wont-fix/024-server-side-edit-services.md) (server-side edit services)
 
 ## Abstract
 

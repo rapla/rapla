@@ -2,7 +2,7 @@
 
 **Status:** in-progress (Phases 1–4 + 6 landed 2026-05-21; Phase 5 cut; dispatch-path audit follow-up open; re-opened 2026-05-28 for Phases 7+8 — provisioning extraction)
 **Date:** 2026-05-21 (re-opened 2026-05-28)
-**Related:** [PRD 036](036-external-idp-oauth-login.md) (external IdP OAuth login), [PRD 037](037-native-saml-shibboleth.md) (native SAML / Shibboleth), [PRD 049](049-controller-interface-deduplication.md) (controller interface dedup — where the wire shape changes land), [PRD 053](done/053-replace-rapla-logger-with-slf4j.md) (plugin coordination pattern for cross-repo refactors), JNDI plugin (LDAP auth), AGENTS.md §16 (read APIs don't mutate — the rule that motivates Phase 7)
+**Related:** [PRD 036](036-external-idp-oauth-login.md) (external IdP OAuth login), [PRD 037](wont-fix/037-native-saml-shibboleth.md) (native SAML / Shibboleth), [PRD 049](049-controller-interface-deduplication.md) (controller interface dedup — where the wire shape changes land), [PRD 053](done/053-replace-rapla-logger-with-slf4j.md) (plugin coordination pattern for cross-repo refactors), JNDI plugin (LDAP auth), AGENTS.md §16 (read APIs don't mutate — the rule that motivates Phase 7)
 
 ## 2026-05-28 — Re-opened for provisioning extraction (Phases 7+8)
 

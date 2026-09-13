@@ -9,7 +9,7 @@
 **Siblings:**
 - [PRD 055 — Events Read API](055-graphql-events-read-api.md) — single-type reservation reads
 - [PRD 056 — Events Write API](056-graphql-events-write-api.md) — curated `book` mutation tool wraps [PRD 056](056-graphql-events-write-api.md)'s `createReservation`
-- [PRD 028 — Angular Power Search](028-angular-power-search.md) — substrate for the search root in §"Search & discovery"
+- [PRD 028 — Angular Power Search](done/028-angular-power-search.md) — substrate for the search root in §"Search & discovery"
 - [PRD 043 — API Keys (JWT/PAT)](043-api-keys-jwt-pat.md) — the scoped-key mechanism the MCP transport sits on
 
 ## Goal
@@ -80,7 +80,7 @@ The cross-domain `search` root is the MCP-agent-friendly primitive
 ("find anything matching X"). For the SPA's per-type / per-group tier
 model — `searchText` + `matchKind` args on the existing query roots —
 ownership moved to
-[PRD 028 §"GraphQL substrate augmentations"](028-angular-power-search.md#graphql-substrate-augmentations-added-2026-05-29)
+[PRD 028 §"GraphQL substrate augmentations"](done/028-angular-power-search.md#graphql-substrate-augmentations-added-2026-05-29)
 on 2026-05-29 (closer to the consumer that drives the requirements).
 The `MatchKind` enum is defined once and shared by both surfaces.
 
@@ -113,13 +113,13 @@ enum MatchKind  { PREFIX  SUBSTRING  FUZZY }
   today, just exposed via GraphQL). Full-text indexing is follow-on.
 - §12: drop hits where the matched field is unreadable; entity-level §12
   also applies (a hit's entity must be readable).
-- The [PRD 028](028-angular-power-search.md) tier model (A1/A2/A3 for allocatables, E1–E4 for
+- The [PRD 028](done/028-angular-power-search.md) tier model (A1/A2/A3 for allocatables, E1–E4 for
   reservations) is **client-side** — depends on calendar selection +
-  viewport + recency, all client state. [PRD 028](028-angular-power-search.md) composes tiers from
+  viewport + recency, all client state. [PRD 028](done/028-angular-power-search.md) composes tiers from
   multiple aliased calls to the per-type `searchText` roots (now
-  documented in [PRD 028](028-angular-power-search.md) itself).
+  documented in [PRD 028](done/028-angular-power-search.md) itself).
 
-[PRD 028](028-angular-power-search.md) OQ#3 (bounded window) and OQ#10 (§12) are resolved by the
+[PRD 028](done/028-angular-power-search.md) OQ#3 (bounded window) and OQ#10 (§12) are resolved by the
 cross-domain root above + the per-type augmentations specified in PRD
 028.
 
@@ -442,15 +442,15 @@ windows).
     clearer this way. Implementations may also have a defensive
     time/count budget on top.
 
-### OQ-F — [PRD 028](028-angular-power-search.md) viewport-centered default — cross-PRD
+### OQ-F — [PRD 028](done/028-angular-power-search.md) viewport-centered default — cross-PRD
 
 *Opened 2026-05-24 ([PRD 035](done/035-graphql-foundations.md) OQ#20).* The SPA's calendar viewport is client
 state; the server default centers on `serverTime`. A user viewing the March
 2025 calendar in June 2026 expects "search Algorithms" to find the
 Algorithms course in March 2025 — needs the SPA to pass viewport-derived
-`from`/`to` rather than rely on the server default. Decision is [PRD 028](028-angular-power-search.md)
+`from`/`to` rather than rely on the server default. Decision is [PRD 028](done/028-angular-power-search.md)
 territory (not PRD 060): does the SPA always pass viewport, never pass, or
-conditionally? Flag for whenever [PRD 028](028-angular-power-search.md) resumes. PRD 060's contract is
+conditionally? Flag for whenever [PRD 028](done/028-angular-power-search.md) resumes. PRD 060's contract is
 unchanged either way — server default is `serverTime`-centered for
 headless callers.
 
@@ -473,7 +473,7 @@ follow-on; for v1 the agent composes
 ## Cross-references
 
 - [PRD 035 (done) — Foundations](done/035-graphql-foundations.md)
-- [PRD 028 — Angular Power Search](028-angular-power-search.md) — `search` root resolves [PRD 028](028-angular-power-search.md) OQ#3 (bounded window) and OQ#10 (§12)
+- [PRD 028 — Angular Power Search](done/028-angular-power-search.md) — `search` root resolves [PRD 028](done/028-angular-power-search.md) OQ#3 (bounded window) and OQ#10 (§12)
 - [PRD 036 — External IdP OAuth Login](036-external-idp-oauth-login.md) — M365 Copilot showcase track
 - [PRD 040 — dispatch validate before lock](040-dispatch-validate-before-lock.md) — multi-pod lock semantics
 - [PRD 043 — API Keys JWT/PAT](043-api-keys-jwt-pat.md) — scoped key mechanism

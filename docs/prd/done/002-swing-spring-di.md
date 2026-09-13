@@ -32,7 +32,7 @@ After this PRD: every wired class uses Spring stereotypes (`@Service` / `@Compon
 ## Cross-references
 
 - **PRD 001** (Spring Boot migration) — Phase 7 deleted the restinject annotation processor; PRD 002 cleans up the orphaned `@Inject` / `@DefaultImplementation` / `@Extension` annotations the processor used to consume.
-- **[PRD 003](../003-custom-deployments-after-spring-migration.md)** (custom-deployments) — references the now-removed `restinject` jar via `custom/pom.xml`. Patched with a TODO comment in this PRD; full rework deferred to [PRD 003](../003-custom-deployments-after-spring-migration.md).
+- **[PRD 003](003-custom-deployments-after-spring-migration.md)** (custom-deployments) — references the now-removed `restinject` jar via `custom/pom.xml`. Patched with a TODO comment in this PRD; full rework deferred to [PRD 003](003-custom-deployments-after-spring-migration.md).
 - **[PRD 010](010-jackson-field-based-wire-format.md)** (Jackson field-based wire format) — happened concurrently in this session and broke `mvn compile` mid-Phase-F (Jackson 2→3 API change in `JacksonMergePatch.java`). Per AGENTS.md §7 not addressed here; [PRD 010](010-jackson-field-based-wire-format.md) owns it.
 - **AGENTS.md §4** — sets the policy this PRD enforces: server uses `@Bean` factories, client uses `@ComponentScan`. Phase D respects the asymmetry.
 

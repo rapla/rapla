@@ -1,7 +1,7 @@
 # PRD 085 — search & name indexing (in-memory derived-name index over computed names)
 
 **Status:** draft — 2026-06-24 (rewritten: Lucene/H2 dropped in favour of an in-memory derived-name index; see *Direction*)
-**Related:** [PRD 082](082-storage-memory-model.md) (storage memory model — provides the put/remove seam `updateIndizes` this builds on, and the "index = disposable in-RAM projection" rule; name search was split out of Workstream A into here), [PRD 084](084-replace-hsqldb-with-h2.md) (H2 engine — was the candidate full-text store; now only a conditional fallback), [PRD 081](081-graphql-omnibox-multisearch.md) (omnibox multisearch — the consumer), [PRD 028](028-angular-power-search.md) (allocatable evaluator / `searchText`), [PRD 035](done/035-graphql-foundations.md) (GraphQL foundations), AGENTS.md §12 (data-leak prevention)
+**Related:** [PRD 082](082-storage-memory-model.md) (storage memory model — provides the put/remove seam `updateIndizes` this builds on, and the "index = disposable in-RAM projection" rule; name search was split out of Workstream A into here), [PRD 084](wont-fix/084-replace-hsqldb-with-h2.md) (H2 engine — was the candidate full-text store; now only a conditional fallback), [PRD 081](081-graphql-omnibox-multisearch.md) (omnibox multisearch — the consumer), [PRD 028](done/028-angular-power-search.md) (allocatable evaluator / `searchText`), [PRD 035](done/035-graphql-foundations.md) (GraphQL foundations), AGENTS.md §12 (data-leak prevention)
 
 **Split from [PRD 082](082-storage-memory-model.md).** Workstream A originally bundled a hand-rolled name index next to the
 structural type-bucket index. Name search is a *different* problem (the name is **computed, not
@@ -115,7 +115,7 @@ count. Because `rank` is permission-free, bound the permission-walk set with a *
 (e.g. 500) before the walk, then final top-N (e.g. 20) — caps `canModify` walks while keeping order
 correct (K≫N makes the displacement risk negligible for a planner omnibox).
 - **EVENT** → `canModify(r, caller)` (omnibox events are editable-only — *stricter* than §12 read).
-- **RESOURCE** → the [PRD 028](028-angular-power-search.md) `canRead`/evaluator gate.
+- **RESOURCE** → the [PRD 028](done/028-angular-power-search.md) `canRead`/evaluator gate.
 The index is never trusted for permission or for the final score.
 
 ## When to recompute (drift triggers)

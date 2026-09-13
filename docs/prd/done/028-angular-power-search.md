@@ -1,13 +1,13 @@
 # PRD 028 — Angular power search (single-calendar shell)
 
-**Status:** in-progress — GraphQL substrate Phase 1 SHIPPED 2026-05-29 (see §"GraphQL substrate augmentations"). SPA-side consumption (Apollo client, codegen, calendar shell, tier composition, hasConflicts badge UX) NOT STARTED — it's a multi-day delivery slot, schedule when ready.
+**Status:** done — 2026-09-13 — server substrate (`MatchKind`, `searchText`, `hasConflicts`) shipped 2026-05-29; the SPA search UI was superseded by [PRD 081](../081-graphql-omnibox-multisearch.md) (omnibox) + [PRD 089](../089-server-side-recents-favorites.md) (recents/favorites). Previous status: in-progress — GraphQL substrate Phase 1 SHIPPED 2026-05-29 (see §"GraphQL substrate augmentations"). SPA-side consumption (Apollo client, codegen, calendar shell, tier composition, hasConflicts badge UX) NOT STARTED — it's a multi-day delivery slot, schedule when ready.
 **Author:** Christopher Kohlhaas (with AI assistance)
 **Created:** 2026-05-11
 
 ## Goal
 
 Define a **single-calendar shell** for the Angular frontend
-([PRD 026](026-angular-frontend.md)) with a persistent **power-search box** above one main
+([PRD 026](../026-angular-frontend.md)) with a persistent **power-search box** above one main
 calendar. The search box is the primary way to find allocatables,
 reservations, and conflicts. Results are ranked by **how relevant
 they are to what's currently on screen** — selected resources and
@@ -34,11 +34,11 @@ In scope:
 
 Out of scope:
 
-- The reservation-edit flow itself ([PRD 026](026-angular-frontend.md) Phase 2+).
+- The reservation-edit flow itself ([PRD 026](../026-angular-frontend.md) Phase 2+).
 - Admin views, plugin UIs, user / category administration.
 - The top-level cross-domain `Query.search(text:, scope:)` root + MCP
   search tool — those stay in
-  [PRD 060 — Discovery, Compute, MCP Transport](060-graphql-mcp-foundations.md)
+  [PRD 060 — Discovery, Compute, MCP Transport](../060-graphql-mcp-foundations.md)
   because they serve a different consumer (AI agents).
 - (Server-side search augmentations for the SPA's tier model — the
   per-type / per-group `searchText` + `matchKind` args — moved INTO
@@ -117,7 +117,7 @@ if it was selected ten seconds ago.)
   is preserved.
 - **E4 (orphan)**: see below.
 - **Open edit** (secondary, modifier-click or row side-button):
-  open the reservation-edit dialog ([PRD 026](026-angular-frontend.md) Phase 5).
+  open the reservation-edit dialog ([PRD 026](../026-angular-frontend.md) Phase 5).
 
 ### On a conflict result row
 
@@ -162,7 +162,7 @@ query root — existing roots grow new args additively.
 ### Phase 1 — name-only search (NO group / classification dependencies) — SHIPPED 2026-05-29
 
 Goal: ship the working power-search GraphQL surface against the
-structural `name` field today. No [PRD 065](065-graphql-declared-type-groups.md) (declared groups), no
+structural `name` field today. No [PRD 065](../wont-fix/065-graphql-declared-type-groups.md) (declared groups), no
 per-attribute typed match, no introspection of generated
 `<TypeKey>Classification`s. Just the rapla-resolved name string that
 already drives the existing `nameContains` filter on
@@ -223,7 +223,7 @@ What ships (the unchanged design — what the resolvers expose):
    Tier composition stays client-side; per-call internal order is
    server-authoritative.
 
-4. **`Reservation.hasConflicts: Boolean!`** — picks up the [PRD 064](064-graphql-conflicts-read-api.md)
+4. **`Reservation.hasConflicts: Boolean!`** — picks up the [PRD 064](../064-graphql-conflicts-read-api.md)
    deferred field. Power search needs the badge; the calendar view
    may later too. Implementation: `LightDataFetcher` reading the
    per-query `RequestContextInstrumentation` cache + per-row
@@ -264,10 +264,10 @@ What ships (the unchanged design — what the resolvers expose):
 Phase 1 requirements:
 | Augmentation | Requires |
 |---|---|
-| `searchText` + `matchKind` on `allocatables` / `reservations` | None (additive on PRDs [055](055-graphql-events-read-api.md) + [059](done/059-graphql-typed-where-predicates.md)) |
+| `searchText` + `matchKind` on `allocatables` / `reservations` | None (additive on PRDs [055](../055-graphql-events-read-api.md) + [059](059-graphql-typed-where-predicates.md)) |
 | `MatchKind` enum | None |
 | Server-side row ranking | None (resolver-internal) |
-| `Reservation.hasConflicts` | [PRD 064](064-graphql-conflicts-read-api.md) v1's `operator.getConflicts(r)` (shipped) |
+| `Reservation.hasConflicts` | [PRD 064](../064-graphql-conflicts-read-api.md) v1's `operator.getConflicts(r)` (shipped) |
 
 Phase 1 ships everything power search needs **for the dominant case**
 ("find me the room/person/booking named ..."). It deliberately doesn't
@@ -287,7 +287,7 @@ Two ways to expose this:
   all STRING-valued attribute fields the type has — discovered at
   schema-build time from the DynamicType definition, no SPA changes.
   Wire shape unchanged from Phase 1; the field set just widens.
-- **Client-driven via [PRD 059](done/059-graphql-typed-where-predicates.md) typed where:** the SPA composes
+- **Client-driven via [PRD 059](059-graphql-typed-where-predicates.md) typed where:** the SPA composes
   `whereRoom: { Raumnummer: { contains: $text } }` for the per-type
   tier — no new substrate, but the SPA must know per-DT attribute
   names. Lean: server-side fanout — keeps the SPA polymorphic.
@@ -301,7 +301,7 @@ Phase 2 requirements:
 ### Phase 3 — declared-group search
 
 Goal: typed cross-type results via the declared-group surface from
-[PRD 065](065-graphql-declared-type-groups.md). The SPA's E1/E2 tier model can return `[CourseEvent!]!`
+[PRD 065](../wont-fix/065-graphql-declared-type-groups.md). The SPA's E1/E2 tier model can return `[CourseEvent!]!`
 (typed-on-shared-attributes) instead of `[Reservation!]!` (structural
 only), avoiding per-type inline fragments and giving codegen consumers
 typed shared fields.
@@ -309,7 +309,7 @@ typed shared fields.
 Phase 3 requirements:
 | Augmentation | Requires |
 |---|---|
-| `searchText` + `matchKind` on per-group roots | [PRD 065 — Declared Type Groups](065-graphql-declared-type-groups.md) |
+| `searchText` + `matchKind` on per-group roots | [PRD 065 — Declared Type Groups](../wont-fix/065-graphql-declared-type-groups.md) |
 
 Phase 3 is purely additive — Phase 1 (name) and Phase 2
 (classification-attribute) keep working against the structural roots.
@@ -338,7 +338,7 @@ next SPA query. Phase 1 (name-only) is hot-swap-trivial (already on
 3. **Asymmetric scope per tier.** ~~Should E1/E2 query the full
    reservation history (years back) or only a bounded window
    (say, ±1 year around the viewport)?~~
-   **Resolved 2026-05-24 via [PRD 035](done/035-graphql-foundations.md) §"2026-05-24 design refinement"
+   **Resolved 2026-05-24 via [PRD 035](035-graphql-foundations.md) §"2026-05-24 design refinement"
    §9** — bounded window via `from`/`to` args on the GraphQL `search`
    root, server default ±1 year around `serverTime`, client-overridable.
    "Search older →" expander widens the window on demand by re-issuing
@@ -360,7 +360,7 @@ next SPA query. Phase 1 (name-only) is hot-swap-trivial (already on
    Or a dedicated icon-button on each row? Modifier-clicks are
    invisible; explicit icons crowd the row.
 9. **Filter editor coexistence.** Does the classification-filter
-   editor ([PRD 023](023-presenter-view-extraction.md)'s `ClassificationFilterBuilder`) disappear
+   editor ([PRD 023](../023-presenter-view-extraction.md)'s `ClassificationFilterBuilder`) disappear
    entirely in the SPA, hide behind a "filter" affordance on the
    search box, or live as a separate panel? Search subsumes most
    filter use cases but not "show me all reservations of type X
@@ -369,12 +369,12 @@ next SPA query. Phase 1 (name-only) is hot-swap-trivial (already on
     constraint — search must not echo back ids the user can't
     read. The `/storage/resources` payload is already filtered;
     confirm a future `/search` endpoint uses the same boundary.~~
-    **Resolved 2026-05-24 via [PRD 035](done/035-graphql-foundations.md) §"2026-05-24 design refinement"
+    **Resolved 2026-05-24 via [PRD 035](035-graphql-foundations.md) §"2026-05-24 design refinement"
     §9** — the GraphQL `search` resolver applies §12 at both layers:
     (a) drop hits whose entity is unreadable; (b) drop hits whose
     matched field is unreadable (existence-of-match is information,
     don't leak it). Mandatory `GraphQlLeakTest` coverage of search
-    paths ([PRD 035](done/035-graphql-foundations.md) §Tests).
+    paths ([PRD 035](035-graphql-foundations.md) §Tests).
 
 ## Plan
 
@@ -388,7 +388,7 @@ To be drafted once open questions are decided. Likely shape:
   allocatable cache. No server changes. Tier A1/A2/A3 work end-to-end;
   E-tiers stubbed as "search reservations →" CTA.
 - **Phase 2** — add reservation search. Consumes
-  [PRD 060 — Discovery, Compute, MCP Transport](060-graphql-mcp-foundations.md):
+  [PRD 060 — Discovery, Compute, MCP Transport](../060-graphql-mcp-foundations.md):
   GraphQL `reservations(allocatableIds, from, to, searchText)` for
   E1/E2 + `search(text, scope, from, to)` for E3/E4 + `conflicts`
   scope for conflict rows. Tier composition is client-side via
@@ -408,7 +408,7 @@ To be drafted per phase. Initial test charter:
 
 - **Tier-1 (pure)**: ranking function — given (`query`, `selected
   set`, `viewport`, `recency ring`, candidate list), expected
-  ordering. Pure Java if we share the ranker via [PRD 024](024-server-side-edit-services.md), pure
+  ordering. Pure Java if we share the ranker via [PRD 024](../wont-fix/024-server-side-edit-services.md), pure
   TS otherwise. Multiple cases per tier boundary
   (just-in/just-out of viewport; resource just-deselected; etc.).
 - **Tier-3 (MockMvc)**: the eventual `/search` endpoint —
@@ -422,10 +422,10 @@ To be drafted per phase. Initial test charter:
 
 ## See also
 
-- [PRD 026 — Angular frontend (reservation editing)](026-angular-frontend.md)
-- [PRD 023 — Presenter / Model carve-out](023-presenter-view-extraction.md)
-- [PRD 024 — Server-side edit services](024-server-side-edit-services.md)
-- [`architecture/rest-api.md`](../architecture/rest-api.md) — the
+- [PRD 026 — Angular frontend (reservation editing)](../026-angular-frontend.md)
+- [PRD 023 — Presenter / Model carve-out](../023-presenter-view-extraction.md)
+- [PRD 024 — Server-side edit services](../wont-fix/024-server-side-edit-services.md)
+- [`architecture/rest-api.md`](../../architecture/rest-api.md) — the
   endpoints this PRD assumes will be available.
 - AGENTS.md §12 — permission-leak rule that constrains the
   eventual `/search` endpoint.

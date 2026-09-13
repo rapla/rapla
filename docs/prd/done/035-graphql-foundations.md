@@ -1084,7 +1084,7 @@ default window, max-range cap, viewport-centered) are owned by [PRD 060](../060-
 
 - [PRD 009 — Server bulk-storage REST API](../009-server-bulk-storage-rest-api.md) — the dispatch path write mutations funnel through.
 - [PRD 014 — appointment long → java.time](../done/014-appointment-long-to-java-time.md) — `LocalDateTime` scalar rationale.
-- [PRD 028 — Angular power search](../028-angular-power-search.md) — substrate provided by [PRD 060](../060-graphql-mcp-foundations.md).
+- [PRD 028 — Angular power search](028-angular-power-search.md) — substrate provided by [PRD 060](../060-graphql-mcp-foundations.md).
 - [PRD 029 — Swing OAuth login](../029-swing-oauth-login.md) — the OAuth surface.
 - [PRD 030 — Server-side view rendering](../030-server-side-view-rendering.md) — `renderedBlocks` wraps its substrate.
 - [PRD 031 — Token refresh & API keys](031-token-refresh-and-api-keys.md) — the API-keys half (now [PRD 043](../043-api-keys-jwt-pat.md)).

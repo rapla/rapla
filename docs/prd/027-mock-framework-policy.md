@@ -6,7 +6,7 @@
 
 ## Goal
 
-Decide whether `Mockito` (and mock frameworks generally) belong in the rapla test suite, and write the policy down before it drifts. [PRD 024](024-server-side-edit-services.md) lands three new server endpoints; [PRD 025](025-headless-client-test-harness.md) adds a presenter test harness. Both touch the question. Mockito is on the classpath (transitively via `spring-boot-starter-test`) and used in exactly one test today; without a rule, that count grows to "everywhere" the next time someone is in a hurry.
+Decide whether `Mockito` (and mock frameworks generally) belong in the rapla test suite, and write the policy down before it drifts. [PRD 024](wont-fix/024-server-side-edit-services.md) lands three new server endpoints; [PRD 025](025-headless-client-test-harness.md) adds a presenter test harness. Both touch the question. Mockito is on the classpath (transitively via `spring-boot-starter-test`) and used in exactly one test today; without a rule, that count grows to "everywhere" the next time someone is in a hurry.
 
 ## Decision
 
@@ -19,7 +19,7 @@ Decide whether `Mockito` (and mock frameworks generally) belong in the rapla tes
 **Not allowed:**
 1. `Mockito.mock(RaplaFacade.class)`, `mock(RaplaOperator.class)`, `mock(LocalCache.class)`, `mock(PermissionController.class)`, `mock(ConflictFinder.class)`, `mock(ClassificationImpl.class)` — any rapla entity, facade, storage, or permission type. Real is cheap (`FacadeTestSupport` boots in ~150 ms); the mock hides the class of bug rapla has shipped.
 2. `@MockBean` / `@SpyBean` in `@SpringBootTest`. Each busts the Spring context cache (fights [PRD 007](007-build-and-test-performance.md) Phase 2.7). For controller isolation, use a `@TestConfiguration` static class with hand-rolled stub beans (pattern: `StubPanelsConfig` in `PreferencesAdminControllerIntegrationTest`).
-3. `@Mock` partial mocks of pure-Java models carved out by PRDs [023](023-presenter-view-extraction.md) / [024](024-server-side-edit-services.md) (`AllocationConflictModel`, `RepeatingRuleValidator`, `RaplaBuilder`, layout strategies). No I/O — construct directly.
+3. `@Mock` partial mocks of pure-Java models carved out by PRDs [023](023-presenter-view-extraction.md) / [024](wont-fix/024-server-side-edit-services.md) (`AllocationConflictModel`, `RepeatingRuleValidator`, `RaplaBuilder`, layout strategies). No I/O — construct directly.
 
 ## Why mocks are net-negative here
 
@@ -72,7 +72,7 @@ This PRD adds no tests; it constrains how future tests are written. Verification
 | Phase | Verification |
 |---|---|
 | 1 | This PRD merged + AGENTS.md §13 added. |
-| 2 (ongoing) | PRD [024](024-server-side-edit-services.md) / [025](025-headless-client-test-harness.md) / [026](026-angular-frontend.md) tests land without `Mockito.mock(rapla.*)`. Grep audit at each close-out: `grep -rE "mock\(.*(Facade\|Operator\|Cache\|Permission\|Conflict)\.class\)" rapla-*/src/test`. Expected: zero matches outside the grandfathered file. |
+| 2 (ongoing) | PRD [024](wont-fix/024-server-side-edit-services.md) / [025](025-headless-client-test-harness.md) / [026](026-angular-frontend.md) tests land without `Mockito.mock(rapla.*)`. Grep audit at each close-out: `grep -rE "mock\(.*(Facade\|Operator\|Cache\|Permission\|Conflict)\.class\)" rapla-*/src/test`. Expected: zero matches outside the grandfathered file. |
 
 ## Risks
 

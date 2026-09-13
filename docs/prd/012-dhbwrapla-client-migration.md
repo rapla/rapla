@@ -1,6 +1,6 @@
 # PRD 012: Migrate dhbwrapla client-side plugin code to server pages / general rapla
 
-**Status:** in-progress — rapla-side carve-out fully landed 2026-05-10 (`externaleventimport` wire contract + 12-file move + metadata-driven wizard refactor + `ExternalEventImportResources` bundle + property-gated activation). dhbwrapla server-side adapter (`DualisEventsLoaderImpl` → `ExternalEventImportService`) pending under [PRD 003](003-custom-deployments-after-spring-migration.md) D2/E.
+**Status:** in-progress — rapla-side carve-out fully landed 2026-05-10 (`externaleventimport` wire contract + 12-file move + metadata-driven wizard refactor + `ExternalEventImportResources` bundle + property-gated activation). dhbwrapla server-side adapter (`DualisEventsLoaderImpl` → `ExternalEventImportService`) pending under [PRD 003](done/003-custom-deployments-after-spring-migration.md) D2/E.
 **Date:** 2026-05-08
 
 ## 2026-05-10 Implementation snapshot
@@ -24,9 +24,9 @@
 
 **dhbwrapla deletions**: `org.rapla.plugin.dhbw.dualisimport.client/**` (12 files), `DualisEventsLoader.java` + `DualisEventsResult.java`, `DhbwResources.java` + 2 `.properties` (replaced by metadata).
 
-**Phases 1+2+3 (auth/terminal admin pages, index links)** — ALL DROPPED per user direction 2026-05-10. Config moved to `application.yml` / `DhbwProperties` (no UI). One tiny admin page kept: `TerminalUrlController` for encrypted export-URL query ([PRD 003](003-custom-deployments-after-spring-migration.md) §I).
+**Phases 1+2+3 (auth/terminal admin pages, index links)** — ALL DROPPED per user direction 2026-05-10. Config moved to `application.yml` / `DhbwProperties` (no UI). One tiny admin page kept: `TerminalUrlController` for encrypted export-URL query ([PRD 003](done/003-custom-deployments-after-spring-migration.md) §I).
 
-Pending: dhbwrapla server-side `DualisEventsLoaderImpl` rewrite as `ExternalEventImportService` impl with `Locale`-aware `getMetadata()` ([PRD 003](003-custom-deployments-after-spring-migration.md) Phase E).
+Pending: dhbwrapla server-side `DualisEventsLoaderImpl` rewrite as `ExternalEventImportService` impl with `Locale`-aware `getMetadata()` ([PRD 003](done/003-custom-deployments-after-spring-migration.md) Phase E).
 
 
 ## Goal
@@ -214,7 +214,7 @@ Empty `org.rapla.plugin.dhbw.dualisimport.client[.swing]` packages disappear.
 | **001** Spring Boot Migration | Hard prerequisite — controllers need Spring MVC + Security setup. |
 | **002** Swing UI Spring DI Migration | Soft — `ExternalEventImportWizard` will be `@Service`-annotated using those patterns. |
 | **009** Server Bulk Storage REST | Soft — `RaplaExceptionHandler` ([PRD 009](009-server-bulk-storage-rest-api.md) Phase 5) handles `RaplaSecurityException` → 401 the new controllers rely on. |
-| **003** Custom Deployments after Spring Migration | This PRD is one of the dhbw-specific items [PRD 003](003-custom-deployments-after-spring-migration.md) anticipated. |
+| **003** Custom Deployments after Spring Migration | This PRD is one of the dhbw-specific items [PRD 003](done/003-custom-deployments-after-spring-migration.md) anticipated. |
 
 ## Effort estimate
 

@@ -4,7 +4,7 @@
 **typed, ranked, §12-scoped search across entity kinds** (resources, events, occurrences,
 groups). Carved out so the server search resolver and the SPA omnibox evolve in parallel
 against a fixed seam. Downstream consumer + the stable seam: [PRD 078](078-spa-graphql-view-renderer.md)
-(SPA). Related: [PRD 028](028-angular-power-search.md) (resource `searchText` — already shipped),
+(SPA). Related: [PRD 028](done/028-angular-power-search.md) (resource `searchText` — already shipped),
 [PRD 077](077-calendar-model-graphql.md) (groups = `ClassificationFilter[]`, saved views),
 [PRD 074](074-graphql-declarative-views.md) (views the omnibox navigates to).
 
@@ -37,7 +37,7 @@ an action list. This keeps the server contract lean and the action taxonomy in o
 ## Current state (2026-06-21)
 
 - **Resource search SHIPS:** `Query.allocatables(filter: { searchText, matchKind, limit })`
-  ([PRD 028](028-angular-power-search.md)) — §12-scoped, returns `id / name / isPerson / classification.typeKey`. The SPA's
+  ([PRD 028](done/028-angular-power-search.md)) — §12-scoped, returns `id / name / isPerson / classification.typeKey`. The SPA's
   `SearchService` **already fans out to this today** (resources only): it maps each hit to a
   `resource` result with `sublabel = typeKey`. Verified live against the dhbw store.
 - **Everything else is missing:** no event/occurrence search in the omnibox, no group results,
@@ -181,7 +181,7 @@ recall is not worth the cost on that path.
 
 ### Performance — naive scan first, indices second
 
-Phase 1 deliberately does the **naive full scan** (RESOURCE reuses the [PRD 028](028-angular-power-search.md) evaluator; EVENT
+Phase 1 deliberately does the **naive full scan** (RESOURCE reuses the [PRD 028](done/028-angular-power-search.md) evaluator; EVENT
 scans all §12-readable reservations by name). **We measure performance after the implementation
 lands** against the dhbw store, then decide on a name index (a second step / follow-up) for
 effective matching if the scan is too slow. Do not pre-optimize with an index in Phase 1.
@@ -189,7 +189,7 @@ effective matching if the scan is too slow. Do not pre-optimize with an index in
 ## Plan — phased (server)
 
 1. **Phase 1 — unify resources + events + users. ✅ DONE 2026-06-21 (RESOURCE+EVENT), USER added
-   2026-06-24.** `search(query, kinds, limit)` over RESOURCE (reuses the [PRD 028](028-angular-power-search.md) `allocatables`
+   2026-06-24.** `search(query, kinds, limit)` over RESOURCE (reuses the [PRD 028](done/028-angular-power-search.md) `allocatables`
    evaluator, FUZZY) + EVENT (windowless name scan over `CachableStorageOperator.getReservations()`,
    SUBSTRING-only, edit-gated) + USER (name/username FUZZY scan, §12 = self + `canAdminUser`).
    Ranking + per-kind cap + truncation log. RESOURCE/EVENT/USER are all in the **default** kind set.

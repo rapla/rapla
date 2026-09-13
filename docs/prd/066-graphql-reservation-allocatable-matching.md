@@ -7,7 +7,7 @@
 **Siblings:**
 - [PRD 055 (done) — Events Read API](055-graphql-events-read-api.md) — the `reservations(filter:)` resolver this PRD extends
 - [PRD 059 (done) — Typed Where Predicates](done/059-graphql-typed-where-predicates.md) — emits the per-type `whereXxx` shapes this PRD reuses verbatim
-- [PRD 028 — Power Search](028-angular-power-search.md) — `searchText` + `matchKind` on the same filter; lands independently
+- [PRD 028 — Power Search](done/028-angular-power-search.md) — `searchText` + `matchKind` on the same filter; lands independently
 
 ## Goal
 
@@ -178,6 +178,6 @@ None — design locked.
 
 - [PRD 055 done — Events Read API](055-graphql-events-read-api.md)
 - [PRD 059 done — Typed Where Predicates](done/059-graphql-typed-where-predicates.md)
-- [PRD 028 — Power Search](028-angular-power-search.md)
+- [PRD 028 — Power Search](done/028-angular-power-search.md)
 - [AGENTS.md §12](../../AGENTS.md) — `idIn` does not bypass `canRead`
 - [AGENTS.md §17](../../AGENTS.md) — no real personal info in tests/docs (examples use Springfield personas only)

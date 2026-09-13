@@ -1,7 +1,7 @@
 # PRD 082 — Storage memory model: foundation (read-model architecture, engine, scope)
 
 **Status:** draft — 2026-06-22 (restructured 2026-06-24 into the foundation; index implementations split to PRDs [083](083-user-change-subscription.md)/[085](085-search-name-indexing.md)/[086](086-appointment-block-index.md)/[087](087-classification-type-indices.md))
-**Related:** [PRD 035](done/035-graphql-foundations.md) (GraphQL foundations — per-field perf hot-spots), [PRD 066](066-graphql-reservation-allocatable-matching.md) (allocatable scope union on ReservationFilter), PRD [079](079-graphql-grouped-aggregates.md)/[080](done/080-typed-entity-stats.md) (grouped aggregates / typed-entity stats — the `appointmentBlockStats` fan-out), [PRD 081](081-graphql-omnibox-multisearch.md) (omnibox multisearch), [PRD 067](067-server-mutation-unification.md) (server operator split), [PRD 083](083-user-change-subscription.md) (user change-subscription — consumes Workstream B), [PRD 084](084-replace-hsqldb-with-h2.md) (H2 persistence engine), [PRD 085](085-search-name-indexing.md) (search & name indexing — the name-search split out of Workstream A)
+**Related:** [PRD 035](done/035-graphql-foundations.md) (GraphQL foundations — per-field perf hot-spots), [PRD 066](066-graphql-reservation-allocatable-matching.md) (allocatable scope union on ReservationFilter), PRD [079](079-graphql-grouped-aggregates.md)/[080](done/080-typed-entity-stats.md) (grouped aggregates / typed-entity stats — the `appointmentBlockStats` fan-out), [PRD 081](081-graphql-omnibox-multisearch.md) (omnibox multisearch), [PRD 067](067-server-mutation-unification.md) (server operator split), [PRD 083](083-user-change-subscription.md) (user change-subscription — consumes Workstream B), [PRD 084](wont-fix/084-replace-hsqldb-with-h2.md) (H2 persistence engine), [PRD 085](085-search-name-indexing.md) (search & name indexing — the name-search split out of Workstream A)
 
 **Scope note (restructured 2026-06-24): this PRD is now the FOUNDATION.** It holds the shared
 substrate — the Bestandsaufnahme, the modernization thesis (CQRS in-memory SQL read-model), the
@@ -13,7 +13,7 @@ this foundation:
 - **[PRD 087](087-classification-type-indices.md)** — classification & type indices (GraphQL-only).
 - **[PRD 083](083-user-change-subscription.md) Part A** — permission-scoped read index (GraphQL-only); Part B consumes it.
 - **[PRD 085](085-search-name-indexing.md)** — search & name indexing (GraphQL-only).
-- **[PRD 084](084-replace-hsqldb-with-h2.md)** — HSQLDB→H2 persistence backend (orthogonal; same engine).
+- **[PRD 084](wont-fix/084-replace-hsqldb-with-h2.md)** — HSQLDB→H2 persistence backend (orthogonal; same engine).
 
 **Primary objective: read performance (efficient GraphQL queries).** Footprint/memory is a
 *secondary, potential* benefit — **not** the driver of this PRD. The measured pain is read latency
@@ -350,7 +350,7 @@ read-model is in rapla-server. Resolution: `LocalAbstractCachableOperator` (rapl
 untouched, server adds the indexed path. Same override pattern for any core read method an index
 accelerates.
 
-**H2 is absent from the reactor** (HSQLDB 2.7.1 is current, [PRD 084](084-replace-hsqldb-with-h2.md)). Phase 1 adds
+**H2 is absent from the reactor** (HSQLDB 2.7.1 is current, [PRD 084](wont-fix/084-replace-hsqldb-with-h2.md)). Phase 1 adds
 `com.h2database:h2` to **rapla-bom** (version management) + **rapla-server** (compile scope) — a
 flagged POM change, surfaced before it lands.
 
@@ -486,7 +486,7 @@ by hand on put/remove). It also fixes the level (field N+1) that no hand-rolled 
 **Decided forks for this direction** (engine choice + where the domain logic lives):
 - **Engine: H2 in-memory — LOCKED (MQ7 resolved 2026-06-24).** In-process, SQL, MVStore/MVCC
   (clean fit for the Stage-Y sync write-through), JSON column for Class-2 attributes, and a
-  built-in full-text index. It is also the engine [PRD 084](084-replace-hsqldb-with-h2.md) consolidates the *persistence* backend
+  built-in full-text index. It is also the engine [PRD 084](wont-fix/084-replace-hsqldb-with-h2.md) consolidates the *persistence* backend
   onto, so the whole stack runs one embedded engine. DuckDB (columnar analytics fit) and Calcite
   (SQL-over-objects, no data movement) are noted as future levers if the analytics path
   (`appointmentBlockStats`) ever needs a columnar engine, but the default and the prototyping
@@ -774,7 +774,7 @@ Stage X→Y (read-model beside the conflict core, then conflict onto the engine 
   parking design.
 - **MQ7** (strategic direction) — Engine choice for the CQRS read-model. *Resolution:* **H2
   in-memory — LOCKED 2026-06-24.** In-process SQL, MVStore/MVCC (fits Stage-Y sync write-through),
-  JSON column (Class-2 attributes), built-in full-text; and the same engine [PRD 084](084-replace-hsqldb-with-h2.md) consolidates
+  JSON column (Class-2 attributes), built-in full-text; and the same engine [PRD 084](wont-fix/084-replace-hsqldb-with-h2.md) consolidates
   the persistence backend onto. DuckDB (columnar `appointmentBlockStats`) and Calcite (SQL over the
   live object graph, no data movement) retained only as future levers if the analytics path needs a
   columnar engine — not the default.
@@ -801,7 +801,7 @@ The in-memory type-bucket index, the `buildStorageFilter` `typeKeyIn`/B′ pushd
 
 # Read-model architecture (technical foundation)
 
-The technical substrate the strategic direction (CQRS in-memory SQL read-model) and both workstreams sit on. Engine: **H2 in-memory** (in-process, SQL, JSON, MVCC, full-text) — **LOCKED, MQ7 resolved 2026-06-24** (same engine [PRD 084](084-replace-hsqldb-with-h2.md) consolidates persistence onto).
+The technical substrate the strategic direction (CQRS in-memory SQL read-model) and both workstreams sit on. Engine: **H2 in-memory** (in-process, SQL, JSON, MVCC, full-text) — **LOCKED, MQ7 resolved 2026-06-24** (same engine [PRD 084](wont-fix/084-replace-hsqldb-with-h2.md) consolidates persistence onto).
 
 ## Data flow & roles
 

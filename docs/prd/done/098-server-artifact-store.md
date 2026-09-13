@@ -66,7 +66,7 @@ application content); (2) **server-side input to rendering/querying** — never 
 as-is; (3) **small and few** — text or logo-sized binary, dozens of rows, under the OQ2 cap;
 (4) **runtime-editable content, not code** — no rebuild to change, no executable logic (the [PRD 097](../097-event-html-templates-mustache.md)
 no-eval line). The store is a "content customization without code customization" mechanism —
-long-term it reduces what `custom/`-overlay deployments ([PRD 003](../003-custom-deployments-after-spring-migration.md)) exist for.
+long-term it reduces what `custom/`-overlay deployments ([PRD 003](003-custom-deployments-after-spring-migration.md)) exist for.
 
 Intended consumers: view queries ([PRD 074](../074-graphql-declarative-views.md)), document templates + CSS + partials + same-origin
 images ([PRD 097](../097-event-html-templates-mustache.md)), later plausibly HTML mail/notification templates, SPA branding (different trust

@@ -1,7 +1,7 @@
 # PRD 091 — SPA reservation editing & availability search
 
 **Status:** draft — 2026-07-05 (updated 2026-07-06: equipment-lending archetype prioritized as first implementation target; 2026-07-07: in-sheet undo/redo decided — D5; 2026-07-08: recurrence editor shipped — Phase 4.0–4.3 + 4.5 done, D6 block-level availability permanently deferred, OQ6 → GraphQL `expandOccurrences`)
-**Related:** [PRD 024](024-server-side-edit-services.md) (server-side edit services — the `/api/edit` REST trio), [PRD 026](026-angular-frontend.md) (Angular umbrella), PRD [056](056-graphql-events-write-api.md)/[057](done/057-graphql-dt-mutations-v1.md)/[063](063-graphql-allocatables-write-api.md) (GraphQL mutations, shipped), [PRD 060](060-graphql-mcp-foundations.md) (GraphQL MCP foundations — designed `whoIsFree`/`findFreeSlots`/`checkConflicts`, unbuilt), [PRD 067](067-server-mutation-unification.md) (mutation unification, D7: GraphQL write surface still adjustable — SPA is the first real consumer), PRD [077](077-calendar-model-graphql.md)/[078](078-spa-graphql-view-renderer.md) (view model + renderer, the read side), [PRD 086](086-appointment-block-index.md) (appointment block index — the availability substrate), **[PRD 092](092-free-slot-search.md) (free-slot search — the fixed-resources/variable-time axis, split from this PRD)**, **[PRD 093](093-loan-lifecycle.md) (loan lifecycle — status/blocking rules the availability query must honor)**, [PRD 094](094-spa-main-view-actions-and-popups.md) (main-view actions & popups — command-pattern undo past the save boundary; D5 covers only in-sheet)
+**Related:** [PRD 024](wont-fix/024-server-side-edit-services.md) (server-side edit services — the `/api/edit` REST trio), [PRD 026](026-angular-frontend.md) (Angular umbrella), PRD [056](056-graphql-events-write-api.md)/[057](done/057-graphql-dt-mutations-v1.md)/[063](063-graphql-allocatables-write-api.md) (GraphQL mutations, shipped), [PRD 060](060-graphql-mcp-foundations.md) (GraphQL MCP foundations — designed `whoIsFree`/`findFreeSlots`/`checkConflicts`, unbuilt), [PRD 067](067-server-mutation-unification.md) (mutation unification, D7: GraphQL write surface still adjustable — SPA is the first real consumer), PRD [077](077-calendar-model-graphql.md)/[078](078-spa-graphql-view-renderer.md) (view model + renderer, the read side), [PRD 086](086-appointment-block-index.md) (appointment block index — the availability substrate), **[PRD 092](092-free-slot-search.md) (free-slot search — the fixed-resources/variable-time axis, split from this PRD)**, **[PRD 093](093-loan-lifecycle.md) (loan lifecycle — status/blocking rules the availability query must honor)**, [PRD 094](094-spa-main-view-actions-and-popups.md) (main-view actions & popups — command-pattern undo past the save boundary; D5 covers only in-sheet)
 
 **Focus (clarified 2026-07-06): the sheet is the GENERAL event editor** — the
 lending archetype (`docs/usecases/equipment-planning.md`, UC-C1/C2) is a *special
@@ -43,7 +43,7 @@ Swing capability checklist: `docs/architecture/reservation-edit-ui-inventory.md`
 - **Availability primitives exist only as legacy RPC:** `getAllocatableBindings`
   (busy-map for candidate resources × proposed appointments,
   `LocalAbstractCachableOperator:4399`) and `getNextAllocatableDate` (brute-force
-  linear scan up to a year, `:4451`) over `/api/storage/*` — not in GraphQL. [PRD 024](024-server-side-edit-services.md)
+  linear scan up to a year, `:4451`) over `/api/storage/*` — not in GraphQL. [PRD 024](wont-fix/024-server-side-edit-services.md)
   added `/api/edit/check-conflicts` (proposed-reservation dry-run, §12-filtered),
   `/validate-recurrence`, `/expand-blocks`.
 - **No free-resource or multi-slot search anywhere.** "Which rooms are free in
@@ -51,7 +51,7 @@ Swing capability checklist: `docs/architecture/reservation-edit-ui-inventory.md`
   candidate slots" doesn't exist (only first-hit next-free-date).
 - **[PRD 086](086-appointment-block-index.md) block index** (behind `rapla.readmodel.authoritative`) provides the
   in-memory interval index an efficient availability resolver should use.
-- **Pure-Java edit models** (PRD [023](023-presenter-view-extraction.md)/[024](024-server-side-edit-services.md): `RepeatingRuleValidator`,
+- **Pure-Java edit models** (PRD [023](023-presenter-view-extraction.md)/[024](wont-fix/024-server-side-edit-services.md): `RepeatingRuleValidator`,
   `AllocationConflictModel`, `AllocatableRowStatusModel`, `ExceptionListMutator`)
   encode the domain rules and stay the single source of truth.
 
@@ -686,7 +686,7 @@ Recurrence sub-plan detailed 2026-07-08 (Swing→SPA migration research):
   Still out: the approval workflow (clearing the status — `SecurityManager` already validates that
   transition, only a UI is missing).
 - **OQ6** — Occurrence-preview transport: new GraphQL `expandOccurrences` query
-  vs. [PRD 024](024-server-side-edit-services.md) REST `/api/edit/expand-blocks` (predates the SPA GraphQL-only
+  vs. [PRD 024](wont-fix/024-server-side-edit-services.md) REST `/api/edit/expand-blocks` (predates the SPA GraphQL-only
   decision). *Resolution 2026-07-08:* **GraphQL** — shipped as Phase 4.1. The
   REST trio stays for now (Swing/third parties); retiring it is a separate
   decision.
@@ -714,7 +714,7 @@ and MCP clients ([PRD 060](060-graphql-mcp-foundations.md)) get the query for fr
 `/api/edit/*` (would reopen a second data transport in the SPA and be rebuilt on
 GraphQL later anyway); exposing the legacy `/api/storage` RPC (Swing wire protocol,
 raw `ReservationImpl` payloads — §12 leak-by-design for a browser client).
-Constraint: the resolver is a thin layer over the [PRD 024](024-server-side-edit-services.md) service path
+Constraint: the resolver is a thin layer over the [PRD 024](wont-fix/024-server-side-edit-services.md) service path
 (`getAllAllocatableBindingsSync` + `AllocationConflictModel`) — no parallel
 conflict logic.
 

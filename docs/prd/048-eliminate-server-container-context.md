@@ -117,7 +117,7 @@ All resolved 2026-05-18:
 3. **Multi-pod** — `reload()` reloads only the serving pod; other pods re-sync via update history.
 4. **dhbwrapla Dualis datasource** — keep dhbw-private `@Bean DataSource` with `@Qualifier`, not in vanilla rapla's `rapla.db-datasources` map.
 5. **`raplaLogger()` home** — `ServerCoreConfig`.
-6. **Sequencing vs [PRD 003](003-custom-deployments-after-spring-migration.md)** — Phases 1+3 land together (delete breaks dhbwrapla compile immediately). Phase 2 with or just after.
+6. **Sequencing vs [PRD 003](done/003-custom-deployments-after-spring-migration.md)** — Phases 1+3 land together (delete breaks dhbwrapla compile immediately). Phase 2 with or just after.
 
 ## Adjacent cleanup — commons-collections4 → in-tree helpers (2026-05-24)
 

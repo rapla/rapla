@@ -21,7 +21,7 @@ client; no server-side reservation construction or persistence.
 
 ## Prime directive (why the refactoring happened)
 
-The whole point of the PRD [003](003-custom-deployments-after-spring-migration.md)/[012](012-dhbwrapla-client-migration.md) refactoring was **no dhbw-specific code in
+The whole point of the PRD [003](done/003-custom-deployments-after-spring-migration.md)/[012](012-dhbwrapla-client-migration.md) refactoring was **no dhbw-specific code in
 the rapla client** — so there is no dhbw rapla client to build/ship. Master
 violated this with a full dhbw Swing wizard in the client
 (`DhbwImportDialog`, `DualisImportWizard`, `DualisReservationCreator`,

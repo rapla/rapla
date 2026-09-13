@@ -7,7 +7,7 @@
 
 Let custom deployments (dhbwrapla and similar) ship their own Angular views, routes, and UI patterns — without forking `rapla-angular`, without customer TypeScript in the rapla repo, and without dormant customer code in stock builds.
 
-Frontend counterpart of [PRD 003](003-custom-deployments-after-spring-migration.md) (custom server deployments) and [PRD 045](045-end-user-deployment-and-db-config.md) §4 (drop-in server plugin jars). Unlike [PRD 003](003-custom-deployments-after-spring-migration.md) (2026-05-07), this PRD does NOT pull customer code into rapla — the two drivers behind that Swing decision don't transfer:
+Frontend counterpart of [PRD 003](done/003-custom-deployments-after-spring-migration.md) (custom server deployments) and [PRD 045](045-end-user-deployment-and-db-config.md) §4 (drop-in server plugin jars). Unlike [PRD 003](done/003-custom-deployments-after-spring-migration.md) (2026-05-07), this PRD does NOT pull customer code into rapla — the two drivers behind that Swing decision don't transfer:
 
 1. **Signing.** Swing ships as signed JNLP jars; web bundles are not code-signed (no jarsigner / JNLP / YubiKey).
 2. **Migration ease.** A one-time SB4 / `jakarta.*` concern, not steady-state.

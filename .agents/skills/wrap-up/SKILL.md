@@ -38,7 +38,9 @@ Step 6's residue list. Never restart `ng serve` (§14).
 
 For every PRD implemented against or made stale this session: close resolved OQs
 (with date + who decided), flip phase checkboxes, update the Status line, record
-direction changes, update cross-references. `git mv` to `done/` ONLY when nothing
+direction changes, update cross-references, and refresh the PRD's header block in
+`docs/prd/README.md` (status, locked decisions, keywords) — same for touched
+`docs/architecture/` pages in that README's *Page headers* section. `git mv` to `done/` ONLY when nothing
 is outstanding — an open OQ or unverified Goal means it stays active; when
 borderline, recommend and ask.
 

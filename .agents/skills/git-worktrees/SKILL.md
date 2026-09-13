@@ -53,6 +53,7 @@ git branch -d <task-slug>                     # only if merged
 ```
 
 ## Hard rules
+- Never switch the branch of the canonical checkout `/home/chris/git/rapla/` (`git checkout <branch>`, `checkout -b`, `git switch`) — every parallel session lives on that HEAD. A new branch always means `git worktree add ../rapla-<slug> -b <slug>`.
 - Never run two `mvn` invocations against the same worktree at the same time — Maven has no project lock and will silently corrupt `target/`.
 - Never check out the same branch in two worktrees — git refuses, and trying to force it via `git switch -C` corrupts the index.
 - Never edit files in `/home/chris/git/rapla/` while another agent is also working there. If in doubt, make a worktree.

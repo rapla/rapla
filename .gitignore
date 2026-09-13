@@ -96,3 +96,8 @@ hs_err_pid*.log
 
 # production data dump (PII) — never commit
 /template-names.json
+
+# Customer delivery docs — Uni Siegen Leihschein (private, like docs/yogavidya/)
+docs/leihschein/
+rapla-app/src/main/resources/application-siegen.yml
+
