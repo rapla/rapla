@@ -43,6 +43,8 @@ Detailed how-tos live as **Agent Skills** (the cross-engine `SKILL.md` standard)
 
 ### 0. Session discipline — context budget + risky-change branching
 
+**Hard rule first: the canonical checkout `~/git/rapla` stays on its branch.** NEVER `git checkout <branch>`, `checkout -b`, or `git switch` here — several sessions share this tree, and a switch drags all of them onto your branch (scar 2026-09-13: a subagent did `checkout -b fix/…` on `spring-boot` with ~60 foreign uncommitted changes). Branch work = a worktree (§7, `git-worktrees` skill; for the Agent tool: `isolation: "worktree"`). Uncommitted edits on the current branch are fine; a branch label without a worktree is not.
+
 Two practices that pay off on a codebase this size (rapla sessions tend to be long):
 
 - **Don't let context exceed ~60% of the window.** Quality starts degrading at 20–40% of 200 k tokens; auto-compact (~83% threshold) is lossy and retains only 20–30% of detail. When approaching the limit, run `/compact <hint>` — e.g. `/compact focus on PRD 029 phase 2 verification, drop the bootstrap chatter` — so the summary keeps the load-bearing context and drops the rest. Don't wait for auto-compact. After any compact, restate goal + acceptance criteria in one line before continuing. Verification fan-outs batch ~10 items per subagent — never one agent per item; name the expected agent count before launching.

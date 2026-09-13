@@ -2,7 +2,7 @@
 
 How Rapla separates pure-logic models from Swing components, how
 presenter/view pairs are wired, and how to test them headlessly. This is
-the pattern [PRD 023](../prd/023-presenter-view-extraction.md) carved out and [PRDs 024](../prd/024-server-side-edit-services.md)–025 build on. Read
+the pattern [PRD 023](../prd/023-presenter-view-extraction.md) carved out and [PRDs 024](../prd/wont-fix/024-server-side-edit-services.md)–025 build on. Read
 [reservation-edit.md](reservation-edit.md) for the concrete dialog and
 [overview.md](overview.md) for the module split before this page if you
 need broader context.
@@ -67,7 +67,7 @@ Pure-logic models in `rapla-core/src/main/java/`:
 | `org.rapla.client.menu` | `PasswordChangePolicy` | `canChangePassword` / `requiresOldPassword` / `validate` — carved out of `PasswordChangeAction` |
 | `org.rapla.client.menu` | `RaplaObjectActionPolicy` | `isEnabled` decision for NEW/EDIT/DELETE/EDIT_SELECTION/DELETE_SELECTION — carved out of `RaplaObjectActions`. Takes lambda predicates so tier-1 stubbing doesn't need the full `PermissionController` |
 | `org.rapla.plugin.calendarview` | `CalendarLayoutEngine` | Strategy + groupBy → `CalendarPage` |
-| `org.rapla.plugin.reservationedit` | DTOs (`RecurrenceRule`, `ConflictCheckRequest`, …) | Wire shapes for [PRD 024](../prd/024-server-side-edit-services.md) endpoints |
+| `org.rapla.plugin.reservationedit` | DTOs (`RecurrenceRule`, `ConflictCheckRequest`, …) | Wire shapes for [PRD 024](../prd/wont-fix/024-server-side-edit-services.md) endpoints |
 
 Presenters in `rapla-client/src/main/java/`:
 
@@ -78,7 +78,7 @@ Presenters in `rapla-client/src/main/java/`:
 | `org.rapla.client.internal` | `ConflictSelectionPresenter` | `ConflictSelectionView` | production |
 | `org.rapla.client.internal` | `RequestSelectionPresenter` | `ResourceRequestSelectionView` | production |
 | `org.rapla.client.internal.edit` | `EditTaskPresenter` | inner `EditTaskView` | production |
-| ~~`org.rapla.client.edit.reservation.sample`~~ | — | — | **Removed 2026-05-11.** The sample was a dead-code MVP draft kept as a potential promotion target; [PRD 023](../prd/023-presenter-view-extraction.md) Phase 6 was re-aimed because the Angular client (PRD [026](../prd/026-angular-frontend.md)/[028](../prd/028-angular-power-search.md)) will not mirror the Swing edit flow. The sample presenter shape would not have been reused, so it's gone. Git history retains it. |
+| ~~`org.rapla.client.edit.reservation.sample`~~ | — | — | **Removed 2026-05-11.** The sample was a dead-code MVP draft kept as a potential promotion target; [PRD 023](../prd/023-presenter-view-extraction.md) Phase 6 was re-aimed because the Angular client (PRD [026](../prd/026-angular-frontend.md)/[028](../prd/done/028-angular-power-search.md)) will not mirror the Swing edit flow. The sample presenter shape would not have been reused, so it's gone. Git history retains it. |
 
 Swing view adapters live under `org.rapla.client.swing.*` and end in
 `...Swing` or `...Impl` (e.g. `CalendarPlaceViewSwing`,
@@ -306,7 +306,7 @@ Reference tests:
   actually checks; the source of truth for §12.
 - [PRD 023](../prd/023-presenter-view-extraction.md) — the original
   carve-out plan and what's still pending (Phase 6).
-- [PRD 024](../prd/024-server-side-edit-services.md) — REST endpoints
+- [PRD 024](../prd/wont-fix/024-server-side-edit-services.md) — REST endpoints
   built on the carved-out models.
 - [PRD 025](../prd/025-headless-client-test-harness.md) — the
   `HeadlessPresenterTestSupport` + `RecordingView` design.

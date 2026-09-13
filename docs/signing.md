@@ -253,6 +253,7 @@ unsigned — fine for a normal build, but a JNLP launch will then abort.
 |---|---|
 | `No smart card readers found` | YubiKey not attached (`usbipd attach`), pcscd down, or missing polkit rule (step 3). |
 | `CKR_USER_NOT_LOGGED_IN`, fails fast | Missing OpenSC `atomic` mode (step 4); or the card drifted into a bad state — reset it (below). |
+| `pkcs11-tool`/`opensc-tool` hang, `usbipd attach` says "already attached" but hangs, `dmesg` shows `vhci_hcd: connection closed` + `USB disconnect`, `pcscd` processes stuck in D state | The usbip channel died underneath the token. Neither `usbipd detach/attach`, a `pcscd` restart nor `kill -9` recovers it — physically unplug the YubiKey, wait 3 s, replug, then `usbipd.exe attach --wsl --busid 2-2` and `pkcs11-tool --list-slots` (seen 2026-09-02). |
 | `CKR_USER_NOT_LOGGED_IN`, after a long hang | The signing operation waited for a touch that never came. Touch the YubiKey when its LED blinks. |
 | Signing succeeds but `jarsigner -verify` fails | Jars were double-signed (an old signature plus the new one). Restage fresh unsigned jars — `rm -rf rapla-app/target/webclient` then rebuild. |
 | `skipping execute as per configuration` | The `exec-maven-plugin` execution is missing `<skip>false</skip>` (inherited `skip=true` from `rapla-bom`). |

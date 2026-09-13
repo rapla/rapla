@@ -578,7 +578,7 @@ chain equivalent — advisory, call before dispatch to surface a confirm
 dialog. `expand-blocks` materialises a single appointment's blocks
 within a time window (same semantics as `Appointment.createBlocks`).
 
-See [PRD 024](../prd/024-server-side-edit-services.md) for the server-side edit-services rationale.
+See [PRD 024](../prd/wont-fix/024-server-side-edit-services.md) for the server-side edit-services rationale.
 
 ---
 

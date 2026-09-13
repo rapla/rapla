@@ -205,6 +205,6 @@ something better, or consciously drop it (decisions → [PRD 091](../prd/091-spa
 - [reservation-edit.md](reservation-edit.md) — flow, wire model, validation rules
 - `docs/usecases/reservation-editing.md` — the use-case view + SPA reorganization
 - [PRD 091](../prd/091-spa-reservation-edit-and-availability.md) — SPA reservation editing & availability (proposals)
-- PRD [023](../prd/023-presenter-view-extraction.md)/[024](../prd/024-server-side-edit-services.md) — the pure-Java edit models (`RepeatingRuleValidator`,
+- PRD [023](../prd/023-presenter-view-extraction.md)/[024](../prd/wont-fix/024-server-side-edit-services.md) — the pure-Java edit models (`RepeatingRuleValidator`,
   `AllocationConflictModel`, `AllocatableRowStatusModel`, …) and the `/api/edit`
   services that already serve non-Swing clients

@@ -93,5 +93,5 @@ Replacements for the two endpoints that were still in production use:
 |---|---|
 | `GET /rapla/events?start&end&resources&eventTypes` | `/api/graphql` → `reservations(filter: { from, to, allocatableIdsIn, typeIn })` |
 | `GET /rapla/resources?resourceTypes` | `/api/graphql` → `allocatables(filter: { typeIn })` |
-| `POST /rapla/events` | `/api/graphql` → `createReservation(input: CreateReservationInput!)` |
+| `POST /rapla/events` | `/api/graphql` → `createReservation(input: ReservationInput!)` |
 | `?username=…&password=…` | `Authorization: Bearer <api-key>` (PRD 076/043) |

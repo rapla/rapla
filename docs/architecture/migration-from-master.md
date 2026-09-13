@@ -25,12 +25,12 @@ Cross-references below to the PRDs that drove each piece of the work.
 |---|---|---|
 | Module shape | 1 monolithic Maven project (`pom.xml` + `parent/pom.xml`) | 5-module reactor (`rapla-bom`, `rapla-core`, `rapla-client`, `rapla-server`, `rapla-app`) — PRD 005 |
 | DI framework | Custom `restinject` (annotation-processor-driven; external Maven dep `artifactId restinject` at `2.0-RC11`) | Spring Boot 4 (`@Service`, `@ComponentScan`, `@Bean` factories, `@Conditional`) — PRD 001 / [011](../prd/done/011-spring-boot-4-jackson-3.md) |
-| REST wire | Hand-rolled JSON-RPC: `org/rapla/enpoints/`, `org/rapla/rest/`, `org/rapla/server/internal/rest/` (~2.3 k LOC) | Spring MVC + Jackson 3 + `@HttpExchange` interfaces — PRD [009](../prd/009-server-bulk-storage-rest-api.md) / [010](../prd/done/010-jackson-field-based-wire-format.md) / [024](../prd/024-server-side-edit-services.md) / [030](../prd/030-server-side-view-rendering.md) |
+| REST wire | Hand-rolled JSON-RPC: `org/rapla/enpoints/`, `org/rapla/rest/`, `org/rapla/server/internal/rest/` (~2.3 k LOC) | Spring MVC + Jackson 3 + `@HttpExchange` interfaces — PRD [009](../prd/009-server-bulk-storage-rest-api.md) / [010](../prd/done/010-jackson-field-based-wire-format.md) / [024](../prd/wont-fix/024-server-side-edit-services.md) / [030](../prd/030-server-side-view-rendering.md) |
 | Server runtime | Embedded Jetty bootstrapped by custom code | `RaplaSpringBootApplication`, embedded Tomcat, autoconfig (`META-INF/spring/AutoConfiguration.imports`) — PRD 001 |
 | Wire format | Custom Jackson 2 mapper config | Jackson 3 field-based serialisation — [PRD 010](../prd/done/010-jackson-field-based-wire-format.md) |
 | Date types in entities | `java.util.Date` everywhere (millis-since-epoch on the wire) | `java.time.LocalDateTime` / `LocalDate` — PRD 001 (Phase A) / 014 (Appointment) / 015 (Rapla-client) |
 | Web frontend | None (Swing JNLP only) | Angular SPA at `/app/` — [PRD 026](../prd/026-angular-frontend.md) (in flight) |
-| Server-side rendered surfaces (calendar tiles / table rows / CSV) | None — clients fetched raw entities and laid out / projected locally | `/calendar/view`, `/table/*`, `/export/csv` — [PRD 024](../prd/024-server-side-edit-services.md) Phase 3 + [PRD 030](../prd/030-server-side-view-rendering.md) |
+| Server-side rendered surfaces (calendar tiles / table rows / CSV) | None — clients fetched raw entities and laid out / projected locally | `/calendar/view`, `/table/*`, `/export/csv` — [PRD 024](../prd/wont-fix/024-server-side-edit-services.md) Phase 3 + [PRD 030](../prd/030-server-side-view-rendering.md) |
 | Authentication | Custom session token, server-side state | OAuth 2.0 PKCE + JWT bearer (browser-redirect for Swing) — [PRD 029](../prd/029-swing-oauth-login.md) |
 | Test infrastructure | Smattering of GUI tests + few entity tests (~9 % ratio) | Four-tier pyramid ([PRD 017](../prd/017-test-coverage-strategy.md)): tier-1 pure Java, tier-2 `FacadeTestSupport`, tier-3 MockMvc + Spring context, tier-4 `@SpringBootTest` end-to-end; ~12.4 % ratio |
 | Documentation | One 21-line README | ~20 k LOC across `docs/prd/`, `docs/architecture/`, `AGENTS.md`, `CLAUDE.md` |
@@ -125,7 +125,7 @@ served at `/app/` by Spring Boot). Phase 0 prototype just landed
 `@HttpExchange` interfaces.
 
 The SPA never holds full entity graphs for view purposes — it
-consumes server-rendered surfaces from PRD [024](../prd/024-server-side-edit-services.md) / [030](../prd/030-server-side-view-rendering.md) (calendar tiles,
+consumes server-rendered surfaces from PRD [024](../prd/wont-fix/024-server-side-edit-services.md) / [030](../prd/030-server-side-view-rendering.md) (calendar tiles,
 table rows, CSV export). See [overview.md](overview.md) §"Wire
 contracts" for the catalog.
 
@@ -209,7 +209,7 @@ The +16.5 k production growth is roughly:
   class and a tier-1 test; the Swing class shrinks but stays
   in-tree). Net: additive.
 - +4 k from new REST controllers + server-side render surfaces
-  (PRD [024](../prd/024-server-side-edit-services.md) / [030](../prd/030-server-side-view-rendering.md)).
+  (PRD [024](../prd/wont-fix/024-server-side-edit-services.md) / [030](../prd/030-server-side-view-rendering.md)).
 - +2 k from Spring Boot autoconfig + OAuth ([PRD 029](../prd/029-swing-oauth-login.md)).
 
 The +7.5 k test growth tracks the carve-outs directly — every
@@ -278,7 +278,7 @@ roughly stable.
   — Spring Boot 4 upgrade, restinject elimination follow-up.
 - [`../prd/023-presenter-view-extraction.md`](../prd/023-presenter-view-extraction.md)
   — pure-Java carve-out programme.
-- [`../prd/024-server-side-edit-services.md`](../prd/024-server-side-edit-services.md)
+- [`../prd/wont-fix/024-server-side-edit-services.md`](../prd/wont-fix/024-server-side-edit-services.md)
   — server-side edit pre-checks (Angular precursor).
 - [`../prd/026-angular-frontend.md`](../prd/026-angular-frontend.md)
   — Angular SPA.

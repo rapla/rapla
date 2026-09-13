@@ -246,11 +246,10 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
 
         if ( !isFixedIntervalLength())
         {
-            int counts =  ((number -1) * interval) ;
             LocalDateTime newDate = appointmentStart;
-            for ( int i=0;i< counts;i++)
+            for ( int i=0;i< number -1;i++)
             {
-                newDate = gotoNextStep( newDate);
+                newDate = nextOccurrence( newDate);
             }
             return newDate.plus(appointmentLength);
         }
@@ -324,7 +323,7 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
             do 
             {
                 number ++;
-                newDate = gotoNextStep( newDate);
+                newDate = nextOccurrence( newDate);
             }
             while ( newDate.isBefore( localEnd));
             return number;
@@ -496,7 +495,7 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
             return getFixedIntervalLength();
         }
         LocalDateTime appointmentStart = DateTools.toLocalDateTime(s);
-        LocalDateTime localDateTime = gotoNextStep( appointmentStart);
+        LocalDateTime localDateTime = nextOccurrence( appointmentStart);
         long newTime = DateTools.toMilli(localDateTime);
         Assert.isTrue( newTime > s );
         return  newTime- s;
@@ -513,7 +512,7 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
         if (isFixedIntervalLength()) {
             return current.plus(java.time.Duration.ofMillis(getFixedIntervalLength()));
         }
-        return gotoNextStep(current);
+        return nextOccurrence(current);
     }
 
     /** Returns the first occurrence at or after {@code threshold}.
@@ -546,6 +545,7 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
             java.time.YearMonth thresholdYm = java.time.YearMonth.from(threshold);
             long monthsDiff = startYm.until(thresholdYm, java.time.temporal.ChronoUnit.MONTHS);
             if (monthsDiff < 0) monthsDiff = 0;
+            monthsDiff = (monthsDiff + interval - 1) / interval * interval;
             DayOfWeek targetDow = appStart.getDayOfWeek();
             int targetN = (appStart.getDayOfMonth() - 1) / 7 + 1; // 1..5
             java.time.LocalTime targetTime = appStart.toLocalTime();
@@ -553,7 +553,7 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
             // The Nth-weekday-of-month math may land before threshold within the
             // same calendar month; advance one month if so. At most 1 extra step.
             if (candidate.isBefore(threshold)) {
-                candidate = nthWeekdayOfMonth(startYm.plusMonths(monthsDiff + 1), targetDow, targetN, targetTime);
+                candidate = nthWeekdayOfMonth(startYm.plusMonths(monthsDiff + interval), targetDow, targetN, targetTime);
             }
             return candidate;
         }
@@ -563,7 +563,7 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
         // jumps in 1-week increments — both are typically short.)
         LocalDateTime candidate = appStart;
         while (candidate.isBefore(threshold)) {
-            candidate = gotoNextStep(candidate);
+            candidate = nextOccurrence(candidate);
         }
         return candidate;
     }
@@ -575,6 +575,28 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
         LocalDateTime firstOfMonth = ym.atDay(1).atTime(time);
         LocalDateTime firstTarget = firstOfMonth.with(java.time.temporal.TemporalAdjusters.firstInMonth(targetDow));
         return firstTarget.plusWeeks(targetN - 1);
+    }
+
+    /** Next occurrence honoring {@link #getInterval()}: MONTHLY/YEARLY skip {@code interval}
+     *  steps; multi-weekday WEEKLY skips {@code interval-1} weeks when the next weekday
+     *  falls into a later ISO week (RFC 5545 WEEKLY;INTERVAL=N;BYDAY semantics). */
+    private LocalDateTime nextOccurrence( LocalDateTime startDate)
+    {
+        if ( monthly || yearly)
+        {
+            LocalDateTime newTime = startDate;
+            for ( int i=0;i<interval;i++)
+            {
+                newTime = gotoNextStep( newTime);
+            }
+            return newTime;
+        }
+        LocalDateTime newTime = gotoNextWeekday( startDate);
+        if ( interval > 1 && newTime.toLocalDate().with(DayOfWeek.MONDAY).isAfter( startDate.toLocalDate().with(DayOfWeek.MONDAY)))
+        {
+            newTime = newTime.plusWeeks( interval - 1);
+        }
+        return newTime;
     }
 
     private LocalDateTime gotoNextStep( LocalDateTime startDate)
