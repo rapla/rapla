@@ -63,11 +63,22 @@ public abstract class Tools
         if (key == null || key.isEmpty()) return false;
         if (key.equals("true") || key.equals("false") || key.equals("null")) return false;
         if (endsWithReservedGraphqlSuffix(key)) return false;
-        char first = key.charAt(0);
+        return isGraphqlIdentifier(key);
+    }
+
+    /**
+     * Bare GraphQL Name shape {@code [_A-Za-z][_0-9A-Za-z]*} — no reserved-word or suffix rules.
+     * The save-time name rule for stored views and documents (their names are operation names,
+     * artifact keys and URL segments).
+     */
+    public static boolean isGraphqlIdentifier(String name)
+    {
+        if (name == null || name.isEmpty()) return false;
+        char first = name.charAt(0);
         if (!isAsciiLetter(first) && first != '_') return false;
-        for (int i = 1; i < key.length(); i++)
+        for (int i = 1; i < name.length(); i++)
         {
-            char c = key.charAt(i);
+            char c = name.charAt(i);
             if (!(isAsciiLetter(c) || isAsciiDigit(c) || c == '_')) return false;
         }
         return true;

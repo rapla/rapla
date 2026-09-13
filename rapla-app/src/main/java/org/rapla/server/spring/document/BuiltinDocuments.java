@@ -144,17 +144,35 @@ final class BuiltinDocuments
     private static final String MONTH_WINDOW =
             "{\"from\":{\"anchor\":\"MONTH_START\"},\"to\":{\"anchor\":\"MONTH_START\",\"offset\":1,\"unit\":\"MONTHS\"}}";
 
-    private static DocumentEntry builtinWithNav(String name, String viewName, String template,
+    /**
+     * D7a — a builtin IS the whole page (doctype, head with the two CSS partials, the caller's
+     * {@code lang}, the template-placed nav); it doubles as the skeleton a new document starts from.
+     * The template's leading {@code <style>} block, if any, is lifted into the head.
+     */
+    private static DocumentEntry builtinWithNav(String name, String viewName, String title, String template,
             String defaultVariables, String window)
     {
-        return builtin(name, viewName, NAV_BLOCK + template, defaultVariables, window);
+        String style = "";
+        String body = template;
+        if (template.startsWith("<style>"))
+        {
+            int end = template.indexOf("</style>") + "</style>".length();
+            style = template.substring(0, end) + "\n";
+            body = template.substring(end).stripLeading();
+        }
+        String page = "<!doctype html>\n<html lang=\"{{lang}}\">\n<head>\n<meta charset=\"utf-8\">\n"
+                + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
+                + "<title>" + title + "</title>\n"
+                + "{{> rapla/base-css}}{{> rapla/print-css}}" + style
+                + "</head>\n<body>\n" + NAV_BLOCK + body + "\n</body>\n</html>\n";
+        return builtin(name, viewName, page, defaultVariables, window);
     }
 
     static final List<DocumentEntry> ENTRIES = List.of(
-            builtinWithNav("wochenplan", "rapla_kalender", WEEK_TEMPLATE, null, null),
-            builtinWithNav("monatsplan", "rapla_kalender", MONTH_TEMPLATE, null, MONTH_WINDOW),
-            builtinWithNav("tagesliste", "rapla_kalender", TAGESLISTE_TEMPLATE, null, null),
-            builtinWithNav("wochenprogramm", "rapla_wochenprogramm", WOCHENPROGRAMM_TEMPLATE, MO_FR, null));
+            builtinWithNav("wochenplan", "rapla_kalender", "Wochenplan", WEEK_TEMPLATE, null, null),
+            builtinWithNav("monatsplan", "rapla_kalender", "Monatsplan", MONTH_TEMPLATE, null, MONTH_WINDOW),
+            builtinWithNav("tagesliste", "rapla_kalender", "Tagesliste", TAGESLISTE_TEMPLATE, null, null),
+            builtinWithNav("wochenprogramm", "rapla_wochenprogramm", "Wochenprogramm", WOCHENPROGRAMM_TEMPLATE, MO_FR, null));
 
     private static DocumentEntry builtin(String name, String viewName, String template,
             String defaultVariables, String window)

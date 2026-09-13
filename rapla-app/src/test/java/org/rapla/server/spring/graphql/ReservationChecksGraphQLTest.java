@@ -248,7 +248,7 @@ class ReservationChecksGraphQLTest
         org.rapla.entities.domain.Allocatable room = facade.getAllocatables()[0];
         String blocker = "e8888888-8888-4888-8888-888888888881";
         tester.document("""
-                mutation ($input: CreateReservationInput!) { createReservation(input: $input) { id } }
+                mutation ($input: ReservationInput!) { createReservation(input: $input) { id } }
                 """)
                 .variable("input", Map.of("id", blocker, "typeKey", "event",
                         "classification", Map.of("event", Map.of("name", "Blockierer")),
@@ -261,7 +261,7 @@ class ReservationChecksGraphQLTest
         String mover = "e8888888-8888-4888-8888-888888888882";
         String moverAppointment = "a8888888-8888-4888-8888-888888888882";
         tester.document("""
-                mutation ($input: CreateReservationInput!) { createReservation(input: $input) { id } }
+                mutation ($input: ReservationInput!) { createReservation(input: $input) { id } }
                 """)
                 .variable("input", Map.of("id", mover, "typeKey", "event",
                         "classification", Map.of("event", Map.of("name", "Verschieber")),
@@ -304,7 +304,7 @@ class ReservationChecksGraphQLTest
         org.rapla.entities.domain.Allocatable room = facade.getAllocatables()[0];
         String blocker = "e6666666-6666-4666-8666-666666666661";
         tester.document("""
-                mutation ($input: CreateReservationInput!) { createReservation(input: $input) { id } }
+                mutation ($input: ReservationInput!) { createReservation(input: $input) { id } }
                 """)
                 .variable("input", Map.of("id", blocker, "typeKey", "event",
                         "classification", Map.of("event", Map.of("name", "Belegung Alpha")),

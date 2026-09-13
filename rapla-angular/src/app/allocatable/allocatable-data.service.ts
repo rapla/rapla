@@ -124,7 +124,7 @@ export class AllocatableDataService {
     };
     return this.gql
       .mutate<{ updateAllocatable: { id: string } }>(
-        `mutation ($id: ID!, $input: UpdateAllocatableInput!, $expected: LocalDateTime) {
+        `mutation ($id: ID!, $input: AllocatableInput!, $expected: LocalDateTime) {
            updateAllocatable(id: $id, input: $input, expectedLastChanged: $expected) { id }
          }`,
         { id: draft.id, input, expected: draft.lastChanged },

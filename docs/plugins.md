@@ -192,7 +192,7 @@ rapla 2.2. The failure is loud (boot stops with a stack trace) but late
 for that release.
 
 This is a known trade-off and the conscious cost of the drop-in model — see
-[PRD 045](prd/045-end-user-deployment-and-db-config.md) §4 ("Why drop-in, not [PRD 003](prd/003-custom-deployments-after-spring-migration.md)'s custom deployable?") and the
+[PRD 045](prd/045-end-user-deployment-and-db-config.md) §4 ("Why drop-in, not [PRD 003](prd/done/003-custom-deployments-after-spring-migration.md)'s custom deployable?") and the
 "API stability guarantee" entry in [PRD 045](prd/045-end-user-deployment-and-db-config.md)'s Open Questions for the
 rationale and the path to a frozen surface if it ever becomes worth the
 maintenance commitment.

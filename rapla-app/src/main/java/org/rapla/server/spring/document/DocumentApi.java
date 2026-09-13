@@ -85,8 +85,11 @@ public interface DocumentApi
             Map<String, List<String>> variables) { }
 
     /** Exactly one of {@code html} / {@code errorMessage} is set. {@code errorLine} drives the editor
-     *  marker; {@code resolvedVariables} (pretty JSON) feeds the editor's variables pane. */
-    record PreviewResult(String html, Integer errorLine, String errorMessage, String resolvedVariables) { }
+     *  marker; {@code resolvedVariables} (pretty JSON) feeds the editor's variables pane;
+     *  {@code removed} (PRD 097 D6d) lists what the sanitizer stripped from the render — a warning
+     *  the editor shows, never a save error. */
+    record PreviewResult(String html, Integer errorLine, String errorMessage, String resolvedVariables,
+            List<String> removed) { }
 
     /** Which view's shape to project. */
     record ShapeRequest(String viewName) { }

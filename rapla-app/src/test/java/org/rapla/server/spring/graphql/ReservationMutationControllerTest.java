@@ -1334,7 +1334,7 @@ class ReservationMutationControllerTest
 
         String eventId = "e9999999-9999-4999-8999-999999999991";
         tester.document("""
-                mutation ($input: CreateReservationInput!) {
+                mutation ($input: ReservationInput!) {
                   createReservation(input: $input) { id }
                 }
                 """)
@@ -1375,7 +1375,7 @@ class ReservationMutationControllerTest
     {
         String eventId = "e9999999-9999-4999-8999-999999999992";
         tester.document("""
-                mutation ($input: CreateReservationInput!) {
+                mutation ($input: ReservationInput!) {
                   createReservation(input: $input) { id }
                 }
                 """)
@@ -1453,4 +1453,120 @@ class ReservationMutationControllerTest
                 "nothing may be stored");
     }
 
+    // ============================================================ PRD 113 § 1d — merged create/update input
+
+    /**
+     * PRD 113 § 1d — `ReservationInput` serves both create and update. On update the
+     * entity is addressed by the `id` ARGUMENT; an `id` in the input that names a
+     * different entity is a client bug, not a rename, and is rejected rather than
+     * silently ignored.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void updateReservationWithMismatchedInputIdRejected()
+    {
+        String reservationId = "e1111111-1111-4111-8111-111111111101";
+        tester.document("""
+                mutation {
+                  createReservation(input: {
+                    id: "%s",
+                    typeKey: "event",
+                    classification: { event: {} },
+                    appointments: [
+                      { id: "a1111111-1111-4111-8111-111111111101",
+                        start: "2030-07-01T10:00:00", end: "2030-07-01T11:00:00", allDay: false }
+                    ],
+                    allocations: []
+                  }) { id }
+                }
+                """.formatted(reservationId))
+                .execute()
+                .path("createReservation.id")
+                .entity(String.class)
+                .isEqualTo(reservationId);
+
+        tester.document("""
+                mutation ($id: ID!) {
+                  updateReservation(id: $id, input: {
+                    id: "e1111111-1111-4111-8111-111111111199",
+                    typeKey: "event",
+                    classification: { event: {} },
+                    appointments: [
+                      { id: "a1111111-1111-4111-8111-111111111101",
+                        start: "2030-07-01T10:00:00", end: "2030-07-01T12:00:00", allDay: false }
+                    ],
+                    allocations: []
+                  }) { id }
+                }
+                """)
+                .variable("id", reservationId)
+                .execute()
+                .errors()
+                .satisfy(errs -> {
+                    assertFalse(errs.isEmpty(), "a foreign input.id must be rejected");
+                    String joined = errs.toString();
+                    assertTrue(joined.contains("INVALID_VALUE"), () -> "expected INVALID_VALUE; got " + joined);
+                    assertTrue(joined.contains("input.id"), () -> "expected path input.id; got " + joined);
+                });
+    }
+
+    /**
+     * The round-trip the merge exists for: the same input type creates the reservation
+     * and then updates it, echoing the id it was created with (equal id accepted).
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void createThenUpdateThroughTheSameInputTypeRoundTrips()
+    {
+        String reservationId = "e1111111-1111-4111-8111-111111111102";
+        tester.document("""
+                mutation ($input: ReservationInput!) {
+                  createReservation(input: $input) { id }
+                }
+                """)
+                .variable("input", Map.of(
+                        "id", reservationId,
+                        "typeKey", "event",
+                        "classification", Map.of("event", Map.of("name", "vorher")),
+                        "appointments", List.of(Map.of(
+                                "id", "a1111111-1111-4111-8111-111111111102",
+                                "start", "2030-07-02T10:00:00",
+                                "end", "2030-07-02T11:00:00",
+                                "allDay", false)),
+                        "allocations", List.of()))
+                .execute()
+                .path("createReservation.id")
+                .entity(String.class)
+                .isEqualTo(reservationId);
+
+        tester.document("""
+                mutation ($id: ID!, $input: ReservationInput!) {
+                  updateReservation(id: $id, input: $input) { id }
+                }
+                """)
+                .variable("id", reservationId)
+                .variable("input", Map.of(
+                        "id", reservationId,
+                        "typeKey", "event",
+                        "classification", Map.of("event", Map.of("name", "nachher")),
+                        "appointments", List.of(Map.of(
+                                "id", "a1111111-1111-4111-8111-111111111102",
+                                "start", "2030-07-02T10:00:00",
+                                "end", "2030-07-02T12:00:00",
+                                "allDay", false)),
+                        "allocations", List.of()))
+                .execute()
+                .path("updateReservation.id")
+                .entity(String.class)
+                .isEqualTo(reservationId);
+
+        tester.document("""
+                query ($id: ID!) { reservation(id: $id) { name } }
+                """)
+                .variable("id", reservationId)
+                .execute()
+                .path("reservation.name")
+                .entity(String.class)
+                .isEqualTo("nachher");
+    }
 }

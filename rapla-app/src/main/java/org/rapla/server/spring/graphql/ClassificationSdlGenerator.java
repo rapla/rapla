@@ -675,6 +675,14 @@ public final class ClassificationSdlGenerator
                     continue;
                 String enumName = enumNameFor(cat);
                 if (enumName.isEmpty()) continue;
+                if (emittableEnumValues(cat).isEmpty())
+                {
+                    // graphql-java rejects `enum X { }` and the WHOLE schema build fails with it —
+                    // a root without (emittable) children is exposed like an ORGANIZATION root.
+                    LOGGER.warn("VALUE_LIST root '{}' has no emittable child categories — attribute {}.{} falls back to Category instead of an empty enum",
+                            CategoryKindClassifier.keyPath(cat), dt.getKey(), attr.getKey());
+                    continue;
+                }
                 Category prior = sorted.putIfAbsent(enumName, cat);
                 if (prior != null && !prior.getId().equals(cat.getId()))
                 {
@@ -778,6 +786,35 @@ public final class ClassificationSdlGenerator
         return key;
     }
 
+    /**
+     * The enum values a VALUE_LIST root would emit, in child order: leaf key → child. Children with
+     * an empty/unsanitizable key or a colliding value are skipped (WARN). Shared by the collector
+     * (a root with nothing to emit gets no enum at all) and the emitter.
+     */
+    private static Map<String, Category> emittableEnumValues(Category root)
+    {
+        Map<String, Category> values = new LinkedHashMap<>();
+        Category[] children = root.getCategories();
+        if (children == null) return values;
+        for (Category child : children)
+        {
+            if (child == null) continue;
+            String value = enumValueFor(child);
+            if (value.isEmpty())
+            {
+                LOGGER.warn("VALUE_LIST root '{}' — skipping leaf with empty/unsanitizable key '{}'",
+                        root.getKey(), child.getKey());
+                continue;
+            }
+            if (values.putIfAbsent(value, child) != null)
+            {
+                LOGGER.warn("VALUE_LIST root '{}' — enum value '{}' (from leaf key '{}') collides with prior, skipping",
+                        root.getKey(), value, child.getKey());
+            }
+        }
+        return values;
+    }
+
     private static void appendValueListEnum(StringBuilder sb, String enumName, Category root, Locale locale)
     {
         sb.append("\"\"\"\n");
@@ -787,33 +824,14 @@ public final class ClassificationSdlGenerator
         sb.append("PRD 035 §5b — admin add/remove/rename of children triggers schema rebuild.\n");
         sb.append("\"\"\"\n");
         sb.append("enum ").append(enumName).append(" {\n");
-        Category[] children = root.getCategories();
-        Set<String> emittedValues = new HashSet<>();
-        if (children != null)
+        for (Map.Entry<String, Category> e : emittableEnumValues(root).entrySet())
         {
-            for (Category child : children)
+            String localized = e.getValue().getName(locale);
+            if (localized != null && !localized.isBlank())
             {
-                if (child == null) continue;
-                String value = enumValueFor(child);
-                if (value.isEmpty())
-                {
-                    LOGGER.warn("VALUE_LIST root '{}' — skipping leaf with empty/unsanitizable key '{}'",
-                            root.getKey(), child.getKey());
-                    continue;
-                }
-                if (!emittedValues.add(value))
-                {
-                    LOGGER.warn("VALUE_LIST root '{}' — enum value '{}' (from leaf key '{}') collides with prior, skipping",
-                            root.getKey(), value, child.getKey());
-                    continue;
-                }
-                String localized = child.getName(locale);
-                if (localized != null && !localized.isBlank())
-                {
-                    sb.append("  \"").append(escapeStringLiteral(localized.trim())).append("\"\n");
-                }
-                sb.append("  ").append(value).append("\n");
+                sb.append("  \"").append(escapeStringLiteral(localized.trim())).append("\"\n");
             }
+            sb.append("  ").append(e.getKey()).append("\n");
         }
         sb.append("}\n\n");
     }

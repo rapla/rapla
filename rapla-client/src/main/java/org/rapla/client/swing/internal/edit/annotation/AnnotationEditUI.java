@@ -11,6 +11,7 @@ import org.rapla.framework.RaplaLocale;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,12 +19,13 @@ import java.util.Set;
 
 public class AnnotationEditUI extends AbstractEditUI<Annotatable>
 {
-    Set<? extends AnnotationEdit> annotationExtensions;
+    List<? extends AnnotationEdit> annotationExtensions;
     Map<AnnotationEdit,Collection<? extends EditField>> fieldMap = new HashMap<>();
     
     public AnnotationEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Set<? extends AnnotationEdit> annotationExtensions) {
         super(facade, i18n, raplaLocale);
-        this.annotationExtensions = annotationExtensions;
+        this.annotationExtensions = annotationExtensions.stream()
+                .sorted(Comparator.comparingInt(AnnotationEdit::position)).toList();
     }
     
     @Override

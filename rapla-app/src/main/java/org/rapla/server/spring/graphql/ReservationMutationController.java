@@ -191,6 +191,7 @@ public class ReservationMutationController
         {
             throw new ReservationMutationException("REQUIRED", "id", "id is required");
         }
+        rejectForeignInputId(input, id, "input.id");
         Reservation stored = operator.tryResolve(new ReferenceInfo<>(id, Reservation.class));
         if (stored == null)
         {
@@ -937,6 +938,7 @@ public class ReservationMutationController
     private Reservation applyUpdateInBatch(String id, Map<String, Object> input, LocalDateTime expectedLc,
             User caller, String path) throws RaplaException
     {
+        rejectForeignInputId(input, id, path + ".input.id");
         Reservation stored = operator.tryResolve(new ReferenceInfo<>(id, Reservation.class));
         if (stored == null) throw new ReservationMutationException("REFERENCE_NOT_FOUND", path + ".id",
                 "Reservation " + id + " not found");
@@ -1077,5 +1079,21 @@ public class ReservationMutationController
 
         public String code() { return code; }
         public String path() { return path; }
+    }
+
+    /**
+     * PRD 113 § 1d — one input type serves create and update, so the merged input
+     * carries an optional {@code id}. On update the entity is addressed by the id
+     * ARGUMENT; an input id naming something else is a client bug, not a rename.
+     * Absent or equal is accepted.
+     */
+    static void rejectForeignInputId(Map<String, Object> input, String id, String path)
+    {
+        String inputId = (String) input.get("id");
+        if (inputId != null && !inputId.isBlank() && !inputId.equals(id))
+        {
+            throw new ReservationMutationException("INVALID_VALUE", path,
+                    "input.id does not match the id argument");
+        }
     }
 }

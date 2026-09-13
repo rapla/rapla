@@ -209,4 +209,18 @@ public class ToolsTest
         Assert.assertTrue(Tools.isReservedAttributeKey("typeKey"));
         Assert.assertFalse(Tools.isReservedAttributeKey("name"));
     }
+
+    /** Shared name rule for stored views/documents: plain GraphQL identifier shape, nothing else. */
+    @Test
+    public void testIsGraphqlIdentifier()
+    {
+        for (String ok : new String[] { "rapla_kalender", "wochenplan", "Leihschein", "_x", "a1" })
+        {
+            Assert.assertTrue(ok, Tools.isGraphqlIdentifier(ok));
+        }
+        for (String bad : new String[] { "my view", "my-view", "1view", "\u00dcbersicht", "view:1", "", null })
+        {
+            Assert.assertFalse(String.valueOf(bad), Tools.isGraphqlIdentifier(bad));
+        }
+    }
 }

@@ -107,6 +107,21 @@ public class ArtifactCatalogService
     public void save(String kind, String name, String body, String metadata, User caller) throws RaplaException
     {
         checkWrite(caller);
+        store(kind, name, body, metadata, caller);
+    }
+
+    /**
+     * PRD 112 — the deployment patch loader's write: same upsert, authored by the system
+     * ({@code lastChangedBy = null}). Deliberately a separate entry point: {@link #checkWrite}
+     * keeps rejecting a null caller so no request path can write as system by accident.
+     */
+    public void saveAsSystem(String kind, String name, String body, String metadata) throws RaplaException
+    {
+        store(kind, name, body, metadata, null);
+    }
+
+    private void store(String kind, String name, String body, String metadata, User caller) throws RaplaException
+    {
         checkBodySize(body);
         final LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         final StoredArtifactImpl artifact = new StoredArtifactImpl(kind, name);

@@ -76,7 +76,10 @@ public class DynamicTypeMutationController
             "nameformat_planning",
             "nameformat_export",
             "colors",
-            "color");
+            "color",
+            // PRD 111 D1 — the documents wiring is set through the same type mutation the SPA/
+            // Swing editors use; without the key here a saved `documents` annotation is rejected.
+            DynamicTypeAnnotations.KEY_DOCUMENTS);
 
     private final StorageOperator operator;
     private final org.rapla.server.spring.JwtUserResolver jwtUserResolver;

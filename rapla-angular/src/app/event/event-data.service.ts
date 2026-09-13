@@ -118,7 +118,7 @@ export class EventDataService {
     if (draft.persisted) {
       return this.gql
         .mutate<{ updateReservation: { id: string } }>(
-          `mutation ($id: ID!, $input: UpdateReservationInput!, $expected: LocalDateTime) {
+          `mutation ($id: ID!, $input: ReservationInput!, $expected: LocalDateTime) {
              updateReservation(id: $id, input: $input, expectedLastChanged: $expected) { id }
            }`,
           { id: draft.id, input, expected: draft.lastChanged },
@@ -127,7 +127,7 @@ export class EventDataService {
     }
     return this.gql
       .mutate<{ createReservation: { id: string } }>(
-        `mutation ($input: CreateReservationInput!) {
+        `mutation ($input: ReservationInput!) {
            createReservation(input: $input) { id }
          }`,
         { input: { id: draft.id, ...input } },

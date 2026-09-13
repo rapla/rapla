@@ -16,6 +16,9 @@ export interface EntityRef {
   kind: EntityKind;
   id: string;
   canModify?: boolean;
+  /** PRD 111 D3 — the subject's dynamic-type key, when the view selects
+   *  `classification { typeKey }`. Undefined ⇒ no document entries (fail closed). */
+  typeKey?: string;
 }
 
 export interface RowBlock {
@@ -60,7 +63,14 @@ function asRef(value: unknown, kind: EntityKind): EntityRef | null {
     kind,
     id: obj['id'],
     canModify: typeof obj['canModify'] === 'boolean' ? obj['canModify'] : undefined,
+    typeKey: typeKeyOf(obj),
   };
+}
+
+/** `classification { typeKey }` on a subject object, when selected. */
+function typeKeyOf(obj: Record<string, unknown>): string | undefined {
+  const classification = obj['classification'] as Record<string, unknown> | null | undefined;
+  return typeof classification?.['typeKey'] === 'string' ? classification['typeKey'] : undefined;
 }
 
 export function extractRowContext(
@@ -80,6 +90,7 @@ export function extractRowContext(
       kind: 'reservation',
       id: row['reservationId'],
       canModify: typeof row['canModify'] === 'boolean' ? row['canModify'] : undefined,
+      typeKey: typeKeyOf(row),
     };
   }
 

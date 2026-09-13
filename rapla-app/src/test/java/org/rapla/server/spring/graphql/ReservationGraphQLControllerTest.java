@@ -1373,6 +1373,58 @@ class ReservationGraphQLControllerTest
     }
 
     /**
+     * Siegen Leihschein (WP2) — {@code Appointment.compute(expr:)}, the pendant of
+     * {@code AppointmentBlock.compute}. A document template is logic-less, so a contract line like
+     * "Do 09.07.26 08:00 - Fr 10.07.26 16:00" has to be composed server-side; {@code Appointment.times}
+     * carries no date and cannot. Same engine, same functions, subject = the appointment.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void appointmentComputeEvaluatesExpression()
+    {
+        assertTrue(typeFieldNames("Appointment").contains("compute"),
+                () -> "missing Appointment.compute");
+        List<Map<String, Object>> rows = tester.document("""
+                query {
+                  reservations(filter: {
+                    from: "2006-01-01T00:00:00",
+                    to:   "2006-12-31T00:00:00"
+                  }) {
+                    appointments {
+                      start
+                      end
+                      range:  compute(expr: "{p->format(\\"%1$ta %1$td.%1$tm.%1$ty %1$tH:%1$tM\\",start(p))} - {p->format(\\"%1$ta %1$td.%1$tm.%1$ty %1$tH:%1$tM\\",end(p))}")
+                      broken: compute(expr: "{p->nosuchfn(p)}")
+                    }
+                  }
+                }
+                """)
+                .execute().path("reservations")
+                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
+        assertFalse(rows.isEmpty(), "fixture should have reservations in 2006");
+        int checked = 0;
+        for (Map<String, Object> r : rows)
+        {
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> appointments = (List<Map<String, Object>>) r.get("appointments");
+            for (Map<String, Object> a : appointments)
+            {
+                String range = (String) a.get("range");
+                assertNotNull(range, () -> "compute must render the formatted range; got " + a);
+                // "<day> dd.MM.yy HH:mm - <day> dd.MM.yy HH:mm" — the date the template cannot build itself.
+                assertTrue(range.matches("\\w+ \\d{2}\\.\\d{2}\\.\\d{2} \\d{2}:\\d{2} - \\w+ \\d{2}\\.\\d{2}\\.\\d{2} \\d{2}:\\d{2}"),
+                        () -> "unexpected range shape: " + range);
+                assertTrue(range.contains(((String) a.get("start")).substring(8, 10) + "."),
+                        () -> "range must carry the start day-of-month; got " + a);
+                assertNull(a.get("broken"),
+                        () -> "unknown function must yield null, not error; got " + a);
+                checked++;
+            }
+        }
+        assertTrue(checked > 0, "fixture should have at least one appointment");
+    }
+
+    /**
      * PRD 074 V2 — expr ergonomics: bare body auto-wraps as {item -> …}; subject `item` is implicit
      * (0-arg `times()`) or explicit (`times(item)`); the braced explicit form accepts both arrows
      * (`->` and `=>`). All four notations must equal the full `{p->times(p)}` form.

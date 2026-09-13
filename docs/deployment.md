@@ -176,6 +176,44 @@ A **pre-1.8 Rapla database schema is not auto-migrated** — Rapla stops with an
 explicit message. Migrate by exporting `data.xml` from a Rapla 1.8 instance and
 importing it into the new database.
 
+### Listing only some builtin views
+
+`rapla.views.builtin-listed` is an allowlist of builtin view keys (`rapla_appointments`,
+`rapla_reservations`, `rapla_kalender`, `rapla_wochenprogramm`) for the SPA view switcher.
+Absent: each builtin's own `@view(listed:)` decides, as before. Set (also to an empty list): a
+builtin is listed only if named — so a deployment that wants nothing but its own custom views
+is not surprised by a builtin added in a later release. Unlisted builtins stay resolvable by
+name and visible in the GraphiQL load dialog.
+
+```yaml
+rapla:
+  views:
+    builtin-listed: []            # custom views only
+    # builtin-listed: [rapla_kalender]
+```
+
+### Patch directory — stored views and documents from files (PRD 112)
+
+`data/patch/` (property `rapla.patch-dir`, relative to the working directory) holds
+self-describing artefact files that Rapla applies to its artifact store at **every start**:
+
+- `<Name>.mustache` with a `{{! rapla-document … }}` head → stored document `<Name>`
+  (head keys: `view` (required), `public`, `updated`, optional `groups`, `window`,
+  `defaultVariables`);
+- `<Name>.graphql` with leading `# rapla-view` / `# key: value` lines → stored view named
+  after the query's operation name (head keys: `public`, `updated`, optional `groups`,
+  `defaultVariables`).
+
+Rule per file: create when the artefact is missing; overwrite when the head's `updated`
+(ISO-8601, bare local time read as UTC, offset/`Z` honoured) is newer than the stored
+artefact's last change; otherwise leave it alone — so an admin's later edit in the template
+editor survives until a re-delivery bumps `updated`. Views are applied before documents. A
+file without a recognised head is ignored (WARN), a file that fails the editor's validation is
+skipped (ERROR); the server starts either way. The files may be deleted after the first start —
+the store keeps the artefacts. Disable with `rapla.services.org.rapla.plugin.patch: false`.
+Dynamic-type annotations (e.g. `documents=` on an event type) are **not** patched — set them in
+the type editor.
+
 ## Running as a service
 
 ### Linux — systemd

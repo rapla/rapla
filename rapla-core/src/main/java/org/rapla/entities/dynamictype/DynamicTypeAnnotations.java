@@ -25,6 +25,10 @@ public interface DynamicTypeAnnotations
     String VALUE_CLASSIFICATION_TYPE_PERSON="person";
     String VALUE_CLASSIFICATION_TYPE_RAPLATYPE="rapla";
     
+    /** PRD 111 D1 — comma-separated names of stored documents offered on entities of this type,
+     *  in menu order. The document name is the reference, the menu label and the future i18n key. */
+    String KEY_DOCUMENTS="documents";
+
     String KEY_COLORS="colors";
 	String VALUE_COLORS_AUTOMATED = "rapla:automated";
 	String VALUE_COLORS_COLOR_ATTRIBUTE = "color";

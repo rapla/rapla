@@ -53,7 +53,7 @@ public class ViewCatalogService
                     + "    end   @column(header: \"Bis\",           order: 2)\n"
                     + "    name  @column(header: \"Titel\",         order: 3)\n"
                     + "    color @hidden\n"
-                    + "    reservation @hidden { id  canModify  appointmentCount }\n"
+                    + "    reservation @hidden { id  canModify  appointmentCount  classification { typeKey } }\n"
                     + "    appointment @hidden { id  repeating { type } }\n"
                     // PRD 100 Phase 5 — week-grid lane grouping key (match provenance): the scoped
                     // allocatable that admitted the block, from the query's OWN filter (no argument).
@@ -78,6 +78,7 @@ public class ViewCatalogService
                     + "    lastChanged: lastModifiedAt\n"
                     + "    reservationId: id @hidden\n"
                     + "    canModify @hidden\n"
+                    + "    classification @hidden { typeKey }\n"
                     + "    appointmentCount @hidden\n"
                     + "  }\n"
                     + "}"),
@@ -129,10 +130,25 @@ public class ViewCatalogService
     private final ArtifactCatalogService artifactCatalog;
     private final HotSwappableGraphQlSource graphQlSource;
 
-    public ViewCatalogService(ArtifactCatalogService artifactCatalog, HotSwappableGraphQlSource graphQlSource)
+    private final List<String> builtinListed;
+
+    public ViewCatalogService(ArtifactCatalogService artifactCatalog, HotSwappableGraphQlSource graphQlSource,
+            org.rapla.server.spring.RaplaServerProperties properties)
     {
         this.artifactCatalog = artifactCatalog;
         this.graphQlSource = graphQlSource;
+        this.builtinListed = properties.getViews().getBuiltinListed();
+    }
+
+    /**
+     * The EFFECTIVE listing state (what the SPA switcher and GraphiQL show): a builtin under
+     * {@code rapla.views.builtin-listed} is listed iff its key is in the allowlist; otherwise —
+     * and for every custom view — the view's own {@code @view(listed:)} decides.
+     */
+    public boolean isListed(ViewEntry view)
+    {
+        if (view.builtin() && builtinListed != null) return builtinListed.contains(view.name());
+        return isListed(view.queryText());
     }
 
     /**
@@ -151,7 +167,7 @@ public class ViewCatalogService
         List<ViewEntry> result = new ArrayList<>();
         for (ViewEntry b : BUILTIN_VIEWS)
         {
-            if (includeUnlisted || isListed(b.queryText())) result.add(b);
+            if (includeUnlisted || isListed(b)) result.add(b);
         }
         GraphQLSchema schema = graphQlSource.schema();
         for (StoredViewData stored : loadStored())
@@ -229,6 +245,19 @@ public class ViewCatalogService
     public List<String> saveView(String name, String queryText, boolean isPublic,
             List<String> groups, String defaultVariables, User callerUser) throws RaplaException
     {
+        return saveView(name, queryText, isPublic, groups, defaultVariables, callerUser, false);
+    }
+
+    /** PRD 112 — the deployment patch loader's save: identical validation, system author. */
+    public List<String> saveViewAsSystem(String name, String queryText, boolean isPublic,
+            List<String> groups, String defaultVariables) throws RaplaException
+    {
+        return saveView(name, queryText, isPublic, groups, defaultVariables, null, true);
+    }
+
+    private List<String> saveView(String name, String queryText, boolean isPublic,
+            List<String> groups, String defaultVariables, User callerUser, boolean asSystem) throws RaplaException
+    {
         for (ViewEntry b : BUILTIN_VIEWS)
         {
             if (b.name().equals(name))
@@ -242,7 +271,9 @@ public class ViewCatalogService
         if (!errors.isEmpty()) return errors;
 
         ViewMeta meta = new ViewMeta(isPublic, groups == null ? List.of() : groups, defaultVariables);
-        artifactCatalog.save(StoredArtifact.KIND_VIEW, name, queryText, MAPPER.writeValueAsString(meta), callerUser);
+        String metadata = MAPPER.writeValueAsString(meta);
+        if (asSystem) artifactCatalog.saveAsSystem(StoredArtifact.KIND_VIEW, name, queryText, metadata);
+        else artifactCatalog.save(StoredArtifact.KIND_VIEW, name, queryText, metadata, callerUser);
         return List.of();
     }
 
@@ -313,14 +344,6 @@ public class ViewCatalogService
     }
 
     /**
-     * A GraphQL identifier — the grammar has no unicode, so an umlaut cannot be an operation name.
-     * Also excludes the ':' that separates the {@link org.rapla.entities.storage.StoredArtifact}
-     * natural key, and anything that would need escaping in a URL path segment.
-     */
-    private static final java.util.regex.Pattern VIEW_NAME =
-            java.util.regex.Pattern.compile("[_A-Za-z][_0-9A-Za-z]*");
-
-    /**
      * A view's name is a <b>key</b>, not a label: it is the GraphQL <b>operation name</b> the
      * stored-view transport looks up ({@link StoredViewInterceptor} swaps in the stored query but
      * keeps the request's {@code operationName}), the artifact natural key {@code kind:name}, and a
@@ -334,7 +357,7 @@ public class ViewCatalogService
         {
             return List.of("A view name is required");
         }
-        if (!VIEW_NAME.matcher(name).matches())
+        if (!org.rapla.components.util.Tools.isGraphqlIdentifier(name))
         {
             return List.of("View name '" + name + "' is not a valid GraphQL identifier — it is the"
                     + " operation name and a storage/URL key. Use letters, digits and underscore,"

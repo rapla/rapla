@@ -206,4 +206,24 @@ class DocumentCatalogServiceTest
         assertTrue(catalog.find("doc").isEmpty());
         assertFalse(catalog.delete("doc", admin), "second delete reports not-found");
     }
+
+    /** A document name is a GraphQL identifier (referenced from annotations / GraphQL later). */
+    @Test
+    void saveRejectsNonIdentifierNames() throws Exception
+    {
+        for (String bad : List.of("Leih schein", "Leih-schein", "1schein", "Ausleihe\u00fc"))
+        {
+            List<String> errors = catalog.save(bad, "termine", "<p>ok</p>", false, List.of(), null, admin());
+            assertFalse(errors.isEmpty(), () -> "'" + bad + "' must be rejected");
+            assertTrue(errors.get(0).contains("GraphQL identifier"), errors.toString());
+            assertTrue(catalog.find(bad).isEmpty(), "a rejected save stores nothing");
+        }
+    }
+
+    @Test
+    void saveAcceptsIdentifierNames() throws Exception
+    {
+        assertEquals(List.of(), catalog.save("Leihschein", "termine", "<p>ok</p>", false, List.of(), null, admin()));
+        assertEquals(List.of(), catalog.save("rapla_kalender_2", "termine", "<p>ok</p>", false, List.of(), null, admin()));
+    }
 }

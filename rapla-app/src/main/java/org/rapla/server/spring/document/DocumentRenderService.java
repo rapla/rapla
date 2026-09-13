@@ -52,17 +52,20 @@ public class DocumentRenderService
     /** Optional — present when the timeslot plugin is on the classpath (band-domain grouping). */
     private final org.springframework.beans.factory.ObjectProvider<
             org.rapla.plugin.timeslot.TimeslotProvider> timeslotProvider;
+    private final org.rapla.server.spring.RaplaServerProperties properties;
 
     public DocumentRenderService(DocumentCatalogService documents, ViewCatalogService views,
             HotSwappableGraphQlSource graphQlSource, DocumentRenderer renderer,
             org.springframework.beans.factory.ObjectProvider<
-                    org.rapla.plugin.timeslot.TimeslotProvider> timeslotProvider)
+                    org.rapla.plugin.timeslot.TimeslotProvider> timeslotProvider,
+            org.rapla.server.spring.RaplaServerProperties properties)
     {
         this.documents = documents;
         this.views = views;
         this.graphQlSource = graphQlSource;
         this.renderer = renderer;
         this.timeslotProvider = timeslotProvider;
+        this.properties = properties;
     }
 
     /**
@@ -82,7 +85,8 @@ public class DocumentRenderService
         try
         {
             return prepare(documentName, rawParams, caller)
-                    .map(r -> page(title(r.view(), r.document().name()), r.document().template(), r.model()));
+                    .map(r -> page(title(r.view(), r.document().name()), r.document().template(), r.model(),
+                            false, authorScriptsAllowed(r.document())).html());
         }
         catch (MissingRequiredParamsException e)
         {
@@ -374,9 +378,9 @@ public class DocumentRenderService
             if (names.length() > 0) names.append(", ");
             names.append("<code>").append(escapeHtml(name)).append("</code>");
         }
-        return DocumentShell.wrap(title, "<p class=\"rapla-missing-param\">"
+        return DocumentShell.wrapFragment(title, "<p class=\"rapla-missing-param\">"
                 + (missing.size() == 1 ? "Erforderlicher Parameter fehlt: " : "Erforderliche Parameter fehlen: ")
-                + names + "</p>");
+                + names + "</p>", renderingLang());
     }
 
     private static String escapeHtml(String s)
@@ -391,7 +395,7 @@ public class DocumentRenderService
      * the author only data they may already see. Empty when the view is unknown or not theirs.
      */
     /** Preview outcome: the page plus the RESOLVED variables the render actually used (editor pane). */
-    public record Preview(String html, Map<String, Object> variables) { }
+    public record Preview(String html, Map<String, Object> variables, List<String> removed) { }
 
     /**
      * PRD 097 § params (2026-07-15) — the preview takes the SAME raw URL params as the rendered
@@ -425,23 +429,60 @@ public class DocumentRenderService
         if (!missing.isEmpty())
         {
             // The author sees the SAME hint page a subscriber would get on the live URL.
-            return Optional.of(new Preview(hintPage(title(view, viewName), missing), variables));
+            return Optional.of(new Preview(hintPage(title(view, viewName), missing), variables, List.of()));
         }
         Map<String, Object> model = executeResolved(view, variables, "<preview>").model();
         // Nav renders in the preview too — preview mode: clicks postMessage to the editor.
         putNav(model, view, window, null, variables, true);
-        return Optional.of(new Preview(page(title(view, viewName), template, model, true), variables));
+        Page page = page(title(view, viewName), template, model, true, properties.getDocuments().isAuthorScripts());
+        return Optional.of(new Preview(page.html(), variables, page.removed()));
     }
 
-    private String page(String title, String template, Map<String, Object> model)
+    /** A rendered page plus what the sanitizer took out of it (D6d, preview hint). */
+    private record Page(String html, List<String> removed) { }
+
+    private Page page(String title, String template, Map<String, Object> model, boolean preview,
+            boolean allowScripts)
     {
-        return page(title, template, model, false);
+        DocumentSanitizer.Sanitized sanitized =
+                DocumentSanitizer.sanitize(renderer.render(template, model), allowScripts);
+        if (allowScripts)
+        {
+            markResponseScripted();
+        }
+        // D7a — a full-HTML template IS the page; only a body fragment gets the minimal wrapper.
+        String page = sanitized.wholeDocument() ? sanitized.html()
+                : DocumentShell.wrapFragment(title, sanitized.html(), renderingLang());
+        return new Page(preview ? DocumentShell.injectPreviewScript(page) : page, sanitized.removed());
     }
 
-    private String page(String title, String template, Map<String, Object> model, boolean inertLinks)
+    /**
+     * D6c (2) — the yml switch AND the document's visibility. A public document is anonymous-
+     * readable, so the admin-only-CRUD trust basis does not cover it: always strict.
+     */
+    private boolean authorScriptsAllowed(DocumentEntry document)
     {
-        return DocumentShell.wrap(title,
-                DocumentSanitizer.sanitizeFragment(renderer.render(template, model)), inertLinks);
+        return properties.getDocuments().isAuthorScripts() && !document.isPublic();
+    }
+
+    /** Tells the security chain to serve the scripted CSP variant for THIS response. */
+    private static void markResponseScripted()
+    {
+        org.springframework.web.context.request.RequestAttributes attributes =
+                org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+        if (attributes != null)
+        {
+            attributes.setAttribute(org.rapla.server.spring.RaplaCspHeaderWriter.SCRIPTED_DOCUMENT,
+                    Boolean.TRUE, org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST);
+        }
+    }
+
+    /** D6c — the locale the document is being rendered in, for the shell's html lang. */
+    private static String renderingLang()
+    {
+        java.util.Locale locale =
+                org.springframework.context.i18n.LocaleContextHolder.getLocale();
+        return locale == null ? "de" : locale.toLanguageTag();
     }
 
     private static String title(ViewEntry view, String fallback)
@@ -493,6 +534,8 @@ public class DocumentRenderService
 
         Map<String, Object> data = result.getData();
         Map<String, Object> model = new LinkedHashMap<>(data == null ? Map.of() : data);
+        // D7a — the caller's rendering locale, for templates that want <html lang="{{lang}}">.
+        model.put("lang", renderingLang());
         Map<Object, Object> extensions = result.getExtensions();
         applyGrouping(model, extensions);
         Map<String, Object> viewMeta = extensions != null && extensions.get("view") instanceof Map<?, ?> m

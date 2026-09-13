@@ -122,10 +122,30 @@ public class DocumentCatalogService
         // gate first: a non-admin must not be able to probe template/view validity through the
         // error channel (§12 — the response must not reveal what the caller may not see)
         artifacts.checkWrite(caller);
+        return save(name, viewName, template, isPublic, groups, defaultVariables, window, caller, false);
+    }
+
+    /** PRD 112 — the deployment patch loader's save: identical validation, system author. */
+    public List<String> saveAsSystem(String name, String viewName, String template, boolean isPublic,
+            List<String> groups, String defaultVariables, String window) throws RaplaException
+    {
+        return save(name, viewName, template, isPublic, groups, defaultVariables, window, null, true);
+    }
+
+    private List<String> save(String name, String viewName, String template, boolean isPublic,
+            List<String> groups, String defaultVariables, String window, User caller, boolean asSystem)
+            throws RaplaException
+    {
         for (DocumentEntry b : BuiltinDocuments.ENTRIES)
         {
             if (b.name().equals(name))
                 return List.of("'" + name + "' is a built-in document name and cannot be overwritten");
+        }
+        if (!org.rapla.components.util.Tools.isGraphqlIdentifier(name))
+        {
+            return List.of("Document name '" + name + "' is not a valid GraphQL identifier — it is"
+                    + " referenced from GraphQL and is a storage/URL key. Use letters, digits and"
+                    + " underscore, starting with a letter or underscore (e.g. 'Leihschein', not 'Leih-Schein').");
         }
         List<String> errors = validateForSave(viewName, template);
         String windowError = DocumentWindow.validate(window);
@@ -133,7 +153,9 @@ public class DocumentCatalogService
         if (!errors.isEmpty()) return errors;
         DocumentMeta meta = new DocumentMeta(viewName, isPublic, groups == null ? List.of() : groups,
                 defaultVariables, window);
-        artifacts.save(StoredArtifact.KIND_DOCUMENT, name, template, MAPPER.writeValueAsString(meta), caller);
+        String metadata = MAPPER.writeValueAsString(meta);
+        if (asSystem) artifacts.saveAsSystem(StoredArtifact.KIND_DOCUMENT, name, template, metadata);
+        else artifacts.save(StoredArtifact.KIND_DOCUMENT, name, template, metadata, caller);
         return List.of();
     }
 

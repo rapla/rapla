@@ -166,7 +166,7 @@ lecturer needs a room for an ad-hoc session.
 
 **Goal:** jump to a specific room / person / event by name, fast.
 
-- **Surface:** the single search box ([PRD 028](../prd/028-angular-power-search.md)) — ranked across allocatables, reservations,
+- **Surface:** the single search box ([PRD 028](../prd/done/028-angular-power-search.md)) — ranked across allocatables, reservations,
   conflicts, weighted by what's on screen (selection + visible window).
 - **Verbs:** toggle into selection · "switch selection" (replace with just this one) ·
   jump-to-block. **Recency** floats recently-touched entities up.
@@ -197,7 +197,7 @@ lecturer needs a room for an ad-hoc session.
 - **Surface:** find (search) → **event sheet** (focused, deep-linkable, responsive) → one
   edit → save with **server conflict check** shown as text.
 - **rapla mechanism:** `Reservation.canModify` (server-derived, gates the edit button) ·
-  GraphQL mutations (`UpdateReservationInput`/`ChangeOp`/`applyChanges`) · PRD [023](../prd/023-presenter-view-extraction.md)/[024](../prd/024-server-side-edit-services.md)
+  GraphQL mutations (`ReservationInput`/`ChangeOp`/`applyChanges`) · PRD [023](../prd/023-presenter-view-extraction.md)/[024](../prd/wont-fix/024-server-side-edit-services.md)
   pure-Java validation (recurrence) shared with desktop.
 - **Status:** in scope for the product, **built later**. Design the event sheet mobile-first
   from day one so responsive isn't a retrofit.
@@ -292,7 +292,7 @@ X in this period" / per-type attribute rules — which the name search does *not
 
 **Open:** does picking from the list **add** to the selection (chips accumulate) or
 **replace** it (single anchor)? Likely both — single pick = anchor + a "switch selection"
-verb ([PRD 028](../prd/028-angular-power-search.md)) to replace; explicit add for multi. Decide when we design the picker.
+verb ([PRD 028](../prd/done/028-angular-power-search.md)) to replace; explicit add for multi. Decide when we design the picker.
 
 ---
 

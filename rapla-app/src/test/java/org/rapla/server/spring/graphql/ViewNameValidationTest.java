@@ -122,4 +122,10 @@ class ViewNameValidationTest
         assertFalse(errors.isEmpty(), "name/operation mismatch must be rejected");
         assertTrue(errors.toString().contains("vn_beta"), errors.toString());
     }
+
+    @Test
+    void aNameWithAHyphenIsRejected() throws Exception
+    {
+        assertFalse(save("my-view", queryNamed("myview")).isEmpty());
+    }
 }

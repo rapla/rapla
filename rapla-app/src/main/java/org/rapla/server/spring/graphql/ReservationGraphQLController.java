@@ -156,12 +156,14 @@ public class ReservationGraphQLController
         List<org.rapla.entities.dynamictype.DynamicType> eventTypes = new ArrayList<>();
         if (prefs.getEntryAsBoolean(DEFAULTWIZARD_ENABLED, true))
         {
-            for (org.rapla.entities.dynamictype.DynamicType dt : operator.getDynamicTypes())
+            // Swing parity (DefaultWizard): the facade lookup skips internal rapla: types such as
+            // the "nicht sichtbar" placeholder rapla:anonymousEvent, which an admin passes canCreate on.
+            for (org.rapla.entities.dynamictype.DynamicType dt : org.rapla.facade.internal.FacadeImpl
+                    .getDynamicTypes(operator,
+                            org.rapla.entities.dynamictype.DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION,
+                            caller))
             {
-                if (org.rapla.entities.dynamictype.DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION
-                        .equals(dt.getAnnotation(
-                                org.rapla.entities.dynamictype.DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE))
-                        && pc.canCreate(dt, caller))
+                if (pc.canCreate(dt, caller))
                 {
                     eventTypes.add(dt);
                 }

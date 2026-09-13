@@ -23,6 +23,8 @@ import { routes } from './app.routes';
 import { authInterceptor } from './auth/auth.interceptor';
 import { AuthService } from './auth/auth.service';
 import { ROW_MENU_PROVIDERS, EventRowMenuProvider } from './views/row-menu';
+import { DOCUMENT_CATALOG, DocumentsRowMenuProvider } from './views/document-menu';
+import { DocumentCatalogStore } from './views/document-catalog.store';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -39,6 +41,9 @@ export const appConfig: ApplicationConfig = {
     // provider dispatches on the typed row subject (D4). Add further providers
     // (loan transitions, request workflow) as additional multi entries.
     { provide: ROW_MENU_PROVIDERS, useClass: EventRowMenuProvider, multi: true },
+    // PRD 111 D4 — the documents feature contributes its own row entries.
+    { provide: DOCUMENT_CATALOG, useExisting: DocumentCatalogStore },
+    { provide: ROW_MENU_PROVIDERS, useClass: DocumentsRowMenuProvider, multi: true },
     // PRD 072 Phase 4 — cookie-credential model A. CSRF: the server materializes
     // a JS-readable XSRF-TOKEN cookie on GETs; mutating cookie-auth requests must
     // echo it back as X-XSRF-TOKEN. Angular's built-in XSRF interceptor does this

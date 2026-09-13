@@ -102,6 +102,11 @@ class BuiltinDocumentsTest
 
         String woche = render("wochenplan?resource=a1");
         assertTrue(woche.contains("<style>"), woche);
+        // D7a — the builtin IS the whole page: its own doctype/head, the caller's lang, the partials.
+        assertTrue(woche.startsWith("<!doctype html>"), woche);
+        assertTrue(woche.contains("<html lang=\""), woche);
+        assertTrue(woche.contains("@page"), "print CSS via {{> rapla/print-css}}: " + woche);
+        assertFalse(woche.contains("rapla-document"), "no server shell wrapper any more: " + woche);
         assertTrue(woche.contains("Mo "), "week header expected: " + woche);
         // The print hint is an opt-in partial ({{> rapla/print-hint}}), not shell chrome and
         // deliberately NOT in the defaults — everyone knows Ctrl+P.
@@ -122,6 +127,19 @@ class BuiltinDocumentsTest
         // and the Mo–Fr day set pinned in defaultVariables shapes the header.
         assertEquals(7, programm.split("<section class=\"band\">", -1).length - 1, programm);
         assertFalse(programm.contains("Sa "), "Mo–Fr day set expected: " + programm);
+    }
+
+    @Test
+    void everyBuiltinTemplateIsAFullHtmlPageWithThePartials()
+    {
+        for (DocumentEntry b : BuiltinDocuments.ENTRIES)
+        {
+            String t = b.template();
+            assertTrue(t.stripLeading().startsWith("<!doctype html>"), b.name() + ": " + t);
+            assertTrue(t.contains("<html lang=\"{{lang}}\">"), b.name());
+            assertTrue(t.contains("{{> rapla/base-css}}") && t.contains("{{> rapla/print-css}}"), b.name());
+            assertTrue(t.contains("<title>"), b.name());
+        }
     }
 
     @Test
@@ -203,8 +221,30 @@ class BuiltinDocumentsTest
 
     private tools.jackson.databind.JsonNode postPreview(java.util.Map<String, List<String>> params) throws Exception
     {
+        return postPreview("x", params);
+    }
+
+    /** PRD 097 D6d — the preview reports the sanitizer's removals so the editor can warn. */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void previewReportsSanitizerRemovals() throws Exception
+    {
+        var json = postPreview("<p onclick=\"x()\">ok</p><script>a()</script>",
+                java.util.Map.of("resource", List.of("a1")));
+        assertTrue(json.get("errorMessage").isNull(), json.toString());
+        List<String> removed = new java.util.ArrayList<>();
+        json.get("removed").forEach(n -> removed.add(n.asString()));
+        assertTrue(removed.contains("script") && removed.contains("onclick"), removed.toString());
+
+        var clean = postPreview("<p>ok</p>", java.util.Map.of("resource", List.of("a1")));
+        assertEquals(0, clean.get("removed").size(), clean.toString());
+    }
+
+    private tools.jackson.databind.JsonNode postPreview(String template, java.util.Map<String, List<String>> params)
+            throws Exception
+    {
         String body = new tools.jackson.databind.json.JsonMapper().writeValueAsString(java.util.Map.of(
-                "viewName", "rapla_kalender", "template", "x", "variables", params));
+                "viewName", "rapla_kalender", "template", template, "variables", params));
         var response = mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
                         .post("/api/documents/preview")
                         .contentType(org.springframework.http.MediaType.APPLICATION_JSON)

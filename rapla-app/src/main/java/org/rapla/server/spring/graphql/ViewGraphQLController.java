@@ -46,6 +46,7 @@ public class ViewGraphQLController
             m.put("public", v.isPublic());
             m.put("groups", v.groups());
             m.put("defaultVariables", v.defaultVariables());
+            m.put("listed", catalog.isListed(v));
             result.add(m);
         }
         return result;

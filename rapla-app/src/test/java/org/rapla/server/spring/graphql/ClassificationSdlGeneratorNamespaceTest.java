@@ -117,6 +117,51 @@ class ClassificationSdlGeneratorNamespaceTest
         return attr;
     }
 
+    /**
+     * A CATEGORY attribute whose root has NO children classifies as VALUE_LIST (no grandchildren) and
+     * used to emit {@code enum X { }} — graphql-java rejects an enum without values and the whole
+     * schema build died (SPA dead, 2026-09-02, Siegen data). An empty root must fall back to the
+     * generic Category type exactly like an ORGANIZATION root.
+     */
+    @Test
+    void childlessRootCategoryDoesNotEmitAnEmptyEnum() throws Exception
+    {
+        EntityStore store = store();
+        CategoryImpl superCategory = category(store, Category.SUPER_CATEGORY_REF.getId(), "super");
+        CategoryImpl loan = category(store, "cat-loan", "loan");
+        superCategory.addCategory(loan);
+        DynamicTypeImpl dt = reservationType(store, "dt-ausleihe", "ausleihe");
+        dt.addAttribute(categoryAttribute(store, "attr-loan", "status", loan));
+        store.put(dt);
+        String sdl = ClassificationSdlGenerator.generate(List.of(dt));
+        assertDoesNotThrow(() -> new SchemaParser().parse(sdl), () -> "generated SDL must parse:\n" + sdl);
+        assertTrue(!sdl.contains("enum loanEnum"), () -> "no enum for a childless root:\n" + sdl);
+        assertTrue(!sdl.contains("loanEnumWhere"), () -> "no where input referencing a missing enum:\n" + sdl);
+        assertTrue(sdl.contains("  status: Category"), () -> "field falls back to Category:\n" + sdl);
+        assertTrue(sdl.contains("  status: CategoryWhere") || sdl.contains("  status: CategoryRefWhere")
+                || !sdl.contains("status: loanEnum"), () -> "where predicate must not target the enum:\n" + sdl);
+    }
+
+    /** Guard: the empty-root fallback must not hide the normal case — one child, the enum is back. */
+    @Test
+    void rootWithOneChildStillEmitsTheEnum() throws Exception
+    {
+        EntityStore store = store();
+        CategoryImpl superCategory = category(store, Category.SUPER_CATEGORY_REF.getId(), "super");
+        CategoryImpl loan = category(store, "cat-loan", "loan");
+        CategoryImpl open = category(store, "cat-open", "OPEN");
+        superCategory.addCategory(loan);
+        loan.addCategory(open);
+        DynamicTypeImpl dt = reservationType(store, "dt-ausleihe", "ausleihe");
+        dt.addAttribute(categoryAttribute(store, "attr-loan", "status", loan));
+        store.put(dt);
+        String sdl = ClassificationSdlGenerator.generate(List.of(dt));
+        assertDoesNotThrow(() -> new SchemaParser().parse(sdl), () -> "generated SDL must parse:\n" + sdl);
+        assertTrue(sdl.contains("enum loanEnum {"), () -> "enum expected:\n" + sdl);
+        assertTrue(sdl.contains("  OPEN\n"), () -> "enum value expected:\n" + sdl);
+        assertTrue(sdl.contains("  status: loanEnum"), () -> "field targets the enum:\n" + sdl);
+    }
+
     private static CategoryImpl category(EntityStore store, String id, String key)
     {
         CategoryImpl c = new CategoryImpl();

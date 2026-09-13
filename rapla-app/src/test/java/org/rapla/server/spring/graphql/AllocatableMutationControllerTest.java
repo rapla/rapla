@@ -527,4 +527,92 @@ class AllocatableMutationControllerTest
                             () -> "expected MISMATCHED_TYPE, got " + errs);
                 });
     }
+
+    // ============================================================ PRD 113 § 1d — merged create/update input
+
+    /**
+     * PRD 113 § 1d — `AllocatableInput` serves both create and update. On update the
+     * entity is addressed by the `id` ARGUMENT; an `id` in the input naming a different
+     * entity is rejected rather than silently ignored.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void updateAllocatableWithMismatchedInputIdRejected()
+    {
+        String created = tester.document("""
+                mutation {
+                  createAllocatable(input: {
+                    id: "f1111111-1111-4111-8111-111111111101",
+                    typeKey: "room",
+                    classification: { room: {} }
+                  }) { id }
+                }
+                """)
+                .execute()
+                .path("createAllocatable.id")
+                .entity(String.class)
+                .get();
+
+        tester.document("""
+                mutation ($id: ID!) {
+                  updateAllocatable(id: $id, input: {
+                    id: "f1111111-1111-4111-8111-111111119999",
+                    typeKey: "room",
+                    classification: { room: {} }
+                  }) { id }
+                }
+                """)
+                .variable("id", created)
+                .execute()
+                .errors()
+                .satisfy(errs -> {
+                    assertFalse(errs.isEmpty(), "a foreign input.id must be rejected");
+                    String joined = errs.toString();
+                    assertTrue(joined.contains("INVALID_VALUE"), () -> "expected INVALID_VALUE; got " + joined);
+                    assertTrue(joined.contains("input.id"), () -> "expected path input.id; got " + joined);
+                });
+    }
+
+    /**
+     * `ownerId` is create-only (PRD 063; owner changes get their own verb). Now that the
+     * update path parses the same input type, an ownerId on update is rejected instead of
+     * quietly doing nothing.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void updateAllocatableWithOwnerIdRejected()
+    {
+        String created = tester.document("""
+                mutation {
+                  createAllocatable(input: {
+                    id: "f1111111-1111-4111-8111-111111111102",
+                    typeKey: "room",
+                    classification: { room: {} }
+                  }) { id }
+                }
+                """)
+                .execute()
+                .path("createAllocatable.id")
+                .entity(String.class)
+                .get();
+
+        tester.document("""
+                mutation ($id: ID!) {
+                  updateAllocatable(id: $id, input: {
+                    typeKey: "room",
+                    classification: { room: {} },
+                    ownerId: "00000000-0000-0000-0000-00000000beef"
+                  }) { id }
+                }
+                """)
+                .variable("id", created)
+                .execute()
+                .errors()
+                .satisfy(errs -> {
+                    assertFalse(errs.isEmpty(), "ownerId on update must be rejected");
+                    String joined = errs.toString();
+                    assertTrue(joined.contains("INVALID_VALUE"), () -> "expected INVALID_VALUE; got " + joined);
+                    assertTrue(joined.contains("input.ownerId"), () -> "expected path input.ownerId; got " + joined);
+                });
+    }
 }

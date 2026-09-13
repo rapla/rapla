@@ -21,9 +21,22 @@ are pinned end-to-end by `CalendarTemplateRenderingTest` — if the test moves, 
 - A **document** pairs the two and pins **`defaultVariables`** (typically the window). One view
   can serve many documents: `kalender_woche` pins a week window + week template,
   `kalender_monat` a month window + month template — same view.
-- Rendered at `GET /api/documents/<name>`. The response is sanitized (no scripts; inline `style`
-  attributes and `<style>` elements DO survive — the geometry technique depends on them) and
-  wrapped in the server shell.
+- Rendered at `GET /api/documents/<name>`. **The template is the whole page** (Spring Boot Mustache
+  model, [PRD 097 D7a](prd/097-event-html-templates-mustache.md#decisions-locked)): write your own
+  `<!doctype html>`, head, `<title>`, `<style>`. The server adds nothing except on a body-only
+  template, which gets a minimal wrapper (doctype, charset, title = document name, no CSS). The
+  response is sanitized — scripts, event handlers, `javascript:` URLs, `<base>`, `meta http-equiv`
+  and `link rel=import` are removed from head AND body; `<meta name=…>`, `<link>`, inline `style`
+  attributes and `<style>` elements survive (the geometry technique depends on them).
+- Builtin partials, all optional: `{{> rapla/base-css}}` (light scheme, base font, bordered tables),
+  `{{> rapla/print-css}}` (`@page { margin: 2cm }`, no body padding on paper), `{{> rapla/nav}}`
+  (window navigation, styles itself, hidden in print), `{{> rapla/print-hint}}` (Ctrl+P hint, styles
+  itself, hidden in print). `{{lang}}` is the reader's rendering locale for `<html lang="{{lang}}">`;
+  a single-language template simply hardcodes its `lang`. The builtin documents (`wochenplan`, …) are
+  full-HTML templates using these partials — copy one as the skeleton for a new document.
+- The editor preview shows what the sanitizer removed ("Beim Rendern entfernt: script ×1,
+  onclick ×2") — removal is a warning in the preview, never a save error
+  ([PRD 097 D6d](prd/097-event-html-templates-mustache.md#decisions-locked)).
 
 ### URL parameters — `@param` and `@window`
 

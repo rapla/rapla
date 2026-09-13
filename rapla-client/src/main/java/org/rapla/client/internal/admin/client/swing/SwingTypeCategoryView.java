@@ -192,7 +192,9 @@ public class SwingTypeCategoryView extends RaplaGUIComponent implements
 			selectionTreeTable.addDragAndDrop(moveFunction);
 		}
 		okButton.addActionListener((evt)->closeCmd.run());
-		view = isAdmin() ? View.RESOURCE_TYPE : View.PERIODS;
+		// This view is a singleton bean: a reopened dialog keeps the combo box on the last choice,
+		// so the tree must follow the combo instead of silently resetting to resource types.
+		view = viewAt(cbView.getSelectedIndex(), isAdmin());
 		filterTextField.setText("");
 		loadView();
 		return new ResolvedPromise<>(this);
@@ -202,18 +204,7 @@ public class SwingTypeCategoryView extends RaplaGUIComponent implements
 	private void itemStateChanged() {
 		JComboBox cbViewSelection = cbView;
 		// definition of the internal variable for storing the view
-		final int selectedIndex = cbViewSelection.getSelectedIndex();
-		View newView = null;
-		if (selectedIndex == 0)
-			newView = View.RESOURCE_TYPE;
-		else if (selectedIndex == 1)
-			newView = View.PERSON_TYPE;
-		else if (selectedIndex == 2)
-			newView = View.RESERVATION_TYPE;
-		else if (selectedIndex == 3)
-			newView = View.CATEGORY;
-		else if (selectedIndex == 4)
-			newView = View.PERIODS;
+		View newView = viewAt(cbViewSelection.getSelectedIndex(), isAdmin());
 		if ( newView != view)
 		{
 			view = newView;
@@ -223,6 +214,18 @@ public class SwingTypeCategoryView extends RaplaGUIComponent implements
 
 	}
 
+
+	/** The combo box entries in order (see the constructor); non-admins only get the periods entry. */
+	static View viewAt(int selectedIndex, boolean admin) {
+		if (!admin) return View.PERIODS;
+		switch (selectedIndex) {
+			case 1: return View.PERSON_TYPE;
+			case 2: return View.RESERVATION_TYPE;
+			case 3: return View.CATEGORY;
+			case 4: return View.PERIODS;
+			default: return View.RESOURCE_TYPE;
+		}
+	}
 
 	// this method builds the current screen (GUI) according to the variable
 	// "view"

@@ -20,6 +20,34 @@ describe('extractRowContext (PRD 094 D4)', () => {
     expect(ctx.rows.length).toBe(1);
   });
 
+  // PRD 111 D3 — the document menu maps subject kind + typeKey → the type's `documents`.
+  it('carries typeKey from the subject classification when the view selects it', () => {
+    const ctx = extractRowContext(
+      { reservation: { id: 'e1', canModify: true, classification: { typeKey: 'ausleihe' } } },
+      'v',
+    );
+    expect(ctx.primary).toEqual({
+      kind: 'reservation',
+      id: 'e1',
+      canModify: true,
+      typeKey: 'ausleihe',
+    });
+  });
+
+  // Fail closed: a stored view that does not select the key simply offers no document entries.
+  it('leaves typeKey undefined when the view does not select the classification', () => {
+    const ctx = extractRowContext({ reservation: { id: 'e1' } }, 'v');
+    expect(ctx.primary?.typeKey).toBeUndefined();
+  });
+
+  it('scalar fallback carries typeKey too', () => {
+    const ctx = extractRowContext(
+      { reservationId: 'e2', canModify: false, classification: { typeKey: 'ausleihe' } },
+      'v',
+    );
+    expect(ctx.primary?.typeKey).toBe('ausleihe');
+  });
+
   it('scalar fallback: reservationId + canModify (reservations-root views)', () => {
     const ctx = extractRowContext({ reservationId: 'e2', canModify: false }, 'v');
     expect(ctx.primary).toEqual({ kind: 'reservation', id: 'e2', canModify: false });

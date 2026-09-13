@@ -169,7 +169,7 @@ public class DocumentController implements DocumentApi
         Optional<DocumentRenderer.TemplateError> parseError = renderer.validate(body.template());
         if (parseError.isPresent())
         {
-            return new PreviewResult(null, parseError.get().line(), parseError.get().message(), null);
+            return new PreviewResult(null, parseError.get().line(), parseError.get().message(), null, List.of());
         }
         try
         {
@@ -179,7 +179,7 @@ public class DocumentController implements DocumentApi
             return renderService
                     .preview(body.viewName(), body.template(), body.defaultVariables(), body.window(),
                             body.variables(), author)
-                    .map(p -> new PreviewResult(p.html(), null, null, prettyVariables(p.variables())))
+                    .map(p -> new PreviewResult(p.html(), null, null, prettyVariables(p.variables()), p.removed()))
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                             "No such view, or it is not visible to you"));
         }
@@ -187,7 +187,7 @@ public class DocumentController implements DocumentApi
         {
             return new PreviewResult(null, null, "Unknown URL parameter — the vars field takes the "
                     + "document URL's query params: declared @param names, plus from/to/date on "
-                    + "windowed views", null);
+                    + "windowed views", null, List.of());
         }
     }
 

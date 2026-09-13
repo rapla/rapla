@@ -2,6 +2,8 @@
 
 **Status:** in-progress — v1 controller + schema landed 2026-05-29 (`ReservationMutationController` covering all 7 mutations: `createReservation`, `updateReservation`, `changeReservationOwner`, `moveReservations`, `copyReservations`, `deleteReservations`, `applyChanges`; `@oneOf ChangeOp`; per-DynamicType typed classification inputs (β²); `MutationExceptionResolver`; 9 tier-3 tests including happy-path create-then-read-back + restriction round-trip). Design refinements deferred per PRD body's open questions; happy-path coverage closes the gap that previously caught the `typeId`/`typeKey` asymmetry + appointment-id-not-honored bug.
 
+**Revision 2026-09-07 — `CreateReservationInput` / `UpdateReservationInput` are being merged.** A user ruling recorded in [PRD 113 § 1d](113-graphql-permission-model.md#1d-one-input-per-entity--createupdate-inputs-merged) replaces both with a single `ReservationInput` (`id` nullable; `ownerId` rejected on update; fields invalid for the operation rejected, not ignored), following the `saveDynamicType` / `DynamicTypeInput` precedent. Breaking schema change, accepted because the API is in early beta. The mutations themselves (`createReservation` / `updateReservation`) keep their current names and arguments. Everything else in this PRD stands.
+
 **Parent:** [PRD 035 (done) — Foundations](done/035-graphql-foundations.md) — supersedes the former §6 "Bulk mutations" per the 2026-05-28 design discussion. **Sibling:** [PRD 055 — Events Read API](055-graphql-events-read-api.md) (reopened 2026-05-29 for Tier-1 perf migration).
 
 **Related cross-PRDs:**

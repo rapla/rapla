@@ -4,6 +4,8 @@
 
 **Date:** 2026-05-29
 
+**Revision 2026-09-07 — `CreateAllocatableInput` / `UpdateAllocatableInput` are being merged.** A user ruling recorded in [PRD 113 § 1d](113-graphql-permission-model.md#1d-one-input-per-entity--createupdate-inputs-merged) replaces both with a single `AllocatableInput` (`id` nullable; `ownerId` create-only and rejected on update; fields invalid for the operation rejected, not ignored), following the `saveDynamicType` / `DynamicTypeInput` precedent. Breaking schema change, accepted because the API is in early beta. The mutations keep their current names and arguments. Related: [PRD 113](113-graphql-permission-model.md) also lands this PRD's deferred **OQ2 permission editing** — as a nullable `permissions` field on the merged input (shape D), not the `setAllocatablePermissions` verb this PRD sketched.
+
 **Parent:** [PRD 035 (done) — GraphQL foundations](done/035-graphql-foundations.md). Continues the per-entity write surface [PRD 056](056-graphql-events-write-api.md) (events) and [PRD 057](done/057-graphql-dt-mutations-v1.md) (DynamicTypes) opened.
 
 **Siblings:**

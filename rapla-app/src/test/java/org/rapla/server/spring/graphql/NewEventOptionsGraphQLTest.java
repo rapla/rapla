@@ -211,6 +211,22 @@ class NewEventOptionsGraphQLTest
         assertTrue(templateNames.contains("PRIVATE-TEMPLATE"), "admin reads everything");
     }
 
+    /**
+     * Swing parity ({@code FacadeImpl.getDynamicTypes} skips {@code rapla:} internal types): the
+     * placeholder {@code rapla:anonymousEvent} ("nicht sichtbar") is a RESERVATION type that an
+     * admin passes canCreate on — it must never surface as a creatable type (§12).
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void internalPlaceholderTypesAreNeverOffered()
+    {
+        Map<String, Object> options = fetchOptions();
+        List<String> typeKeys = values(options, "eventTypes", "key");
+        assertTrue(typeKeys.contains("event"));
+        assertFalse(typeKeys.stream().anyMatch(k -> k.startsWith("rapla:")),
+                () -> "internal type leaked into eventTypes: " + typeKeys);
+    }
+
     @Test
     @WithMockUser(username = "monty")
     void templatesCarryAGroupingPath()

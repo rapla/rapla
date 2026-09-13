@@ -65,7 +65,7 @@ and should — decompose them: most real edits touch exactly one axis.
 - **Validation split stays as-is:** client converges (non-blocking auto-corrections,
   as documented in reservation-edit.md), server decides (EventCheck equivalents +
   dispatch). Recurrence validation and block expansion already exist as server
-  services (`/api/edit/*`, [PRD 024](../prd/024-server-side-edit-services.md)) so the SPA never re-implements the rules.
+  services (`/api/edit/*`, [PRD 024](../prd/wont-fix/024-server-side-edit-services.md)) so the SPA never re-implements the rules.
 - **§12 applies to availability answers:** "room busy" must not leak *what* occupies
   it when the other event is unreadable — show occupied/free, reveal details only
   when readable.

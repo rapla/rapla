@@ -288,25 +288,71 @@ for history.
 
 ## Storage and migration
 
-The DynamicType definition itself is persisted (XML or JDBC); existing
-Classifications are *not* rewritten when the schema changes:
+The DynamicType definition is persisted (XML or JDBC). What happens to the
+existing Classifications of that type depends on the kind of schema change
+(verified 2026-09-02 against `LocalAbstractCachableOperator`):
+
+**Adding an attribute is lazy — nothing is rewritten.**
 
 1. Admin adds Attribute "credits" to DynamicType "course."
-2. Existing Reservations of type course are not touched.
+2. Existing Reservations of type course are not touched
+   (`ClassificationImpl.needsChange` only looks at keys already present in
+   `data`, so a new key never triggers a rewrite).
 3. When one of those Reservations is loaded, `getValues("credits")`
    returns an empty collection (the key isn't in `data`).
 4. UI shows the Attribute's `defaultValue` for blank slots.
 5. On the next save, `setValue("credits", ...)` populates `data`.
 
-If the admin **removes** an attribute or **changes its type**,
-`ClassificationImpl.commitChange()` runs as part of the dispatch
-pipeline to reshape existing Classifications (drop the key, or
-re-parse the old string into the new type).
+**Removing an attribute, renaming its key, changing its type, or renaming
+the type key is eager — every affected Classification is rewritten in the
+SAME dispatch that stores the type.** `addChangedDynamicTypeDependant`
+collects every entity referencing the type, asks each `DynamicTypeDependant`
+`needsChange(newType)`, and for every positive answer clones the entity into
+the type's own `UpdateEvent` and calls `commitChange(newType)`
+(`ClassificationImpl.commitChange`: drop the values of removed keys,
+re-key / `convertValue` the values of attributes that changed, then point the
+Classification at the new type). The rewritten Reservations, Allocatables and
+Preferences are persisted together with the type — there is no "until the
+next save" window; the old values are gone the moment the type change lands.
+Consequence for admins: removing an attribute deletes its data everywhere,
+immediately. Keep the attribute (hide it via `edit-view=no-view` if needed) if
+the values must survive.
+
+What counts as a change (`DynamicTypeImpl.hasAttributeChanged`, matched by
+attribute **id**, not key) and what `commitChange` does about it:
+
+| Schema change on the type | Detected by `needsChange`? | Effect on every existing Classification of the type |
+|---|---|---|
+| Attribute **added** | no | nothing — lazy, see above |
+| Attribute **removed** | yes | the key and all its values are dropped |
+| Attribute **key renamed** (same id) | yes | values are re-keyed under the new key; nothing lost |
+| Attribute **type changed** (e.g. STRING → INT, STRING → DATE) | yes | every value goes through `AttributeImpl.convertValue(old)`; values that do not convert (non-numeric text to INT, unparsable date, …) become `null` and are **silently dropped** |
+| Attribute **constraint changed** (root category, multi-select, allocatable type filter, …) | yes (any added/removed/changed constraint) | values are re-run through `convertValue` against the new constraints — e.g. a category outside the new root category does not survive |
+| Attribute **annotations / order / name (label)** changed | no | nothing — annotations are UI hints, not data shape |
+| **Type key renamed** | yes | Classification is re-pointed at the new key; values untouched. Reference-carrying places (view queries, `documents` annotations, permissions) are NOT rewritten — see § Keys are persisted as references |
+| Type **removed** | n/a (`toRemove`) | `commitRemove` — an entity that cannot exist without its type is removed with it |
+
+Every "yes" row is applied to Reservations, Allocatables and Preferences in
+the same `UpdateEvent` as the type, so the store (XML or JDBC) never holds a
+Classification whose `data` disagrees with its type's current attribute set.
+Type changes have **no undo at all** — neither the type edit itself nor the
+rewritten Classifications go into the client's command history — so dropped or
+non-convertible values are gone unless a backup is restored. This is accepted
+by design: editing types is an admin-only operation, taken as a deliberate
+schema decision rather than an everyday edit.
+
+Safety net for stale copies: when a Classifiable is stored whose
+`lastChanged` predates the type's `lastChanged` (typically an undo restoring a
+reservation edited before the type change), the store path re-runs
+`needsChange`/`commitChange` on it, so a stale snapshot cannot resurrect a
+removed attribute.
 
 `DynamicTypeDependant`
 (`rapla-core/.../entities/storage/DynamicTypeDependant.java`) is the
 mixin for entities that need to react to schema changes — Allocatable,
-Reservation, Preferences, and Classification all implement it.
+Reservation, Preferences, and Classification all implement it. The
+client-side `ModifiableCalendarState` applies the same `needsChange` /
+`commitChange` pair to calendar-model configurations.
 
 ### Keys are persisted as references — renaming has blast radius
 

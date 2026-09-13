@@ -115,6 +115,26 @@ class DocumentRendererTest
         assertTrue(html.contains("Heute"), html);
     }
 
+    /** PRD 097 D7a — the former shell CSS is offered as partials; affordance partials style themselves. */
+    @Test
+    void cssPartialsAndSelfContainedAffordances()
+    {
+        String printCss = renderer.render("{{> rapla/print-css}}", Map.of());
+        assertTrue(printCss.contains("<style>") && printCss.contains("@page"), printCss);
+
+        String baseCss = renderer.render("{{> rapla/base-css}}", Map.of());
+        assertTrue(baseCss.contains("<style>") && baseCss.contains("border-collapse"), baseCss);
+
+        String hint = renderer.render("{{> rapla/print-hint}}", Map.of());
+        assertTrue(hint.contains("class=\"rapla-print-hint\""), hint);
+        assertTrue(hint.contains("@media print") && hint.contains("display: none"),
+                "the hint hides itself when printing, no shell CSS needed: " + hint);
+
+        String nav = renderer.render("{{> rapla/nav}}", Map.of("nav", Map.of("label", "x")));
+        assertTrue(nav.contains(".rapla-nav") && nav.contains("@media print"),
+                "the nav styles itself: " + nav);
+    }
+
     @Test
     void unknownPartialFailsValidationWithItsLine()
     {

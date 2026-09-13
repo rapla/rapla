@@ -819,6 +819,25 @@ type DynamicType {
   "Locale-resolved name (e.g. \"Lecture room\")."
   name:               String!
   classificationType: ClassificationType!
+  """
+  PRD 111 D3 — the stored documents offered on entities of this type, in the order the type's
+  `documents` annotation lists them. Resolved AS THE CALLER: names that are unreadable or no
+  longer exist are dropped (the dangling case never reaches the client), as are documents whose
+  derived kind does not match this type. The SPA already loads every type at bootstrap and builds
+  the row menu from this — no round-trip on right-click.
+
+  NULLABLE on purpose: the documents plugin is removable (D6 gate 1, `rapla.services.` property).
+  With its beans gone there is no fetcher, and a NON-null field would fail every query selecting
+  it — i.e. break SPA bootstrap exactly when the plugin is switched off. Consumers treat null and
+  [] alike.
+  """
+  documents:          [DocumentRef!]
+}
+
+"PRD 111 D3 — one document offered on a type: `name` is the reference, the menu label and the future i18n key; `param` is the URL parameter that carries the entity id (derived from the view's by-id root, D2)."
+type DocumentRef {
+  name:  String!
+  param: String!
 }
 
 # === Classification — interface + AttributeValue =============================
@@ -1216,6 +1235,8 @@ type Appointment {
   allocatables(filter: AllocatableFilter): [Allocatable!]!
   "Materialize blocks within a window. Server-side recurrence expansion."
   blocks(from: LocalDateTime!, to: LocalDateTime!): [AppointmentBlock!]!
+  "PRD 074 Baustein 6 — the appointment pendant of `AppointmentBlock.compute`: evaluates an arbitrary rapla expression (same language as a nameformat; p = the appointment) against this appointment, e.g. {p->format(\"%1$ta %1$td.%1$tm.%1$ty %1$tH:%1$tM\",start(p))}. Composes what `times` cannot — a date-carrying range for a logic-less document template. Invalid expr returns null. Max 2000 chars."
+  compute(expr: String!): String
 }
 
 "Materialized occurrence of a recurring Appointment. No id (synthetic per-expansion)."
@@ -1396,8 +1417,8 @@ input DateTimeTarget {
 type Mutation {
   # ===== editor flow =====
 
-  "Create a new reservation. Server sets owner to caller. Client-supplied id (UUID) recommended for retry safety; absent = server generates."
-  createReservation(input: CreateReservationInput!): Reservation!
+  "Create a new reservation. Server sets owner to caller. The client-minted id (UUID) is required — PRD 056 §9, retry safety."
+  createReservation(input: ReservationInput!): Reservation!
 
   """
   Update an existing reservation's content (classification / appointments /
@@ -1406,7 +1427,7 @@ type Mutation {
   `expectedLastChanged` enables optimistic concurrency — mismatch returns
   `CONCURRENT_MODIFICATION` with the current value in the error extension.
   """
-  updateReservation(id: ID!, input: UpdateReservationInput!,
+  updateReservation(id: ID!, input: ReservationInput!,
                     expectedLastChanged: LocalDateTime): Reservation!
 
   # ===== bulk transforms =====
@@ -1468,7 +1489,7 @@ type Mutation {
   @oneOf variant must match `input.typeKey`. Same β² typed-input pattern
   as PRD 056 reservations.
   """
-  createAllocatable(input: CreateAllocatableInput!): Allocatable!
+  createAllocatable(input: AllocatableInput!): Allocatable!
 
   """
   Update an existing Allocatable's content (classification only). A typeKey
@@ -1479,7 +1500,7 @@ type Mutation {
   `changeAllocatableOwner` if real demand). `expectedLastChanged`
   enables optimistic concurrency.
   """
-  updateAllocatable(id: ID!, input: UpdateAllocatableInput!,
+  updateAllocatable(id: ID!, input: AllocatableInput!,
                     expectedLastChanged: LocalDateTime): Allocatable!
 
   """
@@ -1661,10 +1682,10 @@ set per op (engine-enforced by `@oneOf`). New entity types grow via
 additive variants for future allocatables-write / users-write PRDs.
 """
 input ChangeOp @oneOf {
-  createReservation: CreateReservationInput
+  createReservation: ReservationInput
   updateReservation: ChangeOpUpdateReservation
   deleteReservation: DeleteInput
-  createAllocatable: CreateAllocatableInput
+  createAllocatable: AllocatableInput
   updateAllocatable: ChangeOpUpdateAllocatable
   deleteAllocatable: DeleteInput
 }
@@ -1672,7 +1693,7 @@ input ChangeOp @oneOf {
 "Update variant wrapped with the id since update-by-id can't piggyback on a mutation-level argument inside ChangeOp."
 input ChangeOpUpdateReservation {
   id:                  ID!
-  input:               UpdateReservationInput!
+  input:               ReservationInput!
   expectedLastChanged: LocalDateTime
 }
 
@@ -1683,12 +1704,22 @@ input DeleteInput {
 }
 
 """
-Create a Reservation. typeKey is the discriminator; the @oneOf variant in
-classification must match it. Server sets owner to caller (no ownerId
-field — see PRD 056 OQ1.a).
+One input for both `createReservation` and `updateReservation` (PRD 113 § 1d —
+no separate create/update inputs). `id` is required on create (clients mint
+their own ids, PRD 056 §9); on update the `id` argument addresses the entity,
+so an input id naming anything else is rejected with INVALID_VALUE at path
+`input.id` (absent or equal is accepted). `typeKey` is the discriminator on
+create — the @oneOf variant in classification must match it. On update it is a cross-check
+against the stored type, and a differing key is an in-place type change
+(PRD 056 OQ1.c revised 2026-07-07, PRD 096): the classification @oneOf variant
+must match the NEW typeKey and the caller needs create-permission on the target
+type; attribute remapping is the client's job — the supplied classification is
+stored as-is. Owner is never set here — on create the server makes the caller
+the owner (PRD 056 OQ1.a), on update the owner is immutable (use
+`changeReservationOwner`).
 """
-input CreateReservationInput {
-  "Client-supplied UUID for retry safety + same-batch refs. Null = server generates."
+input ReservationInput {
+  "Client-minted UUID for retry safety + same-batch refs (PRD 056 §9). Required on create; on update must be absent or equal to the id argument (INVALID_VALUE otherwise)."
   id:             ID
   "Discriminator — must match the @oneOf variant in classification (the DynamicType key, e.g. \"event\")."
   typeKey:        String!
@@ -1707,7 +1738,7 @@ them enables the NOT_IN_CALENDAR check (D3: the intersection half of Swing's
 and that check is skipped — an absent scope is not an empty scope.
 """
 input ReservationCheckInput {
-  draft:               CreateReservationInput!
+  draft:               ReservationInput!
   scopeAllocatableIds: [ID!]
 }
 
@@ -1758,23 +1789,6 @@ enum ReservationWarningCode {
 }
 
 """
-Update a Reservation's content. A typeKey differing from the stored one is
-an in-place type change (PRD 056 OQ1.c revised 2026-07-07, PRD 096): the
-classification @oneOf variant must match the NEW typeKey, and the caller
-needs create-permission on the target type. Attribute remapping is the
-client's job — the supplied classification is stored as-is. Owner immutable
-here (use changeReservationOwner).
-"""
-input UpdateReservationInput {
-  "Defensive cross-check — must equal the stored reservation's typeKey."
-  typeKey:        String!
-  classification: ReservationClassificationInput!
-  "Non-empty. Order-significant."
-  appointments:   [AppointmentInput!]!
-  allocations:    [AllocationInput!]!
-}
-
-"""
 Appointment input — id is nullable for new appointments (server assigns
 UUIDs), required for updates to existing appointments. Same-batch
 references from AllocationInput.appointmentIds use these ids.
@@ -1812,35 +1826,32 @@ input AllocationInput {
 # === PRD 063 — Allocatable mutation inputs ===
 
 """
-Create an Allocatable. typeKey is the discriminator; the @oneOf variant
-in classification must match it. Owner defaults to the caller; admins
-may set `ownerId` to assign a different owner.
+One input for both `createAllocatable` and `updateAllocatable` (PRD 113 § 1d —
+no separate create/update inputs). `id` is required on create (clients mint
+their own ids, PRD 056 §9); on update the `id` argument addresses the entity,
+so an input id naming anything else is rejected with INVALID_VALUE at path
+`input.id` (absent or equal is accepted). `typeKey` is the discriminator on
+create — the @oneOf variant in classification must match it. On update a differing key is an
+in-place type change (PRD 096 Phase 4, mirroring the PRD 056 OQ1.c revision):
+the variant must match the NEW typeKey and the caller needs create-permission
+on the target type. `ownerId` is create-only and admin-only; non-null on update
+is rejected with INVALID_VALUE at path `input.ownerId` — the owner is immutable
+there (owner changes get their own verb).
 """
-input CreateAllocatableInput {
-  "Client-supplied UUID for retry safety + same-batch refs. Null = server generates."
+input AllocatableInput {
+  "Client-minted UUID for retry safety + same-batch refs (PRD 056 §9). Required on create; on update must be absent or equal to the id argument (INVALID_VALUE otherwise)."
   id:             ID
   "Discriminator — must match the @oneOf variant in classification (the DynamicType key, e.g. \"room\")."
   typeKey:        String!
   classification: AllocatableClassificationInput!
-  "Optional. Null = caller becomes owner. Admin-only when non-null."
+  "Create-only, admin-only. Null = caller becomes owner. Non-null on update is rejected."
   ownerId:        ID
-}
-
-"""
-Update an Allocatable's content. Server validates typeKey matches stored
-(in-place type changes rejected — analogous to PRD 056 OQ1.c). Owner
-immutable here.
-"""
-input UpdateAllocatableInput {
-  "Defensive cross-check — must equal the stored allocatable's typeKey."
-  typeKey:        String!
-  classification: AllocatableClassificationInput!
 }
 
 "Update variant wrapped with the id for applyChanges."
 input ChangeOpUpdateAllocatable {
   id:                  ID!
-  input:               UpdateAllocatableInput!
+  input:               AllocatableInput!
   expectedLastChanged: LocalDateTime
 }
 
@@ -1858,6 +1869,13 @@ type ViewMeta {
     groups:           [String!]!
     "Default variable values as a JSON string (may be null for BUILTIN or views saved without defaults)."
     defaultVariables: String
+    """
+    Effective listing state — what the SPA view switcher shows. CUSTOM: the view's own
+    `@view(listed:)`. BUILTIN: the same, unless `rapla.views.builtin-listed` (an allowlist of builtin
+    keys in application.yml) is set — then listed iff the key is in it. Only visible with
+    `includeUnlisted: true`; the default listing already filters on it.
+    """
+    listed:           Boolean!
 }
 
 type SaveViewResult {

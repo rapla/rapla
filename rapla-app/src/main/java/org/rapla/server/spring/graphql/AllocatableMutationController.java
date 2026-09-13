@@ -158,6 +158,15 @@ public class AllocatableMutationController
         {
             throw new ReservationMutationException("REQUIRED", "id", "id is required");
         }
+        ReservationMutationController.rejectForeignInputId(input, id, "input.id");
+        // PRD 113 § 1d — ownerId is create-only; owner changes get their own verb.
+        // The merged input still carries the field, so reject it instead of ignoring it.
+        String updateOwnerId = (String) input.get("ownerId");
+        if (updateOwnerId != null && !updateOwnerId.isBlank())
+        {
+            throw new ReservationMutationException("INVALID_VALUE", "input.ownerId",
+                    "ownerId is create-only — the owner is immutable on update");
+        }
         Allocatable stored = operator.tryResolve(new ReferenceInfo<>(id, Allocatable.class));
         if (stored == null)
         {

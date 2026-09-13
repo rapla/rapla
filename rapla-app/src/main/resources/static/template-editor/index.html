@@ -26,8 +26,17 @@
         header h1 { font-size: 1rem; margin: 0 1rem 0 0; font-weight: 600; }
         select, input, button { font: inherit; padding: .25rem .4rem; }
         button { cursor: pointer; }
+        /* The notch sits flush against the field so the trigger reads as part of it. */
+        #varsform { display: flex; align-items: center; gap: 0; }
+        #varsform label { display: flex; align-items: center; gap: .3rem; }
+        #varsform #vars { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+        #apply { border-left: 0; border-top-left-radius: 0; border-bottom-left-radius: 0;
+                 padding: .25rem .5rem; line-height: 1; }
         #status { margin-left: auto; font-size: .8rem; opacity: .8; }
         #status.error { color: #c00; opacity: 1; }
+        #removed { margin-left: auto; font-size: .8rem; color: #8a5a00; background: #fff3cd;
+                   border: 1px solid #e0c26a; border-radius: 4px; padding: 1px 6px; }
+        #removed + #status { margin-left: .75rem; }
         main { flex: 1; display: grid; grid-template-columns: 15rem 1fr 1fr; min-height: 0; }
         #fields, #editorcol, #preview { min-height: 0; }
         #editorcol { display: flex; flex-direction: column; border-right: 1px solid #8884; }
@@ -53,12 +62,19 @@
     <label>View <select id="view"></select></label>
     <label><input type="checkbox" id="public"> public</label>
     <!-- The document URL's query string, verbatim: declared @param names + from/to/date on
-         windowed views. Gated identically to the live render; Live ↗ carries it unchanged. -->
-    <input id="vars" placeholder="URL params: resource=…&amp;date=…" size="20">
-    <button id="render">Preview</button>
+         windowed views. Gated identically to the live render; Live ↗ carries it unchanged.
+         The notch IS the trigger: template edits and the view dropdown re-render on their own,
+         this field does not (a param typed character by character would fire a preview — i.e. a
+         real GraphQL query in the author's scope — per keystroke). A native <form> submit gives
+         Enter-to-apply for free. -->
+    <form id="varsform"><label>URL params
+    <input id="vars" placeholder="resource=…&amp;date=…" size="20"></label><button type="submit"
+        id="apply" aria-label="Parameter übernehmen und Vorschau aktualisieren"
+        title="Parameter übernehmen (Enter) — gilt für Vorschau und Live ↗">▸</button></form>
     <button id="save">Save</button>
     <button id="delete">Delete</button>
     <a id="live" target="_blank" hidden>Live ↗</a>
+    <span id="removed" title="Vom Sanitizer beim Rendern entfernt — wird auch im gespeicherten Dokument fehlen" hidden></span>
     <span id="status"></span>
 </header>
 <main>
@@ -124,6 +140,17 @@
     }
 
     const el = id => document.getElementById(id);
+    /* PRD 097 D6d — what the sanitizer stripped from THIS render ("script ×1, onclick ×2"):
+       a warning, never a save error. Removal is intended (D6c public documents strip scripts),
+       the author just has to see it. */
+    function showRemoved(removed) {
+        const counts = new Map();
+        for (const label of removed) counts.set(label, (counts.get(label) || 0) + 1);
+        const text = [...counts].map(([label, n]) => label + (n > 1 ? ' ×' + n : '')).join(', ');
+        el('removed').textContent = text ? 'Beim Rendern entfernt: ' + text : '';
+        el('removed').hidden = !text;
+    }
+
     function status(text, isError) {
         el('status').textContent = text;
         el('status').className = isError ? 'error' : '';
@@ -144,6 +171,7 @@
     // ---- result shape: fields pane + completion source ----------------------
 
     let shape = null;   // ShapeNode from POST /api/documents/result-shape
+    let viewDefaults = {};  // viewName -> the view's example defaultVariables (JSON text)
 
     async function loadShape(viewName) {
         shape = null;
@@ -289,6 +317,7 @@
             showParseError(null);
             el('preview').srcdoc = result.html;
             el('varsout').textContent = result.resolvedVariables || '';
+            showRemoved(result.removed || []);
             status('Preview updated ' + new Date().toLocaleTimeString());
         } catch (e) {
             status(e.message, true);
@@ -299,7 +328,8 @@
         // includeUnlisted — like the GraphiQL load dialog, this is an AUTHORING surface:
         // a document is written FOR a @view(listed: false) view (a report, a parked view),
         // so it must be selectable here. End-user choosers keep filtering.
-        const data = await gql('{ listViews(includeUnlisted: true) { name title valid } }');
+        const data = await gql('{ listViews(includeUnlisted: true) { name title valid defaultVariables } }');
+        viewDefaults = Object.fromEntries(data.listViews.map(v => [v.name, v.defaultVariables]));
         el('view').innerHTML = '';
         for (const v of data.listViews.filter(v => v.valid)) {
             el('view').append(new Option(v.title ? v.title + ' (' + v.name + ')' : v.name, v.name));
@@ -350,6 +380,65 @@
         el('live').href = '/api/documents/' + encodeURIComponent(name) + (query ? '?' + query : '');
     }
     el('vars').addEventListener('input', updateLiveLink);
+
+    /* Prefill the params field from the VIEW's example defaultVariables (PRD 097 § Editor
+       follow-up). The field holds PUBLIC keys (@param names) while defaultVariables is keyed by
+       PRIVATE variable paths, so this is a translation, not a dump: per declared @param, resolve
+       its `into` path in the view defaults and emit name=value.
+
+       Safe by construction: the field is ephemeral — save() never sends it — so a prefill reaches
+       no document, no data file and no reader. D8 (server never scopes a live render from a view's
+       defaults) is untouched.
+
+       Never overwrites what the author typed, and skips params the DOCUMENT already pins: a pin
+       applies server-side, and materialising it here would freeze it against later document edits.
+
+       ponytail: the @param decls are regex-parsed from the query text because the server exposes
+       them to no client today. Delete this parse in favour of the declared-params field once that
+       surface lands (it is the same one PRD 074/WP3's `documents` query needs — decide together). */
+    const PARAM_DIRECTIVE = /@param\s*\(([^)]*)\)/g;
+
+    function declaredParams(queryText) {
+        const out = [];
+        for (const [, args] of (queryText || '').matchAll(PARAM_DIRECTIVE)) {
+            const name = /\bname\s*:\s*"([^"]*)"/.exec(args);
+            const into = /\binto\s*:\s*"([^"]*)"/.exec(args);
+            if (name && into) out.push({ name: name[1], into: into[1] });
+        }
+        return out;
+    }
+
+    function valueAt(vars, path) {
+        return path.split('.').reduce((node, key) =>
+            node && typeof node === 'object' ? node[key] : undefined, vars);
+    }
+
+    function parseJson(value) {
+        if (!value) return null;
+        if (typeof value === 'object') return value;
+        try { return JSON.parse(value); } catch (ignored) { return null; }
+    }
+
+    async function prefillVars(viewName) {
+        if (!viewName || el('vars').value.trim()) return;
+        const defaults = parseJson(viewDefaults[viewName]);
+        if (!defaults) return;
+        const pinned = parseJson(currentDefaultVariables) || {};
+        let queryText;
+        try {
+            queryText = (await gql('{ getViewQuery(name: ' + JSON.stringify(viewName) + ') }')).getViewQuery;
+        } catch (ignored) { return; }
+        const params = new URLSearchParams();
+        for (const param of declaredParams(queryText)) {
+            if (valueAt(pinned, param.into) !== undefined) continue;
+            const value = valueAt(defaults, param.into);
+            if (value === undefined || value === null || typeof value === 'object') continue;
+            params.set(param.name, String(value));
+        }
+        if (![...params].length) return;
+        el('vars').value = params.toString();
+        updateLiveLink();
+    }
 
     /* Preview nav (full transparency, 2026-07-15): a nav click inside the sandboxed preview
        cannot navigate, so the shell script postMessages the target window here — we write it
@@ -413,12 +502,17 @@
         updateSaveEnabled();
         updateLiveLink();
         await loadShape(source.viewName);
+        await prefillVars(source.viewName);
         await preview();
         if (source.builtin) status('🔒 Built-in (read-only) — Save requires a new name (save as)');
     };
 
-    el('view').onchange = async () => { await loadShape(el('view').value); preview(); };
-    el('render').onclick = preview;
+    el('view').onchange = async () => {
+        await loadShape(el('view').value);
+        await prefillVars(el('view').value);
+        preview();
+    };
+    el('varsform').addEventListener('submit', e => { e.preventDefault(); updateLiveLink(); preview(); });
 
     el('save').onclick = async () => {
         const name = el('name').value.trim();

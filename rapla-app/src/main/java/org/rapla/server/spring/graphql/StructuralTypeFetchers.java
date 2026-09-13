@@ -1180,6 +1180,27 @@ public final class StructuralTypeFetchers
      * Both return String. Returns null on unknown function / parse error.
      */
     /**
+     * {@code Appointment.compute(expr:)} — the appointment pendant of {@link #APPOINTMENT_BLOCK_COMPUTE}.
+     * Same engine and same functions, subject = the appointment ({@code ParsedText.guessClassification}
+     * already resolves an Appointment via its reservation). Needed because a logic-less Mustache
+     * document cannot compose a date-carrying time range, and {@code Appointment.times} carries none.
+     */
+    static final LightDataFetcher<String> APPOINTMENT_COMPUTE =
+            new LightSourceFetcher<org.rapla.entities.domain.Appointment, String>(
+                    org.rapla.entities.domain.Appointment.class)
+            {
+                @Override protected String read(org.rapla.entities.domain.Appointment a,
+                        Supplier<DataFetchingEnvironment> env)
+                {
+                    if (a == null) return null;
+                    DataFetchingEnvironment dfe = env.get();
+                    String expr = dfe.getArgument("expr");
+                    var rc = RequestContextInstrumentation.from(dfe.getGraphQlContext());
+                    return computeEntityExpr(a, expr, rc.caller());
+                }
+            };
+
+    /**
      * PRD 074 Baustein 6 — {@code AppointmentBlock.compute(expr:)}. An inline composition
      * column: evaluates an arbitrary rapla ParsedText format string against the block, reusing
      * the exact table-column machinery (`DefaultRaplaTableColumn.format`): guess the
@@ -1255,6 +1276,36 @@ public final class StructuralTypeFetchers
         {
             return null;   // invalid expr — save-time validation will reject at view-store time
         }
+        catch (RuntimeException e)
+        {
+            return computeFailed(expr, e);
+        }
+    }
+
+    /**
+     * Exprs whose evaluation already produced a WARN — the log line is per expression, not per row
+     * (a view renders the same expr for every row). Bounded so a probing client cannot grow it.
+     */
+    private static final org.slf4j.Logger LOGGER =
+            org.slf4j.LoggerFactory.getLogger(StructuralTypeFetchers.class);
+
+    private static final java.util.Set<String> WARNED_COMPUTE_EXPRS =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    /**
+     * The {@code compute(expr:)} contract is "null when the entity cannot satisfy the expression" —
+     * an invalid expr is null, and so is a valid expr over an entity that lacks what it references
+     * ({@code attribute(p,"loan")} on a type without {@code loan} throws {@code NullPointerException}
+     * out of the engine). A GraphQL INTERNAL_ERROR per row is not part of that contract.
+     */
+    private static <T> T computeFailed(String expr, RuntimeException e)
+    {
+        if (WARNED_COMPUTE_EXPRS.size() < 1000 && WARNED_COMPUTE_EXPRS.add(expr))
+        {
+            LOGGER.warn("compute(expr: \"{}\") failed with {}: {} — rendering null for this expr (logged once)",
+                    expr, e.getClass().getSimpleName(), e.getMessage());
+        }
+        return null;
     }
 
     /**
@@ -1290,6 +1341,10 @@ public final class StructuralTypeFetchers
         catch (org.rapla.entities.IllegalAnnotationException e)
         {
             return null;
+        }
+        catch (RuntimeException e)
+        {
+            return computeFailed(expr, e);
         }
     }
 
@@ -1424,7 +1479,8 @@ public final class StructuralTypeFetchers
                 .dataFetcher("allDay",       APPOINTMENT_ALL_DAY)
                 .dataFetcher("repeating",    APPOINTMENT_REPEATING)
                 .dataFetcher("allocatables", appointmentAllocatables(operator))
-                .dataFetcher("blocks",       APPOINTMENT_BLOCKS));
+                .dataFetcher("blocks",       APPOINTMENT_BLOCKS)
+                .dataFetcher("compute",      APPOINTMENT_COMPUTE));
         b.type("AppointmentBlock", t -> t
                 .dataFetcher("name",         APPOINTMENT_BLOCK_NAME)
                 .dataFetcher("appointmentId", APPOINTMENT_BLOCK_APPOINTMENT_ID)

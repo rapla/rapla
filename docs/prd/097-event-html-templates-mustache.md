@@ -276,7 +276,7 @@ Qute→param declarations) — ours is the referenced view's selection set, the 
 ### Phase 5 — 2D time-grid rendering (the layout engine half)
 
 > **Design rethought 2026-07-13** — the `CalendarLayoutEngine` concept from
-> [PRD 030](030-server-side-view-rendering.md)/[PRD 024](024-server-side-edit-services.md) predates the template+GraphQL model (stored views, D3,
+> [PRD 030](030-server-side-view-rendering.md)/[PRD 024](wont-fix/024-server-side-edit-services.md) predates the template+GraphQL model (stored views, D3,
 > `@param`, `RowGrouping`, the document pipeline) and is **superseded by the leading design
 > below**: there is no layout engine at all. **Implemented 2026-07-14** (schema + resolvers +
 > seed templates + `docs/templates.md`; see the plan checkboxes) — only the golden
@@ -474,8 +474,9 @@ no code, no migration). The platform's only hard opinions remain the security on
       (multi-strip windows would otherwise make `dayIndex` ambiguous), and blocks outside the
       flat `appointmentBlocks` list (nested `Appointment.blocks`) answer empty geometry.
 - [x] Seed templates proving the contract end-to-end (landed 2026-07-14 as the test-pinned
-      copy-paste starters in `docs/templates.md` + `CalendarTemplateRenderingTest` — there is no
-      artifact-store seeding mechanism, deliberately: seeds are docs, not migrations):
+      copy-paste starters in `docs/templates.md` + `CalendarTemplateRenderingTest`; the JAR's
+      starters stay docs, not store content — deployment-specific artefacts go through the
+      [PRD 112](112-deployment-patch.md) patch directory since 2026-09-02):
       **Tagesliste** (needs NO Phase-5 fields), **Wochenprogramm** (timeslot × day matrix,
       grouped `timeslot` bands incl. empty ones, Mo–Fr via `weekdays`), **week** and **month** —
       covering **both authoring shapes**: one unified `seed_kalender` view rendered through week
@@ -829,6 +830,77 @@ by Phase 7's reshape, so saves are native-form-only. No longer a blocker.)*
 - Tier-1: JMustache SSTI-inert + auto-escape unit tests.
 - Tier-3: MockMvc leak test on the render endpoint (the §12 recipe).
 - Manual: render a document, `window.print()` → PDF in Chrome + Firefox.
+
+## Editor follow-up — the URL-params field (2026-09-01, from live authoring)
+
+Surfaced while the maintainer authored the Siegen Leihschein in `/template-editor`. Four
+observations, one coherent change.
+
+**STATUS: implemented 2026-09-02** (maintainer's go, one file: `static/template-editor/index.html`).
+Prefill + send notch shipped; the `Preview` button is gone. Browser-verified by the maintainer.
+Automated coverage: none — there is no JS test tier for this static admin page; the pure helpers
+(`declaredParams` / `valueAt` / `parseJson`) were exercised under node against the real
+`leihschein` view text and a two-param calendar view. Per-`@param` inputs remain OPEN (below).
+
+**What the field is today.** `<input id="vars">`, a bare input with only a placeholder
+(`URL params: resource=…&date=…`, an example from a *calendar* view). It is the document's query
+string, and it feeds BOTH consumers: `preview()` sends `variables: parseVariables(el('vars').value)`,
+and `updateLiveLink()` appends it to the document URL for `Live ↗`.
+
+**The four problems.**
+1. **No association.** Every other toolbar control is wrapped in a `<label>`; this one is not, so it
+   reads as belonging to neither the `public` checkbox on its left nor the `Preview` button on its right.
+2. **The author cannot know what to type.** The legal keys are exactly the view's declared `@param`
+   names (+ `from`/`to`/`date` when windowed); the server knows them (`ViewParamDirectives.parse`)
+   and 400s on anything else — but never tells the client. Compare `loadShape()`, which answers the
+   very same "what may I address?" question for template fields via `/api/documents/result-shape`.
+3. **Never prefilled.** On load the editor reads `source.defaultVariables` into
+   `currentDefaultVariables` and carries it through Save, but never writes it into the field. So
+   `Live ↗` opens a bare URL, and a `required` param lands on the hint page — indistinguishable from
+   "no default exists".
+4. **Editing it triggers nothing.** Template edits auto-preview (`onDidChangeModelContent`,
+   debounce 700 ms) and so does the view dropdown (`el('view').onchange`), but the vars field only
+   updates the `Live ↗` href. Typing a param and watching the stale preview is the actual reason
+   problem 1 bites.
+
+**The change (maintainer's design, 2026-09-01).**
+- **Prefill from defaults.** Not a dump of `defaultVariables` (those are keyed by PRIVATE variable
+  paths); for each declared `@param`, look up its `into` path in the defaults and emit `name=value`
+  when present — the same translation the server already does for the preview. Precedence: document
+  pins beat view example defaults; do NOT materialise document pins into the field (a pin already
+  applies server-side, and copying it into the URL freezes it against later document edits).
+- **A send notch on the field replaces the `Preview` button.** The trigger moves onto the control it
+  acts on, which fixes (1) structurally rather than with a label. Build it natively: wrap input +
+  notch in a `<form>`, `<button type="submit">`, `preventDefault` → `preview()` — that yields
+  Enter-to-apply for free, the same shape as the document GET filter forms. `aria-label` on the notch
+  supplies the accessible name the input never had. `el('render')` and the button then go.
+- **NOT auto-preview on the vars field.** Considered and rejected in favour of the notch: each
+  preview is a real `POST /api/documents/preview` running the view's GraphQL in the author's read
+  scope, and an id typed character by character would fire several. One explicit trigger, one query.
+
+**The prefill cannot reach the live system — verified in code, not argued.** The vars field is
+EPHEMERAL: `save()` sends `{viewName, template, isPublic, groups, defaultVariables:
+currentDefaultVariables, window: currentWindow}` and `el('vars').value` appears nowhere in that
+payload. So typing (or prefilling) the field writes to no document, no data file, and no reader —
+readers call `/api/documents/<name>?…` themselves and the server still never applies a view's
+defaults on that path. The prefill lives and dies in the author's browser tab, and the editor is
+admin-only besides.
+
+[D8](#decisions-locked) is therefore untouched: it forbids the SERVER scoping a live render from a
+view's `defaultVariables`, and nothing here changes what the server does. The visible,
+author-editable field is the same precedent as a preview nav click, which already writes the
+server-resolved window into it ("a nav click IS a variables edit", `docs/templates.md`).
+
+Footnote, author-facing only: with a prefilled id, `Live ↗` opens one real reservation's document,
+so a link copied out of the editor keeps pointing at that record. A property of any parameterised
+URL, not of the prefill — worth knowing before pasting such a link into a ticket.
+
+**Deliberately left out — per-`@param` inputs.** The better end state is one labelled input per
+declared param (`required` marked, `from`/`to`/`date` added when windowed), making a wrong key
+unrepresentable instead of a 400. It needs a NEW server surface: the declared params exposed to
+clients (absent from `listViews` and from the SDL today). Note the overlap — PRD 074/WP3's proposed
+`documents` query wants to expose `(name, title, anchor, param)` for the SPA action link. One
+exposure of declared `@param`s serves both; decide them together rather than twice.
 
 ## Implementation findings (Phases 1–4, 2026-07-10)
 
@@ -1249,7 +1321,94 @@ matched against the response's script sources server-side, independent of the te
 Consequence: the CSP posture is unchanged by the engine-selection flag (D2); switching
 Mustache↔Handlebars neither strengthens nor weakens it.
 
-**D7 — Served as a standalone page-generator URL, session-cookie authenticated, §12-scoped.** The
+**D6c — Full-HTML templates accepted; author scripts only behind a yml switch, never on public
+documents (user ruling 2026-09-02, concept session; implementation go 2026-09-02).** Two amendments to D6/D6a:
+1. *Full HTML in.* A template may be a complete HTML file. The sanitizer parses it as a whole
+   document instead of a body fragment, keeps exactly two things from the author's head — `<title>`
+   (overrides the document-name title) and `<style>` (moved into the body) — and drops the rest
+   (`<base>`, `<meta charset|http-equiv>`, `<link>`; external stylesheets are CSP-blocked anyway).
+   The forbidden-element/attribute pass runs unchanged on the result. Same change fixes the shell's
+   hardcoded `<html lang="de">` → the rendering locale.
+   **Superseded by D7a (2026-09-02):** the author's head is passed through (filtered like the body),
+   not reduced to title+style — the head belongs to the author once the shell is gone.
+2. *Author scripts, sandboxed.* `rapla.documents.author-scripts: false` in **application.yml
+   only** (deployment decision: needs server access, not an admin login; never a system
+   preference). When true, for a document that is NOT public: the sanitizer keeps `<script>` and the
+   document CSP becomes `sandbox allow-scripts` + `script-src 'self' 'unsafe-inline'` (inline +
+   rapla-hosted script files; third-party script hosts are NEVER allowed — no CDN, no reader IP
+   leaked; `'self'` here is a fetch allowance for the file, not `allow-same-origin`) — every
+   other directive stays (`connect-src 'none'`, no `allow-same-origin`, no popups/top-navigation,
+   `base-uri 'none'`). **A public document (`isPublic`, i.e. anonymous-readable) is always rendered
+   with the strict policy and scripts stripped, regardless of the switch** — decided at render time
+   per response, so a flag flip or an old document cannot expose script to anonymous readers.
+   Trust basis: editor CRUD is admin-only (`DocumentCatalogService`), so the only authors are the
+   same class of people who can edit the yml. Gains: DOM-transforming scripts (page numbers,
+   totals, QR/barcodes, auto `window.print()`) that Mustache cannot express. **Containment model, stated
+   explicitly because "sandbox = no cookies" is the intuitive-but-wrong reading:** the opaque origin
+   denies the page *access* (no `document.cookie`, no storage, no same-origin XHR), but the network
+   stack still attaches rapla's SameSite=Lax session cookie to subresource requests the page makes.
+   So a script CAN cause credentialed same-origin GETs (`<img src="/api/…">`) — it cannot read
+   their bodies (an image yields pixels, not JSON) and cannot read the cookie; outbound channels are
+   closed by `img-src 'self' data:`, `connect-src 'none'` and the navigation locks. Two hard rules
+   for the scripted variant: (a) **never `allow-same-origin`** — with `allow-scripts` that is the
+   documented sandbox escape (the page reaches its own origin, reads the session, calls `/api` as
+   the reader — exactly the PRD 102 threat); a legitimate need for same-origin is a separate
+   decision, never an implementation detail; (b) **the scripted variant drops forms**
+   (`sandbox allow-scripts` without `allow-forms`, `form-action 'none'`) — with scripts an
+   auto-submitted form is a credentialed write primitive against any cookie-authenticated endpoint
+   that accepts form-encoded POSTs, which no document needs; the interactive tier
+   (PRD 102 D7 native save) is a different policy and stays unaffected. Precondition before shipping
+   is therefore reduced to a regression test that the scripted policy contains exactly
+   `sandbox allow-scripts`, `script-src 'self' 'unsafe-inline'`, `form-action 'none'`, and none of
+   `allow-same-origin`/`allow-forms`/`allow-popups`/`allow-top-navigation`.
+   Rejected shape: a "disable stripping"
+   flag — inert under the CSP and a pure defence-removal if it only touched the sanitizer; the
+   switch must change sanitizer + CSP together. Not a replacement for
+   [PRD 102 § Interactive document tier](102-browser-credential-hardening.md#interactive-document-tier-untrusted-authored-components--native-save)
+   (which needs same-origin for native save) — this is scripts *inside* the untrusted sandbox.
+
+   **Implementation notes (rapla-e6, 2026-09-02 — behaviour the spec did not pin, recorded so it is
+   not re-decided by accident):**
+   - *Whole-document parse is opt-in by shape, not unconditional.* `DocumentSanitizer.sanitize`
+     uses jsoup's full-document parse only when the rendered output actually starts with
+     `<!doctype`/`<html>`; anything else still goes through `parseBodyFragment`. That keeps the
+     foster-parenting trap closed for body-only templates (§ Lessons, point 2 — a full parse
+     relocates a stray `<tr>`), so the amendment cannot regress existing documents.
+   - *The author's head `<style>` is **prepended** to the body, not appended.* In the body-only
+     world the author's `<style>` was the first thing in their template, so body content could
+     override it by source order. Appending would silently flip that precedence for every document
+     converted to full HTML. Prepending preserves the old cascade.
+   - *The preview path applies the flag WITHOUT the `isPublic` test.* Live render is
+     `flag && !document.isPublic()`; the editor preview is `flag` alone, on the reasoning that the
+     author is an admin looking at their own draft. Consequence to be aware of: a **public**
+     document's preview shows its scripts while its live render strips them — the preview is
+     deliberately not a faithful mirror in this one respect. If that ever becomes confusing, the
+     fix is to pass the document's visibility into the preview call, not to loosen the live rule.
+
+**D6d — Sanitizer removals are surfaced to the author as a warning, never a save error (decided
+2026-09-02).** Today the sanitizer strips silently: an author writes `<script>` or `onclick` and only
+notices at render time that it is gone. Three constraints shape the fix: (1) sanitization runs on the
+*render result*, not the template (§ Lessons, point 2) — so "what gets removed" is only knowable via a
+render, and can depend on the data as well as the template; (2) removal is intended behaviour, not a
+defect — under D6c a `<script>` legitimately survives on a non-public document and is always
+stripped on a public one, so the author must be allowed to save it and must be *told* what happens;
+(3) the rules must not be duplicated — no second template-scanning regex list next to
+`DocumentSanitizer`. Hence:
+- `DocumentSanitizer.sanitize` reports what it removed (a list of removal labels: element name,
+  attribute name, or `attr=scheme:` for a blocked URL), alongside `body` and `title`.
+- The **preview** endpoint (`POST /api/documents/preview`) returns that list as `removed`; the
+  editor shows a compact hint next to the preview ("Beim Rendern entfernt: script ×1, onclick ×2").
+  The author sees it while typing — the preview already renders with the same sanitizer and the same
+  policy (public → strict) the readers get.
+- The **save** gate stays a pure error list (400 on errors). No blocking on removals; the preview hint
+  is the warning channel. Rejected: a separate `warnings` array on save — the author has already seen
+  the hint in the live preview, and the save gate's contract (empty list = stored) stays simple.
+- Rejected: warning on the *template* text at save time without rendering — would need a parallel
+  rule set (violates the single-sanitizer rule) and cannot see data-borne removals.
+
+**D7 — Served as a standalone page-generator URL, session-cookie authenticated, §12-scoped.**
+*(The "server-authored shell" half of this decision is superseded by D7a below; URL, auth and §12
+scoping stand.)* The
 document is opened directly in the browser at its own human-navigable URL (like the existing
 `/rapla/calendar` pages), NOT fetched/embedded by the SPA. Consequences:
 - **Page generator, §15 category.** A page controller (cf. `CalendarPageController`,
@@ -1266,6 +1425,48 @@ document is opened directly in the browser at its own human-navigable URL (like 
   and a script-free print hint (Ctrl+P — no auto-print, no button, no CSP nonce; the shell carries no
   script, per D6a). Aligns with [PRD 030](030-server-side-view-rendering.md)'s parked
   "HTML autoexport calendar pages" migration — the same standalone-server-rendered-HTML shape.
+
+**D7a — The page shell is dissolved: the template owns the whole page, the server contributes
+partials and variables (decided 2026-09-02, supersedes the shell half of D7 and D6c point 1).**
+Trigger: the D6d/meta discussion — every question of the form "is `<meta …>` allowed?" was really
+"why does the server own the head?". It doesn't need to. What the shell (`DocumentShell`) did and
+where it goes:
+- **Doctype / `<html lang>` / charset / viewport / `<title>`** → the author writes them (D6c already
+  admits full-HTML templates). The sanitizer keeps the author's head and runs the SAME
+  forbidden-element/attribute pass on it as on the body (`<base>`, `meta[http-equiv]`,
+  `link[rel=import]`, scripts, handlers, `javascript:` URLs go; everything else — `<meta name=…>`,
+  favicon `<link>`, stylesheet `<link>` (CSP decides), `<style>` — stays where the author put it).
+- **Print CSS** (`@page` 2 cm margin, no body padding on paper) → builtin partial
+  `{{> rapla/print-css}}`; **default look** (light scheme, base font, bordered tables) → builtin
+  partial `{{> rapla/base-css}}`. Both are offers: a template that omits them prints with browser
+  defaults, on purpose. The affordance partials `rapla/nav` and `rapla/print-hint` carry their OWN
+  style incl. their print-time hide (implementation 2026-09-02) — a partial that needs another
+  partial's CSS to behave is the coupling D7a removes.
+- **Rendering language** → a model variable `lang` (the caller's rendering locale) the author MAY
+  use: `<html lang="{{lang}}">`. Many templates exist only in the language they were written in and
+  simply hardcode `lang="de"` — the server has no business overriding that.
+- **Preview nav script** (the one server-authored script, editor iframe only) → injected by the
+  PREVIEW path before `</body>`; real pages stay script-free by construction as before (D6a).
+- **Body-only templates** (the existing stored documents and the current builtins) → keep working:
+  a fragment gets a minimal wrapper — doctype, `charset`, `<title>` = document name — and NOTHING
+  else (no CSS, no look). A fragment author who wants the old look adds the two partials.
+- **Builtins** (`BuiltinDocuments`) become full-HTML templates using the partials, so they double as
+  the reference skeleton; the editor's "new document" starts from that skeleton, otherwise every
+  author begins at a blank page with browser print margins.
+- **Unchanged:** sanitizer rules, CSP headers (`RaplaCspHeaderWriter`), D6c scripted variant, the
+  view/document pairing, D6d's removal hint (which now also reports head removals — they are real
+  sanitizer hits, no longer structural drops).
+Gain: the template shows everything that reaches the page; no second CSS source hidden in Java.
+Rejected: a per-meta allowlist in the shell — it would grow one entry per author question and
+still leave the head server-owned. **Landed 2026-09-02** (`DocumentSanitizer` passes the head through,
+`DocumentShell` = fragment wrapper + preview-script injection, `BuiltinPartials` +2, `BuiltinDocuments`
+full-HTML, `lang` model variable); docs/templates.md updated.
+Follow-up, not decided (2026-09-02): with every template a full page — the Spring Boot Mustache
+model — stored templates can later be `{{> included}}` into other templates. Needs three things in
+the `DocumentRenderer` partial loader: stored-artifact resolution next to `BuiltinPartials`,
+visibility ANDed like view references (an include is template text — data still comes only from
+the including document's view), a recursion guard, and save-time validation of stored partial
+names (a vanished include is "invalid, never deleted", like a vanished view).
 
 **D8 — View `defaultVariables` are authoring EXAMPLE data, not runtime pins (2026-08-11).**
 Saving a view from GraphiQL stores the variables-pane content as `defaultVariables` — example data
@@ -1387,3 +1588,16 @@ the first element):
 cannot format — the server provides formatted values (`AppointmentBlock.times`, `compute(expr:)`, or
 a dedicated formatted field). Formatting lives in the query, not the template — which is why
 JMustache suffices and no author-side template filters are needed.
+
+## Idea — Exchange subject and body from document templates (2026-09-13, moved here from PRD 114)
+
+Render the Exchange **body** and the **subject** through the document template engine
+instead of the `nameformat_export` / `descriptionformat_export` annotations. Trigger: a site
+asked for persons and resources in the note text; the quick fix was an annotation change
+(`Personen: {filter(event:allocatables, r->isPerson(r))} Ressourcen: {filter(…,r->not(isPerson(r)))}`),
+but the annotation language has no list separator, no per-element format without a type
+annotation (and the type editor only offers `descriptionformat_export` on event types), and
+no formatting. A template per event type, editable by the site admins, covers body (HTML for
+`BodyType.HTML`) and subject alike; the Exchange writer (`AppointmentSynchronizer`,
+[PRD 114](114-exchange-sync-per-mailbox-lock.md)) keeps `rapla2exchange` + markers and only
+swaps the two string sources. Not scheduled; no PRD phase yet.

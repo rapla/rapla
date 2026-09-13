@@ -45,6 +45,9 @@ public class TableColumnAnnotationEdit extends RaplaGUIComponent implements Anno
     }
 
     @Override
+    public int position() { return 2; }
+
+    @Override
     public Collection<? extends EditField> createEditFields(Annotatable annotatable)
     {
         if (!( annotatable instanceof DynamicType))
