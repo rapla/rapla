@@ -313,6 +313,18 @@ rapla renders from trusted templates → no markup-injection surface at all.
 `'unsafe-inline'`) that allows **author** inline JS — high-trust self-hosted deployments only,
 all-or-nothing (CSP has no "onclick-only" granularity), **never** for AI/open-user content.
 
+### Sandboxed author scripts (PRD 097 D6c, 2026-09-02) — a cheaper tier, not this one
+
+[PRD 097 D6c](097-event-html-templates-mustache.md#decisions-locked) adds an application.yml-only
+switch that lets admin-authored (non-public) documents keep `<script>` under
+`sandbox allow-scripts` (no forms) + `script-src 'self' 'unsafe-inline'`, with the opaque origin,
+`connect-src 'none'` and the navigation locks untouched. That is "scripts inside the untrusted
+sandbox": no cookies, no API, no exfil channel beyond the same-origin `<img>`/form requests the
+sandbox already permits. It does NOT provide the same-origin scope this tier needs for native save
+(D7) or precompiled components (D6), and public documents never get it. Keep the two apart when
+Phase 4 lands: the scripted-sandbox policy is a third document policy variant, selected per
+response on (switch, isPublic).
+
 ## Scope
 
 ### In scope

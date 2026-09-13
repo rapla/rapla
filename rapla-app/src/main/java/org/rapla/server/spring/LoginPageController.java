@@ -340,7 +340,7 @@ public class LoginPageController
                   <label for="p">%PASSWORD%</label>
                   <input id="p" type="password" name="password">
                   <label class="remember">
-                    <input type="checkbox" name="remember-me" value="on">
+                    <input type="checkbox" name="remember-me" value="on"%CHECKED%>
                     %REMEMBER%
                   </label>
                   <button type="submit" id="btn" data-busy="%SIGNING_IN%">%LOGIN%</button>
@@ -353,6 +353,8 @@ public class LoginPageController
                    .replace("%SIGNING_IN%", msg("login.signing_in", locale))
                    .replace("%LOGIN%", msg("login", locale))
                    .replace("%CSRF%", csrfField)
+                   .replace("%CHECKED%", "1".equals(CookieAuthSupport.readCookie(request,
+                           CookieAuthSupport.REMEMBER_CHOICE_COOKIE)) ? " checked" : "")
                    .replace("%HINT%", showDefaultAdminHint()
                            ? "<p class=\"note\">Dev default: <code>admin</code> with empty password.</p>" : "");
     }

@@ -73,6 +73,38 @@ class RaplaCspHeaderWriterTest
         }
     }
 
+    // PRD 097 D6c (2) — the controller marks a response as script-bearing (yml switch on AND the
+    // document is not public); the writer then serves the scripted sandbox variant: scripts run,
+    // still no same-origin, no forms (an auto-submitted credentialed form would be a write
+    // primitive), no third-party script hosts.
+    @Test
+    void aScriptedDocumentResponseGetsTheScriptedSandboxVariant()
+    {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/documents/leihschein");
+        request.setAttribute(RaplaCspHeaderWriter.SCRIPTED_DOCUMENT, Boolean.TRUE);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        writer.writeHeaders(request, response);
+        String policy = response.getHeader("Content-Security-Policy");
+        assertTrue(policy.contains("sandbox allow-scripts"), policy);
+        assertTrue(policy.contains("script-src 'self' 'unsafe-inline'"), policy);
+        assertTrue(policy.contains("form-action 'none'"), policy);
+        assertTrue(policy.contains("connect-src 'none'"), policy);
+        assertTrue(!policy.contains("allow-same-origin"), policy);
+        assertTrue(!policy.contains("allow-forms"), policy);
+        assertTrue(!policy.contains("allow-popups"), policy);
+        assertTrue(!policy.contains("allow-top-navigation"), policy);
+    }
+
+    @Test
+    void theScriptedMarkerIsIgnoredOutsideDocumentPages()
+    {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/graphql");
+        request.setAttribute(RaplaCspHeaderWriter.SCRIPTED_DOCUMENT, Boolean.TRUE);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        writer.writeHeaders(request, response);
+        assertEquals(CspPolicyBuilder.jsonApiPolicy(), response.getHeader("Content-Security-Policy"));
+    }
+
     private String enforcedPolicyFor(String uri)
     {
         return write(uri).getHeader("Content-Security-Policy");

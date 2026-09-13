@@ -51,6 +51,32 @@ public class RaplaCspHeaderWriter implements HeaderWriter
      * of Phase 9's write forms (cross-origin POST + capability): {@code 'self'} keeps every
      * submit on rapla's own origin, where the /api/documents/* gate rejects undeclared keys.
      */
+    /**
+     * PRD 097 D6c (2) — request attribute set by the document controller when this response
+     * carries author scripts (yml switch ON and the document is not public). The writer never
+     * decides it: visibility and configuration live with the renderer.
+     */
+    public static final String SCRIPTED_DOCUMENT = RaplaCspHeaderWriter.class.getName() + ".SCRIPTED_DOCUMENT";
+
+    /**
+     * The scripted variant. Scripts run, and nothing else loosens: NO {@code allow-same-origin}
+     * (with {@code allow-scripts} that pair is the documented sandbox escape — the page could read
+     * the session cookie and call /api as the reader), and NO forms — a credentialed auto-submitted
+     * form would be a write primitive, while the credentialed GETs a script can still trigger are
+     * read-only and their bodies unreadable from the opaque origin.
+     */
+    private final String scriptedDocumentPagePolicy = String.join("; ",
+            "sandbox allow-scripts",
+            "default-src 'none'",
+            "script-src 'self' 'unsafe-inline'",
+            "connect-src 'none'",
+            "style-src 'unsafe-inline'",
+            "img-src 'self' data:",
+            "font-src 'self' data:",
+            "base-uri 'none'",
+            "frame-ancestors 'none'",
+            "form-action 'none'");
+
     private final String documentPagePolicy = String.join("; ",
             "sandbox allow-forms",
             "default-src 'none'",
@@ -74,7 +100,8 @@ public class RaplaCspHeaderWriter implements HeaderWriter
         String path = pathWithinApplication(request);
         if (path.startsWith("/api/documents/"))
         {
-            response.setHeader(ENFORCE, documentPagePolicy);
+            response.setHeader(ENFORCE, Boolean.TRUE.equals(request.getAttribute(SCRIPTED_DOCUMENT))
+                    ? scriptedDocumentPagePolicy : documentPagePolicy);
         }
         else if (path.startsWith("/api/"))
         {

@@ -24,10 +24,13 @@ public class RaplaServerProperties
     private Map<String, Boolean> services = new LinkedHashMap<>();
     private String mailSession;
     private String patchScript;
+    private String patchDir = "data/patch";
     private Merge merge = new Merge();
     private boolean fixAdminPassword = false;
     private String legacyContextPath = "";
     private Readmodel readmodel = new Readmodel();
+    private Views views = new Views();
+    private Documents documents = new Documents();
 
     public Map<String, DataSourceProperties> getDbDatasources()
     {
@@ -119,6 +122,22 @@ public class RaplaServerProperties
         this.mailSession = mailSession;
     }
 
+    /**
+     * {@code rapla.patch-dir} &mdash; PRD 112. Directory of self-describing artefact files
+     * (front-matter head) applied to the artifact store at every start: created when missing,
+     * overwritten when the file's {@code updated} stamp is newer than the stored artifact.
+     * Relative to the working directory like {@code data/data.xml}; absent directory = no-op.
+     */
+    public String getPatchDir()
+    {
+        return patchDir;
+    }
+
+    public void setPatchDir(String patchDir)
+    {
+        this.patchDir = patchDir;
+    }
+
     public String getPatchScript()
     {
         return patchScript;
@@ -137,6 +156,38 @@ public class RaplaServerProperties
     public void setMerge(Merge merge)
     {
         this.merge = merge;
+    }
+
+    public Views getViews()
+    {
+        return views;
+    }
+
+    public void setViews(Views views)
+    {
+        this.views = views;
+    }
+
+    /**
+     * {@code rapla.views.builtin-listed} &mdash; allowlist of BUILTIN view keys that appear in
+     * the SPA view switcher. Absent (null): each builtin's own {@code @view(listed:)} decides, as
+     * before. Set: a builtin is listed iff its key is in the list &mdash; so a deployment that wants
+     * only its custom views is not surprised by a builtin added in a later release. Unlisted
+     * builtins stay resolvable by name.
+     */
+    public static class Views
+    {
+        private List<String> builtinListed;
+
+        public List<String> getBuiltinListed()
+        {
+            return builtinListed;
+        }
+
+        public void setBuiltinListed(List<String> builtinListed)
+        {
+            this.builtinListed = builtinListed;
+        }
     }
 
     public Readmodel getReadmodel()
@@ -158,6 +209,26 @@ public class RaplaServerProperties
      * {@code --spring.config.additional-location}) to fall back to the legacy path — the legacy
      * structures stay maintained, so the switch is instant and lossless.
      */
+    public Documents getDocuments() { return documents; }
+
+    public void setDocuments(Documents documents) { this.documents = documents; }
+
+    /** PRD 097 D6c (2) — document-rendering policy. */
+    public static class Documents
+    {
+        /**
+         * Allow author {@code <script>} in stored documents. OFF by default, yml only (never a
+         * runtime preference or a per-document field): turning it on changes the sanitizer AND the
+         * CSP together, and it NEVER applies to a public document — trust rests on document CRUD
+         * being admin-only, which anonymous readability would bypass.
+         */
+        private boolean authorScripts = false;
+
+        public boolean isAuthorScripts() { return authorScripts; }
+
+        public void setAuthorScripts(boolean authorScripts) { this.authorScripts = authorScripts; }
+    }
+
     public static class Readmodel
     {
         private boolean authoritative = true;

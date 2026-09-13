@@ -31,6 +31,12 @@ public class CookieAuthSupport
 {
     public static final String ACCESS_TOKEN_COOKIE = "access_token";
     public static final String REFRESH_TOKEN_COOKIE = "refresh_token";
+    /**
+     * Per-browser memory of the login page's "stay signed in" tick. Deliberately NOT
+     * the {@code rapla-remember-me} cookie itself: logout kills that one, and the tick
+     * must survive a logout so the login page comes back in the state the user chose.
+     */
+    public static final String REMEMBER_CHOICE_COOKIE = "rapla-remember-choice";
     public static final String ACCESS_TOKEN_PATH = "/";
     public static final String REFRESH_TOKEN_PATH = "/api/auth/session";
 
@@ -62,6 +68,19 @@ public class CookieAuthSupport
             }
         }
         return null;
+    }
+
+    /** Records the login page's "stay signed in" tick for a year. Read back by the login page. */
+    public void setRememberChoiceCookie(HttpServletResponse response, boolean remember)
+    {
+        response.addHeader("Set-Cookie", ResponseCookie.from(REMEMBER_CHOICE_COOKIE, remember ? "1" : "0")
+                .httpOnly(true)
+                .secure(secure)
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(Duration.ofDays(365))
+                .build()
+                .toString());
     }
 
     public void setAccessTokenCookie(HttpServletResponse response, String accessToken, long maxAgeSeconds)
