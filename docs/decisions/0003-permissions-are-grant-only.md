@@ -74,10 +74,10 @@ are clean.
 **Why precedence was dropped (2026-06-24 → 2026-06-28).** The original `USER > GROUP > WORLD`
 precedence let a more-specific row override a broader grant *downward* — a soft subtraction that
 produces exactly the "why am I capped?" surprises a grant-only model is meant to avoid (it caused a
-real one: the same group rendered under two locales looked like two different rules). A dhbw store
-audit measured the cost of relying on it: of ~2,900 user rows, **only 2 entities** used a genuine
-downward cap (1 still active, 0 on events) — every other apparent cap was a user row sitting below a
-group the user is *not* a member of. With the blast radius that small, dropping precedence buys full
+real one: the same group rendered under two locales looked like two different rules). A production
+store audit measured the cost of relying on it: of thousands of user rows, **only a handful of
+entities** used a genuine downward cap (figures: dhbwrapla `docs/user-access-downgrades.md`) — every
+other apparent cap was a user row sitting below a group the user is *not* a member of. With the blast radius that small, dropping precedence buys full
 monotonicity for a near-empty migration.
 
 ### Migration to additive — one strategy for any rapla deployment
@@ -95,7 +95,7 @@ strategy is therefore **measure → flip → clean**:
    finds *every* row that actually subtracts today — both forms in a single pass: a `DENIED` at
    higher precedence than a grant, **and** a user row below a group the user belongs to. With
    precedence still live it reports, per `(principal, entity)`, `current → additive` — the
-   deployment's exact escalation set. This is the union; dhbw's number is 2 (1 active).
+   deployment's exact escalation set. This is the union; the production audit found a handful (one active).
 3. **Flip resolution to additive, gated on the audit.** The change refuses to flip a store whose
    audit is non-empty unless explicitly acknowledged (config flag), and logs the before/after diff.
    For each flagged row the admin chooses **accept the escalation** or **preserve the limit by group
@@ -119,7 +119,7 @@ is explicitly not the default.
 - Bad, because you cannot limit an individual below their group through permissions at all;
   exclusion must be modelled via group membership/structure (or a future per-row cap/mask).
 - Bad, because existing downward caps escalate unless migrated — handled by the measure-then-flip
-  process above (dhbw: 1 active row).
+  process above (production audit: one active row).
 
 ### Confirmation
 
@@ -171,7 +171,7 @@ redundant under this resolution.
   separate deny concept.
 - Bad, because that downward override *is* a soft subtraction — non-obvious ("why am I capped?"),
   and the one seam that kept the model from being purely additive. Blast radius of relying on it
-  (dhbw) was 2 entities, so it was removed.
+  (production audit) was a handful of entities, so it was removed.
 
 ### Subtractive ACL (deny rows override grants)
 

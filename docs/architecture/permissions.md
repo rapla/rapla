@@ -160,10 +160,12 @@ Fields:
 | `minAdvance` | `Integer` (nullable) | Days from "today" — request must be at least this far in the future. |
 | `maxAdvance` | `Integer` (nullable) | Days from "today" — request can't be further out than this. |
 
-Two special cases for `(user, group)` both null:
-
-- `NO_PERMISSION` (`-2`) — disabled row.
-- `ALL_USER_PERMISSION` (`-1`) — applies to everybody (the wildcard).
+`(user, group)` both null has exactly one meaning: **`ALL_USER_PERMISSION`
+(`-1`) — the row applies to everybody** (the wildcard). `NO_PERMISSION`
+(`-2`) is **not** a stored row state — it is the value
+`PermissionContainer.Util.getUserEffect` returns when a row does *not*
+match the user being tested (the fallthrough), so it never describes how a
+row was saved. Don't read a both-null row as "disabled".
 
 Setting one of `pStart`/`pEnd` (absolute) clears the corresponding
 relative bound `minAdvance`/`maxAdvance` and vice versa — they're

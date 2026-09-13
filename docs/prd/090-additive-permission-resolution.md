@@ -11,8 +11,8 @@ Replace rapla's `USER > GROUP > WORLD` **precedence** resolution with a **purely
 model: a user's effective access is the *highest* level granted by any matching row (union),
 with **no precedence and no subtraction**. This abolishes the "soft deny" — both the `DENIED`
 level *and* the user-row-below-their-group cap (which precedence honoured as a downward override).
-A dhbw store audit measured the real impact at **2 entities** (1 active, 0 events), so the change
-is near-zero-impact. Migration is a one-shot at first boot that freezes the affected allocatable
+A production store audit measured the real impact at **a handful of entities** (figures: dhbwrapla
+`docs/user-access-downgrades.md`), so the change is near-zero-impact. Migration is a one-shot at first boot that freezes the affected allocatable
 ids into a worklist; an admin SPA UI drains it. Resolution stays a **single live model** (additive);
 precedence survives only as throwaway one-shot code.
 
@@ -41,7 +41,7 @@ precedence survives only as throwaway one-shot code.
 ### List minimization (keep the worklist tiny)
 1. **True-diff filter** (the big one): keep a finding only where `additiveEffective > precedenceEffective`.
    The real precedence calc already drops owner/admin bypass, expired time-windows, and
-   multi-group-covered users — dhbw `2,778 structural → 1`.
+   multi-group-covered users — production audit: thousands of structural hits → a single true escalation.
 2. **Group-keying**: a `GROUP`-deny-over-world is one finding (the group), not one-per-member.
 3. **Table keyed by allocatable**: one row + one checkbox per allocatable (findings listed within if
    more than one); sort by highest escalated level so the admin triages by risk. Never filter by magnitude.
@@ -144,7 +144,7 @@ recomputed from live permissions for display.
   *invert* (the user gets the group level); a new tier-2 suite pins max-wins, deny-inert, and
   user-grant-still-elevates.
 - On a store with legacy soft-denies, first boot writes a frozen allocatable-id worklist; the SPA
-  migration UI lists exactly the true-escalation entities (dhbw: 1) with self-explaining text.
+  migration UI lists exactly the true-escalation entities (production audit: one) with self-explaining text.
 - No precedence branch remains in the live access path (grep + arch check).
 
 ## Scope
@@ -238,7 +238,7 @@ forms; additive neutralizes both. The migration, the audit, and the deprecation 
 
 **D3 — Option A only: flip immediately, migrate after.** The flip is the deploy; escalated users gain
 their *group's* level immediately and keep it until the admin resolves the worklist — a **bounded,
-tiny (dhbw: 1), visible, accepted** temporary elevation. The gated-flip / `requireAck` opt-in is
+tiny (production audit: one), visible, accepted** temporary elevation. The gated-flip / `requireAck` opt-in is
 **rejected** — it re-introduces a pre-flip window where new permissions get old semantics and a
 gated dual path. Simplicity of one live model wins.
 
