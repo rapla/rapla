@@ -55,6 +55,10 @@ public class EWSConnector {
     private final Boolean developmentMode= Boolean.valueOf(System.getProperty("org.rapla.developmentmode","false"));
 
     private String exchangeUsername;
+
+    public String getExchangeUsername() {
+        return exchangeUsername;
+    }
     private String mailboxAddress;
 
 //	private final Character DOMAIN_SEPERATION_SYMBOL = new Character('@');
@@ -142,6 +146,12 @@ public class EWSConnector {
 		//throw new Exception("Credentials are invalid!");
 	}
 
+    private static final Set<String> SHARED_CALENDAR_GROUP_NAMES = Set.of("Weitere Kalender", "Andere Kalender", "Other Calendars");
+
+    static boolean isSharedCalendarGroup(String groupName) {
+        return groupName != null && SHARED_CALENDAR_GROUP_NAMES.contains(groupName);
+    }
+
     public UserConnect loadMailboxes() throws Exception {
         SearchFilter sfSearchFilter = new SearchFilter.IsEqualTo(FolderSchema.DisplayName, "Common Views");
         ExchangeService service = getService();
@@ -167,21 +177,22 @@ public class EWSConnector {
             ExtendedPropertyDefinition PidTagWlinkGroupName = new ExtendedPropertyDefinition(0x6851, MapiPropertyType.String);
 
             psPropset.add(PidTagWlinkAddressBookEID);
+            psPropset.add(PidTagWlinkGroupName);
             ItemView iv = new ItemView(1000);
             iv.setPropertySet(psPropset);
             iv.setTraversal(ItemTraversal.Associated);
             Folder folder = folders.get(0);
-            FindItemsResults<Item> fiResults = folder.findItems(new SearchFilter.IsEqualTo(PidTagWlinkGroupName, "Weitere Kalender"), iv);
-            if ( fiResults.getTotalCount() == 0 ){
-                fiResults = folder.findItems(new SearchFilter.IsEqualTo(PidTagWlinkGroupName, "Other Calendars"), iv);
-            }
-            // TODO add other languages
-            //logger.info(" Found " + fiResults);t
+            FindItemsResults<Item> fiResults = folder.findItems(iv);
             for ( Item itItem : fiResults) {
                 OutParam<Object> WlinkAddressBookEID = new OutParam<>();
                 EmailMessage emailMessage = (EmailMessage) itItem;
                 EmailAddress from = emailMessage.getFrom();
                 ExtendedPropertyCollection extendedProperties = emailMessage.getExtendedProperties();
+                OutParam<Object> groupName = new OutParam<>();
+                if (extendedProperties == null || !extendedProperties.tryGetValue(Object.class, PidTagWlinkGroupName, groupName)
+                        || !isSharedCalendarGroup((String) groupName.getParam())) {
+                    continue;
+                }
                 String subject = itItem.getSubject();
                 if (extendedProperties != null && extendedProperties.tryGetValue(Object.class, PidTagWlinkAddressBookEID, WlinkAddressBookEID))
                 {

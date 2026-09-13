@@ -13,6 +13,7 @@ public class ExchangeAppointment {
     final ItemId itemId;
     final microsoft.exchange.webservices.data.core.service.item.Appointment exchangeAppointment;
     final String raplaAppointmentLastChanged;
+    boolean foreign;
 
 
     public ExchangeAppointment(ReferenceInfo<Appointment> raplaAppointmentId, String exchangeAppointmentId, ItemId itemId, microsoft.exchange.webservices.data.core.service.item.Appointment exchangeAppointment, String raplaAppointmentLastChanged) {
@@ -21,6 +22,11 @@ public class ExchangeAppointment {
         this.itemId = itemId;
         this.exchangeAppointment = exchangeAppointment;
         this.raplaAppointmentLastChanged = raplaAppointmentLastChanged;
+    }
+
+    /** true = the mailbox owner's item (an Outlook copy or marked private): rapla can neither update nor delete it (PRD 114 hunks 7/10/11) */
+    public boolean isForeign() {
+        return foreign;
     }
 
     public microsoft.exchange.webservices.data.core.service.item.Appointment getExchangeAppointment() {

@@ -133,7 +133,7 @@ public class AppointmentSynchronizer
             return errors;
         AffectedTaskOccurrence affectedTaskOccurrences = AffectedTaskOccurrence.AllOccurrences;
         SendCancellationsMode sendCancellationsMode = SendCancellationsMode.SendToNone;
-        DeleteMode deleteMode = DeleteMode.HardDelete;
+        DeleteMode deleteMode = DeleteMode.SoftDelete;
         ServiceResponseCollection<ServiceResponse> deleteItems;
         try
         {
@@ -178,28 +178,78 @@ public class AppointmentSynchronizer
     }
 
     @NotNull
+    /** EWS {@code ItemView} offsets count items, so a full page advances by the page size; -1 = no further page. */
+    public static int nextPageOffset(int offset, int pageSize, int returned) {
+        return returned == pageSize ? offset + pageSize : -1;
+    }
+
+    private static final ExtendedPropertyDefinition PR_CREATOR_NAME = newMapiString(0x3FF8);
+
+    private static ExtendedPropertyDefinition newMapiString(int tag) {
+        try { return new ExtendedPropertyDefinition(tag, MapiPropertyType.String); } catch (Exception e) { throw new IllegalStateException(e); }
+    }
+
+    /** An item is rapla's own if the sync account created it and the owner did not mark it private (PRD 114 hunks 7+10).
+     *  Items the mailbox owner created (an Outlook copy keeps the rapla marker) are never rapla's; owner edits of rapla items
+     *  do not change that, but a private item cannot be updated or deleted by a delegate (Exchange answers "not found").
+     *  Names are compared by the login's local part (RaplaTermin ~ raplatermin@...). */
+    public static boolean ownedBySyncAccount(String creatorName, Sensitivity sensitivity, String syncLogin) {
+        if (sensitivity != null && sensitivity != Sensitivity.Normal) return false;
+        return creatorName == null || isSyncAccountName(creatorName, syncLogin);
+    }
+
+    /** "RaplaTermin VS" ~ RaplaTermin.VS@…, "rapla-termin" ~ rapla-termin@…: compare letters/digits only, either side may be the shorter one */
+    static boolean isSyncAccountName(String displayName, String syncLogin) {
+        if (displayName == null || syncLogin == null) return false;
+        String a = displayName.toLowerCase().replaceAll("[^a-z0-9]", "");
+        String b = syncLogin.replaceFirst("@.*", "").toLowerCase().replaceAll("[^a-z0-9]", "");
+        return !a.isEmpty() && !b.isEmpty() && (a.startsWith(b) || b.startsWith(a));
+    }
+
+    /** Last writer wins (PRD 114 hunk 12): an own item the mailbox owner modified after rapla's last change is left alone. */
+    public static boolean ownerEditedAfterRapla(String lastModifierName, java.util.Date itemModified, java.util.Date raplaLastChanged, String syncLogin) {
+        if (lastModifierName == null || itemModified == null || raplaLastChanged == null) return false;
+        return !isSyncAccountName(lastModifierName, syncLogin) && itemModified.after(raplaLastChanged);
+    }
+
+    private String skipReason;
+
+    /** set when addOrUpdate() deliberately wrote nothing (owner edit wins); reported by the manager */
+    public String getSkipReason() {
+        return skipReason;
+    }
+
+    /** Start, end and subject are what the lecturer sees; equal means the owner's private/copied item is still up to date (PRD 114 hunk 11). */
+    public static boolean sameStartEndSubject(java.util.Date raplaStart, java.util.Date raplaEnd, String raplaSubject, java.util.Date exchangeStart, java.util.Date exchangeEnd, String exchangeSubject) {
+        return raplaStart != null && raplaStart.equals(exchangeStart) && raplaEnd != null && raplaEnd.equals(exchangeEnd)
+                && (raplaSubject == null ? exchangeSubject == null : raplaSubject.equals(exchangeSubject));
+    }
+
+    /** true if the owner's foreign item for this rapla appointment shows the same start, end and subject rapla would write. */
+    public static boolean foreignItemUpToDate(TimeZoneConverter converter, Locale locale, Appointment raplaAppointment, ExchangeAppointment foreignItem) {
+        try {
+            microsoft.exchange.webservices.data.core.service.item.Appointment ex = foreignItem.getExchangeAppointment();
+            return sameStartEndSubject(rapla2exchange(converter, raplaAppointment.getStart()), rapla2exchange(converter, raplaAppointment.getEnd()),
+                    NameFormatUtil.getExportName(raplaAppointment, locale), ex.getStart(), ex.getEnd(), ex.getSubject());
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public static List<ExchangeAppointment> getExchangeAppointments(EWSConnector ewsConnector, CalendarFolder folder) throws RaplaException {
         List<ExchangeAppointment> exchangeAppointments = new ArrayList<>();
         try
         {
-            boolean newRequestNeeded = true;
             int offset = 0;
-            final int maxRequestedAppointments = 5;
+            final int maxRequestedAppointments = 100;
             final SearchFilter searchFilter = new SearchFilter.Exists(RAPLA_APPOINTMENT_MARKER);
-            while (newRequestNeeded)
+            ExchangeService service = ewsConnector.getService();
+            while (offset >= 0)
             {
                 final ItemView view = new ItemView(maxRequestedAppointments, offset);
-                view.setPropertySet(new PropertySet(BasePropertySet.FirstClassProperties, RAPLA_APPOINTMENT_ID, RAPLA_APPOINTMENT_MARKER, RAPLA_LAST_UPDATED_TIME));
-                ExchangeService service = ewsConnector.getService();
+                view.setPropertySet(new PropertySet(BasePropertySet.FirstClassProperties, RAPLA_APPOINTMENT_ID, RAPLA_APPOINTMENT_MARKER, RAPLA_LAST_UPDATED_TIME, PR_CREATOR_NAME));
                 final FindItemsResults<Item> foundItems = service.findItems(folder.getId(), searchFilter, view);
-                if (foundItems.getItems().size() == maxRequestedAppointments)
-                {
-                    offset++;
-                }
-                else
-                {
-                    newRequestNeeded = false;
-                }
+                offset = nextPageOffset(offset, maxRequestedAppointments, foundItems.getItems().size());
 
                 for (Item item : foundItems)
                 {
@@ -234,6 +284,9 @@ public class AppointmentSynchronizer
                     microsoft.exchange.webservices.data.core.service.item.Appointment appointment = (microsoft.exchange.webservices.data.core.service.item.Appointment) item;
                     String exchangeAppointmentId = id.getUniqueId();
                     ExchangeAppointment exchangeAppointment = new ExchangeAppointment(new ReferenceInfo<>(raplaAppointmentId, Appointment.class), exchangeAppointmentId, id, appointment, raplaAppointmentLastChanged);
+                    OutParam<String> creator = new OutParam<>();
+                    extendedProperties.tryGetValue(String.class, PR_CREATOR_NAME, creator);
+                    exchangeAppointment.foreign = !ownedBySyncAccount(creator.getParam(), item.getSensitivity(), ewsConnector.getExchangeUsername());
                     exchangeAppointments.add(exchangeAppointment);
                 }
             }
@@ -285,6 +338,27 @@ public class AppointmentSynchronizer
                 delete();
             }
         }
+        microsoft.exchange.webservices.data.core.service.item.Appointment existing = getExchangeAppointmentByRaplaId(service, raplaAppointment.getId());
+        if (existing != null && !appointmentTask.isForced()
+                && ownerEditedAfterRapla(existing.getLastModifiedName(), existing.getLastModifiedTime(), java.util.Date.from(raplaAppointment.getReservation().getLastChanged().toInstant(java.time.ZoneOffset.UTC)), ewsConnector.getExchangeUsername())
+                && !sameStartEndSubject(rapla2exchange(raplaAppointment.getStart()), rapla2exchange(raplaAppointment.getEnd()), NameFormatUtil.getExportName(raplaAppointment, locale), existing.getStart(), existing.getEnd(), existing.getSubject())) {
+            LOGGER.info("{} leaving {} as edited by the mailbox owner on {} (after rapla's last change)", getMailboxName(), raplaAppointment.getId(), existing.getLastModifiedTime());
+            skipReason = "vom Postfach-Inhaber am " + existing.getLastModifiedTime() + " bearbeitet (nach Raplas letzter Aenderung) - unveraendert gelassen";
+            return;
+        }
+        if (existing != null && isRecurringMaster(existing) != null && isRecurringMaster(existing) != (raplaAppointment.getRepeating() != null)) {
+            LOGGER.info("{} re-creating {}: recurrence shape differs from the existing item", getMailboxName(), raplaAppointment.getId());
+            existing.delete(DeleteMode.SoftDelete, SendCancellationsMode.SendToNone);
+            existing = null;
+        }
+        if (existing == null) {
+            for (ExchangeAppointment candidate : getExchangeAppointmentsById(service, raplaAppointment.getId())) {
+                if (candidate.isForeign() && foreignItemUpToDate(timeZoneConverter, locale, raplaAppointment, candidate)) {
+                    LOGGER.info("{} not creating {}: the owner's private/copied item already has the same start, end and subject", getMailboxName(), raplaAppointment.getId());
+                    return;
+                }
+            }
+        }
         microsoft.exchange.webservices.data.core.service.item.Appointment exchangeAppointment = getEquivalentExchangeAppointment(raplaAppointment);
         saveToExchangeServer(exchangeAppointment, sendNotificationMail);
         // FIXME it an error occurs exceptions may not be serialized correctly
@@ -330,20 +404,13 @@ public class AppointmentSynchronizer
             microsoft.exchange.webservices.data.core.service.item.Appointment exchangeAppointment = getExchangeAppointmentByRaplaId(service, identifier);
             if (exchangeAppointment != null)
             {
-                try
-                {
-                    LOGGER.debug("Deleting  {} {}", exchangeAppointment.getId().getUniqueId(), exchangeAppointment);
-                    exchangeAppointment.delete(DeleteMode.HardDelete, SendCancellationsMode.SendToNone);
-                }
-                catch (ServiceResponseException e)
-                {
-                    LOGGER.warn("{} Deleted appointment with id {} failed due to {}", getMailboxName(), identifier, e.getMessage());
-                }
+                LOGGER.debug("{}: Deleting {} {}", getMailboxName(), exchangeAppointment.getId().getUniqueId(), exchangeAppointment);
+                exchangeAppointment.delete(DeleteMode.SoftDelete, SendCancellationsMode.SendToNone);
             }
         }
         catch (microsoft.exchange.webservices.data.core.exception.service.remote.ServiceResponseException e)
         {
-            //can be ignored
+            throw e;
         }
         //delete on the Exchange Server side
         //remove it from the "to-be-removed"-list
@@ -357,13 +424,13 @@ public class AppointmentSynchronizer
         {
             FolderId folderId = getFolderId();
 
-            LOGGER.info("{}Adding {} to exchange", getMailboxName(), exchangeAppointment.getSubject());
+            LOGGER.info("{}: Adding {} to exchange", getMailboxName(), exchangeAppointment.getSubject());
             SendInvitationsMode sendMode = notify ? SendInvitationsMode.SendOnlyToAll : SendInvitationsMode.SendToNone;
             exchangeAppointment.save(folderId,sendMode);
         }
         else
         {
-            LOGGER.info("{}Updating {} {},{}", getMailboxName(), exchangeAppointment.getId(), exchangeAppointment.getSubject(), exchangeAppointment.getWhen());
+            LOGGER.info("{}: Updating {} {},{}", getMailboxName(), exchangeAppointment.getId(), exchangeAppointment.getSubject(), exchangeAppointment.getWhen());
             SendInvitationsOrCancellationsMode sendMode = notify ? SendInvitationsOrCancellationsMode.SendOnlyToAll
                     : SendInvitationsOrCancellationsMode.SendToNone;
             exchangeAppointment.update(ConflictResolutionMode.AlwaysOverwrite, sendMode);
@@ -374,24 +441,50 @@ public class AppointmentSynchronizer
         return appointmentTask != null ? appointmentTask.getMailboxName() :"unkown";
     }
 
+    /** all rapla-tagged items (own and foreign) carrying this rapla id in the task's calendar */
+    private List<ExchangeAppointment> getExchangeAppointmentsById(ExchangeService service, String raplaId) throws Exception
+    {
+        List<ExchangeAppointment> result = new ArrayList<>();
+        FolderId folderId = getFolderId();
+        if (folderId == null) return result;
+        ItemView view = new ItemView(10);
+        view.setPropertySet(new PropertySet(BasePropertySet.FirstClassProperties, RAPLA_APPOINTMENT_ID, RAPLA_LAST_UPDATED_TIME, PR_CREATOR_NAME));
+        for (Item item : service.findItems(folderId, new SearchFilter.IsEqualTo(RAPLA_APPOINTMENT_ID, raplaId), view))
+        {
+            if (!(item instanceof microsoft.exchange.webservices.data.core.service.item.Appointment)) continue;
+            OutParam<String> creator = new OutParam<>(), last = new OutParam<>();
+            item.getExtendedProperties().tryGetValue(String.class, PR_CREATOR_NAME, creator);
+            String lastChanged = item.getExtendedProperties().tryGetValue(String.class, RAPLA_LAST_UPDATED_TIME, last) ? last.getParam() : T_00_00_00_Z;
+            ExchangeAppointment ea = new ExchangeAppointment(new ReferenceInfo<>(raplaId, Appointment.class), item.getId().getUniqueId(), item.getId(), (microsoft.exchange.webservices.data.core.service.item.Appointment) item, lastChanged);
+            ea.foreign = !ownedBySyncAccount(creator.getParam(), item.getSensitivity(), ewsConnector.getExchangeUsername());
+            result.add(ea);
+        }
+        return result;
+    }
+
     private microsoft.exchange.webservices.data.core.service.item.Appointment getExchangeAppointmentByRaplaId(ExchangeService service, String raplaId) throws Exception
     {
         FolderId folderId = getFolderId();
         if (folderId == null) return null;
         try
         {
-            final ItemView view = new ItemView(1);
+            final ItemView view = new ItemView(10);
+            view.setPropertySet(new PropertySet(BasePropertySet.FirstClassProperties, PR_CREATOR_NAME));
             final SearchFilter searchFilter = new SearchFilter.IsEqualTo(RAPLA_APPOINTMENT_ID, raplaId);
             final FindItemsResults<Item> items = service.findItems(folderId, searchFilter, view);
-            if (items != null && !items.getItems().isEmpty())
+            for (Item item : items)
             {
-                final Item item = items.iterator().next();
+                OutParam<String> creator = new OutParam<>();
+                item.getExtendedProperties().tryGetValue(String.class, PR_CREATOR_NAME, creator);
+                if (!ownedBySyncAccount(creator.getParam(), item.getSensitivity(), ewsConnector.getExchangeUsername()))
+                {
+                    continue;   // owner's copy carries the rapla marker too; private items are not writable for the delegate
+                }
                 if (item instanceof microsoft.exchange.webservices.data.core.service.item.Appointment)
                 {
                     return (microsoft.exchange.webservices.data.core.service.item.Appointment) item;
                 }
-                final ItemId id = item.getId();
-                return microsoft.exchange.webservices.data.core.service.item.Appointment.bind(service, id);
+                return microsoft.exchange.webservices.data.core.service.item.Appointment.bind(service, item.getId());
             }
         }
         catch (ServiceResponseException e)
@@ -492,6 +585,12 @@ public class AppointmentSynchronizer
         return exchangeAppointment;
     }
 
+    // IsRecurring is false on a recurring master (it flags occurrences); the master is recognised by its AppointmentType
+    public static Boolean isRecurringMaster(microsoft.exchange.webservices.data.core.service.item.Appointment item) {
+        try { return item.getAppointmentType() == microsoft.exchange.webservices.data.core.enumeration.service.calendar.AppointmentType.RecurringMaster; }
+        catch (Exception e) { return null; }   // unknown type: callers never act on it
+    }
+
     public static String getLastUpdate(Appointment raplaAppointment) {
         Reservation reservation = raplaAppointment.getReservation();
         if ( reservation == null) {
@@ -516,6 +615,13 @@ public class AppointmentSynchronizer
         {
 
         }
+    }
+
+    public static java.util.Date rapla2exchange(TimeZoneConverter timeZoneConverter, LocalDateTime date)
+    {
+        TimeZone timeZone = timeZoneConverter.getImportExportTimeZone();
+        LocalDateTime exportDate = timeZoneConverter.fromRaplaTime(timeZone, DateTools.toLocalDateTime(DateTools.toMilli(date)));
+        return java.util.Date.from(exportDate.toInstant(java.time.ZoneOffset.UTC));
     }
 
     private java.util.Date rapla2exchange(LocalDateTime date)
@@ -677,8 +783,7 @@ public class AppointmentSynchronizer
         }
         else if (type.is(RepeatingType.WEEKLY))
         {
-            DayOfTheWeek dayOfWeek = getDayOfWeek(calendar);
-            returnVal = new Recurrence.WeeklyPattern(startAsDate, interval, dayOfWeek);
+            returnVal = new Recurrence.WeeklyPattern(startAsDate, interval, weeklyDays(repeating.getWeekdays()));
         }
         else if (type.is(RepeatingType.MONTHLY))
         {
@@ -708,6 +813,17 @@ public class AppointmentSynchronizer
             }
         }
         return returnVal;
+    }
+
+    // rapla weekdays are SUNDAY=1..SATURDAY=7, the same order as DayOfTheWeek.values()
+    public static DayOfTheWeek[] weeklyDays(java.util.Set<Integer> weekdays)
+    {
+        java.util.List<DayOfTheWeek> days = new java.util.ArrayList<DayOfTheWeek>();
+        for (Integer weekday : new java.util.TreeSet<Integer>(weekdays))
+        {
+            days.add(DayOfTheWeek.values()[weekday - 1]);
+        }
+        return days.toArray(new DayOfTheWeek[days.size()]);
     }
 
     private DayOfTheWeek getDayOfWeek(Calendar calendar)

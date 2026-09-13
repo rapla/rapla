@@ -150,6 +150,9 @@ public class SynchronisationManager
             Collection<User> users = cachableStorageOperator.getUsers();
             Map<String, Allocatable> allocatablesPerMailbox = getAllocatableForMailbox();
             Set<SynchronizationTask> synchronizationTasks = reloadSyncTasks();
+            List<String> foreignReport = new ArrayList<>();
+            Map<String, Integer> foreignUpToDate = new TreeMap<>();
+            ownerEditReport.clear();
             for (User user:users) {
                     EWSConnector.UserConnect userConnect;
                     try {
@@ -170,14 +173,27 @@ public class SynchronisationManager
 //                            }
                             CalendarFolder folder = mailbox.getValue();
                             Allocatable allocatable = allocatablesPerMailbox.get(mailboxName);
+                            if (allocatable != null && failureBackoff.skipThisSweep(allocatable.getId())) {
+                                LOGGER.info("Skipping mailbox {} this sweep: previous tasks failed (backoff)", mailboxName);
+                                continue;
+                            }
                             if (allocatable == null) {
                                 LOGGER.warn("Resource for mailbox {} not found  Skipping mailbox ", mailboxName);
                                 continue;
                             }
                             List<ExchangeAppointment> exchangeAppointments = AppointmentSynchronizer.getExchangeAppointments(userConnect.getEwsConnector(), folder);
                             Map<ReferenceInfo<Appointment>, Collection<ExchangeAppointment>> exchangeAppointmentsByReference = new LinkedHashMap<>();
+                            Map<ReferenceInfo<Appointment>, List<ExchangeAppointment>> foreignByReference = new LinkedHashMap<>();
+                            java.util.Date windowStart = AppointmentSynchronizer.rapla2exchange(converter, getSyncRange().getStart());
                             for ( ExchangeAppointment exchangeAppointment: exchangeAppointments) {
+                                if (outsideSweepWindow(exchangeAppointment.getExchangeAppointment(), windowStart)) {
+                                    continue;   // older than exch-sync-past: not compared, not deleted (PRD 114 hunk 13)
+                                }
                                 ReferenceInfo<Appointment> raplaAppointmentId = exchangeAppointment.getRaplaAppointmentId();
+                                if (exchangeAppointment.isForeign()) {
+                                    foreignByReference.computeIfAbsent(raplaAppointmentId, x -> new ArrayList<ExchangeAppointment>()).add(exchangeAppointment);
+                                    continue;
+                                }
                                 Collection<ExchangeAppointment> exchangeAppointmentList = exchangeAppointmentsByReference.computeIfAbsent(raplaAppointmentId, x -> new ArrayList<ExchangeAppointment>());
                                 exchangeAppointmentList.add( exchangeAppointment );
                             }
@@ -193,7 +209,16 @@ public class SynchronisationManager
                                 Collection<ExchangeAppointment> exchangeAppointmentList = exchangeAppointmentsByReference.get(reference);
                                 String lastUpdate = AppointmentSynchronizer.getLastUpdate(appointment);
                                 if (exchangeAppointmentList == null || exchangeAppointmentList.isEmpty()) {
-                                    appointmentsToUpdate.add(appointment);
+                                    List<ExchangeAppointment> foreignList = foreignByReference.get(reference);
+                                    String what = reservation.getName(i18n.getLocale()) + " " + appointment.getStart();
+                                    if (foreignList != null && foreignList.stream().anyMatch(f -> AppointmentSynchronizer.foreignItemUpToDate(converter, i18n.getLocale(), appointment, f))) {
+                                        foreignUpToDate.merge(mailboxName, 1, Integer::sum);
+                                    } else {
+                                        if (foreignList != null) {
+                                            foreignReport.add(mailboxName + ": " + what + " - owner's private/copied item is outdated, rapla creates its own item");
+                                        }
+                                        appointmentsToUpdate.add(appointment);
+                                    }
                                 } else {
                                     boolean changed = false;
                                     for ( ExchangeAppointment exchangeAppointment: exchangeAppointmentList) {
@@ -208,6 +233,12 @@ public class SynchronisationManager
                                 }
                             }
                             for (ExchangeAppointment exchangeAppointment : exchangeAppointments) {
+                                if (exchangeAppointment.isForeign()) {
+                                    continue;
+                                }
+                                if (endsBeforeSweepWindow(exchangeAppointment.getExchangeAppointment(), windowStart)) {
+                                    continue;   // the rapla side was queried from the window start, so an old item is NOT "only in Exchange"
+                                }
                                 ReferenceInfo<Appointment> raplaAppointmentId = exchangeAppointment.getRaplaAppointmentId();
                                 if (!appointmentsByReference.containsKey(raplaAppointmentId)) {
                                     appointmentsToDelete.add(exchangeAppointment);
@@ -216,9 +247,13 @@ public class SynchronisationManager
 
 
                             for (Appointment appointment : appointmentsToUpdate) {
-                                Collection<SynchronizationTask> result = updateOrCreateTasks(appointment);
+                                Collection<SynchronizationTask> result = tasksForResource(updateOrCreateTasks(appointment), allocatable.getId());
                                 synchronizationTasks.removeAll(result);
                                 synchronizationTasks.addAll(result);
+                            }
+                            if (appointmentsToDelete.size() > MAX_DELETES_PER_MAILBOX_PER_SWEEP) {
+                                LOGGER.warn("Not deleting in mailbox {}: {} deletes in one sweep exceed the safety limit of {} - check the sync window / mapping first", mailboxName, appointmentsToDelete.size(), MAX_DELETES_PER_MAILBOX_PER_SWEEP);
+                                appointmentsToDelete.clear();
                             }
                             for (ExchangeAppointment exchangeAppointment : appointmentsToDelete) {
                                 SynchronizationBox box = synchronizationBoxMap.get(allocatable.getReference());
@@ -235,6 +270,13 @@ public class SynchronisationManager
                     }
             }
             LOGGER.info("Executing {} Synchronization tasks.", synchronizationTasks.size());
+            for (String line : foreignReport) {
+                LOGGER.warn(line);
+            }
+            for (Map.Entry<String, Integer> e : foreignUpToDate.entrySet()) {
+                LOGGER.info("{}: {} private/copied rapla item(s) up to date, nothing written", e.getKey(), e.getValue());
+            }
+            lastForeignReport = foreignReport;
             executeTasks(synchronizationTasks );
             if ( synchronizationTasks.size() >0 ) {
                 LOGGER.info("Executing done.");
@@ -277,6 +319,68 @@ public class SynchronisationManager
             }
         }
     }
+
+    /** Only an account-level failure (bad credentials) makes the user's remaining tasks pointless;
+     *  access denied on one shared calendar is a property of that mailbox (PRD 114 hunk 1). */
+    static boolean abortsRemainingTasksForUser(Throwable cause) {
+        return cause instanceof HttpErrorException && ((HttpErrorException) cause).getHttpErrorCode() == 401;
+    }
+
+    /** The sweep diffs one mailbox at a time; {@link #updateOrCreateTasks} fans out to every
+     *  participant of the appointment, so keep only the diffed resource (PRD 114 hunk 4). */
+    static Collection<SynchronizationTask> tasksForResource(Collection<SynchronizationTask> tasks, String resourceId) {
+        return tasks.stream().filter(t -> t.getResourceId().equals(resourceId)).collect(Collectors.toList());
+    }
+
+    /** Per-mailbox backoff (PRD 114 hunk 9): after n failed tasks a mailbox is skipped for the next n sweeps (max 24); a success resets. */
+    static class FailureBackoff {
+        private final Map<String, Integer> failures = new ConcurrentHashMap<>();
+        private final Map<String, Integer> skipsLeft = new ConcurrentHashMap<>();
+
+        boolean skipThisSweep(String resourceId) {
+            Integer left = skipsLeft.get(resourceId);
+            if (left == null || left <= 0) return false;
+            skipsLeft.put(resourceId, left - 1);
+            return true;
+        }
+
+        void failed(String resourceId) {
+            skipsLeft.put(resourceId, Math.min(24, failures.merge(resourceId, 1, Integer::sum)));
+        }
+
+        void succeeded(String resourceId) {
+            failures.remove(resourceId);
+            skipsLeft.remove(resourceId);
+        }
+    }
+
+    final FailureBackoff failureBackoff = new FailureBackoff();
+
+    /** PRD 114 hunk 13: items ending before the sweep window are invisible to the sweep — neither compared nor deleted. */
+    // delete side: the rapla side was queried from the window start, so a series whose last occurrence lies before it
+    // is absent there although its master is still in Exchange — never treat that as "only in Exchange"
+    private static boolean endsBeforeSweepWindow(microsoft.exchange.webservices.data.core.service.item.Appointment item, java.util.Date windowStart) {
+        java.util.Date itemEnd = null;
+        try { itemEnd = item.getEnd(); } catch (Exception ignore) { }
+        return outsideSweepWindow(false, itemEnd, windowStart);
+    }
+
+    private static boolean outsideSweepWindow(microsoft.exchange.webservices.data.core.service.item.Appointment item, java.util.Date windowStart) {
+        java.util.Date itemEnd = null;
+        try { itemEnd = item.getEnd(); } catch (Exception ignore) { }
+        Boolean master = AppointmentSynchronizer.isRecurringMaster(item);
+        return master != null && outsideSweepWindow(master, itemEnd, windowStart);
+    }
+
+    // a recurring master reports the end of its FIRST occurrence, so it can never be judged by getEnd() alone
+    static boolean outsideSweepWindow(boolean recurring, java.util.Date itemEnd, java.util.Date windowStart) {
+        return !recurring && itemEnd != null && windowStart != null && itemEnd.before(windowStart);
+    }
+
+    /** safety net against a mass delete caused by a window/mapping mistake (2026-09-09: 258 items in 3 minutes) */
+    static final int MAX_DELETES_PER_MAILBOX_PER_SWEEP = 50;
+    volatile List<String> lastForeignReport = Collections.emptyList();
+    final List<String> ownerEditReport = Collections.synchronizedList(new ArrayList<>());
 
     boolean firstExecution = true;
 
@@ -650,13 +754,16 @@ public class SynchronisationManager
                 {
                     Reservation current = evt.getLastEntryBeforeUpdate(op.getReference());
                     Reservation oldReservation = current;
+                    Set<String> removeMailboxes = new TreeSet<>();
                     for (Appointment app : oldReservation.getAppointments())
                     {
-                        Collection<SynchronizationTask> result = updateTasksSetDelete(app.getReference());
+                        // task persistence is off, so build the delete tasks from the removed reservation itself (PRD 114 hunk 8)
+                        Collection<SynchronizationTask> result = updateOrCreateTasks(app);
+                        result.forEach(t -> { t.setStatus(SyncStatus.toDelete); removeMailboxes.add(t.getMailboxName()); });
                         tasks.removeAll(result);
                         tasks.addAll(result);
                     }
-                    LOGGER.info("Removing  {}", oldReservation);
+                    LOGGER.info("Removing in mailboxes {}: {}", removeMailboxes, oldReservation);
                 }
                 else if (operation instanceof UpdateResult.Add)
                 {
@@ -749,6 +856,30 @@ public class SynchronisationManager
                 if(sb.length() == 0)
                 {
                     sb.append("No errors occured, all sychronized");
+                }
+                EWSConnector.UserConnect connect = connectMap.get(userRef);
+                if (connect != null)
+                {
+                    Set<String> mapped = synchronizationBoxMap.values().stream().filter(b -> userRef.equals(b.userId)).map(b -> b.mailboxName).collect(Collectors.toSet());
+                    sb.append("\n\nMailboxen (").append(connect.getSharedMailboxes().size()).append("):\n");
+                    for (String mailboxName : new TreeSet<>(connect.getSharedMailboxes().keySet()))
+                    {
+                        sb.append(mapped.contains(mailboxName) ? "  synchronisiert: " : "  KEINE RAPLA-PERSON ZUGEORDNET (exchangeMailbox setzen): ").append(mailboxName).append("\n");
+                    }
+                    List<String> foreign = new ArrayList<>();
+                    for (String line : new ArrayList<>(ownerEditReport))
+                    {
+                        if (connect.getSharedMailboxes().containsKey(line.substring(0, Math.max(0, line.indexOf(':'))))) foreign.add(line);
+                    }
+                    for (String line : lastForeignReport)
+                    {
+                        if (connect.getSharedMailboxes().containsKey(line.substring(0, Math.max(0, line.indexOf(':'))))) foreign.add(line);
+                    }
+                    if (!foreign.isEmpty())
+                    {
+                        sb.append("\nVom Postfach-Inhaber kopierte oder als privat markierte Rapla-Termine (Rapla kann sie nicht aendern/loeschen):\n");
+                        for (String line : foreign) sb.append("  ").append(line).append("\n");
+                    }
                 }
                 try
                 {
@@ -933,6 +1064,7 @@ public class SynchronisationManager
                 } else {
                     task.setStatus(SyncStatus.toUpdate);
                 }
+                task.setForced(true);   // explicit resync: rapla's version wins over owner edits
                 newTasksFromCalendar.add(task);
                 appointmentsFound.add(app.getId());
 
@@ -971,7 +1103,7 @@ public class SynchronisationManager
 
     private AppointmentMapping queryAppointments(Set<Allocatable> allocatables) throws RaplaException {
         org.rapla.storage.SyncStorageOperator sync = (org.rapla.storage.SyncStorageOperator) cachableStorageOperator;
-        return sync.queryAppointmentsSync(null, allocatables, Collections.emptyList(), null, null, null, Collections.emptyMap(), false);
+        return sync.queryAppointmentsSync(null, allocatables, Collections.emptyList(), getSyncRange().getStart(), null, null, Collections.emptyMap(), false);
     }
 
     @NotNull
@@ -990,7 +1122,7 @@ public class SynchronisationManager
     {
         boolean isDelete = task.status == SyncStatus.toDelete;
         String appointmentId = task.getAppointmentId();
-        return getAppointmentMessage(appointmentId, isDelete);
+        return task.getMailboxName() + ": " + getAppointmentMessage(appointmentId, isDelete);
     }
 
     private String getAppointmentMessage(String appointmentId, boolean isDeleteTask)
@@ -1102,7 +1234,11 @@ public class SynchronisationManager
                 notificationMail = preferences.getEntryAsBoolean(ExchangeConnectorConfig.EXCHANGE_SEND_INVITATION_AND_CANCELATION,
                         ExchangeConnectorConfig.DEFAULT_EXCHANGE_SEND_INVITATION_AND_CANCELATION);
             }
+            Set<String> failedResources = new HashSet<>();
             for (SynchronizationTask task : tasksForUser) {
+                if (failedResources.contains(task.getResourceId())) {
+                    continue;
+                }
                 final SyncStatus beforeStatus = task.getStatus();
                 final ReferenceInfo<Appointment> appointmentId = new ReferenceInfo<>(task.getAppointmentId(), Appointment.class);
                 final Appointment appointment = beforeStatus != SyncStatus.toDelete ? facade.tryResolve(appointmentId) : null;
@@ -1165,6 +1301,9 @@ public class SynchronisationManager
                 try {
                     try {
                         worker.execute();
+                        if (worker.getSkipReason() != null) {
+                            ownerEditReport.add(task.getMailboxName() + ": " + getAppointmentMessage(task.getAppointmentId(), false) + " - " + worker.getSkipReason());
+                        }
                     } catch (RaplaException ex) {
                         String message = "Internal error while processing SynchronizationTask " + task + ". Ignoring task. ";
                         task.increaseRetries(message);
@@ -1187,7 +1326,7 @@ public class SynchronisationManager
                     while (cause != null && cause.getCause() != null && depth++<4) {
                         cause = cause.getCause();
                     }
-                    boolean accessEroor = false;
+                    boolean accessEroor = abortsRemainingTasksForUser(cause);
                     if (cause instanceof HttpErrorException) {
                         int httpErrorCode = ((HttpErrorException) cause).getHttpErrorCode();
                         if (httpErrorCode == 401) {
@@ -1205,15 +1344,12 @@ public class SynchronisationManager
                                 }
                             }
                         }
-                        accessEroor = true;
                     }
                     if ( message.contains("Access is denied") || message.contains("Zugriff") || message.contains("verweigert") ) {
                         message = "Cannot write into exchange calendar " + cause.getMessage();
-                        accessEroor = true;
                     }
                     if (cause instanceof IOException) {
                         message = "Keine Verbindung zum Exchange " + cause.getMessage();
-                        accessEroor = true;
                     }
                     String toString = getAppointmentMessage(task);
                     if (message != null) {
@@ -1231,8 +1367,13 @@ public class SynchronisationManager
                     if (accessEroor) {
                         break;
                     }
+                    failedResources.add(task.getResourceId());
+                    failureBackoff.failed(task.getResourceId());
                 }
                 SyncStatus after = task.getStatus();
+                if (after == SyncStatus.deleted || after == SyncStatus.synched) {
+                    failureBackoff.succeeded(task.getResourceId());
+                }
                 if (after == SyncStatus.deleted && beforeStatus != SyncStatus.deleted) {
                     toRemove.add(task);
                     result.removed++;
