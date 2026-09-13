@@ -14,7 +14,8 @@
 		<intellijAnnotations.version>12.0</intellijAnnotations.version>
 		<ical4j.version>4.2.0</ical4j.version>
 		<rxjava.version>3.1.5</rxjava.version>
-		<spring-boot.version>4.0.6</spring-boot.version>
+		<spring-boot.version>4.0.8</spring-boot.version>
+		<tomcat.version>11.0.25</tomcat.version> <!-- FIXME: temporary CVE pin, see dependencyManagement note -->
 		<java.version>17</java.version>
 		<exchange.webservice.api>2.0</exchange.webservice.api>
 		<maven.install.skip>false</maven.install.skip>
@@ -271,6 +272,24 @@
 	</build>
 	<dependencyManagement>
 		<dependencies>
+			<!-- FIXME(2026-09-13): tomcat-embed pins for CVE fixes (Spring Boot 4.0.8 still manages Tomcat 11.0.24).
+			     REMOVE the three tomcat-embed entries below AND the tomcat.version property as soon as a
+			     Spring Boot patch manages Tomcat >= 11.0.25 (check: mvn dependency:tree | grep tomcat-embed-core). -->
+			<dependency>
+				<groupId>org.apache.tomcat.embed</groupId>
+				<artifactId>tomcat-embed-core</artifactId>
+				<version>${tomcat.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.tomcat.embed</groupId>
+				<artifactId>tomcat-embed-el</artifactId>
+				<version>${tomcat.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.tomcat.embed</groupId>
+				<artifactId>tomcat-embed-websocket</artifactId>
+				<version>${tomcat.version}</version>
+			</dependency>
 			<dependency>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-dependencies</artifactId>
