@@ -569,6 +569,25 @@ import java.time.LocalDateTime;
         return used > 0 ? Math.round(100.0 * lost / used) : 0;
     }
 
+    /** S10 — the driver's URL may carry credentials (MariaDB {@code ?user=&password=}, HSQLDB/H2 {@code ;password=}, {@code user:pass@host}); keep host and database only. */
+    static String sanitizeJdbcUrl(String url)
+    {
+        if (url == null)
+        {
+            return null;
+        }
+        int cut = url.length();
+        for (char separator : new char[] { '?', ';' })
+        {
+            int index = url.indexOf(separator);
+            if (index >= 0 && index < cut)
+            {
+                cut = index;
+            }
+        }
+        return url.substring(0, cut).replaceFirst("//[^/@]*@", "//");
+    }
+
     public final void loadData() throws RaplaException
     {
         //clearAllHistory();
@@ -579,7 +598,7 @@ import java.time.LocalDateTime;
         try
         {
             c = createConnection();
-            connectionName = c.getMetaData().getURL();
+            connectionName = sanitizeJdbcUrl(c.getMetaData().getURL());
             final String productName = c.getMetaData().getDatabaseProductName();
             LOGGER.info("Using datasource {}: {}", productName, connectionName);
             // Drives the SHUTDOWN branch in disconnect(); without this the field stays
