@@ -916,9 +916,10 @@ All three share the same surface.
    classification generation yet).
 3. One read query end-to-end (`reservations`), §12 filter in the
    resolver.
-4. `/api/graphql` is `permitAll` by design — unauthenticated requests
+4. ~~`/api/graphql` is `permitAll` by design — unauthenticated requests
    return HTTP 200 with an `UNAUTHENTICATED` error; access is gated
-   per-field by §12, not by an endpoint-level 401.
+   per-field by §12, not by an endpoint-level 401.~~ **Reversed
+   2026-09-14** — see [Endpoint auth reversal](#endpoint-auth-reversal-2026-09-14).
 5. Verify `spring-boot-starter-graphql` is Jackson-3 / Spring Boot 4
    clean.
 
@@ -1047,6 +1048,18 @@ All three share the same surface.
 
 OQs 15–20 (Conflict symmetry, §12 on conflict hits, window semantics,
 default window, max-range cap, viewport-centered) are owned by [PRD 060](../060-graphql-mcp-foundations.md).
+
+### Endpoint auth reversal (2026-09-14)
+
+User ruling: `/api/graphql` (POST/GET) is `authenticated()` — an anonymous
+request gets HTTP 401 at the filter chain; `/api/graphql/schema` stays
+`permitAll`. Reason: with `permitAll`, anyone without login could introspect
+the schema through `/api/graphql` and spend server execution time on parsing,
+validation and resolver dispatch (an anonymous execution budget), even though
+§12 returned no data. The public SDL endpoint keeps schema shape readable, as
+item 11 intends. §12 per-field gating stays unchanged as the second layer;
+item 12's "auth → 401" now also holds for a missing login. Details:
+[docs/graphql.md § Auth](../../graphql.md#auth).
 
 ## Risks
 

@@ -347,29 +347,31 @@ test: `auth.interceptor.spec.ts` → "recovers when the refresh-owning
 request is torn down mid-refresh". Don't reintroduce a refresh whose
 lifecycle hangs off the request observable.
 
-#### GraphQL auth failures are HTTP 200, not 401 — the interceptor handles both
+#### GraphQL auth failures: HTTP 401 at the filter chain, 200+`UNAUTHENTICATED` in the resolvers — the interceptor handles both
 
-`/api/graphql` reports an unauthenticated caller as an **HTTP 200** body
-`{ errors: [{ extensions: { code: "UNAUTHENTICATED" } }] }` (GraphQL
-convention — `UnauthenticatedException` → `MutationExceptionResolver`),
-**not** a 401. The endpoint is `permitAll` (public probes like `hello` /
-`me` must stay anonymous), so an expired access-token cookie does not
-produce a 401 there — the resolver just sees a null caller and throws.
+Since 2026-09-14 `/api/graphql` is `authenticated()` in `SecurityConfig`
+([docs/graphql.md § Auth](graphql.md#auth)). A request **without a valid
+token** — no cookie, or an expired/invalid `access_token` — is rejected with
+**HTTP 401** by the filter chain before any GraphQL runs, exactly like every
+other `/api` endpoint; `/api/graphql/schema` stays public. The mid-session
+access-token expiry therefore reaches the interceptor's normal 401 path.
 
-A plain 401 interceptor therefore misses a mid-session access-token
-expiry on a GraphQL query: the user clicks a resource, the view query
-returns 200+`UNAUTHENTICATED`, and the SPA shows "Authentication
-required: this query needs a valid bearer token" until a full page
-reload (the reload's `GET /api/auth/me` *does* 401 → refresh → heal).
+An **HTTP 200** body `{ errors: [{ extensions: { code: "UNAUTHENTICATED" } }] }`
+(GraphQL convention — `UnauthenticatedException` →
+`MutationExceptionResolver`) remains possible only when the token passed the
+filter chain but the resolver cannot resolve a caller from it. The resolver
+tests pin that behaviour with `addFilters = false`.
 
-So `auth.interceptor.ts` also inspects `/api/graphql` 200 responses: a
-body carrying an `UNAUTHENTICATED` error triggers the **same shared
-refresh + replay** as a 401 (one retry, guarded by an `HttpContext`
-token so a still-unauthenticated replay can't loop). Other GraphQL
-errors (e.g. `VIEW_NOT_FOUND`) pass straight through to the view.
-Regression tests: `auth.interceptor.spec.ts` → "on a GraphQL 200 with
-UNAUTHENTICATED error: refreshes once and replays" + "does NOT refresh on
-a non-auth GraphQL error".
+So `auth.interceptor.ts` covers both: a 401 from `/api` triggers the shared
+refresh + replay, and it also inspects `/api/graphql` 200 responses — a body
+carrying an `UNAUTHENTICATED` error triggers the **same shared refresh +
+replay** (one retry, guarded by an `HttpContext` token so a
+still-unauthenticated replay can't loop). Other GraphQL errors (e.g.
+`VIEW_NOT_FOUND`) pass straight through to the view. Regression tests:
+`GraphQlEndpointAuthGateTest` (anonymous POST → 401, schema → 200, Bearer →
+200); `auth.interceptor.spec.ts` → "on a GraphQL 200 with UNAUTHENTICATED
+error: refreshes once and replays" + "does NOT refresh on a non-auth GraphQL
+error".
 
 ### Swing client — default OAuth, fallback password dialog
 
@@ -793,7 +795,7 @@ use `tokenUrl` for both initial code exchange and subsequent refresh
 Defaults are correct for a single rapla server at `https://rapla.yourdomain.com`:
 
 ```bash
-java -jar rapla-2.1-SNAPSHOT.jar
+java -jar rapla.jar
 ```
 
 The Swing client's "Sign in with browser…" button works out of the
@@ -1774,7 +1776,7 @@ makes (verified live, [PRD 072](prd/done/072-server-side-login-dialog.md)).
    export RAPLA_OAUTH_EXTERNAL_MICROSOFT_TENANT=11111111-2222-3333-4444-555555555555
    export RAPLA_OAUTH_EXTERNAL_MICROSOFT_CLIENT_ID=66666666-7777-8888-9999-aaaaaaaaaaaa
    export RAPLA_OAUTH_EXTERNAL_MICROSOFT_CLIENT_SECRET=<secret-value>
-   java -jar rapla-2.1-SNAPSHOT.jar
+   java -jar rapla.jar
    ```
 
 ### Recipe: Google (Web application — requires secret + BFF)
@@ -1797,7 +1799,7 @@ token endpoint even with PKCE. The BFF route handles this.
    export RAPLA_OAUTH_EXTERNAL_GOOGLE_CLIENT_ID=000000000000-aaaa.apps.googleusercontent.com
    export RAPLA_OAUTH_EXTERNAL_GOOGLE_CLIENT_SECRET=<secret>
    export RAPLA_OAUTH_EXTERNAL_GOOGLE_HOSTED_DOMAIN=yourdomain.com
-   java -jar rapla-2.1-SNAPSHOT.jar
+   java -jar rapla.jar
    ```
    `HOSTED_DOMAIN` is optional but **strongly recommended for Workspace
    deployments** — without it, any verified Google account (including
@@ -1842,7 +1844,7 @@ realm. Unlike Microsoft/Google, rapla derives every OIDC endpoint from just
    export RAPLA_OAUTH_EXTERNAL_KEYCLOAK_CLIENT_ID=rapla-app
    # Confidential client only — omit for a public PKCE client:
    # export RAPLA_OAUTH_EXTERNAL_KEYCLOAK_CLIENT_SECRET=<secret>
-   java -jar rapla-2.1-SNAPSHOT.jar
+   java -jar rapla.jar
    ```
 
 rapla derives the endpoints as:

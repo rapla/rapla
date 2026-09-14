@@ -144,6 +144,11 @@ public class SecurityConfig
                     // are covered by the /** glob; the 302→index.html redirect
                     // itself requires auth, so it can't leak the page either.
                     auth.requestMatchers("/swagger-ui", "/swagger-ui/**", "/graphiql", "/graphiql/**").authenticated();
+                    // /api/graphql (POST/GET) is authenticated since 2026-09-14 (user ruling,
+                    // docs/graphql.md § Auth): no anonymous introspection or execution. The
+                    // schema endpoint /api/graphql/schema stays public (permitAll below);
+                    // per-resolver §12 gating remains the second layer.
+                    auth.requestMatchers("/api/graphql").authenticated();
                     auth.requestMatchers("/api/auth/**", "/", "/index", "/server", "/static/**", "/*.html", "/*.css",
                             "/images/**", "/webclient/**", "/app/**",
                             "/api/logger/**", "/api/ical/timezones/**",
@@ -152,12 +157,6 @@ public class SecurityConfig
                             "/rapla/ical", "/rapla/internal_ical",
                             "/raplaclient", "/raplaclient.jnlp",
                             "/api/v3/api-docs/**", "/v3/api-docs/**",
-                            // /api/graphql is deliberately permitAll — authorization happens
-                            // per resolver (docs/graphql.md § Auth): anonymous queries get
-                            // UNAUTHENTICATED / null / [], writes fail closed via requireCaller().
-                            // Tightening to .authenticated() is a documented open decision
-                            // (2026-09, see docs/graphql.md § Auth), not an omission.
-                            "/api/graphql",
                             // GraphQL schema printer (spring.graphql.schema.printer.enabled)
                             // — the SDL pendant to the public /v3/api-docs above. API
                             // shape metadata only, no entity data; public to match Swagger.

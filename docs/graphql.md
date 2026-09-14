@@ -109,14 +109,24 @@ controller resolvers).
 
 ## Auth
 
-`/api/graphql` is in `SecurityConfig` `permitAll()` **by design** — it is
-NOT a 401 Bearer-JWT gate. An anonymous request returns HTTP 200 and reaches
-the resolvers; the auth boundary is the per-field §12 `canRead` gating inside
-the resolvers (anonymous → null caller → empty read scope; mutations fail
-closed via `requireCaller()`). A missing/invalid token surfaces as a GraphQL
-`UNAUTHENTICATED` error in the `errors` array, not an HTTP 401. To act as a
-real user, get a JWT via the password grant (rapla-client public OAuth
-client) and attach it:
+Two layers, both enforced:
+
+1. **Endpoint** — `/api/graphql` (POST/GET) is `authenticated()` in
+   `SecurityConfig` since 2026-09-14 (user ruling, reversing the earlier
+   `permitAll`): a request without a valid Bearer / `access_token` cookie gets
+   **HTTP 401** before any GraphQL parsing, so neither introspection nor an
+   anonymous execution budget is available without login.
+   `/api/graphql/schema` (the SDL printer) **stays `permitAll`** — API shape
+   metadata only, the pendant to the public `/v3/api-docs`.
+2. **Resolvers** — every authenticated request still passes the per-field §12
+   `canRead` gating (a caller only sees what it can read; mutations fail
+   closed via `requireCaller()`). A caller the resolvers can't resolve yields a
+   GraphQL `UNAUTHENTICATED` error in the `errors` array (HTTP 200); the
+   resolver tests assert this with `addFilters = false`.
+
+Gate test: `GraphQlEndpointAuthGateTest` (anonymous POST → 401, schema → 200,
+Bearer → 200). To act as a real user, get a JWT via the password grant
+(rapla-client public OAuth client) and attach it:
 
 ```bash
 TOK=$(curl -s -X POST http://localhost:8051/oauth2/token \
