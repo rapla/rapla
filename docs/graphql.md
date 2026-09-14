@@ -2,7 +2,7 @@
 
 [PRD 035](prd/done/035-graphql-foundations.md) exposes a GraphQL endpoint at `POST /api/graphql` covering
 resources (resources + persons), classifications, dynamic types, and
-reservations (PRD [055](prd/055-graphql-events-read-api.md)/[066](prd/066-graphql-reservation-resource-matching.md)). Live UIs: GraphiQL at `/graphiql/`,
+reservations (PRD [055](prd/055-graphql-events-read-api.md)/[066](prd/066-graphql-reservation-allocatable-matching.md)). Live UIs: GraphiQL at `/graphiql/`,
 Scalar at `/scalar/`, schema-as-data via introspection.
 
 ---
@@ -618,7 +618,7 @@ Input null-semantics on the write side (same PRD): in a classification
 value; an OMITTED key falls back to the type default (create and update
 rebuild from `newClassification()` — replace semantics, not merge).
 
-### 11. reservations + the calendar query ([PRD 055](prd/055-graphql-events-read-api.md) + [PRD 066](prd/066-graphql-reservation-resource-matching.md))
+### 11. reservations + the calendar query ([PRD 055](prd/055-graphql-events-read-api.md) + [PRD 066](prd/066-graphql-reservation-allocatable-matching.md))
 
 `reservations(filter:)` requires a mandatory time window and supports
 three orthogonal ways to select which resources drive the result —

@@ -171,7 +171,7 @@ all, so even reintroducing `connectAs` wouldn't cover the dominant SSO case.
 
 The "who can impersonate whom" decision is `canAdminUser(adminUser,
 target)`, in
-[`rapla-core/.../storage/PermissionController.java`](../../rapla-core/src/main/java/org/rapla/storage/PermissionController.java)
+[`rapla-core/.../storage/PermissionController.java`](../../../rapla-core/src/main/java/org/rapla/storage/PermissionController.java)
 at line 697:
 
 ```java
@@ -196,7 +196,7 @@ Two layers of admin authority:
 #### How the `can_admin_parent` annotation works
 
 The annotation key is
-[`CategoryAnnotations.CAN_ADMIN_PARENT`](../../rapla-core/src/main/java/org/rapla/entities/CategoryAnnotations.java)
+[`CategoryAnnotations.CAN_ADMIN_PARENT`](../../../rapla-core/src/main/java/org/rapla/entities/CategoryAnnotations.java)
 (string `"can_admin_parent"`). When set to `"true"` on category C,
 any user whose group list contains C is treated as admin of C's
 *parent* category and transitively of every user whose group list

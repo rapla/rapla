@@ -3,7 +3,7 @@
 **Status:** done (2026-05-11). All phases A1–A9 landed. `java.util.Date` is gone from `rapla-core` and `rapla-server` `src/main`; the three remaining imports in `rapla-client` are Swing widget boundaries (`DateField`, `TimeField`, `ExternalEventImportPanel`) and intentional. All 10 listed interfaces (`Timestamp`, `LastChangedTimestamp`, `Period`, `Conflict`, `Reservation`, `Permission`, `StorageOperator`, `RaplaFacade`, `CachableStorageOperator`, `RaplaLocale`) carry `LocalDateTime`/`LocalDate`/`LocalTime` primaries. Reactor `mvn test` green on Spring Boot 4.0.6 + Jackson 3.x. Follow-up work on long-millis arithmetic inside `AppointmentImpl` / `RepeatingImpl` tracked under [PRD 014](014-appointment-long-to-java-time.md) (also done).
 **Date:** 2026-05-06 (closed: 2026-05-11)
 
-> Detailed phase history (A1–A8 and earlier A9 iterations) lives in [`docs/date-migration-history.md`](../date-migration-history.md). This PRD now contains only the script-driven plan.
+> Detailed phase history (A1–A8 and earlier A9 iterations) lives in `docs/date-migration-history.md` (not kept in the repo). This PRD now contains only the script-driven plan.
 
 ### Phase A9 — Big-bang strip + direct type replacement (2026-05-09)
 
@@ -36,10 +36,10 @@ A read-only checkout of `origin/master` lives at `~/rapla-master-checkout/` for 
 
 | Doc | Generator | What |
 |-----|-----------|------|
-| **[`docs/date-occurrences.md`](../date-occurrences.md)** | `list-date-occurrences.py` + `augment-occurrences-with-worktree.py` | Every `Date` token in `origin/master` with master path AND working-tree path. 1,578 rows across 212 files. Canonical work list. |
-| **[`docs/date-occurrences-master.md`](../date-occurrences-master.md)** | `list-date-occurrences.py` | Same content, master-only — input to augment step. |
-| **[`docs/date-method-cleanup.md`](../date-method-cleanup.md)** | `list-date-methods.py [--all]` | Slimmer interface-only (69 methods across 24 interfaces). Per-method semantics overrides (`Period` → LocalDate, `RaplaLocale.toTime` → LocalTime). |
-| **[`docs/date-duplications-introduced.md`](../date-duplications-introduced.md)** | `list-introduced-duplications.py` | Methods added during migration that don't exist in master. Goal: drive to zero by Phase 2. |
+| **`docs/date-occurrences.md`** | `list-date-occurrences.py` + `augment-occurrences-with-worktree.py` | Every `Date` token in `origin/master` with master path AND working-tree path. 1,578 rows across 212 files. Canonical work list. |
+| **`docs/date-occurrences-master.md`** | `list-date-occurrences.py` | Same content, master-only — input to augment step. |
+| **`docs/date-method-cleanup.md`** | `list-date-methods.py [--all]` | Slimmer interface-only (69 methods across 24 interfaces). Per-method semantics overrides (`Period` → LocalDate, `RaplaLocale.toTime` → LocalTime). |
+| **`docs/date-duplications-introduced.md`** | `list-introduced-duplications.py` | Methods added during migration that don't exist in master. Goal: drive to zero by Phase 2. |
 
 | Script | Purpose |
 |--------|---------|

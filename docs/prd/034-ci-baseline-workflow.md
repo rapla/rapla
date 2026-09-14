@@ -81,5 +81,5 @@ If/when we adopt browser e2e as a CI gate. Out of scope for the initial PRD.
 - [PRD 017 — Test Coverage Strategy](017-test-coverage-strategy.md) — the pyramid this workflow exercises.
 - [PRD 007 — Build & Test Performance](007-build-and-test-performance.md) — Phase 1 work that brought test runtime under control; CI inherits those gains.
 - [AGENTS.md §5](../../AGENTS.md) — build discipline (reactor hard rules apply in CI too).
-- [`.agents/hooks.md`](../../.agents/hooks.md) — the local `mvn install` ban; CI runs `mvn verify`, also doesn't `install`.
+- [`.claude/hooks.md`](../../.claude/hooks.md) — the local `mvn install` ban; CI runs `mvn verify`, also doesn't `install`.
 - `~/.claude/settings.json` `autoMode.soft_deny` — editing `.github/workflows/` requires explicit user direction; this PRD is that direction.

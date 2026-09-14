@@ -1,7 +1,7 @@
 # PRD 111 — Wiring stored documents into the UI
 
 **Status:** DECIDED 2026-09-02 (D1–D6) and **v1 IMPLEMENTED the same day** (plugin `org.rapla.plugin.documents`: `documents` type annotation, `DynamicType.documents` resolver, row-menu provider for table/week/month, Swing `DocumentsAnnotationEdit`; reactor green; shipped in the Siegen package). Later phases (event sheet, resource tree, picker in the type editor) open.
-**Related:** [PRD 097 § Phase 7](097-event-html-templates-mustache.md), [PRD 074 § Window and inputs directives](074-graphql-declarative-views.md), [PRD 094](094-spa-main-view-actions-and-popups.md), [PRD 099](099-spa-table-selection.md), [PRD 089](089-server-side-recents-favorites.md)
+**Related:** [PRD 097 § Phase 7](097-event-html-templates-mustache.md), [PRD 074 § Window and inputs directives](074-graphql-declarative-views.md), [PRD 094](094-spa-main-view-actions-and-popups.md), [PRD 099](done/099-spa-table-selection.md), [PRD 089](089-server-side-recents-favorites.md)
 
 ## The question
 
