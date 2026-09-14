@@ -121,6 +121,20 @@ by up to ~10 s. Writes are still serialized by the resource/global
 locks; reads from a pod's cache are eventually consistent within that
 window.
 
+Entity changes reach the other pods through the `CHANGES` history,
+preference changes through a timestamp comparison on the `PREFERENCE`
+table. Both compare inclusively against the pod's last refresh time, so a
+row stamped exactly at that moment is still picked up; reading the same
+row again on the next refresh is harmless. Robustness notes:
+
+- The timestamp columns have whole-second resolution on MySQL/MariaDB;
+  explicit millisecond precision would be more robust (a candidate for the
+  next schema migration).
+- Routing preference changes through the change history instead of
+  timestamps would unify both paths and is the cleaner end state.
+- The timestamp binding assumes all pods run with the same JVM default
+  time zone.
+
 ## See also
 
 - [flows.md](flows.md) — the store/dispatch and refresh-poll flows.

@@ -216,4 +216,77 @@ public class PreferenceRemovalRefreshDbTest
             operatorC.disconnect();
         }
     }
+
+    /** (c) A preference row stamped exactly at the reading pod's refresh boundary must still reach that pod. */
+    @Test
+    void preferenceChangeOnRefreshBoundaryReachesSecondPod() throws Exception
+    {
+        User homerA = operatorA.getUser("homer");
+        put(facadeA, homerA, "before-boundary");
+        operatorB.refresh();
+        assertEquals("before-boundary", read(facadeB, operatorB.getUser("homer")), "precondition: B sees the first value");
+
+        put(facadeA, homerA, "on-boundary");
+        stampRowAtRefreshBoundary(homerA);
+        operatorB.refresh();
+        assertEquals("on-boundary", read(facadeB, operatorB.getUser("homer")),
+                "a row whose LAST_CHANGED equals the second pod's last refresh must reach it on the next refresh");
+    }
+
+    /** (d) Reading the boundary row again on the following refresh leaves the cached entry unchanged. */
+    @Test
+    void refreshingTheBoundaryRowTwiceKeepsTheState() throws Exception
+    {
+        User homerA = operatorA.getUser("homer");
+        put(facadeA, homerA, "before-boundary");
+        operatorB.refresh();
+        put(facadeA, homerA, "on-boundary");
+        stampRowAtRefreshBoundary(homerA);
+
+        operatorB.refresh();
+        operatorB.refresh();
+        assertEquals("on-boundary", read(facadeB, operatorB.getUser("homer")), "a second refresh must not change the entry");
+    }
+
+    /**
+     * Moves homer's preference row onto the second pod's refresh boundary: LAST_CHANGED becomes exactly the value
+     * operatorB compares against, bound the same way as PreferenceStorage.getPatches binds it.
+     */
+    private void stampRowAtRefreshBoundary(User user) throws Exception
+    {
+        java.sql.Timestamp boundary = new java.sql.Timestamp(org.rapla.components.util.DateTools.toMilli(operatorB.getLastRefreshed()));
+        String preferencesId = facadeA.getPreferences(user).getId();
+        try (java.sql.Connection c = dataSource().getConnection())
+        {
+            try (java.sql.PreparedStatement stmt = c.prepareStatement(
+                    "UPDATE PREFERENCE SET LAST_CHANGED = ? WHERE USER_ID = ? AND ROLE = ?"))
+            {
+                stmt.setTimestamp(1, boundary);
+                stmt.setString(2, user.getId());
+                stmt.setString(3, ROLE.getId());
+                assertEquals(1, stmt.executeUpdate(), "exactly one preference row for the role");
+            }
+            try (java.sql.PreparedStatement stmt = c.prepareStatement(
+                    "SELECT COUNT(*) FROM PREFERENCE WHERE USER_ID = ? AND ROLE = ? AND LAST_CHANGED = ?"))
+            {
+                stmt.setString(1, user.getId());
+                stmt.setString(2, ROLE.getId());
+                stmt.setTimestamp(3, boundary);
+                try (java.sql.ResultSet rs = stmt.executeQuery())
+                {
+                    rs.next();
+                    assertEquals(1, rs.getInt(1), "the row must sit exactly on the refresh boundary");
+                }
+            }
+            try (java.sql.PreparedStatement stmt = c.prepareStatement("SELECT COUNT(*) FROM CHANGES WHERE ID = ?"))
+            {
+                stmt.setString(1, preferencesId);
+                try (java.sql.ResultSet rs = stmt.executeQuery())
+                {
+                    rs.next();
+                    assertEquals(0, rs.getInt(1), "preferences travel only as patches, never through the CHANGES history");
+                }
+            }
+        }
+    }
 }

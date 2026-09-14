@@ -1001,7 +1001,7 @@ class LockStorage extends AbstractTableStorage
                 // producing an LDT that's offset by the local UTC offset — when that LDT
                 // is later round-tripped through DateTools.toMilli() (which treats LDTs
                 // as UTC) the boundary millis come out shifted by hours, and PreferenceStorage's
-                // "WHERE LAST_CHANGED > ?" readback in DBOperator.dispatch never sees
+                // "WHERE LAST_CHANGED >= ?" readback in DBOperator.dispatch never sees
                 // the patches it just wrote. Fallout: patches issued via
                 // facade.store(prefsEdit) get persisted to the PREFERENCE row but never
                 // applied to the in-memory cache — most visibly, RefreshSessionService's
@@ -2180,7 +2180,9 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
         super(context, Preferences.class, "PREFERENCE",
                 new String[] { "USER_ID VARCHAR(255) KEY", "ROLE VARCHAR(255) NOT NULL", "STRING_VALUE VARCHAR(10000)", "XML_VALUE TEXT",
                         "LAST_CHANGED TIMESTAMP KEY" }, false);
-        this.updateSql = "SELECT USER_ID, ROLE, STRING_VALUE, XML_VALUE, LAST_CHANGED FROM PREFERENCE WHERE LAST_CHANGED > ?";
+        // ">=" like the CHANGES history query: a pod's lastRefreshed advances to exactly the DB time a writer may also
+        // have stamped, so a strict ">" loses a row on that boundary for good (MySQL/MariaDB TIMESTAMP keeps whole seconds).
+        this.updateSql = "SELECT USER_ID, ROLE, STRING_VALUE, XML_VALUE, LAST_CHANGED FROM PREFERENCE WHERE LAST_CHANGED >= ?";
     }
 
     public List<PreferencePatch> getPatches(LocalDateTime lastUpdated) throws SQLException, RaplaException
