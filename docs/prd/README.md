@@ -1,6 +1,6 @@
 # PRD index
 
-78 active PRDs in this directory, 33 done under `done/`, 6 under `wont-fix/`. AGENTS.md §2 and the `prd-management` skill cover the lifecycle (move to `done/` when complete; `git mv` back to reopen).
+79 active PRDs in this directory, 33 done under `done/`, 6 under `wont-fix/`. AGENTS.md §2 and the `prd-management` skill cover the lifecycle (move to `done/` when complete; `git mv` back to reopen).
 
 Each active PRD below carries a generated header (status, locked decisions, dependencies, governed code) plus a keyword line in German and English so that agents and search find it from either language. When a PRD's status or decisions change, update its header here in the same edit (wrap-up checklist).
 
@@ -427,6 +427,12 @@ PRD 114 redesigns rapla's Exchange calendar sync to replace the single global EX
 
 
 ### Deployments / packaging / clients
+
+### 118-rapla3-demo-usecases.md
+
+Draft 2026-09-14: a public Rapla 3 demo built from four locked use cases — U1 Hochschule/Schule (timetable), U2 Ausleihe (equipment loans), U3 Seminarhaus (course centre), U4 Einsatzplan (shift roster) — plus U5, a cross-cutting feature-page screenshot set (dynamic types, permissions, templates, GraphQL views, API keys). Each use case gets its own hand-written `data/demo-<usecase>.xml` (dummy data only, fixed demo window), a scripted Playwright screenshot list into `docs/demo/<usecase>/`, Swing key scenes next to the SPA ones, a page in `rapla/site`, and finally a demo instance from the `rapla/rapla-releases` image with nightly reset. One session per use case in its own worktree; the coordinator session owns catalogue, merge and demo instance. Open: hosting, guest account shape, U4 station screen.
+
+*Keywords:* Demo, Beispieldaten, demo data, data.xml, Screenshots, Playwright, Webseite, rapla/site, Hochschule, Stundenplan, Ausleihe, Leihschein, Seminarhaus, Einsatzplan, Schichtplan, Features-Seite, dynamische Typen, Demo-Instanz, Docker, PRD 118
 
 ### 012-dhbwrapla-client-migration.md
 
