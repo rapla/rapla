@@ -24,6 +24,8 @@ Events (type `event`, week 2026-09-14):
 
 Stored view `week` (public): copy of builtin `rapla_kalender` with `renderModes: [week, day, table]` and the hidden drag-gate fields (`reservation { id canModify appointmentCount }`, `appointment { id repeating { type } }`, `isException`). Builtin views on master offer no week grid.
 
+Admin password: set to a dummy value on the local data copy only (2026-09-15, via the /change-password nag page), so the login page no longer shows the "Dev default: admin with empty password" hint; login.png, i18n-switch.png and login-providers.png were re-shot after that.
+
 API keys for admin: `Calendar sync` and `Reporting script` (365 days, shown in the API-keys dialog). The Swing auto-login keys `demo-swing` and `demo-swing-cli2` were deleted again after use.
 
 ## Images
