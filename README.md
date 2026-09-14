@@ -18,6 +18,8 @@ https://github.com/rapla/rapla/releases
 
 Rapla 3 with a web frontend and a GraphQL API and the complete spring boot migration is currently in development. The first alpha version is planned for October 2026.
 
+**Rapla Standalone is currently NOT WORKING** (the standalone/desktop build is not part of the Rapla 3 alpha; use the server deployment or the Java Web Start client).
+
 # License
 
 Rapla is dual licensed. You can either use it under the terms of the 
