@@ -186,16 +186,12 @@ Same pattern as [PRD 053](done/053-replace-rapla-logger-with-slf4j.md): land rap
 2. **Open:** Disconnect → require password reset on next login? Recommend admin UI flow combines "disconnect" + "set password" as single dialog.
 3. **Decided 2026-05-21:** `authenticationSource` = simple provider id (`"keycloak"` / `"ldap"` / `"google"`), no realm tag; can extend later.
 
-## Known follow-up — dispatch-path security gap
+## Dispatch-path guard (security audit F6-1, closed)
 
-Endpoint-level guards cover the named-endpoint surface but **NOT the bulk `dispatch(UpdateEvent)` path**. A non-admin user could:
-
-1. Pull own User via `getEntityRecursive`.
-2. Locally edit `authenticationSource` to `null`.
-3. POST via `dispatch(UpdateEvent)` — `checkWritePermissions` passes (user can write themselves).
-4. Marker cleared; can now set local password.
-
-Same shape applies to `isAdmin` and other server-side-only fields. Per-field admin-only mutation checks at the storage layer for User entities tracked as a PRD 050 follow-up; not blocking the named-endpoint guards. `UserEditUI` is admin-only, so this requires deliberate HTTP exploitation.
+The bulk `dispatch(UpdateEvent)` path enforces the same rule as the named endpoints:
+`SecurityManager` rejects a change of `authenticationSource` by anyone but a global admin, and a
+group admin can no longer set or remove the `can_admin_parent` group marker. Regression lock:
+`SecurityManagerDispatchFieldGuardTest`.
 
 ## Phase status (2026-05-21)
 
@@ -205,7 +201,7 @@ Same shape applies to `isAdmin` and other server-side-only fields. Per-field adm
 - [x] Phase 4 — Swing UI: admin `UserEditUI.AuthenticationSourceField` + disconnect; self `UserOption` probes capabilities, disables buttons + "Managed by &lt;label&gt;" tooltip when external.
 - [x] Phase 5 — Angular SPA: **shipped 2026-06-27** (branch spring-boot). Originally cut 2026-05-21 (no SPA settings page); un-cut once the SPA grew a central user menu. `EditAccountDialogComponent` (`rapla-angular/src/app/account/`) over `ProfileService` consumes the existing `GET /api/storage/profile/capabilities` + `POST /api/storage/change/{name,email,password}`. The menu hides "Edit account" entirely when `externalIdpLabel != null`; the dialog additionally gates each section on the `canChange*` flags and shows the "managed by &lt;label&gt;" banner — same matrix as Swing's `UserOption`. No new server endpoints. Tier-5 `ProfileService` spec + tier-6 dialog spec (local vs. provisioned).
 - [x] Phase 6 — `RemoteStorage.canChangePassword()` removed; `RemoteOperator.canChangePassword()` routes through capabilities. `legacyCanChangePasswordEndpoint_is404_afterPrd050Removal` pins it.
-- [ ] **Follow-up audit** — dispatch-path bypass (non-admin clears own `authenticationSource` via `dispatch(UpdateEvent)`); same for `isAdmin`. Tracked separately; not blocking.
+- [x] **Follow-up audit** — dispatch-path guard for `authenticationSource` (security audit F6-1, `SecurityManagerDispatchFieldGuardTest`).
 
 ## Phase status (2026-05-28 re-open)
 

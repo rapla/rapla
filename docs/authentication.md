@@ -706,32 +706,17 @@ Each key carries a **scope set** that bounds the blast radius of a leak. Two axe
   `exp` (what `rotate` does) can pull it earlier. A missing stored `exp` is ignored — a legacy
   never-expiring key keeps working.
 
-> **Known gap:** api-key Bearer tokens can't drive GraphQL **mutations** yet — those resolvers
-> resolve the caller by `preferred_username`, which api-key JWTs don't carry (only `sub`). REST
-> writes work. The scope enforcement is already uniform at the operator seam, so it applies to
-> GraphQL automatically once caller-resolution there is fixed by subject.
+> **GraphQL mutations with api-key tokens (closed):** GraphQL resolvers resolve the caller via
+> `JwtUserResolver`, which accepts the `sub` of a rapla-issued token, so api-key Bearer tokens drive
+> GraphQL mutations like REST writes, and the scope guard at the operator seam applies to both.
 
-#### Reads are NOT scope-gated (known limitation)
+#### What scopes bound
 
-The scope axis today bounds **writes only**. `read` is a *floor / marker* — "this key may
-authenticate and do GETs" — not a filter:
-
-- There is **no read-side chokepoint**. The only `ApiKeyScopeContext.current()` consultation in
-  the codebase is `LocalAbstractCachableOperator.guardApiKeyScopes`, which iterates
-  `evt.getStoreObjects()`/`getRemoveIds()` — writes. **No read path consults scopes.**
-- A read (`getResources` → `operator.getVisibleEntities(user)` → `LocalCache.getVisibleEntities`,
-  or `queryAppointments`, or any GraphQL query) is filtered solely by the **user's**
-  `PermissionController.canReadInformation(entity, user)` at the output boundary (AGENTS.md §12) —
-  user-scoped, never key-scoped.
-- Consequences: a `{read}` key can read **everything its user can read**; there is no
-  `read_events` vs `read_resources` split; and a **write-only key is impossible** (`write_*`
-  implies read, and read can't be subtracted). The Swing `RemoteOperator` is only a *consumer* of
-  these reads, not an enforcement point — and it authenticates by OAuth password grant
-  (`current() == null` ⇒ unrestricted), so it is unaffected regardless.
-
-Adding meaningful read scopes requires a new read chokepoint (the read surface is spread across
-`getVisibleEntities` / `queryAppointments` / `getAllocatables` / the GraphQL fetchers / `getPreferences`,
-with no single funnel analogous to `dispatch()`). Deferred — design decision pending.
+Scopes bound **writes** (`write_events`, `write_resources`, `write_all`) and self-rotation.
+`read` is the baseline: a key reads what its user may read, because every read is filtered by
+the **user's** permissions at the output boundary (AGENTS.md §12). There is no finer read split
+(`read_events` vs `read_resources`), and `write_*` implies read. Finer read scopes would be a
+design change of their own.
 
 #### Writes that bypass `dispatch()` must gate scopes by hand
 
@@ -739,8 +724,8 @@ The automatic write guard only fires for mutations that flow through `operator.d
 Operations that persist **without** emitting an `UpdateEvent` — `ImportExportManager.saveData(...)`
 (bulk import/export/restore), raw JDBC, file writes — bypass `guardApiKeyScopes` entirely and must
 call `ApiKeyScopeContext.requireWriteAllForBulk("<operation>")` themselves. Reference impl:
-`ArchiverServiceImpl.checkAccess()` gates `backup`/`restore`/`delete` on `write_all` (an admin's
-read-only key would otherwise trigger a full restore). Regression lock: `ArchiverServiceAccessTest`.
+`ArchiverServiceImpl.checkAccess()` gates `backup`/`restore`/`delete` on `write_all`. Regression
+lock: `ArchiverServiceAccessTest`.
 See the `rest-endpoint-creation` skill for the rule.
 
 ### Storage layout
@@ -973,9 +958,10 @@ but should not survive into production. Two options:
 2. **Through the running Swing client**: log in as admin, open the
    user editor, change the password, log out.
 
-There is no production-mode lockout enforcing a non-empty admin
-password today — that's planned hardening (see issue/PRD on
-production-mode hardening when it lands).
+An empty admin password stays allowed on purpose (single-user, desktop
+and demo installs use it). While it is in effect, the login page shows a
+hint and the browser login redirects to a change-password page
+([PRD 071](prd/done/071-web-security-hardening.md), item B3).
 
 ## Group administration policy
 
@@ -1483,13 +1469,8 @@ IdP `id_token`** (and no rapla token) gets a rapla token through the
   (rapla owns the session — #7=a — and does not relay IdP refresh tokens; refresh
   via rapla's own `/api/auth/session/refresh` / `/oauth2/token`).
 
-**Replay caveat (token-exchange):** RFC 8693 has no authorization request, so the
-exchanged id_token carries **no `nonce` binding** — its replay window is bounded
-only by its own `exp` plus the `aud` pin. A caller who captures a valid id_token
-*for rapla's client_id* can replay it until expiry to mint a rapla session.
-Acceptable for the "I already hold a finished id_token for rapla" use case; if
-stricter replay protection is needed, add a one-time `jti` check or a fresh
-`auth_time` requirement.
+**Token-exchange validation:** the presented id_token must be issued for rapla's
+client id (`aud`) and must not be expired; rapla then mints its own session.
 
 ## External IdP (Microsoft Entra ID + Google + Keycloak)
 

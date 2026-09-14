@@ -503,7 +503,7 @@ das.
 
 Reihenfolge so, dass jeder Schritt für sich testbar ist und der Engine kein Fach-Wissen zuwächst.
 Nichts davon ist heute gebaut; Formulare sind derzeit hart blockiert (`form-action 'none'`, bare
-`sandbox`) und der Sanitizer fasst `<form>` noch nicht an — inert, aber ein latenter Footgun.
+`sandbox`). Sanitizer-Regeln für `<form>` kommen erst mit Schritt 1.
 
 1. **Sanitizer-Regeln für Formulare — im selben Change wie `allow-forms`, nie davor/danach.**
    `type=password` verbieten, `action`/`formaction` auf den registrierten Endpoint pinnen bzw.

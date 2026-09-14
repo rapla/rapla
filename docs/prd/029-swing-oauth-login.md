@@ -6,7 +6,7 @@
 > `access_token` cookie — no HMAC header/cookie/query-param fallback). Mentions of
 > `AuthController`/`TokenHandler`/`RemoteSessionImpl` below are historical.
 
-**Status:** in-progress — phase 1 done (2026-05-12), phase 2 mostly landed (2026-05-12). Phase 1 shipped discovery endpoint, single `rapla-client` RegisteredClient (Swing + planned Angular), `SwingOAuthLoginFlow`, `ConnectInfo` token path, UI button, custom redirect URI validator (WSL-bridge 172.16.0.0/12 + same-origin allowances), token unification (`/auth/login` + `/oauth2/token` both sign via single RSA JWKSource), persistent JWK via `RaplaKeyStorage` (tokens survive server restart).
+**Status:** in-progress (done except small) — 2026-09-14 — phases 1–5 shipped (discovery endpoint, `SwingOAuthLoginFlow`, login-method dropdown, remember-me, `rapla.oauth.local-accounts-enabled`); open low item: a "Retry connection" button when discovery fails. History: phase 1 done (2026-05-12), phase 2 mostly landed (2026-05-12). Phase 1 shipped discovery endpoint, single `rapla-client` RegisteredClient (Swing + planned Angular), `SwingOAuthLoginFlow`, `ConnectInfo` token path, UI button, custom redirect URI validator (WSL-bridge 172.16.0.0/12 + same-origin allowances), token unification (`/auth/login` + `/oauth2/token` both sign via single RSA JWKSource), persistent JWK via `RaplaKeyStorage` (tokens survive server restart).
 
 **2026-05-24 — paste-URL fallback removed.** Paste-callback dialog, `rapla.oauth.show-paste-fallback` toggle, `OAuthCallbackPasteDialog`, `SwingOAuthLoginFlow.Session.deliverPasted(...)` and German/English `login.oauth.paste.*` keys all removed: WSL-bridge IP path is the real fix when loopback isn't reachable. Discovery JSON no longer carries `showPasteFallback`.
 

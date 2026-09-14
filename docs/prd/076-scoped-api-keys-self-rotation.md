@@ -10,19 +10,14 @@ from the 2026-06-27 SPA key-management UI) is **in progress** — see Plan §Pha
 
 **Follow-up findings (2026-06-24, code-smell audit):** two limits of the "one write chokepoint" model surfaced and are recorded here so they aren't re-discovered:
 
-1. **Reads are not scope-gated at all.** The scope axis bounds *writes only*. The single
-   `ApiKeyScopeContext.current()` consultation is `guardApiKeyScopes`, which iterates the
-   `UpdateEvent`'s store/remove sets — there is **no read-side chokepoint**. Reads
-   (`getResources` → `getVisibleEntities`, `queryAppointments`, GraphQL fetchers) are filtered
-   solely by the *user's* `PermissionController.canRead*`, never by the *key's* scopes. So `{read}`
-   is a floor/marker (the key may do GETs of everything its user can see); there is no
-   `read_events`/`read_resources` split and no write-only key. Adding real read scopes needs a new
-   read chokepoint (the read surface has no single `dispatch()`-style funnel). **Deferred** — when
-   tackled, likely a new PRD. Documented in `docs/authentication.md` §"Reads are NOT scope-gated".
+1. **Scopes bound writes, not reads.** `read` is the baseline: a key reads what its user may read,
+   filtered by the user's permissions (AGENTS.md §12). There is no `read_events`/`read_resources`
+   split and no write-only key; finer read scopes would be a new PRD. Documented in
+   `docs/authentication.md` §"What scopes bound".
 2. **Non-`dispatch()` writes bypass the guard** and must gate by hand. `ImportExportManager.saveData`
    (bulk import/export/restore), raw JDBC and file writes emit no `UpdateEvent`, so
-   `guardApiKeyScopes` never sees them. Concretely the `ArchiverService` (`backup`/`restore`/`delete`)
-   was reachable by an admin's read-only key. **Fixed 2026-06-24:** added
+   `guardApiKeyScopes` never sees them. **Fixed 2026-06-24** for the `ArchiverService`
+   (`backup`/`restore`/`delete`): added
    `ApiKeyScopeContext.requireWriteAllForBulk(...)`, called from `ArchiverServiceImpl.checkAccess()`
    (gates on `write_all`); regression lock `ArchiverServiceAccessTest`; convention added to the
    `rest-endpoint-creation` skill so future non-dispatch writes gate themselves.
@@ -73,8 +68,8 @@ superseded and will be reworked to the GraphQL path.
   the 5 plugin system/admin config reads (Mail/JNDI/Exchange/ICal/EventTimeCalc). SettingsController
   (`getSystem`/`getCalendar`) deliberately left open — non-sensitive display metadata.
 - **Bootstrap strip consistency:** `RemoteStorageController.getResources` now strips `.server.*`
-  from ALL prefs (system AND user-owned), matching `processClientReadable` — closes the
-  user-`refreshToken` bootstrap leak.
+  from ALL prefs (system AND user-owned), matching `processClientReadable` — server-only user
+  prefs never reach the bootstrap payload.
 - Tests: `ApiKeyScopesTest`, `ApiKeyScopeContextTest`, `ArchiverServiceAccessTest`, updated
   `ApiKeyScopeTest`; dhbwrapla `DualisAPIImpl` `callUnrestricted` wrap.
 
@@ -230,14 +225,9 @@ Three invariants:
       keys → 401, `write_all` → 200 on a REST `User` write). Rejection throws
       `RaplaSecurityException` → 401, byte-identical to a permission denial.
 
-> **Discovered gap (out of PRD 076 scope):** the GraphQL mutation controllers
-> (`AllocatableMutationController`/`ReservationMutationController`) resolve the caller via
-> `requireCaller()` using the `preferred_username` claim / `auth.getName()`. An api-key JWT
-> carries neither a username nor `preferred_username` (only `sub` = user UUID), so api-key
-> Bearer tokens **cannot drive GraphQL mutations at all today** (`caller not resolvable`),
-> independent of scopes. The scope ENFORCEMENT is still uniform — it sits at the shared operator
-> chokepoint, so the moment GraphQL caller-resolution is fixed, scopes apply there automatically.
-> Fixing `requireCaller()` to also resolve by subject is a separate change; flagged for the user.
+> **GraphQL caller resolution (closed):** the mutation controllers resolve the caller via
+> `JwtUserResolver`, which accepts the `sub` of an api-key JWT, so api-key tokens drive GraphQL
+> mutations and the operator-level scope guard applies there too.
 
 ### Phase 3 — self-rotation + grace-expiry enforcement ✅ (2026-06-21)
 - [x] **Decoder enforces `min(jwt.exp, stored.exp)` (D9).** `ApiKeyJwtDecoder.earliest(...)` takes

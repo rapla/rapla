@@ -25,7 +25,7 @@ impose after the fact. The gap is **not** missing specs. Two real gaps remain:
 No framework is adopted as a tool (D1, [ADR 0002](../decisions/0002-no-sdd-framework-as-tool.md)); OpenSpec's
 *ideas* (delta-specs, day-one `validate`, status-enum, change↔capability split) are reimplemented as thin
 scripts + skills. Full framework-fit evidence:
-[research findings](../research/spec-driven-development-findings.md).
+[research findings](../research/spec-driven-development-research.md).
 
 ## Goal (measurable end state)
 

@@ -11,20 +11,13 @@ Surfaced during the [PRD 035](done/035-graphql-foundations.md) design review (OQ
 
 ## Problem
 
-In `DBOperator.dispatch` (`rapla-server/.../storage/dbsql/DBOperator.java:681`):
-
-```
-preprocessEventStorage(evt)   line 687  — check(): conflict + permission validation
-dbStore(...)                  line 698
-  tryResolve(oldEntity)       line 761  — old entities resolved from LocalCache
-  requestLocks(...)           line 777  — cluster WRITE_LOCK acquired HERE
-  store / commit                        — the write
-```
+`DBOperator.dispatch` validates first (`preprocessEventStorage` → `check()`: conflict + permission
+checks) and takes the cluster `WRITE_LOCK` later, inside `dbStore`, just before the write.
 
 `preprocessEventStorage` → `check()` validates against `EntityStore(cache)` — the in-memory `LocalCache`. Each pod reconciles its cache from the update history only **every ~10 s** (`docs/architecture/locking.md`). The cluster `WRITE_LOCK` is acquired later, inside `dbStore`. So **validation runs pre-lock, against a cache up to ~10 s stale**. Two consequences across pods:
 
 1. **Silently missed conflict.** Pod A books Room 101 at 14:00; within 10 s pod B books Room 101 at 14:00. B's conflict detection runs on a cache that hasn't seen A's reservation → reports no conflict → both commit. *Mitigating factor:* rapla conflicts are advisory and recomputed — once both reservations land in every cache (≤10 s), the conflict resurfaces to anyone viewing the resource. Missed *at-save-time warning*, not permanent data loss.
-2. **Stale permission honored.** A user's write permission to a resource is revoked on pod A. For up to ~10 s pod B still validates against the old permission and lets the write through. **Not advisory, never self-corrects.** The genuine defect.
+2. **Permission changes propagate with the cache lag.** A changed write permission takes effect on another pod after that pod's next history refresh (~10 s).
 
 What *is* already correct: the optimistic version check inside `raplaSQLOutput.store` runs under the lock against the DB, so lost-update of an *existing* entity is caught. Only conflict and permission checks are exposed.
 
@@ -32,7 +25,7 @@ What *is* already correct: the optimistic version check inside `raplaSQLOutput.s
 
 ## Severity
 
-Double-booking window (#1) is a UX degradation — saving user misses an immediate warning, conflict not lost. Permission window (#2) is a real, non-self-correcting authorization gap. "Permission changes are not instantaneous across a cluster" is a common, often-accepted distributed-systems property (cf. JWT valid until expiry) — whether #2 crosses from *known weakness* to *must-fix* is a deployment threat-model decision. This PRD documents it and offers the fix; adoption is the maintainer's call.
+Double-booking window (#1) is a UX degradation — saving user misses an immediate warning, conflict not lost. Permission window (#2) is the cluster-wide propagation delay of a permission change. "Permission changes are not instantaneous across a cluster" is a common, often-accepted distributed-systems property (cf. JWT valid until expiry) — whether #2 crosses from *known weakness* to *must-fix* is a deployment threat-model decision. This PRD documents it and offers the fix; adoption is the maintainer's call.
 
 ## Scope
 

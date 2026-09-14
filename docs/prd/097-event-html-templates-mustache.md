@@ -1032,9 +1032,9 @@ render path resolve the date window identically).
   signs, QR codes, printed links — the §15 lesson) to a schema field name, so renaming
   `allocatableIdsIn` breaks every link; (2) it leaks the query shape; (3) caller variables **override**
   the document's stored defaults, so a reader appends `&filter.limit=5000` /
-  `&filter.accessibleByUsername=x` — harmless while every document is session-scoped (the caller's own
-  §12 bounds it), a real data-exposure the moment Phase 8 publishes an anonymous, publisher-scope
-  document (the class OQ1 killed Option B over).
+  `&filter.accessibleByUsername=x` — bounded by the caller's own §12 scope for session documents, but not
+  acceptable for anonymous, publisher-scope documents (Phase 8). **Closed:** undeclared URL
+  parameters are rejected with 400 (`DocumentRenderService.UndeclaredParameterException`).
 
   **The decision.** The **view declares its public parameters** with `@param`; the URL speaks only
   public names; anything undeclared is **rejected**, never merged:
@@ -1160,8 +1160,8 @@ render path resolve the date window identically).
     `RequestVariables`); §12-safe; missing → empty via the GraphQL error path (`required` cleans it).
   - **Author-fixed scope** — pin it inline in the document's `defaultVariables` (the save API carries
     the field; the editor UI does not expose it yet). "Large rooms" = an inline `allocatableMatching`
-    filter. **Soft default, not a hard pin** (overridable via raw dotted paths until `reject-undeclared`
-    + true pins land) — "scoped, not sealed"; fine in practice, closed properly by the two fixes.
+    filter. **Soft default, not a hard pin** at the time (raw dotted paths could override it; closed
+    since undeclared parameters are rejected).
   - **Reader-supplied resources** — `?filter.allocatableIdsIn=<id>` (provisional dotted path).
   - **Reader-choose-else-nothing** — a sentinel bogus-id in `defaultVariables` fakes `requiresScope`
     today (empty when unscoped, overridden by a real reader id); a hack, replaced by the real

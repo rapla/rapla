@@ -1,6 +1,6 @@
 # 026 — Angular frontend (reservation editing)
 
-**Status:** in-progress (Phase 0 prototype landed 2026-05-12)
+**Status:** in-progress (done except small) — 2026-09-14 — the SPA is live (GraphQL views + cookie session); reservation create/edit shipped under PRDs 091/094/096/101. Open low items: tier-3 tests for the option-panel read endpoints, removal of four temporary INFO log lines. History: Phase 0 prototype landed 2026-05-12.
 
 ## Goal
 
@@ -231,10 +231,8 @@ expected impact on the SPA team, not by dependency.
    surprises. Either deprecate the resource-style endpoints or
    thin the dispatch path.
 
-10. **CORS for prod.** `SecurityConfig.corsConfigurationSource`
-    allows `*` origins. If SPA is hosted same-origin (recommended —
-    e.g. `/app/**` from rapla-app), no change needed. If
-    cross-origin, lock down `setAllowedOriginPatterns` for prod.
+10. **CORS for prod.** Closed: `SecurityConfig.corsConfigurationSource`
+    reflects only origins accepted by `CorsOriginPolicy` (no `*`).
 
 11. **SSE / WebSocket for refresh.** Replace the 20–30 s long-poll
     with server push. Cuts visible latency on multi-user edits.

@@ -1,6 +1,6 @@
 # PRD 030 — Server-side view rendering (the complete picture)
 
-**Status:** in-progress — Phases 1–6 landed 2026-05-12. **84 new tests.** Phase 6 deletes the back-edge as an arch-test invariant. Future migration of HTML autoexport calendar pages to `CalendarLayoutEngine` is a separate PRD.
+**Status:** in-progress (done except small) — 2026-09-14 — Phases 1–5 and 7–8 shipped; the calendar-layout engine was deleted (see the correction below); open: Phase 9, removing the three async fallbacks in `CalendarModelImpl`. History: Phases 1–6 landed 2026-05-12 with 84 new tests; Phase 6 deletes the back-edge as an arch-test invariant.
 
 > **Correction 2026-07-07:** the PRD-024-Phase-3 calendar-layout read-side core
 > (`CalendarLayoutEngine`, `RenderedBlock`, `CalendarPage`, `CalendarViewService`,

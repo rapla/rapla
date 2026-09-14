@@ -119,6 +119,10 @@ directly can forge `X-Forwarded-Host` to hijack the OAuth redirect-URI
 same-origin check. With `native` in place the OAuth SPA callback is
 accepted automatically for your real hostname (`rapla.oauth.allow-same-origin-
 redirects` is on by default) — no per-deployment redirect URI to register.
+If your proxy connects from an address outside loopback and the private ranges,
+list it in `server.tomcat.remoteip.internal-proxies` (a regular expression of
+trusted proxy IPs); the value replaces the built-in default, so keep the ranges
+you still need in it.
 
 Authentication (OAuth2, external IdPs, API keys) is covered in
 [`authentication.md`](authentication.md).
@@ -166,8 +170,8 @@ rapla:
 ```
 
 For PostgreSQL / MariaDB / SQL Server, drop the driver jar into `./lib/` next
-to the JAR and add `-Dloader.path=lib/` to the `java -jar` invocation (Spring
-Boot's fat-JAR convention for external classpath entries).
+to the JAR. The bundled `loader.properties` (`loader.path=lib/,plugins/`) puts
+`lib/` and `plugins/` on the classpath, so no extra `java -jar` flag is needed.
 
 ### First boot
 
@@ -274,7 +278,6 @@ User=rapla
 Group=rapla
 WorkingDirectory=/opt/rapla
 ExecStart=/usr/bin/java -Xmx2048m -Djava.awt.headless=true \
-  -Dloader.path=/opt/rapla/lib/ \
   -jar /opt/rapla/rapla-2.1-SNAPSHOT.jar
 Restart=on-failure
 TimeoutStopSec=45
@@ -287,9 +290,9 @@ WantedBy=multi-user.target
 Notes on the unit:
 - `WorkingDirectory=/opt/rapla` is the **state root** — Rapla resolves
   `config/`, `data/`, `lib/`, `logs/` relative to it.
-- `-Dloader.path=/opt/rapla/lib/` is Spring Boot's fat-JAR convention for
-  adding external classpath entries — that's where operator-supplied JDBC
-  drivers (PostgreSQL, MariaDB) go; drop the jar in, restart, no rebuild.
+- `lib/` (operator-supplied JDBC drivers such as PostgreSQL or MariaDB) and
+  `plugins/` are on the classpath through the bundled `loader.properties`;
+  drop the jar in, restart, no rebuild.
 - `-Xmx2048m` is a starting point; tune to the host.
 - `SuccessExitStatus=143` — the JVM exits `143` (128 + SIGTERM) on a clean
   `systemctl stop`; without this systemd would log the stop as failed.

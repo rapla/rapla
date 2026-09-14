@@ -354,9 +354,8 @@ Promote this to first: it is a one-branch change, code-verified zero side-effect
 immediate hardening (exfiltration confinement + injection-surface closure) with no dependency on 097.
 
 **Mechanism note:** `script-src` for the SPA is **not** in this header — `CspPolicyBuilder.build`
-deliberately omits `script-src`/`default-src` (the Angular build's `autoCsp` is meant to own it, but
-`autoCsp` is **not enabled** today, so the SPA currently has no `script-src` at all; Angular's framework
-escaping + the confirmed absence of `bypassSecurityTrust*` are the only active in-SPA script defense).
+deliberately omits `script-src`/`default-src`; the Angular build's `autoCsp` (set in `angular.json`)
+owns it via a `<meta>` CSP.
 That is exactly why enforcing this header is safe — it can't touch script/style. The `script-src`
 backstop is **Phase 6**.
 
@@ -413,7 +412,7 @@ untrusted-page containment, already carried by Phases 1–4) and churns against 
 The report-only header **stays on** meanwhile so violation telemetry keeps flowing; Angular's framework
 sanitization is the interim in-SPA defense.
 
-- [ ] Enable Angular **`autoCsp`** (or ship a `<meta>` CSP: `script-src` nonce/hash + `'strict-dynamic'`,
+- [x] Enable Angular **`autoCsp`** (or ship a `<meta>` CSP: `script-src` nonce/hash + `'strict-dynamic'`,
       no `'unsafe-inline'`/`'unsafe-eval'`). An **Angular-build** change, not `SecurityConfig`.
 - [ ] `style-src` for Material/CDK inline styles — take `'unsafe-inline'` (low-risk; styles don't
       execute) rather than fighting nonce plumbing.
@@ -459,13 +458,10 @@ sanitization is the interim in-SPA defense.
   form-login session carries a `UsernamePasswordAuthenticationToken`, so every `/api` data controller
   resolves *no* rapla user and answers `RaplaSecurityException` → **401**. Locked by
   `SessionCookieCannotAuthApiTest` (tier-3): one test proves the session is a *live* chain authentication
-  (`/graphiql` → 200), the other proves that live session still can't read `/api/users` (→ 401). **Caveat
-  / follow-up:** because the protection is the JWT-identity requirement and *not* statelessness, any future
-  `/api` endpoint gated by `.authenticated()` alone — one that does NOT call `checkAndGetUser`/resolve a
-  JWT — would be reachable by a bare `JSESSIONID`. Every data controller today routes identity through
-  `checkAndGetUser` (or the GraphQL `JwtUserResolver`), so the surface is closed now; a broad audit +
-  optionally flipping the `/api` matcher to `SessionCreationPolicy.STATELESS` as defence-in-depth is a
-  worthwhile future hardening, tracked here rather than done now.
+  (`/graphiql` → 200), the other proves that live session still can't read `/api/users` (→ 401). **Follow-up
+  hardening:** every `/api` data controller resolves identity through `checkAndGetUser` (or the GraphQL
+  `JwtUserResolver`); flipping the `/api` chain to `SessionCreationPolicy.STATELESS` stays an optional
+  defence-in-depth step.
 - **OQ2 — refresh-token rotation/reuse detection.** *Resolution: NOT for rapla — architecturally
   incompatible with the single-slot policy, not merely deferred.* Rotation changes the slot's value on
   every refresh; rapla runs **one shared slot per user** (logout-everywhere), where the token being

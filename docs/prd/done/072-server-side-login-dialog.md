@@ -477,11 +477,9 @@ single-slot is also what couples to risk #1 above.
    and `SingleIssuerCutoverApiTest` (tier-3 MockMvc, Keycloak enabled + default flag: rapla token → 200,
    foreign-iss Bearer → 401). `JwtConfigTokenTypeTest` updated to the 4-arg call.
 
-   **Risk note:** the legacy `OAuthExchangeController` (`/api/auth/oauth/exchange/{provider}`) and the
-   `tokenUrl` it advertises in `OAuthConfigController` for confidential providers still return a raw
-   IdP token. No first-party client uses them post-Phase-4, but a stale/3rd-party SPA doing client-side
-   PKCE would now get a token that 401s at `/api`. Follow-up (Phase 7 or a small PRD): mint a rapla
-   token there via `RefreshSessionService.issueAndPersist`, or retire the endpoint.
+   **Risk note (closed):** `OAuthExchangeController` (`/api/auth/oauth/exchange/{provider}`) now mints
+   and returns a rapla token after the upstream exchange instead of forwarding the raw IdP token
+   (see `docs/authentication.md`).
 7. ✅ **DONE (2026-06-20). Deployment + docs.** Redirect-URI registration is **NOT** a blanket no-op:
    the **fremdverwaltete DHBW prod realm** (`idp.example.org`, realm `<realm>`) only
    whitelists the **legacy** `/app/auth/callback` for localhost and the maintainer has no admin to add
@@ -590,8 +588,8 @@ single-slot is also what couples to risk #1 above.
    reuse the existing public `rapla-app` client** (server-side `oauth2Login` with PKCE,
    `client-authentication-method=none`), **no new client and no new redirect-URI registration are
    needed** (dev + prod-test already covered). A *new confidential* client would instead start with
-   an empty redirect list → one registration per env. (Note: the broad `…/*` wildcard is a mild
-   existing security smell, not introduced here; a path-exact entry would be cleaner.)
+   an empty redirect list → one registration per env. (A path-exact redirect entry would be cleaner
+   than the path wildcard.)
 7. ~~**Keycloak refresh model**~~ — **RESOLVED 2026-06-19: (a) identity-only** + the broker
    model (M2). rapla validates the IdP once at login, mints + owns the session, and **discards
    the IdP tokens** (ideally never requests the IdP refresh token). Revocation is a **rapla**

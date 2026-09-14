@@ -31,7 +31,7 @@
 > | `clearSession(User)` | Wipes the SESSION entry → all refresh tokens for user become invalid. Called by `/oauth2/revoke` hook. |
 > | `persistSession(User, refreshToken)` | Public for test fixtures + Spring AS issuance hooks. |
 >
-> Storage: full JWT in user prefs under `TypedComponentRole<String> SESSION = "org.rapla.auth.session"`. Single slot. Defense-in-depth argument for storing only a hash was moot because the persistent RSA signing key is *also* in the data file — backup leak = game-over regardless. Storing the full JWT lets `issueAndPersist` return the existing valid token on subsequent logins (multi-tab/multi-device share).
+> Storage: full JWT in user prefs under `TypedComponentRole<String> SESSION = "org.rapla.auth.session"`. Single slot. A hash-only store was considered and not adopted, because the data file already needs the same protection as a credential store. Storing the full JWT lets `issueAndPersist` return the existing valid token on subsequent logins (multi-tab/multi-device share).
 >
 > ### Custom Spring AS providers (`AuthorizationServerConfig`)
 >

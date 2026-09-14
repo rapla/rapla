@@ -359,7 +359,7 @@ client-side `ModifiableCalendarState` applies the same `needsChange` /
 Attribute *values* reference entities by id, but the persisted schema and the
 persisted preferences reference **DynamicTypes and Categories by key path**
 (surfaced during a Rapla 2 → 3 migration in 2026-08; the application-side fix is
-[PRD 110](../prd/110-safe-key-rename.md)):
+recorded in [PRD 058](../prd/058-graphql-key-spec-migration.md)):
 
 | Where | Reference form | Resolved relative to |
 |---|---|---|
@@ -379,7 +379,7 @@ Consequences:
   holds ids, so nothing breaks until the next **restart**. **Rapla 3** re-stores
   every referer in the same dispatch — `addChangedDynamicTypeDependant` for type
   and attribute keys, `addCategoryKeyPathReferers` for category keys
-  ([PRD 110](../prd/110-safe-key-rename.md), `DbOperatorKeyRenameTest`).
+  ([PRD 058](../prd/058-graphql-key-spec-migration.md), `DbOperatorKeyRenameTest`).
 - On load, an unresolvable **category** path is dropped silently
   (`DynamicTypeReader`: constraint/default → `null`; filter rule → gone). An
   unresolvable **type** key in a preference aborts the boot

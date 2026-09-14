@@ -60,18 +60,18 @@ its `requestLock` is effectively degenerate.
 In `DBOperator.dispatch` the sequence is:
 
 ```
-preprocessEventStorage(evt)   DBOperator.java:687  — check(): conflict + permission validation, against the LocalCache
-dbStore(...)                  DBOperator.java:698
-  requestLocks(...)           DBOperator.java:777  — cluster lock acquired HERE
-  store / commit                                  — the write
+preprocessEventStorage(evt)   — check(): conflict + permission validation, against the LocalCache
+dbStore(...)
+  requestLocks(...)           — cluster lock acquired here
+  store / commit              — the write
 ```
 
 The resource lock is acquired **inside `dbStore`, after**
 `preprocessEventStorage`. So conflict detection and permission checks
 run against the (possibly stale — see below) `LocalCache`, **not** under
 the cluster lock. The lock covers the write and the optimistic
-version-check inside `store`, not the check. Cross-pod this is a
-time-of-check-to-time-of-use window — see [PRD 035](../prd/done/035-graphql-foundations.md)'s OQ#10 / the
+version-check inside `store`, not the check. Cross-pod the check can see
+state up to one refresh interval old — see [PRD 035](../prd/done/035-graphql-foundations.md)'s OQ#10 / the
 multi-pod-validation discussion for the analysis and the
 lock-then-fetch-then-validate fix.
 

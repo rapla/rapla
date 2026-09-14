@@ -1053,7 +1053,7 @@ default window, max-range cap, viewport-centered) are owned by [PRD 060](../060-
 | Risk | Mitigation |
 |---|---|
 | Spring AI MCP starter SB4/Jackson 3 alignment | Verify Phase 1; worst case isolate Jackson 2 like `SwaggerJacksonConfig` |
-| DoS via deep/expensive queries | Per-request wall-clock deadline (`GraphQlExecutionDeadlineInstrumentation`, `rapla.graphql.execution-budget-millis`, default 30s); query logging (no depth/complexity limiting — shallow-but-wide queries slip it; no persisted-query allowlist — OQ#5) |
+| DoS via deep/expensive queries | Per-request wall-clock deadline (`GraphQlExecutionDeadlineInstrumentation`, `rapla.graphql.execution-budget-millis`, default 30s); query logging; depth/complexity limits and a persisted-query allowlist are open design options (OQ#5) |
 | Permission-leak via clever traversal | §12 `canRead` in *every* field resolver; per-controller leak tests (no single `GraphQlLeakTest` class shipped) |
 | `book` invoked autonomously without confirmation | Curated tool marked `cautious`; host prompts; all `book` calls logged; `created_via=mcp` flag for fast revert |
 | Name-mangling collisions | Deterministic scheme + collision detection at generation time → fail rebuild loudly |
