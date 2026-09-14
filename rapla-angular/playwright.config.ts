@@ -10,6 +10,7 @@ import { defineConfig, devices } from '@playwright/test';
 // `npx playwright install`.
 export default defineConfig({
   testDir: './tests',
+  testIgnore: ['**/demo/**'],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
