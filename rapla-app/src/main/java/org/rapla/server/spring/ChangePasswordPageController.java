@@ -45,17 +45,30 @@ public class ChangePasswordPageController
     private final RequestCache requestCache = new HttpSessionRequestCache();
 
     public ChangePasswordPageController(RemoteSession session, CachableStorageOperator operator,
-            RefreshSessionService refreshSessionService)
+            RefreshSessionService refreshSessionService, RaplaServerProperties properties)
     {
         this.session = session;
         this.operator = operator;
         this.refreshSessionService = refreshSessionService;
+        this.properties = properties;
+    }
+
+    private final RaplaServerProperties properties;
+
+    /** PRD 118 D8-2 — under {@code rapla.lock-passwords} the page does not exist. */
+    private void requireUnlocked()
+    {
+        if (properties.isLockPasswords())
+        {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND);
+        }
     }
 
     @GetMapping(produces = MediaType.TEXT_HTML_VALUE)
     @ResponseBody
     public String page(@RequestParam(value = "error", required = false) String error, HttpServletRequest request)
     {
+        requireUnlocked();
         String banner = error != null
                 ? "<p style=\"color:#c00;\">Passwords did not match or were empty.</p>" : "";
         return render(banner, request);
@@ -67,6 +80,7 @@ public class ChangePasswordPageController
                          @RequestParam(value = "skip", required = false) String skip,
                          HttpServletRequest request, HttpServletResponse response) throws RaplaException
     {
+        requireUnlocked();
         if (skip != null)
         {
             // skippable, not disableable — empty password stays allowed, nag returns next login

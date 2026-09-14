@@ -69,7 +69,8 @@ public class AuthCookieController implements AuthCookieService
                                CookieAuthSupport cookies,
                                HttpServletRequest request,
                                HttpServletResponse response,
-                               @org.springframework.beans.factory.annotation.Value("${rapla.auth.impersonation.enabled:true}") boolean impersonationEnabled)
+                               @org.springframework.beans.factory.annotation.Value("${rapla.auth.impersonation.enabled:true}") boolean impersonationEnabled,
+                               @org.springframework.beans.factory.annotation.Value("${rapla.demo.banner:}") String demoBanner)
     {
         this.session = session;
         this.facade = facade;
@@ -79,7 +80,11 @@ public class AuthCookieController implements AuthCookieService
         this.request = request;
         this.response = response;
         this.impersonationEnabled = impersonationEnabled;
+        this.demoBanner = demoBanner == null || demoBanner.isBlank() ? null : demoBanner;
     }
+
+    /** PRD 118 D8-8 — {@code rapla.demo.banner}, shown by the SPA shell; null outside the demo. */
+    private final String demoBanner;
 
     @Override
     public IdentityResponse me() throws RaplaException
@@ -118,8 +123,10 @@ public class AuthCookieController implements AuthCookieService
             roles.add(group.getKey());
         }
 
-        return new IdentityResponse(user.getId(), user.getUsername(), user.getName(), user.isAdmin(),
+        IdentityResponse identity = new IdentityResponse(user.getId(), user.getUsername(), user.getName(), user.isAdmin(),
                 roles, impersonating, actor, target);
+        identity.setDemoBanner(demoBanner);
+        return identity;
     }
 
     @Override

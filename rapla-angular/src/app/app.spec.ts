@@ -30,10 +30,12 @@ const IDENTITY: Identity = {
 class RoutedStub {}
 
 describe('App', () => {
+  let identity: ReturnType<typeof signal<Identity | null>>;
+
   beforeEach(async () => {
     // App now hosts the global toolbar (AuthService / UsersService) + the
     // Material sidenav (animations). Provide stubs so the shell renders.
-    const identity = signal<Identity | null>(IDENTITY);
+    identity = signal<Identity | null>(IDENTITY);
     await TestBed.configureTestingModule({
       imports: [App],
       providers: [
@@ -115,5 +117,20 @@ describe('App', () => {
     fixture.detectChanges();
     const trigger = (fixture.nativeElement as HTMLElement).querySelector('.view-trigger');
     expect(trigger?.textContent?.trim()).toBeTruthy();
+  });
+
+  /** PRD 118 D8-8 — the demo instance says so in the shell; the text comes from GET /api/auth/me. */
+  it('shows the demo banner from the identity', () => {
+    identity.set({ ...IDENTITY, demoBanner: 'Demo — data resets nightly at 04:15' });
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    const banner = (fixture.nativeElement as HTMLElement).querySelector('.demo-banner');
+    expect(banner?.textContent?.trim()).toBe('Demo — data resets nightly at 04:15');
+  });
+
+  it('shows no banner outside the demo', () => {
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.demo-banner')).toBeNull();
   });
 });

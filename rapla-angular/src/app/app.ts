@@ -11,6 +11,7 @@ import { ResourceSelectionComponent } from './shell/resource-selection.component
 import { ViewControlStripComponent } from './shell/view-control-strip.component';
 import { ChipRailComponent } from './shell/chip-rail.component';
 import { ViewCatalogService, type ViewInfo } from './views/view-catalog.service';
+import { AuthService } from './auth/auth.service';
 
 @Component({
   selector: 'app-root',
@@ -32,6 +33,10 @@ import { ViewCatalogService, type ViewInfo } from './views/view-catalog.service'
 export class App {
   private readonly catalog = inject(ViewCatalogService);
   private readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
+
+  /** PRD 118 D8-8 — the demo instance names itself; text from GET /api/auth/me, none elsewhere. */
+  readonly demoBanner = computed(() => this.auth.identity()?.demoBanner ?? null);
 
   /** Server view catalog (PRD 074 listViews) → the entries of the view picker. */
   readonly views = signal<ViewInfo[]>([]);

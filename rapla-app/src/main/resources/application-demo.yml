@@ -1,0 +1,34 @@
+# PRD 118 D8-1 — public demo instance (visible credentials, writes allowed, nightly reset
+# of the data file by a host timer). Activate with SPRING_PROFILES_ACTIVE=demo and point
+# RAPLA_FILEDATASOURCES_RAPLAFILE at the copy of the seed file. No mail, Exchange, LDAP
+# or external IdP settings belong here or in the demo's environment.
+rapla:
+  fix-admin-password: true
+  lock-passwords: true
+  demo:
+    banner: "Demo — data resets nightly at 04:15"
+  auth:
+    impersonation:
+      enabled: false
+  exchange:
+    enabled: false
+  externalevents:
+    enabled: false
+  services:
+    org.rapla.plugin.notification: false
+    org.rapla.plugin.archiver: false
+    org.rapla.plugin.jndi: false
+    org.rapla.plugin.ical: false
+    3_status: false
+  documents:
+    author-scripts: false
+  graphql:
+    max-query-window-days: 400
+  # D8-3: Swing is out of the demo — no password grant, no loopback/WSL redirects, no Swing callback path.
+  # The /api allowlist itself is DemoApiAllowlistConfig (@Profile("demo")).
+  oauth:
+    local-accounts-enabled: false
+    allow-loopback-redirects: false
+    allow-wsl-bridge-redirects: false
+    same-origin-callback-paths:
+      - /app/auth/callback

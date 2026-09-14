@@ -43,6 +43,9 @@ public final class IdentityResponse
 
     @JsonProperty("target")
     private String target;
+    /** PRD 118 D8-8 — {@code rapla.demo.banner} for the SPA shell; null outside the demo. */
+    @JsonProperty("demoBanner")
+    private String demoBanner;
 
     public IdentityResponse() {}
 
@@ -82,4 +85,6 @@ public final class IdentityResponse
 
     public String getTarget() { return target; }
     public void setTarget(String target) { this.target = target; }
+    public String getDemoBanner() { return demoBanner; }
+    public void setDemoBanner(String demoBanner) { this.demoBanner = demoBanner; }
 }

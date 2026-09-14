@@ -4,6 +4,24 @@
   height: calc(100vh - 64px);
 }
 
+/* PRD 118 D8-8 — demo instance strip above the toolbar (28px, subtracted from the shell). */
+.demo-banner {
+  height: 28px;
+  line-height: 28px;
+  padding: 0 16px;
+  background: #fff4ce;
+  color: #5c4400;
+  font-size: 13px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shell.with-banner {
+  height: calc(100vh - 64px - 28px);
+}
+
 .nav {
   width: 290px;
 }

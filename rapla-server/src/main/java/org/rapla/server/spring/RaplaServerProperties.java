@@ -27,6 +27,7 @@ public class RaplaServerProperties
     private String patchDir = "data/patch";
     private Merge merge = new Merge();
     private boolean fixAdminPassword = false;
+    private boolean lockPasswords = false;
     private String legacyContextPath = "";
     private Readmodel readmodel = new Readmodel();
     private Views views = new Views();
@@ -56,6 +57,21 @@ public class RaplaServerProperties
     public void setFixAdminPassword(boolean fixAdminPassword)
     {
         this.fixAdminPassword = fixAdminPassword;
+    }
+
+    /**
+     * {@code rapla.lock-passwords} — PRD 118 D8-2. When true, no user's password can be changed
+     * (public demo with published credentials): the change-password page is gone, the profile
+     * capability reports it, and the empty-password nag is skipped.
+     */
+    public boolean isLockPasswords()
+    {
+        return lockPasswords;
+    }
+
+    public void setLockPasswords(boolean lockPasswords)
+    {
+        this.lockPasswords = lockPasswords;
     }
 
     /**

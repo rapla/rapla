@@ -1,5 +1,8 @@
+@if (demoBanner(); as text) {
+  <div class="demo-banner" role="status">{{ text }}</div>
+}
 <app-toolbar />
-<mat-sidenav-container class="shell">
+<mat-sidenav-container class="shell" [class.with-banner]="demoBanner()">
   <mat-sidenav mode="side" opened class="nav">
     <div class="view-switch">
       <!-- A plain button, not matButton: the Material button hoists its icons ahead of the

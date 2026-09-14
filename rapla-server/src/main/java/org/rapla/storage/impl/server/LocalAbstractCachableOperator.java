@@ -186,6 +186,19 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         this.fixAdminPassword = fixAdminPassword;
     }
 
+    /** {@code rapla.lock-passwords} (PRD 118 D8-2): no user's password can be changed (public demo). */
+    private boolean lockPasswords = false;
+
+    public void setLockPasswords(boolean lockPasswords)
+    {
+        this.lockPasswords = lockPasswords;
+    }
+
+    public boolean isLockPasswords()
+    {
+        return lockPasswords;
+    }
+
     /** True when this user is the built-in admin and the fix-admin-password lock is active. */
     private boolean isFixedAdmin(User user)
     {
@@ -284,7 +297,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     @Override
     public boolean isPasswordChangeRequired(User user) throws RaplaException
     {
-        if (user == null || isFixedAdmin(user))
+        if (user == null || lockPasswords || isFixedAdmin(user))
         {
             return false;
         }
@@ -1056,7 +1069,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     public boolean canChangePassword() throws RaplaException
     {
-        return true;
+        return !lockPasswords;
     }
 
     public void changePassword(User user, char[] oldPassword, char[] newPassword) throws RaplaException
@@ -1064,6 +1077,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         if (isFixedAdmin(user))
         {
             throw new RaplaSecurityException("The admin password is fixed by configuration (rapla.fix-admin-password).");
+        }
+        if (lockPasswords)
+        {
+            throw new RaplaSecurityException("Passwords are locked by configuration (rapla.lock-passwords).");
         }
         LOGGER.info("Change password for User {}", user.getUsername());
         String plain = new String(newPassword);

@@ -26,6 +26,8 @@ export interface Identity {
   actor: string | null;
   /** The impersonation target's username when {@code impersonating}; otherwise null. */
   target: string | null;
+  /** PRD 118 D8-8 — banner text of a demo instance ({@code rapla.demo.banner}); absent elsewhere. */
+  demoBanner?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })

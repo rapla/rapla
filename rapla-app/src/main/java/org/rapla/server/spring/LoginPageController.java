@@ -74,13 +74,23 @@ public class LoginPageController
                               @Value("${rapla.oauth.web.password-login:true}") boolean passwordLoginEnabled,
                               RaplaFacade facade,
                               RaplaResources i18n,
-                              BundleManager bundleManager)
+                              BundleManager bundleManager,
+                              @Value("${rapla.demo.banner:}") String demoBanner)
     {
         this.externalProviders = externalProviders;
         this.passwordLoginEnabled = passwordLoginEnabled;
         this.facade = facade;
         this.i18n = i18n;
         this.bundleManager = bundleManager;
+        this.demoBanner = demoBanner == null ? "" : demoBanner.trim();
+    }
+
+    /** PRD 118 D8-8 — {@code rapla.demo.banner}; empty outside the demo. */
+    private final String demoBanner;
+
+    private String demoBannerHtml()
+    {
+        return demoBanner.isEmpty() ? "" : "<p class=\"demo-banner\">" + HtmlUtils.htmlEscape(demoBanner) + "</p>";
     }
 
     /** @return {@code lang} if it is one of the shipped bundle languages, else {@code null}. */
@@ -214,6 +224,7 @@ public class LoginPageController
                     button:hover { background: #248; }
                     button:disabled { background: #888; cursor: default; }
                     .note { color: #888; font-size: 0.8rem; margin-top: 1rem; }
+                    .demo-banner { background: #fff4ce; color: #5c4400; border-radius: 4px; padding: 0.4rem 0.6rem; font-size: 0.85rem; margin: 0 0 1rem; }
                     .remember { display: flex; align-items: center; gap: 0.5rem; margin: 1rem 0 0.2rem; color: #555; font-size: 0.9rem; }
                     .remember input { margin: 0; }
                     .sso { display: block; text-decoration: none; text-align: center; margin: 0.5rem 0; padding: 0.6rem 1.2rem; background: #345; color: #fff; border-radius: 4px; font-size: 1rem; }
@@ -227,6 +238,7 @@ public class LoginPageController
                   <div class="card">
                     <div class="langrow">%CHOOSER%</div>
                     <h1>%TITLE%</h1>
+                    %DEMO%
                     %BANNER%
                     %SSO%
                     %PASSWORD%
@@ -254,7 +266,8 @@ public class LoginPageController
                 .replace("%BANNER%", banner)
                 .replace("%SSO%", ssoButtonsHtml(reprompt, locale))
                 .replace("%PASSWORD%", passwordLoginEnabled ? passwordFormHtml(request, locale) : "")
-                .replace("%CHOOSER%", languageChooserHtml(locale));
+                .replace("%CHOOSER%", languageChooserHtml(locale))
+                .replace("%DEMO%", demoBannerHtml());
     }
 
     /** Language chooser — every shipped bundle language, labeled with its autonym. */
@@ -355,7 +368,9 @@ public class LoginPageController
                    .replace("%CSRF%", csrfField)
                    .replace("%CHECKED%", "1".equals(CookieAuthSupport.readCookie(request,
                            CookieAuthSupport.REMEMBER_CHOICE_COOKIE)) ? " checked" : "")
-                   .replace("%HINT%", showDefaultAdminHint()
-                           ? "<p class=\"note\">Dev default: <code>admin</code> with empty password.</p>" : "");
+                   .replace("%HINT%", !showDefaultAdminHint() ? ""
+                           : demoBanner.isEmpty()
+                           ? "<p class=\"note\">Dev default: <code>admin</code> with empty password.</p>"
+                           : "<p class=\"note\">Demo login: <code>admin</code>, no password &mdash; data resets nightly.</p>");
     }
 }
