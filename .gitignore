@@ -46,6 +46,7 @@ proxy.conf.local.json
 .env
 .env.*
 *.env
+!.env.example
 secrets.yml
 secrets.yaml
 **/secrets.yml

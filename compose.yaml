@@ -1,0 +1,20 @@
+name: rapla
+
+services:
+  rapla:
+    build: .
+    image: rapla:3
+    ports:
+      - "8051:8051"
+    environment:
+      - RAPLA_DBDATASOURCES_RAPLADB_URL
+      - RAPLA_DBDATASOURCES_RAPLADB_USERNAME
+      - RAPLA_DBDATASOURCES_RAPLADB_PASSWORD
+    volumes:
+      - rapla-data:/opt/rapla/data
+      - rapla-logs:/opt/rapla/logs
+    restart: unless-stopped
+
+volumes:
+  rapla-data:
+  rapla-logs:

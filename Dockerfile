@@ -1,14 +1,17 @@
-FROM alpine:3.23
+FROM eclipse-temurin:21-jre
 
 WORKDIR /opt/rapla
 
-RUN apk add --no-cache \
-    openjdk21-jre \
-    tar
+RUN useradd --system --user-group --home-dir /opt/rapla --shell /usr/sbin/nologin rapla \
+    && mkdir config data lib plugins logs work \
+    && chown rapla:rapla data logs work
 
-COPY target/distribution/*.tar.gz /opt/rapla/rapla_package.tar.gz
-RUN tar -xzvf rapla_package.tar.gz
+COPY rapla-app/target/rapla-*.jar rapla.jar
 
-CMD ./raplaserver.sh run
+USER rapla
+
+VOLUME ["/opt/rapla/data", "/opt/rapla/logs"]
 
 EXPOSE 8051
+
+ENTRYPOINT ["java", "-jar", "rapla.jar"]

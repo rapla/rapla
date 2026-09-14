@@ -1,0 +1,6 @@
+services:
+  rapla:
+    environment:
+      RAPLA_FILEDATASOURCES_RAPLAFILE: /opt/rapla/seed/data.xml
+    volumes:
+      - ${RAPLA_SEED_XML:?set RAPLA_SEED_XML}:/opt/rapla/seed/data.xml:ro

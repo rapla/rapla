@@ -223,6 +223,105 @@ the store keeps the artefacts. Disable with `rapla.services.org.rapla.plugin.pat
 Dynamic-type annotations (e.g. `documents=` on an event type) are **not** patched — set them in
 the type editor.
 
+## Docker
+
+The repo root carries a `Dockerfile` that wraps the fat JAR in
+`eclipse-temurin:21-jre`, with the install layout from above under
+`/opt/rapla` and a non-root `rapla` user. Build the JAR first (see
+§"Building the deployable JAR"), then the image:
+
+```sh
+mvn -pl rapla-app -am clean package -DskipTests
+docker compose up -d --build
+```
+
+Browse to `http://localhost:8051` — the XML file store in the `rapla-data`
+volume starts with the default admin account (username `admin`, empty
+password; **set a password immediately**, see §"Quick start").
+
+| Container path | Compose default | Purpose |
+|---|---|---|
+| `/opt/rapla/data` | volume `rapla-data` | datastore / first-boot seed |
+| `/opt/rapla/logs` | volume `rapla-logs` | application + access log |
+| `/opt/rapla/config/application.yml` | not mounted | your overrides — bind-mount a file |
+| `/opt/rapla/lib` | not mounted | extra JDBC drivers |
+| `/opt/rapla/plugins` | not mounted | drop-in plugin jars |
+
+`compose.yaml` sets the project name `rapla`, so the volumes are called
+`rapla_rapla-data`, `rapla_rapla-logs` (and `rapla_rapla-db` for MariaDB)
+whatever the checkout directory is named.
+
+Configuration works as in §"Configuration": mount `config/application.yml`
+or set environment variables (`SERVER_PORT`, `RAPLA_OAUTH_PUBLIC_BASE_URL`,
+…). JVM flags go into `JAVA_TOOL_OPTIONS` (e.g. `-Xmx2g`).
+
+### Storage modes
+
+Copy `.env.example` to `.env` next to `compose.yaml` and uncomment the
+block for your mode — Compose reads `.env` automatically, then
+`docker compose up -d --build`.
+
+| Mode | Set in `.env` |
+|---|---|
+| File store (default) | nothing |
+| HSQLDB in the `rapla-data` volume | `RAPLA_DBDATASOURCES_RAPLADB_URL=jdbc:hsqldb:file:/opt/rapla/data/rapladb`<br>`RAPLA_DBDATASOURCES_RAPLADB_USERNAME=SA` |
+| HSQLDB + seed | the two HSQLDB lines, plus<br>`COMPOSE_FILE=compose.yaml:docker/compose.seed.yaml`<br>`RAPLA_SEED_XML=<path to data.xml>` |
+| MariaDB | `COMPOSE_FILE=compose.yaml:docker/compose.mariadb.yaml`<br>`RAPLA_DB_PASSWORD=<choose one>`<br>driver jar `mariadb-java-client-*.jar` in `./lib/` (or `RAPLA_LIB_DIR`) |
+
+- Keep unused lines **commented**, not empty: an empty
+  `RAPLA_DBDATASOURCES_RAPLADB_URL=` stops Rapla at startup.
+- The variable names are Spring Boot's environment form of
+  `rapla.db-datasources.rapladb.*`, so the same names work outside Docker.
+- On Windows separate the `COMPOSE_FILE` entries with `;`, or set
+  `COMPOSE_PATH_SEPARATOR=:`.
+- With a database, the first start creates the schema and imports the seed
+  (§"First boot"); the log shows `Using datasource HSQL Database Engine` or
+  `Using datasource MariaDB`.
+
+**Seed.** `docker/compose.seed.yaml` mounts `RAPLA_SEED_XML` read-only at
+`/opt/rapla/seed/data.xml` and points `rapla.file-datasources.raplafile` at it.
+An empty database imports it on first start; later starts ignore it. Use it
+with the **database modes only** — the file store saves by renaming its
+`data.xml` to `data.xml.bak` and writing a new one, which a read-only mount
+cannot take. For MariaDB list both overlays:
+`COMPOSE_FILE=compose.yaml:docker/compose.mariadb.yaml:docker/compose.seed.yaml`.
+
+### Backup and restore
+
+**File store and HSQLDB** — archive the data volume with a throwaway
+container. Stop Rapla first; for HSQLDB this is required so the database
+files are consistent:
+
+```sh
+docker compose stop rapla
+docker run --rm -v rapla_rapla-data:/data -v "$PWD":/backup busybox \
+  tar czf /backup/rapla-data.tgz -C /data .
+docker compose start rapla
+```
+
+Restore into a fresh volume — create it without starting Rapla, unpack, start:
+
+```sh
+docker compose up --no-start
+docker run --rm -v rapla_rapla-data:/data -v "$PWD":/backup busybox \
+  tar xzf /backup/rapla-data.tgz -C /data
+docker compose up -d
+```
+
+**MariaDB** — dump and restore through the database container; the password
+is read from the container's own environment:
+
+```sh
+docker compose exec -T mariadb sh -c 'mariadb-dump -u rapla -p"$MARIADB_PASSWORD" rapla' > rapla.sql
+docker compose exec -T mariadb sh -c 'mariadb -u rapla -p"$MARIADB_PASSWORD" rapla' < rapla.sql
+```
+
+**Host folder instead of a volume** — if the data should sit in a directory
+your host backup already covers, replace `rapla-data:/opt/rapla/data` in
+`compose.yaml` with `./data:/opt/rapla/data`. The container runs as the system
+user `rapla` (uid 999, check with `docker compose exec rapla id`), so the
+directory must be writable for it: `mkdir data && sudo chown 999:999 data`.
+
 ## Running as a service
 
 ### Linux — systemd

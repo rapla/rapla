@@ -1,0 +1,29 @@
+services:
+  rapla:
+    environment:
+      RAPLA_DBDATASOURCES_RAPLADB_URL: jdbc:mariadb://mariadb:3306/rapla
+      RAPLA_DBDATASOURCES_RAPLADB_USERNAME: rapla
+      RAPLA_DBDATASOURCES_RAPLADB_PASSWORD: ${RAPLA_DB_PASSWORD:?set RAPLA_DB_PASSWORD}
+    volumes:
+      - ${RAPLA_LIB_DIR:-./lib}:/opt/rapla/lib:ro
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+  mariadb:
+    image: mariadb:11
+    environment:
+      MARIADB_DATABASE: rapla
+      MARIADB_USER: rapla
+      MARIADB_PASSWORD: ${RAPLA_DB_PASSWORD:?set RAPLA_DB_PASSWORD}
+      MARIADB_RANDOM_ROOT_PASSWORD: "1"
+    volumes:
+      - rapla-db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      retries: 30
+    restart: unless-stopped
+
+volumes:
+  rapla-db:
