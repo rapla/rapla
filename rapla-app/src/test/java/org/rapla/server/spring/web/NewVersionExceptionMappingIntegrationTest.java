@@ -90,7 +90,7 @@ class NewVersionExceptionMappingIntegrationTest
 
     /** Test-only route that throws {@link RaplaNewVersionException} on demand.
      *  Registered as a {@code @TestConfiguration} so it doesn't leak into
-     *  production. The route path uses a {@code /__test/} prefix to avoid
+     *  production. The route path uses a {@code /api/__test/} prefix to avoid
      *  shadowing any real endpoint. The {@code @RestController} stereotype
      *  on the inner class is enough — Spring discovers it via component
      *  scan when {@link TestRouteConfig} is included in {@code @SpringBootTest.classes}. */
@@ -98,7 +98,7 @@ class NewVersionExceptionMappingIntegrationTest
     static class TestRouteConfig
     {
         @RestController
-        @RequestMapping("/__test")
+        @RequestMapping("/api/__test")
         static class ThrowingController
         {
             @GetMapping("/throw-new-version")

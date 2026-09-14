@@ -69,9 +69,13 @@ class BadLoginErrorMessageTest
     @Test
     void badLoginPreservesServerMessageBody()
     {
-        try (AnnotationConfigApplicationContext ctx =
-                     new AnnotationConfigApplicationContext(ClientProxyConfig.class))
+        try (AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext())
         {
+            // ClientProxyConfig takes the TokenStore and RaplaResources that ClientConfig supplies in the real client.
+            ctx.registerBean(org.rapla.storage.dbrm.TokenStore.class, org.rapla.storage.dbrm.TokenStores::noOp);
+            ctx.registerBean(org.rapla.RaplaResources.class, () -> new org.rapla.RaplaResources(new org.rapla.components.i18n.server.ServerBundleManager()));
+            ctx.register(ClientProxyConfig.class);
+            ctx.refresh();
             ctx.getBean(RemoteConnectionInfo.class).setServerURL("http://localhost:" + port + "/api");
             OAuth2PasswordLogin passwordLogin = ctx.getBean(OAuth2PasswordLogin.class);
 
