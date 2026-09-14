@@ -1,6 +1,6 @@
 # PRD 054: Standalone Windows 11 desktop installer
 
-**Status:** in-progress — Phase 1 landed 2026-05-25 (Maven profile + application-standalone.yml + StandaloneBootTest + Tauri scaffold under `rapla-standalone/`). Phases 2-5 (jlink + Tauri build + signing + MSI) run on the maintainer's Windows machine per `rapla-standalone/README.md`.
+**Status:** paused / NOT WORKING (2026-09-14) — the standalone build is broken and not part of the Rapla 3 alpha; whether Rapla 3 supports a standalone installation at all is undecided (maintainer call). Phase 1 landed 2026-05-25 (Maven profile + application-standalone.yml + StandaloneBootTest + Tauri scaffold under `rapla-standalone/`). Phases 2-5 (jlink + Tauri build + signing + MSI) run on the maintainer's Windows machine per `rapla-standalone/README.md`.
 **Date:** 2026-05-25
 
 ## Goal

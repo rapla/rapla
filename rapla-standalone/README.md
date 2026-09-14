@@ -1,5 +1,13 @@
 # rapla-standalone — Windows 11 desktop trial installer
 
+> ## ⚠️ NOT WORKING — unsupported in Rapla 3
+>
+> **The standalone desktop build is currently broken and not part of the Rapla 3 alpha.**
+> Whether a standalone installation will be supported in Rapla 3 at all is undecided
+> (see [PRD 054](../docs/prd/054-standalone-windows-installer.md)). Do not build, ship, or
+> rely on it. Use the server deployment or the Java Web Start client instead
+> (see the [main README](../README.md)).
+
 A [Tauri 2](https://tauri.app) shell wrapping the standalone Spring Boot
 build of rapla, producing a signed MSI installer for Windows 11 x64.
 
