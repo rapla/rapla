@@ -74,7 +74,7 @@ secrets.yaml
 # Local Keycloak dev server — local dev tooling (machine-specific realm
 # config, dev secret), not committed
 /tools/keycloak/
-/.agents/scheduled_tasks.lock
+/.claude/scheduled_tasks.lock
 
 # Per-agent git worktrees (parallel-session isolation, git-worktrees skill) — local, transient
 .agents/worktrees/
@@ -121,3 +121,6 @@ docs/coordination/
 
 # npm/vitest run from the repo root leaves a stray cache here — never tracked (rapla-angular/ has its own)
 /node_modules/
+.claude/worktrees/
+.claude/settings.local.json
+.claude/agent-memory-local/

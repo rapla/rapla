@@ -37,7 +37,7 @@ The repo-root `pom.xml` is the reactor aggregator (artifactId `rapla-aggregator`
 
 ## Skills
 
-Detailed how-tos live as **Agent Skills** (the cross-engine `SKILL.md` standard) under `.agents/skills/<name>/SKILL.md`, kept out of this always-on file so it stays rule-dense. Every engine that reads this repo — Claude Code, opencode, Copilot/VS Code, Codex, Gemini CLI — **auto-discovers them by `name` + `description` and loads the body on demand** (progressive disclosure); there is no manual index to maintain, and you never need to `cat` a SKILL.md to "enable" it. The numbered rules below name the relevant skill at the point it applies (*"load the X skill"*) — that contextual pointer **is** the reference. If your engine doesn't auto-surface skills (e.g. Cursor), they're plain Markdown at the path above. Restructuring this file or its skills: load the **`agents-cleanup`** skill.
+Detailed how-tos live as **Agent Skills** (the cross-engine `SKILL.md` standard) under `.agents/skills/<name>/SKILL.md`, kept out of this always-on file so it stays rule-dense. Every engine that reads this repo — Claude Code, opencode, Copilot/VS Code, Codex, Gemini CLI — **auto-discovers them by `name` + `description` and loads the body on demand** (progressive disclosure); there is no manual index to maintain, and you never need to `cat` a SKILL.md to "enable" it. The numbered rules below name the relevant skill at the point it applies (*"load the X skill"*) — that contextual pointer **is** the reference. **Claude Code is the exception:** it reads only `.claude/skills/`, so this repo ships a plugin manifest `.claude-plugin/plugin.json` pointing at `.agents/skills`; start Claude Code with `claude --plugin-dir .` (a shell wrapper or the session script adds the flag) and the skills appear as `rapla:<name>`. Claude-only files (settings, hooks, commands) live in `.claude/`; `.agents/` holds only the shared skills. If your engine doesn't auto-surface skills (e.g. Cursor), they're plain Markdown at the path above. Restructuring this file or its skills: load the **`agents-cleanup`** skill.
 
 ## Rules
 
@@ -157,7 +157,7 @@ The rapla vault (`docs/`) is the source of truth per the table above; the privat
 ### 5. Build Discipline
 
 **Reactor hard rules** (referenced from §8 and §9):
-- **NEVER `mvn install`** and **never run rapla JARs from `~/.m2/repository/`**. Both shadow in-reactor `target/classes` for sibling modules with stale code — an hours-of-debugging trap. The reactor's in-tree classpath handles all sibling resolution. Enforced by a `PreToolUse: Bash` hook in `.agents/settings.json` that exit-2's `mvn install` calls — see `.agents/hooks.md` for the wired hooks and how to add more.
+- **NEVER `mvn install`** and **never run rapla JARs from `~/.m2/repository/`**. Both shadow in-reactor `target/classes` for sibling modules with stale code — an hours-of-debugging trap. The reactor's in-tree classpath handles all sibling resolution. Enforced by a `PreToolUse: Bash` hook in `.claude/settings.json` that exit-2's `mvn install` calls — see `.claude/hooks.md` for the wired hooks and how to add more.
 - **The `-am` ("also-make") flag is mandatory** for any cross-module compile/test/run. Without it, Maven resolves siblings from `~/.m2/repository`, which is stale or missing.
 - Run from the repo root with `-pl <module> -am` — never `cd <module>`.
 
@@ -183,7 +183,7 @@ The rapla vault (`docs/`) is the source of truth per the table above; the privat
   scar 2026-07-08: a `git stash -- <file>` run to lint the HEAD version reverted a file
   carrying two sessions' uncommitted work; recovered only because of a manual backup).
   `git restore` / `git reset --hard` / `git clean` / `git stash` (except `list`/`show`)
-  are **hard-blocked by a PreToolUse hook** (`.agents/settings.json`, §5 pattern) — they
+  are **hard-blocked by a PreToolUse hook** (`.claude/settings.json`, §5 pattern) — they
   fire even under bypassPermissions where `ask`/`deny` rules don't; if the user genuinely
   wants one, they run it themselves via the `!` prefix. To compare against HEAD, use the
   read-only forms: `git show HEAD:<path> > /tmp/…` / `git diff` — never swap the working

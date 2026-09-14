@@ -1,10 +1,10 @@
 # Claude Code hooks — what's wired, where, and why
 
-Claude Code reads two layers of settings: per-user at `~/.claude/settings.json`, per-project at `.agents/settings.json` (here, reached via the `.claude → .agents` symlink). Hooks in either file fire automatically — the agent doesn't need to know they exist, but you do, so this file documents the contract.
+Claude Code reads two layers of settings: per-user at `~/.claude/settings.json`, per-project at `.claude/settings.json`. Hooks in either file fire automatically — the agent doesn't need to know they exist, but you do, so this file documents the contract.
 
 For settings format and adding new hooks, load the **`update-config`** skill. The Claude Code docs live at `claude.com/docs/en/docs/claude-code/hooks`.
 
-## Project-level — `.agents/settings.json`
+## Project-level — `.claude/settings.json`
 
 ### `PreToolUse: Bash` — block `mvn install`
 
@@ -42,7 +42,7 @@ For settings format and adding new hooks, load the **`update-config`** skill. Th
 
 ### `PreToolUse: Bash` — block `git restore` / `git reset --hard` / `git clean` / `git stash`
 
-A second hook in the same `Bash` matcher (`.agents/settings.json`, `hooks.PreToolUse[0].hooks[1]`). Same shape as the `mvn install` guard: reads the pending command, greps it, `exit 2` to block.
+A second hook in the same `Bash` matcher (`.claude/settings.json`, `hooks.PreToolUse[0].hooks[1]`). Same shape as the `mvn install` guard: reads the pending command, greps it, `exit 2` to block.
 
 ```
 ... grep -qE '\bgit\b[^|;&]*\b(restore|clean)\b' || grep -qE '\bgit\b[^|;&]*\breset\b[^|;&]*--hard'
@@ -111,7 +111,7 @@ Prints a context line when ≥3 queued sessions have friction ("run /retrospecti
 
 ### `PreToolUse: Bash` — YubiKey guard for signed builds (maintainer's machine only)
 
-`~/.claude/hooks/yubikey-sign-guard.sh` — commands containing `-Psign-pkcs11` auto-attach the YubiKey to WSL (idempotent `usbipd.exe attach`) and are blocked (exit 2) only if the erdkante token still isn't visible, so the signing step can't fail late after a full compile. Deliberately user-level, NOT in this repo's `.agents/settings.json`: `-Psign-pkcs11` is tied to the maintainer's hardware; other developers sign with `-Psign-jks` and never hit this guard (2026-07-10).
+`~/.claude/hooks/yubikey-sign-guard.sh` — commands containing `-Psign-pkcs11` auto-attach the YubiKey to WSL (idempotent `usbipd.exe attach`) and are blocked (exit 2) only if the erdkante token still isn't visible, so the signing step can't fail late after a full compile. Deliberately user-level, NOT in this repo's `.claude/settings.json`: `-Psign-pkcs11` is tied to the maintainer's hardware; other developers sign with `-Psign-jks` and never hit this guard (2026-07-10).
 
 ## `autoMode` policy lines — not hooks, but related
 
@@ -120,13 +120,13 @@ Prints a context line when ≥3 queued sessions have friction ("run /retrospecti
 - "`mvn install` to `~/.m2/repository` is fine; `mvn deploy` is not." — guides the agent without blocking the tool call. (The actual block on `mvn install` here in rapla is a project-level override of that user-level allow, because rapla's reactor specifically hates it.)
 - "Editing `.github/workflows/` requires explicit user direction." — surfaces as a `soft_deny` reminder, not a hard block.
 
-`.agents/settings.local.json` adds the project-specific `autoMode.environment` notes (worktree layout, port offsets, cross-repo dhbwrapla read access).
+`.claude/settings.local.json` adds the project-specific `autoMode.environment` notes (worktree layout, port offsets, cross-repo dhbwrapla read access).
 
 ## Adding a new hook
 
 The lowest-friction path is the `update-config` skill — it knows the JSON shape and where to put a new entry. Manually:
 
-1. Decide *user-level* (applies everywhere → `~/.claude/settings.json`) or *project-level* (rapla-only → `.agents/settings.json`).
+1. Decide *user-level* (applies everywhere → `~/.claude/settings.json`) or *project-level* (rapla-only → `.claude/settings.json`).
 2. Pick the event: `PreToolUse`, `PostToolUse`, `SessionStart`, `SessionEnd`, `UserPromptSubmit`, etc. The hook docs at `claude.com/docs/en/docs/claude-code/hooks` list the full set.
 3. Pick the matcher (regex against the tool name — `Bash`, `Edit|Write`, etc.) — `""` matches everything.
 4. The command receives the tool call as JSON on stdin. Use `jq` to extract fields. Exit code 0 = allow, 2 = block with stderr surfaced to the agent.

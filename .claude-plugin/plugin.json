@@ -1,0 +1,5 @@
+{
+  "name": "rapla",
+  "description": "rapla agent skills from .agents/skills (cross-engine Agent Skills standard); load with: claude --plugin-dir .",
+  "skills": "./.agents/skills"
+}

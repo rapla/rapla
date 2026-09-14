@@ -367,11 +367,6 @@
 				<version>${h2.version}</version>
 			</dependency>
 			<dependency>
-				<groupId>org.mariadb.jdbc</groupId>
-				<artifactId>mariadb-java-client</artifactId>
-				<version>3.1.4</version>
-			</dependency>
-			<dependency>
 				<groupId>com.microsoft.ews-java-api</groupId>
 				<artifactId>ews-java-api</artifactId>
 				<version>${exchange.webservice.api}</version>

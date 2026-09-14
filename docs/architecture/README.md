@@ -33,7 +33,7 @@ references — pasting one into your IDE jumps to the right place.
 | [locking.md](locking.md) | The three lock layers (process / resource / global), the `WRITE_LOCK` table, multi-pod concurrency, the validate-before-lock ordering gotcha |
 | [mvp-pattern.md](mvp-pattern.md) | Presenter / View / pure-model carve-out pattern; headless test harness; AGENTS.md §12 leak-probe pattern |
 | [swing-platform-quirks.md](swing-platform-quirks.md) | Platform/compositor workarounds in the Swing client (WSLg popup input-region leak, FilterEditButton positioning, focus-dismiss handlers) |
-| [migration-from-master.md](migration-from-master.md) | What changed from the historical `master` branch to the current `spring-boot` tree (restinject removed, Spring Boot 4 + Angular added, 5-module reactor, carve-out programme); size comparison + intent for new contributors |
+| [what-changed-in-rapla-3.md](what-changed-in-rapla-3.md) | What changed from the historical `master` branch to the current `spring-boot` tree (restinject removed, Spring Boot 4 + Angular added, 5-module reactor, carve-out programme); size comparison + intent for new contributors |
 | [tableview-and-graphql-views.md](tableview-and-graphql-views.md) | Legacy Swing TableView config (views, columns, `defaultValue` annotations, the dhbw-configured Termine table) as the capability benchmark for the GraphQL-native view system ([PRD 074](../prd/074-graphql-declarative-views.md)) — proves the new path reproduces the existing tables |
 | [spa-selection-and-actions.md](spa-selection-and-actions.md) | Row/item selection in the SPA (Swing/Excel semantics, keyboard map, touch selection mode) and how a multi-row selection feeds the row-action/command system (bulk Löschen, subset-wins gating, best-effort undo) — PRDs [094](../prd/094-spa-main-view-actions-and-popups.md)/099 |
 | [legacy-urls.md](legacy-urls.md) | The `/rapla/` prefix after the context-root move (server routes kept it literally, client URL generators must emit it themselves) + the `UrlEncryptor` salt-in-return-value wire format — read before touching published calendar/iCal URL generation |
@@ -147,7 +147,7 @@ Reference doc on Rapla's concurrency and locking model in a multi-pod deployment
 
 *Keywords:* Locking, Concurrency, WRITE_LOCK, ReentrantReadWriteLock, DefaultRaplaLock, DBOperator, RemoteOperator, GLOBAL_LOCK, multi-pod, PRD 035, PRD 029, Deadlock, fireStorageUpdated, Sperre, Nebenläufigkeit, cluster-wide lock, resource lock, process lock
 
-### migration-from-master.md
+### what-changed-in-rapla-3.md
 
 Historical architecture record contrasting the legacy master branch with the current spring-boot branch rework, explaining what changed structurally and why — the move from restinject-based custom DI and hand-rolled JSON-RPC (org.rapla.enpoints, org.rapla.rest) to Spring Boot 4 with @HttpExchange interfaces and Jackson 3; the split from one monolithic Maven project into the 5-module reactor (rapla-bom/core/client/server/app, PRD 005); Date to java.time migration; the new Angular SPA (PRD 026); OAuth 2.0 PKCE auth (PRD 029); and the pure-Java presenter carve-outs from Swing (PRD 023) enabling the 4-tier test pyramid (PRD 017). Includes LOC comparisons and a size/complexity rationale. References PRDs 001, 005, 009, 010, 011, 017, 023, 024, 026, 029, 030.
 
