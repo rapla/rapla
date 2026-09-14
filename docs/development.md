@@ -424,6 +424,12 @@ Key facts:
 
 The two hardcoded localhost defaults in `org.rapla.client.spring` (`ClientConfig.java:131`, `ClientProxyConfig.java:54`) are migration-era regressions worth a follow-up: ideal flow is `BasicService.getCodeBase()` (the standard JNLP "where was I launched from?" API) before falling back to localhost. Item 5 above papers over this via `<property>` injection — works, but a `BasicService` fallback would survive an absent or hand-edited JNLP.
 
+## Line endings — LF everywhere, enforced by `.gitattributes`
+
+The repo ships `.gitattributes` with `* text=auto eol=lf` (plus `eol=crlf` for `*.bat`, `*.cmd`, `*.ps1`). Every clone gets LF on disk regardless of the developer's `core.autocrlf`; files saved with CRLF are normalised to LF on `git add`, so no mixed line endings and no whole-file diffs reach the repo. IntelliJ, Eclipse, VS Code and Maven/npm handle LF on Windows without any setting; `.editorconfig` says the same for new files.
+
+**Existing clones, once after pulling the commit that added `.gitattributes`:** run `git add --renormalize .` (or re-clone). Otherwise `git status` may list many files as modified although `git diff` is empty. The harmless `LF will be replaced by CRLF` warning goes away with `git config --global core.autocrlf false`.
+
 ## Agent skills — how engines find them
 
 Detailed agent how-tos live as **Agent Skills** (the cross-engine `SKILL.md` standard) under `.agents/skills/<name>/SKILL.md`, kept out of the always-on `AGENTS.md` so it stays rule-dense. Claude Code, opencode, Copilot/VS Code, Codex and Gemini CLI **auto-discover them by `name` + `description` and load the body on demand** (progressive disclosure) — there is no manual index, and nobody needs to `cat` a SKILL.md to "enable" it. AGENTS.md names the relevant skill at the point a rule applies; that contextual pointer is the reference.
