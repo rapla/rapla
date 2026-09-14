@@ -1,0 +1,43 @@
+// Rapla CI "Tafel" (see rapla.org): replaces the prebuilt azure-blue theme.
+// Palettes in _theme-colors.scss were generated with
+// `ng generate @angular/material:theme-color --primary-color=#1F6FB2 --tertiary-color=#D2AF63 --neutral-color=#35393C`.
+@use '@angular/material' as mat;
+@use './theme-colors' as rapla;
+
+html {
+  color-scheme: light;
+  @include mat.theme((
+    color: (
+      primary: rapla.$primary-palette,
+      tertiary: rapla.$tertiary-palette,
+    ),
+    // Roboto is not shipped with the SPA, so Material fell back to a serif face. Use the system sans stack, as on rapla.org.
+    typography: (
+      plain-family: (system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif),
+      brand-family: (system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif),
+    ),
+    density: 0,
+  ));
+
+  // App bar on the logo's slate board, chalk text, gold rule below (same as the rapla.org header).
+  @include mat.toolbar-overrides((
+    container-background-color: #35393c,
+    container-text-color: #efefea,
+  ));
+}
+
+@media screen {
+  mat-toolbar.appbar {
+    border-bottom: 3px solid #d2af63;
+    // Buttons and icons on the slate bar take chalk; disabled ones (undo/redo) stay legible as dimmed chalk.
+    @include mat.icon-button-overrides((
+      icon-color: #efefea,
+      disabled-icon-color: rgb(239 239 234 / 0.45),
+    ));
+    @include mat.button-overrides((
+      text-label-text-color: #efefea,
+      text-disabled-label-text-color: rgb(239 239 234 / 0.45),
+    ));
+    @include mat.icon-overrides((color: #efefea));
+  }
+}
