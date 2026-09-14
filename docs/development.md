@@ -238,6 +238,20 @@ Then `wsl --shutdown` and reopen WSL. Windows-side `localhost:8051` thereafter f
 netsh interface portproxy add v4tov4 listenport=8051 listenaddress=127.0.0.1 connectport=8051 connectaddress=<WSL IP>
 ```
 
+## CI — nightly GitHub Actions build
+
+`.github/workflows/ci.yml` ([PRD 034](prd/034-ci-baseline-workflow.md)) runs nightly (01:17 UTC) and on demand — not on push/PR:
+
+```bash
+gh workflow run ci.yml --ref master   # only works once the workflow file is on master
+gh run watch
+```
+
+- **Red tests never block the build.** The run turns red and the run summary lists failing test classes, but the JAR is still built and published.
+- **Nightly download (fixed link, no login):** `https://github.com/rapla/rapla/releases/download/nightly/rapla-nightly.jar` — prerelease `nightly`, overwritten each run (only runs on `master` publish), self-signed with `raplaselfsigned.ks`, not for production. The `nightly` tag is force-moved each run.
+- **Jobs:** `java` (default test lane + `package -Psign-jks`), `slow-tests` (`db`/`e2e`/`perf`), `angular` (lint + unit tests), `publish` (nightly release), `docker` (image build only, no registry push).
+- **Reports:** run artefacts `surefire-reports` / `surefire-reports-slow` (3 days).
+
 ## Self-signed build — what's automated vs. manual
 
 `mvn -Psign-jks package` now produces a launchable webclient JNLP without hand-patching. Six gotchas the build (or generator) handles:

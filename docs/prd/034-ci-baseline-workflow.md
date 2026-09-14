@@ -1,6 +1,6 @@
 # PRD 034: CI baseline workflow
 
-**Status:** Phase 1 implemented 2026-09-14 directly on `master` (user ruling: no branch test run) — `.github/workflows/ci.yml` with `java`, `angular`, `publish` jobs (nightly + on-demand, build despite red tests, self-signed rolling `nightly` release). Docker job (Phase 2) and slow lanes (Phase 3) open.
+**Status:** Phases 1–3 implemented 2026-09-14 directly on `master` (user ruling: no branch test run) — `.github/workflows/ci.yml` with `java`, `slow-tests`, `angular`, `publish`, `docker` jobs (nightly + on-demand, build despite red tests, self-signed rolling `nightly` release, image build without push). First live run pending.
 
 ## Goal
 
@@ -87,7 +87,7 @@ Run artefacts stay for diagnosis only:
 
 ### D5 — Out of scope (unchanged or deferred)
 
-- `@Tag("db")` / `@Tag("e2e")` / `@Tag("perf")` lanes — candidate Phase 3 as a separate nightly job with `-Dtest.excludedGroups=`.
+- Container registry push for nightlies — the registry is reserved for real releases (user ruling 2026-09-14); the nightly `docker` job only builds.
 - Playwright browser e2e ([PRD 033](done/033-playwright-mcp-browser-testing.md)).
 - Push/PR triggers and required status checks ([OQ 3](#open-questions)).
 - Cross-OS / cross-JDK matrix; Swing client can't run headless meaningfully.
@@ -103,15 +103,16 @@ Run artefacts stay for diagnosis only:
 3. **Verify the red path deliberately:** on the branch, add a temporary failing test, push → run red, summary names the test, JAR still uploaded. Remove the test and the temporary `push` trigger.
 4. Merge to `master`; dispatch once manually → `nightly` prerelease created, fixed URL downloads the JAR without login, notes show commit + test result. Dispatch a second time → still exactly one asset, tag moved.
 5. Wait for the first scheduled run.
-6. Short "CI" section in `docs/development.md` (triggers, nightly download link, where reports are, how to run manually).
+6. **Done 2026-09-14:** short "CI" section in `docs/development.md` (triggers, nightly download link, where reports are, how to run manually).
 
 ### Phase 2 — Docker job
 
-1. Add the `docker` job (build only, no push). Verify on a branch run.
+1. `docker` job: downloads the `rapla-jar` artefact into `rapla-app/target/`, runs `docker build -t rapla:nightly .` — no login, no push (registry only for real releases). Runs whenever the JAR exists, on any branch. **Done 2026-09-14.**
 
-### Phase 3 — Slow lanes (optional)
+### Phase 3 — Slow lanes
 
-1. Nightly-only job running `-Dtest.excludedGroups=` (db/e2e/perf), same report-don't-block pattern. Only if Phase 1 has been green for a while.
+1. `slow-tests` job, parallel to `java`, on both triggers: `mvn -B clean test -Dgroups=db,e2e,perf -Dtest.excludedGroups= -Dmaven.test.failure.ignore=true`, same report-don't-block pattern (reports artefact `surefire-reports-slow`, 3 days; summary; red job on failures). Doesn't feed `publish`. All `@Tag("db")` tests use embedded HSQLDB — no service container. **Done 2026-09-14.**
+2. The summary shell lives once in `.github/scripts/test-summary.sh`, shared by `java` and `slow-tests`.
 
 ## Tests
 
@@ -124,7 +125,7 @@ Run artefacts stay for diagnosis only:
 2. ~~Retention~~ — resolved 2026-09-14: one rolling `nightly` release (overwritten), run artefacts 1 day (JAR) / 3 days (reports) — D4.
 3. **PR trigger later?** — add `pull_request` (tests only, no package) once external PRs pick up again, or keep manual `gh workflow run` for PR branches?
 4. **Node version** — Phase 1: the `angular` job pins `setup-node` to 24.15.0 (`docs/development.md`); the `java` job uses whatever `frontend-maven-plugin` installs. Still open whether to align the pom. Background: pom installs v22.22.3, `docs/development.md` says 24.15.0, `.nvmrc` says `lts/*`. CI should use one pin: align the pom to 24.15.0 (and `.nvmrc`) as part of Phase 1, or leave the pom alone and pin CI's `setup-node` to what the pom uses?
-5. **Docker job in Phase 1 or later** — deferred to Phase 2 (not in the 2026-09-14 workflow). Original question: build-only image check nightly (+~2 min), or defer until the image is actually published somewhere?
+5. ~~Docker job~~ — resolved 2026-09-14: nightly build-only (`docker build`, no push); registry only for real releases. Open: attach `docker save` tarball to the `nightly` release?
 
 ## Risks
 
