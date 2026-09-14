@@ -8,7 +8,7 @@ http://rapla.org
 
 Find further information in the rapla wiki
 
-https://github.com/rapla/rapla/wiki
+https://github.com/rapla/site/wiki
 
 get the latest rapla binary packages under
 
@@ -16,9 +16,9 @@ https://github.com/rapla/rapla/releases
 
 ## Rapla 3
 
-Rapla 3 with a web frontend and a GraphQL API and the complete spring boot migration is currently in development. The first alpha version is planned for October 2026.
+Rapla 3 with a web frontend and a GraphQL API and the complete spring boot migration is currently in development. The first alpha version is planned for October 2026. Stable releases from 3.0 on are published in [rapla/rapla-releases](https://github.com/rapla/rapla-releases/releases); releases up to 2.0 remain at [rapla/rapla releases](https://github.com/rapla/rapla/releases).
 
-**Feeling experimental?** Nightly test builds of `master` are published from [rapla/rapla-nightly](https://github.com/rapla/rapla-nightly): download the JAR from the [nightly release](https://github.com/rapla/rapla-nightly/releases/tag/nightly) or pull the Docker image `ghcr.io/rapla/rapla:nightly`. Self-signed, untested, not for production. How to run and verify: [docs/deployment.md § Docker](docs/deployment.md#docker).
+**Feeling experimental?** Nightly test builds of `master` are published from [rapla/rapla-releases](https://github.com/rapla/rapla-releases): download the JAR from the [nightly release](https://github.com/rapla/rapla-releases/releases/tag/nightly) or pull the Docker image `ghcr.io/rapla/rapla:nightly`. Self-signed, untested, not for production. How to run and verify: [docs/deployment.md § Docker](docs/deployment.md#docker).
 
 # License
 

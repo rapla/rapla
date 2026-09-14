@@ -1,4 +1,4 @@
-# Build + test, no publishing — the nightly is published from rapla/rapla-nightly.
+# Build + test, no publishing — releases and the nightly are published from rapla/rapla-releases.
 name: CI
 
 on:

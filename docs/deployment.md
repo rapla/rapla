@@ -24,6 +24,11 @@ never edit anything inside it. Everything site-specific lives *outside* the JAR
 **Requirements:** Java 21 (the JAR targets Java 17 bytecode but runs on 21).
 A JDBC database is optional — Rapla ships with an embedded store.
 
+**Where to get it:** stable releases from 3.0 on are published in
+[rapla/rapla-releases](https://github.com/rapla/rapla-releases/releases);
+releases up to 2.0 remain at [rapla/rapla releases](https://github.com/rapla/rapla/releases).
+Nightly test builds: see [Nightly image](#nightly-image).
+
 ## Building the deployable JAR
 
 Always `clean` before `package` (stale `target/` shadows the assembly inputs
@@ -288,10 +293,10 @@ cannot take. For MariaDB list both overlays:
 
 ### Nightly image
 
-The nightly workflow in [rapla/rapla-nightly](https://github.com/rapla/rapla-nightly)
+The nightly workflow in [rapla/rapla-releases](https://github.com/rapla/rapla-releases)
 builds rapla `master` every night and publishes the image
 `ghcr.io/rapla/rapla:nightly` and the JAR
-https://github.com/rapla/rapla-nightly/releases/download/nightly/rapla.jar — the
+https://github.com/rapla/rapla-releases/releases/download/nightly/rapla.jar — the
 current `master` state with the self-signed dev certificate for the Web Start
 client. **Test builds only, not for production**; the tag moves every night.
 
@@ -336,17 +341,20 @@ the current nightly and never falls back to a local build.
 The overlays in `docker/` and `.env` work unchanged.
 
 **Who publishes.** Only the workflow `.github/workflows/nightly.yml` in
-`rapla/rapla-nightly`, with that repository's own `GITHUB_TOKEN` — no stored
-secrets. Only the organization owners have access to that repository, and the
-package grants write access to it alone. The CI workflow in `rapla/rapla`
-builds and tests but never publishes. Verify a download:
+`rapla/rapla-releases`, with that repository's own `GITHUB_TOKEN` — no stored
+secrets. Only the maintainer can publish there. The CI workflow in
+`rapla/rapla` builds and tests but never publishes. Verify a download:
 
 ```sh
-gh attestation verify rapla.jar --repo rapla/rapla-nightly \
-  --signer-workflow rapla/rapla-nightly/.github/workflows/nightly.yml --source-ref refs/heads/main
-gh attestation verify oci://ghcr.io/rapla/rapla:nightly --repo rapla/rapla-nightly \
-  --signer-workflow rapla/rapla-nightly/.github/workflows/nightly.yml --source-ref refs/heads/main
+gh attestation verify rapla.jar --repo rapla/rapla-releases \
+  --signer-workflow rapla/rapla-releases/.github/workflows/nightly.yml --source-ref refs/heads/main
+gh attestation verify oci://ghcr.io/rapla/rapla:nightly --repo rapla/rapla-releases \
+  --signer-workflow rapla/rapla-releases/.github/workflows/nightly.yml --source-ref refs/heads/main
 ```
+
+Builds published before the repository was renamed from `rapla-nightly` carry
+attestations for `rapla/rapla-nightly`; verify those with
+`--repo rapla/rapla-nightly --signer-workflow rapla/rapla-nightly/.github/workflows/nightly.yml`.
 
 ### Backup and restore
 

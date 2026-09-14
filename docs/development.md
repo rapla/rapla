@@ -247,8 +247,8 @@ gh workflow run ci.yml --ref master   # only works once the workflow file is on 
 gh run watch
 ```
 
-- **Red tests never block the build.** The run turns red and the run summary lists failing test classes, but the JAR and the image are still built (publishing happens in [rapla/rapla-nightly](https://github.com/rapla/rapla-nightly)).
-- **Nightly download (fixed link, no login):** `https://github.com/rapla/rapla-nightly/releases/download/nightly/rapla.jar` and `ghcr.io/rapla/rapla:nightly` — built from `master` and published by [rapla/rapla-nightly](https://github.com/rapla/rapla-nightly) (its README has the `gh attestation verify` commands), self-signed with `raplaselfsigned.ks`, not for production. The `nightly` tag there is force-moved each run.
+- **Red tests never block the build.** The run turns red and the run summary lists failing test classes, but the JAR and the image are still built (publishing happens in [rapla/rapla-releases](https://github.com/rapla/rapla-releases)).
+- **Nightly download (fixed link, no login):** `https://github.com/rapla/rapla-releases/releases/download/nightly/rapla.jar` and `ghcr.io/rapla/rapla:nightly` — built from `master` and published by [rapla/rapla-releases](https://github.com/rapla/rapla-releases) (its README has the `gh attestation verify` commands), self-signed with `raplaselfsigned.ks`, not for production. The `nightly` tag there is force-moved each run.
 - **Jobs:** `java` (default test lane + `package -Psign-jks`), `slow-tests` (`db`/`e2e`/`perf`), `angular` (lint + unit tests), `docker` (image build on every branch, no push). No publishing from this repository.
 - **Reports:** run artefacts `surefire-reports` / `surefire-reports-slow` (3 days).
 
