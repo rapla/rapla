@@ -1,85 +1,147 @@
 # PRD 034: CI baseline workflow
 
-**Status:** draft (2026-05-13)
+**Status:** Phase 1 implemented 2026-09-14 directly on `master` (user ruling: no branch test run) — `.github/workflows/ci.yml` with `java`, `angular`, `publish` jobs (nightly + on-demand, build despite red tests, self-signed rolling `nightly` release). Docker job (Phase 2) and slow lanes (Phase 3) open.
 
 ## Goal
 
-Add a minimal GitHub Actions workflow that runs on every PR to `master` and on every push to `spring-boot`, exercising the bottom of the testing pyramid ([PRD 017](017-test-coverage-strategy.md) tiers 1–2 for Java, tier 5–6 for Angular). Today the only active workflow is `Dependabot Updates` — every commit on `spring-boot` (64 of them so far) has gone untested in CI. PRs from external contributors get no automatic feedback.
+A GitHub Actions workflow (`.github/workflows/ci.yml`) that **reports test results and builds the deployable artefact** for `master`, triggered **on demand** (`workflow_dispatch`) and **once per night** (`schedule`). Red tests are reported loudly (red run, test summary, downloadable reports) but **never block the build**: the fat JAR is produced, self-signed, and published to one fixed download link either way.
 
-## Why now
+The 2026-05-13 draft ran on every push/PR and gated merges. That is replaced (see [Decisions](#decisions)).
 
-1. **`spring-boot` is the working trunk** (PRDs 005, [011](done/011-spring-boot-4-jackson-3.md), [029](029-swing-oauth-login.md), 031, [026](026-angular-frontend.md) land here). Merge-back diff is +84 k / −55 k LOC; catching regressions by re-reading 64 commits is the wrong tool.
-2. **External contributors exist** (`@stephenBDT`, `@floxdeveloper` merged PRs in 2025); they get no CI feedback today.
-3. **The test pyramid is real** ([PRD 017](017-test-coverage-strategy.md) Phases 1–4 done, ~150 tests; PRDs [023](023-presenter-view-extraction.md) + [030](030-server-side-view-rendering.md) added 84 more). CI as forcing function makes it load-bearing.
+## Context since the first draft
 
-## Scope
+- **`master` is the trunk again** — `spring-boot` squash-merged as `051e41fbb` (2026-09-14). The draft's `spring-boot` triggers are obsolete.
+- **Java 21**, **Angular 22**. `docs/development.md` pins Node **24.15.0**; `rapla-app/pom.xml`'s `frontend-maven-plugin` still installs **v22.22.3**; `rapla-angular/.nvmrc` says `lts/*` (see [OQ 4](#open-questions)).
+- **The SPA is built inside `mvn package`**: `frontend-maven-plugin` runs `npm ci` + `ng build` at `prepare-package` and copies the dist into `target/classes/static/app/`. `-Dskip.npm` only works when a dist already exists — CI must let the plugin build the SPA (or build it first).
+- **Docker support is in the repo** (`1ba81b92a`): `Dockerfile` copies the host-built `rapla-app/target/rapla-*.jar`; no in-image Maven build.
+- **`.gitlab-ci.yml` moved to `docs/examples/gitlab-ci.yml`** — inert, Rapla 2 era; not a template for this.
+- **No `.github/` directory in the repo** — the only GitHub-side automation is Dependabot configured in the repo settings.
+- **Default surefire lane** excludes `@Tag("db")`, `@Tag("e2e")`, `@Tag("perf")` (`rapla-bom/pom.xml` `test.excludedGroups`). Untagged `@SpringBootTest` + MockMvc (tier 3) tests are therefore **in** the default lane, not a separate phase as the first draft assumed.
 
-**In scope:**
+## Decisions
 
-- One workflow file: `.github/workflows/ci.yml`.
-- Triggers: `pull_request` to `master`, `push` to `master` and `spring-boot`.
-- Jobs:
-  1. **Java** — JDK 21 (Temurin), Maven cache, `mvn -B verify` (default surefire excludes `@Tag("db")`/`@Tag("e2e")` per AGENTS.md §10). ~3–5 min on GitHub-hosted runners.
-  2. **Angular** — Node 24, npm cache, `cd rapla-angular && npm ci && npm run build` (= `lint && ng build`). ~2 min.
-- PR status checks gating merge (after the first green run lands).
+### D1 — Triggers: `workflow_dispatch` + nightly `schedule`, no push/PR
 
-**Out of scope (deferred):**
+```yaml
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 1 * * *'   # 01:17 UTC ≈ 03:17 CEST — off the full hour (GitHub delays :00 jobs under load)
+```
 
-- Tier-3 web-slice tests (`@SpringBootTest` + MockMvc). These boot a Spring context; expensive but parallelizable. Phase 2.
-- Tier-4 full E2E (`@Tag("e2e")`). 7–15 s per test, want them in a separate slower job. Phase 3.
-- Browser e2e (Playwright MCP, [PRD 033](done/033-playwright-mcp-browser-testing.md)). Headless Playwright on Linux runners is straightforward but adds 5–10 min and a browser binary cache. Phase 4.
-- Coverage report upload to a service. The JaCoCo aggregate works locally per the `coverage-report` skill; sending it to Codecov/Coveralls is a Phase-5 polish.
-- Cross-OS or cross-JDK matrix. rapla targets one JDK (21); cross-OS only matters for the Swing client, which CI can't exercise headless without WSLg/Xvfb.
+**Why not on every push/PR:**
+
+1. **Noise from WIP commits.** Several Claude sessions and the maintainer commit to `master` directly, often intermediate states; a red mail per push trains everyone to ignore red. One nightly verdict on the day's end state is the signal that gets read.
+2. **Minutes.** A full run (reactor tests incl. tier 3 + SPA build + package) is ~10–15 min. At 5–20 pushes on busy days that is hours of runner time for results nobody waits for; nightly is ≤ 1 run/day plus manual runs.
+3. **No merge-gating need today.** External PRs are rare; the maintainer can `gh workflow run ci.yml --ref <branch>` for a PR branch on demand.
+
+Scheduled workflows only run on the default branch (`master`) and GitHub disables them after 60 days without repository activity — acceptable, rapla is active. **`workflow_dispatch` (UI button and `gh workflow run`) also only works once the workflow file exists on `master`** — a workflow that lives only on a feature branch can't be dispatched.
+
+GitHub side (checked 2026-09-14): `rapla/rapla` is public, Actions enabled with all actions allowed. Public repos get unlimited minutes on standard runners and free artefact storage — no plan, no billing, no secrets needed.
+
+`concurrency: { group: ci-${{ github.ref }}, cancel-in-progress: false }` — a manual run during the nightly run queues rather than kills it.
+
+### D2 — Red tests don't block the build
+
+Surefire runs with `-Dmaven.test.failure.ignore=true`, so the reactor continues through `package` even when tests fail. The Java job then:
+
+1. uploads the fat JAR as a run artefact (always),
+2. uploads `**/target/surefire-reports/` (always, `if: always()`),
+3. writes a test summary (counts + failing test names) to `$GITHUB_STEP_SUMMARY`,
+4. **fails the job as its last step** if the surefire reports contain failures/errors.
+
+Result: the run is red, the summary says which tests broke, the JAR is still downloadable — and **a red nightly is published to the `nightly` release too** (user ruling 2026-09-14, [D4](#d4--nightly-release-artefacts-and-retention)); its release notes carry the test result. A **compile error** still fails early and produces no JAR — that is intended; "build despite red" means test failures, not broken code.
+
+Summary generation: first rung is a few lines of shell over the surefire XML (`grep -c '<failure\|<error'` + testcase names) — no third-party reporter action. A marketplace action (e.g. a JUnit report action) only if the shell summary proves unreadable ([OQ 5](#open-questions)).
+
+### D3 — Job structure
+
+| Job | Needs | Runs | Fails the run when | Artefacts |
+|---|---|---|---|---|
+| **java** — test + package | — | Temurin 21, Maven cache (`setup-java` `cache: maven`), Node via `setup-node` (npm cache). `mvn -B clean package -Psign-jks -Dmaven.test.failure.ignore=true` from repo root (reactor; no `install`, AGENTS.md §5). Includes tiers 1–3 (default lane), the SPA production build via `frontend-maven-plugin`, and self-signing of the JNLP webclient jars. | any surefire failure/error (checked after upload), or compile/package error | `rapla-jar` (`rapla-app/target/rapla-*.jar`), `surefire-reports` |
+| **publish** — rolling `nightly` release | `java` (artefact) | only on `refs/heads/master`; `permissions: contents: write` on this job only. Creates the prerelease `nightly` if missing, moves tag `nightly` to `$GITHUB_SHA`, uploads the JAR as `rapla-nightly.jar` with `gh release upload --clobber`, rewrites the release notes (commit, date, test counts, disclaimer). Uses the built-in `GITHUB_TOKEN`. | upload failure | the release asset |
+| **angular** — lint + unit tests | — (parallel to java) | Node, `npm ci`, `npm run lint`, `npx ng test --watch=false` (Vitest via `@angular/build:unit-test`) | lint or vitest failure | vitest report if the builder emits one (optional) |
+| **docker** — image build, no push | `java` (artefact) | downloads `rapla-jar` into `rapla-app/target/`, `docker build .` | image build failure | none (image is not pushed) |
+
+- `java` and `angular` run **independently** (`angular` does not `needs: java`), so a lint failure never suppresses the JAR and vice versa.
+- The SPA is built twice (once in `java` via Maven for the JAR, once implicitly by `ng test`) — accepted; deduplicating means passing a dist artefact between jobs and `-Dskip.npm`, which adds coupling for ~1–2 min.
+- `docker` uses `if: always() && needs.java.result != 'cancelled'` guarded by the artefact actually existing, so a red-test run still validates the image; it is skipped if the JAR was never produced (compile error).
+- `publish` and `docker` both need the JAR; `publish` runs whenever the JAR exists, regardless of test results (`if: always() && needs.java.outputs.jar == 'true'` or equivalent).
+- **Signing: `-Psign-jks`** (user ruling 2026-09-14). The self-signed `raplaselfsigned.ks` and its password are already public in the repo (`rapla-bom` `keystore.*` defaults; certificate RSA 2048 / SHA256, valid until 2036-05) — no secret. It signs the JNLP webclient jars inside the fat JAR so the webclient launches (with a trust prompt). Because the key is public, the signature proves nothing about origin; maintainer production builds stay YubiKey-signed (`-Psign-pkcs11`, local) — [`docs/signing.md`](../signing.md).
+
+### D4 — Nightly release, artefacts and retention
+
+**Download = one rolling prerelease `nightly`** (user ruling 2026-09-14), not run artefacts:
+
+- Fixed URL, no login, no ZIP: `https://github.com/rapla/rapla/releases/download/nightly/rapla-nightly.jar`.
+- Exactly one nightly exists at any time: each publish overwrites the asset (`--clobber`) and moves the tag; nothing accumulates, no cleanup job.
+- Marked **prerelease**, so it never becomes "Latest"; release watchers are notified once on creation, not on each nightly update.
+- **Published even when tests are red.** Release notes are rewritten each time: commit SHA, build date, test result (e.g. "1432 tests, 3 failed" + link to the run), and the disclaimer *"Nightly test build, self-signed with the public dev certificate — not for production."*
+- Only runs from `master` publish (scheduled, or a manual dispatch on `master`); a dispatch on another branch builds and tests but doesn't touch the release.
+
+Run artefacts stay for diagnosis only:
+
+- `surefire-reports`: `actions/upload-artifact`, **retention 3 days**.
+- `rapla-jar`: retention **1 day** — only the hand-off to `publish`/`docker`; manual branch runs download it from the run page.
+- No container registry push (a GHCR `:nightly` tag would leave untagged old image versions that need a cleanup job), no coverage upload.
+
+### D5 — Out of scope (unchanged or deferred)
+
+- `@Tag("db")` / `@Tag("e2e")` / `@Tag("perf")` lanes — candidate Phase 3 as a separate nightly job with `-Dtest.excludedGroups=`.
+- Playwright browser e2e ([PRD 033](done/033-playwright-mcp-browser-testing.md)).
+- Push/PR triggers and required status checks ([OQ 3](#open-questions)).
+- Cross-OS / cross-JDK matrix; Swing client can't run headless meaningfully.
+- YubiKey-signed release builds, JNLP launch verification (`test-deployment` skill stays local).
+- Notifications beyond GitHub's own failure mail (e.g. Telegram) — not wired in the public repo.
 
 ## Plan
 
-### Phase 1 — Tier 1+2 + Angular build
+### Phase 1 — Workflow, java + angular + publish jobs
 
-1. Add `.github/workflows/ci.yml` with the two jobs above.
-2. Run once against the current `spring-boot` HEAD to confirm green.
-3. Open a PR from `spring-boot` to `master` (or a synthetic branch) to confirm the PR-status-check shape.
-4. Document the workflow in `docs/development.md` under a new "CI" section.
+1. Add `.github/workflows/ci.yml` with D1 triggers and the `java`, `angular`, `publish` jobs from D3, D2 failure handling, D4 release + artefacts.
+2. **Branch test run:** dispatch doesn't work before the file is on `master` (D1), so the branch copy temporarily adds `push: branches: [<branch>]`. Verify: signed JAR artefact present (`jarsigner -verify` on a webclient jar), surefire artefact present, job summary lists results, `publish` skipped (not `master`).
+3. **Verify the red path deliberately:** on the branch, add a temporary failing test, push → run red, summary names the test, JAR still uploaded. Remove the test and the temporary `push` trigger.
+4. Merge to `master`; dispatch once manually → `nightly` prerelease created, fixed URL downloads the JAR without login, notes show commit + test result. Dispatch a second time → still exactly one asset, tag moved.
+5. Wait for the first scheduled run.
+6. Short "CI" section in `docs/development.md` (triggers, nightly download link, where reports are, how to run manually).
 
-### Phase 2 — Tier 3 web slices
+### Phase 2 — Docker job
 
-1. Add a third job: `mvn -B -pl rapla-app -am test -Dtest.excludedGroups=e2e,db` to include `@SpringBootTest` + MockMvc tests.
-2. Expect ~2–4 min runtime. Cache the Spring context where possible (already done via `@SpringBootTest` cache key — should "just work" with the Maven cache).
+1. Add the `docker` job (build only, no push). Verify on a branch run.
 
-### Phase 3 — Tier 4 e2e
+### Phase 3 — Slow lanes (optional)
 
-1. Add a fourth job: `mvn -B test -Dtest.excludedGroups=db` (drop the `e2e` exclude). Runs full `@SpringBootTest(webEnvironment=RANDOM_PORT)`.
-2. Gate this job behind a `if: contains(github.event.pull_request.labels.*.name, 'run-e2e')` so it only runs when needed — keeps PR feedback fast by default.
-
-### Phase 4 — Playwright (optional)
-
-If/when we adopt browser e2e as a CI gate. Out of scope for the initial PRD.
+1. Nightly-only job running `-Dtest.excludedGroups=` (db/e2e/perf), same report-don't-block pattern. Only if Phase 1 has been green for a while.
 
 ## Tests
 
-- The workflow itself is testable: trigger via `gh workflow run ci.yml --ref spring-boot` and confirm green.
-- Catch regressions in CI config before they ship: edit the workflow on a feature branch, push, observe the CI of the CI. Don't edit `master`'s workflow directly per AGENTS.md `autoMode` policy on `.github/workflows/`.
+- The workflow is verified by running it (Phase 1 steps 2–4), including the intentional red run — the D2 property "red tests → red run + JAR uploaded" and the D4 property "exactly one nightly asset after repeated runs" must be observed, not assumed.
+- Workflow edits happen on a branch with a temporary `push` trigger before landing on `master` (dispatch needs the file on `master`).
 
 ## Open questions
 
-1. **Concurrency cap** — add `concurrency: { group: ci-${{ github.ref }}, cancel-in-progress: true }` to cancel stale runs on rapid pushes. Recommendation: yes.
-2. **`mvn -B` vs `mvn -ntp`** — pick `-B` (legacy batch mode) for consistency with rapla docs.
-3. **JDK distribution** — local dev uses Semeru (`21.0.11-sem`); use Temurin in CI (better `setup-java` cache hit rate).
-4. **Caching key** — `setup-java` built-in Maven cache + `actions/cache@v4` keyed on `pom.xml` hashes. Standard.
-5. **`push` to `spring-boot` or only `pull_request`?** Both — catches drift earlier than waiting for merge-back PR.
+1. **Nightly time** — implemented as 01:17 UTC (03:17 CEST / 02:17 CET, cron is UTC and doesn't follow DST). Later (e.g. 04:17 UTC) if late-evening commits should be included?
+2. ~~Retention~~ — resolved 2026-09-14: one rolling `nightly` release (overwritten), run artefacts 1 day (JAR) / 3 days (reports) — D4.
+3. **PR trigger later?** — add `pull_request` (tests only, no package) once external PRs pick up again, or keep manual `gh workflow run` for PR branches?
+4. **Node version** — Phase 1: the `angular` job pins `setup-node` to 24.15.0 (`docs/development.md`); the `java` job uses whatever `frontend-maven-plugin` installs. Still open whether to align the pom. Background: pom installs v22.22.3, `docs/development.md` says 24.15.0, `.nvmrc` says `lts/*`. CI should use one pin: align the pom to 24.15.0 (and `.nvmrc`) as part of Phase 1, or leave the pom alone and pin CI's `setup-node` to what the pom uses?
+5. **Docker job in Phase 1 or later** — deferred to Phase 2 (not in the 2026-09-14 workflow). Original question: build-only image check nightly (+~2 min), or defer until the image is actually published somewhere?
 
 ## Risks
 
 | Risk | Mitigation |
 |---|---|
-| First CI run reveals existing test failures on `spring-boot` HEAD | Address them as Phase 1.5; don't merge the workflow until it passes. |
-| Workflow runs use minutes on the public-repo free tier | Concurrency cap + tag-gated tier-4 jobs cap the budget. |
-| Dependabot PRs start failing CI noisily (they pass today only because there is no CI) | Likely fine — Dependabot bumps are small; if they fail it surfaces a real version conflict. |
-| External contributors confused by required-status-check gating | Document the workflow in `docs/development.md` and link from `CONTRIBUTING.md` (which doesn't exist yet — would be a one-line follow-up). |
+| First run on `master` HEAD is red (known local-only reds, e.g. gitignored mock controllers, won't exist in CI; unknown reds may) | Intended outcome of D2 — the run reports them, the JAR still builds; fixing them is separate work. |
+| `-Dmaven.test.failure.ignore=true` hides failures if the final check step is wrong | Phase 1 step 3 verifies the red path explicitly. |
+| Tier-3 `@SpringBootTest` tests are slow or flaky on 2-vCPU runners | Measure on first run; move offenders to `@Tag("e2e")` only with a named reason. |
+| Scheduled run silently disabled after 60 days of inactivity | Acceptable; manual trigger still works. |
+| Users take the public nightly for a release (self-signed with a public key, possibly red tests) | Prerelease flag, fixed disclaimer + test result in the notes, `-nightly` asset name. |
+| Force-moving the `nightly` tag confuses clones that fetched it | Only a moving pointer by design; documented in `docs/development.md`. Tags pushed with `GITHUB_TOKEN` don't trigger further workflow runs. |
+| Frontend plugin downloads Node every run | `frontend-maven-plugin` install dir is `rapla-app/target` (cleaned); cache `~/.m2` covers the Node archive the plugin stores there. |
 
 ## Cross-references
 
-- [PRD 017 — Test Coverage Strategy](017-test-coverage-strategy.md) — the pyramid this workflow exercises.
-- [PRD 007 — Build & Test Performance](007-build-and-test-performance.md) — Phase 1 work that brought test runtime under control; CI inherits those gains.
-- [AGENTS.md §5](../../AGENTS.md) — build discipline (reactor hard rules apply in CI too).
-- [`.claude/hooks.md`](../../.claude/hooks.md) — the local `mvn install` ban; CI runs `mvn verify`, also doesn't `install`.
-- `~/.claude/settings.json` `autoMode.soft_deny` — editing `.github/workflows/` requires explicit user direction; this PRD is that direction.
+- [PRD 017 — Test Coverage Strategy](017-test-coverage-strategy.md) — the pyramid.
+- [PRD 007 — Build & Test Performance](007-build-and-test-performance.md) — default lane runtime.
+- [AGENTS.md §5](../../AGENTS.md#5-build-discipline) — reactor hard rules (no `install`, `clean` before `package`) apply in CI too.
+- [`docs/development.md`](../development.md) — Node/Java toolchain pins.
+- `Dockerfile` — consumes the host-built fat JAR.

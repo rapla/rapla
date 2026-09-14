@@ -1,0 +1,122 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 1 * * *'
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  java:
+    runs-on: ubuntu-latest
+    outputs:
+      jar: ${{ steps.jar.outputs.found }}
+      result: ${{ steps.tests.outputs.result }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Build and test
+        run: mvn -B clean package -Psign-jks -Dmaven.test.failure.ignore=true
+      - name: Locate JAR
+        id: jar
+        if: always()
+        run: |
+          if ls rapla-app/target/rapla-*.jar >/dev/null 2>&1; then found=true; else found=false; fi
+          echo "found=$found" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v7
+        if: always() && steps.jar.outputs.found == 'true'
+        with:
+          name: rapla-jar
+          path: rapla-app/target/rapla-*.jar
+          retention-days: 1
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: surefire-reports
+          path: '**/target/surefire-reports/'
+          retention-days: 3
+          if-no-files-found: ignore
+      - name: Test summary
+        id: tests
+        if: always()
+        run: |
+          shopt -s globstar nullglob
+          files=(**/target/surefire-reports/TEST-*.xml)
+          read -r tests failures errors skipped < <(cat "${files[@]}" /dev/null | grep -o '<testsuite [^>]*>' | awk '
+            { for (i = 1; i <= NF; i++) if ($i ~ /^(tests|failures|errors|skipped)="[0-9]+"/) { split($i, kv, "\""); s[substr($i, 1, index($i, "=") - 1)] += kv[2] } }
+            END { printf "%d %d %d %d\n", s["tests"], s["failures"], s["errors"], s["skipped"] }')
+          bad=$((failures + errors))
+          echo "result=$tests tests, $bad failed, $skipped skipped" >> "$GITHUB_OUTPUT"
+          echo "bad=$bad" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Java tests: $tests run, $failures failures, $errors errors, $skipped skipped"
+            if [ "$bad" -gt 0 ]; then
+              echo
+              grep -l -E '<(failure|error)[ >]' "${files[@]}" | sed -E 's#.*/TEST-(.*)\.xml#- \1#'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Fail on red tests
+        if: always() && steps.tests.outputs.bad != '0'
+        run: exit 1
+
+  angular:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rapla-angular
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24.15.0'
+          cache: npm
+          cache-dependency-path: rapla-angular/package-lock.json
+      - run: npm ci
+      - name: Lint
+        id: lint
+        run: npm run lint
+      - name: Unit tests
+        if: success() || steps.lint.outcome == 'failure'
+        run: npx ng test --watch=false
+
+  publish:
+    needs: java
+    if: always() && needs.java.outputs.jar == 'true' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: rapla-jar
+          path: dist
+      - name: Update nightly release
+        run: |
+          cp dist/rapla-*.jar rapla-nightly.jar
+          cat > notes.md <<EOF
+          Nightly test build of master at ${GITHUB_SHA::9}, built $(date -u '+%Y-%m-%d %H:%M UTC').
+
+          Tests: ${{ needs.java.outputs.result }} ([run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}))
+
+          Self-signed with the public dev certificate (raplaselfsigned.ks) - not for production.
+          EOF
+          if gh release view nightly >/dev/null 2>&1; then
+            gh api -X PATCH "repos/$GH_REPO/git/refs/tags/nightly" -f sha="$GITHUB_SHA" -F force=true
+            gh release edit nightly --prerelease --notes-file notes.md
+          else
+            gh release create nightly --prerelease --target "$GITHUB_SHA" --title "Nightly build" --notes-file notes.md
+          fi
+          gh release upload nightly rapla-nightly.jar --clobber
