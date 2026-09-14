@@ -1,6 +1,7 @@
 package org.rapla.client.swing.internal.adminpanels;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import org.rapla.plugin.adminpanels.Field;
 import org.rapla.plugin.adminpanels.FieldType;
 import org.rapla.plugin.adminpanels.PanelDefinition;
@@ -31,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *  PanelRenderer must wrap its body in a JScrollPane with a viewport-tracking
  *  body, and pin the footer (Save + actions) outside that JScrollPane so it
  *  is always visible. */
+@Tag("swing")
 class PanelRendererLayoutTest
 {
     @Test

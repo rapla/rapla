@@ -1,6 +1,7 @@
 package org.rapla.client.spring;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import org.rapla.client.api.ClientService;
 import org.rapla.client.swing.internal.RaplaClientServiceImpl;
 
@@ -11,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Tag("swing")
 class LoginDialogExitTest
 {
     @Test

@@ -1,6 +1,7 @@
 package org.rapla.plugin.externaleventimport.client.swing;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.RaplaFrame;
 
@@ -17,6 +18,7 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
  * {@code DialogUiFactory.busy} fallback always targets the main window, which froze
  * the calendar while the edit window stayed interactive.
  */
+@Tag("swing")
 class ExternalEventImportBusyTargetTest
 {
     @Test

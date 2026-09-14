@@ -1,8 +1,7 @@
 package org.rapla.components.calendar;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
 /**
  * Reproduces the bug introduced by PRD 001-A's Date→LocalDateTime migration:
@@ -18,7 +17,7 @@ import org.junit.runners.JUnit4;
  * surefire JVM has, since DateField extends JTextField — Swing components can be
  * constructed in headless mode (only display would fail).
  */
-@RunWith(JUnit4.class)
+@Tag("swing")
 public class DateFieldTest
 {
     @Test

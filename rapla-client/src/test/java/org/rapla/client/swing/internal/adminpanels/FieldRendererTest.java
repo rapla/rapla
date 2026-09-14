@@ -2,6 +2,7 @@ package org.rapla.client.swing.internal.adminpanels;
 
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import org.rapla.plugin.adminpanels.Field;
 import org.rapla.plugin.adminpanels.FieldType;
 
@@ -24,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  *  unchanged in shape (modulo type coercion the wire format expects, e.g.
  *  Integer→Long for INT). Catches subtle bugs like null vs empty-string,
  *  Long/Integer drift, or option lookup failures. */
+@Tag("swing")
 class FieldRendererTest
 {
     private static Field of(FieldType type) { return of(type, Map.of()); }

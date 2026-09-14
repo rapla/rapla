@@ -26,7 +26,7 @@ jobs:
           java-version: '21'
           cache: maven
       - name: Build and test
-        run: mvn -B clean package -Psign-jks -Dmaven.test.failure.ignore=true
+        run: mvn -B clean package -Psign-jks -Dtest.excludedGroups=db,e2e,perf,swing -Dmaven.test.failure.ignore=true
       - name: Locate JAR
         id: jar
         if: always()

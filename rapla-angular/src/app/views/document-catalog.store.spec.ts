@@ -7,7 +7,9 @@ import { DOCUMENT_CATALOG, DocumentsRowMenuProvider } from './document-menu';
 import { GraphqlService, type GqlResponse } from '../graphql/graphql.service';
 import type { RowContext } from './row-context';
 
-type TypesResponse = { types: { key: string; documents: { name: string; param: string }[] | null }[] };
+interface TypesResponse {
+  types: { key: string; documents: { name: string; param: string }[] | null }[];
+}
 
 const ROW: RowContext = {
   primary: { kind: 'reservation', id: 'e1', typeKey: 'event' },
@@ -43,7 +45,9 @@ describe('DocumentCatalogStore warm-up', () => {
   it('offers the entry on the FIRST items() call once the fetch resolved', () => {
     TestBed.inject(DocumentCatalogStore); // bootstrap-time warm-up, no read yet
     responses.next({
-      data: { types: [{ key: 'event', documents: [{ name: 'Leihschein', param: 'reservationId' }] }] },
+      data: {
+        types: [{ key: 'event', documents: [{ name: 'Leihschein', param: 'reservationId' }] }],
+      },
     } as GqlResponse<TypesResponse>);
 
     const provider = TestBed.inject(DocumentsRowMenuProvider);

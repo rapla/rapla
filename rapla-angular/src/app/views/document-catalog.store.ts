@@ -30,19 +30,19 @@ export class DocumentCatalogStore implements DocumentCatalog {
 
   private load(): void {
     this.gql
-        .query<{ types: { key: string; documents: DocumentRef[] | null }[] }>(
-          '{ types { key documents { name param } } }',
-        )
-        .subscribe({
-          next: (response) => {
-            const map = new Map<string, DocumentRef[]>();
-            for (const type of response.data?.types ?? []) {
-              if (type.documents?.length) map.set(type.key, type.documents);
-            }
-            this.byTypeKey.set(map);
-          },
-          // A deployment with the plugin off answers null — no entries, no noise.
-          error: () => this.byTypeKey.set(new Map()),
-        });
+      .query<{
+        types: { key: string; documents: DocumentRef[] | null }[];
+      }>('{ types { key documents { name param } } }')
+      .subscribe({
+        next: (response) => {
+          const map = new Map<string, DocumentRef[]>();
+          for (const type of response.data?.types ?? []) {
+            if (type.documents?.length) map.set(type.key, type.documents);
+          }
+          this.byTypeKey.set(map);
+        },
+        // A deployment with the plugin off answers null — no entries, no noise.
+        error: () => this.byTypeKey.set(new Map()),
+      });
   }
 }

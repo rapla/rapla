@@ -6,7 +6,13 @@ import type { RowContext } from './row-context';
 /** PRD 111 D4 — kind + typeKey → the type's `documents` → one direct entry per document. */
 describe('documentEntries', () => {
   const types = new Map([
-    ['ausleihe', [{ name: 'Leihschein', param: 'reservationId' }, { name: 'Rueckgabe', param: 'reservationId' }]],
+    [
+      'ausleihe',
+      [
+        { name: 'Leihschein', param: 'reservationId' },
+        { name: 'Rueckgabe', param: 'reservationId' },
+      ],
+    ],
     ['geraet', [{ name: 'Geraetebogen', param: 'id' }]],
   ]);
 
@@ -43,14 +49,21 @@ describe('documentEntries', () => {
 
   it('offers nothing for a type that carries no documents', () => {
     expect(
-      documentEntries(ctx({ primary: { kind: 'reservation', id: 'e1', typeKey: 'vorlesung' } }), types),
+      documentEntries(
+        ctx({ primary: { kind: 'reservation', id: 'e1', typeKey: 'vorlesung' } }),
+        types,
+      ),
     ).toEqual([]);
   });
 
   it('offers nothing on multi-select (a document takes exactly one id)', () => {
     expect(
       documentEntries(
-        ctx({ primary: null, rows: [{}, {}], subjects: [{ kind: 'reservation', id: 'e1', typeKey: 'ausleihe' }] }),
+        ctx({
+          primary: null,
+          rows: [{}, {}],
+          subjects: [{ kind: 'reservation', id: 'e1', typeKey: 'ausleihe' }],
+        }),
         types,
       ),
     ).toEqual([]);
@@ -58,7 +71,10 @@ describe('documentEntries', () => {
 
   it('offers nothing before the catalog has loaded', () => {
     expect(
-      documentEntries(ctx({ primary: { kind: 'reservation', id: 'e1', typeKey: 'ausleihe' } }), new Map()),
+      documentEntries(
+        ctx({ primary: { kind: 'reservation', id: 'e1', typeKey: 'ausleihe' } }),
+        new Map(),
+      ),
     ).toEqual([]);
   });
 });
@@ -66,16 +82,21 @@ describe('documentEntries', () => {
 describe('documentMenuItems', () => {
   it('maps entries onto RowMenuItems that open a new tab', () => {
     const opened: string[] = [];
-    const items = documentMenuItems({
-      primary: { kind: 'reservation', id: 'e1', typeKey: 'ausleihe' },
-      entities: [],
-      subjects: [],
-      block: { appointmentId: null, start: null, isException: false },
-      rows: [{}],
-      viewName: 'v',
-    },
-    { documentsByTypeKey: () => new Map([['ausleihe', [{ name: 'Leihschein', param: 'reservationId' }]]]) },
-    (url) => opened.push(url));
+    const items = documentMenuItems(
+      {
+        primary: { kind: 'reservation', id: 'e1', typeKey: 'ausleihe' },
+        entities: [],
+        subjects: [],
+        block: { appointmentId: null, start: null, isException: false },
+        rows: [{}],
+        viewName: 'v',
+      },
+      {
+        documentsByTypeKey: () =>
+          new Map([['ausleihe', [{ name: 'Leihschein', param: 'reservationId' }]]]),
+      },
+      (url) => opened.push(url),
+    );
     expect(items.map((i) => i.label)).toEqual(['Leihschein']);
     items[0].run();
     expect(opened).toEqual(['/api/documents/Leihschein?reservationId=e1']);

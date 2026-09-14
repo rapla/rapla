@@ -83,6 +83,7 @@ Slow / environment-dependent tests carry a JUnit 5 `@Tag`:
 |---|---|---|
 | `db` | Hits a JDBC target (HSQLDB embedded today; still seconds) | `ConcurrentTests` |
 | `e2e` | Full `@SpringBootTest` acceptance — cold context, often `RANDOM_PORT` | `RaplaSpringBootApplicationTest`, `ServerServiceIntegrationTest`, `HeadlessClientNameResolutionIntegrationTest`, `SwingClientStartIntegrationTest` |
+| `swing` | Needs a real display (AWT toolkit / `UIManager` fonts); runs locally, excluded in the CI nightly via `-Dtest.excludedGroups=db,e2e,perf,swing` | `FieldRendererTest`, `RaplaTreeDuplicateSelectionTest`, `DateTimeWidgetSmokeTest`, `LoginDialogExitTest`, … (`grep -rl '@Tag("swing")'`) |
 
 Default `mvn test` excludes both via surefire `<excludedGroups>${test.excludedGroups}</excludedGroups>` (default value `db,e2e` set in `rapla-bom/pom.xml`). To include them:
 

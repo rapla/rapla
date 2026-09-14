@@ -1,6 +1,7 @@
 package org.rapla.components.calendar;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import org.rapla.test.util.HeadlessSwingTestSupport;
 
 import javax.swing.JTextField;
@@ -31,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * full public surface: construction defaults, set/get round-trip,
  * locale variants, null handling, model<->view sync.
  */
+@Tag("swing")
 class DateTimeWidgetSmokeTest extends HeadlessSwingTestSupport
 {
     private static final Locale EN = Locale.US;

@@ -1,6 +1,7 @@
 package org.rapla.client.swing.toolkit;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
@@ -18,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * ConflictSelectionViewSwing.updateTree path relies on after a reservation
  * move replaces the conflict list.
  */
+@Tag("swing")
 class RaplaTreeExchangeSelectionTest
 {
     @Test

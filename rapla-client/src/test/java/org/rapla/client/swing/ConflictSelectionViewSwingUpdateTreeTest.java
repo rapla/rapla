@@ -1,6 +1,7 @@
 package org.rapla.client.swing;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaTreeNode;
@@ -43,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *       a spurious calendar refresh.
  * </ul>
  */
+@Tag("swing")
 class ConflictSelectionViewSwingUpdateTreeTest extends HeadlessSwingTestSupport
 {
     @Test

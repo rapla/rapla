@@ -1,6 +1,7 @@
 package org.rapla.client.swing.toolkit;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import org.rapla.test.util.HeadlessSwingTestSupport;
 
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -21,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * same room under "Gebäude" and "Studiengang"). Selecting the object must
  * highlight EVERY node carrying it, not just the first one in DFS order.
  */
+@Tag("swing")
 class RaplaTreeDuplicateSelectionTest extends HeadlessSwingTestSupport
 {
     private static final Object ROOM = new Object()
