@@ -105,6 +105,19 @@ class DemoSeedCredentialScanTest
         assertEquals(List.of(), failures, "scanned " + seeds.size() + " demo seed file(s)");
     }
 
+    /** The four use-case seeds are part of the scanned set (lands with the seed merge, PRD 118 D8-9 S1). */
+    @Test
+    void theFourUseCaseSeedsAreScanned()
+    {
+        Path cwd = Path.of("").toAbsolutePath();
+        Path root = Files.isDirectory(cwd.resolve("rapla-app")) ? cwd : cwd.getParent();
+        for (String useCase : List.of("hochschule", "ausleihe", "seminarhaus", "einsatzplan"))
+        {
+            Path seed = root.resolve("docs/demo/" + useCase + "/demo-" + useCase + ".xml");
+            assertEquals(true, Files.isRegularFile(seed), "expected demo seed " + root.relativize(seed));
+        }
+    }
+
     @Test
     void theScanFindsEveryCredentialPrefixAndTheScrubRemovesThem() throws IOException
     {
