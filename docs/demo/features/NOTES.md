@@ -39,6 +39,7 @@ API keys for admin: `Calendar sync` and `Reporting script` (365 days, shown in t
 | template-editor.png | /template-editor/: builtin document "wochenplan" on stored view "week", URL params `resource=<Lecture hall 1>&date=2026-09-14`; data tree left, Mustache source middle, resolved variables below, live preview KW 38 right |
 | login.png | /login in German (`?lang=de`): language picker, username/password, "Angemeldet bleiben". No external IdP buttons — data-plain/dev config has no IdP, so the "— oder —" separator stands alone; an IdP login picker needs a server config with Keycloak/Google/Entra |
 | i18n-switch.png | /login in English (browser locale en-US) — pair with login.png: switching the picker to "Deutsch" reloads as `?lang=de`; picker lists cs, de, en, es, fi, fr, nl, pl, pt |
+| login-providers.png | /login in English with buttons "Sign in with Microsoft", "Sign in with Google", "Sign in with Keycloak" above the local username/password login. Rendered live, unedited. Server started with an extra scratch yml outside the repo (`rapla.oauth.external.{microsoft,google,keycloak}.enabled=true`, placeholder tenant all-zero GUID, client-id `demo`, Keycloak base-url `https://login.example.org` realm `demo`, no secrets); the providers cannot actually log anyone in |
 | graphiql.png | /graphiql: docs explorer on Query → appointmentBlocks (description, type, arguments), prettified WeekOverview query, JSON result with this week's blocks |
 
 ## Observations
