@@ -389,7 +389,7 @@ Consequences:
   stale path meant.
 
 Rule of thumb: rename keys in Rapla 3, never in Rapla 2 on a live system
-([migration-rapla2-to-rapla3 § Generic keys](../migration-rapla2-to-rapla3.md#generic-keys-c1-reservation10-)).
+([migration-rapla2-to-rapla3 § Generic keys](../../migration-rapla2-to-rapla3.md#generic-keys-c1-reservation10-)).
 
 ## Worked example: a course reservation, end to end
 

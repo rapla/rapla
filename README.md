@@ -14,6 +14,10 @@ get the latest rapla binary packages under
 
 https://github.com/rapla/rapla/releases
 
+## Rapla 3
+
+Rapla 3 with a web frontend and a GraphQL API and the complete spring boot migration is currently in development. The first alpha version is planned for October 2026.
+
 # License
 
 Rapla is dual licensed. You can either use it under the terms of the 

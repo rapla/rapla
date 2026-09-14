@@ -4,10 +4,10 @@ This guide is for **operators upgrading an existing Rapla 2 deployment** to the
 Rapla 3 alpha — the Spring Boot rework of the server. It is written for the
 person who runs the server, not for someone developing Rapla.
 
-> Developing Rapla, not deploying it? See [`development.md`](development.md).
+> Developing Rapla, not deploying it? See [`development.md`](docs/development.md).
 > For the *internal* code rework (why the module shape, DI, and wire format
-> changed) see [`architecture/migration-from-master.md`](architecture/migration-from-master.md).
-> Once you have migrated, [`deployment.md`](deployment.md) is the ongoing
+> changed) see [`architecture/migration-from-master.md`](docs/architecture/migration-from-master.md).
+> Once you have migrated, [`deployment.md`](docs/deployment.md) is the ongoing
 > install/configure/run reference.
 
 Rapla 3 is still **alpha**. Do the migration against a **copy** of your Rapla 2
@@ -94,8 +94,8 @@ The settings you used to set in container XML / system properties now live in
 Behind a reverse proxy keep `server.forward-headers-strategy: FRAMEWORK` (the
 default) so Rapla derives correct absolute URLs from `X-Forwarded-*`. The full
 key reference and the production checklist are in
-[`deployment.md`](deployment.md); authentication (OAuth2, external IdPs, API
-keys) is in [`authentication.md`](authentication.md).
+[`deployment.md`](docs/deployment.md); authentication (OAuth2, external IdPs, API
+keys) is in [`authentication.md`](docs/authentication.md).
 
 ### Running as a service
 
@@ -105,7 +105,7 @@ The Rapla 2 WAR-in-a-container / service-wrapper model is replaced by a plain
 - **Linux**: a systemd unit with `WorkingDirectory=/opt/rapla` and
   `ExecStart=/usr/bin/java -jar /opt/rapla/rapla-2.1-SNAPSHOT.jar`. Full unit
   file (service account, permissions, graceful shutdown) in
-  [`deployment.md` §Running as a service](deployment.md#running-as-a-service).
+  [`deployment.md` §Running as a service](docs/deployment.md#running-as-a-service).
 - **Windows**: a wrapper such as WinSW (Spring Boot has no native
   Windows-service support).
 
@@ -193,7 +193,7 @@ the `data.xml` seed is no longer read.
 > Rapla 3 writes `CHANGES.CHANGED_AT` with the same wall-clock convention Rapla 2
 > used (and the same one every other timestamp column uses), so the history rows
 > your Rapla 2 instance left behind stay correctly ordered against Rapla 3's own
-> writes. Builds before [PRD 108](prd/108-changes-history-timestamp-convention.md)
+> writes. Builds before [PRD 108](docs/prd/108-changes-history-timestamp-convention.md)
 > stored that one column shifted by the local UTC offset; on those, legacy rows
 > from the last one to two hours before the copy were replayed as if they lay in
 > the future and could revert freshly migrated entities in the cache. If you are
@@ -210,15 +210,15 @@ becomes `reservation12Classification`), so you will want speaking keys.
 **Migrate first, rename afterwards in Rapla 3.** Two reasons:
 
 1. **Key shape is migrated automatically.** On the first Rapla 3 boot,
-   [PRD 058](prd/058-graphql-key-spec-migration.md) renames every key that is
+   [PRD 058](docs/prd/058-graphql-key-spec-migration.md) renames every key that is
    not GraphQL-safe (`ü` → `ue`, `-` → `_`, reserved suffix → trailing `_`) and
    rewrites the references. No manual step.
 2. **Renaming is safe in Rapla 3, unsafe in Rapla 2.** Type definitions and
    calendar preferences (including published export calendars) store categories
    and types *by key path* (see
-   [dynamic-types § Keys are persisted as references](architecture/dynamic-types.md#keys-are-persisted-as-references--renaming-has-blast-radius)).
+   [dynamic-types § Keys are persisted as references](docs/architecture/dynamic-types.md#keys-are-persisted-as-references--renaming-has-blast-radius)).
    Rapla 3 re-stores every referencing definition and preference in the same
-   transaction ([PRD 110](prd/110-safe-key-rename.md)); Rapla 2 rewrites only
+   transaction ([PRD 110](docs/prd/110-safe-key-rename.md)); Rapla 2 rewrites only
    the edited entity, and the stale paths surface on its next restart — category
    filters silently stop filtering, a renamed type key aborts the boot.
 
@@ -227,14 +227,14 @@ after the switch, rename them in the Rapla 3 admin client at your leisure. Keys 
 external integration still uses stay until that integration talks to the GraphQL
 API.
 
-## 3. The new permission model ([PRD 090](prd/090-additive-permission-resolution.md))
+## 3. The new permission model ([PRD 090](docs/prd/090-additive-permission-resolution.md))
 
 This is the one **behaviour** change in the migration that can affect who sees
 what. Read it even if everything else in your deployment is unchanged.
 
-> Reference: [PRD 090](prd/090-additive-permission-resolution.md),
-> [ADR 0003](decisions/0003-permissions-are-grant-only.md),
-> [`architecture/permissions.md`](architecture/permissions.md).
+> Reference: [PRD 090](docs/prd/090-additive-permission-resolution.md),
+> [ADR 0003](docs/decisions/0003-permissions-are-grant-only.md),
+> [`architecture/permissions.md`](docs/architecture/permissions.md).
 
 ### What changed
 
@@ -333,18 +333,18 @@ migrated.
       escalated allocatable (§3).
 - [ ] Verify a few real users see exactly what they should (spot-check the most
       permission-sensitive resources).
-- [ ] Wire up the OS service (systemd / WinSW) per [`deployment.md`](deployment.md).
+- [ ] Wire up the OS service (systemd / WinSW) per [`deployment.md`](docs/deployment.md).
 - [ ] Keep the Rapla 2 instance available until you have signed off.
 
 ## See also
 
-- [`deployment.md`](deployment.md) — ongoing install/configure/run reference.
-- [`authentication.md`](authentication.md) — OAuth2, external IdPs, API keys.
-- [`architecture/migration-from-master.md`](architecture/migration-from-master.md)
+- [`deployment.md`](docs/deployment.md) — ongoing install/configure/run reference.
+- [`authentication.md`](docs/authentication.md) — OAuth2, external IdPs, API keys.
+- [`architecture/migration-from-master.md`](docs/architecture/migration-from-master.md)
   — the internal code rework (developer-facing).
-- [PRD 045](prd/045-end-user-deployment-and-db-config.md) — end-user deployment
+- [PRD 045](docs/prd/045-end-user-deployment-and-db-config.md) — end-user deployment
   + database configuration model.
-- [PRD 090](prd/090-additive-permission-resolution.md) — additive permission
+- [PRD 090](docs/prd/090-additive-permission-resolution.md) — additive permission
   resolution + soft-deny migration.
 </content>
 </invoke>

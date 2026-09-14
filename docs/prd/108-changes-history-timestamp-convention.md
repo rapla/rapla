@@ -1,7 +1,7 @@
 # PRD 108 — CHANGES history timestamp convention (legacy in-place DB migration)
 
 **Status:** implemented (Option A) — 2026-08-28
-**Related:** [PRD 058](058-graphql-key-spec-migration.md) (startup migration that surfaced the bug), PRD 054 references in `RaplaSQL` (the `Timestamp.valueOf` "self-consistent" CHANGES binding), [migration guide](../migration-rapla2-to-rapla3.md) (in-place DB path)
+**Related:** [PRD 058](058-graphql-key-spec-migration.md) (startup migration that surfaced the bug), PRD 054 references in `RaplaSQL` (the `Timestamp.valueOf` "self-consistent" CHANGES binding), [migration guide](../../migration-rapla2-to-rapla3.md) (in-place DB path)
 
 ## Abstract
 
@@ -74,7 +74,7 @@ see local deploy note.)
    an attribute via `storeAndRemove` and asserts the cache shows the new key. Red before,
    green after.
 2. After the fix, an in-place migrated Rapla 2 MariaDB boots without manual SQL, and
-   `docs/migration-rapla2-to-rapla3.md` documents whatever one-time step remains.
+   `migration-rapla2-to-rapla3.md` documents whatever one-time step remains.
 
 ## Options (decided — see D1)
 
@@ -163,7 +163,7 @@ catch. C was dropped with it.
       against the unfixed helper.
 
 ### Phase 3 — Docs ✅
-- [x] `docs/migration-rapla2-to-rapla3.md` § Migrating your data: note that an
+- [x] `migration-rapla2-to-rapla3.md` § Migrating your data: note that an
       in-place 1.8+ upgrade needs no manual `CHANGES` step, with the pre-fix
       `TRUNCATE TABLE changes` workaround named for anyone on an older build.
       `docs/architecture/locking.md` unchanged — the refresh contract is the same,
