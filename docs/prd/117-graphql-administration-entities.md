@@ -1,6 +1,6 @@
 # PRD 117 — Administration over GraphQL: users, group membership, categories/groups, periods and templates
 
-**Status:** draft 2026-09-14 — design only, no code. Sibling of [PRD 113](113-graphql-permission-model.md) (its [OQ 11](113-graphql-permission-model.md#4-open-questions-for-the-user) ruled "(a) nothing in 113; sibling PRD for a membership verb", and its P-2 ruling hands over the residue "group/user visibility scoping"). Requested by the PRD 113 coordinator session; all decisions in § 4 are open and wait for the user. Order relative to the PRD 113 commit: user decides.
+**Status:** draft 2026-09-14 — decisions E1–E16 open; the three security guards E2/E8/E9 are already implemented (75dc7799d) and the admin-flag invariant (§ Admin flag) is pinned by tests (094c71d09); no GraphQL mutations yet. Sibling of [PRD 113](113-graphql-permission-model.md) (its [OQ 11](113-graphql-permission-model.md#4-open-questions-for-the-user) ruled "(a) nothing in 113; sibling PRD for a membership verb", and its P-2 ruling hands over the residue "group/user visibility scoping"). Requested by the PRD 113 coordinator session; all decisions in § 4 are open and wait for the user. Order relative to the PRD 113 commit: user decides.
 
 **Guiding ruling (user, relayed by the coordinator 2026-09-14):** **entities go over GraphQL, procedures and configuration stay REST.**
 
