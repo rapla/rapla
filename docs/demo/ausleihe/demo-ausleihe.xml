@@ -1,0 +1,1193 @@
+<?xml version="1.0" encoding="utf-8"?><!--*- coding: utf-8 -*-->
+<rapla:data xmlns:rapla="http://rapla.sourceforge.net/rapla"
+ xmlns:relax="http://relaxng.org/ns/structure/1.0"
+ xmlns:dynatt="http://rapla.sourceforge.net/dynamictype"
+ xmlns:ext="http://rapla.sourceforge.net/extension"
+ xmlns:doc="http://rapla.sourceforge.net/annotation"
+ version="1.2">
+   <rapla:categories>
+      <rapla:category created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z" id="c4a9aaf8-2b46-5bf1-b0b4-b64af993f8fb" key="user-groups">
+         <doc:name lang="de">Benutzergruppen</doc:name>
+         <doc:name lang="en">User groups</doc:name>
+         <rapla:category created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z" id="c5edebf4-3ba5-5d3e-9972-afae52df0940" key="read-events-from-others">
+            <doc:name lang="de">Termine anderer sehen</doc:name>
+            <doc:name lang="en">See events of other users</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z" id="c9c730dd-6280-51c1-aff3-d271b43ffd92" key="create-events">
+            <doc:name lang="de">Termine anlegen</doc:name>
+            <doc:name lang="en">Create events</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z" id="c2bdeae8-613e-53e2-90eb-791f42317b1e" key="exchange-synchronization">
+            <doc:name lang="de">Exchange-Synchronisation</doc:name>
+            <doc:name lang="en">Exchange synchronization</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z" id="c7923673-ab88-54dc-94c2-e75a588b434f" key="desk-staff">
+            <doc:name lang="de">Ausleihtheke</doc:name>
+            <doc:name lang="en">Desk staff</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z" id="c19a05db-d11d-5b4b-acef-7dfeb650ee6a" key="borrowers">
+            <doc:name lang="de">Entleiher</doc:name>
+            <doc:name lang="en">Borrowers</doc:name>
+         </rapla:category>
+      </rapla:category>
+      <rapla:category created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z" id="c34bcf4a-922b-56b8-8272-7d44e7088780" key="periods">
+         <doc:name lang="de">Zeiträume</doc:name>
+         <doc:name lang="en">Periods</doc:name>
+         <rapla:category created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z" id="c22a8747-9768-58c2-b81e-33b02aa0a4e6" key="holiday">
+            <doc:name lang="de">Feiertag</doc:name>
+            <doc:name lang="en">Holiday</doc:name>
+         </rapla:category>
+      </rapla:category>
+      <rapla:category created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T22:21:55.748Z" id="c5d2e8a3-92f7-555a-bf94-7c0ce2fe8980" key="loan_status">
+         <doc:name lang="de">Ausleihstatus</doc:name>
+         <doc:name lang="en">Loan status</doc:name>
+         <rapla:category created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z" id="c4d1c193-332f-5150-9394-450daecc2f7f" key="planned">
+            <doc:name lang="de">Geplant</doc:name>
+            <doc:name lang="en">Planned</doc:name>
+            <rapla:annotation key="color">#f6c85f</rapla:annotation>
+         </rapla:category>
+         <rapla:category created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z" id="cb9c9bd2-94aa-5ffc-8643-cfa66e178d96" key="out">
+            <doc:name lang="de">Ausgegeben</doc:name>
+            <doc:name lang="en">Handed out</doc:name>
+            <rapla:annotation key="color">#7cc47f</rapla:annotation>
+         </rapla:category>
+         <rapla:category created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z" id="ca5b453a-9ead-57af-aaa2-caf8b94201c4" key="returned">
+            <doc:name lang="de">Zurückgegeben</doc:name>
+            <doc:name lang="en">Returned</doc:name>
+            <rapla:annotation key="color">#c8c8c8</rapla:annotation>
+         </rapla:category>
+      </rapla:category>
+      <rapla:category created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z" id="c86cacab-b80d-51ec-b405-eb698169ee6a" key="condition">
+         <doc:name lang="de">Zustand</doc:name>
+         <doc:name lang="en">Condition</doc:name>
+         <rapla:category created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z" id="cd18adcf-40e8-5c03-bf9d-7c6863a9ceb5" key="new">
+            <doc:name lang="de">Neu</doc:name>
+            <doc:name lang="en">New</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z" id="c5709465-fb5c-56fc-9ab3-979a58098da6" key="good">
+            <doc:name lang="de">Gut</doc:name>
+            <doc:name lang="en">Good</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z" id="c6c63ce1-ea65-592d-b8f9-e7b2cce79d02" key="worn">
+            <doc:name lang="de">Gebraucht</doc:name>
+            <doc:name lang="en">Worn</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z" id="cbf72787-7130-5f3c-ab41-0a3aabb39195" key="defective">
+            <doc:name lang="de">Defekt</doc:name>
+            <doc:name lang="en">Defective</doc:name>
+         </rapla:category>
+      </rapla:category>
+   </rapla:categories>
+
+   <relax:grammar>
+      <relax:define name="vehicle">
+         <relax:element name="dynatt:vehicle" id="d7e0d25d-6cc7-5867-ae2f-0c486afc15c8" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+            <doc:name lang="de">Fahrzeug</doc:name>
+            <doc:name lang="en">Vehicle</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{name}</rapla:annotation>
+               <rapla:annotation key="classification-type">resource</rapla:annotation>
+               <rapla:annotation key="colors">automatic</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="name">
+                  <doc:name lang="de">Name</doc:name>
+                  <doc:name lang="en">Name</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="inventoryNumber">
+                  <doc:name lang="de">Inventarnummer</doc:name>
+                  <doc:name lang="en">Inventory number</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="condition">
+                  <doc:name lang="de">Zustand</doc:name>
+                  <doc:name lang="en">Condition</doc:name>
+                  <relax:data type="rapla:category"/>
+                  <rapla:constraint name="root-category">category[key='condition']</rapla:constraint>
+                  <rapla:constraint name="multi-select">false</rapla:constraint>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="storageLocation">
+                  <doc:name lang="de">Lagerort</doc:name>
+                  <doc:name lang="en">Storage location</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:define name="projector">
+         <relax:element name="dynatt:projector" id="d9f2766d-f31d-51fa-a35c-98394ac14f82" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+            <doc:name lang="de">Beamer</doc:name>
+            <doc:name lang="en">Projector</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{name}</rapla:annotation>
+               <rapla:annotation key="classification-type">resource</rapla:annotation>
+               <rapla:annotation key="colors">automatic</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="name">
+                  <doc:name lang="de">Name</doc:name>
+                  <doc:name lang="en">Name</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="inventoryNumber">
+                  <doc:name lang="de">Inventarnummer</doc:name>
+                  <doc:name lang="en">Inventory number</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="condition">
+                  <doc:name lang="de">Zustand</doc:name>
+                  <doc:name lang="en">Condition</doc:name>
+                  <relax:data type="rapla:category"/>
+                  <rapla:constraint name="root-category">category[key='condition']</rapla:constraint>
+                  <rapla:constraint name="multi-select">false</rapla:constraint>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="storageLocation">
+                  <doc:name lang="de">Lagerort</doc:name>
+                  <doc:name lang="en">Storage location</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:define name="audio">
+         <relax:element name="dynatt:audio" id="d4ffd6d1-bc7b-5e02-83ad-12eeea3228b4" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+            <doc:name lang="de">Audio</doc:name>
+            <doc:name lang="en">Audio</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{name}</rapla:annotation>
+               <rapla:annotation key="classification-type">resource</rapla:annotation>
+               <rapla:annotation key="colors">automatic</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="name">
+                  <doc:name lang="de">Name</doc:name>
+                  <doc:name lang="en">Name</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="inventoryNumber">
+                  <doc:name lang="de">Inventarnummer</doc:name>
+                  <doc:name lang="en">Inventory number</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="condition">
+                  <doc:name lang="de">Zustand</doc:name>
+                  <doc:name lang="en">Condition</doc:name>
+                  <relax:data type="rapla:category"/>
+                  <rapla:constraint name="root-category">category[key='condition']</rapla:constraint>
+                  <rapla:constraint name="multi-select">false</rapla:constraint>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="storageLocation">
+                  <doc:name lang="de">Lagerort</doc:name>
+                  <doc:name lang="en">Storage location</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:define name="camera">
+         <relax:element name="dynatt:camera" id="df4c939a-5148-5683-a9e8-0807686ae860" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+            <doc:name lang="de">Kamera</doc:name>
+            <doc:name lang="en">Camera</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{name}</rapla:annotation>
+               <rapla:annotation key="classification-type">resource</rapla:annotation>
+               <rapla:annotation key="colors">automatic</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="name">
+                  <doc:name lang="de">Name</doc:name>
+                  <doc:name lang="en">Name</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="inventoryNumber">
+                  <doc:name lang="de">Inventarnummer</doc:name>
+                  <doc:name lang="en">Inventory number</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="condition">
+                  <doc:name lang="de">Zustand</doc:name>
+                  <doc:name lang="en">Condition</doc:name>
+                  <relax:data type="rapla:category"/>
+                  <rapla:constraint name="root-category">category[key='condition']</rapla:constraint>
+                  <rapla:constraint name="multi-select">false</rapla:constraint>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="storageLocation">
+                  <doc:name lang="de">Lagerort</doc:name>
+                  <doc:name lang="en">Storage location</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:define name="borrower">
+         <relax:element name="dynatt:borrower" id="decc0713-a48f-5b12-b405-dfad8c4f36e8" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+            <doc:name lang="de">Entleiher</doc:name>
+            <doc:name lang="en">Borrower</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{surname} {firstname}</rapla:annotation>
+               <rapla:annotation key="classification-type">person</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="surname">
+                  <doc:name lang="de">Nachname</doc:name>
+                  <doc:name lang="en">Surname</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="firstname">
+                  <doc:name lang="de">Vorname</doc:name>
+                  <doc:name lang="en">First name</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="email">
+                  <doc:name lang="de">E-Mail</doc:name>
+                  <doc:name lang="en">Email</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="phone">
+                  <doc:name lang="de">Telefon</doc:name>
+                  <doc:name lang="en">Phone</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="department">
+                  <doc:name lang="de">Abteilung</doc:name>
+                  <doc:name lang="en">Department</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+            <rapla:permission access="allocate_conflicts"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:define name="loan">
+         <relax:element name="dynatt:loan" id="db0548a3-604a-56a0-8748-0e9a0e90ca80" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T22:21:55.748Z">
+            <doc:name lang="de">Ausleihe</doc:name>
+            <doc:name lang="en">Loan</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{name}</rapla:annotation>
+               <rapla:annotation key="documents">LoanForm,ReturnReminder</rapla:annotation>
+               <rapla:annotation key="classification-type">reservation</rapla:annotation>
+               <rapla:annotation key="colors">color</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="name">
+                  <doc:name lang="de">Titel</doc:name>
+                  <doc:name lang="en">Loan title</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="loanStatus">
+                  <doc:name lang="de">Status</doc:name>
+                  <doc:name lang="en">Status</doc:name>
+                  <doc:annotations>
+                     <rapla:annotation key="color">true</rapla:annotation>
+                  </doc:annotations>
+                  <relax:data type="rapla:category"/>
+                  <rapla:constraint name="root-category">category[key='loan_status']</rapla:constraint>
+                  <rapla:constraint name="multi-select">false</rapla:constraint>
+                  <rapla:default>category[key='loan_status']/category[key='planned']</rapla:default>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+            <rapla:permission group="category[key='desk-staff']" access="edit"/>
+            <rapla:permission group="category[key='desk-staff']" access="create"/>
+            <rapla:permission group="category[key='borrowers']" access="create"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:start>
+         <relax:choice>
+            <relax:ref name="vehicle"/>
+            <relax:ref name="projector"/>
+            <relax:ref name="audio"/>
+            <relax:ref name="camera"/>
+            <relax:ref name="borrower"/>
+            <relax:ref name="loan"/>
+         </relax:choice>
+      </relax:start>
+   </relax:grammar>
+
+   <rapla:preferences>
+      <rapla:entry key="org.rapla.server.graphql-key-migration.applied" value="2026-09-14T22:21:55.724660876Z"/>
+      <rapla:entry key="org.rapla.server.additive-permission-migration.worklist" value=""/>
+      <rapla:entry key="org.rapla.server.additive-permission-migration.applied" value="2026-09-14T22:21:55.823792493Z"/>
+   </rapla:preferences>
+
+   <rapla:users>
+      <!-- Users of the system -->
+      <rapla:user id="u1201d83-32fa-51ed-bb3f-51e21f4c178b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z" username="bob" password="demo" name="Bob Carter" email="bob@example.org" isAdmin="false">
+         <rapla:group key="category[key='borrowers']"/>
+         <rapla:group key="category[key='create-events']"/>
+      </rapla:user>
+      <rapla:user id="u2449462-6544-59b6-ba37-323a00c8fac8" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T22:22:11.412Z" last-changed-by="u2449462-6544-59b6-ba37-323a00c8fac8" username="desk" password="bcrypt:$2a$10$wT/1wCnsEWugAdO1hp6FwOJs6MxuYsW20wQhQjSYeWndQxz.FgWWm" name="Dana Fischer" email="desk@example.org" isAdmin="false">
+         <rapla:group key="category[key='desk-staff']"/>
+         <rapla:group key="category[key='read-events-from-others']"/>
+         <rapla:group key="category[key='create-events']"/>
+         <rapla:preferences>
+            <rapla:entry key="org.rapla.user.recents" value="[{&quot;id&quot;:&quot;racbab79-3f57-5f1f-bda7-1304cd97ecc3&quot;,&quot;kind&quot;:&quot;resource&quot;,&quot;ts&quot;:1789372800000},{&quot;id&quot;:&quot;r5bf35f7-6f20-5645-8fb2-7d0083a59a15&quot;,&quot;kind&quot;:&quot;resource&quot;,&quot;ts&quot;:1789372740000},{&quot;id&quot;:&quot;rb2d371e-a7b0-5853-80c2-7a5011b1116c&quot;,&quot;kind&quot;:&quot;resource&quot;,&quot;ts&quot;:1789372680000},{&quot;id&quot;:&quot;receeaeb-1698-596f-8342-253c557a11dc&quot;,&quot;kind&quot;:&quot;resource&quot;,&quot;ts&quot;:1789372620000},{&quot;id&quot;:&quot;r57bfe34-f99a-5736-a55e-23ecaf36fdf0&quot;,&quot;kind&quot;:&quot;resource&quot;,&quot;ts&quot;:1789372560000},{&quot;id&quot;:&quot;r3a7c54c-9dc9-5f8d-bab6-db38cec88852&quot;,&quot;kind&quot;:&quot;resource&quot;,&quot;ts&quot;:1789372500000}]"/>
+            <rapla:entry key="org.rapla.user.favorites" value="[{&quot;id&quot;:&quot;racbab79-3f57-5f1f-bda7-1304cd97ecc3&quot;,&quot;kind&quot;:&quot;resource&quot;},{&quot;id&quot;:&quot;r5bf35f7-6f20-5645-8fb2-7d0083a59a15&quot;,&quot;kind&quot;:&quot;resource&quot;},{&quot;id&quot;:&quot;rb2d371e-a7b0-5853-80c2-7a5011b1116c&quot;,&quot;kind&quot;:&quot;resource&quot;},{&quot;id&quot;:&quot;receeaeb-1698-596f-8342-253c557a11dc&quot;,&quot;kind&quot;:&quot;resource&quot;}]"/>
+         </rapla:preferences>
+      </rapla:user>
+      <rapla:user id="uf9c5972-bb31-5ab4-b02e-61b63443993a" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T22:22:25.208Z" last-changed-by="uf9c5972-bb31-5ab4-b02e-61b63443993a" username="alice" password="bcrypt:$2a$10$tSssej99EhaQp8mbOrjGfejUwqktuQbc72JtsZX9R5JqNWwsjyXwa" name="Alice Baker" email="alice@example.org" isAdmin="false">
+         <rapla:group key="category[key='borrowers']"/>
+         <rapla:group key="category[key='create-events']"/>
+         <rapla:preferences>
+            <rapla:entry key="org.rapla.user.recents" value="[{&quot;id&quot;:&quot;r5bf35f7-6f20-5645-8fb2-7d0083a59a15&quot;,&quot;kind&quot;:&quot;resource&quot;,&quot;ts&quot;:1789372800000},{&quot;id&quot;:&quot;r75c8e7f-294f-5a47-8700-6121558911d0&quot;,&quot;kind&quot;:&quot;resource&quot;,&quot;ts&quot;:1789372740000},{&quot;id&quot;:&quot;rb2d371e-a7b0-5853-80c2-7a5011b1116c&quot;,&quot;kind&quot;:&quot;resource&quot;,&quot;ts&quot;:1789372680000}]"/>
+            <rapla:entry key="org.rapla.user.favorites" value="[{&quot;id&quot;:&quot;r5bf35f7-6f20-5645-8fb2-7d0083a59a15&quot;,&quot;kind&quot;:&quot;resource&quot;},{&quot;id&quot;:&quot;rb2d371e-a7b0-5853-80c2-7a5011b1116c&quot;,&quot;kind&quot;:&quot;resource&quot;}]"/>
+         </rapla:preferences>
+      </rapla:user>
+      <rapla:user id="u35b52c0-ae4b-5eb4-904a-8db15afcf46b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z" username="admin" password="" name="" email="" isAdmin="true">
+      </rapla:user>
+   </rapla:users>
+
+   <rapla:resources>
+      <!-- resources -->
+      <rapla:extension id="r9130e1e-b15c-552d-9133-64b869bf4dce" owner="u35b52c0-ae4b-5eb4-904a-8db15afcf46b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <ext:template>
+            <ext:name>Van day trip</ext:name>
+            <ext:fixedtimeandduration>false</ext:fixedtimeandduration>
+         </ext:template>
+         <rapla:permission access="read"/>
+      </rapla:extension>
+      <rapla:extension id="r9d0dfe1-7f50-5959-b883-2ecd29f47a1f" owner="u35b52c0-ae4b-5eb4-904a-8db15afcf46b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <ext:template>
+            <ext:name>Weekend camera kit</ext:name>
+            <ext:fixedtimeandduration>false</ext:fixedtimeandduration>
+         </ext:template>
+         <rapla:permission access="read"/>
+      </rapla:extension>
+      <rapla:extension id="re5d57e3-0418-56c9-b2d0-1bad30b64246" owner="u35b52c0-ae4b-5eb4-904a-8db15afcf46b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <ext:template>
+            <ext:name>Presentation set</ext:name>
+            <ext:fixedtimeandduration>false</ext:fixedtimeandduration>
+         </ext:template>
+         <rapla:permission access="read"/>
+      </rapla:extension>
+      <rapla:resource id="rb2d371e-a7b0-5853-80c2-7a5011b1116c" owner="u35b52c0-ae4b-5eb4-904a-8db15afcf46b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:vehicle>
+            <dynatt:name>Media van V1</dynatt:name>
+            <dynatt:inventoryNumber>MC-VEH-001</dynatt:inventoryNumber>
+            <dynatt:condition>category[key='good']</dynatt:condition>
+            <dynatt:storageLocation>Garage</dynatt:storageLocation>
+         </dynatt:vehicle>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='desk-staff']" access="allocate_conflicts"/>
+         <rapla:permission group="category[key='borrowers']" access="request"/>
+      </rapla:resource>
+      <rapla:resource id="r34626dc-02f0-59ac-a195-3352c59af969" owner="u35b52c0-ae4b-5eb4-904a-8db15afcf46b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:projector>
+            <dynatt:name>Projector P2</dynatt:name>
+            <dynatt:inventoryNumber>MC-PRJ-002</dynatt:inventoryNumber>
+            <dynatt:condition>category[key='good']</dynatt:condition>
+            <dynatt:storageLocation>Cabinet C</dynatt:storageLocation>
+         </dynatt:projector>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='desk-staff']" access="allocate_conflicts"/>
+         <rapla:permission group="category[key='borrowers']" access="request"/>
+      </rapla:resource>
+      <rapla:resource id="receeaeb-1698-596f-8342-253c557a11dc" owner="u35b52c0-ae4b-5eb4-904a-8db15afcf46b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:projector>
+            <dynatt:name>Projector P1</dynatt:name>
+            <dynatt:inventoryNumber>MC-PRJ-001</dynatt:inventoryNumber>
+            <dynatt:condition>category[key='good']</dynatt:condition>
+            <dynatt:storageLocation>Cabinet C</dynatt:storageLocation>
+         </dynatt:projector>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='desk-staff']" access="allocate_conflicts"/>
+         <rapla:permission group="category[key='borrowers']" access="request"/>
+      </rapla:resource>
+      <rapla:resource id="r355c7fa-3435-52c1-8d35-c674be243072" owner="u35b52c0-ae4b-5eb4-904a-8db15afcf46b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:projector>
+            <dynatt:name>Portable projector P3</dynatt:name>
+            <dynatt:inventoryNumber>MC-PRJ-003</dynatt:inventoryNumber>
+            <dynatt:condition>category[key='new']</dynatt:condition>
+            <dynatt:storageLocation>Cabinet C</dynatt:storageLocation>
+         </dynatt:projector>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='desk-staff']" access="allocate_conflicts"/>
+         <rapla:permission group="category[key='borrowers']" access="request"/>
+      </rapla:resource>
+      <rapla:resource id="r87eb3bf-594c-5d9b-8603-a24e72fd1d55" owner="u35b52c0-ae4b-5eb4-904a-8db15afcf46b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:audio>
+            <dynatt:name>Field recorder R1</dynatt:name>
+            <dynatt:inventoryNumber>MC-AUD-004</dynatt:inventoryNumber>
+            <dynatt:condition>category[key='worn']</dynatt:condition>
+            <dynatt:storageLocation>Shelf B2</dynatt:storageLocation>
+         </dynatt:audio>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='desk-staff']" access="allocate_conflicts"/>
+         <rapla:permission group="category[key='borrowers']" access="request"/>
+      </rapla:resource>
+      <rapla:resource id="r7abf926-a6d1-5dec-81d5-9e0e2496f3ea" owner="u35b52c0-ae4b-5eb4-904a-8db15afcf46b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:audio>
+            <dynatt:name>Wireless mic set W1</dynatt:name>
+            <dynatt:inventoryNumber>MC-AUD-002</dynatt:inventoryNumber>
+            <dynatt:condition>category[key='good']</dynatt:condition>
+            <dynatt:storageLocation>Shelf B1</dynatt:storageLocation>
+         </dynatt:audio>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='desk-staff']" access="allocate_conflicts"/>
+         <rapla:permission group="category[key='borrowers']" access="request"/>
+      </rapla:resource>
+      <rapla:resource id="r75c8e7f-294f-5a47-8700-6121558911d0" owner="u35b52c0-ae4b-5eb4-904a-8db15afcf46b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:audio>
+            <dynatt:name>Shotgun microphone S1</dynatt:name>
+            <dynatt:inventoryNumber>MC-AUD-001</dynatt:inventoryNumber>
+            <dynatt:condition>category[key='good']</dynatt:condition>
+            <dynatt:storageLocation>Shelf B1</dynatt:storageLocation>
+         </dynatt:audio>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='desk-staff']" access="allocate_conflicts"/>
+         <rapla:permission group="category[key='borrowers']" access="request"/>
+      </rapla:resource>
+      <rapla:resource id="r191daa9-5ceb-591a-a45f-8740d8352a95" owner="u35b52c0-ae4b-5eb4-904a-8db15afcf46b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:audio>
+            <dynatt:name>Wireless mic set W2</dynatt:name>
+            <dynatt:inventoryNumber>MC-AUD-003</dynatt:inventoryNumber>
+            <dynatt:condition>category[key='new']</dynatt:condition>
+            <dynatt:storageLocation>Shelf B1</dynatt:storageLocation>
+         </dynatt:audio>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='desk-staff']" access="allocate_conflicts"/>
+         <rapla:permission group="category[key='borrowers']" access="request"/>
+      </rapla:resource>
+      <rapla:resource id="r747033d-e90f-50dc-8740-7c0b31012e3b" owner="u35b52c0-ae4b-5eb4-904a-8db15afcf46b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:camera>
+            <dynatt:name>Mirrorless camera M1</dynatt:name>
+            <dynatt:inventoryNumber>MC-CAM-003</dynatt:inventoryNumber>
+            <dynatt:condition>category[key='good']</dynatt:condition>
+            <dynatt:storageLocation>Shelf A2</dynatt:storageLocation>
+         </dynatt:camera>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='desk-staff']" access="allocate_conflicts"/>
+         <rapla:permission group="category[key='borrowers']" access="request"/>
+      </rapla:resource>
+      <rapla:resource id="rce00cd4-ce29-50a3-b0c9-c8087365f08a" owner="u35b52c0-ae4b-5eb4-904a-8db15afcf46b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:camera>
+            <dynatt:name>Action camera G1</dynatt:name>
+            <dynatt:inventoryNumber>MC-CAM-006</dynatt:inventoryNumber>
+            <dynatt:condition>category[key='defective']</dynatt:condition>
+            <dynatt:storageLocation>Repair box</dynatt:storageLocation>
+         </dynatt:camera>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='desk-staff']" access="allocate_conflicts"/>
+         <rapla:permission group="category[key='borrowers']" access="request"/>
+      </rapla:resource>
+      <rapla:resource id="rdbb5768-e6e7-5a84-8e46-c761ae045340" owner="u35b52c0-ae4b-5eb4-904a-8db15afcf46b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:camera>
+            <dynatt:name>Camcorder H1</dynatt:name>
+            <dynatt:inventoryNumber>MC-CAM-005</dynatt:inventoryNumber>
+            <dynatt:condition>category[key='good']</dynatt:condition>
+            <dynatt:storageLocation>Shelf A3</dynatt:storageLocation>
+         </dynatt:camera>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='desk-staff']" access="allocate_conflicts"/>
+         <rapla:permission group="category[key='borrowers']" access="request"/>
+      </rapla:resource>
+      <rapla:resource id="racbab79-3f57-5f1f-bda7-1304cd97ecc3" owner="u35b52c0-ae4b-5eb4-904a-8db15afcf46b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:camera>
+            <dynatt:name>Cinema camera C1</dynatt:name>
+            <dynatt:inventoryNumber>MC-CAM-001</dynatt:inventoryNumber>
+            <dynatt:condition>category[key='good']</dynatt:condition>
+            <dynatt:storageLocation>Shelf A1</dynatt:storageLocation>
+         </dynatt:camera>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='desk-staff']" access="allocate_conflicts"/>
+         <rapla:permission group="category[key='borrowers']" access="request"/>
+      </rapla:resource>
+      <rapla:resource id="r5bf35f7-6f20-5645-8fb2-7d0083a59a15" owner="u35b52c0-ae4b-5eb4-904a-8db15afcf46b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:camera>
+            <dynatt:name>Cinema camera C2</dynatt:name>
+            <dynatt:inventoryNumber>MC-CAM-002</dynatt:inventoryNumber>
+            <dynatt:condition>category[key='new']</dynatt:condition>
+            <dynatt:storageLocation>Shelf A1</dynatt:storageLocation>
+         </dynatt:camera>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='desk-staff']" access="allocate_conflicts"/>
+         <rapla:permission group="category[key='borrowers']" access="request"/>
+      </rapla:resource>
+      <rapla:resource id="r18f4c56-e403-52bd-a928-15df27269448" owner="u35b52c0-ae4b-5eb4-904a-8db15afcf46b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:camera>
+            <dynatt:name>Mirrorless camera M2</dynatt:name>
+            <dynatt:inventoryNumber>MC-CAM-004</dynatt:inventoryNumber>
+            <dynatt:condition>category[key='worn']</dynatt:condition>
+            <dynatt:storageLocation>Shelf A2</dynatt:storageLocation>
+         </dynatt:camera>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='desk-staff']" access="allocate_conflicts"/>
+         <rapla:permission group="category[key='borrowers']" access="request"/>
+      </rapla:resource>
+      <rapla:person id="r57bfe34-f99a-5736-a55e-23ecaf36fdf0" owner="u35b52c0-ae4b-5eb4-904a-8db15afcf46b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:borrower>
+            <dynatt:surname>Dunn</dynatt:surname>
+            <dynatt:firstname>Chloe</dynatt:firstname>
+            <dynatt:email>chloe.dunn@example.org</dynatt:email>
+            <dynatt:phone>+49 555 0102</dynatt:phone>
+            <dynatt:department>Marketing</dynatt:department>
+         </dynatt:borrower>
+         <rapla:permission group="category[key='desk-staff']" access="allocate_conflicts"/>
+      </rapla:person>
+      <rapla:person id="r0143750-90fe-56ed-8a16-32c3671fa40c" owner="u35b52c0-ae4b-5eb4-904a-8db15afcf46b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:borrower>
+            <dynatt:surname>Hill</dynatt:surname>
+            <dynatt:firstname>Grace</dynatt:firstname>
+            <dynatt:email>grace.hill@example.org</dynatt:email>
+            <dynatt:phone>+49 555 0106</dynatt:phone>
+            <dynatt:department>Event office</dynatt:department>
+         </dynatt:borrower>
+         <rapla:permission group="category[key='desk-staff']" access="allocate_conflicts"/>
+      </rapla:person>
+      <rapla:person id="rfc3037c-3a4e-5f28-a337-2ecf7144d44a" owner="u35b52c0-ae4b-5eb4-904a-8db15afcf46b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:borrower>
+            <dynatt:surname>Carter</dynatt:surname>
+            <dynatt:firstname>Bob</dynatt:firstname>
+            <dynatt:email>bob.carter@example.org</dynatt:email>
+            <dynatt:phone>+49 555 0101</dynatt:phone>
+            <dynatt:department>Film studies</dynatt:department>
+         </dynatt:borrower>
+         <rapla:permission group="category[key='desk-staff']" access="allocate_conflicts"/>
+         <rapla:permission user="u1201d83-32fa-51ed-bb3f-51e21f4c178b" access="read"/>
+      </rapla:person>
+      <rapla:person id="rb762ed5-551a-57e5-846f-24e689e11c18" owner="u35b52c0-ae4b-5eb4-904a-8db15afcf46b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:borrower>
+            <dynatt:surname>Baker</dynatt:surname>
+            <dynatt:firstname>Alice</dynatt:firstname>
+            <dynatt:email>alice.baker@example.org</dynatt:email>
+            <dynatt:phone>+49 555 0100</dynatt:phone>
+            <dynatt:department>Journalism</dynatt:department>
+         </dynatt:borrower>
+         <rapla:permission group="category[key='desk-staff']" access="allocate_conflicts"/>
+         <rapla:permission user="uf9c5972-bb31-5ab4-b02e-61b63443993a" access="read"/>
+      </rapla:person>
+      <rapla:person id="r58caaba-fbc8-527b-9553-b4d70999d8ac" owner="u35b52c0-ae4b-5eb4-904a-8db15afcf46b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:borrower>
+            <dynatt:surname>Grant</dynatt:surname>
+            <dynatt:firstname>Felix</dynatt:firstname>
+            <dynatt:email>felix.grant@example.org</dynatt:email>
+            <dynatt:phone>+49 555 0105</dynatt:phone>
+            <dynatt:department>Journalism</dynatt:department>
+         </dynatt:borrower>
+         <rapla:permission group="category[key='desk-staff']" access="allocate_conflicts"/>
+      </rapla:person>
+      <rapla:person id="r3a7c54c-9dc9-5f8d-bab6-db38cec88852" owner="u35b52c0-ae4b-5eb4-904a-8db15afcf46b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:borrower>
+            <dynatt:surname>Evans</dynatt:surname>
+            <dynatt:firstname>Daniel</dynatt:firstname>
+            <dynatt:email>daniel.evans@example.org</dynatt:email>
+            <dynatt:phone>+49 555 0103</dynatt:phone>
+            <dynatt:department>Film studies</dynatt:department>
+         </dynatt:borrower>
+         <rapla:permission group="category[key='desk-staff']" access="allocate_conflicts"/>
+      </rapla:person>
+      <rapla:person id="r2a56d37-c439-53e1-80cf-a17dba04abc6" owner="u35b52c0-ae4b-5eb4-904a-8db15afcf46b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:borrower>
+            <dynatt:surname>Foster</dynatt:surname>
+            <dynatt:firstname>Emma</dynatt:firstname>
+            <dynatt:email>emma.foster@example.org</dynatt:email>
+            <dynatt:phone>+49 555 0104</dynatt:phone>
+            <dynatt:department>Event office</dynatt:department>
+         </dynatt:borrower>
+         <rapla:permission group="category[key='desk-staff']" access="allocate_conflicts"/>
+      </rapla:person>
+      <rapla:person id="rba80c86-b952-58b0-bb22-2467e2c324f6" owner="u35b52c0-ae4b-5eb4-904a-8db15afcf46b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:borrower>
+            <dynatt:surname>Irving</dynatt:surname>
+            <dynatt:firstname>Henry</dynatt:firstname>
+            <dynatt:email>henry.irving@example.org</dynatt:email>
+            <dynatt:phone>+49 555 0107</dynatt:phone>
+            <dynatt:department>Sports department</dynatt:department>
+         </dynatt:borrower>
+         <rapla:permission group="category[key='desk-staff']" access="allocate_conflicts"/>
+      </rapla:person>
+
+   </rapla:resources>
+
+   <rapla:reservations>
+      <rapla:reservation id="ce97717a-c34c-5725-8bfc-2a6c4c29bf74" owner="u2449462-6544-59b6-ba37-323a00c8fac8" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:loan>
+            <dynatt:name>Christmas concert recording</dynatt:name>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
+         </dynatt:loan>
+         <rapla:appointment id="a9cd312a-4861-5767-83f6-cf5dafdb53b3" start-date="2026-10-15" start-time="12:00:00" end-date="2026-10-17" end-time="12:00:00"/>
+         <rapla:allocate idref="racbab79-3f57-5f1f-bda7-1304cd97ecc3"/>
+         <rapla:allocate idref="r7abf926-a6d1-5dec-81d5-9e0e2496f3ea"/>
+         <rapla:allocate idref="r191daa9-5ceb-591a-a45f-8740d8352a95"/>
+         <rapla:allocate idref="r58caaba-fbc8-527b-9553-b4d70999d8ac"/>
+         <rapla:permission group="category[key='desk-staff']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="56b2481e-e0f7-5d90-81a7-e61f6e986b8a" owner="u2449462-6544-59b6-ba37-323a00c8fac8" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:loan>
+            <dynatt:name>Year-end video</dynatt:name>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
+         </dynatt:loan>
+         <rapla:appointment id="a9fb6721-83d3-51f9-92cb-1790a69e5b1e" start-date="2026-10-19" start-time="09:00:00" end-date="2026-10-23" end-time="17:00:00"/>
+         <rapla:allocate idref="r747033d-e90f-50dc-8740-7c0b31012e3b"/>
+         <rapla:allocate idref="r3a7c54c-9dc9-5f8d-bab6-db38cec88852"/>
+         <rapla:permission group="category[key='desk-staff']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="8e4db53b-84c7-5d67-8e5c-f8e16a02d007" owner="u2449462-6544-59b6-ba37-323a00c8fac8" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:loan>
+            <dynatt:name>Trade fair trip</dynatt:name>
+            <dynatt:loanStatus>category[key='returned']</dynatt:loanStatus>
+         </dynatt:loan>
+         <rapla:appointment id="a8dceba7-f094-5f44-b179-a702221665c4" start-date="2026-09-02" start-time="07:00:00" end-date="2026-09-03" end-time="21:00:00"/>
+         <rapla:allocate idref="rb2d371e-a7b0-5853-80c2-7a5011b1116c"/>
+         <rapla:allocate idref="r0143750-90fe-56ed-8a16-32c3671fa40c"/>
+         <rapla:permission group="category[key='desk-staff']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="72b2bae0-f0bd-53dd-9eca-6ad03ec41892" owner="u2449462-6544-59b6-ba37-323a00c8fac8" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:loan>
+            <dynatt:name>Workshop presentations</dynatt:name>
+            <dynatt:loanStatus>category[key='out']</dynatt:loanStatus>
+         </dynatt:loan>
+         <rapla:appointment id="a02d31e5-81dc-5c08-870d-afac200d9af5" start-date="2026-09-10" start-time="09:00:00" end-date="2026-09-15" end-time="12:00:00"/>
+         <rapla:allocate idref="r355c7fa-3435-52c1-8d35-c674be243072"/>
+         <rapla:allocate idref="r57bfe34-f99a-5736-a55e-23ecaf36fdf0"/>
+         <rapla:permission group="category[key='desk-staff']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="ae5259ea-81d6-52e7-ac1b-53c0be7b4bab" owner="u2449462-6544-59b6-ba37-323a00c8fac8" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:loan>
+            <dynatt:name>Documentary interviews</dynatt:name>
+            <dynatt:loanStatus>category[key='returned']</dynatt:loanStatus>
+         </dynatt:loan>
+         <rapla:appointment id="afde1206-fe10-5071-af36-23703aba8271" start-date="2026-09-08" start-time="09:00:00" end-date="2026-09-12" end-time="17:00:00"/>
+         <rapla:allocate idref="rdbb5768-e6e7-5a84-8e46-c761ae045340"/>
+         <rapla:allocate idref="r87eb3bf-594c-5d9b-8603-a24e72fd1d55"/>
+         <rapla:allocate idref="r58caaba-fbc8-527b-9553-b4d70999d8ac"/>
+         <rapla:permission group="category[key='desk-staff']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="8cc90176-d7fa-5423-bb22-933e4c249001" owner="u2449462-6544-59b6-ba37-323a00c8fac8" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:loan>
+            <dynatt:name>Lecture capture</dynatt:name>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
+         </dynatt:loan>
+         <rapla:appointment id="a26bac9c-bff2-58ed-be46-f8666e553b45" start-date="2026-12-21" start-time="08:00:00" end-date="2026-12-25" end-time="18:00:00"/>
+         <rapla:allocate idref="r18f4c56-e403-52bd-a928-15df27269448"/>
+         <rapla:allocate idref="r7abf926-a6d1-5dec-81d5-9e0e2496f3ea"/>
+         <rapla:allocate idref="r57bfe34-f99a-5736-a55e-23ecaf36fdf0"/>
+         <rapla:permission group="category[key='desk-staff']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="ef7b958d-7b1b-547a-9c0d-9969c85972b1" owner="u1201d83-32fa-51ed-bb3f-51e21f4c178b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:loan>
+            <dynatt:name>Spring campaign shoot</dynatt:name>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
+         </dynatt:loan>
+         <rapla:appointment id="a8c7c405-b092-595c-9644-265e03343238" start-date="2027-01-11" start-time="09:00:00" end-date="2027-01-13" end-time="17:00:00"/>
+         <rapla:allocate idref="r5bf35f7-6f20-5645-8fb2-7d0083a59a15"/>
+         <rapla:allocate idref="r75c8e7f-294f-5a47-8700-6121558911d0"/>
+         <rapla:allocate idref="rfc3037c-3a4e-5f28-a337-2ecf7144d44a"/>
+         <rapla:permission group="category[key='desk-staff']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="7c9d363d-c9c4-5903-bebb-ae777717301b" owner="u2449462-6544-59b6-ba37-323a00c8fac8" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:loan>
+            <dynatt:name>Open day 2027</dynatt:name>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
+         </dynatt:loan>
+         <rapla:appointment id="a7a37b28-a669-5301-a33a-f373ffdb7c6a" start-date="2027-01-23" start-time="08:00:00" end-date="2027-01-23" end-time="20:00:00"/>
+         <rapla:allocate idref="receeaeb-1698-596f-8342-253c557a11dc"/>
+         <rapla:allocate idref="r34626dc-02f0-59ac-a195-3352c59af969"/>
+         <rapla:allocate idref="r2a56d37-c439-53e1-80cf-a17dba04abc6"/>
+         <rapla:permission group="category[key='desk-staff']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="ee6753ba-743a-5c5e-bdfa-2ec6d925b75f" owner="u35b52c0-ae4b-5eb4-904a-8db15afcf46b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <rapla:annotation key="template">r9130e1e-b15c-552d-9133-64b869bf4dce</rapla:annotation>
+         <dynatt:loan>
+            <dynatt:name>Van day trip</dynatt:name>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
+         </dynatt:loan>
+         <rapla:appointment id="a2131141-bc5a-5a31-a244-4f74b3b40bab" start-date="2026-09-14" start-time="07:00:00" end-date="2026-09-14" end-time="20:00:00"/>
+         <rapla:allocate idref="rb2d371e-a7b0-5853-80c2-7a5011b1116c"/>
+         <rapla:permission group="category[key='desk-staff']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="f203e1a9-63b7-5239-9180-33ee332f0419" owner="u2449462-6544-59b6-ba37-323a00c8fac8" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:loan>
+            <dynatt:name>Spring exhibition</dynatt:name>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
+         </dynatt:loan>
+         <rapla:appointment id="a750108b-5a60-5729-85e1-5857dfe55d92" start-date="2027-03-22" start-time="08:00:00" end-date="2027-03-24" end-time="18:00:00"/>
+         <rapla:allocate idref="r34626dc-02f0-59ac-a195-3352c59af969"/>
+         <rapla:allocate idref="r355c7fa-3435-52c1-8d35-c674be243072"/>
+         <rapla:allocate idref="r2a56d37-c439-53e1-80cf-a17dba04abc6"/>
+         <rapla:permission group="category[key='desk-staff']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="a8b4363c-1df8-5d58-9baf-5727f183d941" owner="u1201d83-32fa-51ed-bb3f-51e21f4c178b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:loan>
+            <dynatt:name>Podcast series</dynatt:name>
+            <dynatt:loanStatus>category[key='out']</dynatt:loanStatus>
+         </dynatt:loan>
+         <rapla:appointment id="a62900c2-4c2d-5993-bc2e-3dd9024221af" start-date="2026-09-07" start-time="10:00:00" end-date="2026-09-18" end-time="16:00:00"/>
+         <rapla:allocate idref="r7abf926-a6d1-5dec-81d5-9e0e2496f3ea"/>
+         <rapla:allocate idref="r191daa9-5ceb-591a-a45f-8740d8352a95"/>
+         <rapla:allocate idref="rfc3037c-3a4e-5f28-a337-2ecf7144d44a"/>
+         <rapla:permission group="category[key='desk-staff']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="857de7d3-5605-52b9-8c11-54d0c98a56ee" owner="u2449462-6544-59b6-ba37-323a00c8fac8" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:loan>
+            <dynatt:name>Conference streaming</dynatt:name>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
+         </dynatt:loan>
+         <rapla:appointment id="a3febf4b-3d5b-5923-942b-aaed48989cb1" start-date="2027-03-01" start-time="08:00:00" end-date="2027-03-05" end-time="18:00:00"/>
+         <rapla:allocate idref="r747033d-e90f-50dc-8740-7c0b31012e3b"/>
+         <rapla:allocate idref="r191daa9-5ceb-591a-a45f-8740d8352a95"/>
+         <rapla:allocate idref="rba80c86-b952-58b0-bb22-2467e2c324f6"/>
+         <rapla:permission group="category[key='desk-staff']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="efe0b052-25d3-588e-9977-45c85e160ef2" owner="u2449462-6544-59b6-ba37-323a00c8fac8" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:loan>
+            <dynatt:name>Semester kick-off</dynatt:name>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
+         </dynatt:loan>
+         <rapla:appointment id="a8262786-8c4e-5c2d-a507-565a89cc260f" start-date="2026-11-16" start-time="08:00:00" end-date="2026-11-16" end-time="18:00:00"/>
+         <rapla:allocate idref="receeaeb-1698-596f-8342-253c557a11dc"/>
+         <rapla:allocate idref="r2a56d37-c439-53e1-80cf-a17dba04abc6"/>
+         <rapla:permission group="category[key='desk-staff']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="0c883065-bf23-5983-9024-35c6ed1b80e7" owner="u1201d83-32fa-51ed-bb3f-51e21f4c178b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:loan>
+            <dynatt:name>Student film project</dynatt:name>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
+         </dynatt:loan>
+         <rapla:appointment id="a279db2e-05d2-59e5-9308-bc72db34ba98" start-date="2026-09-19" start-time="10:00:00" end-date="2026-09-20" end-time="18:00:00"/>
+         <rapla:allocate idref="r5bf35f7-6f20-5645-8fb2-7d0083a59a15"/>
+         <rapla:allocate idref="rfc3037c-3a4e-5f28-a337-2ecf7144d44a"/>
+         <rapla:permission group="category[key='desk-staff']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="529ac07f-c882-55f5-b9bf-3d54c1e0a614" owner="u2449462-6544-59b6-ba37-323a00c8fac8" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:loan>
+            <dynatt:name>Winter documentary</dynatt:name>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
+         </dynatt:loan>
+         <rapla:appointment id="a553f980-5101-5ce1-847a-1d03d461e8d0" start-date="2026-11-23" start-time="09:00:00" end-date="2026-11-27" end-time="17:00:00"/>
+         <rapla:allocate idref="racbab79-3f57-5f1f-bda7-1304cd97ecc3"/>
+         <rapla:allocate idref="r87eb3bf-594c-5d9b-8603-a24e72fd1d55"/>
+         <rapla:allocate idref="r58caaba-fbc8-527b-9553-b4d70999d8ac"/>
+         <rapla:permission group="category[key='desk-staff']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="70256c29-ec77-5ef2-b480-aa18e47572fb" owner="uf9c5972-bb31-5ab4-b02e-61b63443993a" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:loan>
+            <dynatt:name>Short film weekend</dynatt:name>
+            <dynatt:loanStatus>category[key='returned']</dynatt:loanStatus>
+         </dynatt:loan>
+         <rapla:appointment id="a1e728b6-c264-5046-8ce9-60f402360e74" start-date="2026-09-04" start-time="16:00:00" end-date="2026-09-07" end-time="10:00:00"/>
+         <rapla:allocate idref="r5bf35f7-6f20-5645-8fb2-7d0083a59a15"/>
+         <rapla:allocate idref="r75c8e7f-294f-5a47-8700-6121558911d0"/>
+         <rapla:allocate idref="r18f4c56-e403-52bd-a928-15df27269448"/>
+         <rapla:allocate idref="rb762ed5-551a-57e5-846f-24e689e11c18"/>
+         <rapla:permission group="category[key='desk-staff']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="21e8b43f-2342-5548-85f9-12f877413321" owner="u35b52c0-ae4b-5eb4-904a-8db15afcf46b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <rapla:annotation key="template">r9d0dfe1-7f50-5959-b883-2ecd29f47a1f</rapla:annotation>
+         <dynatt:loan>
+            <dynatt:name>Weekend camera kit</dynatt:name>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
+         </dynatt:loan>
+         <rapla:appointment id="af36eced-8405-5444-bd4a-61d639b709dc" start-date="2026-09-18" start-time="16:00:00" end-date="2026-09-21" end-time="10:00:00"/>
+         <rapla:allocate idref="r5bf35f7-6f20-5645-8fb2-7d0083a59a15"/>
+         <rapla:allocate idref="r75c8e7f-294f-5a47-8700-6121558911d0"/>
+         <rapla:permission group="category[key='desk-staff']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="410383b7-31fb-5a91-91bf-f63ec8099100" owner="uf9c5972-bb31-5ab4-b02e-61b63443993a" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:loan>
+            <dynatt:name>Field trip Hamburg</dynatt:name>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
+         </dynatt:loan>
+         <rapla:appointment id="a3ac9895-cc6a-51d1-81d6-1c1944105f75" start-date="2026-09-23" start-time="07:00:00" end-date="2026-09-25" end-time="20:00:00"/>
+         <rapla:allocate idref="rb2d371e-a7b0-5853-80c2-7a5011b1116c" request-status="requested"/>
+         <rapla:allocate idref="rb762ed5-551a-57e5-846f-24e689e11c18"/>
+         <rapla:permission group="category[key='desk-staff']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="bf18e513-ba5e-54ab-adc8-2ba5daba5cdc" owner="uf9c5972-bb31-5ab4-b02e-61b63443993a" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:loan>
+            <dynatt:name>Interview series</dynatt:name>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
+         </dynatt:loan>
+         <rapla:appointment id="a5ba5805-9442-5397-9da7-809a4bdd3312" start-date="2026-10-06" start-time="09:00:00" end-date="2026-10-08" end-time="17:00:00"/>
+         <rapla:allocate idref="r18f4c56-e403-52bd-a928-15df27269448"/>
+         <rapla:allocate idref="r87eb3bf-594c-5d9b-8603-a24e72fd1d55"/>
+         <rapla:allocate idref="rb762ed5-551a-57e5-846f-24e689e11c18"/>
+         <rapla:permission group="category[key='desk-staff']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="55733140-706c-5f82-b96a-f57c6a93ca74" owner="u2449462-6544-59b6-ba37-323a00c8fac8" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:loan>
+            <dynatt:name>Campus open day</dynatt:name>
+            <dynatt:loanStatus>category[key='returned']</dynatt:loanStatus>
+         </dynatt:loan>
+         <rapla:appointment id="a488dbd4-8906-5552-a66a-3429658779c1" start-date="2026-09-06" start-time="08:00:00" end-date="2026-09-06" end-time="20:00:00"/>
+         <rapla:allocate idref="receeaeb-1698-596f-8342-253c557a11dc"/>
+         <rapla:allocate idref="r34626dc-02f0-59ac-a195-3352c59af969"/>
+         <rapla:allocate idref="r2a56d37-c439-53e1-80cf-a17dba04abc6"/>
+         <rapla:permission group="category[key='desk-staff']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="4fce37be-7620-566f-bcba-092241793044" owner="u2449462-6544-59b6-ba37-323a00c8fac8" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:loan>
+            <dynatt:name>Film festival</dynatt:name>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
+         </dynatt:loan>
+         <rapla:appointment id="adbc9e9a-dc8a-507d-b2d1-10b7fac68ff1" start-date="2027-02-15" start-time="09:00:00" end-date="2027-02-19" end-time="18:00:00"/>
+         <rapla:allocate idref="racbab79-3f57-5f1f-bda7-1304cd97ecc3"/>
+         <rapla:allocate idref="rdbb5768-e6e7-5a84-8e46-c761ae045340"/>
+         <rapla:allocate idref="r3a7c54c-9dc9-5f8d-bab6-db38cec88852"/>
+         <rapla:permission group="category[key='desk-staff']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="8702581e-7174-508b-92a8-1449c0420a02" owner="u2449462-6544-59b6-ba37-323a00c8fac8" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:loan>
+            <dynatt:name>Graduation ceremony</dynatt:name>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
+         </dynatt:loan>
+         <rapla:appointment id="a53e3c53-c14d-5676-9735-509803b816fc" start-date="2027-04-12" start-time="09:00:00" end-date="2027-04-13" end-time="18:00:00"/>
+         <rapla:allocate idref="racbab79-3f57-5f1f-bda7-1304cd97ecc3"/>
+         <rapla:allocate idref="r7abf926-a6d1-5dec-81d5-9e0e2496f3ea"/>
+         <rapla:allocate idref="r191daa9-5ceb-591a-a45f-8740d8352a95"/>
+         <rapla:allocate idref="r0143750-90fe-56ed-8a16-32c3671fa40c"/>
+         <rapla:permission group="category[key='desk-staff']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="421f0cd0-67d8-536e-9999-39f4db5e623f" owner="u2449462-6544-59b6-ba37-323a00c8fac8" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:loan>
+            <dynatt:name>Conference talk recording</dynatt:name>
+            <dynatt:loanStatus>category[key='returned']</dynatt:loanStatus>
+         </dynatt:loan>
+         <rapla:appointment id="a2c02bde-6f9a-5289-961f-224570836d0f" start-date="2026-09-04" start-time="08:00:00" end-date="2026-09-05" end-time="18:00:00"/>
+         <rapla:allocate idref="r747033d-e90f-50dc-8740-7c0b31012e3b"/>
+         <rapla:allocate idref="r7abf926-a6d1-5dec-81d5-9e0e2496f3ea"/>
+         <rapla:allocate idref="r3a7c54c-9dc9-5f8d-bab6-db38cec88852"/>
+         <rapla:permission group="category[key='desk-staff']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="49c438a8-f165-5318-8310-43cb0760cba0" owner="u35b52c0-ae4b-5eb4-904a-8db15afcf46b" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <rapla:annotation key="template">re5d57e3-0418-56c9-b2d0-1bad30b64246</rapla:annotation>
+         <dynatt:loan>
+            <dynatt:name>Presentation set</dynatt:name>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
+         </dynatt:loan>
+         <rapla:appointment id="a8599ab8-7ee4-5948-8e25-5ff523146954" start-date="2026-09-14" start-time="08:00:00" end-date="2026-09-14" end-time="18:00:00"/>
+         <rapla:allocate idref="receeaeb-1698-596f-8342-253c557a11dc"/>
+         <rapla:allocate idref="r7abf926-a6d1-5dec-81d5-9e0e2496f3ea"/>
+         <rapla:permission group="category[key='desk-staff']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="1e3fa906-33f5-578f-a891-49b9051afd31" owner="uf9c5972-bb31-5ab4-b02e-61b63443993a" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:loan>
+            <dynatt:name>Weekend camera kit</dynatt:name>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
+         </dynatt:loan>
+         <rapla:appointment id="a161ce56-4af9-5877-86fa-8f052ccd4331" start-date="2026-09-18" start-time="16:00:00" end-date="2026-09-21" end-time="10:00:00"/>
+         <rapla:allocate idref="r5bf35f7-6f20-5645-8fb2-7d0083a59a15"/>
+         <rapla:allocate idref="r75c8e7f-294f-5a47-8700-6121558911d0"/>
+         <rapla:allocate idref="rb762ed5-551a-57e5-846f-24e689e11c18"/>
+         <rapla:permission group="category[key='desk-staff']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="86f9e721-a77a-55fc-b9ef-8d3bab75809c" owner="u2449462-6544-59b6-ba37-323a00c8fac8" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:loan>
+            <dynatt:name>Interview shoot</dynatt:name>
+            <dynatt:loanStatus>category[key='returned']</dynatt:loanStatus>
+         </dynatt:loan>
+         <rapla:appointment id="a472d9d6-c245-57b5-a973-1a479d993363" start-date="2026-09-01" start-time="09:00:00" end-date="2026-09-03" end-time="17:00:00"/>
+         <rapla:allocate idref="racbab79-3f57-5f1f-bda7-1304cd97ecc3"/>
+         <rapla:allocate idref="r75c8e7f-294f-5a47-8700-6121558911d0"/>
+         <rapla:allocate idref="r57bfe34-f99a-5736-a55e-23ecaf36fdf0"/>
+         <rapla:permission group="category[key='desk-staff']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="c6121ab1-7704-55d0-b24e-9650089121c1" owner="u2449462-6544-59b6-ba37-323a00c8fac8" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:loan>
+            <dynatt:name>Guest lecture</dynatt:name>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
+         </dynatt:loan>
+         <rapla:appointment id="a720de71-714a-5810-bd2e-290a78455f96" start-date="2026-09-24" start-time="08:00:00" end-date="2026-09-24" end-time="18:00:00"/>
+         <rapla:allocate idref="receeaeb-1698-596f-8342-253c557a11dc"/>
+         <rapla:allocate idref="r0143750-90fe-56ed-8a16-32c3671fa40c"/>
+         <rapla:permission group="category[key='desk-staff']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="59074344-e862-56cd-9365-d47360c6c83c" owner="u2449462-6544-59b6-ba37-323a00c8fac8" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:loan>
+            <dynatt:name>Music video</dynatt:name>
+            <dynatt:loanStatus>category[key='out']</dynatt:loanStatus>
+         </dynatt:loan>
+         <rapla:appointment id="aacb43d3-6122-5ac2-921c-af50f36dee8c" start-date="2026-09-11" start-time="10:00:00" end-date="2026-09-16" end-time="18:00:00"/>
+         <rapla:allocate idref="racbab79-3f57-5f1f-bda7-1304cd97ecc3"/>
+         <rapla:allocate idref="r747033d-e90f-50dc-8740-7c0b31012e3b"/>
+         <rapla:allocate idref="r3a7c54c-9dc9-5f8d-bab6-db38cec88852"/>
+         <rapla:permission group="category[key='desk-staff']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="d12eb107-6e6a-5a6d-aae5-d755d3824e87" owner="u2449462-6544-59b6-ba37-323a00c8fac8" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:loan>
+            <dynatt:name>Sports event coverage</dynatt:name>
+            <dynatt:loanStatus>category[key='out']</dynatt:loanStatus>
+         </dynatt:loan>
+         <rapla:appointment id="a31b1965-aeef-5f6d-931d-7acb25ab2314" start-date="2026-09-05" start-time="08:00:00" end-date="2026-09-11" end-time="17:00:00"/>
+         <rapla:allocate idref="rce00cd4-ce29-50a3-b0c9-c8087365f08a"/>
+         <rapla:allocate idref="rba80c86-b952-58b0-bb22-2467e2c324f6"/>
+         <rapla:permission group="category[key='desk-staff']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="0b7e1686-4bf6-5080-a13c-c88b548310be" owner="u2449462-6544-59b6-ba37-323a00c8fac8" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:loan>
+            <dynatt:name>Theatre rehearsal</dynatt:name>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
+         </dynatt:loan>
+         <rapla:appointment id="a003f5c4-68ef-53c7-bfdd-b0d5dd12401a" start-date="2026-10-05" start-time="09:00:00" end-date="2026-10-09" end-time="17:00:00"/>
+         <rapla:allocate idref="rdbb5768-e6e7-5a84-8e46-c761ae045340"/>
+         <rapla:allocate idref="r75c8e7f-294f-5a47-8700-6121558911d0"/>
+         <rapla:allocate idref="rba80c86-b952-58b0-bb22-2467e2c324f6"/>
+         <rapla:permission group="category[key='desk-staff']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="2b35f47f-d219-5f3b-bf48-d63da14b1cd8" owner="u2449462-6544-59b6-ba37-323a00c8fac8" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:loan>
+            <dynatt:name>Ski trip media team</dynatt:name>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
+         </dynatt:loan>
+         <rapla:appointment id="a967f79b-97dd-5f0e-acbf-4869844564d5" start-date="2026-12-11" start-time="07:00:00" end-date="2026-12-13" end-time="20:00:00"/>
+         <rapla:allocate idref="rb2d371e-a7b0-5853-80c2-7a5011b1116c"/>
+         <rapla:allocate idref="r0143750-90fe-56ed-8a16-32c3671fa40c"/>
+         <rapla:permission group="category[key='desk-staff']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="2a023386-02fe-54da-85a2-e8078622ce0e" owner="u2449462-6544-59b6-ba37-323a00c8fac8" created-at="2026-09-14T00:00:00.000Z" last-changed="2026-09-14T00:00:00.000Z">
+         <dynatt:loan>
+            <dynatt:name>Exhibition setup</dynatt:name>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
+         </dynatt:loan>
+         <rapla:appointment id="a8d38640-0a06-59fd-b95c-dd13ca25331e" start-date="2026-09-29" start-time="08:00:00" end-date="2026-10-02" end-time="18:00:00"/>
+         <rapla:allocate idref="r34626dc-02f0-59ac-a195-3352c59af969"/>
+         <rapla:allocate idref="r355c7fa-3435-52c1-8d35-c674be243072"/>
+         <rapla:allocate idref="rb2d371e-a7b0-5853-80c2-7a5011b1116c"/>
+         <rapla:allocate idref="r2a56d37-c439-53e1-80cf-a17dba04abc6"/>
+         <rapla:permission group="category[key='desk-staff']" access="edit"/>
+      </rapla:reservation>
+   </rapla:reservations>
+
+   <rapla:importexports>
+   </rapla:importexports>
+   <rapla:artifacts>
+      <rapla:artifact id="VIEW:LoanForm" kind="VIEW" name="LoanForm" created-at="2026-09-14T22:22:01.978Z" last-changed="2026-09-14T22:22:01.978Z">
+         <body># rapla-view
+# public: true
+# updated: 2026-09-15T01:00
+
+query LoanForm($reservationId: ID!) @view(title: &quot;Loan form&quot;, listed: false)
+  @param(name: &quot;reservationId&quot;, into: &quot;reservationId&quot;, required: true)
+{
+  reservation(id: $reservationId) {
+    id
+    name
+    owner { username }
+    appointments {
+      status: compute(expr: &quot;{p-&gt;name(attribute(p,\&quot;loanStatus\&quot;))}&quot;)
+      period: compute(expr: &quot;{p-&gt;format(\&quot;%1$ta %1$td.%1$tm.%1$tY %1$tH:%1$tM\&quot;,start(p))} - {p-&gt;format(\&quot;%1$ta %1$td.%1$tm.%1$tY %1$tH:%1$tM\&quot;,end(p))}&quot;)
+      returnBy: compute(expr: &quot;{p-&gt;format(\&quot;%1$tA %1$td.%1$tm.%1$tY %1$tH:%1$tM\&quot;,end(p))}&quot;)
+      borrowers: resources(filter: { isPersonEq: true }) {
+        name
+        classification {
+          ... on borrowerClassification { firstname surname email phone department }
+        }
+      }
+      items: resources(filter: { isPersonEq: false }) {
+        name
+        inventoryNumber: compute(expr: &quot;inventoryNumber&quot;)
+        condition: compute(expr: &quot;condition&quot;)
+        storageLocation: compute(expr: &quot;storageLocation&quot;)
+      }
+    }
+  }
+}
+</body>
+         <metadata>{&quot;isPublic&quot;:true,&quot;groups&quot;:[],&quot;defaultVariables&quot;:null}</metadata>
+      </rapla:artifact>
+      <rapla:artifact id="VIEW:Loans" kind="VIEW" name="Loans" created-at="2026-09-14T22:22:01.998Z" last-changed="2026-09-14T22:22:01.998Z">
+         <body># rapla-view
+# public: true
+# updated: 2026-09-15T00:00
+
+query Loans(
+  $filter: ReservationFilter!,
+  $sort: [BlockSort!] = [{ field: END, dir: ASC }]
+) @view(title: &quot;Loans&quot;, rowLabel: &quot;Loan|Loans&quot;, renderModes: [table, month])
+  @window(from: {anchor: TODAY, offset: -30}, to: {anchor: TODAY, offset: 60})
+{
+  appointmentBlocks(filter: $filter, sort: $sort) {
+    name  @column(header: &quot;Loan&quot;, order: 1)
+    start @column(header: &quot;From&quot;, order: 2)
+    end   @column(header: &quot;Return&quot;, order: 3)
+    status: compute(expr: &quot;{p-&gt;if(and(equals(key(attribute(p,\&quot;loanStatus\&quot;)),\&quot;out\&quot;),isBefore(end(p),now())),\&quot;Overdue\&quot;,name(attribute(p,\&quot;loanStatus\&quot;)))}&quot;)
+      @column(header: &quot;Status&quot;, order: 4)
+    items: resources(filter: { isPersonEq: false })
+      @join(separator: &quot;, &quot;) @column(header: &quot;Items&quot;, order: 5) { id name }
+    borrowers: resources(filter: { isPersonEq: true })
+      @join(separator: &quot;, &quot;) @column(header: &quot;Borrower&quot;, order: 6) { id name }
+    color @hidden
+    reservation @hidden { id canModify appointmentCount classification { typeKey } }
+    appointment @hidden { id repeating { type } }
+    matchedBy @hidden { id }
+    isException @hidden
+  }
+}
+</body>
+         <metadata>{&quot;isPublic&quot;:true,&quot;groups&quot;:[],&quot;defaultVariables&quot;:null}</metadata>
+      </rapla:artifact>
+      <rapla:artifact id="DOCUMENT:LoanForm" kind="DOCUMENT" name="LoanForm" created-at="2026-09-14T22:22:02.029Z" last-changed="2026-09-14T22:22:02.029Z">
+         <body>{{! rapla-document
+view: LoanForm
+public: true
+updated: 2026-09-15T00:00
+}}
+&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+&lt;head&gt;
+&lt;meta charset=&quot;utf-8&quot;&gt;
+&lt;title&gt;Loan form&lt;/title&gt;
+&lt;style&gt;
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; line-height: 1.4;
+         max-width: 17cm; margin: 1.5cm auto; color: #000; background: #fff; }
+  h1 { font-size: 22px; margin: 0 0 .2em 0; }
+  .org { color: #555; margin: 0 0 1.5em 0; }
+  h2 { font-size: 14px; margin: 1.4em 0 .4em 0; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { border: 1px solid #999; padding: .3em .5em; text-align: left; vertical-align: top; }
+  th { background: #eee; }
+  dl { display: grid; grid-template-columns: 9em 1fr; gap: .2em 1em; margin: 0; }
+  dt { font-weight: bold; }
+  dd { margin: 0; }
+  ol li { margin-bottom: .3em; }
+  .sig { display: grid; grid-template-columns: 1fr 1fr; gap: 2em; margin-top: 3em; }
+  .sig p { border-top: 1px solid #000; padding-top: .3em; margin: 0; }
+  .return td { height: 2.5em; }
+  @media print { @page { margin: 2cm; } body { margin: 0 auto; } }
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+{{&gt; rapla/print-hint}}
+{{#reservation}}
+&lt;h1&gt;Loan form&lt;/h1&gt;
+&lt;p class=&quot;org&quot;&gt;Media Centre (example) · Service desk · Mon–Fri 09:00–16:00 · media-desk@example.org · +49 555 0100&lt;/p&gt;
+&lt;dl&gt;
+  &lt;dt&gt;Loan&lt;/dt&gt;&lt;dd&gt;{{name}}&lt;/dd&gt;
+  
+  &lt;dt&gt;Booked by&lt;/dt&gt;&lt;dd&gt;{{owner.username}}&lt;/dd&gt;
+&lt;/dl&gt;
+{{#appointments}}
+&lt;p&gt;&lt;b&gt;Status:&lt;/b&gt; {{status}}&lt;/p&gt;
+&lt;h2&gt;Borrower&lt;/h2&gt;
+{{#borrowers}}
+&lt;dl&gt;
+  &lt;dt&gt;Name&lt;/dt&gt;&lt;dd&gt;{{name}}&lt;/dd&gt;
+  {{#classification}}
+  {{#email}}&lt;dt&gt;Email&lt;/dt&gt;&lt;dd&gt;{{email}}&lt;/dd&gt;{{/email}}
+  {{#phone}}&lt;dt&gt;Phone&lt;/dt&gt;&lt;dd&gt;{{phone}}&lt;/dd&gt;{{/phone}}
+  {{#department}}&lt;dt&gt;Department&lt;/dt&gt;&lt;dd&gt;{{department}}&lt;/dd&gt;{{/department}}
+  {{/classification}}
+&lt;/dl&gt;
+{{/borrowers}}
+&lt;h2&gt;Loan period&lt;/h2&gt;
+&lt;p&gt;{{period}}&lt;/p&gt;
+&lt;h2&gt;Items&lt;/h2&gt;
+&lt;table&gt;
+  &lt;tr&gt;&lt;th&gt;Item&lt;/th&gt;&lt;th&gt;Inventory no.&lt;/th&gt;&lt;th&gt;Condition at hand-over&lt;/th&gt;&lt;th&gt;Storage location&lt;/th&gt;&lt;/tr&gt;
+  {{#items}}&lt;tr&gt;&lt;td&gt;{{name}}&lt;/td&gt;&lt;td&gt;{{inventoryNumber}}&lt;/td&gt;&lt;td&gt;{{condition}}&lt;/td&gt;&lt;td&gt;{{storageLocation}}&lt;/td&gt;&lt;/tr&gt;{{/items}}
+&lt;/table&gt;
+&lt;h2&gt;Terms&lt;/h2&gt;
+&lt;ol&gt;
+  &lt;li&gt;The items are lent for the purpose stated above and may not be passed on to third parties.&lt;/li&gt;
+  &lt;li&gt;The borrower checks the items at hand-over and reports visible defects immediately.&lt;/li&gt;
+  &lt;li&gt;Loss or damage during the loan period must be reported to the service desk without delay.&lt;/li&gt;
+  &lt;li&gt;The items are returned complete and on time, at the latest by {{returnBy}}.&lt;/li&gt;
+&lt;/ol&gt;
+{{/appointments}}
+&lt;div class=&quot;sig&quot;&gt;
+  &lt;p&gt;Date, signature service desk&lt;/p&gt;
+  &lt;p&gt;Date, signature borrower&lt;/p&gt;
+&lt;/div&gt;
+&lt;h2&gt;Return&lt;/h2&gt;
+&lt;table class=&quot;return&quot;&gt;
+  &lt;tr&gt;&lt;th&gt;Returned on&lt;/th&gt;&lt;th&gt;Complete / defects&lt;/th&gt;&lt;th&gt;Signature service desk&lt;/th&gt;&lt;/tr&gt;
+  &lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;/table&gt;
+{{/reservation}}
+{{^reservation}}&lt;p&gt;Loan not found.&lt;/p&gt;{{/reservation}}
+&lt;/body&gt;
+&lt;/html&gt;
+</body>
+         <metadata>{&quot;viewName&quot;:&quot;LoanForm&quot;,&quot;isPublic&quot;:true,&quot;groups&quot;:[],&quot;defaultVariables&quot;:null,&quot;window&quot;:null}</metadata>
+      </rapla:artifact>
+      <rapla:artifact id="DOCUMENT:ReturnReminder" kind="DOCUMENT" name="ReturnReminder" created-at="2026-09-14T22:22:02.042Z" last-changed="2026-09-14T22:22:02.042Z">
+         <body>{{! rapla-document
+view: LoanForm
+public: true
+updated: 2026-09-15T00:00
+}}
+&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+&lt;head&gt;
+&lt;meta charset=&quot;utf-8&quot;&gt;
+&lt;title&gt;Return reminder&lt;/title&gt;
+&lt;style&gt;
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 13px; line-height: 1.5;
+         max-width: 16cm; margin: 1.5cm auto; color: #000; background: #fff; }
+  .mailhead { border: 1px solid #ccc; background: #f6f6f6; padding: .6em 1em; margin-bottom: 1.5em; }
+  .mailhead p { margin: .1em 0; }
+  .note { color: #666; font-size: 11px; margin-top: 2em; }
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+{{#reservation}}
+{{#appointments}}
+&lt;div class=&quot;mailhead&quot;&gt;
+  &lt;p&gt;&lt;b&gt;From:&lt;/b&gt; media-desk@example.org&lt;/p&gt;
+  &lt;p&gt;&lt;b&gt;To:&lt;/b&gt; {{#borrowers}}{{#classification}}{{email}}{{/classification}} {{/borrowers}}&lt;/p&gt;
+  &lt;p&gt;&lt;b&gt;Subject:&lt;/b&gt; Reminder: please return &quot;{{name}}&quot;&lt;/p&gt;
+&lt;/div&gt;
+&lt;p&gt;Hello {{#borrowers}}{{#classification}}{{firstname}}{{/classification}}{{/borrowers}},&lt;/p&gt;
+&lt;p&gt;this is a friendly reminder that your loan &lt;b&gt;{{name}}&lt;/b&gt; ends on &lt;b&gt;{{returnBy}}&lt;/b&gt;.
+Please bring the following items back to the service desk:&lt;/p&gt;
+&lt;ul&gt;
+  {{#items}}&lt;li&gt;{{name}} ({{inventoryNumber}})&lt;/li&gt;{{/items}}
+&lt;/ul&gt;
+&lt;p&gt;If you need the items longer, reply to this mail before the return date.&lt;/p&gt;
+&lt;p&gt;Kind regards&lt;br&gt;Media Centre (example), service desk&lt;/p&gt;
+{{/appointments}}
+&lt;p class=&quot;note&quot;&gt;Rendered as a document — Rapla does not send this mail.&lt;/p&gt;
+{{/reservation}}
+{{^reservation}}&lt;p&gt;Loan not found.&lt;/p&gt;{{/reservation}}
+&lt;/body&gt;
+&lt;/html&gt;
+</body>
+         <metadata>{&quot;viewName&quot;:&quot;LoanForm&quot;,&quot;isPublic&quot;:true,&quot;groups&quot;:[],&quot;defaultVariables&quot;:null,&quot;window&quot;:null}</metadata>
+      </rapla:artifact>
+   </rapla:artifacts>
+</rapla:data>
