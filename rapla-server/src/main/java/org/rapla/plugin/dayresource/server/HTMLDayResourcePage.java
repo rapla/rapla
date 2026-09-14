@@ -1,0 +1,124 @@
+package org.rapla.plugin.dayresource.server;
+
+import org.rapla.RaplaResources;
+import org.rapla.components.calendarview.Block;
+import org.rapla.components.calendarview.BlockContainer;
+import org.rapla.components.calendarview.Builder;
+import org.rapla.components.calendarview.html.AbstractHTMLView;
+import org.rapla.components.calendarview.html.HTMLWeekView;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.AppointmentFormater;
+import org.rapla.facade.RaplaFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
+import org.rapla.plugin.abstractcalendar.RaplaBlock;
+import org.rapla.plugin.abstractcalendar.RaplaBuilder;
+import org.rapla.plugin.dayresource.DayResourcePlugin;
+import org.rapla.plugin.weekview.server.HTMLDayViewPage;
+import org.rapla.server.extensionpoints.HTMLViewPage;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+
+import java.time.LocalDateTime;
+public class HTMLDayResourcePage extends HTMLDayViewPage
+{
+    @Autowired
+	public HTMLDayResourcePage(RaplaLocale raplaLocale, RaplaResources raplaResources, RaplaFacade facade,
+			AppointmentFormater appointmentFormater)
+	{
+		super(raplaLocale, raplaResources, facade, appointmentFormater);
+	}
+
+	@Override
+	protected AbstractHTMLView createCalendarView() throws RaplaException {
+		final List<Allocatable> selectedAllocatablesSorted = model.getSelectedAllocatablesSorted();
+		Collection<Allocatable> selectedAllocatables =model.getSelectedAllocatablesAsList();
+
+		HTMLWeekView weekView = new HTMLWeekView(){
+            
+            
+        	@Override
+        	protected String createColumnHeader(int i)
+        	{
+            	Allocatable allocatable = selectedAllocatablesSorted.get(i);
+				return  org.rapla.components.util.Tools.createXssSafeString(allocatable.getName( getRaplaLocale().getLocale()));
+        	}
+            
+            @Override
+            protected int getColumnCount() {
+				return selectedAllocatables.size();
+            }
+            
+            public void rebuild(Builder b) {
+                setWeeknumber(getRaplaLocale().formatDateShort(getStartDate()));
+        		super.rebuild(b);
+        	}
+    		
+        };
+        return weekView;
+    }
+	
+	 
+	
+	private int getIndex(final List<Allocatable> allocatables,
+			Block block) {
+		RaplaBlock b = (RaplaBlock)block;
+		Allocatable a = b.getGroupAllocatable();
+		int index = a != null ? allocatables.indexOf( a ) : -1;
+		return index;
+	}
+	
+	
+
+	
+	protected RaplaBuilder createBuilder() throws RaplaException {
+        RaplaBuilder builder = super.createBuilder();
+
+        final List<Allocatable> allocatables = model.getSelectedAllocatablesSorted();
+        builder.setSplitByAllocatables( true );
+        GroupAllocatablesStrategy strategy = new GroupAllocatablesStrategy( getRaplaLocale().getLocale() )
+        {
+        	@Override
+        	protected Map<Block, Integer> getBlockMap(BlockContainer wv,
+        			List<Block> blocks, LocalDateTime startDate)
+        	{
+        		if (allocatables != null)
+        		{
+        			Map<Block,Integer> map = new LinkedHashMap<>();
+        			for (Block block:blocks)
+        			{
+        				int index = getIndex(allocatables, block);
+        				
+        				if ( index >= 0 )
+        				{
+        					map.put( block, index );
+        				}
+        		     }
+        		     return map;		
+        		}
+        		else 
+        		{
+        			return super.getBlockMap(wv, blocks, startDate);
+        		}
+        	}
+
+			
+        };
+       
+        
+        strategy.setResolveConflictsEnabled( true );
+        builder.setBuildStrategy( strategy );
+
+        return builder;
+    }
+	
+
+
+
+}

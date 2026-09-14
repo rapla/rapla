@@ -1,3 +1,4 @@
+/.audit/
 /eclipse-build
 /build.properties
 /temp
@@ -14,6 +15,13 @@
 /jetty.home_IS_UNDEFINED
 /certificate/
 /target/
+# PRD 005: ignore target/ and data/ in every module / subdir of the reactor
+**/target/
+**/data/
+# Cached signed webclient jars + source-shas manifest produced by
+# SignWebclientJars (rapla-app -Psign-pkcs11). Survives `mvn clean` and lets
+# server-only or Angular-only rebuilds skip the YubiKey touch.
+rapla-app/signed-webclient-cache/
 /parent/rapla-parent.iml
 /.settings/
 /.idea/
@@ -25,10 +33,88 @@ bin/
 src/main/gwt-jre/gwt-jre.iml
 src/main/main.iml
 src/test/test.iml
-custom/target/
-parent/target/
 /.apt_generated/
 /*.pfx
 /*.crt
 /erdkante-chain.pem
 /pkcs11.cfg
+application-local.yml
+src/main/resources/application-local.yml
+proxy.conf.local.json
+# Deployment secrets — never commit. Use env vars or your platform's
+# secret manager. See docs/authentication.md "Managing secrets".
+.env
+.env.*
+*.env
+secrets.yml
+secrets.yaml
+**/secrets.yml
+**/secrets.yaml
+/rapla-app/jetty.home_IS_UNDEFINED/logs/rapla.log
+/rapla-client/jetty.home_IS_UNDEFINED/logs/rapla.log
+/rapla-server/jetty.home_IS_UNDEFINED/logs/rapla.log
+/rapla-app/jetty.home_IS_UNDEFINED/logs/rapla_client.csv
+/rapla-client/jetty.home_IS_UNDEFINED/logs/rapla_client.csv
+/rapla-server/jetty.home_IS_UNDEFINED/logs/rapla_client.csv
+**/*.log
+**/logs/
+# rapla-angular (Phase 0 prototype, PRD 026)
+/rapla-angular/node_modules/
+/rapla-angular/dist/
+/rapla-angular/src/app/api/
+/rapla-angular/.angular/
+/rapla-app/src/main/resources/static/spa/
+# playwright-mcp browser-test session artefacts (PRD 033)
+/.playwright-mcp/*.yml
+/.playwright-mcp/*.yaml
+/.playwright-mcp/*.png
+# stray screenshots the playwright MCP drops at repo root (no tracked root PNGs exist)
+/*.png
+
+# Local Keycloak dev server — local dev tooling (machine-specific realm
+# config, dev secret), not committed
+/tools/keycloak/
+/.agents/scheduled_tasks.lock
+
+# Per-agent git worktrees (parallel-session isolation, git-worktrees skill) — local, transient
+.agents/worktrees/
+
+# Obsidian vault config — local app state (UI layout, plugins), not project content
+docs/.obsidian/
+
+# Leihschein/Leihvertrag MOCK (PRD 097 preview) — throwaway hand-rendered stand-in, not for commit
+/rapla-server/src/main/java/org/rapla/server/spring/web/LeihscheinMockController.java
+
+# JVM crash / profiler dumps — belt-and-suspenders. The profiling skill directs these to a
+# scratch dir outside the repo; ignore them so a forgotten -Xdump:directory cannot add trash.
+core.*.dmp
+javacore.*.txt
+jitdump.*.dmp
+Snap.*.trc
+hs_err_pid*.log
+*.hprof
+
+# production data dump (PII) — never commit
+/template-names.json
+
+# Customer delivery docs — Uni Siegen Leihschein (private, like docs/yogavidya/)
+docs/leihschein/
+rapla-app/src/main/resources/application-siegen.yml
+
+
+# Security findings never enter the public repo (user ruling 2026-09-14, AGENTS.md §17).
+# Naming scheme: audits, pentest reports, findings, leak-check/security-check reports and
+# session coordination logs live under docs/security/ or docs/coordination/ (both ignored),
+# and any file whose name carries one of the markers below is ignored wherever it lies.
+docs/security/
+docs/coordination/
+*security-audit*
+*security-review*
+*security-findings*
+*pentest*
+*-findings.md
+*leak-check*
+*security-check*
+
+# Angular CLI cache created when ng runs from the repo root
+/.angular/

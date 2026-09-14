@@ -1,0 +1,93 @@
+/*--------------------------------------------------------------------------*
+ | Copyright (C) 2014 Christopher Kohlhaas                                  |
+ |                                                                          |
+ | This program is free software; you can redistribute it and/or modify     |
+ | it under the terms of the GNU General Public License as published by the |
+ | Free Software Foundation. A copy of the license has been included with   |
+ | these distribution in the COPYING file, if not go to www.fsf.org         |
+ |                                                                          |
+ | As a special exception, you are granted the permissions to link this     |
+ | program with every library, which license fulfills the Open Source       |
+ | Definition as published by the Open Source Initiative (OSI).             |
+ *--------------------------------------------------------------------------*/
+package org.rapla.framework.internal;
+
+import org.rapla.components.i18n.BundleManager;
+import org.rapla.components.util.IOUtil;
+import org.rapla.framework.RaplaLocale;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import java.text.Collator;
+import java.text.NumberFormat;
+import java.util.Comparator;
+import java.util.Locale;
+import java.util.TimeZone;
+
+import java.time.LocalDateTime;
+import org.rapla.components.util.DateTools;
+public class RaplaLocaleImpl extends AbstractRaplaLocale  {
+
+    String charsetForHtml = AbstractRaplaLocale.HTML_CHARSET_DEFAULT;
+    String charsetForCsv  = AbstractRaplaLocale.CSV_CHARSET_DEFAULT;
+    private TimeZone importExportTimeZone;
+    @Autowired
+    public RaplaLocaleImpl(BundleManager bundleManager)
+    {
+        super(bundleManager);
+        importExportTimeZone = TimeZone.getDefault();
+    }
+
+	public LocalDateTime fromUTCTimestamp(LocalDateTime date)
+	{
+        long time = DateTools.toMilli(date);
+        long offset =  importExportTimeZone.getOffset(time);
+        long raplaTime = time + offset;
+		return DateTools.toLocalDateTime(raplaTime);
+	}
+	
+	public void setImportExportTimeZone(TimeZone importExportTimeZone) {
+        this.importExportTimeZone = importExportTimeZone;
+    }
+
+    public void setCharsetForHtml(String charsetForHtml) {
+        this.charsetForHtml = charsetForHtml;
+    }
+
+    public void setCharsetForCsv(String charsetForCsv) {
+        this.charsetForCsv = charsetForCsv;
+    }
+
+    public TimeZone getTimeZone() {
+        return IOUtil.getTimeZone();
+    }
+
+
+    public String formatNumber( Long number ) {
+        Locale locale = getLocale();
+		return NumberFormat.getInstance( locale).format(number );
+    }
+
+    public String getCharsetForHtml()
+    {
+        return charsetForHtml;
+    }
+
+    public String getCharsetForCsv()
+    {
+        return charsetForCsv;
+    }
+
+    @Override
+    public Locale newLocale(String language, String country)
+    {
+        return new Locale(language, country != null ? country : "");
+    }
+
+    @Override
+    public Comparator<String> getCollator()
+    {
+        return (Comparator<String>) (Comparator) Collator.getInstance(getLocale());
+    }
+}
+
+

@@ -1,0 +1,77 @@
+package org.rapla;
+
+import org.jetbrains.annotations.PropertyKey;
+import org.rapla.components.i18n.AbstractBundle;
+import org.rapla.components.i18n.BundleManager;
+import org.rapla.components.util.DateTools;
+import org.rapla.components.i18n.I18nBundle;
+import org.rapla.components.i18n.I18nIcon;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import java.util.Locale;
+
+
+import java.time.LocalDateTime;
+import java.time.LocalDate;
+public class RaplaResources extends AbstractBundle {
+    public static final String BUNDLENAME = "org.rapla.RaplaResources";
+
+    @Autowired
+    public RaplaResources(BundleManager bundleManager)
+    {
+      super(BUNDLENAME, bundleManager);
+    }
+    @Override
+    public String getString(@PropertyKey(resourceBundle = BUNDLENAME) String key)
+    {
+        return super.getString(key);
+    }
+
+    @Override
+    public String getString(@PropertyKey(resourceBundle = BUNDLENAME) String key,Locale locale)
+    {
+        return super.getString(key, locale);
+    }
+
+    @Override
+    public I18nIcon getIcon(@PropertyKey(resourceBundle = BUNDLENAME) String key)
+    {
+        return super.getIcon(key);
+    }
+
+    @Override
+    public String format(@PropertyKey(resourceBundle = BUNDLENAME) String key, Object... obj)
+    {
+        return super.format(key, obj);
+    }
+
+    // add custom format methods
+
+    // custom format for the calendarweek
+    public String calendarweek(LocalDateTime startDate) {
+        String format = getString("calendarweek.abbreviation");
+        int week = DateTools.getWeekInYear(startDate, getLocale());
+        String result = format.replace("{0}", "" + week);
+        // old format also works
+        result = result.replace("{0,date,w}", "" + week);
+        return result;
+    }
+
+    /** {@code LocalDate} variant of {@link #calendarweek(LocalDateTime)}. */
+    public String calendarweek(java.time.LocalDate startDate) {
+        String format = getString("calendarweek.abbreviation");
+        int week = DateTools.getWeekInYear(startDate, getLocale());
+        String result = format.replace("{0}", "" + week);
+        result = result.replace("{0,date,w}", "" + week);
+        return result;
+    }
+
+    // custom format method for formating the number of week in a period
+    public String periodFormatWeek(int weeknumber, String periodName)
+    {
+        return format("period.format.week", weeknumber, periodName);
+    }
+
+
+
+}

@@ -1,0 +1,543 @@
+<!-- copyable rapla-id — outside the sheet grid, pinned directly under the
+     window's top edge (sticky against the scroll container) -->
+@if (draft(); as d) {
+  <div class="idbar">
+    <app-entity-id-chip [id]="d.id" />
+  </div>
+}
+<div class="sheet">
+  @if (loading()) {
+    <p class="hint">Lade Veranstaltung…</p>
+  } @else if (notFound()) {
+    <section class="sec">
+      <h2>Nicht gefunden</h2>
+      <p class="hint">Die Veranstaltung existiert nicht oder ist für dich nicht sichtbar.</p>
+      <button type="button" (click)="cancel()">Zurück</button>
+    </section>
+  } @else if (draft(); as d) {
+    <!-- ============================================== Kopfbereich -->
+    @if (headerOpen()) {
+      <section
+        class="sec"
+        [class.active]="active() === 'header'"
+        tabindex="0"
+        (click)="activate('header')"
+        (keydown.enter)="activate('header')"
+        (focusin)="activate('header')"
+      >
+        <div class="hbar">
+          <label class="field type">
+            <span class="lab">Veranstaltungstyp</span>
+            <select
+              [ngModel]="d.typeKey"
+              (ngModelChange)="setTypeKey($event)"
+              [disabled]="!canModify()"
+            >
+              @for (t of typeOptions(); track t.key) {
+                <option [value]="t.key">{{ t.name }}</option>
+              }
+            </select>
+          </label>
+          <button
+            type="button"
+            class="act collapse"
+            (click)="headerOpen.set(false); $event.stopPropagation()"
+          >
+            ▴ einklappen
+          </button>
+        </div>
+        @if (titleAttrs().length > 0) {
+          <app-classification-edit
+            class="titles top-gap"
+            [typeKey]="d.typeKey"
+            [values]="d.values"
+            [disabled]="!canModify()"
+            [onlyKeys]="titleExcludeKeys()"
+            (patch)="applyClassificationPatch($event)"
+          />
+        }
+        <app-classification-edit
+          class="top-gap"
+          [typeKey]="d.typeKey"
+          [values]="d.values"
+          [disabled]="!canModify()"
+          [excludeKeys]="titleExcludeKeys()"
+          (patch)="applyClassificationPatch($event)"
+        />
+      </section>
+    } @else {
+      <section
+        class="sec collapsed-header"
+        tabindex="0"
+        (click)="openHeader()"
+        (keydown.enter)="openHeader()"
+      >
+        <span class="hint">{{ typeName(d.typeKey) }} ·</span>
+        <span class="title">{{ displayName(d) }}</span>
+        @if (canModify()) {
+          <span class="anchor">✎ klicken zum Bearbeiten</span>
+        }
+      </section>
+    }
+
+    <!-- ============================================== Termine -->
+    <section
+      class="sec"
+      [class.active]="active() === 'termine'"
+      tabindex="0"
+      (click)="activate('termine')"
+      (keydown.enter)="activate('termine')"
+      (focusin)="activate('termine')"
+    >
+      <div class="sec-title">
+        Termine <span class="badge">{{ d.appointments.length }}</span>
+        <span class="anchor">✎</span>
+      </div>
+      @for (a of d.appointments; track a.id; let i = $index) {
+        <div class="rail">
+          @if (editingAppointment() === a.id) {
+            <span class="row tight fields">
+              {{ circled(i) }}
+              <mat-form-field class="f-date" appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Beginn</mat-label>
+                <input
+                  matInput
+                  [matDatepicker]="sd"
+                  [value]="asDate(a.start)"
+                  (dateChange)="setStartDate(a, $event.value)"
+                />
+                <mat-datepicker-toggle matSuffix [for]="sd" />
+                <mat-datepicker #sd />
+              </mat-form-field>
+              <mat-form-field class="f-time" appearance="outline" subscriptSizing="dynamic">
+                <input
+                  matInput
+                  [matTimepicker]="st"
+                  [value]="asDate(a.start)"
+                  (valueChange)="setStartTime(a, $event)"
+                />
+                <mat-timepicker-toggle matSuffix [for]="st" />
+                <mat-timepicker #st interval="15m" />
+              </mat-form-field>
+              <span class="hint">–</span>
+              <mat-form-field class="f-date" appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Ende</mat-label>
+                <input
+                  matInput
+                  [matDatepicker]="ed"
+                  [value]="asDate(a.end)"
+                  (dateChange)="setEndDate(a, $event.value)"
+                />
+                <mat-datepicker-toggle matSuffix [for]="ed" />
+                <mat-datepicker #ed />
+              </mat-form-field>
+              <mat-form-field class="f-time" appearance="outline" subscriptSizing="dynamic">
+                <input
+                  matInput
+                  [matTimepicker]="et"
+                  [value]="asDate(a.end)"
+                  (valueChange)="setEndTime(a, $event)"
+                />
+                <mat-timepicker-toggle matSuffix [for]="et" />
+                <mat-timepicker #et interval="15m" />
+              </mat-form-field>
+              <button type="button" (click)="editingAppointment.set(null)">OK</button>
+            </span>
+          } @else {
+            <span
+              >{{ circled(i) }} {{ a.start | date: 'EE dd.MM.yyyy HH:mm' }}–{{
+                a.end
+                  | date
+                    : (a.start.slice(0, 10) === a.end.slice(0, 10) ? 'HH:mm' : 'EE dd.MM. HH:mm')
+              }}</span
+            >
+            <span class="right">
+              <span class="hint">{{ repeatingLabel(a) }}</span>
+              @if (canModify()) {
+                <button
+                  type="button"
+                  class="act linkish"
+                  [class.rep-open]="repeatingOpen() === a.id"
+                  title="Wiederholung"
+                  (click)="toggleRepeatingPanel(a)"
+                >
+                  ↻
+                </button>
+                <button type="button" class="act linkish" (click)="editingAppointment.set(a.id)">
+                  ✎
+                </button>
+                <button
+                  type="button"
+                  class="act linkish"
+                  (click)="removeAppointment(a.id)"
+                  [disabled]="d.appointments.length < 2"
+                >
+                  ✕
+                </button>
+              }
+            </span>
+          }
+        </div>
+        <!-- Phase 4.3 — recurrence panel (four-field row above stays untouched;
+             the end DATE of one occurrence derives from start + duration) -->
+        @if (repeatingOpen() === a.id && canModify()) {
+          <div class="rep-panel">
+            <div class="row tight">
+              <label class="field">
+                <span class="lab">Wiederholt sich</span>
+                <select
+                  [ngModel]="a.repeating?.type ?? 'NONE'"
+                  (ngModelChange)="setRepeatingType(a, $event)"
+                >
+                  <option value="NONE">nie (Einzeltermin)</option>
+                  <option value="DAILY">täglich</option>
+                  <option value="WEEKLY">wöchentlich</option>
+                  <option value="MONTHLY">monatlich</option>
+                  <option value="YEARLY">jährlich</option>
+                </select>
+              </label>
+              @if (a.repeating; as rule) {
+                <label class="field">
+                  <span class="lab">alle</span>
+                  <input
+                    class="rep-num"
+                    type="number"
+                    min="1"
+                    [ngModel]="rule.interval"
+                    (ngModelChange)="setRepInterval(a, $event)"
+                  />
+                </label>
+              }
+            </div>
+            @if (a.repeating; as rule) {
+              @if (rule.type === 'WEEKLY') {
+                <div class="rep-weekdays">
+                  @for (w of weekdayOptions; track w.value) {
+                    <button
+                      type="button"
+                      class="wd"
+                      [class.on]="rule.weekdays?.includes(w.value)"
+                      (click)="toggleRepWeekday(a, w.value)"
+                    >
+                      {{ w.label }}
+                    </button>
+                  }
+                </div>
+                @if (!rule.weekdays?.length) {
+                  <p class="rep-error">
+                    Mindestens ein Wochentag — sonst hat die Serie keine Termine.
+                  </p>
+                }
+              }
+              <div class="rep-end">
+                <label class="opt">
+                  <input
+                    type="radio"
+                    [name]="'repend-' + a.id"
+                    [checked]="repEndMode(a) === 'FOREVER'"
+                    (change)="setRepEndMode(a, 'FOREVER')"
+                  />
+                  endet nie
+                </label>
+                <label class="opt">
+                  <input
+                    type="radio"
+                    [name]="'repend-' + a.id"
+                    [checked]="repEndMode(a) === 'UNTIL'"
+                    (change)="setRepEndMode(a, 'UNTIL')"
+                  />
+                  endet am
+                  <mat-form-field class="f-date" appearance="outline" subscriptSizing="dynamic">
+                    <input
+                      matInput
+                      [matDatepicker]="ud"
+                      [disabled]="repEndMode(a) !== 'UNTIL'"
+                      [value]="untilDate(a)"
+                      (dateChange)="setRepUntil(a, $event.value)"
+                    />
+                    <mat-datepicker-toggle matSuffix [for]="ud" />
+                    <mat-datepicker #ud />
+                  </mat-form-field>
+                </label>
+                <label class="opt">
+                  <input
+                    type="radio"
+                    [name]="'repend-' + a.id"
+                    [checked]="repEndMode(a) === 'COUNT'"
+                    (change)="setRepEndMode(a, 'COUNT')"
+                  />
+                  endet nach
+                  <input
+                    class="rep-num"
+                    type="number"
+                    min="1"
+                    [disabled]="repEndMode(a) !== 'COUNT'"
+                    [ngModel]="rule.count ?? 10"
+                    (ngModelChange)="setRepCount(a, $event)"
+                  />
+                  Terminen
+                </label>
+              </div>
+              <div class="rep-summary">
+                {{ repSummary(a) }}
+                @if (rule.exceptions.length) {
+                  <span class="rep-badge">{{ rule.exceptions.length }} Ausnahmen</span>
+                }
+              </div>
+              <div class="rep-preview">
+                @for (occ of previewRows(); track occ.start; let i = $index) {
+                  <button
+                    type="button"
+                    class="occ"
+                    [class.skipped]="isSkipped(a, occ)"
+                    (click)="toggleRepOccurrence(a, occ)"
+                  >
+                    <span class="no">{{ i + 1 }}.</span>
+                    <span class="when"
+                      >{{ occ.start | date: 'EE dd.MM.yyyy' }} · {{ occ.start | date: 'HH:mm' }}–{{
+                        occ.end | date: 'HH:mm'
+                      }}</span
+                    >
+                    <span class="tag">{{
+                      isSkipped(a, occ) ? 'übersprungen' : 'überspringen'
+                    }}</span>
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        }
+      }
+      @if (canModify()) {
+        <div class="row act top-gap">
+          <button type="button" class="dashed" (click)="addAppointment()">+ Termin</button>
+        </div>
+      }
+    </section>
+
+    <!-- ============================================== Ressourcen -->
+    <section
+      class="sec"
+      [class.active]="active() === 'ressourcen'"
+      tabindex="0"
+      (click)="activate('ressourcen')"
+      (keydown.enter)="activate('ressourcen')"
+      (focusin)="activate('ressourcen')"
+    >
+      <div class="sec-title">
+        Ressourcen
+        <span class="anchor">✎</span>
+      </div>
+      @for (al of d.allocations; track al.resourceId) {
+        <div class="rail">
+          <span>
+            <span class="dot" [class]="'dot ' + (statusFor(al.resourceId)?.status ?? '')"></span>
+            {{ al.resourceName }}
+          </span>
+          <span class="right">
+            <!-- PRD 091 OQ5 — persisted request state: the server marked this allocation as a
+                 pending request because the booker may only REQUEST the resource. Independent of
+                 the live availability pill below (an approver sees the request, not the verdict). -->
+            @if (al.requestStatus === 'REQUESTED') {
+              <span class="pill requested">beantragt</span>
+            }
+            @if (statusFor(al.resourceId); as st) {
+              <span class="pill" [class]="'pill ' + st.status">
+                @switch (st.status) {
+                  @case ('AVAILABLE') {
+                    frei
+                  }
+                  @case ('CONFLICT') {
+                    belegt an {{ conflictMarks(st) }}
+                  }
+                  @case ('PARTIAL') {
+                    belegt an {{ conflictMarks(st) }}
+                  }
+                  @case ('REQUEST_ONLY') {
+                    nur auf Anfrage
+                  }
+                  @default {
+                    nicht buchbar
+                  }
+                }
+              </span>
+            }
+            @if (canModify()) {
+              <button type="button" class="act" (click)="toggleGilt(al.resourceId)">
+                gilt für: {{ giltLabel(al) }} {{ giltOpen() === al.resourceId ? '▴' : '▾' }}
+              </button>
+              <button type="button" class="act linkish" (click)="unassign(al.resourceId)">✕</button>
+            } @else {
+              <span class="hint">gilt für: {{ giltLabel(al) }}</span>
+            }
+          </span>
+        </div>
+        @if (giltOpen() === al.resourceId) {
+          <div class="picker">
+            <div class="row spread">
+              <b>{{ al.resourceName }} — Termine zuordnen</b>
+            </div>
+            <label>
+              <input
+                type="radio"
+                [checked]="al.appointmentIds === null"
+                (change)="setGiltMode(al, 'all')"
+              />
+              alle Termine (auch künftig ergänzte)
+            </label>
+            <label>
+              <input
+                type="radio"
+                [checked]="al.appointmentIds !== null"
+                (change)="setGiltMode(al, 'some')"
+              />
+              nur ausgewählte Termine:
+            </label>
+            @for (a of d.appointments; track a.id; let i = $index) {
+              <label class="indent">
+                <input
+                  type="checkbox"
+                  [checked]="al.appointmentIds === null || al.appointmentIds.includes(a.id)"
+                  [disabled]="al.appointmentIds === null"
+                  (change)="toggleGiltAppointment(al, a.id, $any($event.target).checked)"
+                />
+                {{ circled(i) }} {{ a.start | date: 'EE dd.MM. HH:mm' }}
+                @if (statusFor(al.resourceId)?.conflictingAppointmentIds?.includes(a.id)) {
+                  <span class="pill CONFLICT">belegt</span>
+                } @else {
+                  <span class="pill AVAILABLE">frei</span>
+                }
+              </label>
+            }
+          </div>
+        }
+      }
+      @if (canModify() && !addMode()) {
+        <div class="row act top-gap">
+          <button type="button" class="dashed" (click)="openAddMode()">+ Ressource…</button>
+        </div>
+      }
+
+      <!-- ------------------------------ Hinzufüge-Modus -->
+      @if (addMode()) {
+        <div class="panel hot top-gap">
+          <div class="sec-title small">
+            Auswählbar
+            <span class="anchor">★ heftet oben an</span>
+          </div>
+          <input
+            class="search"
+            type="text"
+            placeholder="Suchen… (Name)"
+            [ngModel]="searchText()"
+            (ngModelChange)="onSearch($event)"
+          />
+          <div class="scrolly">
+            @for (c of candidates(); track c.id) {
+              <div class="cand" [class.pinned]="c.pinned">
+                <span class="dot" [class]="'dot ' + c.status"></span>
+                <span class="grow"
+                  >{{ c.name }}
+                  @if (c.pinned) {
+                    <span class="hint"> · gepinnt</span>
+                  }
+                </span>
+                <span class="pill" [class]="'pill ' + c.status">
+                  @switch (c.status) {
+                    @case ('AVAILABLE') {
+                      frei
+                    }
+                    @case ('REQUEST_ONLY') {
+                      Anfrage
+                    }
+                    @default {
+                      belegt an {{ conflictMarks(c) }}
+                    }
+                  }
+                </span>
+                <button type="button" class="star" [class.on]="c.pinned" (click)="togglePin(c.id)">
+                  {{ c.pinned ? '★' : '☆' }}
+                </button>
+                <button type="button" class="linkish" (click)="assign(c)">→ Zuordnen</button>
+              </div>
+            } @empty {
+              <p class="hint">
+                @if (searchText().trim().length === 0) {
+                  Suchbegriff eingeben — Treffer erscheinen mit Live-Verfügbarkeit für alle Termine.
+                } @else {
+                  Keine Treffer.
+                }
+              </p>
+            }
+          </div>
+          <div class="row end top-gap">
+            <button type="button" (click)="closeAddMode()">Fertig</button>
+          </div>
+        </div>
+      }
+    </section>
+
+    <!-- ============================================== Meldungen -->
+    @if (concurrent()) {
+      <section class="sec warnbox">
+        <b>Zwischenzeitlich geändert.</b>
+        <span>Jemand hat diese Veranstaltung nach dem Laden gespeichert.</span>
+        <span class="right">
+          <button type="button" (click)="reloadDiscarding()">
+            Neu laden (meine Änderungen verwerfen)
+          </button>
+          <button type="button" (click)="save(true)">Trotzdem speichern</button>
+        </span>
+      </section>
+    }
+    @for (issue of issues(); track issue.path + issue.code) {
+      <section class="sec errbox">
+        {{ issue.code }} · {{ issue.path }} — {{ issue.message }}
+      </section>
+    }
+    @if (notice()) {
+      <p class="hint">{{ notice() }}</p>
+    }
+  }
+</div>
+
+@if (draft() && !notFound()) {
+  <div class="savebar">
+    <span class="hint">
+      @if (dirty()) {
+        ungespeicherte Änderungen (Draft)
+      }
+    </span>
+    @if (canModify()) {
+      <button
+        type="button"
+        class="hist"
+        [disabled]="!canUndo()"
+        [title]="canUndo() ? 'Rückgängig: ' + undoLabel() + ' (Strg+Z)' : 'Rückgängig (Strg+Z)'"
+        aria-label="Rückgängig"
+        (click)="undo()"
+      >
+        ↶
+      </button>
+      <button
+        type="button"
+        class="hist"
+        [disabled]="!canRedo()"
+        [title]="canRedo() ? 'Wiederholen: ' + redoLabel() + ' (Strg+Y)' : 'Wiederholen (Strg+Y)'"
+        aria-label="Wiederholen"
+        (click)="redo()"
+      >
+        ↷
+      </button>
+    }
+    @if (canModify() && draft()?.persisted) {
+      <button type="button" class="delete-btn" (click)="deleteEvent()">Löschen</button>
+    }
+    <button type="button" (click)="cancel()">Abbrechen</button>
+    @if (canModify()) {
+      <button type="button" class="primary" [disabled]="saving() || !dirty()" (click)="save()">
+        {{ saving() ? 'Speichere…' : 'Speichern' }}
+      </button>
+    }
+  </div>
+}

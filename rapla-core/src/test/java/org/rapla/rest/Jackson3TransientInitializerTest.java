@@ -1,0 +1,321 @@
+package org.rapla.rest;
+
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
+import org.rapla.entities.dynamictype.internal.ParsedText;
+import org.rapla.storage.dbrm.AppointmentMap;
+
+import tools.jackson.databind.json.JsonMapper;
+
+import java.lang.reflect.Field;
+
+/**
+ * Verifies PRD 011 Risk #4: that the Jackson 3 mapper produced by
+ * {@link JacksonObjectMapperFactory} preserves transient-field initializers
+ * during deserialization.
+ *
+ * <p>Why this matters: Rapla entities have multiple {@code transient} fields
+ * with non-null initializers — e.g. {@code DynamicTypeImpl.parseContext = new
+ * DynamicTypeParseContext(this)} and {@code ParsedText.first = ""}. The legacy
+ * Jackson 2 / Gson stacks instantiated objects via the no-arg constructor, so
+ * those initializers ran. If Jackson 3 instead instantiates via
+ * {@code Unsafe.allocateInstance()} (skipping the constructor and field
+ * initializers), those fields land as {@code null} after deserialization. That
+ * would silently break {@code DynamicTypeImpl.setResolver(...) → annotation.init(parseContext)}
+ * (NPE on null context) and {@code ParsedText.formatName(...)} (returns null
+ * instead of "" for resources without a {@code {variable}} format).
+ *
+ * <p>The user observed empty resource names in the Swing client immediately
+ * after the PRD 011 (Spring Boot 4 + Jackson 3) cutover. This test isolates
+ * whether the transient-initializer behavior is the cause.
+ */
+@RunWith(JUnit4.class)
+public class Jackson3TransientInitializerTest
+{
+    /**
+     * Minimal probe: a POJO with a {@code transient String x = "hello"} initializer.
+     * If Jackson 3 calls the no-arg constructor on deserialize, {@code x == "hello"}.
+     * If Jackson 3 uses {@code Unsafe.allocateInstance}, {@code x == null}.
+     */
+    public static class TransientInitProbe
+    {
+        public transient String x = "hello";
+        public String y;
+
+        public TransientInitProbe() {}
+    }
+
+    @Test
+    public void transientFieldInitializerSurvivesRoundTrip() throws Exception
+    {
+        JsonMapper mapper = JacksonObjectMapperFactory.create();
+        TransientInitProbe original = new TransientInitProbe();
+        original.y = "persisted";
+
+        String json = mapper.writeValueAsString(original);
+        TransientInitProbe restored = mapper.readValue(json, TransientInitProbe.class);
+
+        Assert.assertEquals("persisted field y must round-trip", "persisted", restored.y);
+        Assert.assertEquals(
+            "transient field x with initializer \"hello\" must be re-initialized after deserialize "
+            + "(if null, Jackson 3 is bypassing the no-arg constructor — confirms PRD 011 risk #4)",
+            "hello", restored.x);
+    }
+
+    /**
+     * The actual symptom: {@code ParsedText.first} defaults to {@code ""} via the
+     * field initializer at line 48. After Jackson 3 deserialize it must NOT be null
+     * — {@code formatName(ctx)} returns {@code first} as the resource name when the
+     * format string has no {@code {variable}} parts.
+     */
+    @Test
+    public void parsedTextFirstFieldHasInitializedValueAfterRoundTrip() throws Exception
+    {
+        JsonMapper mapper = JacksonObjectMapperFactory.create();
+        ParsedText original = new ParsedText("just a static name");
+
+        String json = mapper.writeValueAsString(original);
+        ParsedText restored = mapper.readValue(json, ParsedText.class);
+
+        Field firstField = ParsedText.class.getDeclaredField("first");
+        firstField.setAccessible(true);
+        Object firstValue = firstField.get(restored);
+
+        Assert.assertNotNull(
+            "ParsedText.first must not be null after Jackson 3 deserialize "
+            + "(the field initializer `transient private String first = \"\"` must run)",
+            firstValue);
+        Assert.assertEquals("", firstValue);
+    }
+
+    /**
+     * {@code DynamicTypeImpl.parseContext} is the parser the {@code setResolver(...)}
+     * → {@code annotation.init(parseContext)} chain depends on. If null after
+     * deserialize, the init either NPEs (for {variable} format strings) or appears
+     * to succeed but leaves entity name resolution broken.
+     */
+    @Test
+    public void dynamicTypeParseContextIsNonNullAfterRoundTrip() throws Exception
+    {
+        JsonMapper mapper = JacksonObjectMapperFactory.create();
+        DynamicTypeImpl original = new DynamicTypeImpl();
+
+        String json = mapper.writeValueAsString(original);
+        DynamicTypeImpl restored = mapper.readValue(json, DynamicTypeImpl.class);
+
+        Assert.assertNotNull(
+            "DynamicTypeImpl.parseContext must not be null after Jackson 3 deserialize "
+            + "(the field initializer `transient DynamicTypeParseContext parseContext = "
+            + "new DynamicTypeParseContext(this)` must run, otherwise setResolver→init NPEs)",
+            restored.getParseContext());
+    }
+
+    /**
+     * The server-side SQL-history blob serializer ({@link org.rapla.rest.jackson.JacksonParserWrapper})
+     * has its own {@code JsonMapper} config, separate from {@link JacksonObjectMapperFactory}.
+     * It also stores entity JSON, so it has the same final-field exposure. This test pins
+     * that the wrapper round-trips final-field bearing entities correctly.
+     *
+     * <p>Without harmonizing through the factory, a final collection on a future entity
+     * would silently drop data when written into and read out of the SQL history table.
+     */
+    @Test
+    public void jacksonParserWrapperRoundTripsFinalFieldsToo() throws Exception
+    {
+        org.rapla.rest.JsonParserWrapper.JsonParser parser = new org.rapla.rest.jackson.JacksonParserWrapper().get();
+        FinalCollectionProbe original = new FinalCollectionProbe();
+        original.finalMap.put("k", "v");
+        original.mutableMap.put("k", "v");
+
+        String json = parser.toJson(original);
+        FinalCollectionProbe restored = parser.fromJson(json, FinalCollectionProbe.class, null);
+
+        Assert.assertEquals("v", restored.mutableMap.get("k"));
+        Assert.assertEquals(
+            "JacksonParserWrapper (SQL-history mapper) must also handle final fields. "
+            + "If this fails, route its mapper through JacksonObjectMapperFactory.configure(...).",
+            "v", restored.finalMap.get("k"));
+    }
+
+    /**
+     * Realistic shape: a {@code DynamicType} carrying a {@code nameformat} annotation
+     * (the actual mechanism by which a resource computes its display name) must
+     * survive a Jackson 3 round-trip with the annotation map intact.
+     *
+     * <p>If the annotations map is empty on the restored object, the resource name
+     * will resolve to "" downstream regardless of any setResolver/init repair.
+     * That would point the bug at the wire format itself (field naming, map key
+     * handling, polymorphic typing of {@code ParsedText}) rather than the post-
+     * deserialize init chain.
+     */
+    @Test
+    public void dynamicTypeNameformatAnnotationSurvivesRoundTrip() throws Exception
+    {
+        JsonMapper mapper = JacksonObjectMapperFactory.create();
+        DynamicTypeImpl original = new DynamicTypeImpl();
+        original.setKey("room");
+        // Bypass setAnnotation() here — it requires a live parseContext set up via
+        // setResolver(StorageOperator) which we don't have in this isolated test.
+        // Inject a ParsedText directly so we test purely the wire format.
+        Field annotationsField = DynamicTypeImpl.class.getDeclaredField("annotations");
+        annotationsField.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, ParsedText> annotations =
+            (java.util.Map<String, ParsedText>) annotationsField.get(original);
+        annotations.put("nameformat", new ParsedText("Room"));
+
+        String json = mapper.writeValueAsString(original);
+        System.out.println("Serialized DynamicType JSON: " + json);
+        DynamicTypeImpl restored = mapper.readValue(json, DynamicTypeImpl.class);
+
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, ParsedText> restoredAnnotations =
+            (java.util.Map<String, ParsedText>) annotationsField.get(restored);
+
+        Assert.assertNotNull("annotations map must not be null after deserialize", restoredAnnotations);
+        Assert.assertTrue(
+            "annotations map must contain 'nameformat' key after round-trip; was: " + restoredAnnotations.keySet(),
+            restoredAnnotations.containsKey("nameformat"));
+
+        ParsedText restoredNameformat = restoredAnnotations.get("nameformat");
+        Assert.assertNotNull("nameformat ParsedText must not be null after deserialize", restoredNameformat);
+
+        Field formatStringField = ParsedText.class.getDeclaredField("formatString");
+        formatStringField.setAccessible(true);
+        Assert.assertEquals(
+            "nameformat ParsedText.formatString must round-trip its content",
+            "Room", formatStringField.get(restoredNameformat));
+    }
+
+    /**
+     * Pin the Jackson-3-specific behaviour around {@code final} fields with initializers.
+     * The Swing-client "empty resource names" bug traces back to
+     * {@code ClassificationImpl.data} being declared
+     * {@code private final Map<String,List<String>> data = new LinkedHashMap<>();}
+     * — Jackson 2 happily wrote into final fields via reflection; Jackson 3 silently
+     * does not, leaving every classification's {@code data} map empty post-deserialize.
+     *
+     * <p>This test pins the behaviour so any future change to the final-field policy
+     * (Jackson upgrade, mapper-feature toggle) is visible.
+     */
+    public static class FinalCollectionProbe
+    {
+        public final java.util.Map<String, String> finalMap = new java.util.LinkedHashMap<>();
+        public java.util.Map<String, String> mutableMap = new java.util.LinkedHashMap<>();
+
+        public FinalCollectionProbe() {}
+    }
+
+    @Test
+    public void factoryReEnablesFinalFieldMutationForBeltAndSuspenders() throws Exception
+    {
+        // We've already dropped `final` from every entity collection field that
+        // round-trips on the wire. As belt-and-suspenders, JacksonObjectMapperFactory
+        // re-enables MapperFeature.ALLOW_FINAL_FIELDS_AS_MUTATORS — Jackson 3 turned
+        // this off by default (PR FasterXML/jackson-databind#4552), which is what
+        // caused the original bug. Re-enabling protects future final-collection
+        // additions from silently regressing the same wire-format breakage.
+        JsonMapper mapper = JacksonObjectMapperFactory.create();
+        FinalCollectionProbe original = new FinalCollectionProbe();
+        original.finalMap.put("k", "v");
+        original.mutableMap.put("k", "v");
+
+        String json = mapper.writeValueAsString(original);
+        FinalCollectionProbe restored = mapper.readValue(json, FinalCollectionProbe.class);
+
+        Assert.assertEquals("v", restored.mutableMap.get("k"));
+        Assert.assertEquals(
+            "JacksonObjectMapperFactory must re-enable ALLOW_FINAL_FIELDS_AS_MUTATORS so "
+            + "future `final` collection fields don't silently lose data. If this fails, "
+            + "the .enable(MapperFeature.ALLOW_FINAL_FIELDS_AS_MUTATORS) was dropped — "
+            + "restore it.",
+            "v", restored.finalMap.get("k"));
+    }
+
+    /**
+     * Regression test for the queryAppointments wire-format bug: the response type
+     * {@link AppointmentMap} carries a {@code Map<String, Set<String>>
+     * entityIdToAppointmentIds} that maps each allocatable to its appointment ids.
+     * The field was originally declared {@code final} with an empty initializer; under
+     * Jackson 3 (with {@code ALLOW_FINAL_FIELDS_AS_MUTATORS=false}) deserialization
+     * silently left it empty, so the Swing calendar grid never linked the server's
+     * returned reservations to the selected resource and rendered nothing.
+     *
+     * <p>Server-side observation that confirmed the bug:
+     * <pre>
+     * Get reservations 2026-05-04T00:00 2026-05-11T00:00:
+     *   AppointmentMap{reservations=[Reservation [e2ec…] {name:[test]}],
+     *                  allocatableIdToAppointmentIds={r05b…=[a7b7…]}}
+     * </pre>
+     * — server returned the populated map, but client deserialized
+     * {@code entityIdToAppointmentIds = {}}.
+     *
+     * <p>Fix: drop {@code final} from the field. This test pins the round-trip.
+     */
+    @Test
+    public void appointmentMapEntityIdToAppointmentIdsRoundTripsAfterFinalDropped() throws Exception
+    {
+        JsonMapper mapper = JacksonObjectMapperFactory.create();
+        AppointmentMap original = new AppointmentMap();
+
+        Field f = AppointmentMap.class.getDeclaredField("entityIdToAppointmentIds");
+        f.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, java.util.Set<String>> idMap =
+                (java.util.Map<String, java.util.Set<String>>) f.get(original);
+        idMap.put("r05b83f9-46c4-4690-a414-20a741f9abf9",
+                new java.util.LinkedHashSet<>(java.util.List.of("a7b791b3-c503-4396-afe3-0291d3c8d87f")));
+
+        String json = mapper.writeValueAsString(original);
+        AppointmentMap restored = mapper.readValue(json, AppointmentMap.class);
+
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, java.util.Set<String>> restoredMap =
+                (java.util.Map<String, java.util.Set<String>>) f.get(restored);
+
+        Assert.assertNotNull("entityIdToAppointmentIds must not be null after deserialize", restoredMap);
+        Assert.assertFalse(
+            "entityIdToAppointmentIds must contain the resource→appointment mapping after round-trip "
+            + "(if empty, the field is `final` again — Jackson 3 silently won't write into it, "
+            + "and the Swing calendar grid won't render any reservation)",
+            restoredMap.isEmpty());
+        Assert.assertTrue(
+            "expected resource id key in restored map; got: " + restoredMap.keySet(),
+            restoredMap.containsKey("r05b83f9-46c4-4690-a414-20a741f9abf9"));
+    }
+
+    /**
+     * End-to-end probe: simulates the production setResolver→init→formatName chain
+     * on a freshly deserialized {@link DynamicTypeImpl} carrying a plain-text
+     * nameformat. {@code formatName} for a no-variable format returns the
+     * {@code first} field, which is what the GUI displays as the resource name.
+     *
+     * <p>If this returns {@code null} or empty, the bug is somewhere in the
+     * deserialize→init chain. If it returns "Plain Room Name", the bug is
+     * elsewhere — e.g. in how {@code RemoteOperator.testResolveInitial} +
+     * {@code AbstractCachableOperator.setResolver(Collection)} are invoked, or
+     * in the actual server-side wire-format content the client receives.
+     */
+    @Test
+    public void plainTextFormatNameSurvivesDeserializeAndInit() throws Exception
+    {
+        JsonMapper mapper = JacksonObjectMapperFactory.create();
+
+        ParsedText original = new ParsedText("Plain Room Name");
+        String json = mapper.writeValueAsString(original);
+        ParsedText restored = mapper.readValue(json, ParsedText.class);
+
+        // Simulate the setResolver→init chain. parseContext can be null for
+        // no-variable formats because parseFunctions() is never called.
+        restored.init(null);
+
+        String formatted = restored.formatName(null);
+        Assert.assertEquals(
+            "After deserialize + init, formatName must return the literal text "
+            + "(empty/null here would point to the deserialize→init chain as the bug)",
+            "Plain Room Name", formatted);
+    }
+}

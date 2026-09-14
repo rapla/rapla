@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Spring Boot picks up this file at startup (preferred over plain `logback.xml`
+  because <springProperty> and <springProfile> only work when Spring's
+  PropertySources are loaded first). Sits at the bottom of Spring Boot's
+  precedence chain:
+
+    1. logging.config (env LOGGING_CONFIG or -Dlogging.config) — full override
+    2. classpath:logback-spring.xml   ← this file
+    3. classpath:logback.xml          — vanilla Logback (springProperty INERT)
+    4. Spring Boot defaults (console-only)
+
+  Operators don't need to edit this file. Common changes via env vars:
+
+    LOGGING_LEVEL_ROOT=DEBUG                            root level
+    LOGGING_LEVEL_ORG_RAPLA=TRACE                       per-package level
+    LOGGING_FILE_NAME=/var/log/rapla/rapla.log          file location
+    LOGGING_LOGBACK_ROLLINGPOLICY_MAX_FILE_SIZE=200MB   roll on size
+    LOGGING_LOGBACK_ROLLINGPOLICY_MAX_HISTORY=14        retention days
+    LOGGING_LOGBACK_ROLLINGPOLICY_TOTAL_SIZE_CAP=5GB    archive cap
+    LOGGING_CONFIG=file:/etc/rapla/logback.xml          full file replace
+
+  Profiles that change behaviour:
+
+    SPRING_PROFILES_ACTIVE=local   bumps org.rapla + Spring Security to DEBUG
+    SPRING_PROFILES_ACTIVE=cloud   disables FILE appender (stdout-only)
+
+  Live reload (scan="true" below) works ONLY when this file is on disk via
+  LOGGING_CONFIG=file:... — inside the fat jar it's inert.
+-->
+<configuration scan="true" scanPeriod="30 seconds">
+
+  <!-- Spring Boot's defaults: conversion rules (%clr{}), CONSOLE_LOG_PATTERN,
+       FILE_LOG_PATTERN, plus level tuning for embedded Tomcat startup noise.
+       Bundled with spring-boot itself, so versioning tracks Spring Boot. -->
+  <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+  <!-- Bridge Spring Boot's `logging.*` YAML/env properties into Logback
+       variables. Defaults match Spring Boot's own defaults so behaviour is
+       predictable if the operator does nothing. -->
+  <springProperty scope="context" name="LOG_FILE"
+                  source="logging.file.name" defaultValue="logs/rapla.log"/>
+  <springProperty scope="context" name="LOG_LEVEL_ROOT"
+                  source="logging.level.root" defaultValue="INFO"/>
+  <springProperty scope="context" name="LOG_LEVEL_RAPLA"
+                  source="logging.level.org.rapla" defaultValue="INFO"/>
+  <springProperty scope="context" name="LOG_MAX_FILE_SIZE"
+                  source="logging.logback.rollingpolicy.max-file-size"
+                  defaultValue="100MB"/>
+  <springProperty scope="context" name="LOG_MAX_HISTORY"
+                  source="logging.logback.rollingpolicy.max-history"
+                  defaultValue="30"/>
+  <springProperty scope="context" name="LOG_TOTAL_SIZE_CAP"
+                  source="logging.logback.rollingpolicy.total-size-cap"
+                  defaultValue="2GB"/>
+
+  <!-- Console appender — color codes auto-detected from the terminal in dev,
+       plain text under systemd / nohup / Docker. Pattern from
+       CONSOLE_LOG_PATTERN (defined by defaults.xml). -->
+  <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+  <!-- Rolling file appender. Default location ./logs/rapla.log resolves
+       relative to the JVM's CWD (= ${user.dir}):
+         - `java -jar rapla-*.jar`            → <install-dir>/logs/rapla.log
+         - `mvn -pl rapla-app spring-boot:run` → rapla-app/logs/rapla.log
+       (The repo-root logs/ dir is unrelated — it's a dev convention for
+       capturing mvn's stdout to logs/build.log, separate from the app log
+       written here. See application.yml comments on server.tomcat.basedir.)
+       Files roll daily AND on max-file-size, are gzipped, and capped at
+       LOG_TOTAL_SIZE_CAP total. Disable file logging entirely with
+       SPRING_PROFILES_ACTIVE=cloud. -->
+  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${LOG_FILE}</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+      <fileNamePattern>${LOG_FILE}.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
+      <maxFileSize>${LOG_MAX_FILE_SIZE}</maxFileSize>
+      <maxHistory>${LOG_MAX_HISTORY}</maxHistory>
+      <totalSizeCap>${LOG_TOTAL_SIZE_CAP}</totalSizeCap>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${FILE_LOG_PATTERN}</pattern>
+    </encoder>
+  </appender>
+
+  <!-- JUL → SLF4J level propagation. Spring Boot installs SLF4JBridgeHandler
+       at startup, but JUL filters events at the source unless its per-logger
+       levels track Logback's. LevelChangePropagator keeps them in sync —
+       costs nothing when nothing logs via JUL; ensures third-party JUL
+       emitters (some iCal4j paths, JDK internals) don't get silently
+       dropped at high verbosity. -->
+  <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator">
+    <resetJUL>true</resetJUL>
+  </contextListener>
+
+  <!-- Subsystem level tuning. Silence libraries that log noisily at INFO.
+       Translated from master's logback to the FQCN-based logger names the
+       post-PRD-053 codebase uses. Operators can override any of these via
+       LOGGING_LEVEL_NET_FORTUNA_ICAL4J=INFO etc. -->
+  <logger name="net.fortuna.ical4j" level="WARN"/>
+  <logger name="net.fortuna.ical4j.model.TimeZoneRegistryImpl" level="ERROR"/>
+
+  <!-- Honour LOG_LEVEL_RAPLA across all profiles. Default INFO; override via
+       LOGGING_LEVEL_ORG_RAPLA env var or application.yml. No `local`-profile
+       block here on purpose — dev defaults stay at INFO so a fresh run isn't
+       noisy. Opt into DEBUG via env vars (LOGGING_LEVEL_ORG_RAPLA=DEBUG,
+       LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY=DEBUG, etc.) when actually
+       debugging a specific subsystem. -->
+  <logger name="org.rapla" level="${LOG_LEVEL_RAPLA}"/>
+
+  <!-- Two <root> blocks wrapped in <springProfile>. Spring Boot's docs warn
+       against nesting <springProfile> inside <appender>/<logger>/<root>; the
+       documented pattern is to scope at the top level. Only one of these
+       blocks survives the profile evaluation. -->
+  <springProfile name="cloud">
+    <root level="${LOG_LEVEL_ROOT}">
+      <appender-ref ref="CONSOLE"/>
+    </root>
+  </springProfile>
+  <springProfile name="!cloud">
+    <root level="${LOG_LEVEL_ROOT}">
+      <appender-ref ref="CONSOLE"/>
+      <appender-ref ref="FILE"/>
+    </root>
+  </springProfile>
+
+</configuration>

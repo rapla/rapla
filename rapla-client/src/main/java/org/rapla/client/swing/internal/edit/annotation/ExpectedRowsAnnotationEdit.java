@@ -1,0 +1,80 @@
+package org.rapla.client.swing.internal.edit.annotation;
+
+import org.rapla.RaplaResources;
+import org.rapla.client.extensionpoints.AnnotationEditAttributeExtension;
+import org.rapla.client.swing.EditField;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.internal.edit.fields.LongField;
+import org.rapla.client.swing.internal.edit.fields.LongField.LongFieldFactory;
+import org.rapla.components.iolayer.IOInterface;
+import org.rapla.entities.Annotatable;
+import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.AttributeAnnotations;
+import org.rapla.entities.dynamictype.AttributeType;
+import org.rapla.facade.client.ClientFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.springframework.stereotype.Service;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import java.util.Collection;
+import java.util.Collections;
+
+@Service
+
+public class ExpectedRowsAnnotationEdit extends RaplaGUIComponent implements AnnotationEditAttributeExtension
+{
+    protected String annotationName = AttributeAnnotations.KEY_EXPECTED_ROWS;
+    protected Long DEFAULT_VALUE = Long.valueOf(1);
+    private final IOInterface service;
+    private final LongFieldFactory longFieldFactory;
+    
+    @Autowired
+    public ExpectedRowsAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, IOInterface service, LongFieldFactory longFieldFactory) {
+        super(facade, i18n, raplaLocale);
+        this.service = service;
+        this.longFieldFactory = longFieldFactory;
+    }
+
+    @Override
+    public Collection<? extends EditField> createEditFields(Annotatable annotatable) {
+        if (!( annotatable instanceof Attribute))
+        {
+            return Collections.emptyList();
+        }
+        Attribute attribute = (Attribute)annotatable;
+        AttributeType type = attribute.getType();
+        if ( type!=AttributeType.STRING)
+        {
+            return Collections.emptyList();
+        }
+        String annotation = annotatable.getAnnotation(annotationName);
+        LongField field = longFieldFactory.create(getString(annotationName));
+        if ( annotation != null)
+        {
+            field.setValue( Integer.parseInt(annotation));
+        }
+        else
+        {
+            field.setValue( DEFAULT_VALUE);
+        }
+        addCopyPaste(field.getComponent(), getI18n(), getRaplaLocale(), service);
+        return Collections.singleton(field);
+    }
+
+    @Override
+    public void mapTo(EditField field, Annotatable annotatable) throws RaplaException {
+        if ( field != null)
+        {
+            Long value = ((LongField)field).getValue();
+            if ( value != null && !value.equals(DEFAULT_VALUE))
+            {
+                annotatable.setAnnotation(annotationName, value.toString());
+                return;
+            }
+        }
+        annotatable.setAnnotation(annotationName, null);
+        
+    }
+
+}

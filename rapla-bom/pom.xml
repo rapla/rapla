@@ -1,0 +1,530 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>org.rapla</groupId>
+	<artifactId>rapla-bom</artifactId>
+	<version>2.1-SNAPSHOT</version>
+	<description>rapla - BOM &amp; parent (formerly rapla-parent)</description>
+	<name>rapla - bom</name>
+	<packaging>pom</packaging>
+	<properties>
+		<disableGwtCompile>false</disableGwtCompile>
+		<slf4j.version>2.0.12</slf4j.version>
+		<logback.version>1.3.15</logback.version>
+		<intellijAnnotations.version>12.0</intellijAnnotations.version>
+		<ical4j.version>4.2.0</ical4j.version>
+		<rxjava.version>3.1.5</rxjava.version>
+		<spring-boot.version>4.0.8</spring-boot.version>
+		<tomcat.version>11.0.25</tomcat.version> <!-- FIXME: temporary CVE pin, see dependencyManagement note -->
+		<java.version>17</java.version>
+		<exchange.webservice.api>2.0</exchange.webservice.api>
+		<maven.install.skip>false</maven.install.skip>
+        <commons-io.version>2.14.0</commons-io.version>
+		<commons-codec.version>1.14</commons-codec.version>
+		<hsqldb.version>2.7.4</hsqldb.version>
+		<h2.version>2.3.232</h2.version>
+		<postgresql.version>9.1-901-1.jdbc4</postgresql.version>
+		<mysql.version>8.0.28</mysql.version>
+
+		<maven.compiler.source>17</maven.compiler.source>
+		<maven.compiler.target>17</maven.compiler.target>
+		<maven.compiler.release>17</maven.compiler.release>
+
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<webapp.dir>${project.build.directory}/${project.build.finalName}</webapp.dir>
+		<rapla.distribution.directory>${basedir}/src/main/distribution</rapla.distribution.directory>
+		<!-- Text Properties -->
+		<maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
+		<doc.date>${maven.build.timestamp}</doc.date>
+		<doc.version>${project.version}</doc.version>
+		<doc.buildtime>${maven.build.timestamp} GMT+0 </doc.buildtime>
+		<doc.revision></doc.revision>
+		<doc.year>2000-2026</doc.year>
+		<doc.copyright>Rapla Team</doc.copyright>
+		<doc.developer-list-link>http://lists.sourceforge.net/lists/listinfo/rapla-developers</doc.developer-list-link>
+		<doc.developer-list>rapla-developers@lists.sourceforge.net</doc.developer-list>
+		<doc.homepage>http://rapla.org</doc.homepage>
+		<rapla.module>moduleDescription</rapla.module>
+		<!-- Default to the committed dev keystore at the reactor root.
+		     ${maven.multiModuleProjectDirectory} is the repo root regardless of which
+		     module Maven is invoked from, so the path resolves correctly when the
+		     jarsigner plugin runs from rapla-app/. Override via -Dkeystore.file=... -->
+		<keystore.file>${maven.multiModuleProjectDirectory}/raplaselfsigned.ks</keystore.file>
+		<keystore.alias>rapla</keystore.alias>
+		<keystore.password>raplaselfsigned</keystore.password>
+		<keystore.keypass>${keystore.password}</keystore.keypass>
+
+		<!-- PRD 017 Phase 2 (+perf added in hardening round): default test
+		     lane excludes slow tagged tests.
+		     Override on CLI: mvn test -Dtest.excludedGroups= (empty = run all)
+		     Tags:
+		       db    — JDBC-touching (HSQLDB embedded; still seconds)
+		       e2e   — full @SpringBootTest acceptance, often RANDOM_PORT
+		       perf  — large-fixture stress / throughput tests (~10–60 s) -->
+		<test.excludedGroups>db,e2e,perf</test.excludedGroups>
+	</properties>
+	<distributionManagement>
+		<snapshotRepository>
+			<id>ossrh</id>
+			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+		</snapshotRepository>
+	</distributionManagement>
+
+	<build>
+		<!-- <sourceDirectory>${basedir}/src</sourceDirectory> -->
+		<plugins>
+			<!-- temporary disable forking as this creates a classpath where dependencies seems to be missing -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>3.0.0-M9</version>
+				<configuration>
+					<!-- forkCount=0: tests run in the Maven JVM. Faster, and the in-reactor
+					     classpath (target/classes of upstream modules) resolves correctly without
+					     needing `mvn install`. The trade-off is that legacy test loaders setting
+					     System.setProperty("java.awt.headless", "true") in a shared JVM can break
+					     subsequent Swing tests. We pre-set java.awt.headless=false at the Maven JVM
+					     level via systemPropertyVariables so the loaders' setProperty is a no-op
+					     for the FIRST class loaded — the property is already set, and these tests
+					     don't re-read it. -->
+					<forkCount>0</forkCount>
+					<systemPropertyVariables>
+						<java.awt.headless>false</java.awt.headless>
+					</systemPropertyVariables>
+					<!-- PRD 017 Phase 2: dev-loop fast lane excludes slow tagged tests by
+					     default. Override for the full set:
+					       mvn test -DexcludedGroups=
+					     Tags in use:
+					       db   — tests requiring a JDBC target (HSQLDB embedded; still ~seconds)
+					       e2e  — full @SpringBootTest acceptance tests (cold context, RANDOM_PORT) -->
+					<excludedGroups>${test.excludedGroups}</excludedGroups>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.sonatype.plugins</groupId>
+				<artifactId>nexus-staging-maven-plugin</artifactId>
+				<version>1.6.8</version>
+				<extensions>true</extensions>
+				<configuration>
+					<serverId>ossrh</serverId>
+					<nexusUrl>https://oss.sonatype.org/</nexusUrl>
+					<autoReleaseAfterClose>true</autoReleaseAfterClose>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.13.0</version>
+				<configuration>
+					<useIncrementalCompilation>false</useIncrementalCompilation>
+					<verbose>false</verbose>
+					<source>${maven.compiler.source}</source>
+					<target>${maven.compiler.target}</target>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>3.3.1</version>
+				<executions>
+					<execution>
+						<id>copyLegalToMetaInf</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${webapp.dir}/META-INF</outputDirectory>
+							<resources>
+								<resource>
+									<directory>${rapla.distribution.directory}/legal</directory>
+									<include>*</include>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+					<execution>
+						<id>copyModuleDescription</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${webapp.dir}/WEB-INF/classes</outputDirectory>
+							<resources>
+								<resource>
+									<directory>${project.build.directory}/classes</directory>
+									<include>${rapla.module}</include>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jdeps-plugin</artifactId>
+				<version>3.1.2</version>
+			</plugin>
+			<!-- exec-maven-plugin bound at BOM level with skip=true so that
+			     `mvn -pl rapla-client -am exec:java` walks the reactor (rapla-bom →
+			     rapla-core → rapla-client) without trying to invoke the goal on
+			     rapla-bom or rapla-core. rapla-client's plugins block overrides
+			     skip=false + mainClass. Net effect: launching the Swing client uses
+			     in-reactor target/classes (no `mvn install` needed). -->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>3.6.3</version>
+				<configuration>
+					<skip>true</skip>
+					<!-- exec-maven-plugin validates mainClass before honoring skip; supply a no-op
+					     placeholder so validation passes and the skip flag actually kicks in. -->
+					<mainClass>java.lang.Object</mainClass>
+				</configuration>
+			</plugin>
+		</plugins>
+		<pluginManagement>
+			<plugins>
+				<!-- PRD 005 Phase E.3: BOM-level maven-jar-plugin so every module's jar
+				     ships a sensible MANIFEST.MF (Implementation-Title, Implementation-Version,
+				     Implementation-Vendor). Modules inherit the manifestEntries; rapla-app's
+				     fat-jar build via spring-boot-maven-plugin overrides this for the boot jar. -->
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-jar-plugin</artifactId>
+					<version>3.4.1</version>
+					<configuration>
+						<archive>
+							<manifestEntries>
+								<Implementation-Title>${project.artifactId}</Implementation-Title>
+								<Implementation-Version>${project.version}</Implementation-Version>
+								<Implementation-Vendor>${doc.copyright}</Implementation-Vendor>
+								<Built-By>rapla-build</Built-By>
+								<Build-Jdk>${java.version}</Build-Jdk>
+							</manifestEntries>
+						</archive>
+					</configuration>
+				</plugin>
+				<!-- PRD 005 cleanup: register spring-boot-maven-plugin at BOM level so
+				     `mvn -pl rapla-app -am spring-boot:run` from the repo root resolves the
+				     plugin prefix without needing the explicit GAV.
+				     Children only inherit the version pin; rapla-app's own <build><plugins>
+				     entry adds the executions + mainClass config. -->
+				<plugin>
+					<groupId>org.springframework.boot</groupId>
+					<artifactId>spring-boot-maven-plugin</artifactId>
+					<version>${spring-boot.version}</version>
+					<!-- Default to skipped so `mvn -pl rapla-app -am spring-boot:run` from
+					     repo root only actually runs on rapla-app (which overrides skip=false
+					     in its own <build><plugins> entry). Without this, the run goal fires
+					     on rapla-bom first and fails with "Unable to find a suitable main class". -->
+					<configuration>
+						<skip>true</skip>
+					</configuration>
+				</plugin>
+				<!-- Same trick for exec-maven-plugin: skipped by default, rapla-client overrides
+				     skip=false. Lets `mvn -pl rapla-client -am exec:java` walk the reactor
+				     (compiling rapla-core in-tree first, picking up its fresh target/classes)
+				     instead of needing `mvn install` to refresh ~/.m2/repository. -->
+				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>exec-maven-plugin</artifactId>
+					<version>3.6.3</version>
+					<configuration>
+						<skip>true</skip>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.eclipse.m2e</groupId>
+					<artifactId>lifecycle-mapping</artifactId>
+					<version>1.0.0</version>
+					<configuration>
+						<lifecycleMappingMetadata>
+							<pluginExecutions>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>
+											org.apache.maven.plugins
+										</groupId>
+										<artifactId>
+											maven-antrun-plugin
+										</artifactId>
+										<versionRange>
+											[1.8,)
+										</versionRange>
+										<goals>
+											<goal>run</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<execute>
+											<runOnIncremental>true</runOnIncremental>
+										</execute>
+									</action>
+								</pluginExecution>
+							</pluginExecutions>
+						</lifecycleMappingMetadata>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
+	<dependencyManagement>
+		<dependencies>
+			<!-- FIXME(2026-09-13): tomcat-embed pins for CVE fixes (Spring Boot 4.0.8 still manages Tomcat 11.0.24).
+			     REMOVE the three tomcat-embed entries below AND the tomcat.version property as soon as a
+			     Spring Boot patch manages Tomcat >= 11.0.25 (check: mvn dependency:tree | grep tomcat-embed-core). -->
+			<dependency>
+				<groupId>org.apache.tomcat.embed</groupId>
+				<artifactId>tomcat-embed-core</artifactId>
+				<version>${tomcat.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.tomcat.embed</groupId>
+				<artifactId>tomcat-embed-el</artifactId>
+				<version>${tomcat.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.tomcat.embed</groupId>
+				<artifactId>tomcat-embed-websocket</artifactId>
+				<version>${tomcat.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-dependencies</artifactId>
+				<version>${spring-boot.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<!-- PRD 005: in-reactor module versions, all pinned to ${project.version} -->
+			<dependency>
+				<groupId>org.rapla</groupId>
+				<artifactId>rapla-core</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.rapla</groupId>
+				<artifactId>rapla-client</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.rapla</groupId>
+				<artifactId>rapla-server</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.rapla</groupId>
+				<artifactId>rapla-app</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<!-- PRD 005 OQ4: iCal4j version pin (declared as a direct <dependency> only in rapla-server). -->
+			<dependency>
+				<groupId>org.mnode.ical4j</groupId>
+				<artifactId>ical4j</artifactId>
+				<version>${ical4j.version}</version>
+			</dependency>
+			<!-- PRD 005 cleanup D: third-party version pins only (no transitive injection).
+			     Each module declares what it actually uses. -->
+			<dependency>
+				<groupId>io.reactivex.rxjava3</groupId>
+				<artifactId>rxjava</artifactId>
+				<version>${rxjava.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.httpcomponents</groupId>
+				<artifactId>httpclient</artifactId>
+				<version>4.5.14</version>
+			</dependency>
+			<dependency>
+				<groupId>commons-codec</groupId>
+				<artifactId>commons-codec</artifactId>
+				<version>${commons-codec.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>commons-io</groupId>
+				<artifactId>commons-io</artifactId>
+				<version>${commons-io.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>jakarta.servlet</groupId>
+				<artifactId>jakarta.servlet-api</artifactId>
+				<version>6.0.0</version>
+			</dependency>
+			<dependency>
+				<groupId>com.intellij</groupId>
+				<artifactId>annotations</artifactId>
+				<version>${intellijAnnotations.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.hsqldb</groupId>
+				<artifactId>hsqldb</artifactId>
+				<version>${hsqldb.version}</version>
+				<classifier>jdk8</classifier>
+			</dependency>
+			<dependency>
+				<groupId>com.h2database</groupId>
+				<artifactId>h2</artifactId>
+				<version>${h2.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>mysql</groupId>
+				<artifactId>mysql-connector-java</artifactId>
+				<version>${mysql.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.mariadb.jdbc</groupId>
+				<artifactId>mariadb-java-client</artifactId>
+				<version>3.1.4</version>
+			</dependency>
+			<dependency>
+				<groupId>com.microsoft.ews-java-api</groupId>
+				<artifactId>ews-java-api</artifactId>
+				<version>${exchange.webservice.api}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.ibm.icu</groupId>
+				<artifactId>icu4j</artifactId>
+				<version>55.1</version>
+			</dependency>
+			<dependency>
+				<groupId>junit</groupId>
+				<artifactId>junit</artifactId>
+				<version>4.13.1</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+	<!-- PRD 005 cleanup D: only universal needs declared at BOM level. Logging is for test
+	     output (every module that runs tests needs a binding); junit-vintage is for surefire's
+	     JUnit 4 -> Platform compatibility shim. Everything else: each module declares its own. -->
+	<dependencies>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-classic</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.vintage</groupId>
+			<artifactId>junit-vintage-engine</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<!-- Spring Boot 4 split MockMvc / WebMvcTest out of spring-boot-test-autoconfigure
+		     into a dedicated module under package org.springframework.boot.webmvc.test.autoconfigure.
+		     Needed so @AutoConfigureMockMvc and the MockMvc-bean autoconfiguration are on the
+		     test classpath of any module that runs full-stack web tests. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-webmvc-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+	<repositories>
+		<repository>
+			<id>google-snapshots</id>
+			<name>Google Snapshots</name>
+			<url>https://oss.sonatype.org/content/repositories/google-snapshots</url>
+			<releases><enabled>false</enabled></releases>
+			<snapshots><enabled>true</enabled></snapshots>
+		</repository>
+		<repository>
+			<id>sonatype-release</id>
+			<name>Sonatype Releases</name>
+			<url>https://oss.sonatype.org/content/repositories/releases/</url>
+			<releases><enabled>true</enabled></releases>
+			<snapshots><enabled>false</enabled></snapshots>
+		</repository>
+		<repository>
+			<id>sonatype-snapshots</id>
+			<name>Sonatype Releases</name>
+			<url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+			<releases><enabled>false</enabled></releases>
+			<snapshots><enabled>true</enabled></snapshots>
+		</repository>
+	</repositories>
+	<pluginRepositories>
+		<pluginRepository>
+			<id>sonatype-snapshots</id>
+			<name>sonatype Snapshots</name>
+			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+			<releases><enabled>false</enabled></releases>
+			<snapshots><enabled>true</enabled></snapshots>
+		</pluginRepository>
+		<pluginRepository>
+			<id>google-snapshots</id>
+			<name>Google Snapshots</name>
+			<url>https://oss.sonatype.org/content/repositories/google-snapshots</url>
+			<releases><enabled>false</enabled></releases>
+			<snapshots><enabled>true</enabled></snapshots>
+		</pluginRepository>
+	</pluginRepositories>
+	<profiles>
+		<profile>
+			<id>enableGwtCompileProfile</id>
+			<activation>
+				<file><exists>src/main/resources/Rapla.gwt.xml</exists></file>
+			</activation>
+			<properties>
+				<disableGwtCompile>false</disableGwtCompile>
+			</properties>
+		</profile>
+		<profile>
+			<id>disableGwtCompileProfile</id>
+			<activation>
+				<file><missing>src/main/resources/Rapla.gwt.xml</missing></file>
+			</activation>
+			<properties>
+				<disableGwtCompile>true</disableGwtCompile>
+			</properties>
+		</profile>
+
+		<!-- PRD 017 Phase 3: JaCoCo coverage. Opt-in to keep instrumentation
+		     overhead off the default test path.
+		         mvn -Pcoverage test
+		     produces target/site/jacoco/index.html per module. The default
+		     surefire forkCount=0 doesn't honour argLine (no fork = no JVM
+		     args), so this profile flips to forkCount=1 — only when active. -->
+		<profile>
+			<id>coverage</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-surefire-plugin</artifactId>
+						<configuration>
+							<forkCount>1</forkCount>
+							<reuseForks>true</reuseForks>
+							<argLine>@{argLine}</argLine>
+						</configuration>
+					</plugin>
+					<plugin>
+						<groupId>org.jacoco</groupId>
+						<artifactId>jacoco-maven-plugin</artifactId>
+						<version>0.8.11</version>
+						<executions>
+							<execution>
+								<id>jacoco-prepare</id>
+								<goals><goal>prepare-agent</goal></goals>
+							</execution>
+							<execution>
+								<id>jacoco-report</id>
+								<phase>test</phase>
+								<goals><goal>report</goal></goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+
+	</profiles>
+</project>

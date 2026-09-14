@@ -1,0 +1,808 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.rapla</groupId>
+        <artifactId>rapla-bom</artifactId>
+        <version>2.1-SNAPSHOT</version>
+        <relativePath>../rapla-bom/pom.xml</relativePath>
+    </parent>
+    <artifactId>rapla-app</artifactId>
+
+    <properties>
+        <!-- Default for the spring-boot:run skip flag (see <plugins> below).
+             Downstream deployments override to true so this module's run goal
+             doesn't run alongside theirs. -->
+        <rapla.app.spring-boot-run.skip>false</rapla.app.spring-boot-run.skip>
+        <!-- Default for the JNLP webclient/ staging skip flag (PRD 054).
+             -Pstandalone flips this true to drop the Swing client's staging
+             executions from the build. -->
+        <webclient.skip>false</webclient.skip>
+        <!-- Default for SignWebclientJars's signed-webclient cache bypass.
+             Pass -Dwebclient.force-sign=true on the command line to re-sign
+             every webclient jar even when their unsigned content is unchanged
+             since the last signed build. -->
+        <webclient.force-sign>false</webclient.force-sign>
+    </properties>
+    <name>rapla - app</name>
+    <description>Runnable Spring Boot application: @SpringBootApplication entry point, JNLP webclient/ staging, signing profiles, distribution assembly. Depends on rapla-server + rapla-client. Final on-disk JAR is rapla-2.1-SNAPSHOT.jar via &lt;finalName&gt; (PRD 005 OQ2).</description>
+
+    <build>
+        <finalName>rapla-2.1-SNAPSHOT</finalName>
+        <resources>
+            <resource>
+                <directory>${basedir}/src/main/resources-filtered</directory>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>${basedir}/src/main/resources</directory>
+                <filtering>false</filtering>
+            </resource>
+        </resources>
+        <plugins>
+            <!-- JNLP webclient/ build flow for Spring Boot fat JAR. Single-copy strategy:
+                 jars live ONCE in BOOT-INF/lib/ (signed, manifest-patched), and
+                 WebClientJarController streams them out at /webclient/X.jar. No duplicate
+                 under static/webclient/ — saves ~14 MB on the fat JAR.
+
+                 prepare-package phase (in declaration order, profile plugins append last):
+                 (1) maven-dependency-plugin:copy-dependencies → target/webclient/
+                     (raw client-runtime jars per <includeArtifactIds>).
+                 (2) antrun:add-jnlp-manifest-attributes → injects
+                     Permissions: all-permissions / Codebase: * / Application-Name: Rapla
+                     into every staged jar's MANIFEST.MF. Required since Java 7u51.
+                 (3) antrun:strip-mr-from-slf4j-api → removes META-INF/versions/ entries
+                     from slf4j-api (icedtea-netx 1.x rejects MR module-info.class).
+                 (4) antrun:generate-clientlibs-properties → writes ;-separated jar list
+                     to target/classes/clientlibs.properties (read by RaplaJNLPPageGenerator).
+                 (5) (profile) maven-jarsigner-plugin → signs target/webclient/*.jar.
+
+                 package phase:
+                 (6) maven-jar-plugin → builds the regular rapla-app.jar.
+                 (7) spring-boot-maven-plugin:repackage → wraps it as a fat JAR, bundles
+                     dependencies (UNSIGNED, from Maven's resolved deps) into BOOT-INF/lib/.
+                 (8) antrun:replace-bootinf-lib-with-signed → updates the fat JAR in place,
+                     replacing each BOOT-INF/lib/X.jar entry with the signed copy from
+                     target/webclient/. The server JVM doesn't care about signatures; the
+                     same single physical copy serves the JNLP launcher.
+
+                 See docs/development.md and .agents/skills/test-jnlp-launch/SKILL.md. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>stage-webclient-jars</id>
+                        <!-- prepare-package (not process-classes): the goal needs sibling modules
+                             packaged as JARs, which only happens during `mvn package`. Binding to
+                             process-classes broke `mvn spring-boot:run` per MDEP-187. -->
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <!-- PRD 054: webclient.skip flips on under -Pstandalone (no Swing
+                                 client in the standalone build, so target/webclient/ would be
+                                 dead bytes). Defaults false. -->
+                            <skip>${webclient.skip}</skip>
+                            <outputDirectory>${project.build.directory}/webclient</outputDirectory>
+                            <includeScope>runtime</includeScope>
+                            <!-- The Swing client uses spring-context (NOT @SpringBootApplication —
+                                 see AGENTS.md rapla-client description), so we ship a focused subset
+                                 of the server's runtime classpath. Allow-list comes from a literal
+                                 import audit of rapla-client + rapla-core source — only artifacts
+                                 actually referenced (directly or via Spring's reflective wiring) make
+                                 the cut. Server-only transitive leaks (commons-* via ews-java-api,
+                                 httpclient via Spring's optional Apache HTTP transport, joda-time
+                                 via ical4j, all spring-boot-* and spring-security-* etc.) stay on
+                                 the server.
+                                 NOTE: maven-dependency-plugin tokenises this on commas only;
+                                 whitespace inside is treated as part of the artifactId. Keep it on
+                                 ONE LINE. -->
+                            <!-- jcl-over-slf4j: Spring's internal logging façade still calls
+                                 org.apache.commons.logging.LogFactory at runtime. Spring 5/6 shipped
+                                 a shim inside spring-jcl (merged into spring-core in 6); Spring 7
+                                 dropped it. We could ship commons-logging.jar but Spring's logs
+                                 would then go through commons-logging's own discovery (JUL/stderr).
+                                 jcl-over-slf4j provides the same org.apache.commons.logging.* API
+                                 surface but bridges every call to SLF4J → logback for unified
+                                 output. The two artifacts CONFLICT (same class names) so use ONLY
+                                 one — commons-logging is excluded transitively. -->
+                            <!-- spring-aop and spring-expression: never IMPORTED by our code, but
+                                 spring-context's bean factory references them eagerly during startup
+                                 (TargetSource for proxy infrastructure, Expression for @Value/SpEL
+                                 evaluation hooks). Empirically required at runtime — dropping either
+                                 produced NoClassDefFoundError on the launched client. -->
+                            <!-- micrometer-observation/-commons: Spring 7's RestClient.Builder
+                                 factory hard-requires io.micrometer.observation.ObservationRegistry
+                                 even with no metrics configured. Was optional in Spring 6. -->
+                            <includeArtifactIds>rapla-client,rapla-core,spring-aop,spring-beans,spring-context,spring-core,spring-expression,spring-web,jackson-core,jackson-databind,jackson-annotations,jakarta.annotation-api,slf4j-api,logback-classic,logback-core,jul-to-slf4j,jcl-over-slf4j,jspecify,rxjava,reactive-streams,micrometer-observation,micrometer-commons</includeArtifactIds>
+                            <overWriteReleases>false</overWriteReleases>
+                            <overWriteSnapshots>true</overWriteSnapshots>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <!-- Java Web Start since 7u51 requires every signed jar in an
+                         <all-permissions/> JNLP to declare Permissions: all-permissions
+                         in its manifest. Inject that (plus Codebase: * and Application-Name)
+                         into every staged webclient jar in target/webclient/. The signing
+                         profile signs in-place here too; the resulting signed jars later
+                         REPLACE BOOT-INF/lib/ entries inside the fat JAR (see
+                         replace-bootinf-lib-with-signed below) so we ship one copy not two. -->
+                    <execution>
+                        <id>add-jnlp-manifest-attributes</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${webclient.skip}</skip>
+                            <target>
+                                <echo file="${project.build.directory}/jnlp-manifest-attrs.txt"
+                                      message="Permissions: all-permissions${line.separator}Codebase: *${line.separator}Application-Name: Rapla${line.separator}"
+                                      encoding="UTF-8" />
+                                <apply executable="jar" failonerror="true" parallel="false">
+                                    <arg value="uvfm" />
+                                    <srcfile />
+                                    <arg file="${project.build.directory}/jnlp-manifest-attrs.txt" />
+                                    <fileset dir="${project.build.directory}/webclient">
+                                        <include name="*.jar" />
+                                    </fileset>
+                                </apply>
+                            </target>
+                        </configuration>
+                    </execution>
+                    <!-- icedtea-netx 1.x's signing verifier rejects the
+                         META-INF/versions/9/module-info.class entry in slf4j-api as unsigned
+                         (despite jarsigner accepting it), failing the <all-permissions/> gate
+                         with "Cannot grant permissions to unsigned jars". 11 other multi-release
+                         jars in the set are unaffected; slf4j-api specifically because its MR
+                         entry is a module-info.class. Strip versions/ from slf4j-api before
+                         signing. OWS 1.13 (icedtea-web 2.x) handles MR correctly so this strip
+                         is purely a parity gesture for the legacy launcher.
+                         Repackages via ant <zip> rather than `zip -d` so the build doesn't
+                         require the OS-level zip binary. -->
+                    <execution>
+                        <id>strip-mr-from-slf4j-api</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${webclient.skip}</skip>
+                            <target>
+                                <fileset id="slf4j.api.jars"
+                                         dir="${project.build.directory}/webclient"
+                                         includes="slf4j-api-*.jar" />
+                                <pathconvert pathsep="," property="slf4j.api.list" refid="slf4j.api.jars" />
+                                <sequential>
+                                    <copy file="${slf4j.api.list}" tofile="${slf4j.api.list}.mr" />
+                                    <delete file="${slf4j.api.list}" />
+                                    <zip destfile="${slf4j.api.list}">
+                                        <zipfileset src="${slf4j.api.list}.mr" excludes="META-INF/versions/**" />
+                                    </zip>
+                                    <delete file="${slf4j.api.list}.mr" />
+                                </sequential>
+                            </target>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>generate-clientlibs-properties</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${webclient.skip}</skip>
+                            <target>
+                                <mkdir dir="${project.build.directory}/classes" />
+                                <pathconvert pathsep=";" property="webclient.jars">
+                                    <fileset dir="${project.build.directory}/webclient">
+                                        <include name="*.jar" />
+                                    </fileset>
+                                    <mapper type="flatten" />
+                                </pathconvert>
+                                <echo file="${project.build.directory}/classes/clientlibs.properties"
+                                      message="${webclient.jars}"
+                                      encoding="UTF-8" />
+                            </target>
+                        </configuration>
+                    </execution>
+                    <!-- Post-repackage: replace BOOT-INF/lib/X.jar entries inside the fat JAR
+                         with the signed copies from target/webclient/. This is the dedup step:
+                         instead of bundling a separate signed copy under static/webclient/
+                         (paid ~14 MB), we ship ONE physical copy in BOOT-INF/lib/, signed and
+                         manifest-patched. WebClientJarController serves /webclient/X.jar by
+                         streaming from BOOT-INF/lib/. The server's classloader doesn't care
+                         that the jars are signed — JVM ignores signatures for class loading.
+                         Phase=package binds AFTER spring-boot:repackage (also package phase,
+                         and declared earlier in plugin order so runs first within the phase). -->
+                    <execution>
+                        <id>replace-bootinf-lib-with-signed</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${webclient.skip}</skip>
+                            <target>
+                                <mkdir dir="${project.build.directory}/fatjar-overlay/BOOT-INF/lib" />
+                                <copy todir="${project.build.directory}/fatjar-overlay/BOOT-INF/lib" overwrite="true">
+                                    <fileset dir="${project.build.directory}/webclient" includes="*.jar">
+                                        <!-- rxjava + rapla-client are excluded from BOOT-INF/lib/ via
+                                             spring-boot:repackage's <excludes> (server bytecode has 0 refs
+                                             to either). Don't add them back here; they live at
+                                             static/webclient/ and are served via the controller fallback. -->
+                                        <exclude name="rxjava-*.jar" />
+                                        <exclude name="rapla-client-*.jar" />
+                                    </fileset>
+                                </copy>
+                                <exec executable="jar" failonerror="true"
+                                      dir="${project.build.directory}/fatjar-overlay">
+                                    <arg value="-uf" />
+                                    <arg file="${project.build.directory}/${project.build.finalName}.jar" />
+                                    <arg value="BOOT-INF/lib" />
+                                </exec>
+                                <delete dir="${project.build.directory}/fatjar-overlay" />
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Build the Angular SPA and bundle it under target/classes/static/app/
+                 so spring-boot:repackage stages it into BOOT-INF/classes/. Bound to
+                 prepare-package so `mvn compile` / `mvn test` skip Node + npm; only
+                 `mvn package` (the distribution build) downloads Node and runs ng build.
+                 Sequence: install-node-and-npm → npm ci → build:fast (ng build,
+                 skipping lint — lint is a dev/CI quality gate, not a release blocker)
+                 → copy-spa (maven-resources-plugin) drops the dist into target/classes/. -->
+            <plugin>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <version>1.15.1</version>
+                <configuration>
+                    <workingDirectory>../rapla-angular</workingDirectory>
+                    <installDirectory>target</installDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>install-node-and-npm</id>
+                        <goals><goal>install-node-and-npm</goal></goals>
+                        <phase>prepare-package</phase>
+                        <configuration>
+                            <nodeVersion>v22.22.3</nodeVersion>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>npm-ci</id>
+                        <goals><goal>npm</goal></goals>
+                        <phase>prepare-package</phase>
+                        <configuration>
+                            <arguments>ci</arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>ng-build</id>
+                        <goals><goal>npm</goal></goals>
+                        <phase>prepare-package</phase>
+                        <configuration>
+                            <arguments>run build:fast -- --configuration=production</arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <!-- Bundle ONLY client-only jars (rxjava, rapla-client) under
+                         BOOT-INF/classes/static/webclient/. These are excluded from
+                         BOOT-INF/lib/ via spring-boot:repackage's <excludes> (server
+                         bytecode has 0 refs), so they need a separate home for the JNLP
+                         launcher; RaplaJNLPController's static-resource fallback serves
+                         them. Declared in this plugin block (after maven-antrun-plugin
+                         in the plugins list) specifically so it runs AFTER
+                         add-jnlp-manifest-attributes: the bundled copies inherit the
+                         JNLP manifest attrs. Signing happens later (sign-pkcs11 profile,
+                         appended at end of prepare-package); the signer now covers this
+                         directory too. -->
+                    <execution>
+                        <id>bundle-client-only-into-static</id>
+                        <phase>prepare-package</phase>
+                        <goals><goal>copy-resources</goal></goals>
+                        <configuration>
+                            <skip>${webclient.skip}</skip>
+                            <outputDirectory>${project.build.directory}/classes/static/webclient</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.build.directory}/webclient</directory>
+                                    <includes>
+                                        <include>rxjava-*.jar</include>
+                                        <include>rapla-client-*.jar</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>copy-spa</id>
+                        <phase>prepare-package</phase>
+                        <goals><goal>copy-resources</goal></goals>
+                        <configuration>
+                            <outputDirectory>${project.build.outputDirectory}/static/app</outputDirectory>
+                            <resources>
+                                <resource><directory>../rapla-angular/dist/rapla-angular/browser</directory></resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <!-- Developer-only secrets file (git-ignored). Must stay in target/classes for
+                         spring-boot:run but never ship: repackage builds BOOT-INF/classes from this jar. -->
+                    <excludes>
+                        <exclude>application-local*.yml</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <!-- version inherited from rapla-bom <pluginManagement>;
+                     skip=false overrides the BOM default so spring-boot:run actually fires here.
+                     Property-driven so downstream deployments (e.g. dhbwrapla) can suppress
+                     rapla-app's run goal when launching their own @SpringBootApplication via
+                     `mvn -pl :<deployment> -am spring-boot:run` — otherwise rapla-app fires
+                     first in reactor order and blocks dhbwrapla from ever starting. -->
+                <configuration>
+                    <mainClass>org.rapla.server.spring.RaplaSpringBootApplication</mainClass>
+                    <skip>${rapla.app.spring-boot-run.skip}</skip>
+                    <!-- PRD 045 §4 / Phase 4: switch to PropertiesLauncher so the
+                         bundled loader.properties (loader.path=lib/,plugins/) takes
+                         effect at launch. Operators get drop-in JDBC drivers (./lib/)
+                         and drop-in plugins (./plugins/) without any -D flag or
+                         launcher script — just `java -jar X.jar`. JarLauncher (the
+                         default) ignores loader.path. -->
+                    <layout>ZIP</layout>
+                    <!-- Client-only jars excluded from BOOT-INF/lib/ — server bytecode has zero
+                         references to either (verified with strings on rapla-server + rapla-core).
+                         They live under BOOT-INF/classes/static/webclient/ instead and are served
+                         via RaplaJNLPController's static-resource fallback for the JNLP launcher.
+                           rxjava        — pure client-side reactive abstraction.
+                           rapla-client  — Swing UI module; server has 0 refs (org.rapla.client.internal
+                                          classes referenced from RaplaBuilder physically live in
+                                          rapla-core despite the misleading package name).
+                         org.reactivestreams CANNOT be excluded — Spring 7's spring-web,
+                         spring-core, spring-context, spring-security-* all reference it
+                         internally at runtime even with no reactive endpoints.
+
+                         swagger-annotations-jakarta is excluded because OpenAPI is generated
+                         at test time only (OpenApiSpecCaptureTest via springdoc-openapi,
+                         <scope>test</scope>). The runtime never reflects on @OpenAPIDefinition,
+                         @Operation, @Schema etc — the JVM tolerates missing annotation types
+                         on loaded classes (getAnnotations() silently skips them). If you ever
+                         promote springdoc-openapi to runtime scope to serve /v3/api-docs live,
+                         remove this exclusion.
+
+                         -->
+                    <!-- includeTools=false drops spring-boot-jarmode-tools (~55 KiB) from
+                         BOOT-INF/lib. That jar backs `java -jar app.jar -mode=tools` for
+                         layered-jar extraction (Docker image layering). We use <layout>ZIP</layout>,
+                         not layered, so the tools jar has no callers and the normal launcher
+                         (PropertiesLauncher per PRD 045) is unaffected. Re-enable if you ever
+                         switch to layered jars. -->
+                    <includeTools>false</includeTools>
+                    <excludes>
+                        <exclude>
+                            <groupId>io.reactivex.rxjava3</groupId>
+                            <artifactId>rxjava</artifactId>
+                        </exclude>
+                        <exclude>
+                            <groupId>org.rapla</groupId>
+                            <artifactId>rapla-client</artifactId>
+                        </exclude>
+                        <exclude>
+                            <groupId>io.swagger.core.v3</groupId>
+                            <artifactId>swagger-annotations-jakarta</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.rapla</groupId>
+            <artifactId>rapla-server</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.rapla</groupId>
+            <artifactId>rapla-client</artifactId>
+        </dependency>
+        <!-- Direct imports in rapla-app (RaplaSpringBootApplication entry point, etc.).
+             rxjava/reactive-streams omitted intentionally — scheduled for removal in a
+             future PRD. -->
+        <!-- Logback at runtime in the fat JAR (not provided — must ship).
+             Version managed by spring-boot-dependencies BOM. -->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+        </dependency>
+        <!-- slf4j-api: rapla-bom defaults to 'provided' (compile-only, not packaged).
+             Override to default (compile) here so it's BOTH compile-visible to
+             rapla-app sources (AuthorizationServerConfig uses LoggerFactory) AND
+             staged by maven-dependency-plugin:copy-dependencies into target/webclient/
+             for the JNLP set (without staging, JNLP Swing client dies on startup
+             with NoClassDefFoundError: org.slf4j.LoggerFactory from logback-classic). -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <!-- jcl-over-slf4j: provides org.apache.commons.logging.LogFactory but routes
+             every call through SLF4J → logback. Required because Spring 7 dropped
+             spring-jcl (the in-tree commons-logging shim that older Spring shipped).
+             Without this, Spring framework code throws NoClassDefFoundError at runtime.
+             Conflicts with commons-logging.jar — ship one or the other. -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jcl-over-slf4j</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <!-- Spring Authorization Server: hosts OAuth2 / OIDC endpoints (/oauth2/authorize,
+             /oauth2/token, /oauth2/jwks, /.well-known/openid-configuration). Used by the
+             Swagger UI's code+PKCE flow and the Angular SPA. ~0.62 MiB in fat JAR
+             on top of the existing OAuth2 resource server (which contributes its own
+             Spring Security jars; this just adds the auth-server module). PRD 026 §5. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-authorization-server</artifactId>
+        </dependency>
+        <!-- PRD 035: GraphQL endpoint at /api/graphql. Pulls spring-graphql +
+             graphql-java + dataloader. spring-graphql 2.x ships a thin
+             CDN-loaded GraphiQL launcher (~3 KiB, esm.sh-based) under
+             graphiql/index.html — we use that directly via
+             spring.graphql.graphiql.enabled=true rather than custom HTML,
+             since it already matches the PRD 041 zero-bundled-UI-bytes
+             pattern. No antrun strip needed at current spring-graphql size. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-graphql</artifactId>
+        </dependency>
+        <!-- PRD 035: extra scalar types (DateTime, Date, Time, …) not in
+             graphql-java's built-in set. Registered as a Spring bean via
+             GraphQlScalarConfig. ~100 KiB; needed long-term anyway once
+             reservation/appointment types land. -->
+        <dependency>
+            <groupId>com.graphql-java</groupId>
+            <artifactId>graphql-java-extended-scalars</artifactId>
+            <version>24.0</version>
+        </dependency>
+        <!-- PRD 097 D2: JMustache — logic-less template engine for stored HTML
+             documents. ~100 KiB, zero transitive deps, no expression language
+             (structural no-SSTI guarantee). Version managed by the Spring Boot
+             BOM (it backs spring-boot-starter-mustache), so no <version> here. -->
+        <dependency>
+            <groupId>com.samskivert</groupId>
+            <artifactId>jmustache</artifactId>
+        </dependency>
+        <!-- PRD 097 D6: jsoup strips <script>/event handlers/javascript: URLs from the
+             rendered document before the server-authored shell wraps it. Not BOM-managed. -->
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.21.1</version>
+        </dependency>
+        <!-- PRD 035 testbed: HttpGraphQlTester for tier-3 resolver tests
+             (Spring for GraphQL's MockMvc-equivalent — wraps the configured
+             GraphQL endpoint via MockMvc, no random port).
+             Test scope only — never bundled in the production fat JAR. -->
+        <dependency>
+            <groupId>org.springframework.graphql</groupId>
+            <artifactId>spring-graphql-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- @WithMockUser + SecurityMockMvcRequestPostProcessors.jwt() — push
+             authenticated principals into MockMvc-based tests so they reach the
+             GraphQL resolver via the Spring Security filter chain (needed for
+             HttpGraphQlTester auth propagation, since the ThreadLocal-based
+             SecurityContextHolder doesn't follow Reactor schedulers).
+             Test scope. Not pulled by spring-boot-starter-test in Spring Boot 4. -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- WebTestClient (used by MockMvcWebTestClient + HttpGraphQlTester) is in
+             spring-webflux. Test scope. Production stays Spring MVC; this is only
+             for the test wrapper that adapts MockMvc → WebTestClient → GraphQlTester. -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-webflux</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- PRD 041: OpenAPI spec is generated ONCE at build time (capture-in-test
+             pattern, OpenApiSpecCaptureTest writes to src/main/resources/openapi/).
+             At runtime StaticOpenApiController serves those files — no SpringDoc on
+             the production classpath, no reflective generation, no Jackson 2 island.
+             SpringDoc itself stays in test scope (the capture test needs it).         -->
+        <!-- Annotations only — RaplaSpringBootApplication's @OpenAPIDefinition + bearer
+             JWT @SecurityScheme are read by SpringDoc during the build-time capture run.
+             Provided scope: visible at compile + test, NOT bundled in BOOT-INF/lib (the
+             annotations are inert metadata at runtime — nothing in production reflects
+             on them). ~30 KiB jar. No transitive Jackson 2.                             -->
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations-jakarta</artifactId>
+            <version>2.2.38</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- PRD 041: runtime API-doc explorers (Scalar + Swagger UI) are CDN-loaded
+             from static/scalar/index.html and static/swagger-ui/index.html. NO Java
+             dependency on the production classpath: zero bytes added to the fat JAR,
+             the JS bundles ship from jsdelivr to the dev's browser. Both pages serve
+             the same captured static specs at /api/v3/api-docs/{auth,client,rest,exports}.
+             Considered + rejected alternatives (PRD 041 OQ5):
+             - com.scalar.maven:scalar-webmvc — drags Jackson 2.19.2 via scalar-core
+               (would re-introduce the exact dep this PRD removes).
+             - org.webjars.npm:scalar__api-reference — unresolvable nanoid version
+               conflicts in the npm dep tree.
+             - org.webjars:swagger-ui — viable clean webjar but bundling cost
+               (~1.2 MiB in the fat JAR) vs CDN's zero. CDN wins for a dev/admin
+               tool with few sessions.
+             Offline self-host fallback for both: see comments in the respective
+             static/{scalar,swagger-ui}/index.html files.                              -->
+
+        <!-- SpringDoc — TEST SCOPE ONLY. Used by OpenApiSpecCaptureTest +
+             ApiPrefixArchitectureTest to discover @RestControllers and emit the
+             machine-readable spec for the four PRD 031 groups. Production runtime
+             never sees it; the captured static JSON is what gets served at
+             /api/v3/api-docs (StaticOpenApiController). Brings in Jackson 2.x
+             transitively (swagger-core-jakarta dep) — fine in test scope, would
+             be a contamination of the Jackson 3 runtime if compile-scope.            -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>3.0.0</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-validation</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!-- Tests are full-stack @SpringBootTest integration tests + bootstrap loaders -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <profiles>
+        <!-- PRD 017 Phase 3: skip rapla-app's per-module JaCoCo report. The
+             webclient/ directory under target/classes/static/ contains JNLP
+             jars (multi-release shaded Jackson) that JaCoCo's class scanner
+             chokes on with "Can't add different class with same name".
+             Rapla-app's own bytecode is just RaplaSpringBootApplication so
+             the per-module report adds no signal anyway — the cross-module
+             attribution lives in the aggregate at the reactor root. The
+             prepare-agent execution still runs, so rapla-app's test JVM
+             still writes a jacoco.exec for the aggregate to consume. -->
+        <profile>
+            <id>coverage</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>jacoco-report</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <!-- Dev-loop loader for the dhbwrapla plugin. Vanilla rapla has no compile-time
+             knowledge of dhbwrapla, but `mvn spring-boot:run` builds its classpath from
+             rapla-app's declared deps — without one, `DhbwPluginAutoConfiguration` is
+             not on the classpath and beans like `DhbwNtlmAuthStore` never instantiate.
+             Activate only when launching through the dhbwrapla aggregator pom (which
+             pulls dhbwrapla's `target/classes` into the reactor in-tree, so no
+             `mvn install` is needed). Activation: `-Pdhbw` on the command line. -->
+        <profile>
+            <id>dhbw</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.rapla.dhbw</groupId>
+                    <artifactId>dhbwrapla</artifactId>
+                    <version>1.0-SNAPSHOT</version>
+                    <scope>runtime</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+        <!-- PRD 054 (2026-05-25) — Standalone trial install (Windows desktop).
+             Excludes the Swing client (rapla-client) and skips the JNLP webclient
+             staging steps — both are useless in the Tauri/SPA standalone shape.
+             Runtime activates the `standalone` Spring profile via
+             {@code application-standalone.yml} (oauth disabled, password check
+             skipped, FileOperator storage). The Tauri launcher passes the
+             Spring profile via JVM arg when it spawns the JAR as a child
+             process.
+
+             Phase 1.5 (deferred): also exclude spring-security-* /
+             spring-authorization-server / springdoc-openapi / nimbus-jose-jwt
+             once {@code @ConditionalOnClass} guards on SecurityConfig /
+             JwtConfig / AuthorizationServerConfig are in place. Saves ~25 MB. -->
+        <profile>
+            <id>standalone</id>
+            <properties>
+                <!-- Skip the JNLP webclient staging — no Swing client in standalone,
+                     so target/webclient/ would just be dead bytes. Both the
+                     dependency-plugin copy step and the antrun manifest-injection
+                     step check this. -->
+                <webclient.skip>true</webclient.skip>
+            </properties>
+            <build>
+                <!-- Output as rapla-standalone.jar (no version suffix) so the
+                     standalone artifact doesn't clobber the regular fat JAR
+                     (rapla-2.1-SNAPSHOT.jar) in target/. Both can live side by
+                     side; the Tauri build script bundles this one specifically. -->
+                <finalName>rapla-standalone</finalName>
+            </build>
+            <dependencies>
+                <!-- Swing desktop client — useless in the Tauri/SPA standalone shape.
+                     `provided` scope drops it from the runtime classpath (and thus
+                     the fat JAR) without breaking the reactor build order. -->
+                <dependency>
+                    <groupId>org.rapla</groupId>
+                    <artifactId>rapla-client</artifactId>
+                    <scope>provided</scope>
+                </dependency>
+                <!-- rxjava is a rapla-client / Swing-UI concern (Swing scheduler glue,
+                     UI event streams). Server-side bytecode has zero references —
+                     same exclusion logic as rapla-client. -->
+                <dependency>
+                    <groupId>io.reactivex.rxjava3</groupId>
+                    <artifactId>rxjava</artifactId>
+                    <scope>provided</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+        <!-- PRD 005 cleanup C: signing profiles relocated from the deleted root pom.xml
+             into rapla-app, where the runnable fat JAR + JNLP webclient/ staging lives.
+             archiveDirectory still points at ${project.build.directory}/${project.build.finalName}/webclient
+             — that path was the old WAR target and remains valid for the staging dir
+             populated by the JNLP/webclient build steps (yet to be reconfigured for the
+             Spring Boot fat-JAR shape per PRD 003 §JNLP/Code Signing). -->
+        <profile>
+            <id>sign-jks</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-jarsigner-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>sign-webclient-jks</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                            <!-- Same for the rxjava + rapla-client copies that
+                                 bundle-client-only-into-static staged BEFORE this
+                                 profile plugin ran (profile plugins append last in
+                                 prepare-package). Mirrors SignWebclientJars' second
+                                 directory; without it the fat JAR ships them unsigned
+                                 and JNLP fails with "Cannot grant permissions to
+                                 unsigned jars". -->
+                            <execution>
+                                <id>sign-static-webclient-jks</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                                <configuration>
+                                    <archiveDirectory>${project.build.directory}/classes/static/webclient</archiveDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <alias>${keystore.alias}</alias>
+                            <keystore>${keystore.file}</keystore>
+                            <keypass>${keystore.keypass}</keypass>
+                            <storepass>${keystore.password}</storepass>
+                            <archiveDirectory>${project.build.directory}/webclient</archiveDirectory>
+                            <includes>
+                                <include>*.jar</include>
+                            </includes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <!-- Sign the JNLP webclient jars with a hardware token (YubiKey PIV via
+             OpenSC PKCS#11). NOT the maven-jarsigner-plugin: it forks one
+             jarsigner process per jar, and a YubiKey whose signing slot has
+             touch policy CACHED (a touch is valid 15 s) then demands a fresh
+             physical touch every few jars. SignWebclientJars signs the whole
+             set in ONE JVM (one login, one PKCS#11 session) in ~8 s, so a
+             single touch covers the build. See docs/signing.md. -->
+        <profile>
+            <id>sign-pkcs11</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <!-- version inherited from rapla-bom pluginManagement -->
+                        <executions>
+                            <execution>
+                                <id>sign-webclient-pkcs11</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <!-- rapla-bom defaults exec-maven-plugin to skip=true
+                                         (so reactor walks don't fire exec:java everywhere);
+                                         re-enable it for this signing execution. -->
+                                    <skip>false</skip>
+                                    <executable>${java.home}/bin/java</executable>
+                                    <arguments>
+                                        <argument>--add-modules</argument>
+                                        <argument>jdk.jartool</argument>
+                                        <!-- Thread the cache force-resign flag through to the
+                                             sub-JVM. Default false; pass -Dwebclient.force-sign=true
+                                             on the mvn command line to bypass the signed-webclient
+                                             cache check and re-sign even when inputs are unchanged. -->
+                                        <argument>-Dwebclient.force-sign=${webclient.force-sign}</argument>
+                                        <argument>${project.basedir}/src/build/SignWebclientJars.java</argument>
+                                        <!-- pkcs11.cfg / pkcs11.certchain / pkcs11.pin are
+                                             NOT committed. The maintainer defines them in the
+                                             machine-local ~/.m2/settings.xml; the cfg + cert
+                                             files live in ~/.m2/. See docs/signing.md.
+                                             SignWebclientJars hardcodes the PIV alias + algos
+                                             and defaults to signing both target/webclient/ and
+                                             target/classes/static/webclient/ — no extra args
+                                             needed here. -->
+                                        <argument>${pkcs11.cfg}</argument>
+                                        <argument>${pkcs11.certchain}</argument>
+                                        <argument>${pkcs11.pin}</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

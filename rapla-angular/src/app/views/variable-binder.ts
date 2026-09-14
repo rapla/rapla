@@ -1,0 +1,63 @@
+import type { ViewVariable } from '../graphql/graphql.service';
+
+/**
+ * Type-driven variable binder. The GUI owns the LOGIC of how each rapla input
+ * type is filled from ambient state; the view's variable signature ({@code name}
+ * + {@code type}) says only WHICH variables exist. Each variable is filled by a
+ * filler keyed on its TYPE (not its name) — so {@code $resourceFilter} and
+ * {@code $rooms} bind identically, and a view that declares two ResourceFilter
+ * sinks gets the selection in BOTH (no special-casing, no required-var failures).
+ *
+ * Unknown types are left unset → the server falls back to the query text's own
+ * variable defaults ({@code $limit: Int = 10}) and the {@code @window} fill (a
+ * view's stored defaultVariables are authoring example data, never merged at
+ * runtime — PRD 097 D8). New types (conflict ids, user, …) are added here as new
+ * fillers; views need no change. This is the implicit contract: the meaning of
+ * the rapla input types.
+ */
+
+/** The ambient state the GUI binds from (grows: groups, conflicts, …). */
+export interface SelectionContext {
+  window: { from: string; to: string } | null;
+  /** Ids of the currently-selected resources (chips). */
+  resourceIds: string[];
+  /** The user scope (a `user` chip / the pinned own user) → ReservationFilter.ownerEq.
+   *  Single, because ReservationFilter.ownerEq takes one id (no ownerIdsIn). */
+  ownerId?: string | null;
+}
+
+/** Strip GraphQL type wrappers ({@code !}, {@code [ ]}) to the base type name. */
+function baseType(type: string): string {
+  return type.replace(/[![\]]/g, '');
+}
+
+function fillByType(type: string, ctx: SelectionContext): unknown | undefined {
+  switch (baseType(type)) {
+    case 'ReservationFilter': {
+      if (!ctx.window) return undefined; // first load → server merges its default
+      const filter: Record<string, unknown> = { from: ctx.window.from, to: ctx.window.to };
+      // Selection narrows the reservation search via resourceMatching (an
+      // ResourceFilter — future-proof for groups, not just ids).
+      if (ctx.resourceIds.length) filter['resourceMatching'] = { idIn: ctx.resourceIds };
+      // A user scope → events owned by that user ("my events" for the pinned self).
+      if (ctx.ownerId) filter['ownerEq'] = ctx.ownerId;
+      return filter;
+    }
+    case 'ResourceFilter':
+      return ctx.resourceIds.length ? { idIn: ctx.resourceIds } : undefined;
+    default:
+      return undefined; // no filler → leave unset (server default)
+  }
+}
+
+export function buildVariablesByType(
+  variables: ViewVariable[],
+  ctx: SelectionContext,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const variable of variables) {
+    const value = fillByType(variable.type, ctx);
+    if (value !== undefined) out[variable.name] = value;
+  }
+  return out;
+}

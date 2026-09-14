@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Rapla — Durchsteppen (persistente Liste)</title>
+<style>
+  :root{
+    --indigo:#3f51b5; --indigo-d:#303f9f; --bg:#f4f5f7; --card:#fff;
+    --line:#e0e0e0; --text:#1f2330; --muted:#6b7280; --chip:#eef0fb; --fil:#2e7d32;
+    --c1:#c8e6c9; --c1b:#2e7d32; --c2:#bbdefb; --c2b:#1565c0;
+    --c3:#ffe0b2; --c3b:#e65100; --c4:#e1bee7; --c4b:#6a1b9a;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--text);background:var(--bg)}
+  .app{display:flex;flex-direction:column;height:100vh}
+
+  .topbar{display:flex;align-items:center;gap:16px;background:var(--indigo);color:#fff;padding:0 16px;height:56px;box-shadow:0 2px 4px rgba(0,0,0,.2)}
+  .brand{font-weight:600;font-size:18px}
+  .omni{position:relative;flex:1;max-width:520px}
+  .omni input{width:100%;height:38px;border:none;border-radius:6px;padding:0 12px 0 38px;font-size:14px}
+  .omni .mag{position:absolute;left:11px;top:9px;color:var(--muted);font-size:16px}
+  .omninote{font-size:11px;color:#c7ccf1;white-space:nowrap}
+  .user{margin-left:auto;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.15);padding:5px 10px;border-radius:18px;font-size:13px}
+  .user .av{width:24px;height:24px;border-radius:50%;background:#fff;color:var(--indigo);display:grid;place-items:center;font-weight:700;font-size:12px}
+
+  .body{display:flex;flex:1;min-height:0}
+
+  /* persistent stepping list */
+  .stepper{width:250px;background:var(--card);border-right:1px solid var(--line);display:flex;flex-direction:column;overflow:auto}
+  .sthead{padding:12px 14px 8px;font-size:12px;font-weight:700;letter-spacing:.4px;color:var(--muted)}
+  .tabs{display:flex;gap:6px;padding:0 12px 8px}
+  .tabs button{flex:1;border:1px solid var(--line);background:#fff;border-radius:6px;padding:6px 4px;font-size:12px;cursor:pointer;color:var(--muted)}
+  .tabs button.on{background:var(--indigo);color:#fff;border-color:var(--indigo);font-weight:600}
+  .stsearch{margin:0 12px 8px;height:30px;border:1px solid var(--line);border-radius:6px;padding:0 10px;font-size:12px;width:calc(100% - 24px)}
+  .grouplbl{font-size:10px;font-weight:700;color:var(--muted);padding:6px 16px 2px;letter-spacing:.4px}
+  .item{display:flex;align-items:center;gap:9px;padding:9px 16px;font-size:13.5px;cursor:pointer;border-left:3px solid transparent;position:relative}
+  .item:hover{background:#f3f4ff}
+  .item .dot{width:9px;height:9px;border-radius:50%;flex:none}
+  .item.active{background:#eaf6ec;border-left-color:var(--fil);font-weight:600}
+  .item.active .now{position:absolute;right:12px;font-size:10px;font-weight:700;color:var(--fil)}
+  .item.next{outline:2px dashed var(--fil);outline-offset:-2px;border-radius:4px}
+  .item .nexttag{position:absolute;right:10px;background:var(--fil);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px}
+  .sthint{margin-top:auto;padding:12px 14px;font-size:11px;color:var(--muted);border-top:1px solid var(--line);line-height:1.5}
+  .kbd{display:inline-block;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;font-size:11px;background:#fafafe}
+
+  .content{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+  .strip{display:flex;align-items:center;gap:14px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--card)}
+  .vtitle{font-size:15px;font-weight:700}
+  .vtitle .small{font-weight:400;color:var(--muted);font-size:13px}
+  .seg{display:flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;margin-left:auto}
+  .seg button{border:none;background:#fff;padding:6px 12px;font-size:13px;cursor:pointer;color:var(--muted)}
+  .seg button.on{background:var(--indigo);color:#fff;font-weight:600}
+  .datenav{display:flex;align-items:center;gap:6px}
+  .datenav button{border:1px solid var(--line);background:#fff;border-radius:6px;width:30px;height:30px;cursor:pointer}
+  .datenav .today{width:auto;padding:0 12px;font-size:13px}
+  .kw{font-weight:600;font-size:14px}
+
+  .host{flex:1;overflow:auto;background:var(--card)}
+  .grid{display:grid;grid-template-columns:54px repeat(5,1fr);min-width:720px}
+  .ghead{position:sticky;top:0;background:#fff;border-bottom:2px solid var(--line);padding:8px 6px;text-align:center;font-size:12px;z-index:5}
+  .ghead .d{font-weight:700}.ghead .dt{color:var(--muted);font-size:11px}
+  .gutter{border-right:1px solid var(--line)}
+  .hour{height:60px;border-bottom:1px solid #f0f0f3;font-size:11px;color:var(--muted);text-align:right;padding:2px 6px 0 0}
+  .col{position:relative;border-right:1px solid #f0f0f3}
+  .col .hline{height:60px;border-bottom:1px solid #f4f4f7}
+  .ev{position:absolute;left:4px;right:4px;border-radius:6px;padding:5px 7px;font-size:11.5px;line-height:1.25;box-shadow:0 1px 2px rgba(0,0,0,.12);border-left:3px solid}
+  .ev b{display:block;font-weight:600;font-size:12px}
+  .ev .meta{color:rgba(0,0,0,.6);font-size:10.5px;margin-top:1px}
+
+  .rhythm{display:flex;align-items:center;gap:10px;padding:9px 16px;background:#eef7ef;border-top:1px solid #cfe6d2;font-size:12.5px;color:var(--fil);font-weight:600;flex-wrap:wrap}
+  .rhythm .arrow{color:#9bbfa0}
+  .rhythm .plain{color:var(--muted);font-weight:400}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">Rapla</div>
+    <div class="omni"><span class="mag">🔍</span><input placeholder="finden: Raum, Kohorte, Dozent, Veranstaltung…" /></div>
+    <div class="omninote">↑ Omnibox <b>findet</b> · Liste links <b>steppt</b></div>
+    <div class="user"><span class="av">A</span> admin ▾</div>
+  </header>
+
+  <div class="body">
+
+    <!-- persistent stepping list -->
+    <aside class="stepper">
+      <div class="sthead">DURCHSTEPPEN</div>
+      <div class="tabs"><button class="on">Zuletzt</button><button>Favoriten</button><button>Gruppe</button></div>
+      <input class="stsearch" placeholder="in der Liste filtern…" />
+      <div class="grouplbl">RÄUME C-BAU (gebrowste Gruppe)</div>
+      <div class="item active"><span class="dot" style="background:var(--c2b)"></span>C348 PC-Hörsaal<span class="now">▶ gezeigt</span></div>
+      <div class="item next"><span class="dot" style="background:var(--c1b)"></span>C452 Labor<span class="nexttag">Klick → ersetzt</span></div>
+      <div class="item"><span class="dot" style="background:var(--c4b)"></span>C445 Labor</div>
+      <div class="item"><span class="dot" style="background:var(--c3b)"></span>A474 Hörsaal</div>
+      <div class="item"><span class="dot" style="background:var(--c2b)"></span>B12 Seminarraum</div>
+      <div class="item"><span class="dot" style="background:var(--c1b)"></span>S2/1200 Seminarraum 4</div>
+      <div class="sthint">Single-Klick = seine Woche (<b>ersetzt</b>).<br><span class="kbd">↑</span> <span class="kbd">↓</span> blättert mit Live-Vorschau, <span class="kbd">↵</span> bleibt.</div>
+    </aside>
+
+    <main class="content">
+      <div class="strip">
+        <div class="vtitle">Belegung: C348 PC-Hörsaal <span class="small">· gerade gezeigt</span></div>
+        <div class="seg" style="margin-left:auto"><button class="on">Woche</button><button>Tabelle</button><button>Monat</button></div>
+        <div class="datenav"><button>◀</button><button class="today">Heute</button><button>▶</button><span class="kw">KW 25</span></div>
+      </div>
+
+      <div class="host">
+        <div class="grid">
+          <div class="ghead"></div>
+          <div class="ghead"><div class="d">Mo</div><div class="dt">15.06.</div></div>
+          <div class="ghead"><div class="d">Di</div><div class="dt">16.06.</div></div>
+          <div class="ghead"><div class="d">Mi</div><div class="dt">17.06.</div></div>
+          <div class="ghead"><div class="d">Do</div><div class="dt">18.06.</div></div>
+          <div class="ghead"><div class="d">Fr</div><div class="dt">19.06.</div></div>
+
+          <div class="gutter">
+            <div class="hour">08:00</div><div class="hour">09:00</div><div class="hour">10:00</div>
+            <div class="hour">11:00</div><div class="hour">12:00</div><div class="hour">13:00</div><div class="hour">14:00</div>
+          </div>
+
+          <div class="col">
+            <div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div>
+            <div class="ev" style="top:0;height:118px;background:var(--c1);border-color:var(--c1b)"><b>Programmieren II</b><span class="meta">08:00–10:00 · TINF22 · Prof. A</span></div>
+          </div>
+          <div class="col">
+            <div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div>
+            <div class="ev" style="top:60px;height:118px;background:var(--c2);border-color:var(--c2b)"><b>Datenbanken</b><span class="meta">09:00–11:00 · WIB25 · Dr. B</span></div>
+          </div>
+          <div class="col">
+            <div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div>
+            <div class="ev" style="top:120px;height:118px;background:var(--c4);border-color:var(--c4b)"><b>Mathe II</b><span class="meta">10:00–12:00 · TINF22 · Prof. A</span></div>
+          </div>
+          <div class="col">
+            <div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div>
+            <div class="ev" style="top:360px;height:58px;background:var(--c3);border-color:var(--c3b)"><b>Software Eng.</b><span class="meta">14:00–15:00 · WIB25</span></div>
+          </div>
+          <div class="col">
+            <div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div><div class="hline"></div>
+            <div class="ev" style="top:60px;height:88px;background:var(--c1);border-color:var(--c1b)"><b>Programmieren II</b><span class="meta">09:00–10:30 · TINF22 · Prof. A</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rhythm">
+        <span>Der Rhythmus:</span>
+        <span>Klick <b>C348</b></span><span class="arrow">→</span><span>dessen Woche</span><span class="arrow">→</span>
+        <span>Klick <b>C452</b></span><span class="arrow">→</span><span>ersetzt → dessen Woche</span><span class="arrow">→</span>
+        <span>Klick <b>A474</b> …</span>
+        <span class="plain">— ein Klick pro Ressource, der Kalender wechselt mit. Kein Neu-Tippen.</span>
+      </div>
+    </main>
+  </div>
+</div>
+</body>
+</html>

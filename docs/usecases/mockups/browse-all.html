@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Rapla — Komplette Liste (Typ browsen)</title>
+<style>
+  :root{
+    --indigo:#3f51b5; --indigo-d:#303f9f; --bg:#eef0f4; --card:#fff;
+    --line:#e0e0e0; --text:#1f2330; --muted:#6b7280; --chip:#eef0fb; --fil:#2e7d32; --grp:#6a1b9a;
+    --c1b:#2e7d32; --c2b:#1565c0; --c3b:#e65100; --c4b:#6a1b9a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--text);background:var(--bg);padding:24px 0}
+  .wrap{max-width:760px;margin:0 auto;padding:0 24px}
+  h1{font-size:20px;margin:0 0 4px}
+  .lead{color:var(--muted);font-size:13px;margin:0 0 18px;line-height:1.5}
+
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .ptitle{font-size:13px;font-weight:700;margin:0 0 12px;display:flex;align-items:center;gap:9px}
+  .num{background:var(--indigo);color:#fff;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px}
+  .note{font-size:12.5px;color:var(--muted);margin-top:12px;line-height:1.5}
+  .note b{color:var(--text)}
+
+  .bar{background:var(--indigo);border-radius:8px;padding:9px 12px}
+  .omni{position:relative;max-width:560px}
+  .omni input{width:100%;height:36px;border:none;border-radius:6px;padding:0 12px 0 36px;font-size:14px}
+  .omni input::placeholder{color:#9aa0ab}
+  .mag{position:absolute;left:10px;top:9px;color:var(--muted);font-size:15px}
+
+  .results{background:#fff;border:1px solid var(--line);border-radius:8px;margin-top:8px;max-width:560px;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,.12)}
+  .rgroup{font-size:10.5px;font-weight:700;letter-spacing:.5px;color:var(--muted);padding:8px 13px 4px;background:#fafafe}
+  .row{display:flex;align-items:center;gap:10px;padding:9px 13px;border-top:1px solid #f4f4f7;cursor:pointer}
+  .row:hover{background:#f6eefb}
+  .badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:#f0e3f7;color:var(--grp);min-width:60px;text-align:center}
+  .rname{font-weight:600;font-size:13.5px}
+  .rcount{font-size:12px;color:var(--muted)}
+  .ld{margin-left:auto;font-size:11px;font-weight:600;color:#fff;background:var(--grp);border-radius:6px;padding:4px 10px}
+
+  .between{text-align:center;margin:14px 0;color:var(--grp);font-weight:700;font-size:13px}
+  .between .big{font-size:22px;display:block;line-height:1}
+
+  .stepper{width:262px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+  .sthead{padding:11px 14px 8px;font-size:12px;font-weight:700;letter-spacing:.4px;color:var(--muted)}
+  .tabs{display:flex;gap:6px;padding:0 12px 8px}
+  .tabs button{flex:1;border:1px solid var(--line);background:#fff;border-radius:6px;padding:6px 4px;font-size:12px;cursor:pointer;color:var(--muted)}
+  .tabs button.on{background:var(--indigo);color:#fff;border-color:var(--indigo);font-weight:600}
+  .grouphdr{display:flex;align-items:center;justify-content:space-between;padding:6px 14px;background:#f6eefb;font-size:11px;font-weight:700;color:var(--grp)}
+  .grouphdr .clr{cursor:pointer}
+  .listfilter{margin:8px 12px;height:30px;border:1px solid var(--line);border-radius:6px;padding:0 10px;font-size:12px;width:calc(100% - 24px)}
+  .item{display:flex;align-items:center;gap:9px;padding:8px 14px;font-size:13.5px;cursor:pointer;border-left:3px solid transparent}
+  .item:hover{background:#f3f4ff}
+  .item .dot{width:9px;height:9px;border-radius:50%;flex:none}
+  .item.active{background:#eaf6ec;border-left-color:var(--fil);font-weight:600;position:relative}
+  .item.active .now{position:absolute;right:12px;font-size:10px;font-weight:700;color:var(--fil)}
+  .more{padding:8px 14px;font-size:12px;color:var(--muted)}
+  .listwrap{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap}
+  .listside{flex:1;min-width:220px;font-size:12.5px;color:var(--muted);line-height:1.6}
+  .listside b{color:var(--text)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Komplette verfügbare Liste — einen ganzen Typ browsen</h1>
+  <p class="lead">„Zeig mir <b>alle</b> Räume / Dozenten / Kurse, die ich sehen darf." Das ist eine typ-weite Gruppe — ein Klick füllt die linke Liste mit deinem kompletten (§12-sichtbaren) Bestand dieses Typs.</p>
+
+  <div class="panel">
+    <div class="ptitle"><span class="num">1</span> Leeres Feld / „Browse" → ganze Typen anbieten</div>
+    <div class="bar"><div class="omni"><span class="mag">🔍</span><input placeholder="finden — oder unten einen ganzen Typ browsen" /></div></div>
+    <div class="results">
+      <div class="rgroup">BROWSE — KOMPLETTE LISTEN (was du sehen darfst)</div>
+      <div class="row"><span class="badge">Räume</span><span class="rname">Alle Räume</span><span class="rcount">193</span><span class="ld">in Liste laden →</span></div>
+      <div class="row"><span class="badge">Dozenten</span><span class="rname">Alle Dozenten</span><span class="rcount">948</span><span class="ld">in Liste laden →</span></div>
+      <div class="row"><span class="badge">Kurse</span><span class="rname">Alle Kurse</span><span class="rcount">62</span><span class="ld">in Liste laden →</span></div>
+      <div class="row"><span class="badge">Studieng.</span><span class="rname">Alle Studiengänge</span><span class="rcount">12</span><span class="ld">in Liste laden →</span></div>
+      <div class="row"><span class="badge">Gebäude</span><span class="rname">Alle Gebäude</span><span class="rcount">13</span><span class="ld">in Liste laden →</span></div>
+    </div>
+    <div class="note">Die Zahlen sind dein <b>§12-sichtbarer</b> Bestand (z.B. 193 Räume, nicht alle 1.872 des Deployments). Das ist „verfügbar für mich".</div>
+  </div>
+
+  <div class="between"><span class="big">↓</span> „Alle Kurse (62)" laden</div>
+
+  <div class="panel">
+    <div class="ptitle"><span class="num">2</span> Komplette Liste in der linken Liste → scrollen, filtern, steppen</div>
+    <div class="listwrap">
+      <div class="stepper">
+        <div class="sthead">DURCHSTEPPEN</div>
+        <div class="tabs"><button>Zuletzt</button><button>Favoriten</button><button class="on">Gruppe</button></div>
+        <div class="grouphdr"><span>ALLE KURSE (62)</span><span class="clr">× leeren</span></div>
+        <input class="listfilter" placeholder="in der Liste filtern… (wichtig bei 948 Dozenten)" />
+        <div class="item active"><span class="dot" style="background:var(--c1b)"></span>TINF22<span class="now">▶ gezeigt</span></div>
+        <div class="item"><span class="dot" style="background:var(--c2b)"></span>TINF22-IPM</div>
+        <div class="item"><span class="dot" style="background:var(--c4b)"></span>TINF23</div>
+        <div class="item"><span class="dot" style="background:var(--c3b)"></span>WIB25</div>
+        <div class="item"><span class="dot" style="background:var(--c2b)"></span>WIB26</div>
+        <div class="item"><span class="dot" style="background:var(--c1b)"></span>WWI24</div>
+        <div class="more">… 56 weitere (scrollen / filtern)</div>
+      </div>
+      <div class="listside">
+        <p>Die <b>komplette Liste</b> deiner 62 Kurse steht jetzt da. Kurz genug zum <b>Scrollen</b>; bei langen Typen (z.B. <b>948 Dozenten</b>) tippst du oben ins <b>Listen-Filter</b> und engst ein.</p>
+        <p>Das ist der <b>Browse-/Baum-Ersatz</b>: die volle Übersicht eines Typs als flache, filterbare Liste — statt einen Baum-Knoten aufzuklappen. Klick = seine Belegung, durchsteppen wie gehabt.</p>
+      </div>
+    </div>
+    <div class="note"><b>Für jeden Typ gleich:</b> Alle Räume · Alle Dozenten · Alle Kurse · Alle Studiengänge · Alle Gebäude — laden → komplette Liste → scrollen/filtern/steppen.</div>
+  </div>
+
+</div>
+</body>
+</html>

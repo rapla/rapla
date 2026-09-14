@@ -1,0 +1,26 @@
+@import '@angular/material/prebuilt-themes/azure-blue.css';
+/* Self-hosted Material Icons font — <mat-icon> renders ligature glyphs from
+   this. Self-hosted (not the Google Fonts CDN) so the SPA has no runtime
+   third-party dependency: works offline and avoids the GDPR concern of the
+   browser calling fonts.googleapis.com. */
+@import 'material-icons/iconfont/material-icons.css';
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+body {
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+}
+
+/* Print: the week/day time grid caps its height to the viewport remainder via an
+   inline maxHeight (its own scroller). For paper the full grid must flow across
+   pages — !important in a stylesheet outranks the inline style. Global (not
+   component-scoped) because app.css can't reach into the encapsulated component. */
+@media print {
+  app-week-grid .wg {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}

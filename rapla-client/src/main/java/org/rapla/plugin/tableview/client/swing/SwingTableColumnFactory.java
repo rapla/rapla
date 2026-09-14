@@ -1,0 +1,31 @@
+package org.rapla.plugin.tableview.client.swing;
+
+import org.rapla.entities.User;
+import org.rapla.facade.client.ClientFacade;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.plugin.tableview.RaplaTableColumn;
+import org.rapla.plugin.tableview.internal.RaplaTableColumnFactory;
+import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
+
+import org.springframework.beans.factory.annotation.Autowired;
+
+@org.springframework.stereotype.Service
+public class SwingTableColumnFactory implements RaplaTableColumnFactory
+{
+
+    final ClientFacade facade;
+    @Autowired
+    public SwingTableColumnFactory(ClientFacade facade)
+    {
+        super();
+        this.facade = facade;
+    }
+    
+    @SuppressWarnings("rawtypes")
+    @Override
+    public RaplaTableColumn createColumn(TableColumnConfig column, User user,RaplaLocale raplaLocale)
+    {
+        return new RaplaSwingTableColumnImpl(column, raplaLocale, facade, user);
+    }
+
+}

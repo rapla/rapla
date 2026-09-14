@@ -1,0 +1,141 @@
+/* Shell layout: toolbar (with the search) on top, sidenav + content fill the rest. */
+.shell {
+  /* Fill the viewport below the ~64px Material toolbar. */
+  height: calc(100vh - 64px);
+}
+
+.nav {
+  width: 290px;
+}
+
+/* Make the Material drawer's inner container a flex column so the view nav pins
+   to the top and the stepping list fills + scrolls on its own (no page scroll). */
+.nav ::ng-deep .mat-drawer-inner-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.nav .view-switch {
+  flex: 0 0 auto;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 8px;
+}
+
+/* One row instead of one row per view — everything the picker frees goes to the
+   resource selection below, which is the part that grows with real work. */
+.nav .view-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  font: inherit;
+  font-weight: 500;
+  color: var(--mat-sys-on-surface);
+  background: var(--mat-sys-surface);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.nav .view-trigger:hover {
+  background: var(--mat-sys-surface-container);
+}
+
+.nav .view-trigger:focus-visible {
+  outline: 2px solid var(--mat-sys-primary);
+  outline-offset: 2px;
+}
+
+.nav .view-trigger .view-glyph,
+.nav .view-trigger .view-chevron {
+  flex: 0 0 auto;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.nav .view-trigger .view-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The menu overlay is not bound to the 290px drawer, so a long view title is
+   readable in full here even when the trigger has to truncate it. */
+::ng-deep .view-menu.mat-mdc-menu-panel {
+  max-width: min(420px, 90vw);
+}
+
+.nav app-resource-selection {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* PRD 104 v2 — Dualis-Import entry pinned below the resource selection. */
+.nav .import-entry {
+  flex: 0 0 auto;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.import-badge {
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 1px 8px;
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}
+
+.active-link {
+  background: rgba(0, 0, 0, 0.06);
+  font-weight: 500;
+}
+
+/* Content column: control strip + chip rail above the scrolling view host. */
+.content-col {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.view-host {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* Print: only the main pane (the routed view) prints — toolbar, sidenav, chip
+   rail and control strip are screen chrome. The view host's print-only heading
+   ("Termine (68 Termine)") carries title + count instead. */
+@media print {
+  app-toolbar,
+  .nav,
+  app-chip-rail,
+  app-view-control-strip {
+    display: none !important;
+  }
+  /* Material pushes the content by the drawer width via an inline style —
+     !important in a stylesheet outranks inline styles. Material's own
+     .mat-drawer-container/.mat-drawer-content styles clip + scroll; on paper
+     they must let the content flow so the browser can paginate it. */
+  mat-sidenav-container,
+  mat-sidenav-content {
+    overflow: visible !important;
+  }
+  mat-sidenav-content {
+    margin-left: 0 !important;
+  }
+  /* Un-cage the viewport-height scrollers so the full content flows onto pages. */
+  .shell,
+  .content-col {
+    height: auto;
+  }
+  .view-host {
+    overflow: visible;
+  }
+}

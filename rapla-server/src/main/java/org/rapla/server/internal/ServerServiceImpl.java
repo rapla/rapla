@@ -1,0 +1,259 @@
+/*--------------------------------------------------------------------------*
+ | Copyright (C) 2013 Christopher Kohlhaas                                  |
+ |                                                                          |
+ | This program is free software; you can redistribute it and/or modify     |
+ | it under the terms of the GNU General Public License as published by the |
+ | Free Software Foundation. A copy of the license has been included with   |
+ | these distribution in the COPYING file, if not go to www.fsf.org         |
+ |                                                                          |
+ | As a special exception, you are granted the permissions to link this     |
+ | program with every library, which license fulfills the Open Source       |
+ | Definition as published by the Open Source Initiative (OSI).             |
+ *--------------------------------------------------------------------------*/
+package org.rapla.server.internal;
+
+import net.fortuna.ical4j.model.TimeZoneRegistry;
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
+import org.rapla.RaplaResources;
+import org.rapla.RaplaSystemInfo;
+import org.rapla.components.i18n.server.ServerBundleManager;
+import org.rapla.entities.User;
+import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.entities.dynamictype.internal.AttributeImpl;
+import org.rapla.facade.RaplaComponent;
+import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.internal.FacadeImpl;
+import org.rapla.framework.Configuration;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.internal.AbstractRaplaLocale;
+import org.rapla.framework.internal.DefaultScheduler;
+import org.rapla.framework.internal.RaplaLocaleImpl;
+import org.rapla.plugin.export2ical.Export2iCalPlugin;
+import org.rapla.scheduler.CommandScheduler;
+import org.rapla.server.ServerServiceContainer;
+import org.rapla.framework.TimeZoneConverter;
+import org.rapla.framework.internal.TimeZoneConverterImpl;
+import org.rapla.server.extensionpoints.ServletRequestPreprocessor;
+import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.StorageOperator;
+import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import java.util.function.Supplier;
+import java.util.Collection;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.TimeZone;
+import java.util.TreeSet;
+
+public class ServerServiceImpl implements ServerServiceContainer
+{
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServerServiceImpl.class);
+
+    final protected CachableStorageOperator operator;
+    final protected RaplaFacade facade;
+
+    private final RaplaLocale raplaLocale;
+    private final CommandScheduler scheduler;
+
+    final Set<ServletRequestPreprocessor> requestPreProcessors;
+    public Collection<ServletRequestPreprocessor> getServletRequestPreprocessors()
+    {
+        return requestPreProcessors;
+    }
+
+    @Autowired public ServerServiceImpl(CachableStorageOperator operator, RaplaFacade facade, RaplaLocale raplaLocale, TimeZoneConverter importExportLocale,
+            final Supplier<Set<ServletRequestPreprocessor>> requestPreProcessors,
+            CommandScheduler scheduler, RaplaResources i18n, RaplaSystemInfo systemInfo, ServerBundleManager bundleManager) throws RaplaInitializationException
+    {
+        String version = systemInfo.getString("rapla.version");
+        LOGGER.info("Rapla.Version={}", version);
+        version = systemInfo.getString("rapla.build");
+        LOGGER.info("Rapla.Build={}", version);
+        try
+        {
+            String javaversion = System.getProperty("java.version");
+            LOGGER.info("Java.Version={}", javaversion);
+        }
+        catch (SecurityException ex)
+        {
+            LOGGER.warn("Permission to system property java.version is denied!");
+        }
+        try
+        {
+            this.scheduler = scheduler;
+            this.raplaLocale = raplaLocale;
+            //webMethods.setList( );
+            //        SimpleProvider<Object> externalMailSession = new SimpleProvider<Object>();
+            //        if (containerContext.mailSession != null)
+            //        {
+            //            externalMailSession.setValue(containerContext.getMailSession());
+            //        }
+            this.operator = operator;
+            this.facade = facade;
+            // PRD 019 Phase 1: operator.connect() now happens in the @Bean factory
+            // (ServerServiceConfig.cachableStorageOperator), and FacadeImpl.setOperator()
+            // happens in the raplaFacade @Bean factory. By the time we get here both are
+            // already done. Idempotent setOperator call kept defensively in case a test
+            // wires the facade without going through the bean factory.
+            if (((FacadeImpl) facade).getOperator() == null) {
+                ((FacadeImpl) facade).setOperator(operator);
+            }
+            AttributeImpl.TRUE_TRANSLATION.setName(i18n.getLang(), i18n.getString("yes"));
+            AttributeImpl.FALSE_TRANSLATION.setName(i18n.getLang(), i18n.getString("no"));
+            Preferences preferences = operator.getPreferences(null, true);
+            String importExportTimeZone = TimeZone.getDefault().getID();
+            // get old entries
+            RaplaConfiguration entry = preferences.getEntry(RaplaComponent.PLUGIN_CONFIG);
+            if (entry != null)
+            {
+                Configuration find = entry.find("class", Export2iCalPlugin.PLUGIN_CLASS);
+                if (find != null)
+                {
+                    String timeZone = find.getChild("TIMEZONE").getValue(null);
+                    if (timeZone != null && !timeZone.equals("Etc/UTC"))
+                    {
+                        importExportTimeZone = timeZone;
+                    }
+                }
+            }
+            final Locale aDefault = Locale.getDefault();
+            final String localeString  =preferences.getEntryAsString( AbstractRaplaLocale.LOCALE, aDefault.getLanguage()+"_" + aDefault.getCountry());
+            final String[] split = localeString.split("_");
+            final Locale locale;
+            if ( split.length == 1) {
+                locale = new Locale(split[0]);
+            } else  if ( split.length == 2) {
+                locale = new Locale(split[0],split[1]);
+            } else  if ( split.length == 3) {
+                locale = new Locale(split[0], split[1], split[2]);
+            } else {
+                locale = aDefault;
+            }
+            bundleManager.setLocale( locale);
+            String timezoneId = preferences.getEntryAsString(AbstractRaplaLocale.TIMEZONE, importExportTimeZone);
+            //TimeZoneConverter importExportLocale = lookup(TimeZoneConverter.class);
+            try
+            {
+                TimeZoneRegistry registry = TimeZoneRegistryFactory.getInstance().createRegistry();
+                TimeZone timeZone = registry.getTimeZone(timezoneId);
+                if (timeZone == null)
+                {
+                    // FIXME createInfoDialog VTimezones for GMT+1-12 and GMT-1-12
+                    // if ( timezoneId.startsWith("GMT") )
+                    String fallback = "Etc/GMT";
+                    LOGGER.error("Timezone {} not found in ical registry.  Using {}", timezoneId, fallback);
+                    timeZone = registry.getTimeZone(fallback);
+                    if (timeZone == null)
+                    {
+                        if (timeZone == null)
+                        {
+                            throw new RaplaException(fallback + " timezone not found in ical registry. ical4j maybe corrupted or not loaded correctyl");
+                        }
+                    }
+                }
+                RaplaLocaleImpl raplaLocaleImpl = (RaplaLocaleImpl) raplaLocale;
+                raplaLocaleImpl.setImportExportTimeZone(timeZone);
+                raplaLocaleImpl.setCharsetForCsv( preferences.getEntryAsString(AbstractRaplaLocale.CSV_CHARSET, AbstractRaplaLocale.CSV_CHARSET_DEFAULT));
+                raplaLocaleImpl.setCharsetForHtml( preferences.getEntryAsString(AbstractRaplaLocale.HTML_CHARSET, AbstractRaplaLocale.HTML_CHARSET_DEFAULT));
+                ((TimeZoneConverterImpl) importExportLocale).setImportExportTimeZone(timeZone);
+                if (operator instanceof LocalAbstractCachableOperator)
+                {
+                    ((LocalAbstractCachableOperator) operator).setTimeZone(timeZone);
+                }
+            }
+            catch (Exception rc)
+            {
+                LOGGER.error(
+                        "Timezone {} not found. {} Using system timezone {}", timezoneId, rc.getMessage(), importExportLocale.getImportExportTimeZone());
+            }
+            this.requestPreProcessors = requestPreProcessors.get();
+            // PRD 019 Phase 4: ServerExtension iteration removed. Recurring tasks now use
+            // Spring's @Scheduled (registered automatically by @EnableScheduling) and one-shot
+            // startup work uses @EventListener(ApplicationReadyEvent.class). Bean lifecycle
+            // is owned by Spring, not by this class.
+        }
+        catch( RaplaException e)
+        {
+            throw new RaplaInitializationException(e);
+        }
+    }
+
+    public RaplaLocale getRaplaLocale()
+    {
+        return raplaLocale;
+    }
+
+    public RaplaFacade getFacade()
+    {
+        return facade;
+    }
+
+    public String getFirstAdmin() throws RaplaException
+    {
+        User user = getFirstAdmin(operator);
+        if (user == null)
+        {
+            return null;
+        }
+        else
+        {
+            return user.getUsername();
+        }
+    }
+
+    public User getFirstAdmin(StorageOperator operator) throws RaplaException
+    {
+        Set<User> sorted = new TreeSet<>(User.USER_COMPARATOR);
+        sorted.addAll(operator.getUsers());
+        for (User u : sorted)
+        {
+            if (u.isAdmin())
+            {
+                return u;
+            }
+        }
+        return null;
+    }
+
+    private void stop()
+    {
+        // PRD 019 Phase 4: ServerExtension.stop() iteration removed — Spring's TaskScheduler
+        // shuts down its own scheduled jobs on context close, and @PreDestroy callbacks
+        // handle per-bean teardown.
+        ((DefaultScheduler) scheduler).dispose();
+        boolean wasConnected = operator.isConnected();
+        try
+        {
+            operator.disconnect();
+        }
+        catch (RaplaException e)
+        {
+            LOGGER.error("Could not disconnect operator ", e);
+        }
+
+        if (wasConnected)
+        {
+            LOGGER.info("Storage service stopped");
+        }
+    }
+
+    @Override
+    public void dispose()
+    {
+        stop();
+    }
+
+    public StorageOperator getOperator()
+    {
+        return operator;
+    }
+
+
+}

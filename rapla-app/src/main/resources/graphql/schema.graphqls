@@ -1,0 +1,2319 @@
+# PRD 035 testbed — incremental schema, fed by the rapla facade.
+# Real PRD 035 surface (typed-per-DynamicType reservations, group interfaces,
+# §12 batch loaders, mutations, etc.) lands per the design in
+# docs/prd/035-rapla-mcp-server.md §"2026-05-24 design refinement".
+#
+# Cut C (this iteration): structural types are declared here; per-DynamicType
+# classification types (`<TypeKey>Classification implements Classification`)
+# are GENERATED at startup by ClassificationSdlGenerator from the deployment's
+# DynamicTypes and merged into this SDL by HotSwappableGraphQlSource. They
+# rebuild on DynamicType admin change (UpdateEvent listener). The SPA queries
+# only the `Classification` interface — never the typed implementations.
+
+# ISO-8601 OffsetDateTime. From graphql-java-extended-scalars; registered in
+# GraphQlScalarConfig. Used for instant-in-time fields (e.g. serverTime).
+scalar DateTime
+
+# ISO-8601 LocalDateTime (wall-time, no offset). Custom scalar in
+# GraphQlScalarConfig. Used for rapla domain time fields per PRD 014 —
+# appointments, periods, etc. are wall-time semantics (a 10:00 lecture
+# happens at 10:00 local, not at a particular UTC instant). Also used for
+# rapla AttributeType.DATE attribute values (rapla stores DATE as
+# LocalDateTime — see AttributeImpl line 414).
+scalar LocalDateTime
+
+type Query {
+  # Echo, optionally personalized — smoke test.
+  hello(name: String = "world"): String!
+
+  # Server-side current time as ISO-8601 OffsetDateTime.
+  serverTime: DateTime!
+
+  # rapla version string.
+  version: String!
+
+  # Currently-authenticated user, or null if anonymous.
+  # Tests the auth-context → facade lookup path.
+  me: User
+
+  # All periods (semester definitions) visible to the caller.
+  # Tests facade injection + entity → DTO mapping at the resolver layer.
+  # Flat list — no pagination yet; small list (~dozens at most per deployment).
+  periods: [Period!]!
+
+  # All users visible to the caller. Bucket 1 from PRD 035.
+  # §12: anonymous → []. Authenticated → self + everyone the caller
+  # canAdminUser. Pagination not yet (v1; users sets are small for typical
+  # rapla deployments).
+  users(filter: UserFilter): [User!]!
+
+  # User by username, or null if not found / not visible.
+  user(username: String!): User
+
+  # Single category by slash-separated key path (e.g. "user-groups/staff",
+  # "departments/cs/ai"). Returns null if any segment fails. Resolved from
+  # the super-category root.
+  category(path: String!): Category
+
+  # Children of a root category. `rootKey` selects which subtree's children
+  # to return (looked up under super); when null, returns the super-category's
+  # immediate children. Empty list if rootKey doesn't exist.
+  categories(rootKey: String): [Category!]!
+
+  # Resources (resources + persons) visible to the caller.
+  # §12: every entry is canRead-gated; mixed visible/hidden requests are
+  # silently narrowed to the visible subset. Filter narrows the visible
+  # subset further (never reveals hidden entities).
+  resources(filter: ResourceFilter): [Resource!]!
+
+  # Resource by id, or null if not found / not visible (§12 — existence
+  # not leaked).
+  resource(id: ID!): Resource
+
+  # All DynamicTypes (resource / person / reservation classifications).
+  # No §12 — DynamicTypes are deployment-global metadata. Used by SPA form
+  # widget config (PRD 035 §4 "descriptor query, lazy") and admin / MCP
+  # introspection.
+  types: [DynamicType!]!
+
+  # DynamicType by key (e.g. "room", "lecturer", "event"). Null if unknown.
+  type(key: String!): DynamicType
+
+  # Permission groups visible to the caller (PRD 035 §5c). Internally backed
+  # by the user-groups category subtree; surfaced as Group so the API doesn't
+  # leak the storage representation. Anonymous → empty list.
+  groups: [Group!]!
+
+  # Permission group by id, or null if unknown / anonymous caller.
+  group(id: ID!): Group
+
+  # PRD 055 reservation reads.
+  # §12: anonymous → empty / null. Authenticated → canRead-filtered.
+  # `reservations` requires a mandatory time window (from + to). The window
+  # cap is configurable via rapla.graphql.max-query-window-days (default null
+  # = no cap). Result size caps at 5000 entries (default 500).
+  reservation(id: ID!): Reservation
+  reservations(filter: ReservationFilter!): [Reservation!]!
+
+  # PRD 099 — server-computed prefill for NEW events: the classification a
+  # create of this type would be born with (attribute defaults via
+  # newClassification()). Side-effect-free; nothing is persisted. Caller must
+  # be able to CREATE the type — unknown and non-creatable typeKeys answer
+  # identically (§12, no existence leak).
+  reservationPrototype(typeKey: String!): ReservationPrototype!
+
+  # PRD 099 D6 slice — the caller's "Neu" options, Swing-parity gated:
+  # `eventTypes` = RESERVATION types the caller may CREATE, empty when the
+  # defaultwizard plugin is disabled (like Swing's DefaultWizard). `templates`
+  # = the event templates the caller may READ (§12 — an unreadable template is
+  # absent, indistinguishable from nonexistent), empty when the templatewizard
+  # plugin is disabled or the caller cannot create reservations at all.
+  newEventOptions: NewEventOptions!
+
+  # PRD 113 § 1c — template entity reads, gated on canRead(template) only (no create gate, no plugin flag).
+  # Unknown, non-template and unreadable ids answer identically: null (§12).
+  eventTemplate(id: ID!): EventTemplate
+  # PRD 113 § 1c — every template the caller may read; unreadable ones are absent.
+  eventTemplates: [EventTemplate!]!
+
+  # PRD 104 D8 — the reservations stored inside an event template, as plain
+  # Reservation entities (the SPA picker selects { id } and loads the rest via
+  # `reservation(id:)` — canRead of a template reservation delegates to
+  # canRead(template)). §12: unknown ids and unreadable templates answer
+  # identically with an empty list. Instantiation is a CLIENT act: fresh ids,
+  # date shift, nothing persisted until the sheet saves.
+  reservationsFromTemplate(templateId: ID!): [Reservation!]!
+
+  # PRD 074 — block-rooted read: materializes recurrence blocks across all
+  # caller-visible reservations in the window into a FLAT list (one row = one
+  # block), sorted ascending by start. Same §12 + window/limit semantics as
+  # `reservations`. Basis for the SPA table/calendar views.
+  # PRD 074 — `sort` orders the flat block list server-side (locale Collator for
+  # NAME, stable reservation-id tiebreaker); `offset` paginates (skip N). The
+  # block count kept is bounded to `offset + limit + 1` (the +1 powers `hasMore`
+  # without a full count). Use `@view` to also receive `extensions.view.page`
+  # `{ offset, limit, returned, hasMore }`. Default sort = START ASC.
+  appointmentBlocks(filter: ReservationFilter!, sort: [BlockSort!], offset: Int): [AppointmentBlock!]!
+
+  # PRD 097 Phase 5 — the day scaffold for 2D templates: the window snapped
+  # OUTWARD to full Monday-first weeks (grid window ⊇ filter window), one strip
+  # per week, days restricted by `weekdays`. Pass the SAME $filter variable as
+  # the data field so frame and data share one window by construction; only
+  # `from`/`to`/`weekdays` are read, every scope field is ignored (pure
+  # calendar math — §12-clean, no entity data). Larger grids are demand-driven
+  # through the window itself (e.g. a stable 6-row month via @window offsets).
+  strips(filter: ReservationFilter!): [Strip!]!
+
+  # PRD 079 — grouped/bucketed analytics over the full matched set, as typed `data`
+  # (not extensions). `groupBy` = dimensions (date bucket / §12 resource / custom
+  # compute `expr`); `aggregate` = metrics (numeric block field × fn). Empty `groupBy`
+  # → one global bucket (= a plain total). Server-evaluated, §12-safe, window-bounded
+  # + bucket-capped. See PRD 079.
+  appointmentBlockStats(
+    filter: ReservationFilter!,
+    groupBy: [BlockGroupKey!],
+    aggregate: [BlockAggregate!]!,
+    limit: Int
+  ): [BlockStatBucket!]!
+
+  # PRD 080 item 6 — grouped/bucketed analytics over the §12-visible ALLOCATABLE
+  # population (resources/persons), NOT over bookings. `groupBy` = dimensions
+  # (DynamicType / custom `expr` / the resource itself); `aggregate` = metrics
+  # (COUNT, or a numeric `expr` over the resource, e.g. capacity sum). Filter =
+  # the full ResourceFilter (typeIn / where<Type> / idIn / accessibleBy*).
+  # Shares the generic BlockStatBucket result. e.g. "seats per building".
+  resourceStats(
+    filter: ResourceFilter,
+    groupBy: [ResourceGroupKey!],
+    aggregate: [ResourceAggregate!]!,
+    "HAVING — drop buckets whose population (count) is below this threshold. minCount: 2 = only groups that occur more than once (duplicate report). Applied before `limit`."
+    minCount: Int,
+    limit: Int
+  ): [BlockStatBucket!]!
+
+  # PRD 080 item 7 — grouped/bucketed analytics over the §12-visible RESERVATION
+  # set in the window (same gating/window/search as `reservations`). `groupBy` =
+  # dimensions (DynamicType / custom `expr` / the reservation itself); `aggregate`
+  # = metrics (COUNT, or a numeric `expr` over the reservation). Shares the generic
+  # BlockStatBucket result. e.g. "events per course type".
+  reservationStats(
+    filter: ReservationFilter!,
+    groupBy: [ReservationGroupKey!],
+    aggregate: [ReservationAggregate!]!,
+    limit: Int
+  ): [BlockStatBucket!]!
+
+  # PRD 073 — catalog of the rapla expression-language functions available in `compute(expr:)`
+  # / stat `expr` / view columns. Drives editor autocomplete + view validation; aggregated from
+  # every registered FunctionFactory's declared FunctionDescriptors (core + active plugins).
+  computeFunctions: [ComputeFunction!]!
+
+  # PRD 064 — conflicts touching this reservation. §12: caller must be able
+  # to read BOTH sides of each conflict + the resource; unreadable
+  # conflicts are silently dropped.
+  conflicts(reservationId: ID!): [Conflict!]!
+
+  # PRD 091 — CHEAP availability display path (finder/picker): many candidates,
+  # per candidate a status + which own draft appointments clash (yes/no,
+  # first-conflict semantics). Appointment-granular, no occurrence enumeration,
+  # no window — series overlap is computed analytically (Swing picker parity).
+  # §12: candidates are silently reduced to what the caller can read; hidden
+  # and nonexistent ids are indistinguishable.
+  resourceAvailability(input: AvailabilityInput!): [ResourceAvailability!]!
+
+  # PRD 091 — EXPENSIVE detail path (chip drill-down / save preflight): full
+  # potential-conflict list for concrete resources against a draft. Same
+  # result type as the realized `conflicts(reservationId:)` — a potential
+  # conflict is a Conflict whose side 1 is not persisted (yet). §12: unlike
+  # the realized query, unreadable counterparties are MASKED (side-2 fields
+  # null + generic description), never dropped — the resource IS busy.
+  potentialConflicts(input: PotentialConflictInput!): [Conflict!]!
+
+  # PRD 091 Phase 4.1 — the recurrence editor's occurrence preview: expand ONE
+  # draft appointment's repeating rule into concrete occurrences, server-owned
+  # (Appointment.createBlocks — the MONTHLY weekday-in-nth-week semantic and
+  # exception-skip rules are never reimplemented client-side). Excepted
+  # occurrences are INCLUDED with exception=true (the preview strikes them
+  # through). Pure function of the input — no stored data touched (§12 has no
+  # surface); capped at `limit` (default 30, max 100) within a 2-year horizon.
+  expandOccurrences(appointment: AppointmentInput!, limit: Int = 30): [Occurrence!]!
+
+  """
+  PRD 105 — pre-save checks over a DRAFT, before it is written: the same seven rules Swing runs in
+  its `EventCheck` chain, from one implementation. Advisory (D2) — the server returns codes, the
+  client decides; nothing is persisted and nothing is refused here. The draft is built with the
+  same mapper `createReservation` uses, so a check sees exactly what a save would write.
+  §12: the draft's own ids are checked against the caller's read scope like any mutation input.
+  """
+  reservationChecks(input: ReservationCheckInput!): [ReservationWarning!]!
+
+  """
+  PRD 105 — the same checks for a MOVE that has not happened yet (calendar drag / resize). The
+  server computes the state the move verb would store (same resolution, permission gate and shift
+  arithmetic, no dispatch) and runs the chain over it, so the client never rebuilds a move payload
+  to ask "would this clash?" (PRD 101 keeps move semantics server-side). Advisory like
+  `reservationChecks`. SINGLE-on-repeating (`splitOccurrence`) is NOT covered yet — see PRD 105.
+  """
+  moveChecks(input: MoveCheckInput!): [ReservationWarning!]!
+
+  # PRD 081 — omnibox multisearch. Turns a free-text term into typed, ranked,
+  # §12-scoped result rows bucketed per kind. Phase 1 implements RESOURCE +
+  # EVENT; OCCURRENCE / GROUP are reserved in SearchKind for later phases and
+  # currently yield no bucket. `limit` caps PER KIND (default 20). The result
+  # is already kind-bucketed + each bucket internally score-ranked, so the SPA
+  # maps groups → SearchResultGroup[] without re-sorting. Existence never
+  # leaks: a term matching only hidden entities returns the SAME empty result
+  # as a no-match term.
+  search(query: String!, kinds: [SearchKind!], limit: Int = 20): SearchResults!
+}
+
+"""
+A scheduling conflict — two appointments allocating the same Resource at
+overlapping times. ONE type for realized AND potential conflicts (PRD 091 D4):
+a potential conflict is a Conflict whose side 1 is not persisted (yet).
+The id pair fields are always present (§12 permitting); the entity fields
+resolve when the side is persisted and readable.
+
+Perspectival queries (`conflicts(reservationId:)`, `potentialConflicts`) use
+the convention side 1 = the queried reservation / the draft. Remaining
+nullability is semantic: `reservation1` null = brand-new draft;
+`reservation2`/`appointment2`/`appointment2Id` null = §12-masked (only in
+`potentialConflicts` — the realized query drops unreadable conflicts).
+
+`id` is derived from the involved reservation/appointment ids and is
+session-scoped — treat as opaque, do not persist.
+"""
+type Conflict {
+  id:              ID!
+  resource:     Resource!
+  reservation1Id:  ID!
+  appointment1Id:  ID!
+  reservation2Id:  ID
+  appointment2Id:  ID
+  "Realized: from the store. Potential: materialized from the input (shows the DRAFT state). Never null."
+  appointment1:    Appointment!
+  "Null only for a brand-new draft (side 1 not persisted)."
+  reservation1:    Reservation
+  reservation2:    Reservation
+  appointment2:    Appointment
+  "Server-built, §12-scoped display text — the other side's name, or a generic 'occupied' when masked."
+  description:     String!
+  "First clash date (ConflictImpl.getFirstConflictDate) — realized and potential."
+  startDate:       LocalDateTime!
+}
+
+"""
+PRD 091 — availability status of one candidate resource for a draft's
+appointments. Mirrors the Swing picker categories
+(ResourceRowStatusModel): PARTIAL = some appointments clash but the
+resource is still usable for the rest; REQUEST_ONLY/FORBIDDEN fold in
+permission-window violations (those are NOT conflicts and never appear in
+`potentialConflicts`).
+"""
+enum AllocationStatus { AVAILABLE PARTIAL CONFLICT REQUEST_ONLY FORBIDDEN }
+
+"""
+PRD 091 — input for `resourceAvailability`. Appointment ids are REQUIRED
+(D3 / PRD 056 §9 id-first drafts) — a missing id is a loud ValidationError;
+they are the join key for `conflictingAppointmentIds` and stay stable across
+draft edits. `reservationId` (when editing an existing event) is implicitly
+added to `ignoreReservationIds`.
+"""
+input AvailabilityInput {
+  reservationId: ID
+  appointments: [AppointmentInput!]!
+  candidates: CandidateInput!
+  ignoreReservationIds: [ID!]
+}
+
+"Exactly one of `filter` (the finder case) or `ids` (the allocated set)."
+input CandidateInput @oneOf {
+  filter: ResourceFilter
+  ids: [ID!]
+}
+
+"""
+PRD 091 Phase 4.1 — one concrete occurrence of a (possibly repeating) draft
+appointment, as expanded by `expandOccurrences`. `exception` = true marks an
+occurrence skipped via the rule's exception dates (included for preview
+display, excluded from any conflict computation).
+"""
+type Occurrence {
+  start:     LocalDateTime!
+  end:       LocalDateTime!
+  exception: Boolean!
+}
+
+type ResourceAvailability {
+  resource: Resource!
+  status: AllocationStatus!
+  "Own draft appointment ids that clash on this resource (yes/no granularity — details via potentialConflicts)."
+  conflictingAppointmentIds: [ID!]!
+}
+
+"""
+PRD 091 — input for `potentialConflicts`. `reservationId` is the draft's
+reservation id — client-generated for brand-new drafts (D3 id-first); it is
+echoed as `reservation1Id` and, when it resolves to a stored reservation,
+implicitly ignored in the clash computation (self-ignore while editing).
+"""
+input PotentialConflictInput {
+  reservationId: ID!
+  appointments: [AppointmentInput!]!
+  resourceIds: [ID!]!
+  ignoreReservationIds: [ID!]
+}
+
+"""
+PRD 055 — mandatory time window + optional narrowing predicates for
+`reservations(filter:)`. Window is mandatory because the un-windowed query
+is "scan every reservation in the deployment" — at admin scale that's many
+seconds of CPU per call. Default limit 500; hard cap 5000.
+
+PRD 028 power search: `searchText` + `matchKind` (on this filter) +
+ranking are documented at PRD 028 §"GraphQL substrate augmentations".
+"""
+input ReservationFilter {
+  "Mandatory lower bound (inclusive)."
+  from:              LocalDateTime!
+  "Mandatory upper bound (exclusive). Window cap (if any) is set via rapla.graphql.max-query-window-days; default = no cap."
+  to:                LocalDateTime!
+  # Type selection lives on the GENERATED `typeIn: [ReservationTypeKey!]` field
+  # (PRD 059 Phase 7 — SDL `extend input` emitted by ClassificationSdlGenerator).
+  "Exact-match on owner id."
+  ownerEq:           ID
+  "Reservations using ANY of the listed resource ids."
+  resourceIdsIn:  [ID!]
+  """
+  PRD 066 — reservations using ANY resource matching this
+  ResourceFilter. Lets the SPA pass its tree-selection
+  (`typeIn` + per-type `whereXxx` + `idIn`) in one shot instead of
+  resolving resource ids in a separate roundtrip. UNIONed with
+  `resourceIdsIn` when both are set.
+  """
+  resourceMatching: ResourceFilter
+  "Case-insensitive substring match on default-locale name (legacy — prefer `searchText` + `matchKind` for new flows). ANDs with `searchText` if both are set."
+  nameContains:      String
+  "PRD 028 Phase 1 — match against the rapla-resolved name (same value as `nameContains`); paired with `matchKind` for prefix/substring/fuzzy."
+  searchText:        String
+  "PRD 028 Phase 1 — algorithm choice for `searchText`. Defaults to SUBSTRING (matches the legacy `nameContains` behavior)."
+  matchKind:         MatchKind = SUBSTRING
+  """
+  PRD 069 — restrict to events the named **user** may access (admin-scoped).
+  Username handle, like `user(username:)`. XOR with `accessibleByUserId` /
+  `accessibleByGroup`. The caller must be allowed to administer the user
+  (`canAdminUser`), else a uniform FORBIDDEN error (no existence leak).
+  """
+  accessibleByUsername: String
+  "PRD 069 — same as `accessibleByUsername` but by opaque user id. XOR with the other access selectors."
+  accessibleByUserId:   ID
+  """
+  PRD 069 — restrict to events any of these **groups** may access (admin-scoped).
+  Union over the list. Groups are key paths relative to the `user-groups` root —
+  no `user-groups/` prefix (e.g. `"staff"` or nested `"staff/leads"`). Group
+  access on events is type-level (the event type grants the group the right).
+  Caller must administer every group (`canAdminGroup`), else FORBIDDEN.
+  """
+  accessibleByGroup:    [String!]
+  "PRD 069 — minimum access level the target must hold (default READ = visible; EDIT = editable). Ignores time-window constraints in v1."
+  accessLevel:          AccessLevel = READ
+  "Cap result size. Default 500, hard cap 5000."
+  limit:             Int
+  """
+  PRD 097 Phase 5 — the rendered day set (null = all seven). One declaration,
+  both consumers: block-level queries DROP blocks touching none of these days
+  (a Saturday event in a Mo–Fr view disappears, it is not ghosted), and
+  `strips` builds its scaffold from the same set, so `dayIndex`/`startDay`
+  stay consistent by construction. Day-set gaps chunk `bars` like strip edges
+  (a Fr→Mo bar clips at Friday and continues Monday of the next strip).
+  Ignored by the reservation-level `reservations` query (a reservation has no
+  single day).
+  """
+  weekdays:          [Weekday!]
+}
+
+"PRD 097 Phase 5 — day-set selector for `ReservationFilter.weekdays` (ISO days, Monday-first weeks)."
+enum Weekday { MONDAY  TUESDAY  WEDNESDAY  THURSDAY  FRIDAY  SATURDAY  SUNDAY }
+
+"""
+PRD 028 Phase 1 — string-match algorithm for power search.
+Shared between `ReservationFilter.matchKind`, `ResourceFilter.matchKind`,
+and the future top-level `Query.search` (PRD 060). Server-side ranking
+respects this ordering: PREFIX > SUBSTRING > FUZZY.
+"""
+enum MatchKind {
+  "Field value must START with the query (case-insensitive). Cheap, narrow."
+  PREFIX
+  "Field value must CONTAIN the query (case-insensitive). Default."
+  SUBSTRING
+  "Approximate match — small edit distance from the query. Broad fallback."
+  FUZZY
+}
+
+"PRD 074 — sort direction for `appointmentBlocks(sort:)`."
+enum SortDir { ASC  DESC }
+
+"PRD 074 — sortable fields of the flat block list. NAME = locale-collated block name; DURATION omitted in v1 (formatted string, not numerically comparable)."
+enum BlockSortField { START  END  NAME }
+
+"PRD 074 — one sort key for `appointmentBlocks(sort:)`. Multiple keys chain left-to-right; a stable reservation-id tiebreaker is always appended."
+input BlockSort {
+  field: BlockSortField!
+  dir:   SortDir = ASC
+}
+
+"""
+PRD 069 — permission access level, mirrors `org.rapla.entities.domain.Permission.AccessLevel`.
+Used by the `accessLevel` argument of the access-by-target filters
+(`accessibleByUsername` / `accessibleByUserId` / `accessibleByGroup`). Levels are
+ordered; a filter for level L matches when the target's effective level ≥ L.
+The two everyday values: `READ` ("what can they see"), `EDIT` ("what can they edit").
+"""
+enum AccessLevel {
+  DENIED
+  READ_TYPE
+  CREATE
+  READ_NO_ALLOCATION
+  READ
+  REQUEST
+  ALLOCATE
+  ALLOCATE_CONFLICTS
+  EDIT
+  ADMIN
+}
+
+"""
+PRD 035 Bucket 1 — narrowing predicates for `users(filter:)`. All fields
+optional; null = unconstrained. Multiple predicates AND together. Filter
+runs over the §12-visible subset, never over the raw user table.
+"""
+input UserFilter {
+  "True → only users with a non-blank authSource (external-IdP). False → only locally-authenticated."
+  hasAuthSource:    Boolean
+  "Exact-match on authSource (e.g. \"keycloak\", \"microsoft\")."
+  authSourceEq:     String
+  "True → only admins. False → only non-admins."
+  isAdmin:          Boolean
+  "Case-insensitive substring match on username."
+  usernameContains: String
+  """
+  PRD 069 — restrict to users that are members of **any** of these groups
+  (union), including membership via a sub-group. Groups are **key paths
+  relative to the `user-groups` root** — no `user-groups/` prefix, same handle
+  as `accessibleByGroup` (e.g. `"CampusA"` or nested `"CampusA/T/INF"`). This resolves
+  the bare-key ambiguity of `User.groups` (a Studiengang key like `"INF"` exists
+  at many campuses). Unknown path → INVALID_VALUE. ANDs with the other filters.
+  """
+  inGroup:          [String!]
+}
+
+"""
+Narrowing predicates for `resources(filter:)`. All fields optional;
+null = unconstrained. Multiple predicates AND together. Filter runs over
+the §12-visible subset.
+
+For typed per-attribute filtering, see the GENERATED `where<TypeKey>`
+fields (PRD 035 §5d). They appear on this input alongside the scalar
+fields below — one per resource/person DynamicType in the deployment.
+"""
+input ResourceFilter {
+  # Type selection lives on the GENERATED `typeIn: [ResourceTypeKey!]` field
+  # (PRD 059 Phase 7 — SDL `extend input` emitted by ClassificationSdlGenerator).
+  "True → only persons. False → only resources. null → both."
+  isPersonEq:   Boolean
+  "Case-insensitive substring match on displayName (legacy — prefer `searchText` + `matchKind` for new flows). ANDs with `searchText` if both are set."
+  nameContains: String
+  "PRD 028 Phase 1 — match against `Resource.displayName`; paired with `matchKind` for prefix/substring/fuzzy."
+  searchText:   String
+  "PRD 028 Phase 1 — algorithm choice for `searchText`. Defaults to SUBSTRING (matches the legacy `nameContains` behavior)."
+  matchKind:    MatchKind = SUBSTRING
+  "Exact-match on owner id."
+  ownerEq:      ID
+  """
+  PRD 066 — additive id-selection that ALWAYS appears in the result
+  (subject only to §12 canRead). Ids matching the type-bucket
+  (`typeIn` + `whereXxx`) and ids in `idIn` are
+  UNIONed. The per-type filter rules do NOT apply to `idIn` picks —
+  the caller has explicitly named them. Empty filter (all fields null)
+  still means "everything readable"; `idIn` alone means "exactly these
+  ids" (no type-bucket contribution).
+  """
+  idIn:         [ID!]
+  """
+  PRD 069 — restrict to resources the named **user** may access (admin-scoped).
+  Username handle, like `user(username:)`. XOR with `accessibleByUserId` /
+  `accessibleByGroup`. The caller must be allowed to administer the user
+  (`canAdminUser`), else a uniform FORBIDDEN error (no existence leak).
+  """
+  accessibleByUsername: String
+  "PRD 069 — same as `accessibleByUsername` but by opaque user id. XOR with the other access selectors."
+  accessibleByUserId:   ID
+  """
+  PRD 069 — restrict to resources any of these **groups** may access
+  (admin-scoped). Union over the list. Groups are key paths relative to the
+  `user-groups` root — no `user-groups/` prefix (e.g. `"staff"` or nested
+  `"staff/leads"`). Caller must administer every group (`canAdminGroup`), else
+  FORBIDDEN.
+  """
+  accessibleByGroup:    [String!]
+  "PRD 069 — minimum access level the target must hold (default READ = visible; EDIT = editable). Ignores time-window constraints in v1."
+  accessLevel:          AccessLevel = READ
+  """
+  Cap the result size. Iteration stops as soon as `limit` visible matches
+  have accumulated. Strongly recommended on large deployments — at admin
+  scale, 11 typed fields × 40k+ rows is ~15s of graphql-java per-field
+  overhead. Null = no limit (legacy default; may change).
+  """
+  limit:        Int
+}
+
+# === PRD 035 §5d — Generic Where input types ===
+# Predicate inputs reused by every generated <TypeKey>Where input. All
+# operators are optional (null = unconstrained); when multiple non-null
+# operators are passed inside one *Where they AND together.
+
+"Predicates for STRING-valued attributes."
+input StringWhere {
+  eq:         String
+  ne:         String
+  in:         [String!]
+  "Case-insensitive substring contains."
+  contains:   String
+  startsWith: String
+  endsWith:   String
+  isNull:     Boolean
+}
+
+"Predicates for INT-valued attributes (rapla stores as Long)."
+input IntWhere {
+  eq:     Int
+  ne:     Int
+  in:     [Int!]
+  gt:     Int
+  gte:    Int
+  lt:     Int
+  lte:    Int
+  isNull: Boolean
+}
+
+"Predicates for BOOLEAN-valued attributes."
+input BooleanWhere {
+  eq:     Boolean
+  isNull: Boolean
+}
+
+"Predicates for DATE-valued attributes (rapla stores as LocalDateTime)."
+input LocalDateTimeWhere {
+  eq:      LocalDateTime
+  ne:      LocalDateTime
+  gt:      LocalDateTime
+  gte:     LocalDateTime
+  lt:      LocalDateTime
+  lte:     LocalDateTime
+  "Inclusive between — [from, to]."
+  between: [LocalDateTime!]
+  isNull:  Boolean
+}
+
+"""
+Predicates for CATEGORY-valued attributes targeting ORGANIZATION-kind roots
+(hierarchical trees). For VALUE_LIST roots, use the generated `<EnumName>Where`
+input instead (typed enum predicates, autocomplete-friendly).
+"""
+input CategoryWhere {
+  eq:           ID
+  ne:           ID
+  in:           [ID!]
+  "Match by slash-separated KEY path (e.g. \"Standort/Karlsruhe\")."
+  path:         String
+  "Match any descendant of the given category id — useful for ORGANIZATION trees."
+  descendantOf: ID
+  isNull:       Boolean
+}
+
+"""
+Predicates for multi-select CATEGORY (list) attributes targeting
+ORGANIZATION-kind roots. For VALUE_LIST multi-select, use the generated
+`<EnumName>ListWhere` instead.
+"""
+input CategoryListWhere {
+  contains:    ID
+  containsAny: [ID!]
+  containsAll: [ID!]
+  isEmpty:     Boolean
+  isNull:      Boolean
+}
+
+"""
+Predicates for ALLOCATABLE-valued attributes. Currently supports id-equality
+predicates. Future extension (deferred PRD): nested sub-where on the referenced
+resource's own classification.
+"""
+input ResourceWhere {
+  eq:     ID
+  ne:     ID
+  in:     [ID!]
+  "PRD 074 — match the REFERENCED resource by its display name (case-insensitive substring). Lets you filter through a reference in ONE query, e.g. rooms whose building name contains \"Campus A\" via Room.whereRoom.Building.nameContains."
+  nameContains: String
+  isNull: Boolean
+}
+
+"""
+Predicates for multi-select ALLOCATABLE attributes (rapla `multi-select=true`,
+typically `package=true` flavor). Symmetric mirror of CategoryListWhere.
+"""
+input ResourceListWhere {
+  contains:    ID
+  containsAny: [ID!]
+  containsAll: [ID!]
+  isEmpty:     Boolean
+  isNull:      Boolean
+}
+
+type User {
+  id:         ID!
+  username:   String!
+  name:       String!
+  email:      String
+  isAdmin:    Boolean!
+  # Identity provider that authenticated this user — e.g. "rapla" (local
+  # password), "microsoft", "google", "keycloak". Null for legacy / locally-
+  # created users with no recorded source.
+  authSource: String
+  # Permission groups the user is a member of (PRD 035 §5c). Internally
+  # backed by the user-groups category subtree; surfaced as the dedicated
+  # Group type so the API doesn't leak the storage representation.
+  groups:     [Group!]!
+}
+
+"""
+Permission group (PRD 035 §5c). Internally rapla stores these as categories
+under the user-groups subtree, but the GraphQL API treats them as a first-
+class type so the contract stays clean if the storage representation ever
+moves. Hierarchy (PRD 113 § 5e): `parent` / `children` stay inside the user-groups
+subtree — the root itself is not a group, so a top-level group's parent is null.
+Groups only; members stay behind `User.groups`.
+"""
+type Group {
+  id:       ID!
+  key:      String!
+  name:     String!
+  parent:   Group
+  children: [Group!]!
+}
+
+"""
+PRD 113 § 5b — one stored permission row. `level` is the full enum on read. Window fields are only ever
+evaluated on resource/person rows at REQUEST..EDIT; elsewhere they are stored but inert.
+"""
+type Permission {
+  principal:  PermissionPrincipal!
+  level:      AccessLevel!
+  start:      LocalDateTime
+  end:        LocalDateTime
+  minAdvance: Int
+  maxAdvance: Int
+}
+
+"PRD 113 § 5b — exactly one populated; a stored row with neither user nor group reads as everyone: true."
+type PermissionPrincipal {
+  user:     PermissionPrincipalUser
+  group:    PermissionPrincipalGroup
+  everyone: Boolean!
+}
+
+"PRD 113 OQ 3 — id + name of a row's user, visible to the entity admin even outside their user-admin scope. Deliberately NOT the User type: no email, authSource or groups."
+type PermissionPrincipalUser {
+  id:       ID!
+  username: String!
+  name:     String
+}
+
+"PRD 113 OQ 3 — id + name of a row's group."
+type PermissionPrincipalGroup {
+  id:   ID!
+  name: String!
+}
+
+type Period {
+  "PRD 113 OQ 8 — the id of the underlying rapla:period resource."
+  id:    ID!
+  name:  String!
+  start: LocalDateTime!
+  end:   LocalDateTime!
+  "PRD 113 OQ 12 — the stored multi-select category attribute."
+  categories: [Category!]!
+  "PRD 113 — may edit the permission list."
+  canAdmin:    Boolean!
+  "PRD 113 § 5b — null unless canAdmin (§12)."
+  permissions: [Permission!]
+}
+
+# rapla Category — a node in the hierarchical metadata tree (value-list roots,
+# organization trees, semester groupings, etc.). Returned by the category(path)
+# and categories(rootKey) queries; children/parent traversal is lazy.
+#
+# The `user-groups` subtree is filtered out of every Category resolver — it
+# surfaces only via the dedicated `Group` type (see permission group section).
+# PRD 035 §5a.
+type Category {
+  id:       ID!
+  key:      String!
+  name:     String!         # default-locale resolved
+  path:     String!         # slash-separated, relative to the super-category root
+  kind:     CategoryKind!   # how the consumer should render this Category
+  parent:   Category        # null at the top-level (super-category is hidden)
+  children: [Category!]!
+}
+
+"""
+Render-discrimination for Categories. Determined per category root (deployment-
+agnostic): explicit `category-kind` admin annotation > heuristic on tree depth
+> default. See PRD 035 §5a for the determination rules.
+"""
+enum CategoryKind {
+  "Flat picklist (root → leaves only). Render as a dropdown / chip selector."
+  VALUE_LIST
+  "Hierarchical tree (depth ≥ 2). Render as a drill-down / tree picker."
+  ORGANIZATION
+  "rapla-internal subtrees (super-category root etc.). Not normally exposed; flagged for completeness."
+  SYSTEM
+}
+
+# === Resources + classifications =========================================
+
+"""
+Whether a Resource represents a bookable resource or a person.
+Derived from the DynamicType's classification-type annotation.
+"""
+enum ResourceKind {
+  RESOURCE
+  PERSON
+}
+
+"""
+A bookable entity in rapla — room, equipment, lecturer, student, etc.
+The `type` is structural (resource vs person); the `classification` carries
+deployment-specific attribute values typed via the DynamicType schema.
+The classification field is narrowed to `ResourceClassification` so an
+inline fragment on an event-only type (e.g. `... on LehrveranstaltungClassification`)
+fails GraphQL validation rather than silently returning null at runtime.
+"""
+type Resource {
+  id:             ID!
+  kind:           ResourceKind!
+  "PRD 080 — true when this resource is a person (== type PERSON). Universal across instances."
+  isPerson:       Boolean!
+  "PRD 080 — true when the resource's DynamicType is annotated location=true (room/venue marker, same as iCal export). Deployment-configured; the annotation key is universal — no instance-specific type key needed."
+  isLocation:     Boolean!
+  "PRD 074 — the resource's name composition (nameformat), locale-resolved. variant selects DISPLAY/EXPORT/PLANNING (EXPORT/PLANNING fall back to DISPLAY when the type lacks them)."
+  name(variant: NameVariant = DISPLAY): String
+  "Deprecated alias for name(variant: DISPLAY). Locale-resolved, classification-derived."
+  displayName:    String! @deprecated(reason: "use name(variant: DISPLAY)")
+  owner:          User
+  createdAt:      DateTime
+  lastModifiedAt: DateTime
+  classification: ResourceClassification!
+  "Server-derived per caller — gates the SPA's edit affordance without a second roundtrip (mirror of Reservation.canModify, PRD 096)."
+  canModify:      Boolean!
+  "PRD 113 — may edit the permission list (canAdmin)."
+  canAdmin:       Boolean!
+  "PRD 113 § 5b — the stored rows; null unless canAdmin (§12), never [] for a non-admin. An entity admin sees every principal's name (OQ 3)."
+  permissions:    [Permission!]
+  "Evaluate a rapla expression against this resource (same engine as AppointmentBlock.compute and the stats group-key expr). Lifts a classification attribute onto a row-level, groupable column — e.g. compute(expr: \"email\") so @column(group: true) can group by it. Invalid/blank expr → null."
+  compute(expr: String!): String
+  """
+  The first of `keys` this row's own DynamicType actually has, formatted like the typed
+  classification fields; keys the type lacks are skipped, all-missing → null.
+
+  Why not `compute(expr:)`: an expression binds its attribute names against ONE DynamicType at
+  parse time, so naming a key another type lacks nulls the WHOLE expression — `concat(email,Email)`
+  yields nothing on either type. Deployments spell the same datum differently per type (`email` on
+  persons, `Email` on rooms); this puts both in one row-level, groupable column, which is what a
+  duplicate report across mixed types needs.
+
+  `expr` answers when no key matched, so the same column can group by a COMPOSED value
+  (`attributeValue(keys: [], expr: "name()")`) — which no attribute key expresses. One switchable
+  column, one view.
+  """
+  attributeValue(keys: [String!]!, expr: String): String
+}
+
+# === DynamicType + descriptors (PRD 035 §4) =================================
+
+"""
+What kind of entity a DynamicType classifies. rapla has three categories of
+DynamicTypes — resources, persons, and reservations.
+"""
+enum ClassificationType {
+  RESOURCE
+  PERSON
+  RESERVATION
+}
+
+"""
+The Java type used to represent an attribute value. Drives widget choice in
+the SPA per PRD 035 §5 (valueType + annotations + constraints → widget).
+"""
+enum AttributeValueType {
+  STRING
+  INT
+  BOOLEAN
+  DATE
+  CATEGORY
+  ALLOCATABLE
+}
+
+"""
+Cardinality of an attribute's value. CATEGORY and ALLOCATABLE attributes
+may be multi-select; STRING / INT / BOOLEAN / DATE are always SINGLE in
+the current rapla data model.
+"""
+enum Multiplicity {
+  SINGLE
+  LIST
+  BELONGS_TO
+  PACKAGE
+}
+
+"""
+A deployment-defined classification (event type, resource type, person type).
+The shape of values an `Resource` or `Reservation` of this type carries.
+
+Per-attribute structure (name, valueType, constraints) is exposed via
+**introspection of the generated `<TypeKey>Classification` type** + custom
+directives — NOT via a parallel `attributes: [AttributeDescriptor!]!`
+surface (β refactor 2026-05-28, PRD 055 decision log). The schema-as-data
+path is the single source of truth.
+"""
+type DynamicType {
+  id:                 ID!
+  key:                String!
+  "Locale-resolved name (e.g. \"Lecture room\")."
+  name:               String!
+  classificationType: ClassificationType!
+  """
+  PRD 111 D3 — the stored documents offered on entities of this type, in the order the type's
+  `documents` annotation lists them. Resolved AS THE CALLER: names that are unreadable or no
+  longer exist are dropped (the dangling case never reaches the client), as are documents whose
+  derived kind does not match this type. The SPA already loads every type at bootstrap and builds
+  the row menu from this — no round-trip on right-click.
+
+  NULLABLE on purpose: the documents plugin is removable (D6 gate 1, `rapla.services.` property).
+  With its beans gone there is no fetcher, and a NON-null field would fail every query selecting
+  it — i.e. break SPA bootstrap exactly when the plugin is switched off. Consumers treat null and
+  [] alike.
+  """
+  documents:          [DocumentRef!]
+  "PRD 113 § 1b — the stored READ_TYPE / CREATE rows, evaluated live against the type. Null unless global admin."
+  typeAccess:         [Permission!]
+  "PRD 113 § 1b — every other stored row, copied onto new instances at create time. Null unless global admin."
+  instanceDefaults:   [Permission!]
+}
+
+"PRD 111 D3 — one document offered on a type: `name` is the reference, the menu label and the future i18n key; `param` is the URL parameter that carries the entity id (derived from the view's by-id root, D2)."
+type DocumentRef {
+  name:  String!
+  param: String!
+}
+
+# === Classification — interface + AttributeValue =============================
+
+"""
+Classification — a Resource's or Reservation's typed attribute payload.
+Implementations are GENERATED at startup, one per DynamicType
+(`<TypeKey>Classification`), exposing typed per-attribute fields for codegen
+consumers (plugins, MCP).
+SPA consumers query the interface only (PRD 035 §540 lock-in) — one
+deployment-agnostic renderer iterates `attributes` and uses the descriptor
+on `type` for widget config.
+
+Three-way interface split:
+- `Classification` — the structural base. Every generated type implements it.
+  Rapla-internal types (classification-type=rapla — Period, Template, etc.)
+  implement ONLY this; they're invisible from entity-level narrowing.
+- `ResourceClassification` — narrows the target type of `Resource.classification`.
+  Implemented by generated types whose DynamicType has
+  classification-type ∈ {resource, person}.
+- `ReservationClassification` — narrows the target type of `Reservation.classification`
+  (lands with the reservation resolvers next batch). Implemented by generated
+  types whose DynamicType has classification-type = reservation.
+"""
+interface Classification {
+  "Human-readable key of the DynamicType (e.g. \"event\", \"room\", \"Lehrveranstaltung\"). Unique across the deployment. Matches the @oneOf variant name on the input side, the codegen typed-narrow fragment selector, and the @expectedType directive on ALLOCATABLE attribute fields. For the underlying DynamicType's UUID (rare — admin renames don't require it; rapla keys are uniqueness-enforced), use `type { id }`."
+  typeKey: String!
+  type:    DynamicType!
+}
+
+"""
+Resource / person classifications. The `Resource.classification` field
+targets this interface so a typed-narrow fragment like
+`... on LehrveranstaltungClassification` (an event type) fails GraphQL
+validation up-front instead of resolving to null at runtime.
+"""
+interface ResourceClassification implements Classification {
+  typeKey: String!
+  type:    DynamicType!
+}
+
+"""
+Reservation classifications. Targets `Reservation.classification` when
+the reservation resolvers land next batch. Same split rationale as
+`ResourceClassification`.
+"""
+interface ReservationClassification implements Classification {
+  typeKey: String!
+  type:    DynamicType!
+}
+
+# === Custom directives on generated classification fields (PRD 055 β refactor) ===
+# These replace the AttributeDescriptor + AttributeValue parallel surface.
+# The schema's typed field types ARE the descriptor; directives carry the
+# bits introspection doesn't natively expose (display names, expected
+# resource target type, category root, multiplicity flavor).
+
+"""
+The locale-resolved human-readable name for a generated classification
+field. Default-locale string baked at SDL generation time.
+"""
+directive @displayName(value: String!) on FIELD_DEFINITION
+
+# === PRD 074 — view render-meta directives (query-side; consumed by the SPA renderer, PRD 078) ===
+# Presence of @view on the operation makes the server emit `extensions.view`
+# (resolved title + column descriptors) alongside `data`. Field directives feed
+# that descriptor; they do NOT change `data`.
+
+"""
+PRD 074 — marks an operation as a renderable view; triggers extensions.view (key/title/columns).
+The date window comes from @window when declared, else the render-mode default
+(week → current ISO week, month → current month, else TODAY −7 … +7); the server
+resolves it at request time and emits it as extensions.view.window.
+"""
+directive @view(
+  title: String, rowLabel: String, groupLabel: String,
+  renderModes: [ViewRenderMode],
+  """
+  Whether the view appears in the catalog listing (`listViews`) — the SPA's view switcher.
+  `false` keeps a working view (a report rendered by a document, a building block) out of the
+  switcher. This is presentation, NOT permission: an unlisted view resolves by name exactly as
+  before, and who may read it is still decided by its public/groups visibility alone.
+  """
+  listed: Boolean = true
+) on QUERY
+
+"One end of a @window — resolved server-side at request time so it is never stale. offset is a signed integer; 0 = the anchor itself."
+input WindowAnchor {
+  anchor: ViewAnchor!
+  offset: Int! = 0
+  unit: ViewDateUnit! = DAYS
+}
+
+"""
+PRD 074 §"Window and inputs directives" — the view's declared date window. Both ends are
+anchor triples resolved per request (a Monday two-week span is
+from: {anchor: WEEK_START, offset: 0}, to: {anchor: WEEK_START, offset: 14}).
+On the document path (PRD 097) ?from=/?to= overrides it. `into` names the filter
+variable; omitted = the sole ReservationFilter variable.
+"""
+directive @window(into: String, from: WindowAnchor!, to: WindowAnchor!) repeatable on QUERY
+
+"""
+PRD 074 §"Window and inputs directives" — declares one public value input. `name` is the
+public URL key (document path, PRD 097), `into` the private dotted variable path it fills
+(e.g. "filter.resourceIdsIn"); the coercion type is derived from `into` via the schema.
+On the document path, query params outside the declared set are rejected. `required` means
+the target must be filled from SOMEWHERE after the variable merge — a URL value, a document
+pin, or (authoring preview only) a default derived from the view's example defaultVariables;
+still unfilled → a hint page naming the param, never an unscoped everything-query. The SPA
+fills variables by type and does not enforce `required`.
+"""
+directive @param(name: String!, into: String!, required: Boolean = false) repeatable on QUERY
+"PRD 074 — column fetched but not displayed (e.g. a group/sort key)."
+directive @hidden on FIELD
+"PRD 074 — list-cell join separator (default \", \")."
+directive @join(separator: String) on FIELD
+"PRD 074 — project a single leaf out of a nested object/list column so the GUI renders a flat value. `field` names the leaf; omitted = the column's single selected sub-field. Meta-only (data stays nested)."
+directive @flatten(field: String) on FIELD
+"PRD 079 — aggregation function for appointmentBlockStats."
+enum AggregateFn { SUM  COUNT  MEAN  MIN  MAX }
+
+"PRD 079 — date bucket granularity. ISO_WEEK is ISO-8601 week-based (Mon-start)."
+enum TimeBucket { DAY  ISO_WEEK  MONTH  YEAR }
+
+"PRD 079 — which block date a time-bucket dimension reads."
+enum BlockDateField { START  END }
+
+"PRD 079 — numeric metric source. DURATION_MINUTES = wall-clock (end−start); DURATION_UNIT = eventtimecalculator (break-adjusted, ÷timeUnit → UE/hours, formatted text)."
+enum BlockMetricField { DURATION_MINUTES  DURATION_UNIT }
+
+"""
+PRD 079 — one grouping dimension. Supply EXACTLY ONE of:
+- `date` (+ optional `by`) → time bucket of that block date,
+- `resources` → §12-readable resources (block fans out to each; e.g. rooms),
+- `expr` → a custom compute expression (same engine as `AppointmentBlock.compute`; the
+  string result is the bucket key — group by anything you can express).
+`key` names the dimension in the result bucket's `keys`.
+"""
+input BlockGroupKey {
+  key: String!
+  date: BlockDateField
+  by: TimeBucket
+  resources: ResourceFilter
+  expr: String
+  "PRD 080 — group by the block's reservation (the event); the StatKey carries the Reservation as `entity`. \"hours/sessions per Veranstaltung\"."
+  reservation: Boolean
+}
+
+"""
+PRD 079 — one metric aggregated by `fn`, named `key` in the bucket's `values`. Supply EXACTLY ONE of:
+- `field` (typed numeric source: DURATION_MINUTES / DURATION_UNIT), or
+- `expr` (PRD 074 Stufe b — a numeric rapla expression, same engine as `compute`; the result is
+  coerced to a number, canonical '.' decimal). Non-numeric/formatted results are skipped.
+In-expression arithmetic (add/sub/mul/div) needs the EL number-model (PRD 073) — deferred.
+"""
+input BlockAggregate {
+  key: String!
+  field: BlockMetricField
+  expr: String
+  fn: AggregateFn!
+}
+
+"""
+PRD 080 item 6 — one grouping dimension for `resourceStats`. Supply EXACTLY ONE of:
+- `type: true` → group by the resource's DynamicType (value = type name; entity = null),
+- `expr` → a custom compute expression over the resource (string result = bucket key),
+- `self: true` → group by the resource itself; StatKey carries the Resource as `entity`.
+`key` names the dimension in the result bucket's `keys`.
+"""
+input ResourceGroupKey {
+  key:  String!
+  type: Boolean
+  expr: String
+  self: Boolean
+}
+
+"""
+PRD 080 item 6 — one metric for `resourceStats`. `fn: COUNT` counts resources in the bucket
+(no `expr` needed). For SUM/MEAN/MIN/MAX supply a numeric `expr` over the resource (same engine
+as `AppointmentBlock.compute`; result coerced to a number — e.g. a capacity attribute).
+"""
+input ResourceAggregate {
+  key:  String!
+  expr: String
+  fn:   AggregateFn!
+}
+
+"""
+PRD 080 item 7 — one grouping dimension for `reservationStats`. Supply EXACTLY ONE of:
+- `type: true` → group by the reservation's DynamicType (value = type name; entity = null),
+- `expr` → a custom compute expression over the reservation (string result = bucket key),
+- `self: true` → group by the reservation itself; StatKey carries the Reservation as `entity`.
+`key` names the dimension in the result bucket's `keys`.
+"""
+input ReservationGroupKey {
+  key:  String!
+  type: Boolean
+  expr: String
+  self: Boolean
+}
+
+"""
+PRD 080 item 7 — one metric for `reservationStats`. `fn: COUNT` counts reservations in the bucket.
+For SUM/MEAN/MIN/MAX supply a numeric `expr` over the reservation (same engine as `compute`).
+"""
+input ReservationAggregate {
+  key:  String!
+  expr: String
+  fn:   AggregateFn!
+}
+
+"PRD 079 — one grouped result row: the dimension keys, the aggregate values, and the block count."
+type BlockStatBucket {
+  keys:   [StatKey!]!
+  values: [StatValue!]!
+  count:  Int!
+}
+
+"PRD 079 — a bucket's dimension value (`key` = the BlockGroupKey.key, `value` = the bucket label)."
+type StatKey {
+  key:    String!
+  value:  String!
+  "PRD 080 — the typed group entity for entity dimensions (resources/reservation/category-resolving expr); null for time/scalar dimensions. Select its fields directly (e.g. room size)."
+  entity: StatEntity
+}
+
+"PRD 080 — the meaningful, selectable group entities a StatKey may resolve to."
+union StatEntity = Resource | Reservation | Category
+
+"""
+PRD 073 — one rapla expression-language function available to `compute(expr:)`, stat `expr`
+group-keys/metrics, and view computed columns. The catalog lets an editor offer autocomplete and a
+view validator type-check before save, without parsing engine source.
+"""
+type ComputeFunction {
+  "Function id as written in an expr, e.g. \"concat\", \"attribute\", \"duration\"."
+  name:        String!
+  "Provider namespace: \"org.rapla\" for core; the plugin namespace otherwise (e.g. \"org.rapla.eventtimecalculator\")."
+  namespace:   String!
+  "Minimum argument count."
+  minArgs:     Int!
+  "Maximum argument count; -1 = unbounded (variadic, e.g. concat)."
+  maxArgs:     Int!
+  "rapla-level result kind: String / Boolean / DateTime / Date / Int / TimeInterval / DynamicType / AttributeValue / Entity / list forms ([Resource]…) / generic T."
+  returnType:  String!
+  "Where the subject comes from: EVENT | CLASSIFIABLE | ALLOCATABLE | ANY | VIEW_TITLE."
+  sourceLevel: String!
+  "One-line human description."
+  doc:         String
+}
+
+"PRD 079 — an aggregate result. `number` is the numeric value; `text` is the plugin-formatted form for DURATION_UNIT (UE/hours), else null."
+type StatValue { key: String!  number: Float  text: String }
+
+"""
+For ALLOCATABLE-typed attributes: which DynamicType the referenced
+resource must belong to. Renders the SPA's resource picker filter.
+"""
+directive @expectedType(key: String!) on FIELD_DEFINITION
+
+"""
+For CATEGORY-typed attributes: slash-separated key path of the allowed
+root category. Renders the SPA's category picker root.
+"""
+directive @rootCategory(path: String!) on FIELD_DEFINITION
+
+"""
+The multiplicity flavor on multi-valued attribute fields. SINGLE fields
+do not carry this directive (they're emitted without a list wrapper).
+LIST is the default for `[X!]` types and may be omitted too. BELONGS_TO
+and PACKAGE are explicit markers that drive widget choice in the SPA.
+"""
+directive @multiplicity(value: Multiplicity!) on FIELD_DEFINITION
+
+"""
+Marker on required attribute fields. The field type stays nullable
+(existing pre-required-flag data may carry null), but new saves must
+populate.
+"""
+directive @required on FIELD_DEFINITION
+
+"""
+PRD 096 D5 revision — attribute placement in editors, one directive for the
+whole `title > main > additional > no-view` scale. "title" is computed from
+the DISPLAY nameformat: every direct attribute reference ({surname}
+{forename} → both) becomes a title attribute (rendered as prominent header
+fields, in attribute order); function expressions and list-valued attributes
+are ignored, an explicit edit-view=no-view annotation wins over the
+derivation. "additional" / "no-view" mirror the `edit-view` attribute
+annotation. "main" is the default and is never emitted.
+"""
+directive @editView(value: String!) on FIELD_DEFINITION
+
+# === PRD 055 Reservation read types (minimal — full resolver impl in PRD 055 later) ===
+# Added 2026-05-28 alongside PRD 056 mutations so create/update return Reservation.
+
+"PRD 074 — name composition variant selector. EXPORT/PLANNING fall back to DISPLAY when the type lacks that nameformat."
+enum NameVariant { DISPLAY  EXPORT  PLANNING }
+
+"""
+PRD 099 — the unpersisted birth state of a new reservation of a type:
+classification prefilled with the type's attribute defaults. Deliberately
+carries NO id/owner/lastModifiedAt/permissions — it is not an entity and
+cannot be echoed back as one. The SPA seeds new drafts (and type-switch
+gap-fill) from it; the create mutation persists.
+"""
+type ReservationPrototype {
+  typeKey:        String!
+  classification: Classification!
+}
+
+# PRD 099 D6 slice — see Query.newEventOptions.
+type NewEventOptions {
+  eventTypes: [DynamicType!]!
+  templates:  [EventTemplate!]!
+}
+
+"An event template (rapla:template). Stored as a resource; separate entity in the API (PRD 113 § 1c)."
+type EventTemplate {
+  id:   ID!
+  "Locale-resolved template name."
+  name: String!
+  "Swing keepTime — day-offset vs minute-exact shift on instantiation (event-templates.md)."
+  fixedTimeAndDuration: Boolean!
+  owner:          User
+  createdAt:      DateTime
+  lastModifiedAt: DateTime
+  canModify:      Boolean!
+  "PRD 113 — may edit the permission list."
+  canAdmin:       Boolean!
+  "PRD 113 § 5b — null unless canAdmin (§12)."
+  permissions:    [Permission!]
+}
+
+"""
+Calendar event — the central booking entity. One or more Appointments
+(time slots) carry the booking against Resources (resources/persons).
+"""
+type Reservation {
+  id:             ID!
+  """
+  PRD 074 — the reservation's name composition, locale-resolved server-side. The `variant`
+  selects the nameformat family: DISPLAY (nameformat), EXPORT (nameformat_export), PLANNING
+  (nameformat_planning); EXPORT/PLANNING fall back to DISPLAY when the type lacks them.
+  """
+  name(variant: NameVariant = DISPLAY): String
+  "Deprecated alias for name(variant: DISPLAY)."
+  displayName:    String @deprecated(reason: "use name(variant: DISPLAY)")
+  classification: ReservationClassification!
+  appointments:   [Appointment!]!
+  "PRD 095 Phase 3b (OQ3) — number of appointments, without shipping the list. The month-grid drag gate needs 'single appointment?' per block row; moveReservations shifts ALL appointments, so multi-appointment reservations are not draggable."
+  appointmentCount: Int!
+  allocations:    [Allocation!]!
+  owner:          User
+  createdAt:      DateTime
+  lastModifiedAt: DateTime
+  "min(appointment.start)"
+  firstDate:      LocalDateTime!
+  "max(appointment.maxEnd)"
+  lastDate:       LocalDateTime!
+  "PRD 104 v3 — the `externalid` annotation (external-source binding stamp, e.g. Dualis); null when the reservation is not externally bound."
+  externalId:     String
+  "Server-derived per caller — controls edit-button gating in the SPA without a second roundtrip."
+  canModify:      Boolean!
+  "PRD 113 — may edit the permission list (canAdmin)."
+  canAdmin:       Boolean!
+  "PRD 113 § 5b — the stored rows; null unless canAdmin (§12), never [] for a non-admin."
+  permissions:    [Permission!]
+  """
+  PRD 028 Phase 1 — true if any visible conflict touches this reservation
+  (allows the SPA's power-search badge UX without a second roundtrip).
+  Visibility-filtered: conflicts where the caller can't read the other
+  side OR the resource do not count. The full conflict list lives on
+  `Query.conflicts(reservationId:)` (PRD 064).
+  """
+  hasConflicts:   Boolean!
+}
+
+"""
+A single appointment of a Reservation. Owns its recurrence rule;
+materialized blocks come from `blocks(from:, to:)` on demand.
+"""
+type Appointment {
+  id:        ID!
+  "PRD 074 Baustein 9 — appointment-aware name (reservation.formatAppointment). Honors appointment-note overrides; differs from AppointmentBlock.name only in lacking a single occurrence's date context. DISPLAY/EXPORT/PLANNING; EXPORT/PLANNING fall back to DISPLAY when undefined."
+  name(variant: NameVariant = DISPLAY): String
+  start:     LocalDateTime!
+  end:       LocalDateTime!
+  allDay:    Boolean!
+  "Null = single-occurrence appointment."
+  repeating: RepeatingRule
+  """
+  Pre-resolved per-appointment resources (PRD 055 Q4 — restrictions
+  applied). Restriction-aware editing reads parent Reservation.allocations.
+
+  PRD 074 A — optional `filter` narrows the (already §12-canRead-gated) list using the
+  FULL `ResourceFilter` (same type + same evaluators as `Query.resources`): scalar
+  predicates, `where<TypeKey>` attribute filters, `idIn`, `accessibleBy*`/`accessLevel`
+  (e.g. "resources of this event I may edit"), `limit`. The canRead gate runs BEFORE the
+  filter, so narrowing can never leak a hidden resource.
+  """
+  resources(filter: ResourceFilter): [Resource!]!
+  "Materialize blocks within a window. Server-side recurrence expansion."
+  blocks(from: LocalDateTime!, to: LocalDateTime!): [AppointmentBlock!]!
+  "PRD 074 Baustein 6 — the appointment pendant of `AppointmentBlock.compute`: evaluates an arbitrary rapla expression (same language as a nameformat; p = the appointment) against this appointment, e.g. {p->format(\"%1$ta %1$td.%1$tm.%1$ty %1$tH:%1$tM\",start(p))}. Composes what `times` cannot — a date-carrying range for a logic-less document template. Invalid expr returns null. Max 2000 chars."
+  compute(expr: String!): String
+}
+
+"Materialized occurrence of a recurring Appointment. No id (synthetic per-expansion)."
+type AppointmentBlock {
+  start:       LocalDateTime!
+  end:         LocalDateTime!
+  isException: Boolean!
+  "PRD 094 D4 — the owning appointment's id; the SPA delete-scope flow keys on the (appointmentId, blockStart) pair per row."
+  appointmentId: ID!
+  "PRD 095 Phase 3b (OQ3) — the owning appointment, navigable (id, repeating, allDay, …). Same §12 scope as Reservation.appointments; appointmentId stays as scalar sugar for the PRD 094 delete flow. The month-grid drag gate reads repeating from here."
+  appointment: Appointment!
+  "PRD 074 Baustein 9 — FLAT block-aware name (block → reservation.formatAppointmentBlock). NOT the reservation name: honors appointment-note overrides (appointmentnote plugin), so a block can name differently than its reservation. DISPLAY/EXPORT/PLANNING variants; EXPORT/PLANNING fall back to DISPLAY when the type defines no such format."
+  name(variant: NameVariant = DISPLAY): String
+  "PRD 074 — the reservation this block belongs to (block → reservation → displayName)."
+  reservation: Reservation
+  "PRD 074 A — the block's resources, §12-gated, with the FULL ResourceFilter (scalar + where<TypeKey> + idIn + accessibleBy*/accessLevel + limit; same evaluators as Query.resources). Per-appointment restriction applied for this block's appointment."
+  resources(filter: ResourceFilter): [Resource!]!
+  "PRD 100 Phase 5 — match provenance (no argument): the SCOPED resources this block's appointment is bound to (belongsTo-resolved), as navigable Resources. The candidate pool is the QUERY'S OWN resolved resource scope (resourceIdsIn / resourceMatching) — so it can never diverge from the filter that selected the block — using the SAME AppointmentMapping.getMatchingResources primitive + storage binding the Swing/HTML week view groups by. The week grid's lane grouping key is matchedBy[0] (the selected building/room that admitted the block, not necessarily one it allocates); empty ⇒ the query was unscoped OR the block was admitted by a non-resource criterion ⇒ compact fallback. §12: the pool is the query's canRead-gated scope set, so only readable, already-scoped resources can surface."
+  matchedBy: [Resource!]!
+  "PRD 074 — server-evaluated event-time-calculator duration (e.g. 2 UE 0 Min), via the rapla function bridge. Null if the eventtimecalculator plugin is absent."
+  duration: String
+  "PRD 074 — server-evaluated formatted time range of the block (e.g. 10:00 - 11:30)."
+  times: String
+  "PRD 095 — single effective block color as a CSS hex string: the event color when the reservation carries one, else the first readable resource color (RaplaBuilder resolution + BlockColors merge). Null when no color applies OR the color-bearing contributor is not readable by the caller (§12 / PRD 095 D3 — the block stays, the color nulls)."
+  color: String
+  "PRD 074 — wall-clock occupancy of this block in whole minutes (end−start, no break adjustment). Numeric → aggregatable via @aggregate / groupable (PRD 079). Hours = /60. For break-adjusted teaching units use the `duration` string."
+  durationMinutes: Int
+  "PRD 074 — inline composition column: evaluates an arbitrary rapla expression (same language as a nameformat; p = the block) against this block, e.g. {p->concat(substring(times(p),0,5),substring(times(p),8,13))}. Invalid expr returns null. Max 2000 chars."
+  compute(expr: String!): String
+  "PRD 097 Phase 5 — the appointment's whole-day flag ('ganztägig'), exposed regardless of banner routing."
+  wholeDay: Boolean!
+  """
+  PRD 097 Phase 5 — the Google-model router (Rule B, decided 2026-07-14): true iff the block is
+  whole-day OR a full calendar day lies inside [start, end) — an end at exactly 00:00 belongs to
+  the previous day. NOT a duration threshold: Mon 16:00 → Tue 16:00 is 24h but covers no full day
+  → grid. Banner blocks emit `segments: []` (they live in the header band, not the time columns);
+  shorter midnight-crossers keep the midnight split. Needed only where a view has BOTH regions
+  (header band + time columns, i.e. the week view).
+  """
+  banner: Boolean!
+  """
+  PRD 097 Phase 5 — the block's band LABEL ('08:00' / 'vormittags'): its start classified against
+  the server-configured timeslots (the Swing TimeslotProvider config — bands are DATA, never
+  template structure). Consumed via `band: timeslot @column(group: true)` → `{{#groups}}`; the
+  configured-but-empty bands still render as empty groups. Null when the timeslot plugin is absent.
+  """
+  timeslot: String
+  """
+  PRD 097 Phase 5 — time-column geometry (week-view region): one segment per covered rendered day,
+  minutes clipped to the day, continuation markers at day edges, compact collision lanes. LIST-
+  SCOPED: `lane`/`laneCount` are computed over this query's own returned block list (exactly right
+  for rendering that result); computed lazily, only when selected. Banner blocks answer `[]`.
+  Empty on blocks outside the flat `appointmentBlocks` list (e.g. nested `Appointment.blocks`).
+  """
+  segments: [Segment!]!
+  """
+  PRD 097 Phase 5 — day-spanning geometry (month/band region): bars chunked at strip boundaries
+  and day-set gaps, stacked longer-first with push-down (`row`). LIST-SCOPED like `segments`.
+  `scope: BANNER` = only banner blocks participate (the week template's header band — band-only
+  stacking); `ALL` = month semantics, every block paints as a bar. The two scopes stack
+  independently. A non-banner multi-day block legitimately has BOTH `bars(scope: ALL)` and
+  `segments` — different templates consume different primitives (routing, not double-rendering).
+  """
+  bars(scope: BarScope = ALL): [Bar!]!
+}
+
+"PRD 097 Phase 5 — participation scope for `AppointmentBlock.bars`."
+enum BarScope { ALL  BANNER }
+
+"PRD 097 Phase 5 — one rendered day of a strip. `index` is 1-based within the strip's day set, CSS-grid-ready (substitutes verbatim into grid-column; use named grid lines like `d{{index}}` when an axis column offsets the day columns)."
+type StripDay {
+  index: Int!
+  date:  Date!
+  "Server-formatted day header, e.g. 'Mo 13.07.'. Format/locale authorability is a recorded open (PRD 097)."
+  label: String!
+}
+
+"PRD 097 Phase 5 — one day-strip of the grid (a week row): 1 strip for a week window, ~5 for a month. Week is the degenerate 1-strip case of month — the window's cardinality decides the shape, nothing in the query says 'week' or 'month'."
+type Strip {
+  "1-based, CSS-grid-ready."
+  index: Int!
+  days:  [StripDay!]!
+}
+
+"PRD 097 Phase 5 — time-column geometry of one block on one rendered day. Minutes since the day's 00:00, clipped to the day; `clippedStart`/`clippedEnd` mark midnight-split continuations. `lane`/`laneCount` are 1-based collision lanes within the day (width: calc(100%/{{laneCount}}); margin-left: calc(100%/{{laneCount}}*({{lane}} - 1)))."
+type Segment {
+  strip:        Int!
+  dayIndex:     Int!
+  startMin:     Int!
+  endMin:       Int!
+  lane:         Int!
+  laneCount:    Int!
+  clippedStart: Boolean!
+  clippedEnd:   Boolean!
+}
+
+"PRD 097 Phase 5 — day-spanning geometry of one block within one strip. `startDay`/`span` in strip day-set positions (1-based); `row` is the 1-based stacking row. `strip` + `row` stay separate — the template's calc() composes them (no baked band-height formula)."
+type Bar {
+  strip:        Int!
+  startDay:     Int!
+  span:         Int!
+  row:          Int!
+  clippedStart: Boolean!
+  clippedEnd:   Boolean!
+}
+
+enum RepeatingType { DAILY  WEEKLY  MONTHLY  YEARLY }
+
+type RepeatingRule {
+  type:       RepeatingType!
+  interval:   Int!
+  end:        Date
+  count:      Int
+  "rapla weekday convention 1=Sunday … 7=Saturday (NOT 0-6); WEEKLY-only — needed for 'every Tue + Thu' patterns."
+  weekdays:   [Int!]
+  exceptions: [Date!]!
+}
+
+"""
+Per-resource restriction record. `appointmentIds: null` = bound to all
+appointments (default). Non-null = restricted to those appointment ids
+(intra-document references to Appointment.id within the same Reservation).
+"""
+type Allocation {
+  resource:    Resource!
+  appointmentIds: [ID!]
+  """
+  PRD 091 OQ5 — pending-request marker. `REQUESTED` = the allocation was made by someone who may
+  only REQUEST this resource, not allocate it outright; null = an ordinary allocation. The
+  server derives it on write (`PermissionController.isRequestOnly`) exactly as Swing does on
+  assignment, and `SecurityManager` refuses a request-only allocation that lacks it.
+  """
+  requestStatus:  RequestStatus
+}
+
+"Pending-approval marker on an allocation (`Reservation.getRequestStatus`). One value today."
+enum RequestStatus { REQUESTED }
+
+scalar Date
+
+# === PRD 056 — mutation surface (locked 2026-05-28) ===
+#
+# Mutations split into three rings:
+#   1. Editor flow — single-entity full-state CRUD
+#   2. Bulk transforms — named intent verbs for admin workflows
+#   3. applyChanges — generic atomic batch (cross-type compound + concurrency-checked delete)
+#
+# ATOMIC-only in v1 (PRD 062 defers PARTIAL + heavier robustness patterns).
+# `@oneOf` on ChangeOp enforces exactly-one-variant at parse time.
+
+"""
+PRD 101 — transpose target. @oneOf: the variant type IS the granularity.
+`day` = a whole-day delta against the reference's date, time-of-day preserved by
+construction (≙ Swing keepTime=true, RFC 5545 DATE). `dateTime` = exact delta
+(≙ keepTime=false, RFC DATE-TIME). Move-only flavor — no resize.
+"""
+input Target @oneOf {
+  day: Date
+  dateTime: LocalDateTime
+}
+
+"""
+PRD 101 — transpose target for single-block move verbs, which can also resize.
+`day` is move-only (a day-granular surface has no resize handle — structural).
+`dateTime.end` present ⇒ resize the addressed block.
+"""
+input ResizableTarget @oneOf {
+  day: Date
+  dateTime: DateTimeTarget
+}
+
+"Target start (and optional end) for a single-block move/resize. end present ⇒ resize."
+input DateTimeTarget {
+  start: LocalDateTime!
+  end: LocalDateTime
+}
+
+type Mutation {
+  # ===== editor flow =====
+
+  "Create a new reservation. Server sets owner to caller. The client-minted id (UUID) is required — PRD 056 §9, retry safety."
+  createReservation(input: ReservationInput!): Reservation!
+
+  """
+  Update an existing reservation's content (classification / appointments /
+  allocations). Owner changes go through `changeReservationOwner`; type
+  changes are rejected (future `reshapeReservation` mutation).
+  `expectedLastChanged` enables optimistic concurrency — mismatch returns
+  `CONCURRENT_MODIFICATION` with the current value in the error extension.
+  """
+  updateReservation(id: ID!, input: ReservationInput!,
+                    expectedLastChanged: LocalDateTime): Reservation!
+
+  # ===== bulk transforms =====
+
+  "Reassign owner across N reservations to a single new owner. Admin only (Swing set-owner parity)."
+  changeReservationOwner(ids: [ID!]!, newOwnerId: ID!): BulkResult!
+
+  "PRD 113 OQ 14 — reassign owner across N resources (resources, templates, periods). Admin only (Swing set-owner parity)."
+  changeResourceOwner(ids: [ID!]!, newOwnerId: ID!): BulkResult!
+
+  "PRD 113 § 1c — update a template (rapla:template). canModify for the data, canAdmin for a changed list. Unknown, non-template and unreadable ids answer REFERENCE_NOT_FOUND identically."
+  updateEventTemplate(id: ID!, input: EventTemplateInput!, expectedLastChanged: LocalDateTime): EventTemplate!
+
+  "PRD 113 § 1c — update a period (rapla:period). canModify for the data, canAdmin for a changed list. Unknown, non-period and unreadable ids answer REFERENCE_NOT_FOUND identically."
+  updatePeriod(id: ID!, input: PeriodInput!, expectedLastChanged: LocalDateTime): Period!
+
+  """
+  Shift N reservations (all their appointments) to a new anchor (PRD 101).
+  `reference` = the arithmetic pivot the delta is measured from — default = the
+  earliest appointment start across the set (server-derived at execution time). The
+  EVENT drag passes the grabbed occurrence start so a mid-batch grab shifts correctly.
+  `target` carries the granularity: `day` keeps each appointment's time-of-day (whole-day
+  delta); `dateTime` shifts exactly. Move-only — set transforms cannot resize.
+  Exceptions stay absolute (D2); repeating `until` stays absolute on move (D3).
+  """
+  moveReservations(ids: [ID!]!, reference: LocalDateTime, target: Target!): BulkResult!
+
+  """
+  Duplicate N reservations to a new anchor (new server-minted ids; PRD 101). Same
+  `reference`/`target` transpose as moveReservations. Exceptions stay absolute (D2);
+  non-fixed repeating `until` is length-preserving on copy (D3). Copies start with no
+  permission overrides. NOT idempotent — a retried call creates another copy.
+  """
+  copyReservations(ids: [ID!]!, reference: LocalDateTime, target: Target!): BulkResult!
+
+  "Delete N reservations. No per-id concurrency check — accepts the race. For concurrency-checked delete use applyChanges with DeleteInput.expectedLastChanged."
+  deleteReservations(ids: [ID!]!): BulkResult!
+
+  """
+  Move or resize ONE appointment — the whole SERIE (PRD 101). The appointment's start
+  (and every occurrence) shifts by the delta from `occurrence` to `target`; the repeating
+  rule rides along (weekly weekday set self-heals; MONTHLY re-derives its nth-weekday
+  pattern from the new start — moving a monthly series by non-month amounts silently
+  changes its day-of-month rank). `occurrence` = the grabbed occurrence; defaults to the
+  appointment's own start (occurrence #1). If given it is validated (OCCURRENCE_NOT_FOUND
+  when it matches no occurrence). `target.dateTime.end` present ⇒ resize (a `day` target
+  cannot resize — structural). Exceptions and `until` stay absolute (D2/D3).
+  """
+  moveAppointment(appointmentId: ID!, occurrence: LocalDateTime, target: ResizableTarget!,
+                  expectedLastChanged: LocalDateTime): Reservation!
+
+  """
+  Move/resize a SINGLE occurrence of a repeating appointment by splitting it off (PRD 101).
+  The occurrence is cloned as a new NON-repeating appointment at `target` (carrying the
+  original appointment's per-resource restrictions), and the series gains an exception
+  on the original date. If that exception would empty the series, the whole appointment is
+  removed instead (and if that empties the reservation, the reservation is removed). The
+  response carries the new appointment id. Requires a repeating appointment.
+  """
+  splitOccurrence(appointmentId: ID!, occurrence: LocalDateTime!, target: ResizableTarget!,
+                  expectedLastChanged: LocalDateTime): Reservation!
+
+  # ===== PRD 063 — Resource (resource / person) mutations =====
+
+  """
+  Create a new Resource (resource or person). The owner is always the
+  caller (PRD 113 OQ 14 — reassign with `changeResourceOwner`). The classification's
+  @oneOf variant must match `input.typeKey`. Same β² typed-input pattern
+  as PRD 056 reservations.
+  """
+  createResource(input: ResourceInput!): Resource!
+
+  """
+  Update an existing Resource's content (classification only). A typeKey
+  differing from stored is an in-place type change (PRD 096 Phase 4, mirrors
+  the PRD 056 OQ1.c revision): the classification @oneOf variant must match
+  the NEW typeKey and the caller needs create-permission on the target type;
+  attribute remapping is the client's job. Owner immutable here (use
+  `changeResourceOwner`). `expectedLastChanged`
+  enables optimistic concurrency.
+  """
+  updateResource(id: ID!, input: ResourceInput!,
+                    expectedLastChanged: LocalDateTime): Resource!
+
+  """
+  Delete N Resources. No per-id concurrency check. Rejected with
+  STORAGE_ERROR if any reservation references the resource (rapla's
+  storage layer enforces this; admin must delete dependent reservations
+  first or reassign).
+  """
+  deleteResources(ids: [ID!]!): BulkResult!
+
+  # ===== applyChanges (escape hatch) =====
+
+  """
+  Generic atomic batch — one UpdateEvent per call. Maps 1:1 to rapla's
+  `operator.dispatch`. Used for cross-type compound workflows and the
+  concurrency-checked delete path. ChangeOp carries the typed operation
+  variants; `@oneOf` enforces exactly-one-set per parse.
+  """
+  applyChanges(operations: [ChangeOp!]!): BulkResult!
+
+  # ===== PRD 057 — DynamicType (schema editor) mutations =====
+
+  """
+  Upsert a DynamicType. `input.id` null = create; supplied = update.
+  Admin-only. Update with `expectedLastChanged` mismatch returns
+  `CONCURRENT_MODIFICATION`. Returns the stored DynamicType reflecting
+  the dispatched state. Note: the generated `<TypeKey>Classification`
+  GraphQL type appears in the schema on the next hot-swap poll (~10s);
+  callers that want the typed-narrow shape immediately should poll
+  `__type(name: ...)` until present.
+  """
+  saveDynamicType(input: DynamicTypeInput!,
+                  expectedLastChanged: LocalDateTime): DynamicType!
+
+  """
+  Delete N DynamicTypes by id. Admin-only. Rejected with
+  `REFERENCE_EXISTS` (and `referrers: [ID!]` capped at 50) if any data
+  instance still uses the type — the admin must first delete instances
+  or reassign via a future reshape mutation.
+  """
+  deleteDynamicTypes(ids: [ID!]!): BulkResult!
+}
+
+# === PRD 057 — DynamicType mutation inputs ===
+
+"""
+Upsert payload for a DynamicType. `id` null = create; supplied = update.
+`attributes` is order-significant — rapla preserves attribute order; the
+SPA drag-reorder UI submits the new order and the server stores it.
+"""
+input DynamicTypeInput {
+  "Null = create; supplied = update (must match an existing DynamicType.id)."
+  id:                 ID
+  "Admin-supplied — unique across deployment. Verbatim emission to SDL per PRD 058 (no silent transforms)."
+  key:                String!
+  "Multi-locale name (rapla DynamicType is MultiLanguageNamed)."
+  name:               MultiLanguageStringInput!
+  classificationType: ClassificationType!
+  "Order-significant — index = display order."
+  attributes:         [AttributeInput!]!
+  "Open-ended annotation map (name-format, etc.). v1: known keys only — server rejects unknown keys with INVALID_VALUE."
+  annotations:        [KeyValueInput!]
+  "PRD 113 § 1b — the READ_TYPE / CREATE rows. Null = keep the stored subset; non-null replaces it."
+  typeAccess:               [TypeAccessInput!]
+  "PRD 113 § 1b — instance defaults of a RESOURCE/PERSON type. Null = keep; non-null replaces. Rejected (INVALID_VALUE) on a RESERVATION type."
+  resourceInstanceDefaults: [ResourcePermissionInput!]
+  "PRD 113 § 1b — instance defaults of a RESERVATION type. Null = keep; non-null replaces. Rejected (INVALID_VALUE) on a RESOURCE/PERSON type."
+  eventInstanceDefaults:    [SimplePermissionInput!]
+}
+
+"""
+Attribute definition within a DynamicType. `id` null for new attributes
+(server generates); supplied for updates to existing attributes.
+"""
+input AttributeInput {
+  id:             ID
+  key:            String!
+  name:           MultiLanguageStringInput!
+  valueType:      AttributeValueType!
+  multiplicity:   Multiplicity!
+  required:       Boolean!
+  "CATEGORY only — root of allowed subtree. REFERENCE_NOT_FOUND if unresolved."
+  rootCategoryId: ID
+  "ALLOCATABLE only — required target DynamicType key (matches @expectedType directive on the read side). REFERENCE_NOT_FOUND if unresolved."
+  expectedTypeKey: String
+  "Optional default value. @oneOf enforces exactly-one-variant at parse time. Must match the attribute's valueType + multiplicity."
+  defaultValue:   DefaultValueInput
+  annotations:    [KeyValueInput!]
+}
+
+"""
+Multi-locale name shape. `default` is the default-locale fallback
+(required). `translations` provides per-locale overrides; missing
+locales fall back to `default`.
+"""
+input MultiLanguageStringInput {
+  default:      String!
+  translations: [LocaleEntryInput!]
+}
+
+input LocaleEntryInput {
+  "ISO code: \"de\", \"en\", \"fr\"."
+  locale: String!
+  value:  String!
+}
+
+"""
+Typed primitive value for AttributeInput.defaultValue. The @oneOf
+directive enforces exactly-one-variant per input.
+"""
+input DefaultValueInput @oneOf {
+  stringValue:    String
+  intValue:       Int
+  boolValue:      Boolean
+  dateValue:      LocalDateTime
+  categoryId:     ID
+  resourceId:  ID
+  stringValues:   [String!]
+  categoryIds:    [ID!]
+  resourceIds: [ID!]
+}
+
+"""
+Open-ended key/value pair for annotation maps. v1: server rejects
+unknown keys with INVALID_VALUE.
+"""
+input KeyValueInput {
+  key:   String!
+  value: String!
+}
+
+# === PRD 056 — generic types ===
+
+"Heterogeneous batch result. `overallStatus` quick-signals success/failure; per-op detail in `results[]` indexed to the input order."
+type BulkResult {
+  overallStatus: BulkStatus!
+  results:       [ChangeResult!]!
+}
+
+"PARTIAL_SUCCESS is reserved for the future PARTIAL mode (PRD 062)."
+enum BulkStatus { SUCCESS  REJECTED }
+
+"""
+One entry per applyChanges operation, indexed to the input array.
+Per-operation kind populates exactly one of the typed fields below;
+errors[] populates on failure.
+"""
+type ChangeResult {
+  "Position in the request's operations[]."
+  index:        Int!
+  "Populated for create/update Reservation ops."
+  reservation:  Reservation
+  "Populated for create/update Resource ops (future resources-write PRD)."
+  resource:  Resource
+  "Populated for create/update User ops (future users-write PRD)."
+  user:         User
+  "Populated for any delete op."
+  deletedKind:  EntityKind
+  "Populated for any delete op."
+  deletedId:    ID
+  "Populated on failure. Empty list = op succeeded."
+  errors:       [ValidationError!]!
+}
+
+enum EntityKind { RESERVATION  ALLOCATABLE  USER  PERMISSION }
+
+"""
+Stable-coded validation error. `code` is a string (not enum) so future codes
+don't break existing clients. Common codes: REQUIRED, INVALID_VALUE,
+REFERENCE_NOT_FOUND, REFERENCE_EXISTS, PERMISSION_DENIED, CONCURRENT_MODIFICATION,
+ID_COLLISION, INVALID_TYPE_CHANGE, CONFLICT. Extensions vary per code.
+"""
+type ValidationError {
+  "GraphQL-style path: operations[3].createReservation.appointments[0].repeating.exceptions[2]"
+  path:    String!
+  code:    String!
+  message: String!
+}
+
+# === PRD 056 — ChangeOp + input types ===
+
+"""
+A single operation in an applyChanges batch. Exactly one variant must be
+set per op (engine-enforced by `@oneOf`). New entity types grow via
+additive variants for future resources-write / users-write PRDs.
+"""
+input ChangeOp @oneOf {
+  createReservation: ReservationInput
+  updateReservation: ChangeOpUpdateReservation
+  deleteReservation: DeleteInput
+  createResource: ResourceInput
+  updateResource: ChangeOpUpdateResource
+  deleteResource: DeleteInput
+}
+
+"Update variant wrapped with the id since update-by-id can't piggyback on a mutation-level argument inside ChangeOp."
+input ChangeOpUpdateReservation {
+  id:                  ID!
+  input:               ReservationInput!
+  expectedLastChanged: LocalDateTime
+}
+
+"Concurrency-checked delete payload for applyChanges. The top-level deleteReservations skips expectedLastChanged for bulk simplicity."
+input DeleteInput {
+  id:                  ID!
+  expectedLastChanged: LocalDateTime
+}
+
+"""
+One input for both `createReservation` and `updateReservation` (PRD 113 § 1d —
+no separate create/update inputs). `id` is required on create (clients mint
+their own ids, PRD 056 §9); on update the `id` argument addresses the entity,
+so an input id naming anything else is rejected with INVALID_VALUE at path
+`input.id` (absent or equal is accepted). `typeKey` is the discriminator on
+create — the @oneOf variant in classification must match it. On update it is a cross-check
+against the stored type, and a differing key is an in-place type change
+(PRD 056 OQ1.c revised 2026-07-07, PRD 096): the classification @oneOf variant
+must match the NEW typeKey and the caller needs create-permission on the target
+type; attribute remapping is the client's job — the supplied classification is
+stored as-is. Owner is never set here — on create the server makes the caller
+the owner (PRD 056 OQ1.a), on update the owner is immutable (use
+`changeReservationOwner`).
+"""
+input ReservationInput {
+  "Client-minted UUID for retry safety + same-batch refs (PRD 056 §9). Required on create; on update must be absent or equal to the id argument (INVALID_VALUE otherwise)."
+  id:             ID
+  "Discriminator — must match the @oneOf variant in classification (the DynamicType key, e.g. \"event\")."
+  typeKey:        String!
+  classification: ReservationClassificationInput!
+  "Must be non-empty (PRD 056 OQ1.d). Order-significant."
+  appointments:   [AppointmentInput!]!
+  "Restriction-aware allocations. Empty list valid (reservation with no resources is legal but unusual)."
+  allocations:    [AllocationInput!]!
+  "PRD 113 § 2b — null = untouched (create: type defaults copied); non-null = replace the whole list ([] empties it). Changing the list requires canAdmin. Ignored by reservationChecks."
+  permissions:    [SimplePermissionInput!]
+}
+
+"""
+PRD 105 — a draft to check. `draft` is the same shape `createReservation` takes (id optional here:
+nothing is written). `scopeResourceIds` are the caller's current view-scope resources — supplying
+them enables the NOT_IN_CALENDAR check (D3: the intersection half of Swing's
+`isMatchingSelectionAndFilter`; the classification-filter half is Swing-only). Omit or leave empty
+and that check is skipped — an absent scope is not an empty scope.
+"""
+input ReservationCheckInput {
+  draft:               ReservationInput!
+  scopeResourceIds: [ID!]
+}
+
+"""
+PRD 105 — a prospective move. Exactly one of `appointmentId` (one appointment shifts — the SERIE
+gesture) or `reservationIds` (every appointment of those reservations shifts — the EVENT gesture);
+`target`/`occurrence`/`reference` mirror the corresponding move verb's arguments.
+"""
+input MoveCheckInput {
+  appointmentId:       ID
+  occurrence:          LocalDateTime
+  reservationIds:      [ID!]
+  reference:           LocalDateTime
+  "The appointment gesture may also resize; a whole-reservation shift uses the day/dateTime variants only."
+  target:              ResizableTarget!
+  scopeResourceIds: [ID!]
+}
+
+"""
+PRD 105 — one pre-save finding. `code` is the stable identity (the i18n key follows from it);
+`args` are the positional format arguments; `severity` says whether a client may save anyway —
+copied 1:1 from Swing so the same event is creatable, or not, in both clients (D7).
+"""
+type ReservationWarning {
+  code:     ReservationWarningCode!
+  args:     [String!]!
+  severity: WarningSeverity!
+  """
+  The evidence behind the finding — populated for `CONFLICT`, empty otherwise: WHICH booking
+  blocks WHICH resource WHEN (Swing shows the same list; a bare "erzeugt Konflikte" tells the user
+  nothing they can act on). Same `Conflict` rows and the same §12 masking as `potentialConflicts`:
+  an unreadable counterparty keeps the row but loses its name.
+  """
+  conflicts: [Conflict!]!
+}
+
+enum WarningSeverity { BLOCKING CONFIRMABLE }
+
+"The seven checks (`org.rapla.client.edit.check.ReservationWarning.Code`)."
+enum ReservationWarningCode {
+  NO_RESERVATION_NAME
+  DUPLICATED_APPOINTMENTS
+  NO_ALLOCATABLES_SELECTED
+  NOT_IN_CALENDAR
+  CONFLICT
+  REQUEST_PENDING
+  HOLIDAY_ON_APPOINTMENT
+}
+
+"""
+Appointment input — id is nullable for new appointments (server assigns
+UUIDs), required for updates to existing appointments. Same-batch
+references from AllocationInput.appointmentIds use these ids.
+"""
+input AppointmentInput {
+  id:        ID
+  start:     LocalDateTime!
+  end:       LocalDateTime!
+  allDay:    Boolean!
+  "Null = single occurrence."
+  repeating: RepeatingRuleInput
+}
+
+input RepeatingRuleInput {
+  type:       RepeatingType!
+  interval:   Int!
+  end:        Date
+  count:      Int
+  "rapla weekday convention 1=Sunday … 7=Saturday (NOT 0-6); WEEKLY-only."
+  weekdays:   [Int!]
+  exceptions: [Date!]!
+}
+
+"""
+Restriction record. `appointmentIds: null` = bound to all appointments
+of the parent reservation. Non-null = restricted to those appointment
+ids (must reference appointments declared in the same input).
+"""
+input AllocationInput {
+  "References an existing resource, or a same-batch UUID for create."
+  resourceId:  ID!
+  appointmentIds: [ID!]
+}
+
+# === PRD 063 — Resource mutation inputs ===
+
+"""
+One input for both `createResource` and `updateResource` (PRD 113 § 1d —
+no separate create/update inputs). `id` is required on create (clients mint
+their own ids, PRD 056 §9); on update the `id` argument addresses the entity,
+so an input id naming anything else is rejected with INVALID_VALUE at path
+`input.id` (absent or equal is accepted). `typeKey` is the discriminator on
+create — the @oneOf variant in classification must match it. On update a differing key is an
+in-place type change (PRD 096 Phase 4, mirroring the PRD 056 OQ1.c revision):
+the variant must match the NEW typeKey and the caller needs create-permission
+on the target type. There is no `ownerId` (PRD 113 OQ 14): the owner is the
+caller on create and changes only through `changeResourceOwner`.
+"""
+input ResourceInput {
+  "Client-minted UUID for retry safety + same-batch refs (PRD 056 §9). Required on create; on update must be absent or equal to the id argument (INVALID_VALUE otherwise)."
+  id:             ID
+  "Discriminator — must match the @oneOf variant in classification (the DynamicType key, e.g. \"room\")."
+  typeKey:        String!
+  classification: ResourceClassificationInput!
+  "PRD 113 § 2b — null = untouched (create: type defaults copied); non-null = replace the whole list ([] empties it). Changing the list requires canAdmin. The owner is always the caller on create; reassign with changeResourceOwner."
+  permissions:    [ResourcePermissionInput!]
+}
+
+"PRD 113 § 2a — exactly one principal. `everyone` must be true when set."
+input PrincipalInput @oneOf {
+  userId:   ID
+  groupId:  ID
+  everyone: Boolean
+}
+
+"PRD 113 § 2a — levels a Resource/Person row may carry (READ_NO_ALLOCATION offered with note, OQ 10)."
+enum ResourceAccessLevel {
+  READ_NO_ALLOCATION
+  READ
+  REQUEST
+  ALLOCATE
+  ALLOCATE_CONFLICTS
+  EDIT
+  ADMIN
+}
+
+"PRD 113 § 2a — levels an Event / EventTemplate / Period row may carry."
+enum SimpleAccessLevel {
+  READ
+  EDIT
+  ADMIN
+}
+
+"""
+PRD 113 § 2a — a Resource/Person permission row. Window fields only on REQUEST, ALLOCATE,
+ALLOCATE_CONFLICTS and EDIT rows (OQ 7); absolute (start/end) XOR relative (minAdvance/maxAdvance).
+"""
+input ResourcePermissionInput {
+  principal:  PrincipalInput!
+  level:      ResourceAccessLevel!
+  start:      LocalDateTime
+  end:        LocalDateTime
+  minAdvance: Int
+  maxAdvance: Int
+}
+
+"PRD 113 § 2a — an Event / EventTemplate / Period permission row (no windows)."
+input SimplePermissionInput {
+  principal: PrincipalInput!
+  level:     SimpleAccessLevel!
+}
+
+"PRD 113 § 2a — a DynamicType access row: group or everyone only (Swing hides the user selector there)."
+input TypeAccessPrincipalInput @oneOf {
+  groupId:  ID
+  everyone: Boolean
+}
+
+"PRD 113 § 1b — the type-scoped levels. ADMIN is an instance default, not a type-access level."
+enum TypeAccessLevel {
+  READ_TYPE
+  CREATE
+}
+
+input TypeAccessInput {
+  principal: TypeAccessPrincipalInput!
+  level:     TypeAccessLevel!
+}
+
+"PRD 113 § 1c / OQ 12 — update-only. `id` absent or equal to the id argument."
+input EventTemplateInput {
+  id:                   ID
+  name:                 String!
+  fixedTimeAndDuration: Boolean!
+  "Null = untouched; non-null replaces the list (canAdmin when it changes)."
+  permissions:          [SimplePermissionInput!]
+}
+
+"PRD 113 § 1c / OQ 12 — update-only. `id` absent or equal to the id argument; start must be before end."
+input PeriodInput {
+  id:          ID
+  name:        String!
+  start:       LocalDateTime!
+  end:         LocalDateTime!
+  categoryIds: [ID!]!
+  "Null = untouched; non-null replaces the list (canAdmin when it changes)."
+  permissions: [SimplePermissionInput!]
+}
+
+"Update variant wrapped with the id for applyChanges."
+input ChangeOpUpdateResource {
+  id:                  ID!
+  input:               ResourceInput!
+  expectedLastChanged: LocalDateTime
+}
+
+# === PRD 074 — View catalog ===
+
+enum ViewSource { BUILTIN CUSTOM }
+
+type ViewMeta {
+    name:             String!
+    title:            String
+    source:           ViewSource!
+    valid:            Boolean!
+    invalidReason:    [String!]!
+    public:           Boolean!
+    groups:           [String!]!
+    "Default variable values as a JSON string (may be null for BUILTIN or views saved without defaults)."
+    defaultVariables: String
+    """
+    Effective listing state — what the SPA view switcher shows. CUSTOM: the view's own
+    `@view(listed:)`. BUILTIN: the same, unless `rapla.views.builtin-listed` (an allowlist of builtin
+    keys in application.yml) is set — then listed iff the key is in it. Only visible with
+    `includeUnlisted: true`; the default listing already filters on it.
+    """
+    listed:           Boolean!
+}
+
+type SaveViewResult {
+    ok:            Boolean!
+    invalidReason: [String!]!
+}
+
+"PRD 074 — one validation problem, positioned so a Monaco-based editor can mark it red."
+type ViewIssue {
+    message: String!
+    "1-based line of the offending directive."
+    line:    Int!
+    "1-based column of the offending directive."
+    column:  Int!
+}
+
+"PRD 074 — a legal `@param(into:)` target: a dotted variable path plus the GraphQL type it lands on."
+type ViewIntoPath {
+    path: String!
+    type: String!
+}
+
+extend type Query {
+    """
+    List all views visible to the caller (BUILTIN + permitted CUSTOM). By default views marked
+    `@view(listed: false)` are dropped (end-user choosers); `includeUnlisted: true` returns them
+    too — the authoring surface (GraphiQL load dialog) needs unlisted views to stay editable.
+    """
+    listViews(includeUnlisted: Boolean = false): [ViewMeta!]!
+    "Return stored query text for a view (admin-only for CUSTOM; readable for BUILTIN)."
+    getViewQuery(name: String!): String
+    """
+    PRD 074 — dry-run the exact validation saveView applies, storing nothing. Each issue carries
+    a line/column so the editor can mark it red. Admin-only. Empty list = the query would save.
+    """
+    validateView(query: String!): [ViewIssue!]!
+    """
+    PRD 074 — the completion source for `@param(into: "…")`: every dotted variable path the query
+    being edited could legally target. Same walk as the validator, so completion and validation
+    cannot disagree. Admin-only.
+    """
+    intoPaths(query: String!): [ViewIntoPath!]!
+}
+
+extend type Mutation {
+    "Create or overwrite a CUSTOM view. Admin-only. Returns validation errors on bad query."
+    saveView(name: String!, query: String!, public: Boolean, groups: [String!], defaultVariables: String): SaveViewResult!
+    "Delete a CUSTOM view. Admin-only. Returns false when view is BUILTIN or not found."
+    deleteView(name: String!): Boolean!
+}
+
+# === PRD 081 — omnibox multisearch ==========================================
+# The find-half of the omnibox. The server returns kind + data; ACTIONS are a
+# CLIENT concern (the SPA derives the action buttons from `kind`). §12 applies
+# at the resolver boundary — every hit is canRead-gated; existence never leaks.
+
+"Entity kinds the omnibox can surface. Phase 1: RESOURCE + EVENT + USER."
+enum SearchKind {
+  RESOURCE
+  EVENT
+  USER         # selectable scope chips (ownerEq) — visible users (self + canAdminUser)
+  OCCURRENCE   # Phase 3 — not yet produced
+  GROUP        # Phase 2 — not yet produced
+}
+
+"Top-level multisearch result — already kind-bucketed and ordered."
+type SearchResults {
+  groups: [SearchGroup!]!
+}
+
+"One kind's bucket of hits, internally ranked by score desc."
+type SearchGroup {
+  kind: SearchKind!
+  "Localized section heading, e.g. \"Ressourcen\", \"Veranstaltungen\"."
+  heading: String!
+  hits: [SearchHit!]!
+}
+
+"Common shape every typed hit implements."
+interface SearchHit {
+  id: ID!
+  "Primary display text."
+  label: String!
+  "Type/context line under the label."
+  sublabel: String
+  "Relevance score — HIGHER is better (the resolver inverts SearchMatcher rank)."
+  score: Float!
+}
+
+"A resource/person hit → SPA derives filter-replace / filter-add actions."
+type ResourceHit implements SearchHit {
+  id: ID!
+  label: String!
+  sublabel: String
+  score: Float!
+  "Carries the id the chip rail filters by."
+  resource: Resource!
+}
+
+"""
+An event (reservation) hit → SPA derives navigate / filter-add / edit actions.
+Edit-gated: the EVENT bucket only contains events the caller can edit (canModify),
+which is stricter than §12 read — non-editable events are never surfaced.
+"""
+type EventHit implements SearchHit {
+  id: ID!
+  label: String!
+  sublabel: String
+  score: Float!
+  reservation: Reservation!
+  "Start of the earliest appointment — for navigate; null if the event has no appointments."
+  firstOccurrenceStart: LocalDateTime
+}
+
+"""
+A user hit → SPA derives a filter-add action (a `user` scope chip the SPA binds
+into ReservationFilter.ownerEq). §12: only users the caller may see (self +
+canAdminUser, mirroring `users(filter:)`) — `id` is the user id the chip scopes by.
+"""
+type UserHit implements SearchHit {
+  id: ID!
+  label: String!
+  sublabel: String
+  score: Float!
+  user: User!
+}
+
+
+extend type Mutation {
+    """
+    PRD 104 v3 "Sync": create STORED reservations from staged external events in one
+    transaction (deployment mapping + per-type template copy + external-id stamp).
+    Authorization per item = booking right on its group resource; unknown ≡ forbidden.
+    Placement v1: everything materializes at `defaultStart` (ISO LocalDateTime) and is
+    placed via the normal calendar. Errors when no deployment provides the create service.
+    """
+    createFromStagedEvents(
+        sourceItemIds: [ID!]!
+        lectureTemplateId: ID
+        examTemplateId: ID
+        defaultStart: String!
+    ): [ID!]!
+}
+
+extend type Query {
+    """
+    PRD 104 v3 — deployment-resolved DEFAULT structure templates for the sync dialog
+    (naming conventions / matching rules live server-side, exchangeable without client
+    changes). Null fields = no suitable template; null result = no deployment resolver.
+    """
+    externalEventDefaultTemplates(groupIds: [ID!]!): ExternalEventDefaultTemplates
+    """
+    PRD 104 v3 — of the given reservation ids, the subset durably bound to THE deployment's
+    import source (ExternalSyncEntity join — NOT the bare `externalid` annotation, which other
+    importers like the iCal import also write). Unknown/hidden ids drop silently (§12).
+    Empty when no import source is deployed.
+    """
+    externalEventLinkedReservationIds(reservationIds: [ID!]!): [ID!]!
+}
+
+type ExternalEventDefaultTemplates {
+    lectureTemplateId: ID
+    lectureTemplateName: String
+    examTemplateId: ID
+    examTemplateName: String
+}
+
+extend type Mutation {
+    """
+    Bind an OPEN staged event to a reservation that already exists — the manual counterpart to
+    creating one. Stamps the source id onto that reservation, so the next reconciliation sees it
+    as done instead of offering it again.
+
+    Returns false for every rejection alike (unknown item, not open, no booking right on its
+    group, reservation not usable, deployment refused): the outcomes must not be distinguishable.
+    """
+    bindStagedEvent(sourceItemId: ID!, reservationId: ID!): Boolean!
+
+    """
+    Clear the "changed in the source" marker on staged items — says a human has seen it, nothing
+    more. Neither a source change nor a binding change.
+
+    Returns how many rows were actually cleared. Items the caller may not book, unknown ids and
+    items without a marker are silently not counted.
+    """
+    dismissStagedChanges(sourceItemIds: [ID!]!): Int!
+}
+
+extend type Query {
+    """
+    Reservations in the given window that could be the staged item — a SUGGESTION list, ordered
+    by a crude similarity score. The score ranks, it never decides: two source records can share
+    an event number and be different events, so a human picks.
+
+    Only reservations of a group the caller may book, only readable ones, and never one that
+    already carries an external id. Window is the caller's calendar range.
+
+    Weakly matching candidates are omitted rather than listed: the source's own identifiers
+    (event number, unit) weigh far more than name words, and a shared everyday word suggests
+    nothing. An empty list means "nothing convincing in this window", not "no match exists".
+    """
+    bindCandidates(sourceItemId: ID!, from: String!, to: String!, limit: Int): [BindCandidate!]!
+}
+
+type BindCandidate {
+    reservationId: ID!
+    name: String!
+    "Start of the earliest appointment, ISO local date-time."
+    firstDate: String
+    score: Float!
+}
+
+extend type Query {
+    """
+    Staged external events for the given group resources — the Kurse the caller is working on.
+
+    Always scoped: there is no "everything I may book" mode, because the work happens per Kurs.
+    Scope is BOOKING RIGHTS on each requested resource — stricter than the §12 read floor.
+    Resources the caller may not book are dropped entirely, so an unknown one and a forbidden
+    one are indistinguishable. Empty when no deployment provides a staging source.
+    """
+    externalEventWorklist(resourceIds: [ID!]!, scopeKey: String): ExternalEventWorklist!
+}
+
+"Derived state of a staged item — only the timestamps are stored on the row."
+enum StagedEventState {
+    "Unbound: no entity carries this external id yet."
+    OPEN
+    "Bound to an existing entity."
+    LINKED
+    "Bound, but the source changed since — 'apply changes' candidate."
+    CHANGED
+    "Explicitly ignored by a user."
+    IGNORED
+}
+
+type ExternalEventWorklist {
+    groups: [ExternalEventGroup!]!
+    counts: ExternalEventCounts!
+    "Epoch millis of the last completed reconciliation; null if it never ran."
+    lastRefresh: Float
+    "Error text of the last failed reconciliation; null when the last run succeeded."
+    lastError: String
+}
+
+type ExternalEventGroup {
+    "The resource the caller's booking rights were checked against."
+    resourceId: ID!
+    name: String!
+    items: [ExternalEventItem!]!
+    counts: ExternalEventCounts!
+}
+
+type ExternalEventItem {
+    "Natural key of the staged item, as issued by the source."
+    sourceItemId: ID!
+    "Retention scope, e.g. a semester. Null when the source declares none."
+    scopeKey: String
+    state: StagedEventState!
+    "Display values, keyed as declared by the deployment's import metadata."
+    columns: [ExternalEventColumn!]!
+    changedSince: String
+    ignoredSince: String
+    "The bound reservation — null when unbound OR when the caller may not read it."
+    boundReservationId: ID
+}
+
+type ExternalEventColumn {
+    key: String!
+    value: String
+}
+
+type ExternalEventCounts {
+    open: Int!
+    linked: Int!
+    changed: Int!
+    ignored: Int!
+    total: Int!
+}

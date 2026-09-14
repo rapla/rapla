@@ -1,0 +1,362 @@
+package org.rapla.scheduler.sync;
+
+import org.rapla.scheduler.Action;
+import org.rapla.scheduler.Cancellation;
+import org.rapla.scheduler.CommandScheduler;
+import org.rapla.scheduler.CompletablePromise;
+import org.rapla.scheduler.Promise;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+
+public class UtilConcurrentCommandScheduler implements CommandScheduler, Executor
+{
+    private static final Logger LOGGER = LoggerFactory.getLogger(UtilConcurrentCommandScheduler.class);
+
+    private final ScheduledExecutorService scheduledExecutor;
+    private final Executor promiseExecuter;
+
+    private ConcurrentHashMap<Object, CancableTask> futureTasks = new ConcurrentHashMap<Object, CancableTask>();
+
+    public UtilConcurrentCommandScheduler()
+    {
+        this(6);
+    }
+
+    public UtilConcurrentCommandScheduler(int poolSize)
+    {
+        final ScheduledExecutorService executor = Executors.newScheduledThreadPool(poolSize, new ThreadFactory()
+        {
+
+            public Thread newThread(Runnable r)
+            {
+                Thread thread = new Thread(r);
+                String name = thread.getName();
+                if (name == null)
+                {
+                    name = "";
+                }
+                thread.setName("raplascheduler-" + name.toLowerCase().replaceAll("thread", "").replaceAll("-|\\[|\\]", ""));
+                thread.setDaemon(true);
+                return thread;
+            }
+        });
+
+        this.scheduledExecutor = executor;
+        this.promiseExecuter = executor;
+    }
+
+    public void execute(Runnable task)
+    {
+        scheduledExecutor.execute(task);
+    }
+
+    @Override
+    public Executor getExecutor()
+    {
+        return promiseExecuter;
+    }
+
+    protected void schedule(Runnable task)
+    {
+        if (scheduledExecutor.isShutdown())
+        {
+            Exception ex = new Exception("Can't schedule command because executer is already shutdown " + task.toString());
+            error(ex.getMessage(), ex);
+            return;
+        }
+
+        TimeUnit unit = TimeUnit.MILLISECONDS;
+        long delay = 0;
+        ScheduledFuture<?> schedule = scheduledExecutor.schedule(task, delay, unit);
+    }
+
+    protected void error(String message, Exception ex)
+    {
+        LOGGER.error(message, ex);
+    }
+
+    protected void debug(String message)
+    {
+        LOGGER.debug(message);
+    }
+
+    protected void info(String message)
+    {
+        LOGGER.info(message);
+    }
+
+    protected void warn(String message)
+    {
+        LOGGER.warn(message);
+    }
+
+    @Override
+    public  Promise<Void> scheduleSynchronized(Object synchronizationObject, Action task)
+    {
+        final CompletablePromise<Void> completable = createCompletable();
+        scheduleSynchronized(synchronizationObject, task, completable);
+        return completable;
+    }
+
+    protected void scheduleSynchronized(Object synchronizationObject, Action task, CompletablePromise<Void> completable) {
+        CancableTask wrapper = new CancableTask(task, completable)
+        {
+            @Override
+            protected void replaceWithNext(CancableTask next)
+            {
+                futureTasks.replace(synchronizationObject, this, next);
+            }
+
+            @Override
+            protected void endOfQueueReached()
+            {
+                synchronized (synchronizationObject)
+                {
+                    futureTasks.remove(synchronizationObject);
+                }
+            }
+        };
+        synchronized (synchronizationObject)
+        {
+            CancableTask existing = futureTasks.putIfAbsent(synchronizationObject, wrapper);
+            if (existing == null)
+            {
+                wrapper.scheduleThis();
+            }
+            else
+            {
+                existing.pushToEndOfQueue(wrapper);
+            }
+        }
+    }
+
+    protected void execute(Action action ,CompletablePromise<Void> completablePromise) {
+        try
+        {
+            action.run();
+        }
+        catch (Throwable ex )
+        {
+            completablePromise.completeExceptionally( ex );
+            return;
+        }
+        completablePromise.complete( null );
+    }
+
+
+    abstract class CancableTask implements  Runnable
+    {
+        private Action task;
+
+        volatile Thread.State status = Thread.State.NEW;
+        CancableTask next;
+        CompletablePromise<Void> completablePromise;
+
+        public CancableTask(Action task,CompletablePromise<Void> completablePromise)
+        {
+            this.task = task;
+            this.completablePromise = completablePromise;
+        }
+
+        @Override
+        public void run()
+        {
+            if (status == Thread.State.NEW) {
+                status = Thread.State.RUNNABLE;
+                try {
+                    execute(task,completablePromise);
+                }
+                finally
+                {
+                    status = Thread.State.TERMINATED;
+                    scheduleNext();
+                }
+            }
+
+
+        }
+
+
+
+
+        public void pushToEndOfQueue(CancableTask wrapper)
+        {
+            if (next == null)
+            {
+                next = wrapper;
+            }
+            else
+            {
+                next.pushToEndOfQueue(wrapper);
+            }
+        }
+
+        public void scheduleThis()
+        {
+            schedule(this);
+        }
+
+        private void scheduleNext()
+        {
+            if (next != null)
+            {
+                replaceWithNext(next);
+                next.scheduleThis();
+            }
+            else
+            {
+                endOfQueueReached();
+            }
+        }
+
+        abstract protected void replaceWithNext(CancableTask next);
+
+        abstract protected void endOfQueueReached();
+    }
+
+
+    public void cancel()
+    {
+        try
+        {
+            info("Stopping scheduler thread.");
+            List<Runnable> shutdownNow = scheduledExecutor.shutdownNow();
+            for (Runnable task : shutdownNow)
+            {
+                long delay = -1;
+                if (task instanceof ScheduledFuture)
+                {
+                    ScheduledFuture scheduledFuture = (ScheduledFuture) task;
+                    delay = scheduledFuture.getDelay(TimeUnit.SECONDS);
+                }
+                if (delay <= 0)
+                {
+                    warn("Interrupted active task " + task);
+                }
+            }
+            scheduledExecutor.awaitTermination(2, TimeUnit.SECONDS);
+            info("Stopped scheduler thread.");
+        }
+        catch (Throwable ex)
+        {
+            warn(ex.getMessage());
+        }
+        // we give the update threads some time to execute
+        try
+        {
+            Thread.sleep(50);
+        }
+        catch (InterruptedException e)
+        {
+        }
+    }
+
+    @Override
+    public <T> Promise<T> supply(Callable<T> supplier)
+    {
+        return supply(supplier, promiseExecuter);
+    }
+
+    public Promise<Void> delay(long delay) {
+        CompletablePromise<Void> promise = createCompletable();
+        Runnable task = ()->promise.complete(null);
+        scheduledExecutor.schedule(task, delay, TimeUnit.MILLISECONDS);
+        return promise;
+    }
+
+    private <T> Promise<T> supply(final Callable<T> supplier, Executor executor)
+    {
+        if (supplier == null)
+            throw new NullPointerException();
+        CompletableFuture<T> future = new CompletableFuture<T>();
+        executor.execute(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                final T t;
+                try
+                {
+                    t = supplier.call();
+                }
+                catch (Exception ex)
+                {
+                    future.completeExceptionally(ex);
+                    return;
+                }
+                future.complete(t);
+            }
+        });
+        SynchronizedPromise<T> promise = new SynchronizedPromise<T>(executor, future);
+        return promise;
+    }
+
+    private Promise<Void> run(final Action command, Executor executor)
+    {
+        if (command == null)
+            throw new NullPointerException();
+        CompletableFuture<Void> future = new CompletableFuture<Void>();
+        executor.execute(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    command.run();
+                    future.complete(Promise.VOID);
+                }
+                catch (Throwable ex)
+                {
+                    future.completeExceptionally(ex);
+                }
+            }
+        });
+        SynchronizedPromise<Void> promise = new SynchronizedPromise<Void>(executor, future);
+        return promise;
+    }
+
+    @Override
+    public Promise<Void> run(Action command)
+    {
+        return run(command, promiseExecuter);
+    }
+
+    @Override
+    public <T> CompletablePromise<T> createCompletable()
+    {
+        SynchronizedCompletablePromise<T> promise = new SynchronizedCompletablePromise<T>(promiseExecuter);
+        return promise;
+    }
+
+    @Override
+    public Cancellation delay(Action task, long milliseconds)
+    {
+        final ScheduledFuture<?> future = scheduledExecutor.schedule(() -> runQuietly(task), milliseconds, TimeUnit.MILLISECONDS);
+        return () -> future.cancel(false);
+    }
+
+    @Override
+    public Cancellation schedule(Action task, long initialDelayMs, long periodMs)
+    {
+        final ScheduledFuture<?> future = scheduledExecutor.scheduleAtFixedRate(() -> runQuietly(task), initialDelayMs, periodMs, TimeUnit.MILLISECONDS);
+        return () -> future.cancel(false);
+    }
+
+    private void runQuietly(Action task)
+    {
+        try { task.run(); }
+        catch (Throwable ex) { error("scheduled task failed: " + ex.getMessage(), ex instanceof Exception ? (Exception) ex : new Exception(ex)); }
+    }
+
+}

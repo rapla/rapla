@@ -1,0 +1,28 @@
+<configuration>
+  <!--
+    Test-only logback config. Wins over rapla-app's logback-spring.xml on the
+    test classpath. Kept minimal on purpose:
+      - Console only (tests don't write rolling files to logs/)
+      - No JUL LevelChangePropagator (overhead in tests; nothing in tests
+        relies on JUL → SLF4J propagation working)
+      - INFO root, raise per-package via -Dlogging.level.* on the surefire
+        argLine or per-test @TestPropertySource
+
+    Operator-facing logging defaults live in
+    rapla-app/src/main/resources/logback-spring.xml (see docs/logging.md).
+  -->
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <target>System.out</target>
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <!-- Silence libraries that log noisily at INFO during tests. -->
+  <logger name="net.fortuna.ical4j" level="WARN"/>
+  <logger name="net.fortuna.ical4j.model.TimeZoneRegistryImpl" level="ERROR"/>
+
+  <root level="INFO">
+    <appender-ref ref="STDOUT"/>
+  </root>
+</configuration>

@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Rapla Template Editor</title>
+    <!--
+      PRD 097 Phase 4 — the presentation-layer analogue of /graphiql.
+
+      GraphiQL authors the DATA (a stored view); this page authors the PRESENTATION
+      (a Mustache document over that view). Built the same way on purpose: a static
+      admin page, Monaco from CDN, vanilla-JS toolbar over fetch, cookie-session auth
+      plus the X-XSRF-TOKEN double-submit header — no Angular, no bundler.
+
+      Everything that decides whether a template is valid or what it may render is
+      answered by the SERVER (POST /api/documents/preview, /result-shape). A
+      client-side mustache.js could disagree with JMustache; a preview that lies is
+      worse than no preview. The preview HTML is shown in a sandboxed, srcdoc iframe:
+      it can neither script nor reach the author's session.
+    -->
+    <style>
+        :root { color-scheme: light dark; }
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: system-ui, sans-serif; height: 100vh; display: flex; flex-direction: column; }
+        header { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap;
+                 padding: .5rem .75rem; border-bottom: 1px solid #8884; }
+        header h1 { font-size: 1rem; margin: 0 1rem 0 0; font-weight: 600; }
+        select, input, button { font: inherit; padding: .25rem .4rem; }
+        button { cursor: pointer; }
+        /* The notch sits flush against the field so the trigger reads as part of it. */
+        #varsform { display: flex; align-items: center; gap: 0; }
+        #varsform label { display: flex; align-items: center; gap: .3rem; }
+        #varsform #vars { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+        #apply { border-left: 0; border-top-left-radius: 0; border-bottom-left-radius: 0;
+                 padding: .25rem .5rem; line-height: 1; }
+        #status { margin-left: auto; font-size: .8rem; opacity: .8; }
+        #status.error { color: #c00; opacity: 1; }
+        #removed { margin-left: auto; font-size: .8rem; color: #8a5a00; background: #fff3cd;
+                   border: 1px solid #e0c26a; border-radius: 4px; padding: 1px 6px; }
+        #removed + #status { margin-left: .75rem; }
+        main { flex: 1; display: grid; grid-template-columns: 15rem 1fr 1fr; min-height: 0; }
+        #fields, #editorcol, #preview { min-height: 0; }
+        #editorcol { display: flex; flex-direction: column; border-right: 1px solid #8884; }
+        #editor { flex: 1; min-height: 0; }
+        /* GraphiQL-style variables pane: the RESOLVED variables of the last preview (view baseline
+           + document overrides + window fill; later also resolved @params). */
+        #varsbox { height: 11rem; border-top: 1px solid #8884; display: flex; flex-direction: column; }
+        #varsbox label { font-size: .75rem; opacity: .75; padding: .2rem .5rem; }
+        #varsout { flex: 1; overflow: auto; margin: 0; padding: 0 .5rem .4rem;
+                   font-size: .8rem; font-family: ui-monospace, monospace; }
+        #fields { overflow: auto; border-right: 1px solid #8884; padding: .5rem; font-size: .85rem; }
+        #fields ul { list-style: none; margin: 0; padding-left: .8rem; }
+        #fields code { cursor: pointer; }
+        #fields .section > code::before { content: "▸ "; opacity: .6; }
+        #preview { border: 0; width: 100%; height: 100%; background: #fff; }
+    </style>
+</head>
+<body>
+<header>
+    <h1>Template Editor</h1>
+    <label>Document <select id="doc"><option value="">— new —</option></select></label>
+    <input id="name" placeholder="document name" size="18">
+    <label>View <select id="view"></select></label>
+    <label><input type="checkbox" id="public"> public</label>
+    <!-- The document URL's query string, verbatim: declared @param names + from/to/date on
+         windowed views. Gated identically to the live render; Live ↗ carries it unchanged.
+         The notch IS the trigger: template edits and the view dropdown re-render on their own,
+         this field does not (a param typed character by character would fire a preview — i.e. a
+         real GraphQL query in the author's scope — per keystroke). A native <form> submit gives
+         Enter-to-apply for free. -->
+    <form id="varsform"><label>URL params
+    <input id="vars" placeholder="resource=…&amp;date=…" size="20"></label><button type="submit"
+        id="apply" aria-label="Parameter übernehmen und Vorschau aktualisieren"
+        title="Parameter übernehmen (Enter) — gilt für Vorschau und Live ↗">▸</button></form>
+    <button id="save">Save</button>
+    <button id="delete">Delete</button>
+    <a id="live" target="_blank" hidden>Live ↗</a>
+    <span id="removed" title="Vom Sanitizer beim Rendern entfernt — wird auch im gespeicherten Dokument fehlen" hidden></span>
+    <span id="status"></span>
+</header>
+<main>
+    <aside id="fields"><em>Pick a view to see its fields.</em></aside>
+    <div id="editorcol">
+        <div id="editor"></div>
+        <div id="varsbox"><label>Variables (resolved)</label><pre id="varsout"></pre></div>
+    </div>
+    <!-- allow-scripts: the preview shell's server-authored nav script (postMessage to this
+         editor). Still an opaque origin without cookies; author scripts are sanitized out. -->
+    <iframe id="preview" sandbox="allow-scripts" title="Preview"></iframe>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"></script>
+<script>
+    const MONACO_BASE = 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs';
+
+    // The XSRF-TOKEN cookie is non-HttpOnly by design (CookieCsrfTokenRepository
+    // .withHttpOnlyFalse()); the access_token cookie is HttpOnly and the browser
+    // attaches it to same-origin fetches for us. Same contract as /graphiql.
+    function xsrf() {
+        const m = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
+        return m ? decodeURIComponent(m[1]) : null;
+    }
+
+    async function api(method, url, body) {
+        const token = xsrf();
+        const resp = await fetch(url, {
+            method,
+            credentials: 'same-origin',
+            headers: Object.assign(
+                body ? { 'Content-Type': 'application/json' } : {},
+                token ? { 'X-XSRF-TOKEN': token } : {}),
+            body: body ? JSON.stringify(body) : undefined
+        });
+        if (resp.status === 401) { location.href = '/login'; throw new Error('unauthenticated'); }
+        if (!resp.ok) throw new Error(await errorMessage(resp));
+        return resp.status === 204 ? null : resp.json();
+    }
+
+    /** The save gate answers 400 with {errors:[…]} — show those, not the raw JSON. */
+    async function errorMessage(resp) {
+        const text = await resp.text();
+        try {
+            const parsed = JSON.parse(text);
+            if (parsed.errors) return parsed.errors.join('; ');
+            if (parsed.message) return parsed.message;
+        } catch (ignored) { /* not JSON */ }
+        return 'HTTP ' + resp.status + (text ? ' ' + text : '');
+    }
+
+    async function gql(query) {
+        const token = xsrf();
+        const resp = await fetch('/api/graphql', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: Object.assign({ 'Content-Type': 'application/json' },
+                token ? { 'X-XSRF-TOKEN': token } : {}),
+            body: JSON.stringify({ query })
+        });
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        return (await resp.json()).data;
+    }
+
+    const el = id => document.getElementById(id);
+    /* PRD 097 D6d — what the sanitizer stripped from THIS render ("script ×1, onclick ×2"):
+       a warning, never a save error. Removal is intended (D6c public documents strip scripts),
+       the author just has to see it. */
+    function showRemoved(removed) {
+        const counts = new Map();
+        for (const label of removed) counts.set(label, (counts.get(label) || 0) + 1);
+        const text = [...counts].map(([label, n]) => label + (n > 1 ? ' ×' + n : '')).join(', ');
+        el('removed').textContent = text ? 'Beim Rendern entfernt: ' + text : '';
+        el('removed').hidden = !text;
+    }
+
+    function status(text, isError) {
+        el('status').textContent = text;
+        el('status').className = isError ? 'error' : '';
+    }
+
+    /**
+     * "resource=r1&resource=r2" → { "resource": ["r1","r2"] } — public @param names only, exactly
+     * what the document URL accepts (a private dotted path like filter.resourceIdsIn would 400
+     * at the gate). Values stay grouped per key so the server sees the repeats a real URL carries;
+     * name→into translation and dot-nesting are the server's job, not ours.
+     */
+    function parseVariables(text) {
+        const out = {};
+        for (const [k, v] of new URLSearchParams(text || '')) (out[k] ||= []).push(v);
+        return out;
+    }
+
+    // ---- result shape: fields pane + completion source ----------------------
+
+    let shape = null;   // ShapeNode from POST /api/documents/result-shape
+    let viewDefaults = {};  // viewName -> the view's example defaultVariables (JSON text)
+
+    async function loadShape(viewName) {
+        shape = null;
+        if (!viewName) { el('fields').innerHTML = '<em>Pick a view to see its fields.</em>'; return; }
+        try {
+            shape = await api('POST', '/api/documents/result-shape', { viewName });
+            el('fields').innerHTML = '';
+            el('fields').append(renderFields(shape.fields));
+        } catch (e) {
+            el('fields').innerHTML = '<em>No shape: ' + e.message + '</em>';
+        }
+    }
+
+    function renderFields(nodes) {
+        const ul = document.createElement('ul');
+        for (const node of nodes) {
+            const li = document.createElement('li');
+            if (node.list) li.className = 'section';
+            const code = document.createElement('code');
+            code.textContent = node.key;
+            code.title = node.type + (node.list ? ' (list — use {{#' + node.key + '}})' : '');
+            code.onclick = () => insert(node.list ? '{{#' + node.key + '}}{{/' + node.key + '}}' : '{{' + node.key + '}}');
+            li.append(code);
+            if (node.fields.length) li.append(renderFields(node.fields));
+            ul.append(li);
+        }
+        return ul;
+    }
+
+    /**
+     * Walk the `{{#x}}` / `{{^x}}` / `{{/x}}` section stack above the cursor and descend the shape
+     * tree along it — inside `{{#persons}}` only Person's fields are addressable. This is the whole
+     * reason completion is data-aware rather than a keyword list.
+     */
+    function nodeAtCursor(textBefore) {
+        if (!shape) return null;
+        const stack = [];
+        const tag = /\{\{([#^\/])\s*([\w.]+)\s*\}\}/g;
+        let m;
+        while ((m = tag.exec(textBefore)) !== null) {
+            if (m[1] === '/') stack.pop();
+            else stack.push(m[2]);
+        }
+        let node = shape;
+        for (const key of stack) {
+            const next = (node.fields || []).find(f => f.key === key);
+            if (!next) return null;   // unknown section — propose nothing rather than something wrong
+            node = next;
+        }
+        return node;
+    }
+
+    function completionsAt(model, position) {
+        const textBefore = model.getValueInRange(
+            { startLineNumber: 1, startColumn: 1, endLineNumber: position.lineNumber, endColumn: position.column });
+        const node = nodeAtCursor(textBefore);
+        if (!node) return [];
+        const suggestions = [];
+        for (const f of node.fields || []) {
+            suggestions.push(f.list
+                ? { label: '#' + f.key, insertText: '#' + f.key + '}}{{/' + f.key,
+                    kind: monaco.languages.CompletionItemKind.Folder, detail: '[' + f.type + '] section' }
+                : { label: f.key, insertText: f.key,
+                    kind: monaco.languages.CompletionItemKind.Field, detail: f.type });
+        }
+        // the closing tag of the section we are inside
+        if (node !== shape && node.key) {
+            suggestions.push({ label: '/' + node.key, insertText: '/' + node.key,
+                kind: monaco.languages.CompletionItemKind.Snippet, detail: 'close section' });
+        }
+        return suggestions;
+    }
+
+    // ---- editor ------------------------------------------------------------
+
+    let editor;
+    function insert(text) {
+        editor.executeEdits('fields-pane', [{ range: editor.getSelection(), text, forceMoveMarkers: true }]);
+        editor.focus();
+    }
+
+    require.config({ paths: { vs: MONACO_BASE } });
+    require(['vs/editor/editor.main'], async () => {
+        editor = monaco.editor.create(el('editor'), {
+            // Monaco's `handlebars` mode is a Monarch tokenizer: highlighting only, it validates
+            // nothing. Handlebars-only constructs like {{#if}} therefore highlight happily — they
+            // are rejected by the server's real JMustache compiler below, which is the actual
+            // "restrict to JMustache" mechanism.
+            language: 'handlebars',
+            value: '<h1>{{title}}</h1>\n',
+            automaticLayout: true,
+            minimap: { enabled: false }
+        });
+        monaco.languages.registerCompletionItemProvider('handlebars', {
+            triggerCharacters: ['{', '#', '/'],
+            provideCompletionItems: (model, position) => {
+                const word = model.getWordUntilPosition(position);
+                const range = { startLineNumber: position.lineNumber, endLineNumber: position.lineNumber,
+                    startColumn: word.startColumn, endColumn: word.endColumn };
+                return { suggestions: completionsAt(model, position).map(s => Object.assign({ range }, s)) };
+            }
+        });
+        editor.onDidChangeModelContent(debounce(preview, 700));
+        await Promise.all([loadViews(), loadDocuments()]);
+        preview();
+    });
+
+    function debounce(fn, ms) {
+        let handle;
+        return () => { clearTimeout(handle); handle = setTimeout(fn, ms); };
+    }
+
+    /** The markers come from the real compiler's line number — never from a client-side parse. */
+    function showParseError(line, message) {
+        monaco.editor.setModelMarkers(editor.getModel(), 'mustache', line ? [{
+            severity: monaco.MarkerSeverity.Error,
+            message,
+            startLineNumber: line, endLineNumber: line,
+            startColumn: 1, endColumn: editor.getModel().getLineMaxColumn(line)
+        }] : []);
+    }
+
+    // ---- actions -----------------------------------------------------------
+
+    async function preview() {
+        const viewName = el('view').value;
+        if (!viewName || !editor) return;
+        try {
+            /* Preview must not diverge from the real render: it carries the loaded document's
+               pinned defaultVariables + window anchors alongside the ad-hoc vars field. */
+            const result = await api('POST', '/api/documents/preview', {
+                viewName,
+                template: editor.getValue(),
+                defaultVariables: currentDefaultVariables,
+                window: currentWindow,
+                variables: parseVariables(el('vars').value)
+            });
+            if (result.errorMessage) {
+                showParseError(result.errorLine, result.errorMessage);
+                status('Line ' + result.errorLine + ': ' + result.errorMessage, true);
+                return;
+            }
+            showParseError(null);
+            el('preview').srcdoc = result.html;
+            el('varsout').textContent = result.resolvedVariables || '';
+            showRemoved(result.removed || []);
+            status('Preview updated ' + new Date().toLocaleTimeString());
+        } catch (e) {
+            status(e.message, true);
+        }
+    }
+
+    async function loadViews() {
+        // includeUnlisted — like the GraphiQL load dialog, this is an AUTHORING surface:
+        // a document is written FOR a @view(listed: false) view (a report, a parked view),
+        // so it must be selectable here. End-user choosers keep filtering.
+        const data = await gql('{ listViews(includeUnlisted: true) { name title valid defaultVariables } }');
+        viewDefaults = Object.fromEntries(data.listViews.map(v => [v.name, v.defaultVariables]));
+        el('view').innerHTML = '';
+        for (const v of data.listViews.filter(v => v.valid)) {
+            el('view').append(new Option(v.title ? v.title + ' (' + v.name + ')' : v.name, v.name));
+        }
+        await loadShape(el('view').value);
+    }
+
+    /* Mirrors the GraphiQL view picker: optgroups "Built-in (read-only)" / "Custom". */
+    async function loadDocuments() {
+        const documents = await api('GET', '/api/documents');
+        el('doc').innerHTML = '';
+        el('doc').append(new Option('— new —', ''));
+        const builtinGroup = document.createElement('optgroup');
+        builtinGroup.label = 'Built-in (read-only)';
+        const customGroup = document.createElement('optgroup');
+        customGroup.label = 'Custom';
+        let hasCustom = false;
+        for (const d of documents) {
+            const opt = new Option(d.name + (d.valid ? '' : ' ⚠'), d.name);
+            if (d.builtin) builtinGroup.append(opt);
+            else { customGroup.append(opt); hasCustom = true; }
+        }
+        el('doc').append(builtinGroup);
+        if (hasCustom) el('doc').append(customGroup);
+    }
+
+    /* Carried through save so a copy keeps its pinned variables (e.g. the builtin
+       wochenprogramm's Mo–Fr weekdays) — the editor has no UI for them yet. */
+    let currentDefaultVariables = null;
+    let currentWindow = null;
+
+    /* Save follows the name field: a loaded builtin empties it, so Save stays disabled
+       until a save-as name is typed (GraphiQL parity — builtins are save-as only). */
+    function updateSaveEnabled() {
+        el('save').disabled = !el('name').value.trim();
+    }
+    el('name').oninput = updateSaveEnabled;
+    updateSaveEnabled();
+
+    /* "Live ↗" opens the SAVED document at its real URL (working nav links, real CSP shell).
+       Only meaningful for a selected saved document — hidden for "— new —" / unsaved work.
+       The vars field IS the query string, so it carries over verbatim. */
+    function updateLiveLink() {
+        const name = el('doc').value;
+        el('live').hidden = !name;
+        if (!name) return;
+        const query = new URLSearchParams(el('vars').value || '').toString();
+        el('live').href = '/api/documents/' + encodeURIComponent(name) + (query ? '?' + query : '');
+    }
+    el('vars').addEventListener('input', updateLiveLink);
+
+    /* Prefill the params field from the VIEW's example defaultVariables (PRD 097 § Editor
+       follow-up). The field holds PUBLIC keys (@param names) while defaultVariables is keyed by
+       PRIVATE variable paths, so this is a translation, not a dump: per declared @param, resolve
+       its `into` path in the view defaults and emit name=value.
+
+       Safe by construction: the field is ephemeral — save() never sends it — so a prefill reaches
+       no document, no data file and no reader. D8 (server never scopes a live render from a view's
+       defaults) is untouched.
+
+       Never overwrites what the author typed, and skips params the DOCUMENT already pins: a pin
+       applies server-side, and materialising it here would freeze it against later document edits.
+
+       ponytail: the @param decls are regex-parsed from the query text because the server exposes
+       them to no client today. Delete this parse in favour of the declared-params field once that
+       surface lands (it is the same one PRD 074/WP3's `documents` query needs — decide together). */
+    const PARAM_DIRECTIVE = /@param\s*\(([^)]*)\)/g;
+
+    function declaredParams(queryText) {
+        const out = [];
+        for (const [, args] of (queryText || '').matchAll(PARAM_DIRECTIVE)) {
+            const name = /\bname\s*:\s*"([^"]*)"/.exec(args);
+            const into = /\binto\s*:\s*"([^"]*)"/.exec(args);
+            if (name && into) out.push({ name: name[1], into: into[1] });
+        }
+        return out;
+    }
+
+    function valueAt(vars, path) {
+        return path.split('.').reduce((node, key) =>
+            node && typeof node === 'object' ? node[key] : undefined, vars);
+    }
+
+    function parseJson(value) {
+        if (!value) return null;
+        if (typeof value === 'object') return value;
+        try { return JSON.parse(value); } catch (ignored) { return null; }
+    }
+
+    async function prefillVars(viewName) {
+        if (!viewName || el('vars').value.trim()) return;
+        const defaults = parseJson(viewDefaults[viewName]);
+        if (!defaults) return;
+        const pinned = parseJson(currentDefaultVariables) || {};
+        let queryText;
+        try {
+            queryText = (await gql('{ getViewQuery(name: ' + JSON.stringify(viewName) + ') }')).getViewQuery;
+        } catch (ignored) { return; }
+        const params = new URLSearchParams();
+        for (const param of declaredParams(queryText)) {
+            if (valueAt(pinned, param.into) !== undefined) continue;
+            const value = valueAt(defaults, param.into);
+            if (value === undefined || value === null || typeof value === 'object') continue;
+            params.set(param.name, String(value));
+        }
+        if (![...params].length) return;
+        el('vars').value = params.toString();
+        updateLiveLink();
+    }
+
+    /* Preview nav (full transparency, 2026-07-15): a nav click inside the sandboxed preview
+       cannot navigate, so the shell script postMessages the target window here — we write it
+       into the vars box (visible, hand-editable — a nav click IS a variables edit) and re-run
+       the preview. The neighbor windows were resolved server-side; no date math here. */
+    window.addEventListener('message', e => {
+        const d = e.data;
+        if (!d || e.source !== el('preview').contentWindow) return;
+        /* Author-written absolute links: the sandboxed preview cannot navigate, so the editor
+           opens them in a new tab. Relative links stay inert — test those via "Live ↗". */
+        if (d.type === 'rapla-preview-open') {
+            if (/^https?:\/\//i.test(d.href || '')) window.open(d.href, '_blank', 'noopener');
+            return;
+        }
+        if (d.type === 'rapla-preview-params' && d.params && typeof d.params === 'object') {
+            /* A GET filter form submitted inside the preview: its fields ARE URL params. */
+            const vars = new URLSearchParams(el('vars').value || '');
+            for (const [k, v] of Object.entries(d.params)) vars.set(k, String(v));
+            el('vars').value = vars.toString().replace(/%3A/gi, ':');
+            updateLiveLink();
+            preview();
+            return;
+        }
+        if (d.type !== 'rapla-preview-nav') return;
+        const vars = new URLSearchParams(el('vars').value || '');
+        vars.delete('from');
+        vars.delete('to');
+        vars.delete('date');
+        if (!d.today && d.from && d.to) {
+            vars.set('from', d.from);
+            vars.set('to', d.to);
+        }
+        el('vars').value = vars.toString().replace(/%3A/gi, ':');
+        updateLiveLink();
+        preview();
+    });
+
+    el('doc').onchange = async () => {
+        const name = el('doc').value;
+        if (!name) {
+            el('name').value = '';
+            el('name').placeholder = 'document name';
+            currentDefaultVariables = null;
+            currentWindow = null;
+            el('delete').disabled = false;
+            updateSaveEnabled();
+            updateLiveLink();
+            return;
+        }
+        const source = await api('GET', '/api/documents/' + encodeURIComponent(name) + '/source');
+        currentDefaultVariables = source.defaultVariables || null;
+        currentWindow = source.window || null;
+        /* Built-ins are save-as only (GraphiQL parity): the name field starts EMPTY so Save
+           forces a new name; the server-side name reservation stays the actual guard. */
+        el('name').value = source.builtin ? '' : source.name;
+        el('name').placeholder = source.builtin ? 'save as… (built-in is read-only)' : 'document name';
+        el('view').value = source.viewName;
+        el('public').checked = source.isPublic;
+        editor.setValue(source.template);
+        el('delete').disabled = !!source.builtin;
+        updateSaveEnabled();
+        updateLiveLink();
+        await loadShape(source.viewName);
+        await prefillVars(source.viewName);
+        await preview();
+        if (source.builtin) status('🔒 Built-in (read-only) — Save requires a new name (save as)');
+    };
+
+    el('view').onchange = async () => {
+        await loadShape(el('view').value);
+        await prefillVars(el('view').value);
+        preview();
+    };
+    el('varsform').addEventListener('submit', e => { e.preventDefault(); updateLiveLink(); preview(); });
+
+    el('save').onclick = async () => {
+        const name = el('name').value.trim();
+        if (!name) { status('A document needs a name', true); return; }
+        try {
+            await api('PUT', '/api/documents/' + encodeURIComponent(name), {
+                viewName: el('view').value,
+                template: editor.getValue(),
+                isPublic: el('public').checked,
+                groups: [],
+                defaultVariables: currentDefaultVariables,
+                window: currentWindow
+            });
+            status('Saved ' + name);
+            await loadDocuments();
+            el('doc').value = name;
+        } catch (e) {
+            status(e.message, true);
+        }
+    };
+
+    el('delete').onclick = async () => {
+        const name = el('doc').value;
+        if (!name || !confirm('Delete document "' + name + '"?')) return;
+        await api('DELETE', '/api/documents/' + encodeURIComponent(name));
+        el('name').value = '';
+        await loadDocuments();
+        status('Deleted ' + name);
+    };
+</script>
+</body>
+</html>

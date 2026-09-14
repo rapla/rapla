@@ -1,0 +1,500 @@
+<?xml version="1.0" encoding="utf-8"?><!--*- coding: utf-8 -*-->
+<rapla:data xmlns:rapla="http://rapla.sourceforge.net/rapla"
+ xmlns:relax="http://relaxng.org/ns/structure/1.0"
+ xmlns:dynatt="http://rapla.sourceforge.net/dynamictype"
+ xmlns:ext="http://rapla.sourceforge.net/extension"
+ xmlns:doc="http://rapla.sourceforge.net/annotation"
+ version="1.2">
+   <rapla:categories>
+      <rapla:category created-at="2014-08-15T15:37:58.120Z" last-changed="2014-08-15T15:37:58.120Z" id="c46c87a7-2700-4065-8fed-0a5f0f52a4df" key="department">
+         <doc:name lang="de">Abteilung</doc:name>
+         <doc:name lang="en">department</doc:name>
+         <rapla:category created-at="2014-08-15T15:37:58.120Z" last-changed="2014-08-15T15:37:58.120Z" id="c25d8971-2936-4ea9-b2d9-af63802155cc" key="channel-6">
+            <doc:name lang="en">channel-6</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2014-08-15T15:37:58.120Z" last-changed="2014-08-15T15:37:58.120Z" id="c215928e-b195-4e61-8cd4-1d69c3b43d35" key="elementary-springfield">
+            <doc:name lang="en">elementary-springfield</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2014-08-15T15:37:58.120Z" last-changed="2014-08-15T15:37:58.120Z" id="c7fd0cd1-c698-431f-abab-82cf684cb309" key="springfield-powerplant">
+            <doc:name lang="en">springfield powerplant</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2014-08-15T15:37:58.120Z" last-changed="2014-08-15T15:37:58.120Z" id="c468f8a2-aa73-47aa-8597-91eda93941f8" key="testdepartment">
+            <doc:name lang="en">test department</doc:name>
+         </rapla:category>
+      </rapla:category>
+      <rapla:category created-at="2014-08-15T15:37:58.120Z" last-changed="2014-08-15T15:37:58.120Z" id="c7c2e9e7-d61e-455f-ac6c-14fda82478c8" key="user-groups">
+         <doc:name lang="de">Benutzergruppen</doc:name>
+         <doc:name lang="en">user-groups</doc:name>
+         <rapla:category created-at="2014-08-15T15:37:58.120Z" last-changed="2014-08-15T15:37:58.120Z" id="c2642cdd-6144-4e66-bf54-b3ff76c76f04" key="my-group">
+            <doc:name lang="en">my-group</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2016-03-08T10:53:18.291Z" last-changed="2016-03-08T10:53:18.291Z" id="c59628c4-6b7c-42fa-87f6-b766e7aa6cc4" key="powerplant">
+            <doc:name lang="en">powerplant</doc:name>
+            <rapla:category created-at="2016-03-08T10:53:18.291Z" last-changed="2016-03-08T10:53:18.291Z" id="c353c5de-e3c7-409a-bd44-02f88e10d3f4" key="powerplant-admins">
+               <doc:name lang="en">powerplant admins</doc:name>
+               <rapla:annotation key="can_admin_parent">true</rapla:annotation>
+            </rapla:category>
+            <rapla:category created-at="2016-03-08T10:53:18.291Z" last-changed="2016-03-08T10:53:18.291Z" id="c2959392-3285-4776-b418-a3d3c514af34" key="powerplant-staff">
+               <doc:name lang="en">powerplant staff</doc:name>
+            </rapla:category>
+         </rapla:category>
+         <rapla:category created-at="2014-08-15T15:37:58.120Z" last-changed="2014-08-15T15:37:58.120Z" id="c1de624a-5be1-488a-a43f-93a772d8fc48" key="registerer">
+            <doc:name lang="de">Ressourcen eintragen</doc:name>
+            <doc:name lang="en">register resources</doc:name>
+            <doc:name lang="fr">Enregistrer des ressources</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2014-08-15T15:37:58.120Z" last-changed="2014-08-15T15:37:58.120Z" id="c727abe5-ea4f-41b2-9240-c9a4a6900c9b" key="modify-preferences">
+            <doc:name lang="de">Einstellungen bearbeiten</doc:name>
+            <doc:name lang="en">modify preferences</doc:name>
+            <doc:name lang="fr">Modifier la préférence</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2014-08-15T15:37:58.123Z" last-changed="2014-08-15T15:37:58.123Z" id="c309ea1f-7b5c-400a-8546-ae7e692b32d7" key="read-events-from-others">
+            <doc:name lang="de">Die Veranstaltungen anderer sehen</doc:name>
+            <doc:name lang="en">read-events-from-others</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2014-08-15T15:37:58.123Z" last-changed="2014-08-15T15:37:58.123Z" id="c5a6ade9-9546-44f7-8643-1684608746f0" key="create-events">
+            <doc:name lang="de">Veranstaltungen anlegen</doc:name>
+            <doc:name lang="en">create-events</doc:name>
+         </rapla:category>
+      </rapla:category>
+   </rapla:categories>
+
+   <relax:grammar>
+      <relax:define name="resource2">
+         <relax:element name="dynatt:resource2" id="d010d3a1-e864-4767-a220-8d0f236adad0" created-at="2016-03-08T11:20:03.190Z" last-changed="2016-03-08T11:20:03.190Z" last-changed-by="3f49044c-1469-4699-8a66-5f46ec6c0a41">
+            <doc:name lang="de">Dozentengruppe</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{name}</rapla:annotation>
+               <rapla:annotation key="classification-type">resource</rapla:annotation>
+               <rapla:annotation key="colors">rapla:automated</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="name">
+                  <doc:name lang="de">Name</doc:name>
+                  <doc:name lang="en">name</doc:name>
+                  <relax:data type="string"/>
+                  <rapla:default></rapla:default>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="a1">
+                  <doc:name lang="de">Teile</doc:name>
+                  <relax:data type="rapla:allocatable"/>
+                  <rapla:constraint name="dynamic-type">lecturer</rapla:constraint>
+                  <rapla:constraint name="multi-select">true</rapla:constraint>
+                  <rapla:constraint name="belongsTo">false</rapla:constraint>
+                  <rapla:constraint name="package">true</rapla:constraint>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+            <rapla:permission access="allocate_conflicts"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:define name="room">
+         <relax:element name="dynatt:room" id="d5557636-7c52-4e19-b9b5-3161b0dfc233" created-at="2014-08-15T15:37:58.123Z" last-changed="2014-08-15T15:37:58.123Z">
+            <doc:name lang="de">Raum</doc:name>
+            <doc:name lang="en">room</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{name}</rapla:annotation>
+               <rapla:annotation key="classification-type">resource</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="name">
+                  <doc:name lang="de">Name</doc:name>
+                  <doc:name lang="en">name</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="seats">
+                  <doc:name lang="de">Anzahl der Plätze</doc:name>
+                  <doc:name lang="en">number of seats</doc:name>
+                  <relax:data type="int"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="belongsto">
+                  <doc:name lang="de">gehört zu</doc:name>
+                  <doc:name lang="en">belongs to</doc:name>
+                  <relax:data type="rapla:category"/>
+                  <rapla:constraint name="root-category">category[key='department']</rapla:constraint>
+                  <rapla:constraint name="multi-select">false</rapla:constraint>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+            <rapla:permission access="allocate_conflicts"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:define name="lecturer">
+         <relax:element name="dynatt:lecturer" id="d0dcf151-eaee-40f4-87af-20a756dcbfb6" created-at="2014-08-15T15:37:58.123Z" last-changed="2014-08-15T15:37:58.123Z">
+            <doc:name lang="de">Dozent</doc:name>
+            <doc:name lang="en">lecturer</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{surname} {forename}</rapla:annotation>
+               <rapla:annotation key="classification-type">person</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="title">
+                  <doc:name lang="de">Titel</doc:name>
+                  <doc:name lang="en">title</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="surname">
+                  <doc:name lang="de">Nachname</doc:name>
+                  <doc:name lang="en">surname</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="forename">
+                  <doc:name lang="de">Vorname</doc:name>
+                  <doc:name lang="en">forename</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+            <rapla:permission access="allocate_conflicts"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:define name="resource1">
+         <relax:element name="dynatt:resource1" id="d2889899-fc5b-47bc-aa25-cb84a2415c4b" created-at="2016-03-08T11:18:45.661Z" last-changed="2016-03-08T11:18:45.661Z" last-changed-by="3f49044c-1469-4699-8a66-5f46ec6c0a41">
+            <doc:name lang="de">Teilraum</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{name}</rapla:annotation>
+               <rapla:annotation key="classification-type">resource</rapla:annotation>
+               <rapla:annotation key="colors">rapla:automated</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="name">
+                  <doc:name lang="de">Name</doc:name>
+                  <doc:name lang="en">name</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="a1">
+                  <doc:name lang="de">Ist Teil von</doc:name>
+                  <relax:data type="rapla:allocatable"/>
+                  <rapla:constraint name="dynamic-type">room</rapla:constraint>
+                  <rapla:constraint name="multi-select">false</rapla:constraint>
+                  <rapla:constraint name="belongsTo">true</rapla:constraint>
+                  <rapla:constraint name="package">false</rapla:constraint>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+            <rapla:permission access="allocate_conflicts"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:define name="resource3">
+         <relax:element name="dynatt:resource3" id="d44fd301-7290-41b2-9ecc-5499fa2ad91e" created-at="2016-07-10T13:03:29.325Z" last-changed="2016-07-10T13:03:29.325Z">
+            <doc:name lang="en">TestType</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{name}</rapla:annotation>
+               <rapla:annotation key="classification-type">resource</rapla:annotation>
+               <rapla:annotation key="colors">automatic</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="name">
+                  <doc:name lang="de">Name</doc:name>
+                  <doc:name lang="en">name</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="testdep">
+                  <relax:data type="rapla:category"/>
+                  <rapla:constraint name="root-category">category[key='department']</rapla:constraint>
+                  <rapla:constraint name="multi-select">false</rapla:constraint>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+            <rapla:permission access="allocate_conflicts"/>
+            <rapla:permission group="category[key='registerer']" access="create"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:define name="event">
+         <relax:element name="dynatt:event" id="dd6c8e40-4c7a-47af-a194-a29e11463abc" created-at="2014-08-15T15:37:58.123Z" last-changed="2014-08-15T15:37:58.123Z">
+            <doc:name lang="de">Veranstaltung</doc:name>
+            <doc:name lang="en">event</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{name}</rapla:annotation>
+               <rapla:annotation key="classification-type">reservation</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="name">
+                  <doc:name lang="de">Name</doc:name>
+                  <doc:name lang="en">name</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="belongsto">
+                  <doc:name lang="de">gehört zu</doc:name>
+                  <doc:name lang="en">belongs to</doc:name>
+                  <relax:data type="rapla:category"/>
+                  <rapla:constraint name="root-category">category[key='department']</rapla:constraint>
+                  <rapla:constraint name="multi-select">false</rapla:constraint>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="description">
+                  <doc:name lang="de">Beschreibung</doc:name>
+                  <doc:name lang="en">description</doc:name>
+                  <doc:annotations>
+                     <rapla:annotation key="expected-rows">5</rapla:annotation>
+                     <rapla:annotation key="edit-view">additional-view</rapla:annotation>
+                  </doc:annotations>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+            <rapla:permission access="read"/>
+            <rapla:permission access="create"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:start>
+         <relax:choice>
+            <relax:ref name="resource2"/>
+            <relax:ref name="room"/>
+            <relax:ref name="lecturer"/>
+            <relax:ref name="resource1"/>
+            <relax:ref name="resource3"/>
+            <relax:ref name="event"/>
+         </relax:choice>
+      </relax:start>
+   </relax:grammar>
+
+   <rapla:preferences>
+      <rapla:entry key="org.rapla.plugin">
+         <rapla:config>
+            <pluginlist>
+               <plugin enabled="true" class="org.rapla.plugin.periodcopy.PeriodCopyPlugin"/>
+               <plugin enabled="true" class="org.rapla.plugin.periodwizard.PeriodWizardPlugin"/>
+               <plugin enabled="true" class="org.rapla.plugin.notification.NotificationPlugin"/>
+               <plugin enabled="true" class="org.rapla.plugin.autoexport.AutoExportPlugin"/>
+               <plugin enabled="true" class="org.rapla.plugin.mail.MailPlugin"/>
+               <plugin enabled="true" class="org.rapla.plugin.export2ical.Export2iCalPlugin"/>
+            </pluginlist>
+         </rapla:config>
+      </rapla:entry>
+      <rapla:entry key="org.rapla.plugin.mail.server.Config">
+         <rapla:config>
+            <plugin>
+               <mailinterface>org.rapla.MockMailer</mailinterface>
+            </plugin>
+         </rapla:config>
+      </rapla:entry>
+      <rapla:entry key="org.rapla.plugin.export2ical.server.Config">
+         <rapla:config>
+            <plugin>
+               <first_plugin_startdate>2012-12-20</first_plugin_startdate>
+            </plugin>
+         </rapla:config>
+      </rapla:entry>
+      <rapla:entry key="org.rapla.plugin.autoexport.show_calendar_list_in_html_menu" value="true"/>
+      <rapla:entry key="org.rapla.crypto.server.privateKey" value="MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDfzuhPhvKd4ALE61uoPGlbBJrYumGF2Yv8-RwEaWfG2tE6_pitV74Rb9kyJVREpJ8GRFOVKp-B6L-hIEZjJ9LDrr593_l5JmxoCUfiSDlUHl0L36VCAw2RwnTWboO1-bUnXNwnU3sT23ZRiYlwoPolSX94qcHGgsGOIA4apEttZiAPkxN5e3pAQUS97ce-RUs8F3mKNtrqG9_8sPofz015-DnL-deXPle62G__2pfJZMnnQkcSYa0SvSmVCWvTlUMRQmpaMoLcyIUBbahCBBN9B-MGmEUrtT39ZsfVuDDh2U66Uet_aK2Si9ov11DAPblvcxRVrN9GE9L8_Xn0IqCFAgMBAAECggEBAMwz6NrG8g8CGQS7CcISfL5DEVW1mM2blJKYZ-vOkJVriYQeUAe5Cv614qJSVPTcjwwUw35SiX7qcg39eLt31mIcyknnVaQoXrj93syjwUry-UqgIBR-3J6loh0UcLBUyejEXUq0bJPNpcL3jqNo_VOQH_JkUR1iqF-Y98VvKjMBSaXTK5PA2yesCzDvUNuLMF0rvgHksPuaGinuP-47BI-cM1hnhJHqUqozc-yX_tS0RSOIKOq08lQtXA1k0KAygP698Xj4pem6VaSs9L_p_AvFmEYOBK3hF1bsgSO751bhN0S1omWq-HA_0X4UR8b6EIAWKCsonpUAMSsb06pmhHECgYEA_gQaXWtGdpmtLb_le3icmyvFEXPKqwg51zwhvc5pyYKdxiP54sK-Ra_IueGxh7ujQ-uerxys3XjsZbnooMY9nSHtwWLduS-ir1w1sFCCbC7msRJpaZeq64yCsSE2grskg_AeuXvfbXjUhKkugyo-h2v0lTNV6LDxw_CDxOJuH6cCgYEA4Y5nqndwDGY1nd0f8JK85UCLjk2n7Gi2DMbBx8OOOf4Y5vSfGAP-CegZtAdDx65Sob5GZeQ2u6mj5ZjrZ_9Wg0kwhoy8nuwmMmXlkxdXPD_-nqoFvwx0eVlCYMlPECUg268R_niLbvC8NQyRhbup6me_vcnaHYSCkL0QIzlbY_MCgYAC_v9knLBPE870HDBTvX9zYRfI9emtDMLJ5B6tw3KB-vVrcd8vqoZeAg3HC39xj2gElBHiFN-BGT0IkiHJS61MXisUvdrJpWMw2FCVzM1NA1ybOBFgOna8ooKkHjUrY5OxrrJeE7T18JfpHKm8yFHGfSJ8ZAeeX__qBLs5JkaQPwKBgCjgau8cyCSnHU5ntZMetLcDVIdMkYMpktyL5LB0Q0FFSHQKnw52IsLe2lGjA2ibsgP3_MAYdMbbvoUsinUFdENEr1OjC8ftWhrGFq3qi_eyTU2p2HLAKheX0ozBzt9JK0RE3Qj2BabsX99pULIgyXFergQSIcI5soPSj6siiOp7AoGAfwTkjnIfQzsDS73965tO13fc81WLjzSlwxkXlvlfNckj6AdQzjtYU-SbppByd7mk7t1v-eN9AWuDEXR67qN1rhNdWvbRTS34wqVTB2RsfpQ66fjmcn_sNGYrcHXq3ha117jIH4orzOJS8HiiDuf0CQeoCBhMQJ1UcMJbYqjRGOM"/>
+      <rapla:entry key="org.rapla.crypto.publicKey" value="MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA387oT4byneACxOtbqDxpWwSa2LphhdmL_PkcBGlnxtrROv6YrVe-EW_ZMiVURKSfBkRTlSqfgei_oSBGYyfSw66-fd_5eSZsaAlH4kg5VB5dC9-lQgMNkcJ01m6Dtfm1J1zcJ1N7E9t2UYmJcKD6JUl_eKnBxoLBjiAOGqRLbWYgD5MTeXt6QEFEve3HvkVLPBd5ijba6hvf_LD6H89Nefg5y_nXlz5Xuthv_9qXyWTJ50JHEmGtEr0plQlr05VDEUJqWjKC3MiFAW2oQgQTfQfjBphFK7U9_WbH1bgw4dlOulHrf2itkovaL9dQwD25b3MUVazfRhPS_P159CKghQIDAQAB"/>
+   </rapla:preferences>
+
+   <rapla:users>
+      <!-- Users of the system -->
+      <rapla:user id="15e1576a-bc70-4ddf-9943-8e6ad1c86100" created-at="2014-08-15T15:37:58.125Z" last-changed="2014-08-15T15:37:58.125Z" username="monty" password="burns" name="" email="monty@rapla.dummy.rapla" isAdmin="false">
+         <rapla:group key="category[key='my-group']"/>
+         <rapla:group key="category[key='powerplant']"/>
+         <rapla:group key="category[key='powerplant']/category[key='powerplant-admins']"/>
+      </rapla:user>
+      <rapla:user id="3f49044c-1469-4699-8a66-5f46ec6c0a41" created-at="2014-08-15T15:37:58.125Z" last-changed="2014-08-15T15:37:58.125Z" username="homer" password="duffs" name="" email="homer@rapla.dummy.rapla" isAdmin="true">
+         <rapla:preferences>
+            <rapla:entry key="org.rapla.plugin.notification.allocationlisteners">
+               <rapla:map>
+               </rapla:map>
+            </rapla:entry>
+            <rapla:entry key="org.rapla.SessionTest">
+               <rapla:config>
+                  <myconfig test="testvalue"/>
+               </rapla:config>
+            </rapla:entry>
+            <rapla:entry key="org.rapla.plugin.notification.notify_if_owner" value="true"/>
+            <rapla:entry key="org.rapla.test">
+               <rapla:calendar title="test" view="week">
+                  <options>
+                     <rapla:map>
+                        <rapla:mapentry key="org.rapla.plugin.abstractcalendar.show_navigation" value="true"/>
+                        <rapla:mapentry key="org.rapla.plugin.abstractcalendar.save_selected_date" value="false"/>
+                        <rapla:mapentry key="org.rapla.plugin.export2ical.selected" value="false"/>
+                        <rapla:mapentry key="org.rapla.plugin.autoexport.selected" value="false"/>
+                     </rapla:map>
+                  </options>
+               </rapla:calendar>
+            </rapla:entry>
+         </rapla:preferences>
+      </rapla:user>
+   </rapla:users>
+
+   <rapla:resources>
+      <!-- resources -->
+      <rapla:resource id="r9b69d90-46a0-41bb-94fa-82079b424c03" owner="3f49044c-1469-4699-8a66-5f46ec6c0a41" created-at="2016-03-08T11:20:18.620Z" last-changed="2016-03-08T11:20:18.620Z" last-changed-by="3f49044c-1469-4699-8a66-5f46ec6c0a41">
+         <dynatt:resource2>
+            <dynatt:name>DozGruppe</dynatt:name>
+            <dynatt:a1>f92e9a11-c342-4413-a924-81eee17ccf92</dynatt:a1>
+         </dynatt:resource2>
+         <rapla:permission access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="c24ce517-4697-4e52-9917-ec000c84563c" created-at="2014-08-15T15:37:58.131Z" last-changed="2014-08-15T15:37:58.131Z">
+         <dynatt:room>
+            <dynatt:name>Room A66</dynatt:name>
+            <dynatt:seats>30</dynatt:seats>
+            <dynatt:belongsto>category[key='springfield-powerplant']</dynatt:belongsto>
+         </dynatt:room>
+         <rapla:permission access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="5521686b-0ab4-4ff4-a56e-0bdf148e8d1d" created-at="2014-08-15T15:37:58.131Z" last-changed="2014-08-15T15:37:58.131Z">
+         <dynatt:room>
+            <dynatt:name>erwin</dynatt:name>
+            <dynatt:seats>10</dynatt:seats>
+            <dynatt:belongsto>category[key='elementary-springfield']</dynatt:belongsto>
+         </dynatt:room>
+         <rapla:permission access="allocate"/>
+      </rapla:resource>
+      <rapla:extension id="period_3" created-at="2014-08-15T15:37:58.447Z" last-changed="2014-08-15T15:37:58.447Z">
+         <ext:period>
+            <ext:name>SS 2002</ext:name>
+            <ext:start>2002-04-10</ext:start>
+            <ext:end>2002-07-11</ext:end>
+         </ext:period>
+         <rapla:permission access="read"/>
+      </rapla:extension>
+      <rapla:extension id="period_2" created-at="2014-08-15T15:37:58.447Z" last-changed="2014-08-15T15:37:58.447Z">
+         <ext:period>
+            <ext:name>WS 2001/2002</ext:name>
+            <ext:start>2001-10-15</ext:start>
+            <ext:end>2002-02-15</ext:end>
+         </ext:period>
+         <rapla:permission access="read"/>
+      </rapla:extension>
+      <rapla:extension id="period_1" created-at="2014-08-15T15:37:58.445Z" last-changed="2014-08-15T15:37:58.445Z">
+         <ext:period>
+            <ext:name>SS 2001</ext:name>
+            <ext:start>2001-04-10</ext:start>
+            <ext:end>2001-07-15</ext:end>
+         </ext:period>
+         <rapla:permission access="read"/>
+      </rapla:extension>
+      <rapla:person id="d26b7058-49d5-4bdf-8a5f-81a0cde6ebd2" created-at="2014-08-15T15:37:58.131Z" last-changed="2014-08-15T15:37:58.131Z">
+         <dynatt:lecturer>
+            <dynatt:surname>Simpson</dynatt:surname>
+            <dynatt:forename>Homer</dynatt:forename>
+         </dynatt:lecturer>
+         <rapla:permission access="allocate_conflicts"/>
+      </rapla:person>
+      <rapla:person id="f92e9a11-c342-4413-a924-81eee17ccf92" created-at="2014-08-15T15:37:58.131Z" last-changed="2014-08-15T15:37:58.131Z">
+         <dynatt:lecturer>
+            <dynatt:title>Mr.</dynatt:title>
+            <dynatt:surname>Burns</dynatt:surname>
+            <dynatt:forename>Monty</dynatt:forename>
+         </dynatt:lecturer>
+         <rapla:permission access="allocate_conflicts"/>
+      </rapla:person>
+      <rapla:resource id="rdd6b473-7c77-4344-a73d-1f27008341cb" owner="3f49044c-1469-4699-8a66-5f46ec6c0a41" created-at="2016-03-08T11:19:05.371Z" last-changed="2016-03-08T11:19:05.371Z" last-changed-by="3f49044c-1469-4699-8a66-5f46ec6c0a41">
+         <dynatt:resource1>
+            <dynatt:name>Room A66.1</dynatt:name>
+            <dynatt:a1>c24ce517-4697-4e52-9917-ec000c84563c</dynatt:a1>
+         </dynatt:resource1>
+         <rapla:permission access="allocate_conflicts"/>
+      </rapla:resource>
+
+   </rapla:resources>
+
+   <rapla:reservations>
+      <rapla:reservation id="02c84e71-5d80-458a-97ad-86822780dc09" owner="3f49044c-1469-4699-8a66-5f46ec6c0a41" created-at="2003-11-21T00:00:00.000Z" last-changed="2003-11-21T00:00:00.000Z">
+         <dynatt:event>
+            <dynatt:name>Reservation 2</dynatt:name>
+         </dynatt:event>
+         <rapla:appointment id="aa4b5e33-3b97-4acc-9d21-6c8800518f09" start-date="2001-10-16" start-time="12:00:00" end-date="2001-10-16" end-time="19:00:00"/>
+         <rapla:appointment id="a792160c-3f7d-4b10-b45d-d99d6141d8d4" start-date="2006-09-04" start-time="13:00:00" end-date="2006-09-04" end-time="14:00:00">
+            <rapla:repeating type="monthly" end-date="2010-09-04"/>
+         </rapla:appointment>
+         <rapla:allocate idref="5521686b-0ab4-4ff4-a56e-0bdf148e8d1d"/>
+         <rapla:allocate idref="c24ce517-4697-4e52-9917-ec000c84563c"/>
+         <rapla:allocate idref="f92e9a11-c342-4413-a924-81eee17ccf92"/>
+         <rapla:permission access="read"/>
+      </rapla:reservation>
+      <rapla:reservation id="eb1f500c-1354-420d-99c0-551cced25edf" owner="3f49044c-1469-4699-8a66-5f46ec6c0a41" created-at="2016-07-10T13:02:59.276Z" last-changed="2016-07-10T13:02:59.276Z" last-changed-by="3f49044c-1469-4699-8a66-5f46ec6c0a41">
+         <dynatt:event>
+            <dynatt:name>test-reservation</dynatt:name>
+         </dynatt:event>
+         <rapla:appointment id="a60914eb-f28d-4759-a8e5-00c3c4bb100d" start-date="2016-07-10" start-time="13:02:59" end-date="2016-07-10" end-time="15:02:59">
+            <rapla:repeating interval="2" type="weekly" number="10">
+               <rapla:exception>
+                  <rapla:date date="2016-07-10"/>
+               </rapla:exception>
+               <rapla:exception>
+                  <rapla:date date="2016-07-17"/>
+               </rapla:exception>
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="5521686b-0ab4-4ff4-a56e-0bdf148e8d1d"/>
+         <rapla:permission access="read"/>
+      </rapla:reservation>
+      <rapla:reservation id="b44f10ee-a5c1-403f-b26f-fca25f9d0846" owner="3f49044c-1469-4699-8a66-5f46ec6c0a41" created-at="2003-11-21T00:00:00.000Z" last-changed="2003-11-21T00:00:00.000Z">
+         <dynatt:event>
+            <dynatt:name>power planting</dynatt:name>
+            <dynatt:description>new demands for energy</dynatt:description>
+         </dynatt:event>
+         <rapla:appointment id="a8edbf51-a374-4450-800c-2907bb519af2" start-date="2002-04-10" start-time="10:00:00" end-date="2002-04-10" end-time="12:00:00">
+            <rapla:repeating type="weekly" end-date="2002-07-10"/>
+            <rapla:allocate idref="c24ce517-4697-4e52-9917-ec000c84563c"/>
+         </rapla:appointment>
+         <rapla:appointment id="a543f612-c97d-4b95-a0b8-2342f0cd2c2d" start-date="2002-04-12" start-time="10:00:00" end-date="2002-04-12" end-time="12:00:00">
+            <rapla:repeating type="weekly" end-date="2002-07-10"/>
+         </rapla:appointment>
+         <rapla:allocate idref="5521686b-0ab4-4ff4-a56e-0bdf148e8d1d"/>
+         <rapla:allocate idref="d26b7058-49d5-4bdf-8a5f-81a0cde6ebd2"/>
+         <rapla:permission access="read"/>
+      </rapla:reservation>
+      <rapla:reservation id="0fad6a46-9bc6-4f2b-8f01-dfa88065f90e" owner="3f49044c-1469-4699-8a66-5f46ec6c0a41" created-at="2003-11-21T00:00:00.000Z" last-changed="2003-11-21T00:00:00.000Z">
+         <dynatt:event>
+            <dynatt:name>bowling</dynatt:name>
+            <dynatt:description>with all my friends
+               and all the rest</dynatt:description>
+         </dynatt:event>
+         <rapla:appointment id="a644e379-344e-4e1f-9ea3-2ed22ee12e94" start-date="2001-10-15" start-time="17:00:00" end-date="2001-10-15" end-time="20:00:00">
+            <rapla:repeating type="weekly" end-date="2002-07-10"/>
+         </rapla:appointment>
+         <rapla:appointment id="a20a4b9e-0362-47ab-9f5e-807a5459a4cf" start-date="2001-10-20" start-time="17:00:00" end-date="2001-10-20" end-time="20:00:00">
+            <rapla:repeating type="weekly" end-date="2002-07-10"/>
+            <rapla:allocate idref="c24ce517-4697-4e52-9917-ec000c84563c"/>
+         </rapla:appointment>
+         <rapla:allocate idref="d26b7058-49d5-4bdf-8a5f-81a0cde6ebd2"/>
+         <rapla:permission access="read"/>
+      </rapla:reservation>
+      <rapla:reservation id="e2ee45fd-e653-4ee7-9a12-3608ac16b914" owner="3f49044c-1469-4699-8a66-5f46ec6c0a41" created-at="2016-07-10T13:03:18.860Z" last-changed="2016-07-10T13:03:18.860Z" last-changed-by="3f49044c-1469-4699-8a66-5f46ec6c0a41">
+         <dynatt:event>
+            <dynatt:name>Test</dynatt:name>
+         </dynatt:event>
+         <rapla:appointment id="acde89d9-5362-408a-b8b1-9626bc843c48" start-date="2016-09-18" end-date="2016-09-18"/>
+         <rapla:allocate idref="5521686b-0ab4-4ff4-a56e-0bdf148e8d1d"/>
+         <rapla:permission access="read"/>
+      </rapla:reservation>
+      <rapla:reservation id="e113007d-c9f9-421d-990c-068cfd8ce908" owner="3f49044c-1469-4699-8a66-5f46ec6c0a41" created-at="2016-07-10T13:03:38.491Z" last-changed="2016-07-10T13:03:38.565Z" last-changed-by="3f49044c-1469-4699-8a66-5f46ec6c0a41">
+         <dynatt:event>
+            <dynatt:name>test-reservation</dynatt:name>
+         </dynatt:event>
+         <rapla:appointment id="ab2bd806-e455-4ecc-a7fd-d385ce78bbc3" start-date="2016-07-10" start-time="00:00:00" end-date="2016-07-10" end-time="13:03:38"/>
+         <rapla:allocate idref="5521686b-0ab4-4ff4-a56e-0bdf148e8d1d"/>
+         <rapla:allocate idref="f92e9a11-c342-4413-a924-81eee17ccf92"/>
+         <rapla:permission access="read"/>
+      </rapla:reservation>
+   </rapla:reservations>
+
+   <rapla:importexports>
+   </rapla:importexports>
+</rapla:data>

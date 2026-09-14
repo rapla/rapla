@@ -1,0 +1,163 @@
+package org.rapla.client.swing.internal.view;
+
+import org.rapla.RaplaResources;
+import org.rapla.client.internal.TreeFactoryImpl;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.entities.User;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
+import org.rapla.facade.internal.CalendarModelImpl;
+import org.rapla.framework.RaplaException;
+import org.rapla.storage.PermissionController;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import javax.swing.*;
+import javax.swing.border.Border;
+import javax.swing.tree.DefaultTreeCellRenderer;
+import javax.swing.tree.TreeCellRenderer;
+import java.awt.*;
+
+@org.springframework.stereotype.Service
+@org.springframework.context.annotation.Primary
+public class ComplexTreeCellRenderer extends DefaultTreeCellRenderer {
+    Icon bigFolderResourcesFiltered;
+    Icon bigFolderResourcesUnfiltered;
+    Icon bigFolderUsers;
+    Icon bigFolderCategories;
+    Icon defaultIcon;
+    Icon personIcon;
+    Icon folderClosedIcon;
+    Icon folderOpenIcon;
+    Icon forbiddenIcon;
+    Icon requestIcon;
+    Font normalFont = UIManager.getFont("Tree.font");
+    Font bigFont = normalFont.deriveFont(Font.BOLD, (float) (normalFont.getSize() * 1.2));
+    private final RaplaFacade raplaFacade;
+    private final ClientFacade clientFacade;
+    private boolean filtered;
+
+    private static final long serialVersionUID = 1L;
+
+    Border nonIconBorder = BorderFactory.createEmptyBorder(1, 0, 1, 0);
+    Border conflictBorder = BorderFactory.createEmptyBorder(2, 0, 2, 0);
+    RaplaResources i18n;
+
+    @Autowired
+    public ComplexTreeCellRenderer(RaplaResources i18n, RaplaFacade raplaFacade, ClientFacade clientFacade) {
+        this.raplaFacade = raplaFacade;
+        this.i18n = i18n;
+        this.clientFacade = clientFacade;
+        bigFolderResourcesFiltered = RaplaImages.getIcon(i18n.getIcon("icon.big_folder_resources_filtered"));
+        bigFolderResourcesUnfiltered = RaplaImages.getIcon(i18n.getIcon("icon.big_folder_resources"));
+        bigFolderUsers = RaplaImages.getIcon(i18n.getIcon("icon.big_folder_users"));
+        bigFolderCategories = RaplaImages.getIcon(i18n.getIcon("icon.big_folder_categories"));
+        defaultIcon = RaplaImages.getIcon(i18n.getIcon("icon.tree.default"));
+        personIcon = RaplaImages.getIcon(i18n.getIcon("icon.tree.persons"));
+        folderClosedIcon = RaplaImages.getIcon(i18n.getIcon("icon.folder"));
+        folderOpenIcon = RaplaImages.getIcon(i18n.getIcon("icon.folder"));
+        forbiddenIcon = RaplaImages.getIcon(i18n.getIcon("icon.no_perm"));
+        requestIcon = RaplaImages.getIcon(i18n.getIcon("icon.permissions"));
+        setLeafIcon(defaultIcon);
+    }
+
+    private void setIcon(Object object, boolean leaf) {
+        Icon icon = null;
+        boolean isAllocatable = false;
+        if (object instanceof Allocatable) {
+            isAllocatable = true;
+            Allocatable allocatable = (Allocatable) object;
+            try {
+                User user = clientFacade.getUser();
+                java.time.LocalDate today = raplaFacade.today();
+                final PermissionController permissionController = raplaFacade.getPermissionController();
+                if (!permissionController.canAllocate(allocatable, user, today)) {
+                    if ( permissionController.isRequestOnly( allocatable, user, today) ) {
+                        icon = requestIcon;
+                    } else {
+                        icon = forbiddenIcon;
+                    }
+                } else {
+                    if (allocatable.isPerson()) {
+                        icon = personIcon;
+                    } else {
+                        icon = defaultIcon;
+                    }
+                }
+            } catch (RaplaException ex) {
+            }
+
+        } else if (object instanceof DynamicType) {
+            DynamicType type = (DynamicType) object;
+            String classificationType = type.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
+            if (DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION.equals(classificationType)) {
+                setBorder(conflictBorder);
+            } else {
+                icon = folderClosedIcon;
+            }
+        }
+        if (icon == null) {
+            setBorder(nonIconBorder);
+            // Fall back to rapla's "tree.default" (green dot) so non-Allocatable
+            // leaf nodes — e.g. the option-panel labels under "Plugins" / "Admin"
+            // in PreferencesEditUI — render with a rapla glyph instead of the
+            // JTree default leaf icon (white sheet).
+            if (leaf) {
+                icon = defaultIcon;
+            }
+        }
+        if (leaf) {
+            setLeafIcon(icon);
+        } else if (isAllocatable) {
+            setOpenIcon(icon);
+            setClosedIcon(icon);
+            setIcon(icon);
+        }
+    }
+
+    public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded, boolean leaf, int row, boolean hasFocus) {
+        setBorder(null);
+        setFont(normalFont);
+        Object nodeInfo = TreeFactoryImpl.getUserObject(value);
+        if ( nodeInfo == CalendarModelImpl.ALLOCATABLES_ROOT) {
+            Icon bigFolderIcon;
+            if (filtered) {
+                bigFolderIcon = bigFolderResourcesFiltered;
+            } else {
+                bigFolderIcon = bigFolderResourcesUnfiltered;
+            }
+            setClosedIcon(bigFolderIcon);
+            setOpenIcon(bigFolderIcon);
+            setLeafIcon(bigFolderIcon);
+            setFont(bigFont);
+            value = i18n.getString("resources");
+        } else  if ( nodeInfo == CalendarModelImpl.USER_ROOT) {
+            Icon bigFolderIcon = bigFolderUsers;
+            setClosedIcon(bigFolderIcon);
+            setOpenIcon(bigFolderIcon);
+            setLeafIcon(bigFolderIcon);
+            setFont(bigFont);
+            value = i18n.getString("users");
+        } else {
+            setClosedIcon(folderClosedIcon);
+            setOpenIcon(folderOpenIcon);
+            //if (leaf) {
+            setIcon(nodeInfo, leaf);
+            //}
+        }
+        Component result = super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
+        return result;
+    }
+
+    public boolean isFiltered()
+    {
+        return filtered;
+    }
+
+    public void setFiltered(boolean filtered)
+    {
+        this.filtered = filtered;
+    }
+}

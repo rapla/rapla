@@ -1,448 +1,83 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>org.rapla</groupId>
-        <artifactId>rapla-parent</artifactId>
-        <version>2.1-SNAPSHOT</version>
-        <relativePath>parent/pom.xml</relativePath>
-    </parent>
-    <url>https://github.com/rapla/rapla</url>
-    <name>rapla - resource scheduling and event planing</name>
-    <description>rapla - resource scheduling and event planing</description>
-    <groupId>org.rapla</groupId>
-    <artifactId>rapla</artifactId>
-    <inceptionYear>2000</inceptionYear>
-    <licenses>
-        <license>
-            <name>GNU Affero General Public License</name>
-            <url>https://www.gnu.org/licenses/agpl-3.0.de.html</url>
-            <distribution>repo</distribution>
-        </license>
-        <license>
-            <name>Apache 2</name>
-            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
-            <distribution>repo</distribution>
-        </license>
-    </licenses>
-    <scm>
-        <connection>scm:git:git://github.com/rapla/rapla.git</connection>
-        <url>https://github.com/rapla/rapla.git</url>
-    </scm>
-    <developers>
-        <developer>
-            <name>Christopher Kohlhaas</name>
-            <email>christopher.kohlhaas@gmail.com</email>
-            <organizationUrl>https://github.com/kohlhaas</organizationUrl>
-        </developer>
-        <developer>
-            <name>Martin Geuer</name>
-            <email>martin.geuer@gmail.com</email>
-            <organizationUrl>https://github.com/mgeuer</organizationUrl>
-        </developer>
-    </developers>
-    <organization>
-        <name>Rapla</name>
-        <url>http://rapla.org</url>
-    </organization>
-    <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-    </properties>
-	<build>
-        <resources>
-            <resource>
-                <directory>${basedir}/src/main/resources-filtered</directory>
-                <filtering>true</filtering>
-            </resource>
-            <resource>
-                <directory>${basedir}/src/main/resources</directory>
-                <filtering>false</filtering>
-            </resource>
-        </resources>
-		<plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <version>2.10</version>
-                <executions>
-                    <execution>
-                        <id>copy</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>copy</goal>
-                        </goals>
-                        <configuration>
-                            <artifactItems>
-                                <artifactItem>
-									<groupId>com.google.web.bindery</groupId>
-									<artifactId>requestfactory-server</artifactId>
-									<version>${requestfactory.version}</version>
-                                    <type>jar</type>
-                                    <overWrite>true</overWrite>
-                                    <outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>io.reactivex.rxjava3</groupId>
-                                    <artifactId>rxjava</artifactId>
-                                    <version>${rxjava.version}</version>
-                                    <type>jar</type>
-                                    <overWrite>true</overWrite>
-                                    <outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>org.reactivestreams</groupId>
-                                    <artifactId>reactive-streams</artifactId>
-                                    <version>1.0.0</version>
-                                    <type>jar</type>
-                                    <overWrite>true</overWrite>
-                                    <outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>com.google.code.gson</groupId>
-                                    <artifactId>gson</artifactId>
-                                    <version>${gson.version}</version>
-                                    <type>jar</type>
-                                    <overWrite>true</overWrite>
-                                    <outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
-                                </artifactItem>
-                                <!--
-                                <artifactItem>
-                                    <groupId>com.fasterxml.jackson.core</groupId>
-                                    <artifactId>jackson-databind</artifactId>
-                                    <version>${jackson.version}</version>
-                                    <type>jar</type>
-                                    <overWrite>true</overWrite>
-                                    <outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>com.fasterxml.jackson.core</groupId>
-                                    <artifactId>jackson-core</artifactId>
-                                    <version>${jackson.version}</version>
-                                    <type>jar</type>
-                                    <overWrite>true</overWrite>
-                                    <outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>com.fasterxml.jackson.core</groupId>
-                                    <artifactId>jackson-annotations</artifactId>
-                                    <version>${jackson.version}</version>
-                                    <type>jar</type>
-                                    <overWrite>true</overWrite>
-                                    <outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
-                                </artifactItem>
-                                -->
-                                <artifactItem>
-                                    <groupId>javax.inject</groupId>
-                                    <artifactId>javax.inject</artifactId>
-                                    <version>${javax.inject.version}</version>
-                                    <type>jar</type>
-                                    <overWrite>true</overWrite>
-                                    <outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>org.rapla</groupId>
-                                    <artifactId>restinject</artifactId>
-                                    <version>${restinject.version}</version>
-                                    <type>jar</type>
-                                    <overWrite>true</overWrite>
-                                    <outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
-                                </artifactItem>
-                            </artifactItems>
-                            <outputDirectory>${project.build.directory}/wars</outputDirectory>
-                            <overWriteReleases>false</overWriteReleases>
-                            <overWriteSnapshots>true</overWriteSnapshots>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>2.6</version>
-                <executions>
-                    <execution>
-                        <id>Rapla Client Jar</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${webapp.dir}/webclient</outputDirectory>
-                            <finalName>rapla</finalName>
-                            <excludes>
-                                <exclude>**/*.gwt.xml</exclude>
-                                <exclude>org/rapla/gwt/**</exclude>
-                                <exclude>org/rapla/bootstrap/*</exclude>
-                                <exclude>**/Slf4jAdapter**</exclude>
-                                <exclude>**/server/**</exclude>
-                                <exclude>**/storage/xml/**</exclude>
-                                <exclude>**/storage/dbfile/**</exclude>
-                                <exclude>**/storage/dbsql/**</exclude>
-                                <exclude>se/**</exclude>
-                                <exclude>**/${rapla.module}</exclude>
-                                <exclude>**/*.java</exclude>
-                            </excludes>
-                            <archive>
-                            	<manifestEntries>
-                            		<Permissions>all-permissions</Permissions>
-                                    <Multi-Release>true</Multi-Release>
-                                </manifestEntries>
-                            </archive>
-                            <classifier>client</classifier>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>Rapla Bootstrap Jar</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>test-jar</goal>
-                        </goals>
-                        <configuration>
-                            <finalName>raplabootstrap</finalName>
-                            <includes>
-                                <include>org/rapla/bootstrap/*.*</include>
-                                <include>org/rapla/test/util/*.*</include>
-                            </includes>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>3.1.0</version>
-                <executions>
-                    <execution>
-                        <id>generateclientlibsproperties</id>
-                        <phase>prepare-package</phase>
-                        <configuration>
-                            <target>
-                                <mkdir dir="${webapp.dir}/webclient"/>
-                                <path id="dist.contents">
-                                    <fileset dir="${webapp.dir}/webclient">
-                                        <include name="*.jar" />
-                                    </fileset>
-                                </path>
-                                <path id="dist.contents.dir">
-                                    <dirset dir="${webapp.dir}/webclient">
-                                    </dirset>
-                                </path>
-                                <property name="prop.dist.contents" refid="dist.contents" />
-                                <property name="prop.dist.contents.dir" refid="dist.contents.dir" />
-                                <echo file="${webapp.dir}/WEB-INF/classes/clientlibs.properties">${prop.dist.contents}</echo>
-                                <replace file="${webapp.dir}/WEB-INF/classes/clientlibs.properties"
-                                         token="${prop.dist.contents.dir}${file.separator}" value=""
-                                         preserveLastModified="true" />
-                                <replace file="${webapp.dir}/WEB-INF/classes/clientlibs.properties"
-                                         token="${path.separator}" value=";" preserveLastModified="true" />
-                            </target>
-                        </configuration>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <!-- you can configure the properties in a profile in a settings.xml for maven. By default ossrh profile will be used -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-war-plugin</artifactId>
-                <version>3.3.2</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>war</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <archiveClasses>true</archiveClasses>
-                    <!-- this is relative to the pom.xml directory -->
-<!--
-                    <webResources>
-                        <resource>
-                            <directory>../raplajsclient/dist</directory>
-                        </resource>
-                    </webResources>
-                    -->
-                    <classifier>war</classifier>
-                    <packagingExcludes>**/*.java</packagingExcludes>
-                    <warSourceDirectory>${basedir}/src/main/webapp</warSourceDirectory>
-                    <webXml>${basedir}/src/main/webapp/WEB-INF/web.xml</webXml>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>2.5.5</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <id>rapla.jar</id>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}</outputDirectory>
-                            <finalName>rapla-${project.version}</finalName>
-                            <descriptors>
-                              <descriptor>${basedir}/src/assembly/rapla.jar.xml</descriptor>
-                            </descriptors>
-                            <appendAssemblyId>false</appendAssemblyId>
-                            <attach>true</attach>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>rapla.distribution</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}/distribution</outputDirectory>
-                            <finalName>rapla-${project.version}</finalName>
-                            <descriptors>
-                              <descriptor>${basedir}/src/assembly/rapla.distribution.xml</descriptor>
-                            </descriptors>
-                            <appendAssemblyId>false</appendAssemblyId>
-                            <attach>false</attach>
-                        </configuration>
-                    </execution>
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>org.rapla</groupId>
+	<artifactId>rapla-aggregator</artifactId>
+	<version>2.1-SNAPSHOT</version>
+	<url>https://github.com/rapla/rapla</url>
+	<description>rapla - reactor aggregator (formerly rapla-master)</description>
+	<name>rapla - aggregator</name>
+	<packaging>pom</packaging>
+	<modules>
+		<module>rapla-bom</module>
+		<module>rapla-core</module>
+		<module>rapla-client</module>
+		<module>rapla-server</module>
+		<module>rapla-app</module>
+		<!-- PRD 003 direction change (2026-05-07) deleted the custom/ WAR-overlay parent.
+		     Custom deployments (e.g. dhbwrapla) now declare org.rapla:rapla-server as a
+		     dependency and pick up the server stack via Spring Boot autoconfig (Phase A). -->
+	</modules>
 
-                </executions>
-            </plugin>
-            <!--
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jlink-plugin</artifactId>
-                <version>3.1.0</version>
-                <extensions>true</extensions>
-                <executions>
-                    <execution>
-                        <id>create-runtime</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>jlink</goal>
-                        </goals>
-                        <configuration>
-                            <verbose>true</verbose>
-                            <compress>0</compress>
-                            <noHeaderFiles>true</noHeaderFiles>
-                            <classifier>package</classifier>
-                            <noManPages>true</noManPages>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>-->
-        </plugins>
-    </build>
-    <profiles>
-        <profile>
-            <id>deploy</id>
-            <properties>
-                <gwt.plugin.productionmode>true</gwt.plugin.productionmode>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.6</version>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-
-        </profile>
-        <profile>
-            <id>sign-jks</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-jarsigner-plugin</artifactId>
-                        <version>1.4</version>
-                        <executions>
-                            <execution>
-                                <id>sign-webclient-jks</id>
-                                <phase>prepare-package</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                        <configuration>
-                            <!-- wie bisher -->
-                            <alias>${keystore.alias}</alias>
-                            <keystore>${keystore.file}</keystore>
-                            <keypass>${keystore.keypass}</keypass>
-                            <storepass>${keystore.password}</storepass>
-                            <archiveDirectory>${project.build.directory}/${project.build.finalName}/webclient</archiveDirectory>
-                            <includes>
-                                <include>*.jar</include>
-                            </includes>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>sign-pkcs11</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-jarsigner-plugin</artifactId>
-                        <version>3.1.0</version>
-                        <executions>
-                            <execution>
-                                <id>sign-webclient-pkcs11</id>
-                                <phase>prepare-package</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                        <configuration>
-                            <!-- PKCS#11/YubiKey statt JKS -->
-                            <keystore>NONE</keystore>
-                            <storetype>PKCS11</storetype>
-                            <providerClass>sun.security.pkcs11.SunPKCS11</providerClass>
-                            <providerArg>${project.basedir}/pkcs11.cfg</providerArg>
-
-                            <!-- PIN aus ENV, z.B. ${keystore.keypass}-->
-                            <storepass>123456</storepass>
-                            <!-- Alias aus keytool -list -->
-                            <alias>Certificate for PIV Authentication</alias>
-
-                            <!-- Kette aus deiner .p7b → erdkante-chain.pem -->
-                            <certchain>${project.basedir}/certificate-chain.pem</certchain>
-
-                            <!-- Timestamping von SSL.com -->
-                            <!--
-                            <tsa>http://ts.ssl.com</tsa>
-    -->
-                            <!-- Gleiche Jars wie bisher: webclient/*.jar -->
-                            <archiveDirectory>${project.build.directory}/${project.build.finalName}/webclient</archiveDirectory>
-                            <includes>
-                                <include>*.jar</include>
-                            </includes>
-
-                            <verbose>true</verbose>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
-
+	<profiles>
+		<!-- PRD 017 Phase 3 follow-up: full-stack JaCoCo report.
+		     mvn -Pcoverage verify
+		     produces target/site/jacoco-aggregate/index.html with coverage from
+		     ALL modules' jacoco.exec — so a rapla-app @SpringBootTest that
+		     exercises rapla-server code shows up against rapla-server here,
+		     not just in rapla-app's own per-module report. -->
+		<profile>
+			<id>coverage</id>
+			<dependencies>
+				<!-- rapla-app excluded from class-scan: its target/classes
+				     contains JNLP webclient/ jars (multi-release shaded Jackson)
+				     that crash JaCoCo's bundle analyzer with "Can't add different
+				     class with same name". rapla-app's own bytecode is only
+				     RaplaSpringBootApplication.java — losing it from the report
+				     scan is fine, what matters is that rapla-app's jacoco.exec
+				     (the @SpringBootTest trace, which DOES exercise rapla-core /
+				     rapla-server code) gets folded in. The merge step below
+				     handles that. -->
+				<dependency><groupId>${project.groupId}</groupId><artifactId>rapla-core</artifactId><version>${project.version}</version></dependency>
+				<dependency><groupId>${project.groupId}</groupId><artifactId>rapla-client</artifactId><version>${project.version}</version></dependency>
+				<dependency><groupId>${project.groupId}</groupId><artifactId>rapla-server</artifactId><version>${project.version}</version></dependency>
+			</dependencies>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.jacoco</groupId>
+						<artifactId>jacoco-maven-plugin</artifactId>
+						<version>0.8.11</version>
+						<executions>
+							<!-- Merge rapla-app's jacoco.exec into the aggregator's
+							     target/ dir. report-aggregate's default discovery
+							     (**/target/jacoco.exec) picks this up alongside the
+							     per-module exec files, so @SpringBootTest coverage
+							     gets attributed back to rapla-core / rapla-server
+							     bytecode in the final report. -->
+							<execution>
+								<id>aggregate-merge-app</id>
+								<phase>verify</phase>
+								<goals><goal>merge</goal></goals>
+								<configuration>
+									<destFile>${project.basedir}/target/jacoco.exec</destFile>
+									<fileSets>
+										<fileSet>
+											<directory>${project.basedir}/rapla-app/target</directory>
+											<includes><include>jacoco.exec</include></includes>
+										</fileSet>
+									</fileSets>
+								</configuration>
+							</execution>
+							<execution>
+								<id>aggregate</id>
+								<phase>verify</phase>
+								<goals><goal>report-aggregate</goal></goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>

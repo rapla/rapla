@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Rapla REST API — Swagger UI</title>
+    <!--
+      PRD 041 + PRD 035: Swagger UI as one of the API explorers (alongside
+      Scalar and GraphiQL). CDN-loaded from jsdelivr — no webjar in the fat
+      JAR. Offline-fallback story: npm install swagger-ui-dist + copy to static/.
+
+      PRD 071 Phase 3: this page requires an authenticated session — an
+      anonymous browser GET is rejected 401 by SecurityConfig.
+
+      PRD 072 Phase 3: Swagger UI no longer piggybacks on the SPA's
+      localStorage access_token Bearer. It relies on the HttpOnly
+      `access_token` cookie (Phase 2) the browser sends automatically with
+      same-origin requests. "Try it out" mutating calls (POST/PUT/PATCH/DELETE)
+      are cookie-auth, so the requestInterceptor attaches the X-XSRF-TOKEN
+      header from the non-HttpOnly XSRF-TOKEN cookie that Spring's
+      CookieCsrfTokenRepository.withHttpOnlyFalse() sets (gated by
+      CookieAuthCsrfMatcher). On a 401, the responseInterceptor calls
+      POST /api/auth/session/refresh to mint a fresh access_token cookie; if the
+      refresh itself fails, it bounces to /login.
+    -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.30.1/swagger-ui.css">
+    <link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.30.1/favicon-32x32.png" sizes="32x32">
+</head>
+<body>
+<div id="swagger-ui"></div>
+<script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.30.1/swagger-ui-bundle.js" charset="UTF-8"></script>
+<script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.30.1/swagger-ui-standalone-preset.js" charset="UTF-8"></script>
+<script>
+    // Read the non-HttpOnly XSRF-TOKEN cookie Spring sets
+    // (CookieCsrfTokenRepository.withHttpOnlyFalse()). Mutating cookie-auth
+    // requests need the matching X-XSRF-TOKEN header (CookieAuthCsrfMatcher).
+    // The access_token cookie itself is HttpOnly and unreadable here — the
+    // browser attaches it automatically to same-origin requests.
+    function getXsrfToken() {
+        var m = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
+        return m ? decodeURIComponent(m[1]) : null;
+    }
+
+    // PRD 072 Phase 4: cookie-model sign-out. The old "Drop token" affordance is
+    // gone (the credential is an HttpOnly cookie JS can't clear); POST the server
+    // logout with the double-submit XSRF header, then land on /login.
+    function addSignOut() {
+        var a = document.createElement('a');
+        a.textContent = 'Sign out';
+        a.href = '#';
+        a.style.cssText = 'position:fixed;top:8px;right:16px;z-index:10000;'
+            + 'font:600 13px sans-serif;color:#fff;background:#3b4151;'
+            + 'padding:4px 12px;border-radius:4px;text-decoration:none';
+        a.addEventListener('click', function (e) {
+            e.preventDefault();
+            var xsrf = getXsrfToken();
+            fetch('/api/auth/session/logout', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: xsrf ? { 'X-XSRF-TOKEN': xsrf } : {}
+            }).catch(function () {}).finally(function () {
+                window.location.assign('/login');
+            });
+        });
+        document.body.appendChild(a);
+    }
+
+    window.onload = function () {
+        addSignOut();
+        window.ui = SwaggerUIBundle({
+            // Loads the group inventory served by StaticOpenApiController; the dropdown
+            // populates from its `urls` array (auth / client / rest / exports).
+            configUrl: "/api/v3/api-docs/swagger-config",
+            dom_id: "#swagger-ui",
+            deepLinking: true,
+            presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+            plugins: [SwaggerUIBundle.plugins.DownloadUrl],
+            layout: "StandaloneLayout",
+            // PRD 072 Phase 3: cookie credential. The HttpOnly access_token
+            // cookie is sent automatically with same-origin requests; for
+            // mutating calls attach the X-XSRF-TOKEN double-submit header.
+            requestInterceptor: function (req) {
+                var xsrf = getXsrfToken();
+                if (xsrf) req.headers['X-XSRF-TOKEN'] = xsrf;
+                return req;
+            },
+            // On 401, mint a fresh access_token cookie via the refresh endpoint;
+            // if the refresh itself fails, bounce to login. (Swagger UI has no
+            // built-in replay, so the user re-clicks "Execute" after refresh.)
+            responseInterceptor: function (res) {
+                if (res.status === 401) {
+                    var xsrf = getXsrfToken();
+                    fetch('/api/auth/session/refresh', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: xsrf ? { 'X-XSRF-TOKEN': xsrf } : {}
+                    }).then(function (r) {
+                        if (r.status === 401) {
+                            location.href = '/login';
+                        }
+                    });
+                }
+                return res;
+            }
+        });
+    };
+</script>
+</body>
+</html>

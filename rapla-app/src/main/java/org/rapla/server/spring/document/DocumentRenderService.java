@@ -1,0 +1,594 @@
+package org.rapla.server.spring.document;
+
+import graphql.ExecutionInput;
+import graphql.ExecutionResult;
+import graphql.GraphQLError;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import org.rapla.entities.User;
+import org.rapla.server.spring.graphql.HotSwappableGraphQlSource;
+import org.rapla.server.spring.graphql.ViewCatalogService;
+import org.rapla.server.spring.graphql.ViewEntry;
+import org.rapla.server.spring.graphql.ViewParamDirectives;
+import org.rapla.server.spring.graphql.ViewVariables;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
+/**
+ * PRD 097 Phase 2 — the render pipeline: resolve the document, execute its referenced view in the
+ * <b>caller's</b> §12 read-scope, feed the resulting data tree to Mustache, sanitize, wrap in the
+ * server-authored shell.
+ *
+ * <p>Authorization has three independent layers, in this order:
+ * <ol>
+ *   <li><b>Both artifacts must be visible</b> to the caller — the document and the view it
+ *       references. Either one hidden yields {@code empty}, indistinguishable from "no such
+ *       document" (§12: existence never leaks).</li>
+ *   <li><b>The view executes as the caller.</b> {@code RequestContextInstrumentation} resolves the
+ *       caller from the security context at {@code beginExecution}, so every resolver applies
+ *       {@code canRead}. Request parameters (an {@code eventId}, say) are ordinary GraphQL
+ *       variables: guessing an id the caller may not read yields a resolver {@code null}, hence an
+ *       empty document — byte-identical to a non-existent id.</li>
+ *   <li><b>The template can only render what the query already released</b> (D3): Mustache has no
+ *       independent data access.</li>
+ * </ol>
+ */
+@Service
+public class DocumentRenderService
+{
+    private static final Logger LOGGER = LoggerFactory.getLogger(DocumentRenderService.class);
+
+    /** Key under which grouped rows are exposed to the template (Phase 3). */
+    static final String GROUPS_KEY = "groups";
+
+    private final DocumentCatalogService documents;
+    private final ViewCatalogService views;
+    private final HotSwappableGraphQlSource graphQlSource;
+    private final DocumentRenderer renderer;
+    /** Optional — present when the timeslot plugin is on the classpath (band-domain grouping). */
+    private final org.springframework.beans.factory.ObjectProvider<
+            org.rapla.plugin.timeslot.TimeslotProvider> timeslotProvider;
+    private final org.rapla.server.spring.RaplaServerProperties properties;
+
+    public DocumentRenderService(DocumentCatalogService documents, ViewCatalogService views,
+            HotSwappableGraphQlSource graphQlSource, DocumentRenderer renderer,
+            org.springframework.beans.factory.ObjectProvider<
+                    org.rapla.plugin.timeslot.TimeslotProvider> timeslotProvider,
+            org.rapla.server.spring.RaplaServerProperties properties)
+    {
+        this.documents = documents;
+        this.views = views;
+        this.graphQlSource = graphQlSource;
+        this.renderer = renderer;
+        this.timeslotProvider = timeslotProvider;
+        this.properties = properties;
+    }
+
+    /**
+     * Render a document to a complete HTML page. Empty when the caller may not see the document
+     * or its view, or when either is invalid — the caller cannot tell these apart (§12). Raw URL
+     * parameters are gated by the view's declared {@code @param}/{@code @window} surface: an
+     * undeclared key is a 400 ({@link UndeclaredParameterException}), a declared public
+     * {@code name} is translated to its private {@code into} path before variable expansion.
+     *
+     * <p>2026-08-11 — a {@code required @param} whose target stays unfilled after the merge (no
+     * URL value, no document pin) renders a hint page naming the missing public param instead of
+     * an everything-in-the-window query. Leak-safe: the §12 visibility masking fires first, so
+     * only callers who may see the document reach the hint.
+     */
+    public Optional<String> render(String documentName, Map<String, List<String>> rawParams, User caller)
+    {
+        try
+        {
+            return prepare(documentName, rawParams, caller)
+                    .map(r -> page(title(r.view(), r.document().name()), r.document().template(), r.model(),
+                            false, authorScriptsAllowed(r.document())).html());
+        }
+        catch (MissingRequiredParamsException e)
+        {
+            return Optional.of(hintPage(e.title, e.missing));
+        }
+    }
+
+    /**
+     * The same document as a CSV body — same view, same variables, same §12 read-scope, same
+     * grouping/HAVING as the page. Projected from the view's {@code @column} metadata, not from
+     * the template (which is free-form HTML). Empty exactly where {@link #render} is empty —
+     * except a missing {@code required} param, which stays a plain 404 here (a machine-format
+     * body carries no hint page).
+     */
+    public Optional<String> renderCsv(String documentName, Map<String, List<String>> rawParams, User caller)
+    {
+        try
+        {
+            return prepare(documentName, rawParams, caller).map(r -> DocumentCsv.toCsv(r.viewMeta(), r.model()));
+        }
+        catch (MissingRequiredParamsException e)
+        {
+            return Optional.empty();
+        }
+    }
+
+    /** A document executed against its view: everything both output formats need. */
+    private record Prepared(DocumentEntry document, ViewEntry view, Map<String, Object> model,
+            Map<String, Object> viewMeta) { }
+
+    private Optional<Prepared> prepare(String documentName, Map<String, List<String>> rawParams, User caller)
+    {
+        Optional<DocumentEntry> document = documents.findVisible(documentName, caller);
+        if (document.isEmpty()) return Optional.empty();
+
+        DocumentEntry doc = document.get();
+        if (!doc.valid())
+        {
+            LOGGER.info("Document '{}' is invalid and will not render: {}", documentName, doc.invalidReason());
+            return Optional.empty();
+        }
+
+        Optional<ViewEntry> referenced = views.findViewForCaller(doc.viewName(), caller);
+        if (referenced.isEmpty() || !referenced.get().valid())
+        {
+            LOGGER.info("Document '{}' references view '{}', not available to this caller", documentName, doc.viewName());
+            return Optional.empty();
+        }
+
+        ViewEntry view = referenced.get();
+        Map<String, Object> requestVariables = gateParams(view, doc.window(), rawParams);
+        java.time.LocalDate dateParam = parseReferenceDate(rawParams);
+        java.time.LocalDate referenceDate = dateParam != null ? dateParam : java.time.LocalDate.now();
+        // ?date= is a CALLER gesture, ranked like ?from/?to: it outranks stored defaults. An
+        // explicitly navigated window is injected at the caller layer (explicit ?from/?to still win).
+        Map<String, Object> callerVars = dateParam == null ? requestVariables
+                : withNavigatedWindow(requestVariables, view, doc.window(), dateParam);
+        Map<String, Object> variables = resolveVariables(view, null, doc.defaultVariables(), doc.window(),
+                callerVars, referenceDate);
+        ViewParamDirectives.Declarations decl = ViewParamDirectives.parse(view.queryText());
+        List<String> missing = missingRequired(decl, variables);
+        if (!missing.isEmpty()) throw new MissingRequiredParamsException(title(view, doc.name()), missing);
+        Executed executed = executeResolved(view, variables, doc.name());
+        putNav(executed.model(), view, doc.window(), rawParams, variables, false);
+        return Optional.of(new Prepared(doc, view, executed.model(), executed.viewMeta()));
+    }
+
+    /** The {@code ?date=} reference day (nav, 2026-07-15); malformed → 400, absent → null. */
+    private static java.time.LocalDate parseReferenceDate(Map<String, List<String>> rawParams)
+    {
+        List<String> values = rawParams == null ? null : rawParams.get("date");
+        if (values == null || values.isEmpty()) return null;
+        try
+        {
+            return java.time.LocalDate.parse(values.get(0));
+        }
+        catch (java.time.format.DateTimeParseException e)
+        {
+            throw new UndeclaredParameterException();
+        }
+    }
+
+    /** The document's effective window (document anchors over view {@code @window}) at a reference day. */
+    private static org.rapla.server.spring.graphql.WindowResolver.Window effectiveWindow(
+            ViewEntry view, String documentWindow, java.time.LocalDate date)
+    {
+        return DocumentWindow.resolve(documentWindow, date)
+                .orElseGet(() -> ViewVariables.resolveWindow(view.queryText(), date));
+    }
+
+    /** The effective window for an explicit {@code ?date=}, injected as caller-level bounds. */
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> withNavigatedWindow(Map<String, Object> callerVars,
+            ViewEntry view, String documentWindow, java.time.LocalDate date)
+    {
+        org.rapla.server.spring.graphql.WindowResolver.Window window =
+                effectiveWindow(view, documentWindow, date);
+        Map<String, Object> vars = new LinkedHashMap<>(callerVars == null ? Map.of() : callerVars);
+        Map<String, Object> filter = vars.get("filter") instanceof Map<?, ?> m
+                ? new LinkedHashMap<>((Map<String, Object>) m) : new LinkedHashMap<>();
+        filter.putIfAbsent("from", window.from());
+        filter.putIfAbsent("to", window.to());
+        vars.put("filter", filter);
+        return vars;
+    }
+
+    /**
+     * PRD 097 nav (2026-07-15) — navigation is TEMPLATE data, not shell chrome: the model gets a
+     * {@code nav} entry ({@code prevUrl}/{@code todayUrl}/{@code nextUrl}/{@code label}) and the
+     * author places {@code {{#nav}}…{{/nav}}} wherever they want (the shell CSS offers
+     * {@code .rapla-nav} as a ready-made look). Present for every windowed document. Prev/next
+     * are unit-free: prev = window start minus one day (the anchor snaps it into the previous
+     * period), next = the exclusive window end's date (the first day of the next period) —
+     * weeks, months and day-set windows all step correctly.
+     */
+    private static void putNav(Map<String, Object> model, ViewEntry view, String documentWindow,
+            Map<String, List<String>> rawParams, Map<String, Object> variables, boolean previewMode)
+    {
+        ViewParamDirectives.Declarations decl = ViewParamDirectives.parse(view.queryText());
+        boolean windowed = decl.hasWindow() || (documentWindow != null && !documentWindow.isBlank());
+        if (!windowed) return;
+        java.time.LocalDateTime from = boundOf(variables, "from");
+        java.time.LocalDateTime to = boundOf(variables, "to");
+        if (from == null || to == null || !to.isAfter(from)) return;
+
+        java.time.LocalDate prev = from.toLocalDate().minusDays(1);
+        java.time.LocalDate next = to.toLocalTime().equals(java.time.LocalTime.MIDNIGHT)
+                ? to.toLocalDate() : to.toLocalDate().plusDays(1);
+        java.time.format.DateTimeFormatter label = java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy");
+        Map<String, Object> nav = new LinkedHashMap<>();
+        nav.put("prevUrl", previewMode ? "#" : navUrl(rawParams, prev));
+        nav.put("todayUrl", previewMode ? "#" : navUrl(rawParams, null));
+        nav.put("nextUrl", previewMode ? "#" : navUrl(rawParams, next));
+        nav.put("label", label.format(from.toLocalDate()) + " – " + label.format(next.minusDays(1)));
+        if (previewMode)
+        {
+            // Working preview nav (2026-07-15, "full transparency"): a click cannot navigate the
+            // sandboxed srcdoc iframe, so the shell's preview script postMessages the TARGET
+            // WINDOW to the editor, which writes it into the vars box and re-previews. The
+            // neighbor windows are resolved HERE so the editor does zero date arithmetic; the
+            // data-nav-* attributes (see the rapla/nav partial) are the contract custom nav
+            // markup can adopt too.
+            org.rapla.server.spring.graphql.WindowResolver.Window prevWin =
+                    effectiveWindow(view, documentWindow, prev);
+            org.rapla.server.spring.graphql.WindowResolver.Window nextWin =
+                    effectiveWindow(view, documentWindow, next);
+            nav.put("prevFrom", prevWin.from());
+            nav.put("prevTo", prevWin.to());
+            nav.put("nextFrom", nextWin.from());
+            nav.put("nextTo", nextWin.to());
+        }
+        model.put("nav", nav);
+    }
+
+    private static java.time.LocalDateTime boundOf(Map<String, Object> variables, String key)
+    {
+        if (!(variables.get("filter") instanceof Map<?, ?> filter)) return null;
+        try
+        {
+            return java.time.LocalDateTime.parse(String.valueOf(filter.get(key)));
+        }
+        catch (java.time.format.DateTimeParseException e)
+        {
+            return null;
+        }
+    }
+
+    /**
+     * Relative link: the current request's params with {@code from}/{@code to}/{@code date}
+     * dropped (a nav click means "leave any pinned range, go anchored") and the new reference
+     * day appended. Declared {@code @param}s ({@code ?resource=…}) carry through.
+     */
+    private static String navUrl(Map<String, List<String>> rawParams, java.time.LocalDate date)
+    {
+        StringBuilder query = new StringBuilder();
+        if (rawParams != null)
+        {
+            for (Map.Entry<String, List<String>> entry : rawParams.entrySet())
+            {
+                String key = entry.getKey();
+                if ("from".equals(key) || "to".equals(key) || "date".equals(key)) continue;
+                for (String value : entry.getValue())
+                {
+                    if (query.length() > 0) query.append('&');
+                    query.append(java.net.URLEncoder.encode(key, java.nio.charset.StandardCharsets.UTF_8))
+                            .append('=')
+                            .append(java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.UTF_8));
+                }
+            }
+        }
+        if (date != null)
+        {
+            if (query.length() > 0) query.append('&');
+            query.append("date=").append(date);
+        }
+        return "?" + query;
+    }
+
+    /** Thrown for a URL parameter outside the view's declared {@code @param}/{@code @window} surface → 400. */
+    public static class UndeclaredParameterException extends RuntimeException
+    {
+        UndeclaredParameterException() { super("undeclared request parameter"); }
+    }
+
+    /**
+     * PRD 074 §"Window and inputs directives" — the document-path input gate. The view's
+     * {@code @param} names (plus {@code from}/{@code to} iff it declares {@code @window}) are the
+     * ONLY accepted URL keys; each is translated public {@code name} → private {@code into} path,
+     * then expanded to nested variables. {@code required} is NOT checked here (2026-08-11): it
+     * fires on the effective value after the variable merge — a document pin satisfies it too.
+     */
+    private static Map<String, Object> gateParams(ViewEntry view, String documentWindow,
+            Map<String, List<String>> rawParams)
+    {
+        ViewParamDirectives.Declarations decl = ViewParamDirectives.parse(view.queryText());
+        // PRD 097 (2026-07-15) — a document-level window opens the ?from/?to surface exactly like
+        // a view-level @window; it targets the default "filter" variable.
+        boolean windowed = decl.hasWindow() || (documentWindow != null && !documentWindow.isBlank());
+        String windowInto = decl.hasWindow() ? decl.windowInto() : "filter";
+        Map<String, List<String>> translated = new LinkedHashMap<>();
+        if (rawParams != null)
+        {
+            for (Map.Entry<String, List<String>> entry : rawParams.entrySet())
+            {
+                String key = entry.getKey();
+                ViewParamDirectives.Param param = decl.byName(key);
+                if (param != null)
+                {
+                    translated.put(param.into(), entry.getValue());
+                }
+                else if (windowed && ("from".equals(key) || "to".equals(key)))
+                {
+                    translated.put(windowInto + "." + key, entry.getValue());
+                }
+                else if (windowed && "date".equals(key))
+                {
+                    // The nav reference day — consumed by the render pipeline, not a variable.
+                }
+                else
+                {
+                    throw new UndeclaredParameterException();
+                }
+            }
+        }
+        return RequestVariables.expand(translated);
+    }
+
+    /**
+     * 2026-08-11 — {@code required} means "this scope must come from somewhere": the check runs on
+     * the MERGED variables, so a URL value, a document pin, or (preview only) a derived example
+     * default all satisfy it. Unfilled → the public param names for the hint page.
+     */
+    private static List<String> missingRequired(ViewParamDirectives.Declarations decl,
+            Map<String, Object> variables)
+    {
+        List<String> missing = new ArrayList<>();
+        for (ViewParamDirectives.Param p : decl.params())
+        {
+            if (!p.required()) continue;
+            Object value = ViewParamDirectives.valueAt(variables, p.into());
+            boolean filled = value != null
+                    && !(value instanceof String s && s.isBlank())
+                    && !(value instanceof List<?> l && l.isEmpty());
+            if (!filled) missing.add(p.name());
+        }
+        return missing;
+    }
+
+    /** Signals a required param left unfilled after the merge — mapped per output format. */
+    static class MissingRequiredParamsException extends RuntimeException
+    {
+        final String title;
+        final transient List<String> missing;
+
+        MissingRequiredParamsException(String title, List<String> missing)
+        {
+            super("required parameter missing: " + missing);
+            this.title = title;
+            this.missing = missing;
+        }
+    }
+
+    /** The hint page a visible document renders instead of an unscoped everything-query. */
+    private static String hintPage(String title, List<String> missing)
+    {
+        StringBuilder names = new StringBuilder();
+        for (String name : missing)
+        {
+            if (names.length() > 0) names.append(", ");
+            names.append("<code>").append(escapeHtml(name)).append("</code>");
+        }
+        return DocumentShell.wrapFragment(title, "<p class=\"rapla-missing-param\">"
+                + (missing.size() == 1 ? "Erforderlicher Parameter fehlt: " : "Erforderliche Parameter fehlen: ")
+                + names + "</p>", renderingLang());
+    }
+
+    private static String escapeHtml(String s)
+    {
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+    }
+
+    /**
+     * PRD 097 Phase 4 — render an <b>unsaved</b> template for the authoring editor. Same engine,
+     * same sanitizer, same shell as {@link #render} (a preview that renders differently is worse
+     * than none), and the view still executes in the author's own §12 read-scope: the preview shows
+     * the author only data they may already see. Empty when the view is unknown or not theirs.
+     */
+    /** Preview outcome: the page plus the RESOLVED variables the render actually used (editor pane). */
+    public record Preview(String html, Map<String, Object> variables, List<String> removed) { }
+
+    /**
+     * PRD 097 § params (2026-07-15) — the preview takes the SAME raw URL params as the rendered
+     * document and routes them through the SAME gate: the editor's vars field is literally the
+     * document URL's query string (public {@code @param} names, {@code from/to/date} on windowed
+     * views; an undeclared key errors here exactly as the live URL 400s). A preview that speaks
+     * a different parameter language than the page it previews is a lie.
+     */
+    public Optional<Preview> preview(String viewName, String template, String defaultVariables,
+            String window, Map<String, List<String>> rawParams, User author)
+    {
+        Optional<ViewEntry> referenced = views.findViewForCaller(viewName, author);
+        if (referenced.isEmpty()) return Optional.empty();
+        ViewEntry view = referenced.get();
+
+        Map<String, Object> requestVariables = gateParams(view, window, rawParams);
+        java.time.LocalDate dateParam = parseReferenceDate(rawParams);
+        java.time.LocalDate referenceDate = dateParam != null ? dateParam : java.time.LocalDate.now();
+        Map<String, Object> callerVars = dateParam == null ? requestVariables
+                : withNavigatedWindow(requestVariables, view, window, dateParam);
+        // 2026-08-11 — the preview (and only the preview) derives param defaults from the view's
+        // example defaultVariables, through the declared @param holes: authors see example data
+        // without typing params, while example keys outside the @param surface stay inert.
+        ViewParamDirectives.Declarations decl = ViewParamDirectives.parse(view.queryText());
+        Map<String, Object> derived = ViewParamDirectives.deriveParamDefaults(
+                ViewVariables.parseDefaults(view.defaultVariables()), decl.params());
+        String baseline = derived.isEmpty() ? null : ViewVariables.toJson(derived);
+        Map<String, Object> variables = resolveVariables(view, baseline, defaultVariables, window,
+                callerVars, referenceDate);
+        List<String> missing = missingRequired(decl, variables);
+        if (!missing.isEmpty())
+        {
+            // The author sees the SAME hint page a subscriber would get on the live URL.
+            return Optional.of(new Preview(hintPage(title(view, viewName), missing), variables, List.of()));
+        }
+        Map<String, Object> model = executeResolved(view, variables, "<preview>").model();
+        // Nav renders in the preview too — preview mode: clicks postMessage to the editor.
+        putNav(model, view, window, null, variables, true);
+        Page page = page(title(view, viewName), template, model, true, properties.getDocuments().isAuthorScripts());
+        return Optional.of(new Preview(page.html(), variables, page.removed()));
+    }
+
+    /** A rendered page plus what the sanitizer took out of it (D6d, preview hint). */
+    private record Page(String html, List<String> removed) { }
+
+    private Page page(String title, String template, Map<String, Object> model, boolean preview,
+            boolean allowScripts)
+    {
+        DocumentSanitizer.Sanitized sanitized =
+                DocumentSanitizer.sanitize(renderer.render(template, model), allowScripts);
+        if (allowScripts)
+        {
+            markResponseScripted();
+        }
+        // D7a — a full-HTML template IS the page; only a body fragment gets the minimal wrapper.
+        String page = sanitized.wholeDocument() ? sanitized.html()
+                : DocumentShell.wrapFragment(title, sanitized.html(), renderingLang());
+        return new Page(preview ? DocumentShell.injectPreviewScript(page) : page, sanitized.removed());
+    }
+
+    /**
+     * D6c (2) — the yml switch AND the document's visibility. A public document is anonymous-
+     * readable, so the admin-only-CRUD trust basis does not cover it: always strict.
+     */
+    private boolean authorScriptsAllowed(DocumentEntry document)
+    {
+        return properties.getDocuments().isAuthorScripts() && !document.isPublic();
+    }
+
+    /** Tells the security chain to serve the scripted CSP variant for THIS response. */
+    private static void markResponseScripted()
+    {
+        org.springframework.web.context.request.RequestAttributes attributes =
+                org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+        if (attributes != null)
+        {
+            attributes.setAttribute(org.rapla.server.spring.RaplaCspHeaderWriter.SCRIPTED_DOCUMENT,
+                    Boolean.TRUE, org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST);
+        }
+    }
+
+    /** D6c — the locale the document is being rendered in, for the shell's html lang. */
+    private static String renderingLang()
+    {
+        java.util.Locale locale =
+                org.springframework.context.i18n.LocaleContextHolder.getLocale();
+        return locale == null ? "de" : locale.toLanguageTag();
+    }
+
+    private static String title(ViewEntry view, String fallback)
+    {
+        return view.title() != null ? view.title() : fallback;
+    }
+
+    /** Execute the view in-process; the security context of the current request supplies the caller. */
+    /**
+     * The effective variables of a render: {@code baselineDefaults} (preview only — the param
+     * defaults derived from the view's example {@code defaultVariables}, 2026-08-11; the live
+     * render passes null, a view's stored defaults never scope it), the document's defaults
+     * deep-merged on top (per key, nested objects merged), caller variables win over both, the
+     * window (document anchors over view {@code @window} default) fills any still-missing
+     * {@code filter.from/to}.
+     */
+    private Map<String, Object> resolveVariables(ViewEntry view, String baselineDefaults, String documentDefaults,
+            String documentWindow, Map<String, Object> requestVariables, java.time.LocalDate referenceDate)
+    {
+        List<String> layers = new ArrayList<>();
+        if (baselineDefaults != null) layers.add(baselineDefaults);
+        if (documentDefaults != null) layers.add(documentDefaults);
+        org.rapla.server.spring.graphql.WindowResolver.Window window =
+                DocumentWindow.resolve(documentWindow, referenceDate).orElse(null);
+        return ViewVariables.mergeLayeredDefaults(requestVariables, layers, view.queryText(), window,
+                referenceDate);
+    }
+
+    /** The executed view: the render model plus {@code extensions.view} (the column metadata). */
+    private record Executed(Map<String, Object> model, Map<String, Object> viewMeta) { }
+
+    @SuppressWarnings("unchecked")
+    private Executed executeResolved(ViewEntry view, Map<String, Object> variables, String documentName)
+    {
+        ExecutionInput input = ExecutionInput.newExecutionInput()
+                .query(view.queryText())
+                .variables(variables)
+                .build();
+
+        ExecutionResult result = graphQlSource.graphQl().execute(input);
+        if (!result.getErrors().isEmpty())
+        {
+            // Field errors are normal (§12 nulls a resolver the caller may not read). Log, render
+            // what survived: the document renders empty rather than revealing why.
+            LOGGER.debug("View '{}' produced {} GraphQL error(s) while rendering document '{}': {}",
+                    view.name(), result.getErrors().size(), documentName,
+                    result.getErrors().stream().map(GraphQLError::getMessage).toList());
+        }
+
+        Map<String, Object> data = result.getData();
+        Map<String, Object> model = new LinkedHashMap<>(data == null ? Map.of() : data);
+        // D7a — the caller's rendering locale, for templates that want <html lang="{{lang}}">.
+        model.put("lang", renderingLang());
+        Map<Object, Object> extensions = result.getExtensions();
+        applyGrouping(model, extensions);
+        Map<String, Object> viewMeta = extensions != null && extensions.get("view") instanceof Map<?, ?> m
+                ? (Map<String, Object>) m : Map.of();
+        return new Executed(model, viewMeta);
+    }
+
+    /**
+     * Phase 3 / OQ3 — when the view declares a grouping column ({@code @column(group: true)}),
+     * {@code ViewMetaInstrumentation} reports its alias in {@code extensions.view.groupBy}. Bucket
+     * the single root row list into sections so nested template sections can paint them. No new
+     * GraphQL field, and the grouping semantics stay single-sourced in the view's own directive.
+     */
+    @SuppressWarnings("unchecked")
+    private void applyGrouping(Map<String, Object> model, Map<Object, Object> extensions)
+    {
+        if (extensions == null || !(extensions.get("view") instanceof Map<?, ?> viewMeta)) return;
+        Object groupBy = viewMeta.get("groupBy");
+        if (!(groupBy instanceof String alias) || alias.isBlank()) return;
+
+        List<Map<String, Object>> rows = rootRowList(model);
+        if (rows == null) return;
+
+        Object format = viewMeta.get("groupFormat");
+        int minGroupSize = viewMeta.get("groupMin") instanceof Number n ? n.intValue() : 0;
+        model.put(GROUPS_KEY, RowGrouping.groupByColumn(rows, alias,
+                format instanceof String f ? f : null, domainFor(viewMeta.get("groupField")), minGroupSize));
+    }
+
+    /**
+     * PRD 097 Phase 5 — the configured domain of a grouping field, so configured-but-empty groups
+     * still render (an empty "nachmittags" band keeps its row — the frame argument, band edition).
+     * Currently only {@code timeslot} has one: the server-configured band labels, in band order.
+     */
+    private List<String> domainFor(Object groupField)
+    {
+        if (!"timeslot".equals(groupField)) return null;
+        org.rapla.plugin.timeslot.TimeslotProvider provider = timeslotProvider.getIfAvailable();
+        if (provider == null) return null;
+        return provider.getTimeslots().stream().map(org.rapla.plugin.timeslot.Timeslot::getName).toList();
+    }
+
+    /** The one root field that carries the row list (e.g. {@code appointmentBlocks}). */
+    @SuppressWarnings("unchecked")
+    static List<Map<String, Object>> rootRowList(Map<String, Object> model)
+    {
+        for (Object value : model.values())
+        {
+            if (value instanceof List<?> list && list.stream().allMatch(e -> e instanceof Map))
+            {
+                return new ArrayList<>((List<Map<String, Object>>) list);
+            }
+        }
+        return null;
+    }
+}

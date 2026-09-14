@@ -1,0 +1,341 @@
+/*--------------------------------------------------------------------------*
+ | Copyright (C) 2014 Christopher Kohlhaas                                  |
+ |                                                                          |
+ | This program is free software; you can redistribute it and/or modify     |
+ | it under the terms of the GNU General Public License as published by the |
+ | Free Software Foundation. A copy of the license has been included with   |
+ | these distribution in the COPYING file, if not go to www.fsf.org .       |
+ |                                                                          |
+ | As a special exception, you are granted the permissions to link this     |
+ | program with every library, which license fulfills the Open Source       |
+ | Definition as published by the Open Source Initiative (OSI).             |
+ *--------------------------------------------------------------------------*/
+
+package org.rapla.entities.domain;
+
+import org.rapla.components.util.TimeInterval;
+import org.rapla.entities.Category;
+import org.rapla.entities.Ownable;
+import org.rapla.entities.User;
+import org.rapla.entities.domain.internal.PermissionImpl;
+import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.AttributeType;
+import org.rapla.entities.dynamictype.Classifiable;
+import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.entities.internal.UserImpl;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
+
+import java.time.LocalDateTime;
+public interface PermissionContainer extends Ownable 
+{
+    // adds a permission. Permissions are stored in a hashset so the same permission can't be added twice
+    void addPermission( Permission permission );
+    
+    boolean removePermission( Permission permission );
+    
+    Permission newPermission();
+
+    Collection<Permission> getPermissionList();
+    
+
+    class Util
+    {
+        static public void addDifferences(Set<Permission> invalidatePermissions, PermissionContainer oldContainer, PermissionContainer newContainer) {
+            Collection<Permission> oldPermissions = oldContainer.getPermissionList();
+            Collection<Permission> newPermissions = newContainer.getPermissionList();
+            addDifferences(invalidatePermissions, oldPermissions, newPermissions);
+        }
+
+        
+        public static boolean differs(Collection<Permission> oldPermissions, Collection<Permission> newPermissions) {
+            HashSet<Permission> set = new HashSet<>();
+            addDifferences(set, oldPermissions, newPermissions);
+            return set.size() > 0;
+        }
+
+        public static void replace(PermissionContainer permissionContainer, Collection<Permission> permissions) {
+            Collection<Permission> permissionList = new ArrayList<>(permissionContainer.getPermissionList());
+            for (Permission p:permissionList)
+            {
+                permissionContainer.removePermission(p);
+            }                
+            for (Permission p:permissions)
+            {
+                permissionContainer.addPermission( p );
+            }
+        }
+        
+        /**
+         * WP P1s — the rows a new DynamicType starts with (Swing {@code FacadeImpl.newDynamicType}): resource and person
+         * types everyone READ_TYPE, everyone ALLOCATE_CONFLICTS, registerer CREATE; event types everyone READ_TYPE,
+         * read-events-from-others READ, create-events CREATE. A group row is only added when that group exists.
+         */
+        @SuppressWarnings("deprecation")
+        public static void addDefaultTypePermissions(DynamicType type, Category userGroups) {
+            String classificationType = type.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
+            if (DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION.equals(classificationType)) {
+                addDefaultRow(type, Permission.READ_TYPE, null);
+                addGroupRow(type, Permission.READ, userGroups, Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS);
+                addGroupRow(type, Permission.CREATE, userGroups, Permission.GROUP_CAN_CREATE_EVENTS);
+            } else if (DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE.equals(classificationType)
+                    || DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON.equals(classificationType)) {
+                addDefaultRow(type, Permission.READ_TYPE, null);
+                addDefaultRow(type, Permission.ALLOCATE_CONFLICTS, null);
+                addGroupRow(type, Permission.CREATE, userGroups, Permission.GROUP_REGISTERER_KEY);
+            }
+        }
+
+        private static void addGroupRow(DynamicType type, Permission.AccessLevel level, Category userGroups, String groupKey) {
+            Category group = userGroups == null ? null : userGroups.getCategory(groupKey);
+            if (group != null) {
+                addDefaultRow(type, level, group);
+            }
+        }
+
+        private static void addDefaultRow(DynamicType type, Permission.AccessLevel level, Category group) {
+            Permission permission = type.newPermission();
+            permission.setAccessLevel(level);
+            if (group != null) {
+                permission.setGroup(group);
+            }
+            type.addPermission(permission);
+        }
+
+        public static void copyPermissions(DynamicType type, PermissionContainer permissionContainer) {
+            Collection<Permission> permissionList = type.getPermissionList();
+            for ( Permission p:permissionList)
+            {
+                Permission clone = p.clone();
+                Permission.AccessLevel accessLevel = clone.getAccessLevel();
+                if (!accessLevel.equals(Permission.CREATE) && !accessLevel.equals(Permission.READ_TYPE))
+                {
+                    permissionContainer.addPermission( clone);
+                }
+            }
+        }
+
+        /**
+         * 
+         * @return NO_PERMISSION if permission does not effect user
+         * @return ALL_USER_PERMISSION if permission affects all users 
+         * @return USER_PERMISSION if permission specifies the current user
+         * @return if the permission affects a users group the depth of the permission group category specified 
+         */
+        static public int getUserEffect(User user,Permission p, Collection<String> groups)
+        {
+            String pUserId = p.getUserId();
+            String pGroup = ((PermissionImpl)p).getGroupId();
+            if ( pUserId == null  && pGroup == null )
+            {
+                return PermissionImpl.ALL_USER_PERMISSION;
+            }
+            if ( pUserId != null  && user.getId().equals( pUserId ) )
+            {
+                return PermissionImpl.USER_PERMISSION;
+            } 
+            else if ( pGroup != null ) 
+            {
+                if ( groups.contains(pGroup))
+                {
+                    return PermissionImpl.GROUP_PERMISSION;
+                }
+            }
+            return PermissionImpl.NO_PERMISSION;
+        }
+
+        // ADR 0003 (revised 2026-06-28) / PRD 090 — additive: the allowed interval is
+        // the UNION of the time-windows of EVERY matching row that grants at least the
+        // requested level. No precedence; any qualifying grant contributes its window.
+        static public TimeInterval getInterval(Iterable<? extends Permission> permissionList,User user,LocalDateTime today,  Permission.AccessLevel requestedAccessLevel ) {
+            if ( user == null || user.isAdmin() )
+                return new TimeInterval( null, null);
+
+            TimeInterval interval = null;
+            Collection<String> groups = UserImpl.getGroupsIncludingParents(user);
+            for ( Permission p:permissionList)
+            {
+                int effectLevel = getUserEffect(user,p,groups);
+                Permission.AccessLevel accessLevel = p.getAccessLevel();
+                if ( effectLevel > PermissionImpl.NO_PERMISSION && accessLevel.includes( requestedAccessLevel))
+                {
+                    LocalDateTime start;
+                    LocalDateTime end;
+                    if (accessLevel!= Permission.ADMIN  )
+                    {
+                        java.time.LocalDate todayDate = today == null ? null : today.toLocalDate();
+                        start = p.getMinAllowed( todayDate);
+                        end = p.getMaxAllowed(todayDate);
+                        if ( end != null && end.isBefore( today))
+                        {
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        start = null;
+                        end = null;
+                    }
+                    TimeInterval ti = new TimeInterval(start, end);
+                    interval = ( interval == null) ? ti : interval.union(ti);
+                }
+            }
+            return interval;
+        }
+
+        private static void addDifferences(Set<Permission> invalidatePermissions, Collection<Permission> oldPermissions, Collection<Permission> newPermissions) {
+            // we leave this condition for a faster equals check
+            int size = oldPermissions.size();
+            if  (size == newPermissions.size())
+            {
+                Iterator<Permission> newPermissionsIt = newPermissions.iterator();
+            	for (Permission oldPermission:oldPermissions)
+            	{
+                    Permission newPermission = newPermissionsIt.next();
+            		if (!oldPermission.equals(newPermission))
+            		{
+            			invalidatePermissions.add( oldPermission);
+            			invalidatePermissions.add( newPermission);
+            		}
+            	}
+            }
+            else
+            {
+            	HashSet<Permission> newSet = new HashSet<>(newPermissions);
+            	HashSet<Permission> oldSet = new HashSet<>(oldPermissions);
+            	{
+            		HashSet<Permission> changed = new HashSet<>(newSet);
+            		changed.removeAll( oldSet);
+            		invalidatePermissions.addAll(changed);
+            	}
+            	{
+            		HashSet<Permission> changed = new HashSet<>(oldSet);
+            		changed.removeAll( newSet);
+            		invalidatePermissions.addAll(changed);
+            	}
+            }
+        }
+
+        /** Load-time normalization (ADR 0003 — permissions are grant-only). Removes DENIED
+         * rows that provably change nothing: a DENIED is load-bearing only when it sits at
+         * strictly higher precedence than some grant on the SAME container
+         * (USER &gt; GROUP &gt; WORLD). WORLD-deny is never load-bearing; GROUP-deny only if a
+         * WORLD grant exists; USER-deny only if any GROUP/WORLD grant exists. Never persists —
+         * callers run it on freshly-hydrated entities before setReadOnly.
+         * @return number of rows removed */
+        public static int normalizeRedundantDenies(PermissionContainer container) {
+            Collection<Permission> list = container.getPermissionList();
+            boolean worldGrant = false, groupGrant = false;
+            for (Permission p : list) {
+                if (p.getAccessLevel() == Permission.DENIED) continue;
+                String uid = p.getUserId();
+                String gid = ((PermissionImpl) p).getGroupId();
+                if (uid == null && gid == null) worldGrant = true;
+                else if (gid != null) groupGrant = true;
+            }
+            List<Permission> redundant = new ArrayList<>();
+            for (Permission p : list) {
+                if (p.getAccessLevel() != Permission.DENIED) continue;
+                String uid = p.getUserId();
+                String gid = ((PermissionImpl) p).getGroupId();
+                boolean loadBearing;
+                if (uid == null && gid == null) loadBearing = false;
+                else if (gid != null) loadBearing = worldGrant;
+                else loadBearing = worldGrant || groupGrant;
+                if (!loadBearing) redundant.add(p);
+            }
+            for (Permission p : redundant) container.removePermission(p);
+            return redundant.size();
+        }
+
+        /** old permission_modify should sync with new permission model for a while or until permission_modify attribute is removed
+         * @deprecated 
+         * @param entity
+         * @param persistent
+         */
+        @Deprecated
+        static public void processOldPermissionModify(Classifiable entity, Classifiable persistent)
+        {
+            Classification classification = entity.getClassification();
+            if ( classification == null)
+            {
+                return;
+            }
+            Attribute attribute = classification.getAttribute("permission_modify"); 
+            if ( attribute == null || attribute.getType() != AttributeType.CATEGORY )
+            {
+                return;
+            }
+            Collection<Object> newValues = classification.getValues(attribute);
+            Collection<Object> oldValues = persistent != null ? persistent.getClassification().getValues(attribute) : Collections.emptyList();
+            boolean permissionModifyChanged = !newValues.equals( oldValues);
+            PermissionContainer permissionContainer = (PermissionContainer) entity;
+            Collection<Permission> newPermissionList = permissionContainer.getPermissionList();
+            boolean permissionChanged = persistent != null && differs(newPermissionList, ((PermissionContainer)persistent).getPermissionList());
+            // changed permissions take precedence over changed permission_modify
+            if ( permissionChanged )
+            {
+                List<Category> newCategories = new ArrayList<>();
+                for ( Permission p:newPermissionList)
+                {
+                    Category group = p.getGroup();
+                    Permission.AccessLevel accessLevel = p.getAccessLevel();
+                    if (group != null && accessLevel == Permission.AccessLevel.ADMIN)
+                    {
+                        newCategories.add( group );
+                    }
+                }
+                classification.setValues( attribute, newCategories);
+                
+            }
+            else if ( permissionModifyChanged )
+            {
+                Set<Category> existingAdminGroups = new HashSet<>();
+                for ( Permission p: new ArrayList<>(newPermissionList))
+                {
+                    Category group = p.getGroup();
+                    Permission.AccessLevel accessLevel = p.getAccessLevel();
+                    if (group != null && accessLevel == Permission.AccessLevel.ADMIN)
+                    {
+                        // remove permission if not in permission modify group
+                        if ( !newValues.contains(group ))
+                        {
+                            permissionContainer.removePermission( p);
+                            continue;
+                        }
+                        existingAdminGroups.add( group );
+        
+                    }
+                }
+                
+                for (Object obj:newValues)
+                {
+                    Category category = (Category) obj;
+                    if ( !existingAdminGroups.contains( category ))
+                    {
+                        Permission permission = permissionContainer.newPermission();
+                        permission.setGroup(category );
+                        permission.setAccessLevel( Permission.AccessLevel.ADMIN);
+                        permissionContainer.addPermission(permission);
+                    }
+                }	 
+        
+            }
+        
+        }
+
+
+        
+
+        
+    }
+}

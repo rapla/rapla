@@ -1,0 +1,470 @@
+/*--------------------------------------------------------------------------*
+ | Copyright (C) 2014 Christopher Kohlhaas                                  |
+ |                                                                          |
+ | This program is free software; you can redistribute it and/or modify     |
+ | it under the terms of the GNU General Public License as published by the |
+ | Free Software Foundation. A copy of the license has been included with   |
+ | these distribution in the COPYING file, if not go to www.fsf.org         |
+ |                                                                          |
+ | As a special exception, you are granted the permissions to link this     |
+ | program with every library, which license fulfills the Open Source       |
+ | Definition as published by the Open Source Initiative (OSI).             |
+ *--------------------------------------------------------------------------*/
+package org.rapla.client.swing.internal.edit.fields;
+
+import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.TreeFactory;
+import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
+import org.rapla.client.swing.internal.edit.fields.LongField.LongFieldFactory;
+import org.rapla.components.layout.TableLayout;
+import org.rapla.entities.Category;
+import org.rapla.entities.NamedComparator;
+import org.rapla.entities.User;
+import org.rapla.entities.domain.Permission;
+import org.rapla.facade.client.ClientFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.springframework.stereotype.Service;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import javax.swing.BorderFactory;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import java.awt.Component;
+import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+
+import java.time.LocalDateTime;
+public class PermissionField extends AbstractEditField implements  ChangeListener, ActionListener {
+    SetGetField<Category> groupSelect;
+    ListField<User> userSelect;
+    JLabel userLabel;
+    
+    JPanel panel = new JPanel();
+    JPanel reservationPanel;
+    Permission permission;
+
+    JComboBox startSelection = new JComboBox();
+    JComboBox endSelection = new JComboBox();
+    DateField startDate;
+    DateField endDate;
+    LongField minAdvance;
+    LongField maxAdvance;
+
+    ListField<Permission.AccessLevel> accessField;
+
+    Collection<Permission.AccessLevel> permissionLevels = Arrays.asList(Permission.AccessLevel.values());
+
+    boolean eventType;
+    
+  
+    @SuppressWarnings("unchecked")
+	public PermissionField(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, TreeFactory treeFactory, DialogUiFactoryInterface dialogUiFactory, DateFieldFactory dateFieldFactory, LongFieldFactory longFieldFactory) throws RaplaException {
+        super(clientFacade, i18n, raplaLocale);
+
+        panel.setBorder(BorderFactory.createEmptyBorder(5,8,5,8));
+
+        double pre =TableLayout.PREFERRED;
+        double fill =TableLayout.FILL;
+        panel.setLayout( new TableLayout( new double[][]
+            {{fill, 5},  // Columns
+             {pre,5,pre,5,pre}} // Rows
+                                          ));
+
+        JPanel userPanel = new JPanel();
+        panel.add( userPanel , "0,0,f,f" );
+        userPanel.setLayout( new TableLayout( new double[][]
+            {{pre, 10, fill, 5},  // Columns
+             {pre,5,pre,5,pre}} // Rows
+                                          ));
+
+        userSelect = new UserListField( clientFacade, i18n, raplaLocale );
+        userLabel = new JLabel(i18n.getString("user") + ":");
+        userPanel.add( userLabel, "0,0,l,f" );
+        userPanel.add( userSelect.getComponent(),"2,0,l,f" );
+
+        Category rootCategory =  raplaFacade.getUserGroupsCategory();
+        if ( rootCategory != null) {
+            AbstractEditField groupSelect;
+            if (rootCategory.getDepth() > 2) {
+                CategorySelectField field= new CategorySelectField(clientFacade, i18n, raplaLocale, treeFactory,  dialogUiFactory, rootCategory);
+                this.groupSelect = field;
+                groupSelect = field;
+            } else {
+                CategoryListField field = new CategoryListField(clientFacade, i18n, raplaLocale, rootCategory);
+                this.groupSelect = field;
+                groupSelect = field;
+            }
+            userPanel.add( new JLabel(i18n.getString("group") + ":"), "0,2,l,f" );
+            userPanel.add( groupSelect.getComponent(),"2,2,l,f" );
+            groupSelect.addChangeListener( this );
+           
+        }
+
+
+        reservationPanel = new JPanel();
+        panel.add( reservationPanel , "0,2,f,f" );
+        reservationPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(), i18n.getString("allocatable_in_timeframe") + ":" ));
+        reservationPanel.setLayout( new TableLayout( new double[][]
+            {{pre,3, pre, 5, pre, 5},  // Columns
+             {pre, 5, pre}} // Rows
+                                                     ));
+
+        reservationPanel.add( new JLabel( i18n.getString("start_date") + ":" ) , "0,0,l,f" );
+        reservationPanel.add( startSelection , "2,0,l,f" );
+        startSelection.setModel( createSelectionModel() );
+        startSelection.setSelectedIndex( 0 );
+
+        startDate = dateFieldFactory.create();
+        reservationPanel.add( startDate.getComponent() , "4,0,l,f" );
+
+        minAdvance = longFieldFactory.create(Long.valueOf(0));
+        reservationPanel.add( minAdvance.getComponent() , "4,0,l,f" );
+
+        reservationPanel.add( new JLabel( i18n.getString("end_date") + ":" ), "0,2,l,f" );
+        reservationPanel.add( endSelection , "2,2,l,f" );
+        endSelection.setModel( createSelectionModel() );
+        endSelection.setSelectedIndex( 0 );
+
+        endDate = dateFieldFactory.create();
+        reservationPanel.add( endDate.getComponent() , "4,2,l,f" );
+
+        maxAdvance = longFieldFactory.create(Long.valueOf(1));
+        reservationPanel.add( maxAdvance.getComponent() , "4,2,l,f" );
+
+        userPanel.add( new JLabel(i18n.getString("permission.access") + ":"), "0,4,f,f" );
+        accessField = new ListField<>(clientFacade, i18n, raplaLocale, permissionLevels);
+        accessField.setRenderer( new DefaultListCellRenderer() {
+            private static final long serialVersionUID = 1L;
+
+            public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                Permission.AccessLevel intValue = null;
+                if (value != null) {
+                   intValue = ((Permission.AccessLevel) value);
+                   String key = intValue.name().toLowerCase();
+                   if ( key.equalsIgnoreCase(Permission.CREATE.name()))
+                   {
+                       String typeName = eventType ? i18n.getString("reservation") : i18n.getString("resource");
+                       value = i18n.format("permission." + key, typeName );
+                   }
+                   else  if (key.equalsIgnoreCase(Permission.READ_TYPE.name()))
+                   {
+                       String typeName = eventType ? i18n.getString("reservation_type") : i18n.getString("resource_type");
+                       value = i18n.format("permission." + key, typeName );
+                   }
+                   else  if (key.equalsIgnoreCase(Permission.REQUEST.name()))
+                   {
+                       value =i18n.getString("permission.request" );
+                   }
+                   else  if (key.equalsIgnoreCase(Permission.READ.name()) && permissionLevels.contains(Permission.READ_NO_ALLOCATION))
+                   {
+                       value = i18n.getString("permission.read_allocation"  );
+                   }
+                   else  if (key.equalsIgnoreCase(Permission.DENIED.name()))
+                   {
+                       value = i18n.format("permission.deprecated", i18n.getString("permission.denied") );
+                   }
+                   else
+                   {
+                       value = i18n.getString("permission." + key );
+                   }
+
+                }
+                Component listCellRendererComponent = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus );
+                if ( intValue == Permission.CREATE || intValue == Permission.READ_TYPE)
+                {
+                    Font newFont = listCellRendererComponent.getFont().deriveFont(Font.BOLD);
+                    listCellRendererComponent.setFont( newFont);
+                }
+                if ( intValue == Permission.DENIED)
+                {
+                    Font newFont = listCellRendererComponent.getFont().deriveFont(Font.ITALIC);
+                    listCellRendererComponent.setFont( newFont);
+                }
+                return listCellRendererComponent;
+            }}
+        );
+        
+        userPanel.add( accessField.getComponent(), "2,4,f,f" );
+       
+        toggleVisibility();
+        userSelect.addChangeListener( this );
+
+        startSelection.addActionListener(this);
+        minAdvance.addChangeListener(this);
+        startDate.addChangeListener(this);
+
+        endSelection.addActionListener(this);
+        maxAdvance.addChangeListener(this);
+        endDate.addChangeListener(this);
+
+        accessField.addChangeListener(this);
+        panel.revalidate();
+    }
+
+    public JComponent getComponent() {
+        return panel;
+    }
+
+
+    @SuppressWarnings("unchecked")
+	private DefaultComboBoxModel createSelectionModel() {
+        DefaultComboBoxModel model = new DefaultComboBoxModel();
+        model.addElement(i18n.getString( "open" ) );
+        model.addElement(i18n.getString( "fixed_date") );
+        model.addElement(i18n.getString( "x_days_advance") );
+        return model;
+    }
+
+
+    private void toggleVisibility() {
+        Permission.AccessLevel level = accessField.getValue();
+        reservationPanel.setVisible( level.includes(Permission.ALLOCATE) && level.excludes(Permission.ADMIN));
+        
+        int i = startSelection.getSelectedIndex();
+        startDate.getComponent().setVisible( i == 1 );
+        minAdvance.getComponent().setVisible( i == 2 );
+
+        int j = endSelection.getSelectedIndex();
+        endDate.getComponent().setVisible( j == 1 );
+        maxAdvance.getComponent().setVisible( j == 2 );
+    }
+
+    boolean listenersDisabled = false;
+    public void setValue(Permission value)  {
+        try {
+            listenersDisabled = true;
+
+            permission =  value;
+           
+            int startIndex = 0;
+            if ( permission.getStart() != null )
+                startIndex = 1;
+            if ( permission.getMinAdvance() != null )
+                startIndex = 2;
+            startSelection.setSelectedIndex( startIndex );
+
+            int endIndex = 0;
+            if ( permission.getEnd() != null )
+                endIndex = 1;
+            if ( permission.getMaxAdvance() != null )
+                endIndex = 2;
+            endSelection.setSelectedIndex( endIndex );
+
+            
+            startDate.setValue( permission.getStart());
+            minAdvance.setValue( permission.getMinAdvance());
+            endDate.setValue(permission.getEnd() );
+            maxAdvance.setValue(permission.getMaxAdvance());
+            if ( groupSelect != null )
+            {
+                groupSelect.setValue( permission.getGroup());
+            }
+            userSelect.setValue(permission.getUser() );
+            accessField.setVector( selectableLevels( permissionLevels, permission.getAccessLevel() ) );
+            accessField.setValue( permission.getAccessLevel() );
+
+            toggleVisibility();
+        } finally {
+            listenersDisabled = false;
+        }
+    }
+
+
+
+    public void actionPerformed(ActionEvent evt) {
+        if ( listenersDisabled )
+            return;
+            
+        if (evt.getSource() == startSelection) {
+            int i = startSelection.getSelectedIndex();
+            if ( i == 0 ) {
+                permission.setStart( null );
+                permission.setMinAdvance( null );
+            }
+            if ( i == 1 ) {
+                java.time.LocalDate today = raplaFacade.today();
+                permission.setStart( today.atStartOfDay() );
+                startDate.setValue( today.atStartOfDay() );
+            } if ( i == 2 ) {
+                permission.setMinAdvance(Integer.valueOf(0));
+                minAdvance.setValue(Integer.valueOf(0));
+            }
+        }
+        if (evt.getSource() == endSelection) {
+            int i = endSelection.getSelectedIndex();
+            if ( i == 0 ) {
+                permission.setEnd( null );
+                permission.setMaxAdvance( null );
+            }
+            if ( i == 1 ) {
+                java.time.LocalDate today = raplaFacade.today();
+                permission.setEnd( today.atStartOfDay() );
+                endDate.setValue( today.atStartOfDay() );
+            } if ( i == 2 ) {
+                permission.setMaxAdvance(Integer.valueOf(30));
+                maxAdvance.setValue(Integer.valueOf(30));
+            }
+        }
+        toggleVisibility();
+        fireContentChanged();
+    }
+
+    public Permission getValue() {
+        return permission;
+    }
+
+    public void stateChanged(ChangeEvent evt) {
+        if ( listenersDisabled )
+            return;
+        Permission perm = permission;
+        if (evt.getSource() == groupSelect) {
+            perm.setGroup(groupSelect.getValue() );
+            try
+            {
+                listenersDisabled = true;
+                userSelect.setValue(perm.getUser()) ;
+            }
+            finally
+            {
+                listenersDisabled = false;
+            }
+        } else if (evt.getSource() == userSelect) {
+            perm.setUser( userSelect.getValue());
+            try
+            {
+                listenersDisabled = true;
+                if ( groupSelect != null )
+                    groupSelect.setValue(perm.getGroup());
+            }
+            finally
+            {
+                listenersDisabled = false;
+            }
+        } else if (evt.getSource() == startDate) {
+            perm.setStart(startDate.getValue() );
+        } else if (evt.getSource() == minAdvance) {
+            perm.setMinAdvance( minAdvance.getIntValue());
+        } else if (evt.getSource() == endDate) {
+            perm.setEnd(endDate.getValue());
+        } else if (evt.getSource() == maxAdvance) {
+            perm.setMaxAdvance(maxAdvance.getIntValue() );
+        } else if (evt.getSource() == accessField ) {
+            perm.setAccessLevel( accessField.getValue() );
+            toggleVisibility();
+        }
+        fireContentChanged();
+    }
+
+    class UserListField extends ListField<User> {
+
+        public UserListField(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale) throws RaplaException{
+            super(clientFacade, i18n, raplaLocale, true);
+            User[] users = raplaFacade.getUsers();
+            List<User> asList = new ArrayList<>(Arrays.asList(users));
+            Collections.sort( asList, new NamedComparator<>(i18n.getLocale()));
+            setVector(asList);
+        }
+    }
+
+    
+    public void setPermissionLevels(Permission.AccessLevel... permissionLevels) {
+        this.permissionLevels = Arrays.asList( permissionLevels);
+        accessField.setVector( this.permissionLevels);
+    }
+
+    /** DENIED is deprecated as a selectable level (ADR 0003 — permissions are grant-only).
+     * It is filtered out of the dropdown for new/other rows, but kept when the edited row
+     * already carries it so an existing permission is never silently rewritten. */
+    static List<Permission.AccessLevel> selectableLevels(Collection<Permission.AccessLevel> configured, Permission.AccessLevel current) {
+        List<Permission.AccessLevel> result = new ArrayList<>(configured);
+        result.remove( Permission.DENIED );
+        if ( current == Permission.DENIED ) {
+            // keep an already-stored DENIED row renderable/selectable, even though
+            // it is no longer offered to new rows
+            result.add( 0, Permission.DENIED );
+        }
+        return result;
+    }
+
+    /** First non-deprecated level — the default to fall back to for a new row. */
+    static Permission.AccessLevel firstSelectableLevel(Collection<Permission.AccessLevel> configured) {
+        for ( Permission.AccessLevel level : configured ) {
+            if ( level != Permission.DENIED ) {
+                return level;
+            }
+        }
+        return configured.isEmpty() ? null : configured.iterator().next();
+    }
+    
+    public Collection<Permission.AccessLevel> getPermissionLevels() 
+    {
+        return permissionLevels;
+    }
+    
+    public void setUserVisible(boolean userVisible) {
+        userSelect.getComponent().setVisible( userVisible );
+        userLabel.setVisible( userVisible);
+    }
+    
+    public boolean isUserVisible() 
+    {
+        return userSelect.getComponent().isVisible();
+    }
+    
+    public boolean isEventType() {
+        return eventType;
+    }
+
+    public void setEventType(boolean eventType) {
+        this.eventType = eventType;
+    }
+    
+    @Service
+    public static class PermissionFieldFactory
+    {
+        private final ClientFacade facade;
+        private final RaplaResources i18n;
+        private final RaplaLocale raplaLocale;
+        private final TreeFactory treeFactory;
+        private final DialogUiFactoryInterface dialogUiFactory;
+        private final DateFieldFactory dateFieldFactory;
+        private final LongFieldFactory longFieldFactory;
+
+        @Autowired
+        public PermissionFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, TreeFactory treeFactory,
+                  DialogUiFactoryInterface dialogUiFactory, DateFieldFactory dateFieldFactory, LongFieldFactory longFieldFactory)
+        {
+            this.facade = facade;
+            this.i18n = i18n;
+            this.raplaLocale = raplaLocale;
+            this.treeFactory = treeFactory;
+            this.dialogUiFactory = dialogUiFactory;
+            this.dateFieldFactory = dateFieldFactory;
+            this.longFieldFactory = longFieldFactory;
+        }
+
+        public PermissionField create() throws RaplaException
+        {
+            return new PermissionField(facade, i18n, raplaLocale, treeFactory,  dialogUiFactory, dateFieldFactory, longFieldFactory);
+        }
+    }
+
+}
+
+
+

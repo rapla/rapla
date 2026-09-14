@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Rapla — Suche · Filtern · Navigieren · Bearbeiten</title>
+<style>
+  :root{
+    --indigo:#3f51b5; --indigo-d:#303f9f; --bg:#eef0f4; --card:#fff;
+    --line:#e0e0e0; --text:#1f2330; --muted:#6b7280; --chip:#eef0fb;
+    --nav:#1565c0; --fil:#2e7d32; --edit:#e65100; --srch:#6a1b9a;
+    --c1b:#2e7d32; --c2b:#1565c0; --c4b:#6a1b9a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--text);background:var(--bg);padding:24px 0}
+  .wrap{max-width:880px;margin:0 auto;padding:0 24px}
+  h1{font-size:20px;margin:0 0 4px}
+  .lead{color:var(--muted);font-size:13px;margin:0 0 16px;line-height:1.5}
+  .legend{display:flex;flex-direction:column;gap:6px;margin:0 0 22px;font-size:12.5px}
+  .lg{display:flex;align-items:center;gap:8px}
+  .pill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:6px;border:1px solid;white-space:nowrap}
+  .pill.fil{color:var(--fil);border-color:var(--fil);background:#eaf6ec}
+  .pill.nav{color:var(--nav);border-color:var(--nav);background:#eaf2fc}
+  .pill.edit{color:var(--edit);border-color:var(--edit);background:#fff3e6}
+
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .ptitle{font-size:13px;font-weight:700;margin:0 0 12px;display:flex;align-items:center;gap:9px}
+  .tag{font-size:10px;font-weight:700;letter-spacing:.5px;color:#fff;padding:2px 7px;border-radius:4px}
+  .t-srch{background:var(--srch)} .t-nav{background:var(--nav)} .t-fil{background:var(--fil)} .t-edit{background:var(--edit)}
+  .note{font-size:12.5px;color:var(--muted);margin-top:12px;line-height:1.5}
+  .note b{color:var(--text)}
+
+  .bar{background:var(--indigo);border-radius:8px;padding:9px 12px}
+  .omni{position:relative;max-width:600px}
+  .omni input{width:100%;height:36px;border:none;border-radius:6px;padding:0 12px 0 36px;font-size:14px}
+  .omni input::placeholder{color:#9aa0ab}
+  .mag{position:absolute;left:10px;top:9px;color:var(--muted);font-size:15px}
+
+  .results{background:#fff;border:1px solid var(--line);border-radius:8px;margin-top:8px;max-width:600px;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,.12)}
+  .rgroup{font-size:10.5px;font-weight:700;letter-spacing:.5px;color:var(--muted);padding:8px 13px 4px;background:#fafafe}
+  .row{display:flex;align-items:center;gap:10px;padding:8px 13px;border-top:1px solid #f4f4f7}
+  .badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--chip);color:var(--indigo-d);min-width:74px;text-align:center}
+  .rname{font-weight:500;font-size:13.5px}
+  .acts{margin-left:auto;display:flex;gap:6px;align-items:center}
+  .act{font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;border:1px solid;cursor:pointer;white-space:nowrap}
+  .act.fil{color:var(--fil);border-color:var(--fil);background:#fff}
+  .act.nav{color:var(--nav);border-color:var(--nav);background:#fff}
+  .act.edit{color:var(--edit);border-color:var(--edit);background:#fff}
+  .act.primary{background:currentColor}
+  .act.primary.fil{color:#fff;background:var(--fil)}
+  .act.primary.nav{color:#fff;background:var(--nav)}
+
+  table.mx{border-collapse:collapse;width:100%;font-size:12.5px;margin-top:4px}
+  table.mx th,table.mx td{border:1px solid var(--line);padding:7px 10px;text-align:center}
+  table.mx th{background:#fafafe;font-weight:700}
+  table.mx td.l{text-align:left;font-weight:600}
+  .yes{font-weight:700}
+  .yes.fil{color:var(--fil)} .yes.nav{color:var(--nav)} .yes.edit{color:var(--edit)}
+  .no{color:#c9ccd3}
+
+  .rail{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:2px}
+  .rlabel{font-size:11px;font-weight:700;color:var(--muted)}
+  .chip{display:inline-flex;align-items:center;gap:7px;padding:5px 10px;border-radius:16px;font-size:13px;background:var(--chip);border:1px solid #d7dbf5}
+  .chip .cd{width:9px;height:9px;border-radius:50%}
+  .chip .x{cursor:pointer;color:var(--muted);font-weight:700}
+  .flow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0}
+  .step{background:#f7f8fc;border:1px solid var(--line);border-radius:8px;padding:7px 11px;font-size:12.5px}
+  .arrow{font-size:17px;color:var(--muted)}
+  .repl{font-size:11px;color:var(--fil);font-weight:700}
+  .occ{display:inline-flex;align-items:center;gap:6px;background:#eaf6ec;border:1px solid #bfe0c5;border-radius:7px;padding:6px 10px;font-size:12.5px;color:var(--fil);font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Suche · Filtern · Navigieren · Bearbeiten</h1>
+  <p class="lead">Ein Omnibox-Feld <b>findet</b>. Jede Trefferzeile trägt genau die Aktionen, die ihr Typ erlaubt — als <b>sichtbare Buttons</b>.</p>
+  <div class="legend">
+    <div class="lg"><span class="pill fil">+ Filtern</span> Ressource/Veranstaltung → bestimmt <i>was</i> die View zeigt (Klick = ersetzen, + = dazu)</div>
+    <div class="lg"><span class="pill nav">↵ Navigieren</span> Datum / Veranstaltung→erster Termin / Termin / View → <i>wann · wo · welche</i></div>
+    <div class="lg"><span class="pill edit">✏️ Bearbeiten</span> Veranstaltung / Termin direkt aufmachen (Event-Karte), ohne im Kalender hinzugehen</div>
+  </div>
+
+  <!-- 1 · typing: the full action matrix in the result list -->
+  <div class="panel">
+    <div class="ptitle"><span class="tag t-srch">SUCHE</span><span class="tag t-fil">FILTERN</span><span class="tag t-nav">NAVIGIEREN</span><span class="tag t-edit">BEARBEITEN</span> Tippen — jede Zeile zeigt ihre Aktionen</div>
+    <div class="bar"><div class="omni"><span class="mag">🔍</span><input value="TINF22 / Prog" /></div></div>
+    <div class="results">
+      <div class="rgroup">RESSOURCEN  (nur filtern)</div>
+      <div class="row"><span class="badge">Kohorte</span><span class="rname">TINF22</span>
+        <span class="acts"><span class="act primary fil">Belegung</span><span class="act fil" title="zur Auswahl dazu">+</span></span></div>
+      <div class="row"><span class="badge">Raum</span><span class="rname">C348 PC-Hörsaal</span>
+        <span class="acts"><span class="act primary fil">Belegung</span><span class="act fil">+</span></span></div>
+      <div class="row"><span class="badge">Person</span><span class="rname">Prof. A (TINF)</span>
+        <span class="acts"><span class="act primary fil">Belegung</span><span class="act fil">+</span></span></div>
+
+      <div class="rgroup">VERANSTALTUNG  (alle drei Aktionen)</div>
+      <div class="row"><span class="badge">Veranst.</span><span class="rname">Programmieren II</span>
+        <span class="acts">
+          <span class="act primary nav">↵ erster Termin</span>
+          <span class="act fil" title="alle Termine in die View">+</span>
+          <span class="act edit" title="Event-Karte">✏️</span>
+        </span></div>
+
+      <div class="rgroup">EINZELNER TERMIN  (navigieren + bearbeiten)</div>
+      <div class="row"><span class="badge">Termin</span><span class="rname">Programmieren II · 15.06. 08:00</span>
+        <span class="acts"><span class="act primary nav">↵ hingehen</span><span class="act edit">✏️</span></span></div>
+
+      <div class="rgroup">GESPEICHERTE VIEW  (nur navigieren)</div>
+      <div class="row"><span class="badge">View</span><span class="rname">TINF22 Wochenplan WS</span>
+        <span class="acts"><span class="act primary nav">↵ laden</span></span></div>
+    </div>
+    <div class="note"><b>Primär-Aktion</b> (gefüllt) = was Klick/`↵` macht. Daneben die <b>sichtbaren Sekundär-Buttons</b> (`+` filtern, `✏️` bearbeiten). Kein versteckter Modifier — jede Aktion ist ein eigener Button.</div>
+  </div>
+
+  <!-- 2 · the matrix as a table -->
+  <div class="panel">
+    <div class="ptitle">Aktions-Matrix — welcher Typ kann was</div>
+    <table class="mx">
+      <tr><th style="text-align:left">Treffer-Typ</th><th>+ Filtern</th><th>↵ Navigieren</th><th>✏️ Bearbeiten</th><th>Primär-Aktion (Klick)</th></tr>
+      <tr><td class="l">Raum / Kohorte / Dozent</td><td class="yes fil">✓</td><td class="no">–</td><td class="no">–</td><td>Belegung (filtern, ersetzt)</td></tr>
+      <tr><td class="l">Veranstaltung</td><td class="yes fil">✓</td><td class="yes nav">✓</td><td class="yes edit">✓</td><td>zum ersten Termin (navigieren)</td></tr>
+      <tr><td class="l">Einzelner Termin</td><td class="no">–</td><td class="yes nav">✓</td><td class="yes edit">✓</td><td>hingehen (navigieren)</td></tr>
+      <tr><td class="l">Gespeicherte View</td><td class="no">–</td><td class="yes nav">✓</td><td class="no">–</td><td>laden (navigieren)</td></tr>
+      <tr><td class="l">Datum ◀▶</td><td class="no">–</td><td class="yes nav">✓</td><td class="no">–</td><td>Woche wechseln</td></tr>
+    </table>
+    <div class="note"><b>Faustregel:</b> Filtern = <i>was</i> die View zeigt (Ressourcen + Veranstaltung) · Navigieren = <i>Bewegung</i> (Datum/Termin/View) · Bearbeiten = Event-Karte (Veranstaltung/Termin). Die Veranstaltung ist der einzige Typ mit allen dreien.</div>
+  </div>
+
+  <!-- 3 · filter behaviour: stepping (replace) + accumulate -->
+  <div class="panel">
+    <div class="ptitle"><span class="tag t-fil">FILTERN</span> Der Alltag — durchsteppen (ersetzen) · + sammelt an</div>
+    <div class="flow">
+      <div class="step">Klick <b>C348</b></div><span class="arrow">→</span>
+      <div class="occ">📅 Belegung C348</div><span class="arrow">→</span>
+      <div class="step">Klick <b>TINF22</b> <span class="repl">ersetzt</span></div><span class="arrow">→</span>
+      <div class="occ">📅 Belegung TINF22</div>
+    </div>
+    <div class="rail" style="margin-top:12px">
+      <span class="rlabel">FILTER (+ angesammelt):</span>
+      <span class="chip"><span class="cd" style="background:var(--c1b)"></span>TINF22 <span class="x">✕</span></span>
+      <span class="chip"><span class="cd" style="background:var(--c2b)"></span>C348 <span class="x">✕</span></span>
+      <span class="chip"><span class="cd" style="background:var(--c4b)"></span>Programmieren II <span class="x">✕</span></span>
+    </div>
+    <div class="note"><b>Klick = ersetzen</b> (so steppt man Ressource→Ressource durch die Belegungen). <b>+ = ansammeln</b> → die Chips sind der Filter (Ressourcen <i>und</i> Veranstaltungen, farb-codiert, entfernbar).</div>
+  </div>
+
+</div>
+</body>
+</html>

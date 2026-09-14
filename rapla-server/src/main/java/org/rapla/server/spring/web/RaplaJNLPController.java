@@ -1,0 +1,347 @@
+package org.rapla.server.spring.web;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.rapla.RaplaResources;
+import org.rapla.components.util.DateTools;
+import org.rapla.components.util.IOUtil;
+import org.rapla.entities.configuration.Preferences;
+import org.rapla.facade.RaplaFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.TypedComponentRole;
+import org.rapla.framework.internal.AbstractRaplaLocale;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+
+/**
+ * Preserves the JNLP launch URL: /rapla/raplaclient and /rapla/raplaclient.jnlp.
+ * (HARD CONSTRAINT — see PRD URL Path Preservation.)
+ *
+ * Also serves the webclient/ jar set referenced from the generated JNLP. The jars
+ * physically live in BOOT-INF/lib/ inside the fat JAR (signed + manifest-patched
+ * by the antrun replace-bootinf-lib-with-signed step). No duplicate copy under
+ * static/webclient/ — saves ~14 MB. We resolve each request by suffix-matching the
+ * jar name against the runtime classpath URLs.
+ */
+@RestController
+public class RaplaJNLPController
+{
+    private static final TypedComponentRole<Boolean> CREATE_SHORTCUT = new TypedComponentRole<>("org.rapla.jnlp.createshortcut");
+    private static final TypedComponentRole<Integer> CLIENT_VM_MIN_SIZE = new TypedComponentRole<>("org.rapla.jnlp.xms");
+
+    private final RaplaFacade facade;
+    private final RaplaResources i18n;
+
+    public RaplaJNLPController(RaplaFacade facade, RaplaResources i18n)
+    {
+        this.facade = facade;
+        this.i18n = i18n;
+    }
+
+    @GetMapping("/raplaclient")
+    public void raplaclient(HttpServletRequest request, HttpServletResponse response) throws IOException
+    {
+        generateJnlp(request, response);
+    }
+
+    @GetMapping("/raplaclient.jnlp")
+    public void raplaclientJnlp(HttpServletRequest request, HttpServletResponse response) throws IOException
+    {
+        generateJnlp(request, response);
+    }
+
+    /** Package-visible so JNLP tests can construct the controller and exercise the
+     *  full JNLP-XML generation flow without going through MockMvc. */
+    void generateJnlp(HttpServletRequest request, HttpServletResponse response) throws IOException
+    {
+        PrintWriter out = response.getWriter();
+        String webstartRoot = ".";
+        long currentTimeMillis = System.currentTimeMillis();
+        response.setDateHeader("Last-Modified", currentTimeMillis);
+        response.addDateHeader("Expires", currentTimeMillis + DateTools.MILLISECONDS_PER_MINUTE);
+        response.addDateHeader("Date", currentTimeMillis);
+        response.setHeader("Cache-Control", "no-cache");
+        final String defaultTitle = i18n.getString("rapla.title");
+        String menuName;
+        boolean createShortcut = true;
+        Integer vmXmsSize = null;
+        try
+        {
+            final Preferences systemPreferences = facade.getSystemPreferences();
+            menuName = systemPreferences.getEntryAsString(AbstractRaplaLocale.TITLE, defaultTitle);
+            createShortcut = systemPreferences.getEntryAsBoolean(CREATE_SHORTCUT, true);
+            vmXmsSize = systemPreferences.getEntryAsInteger(CLIENT_VM_MIN_SIZE, -1);
+        }
+        catch (RaplaException e)
+        {
+            menuName = defaultTitle;
+        }
+        response.setContentType("application/x-java-jnlp-file;charset=utf-8");
+        out.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        // Security audit PH3 — no codebase and only relative hrefs: they resolve against the URL the launcher fetched this
+        // manifest from, so a forged Host / X-Forwarded-* header cannot point the client at another server.
+        out.println("<jnlp spec=\"6.0+\" href=\"raplaclient.jnlp\" >");
+        out.println("<information>");
+        out.println(" <title>" + menuName + "</title>");
+        out.println(" <vendor>Rapla team</vendor>");
+        out.println(" <homepage href=\"https://rapla.org\"/>");
+        out.println(" <description>Resource Scheduling Application</description>");
+        out.println(" <icon kind=\"default\" href=\"webclient/rapla_64x64.png\" width=\"64\" height=\"64\"/> ");
+        out.println(" <icon kind=\"shortcut\" href=\"webclient/rapla_64x64.png\" width=\"64\" height=\"64\"/> ");
+        if (createShortcut)
+        {
+            out.println(" <shortcut online=\"true\">");
+            out.println("       <desktop/>");
+            out.println("       <menu submenu=\"" + menuName + "\"/>");
+            out.println(" </shortcut>");
+        }
+        out.println("</information>");
+        out.println("<update check=\"always\" policy=\"always\"/>");
+        out.println("<security>");
+        out.println("  <all-permissions/>");
+        out.println("</security>");
+        out.println("<resources>");
+        if (vmXmsSize != null && vmXmsSize > 0)
+        {
+            out.println("  <j2se version=\"1.8+ \" java-vm-args=\"-Xms" + vmXmsSize + "m\"/>");
+        }
+        else
+        {
+            out.println("  <j2se version=\"1.8+\"/>");
+        }
+
+        // rapla.download.url is not emitted: the client resolves its server URL against the Web Start codebase (PH3).
+
+        String passedUsername = request.getParameter("username");
+        if (passedUsername != null)
+        {
+            String usernameProperty = "jnlp.org.rapla.startupUser";
+            String safeUsername = URLEncoder.encode(passedUsername, "UTF-8");
+            out.println("  <property name=\"" + usernameProperty + "\" value=\"" + safeUsername + "\"/>");
+        }
+        out.println(getLibsJNLP(request.getServletContext(), webstartRoot));
+        out.println("</resources>");
+        out.println("<application-desc main-class=\"org.rapla.client.spring.SpringRaplaClient\">");
+        for (Iterator<String> it = getProgramArguments().iterator(); it.hasNext();)
+        {
+            out.println("  <argument>" + it.next() + "</argument> ");
+        }
+        out.println("</application-desc>");
+        out.println("</jnlp>");
+        out.close();
+    }
+
+    @GetMapping("/webclient/{name:.+\\.jar}")
+    public ResponseEntity<Resource> webclientJar(HttpServletRequest request,
+                                                 @PathVariable("name") String name) throws IOException
+    {
+        if (name.contains("/") || name.contains("\\") || name.contains(".."))
+        {
+            return ResponseEntity.badRequest().build();
+        }
+        URL jarUrl = webclientJarIndex(request.getServletContext()).get(name.toLowerCase(Locale.ROOT));
+        if (jarUrl == null)
+        {
+            return ResponseEntity.notFound().build();
+        }
+        UrlResource resource = new UrlResource(jarUrl);
+        long contentLength = resource.contentLength();
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/java-archive"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + name + "\"")
+                .contentLength(contentLength)
+                .body(resource);
+    }
+
+    /** One-time lookup table from lowercase jar name → resource URL, built on first
+     *  request. The classpath / classloader URL set is fixed for the JVM lifetime,
+     *  so the index is built once and reused; subsequent {@code /webclient/X.jar}
+     *  hits are a Map lookup. Double-checked locking on a {@code volatile} ref keeps
+     *  the build cost to one thread even under concurrent first requests. */
+    private volatile java.util.Map<String, URL> webclientJarIndex;
+
+    private java.util.Map<String, URL> webclientJarIndex(ServletContext context) throws IOException
+    {
+        java.util.Map<String, URL> local = webclientJarIndex;
+        if (local != null) return local;
+        synchronized (this)
+        {
+            local = webclientJarIndex;
+            if (local != null) return local;
+            local = buildWebclientJarIndex(context);
+            webclientJarIndex = local;
+            return local;
+        }
+    }
+
+    /**
+     * Resolves every jar name in {@code clientlibs.properties} to a URL. Three
+     * lookup strategies, tried in order; the first hit per jar wins:
+     * <ol>
+     *   <li>{@code java.class.path} — covers {@code mvn spring-boot:run} (every
+     *       dependency jar is on the classpath individually) and {@code java -cp …}
+     *       launches.</li>
+     *   <li>The current classloader's URL list — covers the Spring Boot fat JAR
+     *       launched via {@code java -jar fat-jar.jar}, where the launcher's
+     *       classloader exposes BOOT-INF/lib/*.jar entries as nested URLs like
+     *       {@code jar:nested:/path/to/fatjar.jar/!BOOT-INF/lib/jackson-core-3.1.2.jar!/}.
+     *       {@code java.class.path} in this mode is just the outer fat JAR.</li>
+     *   <li>The {@code static/webclient/<name>} classpath resource — covers jars
+     *       excluded from BOOT-INF/lib/ but still bundled at
+     *       BOOT-INF/classes/static/webclient/ (rxjava, rapla-client).</li>
+     * </ol>
+     */
+    private java.util.Map<String, URL> buildWebclientJarIndex(ServletContext context) throws IOException
+    {
+        // wanted: lowercase key → original case (the latter is needed because the
+        // static/webclient/ resource path is case-sensitive on case-sensitive
+        // filesystems, but the URL-lookup keys are lowercased for case-insensitive
+        // matching against the runtime classpath).
+        java.util.Map<String, String> wanted = new java.util.HashMap<>();
+        String prefix = "webclient/";
+        for (String entry : getClientLibs(context))
+        {
+            if (entry.startsWith(prefix))
+            {
+                String name = entry.substring(prefix.length());
+                wanted.put(name.toLowerCase(Locale.ROOT), name);
+            }
+        }
+
+        java.util.Map<String, URL> result = new java.util.HashMap<>();
+
+        String classpath = System.getProperty("java.class.path", "");
+        for (String entry : classpath.split(File.pathSeparator))
+        {
+            if (entry.isEmpty()) continue;
+            File file = new File(entry);
+            if (!file.isFile()) continue;
+            String key = file.getName().toLowerCase(Locale.ROOT);
+            if (!wanted.containsKey(key) || result.containsKey(key)) continue;
+            try
+            {
+                result.put(key, file.toURI().toURL());
+            }
+            catch (MalformedURLException ignored) { }
+        }
+
+        ClassLoader cl = getClass().getClassLoader();
+        if (cl instanceof java.net.URLClassLoader)
+        {
+            for (URL url : ((java.net.URLClassLoader) cl).getURLs())
+            {
+                String s = url.toString();
+                if (s.endsWith("!/")) s = s.substring(0, s.length() - 2);
+                int slash = s.lastIndexOf('/');
+                if (slash < 0) continue;
+                String key = s.substring(slash + 1).toLowerCase(Locale.ROOT);
+                if (!wanted.containsKey(key) || result.containsKey(key)) continue;
+                result.put(key, url);
+            }
+        }
+
+        for (java.util.Map.Entry<String, String> e : wanted.entrySet())
+        {
+            if (result.containsKey(e.getKey())) continue;
+            URL u = getClass().getClassLoader().getResource("static/webclient/" + e.getValue());
+            if (u != null) result.put(e.getKey(), u);
+        }
+
+        return java.util.Map.copyOf(result);
+    }
+
+    private String getLibsJNLP(ServletContext context, String webstartRoot) throws IOException
+    {
+        List<String> list = getClientLibs(context);
+        StringBuffer buf = new StringBuffer();
+        for (String file : list)
+        {
+            buf.append("\n<jar href=\"" + webstartRoot + "/");
+            buf.append(file);
+            buf.append("\"");
+            if (isMainRaplaClientJar(file))
+            {
+                buf.append(" main=\"true\"");
+            }
+            buf.append("/>");
+        }
+        return buf.toString();
+    }
+
+    /**
+     * Matches both the legacy unversioned {@code rapla-client.jar} and the Maven-packaged
+     * {@code rapla-client-<version>.jar}. Excludes sibling artifacts like a hypothetical
+     * {@code rapla-client-api.jar} (next char after {@code rapla-client} must be a digit
+     * when versioned).
+     */
+    static boolean isMainRaplaClientJar(String pathOrName)
+    {
+        return pathOrName != null && pathOrName.matches(".*rapla-client(-[0-9][\\w.-]*)?\\.jar$");
+    }
+
+    /** Package-visible so JNLP tests can stage a fake webclient/ dir and exercise the
+     *  fallback (servlet-context filesystem) branch deterministically. */
+    static List<String> getClientLibs(ServletContext context) throws IOException
+    {
+        List<String> list = new ArrayList<>();
+        URL resource = RaplaJNLPController.class.getResource("/clientlibs.properties");
+        if (resource != null)
+        {
+            byte[] bytes = IOUtil.readBytes(resource);
+            String string = new String(bytes);
+            String[] split = string.split(";");
+            for (String file : split)
+            {
+                list.add("webclient/" + file);
+            }
+        }
+        else
+        {
+            String base = context.getRealPath(".");
+            if (base != null)
+            {
+                File baseFile = new File(base);
+                File[] files = IOUtil.getJarFiles(base, "webclient");
+                for (File file : files)
+                {
+                    String relativeURL = IOUtil.getRelativeURL(baseFile, file);
+                    list.add(relativeURL);
+                }
+            }
+        }
+        int size = list.size();
+        for (int i = 0; i < size; i++)
+        {
+            String entry = list.get(i);
+            if (isMainRaplaClientJar(entry))
+            {
+                list.remove(i);
+                list.add(0, entry);
+            }
+        }
+        return list;
+    }
+
+    protected List<String> getProgramArguments()
+    {
+        return new ArrayList<>();
+    }
+}

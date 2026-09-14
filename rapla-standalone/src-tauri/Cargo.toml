@@ -1,0 +1,28 @@
+[package]
+name = "rapla"
+version = "2.1.0"
+description = "Rapla — standalone trial install (Windows 11 desktop)"
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-single-instance = "2"
+# Process / lifecycle handling for the bundled Java child process.
+# wait_timeout: bounded blocking wait so SIGTERM grace period is enforceable.
+wait-timeout = "0.2"
+# Logging — same conventions as the Java side (logs to %LOCALAPPDATA%\rapla\logs\).
+log = "0.4"
+env_logger = "0.11"
+# Free-port picker for the random local port the Spring Boot child binds.
+portpicker = "0.1"
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+incremental = false
+opt-level = "s"   # optimize for size — Tauri shell is small, keep it small
+strip = true
