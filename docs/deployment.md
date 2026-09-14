@@ -288,7 +288,10 @@ cannot take. For MariaDB list both overlays:
 
 ### Nightly image
 
-Every nightly CI run on `master` pushes `ghcr.io/rapla/rapla:nightly` — the
+The nightly workflow in [rapla/rapla-nightly](https://github.com/rapla/rapla-nightly)
+builds rapla `master` every night and publishes the image
+`ghcr.io/rapla/rapla:nightly` and the JAR
+https://github.com/rapla/rapla-nightly/releases/download/nightly/rapla.jar — the
 current `master` state with the self-signed dev certificate for the Web Start
 client. **Test builds only, not for production**; the tag moves every night.
 
@@ -318,8 +321,8 @@ docker run -d --name rapla -p 8051:8051 --env-file .env \
 settings and have no effect there.
 
 With Compose, `compose.yaml` in the repo **builds the image locally**
-(`build: .`). To use the nightly image instead, replace that line with the
-registry image and run `docker compose pull && docker compose up -d`:
+(`build: .`, tagged `image: rapla:3`). To use the nightly image instead,
+remove `build: .` and set `image: ghcr.io/rapla/rapla:nightly`:
 
 ```yaml
 services:
@@ -327,18 +330,23 @@ services:
     image: ghcr.io/rapla/rapla:nightly
 ```
 
+Then start it with `docker compose up -d --pull always --no-build` — it pulls
+the current nightly and never falls back to a local build.
+
 The overlays in `docker/` and `.env` work unchanged.
 
-The GitHub package is created **private** by the first push. Two one-time
-steps for an owner of the `rapla` organization, in the package settings — no
-workflow can do either:
+**Who publishes.** Only the workflow `.github/workflows/nightly.yml` in
+`rapla/rapla-nightly`, with that repository's own `GITHUB_TOKEN` — no stored
+secrets. Only the organization owners have access to that repository, and the
+package grants write access to it alone. The CI workflow in `rapla/rapla`
+builds and tests but never publishes. Verify a download:
 
-- *Change visibility* → public. Until then `docker pull` needs
-  `docker login ghcr.io` with a GitHub token.
-- *Manage Actions access* → `rapla/rapla` → **Admin**. Deleting old untagged
-  versions with the workflow's `GITHUB_TOKEN` needs the Admin role; without it
-  the cleanup step gets HTTP 403 and the `docker` job turns red right after a
-  successful push.
+```sh
+gh attestation verify rapla.jar --repo rapla/rapla-nightly \
+  --signer-workflow rapla/rapla-nightly/.github/workflows/nightly.yml --source-ref refs/heads/main
+gh attestation verify oci://ghcr.io/rapla/rapla:nightly --repo rapla/rapla-nightly \
+  --signer-workflow rapla/rapla-nightly/.github/workflows/nightly.yml --source-ref refs/heads/main
+```
 
 ### Backup and restore
 

@@ -1,6 +1,6 @@
 # PRD 034: CI baseline workflow
 
-**Status:** Phases 1–3 implemented 2026-09-14 directly on `master` (user ruling: no branch test run) — `.github/workflows/ci.yml` with `java`, `slow-tests`, `angular`, `publish`, `docker` jobs (nightly + on-demand, build despite red tests, self-signed rolling `nightly` release, image build without push; since 2026-09-14 `master` pushes `ghcr.io/rapla/rapla:nightly`, see [OQ 5](#open-questions)). First live run pending.
+**Status:** Phases 1–3 implemented 2026-09-14 directly on `master` (user ruling: no branch test run) — `.github/workflows/ci.yml` with `java`, `slow-tests`, `angular`, `docker` jobs (a `publish` job existed until the move below) (nightly + on-demand, build despite red tests, self-signed rolling `nightly` release, image build without push; since 2026-09-14 `master` pushes `ghcr.io/rapla/rapla:nightly`, see [OQ 5](#open-questions)). First live run pending. **Publishing moved to rapla/rapla-nightly 2026-09-14** (user ruling: separate owners-only repo; env/PAT approach rejected — a branch workflow's own GITHUB_TOKEN could publish). `ci.yml` in rapla/rapla only builds and tests; the JAR asset and `ghcr.io/rapla/rapla:nightly` come from `rapla/rapla-nightly/.github/workflows/nightly.yml`.
 
 ## Goal
 
@@ -43,6 +43,8 @@ GitHub side (checked 2026-09-14): `rapla/rapla` is public, Actions enabled with 
 
 ### D2 — Red tests don't block the build
 
+> **Superseded 2026-09-14 for publishing:** the nightly is built and published by `rapla/rapla-nightly` with `-DskipTests` and without test counts, so the statement below that a red nightly is published with its test results no longer applies. The rule itself still holds for this workflow: red tests don't block the CI build.
+
 Surefire runs with `-Dmaven.test.failure.ignore=true`, so the reactor continues through `package` even when tests fail. The Java job then:
 
 1. uploads the fat JAR as a run artefact (always),
@@ -50,7 +52,7 @@ Surefire runs with `-Dmaven.test.failure.ignore=true`, so the reactor continues 
 3. writes a test summary (counts + failing test names) to `$GITHUB_STEP_SUMMARY`,
 4. **fails the job as its last step** if the surefire reports contain failures/errors.
 
-Result: the run is red, the summary says which tests broke, the JAR is still downloadable — and **a red nightly is published to the `nightly` release too** (user ruling 2026-09-14, [D4](#d4--nightly-release-artefacts-and-retention)); its release notes carry the test result. A **compile error** still fails early and produces no JAR — that is intended; "build despite red" means test failures, not broken code.
+Result: the run is red, the summary says which tests broke, the JAR is still downloadable — and **a red nightly is published to the `nightly` release too** (user ruling 2026-09-14, [D4](#d4--nightly-release-artefacts-and-retention)); its release notes carry the test result. A **compile error** still fails early and produces no JAR — that is intended; "build despite red" means test failures, not broken code. Since 2026-09-14 the release is published by `rapla/rapla-nightly`, not by this workflow.
 
 Summary generation: first rung is a few lines of shell over the surefire XML (`grep -c '<failure\|<error'` + testcase names) — no third-party reporter action. A marketplace action (e.g. a JUnit report action) only if the shell summary proves unreadable ([OQ 5](#open-questions)).
 
@@ -59,21 +61,22 @@ Summary generation: first rung is a few lines of shell over the surefire XML (`g
 | Job | Needs | Runs | Fails the run when | Artefacts |
 |---|---|---|---|---|
 | **java** — test + package | — | Temurin 21, Maven cache (`setup-java` `cache: maven`). No `setup-node`: the SPA is built by `frontend-maven-plugin` with its own Node (version from `rapla-app/pom.xml`, see [OQ 4](#open-questions)). `mvn -B clean package -Psign-jks -Dmaven.test.failure.ignore=true` from repo root (reactor; no `install`, AGENTS.md §5). Includes tiers 1–3 (default lane), the SPA production build via `frontend-maven-plugin`, and self-signing of the JNLP webclient jars. | any surefire failure/error (checked after upload), or compile/package error | `rapla-jar` (`rapla-app/target/rapla.jar`), `surefire-reports` |
-| **publish** — rolling `nightly` release | `java` (artefact) | only on `refs/heads/master`; `permissions: contents: write` on this job only. Creates the prerelease `nightly` if missing, moves tag `nightly` to `$GITHUB_SHA`, uploads the JAR as `rapla.jar` (`gh release upload nightly dist/rapla.jar --clobber`; since 2026-09-14 no version or channel in the asset name — the older `rapla-nightly.jar` asset is removed with `gh release delete-asset nightly rapla-nightly.jar -y`, tolerant when absent), rewrites the release notes (commit, date, test counts, disclaimer). Uses the built-in `GITHUB_TOKEN`. | upload failure | the release asset |
 | **angular** — lint + unit tests | — (parallel to java) | Node, `npm ci`, `npm run lint`, `npx ng test --watch=false` (Vitest via `@angular/build:unit-test`) | lint or vitest failure | vitest report if the builder emits one (optional) |
-| **docker** — image build + nightly push | `java` (artefact) | downloads `rapla-jar` into `rapla-app/target/`, `docker build .`; on `master` only: `docker login ghcr.io` with `github.token` (job-level `packages: write`), push `ghcr.io/rapla/rapla:nightly` (single tag), then delete untagged package versions older than 10 days via `gh api` | image build, push or cleanup failure | `ghcr.io/rapla/rapla:nightly` |
+| **docker** — image build, no push | `java` (artefact) | downloads `rapla-jar` into `rapla-app/target/`, `docker build .` on every branch; no environment, `permissions: contents: read`. Validates `Dockerfile` + JAR. | image build failure | none |
 
 - `java` and `angular` run **independently** (`angular` does not `needs: java`), so a lint failure never suppresses the JAR and vice versa.
 - The SPA is built twice (once in `java` via Maven for the JAR, once implicitly by `ng test`) — accepted; deduplicating means passing a dist artefact between jobs and `-Dskip.npm`, which adds coupling for ~1–2 min.
 - `docker` uses `if: always() && needs.java.result != 'cancelled'` guarded by the artefact actually existing, so a red-test run still validates the image; it is skipped if the JAR was never produced (compile error).
-- `publish` and `docker` both need the JAR; `publish` runs whenever the JAR exists, regardless of test results (`if: always() && needs.java.outputs.jar == 'true'` or equivalent).
+- `docker` needs the JAR and runs whenever it exists, regardless of test results (`if: always() && needs.java.outputs.jar == 'true'`). Publishing no longer happens here (see [OQ 5](#open-questions)).
 - **Signing: `-Psign-jks`** (user ruling 2026-09-14). The self-signed `raplaselfsigned.ks` and its password are already public in the repo (`rapla-bom` `keystore.*` defaults; certificate RSA 2048 / SHA256, valid until 2036-05) — no secret. It signs the JNLP webclient jars inside the fat JAR so the webclient launches (with a trust prompt). Because the key is public, the signature proves nothing about origin; maintainer production builds stay YubiKey-signed (`-Psign-pkcs11`, local) — [`docs/signing.md`](../signing.md).
 
 ### D4 — Nightly release, artefacts and retention
 
+> **Superseded 2026-09-14:** the nightly release and image are published by `rapla/rapla-nightly` (see [OQ 5](#open-questions)); the bullets below record the former in-repo `publish` job.
+
 **Download = one rolling prerelease `nightly`** (user ruling 2026-09-14), not run artefacts:
 
-- Fixed URL, no login, no ZIP: `https://github.com/rapla/rapla/releases/download/nightly/rapla.jar`.
+- Fixed URL, no login, no ZIP: `https://github.com/rapla/rapla-nightly/releases/download/nightly/rapla.jar`.
 - Exactly one nightly exists at any time: each publish overwrites the asset (`--clobber`) and moves the tag; nothing accumulates, no cleanup job.
 - Marked **prerelease**, so it never becomes "Latest"; release watchers are notified once on creation, not on each nightly update.
 - **Published even when tests are red.** Release notes are rewritten each time: commit SHA, build date, test result (e.g. "1432 tests, 3 failed" + link to the run), and the disclaimer *"Nightly test build, self-signed with the public dev certificate — not for production."*
@@ -82,7 +85,7 @@ Summary generation: first rung is a few lines of shell over the surefire XML (`g
 Run artefacts stay for diagnosis only:
 
 - `surefire-reports`: `actions/upload-artifact`, **retention 3 days**.
-- `rapla-jar`: retention **1 day** — only the hand-off to `publish`/`docker`; manual branch runs download it from the run page.
+- `rapla-jar`: retention **1 day** — only the hand-off to `docker`; manual branch runs download it from the run page.
 - Container image: only the moving `ghcr.io/rapla/rapla:nightly` tag; each push leaves the previous image untagged, the `docker` job deletes untagged versions older than 10 days. No coverage upload.
 
 ### D5 — Out of scope (unchanged or deferred)
@@ -125,7 +128,7 @@ Run artefacts stay for diagnosis only:
 2. ~~Retention~~ — resolved 2026-09-14: one rolling `nightly` release (overwritten), run artefacts 1 day (JAR) / 3 days (reports) — D4.
 3. **PR trigger later?** — add `pull_request` (tests only, no package) once external PRs pick up again, or keep manual `gh workflow run` for PR branches?
 4. ~~**Node version**~~ — **Closed 2026-09-14:** one pin, 24.15.0 (npm 11.12.1 = `packageManager`, bundled with that Node, so no separate `npmVersion`) in `rapla-app/pom.xml`, `rapla-angular/.nvmrc`, `docs/development.md` and the `angular` job.
-5. ~~Docker job~~ — **Closed 2026-09-14 (registry ruling, replaces the earlier "registry only for real releases"):** nightly `master` runs push `ghcr.io/rapla/rapla:nightly` (one moving tag, no per-SHA tags) with `github.token`; untagged versions older than 10 days are deleted in the same job; release images stay a separate process. The package is created private on first push — an org owner does two manual steps once in the package settings: *Change visibility* → public, and *Manage Actions access* → `rapla/rapla` → **Admin** (the cleanup's `DELETE` with `GITHUB_TOKEN` needs the Admin role; whether the first push grants it automatically is unverified — without it the cleanup gets 403 and the `docker` job turns red after the push). No `docker save` tarball on the release.
+5. ~~Docker job~~ — **Closed 2026-09-14 (registry ruling, replaces the earlier "registry only for real releases"):** nightly `master` runs push `ghcr.io/rapla/rapla:nightly` (one moving tag, no per-SHA tags); untagged versions older than 10 days are deleted in the same job; release images stay a separate process. The package is created private on first push — an org owner switches it to public once by hand. No `docker save` tarball on the release. **Hardened 2026-09-14 (user ruling "Teil B"):** push and release run in the environment `nightly` (deployment branch `master` only) with the maintainer's environment secret `NIGHTLY_TOKEN` instead of `GITHUB_TOKEN`; the `docker` job is split into build-only `docker` (every branch) and `docker-push` (master, environment); `GITHUB_TOKEN` is read-only in all jobs, the repository's package access is Read, the `nightly` tag is protected by a ruleset. The `if: github.ref == 'refs/heads/master'` guards stay as a second layer. **Publishing moved to rapla/rapla-nightly 2026-09-14** (user ruling: separate owners-only repo; env/PAT approach rejected — a branch workflow's own GITHUB_TOKEN could publish). `ci.yml` in rapla/rapla only builds and tests; the JAR asset and `ghcr.io/rapla/rapla:nightly` come from `rapla/rapla-nightly/.github/workflows/nightly.yml`.
 
 ## Risks
 
@@ -136,7 +139,7 @@ Run artefacts stay for diagnosis only:
 | Tier-3 `@SpringBootTest` tests are slow or flaky on 2-vCPU runners | Measure on first run; move offenders to `@Tag("e2e")` only with a named reason. |
 | Scheduled run silently disabled after 60 days of inactivity | Acceptable; manual trigger still works. |
 | Users take the public nightly for a release (self-signed with a public key, possibly red tests) | Prerelease flag, fixed disclaimer + test result in the notes, `-nightly` asset name. |
-| Force-moving the `nightly` tag confuses clones that fetched it | Only a moving pointer by design; documented in `docs/development.md`. Tags pushed with `GITHUB_TOKEN` don't trigger further workflow runs. |
+| Force-moving the `nightly` tag confuses clones that fetched it | Only a moving pointer by design; the tag now lives in `rapla/rapla-nightly` (no tag in rapla/rapla is moved). |
 | Frontend plugin downloads Node every run | `frontend-maven-plugin` install dir is `rapla-app/target` (cleaned); cache `~/.m2` covers the Node archive the plugin stores there. |
 
 ## Cross-references
