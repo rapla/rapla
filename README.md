@@ -18,7 +18,7 @@ https://github.com/rapla/rapla/releases
 
 Rapla 3 with a web frontend and a GraphQL API and the complete spring boot migration is currently in development. The first alpha version is planned for October 2026.
 
-**Rapla Standalone is currently NOT WORKING** (the standalone/desktop build is not part of the Rapla 3 alpha; use the server deployment or the Java Web Start client).
+**Feeling experimental?** Nightly test builds of `master` are published from [rapla/rapla-nightly](https://github.com/rapla/rapla-nightly): download the JAR from the [nightly release](https://github.com/rapla/rapla-nightly/releases/tag/nightly) or pull the Docker image `ghcr.io/rapla/rapla:nightly`. Self-signed, untested, not for production. How to run and verify: [docs/deployment.md § Docker](docs/deployment.md#docker).
 
 # License
 
