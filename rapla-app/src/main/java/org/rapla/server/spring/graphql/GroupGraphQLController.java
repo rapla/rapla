@@ -22,7 +22,8 @@ import org.springframework.stereotype.Controller;
  *
  * <p>Internally each Group is backed by a {@link Category} under the
  * {@code user-groups} root. The DTO carries only the fields the API exposes
- * (id, key, name) — hierarchy support deferred to a separate PRD.
+ * (id, key, name); {@code parent} / {@code children} resolve per row (PRD 113 § 5e,
+ * picker-sized lists) and never leave the user-groups subtree.
  *
  * <p>§12: anonymous callers see empty lists / null lookups. Authenticated
  * callers see all groups (rapla's permission model treats Categories as
@@ -62,6 +63,45 @@ public class GroupGraphQLController
         if (userGroupsRoot == null) return null;
         // Walk the subtree looking for a Category with matching id.
         return findById(userGroupsRoot, id);
+    }
+
+    // === Group.parent / Group.children (PRD 113 § 5e) ===
+
+    /** Null for a top-level group: its parent is the user-groups root, which is not a group. */
+    @SchemaMapping(typeName = "Group", field = "parent")
+    public GroupDto parent(GroupDto group)
+    {
+        Category category = resolveGroup(group);
+        if (category == null) return null;
+        Category parent = category.getParent();
+        if (parent == null || isUserGroupsRoot(parent)) return null;
+        return GroupDto.from(parent);
+    }
+
+    @SchemaMapping(typeName = "Group", field = "children")
+    public List<GroupDto> children(GroupDto group)
+    {
+        Category category = resolveGroup(group);
+        if (category == null) return List.of();
+        Category[] children = category.getCategories();
+        if (children == null) return List.of();
+        List<GroupDto> out = new ArrayList<>(children.length);
+        for (Category child : children)
+        {
+            if (child != null) out.add(GroupDto.from(child));
+        }
+        return out;
+    }
+
+    private Category resolveGroup(GroupDto group)
+    {
+        return operator.tryResolve(new org.rapla.entities.storage.ReferenceInfo<>(group.id(), Category.class));
+    }
+
+    private boolean isUserGroupsRoot(Category category)
+    {
+        Category root = userGroupsRoot();
+        return root != null && root.getId().equals(category.getId());
     }
 
     // === User.groups ===
@@ -139,10 +179,7 @@ public class GroupGraphQLController
         return jwtUserResolver.resolveCurrentUserOrNull();
     }
 
-    /**
-     * Mirror of the {@code Group} GraphQL type. Currently flat — hierarchical
-     * extensions (parent / children) deferred to a separate PRD per §5c.
-     */
+    /** Mirror of the {@code Group} GraphQL type; parent / children resolve via {@link #parent} / {@link #children}. */
     public record GroupDto(String id, String key, String name)
     {
         static GroupDto from(Category c)

@@ -47,11 +47,11 @@ function localToday(): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-/** The block's allocatable refs for the lane grouping key: scan the row's
+/** The block's resource refs for the lane grouping key: scan the row's
  *  array-valued cells (persons/resources aliases in the builtin view; custom
  *  views may alias differently) for {id, name} objects, carrying isLocation
  *  through (the room is the preferred fallback lane key — see week-lanes).
- *  No refs → the block lands in the trailing no-allocatable lane (fail-closed). */
+ *  No refs → the block lands in the trailing no-resource lane (fail-closed). */
 function rowAllocRefs(row: Row): NamedRef[] {
   const refs: NamedRef[] = [];
   for (const [k, value] of Object.entries(row)) {
@@ -67,7 +67,7 @@ function rowAllocRefs(row: Row): NamedRef[] {
 }
 
 /** The server-computed match provenance for the block (`AppointmentBlock.matchedBy`,
- *  PRD 100 Phase 5): the SELECTED allocatable(s) that admitted it. The authoritative
+ *  PRD 100 Phase 5): the SELECTED resource(s) that admitted it. The authoritative
  *  lane key — a room's block carries the selected BUILDING here, which row cells can't
  *  show. Absent (custom view without the field) ⇒ empty ⇒ heuristic fallback. */
 function rowMatchedRefs(row: Row): NamedRef[] {

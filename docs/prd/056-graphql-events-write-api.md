@@ -412,8 +412,18 @@ Returns the updated `Reservation` (post-state).
 
 ### `changeReservationOwner(ids, newOwnerId)`
 
-§12: caller must `canModify(reservation, user)` for **every** id in the batch.
-Failures cause whole-batch rejection per ATOMIC mode.
+~~§12: caller must `canModify(reservation, user)` for **every** id in the batch.~~
+**Gate corrected 2026-09-13 ([PRD 113 § 5c](113-graphql-permission-model.md#5c-wp-w1--p4-permission-inputs-on-allocatable--reservation-ownerid-removal-changeallocatableowner), coordinator decision):
+`caller.isAdmin()`** — Swing parity (`SetOwnerMenuFactory:70`) and PRD 067 D10. The
+verb had inherited the generic `canModify` gate, wider than Swing's admin-only menu;
+CLOSED 2026-09-13 (verb gate + the `SecurityManager` owner-change fall-through, both
+replaced by the rule below). Shared gate with `changeAllocatableOwner`.
+**Widened the same evening by user ruling** ([PRD 113 § 5f WP O1](113-graphql-permission-model.md#5f-wp-o1--owner-change-for-group-admins-within-scope-user-ruling-p-4-2026-09-13-approved-to-impl-final-2245)):
+group admins may change owners when both old and new owner are within their
+`canAdminUser` scope and they can see the entity, pure owner change only; enforced once in
+`PermissionController.canChangeOwner` from `SecurityManager`. Not permitted → `PERMISSION_DENIED`
+at `caller`; unknown id in the batch → `REFERENCE_NOT_FOUND` at `ids[i]`, whole
+batch rejected (ATOMIC).
 
 `newOwnerId` must resolve to a real, visible user. Unknown ownerId fails as
 `REFERENCE_NOT_FOUND`.

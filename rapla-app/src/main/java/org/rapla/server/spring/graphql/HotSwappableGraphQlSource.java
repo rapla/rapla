@@ -183,7 +183,7 @@ public class HotSwappableGraphQlSource implements GraphQlSource
     private static void validateInterfaceCoverage(GraphQLSchema schema)
     {
         for (String interfaceName : new String[] {
-                "Classification", "AllocatableClassification", "ReservationClassification" })
+                "Classification", "ResourceClassification", "ReservationClassification" })
         {
             GraphQLType t = schema.getType(interfaceName);
             if (!(t instanceof GraphQLInterfaceType iface)) continue;

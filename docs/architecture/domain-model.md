@@ -143,7 +143,7 @@ persistent are grandfathered (legacy `period_1`-style ids keep saving). Collisio
 handling: [PRD 056](../prd/056-graphql-events-write-api.md) §9.
 
 **Client ids are MANDATORY on GraphQL creates** (decided 2026-07-06, [PRD 056](../prd/056-graphql-events-write-api.md) §9):
-`createReservation` (reservation + every appointment) and `createAllocatable`
+`createReservation` (reservation + every appointment) and `createResource`
 reject id-less input with `REQUIRED` — the server-generate fallback is removed.
 Why:
 

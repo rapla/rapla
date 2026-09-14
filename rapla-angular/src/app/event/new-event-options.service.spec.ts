@@ -11,7 +11,7 @@ describe('NewEventOptionsService', () => {
     data: {
       newEventOptions: {
         eventTypes: [{ key: 'event', name: 'Veranstaltung' }],
-        templates: [{ id: 't1', name: 'TINF23 Mathe', path: ['TINF23'] }],
+        templates: [{ id: 't1', name: 'TINF23 Mathe' }],
       },
     },
   };
@@ -28,7 +28,7 @@ describe('NewEventOptionsService', () => {
     const service = setup(query);
     service.ensureLoaded().subscribe();
     expect(service.eventTypes()).toEqual([{ key: 'event', name: 'Veranstaltung' }]);
-    expect(service.templates()).toEqual([{ id: 't1', name: 'TINF23 Mathe', path: ['TINF23'] }]);
+    expect(service.templates()).toEqual([{ id: 't1', name: 'TINF23 Mathe' }]);
   });
 
   it('shares one request across repeated callers', () => {

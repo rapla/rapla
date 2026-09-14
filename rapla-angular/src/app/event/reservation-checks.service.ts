@@ -16,7 +16,7 @@ const WARNING_FRAGMENT = `
     code
     args
     severity
-    conflicts { allocatable { name } reservation2 { name } startDate }
+    conflicts { resource { name } reservation2 { name } startDate }
   }`;
 import { saveGate, type ReservationWarning } from './reservation-warnings';
 
@@ -33,10 +33,10 @@ export class ReservationChecksService {
   private readonly gql = inject(GraphqlService);
   private readonly dialog = inject(MatDialog);
 
-  check(draft: EventDraft, scopeAllocatableIds: string[] = []): Observable<ReservationWarning[]> {
+  check(draft: EventDraft, scopeResourceIds: string[] = []): Observable<ReservationWarning[]> {
     const input = {
       draft: { id: draft.id, ...toReservationInput(draft) },
-      scopeAllocatableIds,
+      scopeResourceIds,
     };
     return this.gql
       .query<{ reservationChecks: ReservationWarning[] }>(
@@ -58,8 +58,8 @@ export class ReservationChecksService {
    * proceed: no findings at all, or the user confirmed the confirmable ones. A blocking finding
    * always emits false.
    */
-  confirm(draft: EventDraft, scopeAllocatableIds: string[] = []): Observable<boolean> {
-    return this.check(draft, scopeAllocatableIds).pipe(
+  confirm(draft: EventDraft, scopeResourceIds: string[] = []): Observable<boolean> {
+    return this.check(draft, scopeResourceIds).pipe(
       switchMap((warnings) =>
         saveGate(warnings) === 'save' ? of(true) : this.ask(warnings, conflictDetails(warnings)),
       ),

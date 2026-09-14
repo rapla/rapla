@@ -9,15 +9,10 @@ export interface NewEventType {
   name: string;
 }
 
-/**
- * Mirrors the server `EventTemplate` (PRD 104). `path` is the server-computed
- * grouping path (root first, [] = ungrouped) — a snapshot of the fetched list,
- * never cacheable across differently-filtered lists.
- */
+/** Mirrors the server `EventTemplate` (PRD 104). */
 export interface EventTemplate {
   id: string;
   name: string;
-  path: string[];
 }
 
 export interface NewEventOptions {
@@ -49,7 +44,7 @@ export class NewEventOptionsService {
       this.load$ = this.gql
         .query<{
           newEventOptions: NewEventOptions;
-        }>(`query { newEventOptions { eventTypes { key name } templates { id name path } } }`)
+        }>(`query { newEventOptions { eventTypes { key name } templates { id name } } }`)
         .pipe(
           map((resp) => resp.data?.newEventOptions ?? EMPTY),
           tap((options) => {

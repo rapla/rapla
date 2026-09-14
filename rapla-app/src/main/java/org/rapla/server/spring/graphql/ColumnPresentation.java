@@ -33,7 +33,7 @@ public final class ColumnPresentation
     /** Input types that receive the {@link Attr#forInput()} attributes. */
     private static final List<String> INPUT_TYPES = List.of(
             "BlockGroupKey",       "BlockAggregate",
-            "AllocatableGroupKey", "AllocatableAggregate",
+            "ResourceGroupKey", "ResourceAggregate",
             "ReservationGroupKey", "ReservationAggregate"
     );
 

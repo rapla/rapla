@@ -1,15 +1,15 @@
 ---
 name: graphql-api
-description: Use when the user wants to probe or query the running rapla server's GraphQL API (PRD 035) — fetching allocatables/resources with their typed classification attributes, reading the schema, or confirming what a deployment-specific attribute (e.g. a room's number, or a course's year) actually holds on the wire. Covers the schema endpoint, Bearer-token auth, the generated per-DynamicType `<TypeKey>Classification` narrowing, and the `allocatables(filter:)` query. Sibling of the `api-testing` skill (REST) and `storage-inspection` skill (raw store). Assumes the dev server is running per AGENTS.md §8.
+description: Use when the user wants to probe or query the running rapla server's GraphQL API (PRD 035) — fetching resources (rooms, persons) with their typed classification attributes, reading the schema, or confirming what a deployment-specific attribute (e.g. a room's number, or a course's year) actually holds on the wire. Covers the schema endpoint, Bearer-token auth, the generated per-DynamicType `<TypeKey>Classification` narrowing, and the `resources(filter:)` query. Sibling of the `api-testing` skill (REST) and `storage-inspection` skill (raw store). Assumes the dev server is running per AGENTS.md §8.
 ---
 
 # Querying the rapla GraphQL API
 
 The rapla server exposes a GraphQL API (PRD 035) at **`POST /api/graphql`**. Use it
-to read allocatables/reservations with their *typed* classification attributes —
+to read resources/reservations with their *typed* classification attributes —
 the cleanest way to see what a deployment-specific attribute (a room's
 `Raumnummer`, a course's `COURSE_YEAR`, …) actually holds, resolved through
-categories/allocatable references, without parsing raw store XML.
+categories/resource references, without parsing raw store XML.
 
 Server must be running (AGENTS.md §8). All paths are relative to the dev base
 URL `http://localhost:8051`.
@@ -37,14 +37,14 @@ curl -s http://localhost:8051/api/graphql/schema > /tmp/gql-schema.graphqls
 ```
 
 Key facts about the schema (PRD 035):
-- `type Query { allocatables(filter: AllocatableFilter): [Allocatable!]! ... }` is the
+- `type Query { resources(filter: ResourceFilter): [Resource!]! ... }` is the
   entry point for resources/persons.
-- Every `Allocatable` has `id`, `displayName` (locale-resolved, nameformat-derived),
-  and `classification: AllocatableClassification!`.
+- Every `Resource` has `id`, `displayName` (locale-resolved, nameformat-derived),
+  and `classification: ResourceClassification!`.
 - **Per-DynamicType typed classifications are GENERATED at startup**, one
   `<TypeKey>Classification` type per DynamicType (e.g. `RaumClassification`,
   `GebaeudeClassification`). They expose typed per-attribute fields
-  (`Raumnummer: String`, `Gebaeude: Allocatable @expectedType(key:"Gebaeude")`, …).
+  (`Raumnummer: String`, `Gebaeude: Resource @expectedType(key:"Gebaeude")`, …).
   Because they're generated, they live in the **served** schema
   (`/api/graphql/schema`), not statically in
   `rapla-app/src/main/resources/graphql/schema.graphqls`. Always read the served
@@ -76,7 +76,7 @@ TOK=$(curl -s -X POST http://localhost:8051/oauth2/token \
 
 Access tokens expire after `expires_in` (3600 s) — re-mint on 401.
 
-## 3. Query allocatables with typed narrowing
+## 3. Query resources with typed narrowing
 
 `POST /api/graphql`, body `{"query":"..."}`. Filter with `typeKeyIn:["<Key>"]`
 (the DynamicType **key**, case-sensitive — `"Raum"`, not `"raum"`), and narrow to
@@ -84,16 +84,16 @@ the generated type with an inline fragment `... on <TypeKey>Classification`:
 
 ```bash
 TOK=$(cat /tmp/rapla_token.txt)
-Q='{"query":"{ allocatables(filter:{typeKeyIn:[\"Raum\"]}) { displayName classification { typeKey ... on RaumClassification { Raumnummer SekundaereRaumnummer Raumname Gebaeude { displayName } } } } }"}'
+Q='{"query":"{ resources(filter:{typeKeyIn:[\"Raum\"]}) { displayName classification { typeKey ... on RaumClassification { Raumnummer SekundaereRaumnummer Raumname Gebaeude { displayName } } } } }"}'
 curl -s -X POST http://localhost:8051/api/graphql \
   -H "Authorization: Bearer $TOK" -H "Content-Type: application/json" \
   -d "$Q" | python3 -m json.tool | head -40
 ```
 
 Notes:
-- A wrong `typeKeyIn` casing returns `{"data":{"allocatables":[]}}` (empty, no error)
+- A wrong `typeKeyIn` casing returns `{"data":{"resources":[]}}` (empty, no error)
   — if you get zero rows, check the key against the served schema first.
-- ALLOCATABLE-typed attributes (like `Gebaeude`) resolve to a nested `Allocatable`;
+- ALLOCATABLE-typed attributes (like `Gebaeude`) resolve to a nested `Resource`;
   select `{ displayName }` or `{ classification { ... } }` on them.
 - GraphQL errors come back as `{"errors":[...]}` with `data` partial/null — always
   check for an `errors` key before trusting `data`.

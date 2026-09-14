@@ -196,10 +196,10 @@ see §"If a view ever needs more". CEL was evaluated and dropped.)
 The three building blocks:
 
 - **Selection + filter → GraphQL** — `where` ([PRD 059](done/059-graphql-typed-where-predicates.md)), the nested `allocatables`
-  filter (shipped 2026-06-19), access selectors ([PRD 069](069-graphql-resource-access-read-api.md)). In the dhbw model
-  **rooms, courses and lecturers are referenced *allocatables*, not classification
-  attributes**: `Raum`/`Teilraum`/`virtuellerRaum`, `Kurs`/`Teilkurs`/`Kursgruppe`,
-  `Person` — split per column by `typeIn`. Rows are **AppointmentBlocks**
+  filter (shipped 2026-06-19), access selectors ([PRD 069](069-graphql-resource-access-read-api.md)). In a
+  typical deployment **rooms, courses and lecturers are referenced *allocatables*, not classification
+  attributes**: `room`/`room-sub`/`room-virtual`, `course`/`course-sub`/`course-group`,
+  `person` — split per column by `typeIn`. Rows are **AppointmentBlocks**
   (recurrence expansion) = the flatten unit.
 - **Composition cells → server-evaluated fields.** Each column's `defaultValue`
   composition (and the type nameformats) is evaluated **server-side via rapla's existing
@@ -359,13 +359,13 @@ proves GraphQL reproduces them). Summary:
 | View | `contentDefinition` (rows) | columns (in order) |
 |---|---|---|
 | `events` | `{p->events(p)}` — reservations | `Name`, `Beginn`, `zuletzt geändert` *(rapla default)* |
-| `appointments` (**dhbw-configured**) | `{p->appointmentBlocks(p)}` — blocks | `Name`, `Beginn`, `Ende`, `Kurs`, `Person`, `Raum`, `Dauer` |
+| `appointments` (**a deployment's own config**) | `{p->appointmentBlocks(p)}` — blocks | `Name`, `Beginn`, `Ende`, `Kurs`, `Person`, `Raum`, `Dauer` |
 | `appointments_per_day` | `{p->appointmentBlocks(p)}` — blocks, grouped per day | `Zeiten`, `Name`, `Ressourcen`, `Personen` *(rapla default)* |
 
-The `appointments` row is the dhbw deployment's **configured** Termine view (verified
-from its Tableview-Plugin dialog): the generic `resources` column is split into **`Kurs`**
+The `appointments` row is one deployment's **configured** Termine view (a representative
+Tableview-Plugin config): the generic `resources` column is split into **`Kurs`**
 and **`Raum`** (non-person allocatables by type), **`Person`** is the person allocatables,
-and **`Dauer`** (eventtimecalculator duration, values like `"2 UE 0 Min"`) is added —
+and **`Dauer`** (eventtimecalculator duration, values like `"2 h 0 min"`) is added —
 appointments only. Each column maps to a GraphQL construct: selection →
 `allocatables(filter:{ typeIn / isPersonEq })`; projection/derivation → a
 **server-evaluated field** (rapla's `ParsedText`; `displayName` = the `name` composition,
@@ -404,42 +404,42 @@ convention. **No `end`, no resources/persons** — exactly the real config.
 |---|---|---|
 | Programmieren II | 22.06.2026 10:00 | 10.06.2026 14:22 |
 
-**Table 2 — `appointments` (dhbw Termine) · root `appointmentBlocks` · headers Name, Beginn, Ende, Kurs, Person, Raum, Dauer · flat → 0 reorder directives:**
+**Table 2 — `appointments` (Termine) · root `appointmentBlocks` · headers Name, Beginn, Ende, Kurs, Person, Raum, Dauer · flat → 0 reorder directives:**
 ```graphql
 query Termine_appointments($filter: ReservationFilter!) {
   appointmentBlocks(filter: $filter) {   # rows = blocks ({p->appointmentBlocks(p)}); $filter ← CalendarModel (incl. from/to)
     name:   reservation { displayName }                                             # Name    {p->name(p)}
     start                                                                           # Beginn  {p->start(p)}
     end                                                                             # Ende    {p->end(p)}
-    kurs:   allocatables(filter:{ typeIn:[Kurs,Teilkurs,Kursgruppe] })     { displayName }   # Kurs   (annotation → inline)
+    kurs:   allocatables(filter:{ typeIn:[course,course-sub,course-group] })     { displayName }   # Kurs   (annotation → inline)
     person: allocatables(filter:{ isPersonEq:true })                                { displayName }   # Person
-    raum:   allocatables(filter:{ typeIn:[Raum,Teilraum,virtuellerRaum] }) { displayName }   # Raum
+    raum:   allocatables(filter:{ typeIn:[room,room-sub,room-virtual] }) { displayName }   # Raum
     duration                                                                        # Dauer   {p->…:duration(p)}
   }
 }
 ```
 Rooted at the **blocks** (matching `{p->appointmentBlocks(p)}`), one row = one block →
 **flat**: field order = column order, so **no `@flatten`, no `@column(order:)`**. Headers
-`Name/Beginn/Ende/Kurs/Person/Raum/Dauer` verified from the deployment screenshot (optional
+`Name/Beginn/Ende/Kurs/Person/Raum/Dauer` are a representative view config (optional
 `@column(header:)` overrides the localized label). `Kurs`/`Person`/`Raum` are **lists**
 (`allocatables(filter:)` → `[Allocatable!]!`): the cell **joins** the `displayName`s with
 `, ` **by convention — no directive**; an explicit **`@join(separator: "; ")`** on a list
 field overrides the separator *on demand*. The legacy generic `resources` column is
 **split by allocatable type** to get separate `Kurs` + `Raum`. (The archived snapshot has
-only the generic `resources`/`persons` `defaultValue`s; the live deployment splits them.)
+only the generic `resources`/`persons` `defaultValue`s; some deployments split them.)
 
 *Output* (one block per row; `Kurs`/`Person`/`Raum` are lists) → *GUI* (list cells joined):
 ```json
 { "data": { "appointmentBlocks": [
-  { "name": { "displayName": "Programmieren II" }, "start": "2026-06-15T08:00:00", "end": "2026-06-15T09:30:00",
-    "kurs":   [ { "displayName": "FN-TEK23" }, { "displayName": "FN-TEN23" } ],
+  { "name": { "displayName": "Seminar A" }, "start": "2026-06-15T08:00:00", "end": "2026-06-15T09:30:00",
+    "kurs":   [ { "displayName": "course-A" }, { "displayName": "course-B" } ],
     "person": [ { "displayName": "Prof. X" }, { "displayName": "Dr. A" } ],
-    "raum":   [ { "displayName": "H004 Seminarraum" }, { "displayName": "H005 Seminarraum" } ],
-    "duration": "2 UE 0 Min" } ] } }
+    "raum":   [ { "displayName": "room-1" }, { "displayName": "room-2" } ],
+    "duration": "2 h 0 min" } ] } }
 ```
 | Name | Beginn | Ende | Kurs | Person | Raum | Dauer |
 |---|---|---|---|---|---|---|
-| Programmieren II | 15.06.2026 08:00 | 15.06.2026 09:30 | FN-TEK23, FN-TEN23 | Prof. X, Dr. A | H004 Seminarraum, H005 Seminarraum | 2 UE 0 Min |
+| Seminar A | 15.06.2026 08:00 | 15.06.2026 09:30 | course-A, course-B | Prof. X, Dr. A | room-1, room-2 | 2 h 0 min |
 
 **Table 3 — `appointments_per_day` · root `appointmentBlocks` · flat, each row a block + a hidden `day` group/sort column:**
 Same flat block rows as `appointments`, plus a **`day` column derived from `start`** used
@@ -464,23 +464,23 @@ column**: it orders the rows and clusters them by day but is never shown. No agg
 *Output* (flat block rows + hidden `day`) → *GUI* (rows sorted+grouped by `day`; `day` not shown):
 ```json
 { "data": { "appointmentBlocks": [
-  { "day": "2026-06-22", "times": "10:00–11:30", "name": { "displayName": "Programmieren II" },
-    "resources": [ { "displayName": "A474 Hörsaal" } ], "persons": [ { "displayName": "Prof. X" } ] },
-  { "day": "2026-06-22", "times": "14:00–15:30", "name": { "displayName": "Datenbanken" },
-    "resources": [ { "displayName": "B12" } ], "persons": [ { "displayName": "Dr. A" } ] },
-  { "day": "2026-06-23", "times": "09:00–10:30", "name": { "displayName": "Software Engineering" },
-    "resources": [ { "displayName": "A474 Hörsaal" } ], "persons": [ { "displayName": "Prof. X" } ] } ] } }
+  { "day": "2026-06-22", "times": "10:00–11:30", "name": { "displayName": "Seminar A" },
+    "resources": [ { "displayName": "room-1" } ], "persons": [ { "displayName": "Prof. X" } ] },
+  { "day": "2026-06-22", "times": "14:00–15:30", "name": { "displayName": "Seminar B" },
+    "resources": [ { "displayName": "room-2" } ], "persons": [ { "displayName": "Dr. A" } ] },
+  { "day": "2026-06-23", "times": "09:00–10:30", "name": { "displayName": "Seminar C" },
+    "resources": [ { "displayName": "room-1" } ], "persons": [ { "displayName": "Prof. X" } ] } ] } }
 ```
 | *(Tag)* | Zeiten | Name | Ressourcen | Personen |
 |---|---|---|---|---|
-| **▸ 22.06.2026** | 10:00–11:30 | Programmieren II | A474 Hörsaal | Prof. X |
-|  | 14:00–15:30 | Datenbanken | B12 | Dr. A |
-| **▸ 23.06.2026** | 09:00–10:30 | Software Engineering | A474 Hörsaal | Prof. X |
+| **▸ 22.06.2026** | 10:00–11:30 | Seminar A | room-1 | Prof. X |
+|  | 14:00–15:30 | Seminar B | room-2 | Dr. A |
+| **▸ 23.06.2026** | 09:00–10:30 | Seminar C | room-1 | Prof. X |
 
-**None of the three real tables aggregate.** `@groupBy` is presentation sectioning,
+**None of the three tables aggregate.** `@groupBy` is presentation sectioning,
 distinct from aggregation (count/sum/collapse). A GraphQL aggregate-field convention
 remains a *possible future* capability for explicit aggregate views, **not** used by the
-standard dhbw tables.
+standard tables above.
 
 **The rule, on the real tables:**
 
@@ -496,12 +496,12 @@ structural directive across all three is `@groupBy` for the per-day sectioning. 
 block-row tables at `reservations` was what previously forced `@flatten`/`@column(order:)`
 — an artifact, now gone.)
 
-### Worked example 4 — `Seminarplanung` (wochenplan / yoga domain) · the deliberate op-set case
+### Worked example 4 — `Seminarplanung` (a seminar-planning domain) · the deliberate op-set case
 
-The three dhbw tables above need **no** op-set. This fourth example — from the *other*
-real dataset (`wochenplan.xml`, a yoga/seminar-planning deployment) — shows where the
+The three tables above need **no** op-set. This fourth example — from a *second*
+deployment (a seminar-planning domain) — shows where the
 op-set **is** used: a **view-level computed column** and a **type-level marker-derived
-field**. Compositions are the real wochenplan ones; dummy persons (§17).
+field**. Compositions follow that deployment's shape; dummy persons (§17).
 
 ```graphql
 query Seminarplanung($filter: ReservationFilter!) {
@@ -513,11 +513,11 @@ query Seminarplanung($filter: ReservationFilter!) {
 }
 ```
 - **`leitung.planningName`** — the **meaningful** op-set case: a **type-level derived
-  field** with a **marker chain** (`im_haus → " # "`, `dispo-modus="anfrage" → "*"`,
-  `="selbstaendig" → "**"`, `ausdrucksstarke_yl → "+"`). Real conditional value selection
+  field** with a **marker chain** (`on-site → " # "`, `booking-mode="requested" → "*"`,
+  `="self-organized" → "**"`, `senior-instructor → "+"`). Conditional value selection
   (`if`/`equals`/`key` + boolean fields) — status symbols by data; reusable wherever the
   planning name is shown. **This is where the op-set earns its keep.**
-- **`zeitspanne`** — the **view-level** one-off column. The *real* `customColumn_1`
+- **`zeitspanne`** — the **view-level** one-off column. The `customColumn_1`
   (`concat(substring(times,0,5),"--",substring(times,8,13))`) pulls the start/end out of
   the `times` string and rejoins them **on one line** — most likely to **avoid the line
   breaks** the raw `times` field introduces (ParsedText turns `\n` into real newlines),
@@ -530,15 +530,15 @@ query Seminarplanung($filter: ReservationFilter!) {
 *Output* → *GUI*:
 ```json
 { "data": { "appointmentBlocks": [
-  { "seminar": { "displayName": "Hatha Basics: \"Grundlagen\" - Wochenende" },
+  { "seminar": { "displayName": "Seminar A: \"Basics\" - Weekend" },
     "zeitspanne": "10:00--11:30",
-    "leitung": [ { "planningName": "Ananda B. # *" } ] } ] } }
+    "leitung": [ { "planningName": "Dr. A # *" } ] } ] } }
 ```
 | Seminar | Zeitspanne | Leitung |
 |---|---|---|
-| Hatha Basics: "Grundlagen" - Wochenende | 10:00--11:30 | Ananda B. # * |
+| Seminar A: "Basics" - Weekend | 10:00--11:30 | Dr. A # * |
 
-This closes the arc: **tables 1–3 (dhbw) = no op-set; table 4 (yoga) = the deliberate
+This closes the arc: **tables 1–3 = no op-set; table 4 (a second deployment) = the deliberate
 op-set** in its two homes — **view-level** (`zeitspanne`, one-off) and **type-level
 derived field** (`planningName`, reusable). The op-set language + catalog: [PRD 073 §
 Composition op-set](073-graphql-function-equivalents.md).
@@ -630,8 +630,8 @@ requirement (charts use Vega-Lite's own client transform); revisit only if a con
 need appears.
 
 **The composition language (op-set) + its use-case catalog live in
-[PRD 073 § Composition op-set](073-graphql-function-equivalents.md).** Real **view-level**
-computed-column example (verified in `wochenplan.xml`):
+[PRD 073 § Composition op-set](073-graphql-function-equivalents.md).** A **view-level**
+computed-column example (seen in a deployment's config):
 ```
 customColumn = concat(substring(times, 0, 5), "--", substring(times, 8, 13))
 ```
@@ -1357,9 +1357,9 @@ query Termine @view(title: "Termine KW") {
 > `AppointmentBlockNoteNameTest` (tier-2, `rapla-server`, no GraphQL schema) gives the event type a
 > note-aware nameformat (`{name} {format("<%s>",appointment:note())}`), creates one reservation with
 > two appointments — note only on the second — and asserts the noted block's name carries
-> `<Klausureinsicht>` while the plain block and the reservation name do not (`block.name !=
-> reservation.name`). Backed by a live dhbw probe (reservation "Feedback Studiengangsleitung": only the
-> noted occurrence rendered the suffix). `FacadeTestSupport` now also wires the appointmentnote
+> `<Note A>` while the plain block and the reservation name do not (`block.name !=
+> reservation.name`). Matches the observed behaviour for a reservation with only one noted
+> occurrence rendering the suffix. `FacadeTestSupport` now also wires the appointmentnote
 > FunctionFactory so `appointment:note()` resolves in tier-2.
 >
 > - **Baustein 10** — **sort** (`appointmentBlocks(sort: [BlockSort!])` — `BlockSortField`

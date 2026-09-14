@@ -63,7 +63,7 @@ class NewEventOptionsGraphQLTest
             new TypedComponentRole<>("org.rapla.plugin.templatewizard.enabled");
 
     private static final String QUERY =
-            "{ newEventOptions { eventTypes { key name } templates { id name path } } }";
+            "{ newEventOptions { eventTypes { key name } templates { id name } } }";
 
     @TempDir
     static Path tempDir;
@@ -225,21 +225,6 @@ class NewEventOptionsGraphQLTest
         assertTrue(typeKeys.contains("event"));
         assertFalse(typeKeys.stream().anyMatch(k -> k.startsWith("rapla:")),
                 () -> "internal type leaked into eventTypes: " + typeKeys);
-    }
-
-    @Test
-    @WithMockUser(username = "monty")
-    void templatesCarryAGroupingPath()
-    {
-        // PRD 104 Phase 1 — path present on the wire; two templates need no groups → empty
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> templates =
-                (List<Map<String, Object>>) fetchOptions().get("templates");
-        assertFalse(templates.isEmpty());
-        for (Map<String, Object> t : templates)
-        {
-            assertTrue(t.get("path") instanceof List, "path must be a list, got: " + t.get("path"));
-        }
     }
 
     // ================================================================ plugin gates

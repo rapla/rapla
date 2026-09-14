@@ -62,7 +62,7 @@ public class HTMLCompactDayViewPage extends AbstractHTMLCalendarPage
 		        		 List<Allocatable> sortedAllocatables = model.getSelectedAllocatablesSorted();
 		        		 for (Allocatable alloc: sortedAllocatables)
 		        		 {
-		        			 headerNames.add( alloc.getName( getRaplaLocale().getLocale()));
+		        			 headerNames.add( org.rapla.components.util.Tools.createXssSafeString(alloc.getName( getRaplaLocale().getLocale())));
 		        		 }
 	       		}
 	       		catch (RaplaException ex)

@@ -101,3 +101,20 @@ hs_err_pid*.log
 docs/leihschein/
 rapla-app/src/main/resources/application-siegen.yml
 
+
+# Security findings never enter the public repo (user ruling 2026-09-14, AGENTS.md §17).
+# Naming scheme: audits, pentest reports, findings, leak-check/security-check reports and
+# session coordination logs live under docs/security/ or docs/coordination/ (both ignored),
+# and any file whose name carries one of the markers below is ignored wherever it lies.
+docs/security/
+docs/coordination/
+*security-audit*
+*security-review*
+*security-findings*
+*pentest*
+*-findings.md
+*leak-check*
+*security-check*
+
+# Angular CLI cache created when ng runs from the repo root
+/.angular/

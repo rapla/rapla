@@ -8,7 +8,7 @@ export interface ParkedItem {
   kind: 'v' | 'p';
   lectureTemplateId: string | null;
   examTemplateId: string | null;
-  /** Kurs allocatables the item belongs to — become allocations of the draft. */
+  /** Kurs resources the item belongs to — become allocations of the draft. */
   groups: { id: string; name: string }[];
 }
 

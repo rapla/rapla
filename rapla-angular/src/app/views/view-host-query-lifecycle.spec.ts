@@ -142,7 +142,7 @@ const TWO_FILTER_META: ViewMeta = {
   title: 'Raumauslastung',
   variables: [
     { name: 'filter', type: 'ReservationFilter!' },
-    { name: 'allocatableFilter', type: 'AllocatableFilter!' },
+    { name: 'resourceFilter', type: 'ResourceFilter!' },
   ],
   columns: [{ alias: 'raum', header: 'Raum', type: 'String', order: 1 }],
 };
@@ -154,7 +154,7 @@ const errorWithMetaThenOk = {
     return of(
       calls.length === 1
         ? ({
-            errors: [{ message: "Variable 'allocatableFilter' has coerced Null value" }],
+            errors: [{ message: "Variable 'resourceFilter' has coerced Null value" }],
             extensions: { view: TWO_FILTER_META },
           } as GqlResponse<unknown>)
         : ({
@@ -188,14 +188,14 @@ describe('ViewHostComponent — signature recovery from an errored first query (
     await configure(errorWithMetaThenOk);
     const f = mount();
     expect(calls.length).toBe(1);
-    expect(calls[0]['allocatableFilter']).toBeUndefined(); // signature unknown on first load
+    expect(calls[0]['resourceFilter']).toBeUndefined(); // signature unknown on first load
 
     f.detectChanges(); // meta bound from the error → the query effect re-runs
     vi.advanceTimersByTime(300); // the re-query is the throttle's trailing emission
     f.detectChanges();
 
     expect(calls.length).toBe(2);
-    expect(calls[1]['allocatableFilter']).toEqual({ idIn: ['scope-1'] });
+    expect(calls[1]['resourceFilter']).toEqual({ idIn: ['scope-1'] });
     expect(f.componentInstance.error()).toBeNull();
   });
 });

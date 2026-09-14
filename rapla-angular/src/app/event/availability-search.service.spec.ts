@@ -59,7 +59,7 @@ describe('AvailabilitySearchService', () => {
         data: {
           resourceAvailability: [
             {
-              allocatable: { id: 'r1', name: 'Room' },
+              resource: { id: 'r1', name: 'Room' },
               status: 'AVAILABLE',
               conflictingAppointmentIds: [],
             },

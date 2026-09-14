@@ -225,8 +225,8 @@ class ClassificationGraphQLControllerTest
         // Walk type unwraps to find the leaf type name (handles `Allocatable`,
         // `[Allocatable!]`, `[Allocatable!]!` shapes).
         String leafName = leafTypeName(a1.get("type"));
-        assertEquals("Allocatable", leafName,
-                () -> "a1 field's leaf type should be Allocatable, got " + a1.get("type"));
+        assertEquals("Resource", leafName,
+                () -> "a1 field's leaf type should be Resource, got " + a1.get("type"));
     }
 
     @SuppressWarnings("unchecked")
@@ -251,17 +251,17 @@ class ClassificationGraphQLControllerTest
     private String idByDisplayName(String namePart)
     {
         List<Map<String, Object>> got = tester.document(String.format("""
-                { allocatables(filter: { nameContains: "%s" }) { id displayName } }
+                { resources(filter: { nameContains: "%s" }) { id displayName } }
                 """, namePart))
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         return got.stream()
                 .filter(a -> ((String) a.get("displayName")).contains(namePart))
                 .map(a -> (String) a.get("id"))
                 .findFirst()
-                .orElseThrow(() -> new AssertionError("no allocatable found with displayName containing " + namePart));
+                .orElseThrow(() -> new AssertionError("no resource found with displayName containing " + namePart));
     }
 
     @Test
@@ -270,10 +270,10 @@ class ClassificationGraphQLControllerTest
     {
         String roomA66 = idByDisplayName("Room A66");
         List<Map<String, Object>> got = tester.document(String.format("""
-                { allocatables(filter: { idIn: ["%s"] }) { id displayName } }
+                { resources(filter: { idIn: ["%s"] }) { id displayName } }
                 """, roomA66))
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         assertEquals(1, got.size(), () -> "expected just Room A66, got " + got);
@@ -288,13 +288,13 @@ class ClassificationGraphQLControllerTest
         // a room. Result is the union.
         String simpsonHomer = idByDisplayName("Simpson Homer");
         List<Map<String, Object>> got = tester.document(String.format("""
-                { allocatables(filter: {
+                { resources(filter: {
                     typeIn: [room]
                     idIn: ["%s"]
                   }) { id displayName } }
                 """, simpsonHomer))
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         // fixture has 2 rooms (Room A66, erwin) + the picked lecturer = 3
@@ -311,14 +311,14 @@ class ClassificationGraphQLControllerTest
         // (only Room A66 matches). idIn adds erwin. Result is Room A66 + erwin.
         String erwin = idByDisplayName("erwin");
         List<Map<String, Object>> got = tester.document(String.format("""
-                { allocatables(filter: {
+                { resources(filter: {
                     typeIn: [room]
                     whereRoom: { seats: { gte: 20 } }
                     idIn: ["%s"]
                   }) { id displayName classification { ... on roomClassification { seats } } } }
                 """, erwin))
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         assertEquals(2, got.size(), () -> "expected Room A66 (filter-match) + erwin (id-pick), got " + got);
@@ -332,12 +332,12 @@ class ClassificationGraphQLControllerTest
     {
         String roomA66 = idByDisplayName("Room A66");
         List<Map<String, Object>> got = tester.document(String.format("""
-                { allocatables(filter: {
+                { resources(filter: {
                     idIn: ["%s", "definitely-not-an-id-on-this-server"]
                   }) { id displayName } }
                 """, roomA66))
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         // Unknown id is silently dropped; only Room A66 returned.
@@ -355,17 +355,17 @@ class ClassificationGraphQLControllerTest
         String roomA66 = idByDisplayName("Room A66");
         // Attempt to pick a synthetic id (definitely not visible).
         List<Map<String, Object>> mixed = tester.document(String.format("""
-                { allocatables(filter: { idIn: ["%s", "definitely-hidden-or-unknown"] }) { id } }
+                { resources(filter: { idIn: ["%s", "definitely-hidden-or-unknown"] }) { id } }
                 """, roomA66))
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         List<Map<String, Object>> readableOnly = tester.document(String.format("""
-                { allocatables(filter: { idIn: ["%s"] }) { id } }
+                { resources(filter: { idIn: ["%s"] }) { id } }
                 """, roomA66))
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         assertEquals(readableOnly, mixed,
@@ -393,14 +393,14 @@ class ClassificationGraphQLControllerTest
             op.setReadModelAuthoritative(true);
             List<String> indexIds = montyAllocatableIds();
             assertEquals(canReadIds, indexIds,
-                    () -> "§12 — flipped permission-index allocatables must be byte-identical to the canRead scan; "
+                    () -> "§12 — flipped permission-index resources must be byte-identical to the canRead scan; "
                             + "canRead=" + canReadIds + " index=" + indexIds);
             // The flip must also not bypass the idIn permission gate: a mixed visible+hidden id query
             // under the flip equals the readable-only query (existence not leaked).
             List<String> mixed = tester.document("""
-                    { allocatables(filter: { idIn: ["definitely-hidden-or-unknown"] }) { id } }
+                    { resources(filter: { idIn: ["definitely-hidden-or-unknown"] }) { id } }
                     """)
-                    .execute().path("allocatables[*].id").entityList(String.class).get();
+                    .execute().path("resources[*].id").entityList(String.class).get();
             assertTrue(mixed.isEmpty(),
                     () -> "§12 — a hidden/unknown idIn pick must be silently dropped under the flip; got " + mixed);
         }
@@ -412,9 +412,9 @@ class ClassificationGraphQLControllerTest
 
     private List<String> montyAllocatableIds()
     {
-        return tester.document("{ allocatables { id } }")
+        return tester.document("{ resources { id } }")
                 .execute()
-                .path("allocatables[*].id")
+                .path("resources[*].id")
                 .entityList(String.class)
                 .get()
                 .stream()
@@ -563,17 +563,17 @@ class ClassificationGraphQLControllerTest
         // no constraint. Distinct from Phase 2's broader "where is always
         // no-op" check (superseded by Phase 3 predicate tests below).
         List<Map<String, Object>> baseline = tester.document("""
-                { allocatables(filter: { typeIn: [room] }) { displayName } }
+                { resources(filter: { typeIn: [room] }) { displayName } }
                 """)
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         List<Map<String, Object>> empty = tester.document("""
-                { allocatables(filter: { typeIn: [room], whereRoom: {} }) { displayName } }
+                { resources(filter: { typeIn: [room], whereRoom: {} }) { displayName } }
                 """)
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         assertEquals(baseline.size(), empty.size(), () -> "baseline=" + baseline + " empty=" + empty);
@@ -589,14 +589,14 @@ class ClassificationGraphQLControllerTest
     void whereBlockImpliesTypeGateWithoutTypeKey()
     {
         List<Map<String, Object>> withGate = tester.document("""
-                { allocatables(filter: { typeIn: [room], whereRoom: { seats: { gte: 20 } } }) { displayName } }
+                { resources(filter: { typeIn: [room], whereRoom: { seats: { gte: 20 } } }) { displayName } }
                 """)
-                .execute().path("allocatables")
+                .execute().path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {}).get();
         List<Map<String, Object>> implicit = tester.document("""
-                { allocatables(filter: { whereRoom: { seats: { gte: 20 } } }) { displayName } }
+                { resources(filter: { whereRoom: { seats: { gte: 20 } } }) { displayName } }
                 """)
-                .execute().path("allocatables")
+                .execute().path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {}).get();
         // B′: whereRoom alone gates to rooms — identical to the explicit-type version (no persons/others leak in).
         assertEquals(withGate.size(), implicit.size(),
@@ -619,11 +619,11 @@ class ClassificationGraphQLControllerTest
     void stringWhereEqMatchesOneRoom()
     {
         List<Map<String, Object>> got = tester.document("""
-                { allocatables(filter: { typeIn: [room],
+                { resources(filter: { typeIn: [room],
                     whereRoom: { name: { eq: "Room A66" } } }) { displayName } }
                 """)
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         assertEquals(1, got.size(), () -> "expected only 'Room A66', got " + got);
@@ -636,11 +636,11 @@ class ClassificationGraphQLControllerTest
     {
         // case-insensitive substring per StringWhere.contains semantics.
         List<Map<String, Object>> got = tester.document("""
-                { allocatables(filter: { typeIn: [room],
+                { resources(filter: { typeIn: [room],
                     whereRoom: { name: { contains: "RWIN" } } }) { displayName } }
                 """)
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         assertEquals(1, got.size(), () -> "expected only 'erwin' (substring 'RWIN' i-c), got " + got);
@@ -653,11 +653,11 @@ class ClassificationGraphQLControllerTest
     {
         // case-sensitive prefix per StringWhere.startsWith.
         List<Map<String, Object>> got = tester.document("""
-                { allocatables(filter: { typeIn: [room],
+                { resources(filter: { typeIn: [room],
                     whereRoom: { name: { startsWith: "Room" } } }) { displayName } }
                 """)
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         assertEquals(1, got.size(), () -> "expected only 'Room A66' (prefix 'Room'), got " + got);
@@ -669,11 +669,11 @@ class ClassificationGraphQLControllerTest
     void intWhereGteMatchesOneRoom()
     {
         List<Map<String, Object>> got = tester.document("""
-                { allocatables(filter: { typeIn: [room],
+                { resources(filter: { typeIn: [room],
                     whereRoom: { seats: { gte: 20 } } }) { displayName } }
                 """)
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         assertEquals(1, got.size(), () -> "expected only 'Room A66' (seats>=20), got " + got);
@@ -685,11 +685,11 @@ class ClassificationGraphQLControllerTest
     void intWhereLteMatchesOneRoom()
     {
         List<Map<String, Object>> got = tester.document("""
-                { allocatables(filter: { typeIn: [room],
+                { resources(filter: { typeIn: [room],
                     whereRoom: { seats: { lte: 15 } } }) { displayName } }
                 """)
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         assertEquals(1, got.size(), () -> "expected only 'erwin' (seats<=15), got " + got);
@@ -703,11 +703,11 @@ class ClassificationGraphQLControllerTest
         // testdefault category leaf "springfield-powerplant" → enum value
         // springfield_powerplant after PRD 058 migration.
         List<Map<String, Object>> got = tester.document("""
-                { allocatables(filter: { typeIn: [room],
+                { resources(filter: { typeIn: [room],
                     whereRoom: { belongsto: { eq: springfield_powerplant } } }) { displayName } }
                 """)
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         assertEquals(1, got.size(), () -> "expected only 'Room A66' (springfield-powerplant), got " + got);
@@ -720,9 +720,9 @@ class ClassificationGraphQLControllerTest
     private int countWhereRoom(String wherePredicate)
     {
         List<Map<String, Object>> got = tester.document(
-                "{ allocatables(filter: { typeIn: [room], whereRoom: " + wherePredicate + " }) { displayName } }")
+                "{ resources(filter: { typeIn: [room], whereRoom: " + wherePredicate + " }) { displayName } }")
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         return got.size();
@@ -795,21 +795,21 @@ class ClassificationGraphQLControllerTest
     {
         // monty's visible rooms — baseline.
         List<Map<String, Object>> visible = tester.document("""
-                { allocatables(filter: { typeIn: [room] }) { id displayName } }
+                { resources(filter: { typeIn: [room] }) { id displayName } }
                 """)
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         // A predicate that would have matched Room A66 if monty could see it
         // (seats=30 is only Room A66) must NOT return Room A66 in monty's results
         // and must be byte-identical to the visible-only subset filtered the same way.
         List<Map<String, Object>> withWhere = tester.document("""
-                { allocatables(filter: { typeIn: [room],
+                { resources(filter: { typeIn: [room],
                     whereRoom: { seats: { eq: 30 } } }) { id displayName } }
                 """)
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         // Either monty can see Room A66 (in which case both are 1) OR she cannot
@@ -830,14 +830,14 @@ class ClassificationGraphQLControllerTest
     {
         // Both clauses match Room A66 only.
         List<Map<String, Object>> got = tester.document("""
-                { allocatables(filter: { typeIn: [room],
+                { resources(filter: { typeIn: [room],
                     whereRoom: { AND: [
                       { name:  { eq: "Room A66" } }
                       { seats: { gte: 20 } }
                     ] } }) { displayName } }
                 """)
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         assertEquals(1, got.size(), () -> "got: " + got);
@@ -849,14 +849,14 @@ class ClassificationGraphQLControllerTest
     void andCombinatorOneFailingClauseRejects()
     {
         List<Map<String, Object>> got = tester.document("""
-                { allocatables(filter: { typeIn: [room],
+                { resources(filter: { typeIn: [room],
                     whereRoom: { AND: [
                       { name:  { eq: "Room A66" } }
                       { seats: { gte: 100 } }
                     ] } }) { displayName } }
                 """)
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         assertEquals(0, got.size(), () -> "got: " + got);
@@ -867,14 +867,14 @@ class ClassificationGraphQLControllerTest
     void orCombinatorAnyClauseMatching()
     {
         List<Map<String, Object>> got = tester.document("""
-                { allocatables(filter: { typeIn: [room],
+                { resources(filter: { typeIn: [room],
                     whereRoom: { OR: [
                       { name: { eq: "Room A66" } }
                       { name: { eq: "erwin"    } }
                     ] } }) { displayName } }
                 """)
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         assertEquals(2, got.size(), () -> "got: " + got);
@@ -886,11 +886,11 @@ class ClassificationGraphQLControllerTest
     {
         // NOT name = "Room A66" → only erwin.
         List<Map<String, Object>> got = tester.document("""
-                { allocatables(filter: { typeIn: [room],
+                { resources(filter: { typeIn: [room],
                     whereRoom: { NOT: { name: { eq: "Room A66" } } } }) { displayName } }
                 """)
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         assertEquals(1, got.size(), () -> "got: " + got);
@@ -904,14 +904,14 @@ class ClassificationGraphQLControllerTest
         // AND[{seats >= 20}, {NOT belongsto = elementary_springfield}]
         // → Room A66 (seats=30, belongsto=springfield_powerplant)
         List<Map<String, Object>> got = tester.document("""
-                { allocatables(filter: { typeIn: [room],
+                { resources(filter: { typeIn: [room],
                     whereRoom: { AND: [
                       { seats: { gte: 20 } }
                       { NOT: { belongsto: { eq: elementary_springfield } } }
                     ] } }) { displayName } }
                 """)
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         assertEquals(1, got.size(), () -> "got: " + got);
@@ -924,22 +924,22 @@ class ClassificationGraphQLControllerTest
     {
         // AND: [] vacuously true → no filter (both rooms).
         List<Map<String, Object>> emptyAnd = tester.document("""
-                { allocatables(filter: { typeIn: [room],
+                { resources(filter: { typeIn: [room],
                     whereRoom: { AND: [] } }) { displayName } }
                 """)
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         assertEquals(2, emptyAnd.size(), () -> "AND:[] should match all rooms; got " + emptyAnd);
 
         // OR: [] vacuously false → empty result.
         List<Map<String, Object>> emptyOr = tester.document("""
-                { allocatables(filter: { typeIn: [room],
+                { resources(filter: { typeIn: [room],
                     whereRoom: { OR: [] } }) { displayName } }
                 """)
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         assertEquals(0, emptyOr.size(), () -> "OR:[] should match nothing; got " + emptyOr);
@@ -953,11 +953,11 @@ class ClassificationGraphQLControllerTest
         // a room-only query is a no-op (allocatable belongs to one DT;
         // per-PRD a where<OtherType> contributes no constraint).
         List<Map<String, Object>> got = tester.document("""
-                { allocatables(filter: { typeIn: [room],
+                { resources(filter: { typeIn: [room],
                     whereLecturer: { surname: { eq: "Burns" } } }) { displayName } }
                 """)
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         // whereLecturer against rooms = no constraint. 2 rooms.
@@ -974,7 +974,7 @@ class ClassificationGraphQLControllerTest
     {
         Map<String, Object> filter = tester.document("""
                 {
-                  __type(name: "AllocatableFilter") {
+                  __type(name: "ResourceFilter") {
                     inputFields { name type { name kind ofType { name } } }
                   }
                 }
@@ -1020,8 +1020,8 @@ class ClassificationGraphQLControllerTest
                 .filter(f -> "a1".equals(f.get("name")))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("a1 missing on resource2Where"));
-        assertEquals("AllocatableListWhere", leafTypeName(a1.get("type")),
-                () -> "a1 should be AllocatableListWhere, got " + a1.get("type"));
+        assertEquals("ResourceListWhere", leafTypeName(a1.get("type")),
+                () -> "a1 should be ResourceListWhere, got " + a1.get("type"));
     }
 
     // === allocatables / allocatable ==========================================
@@ -1030,11 +1030,11 @@ class ClassificationGraphQLControllerTest
     @WithAnonymousUser
     void anonymousAllocatablesRejected()
     {
-        tester.document("{ allocatables { id } }")
+        tester.document("{ resources { id } }")
                 .execute()
                 .errors()
                 .satisfy(errs -> {
-                    assertFalse(errs.isEmpty(), "anonymous allocatables query must error");
+                    assertFalse(errs.isEmpty(), "anonymous resources query must error");
                     assertTrue(errs.toString().contains("UNAUTHENTICATED"),
                             () -> "expected UNAUTHENTICATED; got " + errs);
                 });
@@ -1045,16 +1045,16 @@ class ClassificationGraphQLControllerTest
     void adminSeesAllocatables()
     {
         List<Map<String, Object>> all = tester.document("""
-                { allocatables { id displayName type classification { typeKey } } }
+                { resources { id displayName kind classification { typeKey } } }
                 """)
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
-        assertFalse(all.isEmpty(), "admin should see allocatables");
+        assertFalse(all.isEmpty(), "admin should see resources");
         // Every allocatable must carry a classification.
         all.forEach(a -> assertNotNull(((Map<?, ?>) a.get("classification")).get("typeKey"),
-                () -> "every allocatable must have a classification.typeKey: " + a));
+                () -> "every resource must have a classification.typeKey: " + a));
     }
 
     @Test
@@ -1063,13 +1063,13 @@ class ClassificationGraphQLControllerTest
     {
         List<Map<String, Object>> rooms = tester.document("""
                 {
-                  allocatables(filter: { typeIn: [room] }) {
+                  resources(filter: { typeIn: [room] }) {
                     displayName
                   }
                 }
                 """)
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         // testdefault.xml has 2 rooms ("Room A66", "erwin")
@@ -1085,14 +1085,14 @@ class ClassificationGraphQLControllerTest
         // all four.
         List<Map<String, Object>> union = tester.document("""
                 {
-                  allocatables(filter: { typeIn: [room, lecturer] }) {
+                  resources(filter: { typeIn: [room, lecturer] }) {
                     displayName
                     classification { typeKey }
                   }
                 }
                 """)
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         assertEquals(4, union.size(), () -> "expected 4 entries (2 rooms + 2 lecturers), got " + union);
@@ -1106,7 +1106,7 @@ class ClassificationGraphQLControllerTest
         // a typo'd type is a VALIDATION error (loud), not a silent empty.
         tester.document("""
                 {
-                  allocatables(filter: { typeIn: [room, doesNotExist] }) {
+                  resources(filter: { typeIn: [room, doesNotExist] }) {
                     displayName
                   }
                 }
@@ -1114,7 +1114,7 @@ class ClassificationGraphQLControllerTest
                 .execute()
                 .errors()
                 .satisfy(errs -> org.junit.jupiter.api.Assertions.assertFalse(errs.isEmpty(),
-                        "unknown AllocatableTypeKey enum value must be rejected at validation"));
+                        "unknown ResourceTypeKey enum value must be rejected at validation"));
     }
 
     @Test
@@ -1126,13 +1126,13 @@ class ClassificationGraphQLControllerTest
         // appear since the filter is name-substring, not type-restricted.
         List<Map<String, Object>> found = tester.document("""
                 {
-                  allocatables(filter: { nameContains: "ROOM A" }) {
+                  resources(filter: { nameContains: "ROOM A" }) {
                     displayName
                   }
                 }
                 """)
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         assertEquals(2, found.size(), () -> "expected 2 matches for 'ROOM A', got " + found);
@@ -1147,10 +1147,10 @@ class ClassificationGraphQLControllerTest
     {
         // testdefault has ~6 allocatables visible to admin; limit:2 must cap at 2.
         List<Map<String, Object>> capped = tester.document("""
-                { allocatables(filter: { limit: 2 }) { id } }
+                { resources(filter: { limit: 2 }) { id } }
                 """)
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         assertEquals(2, capped.size(), () -> "limit:2 should cap at 2 entries, got " + capped.size());
@@ -1160,9 +1160,9 @@ class ClassificationGraphQLControllerTest
     @WithMockUser(username = "homer", roles = "ADMIN")
     void allocatableByUnknownIdReturnsNull()
     {
-        tester.document("{ allocatable(id: \"does-not-exist\") { id } }")
+        tester.document("{ resource(id: \"does-not-exist\") { id } }")
                 .execute()
-                .path("allocatable")
+                .path("resource")
                 .valueIsNull();
     }
 
@@ -1182,7 +1182,7 @@ class ClassificationGraphQLControllerTest
         // typed field. The SPA must NOT use this; PRD 035 §540 lock-in.
         Map<String, Object> first = tester.document("""
                 {
-                  allocatables(filter: { typeIn: [room] }) {
+                  resources(filter: { typeIn: [room] }) {
                     displayName
                     classification {
                       ... on roomClassification {
@@ -1194,7 +1194,7 @@ class ClassificationGraphQLControllerTest
                 }
                 """)
                 .execute()
-                .path("allocatables[0]")
+                .path("resources[0]")
                 .entity(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         @SuppressWarnings("unchecked")
@@ -1294,7 +1294,7 @@ class ClassificationGraphQLControllerTest
         // From testdefault.xml: "Room A66" has belongsto=springfield-powerplant
         Map<String, Object> roomA66 = tester.document("""
                 {
-                  allocatables(filter: { typeIn: [room], nameContains: "Room A66" }) {
+                  resources(filter: { typeIn: [room], nameContains: "Room A66" }) {
                     displayName
                     classification {
                       ... on roomClassification {
@@ -1306,7 +1306,7 @@ class ClassificationGraphQLControllerTest
                 }
                 """)
                 .execute()
-                .path("allocatables[0]")
+                .path("resources[0]")
                 .entity(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         @SuppressWarnings("unchecked")
@@ -1338,8 +1338,8 @@ class ClassificationGraphQLControllerTest
         List<String> ifaceNames = interfaces.stream().map(i -> (String) i.get("name")).toList();
         assertTrue(ifaceNames.contains("Classification"),
                 () -> "roomClassification should implement Classification, got " + ifaceNames);
-        assertTrue(ifaceNames.contains("AllocatableClassification"),
-                () -> "roomClassification should implement AllocatableClassification (resource kind), got " + ifaceNames);
+        assertTrue(ifaceNames.contains("ResourceClassification"),
+                () -> "roomClassification should implement ResourceClassification (resource kind), got " + ifaceNames);
         assertFalse(ifaceNames.contains("ReservationClassification"),
                 () -> "roomClassification must NOT implement ReservationClassification, got " + ifaceNames);
         @SuppressWarnings("unchecked")
@@ -1383,8 +1383,8 @@ class ClassificationGraphQLControllerTest
         List<String> ifaceNames = interfaces.stream().map(i -> (String) i.get("name")).toList();
         assertTrue(ifaceNames.contains("ReservationClassification"),
                 () -> "eventClassification should implement ReservationClassification, got " + ifaceNames);
-        assertFalse(ifaceNames.contains("AllocatableClassification"),
-                () -> "eventClassification must NOT implement AllocatableClassification, got " + ifaceNames);
+        assertFalse(ifaceNames.contains("ResourceClassification"),
+                () -> "eventClassification must NOT implement ResourceClassification, got " + ifaceNames);
     }
 
     @Test
@@ -1396,7 +1396,7 @@ class ClassificationGraphQLControllerTest
         // fail GraphQL validation up-front, not return null silently.
         tester.document("""
                 {
-                  allocatables(filter: { typeIn: [room] }) {
+                  resources(filter: { typeIn: [room] }) {
                     classification {
                       ... on eventClassification {
                         typeKey
@@ -1409,7 +1409,7 @@ class ClassificationGraphQLControllerTest
                 .errors()
                 .satisfy(errs -> {
                     assertFalse(errs.isEmpty(),
-                            "expected validation error for eventClassification fragment on AllocatableClassification field");
+                            "expected validation error for eventClassification fragment on ResourceClassification field");
                     String joined = errs.toString();
                     assertTrue(joined.contains("eventClassification")
                                     || joined.toLowerCase().contains("fragment")
@@ -1467,7 +1467,7 @@ class ClassificationGraphQLControllerTest
     void allocatableFilterHasSearchTextAndMatchKind()
     {
         Map<String, Object> result = tester.document("""
-                { __type(name: "AllocatableFilter") { inputFields { name } } }
+                { __type(name: "ResourceFilter") { inputFields { name } } }
                 """)
                 .execute()
                 .path("__type")
@@ -1476,8 +1476,8 @@ class ClassificationGraphQLControllerTest
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> inputs = (List<Map<String, Object>>) result.get("inputFields");
         List<String> names = inputs.stream().map(f -> (String) f.get("name")).toList();
-        assertTrue(names.contains("searchText"), () -> "missing searchText in AllocatableFilter: " + names);
-        assertTrue(names.contains("matchKind"),  () -> "missing matchKind in AllocatableFilter: " + names);
+        assertTrue(names.contains("searchText"), () -> "missing searchText in ResourceFilter: " + names);
+        assertTrue(names.contains("matchKind"),  () -> "missing matchKind in ResourceFilter: " + names);
     }
 
     /** MatchKind enum exists with PREFIX / SUBSTRING / FUZZY values. */
@@ -1507,7 +1507,7 @@ class ClassificationGraphQLControllerTest
     {
         List<Map<String, Object>> rooms = tester.document("""
                 {
-                  allocatables(filter: {
+                  resources(filter: {
                     typeIn: [room],
                     searchText: "Room",
                     matchKind: PREFIX
@@ -1515,7 +1515,7 @@ class ClassificationGraphQLControllerTest
                 }
                 """)
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         // Room A66 matches; erwin does NOT prefix-match "Room"
@@ -1531,7 +1531,7 @@ class ClassificationGraphQLControllerTest
         // "r" is in both "Room A66" and "erwin" → both come back
         List<Map<String, Object>> rooms = tester.document("""
                 {
-                  allocatables(filter: {
+                  resources(filter: {
                     typeIn: [room],
                     searchText: "r",
                     matchKind: SUBSTRING
@@ -1539,7 +1539,7 @@ class ClassificationGraphQLControllerTest
                 }
                 """)
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         assertEquals(2, rooms.size(), () -> "expected both rooms, got " + rooms);
@@ -1553,7 +1553,7 @@ class ClassificationGraphQLControllerTest
         // PREFIX-only query; only Room A66 matches (sorts at the top of an empty rest)
         List<Map<String, Object>> rooms = tester.document("""
                 {
-                  allocatables(filter: {
+                  resources(filter: {
                     typeIn: [room],
                     searchText: "Room",
                     matchKind: PREFIX
@@ -1561,7 +1561,7 @@ class ClassificationGraphQLControllerTest
                 }
                 """)
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         assertEquals("Room A66", rooms.get(0).get("displayName"),
@@ -1637,10 +1637,10 @@ class ClassificationGraphQLControllerTest
     {
         String roomA66 = idByDisplayName("Room A66");
         Boolean canModify = tester.document(String.format("""
-                { allocatable(id: "%s") { canModify } }
+                { resource(id: "%s") { canModify } }
                 """, roomA66))
                 .execute()
-                .path("allocatable.canModify")
+                .path("resource.canModify")
                 .entity(Boolean.class)
                 .get();
         assertEquals(Boolean.TRUE, canModify);
@@ -1651,10 +1651,10 @@ class ClassificationGraphQLControllerTest
     void allocatableCanModifyFalseWithoutModifyPermission()
     {
         List<Map<String, Object>> got = tester.document("""
-                { allocatables(filter: { searchText: "Room A66", matchKind: PREFIX }) { displayName canModify } }
+                { resources(filter: { searchText: "Room A66", matchKind: PREFIX }) { displayName canModify } }
                 """)
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         Map<String, Object> roomA66 = got.stream()

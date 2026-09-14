@@ -18,7 +18,7 @@ import org.rapla.entities.domain.Reservation;
  */
 public record ConflictRow(
         String id,
-        Allocatable allocatable,
+        Allocatable resource,
         String reservation1Id,
         String appointment1Id,
         String reservation2Id,

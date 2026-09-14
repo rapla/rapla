@@ -47,7 +47,7 @@ public class HTMLDayResourcePage extends HTMLDayViewPage
         	protected String createColumnHeader(int i)
         	{
             	Allocatable allocatable = selectedAllocatablesSorted.get(i);
-				return  allocatable.getName( getRaplaLocale().getLocale());
+				return  org.rapla.components.util.Tools.createXssSafeString(allocatable.getName( getRaplaLocale().getLocale()));
         	}
             
             @Override

@@ -78,12 +78,12 @@ class ResourceAccessQueryGraphQLTest
     {
         // homer is admin → reads everything; target homer (admin) has access to
         // everything → the access-filtered set must equal the unfiltered set.
-        List<String> unfiltered = tester.document("{ allocatables { id } }")
-                .execute().path("allocatables[*].id").entityList(String.class).get();
+        List<String> unfiltered = tester.document("{ resources { id } }")
+                .execute().path("resources[*].id").entityList(String.class).get();
         List<String> filtered = tester.document(
-                "{ allocatables(filter: { accessibleByUsername: \"homer\", accessLevel: READ }) { id } }")
-                .execute().path("allocatables[*].id").entityList(String.class).get();
-        assertFalse(unfiltered.isEmpty(), "fixture must expose some allocatables");
+                "{ resources(filter: { accessibleByUsername: \"homer\", accessLevel: READ }) { id } }")
+                .execute().path("resources[*].id").entityList(String.class).get();
+        assertFalse(unfiltered.isEmpty(), "fixture must expose some resources");
         assertEquals(Set.copyOf(unfiltered), Set.copyOf(filtered),
                 "admin target at READ must equal the unfiltered readable set");
     }
@@ -95,11 +95,11 @@ class ResourceAccessQueryGraphQLTest
         // by-id form (homer's own id) — just assert it resolves without error.
         String homerId = tester.document("{ user(username: \"homer\") { id } }")
                 .execute().path("user.id").entity(String.class).get();
-        tester.document("query($id: ID!) { allocatables(filter: { accessibleByUserId: $id, accessLevel: READ }) { id } }")
+        tester.document("query($id: ID!) { resources(filter: { accessibleByUserId: $id, accessLevel: READ }) { id } }")
                 .variable("id", homerId)
                 .execute().errors().verify();   // no errors
         // group form — admin may target any group; result may be empty, must not error.
-        tester.document("{ allocatables(filter: { accessibleByGroup: [\"my-group\"], accessLevel: READ }) { id } }")
+        tester.document("{ resources(filter: { accessibleByGroup: [\"my-group\"], accessLevel: READ }) { id } }")
                 .execute().errors().verify();
     }
 
@@ -124,7 +124,7 @@ class ResourceAccessQueryGraphQLTest
         // out-of-scope existing user vs non-existent user → identical FORBIDDEN
         // response (no existence leak).
         String[] outOfScope = new String[1];
-        tester.document("{ allocatables(filter: { accessibleByUsername: \"homer\" }) { id } }")
+        tester.document("{ resources(filter: { accessibleByUsername: \"homer\" }) { id } }")
                 .execute().errors().satisfy(errs -> {
                     assertFalse(errs.isEmpty());
                     assertEquals("FORBIDDEN", errs.get(0).getExtensions().get("code"));
@@ -132,7 +132,7 @@ class ResourceAccessQueryGraphQLTest
                 });
 
         String[] unknown = new String[1];
-        tester.document("{ allocatables(filter: { accessibleByUsername: \"ghost_does_not_exist\" }) { id } }")
+        tester.document("{ resources(filter: { accessibleByUsername: \"ghost_does_not_exist\" }) { id } }")
                 .execute().errors().satisfy(errs -> {
                     assertFalse(errs.isEmpty());
                     assertEquals("FORBIDDEN", errs.get(0).getExtensions().get("code"));
@@ -147,7 +147,7 @@ class ResourceAccessQueryGraphQLTest
     @WithMockUser(username = "monty")
     void nonAdminGroupSelectorForbidden()
     {
-        tester.document("{ allocatables(filter: { accessibleByGroup: [\"my-group\"] }) { id } }")
+        tester.document("{ resources(filter: { accessibleByGroup: [\"my-group\"] }) { id } }")
                 .execute().errors().satisfy(errs -> {
                     assertFalse(errs.isEmpty());
                     assertEquals("FORBIDDEN", errs.get(0).getExtensions().get("code"));
@@ -176,7 +176,7 @@ class ResourceAccessQueryGraphQLTest
     void multipleSelectorsRejected()
     {
         tester.document(
-                "{ allocatables(filter: { accessibleByUsername: \"homer\", accessibleByGroup: [\"my-group\"] }) { id } }")
+                "{ resources(filter: { accessibleByUsername: \"homer\", accessibleByGroup: [\"my-group\"] }) { id } }")
                 .execute().errors().satisfy(errs -> {
                     assertFalse(errs.isEmpty());
                     assertTrue("INVALID_VALUE".equals(errs.get(0).getExtensions().get("code")),

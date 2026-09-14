@@ -13,10 +13,10 @@ import java.util.Map;
  * already do rather than invented:
  *
  * <ul>
- *   <li><b>A dot nests.</b> {@code ?filter.allocatableIdsIn=r1} → {@code {filter:{allocatableIdsIn:"r1"}}}.
+ *   <li><b>A dot nests.</b> {@code ?filter.resourceIdsIn=r1} → {@code {filter:{resourceIdsIn:"r1"}}}.
  *       A single value is left a scalar: GraphQL's input coercion wraps it for a {@code [ID!]} field,
  *       so the common "one resource" link needs no special syntax.</li>
- *   <li><b>A repeated key is a list.</b> {@code ?filter.allocatableIdsIn=r1&filter.allocatableIdsIn=r2}.
+ *   <li><b>A repeated key is a list.</b> {@code ?filter.resourceIdsIn=r1&filter.resourceIdsIn=r2}.
  *       Deliberately NOT comma-splitting: rapla resource names contain commas, and a value that
  *       silently becomes a list is the kind of surprise that only shows up in production.</li>
  * </ul>

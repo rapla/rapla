@@ -1,6 +1,6 @@
 # PRD 067 — Facade split: sync explicit-user core + Swing client facade
 
-**Status:** draft — opened 2026-06-10; design discussion in progress (D1–D10 locked — see "Decisions locked" section; OQs open)
+**Status:** draft — opened 2026-06-10; D1–D11 locked (see "Decisions locked" + D11). **Nothing implemented** as of 2026-09-13 — no `EntityLifecycle` in the code, the three GraphQL mutation controllers still build entities by hand. Phase 1+2 written up as an implementation-ready work package ([§ WP A](#wp-a--phase-12-implementation-spec-2026-09-13)). Independent of [PRD 113](113-graphql-permission-model.md) (user ruling 2026-09-13: 113 is API design, 067 is server internals).
 
 ## Goal
 
@@ -441,6 +441,52 @@ in divergent behavior. Lower urgency, higher leverage.
 6. **dhbwrapla coordination**: its server tiers (sync jobs, exporters) migrate
    in step 3's sweep; `FacadeTestSupport` via test-scoped dep or operator
    rewrite.
+
+## WP A — Phase 1+2 implementation spec (2026-09-13)
+
+Written so a session can implement without re-deriving the plan. Scope = Plan steps 1 and 2 only; steps 3–6 untouched.
+
+**Drift table correction (verified 2026-09-13):** `ReservationMutationController` *does* call `copyPermissions` today (two sites, plus one in `AllocatableMutationController`) — the "createReservation omits copyPermissions" drift below was closed by hand since 2026-06-10. The drift that remains is the duplication itself: four creation implementations (`FacadeImpl`, the two controllers, `LocalAbstractCachableOperator`'s internal allocatable creation) that must be kept in step manually.
+
+### Phase 1 — lifecycle on the operator (behaviour-identical delegation refactor)
+
+1. **New interface** `org.rapla.storage.EntityLifecycle` (rapla-core), exactly the D11 method list plus `newDynamicType(classificationType)` / `newAttribute(attributeType)` (D11 gap — `FacadeImpl` has both, `setNew` without owner, and `DynamicTypeMutationController` mints those ids by hand today). **New factory** on `StorageOperator`: `EntityLifecycle getLifecycle(User actor)` and `getLifecycle(User actor, String templateId)`; `actor == null` → `IllegalArgumentException`.
+2. **One implementation**, package-private class in `org.rapla.storage.impl` (rapla-core, next to `AbstractCachableOperator`), constructed by `AbstractCachableOperator.getLifecycle`. Bodies moved **verbatim** from `FacadeImpl`:
+   - `newReservation(cls)` ← `FacadeImpl.newReservation(cls, user, ids)` (`canCreate` gate, `copyPermissions`, `setNew`, `KEY_TEMPLATE` stamp when `templateId != null`).
+   - `newAllocatable(cls)` ← `FacadeImpl.newAllocatable(cls, user)`; `newAppointment(start, end)` ← `newAppointmentWithUser`; `newCategory()`, `newDynamicType`, `newAttribute`, the `newRaplaMap` family; `setNew` (all overloads incl. the id-iterator one, the null-owner guard, `setOwner` for Reservation/Allocatable only).
+   - `clone(entity)` ← `FacadeImpl.clone(obj, user)` incl. `cloneReservation` (appointment re-id, restriction re-map, `lastChanged` reset, `KEY_TEMPLATE` / `KEY_TEMPLATE_COPYOF` branch); `copyReservations(src, begin, keepTime)` ← the `CopyFunction` path.
+   - `edit` / `editList` ← `FacadeImpl.edit`/`editList` with `lastChangedBy = actor`.
+   - `store(...)` / `storeAndRemove(store, remove)` ← `UpdateEvent` assembly with `userId = actor`, then the sync `operator.storeAndRemove(…, actor)`.
+   - `changeOwner(entity, newOwner)`: gate `isAdmin(actor)`, then `edit` → `setOwner` → `store` in one change record (D10).
+   The `PermissionController` it needs is the operator's own (`getPermissionController()` already exists on `FacadeImpl` as an operator pass-through).
+3. **`FacadeImpl` becomes delegation**: every method above becomes `operator.getLifecycle(user[, templateId]).x(...)`; the `*Async` variants keep their Promise wrapper and resolve `getUser()` first. Delete the moved private bodies in the same change. `RaplaFacade`'s interface does not change (D1 superseded).
+4. **`storeAndRemoveAsSystem(store, remove)`** on `StorageOperator` = today's `storeAndRemove(store, remove, null)`, declared; no caller migration in this WP.
+
+**Golden-master tests (tier 2, `FacadeTestSupport`, rapla-server test tree, one class `EntityLifecycleGoldenMasterTest`).** Written *before* step 3, against the still-intact `FacadeImpl` bodies, so both sides exist at the same time; step 3 turns them into delegation-of-self — they stay as regression pins:
+- `newReservation`: `facade.newReservation(cls, homer)` vs `operator.getLifecycle(homer).newReservation(cls)` — equal `classification`, `owner`, `isNew`, `lastChanged`/`createDate` (clock pinned via the test operator), permission rows equal as a list (type defaults minus READ_TYPE/CREATE), resolver set, ids both freshly allocated and distinct. Repeat with `templateId` set: `KEY_TEMPLATE` annotation equal.
+- `newAllocatable`, `newAppointment`, `newCategory`, `newDynamicType`, `newAttribute`: same field-by-field comparison.
+- `newReservation` with a user lacking `canCreate(type)` → both throw `RaplaException`.
+- `getLifecycle(null)` throws before anything is built; facade path keeps its `IllegalStateException` from `setNew`.
+- `clone(reservation)`: both copies have new reservation id, every appointment re-id'd, restrictions re-mapped onto the new appointment ids, `lastChanged` reset, `owner == actor`, `KEY_TEMPLATE_COPYOF` vs `KEY_TEMPLATE` branch equal.
+- `edit` + `store`: after store, the change record carries `userId == actor` and the stored entity's `lastChangedBy == actor` (the generalised Dualis regression test).
+- `changeOwner`: non-admin actor → `RaplaSecurityException`, entity untouched; admin → owner changed in **one** change record.
+- AGENTS.md § 1 red-first check: temporarily drop `copyPermissions` from the lifecycle body → the permission-rows assertion must go red.
+
+Full Swing-relevant suite (`mvn -pl rapla-server -am test`, then full reactor) green before Phase 2 starts.
+
+### Phase 2 — GraphQL controllers onto the lifecycle
+
+Three controllers in `rapla-app/src/main/java/org/rapla/server/spring/graphql/`; per controller: replace the hand-rolled block, keep the verb, keep every existing `*MutationControllerTest` green (D7: the existing tests are the contract).
+
+| Controller | Hand-rolled today | Becomes |
+|---|---|---|
+| `ReservationMutationController` | `new ReservationImpl(now, now)` + `setOwner(caller)` + `copyPermissions` + `setResolver` (two sites: create and the template-instantiate path); manual `.clone()` for update; `createIdentifier` + `setOwner(caller)` + appointment re-id in `copyReservations`; `draft.setOwner(newOwner)` in `changeReservationOwner`; `operator.dispatch(event)` | `lifecycle.newReservation(cls)` (template path: `getLifecycle(caller, templateId)`), `lifecycle.edit(r)`, `lifecycle.copyReservations(...)`, `lifecycle.changeOwner(r, newOwner)`, `lifecycle.storeAndRemove(...)`. The `UpdateEvent` assembly + `dispatch` moves into the lifecycle `store` |
+| `AllocatableMutationController` | `new AllocatableImpl(now, …)` + `setOwner(owner)` + `copyPermissions`; the admin-only `ownerId` override block | `lifecycle.newAllocatable(cls)`; the `ownerId` block goes with the schema field (D10 / PRD 063 amendment; the API-side yes/no is [PRD 113 OQ 14](113-graphql-permission-model.md#4-open-questions-for-the-user)) |
+| `DynamicTypeMutationController` | `operator.createIdentifier(DynamicType.class, 1)` / `(Attribute.class, 1)` + manual field setup | `lifecycle.newDynamicType(classificationType)` / `newAttribute(attributeType)`; store via `lifecycle.store` |
+
+Phase-2 verification items already named in D10/D7: owner-change enforced at operator dispatch, not only in the verb; permission parity (§12) + copy-appointment-fresh-id tier-3 tests. After Phase 2 an arch-test may forbid `new ReservationImpl` / `new AllocatableImpl` / `createIdentifier` in `*/graphql/*` controllers.
+
+**Out of this WP:** legacy plugins/jobs (step 3), REST import controllers (step 4), the D9 module move (step 5), dhbwrapla (step 6). `LocalAbstractCachableOperator`'s internal allocatable creation (also calls `copyPermissions`) is storage-internal and stays.
 
 ## Tests
 

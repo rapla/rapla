@@ -147,7 +147,7 @@ describe('lane packing (compact, no scope)', () => {
   });
 });
 
-describe('group-by-selected-resource (Swing GroupAllocatablesStrategy)', () => {
+describe('group-by-selected-resource (Swing GroupResourcesStrategy)', () => {
   const ROOM_A = { id: 'rA', name: 'Raum A' };
   const ROOM_B = { id: 'rB', name: 'Raum B' };
   const scoped: LaneOptions<Blk> = {
@@ -162,9 +162,9 @@ describe('group-by-selected-resource (Swing GroupAllocatablesStrategy)', () => {
   });
 
   it('a co-selected resource with NO blocks all week gets no lane (matchedBy groups elsewhere)', () => {
-    const building = { id: 'building-1', name: 'Schloss 2' };
-    const person = { id: 'p1', name: 'Kohlhaas' };
-    const roomA = { id: 'roomA', name: 'S2/1160', isLocation: true };
+    const building = { id: 'building-1', name: 'Building A' };
+    const person = { id: 'p1', name: 'Simpson Homer' };
+    const roomA = { id: 'roomA', name: 'room-1', isLocation: true };
     // building + person both selected; every block binds to the building via matchedBy
     const result = lay(
       [
@@ -238,7 +238,7 @@ describe('group-by-selected-resource (Swing GroupAllocatablesStrategy)', () => {
     expect(day(result, '2026-06-08').lanes).toBe(1);
   });
 
-  it('a block matching no selected resource falls back to its own allocatable group (others DO match)', () => {
+  it('a block matching no selected resource falls back to its own resource group (others DO match)', () => {
     const other = { id: 'rX', name: 'Zzz Extern' };
     const result = lay(
       [
@@ -256,7 +256,7 @@ describe('group-by-selected-resource (Swing GroupAllocatablesStrategy)', () => {
     expect(laneOf('2026-06-08T09:00:00', 'rX')).toBe(1);
   });
 
-  it('a block with no allocatables lands in a trailing group (others DO match)', () => {
+  it('a block with no resources lands in a trailing group (others DO match)', () => {
     const result = lay(
       [
         { start: '2026-06-08T09:00:00', end: '2026-06-08T10:00:00', allocs: [ROOM_A] },
@@ -265,21 +265,21 @@ describe('group-by-selected-resource (Swing GroupAllocatablesStrategy)', () => {
       scoped,
     );
     const d = day(result, '2026-06-08');
-    // Raum A + the no-allocatable trailing group; Raum B (empty) reserves no lane → 2.
+    // Raum A + the no-resource trailing group; Raum B (empty) reserves no lane → 2.
     expect(d.lanes).toBe(2);
     expect(d.blocks.find((b) => !(b.row as Blk).allocs)?.lane).toBe(1);
   });
 
-  it('container chip (no block matches any selected id) → COMPACT dense packing (Swing: empty builder allocatables ⇒ compactColumns)', () => {
+  it('container chip (no block matches any selected id) → COMPACT dense packing (Swing: empty builder resources ⇒ compactColumns)', () => {
     const building: LaneOptions<Blk> = {
-      selected: [{ id: 'building-1', name: 'Schloss 2' }], // container — no block carries it
+      selected: [{ id: 'building-1', name: 'Building A' }], // container — no block carries it
       mode: 'fixed',
       allocsOf: (r) => r.allocs ?? [],
     };
-    const roomA = { id: 'roomA', name: 'S2/1160 Seminarraum', isLocation: true };
-    const roomB = { id: 'roomB', name: 'S2/2190 Seminarraum', isLocation: true };
-    const lecturer1 = { id: 'p1', name: 'Appel, Jürgen' };
-    const lecturer2 = { id: 'p2', name: 'Gillig, Thomas' };
+    const roomA = { id: 'roomA', name: 'room-1', isLocation: true };
+    const roomB = { id: 'roomB', name: 'room-2', isLocation: true };
+    const lecturer1 = { id: 'p1', name: 'Prof X' };
+    const lecturer2 = { id: 'p2', name: 'Dr. A' };
     const result = lay(
       [
         { start: '2026-06-08T09:00:00', end: '2026-06-08T10:30:00', allocs: [lecturer1, roomA] },
@@ -300,9 +300,9 @@ describe('group-by-selected-resource (Swing GroupAllocatablesStrategy)', () => {
     // The dhbw case: a BUILDING is scoped; the server resolves belongsTo and stamps every
     // block with matchedBy=[building]. The client can't derive this from row cells (blocks
     // carry rooms/lecturers, not the building) — matchedBy[0] is the grouping key.
-    const building = { id: 'building-1', name: 'Schloss 2' };
-    const roomA = { id: 'roomA', name: 'S2/1160', isLocation: true };
-    const roomB = { id: 'roomB', name: 'S2/2190', isLocation: true };
+    const building = { id: 'building-1', name: 'Building A' };
+    const roomA = { id: 'roomA', name: 'room-1', isLocation: true };
+    const roomB = { id: 'roomB', name: 'room-2', isLocation: true };
     const result = lay(
       [
         {

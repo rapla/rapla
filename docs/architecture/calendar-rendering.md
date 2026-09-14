@@ -70,14 +70,14 @@ group(blocks)                  # strategy-specific initial grouping
   row cells — the SPA gets it as a server-computed **`matchedBy`** field (NO
   argument) returning the matched SELECTED allocatables (match provenance, [PRD 100](../prd/100-spa-block-renderer-unification.md)
   Phase 5, shipped 2026-07-09). Its candidate pool is the QUERY'S OWN resolved
-  allocatable scope (`allocatableIdsIn`/`allocatableMatching`), so it can't diverge
+  allocatable scope (`resourceIdsIn`/`resourceMatching`), so it can't diverge
   from the filter that selected the block; the client groups lanes by
   `matchedBy[0]`, empty ⇒ compact. The binding test itself is the ONE shared
   primitive `AppointmentMapping.getMatchingAllocatables(appointment, candidates)`
   (rapla-core): both this loop (`RaplaBlockContext.addAllocatables`) and the
   `matchedBy` resolver call it, over the SAME `AppointmentMapping` the query builds
   via `queryAppointmentsSync` — Swing and server can't drift. Note: distinct from
-  `AppointmentBlock.allocatables(filter:)`, which filters the block's OWN reserved
+  `AppointmentBlock.resources(filter:)`, which filters the block's OWN reserved
   resources by an independent predicate (no belongsTo, not query-scoped).
 - **Fixed vs compact** (`CalendarOptions.isCompactColumns()`):
   - *fixed slots* (`setFixedSlotsEnabled(true)`, the default when not compact):

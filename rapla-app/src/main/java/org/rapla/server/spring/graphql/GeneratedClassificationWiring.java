@@ -70,7 +70,7 @@ public final class GeneratedClassificationWiring
         // membership in the interface, not the resolver.
         TypeResolver classificationResolver = classificationTypeResolver();
         wiringBuilder.type("Classification",            b -> b.typeResolver(classificationResolver));
-        wiringBuilder.type("AllocatableClassification", b -> b.typeResolver(classificationResolver));
+        wiringBuilder.type("ResourceClassification", b -> b.typeResolver(classificationResolver));
         wiringBuilder.type("ReservationClassification",       b -> b.typeResolver(classificationResolver));
         // PRD 080 — StatEntity union (typed group entity in StatKey).
         wiringBuilder.type("StatEntity", b -> b.typeResolver(statEntityResolver()));
@@ -155,7 +155,7 @@ public final class GeneratedClassificationWiring
             Object src = env.getObject();
             graphql.schema.GraphQLSchema schema = env.getSchema();
             String typeName =
-                    src instanceof org.rapla.entities.domain.Allocatable ? "Allocatable"
+                    src instanceof org.rapla.entities.domain.Allocatable ? "Resource"
                   : src instanceof org.rapla.entities.domain.Reservation ? "Reservation"
                   : src instanceof org.rapla.entities.Category          ? "Category"
                   : null;

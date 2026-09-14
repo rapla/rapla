@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
  * PRD 090 — client for the admin additive-permission migration worklist
  * ({@code /api/admin/permission-migration}). Admin-only; cookie-auth same-origin.
  *
- * Each finding is one allocatable whose effective access rose when resolution
+ * Each finding is one resource whose effective access rose when resolution
  * went additive (a soft deny stopped biting); {@link resolve} prunes the inert
  * {@code DENIED} rows and acknowledges the rest, dropping it off the list.
  */
@@ -20,8 +20,8 @@ export interface PrincipalEscalation {
 }
 
 export interface PermissionMigrationFinding {
-  allocatableId: string;
-  allocatableName: string;
+  resourceId: string;
+  resourceName: string;
   escalations: PrincipalEscalation[];
 }
 
@@ -34,9 +34,9 @@ export class PermissionMigrationService {
     return this.http.get<PermissionMigrationFinding[]>(`${this.base}/findings`);
   }
 
-  resolve(allocatableId: string): Observable<PermissionMigrationFinding[]> {
+  resolve(resourceId: string): Observable<PermissionMigrationFinding[]> {
     return this.http.post<PermissionMigrationFinding[]>(
-      `${this.base}/${encodeURIComponent(allocatableId)}/resolve`,
+      `${this.base}/${encodeURIComponent(resourceId)}/resolve`,
       null,
     );
   }

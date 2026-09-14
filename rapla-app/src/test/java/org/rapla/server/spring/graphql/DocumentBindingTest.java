@@ -38,7 +38,7 @@ class DocumentBindingTest
         DocumentBinding.Binding binding = DocumentBinding.derive("""
                 query geraetebogen($id: ID!) @view(title: "Gerätebogen")
                   @param(name: "id", into: "id", required: true)
-                { allocatable(id: $id) { name } }
+                { resource(id: $id) { name } }
                 """);
         assertEquals("id", binding.param());
         assertEquals(DocumentBinding.Kind.ALLOCATABLE, binding.kind());
@@ -50,7 +50,7 @@ class DocumentBindingTest
     {
         assertNull(DocumentBinding.derive("""
                 query kalender($filter: ReservationFilter!) @view(title: "Kalender")
-                  @param(name: "resource", into: "filter.allocatableIdsIn", required: true)
+                  @param(name: "resource", into: "filter.resourceIdsIn", required: true)
                 { appointmentBlocks(filter: $filter) { name } }
                 """));
     }
@@ -65,7 +65,7 @@ class DocumentBindingTest
     {
         assertNull(DocumentBinding.derive("""
                 query mixed($reservationId: ID!, $filter: ReservationFilter!) @view(title: "Mixed")
-                  @param(name: "resource", into: "filter.allocatableIdsIn")
+                  @param(name: "resource", into: "filter.resourceIdsIn")
                 {
                   reservation(id: $reservationId) { name }
                   strips(filter: $filter) { index }

@@ -14,6 +14,7 @@ package org.rapla.server.internal;
 
 import org.rapla.RaplaResources;
 import org.rapla.entities.Category;
+import org.rapla.entities.CategoryAnnotations;
 import org.rapla.entities.Entity;
 import org.rapla.entities.Ownable;
 import org.rapla.entities.User;
@@ -23,6 +24,7 @@ import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
+import org.rapla.rest.JsonParserWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.rapla.storage.CachableStorageOperator;
@@ -82,6 +84,9 @@ import java.time.LocalDateTime;
         Entity original = operator.tryResolve(entity.getReference());
         // flag indicates if a user only exchanges allocatables  (needs to have admin-access on the allocatable)
         boolean canExchange = false;
+        // WP O1 — an owner change is judged on its own (see canChangeOwner / isOwnerOnlyChange)
+        boolean ownerChanged = false;
+        boolean pureOwnerChange = false;
 
         boolean ownable = entity instanceof Ownable;
         if (ownable || entity instanceof Appointment)
@@ -120,7 +125,17 @@ import java.time.LocalDateTime;
                 }
                 permitted = (originalOwnerReference != null) && originalOwnerReference.equals(user.getReference()) && originalOwnerReference
                         .equals(entityOwnerReference);
-                if (!permitted && !needsAdminPermission)
+                ownerChanged = ownable && !Objects.equals(originalOwnerReference, entityOwnerReference);
+                if (ownerChanged)
+                {
+                    // WP O1 — a changed owner is permitted only as a pure owner change by a caller who may hand the
+                    // entity over; neither canExchange nor the canModify fall-through below applies to it.
+                    User originalOwner = originalOwnerReference == null ? null : operator.tryResolve(originalOwnerReference);
+                    User newOwner = entityOwnerReference == null ? null : operator.tryResolve(entityOwnerReference);
+                    pureOwnerChange = isOwnerOnlyChange(entity, original, newOwner);
+                    permitted = pureOwnerChange && permissionController.canChangeOwner(user, original, originalOwner, newOwner);
+                }
+                else if (!permitted && !needsAdminPermission)
                 {
                     canExchange = canExchange(user, entity, original);
                     permitted = canExchange;
@@ -134,7 +149,7 @@ import java.time.LocalDateTime;
                 permitted = permissionController.canCreate((Classifiable) entity, user);
             }
         }
-        if (!permitted && original != null && original instanceof PermissionContainer)
+        if (!permitted && !ownerChanged && original != null && original instanceof PermissionContainer)
         {
             if (needsAdminPermission)
             {
@@ -169,6 +184,13 @@ import java.time.LocalDateTime;
             Category category = (Category) entity;
             if (permissionController.canModify(category, user))
             {
+                // Security audit PH1 — can_admin_parent defines who administers which groups; a group admin setting it
+                // on his own scope would climb to the user-groups root. Only global admins (early return above) change it.
+                String before = original == null ? null : ((Category) original).getAnnotation(CategoryAnnotations.CAN_ADMIN_PARENT);
+                if (!Objects.equals(before, category.getAnnotation(CategoryAnnotations.CAN_ADMIN_PARENT)))
+                {
+                    throw new RaplaSecurityException(i18n.format("error.modify_not_allowed", user.toString(), entity.toString()));
+                }
                 permitted = true;
             }
         }
@@ -177,6 +199,12 @@ import java.time.LocalDateTime;
             if (permissionController.canModify(entity, user) && (original == null || permissionController.canModify(original, user)))
             {
                 final User userToModify = (User) entity;
+                // Security audit F6-1 — the authentication source decides whether a local password may be set; a group
+                // admin clearing it could take the account over via change-password. Only global admins change it.
+                if (original != null && !Objects.equals(((User) original).getAuthenticationSource(), userToModify.getAuthenticationSource()))
+                {
+                    throw new RaplaSecurityException(i18n.format("error.modify_not_allowed", user.toString(), userToModify));
+                }
                 Collection<Category> newCompleteUserGroups = new ArrayList<>(userToModify.getGroupList());
                 Collection<Category> newUserGroups = new ArrayList<>(newCompleteUserGroups);
                 Collection<Category> removedUserGroups = new ArrayList<>();
@@ -238,7 +266,11 @@ import java.time.LocalDateTime;
                     throw new RaplaSecurityException(i18n.format("error.create_not_allowed", user.toString(), entity.toString()));
                 }
             }
-            checkPermissions(user, reservation, originalReservation, all);
+            // WP O1b — an owner change is not an allocation: with nothing but the owner changed there is no booking to re-check
+            if (!pureOwnerChange)
+            {
+                checkPermissions(user, reservation, originalReservation, all);
+            }
         }
 
         // Changing the access-control list of a Category/Allocatable requires
@@ -247,7 +279,7 @@ import java.time.LocalDateTime;
         // escalate by rewriting permissions (e.g. granting themselves ADMIN).
         // DynamicTypes are excluded — they are already fully admin-gated, so a
         // non-admin never reaches this point for one.
-        if ((entity instanceof Allocatable || entity instanceof Category)
+        if ((entity instanceof Allocatable || entity instanceof Category || entity instanceof Reservation)
                 && original instanceof PermissionContainer)
         {
             boolean permissionsChanged = PermissionContainer.Util.differs(
@@ -259,6 +291,19 @@ import java.time.LocalDateTime;
                         i18n.format("error.admin_not_allowed", user.toString(), entity.toString()));
             }
         }
+    }
+
+    /** WP O1 — true iff {@code entity} equals {@code original} except for the owner, compared as update-history JSON. */
+    private static boolean isOwnerOnlyChange(Entity entity, Entity original, User newOwner)
+    {
+        if (newOwner == null)
+        {
+            return false;
+        }
+        Entity copy = (Entity) original.clone();
+        ((Ownable) copy).setOwner(newOwner);
+        JsonParserWrapper.JsonParser json = JsonParserWrapper.defaultJson().get();
+        return json.toJson(copy).equals(json.toJson(entity));
     }
 
     private void checkCanAdminGroups(Collection<Category> groups, final Collection<Category> groupsToAdmin, User user) throws RaplaSecurityException

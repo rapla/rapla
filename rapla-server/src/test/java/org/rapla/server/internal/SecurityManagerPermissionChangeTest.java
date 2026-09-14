@@ -10,13 +10,18 @@ import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Permission.AccessLevel;
+import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.test.util.FacadeTestSupport;
+
+import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -119,5 +124,79 @@ class SecurityManagerPermissionChangeTest extends FacadeTestSupport
 
         assertDoesNotThrow(() -> security.checkWritePermissions(monty, edit),
                 "editing data (no permission change) must remain allowed for an EDIT user");
+    }
+
+    /** Build a reservation owned by {@code owner} on which my-group (monty's group) has EDIT. */
+    private Reservation reservationEditableByMontyViaGroupEdit(User owner) throws Exception
+    {
+        DynamicType eventType = facade.getDynamicTypes(
+                DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0];
+        Reservation r = facade.newReservation(eventType.newClassification(), owner);
+        Appointment app = facade.newAppointmentWithUser(
+                LocalDateTime.of(2026, 6, 1, 10, 0),
+                LocalDateTime.of(2026, 6, 1, 11, 0), owner);
+        r.addAppointment(app);
+        Permission p = r.newPermission();
+        p.setGroup(myGroup);
+        p.setAccessLevel(AccessLevel.EDIT);
+        r.addPermission(p);
+        facade.store(r);
+        return (Reservation) operator.tryResolve(r.getReference());
+    }
+
+    private User admin() throws Exception
+    {
+        for (User u : facade.getUsers())
+        {
+            if (u.isAdmin()) return u;
+        }
+        throw new AssertionError("fixture must include an admin user");
+    }
+
+    @Test
+    void nonAdminCannotChangePermissionListOfReservationTheyOnlyEdit() throws Exception
+    {
+        Reservation stored = reservationEditableByMontyViaGroupEdit(admin());
+        assertTrue(operator.getPermissionController().canModify(stored, monty),
+                "monty must be able to modify (EDIT via my-group)");
+        assertFalse(operator.getPermissionController().canAdmin(stored, monty),
+                "monty must NOT have admin (EDIT < ADMIN, not owner)");
+
+        Reservation edit = facade.edit(stored);
+        Permission escalate = edit.newPermission();
+        escalate.setGroup(myGroup);
+        escalate.setAccessLevel(AccessLevel.ADMIN);
+        edit.addPermission(escalate);
+
+        assertThrows(RaplaSecurityException.class,
+                () -> security.checkWritePermissions(monty, edit),
+                "a non-admin must not be able to change a reservation's permission list");
+    }
+
+    @Test
+    void nonAdminCanStillEditReservationDataWithoutTouchingPermissions() throws Exception
+    {
+        Reservation stored = reservationEditableByMontyViaGroupEdit(admin());
+
+        Reservation edit = facade.edit(stored);
+        edit.getClassification().setValue("name", "renamed-event");
+
+        assertDoesNotThrow(() -> security.checkWritePermissions(monty, edit),
+                "editing data (no permission change) must remain allowed for an EDIT user");
+    }
+
+    @Test
+    void ownerCanChangePermissionListOfOwnReservation() throws Exception
+    {
+        Reservation stored = reservationEditableByMontyViaGroupEdit(monty);
+
+        Reservation edit = facade.edit(stored);
+        Permission grant = edit.newPermission();
+        grant.setGroup(myGroup);
+        grant.setAccessLevel(AccessLevel.ADMIN);
+        edit.addPermission(grant);
+
+        assertDoesNotThrow(() -> security.checkWritePermissions(monty, edit),
+                "the owner must still be able to change their reservation's permission list");
     }
 }

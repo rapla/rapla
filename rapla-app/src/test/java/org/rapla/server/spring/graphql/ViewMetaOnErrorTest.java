@@ -71,11 +71,11 @@ class ViewMetaOnErrorTest
     {
         User admin = operator.getUser("homer");
         String twoFilters = """
-                query meta_err($filter: ReservationFilter!, $allocatableFilter: AllocatableFilter!)
+                query meta_err($filter: ReservationFilter!, $resourceFilter: ResourceFilter!)
                   @view(title: "MetaErr")
                 {
                   reservations(filter: $filter) { name }
-                  rooms: allocatables(filter: $allocatableFilter) { name }
+                  rooms: resources(filter: $resourceFilter) { name }
                 }""";
         assertEquals(List.of(), views.saveView("meta_err", twoFilters, true, List.of(), null, admin));
     }
@@ -93,7 +93,7 @@ class ViewMetaOnErrorTest
 
         JsonNode json = JsonMapper.builder().build().readTree(response);
         assertTrue(json.get("errors") != null && json.get("errors").size() > 0,
-                "the {} first query must fail on the NonNull allocatableFilter: " + response);
+                "the {} first query must fail on the NonNull resourceFilter: " + response);
         JsonNode view = json.path("extensions").path("view");
         assertTrue(!view.isMissingNode() && !view.isNull(),
                 "extensions.view must arrive WITH the error so the SPA can recover: " + response);
@@ -102,8 +102,8 @@ class ViewMetaOnErrorTest
         boolean hasAllocatableFilter = false;
         for (JsonNode v : variables)
         {
-            if ("allocatableFilter".equals(v.path("name").asString())
-                    && "AllocatableFilter!".equals(v.path("type").asString()))
+            if ("resourceFilter".equals(v.path("name").asString())
+                    && "ResourceFilter!".equals(v.path("type").asString()))
             {
                 hasAllocatableFilter = true;
             }

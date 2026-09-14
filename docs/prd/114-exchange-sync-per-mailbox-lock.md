@@ -1,7 +1,7 @@
 # PRD 114 — Exchange sync: per-mailbox locking, task queue as intents, sweep/poll separation
 
 **Status:** in-progress — 2026-09-13 — the 2026-09 production hotfix line (Phase 1 + series/delete semantics, hunks 1–14) is closed in [PRD 115 (done)](done/115-exchange-sync-hotfix-2026-09.md); production runs v11, hunk 14 pending deploy. Open here: Phase 2 (per-mailbox lock), the Phase 2b rest, Phase 3 (executors), Phase 4 (connector lifecycle).
-**Related:** [PRD 115](done/115-exchange-sync-hotfix-2026-09.md) (hotfix record + lessons), [PRD 070](070-restore-exchange-connector-wiring.md) (server wiring + scheduler split), [PRD 038](038-graph-calendar-sync.md) (Graph backend, additive), [locking](../architecture/locking.md), [exchange-sync](../architecture/exchange-sync.md) (canonical rules), operational record with site/mailbox specifics: `dhbwrapla/docs/exchange-sweep-analysis-2026-09.md` (gitignored, not in this repo)
+**Related:** [PRD 115](done/115-exchange-sync-hotfix-2026-09.md) (hotfix record + lessons), [PRD 070](070-restore-exchange-connector-wiring.md) (server wiring + scheduler split), [PRD 038](038-graph-calendar-sync.md) (Graph backend, additive), [locking](../architecture/locking.md), [exchange-sync](../architecture/exchange-sync.md) (canonical rules), operational record with site/mailbox specifics kept in the affected deployment's private docs (gitignored, not in this repo)
 
 ## Abstract
 

@@ -32,6 +32,7 @@ import org.rapla.plugin.mail.MailPlugin;
 import org.rapla.plugin.mail.server.MailInterface;
 import org.rapla.server.PrePostDispatchProcessor;
 import org.rapla.server.RemoteSession;
+import org.rapla.server.spring.RefreshSessionService;
 import org.rapla.server.internal.ReloadService;
 import org.rapla.server.internal.SecurityManager;
 import org.rapla.server.internal.UpdateDataManager;
@@ -69,6 +70,8 @@ import java.util.stream.Collectors;
 public class RemoteStorageController implements RemoteStorage
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(RemoteStorageController.class);
+    /** Same audit channel as ImpersonationController. */
+    private static final Logger AUDIT_LOG = LoggerFactory.getLogger("rapla");
     private final RemoteSession session;
     private final CachableStorageOperator operator;
     private final SyncStorageOperator syncOperator;
@@ -79,6 +82,7 @@ public class RemoteStorageController implements RemoteStorage
     private final Supplier<MailInterface> mailInterface;
     private final UpdateDataManager updateDataManager;
     private final HttpServletRequest request;
+    private final RefreshSessionService refreshSessionService;
 
     public RemoteStorageController(RemoteSession session,
                                    CachableStorageOperator operator,
@@ -89,8 +93,10 @@ public class RemoteStorageController implements RemoteStorage
                                    RaplaResources i18n,
                                    Supplier<MailInterface> mailInterface,
                                    UpdateDataManager updateDataManager,
-                                   HttpServletRequest request)
+                                   HttpServletRequest request,
+                                   RefreshSessionService refreshSessionService)
     {
+        this.refreshSessionService = refreshSessionService;
         this.session = session;
         this.operator = operator;
         this.syncOperator = syncOperator;
@@ -307,11 +313,21 @@ public class RemoteStorageController implements RemoteStorage
         // PRD 050: external-auth users — block (no admin fallback either).
         // Admin must explicitly disconnect first via the disconnect endpoint.
         requireLocalIdentity(user, "change password");
+        boolean resetByAdmin = PermissionController.canAdminUser(sessionUser, user) && !sessionUser.getId().equals(user.getId());
         if (!PermissionController.canAdminUser(sessionUser, user))
         {
             operator.authenticate(username, oldPassword);
         }
         operator.changePassword(user, oldPassword.toCharArray(), newPassword.toCharArray());
+        if (resetByAdmin)
+        {
+            // Security audit PM2 — an admin reset without the old password stays possible but is audited (never the password);
+            // logged right after the change so a failing clearSession cannot swallow the audit line
+            AUDIT_LOG.info("AUDIT password-reset: actor={}/{} target={}/{} actorIsAdmin={}",
+                    sessionUser.getUsername(), sessionUser.getId(), user.getUsername(), user.getId(), sessionUser.isAdmin());
+        }
+        // Security audit F5-2 — a new password ends the refresh session issued under the old credentials
+        refreshSessionService.clearSession(user);
     }
 
     @Override

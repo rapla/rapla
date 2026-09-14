@@ -3,7 +3,7 @@
 **Status:** in-progress — opened 2026-06-10 (design resolved in a late-night session
 against the old productive dialog + the existing generic template wizard).
 Sync flow **implemented + verified live 2026-06-12** (Swing client against the
-dhbw dev server + campusnet tunnel: load, single-row sync, in-place classification
+dhbw dev server + `<internal-gateway>` tunnel: load, single-row sync, in-place classification
 update, undo/redo, edit-window-scoped busy glasspane all confirmed working): `syncClassification` contract + DTOs +
 controller endpoint + generic client apply (rapla), `mapSyncClassification` +
 `createReservations → List<ReservationImpl>` (dhbwrapla), Jackson abstract-type

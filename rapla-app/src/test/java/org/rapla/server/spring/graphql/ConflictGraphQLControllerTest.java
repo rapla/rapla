@@ -112,7 +112,7 @@ class ConflictGraphQLControllerTest
         // PRD 091 D4 — id-based superset shape (one type for realized AND
         // potential conflicts; entity fields nullable for draft/§12-masked sides)
         assertTrue(names.containsAll(List.of(
-                "id", "allocatable",
+                "id", "resource",
                 "reservation1Id", "appointment1Id",
                 "reservation2Id", "appointment2Id",
                 "reservation1", "reservation2",

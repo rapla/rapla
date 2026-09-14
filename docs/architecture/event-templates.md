@@ -42,7 +42,14 @@ Entry: `EditTaskPresenter` `CREATE_RESERVATION_FROM_TEMPLATE` →
 
 - **Target cascade** (`RaplaComponent.getMarkedInterval`): marked/dragged calendar interval >
   the calendar's selected date (at the configured worktime start) > today.
-- **`keepTime`** = the template's `fixedtimeandduration` attribute (default true). It governs
+- **`keepTime`** = the template's `fixedtimeandduration` attribute. Two different "defaults", verified
+  2026-09-13: the `rapla:template` type declares the attribute with **default value `false`**
+  (`LocalAbstractCachableOperator` template-type bootstrap), so a template saved from the Swing editor
+  stores `false` explicitly; an **unset** value (legacy data, attribute missing) is read as **`true`** at
+  instantiation (`EditTaskPresenter`: `keepOrig == null || keepOrig`) and by the GraphQL
+  `EventTemplate.fixedTimeAndDuration` read (same rule). The Swing editor `TemplateEdit` reads unset as
+  `false` for its own display only — inconsistent with instantiation, harmless because saving writes the
+  value explicitly. It governs
   ONLY the time-of-day handling and the relative placement to the FIRST reservation:
   - `true` — per-appointment **day** offset to the first reservation is kept; original
     times-of-day are kept. (Days move, clocks don't.)
@@ -58,9 +65,9 @@ Entry: `EditTaskPresenter` `CREATE_RESERVATION_FROM_TEMPLATE` →
 
 - `newEventOptions` (GraphQL) returns the caller's "Neu" options: `eventTypes` (RESERVATION
   types with `canCreate`, empty when the **defaultwizard** plugin is disabled — dhbw runs
-  this way) and `templates` (§12-filtered, name-sorted, each with a server-computed grouping
-  `path` — token-prefix clustering with alphabetic range fallback, `TemplatePathBuilder`;
-  currently not consumed by the UI, kept for grouped rendering later).
+  this way) and `templates` (§12-filtered, name-sorted). The server-computed grouping `path`
+  (`TemplatePathBuilder`) was **removed 2026-09-13** (PRD 113 § 1c, user go per AGENTS.md § 11) —
+  it was never consumed by the UI; grouping, if ever needed, is a client-side sort concern.
 - ONE "Neu" button → **unified picker dialog** (`NewEventPickerComponent`): types pinned on
   top, templates below, kind markers, one search over both, 6 mixed recents
   (per-user localStorage). Skip only for exactly 1 type + 0 templates. Week/month

@@ -33,6 +33,11 @@ and ships a broken artifact), and skip tests on packaging builds:
 mvn -pl rapla-app -am clean package -DskipTests -Psign-pkcs11
 ```
 
+The Web Start client requires rapla at the context root (no
+`server.servlet.context-path`); the JNLP carries no `codebase` and no
+`rapla.download.url` — it is resolved relative to its own URL (audit fix S3,
+2026-09-14).
+
 The bundled Java Web Start webclient jars **must be signed** or the JNLP client
 won't launch. Two signing profiles:
 

@@ -15,7 +15,7 @@ interface Classification {
   typeKey: String!
 }
 
-interface AllocatableClassification implements Classification {
+interface ResourceClassification implements Classification {
   type: DynamicType!
   typeKey: String!
 }
@@ -40,16 +40,16 @@ type eventClassification implements Classification & ReservationClassification {
   typeKey: String!
 }
 
-type roomClassification implements AllocatableClassification & Classification {
+type roomClassification implements ResourceClassification & Classification {
   name: String
   seats: Int @displayName(value : "Plätze")
   projector: Boolean @displayName(value : "Beamer")
   renovated: LocalDateTime @displayName(value : "Renoviert am")
   raumart: Category @displayName(value : "Raumart") @rootCategory(path : "Raumtypen")
   gruppe: gruppierungen_c7 @displayName(value : "Gruppe") @rootCategory(path : "gruppierungen/c7")
-  gebaeude: Allocatable @displayName(value : "Gebäude") @expectedType(key : "building")
+  gebaeude: Resource @displayName(value : "Gebäude") @expectedType(key : "building")
   ausstattung: [gruppierungen_c7!] @displayName(value : "Ausstattung") @multiplicity(value : LIST)
-  zubehoer: [Allocatable!] @displayName(value : "Zubehör") @multiplicity(value : PACKAGE)
+  zubehoer: [Resource!] @displayName(value : "Zubehör") @multiplicity(value : PACKAGE)
   type: DynamicType!
   typeKey: String!
 }

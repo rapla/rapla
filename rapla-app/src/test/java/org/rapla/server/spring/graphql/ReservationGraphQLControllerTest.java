@@ -297,17 +297,17 @@ class ReservationGraphQLControllerTest
     private String idByDisplayName(String namePart)
     {
         List<Map<String, Object>> got = tester.document(String.format("""
-                { allocatables(filter: { nameContains: "%s" }) { id displayName } }
+                { resources(filter: { nameContains: "%s" }) { id displayName } }
                 """, namePart))
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(new ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         return got.stream()
                 .filter(a -> ((String) a.get("displayName")).contains(namePart))
                 .map(a -> (String) a.get("id"))
                 .findFirst()
-                .orElseThrow(() -> new AssertionError("no allocatable with displayName containing " + namePart));
+                .orElseThrow(() -> new AssertionError("no resource with displayName containing " + namePart));
     }
 
     /**
@@ -322,7 +322,7 @@ class ReservationGraphQLControllerTest
         List<Map<String, Object>> legacy = tester.document(String.format("""
                 { reservations(filter: {
                     from: "2001-01-01T00:00:00", to: "2020-12-31T00:00:00",
-                    allocatableIdsIn: ["%s"]
+                    resourceIdsIn: ["%s"]
                   }) { id } }
                 """, roomA66))
                 .execute()
@@ -332,7 +332,7 @@ class ReservationGraphQLControllerTest
         List<Map<String, Object>> matching = tester.document(String.format("""
                 { reservations(filter: {
                     from: "2001-01-01T00:00:00", to: "2020-12-31T00:00:00",
-                    allocatableMatching: { idIn: ["%s"] }
+                    resourceMatching: { idIn: ["%s"] }
                   }) { id } }
                 """, roomA66))
                 .execute()
@@ -342,7 +342,7 @@ class ReservationGraphQLControllerTest
         // Same id set, ignore order.
         java.util.Set<Object> legacyIds = legacy.stream().map(m -> m.get("id")).collect(java.util.stream.Collectors.toSet());
         java.util.Set<Object> matchingIds = matching.stream().map(m -> m.get("id")).collect(java.util.stream.Collectors.toSet());
-        assertEquals(legacyIds, matchingIds, () -> "allocatableMatching{idIn} should match legacy allocatableIdsIn; legacy=" + legacy + " matching=" + matching);
+        assertEquals(legacyIds, matchingIds, () -> "resourceMatching{idIn} should match legacy resourceIdsIn; legacy=" + legacy + " matching=" + matching);
         assertFalse(legacyIds.isEmpty(), "fixture should have reservations on Room A66");
     }
 
@@ -357,7 +357,7 @@ class ReservationGraphQLControllerTest
         List<Map<String, Object>> got = tester.document("""
                 { reservations(filter: {
                     from: "2001-01-01T00:00:00", to: "2020-12-31T00:00:00",
-                    allocatableMatching: { typeIn: [room] }
+                    resourceMatching: { typeIn: [room] }
                   }) { id } }
                 """)
                 .execute()
@@ -434,14 +434,14 @@ class ReservationGraphQLControllerTest
                 .execute()
                 .errors()
                 .satisfy(errs -> assertFalse(errs.isEmpty(),
-                        "allocatable key 'room' must be rejected on ReservationFilter.typeIn"));
+                        "resource key 'room' must be rejected on ReservationFilter.typeIn"));
         tester.document("""
-                { allocatables(filter: { typeIn: [event] }) { id } }
+                { resources(filter: { typeIn: [event] }) { id } }
                 """)
                 .execute()
                 .errors()
                 .satisfy(errs -> assertFalse(errs.isEmpty(),
-                        "reservation key 'event' must be rejected on AllocatableFilter.typeIn"));
+                        "reservation key 'event' must be rejected on ResourceFilter.typeIn"));
     }
 
     /**
@@ -518,8 +518,8 @@ class ReservationGraphQLControllerTest
         List<Map<String, Object>> mergedQuery = tester.document(String.format("""
                 { reservations(filter: {
                     from: "2001-01-01T00:00:00", to: "2020-12-31T00:00:00",
-                    allocatableIdsIn: ["%s"]
-                    allocatableMatching: { idIn: ["%s"] }
+                    resourceIdsIn: ["%s"]
+                    resourceMatching: { idIn: ["%s"] }
                   }) { id } }
                 """, roomA66, roomA66))
                 .execute()
@@ -529,7 +529,7 @@ class ReservationGraphQLControllerTest
         List<Map<String, Object>> idsInOnly = tester.document(String.format("""
                 { reservations(filter: {
                     from: "2001-01-01T00:00:00", to: "2020-12-31T00:00:00",
-                    allocatableIdsIn: ["%s"]
+                    resourceIdsIn: ["%s"]
                   }) { id } }
                 """, roomA66))
                 .execute()
@@ -566,12 +566,12 @@ class ReservationGraphQLControllerTest
         final String win = "from: \"2001-01-01T00:00:00\", to: \"2020-12-31T00:00:00\"";
 
         java.util.Set<Object> a = reservationIds(
-                "{ reservations(filter: { " + win + ", allocatableIdsIn: [\"" + erwin + "\"] }) { id } }");
+                "{ reservations(filter: { " + win + ", resourceIdsIn: [\"" + erwin + "\"] }) { id } }");
         java.util.Set<Object> b = reservationIds(
-                "{ reservations(filter: { " + win + ", allocatableMatching: { idIn: [\"" + roomA66 + "\"] } }) { id } }");
+                "{ reservations(filter: { " + win + ", resourceMatching: { idIn: [\"" + roomA66 + "\"] } }) { id } }");
         java.util.Set<Object> merged = reservationIds(
-                "{ reservations(filter: { " + win + ", allocatableIdsIn: [\"" + erwin + "\"], "
-                        + "allocatableMatching: { idIn: [\"" + roomA66 + "\"] } }) { id } }");
+                "{ reservations(filter: { " + win + ", resourceIdsIn: [\"" + erwin + "\"], "
+                        + "resourceMatching: { idIn: [\"" + roomA66 + "\"] } }) { id } }");
 
         assertFalse(a.isEmpty(), "fixture: room erwin should have reservations");
         assertFalse(b.isEmpty(), "fixture: Room A66 should have reservations");
@@ -594,7 +594,7 @@ class ReservationGraphQLControllerTest
         List<Map<String, Object>> got = tester.document("""
                 { reservations(filter: {
                     from: "2001-01-01T00:00:00", to: "2020-12-31T00:00:00",
-                    allocatableMatching: { typeIn: [room] }
+                    resourceMatching: { typeIn: [room] }
                   }) { id } }
                 """)
                 .execute()
@@ -606,7 +606,7 @@ class ReservationGraphQLControllerTest
         // throws. Existence-leak property requires comparing against the
         // hand-computed monty-visible set; we delegate that to the existing
         // §12 contract on `reservations()` + the new resolution path.
-        assertNotNull(got, "result must be non-null even when allocatableMatching is set");
+        assertNotNull(got, "result must be non-null even when resourceMatching is set");
     }
 
     /**
@@ -1167,8 +1167,8 @@ class ReservationGraphQLControllerTest
     @WithMockUser(username = "homer", roles = "ADMIN")
     void appointmentBlocksRootAllocatablesFilterNarrows()
     {
-        assertTrue(typeFieldNames("AppointmentBlock").contains("allocatables"),
-                () -> "missing AppointmentBlock.allocatables");
+        assertTrue(typeFieldNames("AppointmentBlock").contains("resources"),
+                () -> "missing AppointmentBlock.resources");
 
         List<String> rooms = blockAllocatableNames("{ typeIn: [room] }");
         List<String> persons = blockAllocatableNames("{ isPersonEq: true }");
@@ -1185,8 +1185,8 @@ class ReservationGraphQLControllerTest
     private List<String> blockAllocatableNames(String filterArg)
     {
         String nested = filterArg == null
-                ? "allocatables { displayName }"
-                : "allocatables(filter: " + filterArg + ") { displayName }";
+                ? "resources { displayName }"
+                : "resources(filter: " + filterArg + ") { displayName }";
         List<Map<String, Object>> blocks = tester.document(String.format("""
                 query {
                   appointmentBlocks(filter: {
@@ -1205,7 +1205,7 @@ class ReservationGraphQLControllerTest
         for (Map<String, Object> b : blocks)
         {
             @SuppressWarnings("unchecked")
-            List<Map<String, Object>> allocs = (List<Map<String, Object>>) b.get("allocatables");
+            List<Map<String, Object>> allocs = (List<Map<String, Object>>) b.get("resources");
             if (allocs == null) continue;
             for (Map<String, Object> al : allocs) names.add((String) al.get("displayName"));
         }
@@ -1280,7 +1280,7 @@ class ReservationGraphQLControllerTest
                 .filter(roomNames::contains)
                 .collect(java.util.stream.Collectors.toSet());
         assertEquals(expected, new java.util.HashSet<>(serverFilteredRooms),
-                () -> "block.allocatables filter must run over the canRead-narrowed subset only; "
+                () -> "block.resources filter must run over the canRead-narrowed subset only; "
                         + "visible=" + unfilteredVisible + " serverFiltered=" + serverFilteredRooms);
     }
 
@@ -1511,7 +1511,7 @@ class ReservationGraphQLControllerTest
                     classification: { event: {} },
                     appointments: [ { id: "a6666666-6666-4666-8666-666666666666",
                                       start: "2031-03-03T09:00:00", end: "2031-03-03T10:00:00", allDay: false } ],
-                    allocations: [ { allocatableId: "%s" } ]
+                    allocations: [ { resourceId: "%s" } ]
                   }) { id }
                 }
                 """.formatted(teilraum))
@@ -1522,10 +1522,10 @@ class ReservationGraphQLControllerTest
                 query {
                   appointmentBlockStats(
                     filter: { from: "2031-03-01T00:00:00", to: "2031-03-31T00:00:00",
-                              allocatableMatching: { idIn: ["%s"] } },
-                    groupBy: [ { key: "raum", allocatables: { idIn: ["%s"] } } ],
+                              resourceMatching: { idIn: ["%s"] } },
+                    groupBy: [ { key: "raum", resources: { idIn: ["%s"] } } ],
                     aggregate: [ { key: "termine", field: DURATION_MINUTES, fn: COUNT } ]
-                  ) { keys { value entity { ... on Allocatable { id } } } }
+                  ) { keys { value entity { ... on Resource { id } } } }
                 }
                 """.formatted(roomA66, roomA66))
                 .execute().path("appointmentBlockStats")
@@ -1559,9 +1559,9 @@ class ReservationGraphQLControllerTest
         final String teilraum = "rdd6b473-7c77-4344-a73d-1f27008341cb"; // belongsTo Room A66
 
         List<Map<String, Object>> got = tester.document("""
-                { allocatables(filter: { idIn: ["%s"] }) { id } }
+                { resources(filter: { idIn: ["%s"] }) { id } }
                 """.formatted(roomA66))
-                .execute().path("allocatables")
+                .execute().path("resources")
                 .entityList(new ParameterizedTypeReference<Map<String, Object>>() {}).get();
 
         List<String> ids = got.stream().map(a -> (String) a.get("id")).toList();
@@ -1579,24 +1579,24 @@ class ReservationGraphQLControllerTest
     @WithMockUser(username = "homer", roles = "ADMIN")
     void allocatableNameVariantMirrorsReservation()
     {
-        assertTrue(typeFieldNames("Allocatable").contains("name"),
-                () -> "missing Allocatable.name");
+        assertTrue(typeFieldNames("Resource").contains("name"),
+                () -> "missing Resource.name");
         // displayName deprecated → not in default field list; present with includeDeprecated.
         Map<String, Object> withDep = tester.document(
-                "{ __type(name: \"Allocatable\") { fields(includeDeprecated: true) { name isDeprecated } } }")
+                "{ __type(name: \"Resource\") { fields(includeDeprecated: true) { name isDeprecated } } }")
                 .execute().path("__type")
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {}).get();
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> depFields = (List<Map<String, Object>>) withDep.get("fields");
         Map<String, Object> dn = depFields.stream()
                 .filter(f -> "displayName".equals(f.get("name"))).findFirst()
-                .orElseThrow(() -> new AssertionError("missing Allocatable.displayName"));
-        assertEquals(Boolean.TRUE, dn.get("isDeprecated"), "Allocatable.displayName must be @deprecated");
+                .orElseThrow(() -> new AssertionError("missing Resource.displayName"));
+        assertEquals(Boolean.TRUE, dn.get("isDeprecated"), "Resource.displayName must be @deprecated");
 
         List<Map<String, Object>> rows = tester.document("""
                 query {
                   appointmentBlocks(filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" }) {
-                    allocatables(filter: { isPersonEq: false }) {
+                    resources(filter: { isPersonEq: false }) {
                       n:      name
                       disp:   name(variant: DISPLAY)
                       exp:    name(variant: EXPORT)
@@ -1611,7 +1611,7 @@ class ReservationGraphQLControllerTest
         for (Map<String, Object> b : rows)
         {
             @SuppressWarnings("unchecked")
-            List<Map<String, Object>> allocs = (List<Map<String, Object>>) b.get("allocatables");
+            List<Map<String, Object>> allocs = (List<Map<String, Object>>) b.get("resources");
             if (allocs == null) continue;
             for (Map<String, Object> a : allocs)
             {
@@ -1621,7 +1621,7 @@ class ReservationGraphQLControllerTest
                 assertEquals(a.get("disp"), a.get("exp"), () -> "EXPORT falls back to DISPLAY; got " + a);
             }
         }
-        assertTrue(sawAny, "fixture should have non-person allocatables on a block");
+        assertTrue(sawAny, "fixture should have non-person resources on a block");
     }
 
     // ============================================================ PRD 074 — render-meta (@view → extensions.view)
@@ -1645,7 +1645,7 @@ class ReservationGraphQLControllerTest
                     head: reservation @column(header: "Veranstaltung") { name }
                     start
                     day: start @hidden
-                    persons: allocatables(filter: { isPersonEq: true }) @join(separator: "; ") { name }
+                    persons: resources(filter: { isPersonEq: true }) @join(separator: "; ") { name }
                   }
                 }
                 """;
@@ -1666,7 +1666,7 @@ class ReservationGraphQLControllerTest
                 .andExpect(jsonPath("$.extensions.view.columns[?(@.alias=='head')].type")
                         .value(hasItem("Reservation")))
                 .andExpect(jsonPath("$.extensions.view.columns[?(@.alias=='persons')].type")
-                        .value(hasItem("Allocatable")));
+                        .value(hasItem("Resource")));
     }
 
     /**
@@ -1760,11 +1760,11 @@ class ReservationGraphQLControllerTest
                 query Raumauslastung @view(title: "Raumauslastung") {
                   appointmentBlockStats(
                     filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" },
-                    groupBy:   [ { key: "raum", allocatables: { typeIn: [room] } } ],
+                    groupBy:   [ { key: "raum", resources: { typeIn: [room] } } ],
                     aggregate: [ { key: "minuten", field: DURATION_MINUTES, fn: SUM },
                                  { key: "termine", field: DURATION_MINUTES, fn: COUNT } ]
                   ) {
-                    keys { value entity { ... on Allocatable { id } } }
+                    keys { value entity { ... on Resource { id } } }
                     values { key number }
                     count
                   }
@@ -1773,7 +1773,7 @@ class ReservationGraphQLControllerTest
         mockMvc.perform(post("/api/graphql").contentType(MediaType.APPLICATION_JSON).content(gqlBody(query)))
                 // group column from groupBy key, typed by the dimension
                 .andExpect(jsonPath("$.extensions.view.columns[?(@.alias=='raum')].kind").value(hasItem("group")))
-                .andExpect(jsonPath("$.extensions.view.columns[?(@.alias=='raum')].type").value(hasItem("Allocatable")))
+                .andExpect(jsonPath("$.extensions.view.columns[?(@.alias=='raum')].type").value(hasItem("Resource")))
                 // selected entity leaf field becomes an entity column hung off the group key
                 .andExpect(jsonPath("$.extensions.view.columns[?(@.alias=='id')].kind").value(hasItem("entity")))
                 .andExpect(jsonPath("$.extensions.view.columns[?(@.alias=='id')].group").value(hasItem("raum")))
@@ -1800,14 +1800,14 @@ class ReservationGraphQLControllerTest
         String query = """
                 query Raumauslastung(
                   $filter: ReservationFilter! = { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" },
-                  $allocatableFilter: AllocatableFilter! = { typeIn: [room] }
+                  $resourceFilter: ResourceFilter! = { typeIn: [room] }
                 ) @view(title: "Raumauslastung") {
                   appointmentBlockStats(
                     filter: $filter,
-                    groupBy:   [ { key: "raum", allocatables: $allocatableFilter } ],
+                    groupBy:   [ { key: "raum", resources: $resourceFilter } ],
                     aggregate: [ { key: "minuten", field: DURATION_MINUTES, fn: SUM } ]
                   ) {
-                    keys { value entity { ... on Allocatable { id } } }
+                    keys { value entity { ... on Resource { id } } }
                     values { key number }
                   }
                 }
@@ -1815,8 +1815,8 @@ class ReservationGraphQLControllerTest
         mockMvc.perform(post("/api/graphql").contentType(MediaType.APPLICATION_JSON).content(gqlBody(query)))
                 .andExpect(jsonPath("$.extensions.view.variables[?(@.name=='filter')].type")
                         .value(hasItem("ReservationFilter!")))
-                .andExpect(jsonPath("$.extensions.view.variables[?(@.name=='allocatableFilter')].type")
-                        .value(hasItem("AllocatableFilter!")));
+                .andExpect(jsonPath("$.extensions.view.variables[?(@.name=='resourceFilter')].type")
+                        .value(hasItem("ResourceFilter!")));
     }
 
     @Test
@@ -2059,9 +2059,9 @@ class ReservationGraphQLControllerTest
                 query {
                   appointmentBlockStats(
                     filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" },
-                    groupBy:   [ { key: "raum", allocatables: { typeIn: [room] } } ],
+                    groupBy:   [ { key: "raum", resources: { typeIn: [room] } } ],
                     aggregate: [ { key: "n", field: DURATION_MINUTES, fn: COUNT } ]
-                  ) { keys { value entity { __typename ... on Allocatable { displayName } } } }
+                  ) { keys { value entity { __typename ... on Resource { displayName } } } }
                 }
                 """)
                 .execute().path("appointmentBlockStats")
@@ -2073,8 +2073,8 @@ class ReservationGraphQLControllerTest
             Map<String, Object> key0 = ((List<Map<String, Object>>) bk.get("keys")).get(0);
             @SuppressWarnings("unchecked")
             Map<String, Object> entity = (Map<String, Object>) key0.get("entity");
-            assertNotNull(entity, () -> "allocatable dimension must carry entity; got " + bk);
-            assertEquals("Allocatable", entity.get("__typename"), "entity is an Allocatable");
+            assertNotNull(entity, () -> "resource dimension must carry entity; got " + bk);
+            assertEquals("Resource", entity.get("__typename"), "entity is an Resource");
             assertEquals(key0.get("value"), entity.get("displayName"),
                     () -> "entity.displayName must equal the key value; got " + bk);
         }
@@ -2120,15 +2120,15 @@ class ReservationGraphQLControllerTest
     {
         List<Map<String, Object>> buckets = tester.document("""
                 query {
-                  allocatableStats(
+                  resourceStats(
                     groupBy:   [ { key: "typ", type: true } ],
                     aggregate: [ { key: "n", fn: COUNT } ]
                   ) { count keys { key value } values { key number } }
                 }
                 """)
-                .execute().path("allocatableStats")
+                .execute().path("resourceStats")
                 .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
-        assertFalse(buckets.isEmpty(), "fixture should produce type-grouped allocatable buckets");
+        assertFalse(buckets.isEmpty(), "fixture should produce type-grouped resource buckets");
         for (Map<String, Object> bk : buckets)
         {
             @SuppressWarnings("unchecked")
@@ -2154,16 +2154,16 @@ class ReservationGraphQLControllerTest
     {
         List<Map<String, Object>> buckets = tester.document("""
                 query {
-                  allocatableStats(
+                  resourceStats(
                     filter:    { typeIn: [room] },
                     groupBy:   [ { key: "res", self: true } ],
                     aggregate: [ { key: "n", fn: COUNT } ]
-                  ) { keys { value entity { __typename ... on Allocatable { displayName } } } }
+                  ) { keys { value entity { __typename ... on Resource { displayName } } } }
                 }
                 """)
-                .execute().path("allocatableStats")
+                .execute().path("resourceStats")
                 .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
-        assertFalse(buckets.isEmpty(), "fixture should have room allocatables");
+        assertFalse(buckets.isEmpty(), "fixture should have room resources");
         for (Map<String, Object> bk : buckets)
         {
             @SuppressWarnings("unchecked")
@@ -2171,7 +2171,7 @@ class ReservationGraphQLControllerTest
             @SuppressWarnings("unchecked")
             Map<String, Object> entity = (Map<String, Object>) key0.get("entity");
             assertNotNull(entity, () -> "self dimension must carry entity; got " + bk);
-            assertEquals("Allocatable", entity.get("__typename"));
+            assertEquals("Resource", entity.get("__typename"));
             assertEquals(key0.get("value"), entity.get("displayName"),
                     () -> "entity.displayName must equal the key value; got " + bk);
         }
@@ -2188,7 +2188,7 @@ class ReservationGraphQLControllerTest
     {
         String q = """
                 query($min: Int) {
-                  allocatableStats(
+                  resourceStats(
                     filter:    { typeIn: [room] },
                     groupBy:   [ { key: "res", self: true } ],
                     aggregate: [ { key: "n", fn: COUNT } ],
@@ -2197,13 +2197,13 @@ class ReservationGraphQLControllerTest
                 }
                 """;
         List<Map<String, Object>> all = tester.document(q).variable("min", null)
-                .execute().path("allocatableStats")
+                .execute().path("resourceStats")
                 .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
-        assertFalse(all.isEmpty(), "fixture should have room allocatables (each a count=1 bucket)");
+        assertFalse(all.isEmpty(), "fixture should have room resources (each a count=1 bucket)");
         assertTrue(all.stream().allMatch(b -> ((Number) b.get("count")).intValue() == 1),
                 "self-grouped buckets are singletons");
         List<Map<String, Object>> filtered = tester.document(q).variable("min", 2)
-                .execute().path("allocatableStats")
+                .execute().path("resourceStats")
                 .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
         assertTrue(filtered.isEmpty(), "minCount:2 must remove all count=1 buckets");
     }
@@ -2219,17 +2219,17 @@ class ReservationGraphQLControllerTest
     {
         List<Map<String, Object>> rows = tester.document("""
                 query {
-                  allocatables(filter: { typeIn: [room] }) {
+                  resources(filter: { typeIn: [room] }) {
                     lit: compute(expr: "concat('a','b')")
                   }
                 }
                 """)
-                .execute().path("allocatables")
+                .execute().path("resources")
                 .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
-        assertFalse(rows.isEmpty(), "fixture has room allocatables");
+        assertFalse(rows.isEmpty(), "fixture has room resources");
         for (Map<String, Object> r : rows)
         {
-            assertEquals("ab", r.get("lit"), "compute must evaluate the expr against the allocatable");
+            assertEquals("ab", r.get("lit"), "compute must evaluate the expr against the resource");
         }
     }
 
@@ -2247,14 +2247,14 @@ class ReservationGraphQLControllerTest
     {
         List<Map<String, Object>> rows = tester.document("""
                 query {
-                  allocatables(filter: { typeIn: [room, lecturer] }) {
+                  resources(filter: { typeIn: [room, lecturer] }) {
                     typ: classification { typeKey }
                     wert: attributeValue(keys: ["surname", "name"])
                     fehlt: attributeValue(keys: ["gibtesnicht"])
                   }
                 }
                 """)
-                .execute().path("allocatables")
+                .execute().path("resources")
                 .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
 
         assertFalse(rows.isEmpty(), "fixture has rooms and lecturers");
@@ -2291,14 +2291,14 @@ class ReservationGraphQLControllerTest
     {
         List<Map<String, Object>> rows = tester.document("""
                 query {
-                  allocatables(filter: { typeIn: [room, lecturer] }) {
+                  resources(filter: { typeIn: [room, lecturer] }) {
                     bez: name
                     wert: attributeValue(keys: [], expr: "name()")
                     vorrang: attributeValue(keys: ["surname"], expr: "concat('fallback')")
                   }
                 }
                 """)
-                .execute().path("allocatables")
+                .execute().path("resources")
                 .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
 
         assertFalse(rows.isEmpty(), "fixture has rooms and lecturers");
@@ -2382,8 +2382,8 @@ class ReservationGraphQLControllerTest
         List<Map<String, Object>> blocks = tester.document("""
                 query {
                   appointmentBlocks(filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" }) {
-                    personen:      allocatables(filter: { isPersonEq: true })  { id isPerson isLocation }
-                    nichtPersonen: allocatables(filter: { isPersonEq: false }) { id isPerson isLocation }
+                    personen:      resources(filter: { isPersonEq: true })  { id isPerson isLocation }
+                    nichtPersonen: resources(filter: { isPersonEq: false }) { id isPerson isLocation }
                   }
                 }
                 """)
@@ -2410,7 +2410,7 @@ class ReservationGraphQLControllerTest
                 sawNonPerson = true;
             }
         }
-        assertTrue(sawPerson || sawNonPerson, "fixture blocks should allocate at least one allocatable");
+        assertTrue(sawPerson || sawNonPerson, "fixture blocks should allocate at least one resource");
     }
 
     /**
@@ -2428,7 +2428,7 @@ class ReservationGraphQLControllerTest
                     filter:    { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" },
                     groupBy:   [ { key: "res", expr: "resources(item)" } ],
                     aggregate: [ { key: "n", field: DURATION_MINUTES, fn: COUNT } ]
-                  ) { keys { value entity { __typename ... on Allocatable { displayName } } } }
+                  ) { keys { value entity { __typename ... on Resource { displayName } } } }
                 }
                 """)
                 .execute().path("appointmentBlockStats")
@@ -2441,7 +2441,7 @@ class ReservationGraphQLControllerTest
             @SuppressWarnings("unchecked")
             Map<String, Object> entity = (Map<String, Object>) key0.get("entity");
             assertNotNull(entity, () -> "entity-returning expr must carry entity; got " + bk);
-            assertEquals("Allocatable", entity.get("__typename"));
+            assertEquals("Resource", entity.get("__typename"));
             assertEquals(key0.get("value"), entity.get("displayName"),
                     () -> "entity.displayName must equal the bucket key value; got " + bk);
         }
@@ -2713,8 +2713,8 @@ class ReservationGraphQLControllerTest
     private List<String> reservation2AppointmentAllocatableNames(String filterArg)
     {
         String nested = filterArg == null
-                ? "allocatables { displayName }"
-                : "allocatables(filter: " + filterArg + ") { displayName }";
+                ? "resources { displayName }"
+                : "resources(filter: " + filterArg + ") { displayName }";
         List<Map<String, Object>> result = tester.document(String.format("""
                 query {
                   reservations(filter: {
@@ -2738,7 +2738,7 @@ class ReservationGraphQLControllerTest
             for (Map<String, Object> a : appts)
             {
                 @SuppressWarnings("unchecked")
-                List<Map<String, Object>> allocs = (List<Map<String, Object>>) a.get("allocatables");
+                List<Map<String, Object>> allocs = (List<Map<String, Object>>) a.get("resources");
                 if (allocs == null) continue;
                 for (Map<String, Object> al : allocs)
                 {
@@ -2766,23 +2766,23 @@ class ReservationGraphQLControllerTest
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> fields = (List<Map<String, Object>>) result.get("fields");
         Map<String, Object> allocField = fields.stream()
-                .filter(f -> "allocatables".equals(f.get("name")))
+                .filter(f -> "resources".equals(f.get("name")))
                 .findFirst()
-                .orElseThrow(() -> new AssertionError("missing Appointment.allocatables field"));
+                .orElseThrow(() -> new AssertionError("missing Appointment.resources field"));
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> args = (List<Map<String, Object>>) allocField.get("args");
         Map<String, Object> filterArg = args.stream()
                 .filter(a -> "filter".equals(a.get("name")))
                 .findFirst()
-                .orElseThrow(() -> new AssertionError("Appointment.allocatables must accept a 'filter' arg; got "
+                .orElseThrow(() -> new AssertionError("Appointment.resources must accept a 'filter' arg; got "
                         + args.stream().map(a -> (String) a.get("name")).toList()));
         @SuppressWarnings("unchecked")
         Map<String, Object> type = (Map<String, Object>) filterArg.get("type");
         String typeName = type.get("name") != null
                 ? (String) type.get("name")
                 : (String) ((Map<?, ?>) type.get("ofType")).get("name");
-        assertEquals("AllocatableFilter", typeName,
-                "filter arg must use the unified AllocatableFilter, not " + typeName);
+        assertEquals("ResourceFilter", typeName,
+                "filter arg must use the unified ResourceFilter, not " + typeName);
     }
 
     /**
@@ -2796,14 +2796,14 @@ class ReservationGraphQLControllerTest
         tester.document("""
                 query {
                   reservations(filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" }) {
-                    appointments { allocatables(filter: { idIn: ["some-id"] }) { displayName } }
+                    appointments { resources(filter: { idIn: ["some-id"] }) { displayName } }
                   }
                 }
                 """)
                 .execute()
                 .errors()
                 .satisfy(errs -> assertTrue(errs.isEmpty(),
-                        "idIn is part of the unified AllocatableFilter — must NOT be a validation error: " + errs));
+                        "idIn is part of the unified ResourceFilter — must NOT be a validation error: " + errs));
     }
 
     /** PRD 074 A — `limit` accepted on the nested path (caps the list), no validation error. */
@@ -2814,14 +2814,14 @@ class ReservationGraphQLControllerTest
         tester.document("""
                 query {
                   reservations(filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" }) {
-                    appointments { allocatables(filter: { limit: 1 }) { displayName } }
+                    appointments { resources(filter: { limit: 1 }) { displayName } }
                   }
                 }
                 """)
                 .execute()
                 .errors()
                 .satisfy(errs -> assertTrue(errs.isEmpty(),
-                        "limit is part of the unified AllocatableFilter — must NOT be a validation error: " + errs));
+                        "limit is part of the unified ResourceFilter — must NOT be a validation error: " + errs));
     }
 
     /**
@@ -2835,14 +2835,14 @@ class ReservationGraphQLControllerTest
         tester.document("""
                 query {
                   reservations(filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" }) {
-                    appointments { allocatables(filter: { accessLevel: EDIT }) { displayName } }
+                    appointments { resources(filter: { accessLevel: EDIT }) { displayName } }
                   }
                 }
                 """)
                 .execute()
                 .errors()
                 .satisfy(errs -> assertTrue(errs.isEmpty(),
-                        "accessLevel is part of the unified AllocatableFilter — must NOT be a validation error: " + errs));
+                        "accessLevel is part of the unified ResourceFilter — must NOT be a validation error: " + errs));
     }
 
     /** (a) typeIn narrows the nested list to the named DynamicTypes (rooms only). */

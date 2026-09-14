@@ -328,11 +328,11 @@
         Ressourcen
         <span class="anchor">✎</span>
       </div>
-      @for (al of d.allocations; track al.allocatableId) {
+      @for (al of d.allocations; track al.resourceId) {
         <div class="rail">
           <span>
-            <span class="dot" [class]="'dot ' + (statusFor(al.allocatableId)?.status ?? '')"></span>
-            {{ al.allocatableName }}
+            <span class="dot" [class]="'dot ' + (statusFor(al.resourceId)?.status ?? '')"></span>
+            {{ al.resourceName }}
           </span>
           <span class="right">
             <!-- PRD 091 OQ5 — persisted request state: the server marked this allocation as a
@@ -341,7 +341,7 @@
             @if (al.requestStatus === 'REQUESTED') {
               <span class="pill requested">beantragt</span>
             }
-            @if (statusFor(al.allocatableId); as st) {
+            @if (statusFor(al.resourceId); as st) {
               <span class="pill" [class]="'pill ' + st.status">
                 @switch (st.status) {
                   @case ('AVAILABLE') {
@@ -363,21 +363,19 @@
               </span>
             }
             @if (canModify()) {
-              <button type="button" class="act" (click)="toggleGilt(al.allocatableId)">
-                gilt für: {{ giltLabel(al) }} {{ giltOpen() === al.allocatableId ? '▴' : '▾' }}
+              <button type="button" class="act" (click)="toggleGilt(al.resourceId)">
+                gilt für: {{ giltLabel(al) }} {{ giltOpen() === al.resourceId ? '▴' : '▾' }}
               </button>
-              <button type="button" class="act linkish" (click)="unassign(al.allocatableId)">
-                ✕
-              </button>
+              <button type="button" class="act linkish" (click)="unassign(al.resourceId)">✕</button>
             } @else {
               <span class="hint">gilt für: {{ giltLabel(al) }}</span>
             }
           </span>
         </div>
-        @if (giltOpen() === al.allocatableId) {
+        @if (giltOpen() === al.resourceId) {
           <div class="picker">
             <div class="row spread">
-              <b>{{ al.allocatableName }} — Termine zuordnen</b>
+              <b>{{ al.resourceName }} — Termine zuordnen</b>
             </div>
             <label>
               <input
@@ -404,7 +402,7 @@
                   (change)="toggleGiltAppointment(al, a.id, $any($event.target).checked)"
                 />
                 {{ circled(i) }} {{ a.start | date: 'EE dd.MM. HH:mm' }}
-                @if (statusFor(al.allocatableId)?.conflictingAppointmentIds?.includes(a.id)) {
+                @if (statusFor(al.resourceId)?.conflictingAppointmentIds?.includes(a.id)) {
                   <span class="pill CONFLICT">belegt</span>
                 } @else {
                   <span class="pill AVAILABLE">frei</span>

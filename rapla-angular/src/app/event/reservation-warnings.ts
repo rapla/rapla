@@ -21,7 +21,7 @@ export interface ReservationWarning {
   severity: 'BLOCKING' | 'CONFIRMABLE';
   /** PRD 105 — evidence carried by the finding itself; populated for CONFLICT, empty otherwise. */
   conflicts?: {
-    allocatable: { name: string | null } | null;
+    resource: { name: string | null } | null;
     reservation2: { name: string | null } | null;
     startDate: string;
   }[];
@@ -33,13 +33,13 @@ export interface ReservationWarning {
  * and a drag therefore showed a bare "erzeugt Konflikte".
  */
 export function conflictDetails(warnings: ReservationWarning[]): {
-  allocatableName: string;
+  resourceName: string;
   otherEventName: string | null;
   when: string;
 }[] {
   return warnings.flatMap((w) =>
     (w.conflicts ?? []).map((c) => ({
-      allocatableName: c.allocatable?.name ?? 'Ressource',
+      resourceName: c.resource?.name ?? 'Ressource',
       otherEventName: c.reservation2?.name ?? null,
       when: c.startDate,
     })),

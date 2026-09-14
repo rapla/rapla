@@ -791,69 +791,22 @@ public class FacadeImpl implements RaplaFacade {
 			dynamicType.addAttribute(createStringAttribute("name", "name"));
 			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{name}");
 			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_COLORS,"automatic");
-			addDefaultResourcePermissions(dynamicType);
+			PermissionContainer.Util.addDefaultTypePermissions(dynamicType, getUserGroupsCategory());
 		} else if (classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)) {
 			dynamicType.addAttribute(createStringAttribute("name","eventname"));
 			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{name}");
 			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_COLORS, null);
-			addDefaultEventPermissions(dynamicType);
+			PermissionContainer.Util.addDefaultTypePermissions(dynamicType, getUserGroupsCategory());
 		} else if (classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON)) {
 			dynamicType.addAttribute(createStringAttribute("surname", "surname"));
 			dynamicType.addAttribute(createStringAttribute("firstname", "firstname"));
 			dynamicType.addAttribute(createStringAttribute("email", "email"));
 			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT, "{surname} {firstname}");
 			dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_COLORS, null);
-            addDefaultResourcePermissions(dynamicType);
+            PermissionContainer.Util.addDefaultTypePermissions(dynamicType, getUserGroupsCategory());
 		}
 		return dynamicType;
 	}
-
-    @SuppressWarnings("deprecation")
-    private void addDefaultEventPermissions(DynamicTypeImpl dynamicType) throws RaplaException {
-        {
-            Permission permission = dynamicType.newPermission();
-            permission.setAccessLevel( Permission.READ_TYPE);
-            dynamicType.addPermission( permission);
-        }
-        Category canReadEventsFromOthers = getUserGroupsCategory().getCategory(Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS);
-        if ( canReadEventsFromOthers != null)
-        {
-            Permission permission = dynamicType.newPermission();
-            permission.setAccessLevel( Permission.READ);
-            permission.setGroup( canReadEventsFromOthers);
-            dynamicType.addPermission( permission);
-        }
-        Category canCreate = getUserGroupsCategory().getCategory(Permission.GROUP_CAN_CREATE_EVENTS);
-        if ( canCreate != null)
-        {
-            Permission permission = dynamicType.newPermission();
-            permission.setAccessLevel( Permission.CREATE);
-            permission.setGroup( canCreate);
-            dynamicType.addPermission( permission);
-        }
-    }
-
-    private void addDefaultResourcePermissions(DynamicTypeImpl dynamicType) throws RaplaException {
-        {
-            Permission permission = dynamicType.newPermission();
-            permission.setAccessLevel( Permission.READ_TYPE);
-            dynamicType.addPermission( permission);
-        }
-        {
-            Permission permission = dynamicType.newPermission();
-            permission.setAccessLevel( Permission.ALLOCATE_CONFLICTS);
-            dynamicType.addPermission( permission);
-        }
-        @SuppressWarnings("deprecation")
-        Category registerer = getUserGroupsCategory().getCategory(Permission.GROUP_REGISTERER_KEY);
-        if ( registerer != null)
-        {
-            Permission permission = dynamicType.newPermission();
-            permission.setAccessLevel( Permission.CREATE);
-            permission.setGroup( registerer);
-            dynamicType.addPermission( permission);
-        }
-    }
 
 	public Attribute newAttribute(AttributeType attributeType)	throws RaplaException {
 		AttributeImpl attribute = new AttributeImpl(attributeType);

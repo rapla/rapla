@@ -30,6 +30,8 @@ public interface Period extends RaplaObject<Period>,Comparable<Period>,Named {
     TimeInterval getInterval();
     int getWeeks();
     String getName();
+    /** Id of the underlying rapla:period allocatable. */
+    String getId();
     Set<Category> getCategories();
 
     boolean contains(LocalDateTime dateTime);

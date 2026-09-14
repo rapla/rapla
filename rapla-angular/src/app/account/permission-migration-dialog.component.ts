@@ -13,9 +13,9 @@ import {
 
 /**
  * PRD 090 — "Permission migration" admin dialog. One row + one checkbox per
- * allocatable whose effective access rose at the additive flip; each row lists
+ * resource whose effective access rose at the additive flip; each row lists
  * the principals who gain access. Checking "Resolved" acknowledges the whole
- * allocatable (server prunes inert DENIED rows + sets the ack flag), removing it
+ * resource (server prunes inert DENIED rows + sets the ack flag), removing it
  * from the list. Empty list ⇒ nothing to migrate.
  */
 @Component({
@@ -48,15 +48,15 @@ import {
           Nothing to migrate — every resource is additive-clean.
         </p>
       } @else {
-        @for (f of findings(); track f.allocatableId) {
+        @for (f of findings(); track f.resourceId) {
           <div class="finding">
             <mat-checkbox
-              [disabled]="busyId() === f.allocatableId"
+              [disabled]="busyId() === f.resourceId"
               (change)="resolve(f)"
               matTooltip="Mark resolved — prune obsolete DENIED rows and acknowledge"
             ></mat-checkbox>
             <div class="fmeta">
-              <div class="fname">{{ f.allocatableName }}</div>
+              <div class="fname">{{ f.resourceName }}</div>
               <ul class="who">
                 @for (e of f.escalations; track e.principalName + e.additiveLevel) {
                   <li>
@@ -174,9 +174,9 @@ export class PermissionMigrationDialogComponent implements OnInit {
   }
 
   resolve(f: PermissionMigrationFinding): void {
-    this.busyId.set(f.allocatableId);
+    this.busyId.set(f.resourceId);
     this.errorMessage.set(null);
-    this.api.resolve(f.allocatableId).subscribe({
+    this.api.resolve(f.resourceId).subscribe({
       next: (remaining) => {
         this.findings.set(remaining);
         this.busyId.set(null);

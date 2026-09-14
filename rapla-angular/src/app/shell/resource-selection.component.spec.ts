@@ -7,7 +7,7 @@ import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { ResourceSelectionComponent } from './resource-selection.component';
 import { ResourceSelectionStore } from '../state/resource-selection-store';
 import { FilterStore } from '../state/filter-store';
-import { AllocatableEditDialogComponent } from '../allocatable/allocatable-edit-dialog.component';
+import { ResourceEditDialogComponent } from '../resource/resource-edit-dialog.component';
 
 function setInput(el: HTMLElement, selector: string, value: string): void {
   const input = el.querySelector(selector) as HTMLInputElement;
@@ -260,7 +260,7 @@ describe('ResourceSelectionComponent', () => {
     menuItems[0].click();
     await f.whenStable();
     expect(dialogOpen).toHaveBeenCalledWith(
-      AllocatableEditDialogComponent,
+      ResourceEditDialogComponent,
       expect.objectContaining({ data: { id: 'cam1', readOnly: false } }),
     );
     // the ⋮ click must not step/replace the filter

@@ -100,7 +100,7 @@ public class AvailabilityGraphQLController
     }
 
     /** Wire row for the GraphQL {@code ResourceAvailability} type. */
-    public record ResourceAvailabilityRow(Allocatable allocatable, String status,
+    public record ResourceAvailabilityRow(Allocatable resource, String status,
             List<String> conflictingAppointmentIds)
     {
     }
@@ -189,7 +189,7 @@ public class AvailabilityGraphQLController
         }
 
         List<Allocatable> allocatables = new ArrayList<>();
-        for (String id : stringList(input.get("allocatableIds")))
+        for (String id : stringList(input.get("resourceIds")))
         {
             Allocatable a = tryResolveAllocatable(id);
             if (a == null || !rc.canReadAllocatable(a)) continue;   // §12 — hidden ≡ nonexistent

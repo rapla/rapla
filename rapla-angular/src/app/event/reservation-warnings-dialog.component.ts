@@ -6,7 +6,7 @@ import { isBlocked, warningText, type ReservationWarning } from './reservation-w
 
 /** One clashing booking, as `potentialConflicts` reports it (§12: side 2 may be masked). */
 export interface ConflictDetail {
-  allocatableName: string;
+  resourceName: string;
   otherEventName: string | null;
   when: string;
 }
@@ -37,9 +37,9 @@ export interface WarningsDialogData {
             {{ text(w) }}
             @if (w.code === 'CONFLICT' && data.conflicts.length > 0) {
               <ul class="conflicts">
-                @for (c of data.conflicts; track c.allocatableName + c.when) {
+                @for (c of data.conflicts; track c.resourceName + c.when) {
                   <li>
-                    <strong>{{ c.allocatableName }}</strong> — {{ c.when }} —
+                    <strong>{{ c.resourceName }}</strong> — {{ c.when }} —
                     {{ c.otherEventName ?? 'belegt (nicht einsehbar)' }}
                   </li>
                 }

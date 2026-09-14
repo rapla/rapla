@@ -36,8 +36,8 @@ import org.springframework.stereotype.Controller;
  * <p><b>§12 invariants</b> (PRD 063 §12):
  * <ul>
  *   <li>{@code createAllocatable} — caller must
- *       {@code PermissionController.canCreate(dt, caller)}. Non-admin
- *       callers cannot set {@code ownerId} to a different user.</li>
+ *       {@code PermissionController.canCreate(dt, caller)}. The owner is
+ *       always the caller; {@code changeAllocatableOwner} (admin-only) reassigns.</li>
  *   <li>{@code updateAllocatable} — caller must
  *       {@code canModify(allocatable, caller)}.</li>
  *   <li>{@code deleteAllocatables} — admin-only at the resolver entry
@@ -46,8 +46,9 @@ import org.springframework.stereotype.Controller;
  *       on reservation references surfaces as {@code STORAGE_ERROR}.</li>
  * </ul>
  *
- * <p><b>v1 scope.</b> Permission editing on allocatables is preserved on
- * update (existing permissions copied through) but not editable here.
+ * <p><b>Permissions (PRD 113 § 2b).</b> {@code input.permissions} null keeps the stored
+ * rows (create: type defaults); non-null replaces the list via {@link PermissionInputMapper}.
+ * The canAdmin gate for a changed list lives in {@code SecurityManager}, reached through {@link WriteGate}.
  * New allocatables inherit type-default permissions (matches the facade
  * pattern). Owner is immutable on update.
  */
@@ -73,7 +74,7 @@ public class AllocatableMutationController
 
     // ============================================================ createAllocatable
 
-    @MutationMapping
+    @MutationMapping(name = "createResource")
     @SuppressWarnings("unchecked")
     public Allocatable createAllocatable(@Argument("input") Map<String, Object> input)
             throws RaplaException
@@ -94,25 +95,7 @@ public class AllocatableMutationController
             if (!pc.canCreate(dt, caller))
             {
                 throw new ReservationMutationException("PERMISSION_DENIED", "input.typeKey",
-                        "No permission to create allocatables of type " + dt.getKey());
-            }
-        }
-
-        // ownerId override (admin-only) — null = caller becomes owner
-        String ownerId = (String) input.get("ownerId");
-        User owner = caller;
-        if (ownerId != null && !ownerId.isBlank())
-        {
-            if (!caller.isAdmin())
-            {
-                throw new ReservationMutationException("PERMISSION_DENIED", "input.ownerId",
-                        "Only admins may set ownerId on create");
-            }
-            owner = operator.tryResolve(new ReferenceInfo<>(ownerId, User.class));
-            if (owner == null)
-            {
-                throw new ReservationMutationException("REFERENCE_NOT_FOUND", "input.ownerId",
-                        "User " + ownerId + " not found");
+                        "No permission to create resources of type " + dt.getKey());
             }
         }
 
@@ -132,9 +115,11 @@ public class AllocatableMutationController
         }
         a.setId(clientId);
         a.setClassification(classification);
-        a.setOwner(owner);
-        // Copy type-default permissions onto the new allocatable.
+        a.setOwner(caller);
+        // Copy type-default permissions onto the new allocatable; an explicit list replaces them (PRD 113 § 2b).
         PermissionContainer.Util.copyPermissions(dt, a);
+        PermissionInputMapper.apply(a, (List<Map<String, Object>>) input.get("permissions"),
+                PermissionInputMapper.Kind.RESOURCE, "input.permissions", operator);
 
         UpdateEvent event = new UpdateEvent();
         event.setUserId(caller.getId());
@@ -147,7 +132,7 @@ public class AllocatableMutationController
 
     // ============================================================ updateAllocatable
 
-    @MutationMapping
+    @MutationMapping(name = "updateResource")
     @SuppressWarnings("unchecked")
     public Allocatable updateAllocatable(@Argument("id") String id,
             @Argument("input") Map<String, Object> input,
@@ -159,19 +144,11 @@ public class AllocatableMutationController
             throw new ReservationMutationException("REQUIRED", "id", "id is required");
         }
         ReservationMutationController.rejectForeignInputId(input, id, "input.id");
-        // PRD 113 § 1d — ownerId is create-only; owner changes get their own verb.
-        // The merged input still carries the field, so reject it instead of ignoring it.
-        String updateOwnerId = (String) input.get("ownerId");
-        if (updateOwnerId != null && !updateOwnerId.isBlank())
-        {
-            throw new ReservationMutationException("INVALID_VALUE", "input.ownerId",
-                    "ownerId is create-only — the owner is immutable on update");
-        }
         Allocatable stored = operator.tryResolve(new ReferenceInfo<>(id, Allocatable.class));
         if (stored == null)
         {
             throw new ReservationMutationException("REFERENCE_NOT_FOUND", "id",
-                    "Allocatable " + id + " not found");
+                    "Resource " + id + " not found");
         }
         if (!caller.isAdmin()
                 && !operator.getPermissionController().canModify(stored, caller))
@@ -181,10 +158,10 @@ public class AllocatableMutationController
             if (!operator.getPermissionController().canRead(stored, caller))
             {
                 throw new ReservationMutationException("REFERENCE_NOT_FOUND", "id",
-                        "Allocatable " + id + " not found");
+                        "Resource " + id + " not found");
             }
             throw new ReservationMutationException("PERMISSION_DENIED", "id",
-                    "No modify permission on allocatable " + id);
+                    "No modify permission on resource " + id);
         }
 
         // Type change accepted (PRD 096 Phase 4 — mirrors the PRD 056 OQ1.c
@@ -203,7 +180,7 @@ public class AllocatableMutationController
                 if (!pc.canCreate(targetType, caller))
                 {
                     throw new ReservationMutationException("PERMISSION_DENIED", "input.typeKey",
-                            "No permission to create allocatables of type " + targetType.getKey());
+                            "No permission to create resources of type " + targetType.getKey());
                 }
             }
             targetTypeKey = inputTypeKey;
@@ -215,7 +192,7 @@ public class AllocatableMutationController
         {
             throw new ReservationMutationException("CONCURRENT_MODIFICATION",
                     "expectedLastChanged",
-                    "Allocatable was modified after the supplied lastChanged timestamp");
+                    "Resource was modified after the supplied lastChanged timestamp");
         }
 
         // Clone for edit (rapla pattern — never mutate persistent entities).
@@ -226,6 +203,8 @@ public class AllocatableMutationController
         Classification newClassification = buildClassificationFromInput(targetType, classificationInput,
                 targetTypeKey);
         draft.setClassification(newClassification);
+        PermissionInputMapper.apply(draft, (List<Map<String, Object>>) input.get("permissions"),
+                PermissionInputMapper.Kind.RESOURCE, "input.permissions", operator);
 
         UpdateEvent event = new UpdateEvent();
         event.setUserId(caller.getId());
@@ -235,9 +214,168 @@ public class AllocatableMutationController
         return operator.tryResolve(new ReferenceInfo<>(id, Allocatable.class));
     }
 
+    // ============================================================ updateEventTemplate / updatePeriod
+
+    /** PRD 113 § 1c — see Mutation.updateEventTemplate in the schema. */
+    @MutationMapping
+    @SuppressWarnings("unchecked")
+    public ReservationGraphQLController.EventTemplate updateEventTemplate(@Argument("id") String id,
+            @Argument("input") Map<String, Object> input,
+            @Argument("expectedLastChanged") LocalDateTime expectedLastChanged) throws RaplaException
+    {
+        User caller = requireCaller();
+        AllocatableImpl draft = editableInternal(id, input, StorageOperator.RAPLA_TEMPLATE, caller, expectedLastChanged);
+        Classification c = draft.getClassification().getType().newClassification();
+        c.setValue("name", input.get("name"));
+        c.setValue(org.rapla.entities.domain.ResourceAnnotations.FIXEDTIMEANDDURATION, input.get("fixedTimeAndDuration"));
+        draft.setClassification(c);
+        PermissionInputMapper.apply(draft, (List<Map<String, Object>>) input.get("permissions"),
+                PermissionInputMapper.Kind.SIMPLE, "input.permissions", operator);
+        storeDraft(draft, caller);
+        Allocatable stored = operator.tryResolve(new ReferenceInfo<>(id, Allocatable.class));
+        return ReservationGraphQLController.EventTemplate.from(stored, caller, operator.getPermissionController(),
+                StructuralTypeFetchers.serverLocale(), operator);
+    }
+
+    /** PRD 113 § 1c — see Mutation.updatePeriod in the schema. */
+    @MutationMapping
+    @SuppressWarnings("unchecked")
+    public HelloGraphQLController.PeriodDto updatePeriod(@Argument("id") String id,
+            @Argument("input") Map<String, Object> input,
+            @Argument("expectedLastChanged") LocalDateTime expectedLastChanged) throws RaplaException
+    {
+        User caller = requireCaller();
+        AllocatableImpl draft = editableInternal(id, input, StorageOperator.PERIOD_TYPE, caller, expectedLastChanged);
+        LocalDateTime start = (LocalDateTime) input.get("start");
+        LocalDateTime end = (LocalDateTime) input.get("end");
+        if (!start.isBefore(end))
+        {
+            throw new ReservationMutationException("INVALID_VALUE", "input.end", "end must be after start");
+        }
+        List<String> categoryIds = (List<String>) input.get("categoryIds");
+        List<org.rapla.entities.Category> categories = new ArrayList<>(categoryIds.size());
+        for (int i = 0; i < categoryIds.size(); i++)
+        {
+            org.rapla.entities.Category category;
+            try
+            {
+                category = operator.tryResolve(new ReferenceInfo<>(categoryIds.get(i), org.rapla.entities.Category.class));
+            }
+            catch (RuntimeException e)
+            {
+                category = null;
+            }
+            if (category == null)
+            {
+                throw new ReservationMutationException("REFERENCE_NOT_FOUND", "input.categoryIds[" + i + "]",
+                        "Category not found");
+            }
+            categories.add(category);
+        }
+        Classification c = draft.getClassification().getType().newClassification();
+        c.setValue("name", input.get("name"));
+        c.setValue("start", start);
+        c.setValue("end", end);
+        c.setValues(c.getAttribute("category"), categories);
+        draft.setClassification(c);
+        PermissionInputMapper.apply(draft, (List<Map<String, Object>>) input.get("permissions"),
+                PermissionInputMapper.Kind.SIMPLE, "input.permissions", operator);
+        storeDraft(draft, caller);
+        Allocatable stored = operator.tryResolve(new ReferenceInfo<>(id, Allocatable.class));
+        return HelloGraphQLController.PeriodDto.from(stored, caller, operator.getPermissionController());
+    }
+
+    /**
+     * § 1c / §12 — resolves a template or period for update: unknown ids, allocatables of another type and
+     * allocatables the caller cannot read all answer the same REFERENCE_NOT_FOUND; a readable one the caller
+     * cannot modify gets PERMISSION_DENIED.
+     */
+    private AllocatableImpl editableInternal(String id, Map<String, Object> input, String typeKey, User caller,
+            LocalDateTime expectedLastChanged)
+    {
+        if (id == null || id.isBlank())
+        {
+            throw new ReservationMutationException("REQUIRED", "id", "id is required");
+        }
+        Allocatable stored;
+        try
+        {
+            stored = operator.tryResolve(new ReferenceInfo<>(id, Allocatable.class));
+        }
+        catch (RuntimeException e)
+        {
+            stored = null;
+        }
+        PermissionController pc = operator.getPermissionController();
+        if (stored == null
+                || stored.getClassification() == null
+                || !typeKey.equals(stored.getClassification().getType().getKey())
+                || (!caller.isAdmin() && !pc.canRead(stored, caller)))
+        {
+            throw new ReservationMutationException("REFERENCE_NOT_FOUND", "id", "Not found");
+        }
+        if (!caller.isAdmin() && !pc.canModify(stored, caller))
+        {
+            throw new ReservationMutationException("PERMISSION_DENIED", "id", "No modify permission");
+        }
+        ReservationMutationController.rejectForeignInputId(input, id, "input.id");
+        if (expectedLastChanged != null && stored.getLastChanged() != null
+                && !expectedLastChanged.equals(stored.getLastChanged()))
+        {
+            throw new ReservationMutationException("CONCURRENT_MODIFICATION", "expectedLastChanged",
+                    "Resource was modified after the supplied lastChanged timestamp");
+        }
+        return (AllocatableImpl) ((AllocatableImpl) stored).clone();
+    }
+
+    private void storeDraft(AllocatableImpl draft, User caller) throws RaplaException
+    {
+        UpdateEvent event = new UpdateEvent();
+        event.setUserId(caller.getId());
+        event.addStore(draft);
+        dispatchChecked(event);
+    }
+
+    // ============================================================ changeAllocatableOwner
+
+    /** PRD 113 OQ 14 / WP O1 — owner reassignment for resources, templates and periods; same gate as changeReservationOwner. */
+    @MutationMapping(name = "changeResourceOwner")
+    public Map<String, Object> changeAllocatableOwner(@Argument("ids") List<String> ids,
+            @Argument("newOwnerId") String newOwnerId) throws RaplaException
+    {
+        User caller = requireCaller();
+        User newOwner = ReservationMutationController.requireNewOwnerInScope(operator, caller, newOwnerId);
+        PermissionController pc = operator.getPermissionController();
+        UpdateEvent event = new UpdateEvent();
+        event.setUserId(caller.getId());
+        List<Map<String, Object>> results = new ArrayList<>(ids.size());
+        for (int i = 0; i < ids.size(); i++)
+        {
+            String id = ids.get(i);
+            Allocatable stored = operator.tryResolve(new ReferenceInfo<>(id, Allocatable.class));
+            if (stored == null || (!caller.isAdmin() && !pc.canReadInformation(stored, caller)))
+            {
+                throw new ReservationMutationException("REFERENCE_NOT_FOUND", "ids[" + i + "]",
+                        "Resource " + id + " not found");
+            }
+            ReservationMutationController.requireCanChangeOwner(operator, caller, stored, newOwner, i);
+            AllocatableImpl draft = (AllocatableImpl) ((AllocatableImpl) stored).clone();
+            draft.setOwner(newOwner);
+            event.addStore(draft);
+            Map<String, Object> entry = bulkEntry(i);
+            entry.put("resource", draft);
+            results.add(entry);
+        }
+        dispatchChecked(event);
+        Map<String, Object> bulk = new LinkedHashMap<>();
+        bulk.put("overallStatus", "SUCCESS");
+        bulk.put("results", results);
+        return bulk;
+    }
+
     // ============================================================ deleteAllocatables
 
-    @MutationMapping
+    @MutationMapping(name = "deleteResources")
     public Map<String, Object> deleteAllocatables(@Argument("ids") List<String> ids) throws RaplaException
     {
         User caller = requireCaller();
@@ -257,7 +395,7 @@ public class AllocatableMutationController
             if (a == null)
             {
                 entry.put("errors", List.of(validationError(i, "REFERENCE_NOT_FOUND",
-                        "Allocatable " + id + " not found")));
+                        "Resource " + id + " not found")));
                 results.add(entry);
                 anyFailure = true;
                 continue;
@@ -269,8 +407,8 @@ public class AllocatableMutationController
                 // it exists — report REFERENCE_NOT_FOUND, identical to a nonexistent id.
                 boolean readable = operator.getPermissionController().canRead(a, caller);
                 entry.put("errors", List.of(readable
-                        ? validationError(i, "PERMISSION_DENIED", "No admin permission on allocatable " + id)
-                        : validationError(i, "REFERENCE_NOT_FOUND", "Allocatable " + id + " not found")));
+                        ? validationError(i, "PERMISSION_DENIED", "No admin permission on resource " + id)
+                        : validationError(i, "REFERENCE_NOT_FOUND", "Resource " + id + " not found")));
                 results.add(entry);
                 anyFailure = true;
                 continue;
@@ -355,7 +493,7 @@ public class AllocatableMutationController
         Map<String, Object> e = new LinkedHashMap<>();
         e.put("index", index);
         e.put("reservation", null);
-        e.put("allocatable", null);
+        e.put("resource", null);
         e.put("user", null);
         e.put("errors", List.of());
         return e;

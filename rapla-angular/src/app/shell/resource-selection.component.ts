@@ -5,9 +5,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 
 import {
-  AllocatableEditDialogComponent,
-  type AllocatableEditDialogData,
-} from '../allocatable/allocatable-edit-dialog.component';
+  ResourceEditDialogComponent,
+  type ResourceEditDialogData,
+} from '../resource/resource-edit-dialog.component';
 import {
   ResourceSelectionStore,
   type ResourceSelectionTab,
@@ -127,8 +127,8 @@ import { TableSelection } from '../views/table-selection';
       }
       <mat-menu #itemMenu="matMenu">
         <ng-template matMenuContent let-item="item">
-          <button mat-menu-item (click)="openAllocatable(item, false)">Bearbeiten</button>
-          <button mat-menu-item (click)="openAllocatable(item, true)">Anzeigen</button>
+          <button mat-menu-item (click)="openResource(item, false)">Bearbeiten</button>
+          <button mat-menu-item (click)="openResource(item, true)">Anzeigen</button>
         </ng-template>
       </mat-menu>
     </div>
@@ -423,9 +423,9 @@ export class ResourceSelectionComponent {
   }
 
   /** PRD 096 Phase 4 — Anzeigen/Bearbeiten on a resource item (⋮ menu). */
-  openAllocatable(it: ResourceItem, readOnly: boolean): void {
-    this.dialog.open(AllocatableEditDialogComponent, {
-      data: { id: it.id, readOnly } satisfies AllocatableEditDialogData,
+  openResource(it: ResourceItem, readOnly: boolean): void {
+    this.dialog.open(ResourceEditDialogComponent, {
+      data: { id: it.id, readOnly } satisfies ResourceEditDialogData,
       maxWidth: '95vw',
       restoreFocus: false,
     });

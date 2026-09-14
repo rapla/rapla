@@ -29,6 +29,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.plugin.setowner.SetOwnerResources;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
+import org.rapla.storage.PermissionController;
 import org.rapla.storage.StorageOperator;
 import org.springframework.stereotype.Service;
 
@@ -67,9 +68,19 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
 
     public IdentifiableMenuEntry[] create(final SelectionMenuContext menuContext, final RaplaObject focusedObject )
     {
-    	if (!clientFacade.isAdmin())
+    	final User workingUser;
+    	try
     	{
-    		return IdentifiableMenuEntry.EMPTY_ARRAY;
+    	    workingUser = clientFacade.getUser();
+    	}
+    	catch (RaplaException ex)
+    	{
+    	    return IdentifiableMenuEntry.EMPTY_ARRAY;
+    	}
+    	// WP O1 — global admins and group admins; the server applies PermissionController.canChangeOwner per entity
+    	if (!PermissionController.canAdminUsers(workingUser))
+    	{
+    	    return IdentifiableMenuEntry.EMPTY_ARRAY;
     	}
     	
     	Collection<Object> selectedObjects = new HashSet<>();
@@ -141,7 +152,7 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
         Consumer<PopupContext> action = (popupContext)->
         {
             //PopupContext popupContext = menuContext.getPopupContext();
-            showAddDialog(popupContext, owner).thenCompose((newOwner) ->
+            showAddDialog(popupContext, owner, workingUser).thenCompose((newOwner) ->
                     (newOwner != null) ?
                             facade.editListAsync(ownables).thenApply((editableOwnables) ->
                                     editableOwnables.values().stream().map((editableOwnable) -> {
@@ -161,7 +172,7 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
         return new IdentifiableMenuEntry[] {setOwnerItem };
     }
 
-    private Promise<User> showAddDialog(PopupContext popupContext,final ReferenceInfo<User> selectedOwner) {
+    private Promise<User> showAddDialog(PopupContext popupContext,final ReferenceInfo<User> selectedOwner, final User workingUser) {
         final DialogInterface dialog;
         final ListView<User> listView = listViewProvider.get();
         User[] userList;
@@ -173,7 +184,10 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
         {
             return new ResolvedPromise<>(ex);
         }
-        final Collection sorted = sorted(userList);
+        // WP O1 — only users the working user may administer (a global admin: everyone)
+        final Collection sorted = sorted(Arrays.stream(userList)
+                .filter(user -> PermissionController.canAdminUser(workingUser, user))
+                .toArray(User[]::new));
         listView.setObjects( sorted);
         Optional<User> selectedUser;
         if ( selectedOwner != null)

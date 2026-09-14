@@ -876,8 +876,8 @@ export class ViewHostComponent {
   }
 
   /** True for aggregation/pivot views (columns carry `kind`). Drives BOTH the
-   *  row projection AND where the resource selection binds (allocatableFilter vs
-   *  filter.allocatableIdsIn). A boolean computed → flips false→true once, no loop. */
+   *  row projection AND where the resource selection binds (resourceFilter vs
+   *  filter.resourceIdsIn). A boolean computed → flips false→true once, no loop. */
   readonly aggregated = computed(() => isProjectedView(this.meta()?.columns ?? []));
 
   /** Stable key of the variable signature — flips once (null→signature) when the
@@ -1082,7 +1082,7 @@ export class ViewHostComponent {
 
   private run(viewName: string, window: DateWindow | null, chips: FilterEntry[]): void {
     // Type-driven binding: fill each declared variable BY TYPE (ReservationFilter ←
-    // window+selection, AllocatableFilter ← selection). The server emits the
+    // window+selection, ResourceFilter ← selection). The server emits the
     // variable signature on extensions.view.variables; the FIRST query (before meta
     // lands) sends {} → the server fills only the @window/render-mode date range
     // (stored defaultVariables are authoring example data, never merged at runtime —

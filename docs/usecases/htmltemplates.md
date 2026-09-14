@@ -21,13 +21,13 @@ alleinige Autorität, kein Login). Sie trägt die interaktiven Formular-Use-Case
 unten (Phase 9 + [PRD 102](../prd/102-browser-credential-hardening.md) D7).
 
 **Zentraler Befund:** Das Uni-Deployment betreibt heute drei handkodierte Java-HTML-Generatoren
-(`SteleKursUebersichtPageGenerator{,2,3}` im Terminal-Plugin), einen anonymen
+(`<CourseOverviewPageGenerator>{,2,3}` im Terminal-Plugin), einen anonymen
 Display-Export über verschlüsselte `?key=`-URLs (Stele-Endpoint — strukturell das
 Phase-8-Muster) und ein Prüfungs-Plugin auf `AbstractHTMLCalendarPage`. Die
-Navigationskette Stundenplan → Dozent → Raum → Gebäude ist in `TerminalConstants`
+Navigationskette Stundenplan → Dozent → Raum → Gebäude ist in `<TerminalLinkConstants>`
 (Link-Titel pro Ressourcentyp) und der GraphQL-navigierbaren Raum→Gebäude-Referenz
-(`RoomAttributeIds.BUILDING`) bereits vorgezeichnet. Das Mengengerüst (tausende Räume, weit über zehntausend
-Personen, tausende Kurse, dutzende Gebäude) macht Parameter-Pinning statt
+(`<RoomAttribute>.BUILDING`) bereits vorgezeichnet. Das Mengengerüst (viele Räume, eine
+sehr große Zahl Personen, viele Kurse, mehrere Gebäude) macht Parameter-Pinning statt
 Dokument-Vervielfältigung zur Skalierungsfrage.
 
 ## Übersicht
@@ -156,8 +156,8 @@ Ein Display an der Raumtür zeigt die heutige Belegung des Raums: laufende und n
 
 - **Tier:** flach · **Auth:** publiziert (anonym) · **mehrere Dokumente pro View:** ja
 - **Datenquelle:** Events/AppointmentBlocks eines Raums für heute (reservations/appointmentBlocks gefiltert auf Raum-Allocatable, Zeitfenster heute), im Scope des Stele-Publikationsusers (heute: ein dedizierter Export-Serviceaccount)
-- **Link-Navigation:** Türschild → Raum-Wochenplan; jede Zeile: Kurs → Kurs-Stundenplan, Dozent → Dozentenplan; Kopfzeile: Gebäude → Gebäude-Überblick (TerminalConstants definiert heute schon Link-Titel Belegung/Veranstaltungen/Termine pro Ressourcentyp)
-- **Uni-Beleg:** Terminal-Plugin: SteleExportController (dem Stele-Endpoint, anonym via verschlüsseltem ?key=-URL — exakt das Phase-8-Muster), AllocatableExporter, TerminalConstants ROOM_KEY=Raum/LINK_TITEL_RAUM=Belegung, Terminal-Config resource-types enthält Raum/Teilraum; Raum ist ein sehr großer Allocatable-Typ. Ein publiziertes Dokument pro Raum über derselben View (Raum-Parameter gepinnt).
+- **Link-Navigation:** Türschild → Raum-Wochenplan; jede Zeile: Kurs → Kurs-Stundenplan, Dozent → Dozentenplan; Kopfzeile: Gebäude → Gebäude-Überblick (`<TerminalLinkConstants>` definiert heute schon Link-Titel Belegung/Veranstaltungen/Termine pro Ressourcentyp)
+- **Uni-Beleg:** Terminal-Plugin: `<DisplayExportController>` (dem Stele-Endpoint, anonym via verschlüsseltem ?key=-URL — exakt das Phase-8-Muster), AllocatableExporter, `<TerminalLinkConstants>` `<ROOM_KEY>`=Raum/`<LINK_TITLE_ROOM>`=Belegung, Terminal-Config resource-types enthält Raum/Teilraum; Raum ist ein sehr großer Allocatable-Typ. Ein publiziertes Dokument pro Raum über derselben View (Raum-Parameter gepinnt).
 
 ### Stele-Kursübersicht (Foyer-Anzeige: heutige Veranstaltungen)
 
@@ -166,7 +166,7 @@ Digital-Signage-Stele im Foyer listet alle Kurse mit heutigen Veranstaltungen: K
 - **Tier:** gruppiert (1D) · **Auth:** publiziert (anonym) · **mehrere Dokumente pro View:** ja
 - **Datenquelle:** Events heute campusweit, gefiltert auf event-types [Pruefung, Lehrveranstaltung], gruppiert nach Kurs; Scope des Stele-Publikationsusers
 - **Link-Navigation:** Kurs-Spalte → Kurs-Stundenplan; Raum-Spalte → Raum-Türschild/Raumplan
-- **Uni-Beleg:** SteleKursUebersichtPageGenerator{,2,3} (drei Varianten!) malen PrintWriter-HTML mit Spalten Kurs/Zeitraum/Veranstaltung/Raum, Überschrift 'Kurse mit aktuellen Veranstaltungen', konfigurierbarem cssurl (rapla.Uni-Deployment.terminal.*); Admin-Seite /Uni-Deployment/terminal/url für verschlüsselte Export-URLs. Drei Generator-Varianten = drei Dokumente über derselben Datenbasis.
+- **Uni-Beleg:** `<CourseOverviewPageGenerator>{,2,3}` (drei Varianten!) malen PrintWriter-HTML mit Spalten Kurs/Zeitraum/Veranstaltung/Raum, Überschrift 'Kurse mit aktuellen Veranstaltungen', konfigurierbarem cssurl (`rapla.<deployment>.terminal.*`); Admin-Seite `/<deployment>/terminal/url` für verschlüsselte Export-URLs. Drei Generator-Varianten = drei Dokumente über derselben Datenbasis.
 
 ### Kurs-Stundenplan als Wochenplan/Aushang (pro Kohorte)
 
@@ -175,7 +175,7 @@ Wochenraster einer Kohorte (z.B. <Standort>-WIB25A): alle Lehrveranstaltungen mi
 - **Tier:** 2D-Raster · **Auth:** beides · **mehrere Dokumente pro View:** ja
 - **Datenquelle:** AppointmentBlocks der Woche, gefiltert auf Kurs-Allocatable (Playbook Use-Case 5); für den Aushang das 2D-Wochenraster (CalendarLayoutEngine Phase 5), als Agenda-Variante grouped-1d pro Tag schon in Phase 3
 - **Link-Navigation:** Blockzelle: Dozent → Dozentenplan, Raum → Raum-Türschild/Raumplan — die vom Nutzer genannte Kette Stundenplan → Dozent → Raum beginnt hier
-- **Uni-Beleg:** Kurse + Teilkurse als eigene Allocatable-Typen in großer Zahl; Kurs-Namenskonvention <Standort>-<Programm><Jahrgang> (<Standort>-WIB25A); GraphQL-Playbook Use-Case 5 'Kurs-Stundenplan (Kohorte)' ist die fertige Query; heutige Auslieferung an Studierende läuft über /rapla/calendar-Autoexport + iCal (infrastructure.md Campus-IP-Routing).
+- **Uni-Beleg:** Kurse + Teilkurse als eigene Allocatable-Typen in großer Zahl; Kurs-Namenskonvention <Standort>-<Programm><Jahrgang> (`<Standort>-course-A`); GraphQL-Playbook Use-Case 5 'Kurs-Stundenplan (Kohorte)' ist die fertige Query; heutige Auslieferung an Studierende läuft über /rapla/calendar-Autoexport + iCal (ein internes Infra-Dokument beschreibt das Routing nach Netzsegment).
 
 ### Freie-Räume-Liste (Raumanfrage-Aushang / Selbstlernraum-Finder)
 
@@ -184,7 +184,7 @@ Liste freier Räume für ein Zeitfenster, gefiltert nach Kapazität und Ausstatt
 - **Tier:** gruppiert (1D) · **Auth:** beides · **mehrere Dokumente pro View:** ja
 - **Datenquelle:** Playbook Use-Case 2 'Freien Raum finden' (Kandidaten über AnzahlPlaetzeFest + AusstattungListe, dann Belegungsabgleich); sauber erst mit [PRD 092](../prd/092-free-slot-search.md) freeSlots als View-Feld (092 aktuell geparkt) — bis dahin zweistufig
 - **Link-Navigation:** Raumzeile → Raum-Türschild und → Raum-Wochenplan
-- **Uni-Beleg:** Usecases-Doku des Deployments: room-only ist ein eigenes Nutzerprofil (5 von 12 <Standort>-Usern, ~35–150 sichtbare Allocatables, fast nur Raum); GraphQL-Playbook Use-Case 2 mit verifizierter Kapazitätswahrheit AnzahlPlaetzeFest (Insgesamt/Max sind an MOS/BM null!); Raum-Attribute AusstattungListe, RollstuhlgerechterZugang.
+- **Uni-Beleg:** Usecases-Doku des Deployments: room-only ist ein eigenes Nutzerprofil (ein Teil der <Standort>-User, eine kleine bis mittlere Zahl sichtbarer Allocatables, fast nur Raum); GraphQL-Playbook Use-Case 2 mit verifizierter Kapazitätswahrheit AnzahlPlaetzeFest (Insgesamt/Max sind an einzelnen Standorten null!); Raum-Attribute AusstattungListe, RollstuhlgerechterZugang.
 
 ### Freie-Räume-Aushang / Verfügbarkeitsdokument
 
@@ -193,7 +193,7 @@ Aushang oder Anzeige-Display: welche Räume (Kapazität ≥ N, Ausstattung X) si
 - **Tier:** flach · **Auth:** publiziert (anonym) · **mehrere Dokumente pro View:** ja
 - **Datenquelle:** Sauber erst mit freeSlots ([PRD 092](../prd/092-free-slot-search.md), draft/geparkt — NICHT im Schema); heutiger Workaround = 2-Schritt: allocatables(filter: Kapazität/Ausstattung) + appointmentBlocks(allocatableIdsIn, Fenster) und Differenz bilden — genau das kann logikloses Mustache NICHT, d.h. dieser Use Case ist bis [PRD 092](../prd/092-free-slot-search.md) blockiert (resourceAvailability ist appointment-granular für den Editor, kein Slot-Enumerator)
 - **Link-Navigation:** Raum-Zeile → Raum-Tagesplan (optional)
-- **Uni-Beleg:** GraphQL-Playbook 'Schritt A Kandidatenräume / Schritt B welche sind belegt?' dokumentiert den heutigen 2-Schritt-Workaround; Usecases-Doku des Deployments: Room-only-Nutzer (Nutzer 3,4,7,11) sind eine eigene Persona, UC-3 'Find a free room' — Capability-Gap explizit vermerkt ('no direct query today')
+- **Uni-Beleg:** GraphQL-Playbook 'Schritt A Kandidatenräume / Schritt B welche sind belegt?' dokumentiert den heutigen 2-Schritt-Workaround; Usecases-Doku des Deployments: Room-only-Nutzer (mehrere einzelne Nutzer) sind eine eigene Persona, UC-3 'Find a free room' — Capability-Gap explizit vermerkt ('no direct query today')
 
 ### Raum-Tagesplan / Türschild
 
@@ -280,7 +280,7 @@ Wochenraster eines Raums als publizierte HTML-Seite bzw. Aushang — genau das, 
 - **Tier:** 2D-Raster · **Auth:** beides · **mehrere Dokumente pro View:** ja
 - **Datenquelle:** AppointmentBlocks der Woche gefiltert auf Raum (Playbook Use-Case 1/1a Wochenplan Campus/Gebäude, Raum+Dozent pro Termin); Phase 5 CalendarLayoutEngine für das Zeitraster
 - **Link-Navigation:** Kopf: Gebäude → Gebäude-Überblick; Block: Kurs → Kurs-Stundenplan, Dozent → Dozentenplan — schließt die Kette Raumplan → Gebäude-Überblick
-- **Uni-Beleg:** infrastructure.md: Apache-LB routet /rapla/calendar ↔ /rapla/internal_calendar nach Campus-IP (interne vs. externe Sicht) — die HTML-Kalender-Exporte sind produktiv im Einsatz, inkl. iCal-Subscriber im Topologie-Diagramm; RaplaPruefungen importiert AbstractHTMLCalendarPage direkt.
+- **Uni-Beleg:** ein internes Infra-Dokument: ein Load Balancer routet /rapla/calendar ↔ /rapla/internal_calendar nach Netzsegment (interne vs. externe Sicht) — die HTML-Kalender-Exporte sind produktiv im Einsatz, inkl. iCal-Subscriber im Topologie-Diagramm; `<ExamPlugin>` importiert AbstractHTMLCalendarPage direkt.
 
 ### Publizierter Wochen-/Monats-Stundenplan (Ablösung /rapla/calendar)
 
@@ -289,7 +289,7 @@ Die heute hand-codierten HTML-Export-Seiten (AbstractHTMLCalendarPage → HTMLWe
 - **Tier:** 2D-Raster · **Auth:** publiziert (anonym) · **mehrere Dokumente pro View:** ja
 - **Datenquelle:** appointmentBlocks + color (§12-gated, [PRD 095](../prd/095-month-grid-render-mode.md)) + matchedBy (Lane-Gruppierung, [PRD 100](../prd/100-spa-block-renderer-unification.md) Phase 5) → CalendarLayoutEngine ([PRD 030](../prd/030-server-side-view-rendering.md), resurrect in 097 Phase 5) emittiert das positionierte Modell; Auth-/Publish-Mechanik (AutoExportPlugin.HTML_EXPORT-Flag + URL-Encryption) wird unverändert geerbt
 - **Link-Navigation:** Block → Dozenten-/Raum-Dokument wäre der klassische Stundenplan-Drilldown (Stundenplan → Dozent → dessen Plan); heute haben die Export-Seiten keine Links — Mustache-Templates könnten sie erstmals admin-editierbar hinzufügen
-- **Uni-Beleg:** Infrastruktur-Doku des Deployments (Apache-Konfiguration) — Apache-RewriteRules für /rapla/calendar und /rapla/internal_calendar: die publizierten HTML-Kalender-Exporte sind in der Produktion des Deployments aktiv in Benutzung (UC-7 'Publish/export a calendar', set-and-forget)
+- **Uni-Beleg:** ein internes Infra-Dokument des Deployments — Rewrite-Regeln des Load Balancers für /rapla/calendar und /rapla/internal_calendar: die publizierten HTML-Kalender-Exporte sind in der Produktion des Deployments aktiv in Benutzung (UC-7 'Publish/export a calendar', set-and-forget)
 
 ### Persönlicher Stundenplan (mein Plan)
 
@@ -327,7 +327,7 @@ Foyer-Display oder Aushang pro Gebäude: Sektion je Raum mit aktueller/nächster
 - **Tier:** gruppiert (1D) · **Auth:** beides · **mehrere Dokumente pro View:** ja
 - **Datenquelle:** Events vom Typ Pruefung, gefiltert auf Kurs/Zeitraum, gruppiert nach Semester bzw. Tag (Playbook Use-Case 4 Prüfungsplanung; Räume mit AnzahlPlaetzePruefung als Kapazitätsattribut)
 - **Link-Navigation:** Prüfungszeile: Raum → Raum-Türschild/Raumplan, Kurs → Kurs-Stundenplan
-- **Uni-Beleg:** Eigenes Plugin org.rapla.plugin.Uni-Deployment.pruefungen (RaplaPruefungen mit Semester-Datumslogik, baut auf AbstractHTMLCalendarPage auf); DynamicType Pruefung (DynamicTypeKeys.EXAM, ExamAttributeIds); Terminal-Config event-types [Pruefung, Lehrveranstaltung]; Raum-Attribut AnzahlPlaetzePruefung.
+- **Uni-Beleg:** Eigenes Plugin `org.rapla.plugin.<deployment>.pruefungen` (`<ExamPlugin>` mit Semester-Datumslogik, baut auf AbstractHTMLCalendarPage auf); DynamicType Pruefung (DynamicTypeKeys.EXAM, ExamAttributeIds); Terminal-Config event-types [Pruefung, Lehrveranstaltung]; Raum-Attribut `<examCapacityAttribute>`.
 
 ### Raumauslastungs-Report (Standortadmin)
 
@@ -336,7 +336,7 @@ Tabellarischer Report der Wochen-Auslastung je Raum (heißeste/kälteste Räume)
 - **Tier:** gruppiert (1D) · **Auth:** Session · **mehrere Dokumente pro View:** nein
 - **Datenquelle:** AppointmentBlocks der Woche über alle Räume eines Standorts, aggregiert je Raum (Playbook Use-Case 3 Raumauslastung, 7b Inventar je Gebäude); Aggregation muss der View liefern (compute/Resolver), Mustache malt nur
 - **Link-Navigation:** Raumzeile → Raum-Wochenplan; Gebäude-Sektion → Gebäude-Überblick
-- **Uni-Beleg:** GraphQL-Playbook Use-Case 3 'Raumauslastung' ('die heißesten/kältesten Räume der Woche') und 7/7b Campus-Raum-Inventar — echte, gegen die Live-DB verifizierte Admin-Fragen des BM-Standortadmins.
+- **Uni-Beleg:** GraphQL-Playbook Use-Case 3 'Raumauslastung' ('die heißesten/kältesten Räume der Woche') und 7/7b Campus-Raum-Inventar — dokumentierte Admin-Fragen eines Standortadmins.
 
 ### Terminliste / Tages-Agenda (Termine pro Tag)
 
@@ -354,7 +354,7 @@ Campus-Admin erzeugt einen Auslastungsbericht: Stunden (wall-clock oder UE) pro 
 - **Tier:** gruppiert (1D) · **Auth:** Session · **mehrere Dokumente pro View:** ja
 - **Datenquelle:** appointmentBlockStats(filter, groupBy:[date/allocatables/expr], aggregate:[DURATION_MINUTES×SUM,…]) — [PRD 079](../prd/079-graphql-grouped-aggregates.md) implementiert (v1 2026-06-21) inkl. voller AllocatableFilter auf der Raum-Dimension; StatKey.entity ([PRD 080](../prd/done/080-typed-entity-stats.md)) macht Raumfelder wie AnzahlPlaetzeFest selektierbar
 - **Link-Navigation:** optional: Raum-Zeile → Raum-Wochenplan-Dokument
-- **Uni-Beleg:** [PRD 079](../prd/079-graphql-grouped-aggregates.md): 'Auslastung pro Raum, Standort <Standort>' via whereRaum.Gebaeude startsWith MOS — der Uni-Deployment-Fall war die motivierende Query; GraphQL-Playbook verifiziert die Kapazitätspflege via AnzahlPlaetzeFest
+- **Uni-Beleg:** [PRD 079](../prd/079-graphql-grouped-aggregates.md): 'Auslastung pro Raum, Standort <Standort>' via whereRaum.Gebaeude startsWith `<site-code>` — der Uni-Deployment-Fall war die motivierende Query; GraphQL-Playbook zeigt die Kapazitätspflege via AnzahlPlaetzeFest
 
 ### Inventar-/Ressourcenverzeichnis (Räume je Gebäude, Plätze je Gebäude)
 
@@ -372,7 +372,7 @@ Planer druckt vor einer Planungsrunde die Überschneidungen einer Veranstaltung 
 - **Tier:** flach · **Auth:** Session · **mehrere Dokumente pro View:** nein
 - **Datenquelle:** conflicts(reservationId: ID!) ([PRD 064](../prd/064-graphql-conflicts-read-api.md), im Schema) — per-Reservation; eine globale 'alle Konflikte im Fenster'-Query existiert NICHT (Lücke für eine echte Konflikt-Sammelliste); potentialConflicts nur für Draft-Preflight
 - **Link-Navigation:** Konfliktzeile → Terminlisten-/Detaildokument der Gegenseite (reservationId-Parameter)
-- **Uni-Beleg:** GraphQL-Playbook Use-Case 4b 'Kollidiert eine konkrete Buchung?' (2-Schritt: Reservierung per Name finden → conflicts) — inkl. §12-Hinweis, dass ein BM-User MOS-Konflikte nicht sieht
+- **Uni-Beleg:** GraphQL-Playbook Use-Case 4b 'Kollidiert eine konkrete Buchung?' (2-Schritt: Reservierung per Name finden → conflicts) — inkl. §12-Hinweis, dass ein Nutzer an einem Standort Konflikte an einem anderen Standort nicht sieht
 
 ### Semesterübersicht (Termine je Periode/Semester)
 
@@ -432,7 +432,7 @@ Die CSV-Varianten der Export-Routen werden heute ebenfalls in Java assembliert. 
 - **Tier:** flach · **Auth:** publiziert (anonym) · **mehrere Dokumente pro View:** ja
 - **Datenquelle:** appointmentBlocks flach mit @column-Spalten (dieselbe Datenbasis wie die Terminliste); Routen /rapla/calendar.csv + /rapla/internal_calendar.csv in CalendarPageController, 🔒-frozen
 - **Link-Navigation:** keine — Maschinenformat
-- **Uni-Beleg:** Routen laufen über dieselbe Uni-Deployment-Rewrite-Infrastruktur (infrastructure.md); konkreter CSV-Konsument nicht einzeln belegt
+- **Uni-Beleg:** Routen laufen über dieselbe Uni-Deployment-Rewrite-Infrastruktur (privates Infra-Dokument); konkreter CSV-Konsument nicht einzeln belegt
 
 ## Formulare & Workflows (interaktiv, schreibend — Phase 9 + [PRD 102](../prd/102-browser-credential-hardening.md) D7)
 

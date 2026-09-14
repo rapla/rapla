@@ -75,16 +75,16 @@ class AppointmentBlockMatchedByGraphQLTest
     void scopedQueryReportsTheMatchedAllocatablePerBoundBlock() throws Exception
     {
         // discover an allocatable id a block in the window is bound to
-        String discover = "{ appointmentBlocks(filter: { " + WINDOW + " }) { name allocatables { id } } }";
+        String discover = "{ appointmentBlocks(filter: { " + WINDOW + " }) { name resources { id } } }";
         String json = mockMvc.perform(post("/api/graphql").contentType(MediaType.APPLICATION_JSON).content(gqlBody(discover)))
                 .andReturn().getResponse().getContentAsString();
-        List<String> allocIds = JsonPath.read(json, "$.data.appointmentBlocks[*].allocatables[0].id");
-        assertFalse(allocIds.isEmpty(), "fixture window should yield a block with an allocatable");
+        List<String> allocIds = JsonPath.read(json, "$.data.appointmentBlocks[*].resources[0].id");
+        assertFalse(allocIds.isEmpty(), "fixture window should yield a block with a resource");
         String allocId = allocIds.get(0);
 
         // scope the query to that id → the bound block's matchedBy contains it
         String scoped = "{ appointmentBlocks(filter: { " + WINDOW
-                + ", allocatableIdsIn: [\\\"" + allocId + "\\\"] }) { name allocatables { id } matchedBy { id } } }";
+                + ", resourceIdsIn: [\\\"" + allocId + "\\\"] }) { name resources { id } matchedBy { id } } }";
         String result = mockMvc.perform(post("/api/graphql").contentType(MediaType.APPLICATION_JSON).content(gqlBody(scoped)))
                 .andReturn().getResponse().getContentAsString();
         List<Map<String, Object>> blocks = JsonPath.read(result, "$.data.appointmentBlocks[*]");

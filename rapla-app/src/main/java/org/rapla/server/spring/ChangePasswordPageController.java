@@ -41,12 +41,15 @@ public class ChangePasswordPageController
 
     private final RemoteSession session;
     private final CachableStorageOperator operator;
+    private final RefreshSessionService refreshSessionService;
     private final RequestCache requestCache = new HttpSessionRequestCache();
 
-    public ChangePasswordPageController(RemoteSession session, CachableStorageOperator operator)
+    public ChangePasswordPageController(RemoteSession session, CachableStorageOperator operator,
+            RefreshSessionService refreshSessionService)
     {
         this.session = session;
         this.operator = operator;
+        this.refreshSessionService = refreshSessionService;
     }
 
     @GetMapping(produces = MediaType.TEXT_HTML_VALUE)
@@ -83,6 +86,8 @@ public class ChangePasswordPageController
                     org.springframework.http.HttpStatus.FORBIDDEN, "password already set");
         }
         operator.changePassword(user, new char[0], newPassword.toCharArray());
+        // Security audit F5-2 — a new password ends the refresh session issued under the old credentials
+        refreshSessionService.clearSession(user);
         LOGGER.info("User '{}' set a password via the change-password nag page", user.getUsername());
         return "redirect:" + afterUrl(request, response);
     }

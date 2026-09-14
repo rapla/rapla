@@ -4,8 +4,8 @@ import type { ViewVariable } from '../graphql/graphql.service';
  * Type-driven variable binder. The GUI owns the LOGIC of how each rapla input
  * type is filled from ambient state; the view's variable signature ({@code name}
  * + {@code type}) says only WHICH variables exist. Each variable is filled by a
- * filler keyed on its TYPE (not its name) — so {@code $allocatableFilter} and
- * {@code $rooms} bind identically, and a view that declares two AllocatableFilter
+ * filler keyed on its TYPE (not its name) — so {@code $resourceFilter} and
+ * {@code $rooms} bind identically, and a view that declares two ResourceFilter
  * sinks gets the selection in BOTH (no special-casing, no required-var failures).
  *
  * Unknown types are left unset → the server falls back to the query text's own
@@ -36,14 +36,14 @@ function fillByType(type: string, ctx: SelectionContext): unknown | undefined {
     case 'ReservationFilter': {
       if (!ctx.window) return undefined; // first load → server merges its default
       const filter: Record<string, unknown> = { from: ctx.window.from, to: ctx.window.to };
-      // Selection narrows the reservation search via allocatableMatching (an
-      // AllocatableFilter — future-proof for groups, not just ids).
-      if (ctx.resourceIds.length) filter['allocatableMatching'] = { idIn: ctx.resourceIds };
+      // Selection narrows the reservation search via resourceMatching (an
+      // ResourceFilter — future-proof for groups, not just ids).
+      if (ctx.resourceIds.length) filter['resourceMatching'] = { idIn: ctx.resourceIds };
       // A user scope → events owned by that user ("my events" for the pinned self).
       if (ctx.ownerId) filter['ownerEq'] = ctx.ownerId;
       return filter;
     }
-    case 'AllocatableFilter':
+    case 'ResourceFilter':
       return ctx.resourceIds.length ? { idIn: ctx.resourceIds } : undefined;
     default:
       return undefined; // no filler → leave unset (server default)

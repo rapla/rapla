@@ -14,8 +14,8 @@ describe('PermissionMigrationService', () => {
 
   const sample: PermissionMigrationFinding[] = [
     {
-      allocatableId: 'a1',
-      allocatableName: 'Room A',
+      resourceId: 'a1',
+      resourceName: 'Room A',
       escalations: [
         {
           principalType: 'USER',
@@ -48,7 +48,7 @@ describe('PermissionMigrationService', () => {
     expect(received).toEqual(sample);
   });
 
-  it('POSTs resolve by allocatable id and returns the remaining worklist', () => {
+  it('POSTs resolve by resource id and returns the remaining worklist', () => {
     let received: PermissionMigrationFinding[] | undefined;
     service.resolve('a1').subscribe((r) => (received = r));
     const req = http.expectOne('/api/admin/permission-migration/a1/resolve');

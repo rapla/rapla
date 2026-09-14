@@ -38,6 +38,9 @@ import org.springframework.stereotype.Controller;
  * PRD 057 — DynamicType (schema editor) mutations. Two roots:
  * {@code saveDynamicType} (upsert) and {@code deleteDynamicTypes} (bulk).
  *
+ * <p>Permissions (PRD 113 § 5d): {@code typeAccess} and the instance-default list matching the
+ * classification type each replace only their own subset of the one stored list; a null list keeps it.
+ *
  * <p>Admin-only by design ({@link User#isAdmin()}); DynamicTypes are
  * deployment-wide schema, not group-scoped, so the group-admin path is
  * intentionally not honored here. §12 invariants per PRD 057 §"§12":
@@ -63,9 +66,6 @@ import org.springframework.stereotype.Controller;
  *       (stores no default value in v1)</li>
  *   <li>Annotation surface beyond {@code nameformat} +
  *       {@code classification-type} (rest rejected as INVALID_VALUE)</li>
- *   <li>Permission editing on the DynamicType — preserved on update
- *       (existing permissions kept); for new types only the
- *       facade-default permissions are added</li>
  * </ul>
  */
 @Controller
@@ -197,6 +197,14 @@ public class DynamicTypeMutationController
         // Apply attributes — full replace
         applyAttributes(draft, (List<Map<String, Object>>) input.get("attributes"),
                 isCreate, "input.attributes");
+        applyPermissionLists(draft, input, classificationTypeAnn);
+        if (isCreate && input.get("typeAccess") == null && input.get("resourceInstanceDefaults") == null
+                && input.get("eventInstanceDefaults") == null)
+        {
+            // WP P1s — Swing parity: a new type without explicit lists starts with the facade default rows
+            org.rapla.entities.domain.PermissionContainer.Util.addDefaultTypePermissions(draft,
+                    operator.getSuperCategory().getCategory(org.rapla.entities.domain.Permission.GROUP_CATEGORY_KEY));
+        }
 
         // Dispatch
         UpdateEvent event = new UpdateEvent();
@@ -223,7 +231,7 @@ public class DynamicTypeMutationController
             Map<String, Object> entry = new LinkedHashMap<>();
             entry.put("index", i);
             entry.put("reservation", null);
-            entry.put("allocatable", null);
+            entry.put("resource", null);
             entry.put("user", null);
             entry.put("errors", List.of());
 
@@ -272,6 +280,30 @@ public class DynamicTypeMutationController
     }
 
     // ============================================================ helpers
+
+    /** PRD 113 § 5d — typeAccess plus the instance-default list that matches the classification type (§ 1b). */
+    @SuppressWarnings("unchecked")
+    private void applyPermissionLists(DynamicTypeImpl draft, Map<String, Object> input, String classificationType)
+    {
+        boolean eventType = DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION.equals(classificationType);
+        List<Map<String, Object>> resourceDefaults = (List<Map<String, Object>>) input.get("resourceInstanceDefaults");
+        List<Map<String, Object>> eventDefaults = (List<Map<String, Object>>) input.get("eventInstanceDefaults");
+        if (eventType && resourceDefaults != null)
+        {
+            throw new ReservationMutationException("INVALID_VALUE", "input.resourceInstanceDefaults",
+                    "resourceInstanceDefaults do not apply to an event type — use eventInstanceDefaults");
+        }
+        if (!eventType && eventDefaults != null)
+        {
+            throw new ReservationMutationException("INVALID_VALUE", "input.eventInstanceDefaults",
+                    "eventInstanceDefaults only apply to an event type — use resourceInstanceDefaults");
+        }
+        PermissionInputMapper.replaceTypeLists(draft, (List<Map<String, Object>>) input.get("typeAccess"),
+                eventType ? eventDefaults : resourceDefaults,
+                eventType ? PermissionInputMapper.Kind.SIMPLE : PermissionInputMapper.Kind.RESOURCE,
+                "input.typeAccess", eventType ? "input.eventInstanceDefaults" : "input.resourceInstanceDefaults",
+                operator);
+    }
 
     private User requireAdmin() throws RaplaException
     {

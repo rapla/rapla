@@ -22,7 +22,7 @@ const item = (over: Partial<WorklistItem>): WorklistItem => ({
   changed: false,
   changedSince: null,
   groupIds: ['g1'],
-  groupName: 'STG-TINF23B',
+  groupName: 'course-A',
   boundReservationId: null,
   fullName: null,
   ...over,
@@ -56,16 +56,16 @@ describe('linkedOfGroups', () => {
     name: 'Mathe',
     externalId: 'Vorlesung:1',
     firstDate: '2026-04-20T08:00:00',
-    allocatableIds: ['g1'],
+    resourceIds: ['g1'],
     ...over,
   });
 
   it('keeps only events of the groups, deduped, name-sorted', () => {
     const events = [
       ev({ id: 'r1', name: 'Zeta' }),
-      ev({ id: 'r2', name: 'Alpha', allocatableIds: ['g1', 'g2'] }),
+      ev({ id: 'r2', name: 'Alpha', resourceIds: ['g1', 'g2'] }),
       ev({ id: 'r2', name: 'Alpha' }),
-      ev({ id: 'r3', name: 'Beta', allocatableIds: ['g9'] }),
+      ev({ id: 'r3', name: 'Beta', resourceIds: ['g9'] }),
     ];
     expect(linkedOfGroups(events, ['g1']).map((e) => e.name)).toEqual(['Alpha', 'Zeta']);
   });
@@ -79,28 +79,28 @@ describe('draftWithGroups (parked drop → editor draft)', () => {
       typeKey: 'event',
       values: {},
       appointments: [],
-      allocations: [{ allocatableId: 'r1', allocatableName: 'Raum 1', appointmentIds: null }],
+      allocations: [{ resourceId: 'r1', resourceName: 'Raum 1', appointmentIds: null }],
       lastChanged: null,
     }) as Parameters<typeof draftWithGroups>[0];
 
   it('adds every Kurs group as applies-to-all allocation', () => {
     const out = draftWithGroups(draft(), [
-      { id: 'g1', name: 'MOS-TINF23A' },
-      { id: 'g2', name: 'MOS-TINF23B' },
+      { id: 'g1', name: 'course-A' },
+      { id: 'g2', name: 'course-B' },
     ]);
-    expect(out.allocations.map((a) => a.allocatableId)).toEqual(['r1', 'g1', 'g2']);
+    expect(out.allocations.map((a) => a.resourceId)).toEqual(['r1', 'g1', 'g2']);
     expect(out.allocations[1].appointmentIds).toBeNull();
   });
 
   it('never duplicates a group the template already allocates', () => {
     const base = draft();
     base.allocations.push({
-      allocatableId: 'g1',
-      allocatableName: 'MOS-TINF23A',
+      resourceId: 'g1',
+      resourceName: 'course-A',
       appointmentIds: null,
     });
-    const out = draftWithGroups(base, [{ id: 'g1', name: 'MOS-TINF23A' }]);
-    expect(out.allocations.filter((a) => a.allocatableId === 'g1')).toHaveLength(1);
+    const out = draftWithGroups(base, [{ id: 'g1', name: 'course-A' }]);
+    expect(out.allocations.filter((a) => a.resourceId === 'g1')).toHaveLength(1);
   });
 });
 

@@ -15,9 +15,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.function.Supplier;
 import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.NameFormatUtil;
+import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
@@ -265,7 +267,7 @@ public final class StructuralTypeFetchers
 
     /** §12 — mirrors {@code LocalCache.getVisibleEntities}: a caller only ever sees itself and the
      *  users it can admin; every other owner (admins included) resolves to null. */
-    private static HelloGraphQLController.UserDto visibleOwner(StorageOperator operator,
+    static HelloGraphQLController.UserDto visibleOwner(StorageOperator operator,
             ReferenceInfo<User> ref, User caller)
     {
         if (ref == null || caller == null) return null;
@@ -274,6 +276,54 @@ public final class StructuralTypeFetchers
         boolean visible = caller.getId().equals(owner.getId()) || PermissionController.canAdminUser(caller, owner);
         return visible ? HelloGraphQLController.UserDto.from(owner) : null;
     }
+
+    // === PRD 113 § 5b — permission read fields ================================
+
+    private static <S extends PermissionContainer> LightDataFetcher<Boolean> canAdmin(Class<S> type)
+    {
+        return new LightSourceFetcher<S, Boolean>(type)
+        {
+            @Override protected Boolean read(S s, Supplier<DataFetchingEnvironment> env)
+            {
+                var rc = ctxFrom(env);
+                return PermissionDto.canAdmin((Entity<?>) s, rc.caller(), rc.permissionController());
+            }
+        };
+    }
+
+    private static <S extends PermissionContainer> LightDataFetcher<List<PermissionDto>> permissions(Class<S> type)
+    {
+        return new LightSourceFetcher<S, List<PermissionDto>>(type)
+        {
+            @Override protected List<PermissionDto> read(S s, Supplier<DataFetchingEnvironment> env)
+            {
+                var rc = ctxFrom(env);
+                return PermissionDto.visible((Entity<?>) s, s.getPermissionList(), rc.caller(), rc.permissionController());
+            }
+        };
+    }
+
+    /** DynamicType lists — editing a type is global-admin only, so only a global admin sees its rows. */
+    private static LightDataFetcher<List<PermissionDto>> dynamicTypeRows(boolean typeAccess)
+    {
+        return new LightSourceFetcher<DynamicType, List<PermissionDto>>(DynamicType.class)
+        {
+            @Override protected List<PermissionDto> read(DynamicType dt, Supplier<DataFetchingEnvironment> env)
+            {
+                User caller = ctxFrom(env).caller();
+                if (caller == null || !caller.isAdmin()) return null;
+                return PermissionDto.of(dt.getPermissionList(), p -> PermissionDto.isTypeAccess(p) == typeAccess);
+            }
+        };
+    }
+
+    static final LightDataFetcher<Boolean> ALLOCATABLE_CAN_ADMIN = canAdmin(Allocatable.class);
+    static final LightDataFetcher<List<PermissionDto>> ALLOCATABLE_PERMISSIONS = permissions(Allocatable.class);
+    static final LightDataFetcher<Boolean> RESERVATION_CAN_ADMIN = canAdmin(org.rapla.entities.domain.Reservation.class);
+    static final LightDataFetcher<List<PermissionDto>> RESERVATION_PERMISSIONS =
+            permissions(org.rapla.entities.domain.Reservation.class);
+    static final LightDataFetcher<List<PermissionDto>> DYNAMIC_TYPE_TYPE_ACCESS = dynamicTypeRows(true);
+    static final LightDataFetcher<List<PermissionDto>> DYNAMIC_TYPE_INSTANCE_DEFAULTS = dynamicTypeRows(false);
 
     // === DynamicType field fetchers ===========================================
 
@@ -1434,8 +1484,8 @@ public final class StructuralTypeFetchers
         // default — see ServerLocaleResolver.
         Locale l = org.rapla.server.internal.ServerLocaleResolver.resolve(operator, raplaLocale);
         if (l != null) serverLocale = l;
-        b.type("Allocatable", t -> t
-                .dataFetcher("type",           ALLOCATABLE_TYPE)
+        b.type("Resource", t -> t
+                .dataFetcher("kind",           ALLOCATABLE_TYPE)
                 .dataFetcher("isPerson",       ALLOCATABLE_IS_PERSON)
                 .dataFetcher("isLocation",     ALLOCATABLE_IS_LOCATION)
                 .dataFetcher("name",           ALLOCATABLE_NAME)
@@ -1444,12 +1494,16 @@ public final class StructuralTypeFetchers
                 .dataFetcher("createdAt",      ALLOCATABLE_CREATED_AT)
                 .dataFetcher("lastModifiedAt", ALLOCATABLE_LAST_MODIFIED_AT)
                 .dataFetcher("canModify",      ALLOCATABLE_CAN_MODIFY)
+                .dataFetcher("canAdmin",       ALLOCATABLE_CAN_ADMIN)
+                .dataFetcher("permissions",    ALLOCATABLE_PERMISSIONS)
                 .dataFetcher("compute",        ALLOCATABLE_COMPUTE)
                 .dataFetcher("attributeValue", ALLOCATABLE_ATTRIBUTE_VALUE)
                 .dataFetcher("owner",          allocatableOwner(operator)));
         b.type("DynamicType", t -> t
                 .dataFetcher("name",               DYNAMIC_TYPE_NAME)
-                .dataFetcher("classificationType", DYNAMIC_TYPE_CLASSIFICATION_TYPE));
+                .dataFetcher("classificationType", DYNAMIC_TYPE_CLASSIFICATION_TYPE)
+                .dataFetcher("typeAccess",         DYNAMIC_TYPE_TYPE_ACCESS)
+                .dataFetcher("instanceDefaults",   DYNAMIC_TYPE_INSTANCE_DEFAULTS));
         b.type("Classification", t -> t
                 .dataFetcher("typeKey", CLASSIFICATION_TYPE_KEY)
                 .dataFetcher("type",    CLASSIFICATION_TYPE));
@@ -1466,6 +1520,8 @@ public final class StructuralTypeFetchers
                 .dataFetcher("lastDate",       RESERVATION_LAST_DATE)
                 .dataFetcher("externalId",     RESERVATION_EXTERNAL_ID)
                 .dataFetcher("canModify",      RESERVATION_CAN_MODIFY)
+                .dataFetcher("canAdmin",       RESERVATION_CAN_ADMIN)
+                .dataFetcher("permissions",    RESERVATION_PERMISSIONS)
                 .dataFetcher("hasConflicts",   reservationHasConflicts(operator))
                 .dataFetcher("owner",          reservationOwner(operator))
                 .dataFetcher("createdAt",      RESERVATION_CREATED_AT)
@@ -1478,7 +1534,7 @@ public final class StructuralTypeFetchers
                 .dataFetcher("name",         APPOINTMENT_NAME)
                 .dataFetcher("allDay",       APPOINTMENT_ALL_DAY)
                 .dataFetcher("repeating",    APPOINTMENT_REPEATING)
-                .dataFetcher("allocatables", appointmentAllocatables(operator))
+                .dataFetcher("resources", appointmentAllocatables(operator))
                 .dataFetcher("blocks",       APPOINTMENT_BLOCKS)
                 .dataFetcher("compute",      APPOINTMENT_COMPUTE));
         b.type("AppointmentBlock", t -> t
@@ -1486,7 +1542,7 @@ public final class StructuralTypeFetchers
                 .dataFetcher("appointmentId", APPOINTMENT_BLOCK_APPOINTMENT_ID)
                 .dataFetcher("appointment",  APPOINTMENT_BLOCK_APPOINTMENT)
                 .dataFetcher("color",        APPOINTMENT_BLOCK_COLOR)
-                .dataFetcher("allocatables", appointmentBlockAllocatables(operator))
+                .dataFetcher("resources", appointmentBlockAllocatables(operator))
                 .dataFetcher("matchedBy",    APPOINTMENT_BLOCK_MATCHED_BY)
                 .dataFetcher("duration",     appointmentBlockDuration(operator))
                 .dataFetcher("durationMinutes", APPOINTMENT_BLOCK_DURATION_MINUTES)

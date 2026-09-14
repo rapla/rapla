@@ -83,10 +83,10 @@ class DocumentParamGateTest
     {
         User admin = operator.getUser("homer");
 
-        // A scoped view: public `resource` fills the private filter.allocatableIdsIn.
+        // A scoped view: public `resource` fills the private filter.resourceIdsIn.
         String scoped = """
                 query pg_scoped($filter: ReservationFilter!) @view(title: "Scoped")
-                  @param(name: "resource", into: "filter.allocatableIdsIn")
+                  @param(name: "resource", into: "filter.resourceIdsIn")
                 { reservations(filter: $filter) { titel: name } }""";
         assertEquals(List.of(), views.saveView("pg_scoped", scoped, true, List.of(), WIDE_WINDOW, admin));
         assertEquals(List.of(), documents.save("pg_scoped_doc", "pg_scoped", LIST_TEMPLATE,
@@ -95,7 +95,7 @@ class DocumentParamGateTest
         // A required-param view (the Leihschein shape).
         String required = """
                 query pg_required($filter: ReservationFilter!) @view(title: "Required")
-                  @param(name: "resource", into: "filter.allocatableIdsIn", required: true)
+                  @param(name: "resource", into: "filter.resourceIdsIn", required: true)
                 { reservations(filter: $filter) { titel: name } }""";
         assertEquals(List.of(), views.saveView("pg_required", required, true, List.of(), WIDE_WINDOW, admin));
         assertEquals(List.of(), documents.save("pg_required_doc", "pg_required", LIST_TEMPLATE,
@@ -125,7 +125,7 @@ class DocumentParamGateTest
     void aPrivateDottedVariablePathIsRejectedWith400() throws Exception
     {
         assertEquals(400, mockMvc.perform(get("/api/documents/pg_scoped_doc")
-                        .param("filter.allocatableIdsIn", "x"))
+                        .param("filter.resourceIdsIn", "x"))
                 .andReturn().getResponse().getStatus());
     }
 
@@ -177,7 +177,7 @@ class DocumentParamGateTest
     {
         User admin = operator.getUser("homer");
         String pins = "{\"filter\":{\"from\":\"2000-01-01T00:00:00\",\"to\":\"2035-01-01T00:00:00\","
-                + "\"allocatableIdsIn\":[\"no-such-resource-id\"]}}";
+                + "\"resourceIdsIn\":[\"no-such-resource-id\"]}}";
         assertEquals(List.of(), documents.save("pg_pinned_doc", "pg_required", LIST_TEMPLATE,
                 true, List.of(), pins, admin));
 
@@ -190,7 +190,7 @@ class DocumentParamGateTest
 
     /**
      * 2026-08-11 — a view's stored defaultVariables are GraphiQL EXAMPLE data, not runtime pins:
-     * an example {@code allocatableIdsIn} saved from the variables pane must not scope the live
+     * an example {@code resourceIdsIn} saved from the variables pane must not scope the live
      * document render (it previously deep-merged underneath and silently filtered everything).
      */
     @Test
@@ -199,10 +199,10 @@ class DocumentParamGateTest
     {
         User admin = operator.getUser("homer");
         String exampleDefaults = "{\"filter\":{\"from\":\"2000-01-01T00:00:00\","
-                + "\"to\":\"2035-01-01T00:00:00\",\"allocatableIdsIn\":[\"no-such-resource-id\"]}}";
+                + "\"to\":\"2035-01-01T00:00:00\",\"resourceIdsIn\":[\"no-such-resource-id\"]}}";
         String scoped = """
                 query pg_example($filter: ReservationFilter!) @view(title: "Example")
-                  @param(name: "resource", into: "filter.allocatableIdsIn")
+                  @param(name: "resource", into: "filter.resourceIdsIn")
                 { reservations(filter: $filter) { titel: name } }""";
         assertEquals(List.of(), views.saveView("pg_example", scoped, true, List.of(), exampleDefaults, admin));
         assertEquals(List.of(), documents.save("pg_example_doc", "pg_example", LIST_TEMPLATE,
@@ -224,18 +224,18 @@ class DocumentParamGateTest
     void previewDerivesParamDefaultsFromExampleDataThroughDeclaredParamsOnly() throws Exception
     {
         User admin = operator.getUser("homer");
-        String exampleDefaults = "{\"filter\":{\"allocatableIdsIn\":[\"no-such-resource-id\"],"
+        String exampleDefaults = "{\"filter\":{\"resourceIdsIn\":[\"no-such-resource-id\"],"
                 + "\"nameContains\":\"not-a-param\"}}";
         assertEquals(List.of(), views.saveView("pg_required", """
                 query pg_required($filter: ReservationFilter!) @view(title: "Required")
-                  @param(name: "resource", into: "filter.allocatableIdsIn", required: true)
+                  @param(name: "resource", into: "filter.resourceIdsIn", required: true)
                 { reservations(filter: $filter) { titel: name } }""",
                 true, List.of(), exampleDefaults, admin));
 
         DocumentRenderService.Preview preview = renderService
                 .preview("pg_required", LIST_TEMPLATE, null, null, Map.of(), admin).orElseThrow();
         Map<String, Object> filter = filterOf(preview.variables());
-        assertEquals(List.of("no-such-resource-id"), filter.get("allocatableIdsIn"),
+        assertEquals(List.of("no-such-resource-id"), filter.get("resourceIdsIn"),
                 "the example fills the declared param: " + preview.variables());
         assertEquals(null, filter.get("nameContains"),
                 "example keys without a declared param must not apply: " + preview.variables());

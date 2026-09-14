@@ -16,7 +16,7 @@ type meetingClassification implements Classification & ReservationClassification
   seats: Int @displayName(value : "Plätze")
   confirmed: Boolean @displayName(value : "Bestätigt")
   gruppe: farben @displayName(value : "Gruppe")
-  raum: Allocatable @displayName(value : "Raum") @expectedType(key : "room")
+  raum: Resource @displayName(value : "Raum") @expectedType(key : "room")
   notiz: String @displayName(value : "Notiz") @editView(value : "additional")
   type: DynamicType!
   typeKey: String!

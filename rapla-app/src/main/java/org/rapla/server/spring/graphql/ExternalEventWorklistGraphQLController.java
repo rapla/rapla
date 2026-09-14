@@ -96,7 +96,7 @@ public class ExternalEventWorklistGraphQLController
     }
 
     @QueryMapping
-    public WorklistView externalEventWorklist(@Argument("allocatableIds") java.util.List<String> allocatableIds,
+    public WorklistView externalEventWorklist(@Argument("resourceIds") java.util.List<String> allocatableIds,
             @Argument("scopeKey") String scopeKey, DataFetchingEnvironment env) throws RaplaException
     {
         final var rc = RequestContextInstrumentation.from(env.getGraphQlContext());

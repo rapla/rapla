@@ -142,8 +142,8 @@ describe('AppToolbarComponent', () => {
   // shown only to a global admin AND only when the worklist is non-empty.
   const ADMIN: Identity = { ...LOGGED_IN, admin: true };
   const FINDING: PermissionMigrationFinding = {
-    allocatableId: 'a1',
-    allocatableName: 'Room A',
+    resourceId: 'a1',
+    resourceName: 'Room A',
     escalations: [],
   };
 
@@ -231,7 +231,7 @@ describe('AppToolbarComponent — Dualis-Sync button (0/0 rule, 2026-08-11)', ()
         name: 'Mathe',
         externalId: 'v:1',
         firstDate: '2026-04-20T08:00:00',
-        allocatableIds: ['g1'],
+        resourceIds: ['g1'],
       },
     ]);
     expect(badge(setupImport({ linked }))).toBe('1/1');
@@ -244,7 +244,7 @@ describe('AppToolbarComponent — Dualis-Sync button (0/0 rule, 2026-08-11)', ()
         name: 'Mathe',
         externalId: 'v:1',
         firstDate: '2026-04-20T08:00:00',
-        allocatableIds: ['g1'],
+        resourceIds: ['g1'],
       },
     ]);
     const el = (f: ReturnType<typeof TestBed.createComponent>) =>
@@ -381,8 +381,8 @@ describe('AppToolbarComponent — type-aware Neu (PRD 094 Phase 2)', () => {
         data: {
           draft?: {
             allocations: {
-              allocatableId: string;
-              allocatableName: string;
+              resourceId: string;
+              resourceName: string;
               appointmentIds: string[] | null;
               requestStatus: 'REQUESTED' | null;
             }[];
@@ -394,8 +394,8 @@ describe('AppToolbarComponent — type-aware Neu (PRD 094 Phase 2)', () => {
     // none yet, which scopeAllocations spells out as null.
     expect(config.data.draft?.allocations).toEqual([
       {
-        allocatableId: 'r1',
-        allocatableName: 'Kamera G40',
+        resourceId: 'r1',
+        resourceName: 'Kamera G40',
         appointmentIds: null,
         requestStatus: null,
       },

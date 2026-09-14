@@ -62,7 +62,7 @@ class SearchGraphQLControllerTest
     /** SearchHit selection set reused across tests. */
     private static final String HIT_FIELDS = """
             __typename id label sublabel score
-            ... on ResourceHit { allocatable { id } }
+            ... on ResourceHit { resource { id } }
             ... on EventHit { reservation { id } firstOccurrenceStart }
             ... on UserHit { user { id username } }
             """;
@@ -180,7 +180,7 @@ class SearchGraphQLControllerTest
             assertEquals("ResourceHit", h.get("__typename"));
             assertNotNull(h.get("label"), () -> "hit missing label: " + h);
             assertNotNull(h.get("score"), () -> "hit missing score: " + h);
-            assertNotNull(((Map<?, ?>) h.get("allocatable")).get("id"), () -> "ResourceHit must carry allocatable.id: " + h);
+            assertNotNull(((Map<?, ?>) h.get("resource")).get("id"), () -> "ResourceHit must carry resource.id: " + h);
         });
     }
 
@@ -263,20 +263,20 @@ class SearchGraphQLControllerTest
     {
         java.util.Set<String> allowed = new java.util.HashSet<>();
         tester.document("""
-                { allocatables(filter: { searchText: "room", matchKind: FUZZY }) { id } }
+                { resources(filter: { searchText: "room", matchKind: FUZZY }) { id } }
                 """)
                 .execute()
-                .path("allocatables")
+                .path("resources")
                 .entityList(MAP)
                 .get()
                 .forEach(a -> allowed.add((String) a.get("id")));
 
         java.util.Set<String> searchIds = new java.util.HashSet<>();
         hits(groups("room", "[RESOURCE]"), "RESOURCE")
-                .forEach(h -> searchIds.add((String) ((Map<?, ?>) h.get("allocatable")).get("id")));
+                .forEach(h -> searchIds.add((String) ((Map<?, ?>) h.get("resource")).get("id")));
 
         assertEquals(allowed, searchIds,
-                () -> "search RESOURCE bucket must equal §12-readable allocatables for the term — "
+                () -> "search RESOURCE bucket must equal §12-readable resources for the term — "
                         + "leak if different. allowed=" + allowed + " search=" + searchIds);
     }
 

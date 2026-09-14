@@ -18,8 +18,8 @@ const SAMPLE_VIEW_META: ViewMeta = {
     { alias: 'end', header: 'Bis', type: 'LocalDateTime', order: 2 },
     { alias: 'times', header: 'Zeit', type: 'String', order: 3 },
     { alias: 'name', header: 'Titel', type: 'String', order: 4 },
-    { alias: 'personen', header: 'Personen', type: 'Allocatable', order: 5, join: ', ' },
-    { alias: 'nichtPersonen', header: 'Nicht-Personen', type: 'Allocatable', order: 6, join: ', ' },
+    { alias: 'personen', header: 'Personen', type: 'Resource', order: 5, join: ', ' },
+    { alias: 'nichtPersonen', header: 'Nicht-Personen', type: 'Resource', order: 6, join: ', ' },
   ],
 };
 
@@ -137,14 +137,14 @@ describe('ViewHostComponent', () => {
     expect(captured.view).toBe('Wochenansicht');
   });
 
-  it('binds a resource chip into the ReservationFilter by type (allocatableMatching.idIn)', async () => {
+  it('binds a resource chip into the ReservationFilter by type (resourceMatching.idIn)', async () => {
     filter.replace({ id: 'C348', kind: 'resource', label: 'C348' });
     const f = makeHost('Wochenansicht');
     await settlePastThrottle(f); // binding lands on the re-query once meta arrives
     expect(captured.vars?.['filter']).toMatchObject({
       from: '2026-06-15T00:00:00',
       to: '2026-06-22T00:00:00',
-      allocatableMatching: { idIn: ['C348'] },
+      resourceMatching: { idIn: ['C348'] },
     });
   });
 

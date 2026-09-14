@@ -43,12 +43,12 @@ const WIRE: ReservationWire = {
   ],
   allocations: [
     {
-      allocatable: { id: 'r-room-1', name: 'Raum A66' },
+      resource: { id: 'r-room-1', name: 'Raum A66' },
       appointmentIds: null,
       requestStatus: null,
     },
     {
-      allocatable: { id: 'r-beamer-4', name: 'Beamer 04' },
+      resource: { id: 'r-beamer-4', name: 'Beamer 04' },
       appointmentIds: ['a1111111-1111-4111-8111-111111111111'],
       requestStatus: 'REQUESTED' as const,
     },
@@ -100,8 +100,8 @@ describe('EventDraft (PRD 091 Phase 2.2)', () => {
       },
     ]);
     expect(input.allocations).toEqual([
-      { allocatableId: 'r-room-1' },
-      { allocatableId: 'r-beamer-4', appointmentIds: ['a1111111-1111-4111-8111-111111111111'] },
+      { resourceId: 'r-room-1' },
+      { resourceId: 'r-beamer-4', appointmentIds: ['a1111111-1111-4111-8111-111111111111'] },
     ]);
   });
 
@@ -199,8 +199,8 @@ describe('scopeAllocations / newScopedDraft (Swing parity — PRD 094)', () => {
   it('exactly one resource chip is pre-allocated (applies-to-all)', () => {
     expect(scopeAllocations([chips[0], chips[1], chips[3]])).toEqual([
       {
-        allocatableId: 'r1',
-        allocatableName: 'Kamera G40',
+        resourceId: 'r1',
+        resourceName: 'Kamera G40',
         appointmentIds: null,
         requestStatus: null,
       },
@@ -208,7 +208,7 @@ describe('scopeAllocations / newScopedDraft (Swing parity — PRD 094)', () => {
   });
 
   /**
-   * Swing rule (`RaplaComponent.addAllocatables`): with 2+ resources selected and none
+   * Swing rule (`RaplaComponent.addResources`): with 2+ resources selected and none
    * MARKED in the calendar, NOTHING is pre-allocated — guessing which of them the user
    * meant would silently book resources they never picked for this event.
    */
@@ -222,32 +222,32 @@ describe('scopeAllocations / newScopedDraft (Swing parity — PRD 094)', () => {
 
   /**
    * Swing adds the scope resource to a TEMPLATE-instantiated event too
-   * (`EditTaskPresenter` → `RaplaComponent.addAllocatables` after `copyReservations`) —
+   * (`EditTaskPresenter` → `RaplaComponent.addResources` after `copyReservations`) —
    * on top of what the template already carries, never replacing it.
    */
   describe('withScopeAllocations (template path)', () => {
     const draft = (...ids: string[]) => ({
       ...newScopedDraft('event', new Date('2026-07-07T12:00:00'), []),
       allocations: ids.map((id) => ({
-        allocatableId: id,
-        allocatableName: id,
+        resourceId: id,
+        resourceName: id,
         appointmentIds: null,
       })),
     });
 
     it('appends the scope resource to the template allocations', () => {
       const out = withScopeAllocations(draft('tpl1'), [chips[0], chips[1]]);
-      expect(out.allocations.map((a) => a.allocatableId)).toEqual(['tpl1', 'r1']);
+      expect(out.allocations.map((a) => a.resourceId)).toEqual(['tpl1', 'r1']);
     });
 
     it('never duplicates a resource the template already allocates', () => {
       const out = withScopeAllocations(draft('r1'), [chips[0]]);
-      expect(out.allocations.map((a) => a.allocatableId)).toEqual(['r1']);
+      expect(out.allocations.map((a) => a.resourceId)).toEqual(['r1']);
     });
 
     it('leaves the template untouched when the scope pre-allocates nothing', () => {
       const out = withScopeAllocations(draft('tpl1'), chips);
-      expect(out.allocations.map((a) => a.allocatableId)).toEqual(['tpl1']);
+      expect(out.allocations.map((a) => a.resourceId)).toEqual(['tpl1']);
     });
   });
 
@@ -260,7 +260,7 @@ describe('scopeAllocations / newScopedDraft (Swing parity — PRD 094)', () => {
     );
     expect(draft.id).toBe('e-x');
     expect(draft.typeKey).toBe('ausleihe');
-    expect(draft.allocations.map((a) => a.allocatableId)).toEqual(['r1']);
+    expect(draft.allocations.map((a) => a.resourceId)).toEqual(['r1']);
     expect(draft.appointments.length).toBe(1); // still a normal new draft
   });
 });
@@ -288,7 +288,7 @@ describe('rangeScopedDraft (month-grid drag-create — PRD 095 Phase 3)', () => 
   it('carries the scope resources and typeKey like newScopedDraft', () => {
     const draft = rangeScopedDraft('ausleihe', chips, '2026-07-01', '2026-07-02');
     expect(draft.typeKey).toBe('ausleihe');
-    expect(draft.allocations.map((a) => a.allocatableId)).toEqual(['r1']);
+    expect(draft.allocations.map((a) => a.resourceId)).toEqual(['r1']);
     expect(draft.persisted).toBe(false);
   });
 });

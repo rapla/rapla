@@ -11,23 +11,23 @@ import { toLocalDateTime } from '../graphql/local-date-time';
 import type { MutationResult } from '../graphql/mutation-result';
 
 /**
- * PRD 096 Phase 4 — load/save for the allocatable edit dialog. Same two-step
+ * PRD 096 Phase 4 — load/save for the resource edit dialog. Same two-step
  * shape as EventDataService: shell first, then the full-value classification
  * read built from the parsed SDL descriptors. Much simpler than events —
  * no appointments/allocations, classification only (PRD 063's
- * updateAllocatable is classification-only by design).
+ * updateResource is classification-only by design).
  */
 
-export interface AllocatableDraft {
+export interface ResourceDraft {
   id: string;
   typeKey: string;
   values: Record<string, unknown>;
-  /** LocalDateTime for updateAllocatable's expectedLastChanged. */
+  /** LocalDateTime for updateResource's expectedLastChanged. */
   lastChanged: string | null;
 }
 
-export interface LoadedAllocatable {
-  draft: AllocatableDraft;
+export interface LoadedResource {
+  draft: ResourceDraft;
   displayName: string;
   typeName: string;
   /** RESOURCE | PERSON — the type select only offers same-kind targets. */
@@ -36,7 +36,7 @@ export interface LoadedAllocatable {
 }
 
 interface ShellWire {
-  allocatable: {
+  resource: {
     id: string;
     displayName: string;
     lastModifiedAt: string | null;
@@ -47,7 +47,7 @@ interface ShellWire {
 
 const SHELL_QUERY = `
   query ($id: ID!) {
-    allocatable(id: $id) {
+    resource(id: $id) {
       id
       displayName
       lastModifiedAt
@@ -57,14 +57,14 @@ const SHELL_QUERY = `
   }`;
 
 @Injectable({ providedIn: 'root' })
-export class AllocatableDataService {
+export class ResourceDataService {
   private readonly gql = inject(GraphqlService);
   private readonly schema = inject(ClassificationSchemaService);
 
-  load(id: string): Observable<LoadedAllocatable | null> {
+  load(id: string): Observable<LoadedResource | null> {
     return this.gql.query<ShellWire>(SHELL_QUERY, { id }).pipe(
       switchMap((resp) => {
-        const shell = resp.data?.allocatable;
+        const shell = resp.data?.resource;
         if (!shell) return of(null);
         return this.classificationValues(id, shell.classification.typeKey).pipe(
           map((values) => ({
@@ -90,19 +90,17 @@ export class AllocatableDataService {
         const type = types.get(typeKey);
         if (!type || type.attributes.length === 0) return of({});
         const fragment = `... on ${typeKey}Classification { ${valueSelections(type.attributes)} }`;
-        const doc = `query ($id: ID!) { allocatable(id: $id) { classification { ${fragment} } } }`;
+        const doc = `query ($id: ID!) { resource(id: $id) { classification { ${fragment} } } }`;
         return this.gql
-          .query<{ allocatable: { classification: Record<string, unknown> } | null }>(doc, { id })
+          .query<{ resource: { classification: Record<string, unknown> } | null }>(doc, { id })
           .pipe(
-            map((resp) =>
-              normalizeClassificationValues(resp.data?.allocatable?.classification ?? {}),
-            ),
+            map((resp) => normalizeClassificationValues(resp.data?.resource?.classification ?? {})),
           );
       }),
     );
   }
 
-  /** Type options for the select — same classificationType as the loaded allocatable. */
+  /** Type options for the select — same classificationType as the loaded resource. */
   typeOptions(classificationType: string): Observable<{ key: string; name: string }[]> {
     return this.gql
       .query<{
@@ -117,18 +115,18 @@ export class AllocatableDataService {
       );
   }
 
-  save(draft: AllocatableDraft): Observable<MutationResult<{ id: string }>> {
+  save(draft: ResourceDraft): Observable<MutationResult<{ id: string }>> {
     const input = {
       typeKey: draft.typeKey,
       classification: { [draft.typeKey]: { ...draft.values } },
     };
     return this.gql
-      .mutate<{ updateAllocatable: { id: string } }>(
-        `mutation ($id: ID!, $input: AllocatableInput!, $expected: LocalDateTime) {
-           updateAllocatable(id: $id, input: $input, expectedLastChanged: $expected) { id }
+      .mutate<{ updateResource: { id: string } }>(
+        `mutation ($id: ID!, $input: ResourceInput!, $expected: LocalDateTime) {
+           updateResource(id: $id, input: $input, expectedLastChanged: $expected) { id }
          }`,
         { id: draft.id, input, expected: draft.lastChanged },
       )
-      .pipe(map((r) => (r.kind === 'ok' ? { kind: 'ok', data: r.data.updateAllocatable } : r)));
+      .pipe(map((r) => (r.kind === 'ok' ? { kind: 'ok', data: r.data.updateResource } : r)));
   }
 }

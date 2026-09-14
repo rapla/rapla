@@ -68,7 +68,7 @@ class ViewParamSaveValidationTest
         String query = """
                 query psv_valid($filter: ReservationFilter!) @view(title: "ok")
                   @window(from: { anchor: TODAY, offset: 0 }, to: { anchor: TODAY, offset: 7 })
-                  @param(name: "resource", into: "filter.allocatableIdsIn")
+                  @param(name: "resource", into: "filter.resourceIdsIn")
                 """ + BODY;
         assertEquals(List.of(), save("psv_valid", query));
     }
@@ -93,14 +93,14 @@ class ViewParamSaveValidationTest
     {
         String query = """
                 query psv_typo($filter: ReservationFilter!) @view(title: "x")
-                  @param(name: "resource", into: "filter.allocatableIdsInX")
+                  @param(name: "resource", into: "filter.resourceIdsInX")
                 """ + BODY;
         List<String> errors = save("psv_typo", query);
         assertFalse(errors.isEmpty());
         String message = errors.get(0);
-        assertTrue(message.contains("allocatableIdsInX"), message);
+        assertTrue(message.contains("resourceIdsInX"), message);
         assertTrue(message.contains("available:"), message);
-        assertTrue(message.contains("allocatableIdsIn"), message);
+        assertTrue(message.contains("resourceIdsIn"), message);
         assertTrue(message.contains("ownerEq"), message);
     }
 
@@ -109,7 +109,7 @@ class ViewParamSaveValidationTest
     {
         String query = """
                 query psv_novar($filter: ReservationFilter!) @view(title: "x")
-                  @param(name: "resource", into: "nosuchvar.allocatableIdsIn")
+                  @param(name: "resource", into: "nosuchvar.resourceIdsIn")
                 """ + BODY;
         List<String> errors = save("psv_novar", query);
         assertFalse(errors.isEmpty());
@@ -124,7 +124,7 @@ class ViewParamSaveValidationTest
     {
         String query = """
                 query psv_dup($filter: ReservationFilter!) @view(title: "x")
-                  @param(name: "resource", into: "filter.allocatableIdsIn")
+                  @param(name: "resource", into: "filter.resourceIdsIn")
                   @param(name: "resource", into: "filter.ownerEq")
                 """ + BODY;
         List<String> errors = save("psv_dup", query);
@@ -179,7 +179,7 @@ class ViewParamSaveValidationTest
     {
         String query = """
                 query psv_dry($filter: ReservationFilter!) @view(title: "x")
-                  @param(name: "resource", into: "filter.allocatableIdsInX")
+                  @param(name: "resource", into: "filter.resourceIdsInX")
                 { reservations(filter: $filter) { titel: name } }""";
 
         List<ViewParamDirectives.Issue> issues = views.validateQuery(query);
@@ -199,7 +199,7 @@ class ViewParamSaveValidationTest
         String query = """
                 query psv_dry_ok($filter: ReservationFilter!) @view(title: "ok")
                   @window(from: { anchor: WEEK_START, offset: 0 }, to: { anchor: WEEK_START, offset: 7 })
-                  @param(name: "resource", into: "filter.allocatableIdsIn")
+                  @param(name: "resource", into: "filter.resourceIdsIn")
                 { reservations(filter: $filter) { titel: name } }""";
         assertEquals(List.of(), views.validateQuery(query));
     }

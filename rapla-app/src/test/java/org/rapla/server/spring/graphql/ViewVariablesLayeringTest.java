@@ -66,14 +66,14 @@ class ViewVariablesLayeringTest
                 + "\"weekdays\":[\"MONDAY\",\"FRIDAY\"]}}";
 
         Map<String, Object> vars = ViewVariables.mergeLayeredDefaults(
-                Map.of("filter", Map.of("allocatableIdsIn", List.of("a1"))),
+                Map.of("filter", Map.of("resourceIdsIn", List.of("a1"))),
                 List.of(viewDefaults), QUERY, null);
 
         Map<String, Object> filter = (Map<String, Object>) vars.get("filter");
         assertEquals("2026-06-15T00:00:00", filter.get("from"), "defaults' dates survive a caller filter key");
         assertEquals("2026-06-22T00:00:00", filter.get("to"), "defaults' dates survive a caller filter key");
         assertEquals(List.of("MONDAY", "FRIDAY"), filter.get("weekdays"), "pinned weekdays survive ?resource=");
-        assertEquals(List.of("a1"), filter.get("allocatableIdsIn"), "the caller's key wins");
+        assertEquals(List.of("a1"), filter.get("resourceIdsIn"), "the caller's key wins");
     }
 
     /**

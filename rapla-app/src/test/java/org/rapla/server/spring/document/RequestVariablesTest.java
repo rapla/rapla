@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * PRD 097 OQ9 — the flat request-parameter contract. A document's URL must be able to express the
  * nested GraphQL inputs its view declares, or a per-resource week plan (
- * {@code ?filter.allocatableIdsIn=<id>}) cannot be linked to at all.
+ * {@code ?filter.resourceIdsIn=<id>}) cannot be linked to at all.
  *
  * <p>Two rules, both chosen because a URL already has them: a dot nests, and a repeated key is a
  * list. No comma-splitting — resource names contain commas, ids may one day too.
@@ -40,24 +40,24 @@ class RequestVariablesTest
     @Test
     void aRepeatedKeyIsAList()
     {
-        assertEquals(Map.of("filter", Map.of("allocatableIdsIn", List.of("r1", "r2"))),
-                RequestVariables.expand(Map.of("filter.allocatableIdsIn", List.of("r1", "r2"))));
+        assertEquals(Map.of("filter", Map.of("resourceIdsIn", List.of("r1", "r2"))),
+                RequestVariables.expand(Map.of("filter.resourceIdsIn", List.of("r1", "r2"))));
     }
 
     @Test
     void aSingleValuedListFieldStaysAScalarAndGraphQlCoercesIt()
     {
-        // GraphQL input coercion wraps a single value into a list, so ?filter.allocatableIdsIn=r1
+        // GraphQL input coercion wraps a single value into a list, so ?filter.resourceIdsIn=r1
         // binds to [ID!] without the caller needing to repeat the parameter.
-        assertEquals(Map.of("filter", Map.of("allocatableIdsIn", "r1")),
-                RequestVariables.expand(Map.of("filter.allocatableIdsIn", List.of("r1"))));
+        assertEquals(Map.of("filter", Map.of("resourceIdsIn", "r1")),
+                RequestVariables.expand(Map.of("filter.resourceIdsIn", List.of("r1"))));
     }
 
     @Test
     void deepNestingWorksForFiltersInsideFilters()
     {
-        assertEquals(Map.of("filter", Map.of("allocatableMatching", Map.of("idIn", "r1"))),
-                RequestVariables.expand(Map.of("filter.allocatableMatching.idIn", List.of("r1"))));
+        assertEquals(Map.of("filter", Map.of("resourceMatching", Map.of("idIn", "r1"))),
+                RequestVariables.expand(Map.of("filter.resourceMatching.idIn", List.of("r1"))));
     }
 
     @Test

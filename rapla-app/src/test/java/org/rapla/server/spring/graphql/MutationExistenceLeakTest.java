@@ -126,7 +126,7 @@ class MutationExistenceLeakTest
         String[] code = { null };
         tester.document("""
                 mutation ($id: ID!) {
-                  updateAllocatable(id: $id, input: {
+                  updateResource(id: $id, input: {
                     typeKey: "room", classification: { room: { name: "x" } }
                   }) { id }
                 }

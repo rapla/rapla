@@ -170,7 +170,7 @@ class TableViewControllerIntegrationTest
         //
         // The reservations-table view must scope by "what the user can read",
         // not "what the user owns" — otherwise non-owning users see an empty
-        // table (the bug christopher.kohlhaas reported against DHBW).
+        // table (the bug <reporter> reported against DHBW).
         String montyToken = OAuthTestSupport.loginAs(mockMvc, "monty", "burns");
         mockMvc.perform(postTable("/api/table/reservations", body("2001-10-01", "2001-11-01"))
                         .header("Authorization", "Bearer " + montyToken))

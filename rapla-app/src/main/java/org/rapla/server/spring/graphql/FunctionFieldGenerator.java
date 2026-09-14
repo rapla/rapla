@@ -37,9 +37,9 @@ final class FunctionFieldGenerator
     static final Map<String, Set<String>> EXISTING_FIELDS = Map.of(
             "AppointmentBlock",
             Set.of("start", "end", "isException", "name", "reservation",
-                    "allocatables", "duration", "times", "durationMinutes", "compute"),
+                    "resources", "duration", "times", "durationMinutes", "compute"),
             "Appointment",
-            Set.of("id", "name", "start", "end", "allDay", "repeating", "allocatables", "blocks"));
+            Set.of("id", "name", "start", "end", "allDay", "repeating", "resources", "blocks"));
 
     /**
      * Functions that are EVENT-level but only meaningful on a materialized {@code AppointmentBlock}

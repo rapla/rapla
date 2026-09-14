@@ -1,8 +1,8 @@
 # GraphQL API — generic query catalog
 
 [PRD 035](prd/done/035-graphql-foundations.md) exposes a GraphQL endpoint at `POST /api/graphql` covering
-allocatables (resources + persons), classifications, dynamic types, and
-reservations (PRD [055](prd/055-graphql-events-read-api.md)/[066](prd/066-graphql-reservation-allocatable-matching.md)). Live UIs: GraphiQL at `/graphiql/`,
+resources (resources + persons), classifications, dynamic types, and
+reservations (PRD [055](prd/055-graphql-events-read-api.md)/[066](prd/066-graphql-reservation-resource-matching.md)). Live UIs: GraphiQL at `/graphiql/`,
 Scalar at `/scalar/`, schema-as-data via introspection.
 
 ---
@@ -34,8 +34,8 @@ codegen / lint tooling will warn or auto-rename downstream.
 having the SDL generator PascalCase type names or uppercase enum
 values) re-introduces the same class of bug [PRD 058](prd/058-graphql-key-spec-migration.md) just removed:
 silent transformations destroy information. Concrete burn 2026-05-28
-on dhbw: `DIN_5_2_3_11` / `DIN_5_2_31_1` / `DIN_52_3_11` all collapsed
-to `DIN52311`; SDL generator silently dropped 2 of every 3 leaves
+in a production deployment: `CATEGORY_1_2_3_4` / `CATEGORY_1_23_4` / `CATEGORY_12_3_4` all collapsed
+to `CATEGORY1234`; SDL generator silently dropped 2 of every 3 leaves
 with a WARN. Verbatim emission was the fix.
 
 **What we should do.** The Angular schema-editor screens should
@@ -56,7 +56,7 @@ This lives in the SPA's schema-editor forms ([PRD 057](prd/done/057-graphql-dt-m
 those ship). Server-side, the existing [PRD 058](prd/058-graphql-key-spec-migration.md) spec check is the only
 gate — same as today.
 
-**Why this is fine to defer.** Existing dhbw deploys already have keys
+**Why this is fine to defer.** Existing production deploys already have keys
 in mixed conventions; the verbatim emission preserves whatever the
 admin chose. Schema convention deviation is cosmetic and tool-handled
 (graphql-codegen normalizes for target-language types). No urgency
@@ -65,7 +65,7 @@ from the server side. The hint UX lands when the schema editor lands.
 ---
 
 This doc is a deployment-agnostic tour. **Deployment-specific examples**
-(real type keys like `Raum`/`Gebaeude`/`Lehrveranstaltung`, role
+(the deployment's real type keys, role
 walkthroughs against actual users, capacity / building / equipment
 queries) live alongside that deployment — see for example
 `dhbwrapla/docs/graphql.md`.
@@ -151,7 +151,7 @@ automatically plus an `X-XSRF-TOKEN` double-submit header (from the
 DynamicType **keys** (not UUIDs) are the identity currency of the whole GraphQL surface:
 generated type names (`<typeKey>Classification`), where-fields (`where<TypeKey>`), inline
 fragments, and the type-selection filter. Type selection is the single generated field
-`typeIn` on **per-kind enums** — `AllocatableFilter.typeIn: [AllocatableTypeKey!]`
+`typeIn` on **per-kind enums** — `ResourceFilter.typeIn: [ResourceTypeKey!]`
 (resource+person keys) and `ReservationFilter.typeIn: [ReservationTypeKey!]` (reservation
 keys). Unknown keys **and wrong-kind keys are validation errors**, not silent empty results
 (the former `typeKeyEq`/`typeKeyIn` String fields were removed, [PRD 059](prd/done/059-graphql-typed-where-predicates.md) Phase 7).
@@ -163,7 +163,7 @@ Consequences (details + rationale in the ADR):
   **revalidated-and-marked** after every rebuild: invalid views keep their text, refuse
   execution, carry `invalidReason`; the admin fixes them in GraphiQL. No auto-migration.
 - Typed attribute predicates `where<TypeKey>` exist for all kinds — resource/person on
-  `AllocatableFilter`, reservation (e.g. `whereEvent`) on `ReservationFilter` — evaluated
+  `ResourceFilter`, reservation (e.g. `whereEvent`) on `ReservationFilter` — evaluated
   by the same `WhereEvaluator`.
 
 ## Schema topology
@@ -174,10 +174,10 @@ Query
 ├── periods                                        # rapla period model
 ├── category(path:), categories(rootKey:)          # category tree
 ├── types, type(key:)                              # DynamicType descriptors
-└── allocatables(filter:), allocatable(id:)        # resources + persons
+└── resources(filter:), resource(id:)        # resources + persons
 
 Classification (interface, base — shape: typeKey, type)
-├── AllocatableClassification  (narrows resources + persons)
+├── ResourceClassification  (narrows resources + persons)
 │   ├── <typeKey>Classification  ← one per resource/person DynamicType, generated
 └── ReservationClassification  (narrows reservations)
     └── <typeKey>Classification  ← one per reservation DynamicType, generated
@@ -185,7 +185,7 @@ Classification (interface, base — shape: typeKey, type)
 # Rapla-internal scaffolding types (annotation classification-type=rapla
 # — period / template / defaultUser / anonymousEvent) are filtered out
 # of every GraphQL surface: not in `types`, not in `type(key:)`, not in
-# `allocatables*`, no generated Rapla*Classification. They remain
+# `resources*`, no generated Rapla*Classification. They remain
 # accessible via the dedicated query roots (`periods`, …) and via the
 # operator for the subsystems that need them.
 ```
@@ -199,7 +199,7 @@ introspection + SDL custom directives (`@displayName`,
 
 **SPA pattern:** introspect the schema to learn the deployment's
 attribute layout, then construct typed-narrow queries dynamically:
-`... on roomClassification { name seats Gebaeude { displayName } }`.
+`... on RoomClassification { name seats building { displayName } }`.
 **Codegen consumer pattern:** same typed fragments, but as static
 documents — regenerate types when admin edits a DynamicType (rare,
 explicit, deploy-coupled).
@@ -287,7 +287,7 @@ Restfall: zwei Roots mit gleichem `_`-Pfad (`a/b` vs. Key `a_b`) — der Generat
 den ersten und loggt WARN, das zweite Attribut fällt auf `Category` zurück.
 
 ```graphqls
-enum RaumartEnum {
+enum RoomTypeEnum {
   """Büroräume allgemein"""
   Bueroraeume
   """Hörsaal"""
@@ -298,13 +298,13 @@ enum RaumartEnum {
   Pruefungsraum
 }
 
-type roomClassification implements Classification & AllocatableClassification {
+type RoomClassification implements Classification & ResourceClassification {
   typeKey: String!
   type: DynamicType!
-  Raumart:          RaumartEnum             @displayName(value: "Raumart")    @rootCategory(path: "Raumtypen")
-  AusstattungListe: [AusstattungEnum!]      @displayName(value: "Ausstattung") @rootCategory(path: "Ausstattungen") @multiplicity(value: LIST)
+  roomType:         RoomTypeEnum            @displayName(value: "Room type")  @rootCategory(path: "roomTypes")
+  equipment:        [EquipmentEnum!]        @displayName(value: "Equipment")  @rootCategory(path: "equipment") @multiplicity(value: LIST)
   SyncStatus:       SyncStatus              @displayName(value: "Sync-Status")
-  Gebaeude:         Allocatable             @displayName(value: "Gebäude")     @expectedType(key: "building")
+  building:         Resource                @displayName(value: "Building")   @expectedType(key: "Building")
 }
 ```
 
@@ -328,10 +328,10 @@ hot-swap window.
 
 **Why enums for VALUE_LIST roots specifically:**
 
-- AI / GraphiQL discoverability — `__type(name: "RaumartEnum")` introspection
+- AI / GraphiQL discoverability — `__type(name: "RoomTypeEnum")` introspection
   returns the full value space; autocomplete shows values inline when
   typing predicates. No separate descriptor query for value discovery.
-- Type-safe filtering — `{ Raumart: { eq: Bueroraeume } }` is validated
+- Type-safe filtering — `{ roomType: { eq: Bueroraeume } }` is validated
   at parse time; UUID-typed predicates aren't.
 - Smaller wire payload — enum value names vs full Category objects
 - Codegen consumers get typed enum types in TypeScript / Java.
@@ -416,7 +416,7 @@ Returns only user-visible classifications — internal rapla scaffolding
 Per-attribute metadata lives on the generated `<typeKey>Classification`
 type — discover it via introspection (query 4 below).
 
-### 4. allocatables — schema-as-data via introspection
+### 4. resources — schema-as-data via introspection
 
 The right SPA shape after the β refactor: discover the deployment's
 attribute layout by introspecting the generated classification types,
@@ -443,7 +443,7 @@ through `ofType` for `[X!]` / `!` wrappers) tells you the value type:
 - `name: "String" | "Int" | "Boolean"` etc. — scalar attribute
 - `name: "<RootPath>Enum"`, `kind: "ENUM"` — VALUE_LIST CATEGORY attribute
 - `name: "Category"` — ORGANIZATION CATEGORY attribute
-- `name: "Allocatable"` — ALLOCATABLE attribute (server validates the
+- `name: "Resource"` — ALLOCATABLE attribute (server validates the
   expected DynamicType per the `@expectedType` directive)
 
 SDL directives carry the bits introspection alone doesn't expose:
@@ -453,7 +453,7 @@ SDL directives carry the bits introspection alone doesn't expose:
 | `@displayName(value: "...")` | Always (locale-resolved at SDL-gen time) | Human-readable form label |
 | `@required` | Attribute is `!isOptional()` | Save-time required, read-time still nullable (legacy data may carry null) |
 | `@multiplicity(value: BELONGS_TO \| PACKAGE)` | ALLOCATABLE only, non-default multiplicity | Widget hint (vs plain LIST/SINGLE which is implied by the field type wrapper) |
-| `@expectedType(key: "...")` | ALLOCATABLE attrs with a DynamicType constraint | Filter the allocatable picker |
+| `@expectedType(key: "...")` | ALLOCATABLE attrs with a DynamicType constraint | Filter the resource picker |
 | `@rootCategory(path: "key/path")` | CATEGORY attrs with an admin-set root | Allowed root for the category picker |
 | `@editView(value: "title" \| "additional" \| "no-view")` | Placement on the `title > main > additional > no-view` scale. `title` is computed from the DISPLAY nameformat's direct attribute references (`{surname} {forename}` → both; functions/lists ignored, explicit `edit-view=no-view` annotation wins); `additional`/`no-view` mirror the `edit-view` attribute annotation; `main` (default) is omitted | SPA editors: title attrs render as prominent header fields in attribute order, no-view attrs are hidden, additional renders like main for now ([PRD 096](prd/096-spa-classification-editor.md) D5 revision — replaced the earlier single-attribute `@title`) |
 
@@ -462,7 +462,7 @@ specific classification's typed fields directly:
 
 ```graphql
 {
-  allocatables(filter: { typeIn: [<typeKey>] }) {
+  resources(filter: { typeIn: [<typeKey>] }) {
     id
     displayName
     classification {
@@ -476,14 +476,14 @@ specific classification's typed fields directly:
 }
 ```
 
-### 5. allocatables — typed narrowing (codegen consumer path)
+### 5. resources — typed narrowing (codegen consumer path)
 
 DO NOT do this from the SPA — type names are deployment-coupled. Codegen
 consumers with a fixed deployment use this for compile-time field access:
 
 ```graphql
 {
-  allocatables(filter: { typeIn: [<TypeKey>] }) {
+  resources(filter: { typeIn: [<TypeKey>] }) {
     displayName
     classification {
       ... on <typeKey>Classification {
@@ -500,32 +500,32 @@ consumers with a fixed deployment use this for compile-time field access:
 
 ```graphql
 # only one type
-{ allocatables(filter: { typeIn: [<TypeKey>] }) { displayName } }
+{ resources(filter: { typeIn: [<TypeKey>] }) { displayName } }
 
 # only persons
-{ allocatables(filter: { isPersonEq: true }) { displayName } }
+{ resources(filter: { isPersonEq: true }) { displayName } }
 
 # substring name search (case-insensitive)
-{ allocatables(filter: { nameContains: "foo" }) { displayName } }
+{ resources(filter: { nameContains: "foo" }) { displayName } }
 
 # combined AND
-{ allocatables(filter: { typeIn: [<TypeKey>], nameContains: "foo" }) { displayName } }
+{ resources(filter: { typeIn: [<TypeKey>], nameContains: "foo" }) { displayName } }
 ```
 
 ### 7. follow a reference attribute
 
-When an attribute is typed `Allocatable` (per the `@expectedType(key:)`
+When an attribute is typed `Resource` (per the `@expectedType(key:)`
 directive on the field), chain through to the referenced entity's typed
 classification:
 
 ```graphql
 {
-  allocatables(filter: { typeIn: [<TypeKey>] }) {
+  resources(filter: { typeIn: [<TypeKey>] }) {
     displayName
     classification {
       ... on <typeKey>Classification {
         someStringAttribute
-        someReferenceAttribute {     # this is an Allocatable
+        someReferenceAttribute {     # this is an Resource
           displayName
           classification {
             ... on <OtherKey>Classification {
@@ -550,7 +550,7 @@ One round-trip for a workbench:
 query Workbench {
   me { username isAdmin }
   types: types { key }
-  things: allocatables(filter: { typeIn: [<TypeKey>] }) {
+  things: resources(filter: { typeIn: [<TypeKey>] }) {
     id displayName
   }
   serverNow: serverTime
@@ -561,7 +561,7 @@ query Workbench {
 
 ```graphql
 # only resources + persons
-{ __type(name: "AllocatableClassification") { possibleTypes { name } } }
+{ __type(name: "ResourceClassification") { possibleTypes { name } } }
 
 # only reservations
 { __type(name: "ReservationClassification") { possibleTypes { name } } }
@@ -577,12 +577,12 @@ query Workbench {
 
 ### 10. interface mismatch (validation error, by design)
 
-A resource-typed `Allocatable.classification` rejects an event-only
+A resource-typed `Resource.classification` rejects an event-only
 narrowing at validation time — SPA mistakes never produce silent nulls:
 
 ```graphql
 {
-  allocatables(filter: { typeIn: [<ResourceKey>] }) {
+  resources(filter: { typeIn: [<ResourceKey>] }) {
     classification { ... on <ReservationKey>Classification { typeId } }
   }
 }
@@ -590,7 +590,7 @@ narrowing at validation time — SPA mistakes never produce silent nulls:
 
 Yields:
 ```
-Fragment cannot be spread here as objects of type 'AllocatableClassification'
+Fragment cannot be spread here as objects of type 'ResourceClassification'
 can never be of type '<ReservationKey>Classification'
 ```
 
@@ -618,10 +618,10 @@ Input null-semantics on the write side (same PRD): in a classification
 value; an OMITTED key falls back to the type default (create and update
 rebuild from `newClassification()` — replace semantics, not merge).
 
-### 11. reservations + the calendar query ([PRD 055](prd/055-graphql-events-read-api.md) + [PRD 066](prd/066-graphql-reservation-allocatable-matching.md))
+### 11. reservations + the calendar query ([PRD 055](prd/055-graphql-events-read-api.md) + [PRD 066](prd/066-graphql-reservation-resource-matching.md))
 
 `reservations(filter:)` requires a mandatory time window and supports
-three orthogonal ways to select which allocatables drive the result —
+three orthogonal ways to select which resources drive the result —
 mirroring the calendar UI's tree-selection model (type checkboxes,
 per-type filter rules, explicit ticks). The combined input shape is:
 
@@ -631,14 +631,14 @@ input ReservationFilter {
   to:                  LocalDateTime!     # exclusive
   typeIn: [ReservationTypeKey!]         # narrow to reservation DTs (per-kind enum)
   ownerEq:             ID                 # who created it
-  allocatableIdsIn:    [ID!]              # PRD 055 — uses ANY of these ids
-  allocatableMatching: AllocatableFilter  # PRD 066 — uses ANY allocatable matching this filter
+  resourceIdsIn:    [ID!]              # PRD 055 — uses ANY of these ids
+  resourceMatching: ResourceFilter  # PRD 066 — uses ANY resource matching this filter
   nameContains:        String
   limit:               Int                # default 500, hard cap 5000
 }
 ```
 
-`allocatableMatching` reuses the full `AllocatableFilter` shape — the
+`resourceMatching` reuses the full `ResourceFilter` shape — the
 same `typeIn` + per-type `whereXxx` ([PRD 059](prd/done/059-graphql-typed-where-predicates.md)) + `idIn` the calendar
 sidebar produces. Semantic: result is the union of the type-bucket
 predicate set and `idIn`; per-type filter rules apply only to the
@@ -650,7 +650,7 @@ type-bucket; `idIn` is additive and ignores filter rules.
   reservations(filter: {
     from: "2026-04-01T00:00:00"
     to:   "2026-09-30T00:00:00"
-    allocatableMatching: {
+    resourceMatching: {
       typeIn: [<ResourceKey>]
       where<ResourceKey>: { <RefAttribute>: { eq: "<reference-id>" } }
     }
@@ -670,7 +670,7 @@ type-bucket; `idIn` is additive and ignores filter rules.
   reservations(filter: {
     from: "..."
     to:   "..."
-    allocatableMatching: {
+    resourceMatching: {
       typeIn: [<TypeA>, <TypeB>]      # type checkboxes
       where<TypeA>: { ... }                  # per-type filter rule
       idIn: ["<id-1>", "<id-2>"]             # additive ticks (any types)
@@ -683,8 +683,8 @@ type-bucket; `idIn` is additive and ignores filter rules.
 
 - Anonymous caller → `[]` unconditionally
 - Each reservation passes `pc.canRead(r, caller)` post-loop
-- Each allocatable in `idIn` / `allocatableMatching` passes `pc.canRead(a, caller)` at resolution time — unreadable ids drop silently (existence not leaked)
-- Both `idIn` and `allocatableIdsIn` are subject to §12; explicit picks do NOT bypass `canRead`
+- Each resource in `idIn` / `resourceMatching` passes `pc.canRead(a, caller)` at resolution time — unreadable ids drop silently (existence not leaked)
+- Both `idIn` and `resourceIdsIn` are subject to §12; explicit picks do NOT bypass `canRead`
 
 Window cap is configurable via Spring Boot property
 `rapla.graphql.max-query-window-days` (default null = no cap). Result
@@ -701,15 +701,15 @@ queries with real dataset numbers live in
 [`dhbwrapla/docs/graphql.md`](../../dhbwrapla/docs/graphql.md)
 §"Reservation queries".
 
-#### Nested `Appointment.allocatables(filter:)` — [PRD 073](prd/073-graphql-function-equivalents.md)
+#### Nested `Appointment.resources(filter:)` — [PRD 073](prd/073-graphql-function-equivalents.md)
 
-Each appointment exposes its pre-resolved allocatable list. An optional
-`filter` argument narrows it using the full `AllocatableFilter` — the same
-shape as `Query.allocatables(filter:)`, including `idIn`, `limit`,
+Each appointment exposes its pre-resolved resource list. An optional
+`filter` argument narrows it using the full `ResourceFilter` — the same
+shape as `Query.resources(filter:)`, including `idIn`, `limit`,
 `accessibleBy*`, and generated `where<TypeKey>` blocks. (The earlier
-strict-subset `AppointmentAllocatableFilter` type was removed.)
+strict-subset `AppointmentResourceFilter` type was removed.)
 
-The canRead gate runs **before** any predicate, so a hidden allocatable can
+The canRead gate runs **before** any predicate, so a hidden resource can
 never leak even when it would match.
 
 ```graphql
@@ -718,8 +718,8 @@ never leak even when it would match.
   reservations(filter: { from: "...", to: "..." }) {
     appointments {
       start end
-      rooms:     allocatables(filter: { isPersonEq: false }) { displayName }
-      lecturers: allocatables(filter: { isPersonEq: true  }) { displayName }
+      rooms:     resources(filter: { isPersonEq: false }) { displayName }
+      lecturers: resources(filter: { isPersonEq: true  }) { displayName }
     }
   }
 }
@@ -731,7 +731,7 @@ never leak even when it would match.
   reservations(filter: { from: "...", to: "..." }) {
     appointments {
       start end
-      allocatables(filter: { typeIn: [<TypeA>, <TypeB>] }) {
+      resources(filter: { typeIn: [<TypeA>, <TypeB>] }) {
         displayName
         classification { typeKey }
       }
@@ -740,7 +740,7 @@ never leak even when it would match.
 }
 ```
 
-The nested filter accepts the full `AllocatableFilter` (`idIn` / `limit` /
+The nested filter accepts the full `ResourceFilter` (`idIn` / `limit` /
 `accessibleBy*` / `where<TypeKey>` all honored), but its typical use is
 structural column splitting (rooms vs. persons vs. a named type) within one
 appointment, not cross-appointment id selection.
@@ -773,9 +773,9 @@ Phase 4.5; availability evaluates what a save would persist, series overlap is
 computed analytically on the rule, endless series included); permission-window
 violations surface only as
 `status: REQUEST_ONLY/FORBIDDEN`, never as conflict rows. Resolvers compose
-`getAllAllocatableBindingsSync` + `AllocationConflictModel` (the
+`getAllResourceBindingsSync` + `AllocationConflictModel` (the
 `/api/edit/check-conflicts` service path — no parallel conflict logic); candidate
-`filter` delegates to the §12-scoped `allocatables(filter:)` resolver.
+`filter` delegates to the §12-scoped `resources(filter:)` resolver.
 Implementation: `AvailabilityGraphQLController`, `ConflictGraphQLController`,
 shared `ConflictRow`.
 
@@ -800,7 +800,7 @@ query {
     appointments: [{ id: "a…draft-uuid…", start: "2031-06-02T09:00:00",
                      end: "2031-06-06T17:00:00", allDay: false }],
     candidates: { filter: { typeIn: [room] } }
-  }) { allocatable { id name } status conflictingAppointmentIds }
+  }) { resource { id name } status conflictingAppointmentIds }
 }
 ```
 
@@ -850,22 +850,22 @@ the issue, not the operator — check server logs for
 Every read goes through `PermissionController.canRead` at the output
 boundary — see AGENTS.md §12 and [PRD 035](prd/done/035-graphql-foundations.md) line 491-500. The contract:
 
-- **Anonymous callers** see `me: null`, empty `users`, empty `allocatables`.
+- **Anonymous callers** see `me: null`, empty `users`, empty `resources`.
   Trivial probes (`hello`, `serverTime`, `version`) and the schema /
   introspection remain open (admin/debug aid).
 - **Self-visibility**: every authenticated user always sees themselves in
   `users` (and via `user(username: <self>)`), regardless of admin status.
 - **Other users**: only those the caller `canAdminUser` are visible.
-- **Allocatables / attribute references**: filtered by `canRead`;
+- **Resources / attribute references**: filtered by `canRead`;
   unreadable entries are silently dropped. Existence not leaked.
-- **Mixed-id requests**: a query like `allocatable(id: X)` returns the
+- **Mixed-id requests**: a query like `resource(id: X)` returns the
   same `null` for "doesn't exist" and "exists but you can't see it".
 
 ---
 
 ## Performance patterns
 
-The Cut C work hit a 15 s ceiling on a 42 k × 11-typed-field admin query, then dropped to 6.35 s (58 % faster) by moving the hot-path resolvers off `@SchemaMapping` onto `LightDataFetcher` singletons and caching request-scoped state. Every pattern below is documented here so the next batch of resolvers (reservations, conflicts, search) can follow the same playbook.
+The Cut C work hit a 15 s ceiling on a large production admin query (tens of thousands of rows × 11 typed fields), then dropped to 6.35 s (58 % faster) by moving the hot-path resolvers off `@SchemaMapping` onto `LightDataFetcher` singletons and caching request-scoped state. Every pattern below is documented here so the next batch of resolvers (reservations, conflicts, search) can follow the same playbook.
 
 **Apply these rules to any per-row resolver.** Top-level `@QueryMapping` (runs once per request) is fine on the annotation path; only the per-row stuff matters.
 
@@ -982,7 +982,7 @@ final class AttributeDataFetcher implements LightDataFetcher<Object> {
 }
 ```
 
-One instance per (DynamicType, Attribute). 22 dhbw types × ~15 attrs avg = ~330 instances total, allocated once at schema build.
+One instance per (DynamicType, Attribute). A representative production schema has dozens of types × ~15 attrs avg, giving a few hundred instances total, allocated once at schema build.
 
 ### Pattern 3 — `RequestContextInstrumentation` for query-scoped state
 
@@ -1029,7 +1029,7 @@ private static boolean canReadAllocatable(Allocatable a, Supplier<DataFetchingEn
 
 ### Pattern 4 — cache `RaplaLocale` at wire time, not per request
 
-For locale-aware field reads (`Allocatable.displayName`, `Category.name`, `DynamicType.name`), reading from `RequestCtx` requires `envSupplier.get()` — ~25 µs of env materialization that dominates if you have many locale-aware fields per row. Instead snapshot the configured locale at schema build:
+For locale-aware field reads (`Resource.displayName`, `Category.name`, `DynamicType.name`), reading from `RequestCtx` requires `envSupplier.get()` — ~25 µs of env materialization that dominates if you have many locale-aware fields per row. Instead snapshot the configured locale at schema build:
 
 ```java
 public final class StructuralTypeFetchers
@@ -1134,7 +1134,7 @@ That single flag saved ~1 s on the 42k Person query in measurement (~14 % wall-c
 
 **`-Xms2g -Xmx2g -Xtune:throughput` OpenJ9 tuning.** Caused OOM during boot — rapla's data cache + connection pool needs more headroom. Default heap (~4 GB) works; OpenJ9 perf tuning is a config knob, not a code change.
 
-### Final perf numbers (post-Tier-1, dhbw admin × 42 250 Persons × 11 typed fields)
+### Final perf numbers (post-Tier-1, production admin × a large Person dataset × 11 typed fields)
 
 | Stage | Time | Notes |
 |---|---:|---|
@@ -1142,7 +1142,7 @@ That single flag saved ~1 s on the 42k Person query in measurement (~14 % wall-c
 | + Tier 1 (Patterns 1–6 above) | 7.0 s | code changes only |
 | + Pattern 7 (`optimizedLaunch=false`) | **6.35 s** | JVM flag only |
 | Realistic Tier 1 floor with all known tweaks | ~5.5-5.7 s | adds rapla-core change + JVM heap tuning (deferred) |
-| Tier 2 (`Classification.values: JSON` or `allocatablesPage`) | <1 s | schema change, deferred until real consumer |
+| Tier 2 (`Classification.values: JSON` or `resourcesPage`) | <1 s | schema change, deferred until real consumer |
 
 5 measured runs at 6.35 s mean had stddev 0.05 s — predictable.
 
@@ -1170,7 +1170,7 @@ deployment-spezifischen Typ-Keys im Query-Text; die kommen nur als Variablen-Dat
 
 ```graphql
 query Wochenansicht(
-  $filter: ReservationFilter!,                     # Event-Fenster (+ optional allocatableMatching)
+  $filter: ReservationFilter!,                     # Event-Fenster (+ optional resourceMatching)
   $sort:   [BlockSort!] = [{ field: START, dir: ASC }],
   $offset: Int = 0
 ) @view(title: "Wochenansicht") {
@@ -1188,11 +1188,11 @@ query Wochenansicht(
                                                     # auf den Blättern versteckt die Spalte NICHT
 
     # Generische Ressourcen-Lanes — Trennung rein über isPersonEq, kein typeKey im Query:
-    personen: allocatables(filter: { isPersonEq: true })
+    personen: resources(filter: { isPersonEq: true })
       @join(separator: ", ") @column(header: "Personen", order: 5) {
       id  name  isLocation
     }
-    nichtPersonen: allocatables(filter: { isPersonEq: false })
+    nichtPersonen: resources(filter: { isPersonEq: false })
       @join(separator: ", ") @column(header: "Nicht-Personen", order: 6) {
       id  name  isLocation
     }
@@ -1200,16 +1200,16 @@ query Wochenansicht(
 }
 ```
 
-Variablen (mit `AllocatableFilter` in Aktion — schränkt die Termine auf passende Ressourcen ein):
+Variablen (mit `ResourceFilter` in Aktion — schränkt die Termine auf passende Ressourcen ein):
 
 ```json
 {
   "filter": {
     "from": "2026-06-15T00:00:00",
     "to":   "2026-06-22T00:00:00",
-    "allocatableMatching": {
-      "typeIn": ["Raum"],
-      "whereRaum": { "Gebaeude": { "where": { "Gebaeudename": { "startsWith": "HAUPT" } } } }
+    "resourceMatching": {
+      "typeIn": ["Room"],
+      "whereRoom": { "building": { "where": { "buildingName": { "startsWith": "MAIN" } } } }
     },
     "limit": 2000
   },
@@ -1227,21 +1227,21 @@ Erläuterung:
   DynamicType-Annotation `location=true` (derselbe Marker wie der iCal-Export).
 - **`matchedBy` — Lane-Gruppierung im Wochengrid ([PRD 100](prd/100-spa-block-renderer-unification.md) Phase 5, Server ab 2026-07-09):**
   `matchedBy @hidden { id }` (KEIN Argument) liefert die *Match-Provenienz* — welche der
-  **gescopeten** Allocatables den Block zugelassen haben, als navigierbare `Allocatable`s. Der
-  Kandidaten-Pool ist der EIGENE aufgelöste Allocatable-Scope der Query (`allocatableIdsIn` /
-  `allocatableMatching`), nicht ein separates Argument — so kann `matchedBy` nie von dem Filter
+  **gescopeten** Resources den Block zugelassen haben, als navigierbare `Resource`s. Der
+  Kandidaten-Pool ist der EIGENE aufgelöste Resource-Scope der Query (`resourceIdsIn` /
+  `resourceMatching`), nicht ein separates Argument — so kann `matchedBy` nie von dem Filter
   abweichen, der den Block selektiert hat. Auflösung inkl. belongsTo (ein selektiertes **Gebäude**
   matcht seine Raum-Blöcke, obwohl der Block den Raum, nicht das Gebäude, allokiert). Das Grid nimmt
   `matchedBy[0]` als Lane-Schlüssel; leer ⇒ Query ungescopet ODER durch ein Nicht-Ressourcen-Kriterium
   (Owner-/User-Chip) zugelassen ⇒ Compact-Fallback. Implementiert durch Wiederverwendung der
   `AppointmentMapping`, die die Query ohnehin baut (keine zweite Storage-Abfrage) + gemeinsame
-  Java-Primitive mit dem Swing-Grouping (`AppointmentMapping.getMatchingAllocatables`). §12 fällt
+  Java-Primitive mit dem Swing-Grouping (`AppointmentMapping.getMatchingResources`). §12 fällt
   raus: der Pool ist der canRead-gegatete Scope der Query, also erscheinen nur lesbare, bereits
-  gescopete Ressourcen. **Wichtig:** nicht zu verwechseln mit `allocatables(filter:)`, das die
+  gescopete Ressourcen. **Wichtig:** nicht zu verwechseln mit `resources(filter:)`, das die
   EIGENEN reservierten Ressourcen des Blocks gegen ein *unabhängiges* Prädikat filtert (kein
   belongsTo, nicht an den Query-Scope gebunden).
 - **`@join`** macht aus der Ressourcen-Liste eine Zelle (`", "`-getrennt); die Daten bleiben verschachtelt.
-- **AllocatableFilter an drei Stellen, alle derselbe Typ:** `$filter.allocatableMatching` (welche
+- **ResourceFilter an drei Stellen, alle derselbe Typ:** `$filter.resourceMatching` (welche
   *Termine* erscheinen) und die zwei Lane-Filter (welche *Ressourcen pro Row*). Die GUI kann auf die
   Lane-Filter `where<Type>`, `accessLevel: EDIT`, `idIn` … draufpacken, ohne den Query-Text zu ändern.
 - **Duration:** der UE-String (`duration`, eventtimecalculator) ist bewusst draußen. `durationMinutes`
@@ -1346,43 +1346,43 @@ which would then serve every `expr` slot.
 ## Raumauslastung — kanonische Query (`appointmentBlockStats`, PRD [079](prd/079-graphql-grouped-aggregates.md)/[080](prd/done/080-typed-entity-stats.md))
 
 Auslastung pro Raum: **Gebäude-Scope in ZWEI Variablen** — `$filter` (effiziente Suche, lädt nur
-betroffene Reservierungen) **und** `$allocatableFilter` (Raumauswahl: welcher Raum eine Zeile wird),
+betroffene Reservierungen) **und** `$resourceFilter` (Raumauswahl: welcher Raum eine Zeile wird),
 **beide mit demselben Scope gefüllt**. Plus **Raumgröße + Gebäudename über die typisierte Entität**
-(kein Client-Join), als `@view` (stats-bewusste Spalten). Live verifiziert gegen dhbw.
+(kein Client-Join), als `@view` (stats-bewusste Spalten). Live verifiziert gegen eine repräsentative Testinstallation.
 
 > **Beide Variablen MÜSSEN gesetzt sein — sie machen Unterschiedliches:**
-> - **`$filter` (`ReservationFilter`) = effiziente Suche.** `allocatableMatching` ist ein
+> - **`$filter` (`ReservationFilter`) = effiziente Suche.** `resourceMatching` ist ein
 >   *Reservierungs*-Prädikat: eine Reservierung kommt rein, sobald sie **≥1** passenden Raum belegt —
 >   **mitsamt allen ihren übrigen Räumen** (auch fremder Gebäude). Senkt nur die geladene Datenmenge.
-> - **`$allocatableFilter` (`AllocatableFilter`) = Raumauswahl im `groupBy`.** Entscheidet pro
+> - **`$resourceFilter` (`ResourceFilter`) = Raumauswahl im `groupBy`.** Entscheidet pro
 >   Termin-Block, **welcher Raum zur Zeile wird**. Ohne Gebäude-Scope hier würden die Fremdgebäude-Räume
->   derselben Reservierung über den **groupBy-Fan-out** zu Falschzeilen (live gesehen: „Schloss 11a",
->   „Johann-Hammer-Straße"). **Das ist der korrektheitsentscheidende Filter.**
+>   derselben Reservierung über den **groupBy-Fan-out** zu Falschzeilen (live gesehen: „Gebäude A",
+>   „Musterstraße 1"). **Das ist der korrektheitsentscheidende Filter.**
 >
 > Die **Dopplung** (gleicher Scope in beiden) ist gewollt und ok — die GUI füllt beide aus einer Auswahl.
 >
-> **`where<Type>` impliziert den Typ-Gate (Option B′):** `whereRaum` gatet automatisch auf Raum-
-> Allocatables — `typeIn: [Raum]` ist nicht mehr nötig (bleibt optional als Storage-Vorfilter; mehrere
+> **`where<Type>` impliziert den Typ-Gate (Option B′):** `whereRoom` gatet automatisch auf Room-
+> Resources — `typeIn: [Room]` ist nicht mehr nötig (bleibt optional als Storage-Vorfilter; mehrere
 > `where<…>` ⇒ Union ihrer Typen). Ausnahme: explizites `typeIn`/`typeIn` ist autoritativ.
 
 ```graphql
-query Raumauslastung($filter: ReservationFilter!, $allocatableFilter: AllocatableFilter!) @view(title: "Raumauslastung") {
+query RoomUtilization($filter: ReservationFilter!, $resourceFilter: ResourceFilter!) @view(title: "Room utilization") {
   appointmentBlockStats(
     filter:    $filter,                                              # effiziente Suche (Reservierungen)
-    groupBy:   [ { key: "raum", allocatables: $allocatableFilter } ], # Raumauswahl (welche Zeile)
+    groupBy:   [ { key: "room", resources: $resourceFilter } ], # Raumauswahl (welche Zeile)
     aggregate: [ { key: "minuten", field: DURATION_MINUTES, fn: SUM },     # Stunden = number/60
                  { key: "termine", field: DURATION_MINUTES, fn: COUNT } ],
     limit: 1000
   ) {
     keys {
-      value                                          # → Spalte "raum" (Raumname)
+      value                                          # → Spalte "room" (Raumname)
       entity {
-        ... on Allocatable {
+        ... on Resource {
           id
           classification {
-            ... on RaumClassification {
-              AnzahlPlaetzeInsgesamt                 # → Spalte "AnzahlPlaetzeInsgesamt" (Raumgröße)
-              Gebaeude { classification { ... on GebaeudeClassification { Gebaeudename } } }  # → "Gebaeudename"
+            ... on RoomClassification {
+              roomCapacity                 # → Spalte "roomCapacity" (Raumgröße)
+              building { classification { ... on BuildingClassification { buildingName } } }  # → "buildingName"
             }
           }
         }
@@ -1393,68 +1393,68 @@ query Raumauslastung($filter: ReservationFilter!, $allocatableFilter: Allocatabl
 }
 ```
 
-**Variablen — Gebäude nach Name** (derselbe Gebäude-Scope in beiden; `whereRaum` gatet selbst auf Raum):
+**Variablen — Gebäude nach Name** (derselbe Gebäude-Scope in beiden; `whereRoom` gatet selbst auf Room):
 ```json
 {
   "filter": {
     "from": "2024-10-01T00:00:00",
     "to":   "2025-09-30T00:00:00",
-    "allocatableMatching": {
-      "whereRaum": { "Gebaeude": { "where": { "Gebaeudename": { "contains": "Schloss 2" } } } }
+    "resourceMatching": {
+      "whereRoom": { "building": { "where": { "buildingName": { "contains": "Building A" } } } }
     }
   },
-  "allocatableFilter": {
-    "whereRaum": { "Gebaeude": { "where": { "Gebaeudename": { "contains": "Schloss 2" } } } }
+  "resourceFilter": {
+    "whereRoom": { "building": { "where": { "buildingName": { "contains": "Building A" } } } }
   }
 }
 ```
-Schichtung von `whereRaum`: `RaumWhere` → `Gebaeude` (= `GebaeudeRefWhere`: `eq`/`ne`/`in`/`isNull`/`nameContains` **+** `where`) → `where` (= `GebaeudeWhere`, eigene Attribute) → `Gebaeudename` (= `StringWhere`: `eq`/`in`/`contains`/`startsWith`/`endsWith`/`isNull`). `where:`-Wrapper nur für **Attribute** des Gebäudes; eine konkrete Gebäude-Id direkt per `Gebaeude: { eq: "<id>" }`.
+Schichtung von `whereRoom`: `RoomWhere` → `building` (= `BuildingRefWhere`: `eq`/`ne`/`in`/`isNull`/`nameContains` **+** `where`) → `where` (= `BuildingWhere`, eigene Attribute) → `buildingName` (= `StringWhere`: `eq`/`in`/`contains`/`startsWith`/`endsWith`/`isNull`). `where:`-Wrapper nur für **Attribute** des Gebäudes; eine konkrete Gebäude-Id direkt per `building: { eq: "<id>" }`.
 
-**Variante — bekanntes Gebäude per Id** (beide Variablen mit **identischer** `AllocatableFilter`-Shape `{idIn:[gebäudeId]}`):
+**Variante — bekanntes Gebäude per Id** (beide Variablen mit **identischer** `ResourceFilter`-Shape `{idIn:[gebäudeId]}`):
 ```json
 {
-  "filter": { "from": "2024-10-01T00:00:00", "to": "2025-09-30T00:00:00", "allocatableMatching": { "idIn": ["r7ed4347-9058-45a6-b402-6e3fb64c031f"] } },
-  "allocatableFilter": { "idIn": ["r7ed4347-9058-45a6-b402-6e3fb64c031f"] }
+  "filter": { "from": "2024-10-01T00:00:00", "to": "2025-09-30T00:00:00", "resourceMatching": { "idIn": ["<building-id>"] } },
+  "resourceFilter": { "idIn": ["<building-id>"] }
 }
 ```
 > **`idIn` mit einer Gebäude-Id wirkt belongsTo-bewusst — aber NUR im Stats-/Fan-out-Pfad.**
-> - **`$filter.allocatableMatching.idIn` / `$allocatableFilter.idIn`** matchen einen Raum auch über
+> - **`$filter.resourceMatching.idIn` / `$resourceFilter.idIn`** matchen einen Raum auch über
 >   seine **belongsTo-Vorfahren** → die Gebäude-Id wählt die Räume des Gebäudes (Filter-Pfad via
->   `getDependentRef` nach unten, Fan-out-Pfad via belongsTo-Up-Walk in `filterAllocatables`).
-> - **`Query.allocatables(filter:{idIn:[…]})`** (globale Katalog-Abfrage) bleibt **exakte Id** — gibt
->   das Gebäude selbst zurück, NICHT seine Räume. Eine normale Allocatable-Abfrage tauscht nie ein
+>   `getDependentRef` nach unten, Fan-out-Pfad via belongsTo-Up-Walk in `filterResources`).
+> - **`Query.resources(filter:{idIn:[…]})`** (globale Katalog-Abfrage) bleibt **exakte Id** — gibt
+>   das Gebäude selbst zurück, NICHT seine Räume. Eine normale Resource-Abfrage tauscht nie ein
 >   Gebäude gegen seine Räume.
 >
-> Mehrere Gebäude-Ids: `idIn:["id1","id2"]` (in beiden), oder per Name `whereRaum.Gebaeude.where.Gebaeudename.contains`.
+> Mehrere Gebäude-Ids: `idIn:["id1","id2"]` (in beiden), oder per Name `whereRoom.building.where.buildingName.contains`.
 
-- **`$filter` = effiziente Suche, `$allocatableFilter` = Raumauswahl.** Beide mit demselben Scope; die
+- **`$filter` = effiziente Suche, `$resourceFilter` = Raumauswahl.** Beide mit demselben Scope; die
   Dopplung ist gewollt — die GUI füllt aus *einer* Gebäude-Auswahl **beide** Variablen identisch.
-- **Ohne `$allocatableFilter`-Scope** (nur `typeIn: [Raum]` o.ä.) ⇒ Fremdgebäude-Räume über
+- **Ohne `$resourceFilter`-Scope** (nur `typeIn: [Room]` o.ä.) ⇒ Fremdgebäude-Räume über
   groupBy-Fan-out → Falschzeilen. **Beide setzen.**
-- **Gelöschtes Gebäude:** ein Raum, dessen `Gebaeude`-Referenz auf eine **gelöschte** Ressource zeigt,
-  matcht `whereRaum.Gebaeude…` **nicht** (kein Fail-open auf den Platzhalter) und liefert
-  `entity.Gebaeude: null` — statt die Query zu killen.
+- **Gelöschtes Gebäude:** ein Raum, dessen `building`-Referenz auf eine **gelöschte** Ressource zeigt,
+  matcht `whereRoom.building…` **nicht** (kein Fail-open auf den Platzhalter) und liefert
+  `entity.building: null` — statt die Query zu killen.
 - **Raumgröße + Gebäudename ohne Join** über `keys.entity` (typisierte Gruppen-Entität, [PRD 080](prd/done/080-typed-entity-stats.md));
   unauflösbare Referenz → Feld `null` (TypeResolver/Fetcher-Guard).
-- **`@view` über Stats** ⇒ flache `extensions.view.columns` aus `groupBy`/`aggregate` (`raum` +
+- **`@view` über Stats** ⇒ flache `extensions.view.columns` aus `groupBy`/`aggregate` (`room` +
   Entity-Felder + `minuten`/`termine`), **nicht** die generischen `keys/values/count`. `count` nur,
   wenn selektiert (redundant mit `termine`).
 
 ## Beispiel: Raumauslastung nach Standort (typisierte Referenz-Filter, [PRD 074](prd/074-graphql-declarative-views.md) b)
 
 `appointmentBlockStats` + ein **typisierter Filter über eine Referenz**: Räume werden über das
-**eigene Attribut ihres Gebäudes** eingeschränkt (`Raum.Gebaeude` → `Gebaeude.Gebaeudename`). Der
+**eigene Attribut ihres Gebäudes** eingeschränkt (`Room.building` → `Building.buildingName`). Der
 Referenz-Filter `<RefType>RefWhere` trägt id/name-Prädikate **und** ein verschachteltes
 `where: <RefType>Where`; der `WhereEvaluator` löst die Referenz §12-`canRead`-gegated auf und wertet
-das typisierte where rekursiv aus (tiefen-gedeckelt). Live verifiziert gegen eine Produktionsinstallation (Original mit echtem Standort: dhbwrapla `docs/graphql.md`).
+das typisierte where rekursiv aus (tiefen-gedeckelt). Live verifiziert gegen eine repräsentative Testinstallation.
 
 ```graphql
-query RaumauslastungStandort {
+query RoomUtilizationByLocation {
   appointmentBlockStats(
     filter: { from: "2026-03-21T00:00:00", to: "2026-06-21T00:00:00" },
-    groupBy:   [ { key: "raum", allocatables: {
-                   typeIn: [Raum],
-                   whereRaum: { Gebaeude: { where: { Gebaeudename: { startsWith: "HAUPT" } } } }
+    groupBy:   [ { key: "room", resources: {
+                   typeIn: [Room],
+                   whereRoom: { building: { where: { buildingName: { startsWith: "BUILDING-A" } } } }
                  } } ],
     aggregate: [ { key: "stunden", field: DURATION_MINUTES, fn: SUM },
                  { key: "termine", field: DURATION_MINUTES, fn: COUNT } ]
@@ -1469,16 +1469,16 @@ query RaumauslastungStandort {
 Schichtung des Filters:
 
 ```
-whereRaum:          RaumWhere          # Attribute des Raums
-  Gebaeude:         GebaeudeRefWhere   # Referenz: eq/ne/in/isNull/nameContains + where
-    where:          GebaeudeWhere      # EIGENE Attribute des Gebäudes
-      Gebaeudename: StringWhere        # eq/ne/in/contains/startsWith/endsWith/isNull
+whereRoom:          RoomWhere          # Attribute des Raums
+  building:         BuildingRefWhere   # Referenz: eq/ne/in/isNull/nameContains + where
+    where:          BuildingWhere      # EIGENE Attribute des Gebäudes
+      buildingName: StringWhere        # eq/ne/in/contains/startsWith/endsWith/isNull
 ```
 
 - **§12:** ein nicht-lesbares Gebäude ⇒ der Raum (bzw. seine Blöcke) fällt heraus — kein Attribut-Leak.
-- **Standort-Feld:** `Gebaeudename` (alternativ `Kuerzel`/`Adresse`) — generierte `GebaeudeWhere`-Felder.
+- **Standort-Feld:** `buildingName` (alternativ `shortName`/`address`) — generierte `BuildingWhere`-Felder.
 - **Raumgröße ohne Join:** `keys.entity` trägt das **echte, typisierte Gruppen-Objekt** — siehe nächster
-  Abschnitt; `AnzahlPlaetzeInsgesamt` ist direkt im Bucket selektierbar, **kein** zweiter Request nötig.
+  Abschnitt; `roomCapacity` ist direkt im Bucket selektierbar, **kein** zweiter Request nötig.
 
 ## Typisierte Gruppen-Entität im Stats-Bucket (`StatKey.entity`, [PRD 080](prd/done/080-typed-entity-stats.md))
 
@@ -1486,7 +1486,7 @@ Ein Stats-Bucket bleibt generisch (`keys` + `values` + `count`), **aber** jeder 
 zusätzlich die **echte, typisierte Entität**, nach der gruppiert wurde — als Union `StatEntity`:
 
 ```graphql
-union StatEntity = Allocatable | Reservation | Category
+union StatEntity = Resource | Reservation | Category
 
 type StatKey {
   key:    String!     # der groupBy-"key"-Name
@@ -1496,18 +1496,18 @@ type StatKey {
 ```
 
 Damit ist **jedes Feld der Gruppen-Entität im selben Request selektierbar** (kein Client-Join). Die
-`allocatables`-Dimension liefert ein `Allocatable`, die `reservation: true`-Dimension eine
+`resources`-Dimension liefert ein `Resource`, die `reservation: true`-Dimension eine
 `Reservation`; Zeit-Buckets (`date`/`by`) und reine `expr`-Strings haben `entity: null`.
 
 Standort-Auslastung **mit Raumgröße, eine Query**:
 
 ```graphql
-query RaumauslastungMitGroesse {
+query RoomUtilizationWithCapacity {
   appointmentBlockStats(
     filter: { from: "2026-03-21T00:00:00", to: "2026-06-21T00:00:00" },
-    groupBy:   [ { key: "raum", allocatables: {
-                   typeIn: [Raum],
-                   whereRaum: { Gebaeude: { where: { Gebaeudename: { startsWith: "HAUPT" } } } }
+    groupBy:   [ { key: "room", resources: {
+                   typeIn: [Room],
+                   whereRoom: { building: { where: { buildingName: { startsWith: "BUILDING-A" } } } }
                  } } ],
     aggregate: [ { key: "stunden", field: DURATION_MINUTES, fn: SUM } ]
   ) {
@@ -1515,8 +1515,8 @@ query RaumauslastungMitGroesse {
       value                       # Raumname (Anzeigestring)
       entity {
         __typename
-        ... on Allocatable {
-          classification { ... on RaumClassification { AnzahlPlaetzeInsgesamt } }
+        ... on Resource {
+          classification { ... on RoomClassification { roomCapacity } }
         }
       }
     }
@@ -1540,10 +1540,10 @@ appointmentBlockStats(
 ```
 
 - **§12:** `entity` kommt aus demselben `canRead`-gegateten Resolver-Pfad wie alle anderen Entitäts-
-  Felder (`filterAllocatables` / rekursive Referenzauflösung) — eine nicht-lesbare Entität wird gar
+  Felder (`filterResources` / rekursive Referenzauflösung) — eine nicht-lesbare Entität wird gar
   nicht erst zum Gruppenschlüssel.
 - **Generik bleibt:** ad-hoc `groupBy`/`aggregate` und der eine geteilte Bucket-Typ über alle Familien
   bleiben; nur der Schlüssel ist jetzt zusätzlich typisiert navigierbar.
-- **Status:** `appointmentBlockStats` (Allocatable- + Reservation-Dimension) ist umgesetzt; eigene
-  `allocatableStats`/`reservationStats`-Felder, die Category-Dimension und `expr → Entity` sind in
+- **Status:** `appointmentBlockStats` (Resource- + Reservation-Dimension) ist umgesetzt; eigene
+  `resourceStats`/`reservationStats`-Felder, die Category-Dimension und `expr → Entity` sind in
   [PRD 080](prd/done/080-typed-entity-stats.md) als ⏳ offen geführt.

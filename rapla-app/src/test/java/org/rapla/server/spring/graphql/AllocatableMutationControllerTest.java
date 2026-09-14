@@ -90,9 +90,9 @@ class AllocatableMutationControllerTest
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> fields = (List<Map<String, Object>>) result.get("fields");
         List<String> names = fields.stream().map(f -> (String) f.get("name")).toList();
-        assertTrue(names.contains("createAllocatable"),  () -> "missing createAllocatable in " + names);
-        assertTrue(names.contains("updateAllocatable"),  () -> "missing updateAllocatable in " + names);
-        assertTrue(names.contains("deleteAllocatables"), () -> "missing deleteAllocatables in " + names);
+        assertTrue(names.contains("createResource"),  () -> "missing createResource in " + names);
+        assertTrue(names.contains("updateResource"),  () -> "missing updateResource in " + names);
+        assertTrue(names.contains("deleteResources"), () -> "missing deleteResources in " + names);
     }
 
     @Test
@@ -109,9 +109,9 @@ class AllocatableMutationControllerTest
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> inputs = (List<Map<String, Object>>) result.get("inputFields");
         List<String> names = inputs.stream().map(f -> (String) f.get("name")).toList();
-        assertTrue(names.contains("createAllocatable"), () -> "missing createAllocatable in ChangeOp: " + names);
-        assertTrue(names.contains("updateAllocatable"), () -> "missing updateAllocatable in ChangeOp: " + names);
-        assertTrue(names.contains("deleteAllocatable"), () -> "missing deleteAllocatable in ChangeOp: " + names);
+        assertTrue(names.contains("createResource"), () -> "missing createResource in ChangeOp: " + names);
+        assertTrue(names.contains("updateResource"), () -> "missing updateResource in ChangeOp: " + names);
+        assertTrue(names.contains("deleteResource"), () -> "missing deleteResource in ChangeOp: " + names);
     }
 
     // ============================================================ §12 gates
@@ -122,7 +122,7 @@ class AllocatableMutationControllerTest
     {
         tester.document("""
                 mutation {
-                  createAllocatable(input: {
+                  createResource(input: {
                     typeKey: "room",
                     classification: { room: {} }
                   }) { id }
@@ -146,7 +146,7 @@ class AllocatableMutationControllerTest
     {
         String createdId = tester.document("""
                 mutation {
-                  createAllocatable(input: {
+                  createResource(input: {
                     id: "f7777777-7777-4777-8777-777777777777",
                     typeKey: "room",
                     classification: { room: {} }
@@ -154,17 +154,17 @@ class AllocatableMutationControllerTest
                 }
                 """)
                 .execute()
-                .path("createAllocatable.id")
+                .path("createResource.id")
                 .entity(String.class)
                 .get();
-        assertNotNull(createdId, "createAllocatable must return the stored id");
+        assertNotNull(createdId, "createResource must return the stored id");
         assertFalse(createdId.isBlank());
 
         Map<String, Object> readBack = tester.document("""
                 query ($id: ID!) {
-                  allocatable(id: $id) {
+                  resource(id: $id) {
                     id
-                    type
+                    kind
                     classification { typeKey type { key } }
                     owner { username }
                   }
@@ -172,12 +172,12 @@ class AllocatableMutationControllerTest
                 """)
                 .variable("id", createdId)
                 .execute()
-                .path("allocatable")
+                .path("resource")
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         assertNotNull(readBack);
         assertEquals(createdId, readBack.get("id"));
-        assertEquals("RESOURCE", readBack.get("type"));
+        assertEquals("RESOURCE", readBack.get("kind"));
         @SuppressWarnings("unchecked")
         Map<String, Object> classification = (Map<String, Object>) readBack.get("classification");
         assertEquals("room", classification.get("typeKey"));
@@ -203,7 +203,7 @@ class AllocatableMutationControllerTest
     {
         tester.document("""
                 mutation {
-                  createAllocatable(input: {
+                  createResource(input: {
                     typeKey: "room",
                     classification: { room: {} }
                   }) { id }
@@ -230,7 +230,7 @@ class AllocatableMutationControllerTest
     {
         String document = """
                 mutation {
-                  createAllocatable(input: {
+                  createResource(input: {
                     id: "f8888888-8888-4888-8888-888888888888",
                     typeKey: "room",
                     classification: { room: {} }
@@ -239,7 +239,7 @@ class AllocatableMutationControllerTest
                 """;
         String createdId = tester.document(document)
                 .execute()
-                .path("createAllocatable.id")
+                .path("createResource.id")
                 .entity(String.class)
                 .get();
         assertEquals("f8888888-8888-4888-8888-888888888888", createdId);
@@ -263,7 +263,7 @@ class AllocatableMutationControllerTest
     {
         tester.document("""
                 mutation {
-                  createAllocatable(input: {
+                  createResource(input: {
                     typeKey: "nonexistent",
                     classification: { nonexistent: {} }
                   }) { id }
@@ -282,7 +282,7 @@ class AllocatableMutationControllerTest
                                     || joined.toLowerCase().contains("not found")
                                     || joined.contains("oneOf")
                                     || joined.contains("WrongType")
-                                    || joined.contains("not in 'AllocatableClassificationInput'"),
+                                    || joined.contains("not in 'ResourceClassificationInput'"),
                             () -> "expected type-rejection error; got " + joined);
                 });
     }
@@ -295,7 +295,7 @@ class AllocatableMutationControllerTest
         // → either @oneOf engine validation OR our resolver MISMATCHED_TYPE
         tester.document("""
                 mutation {
-                  createAllocatable(input: {
+                  createResource(input: {
                     typeKey: "room",
                     classification: { lecturer: {} }
                   }) { id }
@@ -319,7 +319,7 @@ class AllocatableMutationControllerTest
     {
         tester.document("""
                 mutation {
-                  updateAllocatable(
+                  updateResource(
                     id: "00000000-0000-0000-0000-deadbeef0000",
                     input: { typeKey: "room", classification: { room: {} } }
                   ) { id }
@@ -344,14 +344,14 @@ class AllocatableMutationControllerTest
     {
         Map<String, Object> result = tester.document("""
                 mutation {
-                  deleteAllocatables(ids: ["00000000-0000-0000-0000-deadbeef0000"]) {
+                  deleteResources(ids: ["00000000-0000-0000-0000-deadbeef0000"]) {
                     overallStatus
                     results { index errors { code path message } }
                   }
                 }
                 """)
                 .execute()
-                .path("deleteAllocatables")
+                .path("deleteResources")
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         assertEquals("REJECTED", result.get("overallStatus"));
@@ -379,7 +379,7 @@ class AllocatableMutationControllerTest
     {
         String created = tester.document("""
                 mutation {
-                  createAllocatable(input: {
+                  createResource(input: {
                     id: "b1111111-1111-4111-8111-111111111111",
                     typeKey: "room",
                     classification: { room: { name: "Umwidmungsraum" } }
@@ -387,13 +387,13 @@ class AllocatableMutationControllerTest
                 }
                 """)
                 .execute()
-                .path("createAllocatable.id")
+                .path("createResource.id")
                 .entity(String.class)
                 .get();
 
         Map<String, Object> updated = tester.document("""
                 mutation ($id: ID!) {
-                  updateAllocatable(id: $id, input: {
+                  updateResource(id: $id, input: {
                     typeKey: "resource1",
                     classification: { resource1: { name: "Umgewidmet" } }
                   }) {
@@ -404,7 +404,7 @@ class AllocatableMutationControllerTest
                 """)
                 .variable("id", created)
                 .execute()
-                .path("updateAllocatable")
+                .path("updateResource")
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         @SuppressWarnings("unchecked")
@@ -414,11 +414,11 @@ class AllocatableMutationControllerTest
 
         // stored, not just echoed
         String storedTypeKey = tester.document("""
-                query ($id: ID!) { allocatable(id: $id) { classification { typeKey } } }
+                query ($id: ID!) { resource(id: $id) { classification { typeKey } } }
                 """)
                 .variable("id", created)
                 .execute()
-                .path("allocatable.classification.typeKey")
+                .path("resource.classification.typeKey")
                 .entity(String.class)
                 .get();
         assertEquals("resource1", storedTypeKey);
@@ -460,7 +460,7 @@ class AllocatableMutationControllerTest
 
         String created = tester.document("""
                 mutation {
-                  createAllocatable(input: {
+                  createResource(input: {
                     id: "b3030303-0303-4303-8303-030303030303",
                     typeKey: "room",
                     classification: { room: { name: "Enumraum" } }
@@ -468,13 +468,13 @@ class AllocatableMutationControllerTest
                 }
                 """)
                 .execute()
-                .path("createAllocatable.id")
+                .path("createResource.id")
                 .entity(String.class)
                 .get();
 
         Map<String, Object> updated = tester.document("""
                 mutation ($id: ID!) {
-                  updateAllocatable(id: $id, input: {
+                  updateResource(id: $id, input: {
                     typeKey: "room",
                     classification: { room: { name: "Enumraum", belongsto: %s } }
                   }) {
@@ -484,11 +484,11 @@ class AllocatableMutationControllerTest
                 """.formatted(pick))
                 .variable("id", created)
                 .execute()
-                .path("updateAllocatable.classification")
+                .path("updateResource.classification")
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {})
                 .get();
         assertEquals(pick, updated.get("belongsto"),
-                "enum key must resolve to the category on allocatable update");
+                "enum key must resolve to the category on resource update");
     }
 
     /** Cross-validation stays: new typeKey with the OLD @oneOf variant is rejected. */
@@ -498,7 +498,7 @@ class AllocatableMutationControllerTest
     {
         String created = tester.document("""
                 mutation {
-                  createAllocatable(input: {
+                  createResource(input: {
                     id: "b2222222-2222-4222-8222-222222222222",
                     typeKey: "room",
                     classification: { room: { name: "Mismatch-Raum" } }
@@ -506,13 +506,13 @@ class AllocatableMutationControllerTest
                 }
                 """)
                 .execute()
-                .path("createAllocatable.id")
+                .path("createResource.id")
                 .entity(String.class)
                 .get();
 
         tester.document("""
                 mutation ($id: ID!) {
-                  updateAllocatable(id: $id, input: {
+                  updateResource(id: $id, input: {
                     typeKey: "resource1",
                     classification: { room: { name: "x" } }
                   }) { id }
@@ -541,7 +541,7 @@ class AllocatableMutationControllerTest
     {
         String created = tester.document("""
                 mutation {
-                  createAllocatable(input: {
+                  createResource(input: {
                     id: "f1111111-1111-4111-8111-111111111101",
                     typeKey: "room",
                     classification: { room: {} }
@@ -549,13 +549,13 @@ class AllocatableMutationControllerTest
                 }
                 """)
                 .execute()
-                .path("createAllocatable.id")
+                .path("createResource.id")
                 .entity(String.class)
                 .get();
 
         tester.document("""
                 mutation ($id: ID!) {
-                  updateAllocatable(id: $id, input: {
+                  updateResource(id: $id, input: {
                     id: "f1111111-1111-4111-8111-111111119999",
                     typeKey: "room",
                     classification: { room: {} }
@@ -570,49 +570,6 @@ class AllocatableMutationControllerTest
                     String joined = errs.toString();
                     assertTrue(joined.contains("INVALID_VALUE"), () -> "expected INVALID_VALUE; got " + joined);
                     assertTrue(joined.contains("input.id"), () -> "expected path input.id; got " + joined);
-                });
-    }
-
-    /**
-     * `ownerId` is create-only (PRD 063; owner changes get their own verb). Now that the
-     * update path parses the same input type, an ownerId on update is rejected instead of
-     * quietly doing nothing.
-     */
-    @Test
-    @WithMockUser(username = "homer", roles = "ADMIN")
-    void updateAllocatableWithOwnerIdRejected()
-    {
-        String created = tester.document("""
-                mutation {
-                  createAllocatable(input: {
-                    id: "f1111111-1111-4111-8111-111111111102",
-                    typeKey: "room",
-                    classification: { room: {} }
-                  }) { id }
-                }
-                """)
-                .execute()
-                .path("createAllocatable.id")
-                .entity(String.class)
-                .get();
-
-        tester.document("""
-                mutation ($id: ID!) {
-                  updateAllocatable(id: $id, input: {
-                    typeKey: "room",
-                    classification: { room: {} },
-                    ownerId: "00000000-0000-0000-0000-00000000beef"
-                  }) { id }
-                }
-                """)
-                .variable("id", created)
-                .execute()
-                .errors()
-                .satisfy(errs -> {
-                    assertFalse(errs.isEmpty(), "ownerId on update must be rejected");
-                    String joined = errs.toString();
-                    assertTrue(joined.contains("INVALID_VALUE"), () -> "expected INVALID_VALUE; got " + joined);
-                    assertTrue(joined.contains("input.ownerId"), () -> "expected path input.ownerId; got " + joined);
                 });
     }
 }

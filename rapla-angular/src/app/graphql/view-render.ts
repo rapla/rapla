@@ -14,7 +14,7 @@ const DEFAULT_JOIN = ', ';
  * Reduce a single GraphQL value to its display string. A nested object is the
  * one scalar leaf the query selected for that cell — which the author may name
  * {@code displayName} OR {@code name} (real views use both, e.g.
- * {@code allocatables { name }}). Prefer the conventional name fields, else the
+ * {@code resources { name }}). Prefer the conventional name fields, else the
  * first string-valued property.
  */
 function scalarize(value: unknown): string {

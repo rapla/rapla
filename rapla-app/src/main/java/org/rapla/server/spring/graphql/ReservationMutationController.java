@@ -128,6 +128,8 @@ public class ReservationMutationController
         // PRD 099 Phase 1 — Swing parity (FacadeImpl.newReservation): seed the
         // new reservation with the type's permissions (all but CREATE/READ_TYPE).
         org.rapla.entities.domain.PermissionContainer.Util.copyPermissions(dt, r);
+        PermissionInputMapper.apply(r, (List<Map<String, Object>>) input.get("permissions"),
+                PermissionInputMapper.Kind.SIMPLE, "input.permissions", operator);
         // PRD 056 §9 (2026-07-06): client id is REQUIRED — no server fallback.
         // Retry-idempotency works via ID_COLLISION on the client-minted id
         // (CalDAV model); a server-generated id can never be retry-safe.
@@ -229,6 +231,8 @@ public class ReservationMutationController
         Map<String, Object> classificationInput = (Map<String, Object>) input.get("classification");
         Classification newClassification = buildClassificationFromInput(targetType, classificationInput, targetTypeKey);
         draft.setClassification(newClassification);
+        PermissionInputMapper.apply(draft, (List<Map<String, Object>>) input.get("permissions"),
+                PermissionInputMapper.Kind.SIMPLE, "input.permissions", operator);
 
         // Replace appointments
         for (Appointment existing : draft.getAppointments())
@@ -279,12 +283,8 @@ public class ReservationMutationController
             throws RaplaException
     {
         User caller = requireCaller();
-        User newOwner = operator.tryResolve(new ReferenceInfo<>(newOwnerId, User.class));
-        if (newOwner == null)
-        {
-            throw new ReservationMutationException("REFERENCE_NOT_FOUND", "newOwnerId",
-                    "User " + newOwnerId + " not found");
-        }
+        User newOwner = requireNewOwnerInScope(operator, caller, newOwnerId);
+        PermissionController pc = operator.getPermissionController();
         UpdateEvent event = new UpdateEvent();
         event.setUserId(caller.getId());
         List<Map<String, Object>> results = new ArrayList<>(ids.size());
@@ -292,12 +292,12 @@ public class ReservationMutationController
         {
             String id = ids.get(i);
             Reservation r = operator.tryResolve(new ReferenceInfo<>(id, Reservation.class));
-            if (r == null)
+            if (r == null || (!caller.isAdmin() && !pc.canRead(r, caller)))
             {
                 throw new ReservationMutationException("REFERENCE_NOT_FOUND", "ids[" + i + "]",
                         "Reservation " + id + " not found");
             }
-            requireCanModify(r, caller);
+            requireCanChangeOwner(operator, caller, r, newOwner, i);
             Reservation draft = editObject(r);
             draft.setOwner(newOwner);
             event.addStore(draft);
@@ -715,6 +715,8 @@ public class ReservationMutationController
                 Map<String, Object> ci = (Map<String, Object>) op.get("createReservation");
                 Reservation r = buildReservationFromCreateInput(ci, caller,
                         "operations[" + i + "].createReservation");
+                PermissionInputMapper.apply(r, (List<Map<String, Object>>) ci.get("permissions"),
+                        PermissionInputMapper.Kind.SIMPLE, "operations[" + i + "].createReservation.permissions", operator);
                 event.addStore(r);
                 event.addCreate(r.getReference());
                 sameBatchCreated.put(r.getId(), r);
@@ -821,13 +823,13 @@ public class ReservationMutationController
         for (int i = 0; i < allocations.size(); i++)
         {
             Map<String, Object> alloc = allocations.get(i);
-            String allocId = (String) alloc.get("allocatableId");
+            String allocId = (String) alloc.get("resourceId");
             Allocatable a = operator.tryResolve(new ReferenceInfo<>(allocId, Allocatable.class));
             if (a == null)
             {
                 throw new ReservationMutationException("REFERENCE_NOT_FOUND",
-                        pathBase + "[" + i + "].allocatableId",
-                        "Allocatable " + allocId + " not found");
+                        pathBase + "[" + i + "].resourceId",
+                        "Resource " + allocId + " not found");
             }
             if (caller != null && !operator.getPermissionController().canRead(a, caller))
             {
@@ -836,8 +838,8 @@ public class ReservationMutationController
                 // allocatable ids told the caller which of them exist behind their read scope.
                 // Same masking MutationExistenceLeakTest already pins for entity ids.
                 throw new ReservationMutationException("REFERENCE_NOT_FOUND",
-                        pathBase + "[" + i + "].allocatableId",
-                        "Allocatable " + allocId + " not found");
+                        pathBase + "[" + i + "].resourceId",
+                        "Resource " + allocId + " not found");
             }
             r.addAllocatable(a);
             // PRD 091 OQ5 — mark an allocation the caller may only REQUEST, exactly as Swing does
@@ -961,6 +963,8 @@ public class ReservationMutationController
         Reservation draft = editObject(stored);
         Map<String, Object> classificationInput = (Map<String, Object>) input.get("classification");
         draft.setClassification(buildClassificationFromInput(targetType, classificationInput, targetTypeKey));
+        PermissionInputMapper.apply(draft, (List<Map<String, Object>>) input.get("permissions"),
+                PermissionInputMapper.Kind.SIMPLE, path + ".permissions", operator);
         for (Appointment existing : draft.getAppointments()) draft.removeAppointment(existing);
         List<Map<String, Object>> appointments = (List<Map<String, Object>>) input.get("appointments");
         Map<String, Appointment> appointmentByClientId = new LinkedHashMap<>();
@@ -994,6 +998,45 @@ public class ReservationMutationController
                     "Mutations require an authenticated caller");
         }
         return caller;
+    }
+
+    /**
+     * WP O1 — owner verbs: global admins and group admins. A caller administering no users is denied up front; a new
+     * owner that is unknown or outside the caller's user-admin scope answers like an unknown user (§12).
+     */
+    static User requireNewOwnerInScope(StorageOperator operator, User caller, String newOwnerId)
+    {
+        if (!PermissionController.canAdminUsers(caller))
+        {
+            throw new ReservationMutationException("PERMISSION_DENIED", "ids[0]", "No permission to change the owner");
+        }
+        User newOwner;
+        try
+        {
+            newOwner = operator.tryResolve(new ReferenceInfo<>(newOwnerId, User.class));
+        }
+        catch (RuntimeException e)
+        {
+            newOwner = null;
+        }
+        if (newOwner == null || !PermissionController.canAdminUser(caller, newOwner))
+        {
+            throw new ReservationMutationException("REFERENCE_NOT_FOUND", "newOwnerId", "User not found");
+        }
+        return newOwner;
+    }
+
+    /** WP O1 — the per-entity half, the same {@link PermissionController#canChangeOwner} the store gate applies. */
+    static void requireCanChangeOwner(StorageOperator operator, User caller, org.rapla.entities.Entity<?> entity,
+            User newOwner, int index)
+    {
+        ReferenceInfo<User> ownerRef = ((org.rapla.entities.Ownable) entity).getOwnerRef();
+        User oldOwner = ownerRef == null ? null : operator.tryResolve(ownerRef);
+        if (!operator.getPermissionController().canChangeOwner(caller, entity, oldOwner, newOwner))
+        {
+            throw new ReservationMutationException("PERMISSION_DENIED", "ids[" + index + "]",
+                    "No permission to change the owner");
+        }
     }
 
     private User resolveCaller()

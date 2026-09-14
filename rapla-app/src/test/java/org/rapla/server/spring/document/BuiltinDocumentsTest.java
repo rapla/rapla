@@ -210,7 +210,7 @@ class BuiltinDocumentsTest
         assertTrue(json.get("errorMessage").isNull(), "declared public @param name must pass the gate: " + json);
         assertFalse(json.get("html").isNull(), json.toString());
 
-        var rejected = postPreview(java.util.Map.of("filter.allocatableIdsIn", List.of("x")));
+        var rejected = postPreview(java.util.Map.of("filter.resourceIdsIn", List.of("x")));
         assertFalse(rejected.get("errorMessage").isNull(),
                 "private variable paths are not URL params — the gate must reject them: " + rejected);
 

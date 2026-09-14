@@ -19,24 +19,24 @@ import { EntityIdChipComponent } from '../common/entity-id-chip.component';
 import { remapValues } from '../classification/classification-schema';
 import { ClassificationSchemaService } from '../classification/classification-schema.service';
 import type { MutationIssue } from '../graphql/mutation-result';
-import { AllocatableDataService, type AllocatableDraft } from './allocatable-data.service';
+import { ResourceDataService, type ResourceDraft } from './resource-data.service';
 
-export interface AllocatableEditDialogData {
+export interface ResourceEditDialogData {
   id: string;
   /** "Anzeigen" — force read-only regardless of canModify. */
   readOnly?: boolean;
 }
 
 /**
- * PRD 096 Phase 4 — the allocatable editor: a thin MatDialog around the
+ * PRD 096 Phase 4 — the resource editor: a thin MatDialog around the
  * reusable classification component. Deliberately simpler than the event
  * sheet: no appointments/allocations, no type change (the server still
- * rejects it for allocatables — PRD 063), no memento history v1 (a handful
+ * rejects it for resources — PRD 063), no memento history v1 (a handful
  * of flat fields; Abbrechen is the undo). `name` is NOT special-cased —
  * for resources it is an ordinary attribute rendered by the component.
  */
 @Component({
-  selector: 'app-allocatable-edit-dialog',
+  selector: 'app-resource-edit-dialog',
   standalone: true,
   imports: [ClassificationEditComponent, EntityIdChipComponent, FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -203,17 +203,17 @@ export interface AllocatableEditDialogData {
     }
   `,
 })
-export class AllocatableEditDialogComponent {
-  private readonly data = inject(AllocatableDataService);
+export class ResourceEditDialogComponent {
+  private readonly data = inject(ResourceDataService);
   private readonly schema = inject(ClassificationSchemaService);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly dialogData = inject<AllocatableEditDialogData>(MAT_DIALOG_DATA);
+  private readonly dialogData = inject<ResourceEditDialogData>(MAT_DIALOG_DATA);
   readonly entityId = this.dialogData.id;
-  private readonly dialogRef = inject<MatDialogRef<AllocatableEditDialogComponent>>(MatDialogRef);
+  private readonly dialogRef = inject<MatDialogRef<ResourceEditDialogComponent>>(MatDialogRef);
 
   readonly loading = signal(true);
   readonly notFound = signal(false);
-  readonly draft = signal<AllocatableDraft | null>(null);
+  readonly draft = signal<ResourceDraft | null>(null);
   readonly displayName = signal('');
   readonly typeName = signal('');
   readonly canModify = signal(false);

@@ -9,7 +9,7 @@
 export type StagedState = 'OPEN' | 'BOUND' | 'IGNORED';
 
 export interface WorklistGroup {
-  /** Allocatable id of the Kurs/Studiengang the group hangs on. */
+  /** Resource id of the Kurs/Studiengang the group hangs on. */
   id: string;
   name: string;
   scope: 'KURS' | 'STUDIENGANG';
@@ -60,7 +60,7 @@ export interface LinkedEvent {
   externalId: string;
   /** ISO LocalDateTime of the first appointment — drives the semester display. */
   firstDate: string;
-  allocatableIds: string[];
+  resourceIds: string[];
 }
 
 /** LinkedEvents allocated to any of the given groups, deduped, name-sorted. */
@@ -69,7 +69,7 @@ export function linkedOfGroups(events: LinkedEvent[], groupIds: string[]): Linke
   const seen = new Set<string>();
   return events
     .filter((e) => {
-      if (!e.allocatableIds.some((a) => ids.has(a)) || seen.has(e.id)) return false;
+      if (!e.resourceIds.some((a) => ids.has(a)) || seen.has(e.id)) return false;
       seen.add(e.id);
       return true;
     })
@@ -87,8 +87,8 @@ export interface BindCandidate {
 /** Minimal draft slice the parked-drop flow touches (structurally EventDraft). */
 interface DraftLike {
   allocations: {
-    allocatableId: string;
-    allocatableName: string;
+    resourceId: string;
+    resourceName: string;
     appointmentIds: string[] | null;
   }[];
 }
@@ -99,10 +99,10 @@ export function draftWithGroups<T extends DraftLike>(
   draft: T,
   groups: { id: string; name: string }[],
 ): T {
-  const known = new Set(draft.allocations.map((a) => a.allocatableId));
+  const known = new Set(draft.allocations.map((a) => a.resourceId));
   const added = groups
     .filter((g) => !known.has(g.id))
-    .map((g) => ({ allocatableId: g.id, allocatableName: g.name, appointmentIds: null }));
+    .map((g) => ({ resourceId: g.id, resourceName: g.name, appointmentIds: null }));
   return added.length === 0 ? draft : { ...draft, allocations: [...draft.allocations, ...added] };
 }
 

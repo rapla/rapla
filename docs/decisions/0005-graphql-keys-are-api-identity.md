@@ -37,7 +37,7 @@ Related: [PRD 035 (done) §11](../prd/done/035-graphql-foundations.md),
 ## Considered Options
 
 1. **Name-based, schema-validated per kind** — keys verbatim as generated names; type selection
-   via generated per-kind enums (`AllocatableTypeKey` = resource+person, `ReservationTypeKey` =
+   via generated per-kind enums (`ResourceTypeKey` = resource+person, `ReservationTypeKey` =
    reservation) on a single `typeIn` field; renames are breaking; stored views are
    **revalidated-and-marked** on every schema rebuild (kept, refused execution,
    `invalidReason` set) and fixed by the admin in GraphiQL.
@@ -62,11 +62,11 @@ Concretely:
 - `Classification` exposes `typeKey: String!` only (no `typeId`); UUID escape hatch is
   `type { id }` ([PRD 035](../prd/done/035-graphql-foundations.md) §11).
 - Type selection is the single generated field `typeIn: [<Kind>TypeKey!]` on
-  `AllocatableFilter`/`ReservationFilter`; the redundant `typeKeyEq`/`typeKeyIn` String fields
+  `ResourceFilter`/`ReservationFilter`; the redundant `typeKeyEq`/`typeKeyIn` String fields
   were **removed** ([PRD 059](../prd/done/059-graphql-typed-where-predicates.md) Phase 7, hard cut — nothing in production). Per-kind enums mean a
-  wrong-kind key (an allocatable key on `ReservationFilter`) is also a validation error.
+  wrong-kind key (a resource key on `ReservationFilter`) is also a validation error.
 - Typed attribute predicates (`where<TypeKey>`) exist for **all** kinds — resource/person on
-  `AllocatableFilter`, reservation on `ReservationFilter` — through one generator loop and one
+  `ResourceFilter`, reservation on `ReservationFilter` — through one generator loop and one
   `WhereEvaluator` ([PRD 059](../prd/done/059-graphql-typed-where-predicates.md) Phase 6).
 - **Rename/delete lifecycle:** schema rebuild → `ViewCatalogService.revalidateCustomViews()`
   marks every stored custom view `valid`/`invalidReason`. Invalid views keep their text, refuse
@@ -91,7 +91,7 @@ Concretely:
 
 - `ReservationGraphQLControllerTest.typeInEnumsAreSplitPerKind` — wrong-kind keys rejected both
   directions.
-- `ClassificationGraphQLControllerTest.allocatablesFilterTypeInUnknownKeyIsRejected` — unknown
+- `ClassificationGraphQLControllerTest.resourcesFilterTypeInUnknownKeyIsRejected` — unknown
   enum value is a validation error.
 - `ClassificationGraphQLControllerTest.reservationDTGetsWhereInput` — reservation kinds carry
   where-inputs.

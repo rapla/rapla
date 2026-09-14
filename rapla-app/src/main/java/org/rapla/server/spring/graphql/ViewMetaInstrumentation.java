@@ -309,8 +309,8 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
             applyPresentation(c, objStr(g, "header") != null ? objStr(g, "header") : key,
                     groupOrder, false, false, null, idx++);
             c.put("kind", "group");
-            boolean entityDim = hasField(g, "allocatables") || Boolean.TRUE.equals(objBool(g, "reservation"));
-            String dimType = hasField(g, "allocatables") ? "Allocatable"
+            boolean entityDim = hasField(g, "resources") || Boolean.TRUE.equals(objBool(g, "reservation"));
+            String dimType = hasField(g, "resources") ? "Resource"
                     : Boolean.TRUE.equals(objBool(g, "reservation")) ? "Reservation"
                     : hasField(g, "date") ? "Date"
                     : hasField(g, "expr") ? "String" : null;

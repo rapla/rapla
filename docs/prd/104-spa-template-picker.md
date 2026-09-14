@@ -14,13 +14,16 @@ The SPA gets ONE unified "Neu" dialog (D1/D6, discussion 2026-07-24): **search +
 flat scrollable list carrying event TYPES and TEMPLATES together**, each row marked by kind —
 the Swing tree existed because menus can't scroll; a dialog scrollbar removes that constraint.
 The old type menu disappears; the dialog is skipped only for exactly-1-type-and-0-templates.
-The server still computes a grouping `path` per template (kept on the wire for later grouped
+~~The server still computes a grouping `path` per template (kept on the wire for later grouped
 rendering, e.g. section headers); grouping stays a server concern so Swing can adopt it later
-and §12 filtering happens before any label/count is computed.
+and §12 filtering happens before any label/count is computed.~~ **`path` removed 2026-09-13**
+([PRD 113 § 1c](113-graphql-permission-model.md#1c-eventtemplate-target-schema), user go per
+AGENTS.md § 11): never consumed by the UI; `TemplatePathBuilder` + tests + the SPA selection
+deleted with it. The D2/D3 paragraphs below are history.
 
 ## Implementation
 
-- **Wire shape: flat list + path tag, NOT a recursive tree** (D2). `EventTemplate` gains
+- ~~**Wire shape: flat list + path tag, NOT a recursive tree** (D2).~~ *(removed 2026-09-13, see above)* `EventTemplate` gained
   `path: [String!]!` — the server-computed group path, root first, `[]` = ungrouped top-level.
   The SPA folds the (already name-sorted) list into a tree in one pass. Precedent:
   `DocumentApi.DocumentSummary.groups` is the same flat-hierarchy-tag shape.
@@ -433,13 +436,13 @@ CAS events attach to Studiengang, not Kurs → hierarchy scope must be selectabl
 
 From the "Neu" menu a user finds one template among 1000 in ≤ 3 interactions: typing two search
 tokens, OR scrolling the alphabetic list, OR one recents chip. GraphQL probe:
-`{ newEventOptions { templates { id name path } } }` returns §12-filtered templates with
-server-computed paths; no group label/count reflects an invisible template.
+`{ newEventOptions { templates { id name } } }` returns §12-filtered templates (the `path`
+field was removed 2026-09-13).
 
 ## Scope
 
 ### In scope
-- `EventTemplate.path` + `TemplatePathBuilder` (token clustering + range fallback).
+- ~~`EventTemplate.path` + `TemplatePathBuilder` (token clustering + range fallback).~~ removed 2026-09-13 (PRD 113 § 1c).
 - SPA "Neu" menu on `newEventOptions`; template picker dialog (search + flat scroll list);
   localStorage recents.
 - `reservationsFromTemplate` + sheet prefill (single-reservation v1).
@@ -456,7 +459,7 @@ server-computed paths; no group label/count reflects an invisible template.
 
 ## Plan
 
-### Phase 1 — Server: `path` on EventTemplate — DONE 2026-07-24
+### Phase 1 — Server: `path` on EventTemplate — DONE 2026-07-24, **REMOVED 2026-09-13** (PRD 113 § 1c)
 - [x] `TemplatePathBuilder` (pure, tier-1-testable): token-prefix clustering, recursion into next
       token for oversized buckets (redundant single-token levels are skipped), alphabetic range
       chunks where tokens don't split, max 25/node.

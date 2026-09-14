@@ -54,7 +54,7 @@ const SCALAR_TYPES: Record<string, AttributeValueType> = {
   Boolean: 'BOOLEAN',
   LocalDateTime: 'DATE',
   Category: 'CATEGORY',
-  Allocatable: 'ALLOCATABLE',
+  Resource: 'ALLOCATABLE',
 };
 
 /** Interface fields present on every generated type — not attributes. */
@@ -62,7 +62,7 @@ const NON_ATTRIBUTE_FIELDS = new Set(['type', 'typeKey']);
 
 const RESERVED_TYPE_NAMES = new Set([
   'Classification',
-  'AllocatableClassification',
+  'ResourceClassification',
   'ReservationClassification',
 ]);
 
@@ -174,7 +174,7 @@ export function parseClassificationSdl(sdl: string): Map<string, ClassificationT
   return result;
 }
 
-/** Tree categories + allocatable refs read as objects — select their id. */
+/** Tree categories + resource refs read as objects — select their id. */
 export function readsAsObject(d: AttributeDescriptor): boolean {
   return d.valueType === 'ALLOCATABLE' || (d.valueType === 'CATEGORY' && d.enumValues === null);
 }

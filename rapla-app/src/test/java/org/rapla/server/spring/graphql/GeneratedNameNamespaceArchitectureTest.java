@@ -26,10 +26,10 @@ class GeneratedNameNamespaceArchitectureTest
     /** Hand-written predicate types; their stems are reserved as DynamicType keys ({@code Tools.isReservedTypeKey}). */
     private static final Set<String> FIXED_WHERE_TYPES = Set.of(
             "StringWhere", "IntWhere", "BooleanWhere", "LocalDateTimeWhere",
-            "CategoryWhere", "CategoryListWhere", "AllocatableWhere", "AllocatableListWhere");
+            "CategoryWhere", "CategoryListWhere", "ResourceWhere", "ResourceListWhere");
     private static final Set<String> FIXED_CLASSIFICATION_TYPES = Set.of(
-            "Classification", "AllocatableClassification", "ReservationClassification",
-            "AllocatableClassificationInput", "ReservationClassificationInput");
+            "Classification", "ResourceClassification", "ReservationClassification",
+            "ResourceClassificationInput", "ReservationClassificationInput");
 
     @Test
     void noHandWrittenTypeEndsWithAReservedSuffix() throws IOException
@@ -51,7 +51,7 @@ class GeneratedNameNamespaceArchitectureTest
     {
         String sdl = schema();
         List<String> offenders = new ArrayList<>();
-        for (String input : List.of("AllocatableFilter", "ReservationFilter"))
+        for (String input : List.of("ResourceFilter", "ReservationFilter"))
         {
             Matcher block = Pattern.compile("^input " + input + "\\s*\\{([\\s\\S]*?)^\\}", Pattern.MULTILINE).matcher(sdl);
             assertTrue(block.find(), input + " missing in schema.graphqls");

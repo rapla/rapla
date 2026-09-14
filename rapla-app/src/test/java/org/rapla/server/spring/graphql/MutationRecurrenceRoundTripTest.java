@@ -119,7 +119,7 @@ class MutationRecurrenceRoundTripTest
                         allDay: false,
                         repeating: { type: WEEKLY, interval: 1, end: "2031-09-30", exceptions: ["2031-07-15"] } }
                     ],
-                    allocations: [ { allocatableId: "%s" } ]
+                    allocations: [ { resourceId: "%s" } ]
                   }) { id }
                 }
                 """.formatted(reservationId, appointmentId, ROOM_A66))
@@ -156,7 +156,7 @@ class MutationRecurrenceRoundTripTest
                     typeKey: "event",
                     classification: { event: { name: "update-roundtrip" } },
                     appointments: [ %s ],
-                    allocations: [ { allocatableId: "%s" } ]
+                    allocations: [ { resourceId: "%s" } ]
                   }) { id }
                 }
                 """.formatted(reservationId, appointmentJson, ROOM_A66))
@@ -173,7 +173,7 @@ class MutationRecurrenceRoundTripTest
                     typeKey: "event",
                     classification: { event: { name: "update-roundtrip-renamed" } },
                     appointments: [ %s ],
-                    allocations: [ { allocatableId: "%s" } ]
+                    allocations: [ { resourceId: "%s" } ]
                   }) { id }
                 }
                 """.formatted(reservationId, appointmentJson, ROOM_A66))

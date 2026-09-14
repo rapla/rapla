@@ -210,7 +210,7 @@ export class EventSheetComponent {
   readonly undoLabel = computed(() => (this.historyTick() >= 0 ? this.history.undoLabel() : ''));
   readonly redoLabel = computed(() => (this.historyTick() >= 0 ? this.history.redoLabel() : ''));
 
-  /** Statuses for assigned rows + pins, keyed by allocatable id. */
+  /** Statuses for assigned rows + pins, keyed by resource id. */
   readonly statusById = signal<Map<string, AvailabilityRow>>(new Map());
   /** Ranked search hits (excluding pinned + assigned, computed in the vm). */
   readonly hits = signal<AvailabilityRow[]>([]);
@@ -218,7 +218,7 @@ export class EventSheetComponent {
   readonly candidates = computed<CandidateVm[]>(() => {
     const d = this.draft();
     if (!d) return [];
-    const assigned = new Set(d.allocations.map((a) => a.allocatableId));
+    const assigned = new Set(d.allocations.map((a) => a.resourceId));
     const pinned = this.pins()
       .filter((p) => !assigned.has(p))
       .map((p) => {
@@ -243,7 +243,7 @@ export class EventSheetComponent {
         switchMap(() => {
           const d = this.draft();
           if (!d || !this.hasValidAppointments(d)) return [];
-          const ids = [...new Set([...this.pins(), ...d.allocations.map((a) => a.allocatableId)])];
+          const ids = [...new Set([...this.pins(), ...d.allocations.map((a) => a.resourceId)])];
           return this.availability.search(
             d.appointments,
             this.addMode() ? this.searchText() : '',
@@ -785,10 +785,10 @@ export class EventSheetComponent {
 
   assign(row: AvailabilityRow): void {
     this.mutateDraft((d) => {
-      if (d.allocations.some((a) => a.allocatableId === row.id)) return;
+      if (d.allocations.some((a) => a.resourceId === row.id)) return;
       d.allocations.push({
-        allocatableId: row.id,
-        allocatableName: row.name,
+        resourceId: row.id,
+        resourceName: row.name,
         appointmentIds: null,
       });
     }, 'Ressource zugeordnet');
@@ -797,7 +797,7 @@ export class EventSheetComponent {
 
   unassign(id: string): void {
     this.mutateDraft((d) => {
-      d.allocations = d.allocations.filter((a) => a.allocatableId !== id);
+      d.allocations = d.allocations.filter((a) => a.resourceId !== id);
     }, 'Ressource entfernt');
     if (this.giltOpen() === id) this.giltOpen.set(null);
   }
@@ -809,26 +809,26 @@ export class EventSheetComponent {
   setGiltMode(al: DraftAllocation, mode: 'all' | 'some'): void {
     this.mutateDraft(
       (d) => {
-        const target = d.allocations.find((a) => a.allocatableId === al.allocatableId);
+        const target = d.allocations.find((a) => a.resourceId === al.resourceId);
         if (!target) return;
         target.appointmentIds = mode === 'all' ? null : d.appointments.map((a) => a.id);
       },
       'gilt für',
-      `gilt:${al.allocatableId}`,
+      `gilt:${al.resourceId}`,
     );
   }
 
   toggleGiltAppointment(al: DraftAllocation, appointmentId: string, checked: boolean): void {
     this.mutateDraft(
       (d) => {
-        const target = d.allocations.find((a) => a.allocatableId === al.allocatableId);
+        const target = d.allocations.find((a) => a.resourceId === al.resourceId);
         if (!target || !target.appointmentIds) return;
         target.appointmentIds = checked
           ? [...new Set([...target.appointmentIds, appointmentId])]
           : target.appointmentIds.filter((x) => x !== appointmentId);
       },
       'gilt für',
-      `gilt:${al.allocatableId}`,
+      `gilt:${al.resourceId}`,
     );
   }
 

@@ -14,8 +14,8 @@ const types = [
   { key: 'exam', name: 'Klausur' },
 ];
 const templates = [
-  { id: 't1', name: 'TINF23B4 Mathe 1', path: [] },
-  { id: 't2', name: 'WWI23A Mathe 1', path: [] },
+  { id: 't1', name: 'course-A Mathe 1', path: [] },
+  { id: 't2', name: 'course-B Mathe 1', path: [] },
 ];
 
 describe('buildPickItems / filterPickItems (PRD 104 D6)', () => {
@@ -34,7 +34,7 @@ describe('buildPickItems / filterPickItems (PRD 104 D6)', () => {
 
   it('ANDs whitespace-split terms case-insensitively', () => {
     const items = buildPickItems(types, templates);
-    expect(filterPickItems(items, 'tinf23 MATHE').map((i) => i.id)).toEqual(['t1']);
+    expect(filterPickItems(items, 'course-a MATHE').map((i) => i.id)).toEqual(['t1']);
   });
 });
 
@@ -82,8 +82,8 @@ describe('draftFromTemplate (PRD 104 D8)', () => {
       },
     ],
     allocations: [
-      { allocatableId: 'r1', allocatableName: 'Raum 1', appointmentIds: ['a-one'] },
-      { allocatableId: 'r2', allocatableName: 'Raum 2', appointmentIds: null },
+      { resourceId: 'r1', resourceName: 'Raum 1', appointmentIds: ['a-one'] },
+      { resourceId: 'r2', resourceName: 'Raum 2', appointmentIds: null },
     ],
     lastChanged: '2001-10-16T12:00:00',
   };

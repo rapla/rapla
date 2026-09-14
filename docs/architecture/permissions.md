@@ -294,8 +294,26 @@ template-sharing plugin) to grant additional read access.
 `SecurityManager.checkModifyPermissions(user, entity)` runs before any
 store. For new entities, the user must be the owner. For modifications,
 either the owner is unchanged (and the user has `EDIT`) or the user is
-admin. Re-parenting (changing the owner) requires admin rights on both
-the old and new owner records.
+admin. **Re-parenting (changing the owner)** — since 2026-09-13
+([PRD 113 § 5f](../prd/113-graphql-permission-model.md#5f-wp-o1--owner-change-for-group-admins-within-scope-user-ruling-p-4-2026-09-13-approved-to-impl-final-2245)):
+allowed for a global admin, or for a group admin (`canAdminUsers`) when
+both the old and the new owner are within their `canAdminUser` scope and
+the entity is visible to them (`canReadInformation` for resources,
+`canRead` for events); only as a *pure* owner change (nothing else in the
+draft differs), and it skips the allocation check (an owner change is not
+an allocation). Owners cannot hand over their own entities. Ownerless
+entities and `DynamicType` stay global-admin only. Enforced once in
+`PermissionController.canChangeOwner`, called from `checkModifyPermissions`;
+this replaced a pre-existing fall-through that re-permitted any owner
+change for an `EDIT` user via `canModify`.
+
+**Changing the permission list itself needs `canAdmin`** on the entity, not
+mere `EDIT`: after the ownership/`canModify` checks, `checkModifyPermissions`
+compares the stored and the submitted list (`PermissionContainer.Util.differs`)
+and rejects a changed list unless `canAdmin(original, user)` holds. This gate
+covers `Allocatable` (incl. templates and periods), `Category` and — since
+2026-09-13, PRD 113 P4a — `Reservation`; `DynamicType` is excluded because it is
+admin-only upstream. Same gate for Swing, GraphQL and every other write path.
 
 ### 5. `READ_NO_ALLOCATION` — resource visibility vs. booking visibility (verified 2026-06-24)
 

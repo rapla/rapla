@@ -124,16 +124,16 @@ describe('applyDeleteScope (Swing data-model effects)', () => {
     const d = draft({
       appointments: [single, repeating],
       allocations: [
-        { allocatableId: 'r1', allocatableName: 'C452', appointmentIds: ['a1', 'a2'] },
-        { allocatableId: 'r2', allocatableName: 'Kamera', appointmentIds: ['a1'] },
-        { allocatableId: 'r3', allocatableName: 'Beamer', appointmentIds: null },
+        { resourceId: 'r1', resourceName: 'C452', appointmentIds: ['a1', 'a2'] },
+        { resourceId: 'r2', resourceName: 'Kamera', appointmentIds: ['a1'] },
+        { resourceId: 'r3', resourceName: 'Beamer', appointmentIds: null },
       ],
     });
     const action = applyDeleteScope(d, 'single', block('a1'));
     if (action.kind !== 'update') throw new Error('expected update');
     expect(action.draft.allocations).toEqual([
-      { allocatableId: 'r1', allocatableName: 'C452', appointmentIds: ['a2'] },
-      { allocatableId: 'r3', allocatableName: 'Beamer', appointmentIds: null },
+      { resourceId: 'r1', resourceName: 'C452', appointmentIds: ['a2'] },
+      { resourceId: 'r3', resourceName: 'Beamer', appointmentIds: null },
     ]);
   });
 

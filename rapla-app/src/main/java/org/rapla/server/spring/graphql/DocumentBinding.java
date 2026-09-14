@@ -71,7 +71,7 @@ public final class DocumentBinding
         return switch (rootFieldName.toLowerCase(Locale.ROOT))
         {
             case "reservation" -> Kind.RESERVATION;
-            case "allocatable" -> Kind.ALLOCATABLE;
+            case "resource" -> Kind.ALLOCATABLE;
             case "user" -> Kind.USER;
             default -> null;
         };

@@ -158,7 +158,7 @@
 
     /**
      * "resource=r1&resource=r2" → { "resource": ["r1","r2"] } — public @param names only, exactly
-     * what the document URL accepts (a private dotted path like filter.allocatableIdsIn would 400
+     * what the document URL accepts (a private dotted path like filter.resourceIdsIn would 400
      * at the gate). Values stay grouped per key so the server sees the repeats a real URL carries;
      * name→into translation and dot-nesting are the server's job, not ours.
      */

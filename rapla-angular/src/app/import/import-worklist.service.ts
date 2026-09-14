@@ -29,10 +29,10 @@ import {
  *  only holds when the worklist covers ALL semesters of the selected Kurse.
  *  The Offen tab filters to the visible semester client-side instead. */
 const WORKLIST_QUERY = `
-  query ($allocatableIds: [ID!]!) {
-    externalEventWorklist(allocatableIds: $allocatableIds) {
+  query ($resourceIds: [ID!]!) {
+    externalEventWorklist(resourceIds: $resourceIds) {
       groups {
-        allocatableId
+        resourceId
         name
         counts { open linked changed }
         items { sourceItemId scopeKey state changedSince boundReservationId columns { key value } }
@@ -46,12 +46,12 @@ const WORKLIST_QUERY = `
  *  stay visible after their source row left the Dualis export window. */
 const LINKED_QUERY = `
   query ($from: LocalDateTime!, $to: LocalDateTime!, $ids: [ID!]!) {
-    reservations(filter: { from: $from, to: $to, allocatableIdsIn: $ids, limit: 2000 }) {
+    reservations(filter: { from: $from, to: $to, resourceIdsIn: $ids, limit: 2000 }) {
       id
       name
       externalId
       firstDate
-      allocations { allocatable { id } }
+      allocations { resource { id } }
     }
   }
 `;
@@ -61,7 +61,7 @@ interface WireLinked {
   name: string | null;
   externalId: string | null;
   firstDate: string;
-  allocations: { allocatable: { id: string } }[];
+  allocations: { resource: { id: string } }[];
 }
 
 interface WireColumn {
@@ -80,7 +80,7 @@ interface WireItem {
 }
 
 interface WireGroup {
-  allocatableId: string;
+  resourceId: string;
   name: string;
   counts: { open: number; linked: number; changed: number };
   items: WireItem[];
@@ -106,7 +106,7 @@ function column(item: WireItem, key: string): string | null {
 
 function toWorklist(wire: WireWorklist): Worklist {
   const groups: WorklistGroup[] = wire.groups.map((g) => ({
-    id: g.allocatableId,
+    id: g.resourceId,
     name: g.name,
     scope: 'KURS',
     openCount: g.counts.open,
@@ -128,7 +128,7 @@ function toWorklist(wire: WireWorklist): Worklist {
         state: STATE_MAP[i.state],
         changed: i.state === 'CHANGED',
         changedSince: i.changedSince,
-        groupIds: [g.allocatableId],
+        groupIds: [g.resourceId],
         groupName: g.name,
         boundReservationId: i.boundReservationId ?? null,
       })),
@@ -207,7 +207,7 @@ export class ImportWorklistService {
       const worklist$ = this.gql
         .query<{
           externalEventWorklist: WireWorklist;
-        }>(WORKLIST_QUERY, { allocatableIds: ids })
+        }>(WORKLIST_QUERY, { resourceIds: ids })
         .pipe(
           map((resp) =>
             resp.errors?.length || !resp.data?.externalEventWorklist
@@ -234,7 +234,7 @@ export class ImportWorklistService {
                         name: r.name ?? r.id,
                         externalId: r.externalId as string,
                         firstDate: r.firstDate,
-                        allocatableIds: r.allocations.map((a) => a.allocatable.id),
+                        resourceIds: r.allocations.map((a) => a.resource.id),
                       })),
               ),
               // The externalid ANNOTATION alone is not enough — other importers

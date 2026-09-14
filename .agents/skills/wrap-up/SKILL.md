@@ -44,6 +44,22 @@ direction changes, update cross-references, and refresh the PRD's header block i
 is outstanding — an open OQ or unverified Goal means it stays active; when
 borderline, recommend and ask.
 
+Index consistency check (run it; every set must print empty): new PRD → add its
+`### <file>` block in the matching group; moved to `done/`/`wont-fix/` → remove the
+block, add the list entry, fix the count line in the intro.
+
+```bash
+python3 - <<'EOF'
+import re,glob,os
+s=open('docs/prd/README.md').read()
+blocks=set(re.findall(r'^### (\d{3}-[\w.-]+\.md)$',s,re.M))
+files={os.path.basename(p) for p in glob.glob('docs/prd/*.md') if 'README' not in p}
+done=set(re.findall(r'\]\(done/([^)]+)\)',s)); donef={os.path.basename(p) for p in glob.glob('docs/prd/done/*.md')}
+wont=set(re.findall(r'\]\(wont-fix/([^)]+)\)',s)); wontf={os.path.basename(p) for p in glob.glob('docs/prd/wont-fix/*.md')}
+print('missing block',files-blocks,'stale block',blocks-files,'done',donef^done,'wont-fix',wontf^wont)
+EOF
+```
+
 ## Step 4 — Docs pass → load the `doc-coauthoring` skill
 
 Per changed subsystem ask: "which `docs/` page did this diff make true-or-false?"

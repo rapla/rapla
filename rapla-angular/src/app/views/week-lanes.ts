@@ -1,7 +1,7 @@
 /**
  * Week time-grid layout (PRD 077/100) — rapla lane model ported from the shared
  * Swing/HTML strategy machinery (`AbstractGroupStrategy` +
- * `GroupAllocatablesStrategy`, see docs/architecture/calendar-rendering.md §2):
+ * `GroupResourcesStrategy`, see docs/architecture/calendar-rendering.md §2):
  * blocks group by their first SELECTED resource, conflicts within a group open
  * an extra lane right after it, and lanes either stay fixed per resource
  * ('fixed', Swing fixed-slots — stable columns across the week) or merge
@@ -17,15 +17,15 @@ export interface NamedRef {
 
 export interface LaneOptions<R> {
   /** Scope resources (the calendar's selection) — enables group-by-selected-
-   *  resource. Grouping keys ONLY on these (Swing: `getGroupAllocatable`). */
+   *  resource. Grouping keys ONLY on these (Swing: `getGroupResource`). */
   selected?: NamedRef[];
   /** 'fixed' reserves a lane per selected resource even when empty that day;
    *  'compact' (default) merges non-colliding lanes. */
   mode?: 'fixed' | 'compact';
-  /** The block's allocatables (id+name), for the grouping key + fallback. */
+  /** The block's resources (id+name), for the grouping key + fallback. */
   allocsOf?: (r: R) => NamedRef[];
   /** PRD 100 Phase 5 — server-computed match provenance (`AppointmentBlock.matchedBy`):
-   *  the SELECTED allocatables that admitted this block (belongsTo-resolved server-side,
+   *  the SELECTED resources that admitted this block (belongsTo-resolved server-side,
    *  so a room's blocks carry the selected BUILDING). When present and non-empty it is
    *  the authoritative grouping key (`matchedBy[0]`), reproducing Swing's binding-based
    *  lanes the client can't derive from row cells; empty ⇒ fall back to `allocsOf`. */
@@ -170,23 +170,23 @@ function mergeSlots<R>(slots: Seg<R>[][]): void {
 }
 
 /**
- * Swing `GroupAllocatablesStrategy.group` + `RaplaBuilder.getGroupAllocatable`:
+ * Swing `GroupResourcesStrategy.group` + `RaplaBuilder.getGroupResource`:
  * one group per SELECTED resource (kept even when empty — fixed-slots lane
- * reservation); a block keys on its first allocatable that is in the selection,
- * falls back to its own allocatables — preferring the LOCATION (room): when the
+ * reservation); a block keys on its first resource that is in the selection,
+ * falls back to its own resources — preferring the LOCATION (room): when the
  * scope chip is a container (building/category) the server expands it for the
  * query but no block carries the chip id, and per-room fallback lanes reproduce
  * Swing's dense per-room columns (a room's sequential lectures share one lane).
- * Blocks with no allocatables land in a trailing group. Groups ordered by
+ * Blocks with no resources land in a trailing group. Groups ordered by
  * locale-collated name.
  */
 /**
  * The grouping key (lane) for a row. PRD 100 Phase 5 — server match provenance wins:
- * matchedBy[0] is the SELECTED allocatable that admitted the block (belongsTo-resolved),
+ * matchedBy[0] is the SELECTED resource that admitted the block (belongsTo-resolved),
  * so a building selection groups all its rooms' blocks into ONE lane exactly like Swing.
  * Only when the block was admitted by a non-resource criterion (empty matchedBy) do we
- * fall back to the client-side heuristic over the block's own allocatables (selected id →
- * location → first). Null ⇒ the block has no lane key (trailing no-allocatable group).
+ * fall back to the client-side heuristic over the block's own resources (selected id →
+ * location → first). Null ⇒ the block has no lane key (trailing no-resource group).
  */
 function groupKeyRef<R>(
   row: R,
@@ -254,14 +254,14 @@ export function layoutWeek<R>(
   /** Days to render (Mo–So of the anchor week by default; a single day for day mode). */
   days: string[] = weekDays(anchorIso),
 ): WeekLayout<R> {
-  // Swing parity: `compactColumns = … || builder.getAllocatables().isEmpty()` —
-  // when the selection resolves to allocatables NO block carries (container
+  // Swing parity: `compactColumns = … || builder.getResources().isEmpty()` —
+  // when the selection resolves to resources NO block carries (container
   // chips: buildings/categories/users), the week view packs COMPACT instead of
   // opening per-fallback fixed lanes.
   const selectedIds = new Set((options?.selected ?? []).map((s) => s.id));
   // PRD 100 Phase 5 — when the server supplies match provenance, it is authoritative:
   // grouping is ON iff SOME block carries a non-empty matchedBy (exactly Swing's
-  // `!builder.getAllocatables().isEmpty()` switch). matchedBy[0] then keys the lanes,
+  // `!builder.getResources().isEmpty()` switch). matchedBy[0] then keys the lanes,
   // so a container chip (building/category) — which the client can't resolve from row
   // cells — groups correctly instead of falling into the compact fallback.
   const hasMatchProvenance =

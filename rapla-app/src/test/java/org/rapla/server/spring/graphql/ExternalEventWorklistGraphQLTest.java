@@ -119,8 +119,8 @@ class ExternalEventWorklistGraphQLTest
     void withoutASnapshotProviderTheWorklistIsEmpty()
     {
         Integer total = tester.document("""
-                query { externalEventWorklist(allocatableIds: ["a-any"]) {
-                    groups { allocatableId } counts { total } } }
+                query { externalEventWorklist(resourceIds: ["a-any"]) {
+                    groups { resourceId } counts { total } } }
                 """)
                 .execute()
                 .path("externalEventWorklist.counts.total")
@@ -128,7 +128,7 @@ class ExternalEventWorklistGraphQLTest
                 .get();
         assertEquals(0, total);
         tester.document("""
-                query { externalEventWorklist(allocatableIds: ["a-any"]) { groups { allocatableId } } }
+                query { externalEventWorklist(resourceIds: ["a-any"]) { groups { resourceId } } }
                 """)
                 .execute()
                 .path("externalEventWorklist.groups")
@@ -141,7 +141,7 @@ class ExternalEventWorklistGraphQLTest
     void anonymousWorklistIsRejected()
     {
         tester.document("""
-                query { externalEventWorklist(allocatableIds: ["a-any"]) { counts { total } } }
+                query { externalEventWorklist(resourceIds: ["a-any"]) { counts { total } } }
                 """)
                 .execute()
                 .errors()

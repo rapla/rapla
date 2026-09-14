@@ -89,7 +89,7 @@ public final class ClassificationSdlGenerator
      */
     private static final Set<String> RESERVED_TYPE_NAMES = Set.of(
             "Classification",
-            "AllocatableClassification",
+            "ResourceClassification",
             "ReservationClassification");
 
     private ClassificationSdlGenerator() {}
@@ -235,12 +235,12 @@ public final class ClassificationSdlGenerator
         if (!allocatableKeys.isEmpty())
         {
             sb.append("\"One value per resource/person DynamicType key — schema-validated type selection.\"\n");
-            sb.append("enum AllocatableTypeKey {\n");
+            sb.append("enum ResourceTypeKey {\n");
             for (String v : allocatableKeys) sb.append("  ").append(v).append('\n');
             sb.append("}\n\n");
-            sb.append("extend input AllocatableFilter {\n");
+            sb.append("extend input ResourceFilter {\n");
             sb.append("  \"PRD 059 Phase 7 — match any resource/person DynamicType key in the list (cross-type union). THE type selector; pre-filters at the storage layer.\"\n");
-            sb.append("  typeIn: [AllocatableTypeKey!]\n");
+            sb.append("  typeIn: [ResourceTypeKey!]\n");
             sb.append("}\n\n");
         }
         if (!reservationKeys.isEmpty())
@@ -320,7 +320,7 @@ public final class ClassificationSdlGenerator
         // Emit the @oneOf dispatch wrappers. Empty deployments still get a
         // valid wrapper — empty @oneOf inputs are spec-valid (just unsatisfiable
         // for any caller, which is fine when the deployment has no such types yet).
-        appendOneOfWrapper(sb, "AllocatableClassificationInput", allocatableVariants);
+        appendOneOfWrapper(sb, "ResourceClassificationInput", allocatableVariants);
         appendOneOfWrapper(sb, "ReservationClassificationInput", reservationVariants);
     }
 
@@ -484,7 +484,7 @@ public final class ClassificationSdlGenerator
         // runtime-generated additions to a statically-declared input.
         if (!allocatableFilterLines.isEmpty())
         {
-            sb.append("extend input AllocatableFilter {\n");
+            sb.append("extend input ResourceFilter {\n");
             for (String line : allocatableFilterLines) sb.append(line).append("\n");
             sb.append("}\n\n");
         }
@@ -529,7 +529,7 @@ public final class ClassificationSdlGenerator
      */
     private static void appendRefWhereInput(StringBuilder sb, String typeName)
     {
-        sb.append("\"PRD 074 b — filter an allocatable reference to `").append(typeName)
+        sb.append("\"PRD 074 b — filter a resource reference to `").append(typeName)
           .append("` by id/name, or recurse into its attributes via `where`.\"\n");
         sb.append("input ").append(typeName).append("RefWhere {\n");
         sb.append("  eq:           ID\n");
@@ -607,7 +607,7 @@ public final class ClassificationSdlGenerator
         }
         if (t == AttributeType.ALLOCATABLE)
         {
-            if (multi) return "AllocatableListWhere";
+            if (multi) return "ResourceListWhere";
             // PRD 074 b — typed reference: if the attribute constrains to a known DynamicType that
             // has a generated <T>Where, target <T>RefWhere (id/name + nested typed where). Otherwise
             // the generic id/name AllocatableWhere.
@@ -617,7 +617,7 @@ public final class ClassificationSdlGenerator
                 String refName = checkGraphQlCompliantName(ref.getKey());
                 if (whereTypeNames.contains(refName)) return refName + "RefWhere";
             }
-            return "AllocatableWhere";
+            return "ResourceWhere";
         }
         if (multi)
         {
@@ -1075,7 +1075,7 @@ public final class ClassificationSdlGenerator
         if (DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE.equals(kind)
                 || DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON.equals(kind))
         {
-            return "Classification & AllocatableClassification";
+            return "Classification & ResourceClassification";
         }
         if (DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION.equals(kind))
         {
@@ -1117,7 +1117,7 @@ public final class ClassificationSdlGenerator
                 case INT         -> "Int";
                 case BOOLEAN     -> "Boolean";
                 case DATE        -> "LocalDateTime";
-                case ALLOCATABLE -> "Allocatable";
+                case ALLOCATABLE -> "Resource";
                 case CATEGORY    -> "Category";   // unreachable; covered above
             };
         }

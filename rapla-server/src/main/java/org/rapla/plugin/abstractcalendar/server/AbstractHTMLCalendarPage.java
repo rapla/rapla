@@ -337,7 +337,7 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
             final Allocatable allocatable = facade.getOperator().tryResolve(allocatable_id, Allocatable.class);
             if ( allocatable != null)
             {
-                final String name = allocatable.getName(getRaplaLocale().getLocale());
+                final String name = Tools.createXssSafeString(allocatable.getName(getRaplaLocale().getLocale()));
                 return name;
             }
         }
@@ -400,7 +400,7 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
     	Collections.sort( sortedAllocatables, new SortedClassifiableComparator(locale) );
     	for (Allocatable alloc:sortedAllocatables)
     	{
-            String name = alloc.getName(locale);
+            String name = Tools.createXssSafeString(alloc.getName(locale));
             final String fullQueryPath = queryPath + "&allocatable_id=" + URLEncoder.encode(alloc.getId(), "UTF-8");
             addListRow(out, addCSV, base, name, fullQueryPath);
         }

@@ -63,7 +63,7 @@ public class ReservationChecksController
             throw new ReservationMutationController.ReservationMutationException("REQUIRED", "reservationChecks.draft",
                     "draft is required");
         }
-        List<String> scope = (List<String>) input.get("scopeAllocatableIds");
+        List<String> scope = (List<String>) input.get("scopeResourceIds");
         Reservation transientReservation = mutations.buildTransientForCheck(draft, caller);
         List<ReservationWarning> warnings = checks.check(transientReservation, caller,
                 raplaLocale.getLocale(), scope == null ? Set.of() : Set.copyOf(scope));
@@ -101,7 +101,7 @@ public class ReservationChecksController
                     "moveChecks.input",
                     "exactly one of appointmentId / reservationIds is required");
         }
-        List<String> scope = (List<String>) input.get("scopeAllocatableIds");
+        List<String> scope = (List<String>) input.get("scopeResourceIds");
         Set<String> scopeIds = scope == null ? Set.of() : Set.copyOf(scope);
 
         List<Reservation> prospective = hasAppointment

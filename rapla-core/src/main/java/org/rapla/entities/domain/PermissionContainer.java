@@ -23,6 +23,7 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.internal.UserImpl;
 
 import java.util.ArrayList;
@@ -74,6 +75,42 @@ public interface PermissionContainer extends Ownable
             }
         }
         
+        /**
+         * WP P1s — the rows a new DynamicType starts with (Swing {@code FacadeImpl.newDynamicType}): resource and person
+         * types everyone READ_TYPE, everyone ALLOCATE_CONFLICTS, registerer CREATE; event types everyone READ_TYPE,
+         * read-events-from-others READ, create-events CREATE. A group row is only added when that group exists.
+         */
+        @SuppressWarnings("deprecation")
+        public static void addDefaultTypePermissions(DynamicType type, Category userGroups) {
+            String classificationType = type.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
+            if (DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION.equals(classificationType)) {
+                addDefaultRow(type, Permission.READ_TYPE, null);
+                addGroupRow(type, Permission.READ, userGroups, Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS);
+                addGroupRow(type, Permission.CREATE, userGroups, Permission.GROUP_CAN_CREATE_EVENTS);
+            } else if (DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE.equals(classificationType)
+                    || DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON.equals(classificationType)) {
+                addDefaultRow(type, Permission.READ_TYPE, null);
+                addDefaultRow(type, Permission.ALLOCATE_CONFLICTS, null);
+                addGroupRow(type, Permission.CREATE, userGroups, Permission.GROUP_REGISTERER_KEY);
+            }
+        }
+
+        private static void addGroupRow(DynamicType type, Permission.AccessLevel level, Category userGroups, String groupKey) {
+            Category group = userGroups == null ? null : userGroups.getCategory(groupKey);
+            if (group != null) {
+                addDefaultRow(type, level, group);
+            }
+        }
+
+        private static void addDefaultRow(DynamicType type, Permission.AccessLevel level, Category group) {
+            Permission permission = type.newPermission();
+            permission.setAccessLevel(level);
+            if (group != null) {
+                permission.setGroup(group);
+            }
+            type.addPermission(permission);
+        }
+
         public static void copyPermissions(DynamicType type, PermissionContainer permissionContainer) {
             Collection<Permission> permissionList = type.getPermissionList();
             for ( Permission p:permissionList)

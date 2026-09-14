@@ -45,14 +45,14 @@ The view declares its public URL surface; everything else is a 400:
 ```graphql
 query kalender($filter: ReservationFilter!) @view(title: "Kalender")
   @window(from: {anchor: WEEK_START}, to: {anchor: WEEK_START, offset: 7})
-  @param(name: "resource", into: "filter.allocatableIdsIn")
+  @param(name: "resource", into: "filter.resourceIdsIn")
 { … }
 ```
 
 - `@window` resolves the date window server-side per request and makes `?from=` / `?to=`
   overridable on the document URL.
 - `@param(name:, into:, required:)` maps a public URL key onto a private variable path
-  (`?resource=…` → `filter.allocatableIdsIn`). `required: true` (2026-08-11) means the target
+  (`?resource=…` → `filter.resourceIdsIn`). `required: true` (2026-08-11) means the target
   must be filled from SOMEWHERE after the merge — the URL, a document pin, or (preview only) a
   default derived from the view's example `defaultVariables`; still unfilled → the document
   renders a hint page naming the missing param instead of querying everything in the window.
@@ -215,7 +215,7 @@ query tagesliste($filter: ReservationFilter!) @view(title: "Tagesliste")
 ```graphql
 query kalender($filter: ReservationFilter!) @view(title: "Kalender")
   @window(from: {anchor: WEEK_START}, to: {anchor: WEEK_START, offset: 7})
-  @param(name: "resource", into: "filter.allocatableIdsIn")
+  @param(name: "resource", into: "filter.resourceIdsIn")
 {
   appointmentBlocks(filter: $filter) {
     name  times  banner

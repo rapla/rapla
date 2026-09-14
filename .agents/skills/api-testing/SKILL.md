@@ -40,7 +40,7 @@ Tokens expire after `expires_in` seconds (3600 by default). Re-run the login if 
 
 ## Bootstrap payload — `GET /storage/resources`
 
-Returns an `UpdateEvent` containing the entity bootstrap the client needs at login: categories, types (DynamicTypes), users, preferences, resources (Allocatables). Reservations are NOT in this payload — query them separately (next section).
+Returns an `UpdateEvent` containing the entity bootstrap the client needs at login: categories, types (DynamicTypes), users, preferences, resources (Resources). Reservations are NOT in this payload — query them separately (next section).
 
 ```bash
 curl -s -H "Authorization: Bearer $ACCESS" \

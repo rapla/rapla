@@ -57,28 +57,27 @@ Define how custom Rapla deployments (e.g., `dhbwrapla`) integrate with the platf
 
 **DI Registration:** Custom classes use `@Extension(provides=…, id="…")` or `@DefaultImplementation(of=…, context=InjectionContext.server)`. `restinject`'s `AnnotationInjectionProcessor` generates `META-INF/org.rapla.servicelist` + `META-INF/services/<iface>` at compile time; `ServiceInfLoader` merges registrations at runtime; `SimpleRaplaInjector` instantiates via `@javax.inject.Inject` constructors.
 
-### Extension Points Used by dhbwrapla
+### Extension Points Used by the custom deployment
 
 | Extension Point | Custom Implementation | Context |
 |-----------------|----------------------|---------|
-| `AuthenticationStore` | `DhbwNtlmAuthStore` | server |
-| `PermissionExtension` | `DhbwRaplaRightsPlugin` | server |
-| `MergeCheckExtension` | `DhbwMergeChecker` | client |
-| `ServerExtension` | `DualisSyncJobStarter`, `MoradaSyncJobStarter` | server |
-| `ExchangeConfigExtensionPoint` | `DhbwExchangeExtension` | server |
-| `PluginOptionPanel` | `DhbwAuthPluginOptionPanel`, `MoradaPluginOptionPanel`, `TerminalOption` | client |
-| `ReservationWizardExtension` | `DualisImportWizard` | client |
-| `ReservationToolbarExtension` | `DhbwSyncButtonExtension` | client |
-| `I18nBundle` | `DhbwResources` | both |
-| JAX-RS `@Path` endpoints | `RaplaPruefungen`, `SteleExportPageGenerator`, `DualisEventsLoaderImpl`, `ImportController`, etc. | server |
-| `PrePostDispatchProcessor` | `DualisImportEventsPrePostDispatchProcessor` | server |
+| `AuthenticationStore` | `<CustomAuthStore>` | server |
+| `PermissionExtension` | `<CustomPermissionExtension>` | server |
+| `MergeCheckExtension` | `<CustomMergeChecker>` | client |
+| `ServerExtension` | `<CustomSyncJobA>`, `<CustomSyncJobB>` | server |
+| `ExchangeConfigExtensionPoint` | `<CustomExchangeExtension>` | server |
+| `PluginOptionPanel` | `<CustomAuthOptionPanel>`, `<CustomImportOptionPanel>`, `<CustomTerminalOptionPanel>` | client |
+| `ReservationWizardExtension` | `<CustomImportWizard>` | client |
+| `ReservationToolbarExtension` | `<CustomSyncToolbarButton>` | client |
+| `I18nBundle` | `<CustomI18nBundle>` | both |
+| JAX-RS `@Path` endpoints | `<CustomExamEndpoint>`, `<CustomExportPageGenerator>`, `<CustomEventsLoader>`, `<CustomImportController>`, etc. | server |
+| `PrePostDispatchProcessor` | `<CustomImportPrePostDispatchProcessor>` | server |
 
 ### Configuration
 
-- LDAP/Morada settings stored as Rapla `Preferences` (per-user or system-level) via `PluginOptionPanel` UI
-- Dualis DB connection via JNDI `java:comp/env/jdbc/dualisdb`
-- Morada HTTPS URL stored in preferences
-- DHBW-specific dynamic types (Room, Building, Person, Course, Exam, etc.) with `MoradaId`/`DualisId` marker attributes
+- Directory/auth settings and an external HTTPS feed URL stored as Rapla `Preferences` (per-user or system-level) via `PluginOptionPanel` UI
+- An external exam-management system's DB connection via JNDI `java:comp/env/jdbc/<external-system>`
+- Deployment-specific dynamic types (Room, Building, Person, Course, Exam, etc.) with external-system marker attributes (id references into the exam-management and personnel-feed systems)
 
 ## Proposed Architecture (Post-Migration)
 
@@ -272,7 +271,7 @@ No `@Import(RaplaSpringBootApplication.class)` shim — `@Import(@SpringBootAppl
 | `custom/pom.xml` cleanup | `custom/pom.xml` | Rewrite as a parent POM for Spring Boot projects: depends on `org.rapla:rapla` JAR (not WAR), removes WAR overlay profile, removes `restinject` annotation processor, adds `spring-boot-maven-plugin`. Or delete entirely if the "separate module with `@Import`" pattern is sufficient. |
 | `moduleDescription` mechanism | `src/main/resources-filtered/moduleDescription` | No longer needed after `ServiceInfLoader` removal. Custom projects don't need it. Keep for backward compat during migration, delete in final cleanup. |
 
-### What changes in dhbwrapla (example migration)
+### What changes in the custom deployment (example migration)
 
 | Item | Detail |
 |------|--------|
@@ -281,21 +280,21 @@ No `@Import(RaplaSpringBootApplication.class)` shim — `@Import(@SpringBootAppl
 | All `@DefaultImplementation` annotations | Replace with `@Service` |
 | JAX-RS `@Path`/`@GET`/`@POST` | Replace with Spring `@RestController`/`@GetMapping`/`@PostMapping` |
 | JNDI `DataSource` lookup | Replace with Spring `@Bean DataSource` from `application.yml` properties |
-| `DhbwRaplaApplication` (new) | Custom `@SpringBootApplication` with `@Import(RaplaSpringBootApplication.class)` |
-| `application.yml` (new) | DHBW-specific config: dualis datasource, LDAP URL, Morada URL, plugin toggles |
-| `DhbwProperties` (new) | `@ConfigurationProperties` for DHBW-specific settings |
-| Client `@Component` classes | Register via `@ComponentScan("org.rapla.plugin.dhbw")` on client side |
+| `<CustomRaplaApplication>` (new) | Custom `@SpringBootApplication` with `@Import(RaplaSpringBootApplication.class)` |
+| `application.yml` (new) | Deployment-specific config: exam-system datasource, LDAP URL, personnel-feed URL, plugin toggles |
+| `<CustomProperties>` (new) | `@ConfigurationProperties` for deployment-specific settings |
+| Client `@Component` classes | Register via `@ComponentScan("org.rapla.plugin.<custom>")` on client side |
 | `moduleDescription` resource | Delete (no longer needed) |
 | `lib/jtds-1.3.3.jar` | Move to Maven dependency (jTDS is available on Maven Central) |
 | `lib/commons-dbcp-1.4.jar`, `lib/commons-pool-1.6.jar` | Move to Maven dependencies or use HikariCP (Spring Boot default) |
-| `src/main/webapp/` | Delete entire directory. `web.xml` references the deleted `MainServlet` and JNDI `jdbc/{rapladb,dualisdb}` — there is no servlet bootstrap to preserve. Static content moves to `src/main/resources/static/`. |
+| `src/main/webapp/` | Delete entire directory. `web.xml` references the deleted `MainServlet` and JNDI datasource names — there is no servlet bootstrap to preserve. Static content moves to `src/main/resources/static/`. |
 | `src/main/java9/module-info.java` | Delete. Currently `requires org.rapla.restinject; requires resteasy.jaxrs; requires javax.inject;` — none of which exist post-migration. Same change rapla-core made in PRD 001 Phase 0. |
-| `dhbwrapla-container/pom.xml` | Delete or rewrite. Current aggregator lists `../../rapla/parent`, `../../rapla/custom`, `../../rapla` (WAR), `../../dhbwrapla` — none of those modules exist in the post-migration shape. |
+| `<custom>-container/pom.xml` | Delete or rewrite. Current aggregator lists `../../rapla/parent`, `../../rapla/custom`, `../../rapla` (WAR), and the custom project — none of those modules exist in the post-migration shape. |
 | `org.rapla.parentModules` Maven property | Delete. Used by the WAR-overlay parent; orphaned after `custom/pom.xml` removal. |
 | `mariadb-java-client` test dep | Verify still needed; if used only for storage tests, leave as-is. |
 | `javax.{inject,servlet,ws.rs,annotation}` imports | Replace with `jakarta.*` throughout. Spring Boot 3.x is jakarta-only. |
-| Custom-defined interfaces with `@DefaultImplementation` (`DhbwImportDialog` / `DhbwImportDialogImpl`, `Dualis` / `DualisViewLoader`) | These are *project-internal* interfaces, not rapla-core extension points. Replace `@DefaultImplementation(of = …)` with `@Service` on the impl. If multiple impls exist, mark the default `@Primary`. |
-| `@Singleton`-without-`@Extension` classes (`MoradaImport`, `MoradaImportJob`, `RaplaImportMailSender`, `JsonConverter`, `XmlConverter`, `MoradaLocationMapping`, `DhbwAuthPreferences.AuthPreferencesReader`, etc.) | Add `@Component`/`@Service`. The migration is not limited to `@Extension` classes — every Singleton currently picked up by `SimpleRaplaInjector` needs a Spring stereotype. |
+| Custom-defined interfaces with `@DefaultImplementation` (project-internal import-dialog and exam-system-client interfaces/impls) | These are *project-internal* interfaces, not rapla-core extension points. Replace `@DefaultImplementation(of = …)` with `@Service` on the impl. If multiple impls exist, mark the default `@Primary`. |
+| `@Singleton`-without-`@Extension` classes (project-internal personnel-feed import/mapping classes, mail sender, JSON/XML converters, auth-preferences reader, etc.) | Add `@Component`/`@Service`. The migration is not limited to `@Extension` classes — every Singleton currently picked up by `SimpleRaplaInjector` needs a Spring stereotype. |
 
 ## Plan
 
@@ -328,7 +327,7 @@ No `@Import(RaplaSpringBootApplication.class)` shim — `@Import(@SpringBootAppl
 
 ### Phase C3: Migrate dhbwrapla annotations
 
-1. Replace all `@Extension(provides = X.class, id = "...")` with `@Component @Named("...")` — preserve the existing string IDs (`org.rapla.dhbw.server.auth`, `org.rapla.dhbw.interface.dualis`, etc.)
+1. Replace all `@Extension(provides = X.class, id = "...")` with `@Component @Named("...")` — preserve the existing string IDs (deployment-namespaced auth and sync-job ids, etc.)
 2. Replace all `@DefaultImplementation(of = X.class)` with `@Service` (for project-internal interfaces, optionally `@Primary`)
 3. Add `@Component`/`@Service` to every `@Singleton`-without-`@Extension` class — the migration is not limited to `@Extension`-annotated classes (see Scope table)
 4. Replace `javax.{inject,servlet,ws.rs,annotation}` imports with `jakarta.*`

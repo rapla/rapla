@@ -1,6 +1,6 @@
 # PRD index
 
-77 active PRDs in this directory, 33 done under `done/`, 6 under `wont-fix/`. AGENTS.md §2 and the `prd-management` skill cover the lifecycle (move to `done/` when complete; `git mv` back to reopen).
+78 active PRDs in this directory, 33 done under `done/`, 6 under `wont-fix/`. AGENTS.md §2 and the `prd-management` skill cover the lifecycle (move to `done/` when complete; `git mv` back to reopen).
 
 Each active PRD below carries a generated header (status, locked decisions, dependencies, governed code) plus a keyword line in German and English so that agents and search find it from either language. When a PRD's status or decisions change, update its header here in the same edit (wrap-up checklist).
 
@@ -152,6 +152,12 @@ PRD 113 designs exposing rapla's permission model (Permission rows: principal, l
 
 *Keywords:* PRD 113, Berechtigung, permission, GraphQL, canAdmin, canRead, PermissionController, SecurityManager, DynamicType, typeAccess, instanceDefaults, EventTemplate, Period, AccessLevel, principal, Gruppe, group, Sichtbarkeit, Zugriffsrecht, Reservation
 
+
+### 116-graphql-allocatable-to-resource-rename.md
+
+PRD 116 renames the whole `Allocatable*` family on the GraphQL wire to `Resource*` (schema, SDL generator output, controllers' wire names, DTO record components, SPA identifiers and folder `app/allocatable` → `app/resource`, GraphQL docs and skills) in one breaking sweep; Java core keeps `Allocatable` and its class names (D4, "nur in graphql und spa"). Status: implemented 2026-09-13, uncommitted, review PASS; open OQ1 (Siegen store-only views) and the Siegen deployment with rewritten patch files. Locked: D1 umbrella `Resource` with `ResourceKind { RESOURCE, PERSON }` and `Resource.type` → `Resource.kind`; D2 `Reservation` stays (PRD 055 D1 not overturned); D3 no in-app migration of stored query texts, repair via PRD 112 patch directory per ADR 0005; D4 schema + SPA only. Related: PRD 063 (renamed write verbs), 055, done/035, 112, 074, 097.
+
+*Keywords:* Resource, Ressource, Allocatable, rename, Umbenennung, GraphQL schema, ResourceKind, kind, resources(filter:), createResource, PRD 116, PRD 063, PRD 112 patch, ADR 0005, SPA app/resource, Person, breaking change
 
 ### REST API / server architecture
 

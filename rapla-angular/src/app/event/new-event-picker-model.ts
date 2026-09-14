@@ -6,7 +6,7 @@ import type { EventTemplate, NewEventType } from './new-event-options.service';
 
 export type PickKind = 'type' | 'template';
 
-/** One selectable row: an event type (`id` = typeKey) or a template (`id` = allocatable id). */
+/** One selectable row: an event type (`id` = typeKey) or a template (`id` = resource id). */
 export interface PickItem {
   kind: PickKind;
   id: string;

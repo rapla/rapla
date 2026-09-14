@@ -351,7 +351,7 @@ public class SearchGraphQLController
 
     /** {@code type ResourceHit implements SearchHit}. */
     public record ResourceHit(String id, String label, String sublabel, double score,
-            Allocatable allocatable) implements SearchHit {}
+            Allocatable resource) implements SearchHit {}
 
     /** {@code type EventHit implements SearchHit}. */
     public record EventHit(String id, String label, String sublabel, double score,

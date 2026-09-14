@@ -5,8 +5,8 @@ import type { ViewColumn } from '../graphql/graphql.service';
 
 const ALLOC_COLUMNS: ViewColumn[] = [
   { alias: 'name', header: 'Titel', type: 'String', order: 1 },
-  { alias: 'personen', header: 'Personen', type: 'Allocatable', order: 2 },
-  { alias: 'raum', header: 'Raum', type: 'Allocatable', order: 3 },
+  { alias: 'personen', header: 'Personen', type: 'Resource', order: 2 },
+  { alias: 'raum', header: 'Raum', type: 'Resource', order: 3 },
 ];
 
 describe('extractRowContext (PRD 094 D4)', () => {
@@ -53,9 +53,9 @@ describe('extractRowContext (PRD 094 D4)', () => {
     expect(ctx.primary).toEqual({ kind: 'reservation', id: 'e2', canModify: false });
   });
 
-  it('allocatable subject → primary allocatable', () => {
-    const ctx = extractRowContext({ allocatable: { id: 'a9', canModify: true } }, 'v');
-    expect(ctx.primary).toEqual({ kind: 'allocatable', id: 'a9', canModify: true });
+  it('resource subject → primary resource', () => {
+    const ctx = extractRowContext({ resource: { id: 'a9', canModify: true } }, 'v');
+    expect(ctx.primary).toEqual({ kind: 'resource', id: 'a9', canModify: true });
   });
 
   it('user subject → primary user (no canModify)', () => {
@@ -63,9 +63,9 @@ describe('extractRowContext (PRD 094 D4)', () => {
     expect(ctx.primary).toEqual({ kind: 'user', id: 'u3', canModify: undefined });
   });
 
-  it('priority order: reservation wins over allocatable/user', () => {
+  it('priority order: reservation wins over resource/user', () => {
     const ctx = extractRowContext(
-      { user: { id: 'u1' }, allocatable: { id: 'a1' }, reservation: { id: 'e1' } },
+      { user: { id: 'u1' }, resource: { id: 'a1' }, reservation: { id: 'e1' } },
       'v',
     );
     expect(ctx.primary?.kind).toBe('reservation');
@@ -77,7 +77,7 @@ describe('extractRowContext (PRD 094 D4)', () => {
     expect(ctx.entities).toEqual([]);
   });
 
-  it('secondary entities: Allocatable-typed columns contribute their cell ids', () => {
+  it('secondary entities: Resource-typed columns contribute their cell ids', () => {
     const row = {
       name: 'Physik',
       reservation: { id: 'e1', canModify: true },
@@ -89,7 +89,7 @@ describe('extractRowContext (PRD 094 D4)', () => {
     };
     const ctx = extractRowContext(row, 'v', ALLOC_COLUMNS);
     expect(ctx.primary?.id).toBe('e1');
-    const allocIds = ctx.entities.filter((e) => e.kind === 'allocatable').map((e) => e.id);
+    const allocIds = ctx.entities.filter((e) => e.kind === 'resource').map((e) => e.id);
     expect(allocIds).toEqual(['p1', 'r1', 'r2']);
     expect(ctx.entities[0]).toEqual({ kind: 'reservation', id: 'e1', canModify: true });
   });

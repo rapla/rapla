@@ -76,7 +76,7 @@ class ReservationChecksGraphQLTest
             query ($input: ReservationCheckInput!) {
               reservationChecks(input: $input) {
                 code args severity
-                conflicts { allocatable { name } reservation2 { name } startDate }
+                conflicts { resource { name } reservation2 { name } startDate }
               }
             }
             """;
@@ -144,7 +144,7 @@ class ReservationChecksGraphQLTest
     {
         String allocId = facade.getAllocatables()[0].getId();
         List<Map<String, Object>> warnings = check(Map.of("draft",
-                draft("Vollständig", List.of(Map.of("allocatableId", allocId)),
+                draft("Vollständig", List.of(Map.of("resourceId", allocId)),
                         List.of(appointment("a5555555-5555-4555-8555-555555555553", "2031-09-12")))));
 
         assertEquals(List.of(), codes(warnings), () -> "expected no findings, got " + warnings);
@@ -161,15 +161,15 @@ class ReservationChecksGraphQLTest
         var allocatables = facade.getAllocatables();
         String used = allocatables[0].getId();
         String scoped = allocatables[1].getId();
-        Map<String, Object> theDraft = draft("Außerhalb", List.of(Map.of("allocatableId", used)),
+        Map<String, Object> theDraft = draft("Außerhalb", List.of(Map.of("resourceId", used)),
                 List.of(appointment("a5555555-5555-4555-8555-555555555554", "2031-09-13")));
 
-        List<String> scopedCodes = codes(check(Map.of("draft", theDraft, "scopeAllocatableIds", List.of(scoped))));
+        List<String> scopedCodes = codes(check(Map.of("draft", theDraft, "scopeResourceIds", List.of(scoped))));
         assertTrue(scopedCodes.contains("NOT_IN_CALENDAR"),
                 () -> "a draft using none of the scoped resources is not in that calendar; got " + scopedCodes);
         assertFalse(codes(check(Map.of("draft", theDraft))).contains("NOT_IN_CALENDAR"),
                 "no scope stated → the check is skipped, not failed");
-        assertFalse(codes(check(Map.of("draft", theDraft, "scopeAllocatableIds", List.of(used))))
+        assertFalse(codes(check(Map.of("draft", theDraft, "scopeResourceIds", List.of(used))))
                         .contains("NOT_IN_CALENDAR"),
                 "the scoped resource IS allocated — that draft is in the calendar");
     }
@@ -200,7 +200,7 @@ class ReservationChecksGraphQLTest
         String missingErrors = errorsFor("r0000000-0000-4000-8000-000000000000")
                 .replace("r0000000-0000-4000-8000-000000000000", "<id>");
         assertEquals(missingErrors, hiddenErrors,
-                "a hidden allocatable must answer exactly like a nonexistent one");
+                "a hidden resource must answer exactly like a nonexistent one");
     }
 
     /** The response reduced to what a prober could observe: error classifications + messages. */
@@ -209,7 +209,7 @@ class ReservationChecksGraphQLTest
         StringBuilder observable = new StringBuilder();
         tester.document(QUERY)
                 .variable("input", Map.of("draft", draft("Sonde",
-                        List.of(Map.of("allocatableId", allocatableId)),
+                        List.of(Map.of("resourceId", allocatableId)),
                         List.of(appointment("a5555555-5555-4555-8555-555555555555", "2031-09-14")))))
                 .execute()
                 .errors()
@@ -255,7 +255,7 @@ class ReservationChecksGraphQLTest
                         "appointments", List.of(Map.of("id", "a8888888-8888-4888-8888-888888888881",
                                 "start", "2031-10-05T10:00:00", "end", "2031-10-05T11:00:00",
                                 "allDay", false)),
-                        "allocations", List.of(Map.of("allocatableId", room.getId()))))
+                        "allocations", List.of(Map.of("resourceId", room.getId()))))
                 .execute().path("createReservation.id").entity(String.class).isEqualTo(blocker);
 
         String mover = "e8888888-8888-4888-8888-888888888882";
@@ -268,7 +268,7 @@ class ReservationChecksGraphQLTest
                         "appointments", List.of(Map.of("id", moverAppointment,
                                 "start", "2031-10-06T10:00:00", "end", "2031-10-06T11:00:00",
                                 "allDay", false)),
-                        "allocations", List.of(Map.of("allocatableId", room.getId()))))
+                        "allocations", List.of(Map.of("resourceId", room.getId()))))
                 .execute().path("createReservation.id").entity(String.class).isEqualTo(mover);
 
         // onto the blocked day → CONFLICT; a day further → nothing
@@ -311,11 +311,11 @@ class ReservationChecksGraphQLTest
                         "appointments", List.of(Map.of("id", "a6666666-6666-4666-8666-666666666661",
                                 "start", "2031-11-03T10:00:00", "end", "2031-11-03T11:00:00",
                                 "allDay", false)),
-                        "allocations", List.of(Map.of("allocatableId", room.getId()))))
+                        "allocations", List.of(Map.of("resourceId", room.getId()))))
                 .execute().path("createReservation.id").entity(String.class).isEqualTo(blocker);
 
         List<Map<String, Object>> warnings = check(Map.of("draft",
-                draft("Kollidierer", List.of(Map.of("allocatableId", room.getId())),
+                draft("Kollidierer", List.of(Map.of("resourceId", room.getId())),
                         List.of(appointment("a6666666-6666-4666-8666-666666666662", "2031-11-03")))));
 
         Map<String, Object> conflict = warnings.stream()
@@ -326,7 +326,7 @@ class ReservationChecksGraphQLTest
         assertFalse(evidence.isEmpty(), "the finding must carry its clashing bookings");
         assertEquals("Belegung Alpha",
                 ((Map<?, ?>) evidence.get(0).get("reservation2")).get("name"));
-        assertNotNull(((Map<?, ?>) evidence.get(0).get("allocatable")).get("name"));
+        assertNotNull(((Map<?, ?>) evidence.get(0).get("resource")).get("name"));
 
         // a finding that is not about conflicts carries no evidence — the list is not a dumping ground
         Map<String, Object> other = warnings.stream()

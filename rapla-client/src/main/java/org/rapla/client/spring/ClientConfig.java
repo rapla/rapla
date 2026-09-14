@@ -118,15 +118,16 @@ public class ClientConfig
             @Override
             public java.net.URL getDownloadURL() throws org.rapla.framework.RaplaException
             {
-                String url = System.getProperty("rapla.download.url", "http://localhost:8051/");
+                java.net.URL codeBase;
                 try
                 {
-                    return new java.net.URL(url);
+                    codeBase = org.rapla.components.util.JNLPUtil.getCodeBase();
                 }
-                catch (java.net.MalformedURLException e)
+                catch (Exception e)
                 {
-                    throw new org.rapla.framework.RaplaException(e);
+                    codeBase = null; // not started via Web Start (exec:java, standalone installer)
                 }
+                return resolveDownloadUrl(System.getProperty("rapla.download.url"), codeBase);
             }
 
             @Override
@@ -178,5 +179,40 @@ public class ClientConfig
         return new org.rapla.storage.dbrm.RemoteOperator(i18n, locale, scheduler,
                 functionFactoryMap, remoteStorage,
                 connectionInfo, permissionExtensions, lockManager);
+    }
+
+    private static final String DEFAULT_DOWNLOAD_URL = "http://localhost:8051/";
+
+    /**
+     * Security audit PH3 — the JNLP manifest names no host, so the server URL comes from the Web Start codebase: an
+     * absolute value is kept, a relative or missing one resolves against the codebase. Without a codebase (exec:java,
+     * standalone installer) the previous absolute default applies. Never throws.
+     */
+    static java.net.URL resolveDownloadUrl(String property, java.net.URL codeBase)
+    {
+        try
+        {
+            java.net.URL base = codeBase != null ? codeBase : new java.net.URL(DEFAULT_DOWNLOAD_URL);
+            if (property == null || property.isBlank())
+            {
+                return base;
+            }
+            if (java.net.URI.create(property.trim()).isAbsolute())
+            {
+                return new java.net.URL(property.trim());
+            }
+            return codeBase != null ? new java.net.URL(codeBase, property.trim()) : base;
+        }
+        catch (IllegalArgumentException | java.net.MalformedURLException e)
+        {
+            try
+            {
+                return codeBase != null ? codeBase : new java.net.URL(DEFAULT_DOWNLOAD_URL);
+            }
+            catch (java.net.MalformedURLException impossible)
+            {
+                throw new IllegalStateException(impossible);
+            }
+        }
     }
 }

@@ -822,7 +822,7 @@ A concrete end-to-end walk-through (spine of the Phase-3 tests).
 **1. Query** — find a lecturer's courses (associations as stubs):
 
 ```graphql
-courses(filter: { lecturer: { eq: "Dr. Schmidt" } }, first: 20) {
+courses(filter: { lecturer: { eq: "Dr. A" } }, first: 20) {
   edges { node {
     id
     classification { typeKey attributes }     # component — embedded
@@ -1064,8 +1064,8 @@ default window, max-range cap, viewport-centered) are owned by [PRD 060](../060-
 - **Nextcloud Assistant integration** (potential Track 5; not
   committed). Source review of `nextcloud/context_agent` shows the
   outbound MCP loader uses a single admin-tenant credential — no
-  per-user identity propagation. Draft upstream issue at
-  [`docs/upstream/nextcloud-context-agent-per-user-mcp-auth.md`](../../upstream/nextcloud-context-agent-per-user-mcp-auth.md).
+  per-user identity propagation. Draft upstream issue moved to
+  `docs/security/` (gitignored, not filed upstream yet).
   Empirical verification against a running Nextcloud + Context Agent
   gates filing the issue or adding a Nextcloud showcase track.
 

@@ -15,7 +15,10 @@ Apple) hold these exact URLs, so they must never move.
 ## Client side — URL generators must emit the prefix explicitly
 
 Under Jetty, client code built subscription/export URLs as `codeBase + "calendar"` and
-the *container* supplied `/rapla/`. Since the context-root move, the same code silently
+the *container* supplied `/rapla/`. (The Web Start `codeBase` itself is no longer
+emitted: since audit fix S3, 2026-09-14, the JNLP has no `codebase`/`rapla.download.url`
+and the client resolves its server URL against the JNLP's own URL — which is why rapla
+must run at the context root, see `docs/deployment.md`.) Since the context-root move, the same code silently
 produces `/calendar` — a 404 — while the server routes still answer at
 `/rapla/calendar`. **Any code that generates a user-facing calendar/export URL (Swing
 dialogs, HTML pages, iCal export, autoexport links) must emit the `/rapla/` prefix
@@ -91,7 +94,7 @@ Replacements for the two endpoints that were still in production use:
 
 | Rapla 2.0 | Rapla 3 |
 |---|---|
-| `GET /rapla/events?start&end&resources&eventTypes` | `/api/graphql` → `reservations(filter: { from, to, allocatableIdsIn, typeIn })` |
-| `GET /rapla/resources?resourceTypes` | `/api/graphql` → `allocatables(filter: { typeIn })` |
+| `GET /rapla/events?start&end&resources&eventTypes` | `/api/graphql` → `reservations(filter: { from, to, resourceIdsIn, typeIn })` |
+| `GET /rapla/resources?resourceTypes` | `/api/graphql` → `resources(filter: { typeIn })` |
 | `POST /rapla/events` | `/api/graphql` → `createReservation(input: ReservationInput!)` |
 | `?username=…&password=…` | `Authorization: Bearer <api-key>` (PRD 076/043) |

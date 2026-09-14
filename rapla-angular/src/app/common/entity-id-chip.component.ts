@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
 
 /**
- * Small copyable rapla-id chip for edit surfaces (event sheet, allocatable
+ * Small copyable rapla-id chip for edit surfaces (event sheet, resource
  * dialog) — lets users refer to an entity unambiguously ("die Veranstaltung
  * e1d7469a…"). Shows a shortened id, click copies the FULL id to the
  * clipboard with transient feedback.

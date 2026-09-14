@@ -129,10 +129,30 @@ public class ReservationGraphQLController
         return new ReservationPrototype(dt.getKey(), dt.newClassification());
     }
 
-    /** PRD 099 D6 slice / PRD 104 — see Query.newEventOptions in the schema. {@code path} is
-     *  the server-computed grouping path (root first, empty = ungrouped), a snapshot of THIS
-     *  §12-filtered response — range-bucket labels depend on siblings (PRD 104 D2). */
-    public record EventTemplate(String id, String name, List<String> path) {}
+    /** PRD 113 § 1c — see type EventTemplate in the schema. */
+    public record EventTemplate(String id, String name, boolean fixedTimeAndDuration,
+            HelloGraphQLController.UserDto owner, OffsetDateTime createdAt, OffsetDateTime lastModifiedAt,
+            boolean canModify, boolean canAdmin, List<PermissionDto> permissions)
+    {
+        static EventTemplate from(Allocatable a, User caller, PermissionController pc, java.util.Locale locale,
+                StorageOperator operator)
+        {
+            org.rapla.entities.dynamictype.Classification c = a.getClassification();
+            boolean keepTime = c.getAttribute("fixedtimeandduration") == null
+                    || !Boolean.FALSE.equals(c.getValue("fixedtimeandduration"));
+            return new EventTemplate(a.getId(), a.getName(locale), keepTime,
+                    StructuralTypeFetchers.visibleOwner(operator, a.getOwnerRef(), caller),
+                    utc(a.getCreateDate()), utc(a.getLastChanged()),
+                    caller.isAdmin() || pc.canModify(a, caller),
+                    PermissionDto.canAdmin(a, caller, pc),
+                    PermissionDto.visible(a, a.getPermissionList(), caller, pc));
+        }
+
+        private static OffsetDateTime utc(LocalDateTime ts)
+        {
+            return ts == null ? null : ts.atOffset(ZoneOffset.UTC);
+        }
+    }
 
     public record NewEventOptions(List<org.rapla.entities.dynamictype.DynamicType> eventTypes,
             List<EventTemplate> templates) {}
@@ -173,26 +193,74 @@ public class ReservationGraphQLController
         List<EventTemplate> templates = new ArrayList<>();
         if (prefs.getEntryAsBoolean(TEMPLATEWIZARD_ENABLED, true) && pc.canCreateReservation(caller))
         {
-            org.rapla.entities.dynamictype.DynamicType templateType =
-                    operator.getDynamicType(StorageOperator.RAPLA_TEMPLATE);
-            java.util.Locale locale = StructuralTypeFetchers.serverLocale();
-            java.text.Collator collator = java.text.Collator.getInstance(locale);
-            // §12 — canRead at the output boundary: an unreadable template is absent,
-            // indistinguishable from a nonexistent one. Paths are computed AFTER this filter
-            // so no group label or bucket reflects an invisible template (PRD 104).
-            List<EventTemplate> visible = operator
-                    .getAllocatables(templateType.newClassificationFilter().toArray())
-                    .stream()
-                    .filter(a -> a != null && pc.canRead(a, caller))
-                    .map(a -> new EventTemplate(a.getId(), a.getName(locale), List.of()))
-                    .sorted((x, y) -> collator.compare(x.name(), y.name()))
-                    .collect(Collectors.toList());
-            java.util.Map<String, List<String>> paths = TemplatePathBuilder.paths(visible, locale, 25);
-            templates = visible.stream()
-                    .map(t -> new EventTemplate(t.id(), t.name(), paths.getOrDefault(t.id(), List.of())))
-                    .collect(Collectors.toList());
+            templates = readableTemplates(caller, pc);
         }
         return new NewEventOptions(eventTypes, templates);
+    }
+
+    /** PRD 113 § 1c — see Query.eventTemplates in the schema. */
+    @QueryMapping
+    public List<EventTemplate> eventTemplates(graphql.schema.DataFetchingEnvironment env) throws RaplaException
+    {
+        var rc = RequestContextInstrumentation.from(env.getGraphQlContext());
+        User caller = UnauthenticatedException.require(rc.caller());
+        return readableTemplates(caller, permissionController(rc));
+    }
+
+    /** PRD 113 § 1c — see Query.eventTemplate in the schema. */
+    @QueryMapping
+    public EventTemplate eventTemplate(@Argument("id") String id, graphql.schema.DataFetchingEnvironment env)
+    {
+        var rc = RequestContextInstrumentation.from(env.getGraphQlContext());
+        User caller = UnauthenticatedException.require(rc.caller());
+        PermissionController pc = permissionController(rc);
+        Allocatable template = readableTemplate(id, caller, pc);
+        return template == null ? null
+                : EventTemplate.from(template, caller, pc, StructuralTypeFetchers.serverLocale(), operator);
+    }
+
+    private PermissionController permissionController(RequestContextInstrumentation.RequestCtx rc)
+    {
+        return rc.permissionController() != null ? rc.permissionController() : operator.getPermissionController();
+    }
+
+    /** §12 — canRead at the output boundary: an unreadable template is absent, indistinguishable from a nonexistent one. */
+    private List<EventTemplate> readableTemplates(User caller, PermissionController pc) throws RaplaException
+    {
+        org.rapla.entities.dynamictype.DynamicType templateType =
+                operator.getDynamicType(StorageOperator.RAPLA_TEMPLATE);
+        java.util.Locale locale = StructuralTypeFetchers.serverLocale();
+        java.text.Collator collator = java.text.Collator.getInstance(locale);
+        return operator
+                .getAllocatables(templateType.newClassificationFilter().toArray())
+                .stream()
+                .filter(a -> a != null && pc.canRead(a, caller))
+                .map(a -> EventTemplate.from(a, caller, pc, locale, operator))
+                .sorted((x, y) -> collator.compare(x.name(), y.name()))
+                .collect(Collectors.toList());
+    }
+
+    /** §12 — unknown, non-template and unreadable ids answer IDENTICALLY (null). */
+    private Allocatable readableTemplate(String templateId, User caller, PermissionController pc)
+    {
+        if (templateId == null || templateId.isBlank()) return null;
+        Allocatable template;
+        try
+        {
+            template = operator.tryResolve(new ReferenceInfo<>(templateId, Allocatable.class));
+        }
+        catch (RuntimeException e)
+        {
+            return null;
+        }
+        if (template == null
+                || template.getClassification() == null
+                || !StorageOperator.RAPLA_TEMPLATE.equals(template.getClassification().getType().getKey())
+                || !pc.canRead(template, caller))
+        {
+            return null;
+        }
+        return template;
     }
 
     /** PRD 104 D8 — see Query.reservationsFromTemplate in the schema. */
@@ -204,21 +272,8 @@ public class ReservationGraphQLController
         User caller = UnauthenticatedException.require(rc.caller());
         PermissionController pc = rc.permissionController() != null
                 ? rc.permissionController() : operator.getPermissionController();
-        if (templateId == null || templateId.isBlank()) return List.of();
-        Allocatable template;
-        try
-        {
-            template = operator.tryResolve(new ReferenceInfo<>(templateId, Allocatable.class));
-        }
-        catch (RuntimeException e)
-        {
-            return List.of();
-        }
-        // §12 — unknown, non-template and unreadable ids answer IDENTICALLY.
-        if (template == null
-                || template.getClassification() == null
-                || !StorageOperator.RAPLA_TEMPLATE.equals(template.getClassification().getType().getKey())
-                || !pc.canRead(template, caller))
+        Allocatable template = readableTemplate(templateId, caller, pc);
+        if (template == null)
         {
             return List.of();
         }
@@ -489,13 +544,13 @@ public class ReservationGraphQLController
         List<BlockAggregate> aggs = aggregate == null ? List.of() : aggregate;
         for (BlockGroupKey g : groups)
         {
-            int dimCount = (g.date() != null ? 1 : 0) + (g.allocatables() != null ? 1 : 0)
+            int dimCount = (g.date() != null ? 1 : 0) + (g.resources() != null ? 1 : 0)
                     + (g.expr() != null && !g.expr().isBlank() ? 1 : 0)
                     + (Boolean.TRUE.equals(g.reservation()) ? 1 : 0);
             if (dimCount != 1)
             {
                 throw new IllegalArgumentException(
-                        "groupBy entry needs exactly one of date/allocatables/expr/reservation (key=" + g.key() + ")");
+                        "groupBy entry needs exactly one of date/resources/expr/reservation (key=" + g.key() + ")");
             }
         }
         ReservationFilter filter = fromMap(filterMap);
@@ -588,7 +643,7 @@ public class ReservationGraphQLController
      * {@link BlockStatBucket} result. e.g. "seats per building". {@code self} dimension carries the
      * Allocatable as {@code StatKey.entity}.
      */
-    @QueryMapping
+    @QueryMapping(name = "resourceStats")
     public List<BlockStatBucket> allocatableStats(
             @Argument("filter") java.util.Map<String, Object> filter,
             @Argument("groupBy") List<AllocatableGroupKey> groupBy,
@@ -607,7 +662,7 @@ public class ReservationGraphQLController
             if (dimCount != 1)
             {
                 throw new IllegalArgumentException(
-                        "allocatableStats groupBy entry needs exactly one of type/expr/self (key=" + g.key() + ")");
+                        "resourceStats groupBy entry needs exactly one of type/expr/self (key=" + g.key() + ")");
             }
         }
         var rc = RequestContextInstrumentation.from(env.getGraphQlContext());
@@ -927,13 +982,13 @@ public class ReservationGraphQLController
             String bucket = timeBucket(t, g.by() == null ? null : g.by().name());
             return bucket == null ? List.of() : List.of(new DimVal(bucket, null));
         }
-        if (g.allocatables() != null)
+        if (g.resources() != null)
         {
             // PRD 080 items 1/2 — entity dimension: each §12-readable allocatable becomes a bucket
             // key carrying the real Allocatable (selectable as StatKey.entity).
             List<Object> out = new ArrayList<>();
             for (Allocatable alloc : StructuralTypeFetchers.filterAllocatables(
-                    dto.appointment(), caller, pc, g.allocatables(), operator))
+                    dto.appointment(), caller, pc, g.resources(), operator))
             {
                 out.add(new DimVal(alloc.getName(StructuralTypeFetchers.serverLocale()), alloc));
             }
@@ -1051,7 +1106,7 @@ public class ReservationGraphQLController
 
     /** One grouping dimension (exactly one of date/allocatables/expr), mirrors input {@code BlockGroupKey}. */
     public record BlockGroupKey(String key, BlockDateField date, TimeBucket by,
-            java.util.Map<String, Object> allocatables, String expr, Boolean reservation) {}
+            java.util.Map<String, Object> resources, String expr, Boolean reservation) {}
 
     /** Internal: one resolved group-dimension value — display string + optional typed entity (PRD 080). */
     private record DimVal(String value, Object entity) {}
@@ -1228,8 +1283,8 @@ public class ReservationGraphQLController
                 (LocalDateTime) m.get("to"),
                 (List<String>) m.get("typeIn"),
                 (String) m.get("ownerEq"),
-                (List<String>) m.get("allocatableIdsIn"),
-                (java.util.Map<String, Object>) m.get("allocatableMatching"),
+                (List<String>) m.get("resourceIdsIn"),
+                (java.util.Map<String, Object>) m.get("resourceMatching"),
                 (String) m.get("nameContains"),
                 (String) m.get("searchText"),
                 matchKind,
@@ -1269,7 +1324,7 @@ public class ReservationGraphQLController
     public record BlockSort(BlockSortField field, SortDir dir) {}
 
     /** Mirror of {@code Allocation} output type. {@code requestStatus} null = ordinary allocation. */
-    public record AllocationDto(Allocatable allocatable, List<String> appointmentIds,
+    public record AllocationDto(Allocatable resource, List<String> appointmentIds,
             org.rapla.entities.domain.RequestStatus requestStatus) {}
 
     /** Mirror of {@code AppointmentBlock} output type. Carries the owning {@code reservation}

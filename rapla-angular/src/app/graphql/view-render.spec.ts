@@ -36,9 +36,9 @@ describe('renderCell', () => {
     expect(renderCell(row, col({ type: '[String]' }))).toBe('FN-TEK23, FN-TEN23');
   });
 
-  it('joins a list of allocatables selected as { name } with explicit separator', () => {
+  it('joins a list of resources selected as { name } with explicit separator', () => {
     const row = { x: [{ name: 'Prof. X' }, { name: 'Dr. A' }] };
-    expect(renderCell(row, col({ type: 'Allocatable', join: '; ' }))).toBe('Prof. X; Dr. A');
+    expect(renderCell(row, col({ type: 'Resource', join: '; ' }))).toBe('Prof. X; Dr. A');
   });
 
   it('honors an explicit join separator', () => {

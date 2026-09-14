@@ -32,8 +32,8 @@ describe('ReservationWarningsDialogComponent', () => {
     const { el } = await render({
       warnings: [{ code: 'CONFLICT', args: [], severity: 'CONFIRMABLE' }],
       conflicts: [
-        { allocatableName: 'Raum A66', otherEventName: 'Physik II', when: '2026-09-14T07:00:00' },
-        { allocatableName: 'Beamer 04', otherEventName: null, when: '2026-09-15T09:00:00' },
+        { resourceName: 'Raum A66', otherEventName: 'Physik II', when: '2026-09-14T07:00:00' },
+        { resourceName: 'Beamer 04', otherEventName: null, when: '2026-09-15T09:00:00' },
       ],
     });
 

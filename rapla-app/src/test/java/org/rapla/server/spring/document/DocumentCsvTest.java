@@ -31,7 +31,7 @@ class DocumentCsvTest
     @Test
     void columnsBecomeTheHeaderAndTheRowsFollowTheirOrder()
     {
-        Map<String, Object> model = Map.of("allocatables", List.of(
+        Map<String, Object> model = Map.of("resources", List.of(
                 Map.of("name", "Homer", "mail", "h@x"),
                 Map.of("name", "Monty", "mail", "m@x")));
 
@@ -61,7 +61,7 @@ class DocumentCsvTest
                 Map.of("mail", "a@x", "name", "A2"),
                 Map.of("mail", "b@x", "name", "B1"));
         Map<String, Object> model = new LinkedHashMap<>();
-        model.put("allocatables", rows);
+        model.put("resources", rows);
         model.put("groups", RowGrouping.groupByColumn(rows, "mail", null, null, 2));
 
         assertEquals("Wert,Name\r\na@x,A1\r\na@x,A2\r\n",

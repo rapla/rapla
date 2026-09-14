@@ -4,7 +4,7 @@ import type { ViewColumn } from '../graphql/graphql.service';
 
 // The Raumauslastung column descriptors (server) + one stat row.
 const COLUMNS: ViewColumn[] = [
-  { alias: 'raum', header: 'raum', kind: 'group', type: 'Allocatable' },
+  { alias: 'raum', header: 'raum', kind: 'group', type: 'Resource' },
   { alias: 'id', header: 'id', kind: 'entity', group: 'raum', path: 'id' },
   {
     alias: 'plaetze',
@@ -31,14 +31,14 @@ const STAT_ROW = {
   // column maps to keys[i]. Here the single group column `raum` → keys[0].
   keys: [
     {
-      value: 'A 1.100 Großer Hörsaal',
+      value: 'room-1',
       entity: {
         id: 'r68dbdf1',
         classification: {
-          AnzahlPlaetzeInsgesamt: 120,
+          AnzahlPlaetzeInsgesamt: 100,
           Gebaeude: {
-            name: 'Gebäude A',
-            classification: { Gebaeudename: 'MOS Gebäude A' },
+            name: 'Building A',
+            classification: { Gebaeudename: 'CAMPUS-A' },
           },
         },
       },
@@ -64,7 +64,7 @@ describe('projectRow', () => {
   const flat = projectRow(STAT_ROW, COLUMNS);
 
   it('group column → the key value', () => {
-    expect(flat['raum']).toBe('A 1.100 Großer Hörsaal');
+    expect(flat['raum']).toBe('room-1');
   });
 
   it('entity id path → entity.id', () => {
@@ -72,15 +72,15 @@ describe('projectRow', () => {
   });
 
   it('entity attribute path → entity.classification[attr]', () => {
-    expect(flat['plaetze']).toBe(120);
+    expect(flat['plaetze']).toBe(100);
   });
 
   it('nested entity path "Gebaeude.name" → entity.classification.Gebaeude.name', () => {
-    expect(flat['gebName']).toBe('Gebäude A');
+    expect(flat['gebName']).toBe('Building A');
   });
 
   it('nested attribute path "Gebaeude.Gebaeudename" → …Gebaeude.classification.Gebaeudename', () => {
-    expect(flat['gebKey']).toBe('MOS Gebäude A');
+    expect(flat['gebKey']).toBe('CAMPUS-A');
   });
 
   it('value columns → the aggregate number (SUM / COUNT)', () => {

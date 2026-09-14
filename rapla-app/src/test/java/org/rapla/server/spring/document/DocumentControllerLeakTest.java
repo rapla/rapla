@@ -153,7 +153,7 @@ class DocumentControllerLeakTest
         String byResource = """
                 query leaktest_by_resource($filter: ReservationFilter!) @view(title: "Nach Ressource")
                   @window(from: { anchor: TODAY, offset: -9999 }, to: { anchor: TODAY, offset: 9999 })
-                  @param(name: "resource", into: "filter.allocatableIdsIn") {
+                  @param(name: "resource", into: "filter.resourceIdsIn") {
                   reservations(filter: $filter) { titel: name }
                 }""";
         assertEquals(List.of(), views.saveView("leaktest_by_resource", byResource, true, List.of(), null, admin));
@@ -181,7 +181,7 @@ class DocumentControllerLeakTest
         User admin = operator.getUser("homer");
         String duplicates = """
                 query leaktest_dupes @view(title: "Dubletten") {
-                  allocatables {
+                  resources {
                     wert: compute(expr: "name()") @column(header: "Wert", order: 1, group: true, minGroupSize: 999)
                     bez: name @column(header: "Bezeichnung", order: 2)
                   }

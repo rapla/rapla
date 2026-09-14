@@ -6,7 +6,7 @@ import type { DraftAppointment } from './event-draft';
 
 /**
  * PRD 091 Phase 2.6 — the add-mode search: one `resourceAvailability` call
- * with a filter (search hits, ranking from the allocatables resolver) plus
+ * with a filter (search hits, ranking from the resources resolver) plus
  * one with ids (pins + assigned rows need statuses too; `CandidateInput` is
  * `@oneOf`, so ids can't ride in the filter call). Both are the CHEAP
  * display path from Phase 1 — §12-scoped server-side.
@@ -23,7 +23,7 @@ export interface AvailabilityRow {
 
 interface AvailabilityWire {
   resourceAvailability: {
-    allocatable: { id: string; name: string | null };
+    resource: { id: string; name: string | null };
     status: AllocationStatus;
     conflictingAppointmentIds: string[];
   }[];
@@ -32,7 +32,7 @@ interface AvailabilityWire {
 const QUERY = `
   query ($input: AvailabilityInput!) {
     resourceAvailability(input: $input) {
-      allocatable { id name }
+      resource { id name }
       status
       conflictingAppointmentIds
     }
@@ -78,8 +78,8 @@ export class AvailabilitySearchService {
         console.warn('[availability] resourceAvailability errors:', resp.errors);
       }
       return (resp.data?.resourceAvailability ?? []).map((r) => ({
-        id: r.allocatable.id,
-        name: r.allocatable.name ?? r.allocatable.id,
+        id: r.resource.id,
+        name: r.resource.name ?? r.resource.id,
         status: r.status,
         conflictingAppointmentIds: r.conflictingAppointmentIds,
       }));

@@ -5,15 +5,11 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
-import org.rapla.entities.domain.Period;
-import org.rapla.facade.PeriodModel;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.StorageOperator;
@@ -221,18 +217,24 @@ public class HelloGraphQLController
     // --- periods --------------------------------------------------------------
 
     /**
-     * All periods. TODO §12: no per-user visibility rules on periods today —
-     * if/when they're added, filter here. The set is small (~dozens) so no
-     * pagination yet.
+     * PRD 113 § 5e — every rapla:period the caller may read information of (Swing client-cache rule,
+     * global admin bypass), regardless of its categories, sorted by start. Anonymous → []. The set is
+     * small (~dozens), so no pagination yet.
      */
     @QueryMapping
-    public List<PeriodDto> periods() throws RaplaException
+    public List<PeriodDto> periods(graphql.schema.DataFetchingEnvironment env) throws RaplaException
     {
-        PeriodModel model = operator.getPeriodModelFor(null);
-        if (model == null) return List.of();
-        return Arrays.stream(model.getAllPeriods())
-                .filter(Objects::nonNull)
-                .map(PeriodDto::from)
+        var rc = RequestContextInstrumentation.from(env.getGraphQlContext());
+        User caller = rc.caller();
+        if (caller == null) return List.of();
+        PermissionController pc = rc.permissionController() != null
+                ? rc.permissionController() : operator.getPermissionController();
+        org.rapla.entities.dynamictype.DynamicType periodType = operator.getDynamicType(StorageOperator.PERIOD_TYPE);
+        return operator.getAllocatables(periodType.newClassificationFilter().toArray()).stream()
+                .filter(a -> a != null && (caller.isAdmin() || pc.canReadInformation(a, caller)))
+                .map(a -> PeriodDto.from(a, caller, pc))
+                .sorted(java.util.Comparator.comparing(PeriodDto::start,
+                        java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())))
                 .toList();
     }
 
@@ -350,12 +352,22 @@ public class HelloGraphQLController
         }
     }
 
-    /** Mirror of the {@code Period} GraphQL type. rapla Periods have no synthetic id. */
-    public record PeriodDto(String name, LocalDateTime start, LocalDateTime end)
+    /** Mirror of the {@code Period} GraphQL type; {@code id} is the underlying rapla:period allocatable (PRD 113 OQ 8). */
+    public record PeriodDto(String id, String name, LocalDateTime start, LocalDateTime end, List<Category> categories,
+            boolean canAdmin, List<PermissionDto> permissions)
     {
-        static PeriodDto from(Period p)
+        /** Same classification reading as PeriodModelImpl (end filled to the end of its day), minus its category match. */
+        @SuppressWarnings("unchecked")
+        static PeriodDto from(org.rapla.entities.domain.Allocatable period, User caller, PermissionController pc)
         {
-            return new PeriodDto(p.getName(), p.getStart(), p.getEnd());
+            org.rapla.entities.dynamictype.Classification c = period.getClassification();
+            LocalDateTime end = (LocalDateTime) c.getValue("end");
+            Collection<Category> categories = (Collection) c.getValues(c.getAttribute("category"));
+            boolean admin = PermissionDto.canAdmin(period, caller, pc);
+            return new PeriodDto(period.getId(), (String) c.getValue("name"), (LocalDateTime) c.getValue("start"),
+                    end == null ? null : org.rapla.components.util.DateTools.fillDate(end),
+                    categories == null ? List.of() : new ArrayList<>(categories),
+                    admin, admin ? PermissionDto.visible(period, period.getPermissionList(), caller, pc) : null);
         }
     }
 }

@@ -2214,6 +2214,11 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
                         RaplaObject type = preferenceReader.getChildType();
                         preferencePatch.putPrivate(role, type);
                     }
+                    else
+                    {
+                        // Security audit PH2 / S6 — a row without value is a removal marker written by storePatches
+                        preferencePatch.addRemove(role);
+                    }
                 }
                 else
                 {
@@ -2314,6 +2319,13 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
                     insertEntry(stmt, userId, role, entry, lastChanged);
                     count++;
                 }
+                // Security audit PH2 / S6 — a plain DELETE is invisible to getPatches (it only reads changed rows), so
+                // every pod's refresh would keep the removed entry; a marker row with both values NULL carries it.
+                for (String role : patch.getRemovedEntries())
+                {
+                    insertEntry(stmt, userId, role, null, lastChanged);
+                    count++;
+                }
             }
 
             if (count > 0)
@@ -2379,7 +2391,12 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
         setString(stmt, 2, role);
         String xml;
         String entryString;
-        if (entry instanceof String)
+        if (entry == null)
+        {
+            entryString = null;
+            xml = null;
+        }
+        else if (entry instanceof String)
         {
             entryString = (String) entry;
             xml = null;

@@ -31,7 +31,7 @@ describe('documentEntries', () => {
 
   it('encodes the id into the query string', () => {
     const items = documentEntries(
-      ctx({ primary: { kind: 'allocatable', id: 'a/1 x', typeKey: 'geraet' } }),
+      ctx({ primary: { kind: 'resource', id: 'a/1 x', typeKey: 'geraet' } }),
       types,
     );
     expect(items[0].url).toBe('/api/documents/Geraetebogen?id=a%2F1+x');

@@ -60,11 +60,11 @@ public class ViewCatalogService
                     // Only the id is needed — lanes have no visible label, so no name.
                     + "    matchedBy @hidden { id }\n"
                     + "    isException @hidden\n"
-                    + "    persons: allocatables(filter: { isPersonEq: true })\n"
+                    + "    persons: resources(filter: { isPersonEq: true })\n"
                     + "      @join(separator: \", \") @column(header: \"Personen\",   order: 4) {\n"
                     + "      id  name  isLocation\n"
                     + "    }\n"
-                    + "    resources: allocatables(filter: { isPersonEq: false })\n"
+                    + "    resources: resources(filter: { isPersonEq: false })\n"
                     + "      @join(separator: \", \") @column(header: \"Ressourcen\", order: 5) {\n"
                     + "      id  name  isLocation\n"
                     + "    }\n"
@@ -94,7 +94,7 @@ public class ViewCatalogService
             ViewEntry.builtin("rapla_kalender", "Kalender", """
                     query rapla_kalender($filter: ReservationFilter!) @view(title: "Kalender")
                       @window(from: {anchor: WEEK_START}, to: {anchor: WEEK_START, offset: 7})
-                      @param(name: "resource", into: "filter.allocatableIdsIn", required: true)
+                      @param(name: "resource", into: "filter.resourceIdsIn", required: true)
                     {
                       appointmentBlocks(filter: $filter) {
                         tag: start @column(group: true, format: "EE dd.MM.")
@@ -114,11 +114,11 @@ public class ViewCatalogService
                     query rapla_wochenprogramm($filter: ReservationFilter!)
                       @view(title: "Wochenprogramm", listed: false)
                       @window(from: {anchor: WEEK_START}, to: {anchor: WEEK_START, offset: 7})
-                      @param(name: "resource", into: "filter.allocatableIdsIn", required: true)
+                      @param(name: "resource", into: "filter.resourceIdsIn", required: true)
                     {
                       appointmentBlocks(filter: $filter) {
                         name  times  color
-                        raum: allocatables(filter: {isPersonEq: false}) @join(separator: ", ") { name }
+                        raum: resources(filter: {isPersonEq: false}) @join(separator: ", ") { name }
                         band: timeslot @column(group: true)
                         segments { dayIndex }
                         bandBars: bars(scope: BANNER) { startDay span }

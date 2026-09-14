@@ -102,7 +102,7 @@ class AvailabilityGraphQLControllerTest
                       { id: "%s", start: "%s", end: "%s", allDay: false }
                     ],
                     allocations: [
-                      { allocatableId: "%s" }
+                      { resourceId: "%s" }
                     ]
                   }) { id }
                 }
@@ -159,7 +159,7 @@ class AvailabilityGraphQLControllerTest
                     ],
                     candidates: { filter: { typeIn: [room] } }
                   }) {
-                    allocatable { id name }
+                    resource { id name }
                     status
                     conflictingAppointmentIds
                   }
@@ -171,7 +171,7 @@ class AvailabilityGraphQLControllerTest
                 .get();
 
         Map<String, Map<String, Object>> byId = rows.stream().collect(Collectors.toMap(
-                r -> (String) ((Map<?, ?>) r.get("allocatable")).get("id"), r -> r));
+                r -> (String) ((Map<?, ?>) r.get("resource")).get("id"), r -> r));
         assertTrue(byId.containsKey(ROOM_A66), () -> "Room A66 missing from " + byId.keySet());
         assertTrue(byId.containsKey(ROOM_ERWIN), () -> "erwin missing from " + byId.keySet());
 
@@ -207,10 +207,10 @@ class AvailabilityGraphQLControllerTest
                     appointments: [
                       { id: "%s", start: "2031-06-09T09:00:00", end: "2031-06-13T17:00:00", allDay: false }
                     ],
-                    allocatableIds: ["%s"]
+                    resourceIds: ["%s"]
                   }) {
                     id
-                    allocatable { id }
+                    resource { id }
                     reservation1Id
                     appointment1Id
                     reservation2Id
@@ -231,7 +231,7 @@ class AvailabilityGraphQLControllerTest
 
         assertEquals(1, rows.size(), () -> "expected exactly one potential conflict; got " + rows);
         Map<String, Object> row = rows.get(0);
-        assertEquals(ROOM_A66, ((Map<?, ?>) row.get("allocatable")).get("id"));
+        assertEquals(ROOM_A66, ((Map<?, ?>) row.get("resource")).get("id"));
         assertEquals(draftReservationId, row.get("reservation1Id"), "side 1 = draft reservation id (echoed)");
         assertEquals(draftAppointmentId, row.get("appointment1Id"), "side 1 = draft appointment id (echoed)");
         assertNull(row.get("reservation1"), "brand-new draft → reservation1 null");
@@ -272,7 +272,7 @@ class AvailabilityGraphQLControllerTest
                     ],
                     candidates: { ids: ["%s", "%s"] }
                   }) {
-                    allocatable { id }
+                    resource { id }
                     status
                     conflictingAppointmentIds
                   }
@@ -284,7 +284,7 @@ class AvailabilityGraphQLControllerTest
                 .get();
 
         Map<String, Map<String, Object>> byId = rows.stream().collect(Collectors.toMap(
-                r -> (String) ((Map<?, ?>) r.get("allocatable")).get("id"), r -> r));
+                r -> (String) ((Map<?, ?>) r.get("resource")).get("id"), r -> r));
         Map<String, Object> a66 = byId.get(ROOM_A66);
         assertNotNull(a66, () -> "Room A66 missing from " + byId.keySet());
         assertEquals("CONFLICT", a66.get("status"),
@@ -313,7 +313,7 @@ class AvailabilityGraphQLControllerTest
                     ],
                     candidates: { ids: ["%s"] }
                   }) {
-                    allocatable { id }
+                    resource { id }
                     status
                     conflictingAppointmentIds
                   }
@@ -380,7 +380,7 @@ class AvailabilityGraphQLControllerTest
                         start: "2031-09-02T10:00:00", end: "2031-09-02T12:00:00", allDay: false,
                         repeating: { type: WEEKLY, interval: 1, count: 10, exceptions: [] } }
                     ],
-                    allocatableIds: ["%s"]
+                    resourceIds: ["%s"]
                   }) { startDate }
                 }
                 """.formatted(ROOM_A66))
@@ -414,7 +414,7 @@ class AvailabilityGraphQLControllerTest
                       { id: "%s", start: "2031-12-03T10:00:00", end: "2031-12-03T12:00:00", allDay: false,
                         repeating: { type: WEEKLY, interval: 1, count: 10, exceptions: [] } }
                     ],
-                    allocations: [ { allocatableId: "%s" } ]
+                    allocations: [ { resourceId: "%s" } ]
                   }) { id }
                 }
                 """.formatted(storedId, java.util.UUID.randomUUID(), ROOM_ERWIN))
@@ -627,7 +627,7 @@ class AvailabilityGraphQLControllerTest
                     ],
                     candidates: { ids: [%s] }
                   }) {
-                    allocatable { id }
+                    resource { id }
                     status
                     conflictingAppointmentIds
                   }

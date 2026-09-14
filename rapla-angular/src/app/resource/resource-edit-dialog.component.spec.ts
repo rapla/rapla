@@ -5,19 +5,19 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
 import {
-  AllocatableEditDialogComponent,
-  type AllocatableEditDialogData,
-} from './allocatable-edit-dialog.component';
+  ResourceEditDialogComponent,
+  type ResourceEditDialogData,
+} from './resource-edit-dialog.component';
 
 const SDL = `
-type kameraClassification implements AllocatableClassification & Classification {
+type kameraClassification implements ResourceClassification & Classification {
   name: String @displayName(value : "Name")
   beschreibung: String @displayName(value : "Beschreibung")
   type: DynamicType!
   typeKey: String!
 }
 
-type stativClassification implements AllocatableClassification & Classification {
+type stativClassification implements ResourceClassification & Classification {
   name: String @displayName(value : "Name")
   hoehe: Int @displayName(value : "Höhe")
   type: DynamicType!
@@ -37,7 +37,7 @@ const TYPES = {
 
 interface ShellFixture {
   data: {
-    allocatable: {
+    resource: {
       id: string;
       displayName: string;
       lastModifiedAt: string;
@@ -52,7 +52,7 @@ interface ShellFixture {
 
 const SHELL: ShellFixture = {
   data: {
-    allocatable: {
+    resource: {
       id: 'a-1',
       displayName: 'Canon G25 01',
       lastModifiedAt: '2026-07-01T10:00:00Z',
@@ -66,16 +66,16 @@ const SHELL: ShellFixture = {
 };
 
 const VALUES = {
-  data: { allocatable: { classification: { name: 'Canon G25 01', beschreibung: 'Vollformat' } } },
+  data: { resource: { classification: { name: 'Canon G25 01', beschreibung: 'Vollformat' } } },
 };
 
-describe('AllocatableEditDialogComponent (PRD 096 Phase 4)', () => {
+describe('ResourceEditDialogComponent (PRD 096 Phase 4)', () => {
   const closeSpy = vi.fn();
 
-  async function setup(data: AllocatableEditDialogData, shell = SHELL) {
+  async function setup(data: ResourceEditDialogData, shell = SHELL) {
     closeSpy.mockClear();
     await TestBed.configureTestingModule({
-      imports: [AllocatableEditDialogComponent],
+      imports: [ResourceEditDialogComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -83,18 +83,18 @@ describe('AllocatableEditDialogComponent (PRD 096 Phase 4)', () => {
         { provide: MatDialogRef, useValue: { close: closeSpy } },
       ],
     }).compileComponents();
-    const fixture = TestBed.createComponent(AllocatableEditDialogComponent);
+    const fixture = TestBed.createComponent(ResourceEditDialogComponent);
     const http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
     // load order: shell query → (schema fetch) → values query
     http.expectOne((r) => r.url === '/api/graphql').flush(shell);
     fixture.detectChanges();
-    if (shell.data.allocatable) {
+    if (shell.data.resource) {
       http.expectOne('/api/graphql/schema').flush(SDL);
       fixture.detectChanges();
       http.expectOne((r) => r.url === '/api/graphql').flush(VALUES);
       fixture.detectChanges();
-      if (shell.data.allocatable.canModify && data.readOnly !== true) {
+      if (shell.data.resource.canModify && data.readOnly !== true) {
         // editable mode loads the same-kind type options for the type select
         http.expectOne((r) => r.url === '/api/graphql').flush(TYPES);
         fixture.detectChanges();
@@ -107,7 +107,7 @@ describe('AllocatableEditDialogComponent (PRD 096 Phase 4)', () => {
 
   beforeEach(() => TestBed.resetTestingModule());
 
-  it('loads shell + values, renders every attribute editable, saves via updateAllocatable', async () => {
+  it('loads shell + values, renders every attribute editable, saves via updateResource', async () => {
     const { fixture, http } = await setup({ id: 'a-1' });
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('h2')?.textContent).toContain('Canon G25 01');
@@ -126,13 +126,13 @@ describe('AllocatableEditDialogComponent (PRD 096 Phase 4)', () => {
     fixture.detectChanges();
     const save = http.expectOne((r) => r.url === '/api/graphql');
     const body = save.request.body as { query: string; variables: Record<string, unknown> };
-    expect(body.query).toContain('updateAllocatable');
+    expect(body.query).toContain('updateResource');
     expect(body.variables['input']).toEqual({
       typeKey: 'kamera',
       classification: { kamera: { name: 'Canon G25 01', beschreibung: 'APS-C' } },
     });
     expect(body.variables['expected']).toBe('2026-07-01T10:00:00');
-    save.flush({ data: { updateAllocatable: { id: 'a-1' } } });
+    save.flush({ data: { updateResource: { id: 'a-1' } } });
     fixture.detectChanges();
     expect(closeSpy).toHaveBeenCalledWith('saved');
   });
@@ -149,7 +149,7 @@ describe('AllocatableEditDialogComponent (PRD 096 Phase 4)', () => {
 
   it('canModify=false from the server forces view mode even without readOnly', async () => {
     const shell = structuredClone(SHELL);
-    shell.data.allocatable!.canModify = false;
+    shell.data.resource!.canModify = false;
     const { fixture } = await setup({ id: 'a-1' }, shell);
     const el = fixture.nativeElement as HTMLElement;
     expect(el.textContent).toContain('nur ansehen');
@@ -182,12 +182,12 @@ describe('AllocatableEditDialogComponent (PRD 096 Phase 4)', () => {
       typeKey: 'stativ',
       classification: { stativ: { name: 'Canon G25 01' } },
     });
-    save.flush({ data: { updateAllocatable: { id: 'a-1' } } });
+    save.flush({ data: { updateResource: { id: 'a-1' } } });
     expect(closeSpy).toHaveBeenCalledWith('saved');
   });
 
   it('unknown id shows "nicht gefunden" without leaking existence details', async () => {
-    const { fixture } = await setup({ id: 'a-x' }, { data: { allocatable: null } });
+    const { fixture } = await setup({ id: 'a-x' }, { data: { resource: null } });
     const el = fixture.nativeElement as HTMLElement;
     expect(el.textContent).toContain('Nicht gefunden');
   });

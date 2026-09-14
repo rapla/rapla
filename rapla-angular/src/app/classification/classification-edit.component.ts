@@ -16,7 +16,7 @@ import type { AttributeDescriptor } from './classification-schema';
 /**
  * A single attribute edit, routed through the HOST's mutation funnel —
  * the event sheet passes label/coalesceKey into mutateDraft (PRD 091 D5),
- * a future allocatable editor does the same with its own draft.
+ * a future resource editor does the same with its own draft.
  */
 export interface ClassificationPatch {
   key: string;
@@ -31,7 +31,7 @@ type Widget = 'text' | 'number' | 'checkbox' | 'select' | 'date' | 'readonly';
  * PRD 096 Phase 2 — reusable, CONTROLLED classification form. Renders the
  * DynamicType-driven attribute fields for whatever `typeKey` the host puts
  * in; never holds its own copy of the values. Widget mapping per PRD 035 §5
- * (v1 subset — tree-category / allocatable / list attributes render
+ * (v1 subset — tree-category / resource / list attributes render
  * read-only and ride along untouched).
  */
 @Component({

@@ -544,7 +544,7 @@ export class QuickEditProtoComponent {
     },
     {
       id: 2,
-      title: 'Kamera-Ausleihe Erwin',
+      title: 'Kamera-Ausleihe',
       type: 'loan',
       start: this.at(1, 9),
       end: this.at(1, 17),

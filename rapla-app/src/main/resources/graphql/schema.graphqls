@@ -60,15 +60,15 @@ type Query {
   # immediate children. Empty list if rootKey doesn't exist.
   categories(rootKey: String): [Category!]!
 
-  # Allocatables (resources + persons) visible to the caller.
+  # Resources (resources + persons) visible to the caller.
   # §12: every entry is canRead-gated; mixed visible/hidden requests are
   # silently narrowed to the visible subset. Filter narrows the visible
   # subset further (never reveals hidden entities).
-  allocatables(filter: AllocatableFilter): [Allocatable!]!
+  resources(filter: ResourceFilter): [Resource!]!
 
-  # Allocatable by id, or null if not found / not visible (§12 — existence
+  # Resource by id, or null if not found / not visible (§12 — existence
   # not leaked).
-  allocatable(id: ID!): Allocatable
+  resource(id: ID!): Resource
 
   # All DynamicTypes (resource / person / reservation classifications).
   # No §12 — DynamicTypes are deployment-global metadata. Used by SPA form
@@ -110,6 +110,12 @@ type Query {
   # plugin is disabled or the caller cannot create reservations at all.
   newEventOptions: NewEventOptions!
 
+  # PRD 113 § 1c — template entity reads, gated on canRead(template) only (no create gate, no plugin flag).
+  # Unknown, non-template and unreadable ids answer identically: null (§12).
+  eventTemplate(id: ID!): EventTemplate
+  # PRD 113 § 1c — every template the caller may read; unreadable ones are absent.
+  eventTemplates: [EventTemplate!]!
+
   # PRD 104 D8 — the reservations stored inside an event template, as plain
   # Reservation entities (the SPA picker selects { id } and loads the rest via
   # `reservation(id:)` — canRead of a template reservation delegates to
@@ -139,7 +145,7 @@ type Query {
   strips(filter: ReservationFilter!): [Strip!]!
 
   # PRD 079 — grouped/bucketed analytics over the full matched set, as typed `data`
-  # (not extensions). `groupBy` = dimensions (date bucket / §12 allocatable / custom
+  # (not extensions). `groupBy` = dimensions (date bucket / §12 resource / custom
   # compute `expr`); `aggregate` = metrics (numeric block field × fn). Empty `groupBy`
   # → one global bucket (= a plain total). Server-evaluated, §12-safe, window-bounded
   # + bucket-capped. See PRD 079.
@@ -152,14 +158,14 @@ type Query {
 
   # PRD 080 item 6 — grouped/bucketed analytics over the §12-visible ALLOCATABLE
   # population (resources/persons), NOT over bookings. `groupBy` = dimensions
-  # (DynamicType / custom `expr` / the allocatable itself); `aggregate` = metrics
-  # (COUNT, or a numeric `expr` over the allocatable, e.g. capacity sum). Filter =
-  # the full AllocatableFilter (typeIn / where<Type> / idIn / accessibleBy*).
+  # (DynamicType / custom `expr` / the resource itself); `aggregate` = metrics
+  # (COUNT, or a numeric `expr` over the resource, e.g. capacity sum). Filter =
+  # the full ResourceFilter (typeIn / where<Type> / idIn / accessibleBy*).
   # Shares the generic BlockStatBucket result. e.g. "seats per building".
-  allocatableStats(
-    filter: AllocatableFilter,
-    groupBy: [AllocatableGroupKey!],
-    aggregate: [AllocatableAggregate!]!,
+  resourceStats(
+    filter: ResourceFilter,
+    groupBy: [ResourceGroupKey!],
+    aggregate: [ResourceAggregate!]!,
     "HAVING — drop buckets whose population (count) is below this threshold. minCount: 2 = only groups that occur more than once (duplicate report). Applied before `limit`."
     minCount: Int,
     limit: Int
@@ -183,7 +189,7 @@ type Query {
   computeFunctions: [ComputeFunction!]!
 
   # PRD 064 — conflicts touching this reservation. §12: caller must be able
-  # to read BOTH sides of each conflict + the allocatable; unreadable
+  # to read BOTH sides of each conflict + the resource; unreadable
   # conflicts are silently dropped.
   conflicts(reservationId: ID!): [Conflict!]!
 
@@ -242,7 +248,7 @@ type Query {
 }
 
 """
-A scheduling conflict — two appointments allocating the same Allocatable at
+A scheduling conflict — two appointments allocating the same Resource at
 overlapping times. ONE type for realized AND potential conflicts (PRD 091 D4):
 a potential conflict is a Conflict whose side 1 is not persisted (yet).
 The id pair fields are always present (§12 permitting); the entity fields
@@ -259,7 +265,7 @@ session-scoped — treat as opaque, do not persist.
 """
 type Conflict {
   id:              ID!
-  allocatable:     Allocatable!
+  resource:     Resource!
   reservation1Id:  ID!
   appointment1Id:  ID!
   reservation2Id:  ID
@@ -279,7 +285,7 @@ type Conflict {
 """
 PRD 091 — availability status of one candidate resource for a draft's
 appointments. Mirrors the Swing picker categories
-(AllocatableRowStatusModel): PARTIAL = some appointments clash but the
+(ResourceRowStatusModel): PARTIAL = some appointments clash but the
 resource is still usable for the rest; REQUEST_ONLY/FORBIDDEN fold in
 permission-window violations (those are NOT conflicts and never appear in
 `potentialConflicts`).
@@ -302,7 +308,7 @@ input AvailabilityInput {
 
 "Exactly one of `filter` (the finder case) or `ids` (the allocated set)."
 input CandidateInput @oneOf {
-  filter: AllocatableFilter
+  filter: ResourceFilter
   ids: [ID!]
 }
 
@@ -319,7 +325,7 @@ type Occurrence {
 }
 
 type ResourceAvailability {
-  allocatable: Allocatable!
+  resource: Resource!
   status: AllocationStatus!
   "Own draft appointment ids that clash on this resource (yes/no granularity — details via potentialConflicts)."
   conflictingAppointmentIds: [ID!]!
@@ -334,7 +340,7 @@ implicitly ignored in the clash computation (self-ignore while editing).
 input PotentialConflictInput {
   reservationId: ID!
   appointments: [AppointmentInput!]!
-  allocatableIds: [ID!]!
+  resourceIds: [ID!]!
   ignoreReservationIds: [ID!]
 }
 
@@ -356,16 +362,16 @@ input ReservationFilter {
   # (PRD 059 Phase 7 — SDL `extend input` emitted by ClassificationSdlGenerator).
   "Exact-match on owner id."
   ownerEq:           ID
-  "Reservations using ANY of the listed allocatable ids."
-  allocatableIdsIn:  [ID!]
+  "Reservations using ANY of the listed resource ids."
+  resourceIdsIn:  [ID!]
   """
-  PRD 066 — reservations using ANY allocatable matching this
-  AllocatableFilter. Lets the SPA pass its tree-selection
+  PRD 066 — reservations using ANY resource matching this
+  ResourceFilter. Lets the SPA pass its tree-selection
   (`typeIn` + per-type `whereXxx` + `idIn`) in one shot instead of
-  resolving allocatable ids in a separate roundtrip. UNIONed with
-  `allocatableIdsIn` when both are set.
+  resolving resource ids in a separate roundtrip. UNIONed with
+  `resourceIdsIn` when both are set.
   """
-  allocatableMatching: AllocatableFilter
+  resourceMatching: ResourceFilter
   "Case-insensitive substring match on default-locale name (legacy — prefer `searchText` + `matchKind` for new flows). ANDs with `searchText` if both are set."
   nameContains:      String
   "PRD 028 Phase 1 — match against the rapla-resolved name (same value as `nameContains`); paired with `matchKind` for prefix/substring/fuzzy."
@@ -411,7 +417,7 @@ enum Weekday { MONDAY  TUESDAY  WEDNESDAY  THURSDAY  FRIDAY  SATURDAY  SUNDAY }
 
 """
 PRD 028 Phase 1 — string-match algorithm for power search.
-Shared between `ReservationFilter.matchKind`, `AllocatableFilter.matchKind`,
+Shared between `ReservationFilter.matchKind`, `ResourceFilter.matchKind`,
 and the future top-level `Query.search` (PRD 060). Server-side ranking
 respects this ordering: PREFIX > SUBSTRING > FUZZY.
 """
@@ -474,7 +480,7 @@ input UserFilter {
   PRD 069 — restrict to users that are members of **any** of these groups
   (union), including membership via a sub-group. Groups are **key paths
   relative to the `user-groups` root** — no `user-groups/` prefix, same handle
-  as `accessibleByGroup` (e.g. `"MOS"` or nested `"MOS/T/INF"`). This resolves
+  as `accessibleByGroup` (e.g. `"CampusA"` or nested `"CampusA/T/INF"`). This resolves
   the bare-key ambiguity of `User.groups` (a Studiengang key like `"INF"` exists
   at many campuses). Unknown path → INVALID_VALUE. ANDs with the other filters.
   """
@@ -482,7 +488,7 @@ input UserFilter {
 }
 
 """
-Narrowing predicates for `allocatables(filter:)`. All fields optional;
+Narrowing predicates for `resources(filter:)`. All fields optional;
 null = unconstrained. Multiple predicates AND together. Filter runs over
 the §12-visible subset.
 
@@ -490,14 +496,14 @@ For typed per-attribute filtering, see the GENERATED `where<TypeKey>`
 fields (PRD 035 §5d). They appear on this input alongside the scalar
 fields below — one per resource/person DynamicType in the deployment.
 """
-input AllocatableFilter {
-  # Type selection lives on the GENERATED `typeIn: [AllocatableTypeKey!]` field
+input ResourceFilter {
+  # Type selection lives on the GENERATED `typeIn: [ResourceTypeKey!]` field
   # (PRD 059 Phase 7 — SDL `extend input` emitted by ClassificationSdlGenerator).
   "True → only persons. False → only resources. null → both."
   isPersonEq:   Boolean
   "Case-insensitive substring match on displayName (legacy — prefer `searchText` + `matchKind` for new flows). ANDs with `searchText` if both are set."
   nameContains: String
-  "PRD 028 Phase 1 — match against `Allocatable.displayName`; paired with `matchKind` for prefix/substring/fuzzy."
+  "PRD 028 Phase 1 — match against `Resource.displayName`; paired with `matchKind` for prefix/substring/fuzzy."
   searchText:   String
   "PRD 028 Phase 1 — algorithm choice for `searchText`. Defaults to SUBSTRING (matches the legacy `nameContains` behavior)."
   matchKind:    MatchKind = SUBSTRING
@@ -621,13 +627,13 @@ input CategoryListWhere {
 """
 Predicates for ALLOCATABLE-valued attributes. Currently supports id-equality
 predicates. Future extension (deferred PRD): nested sub-where on the referenced
-allocatable's own classification.
+resource's own classification.
 """
-input AllocatableWhere {
+input ResourceWhere {
   eq:     ID
   ne:     ID
   in:     [ID!]
-  "PRD 074 — match the REFERENCED allocatable by its display name (case-insensitive substring). Lets you filter through a reference in ONE query, e.g. rooms whose building name contains \"MOS\" (Standort Mosbach) via Raum.whereRaum.Gebaeude.nameContains."
+  "PRD 074 — match the REFERENCED resource by its display name (case-insensitive substring). Lets you filter through a reference in ONE query, e.g. rooms whose building name contains \"Campus A\" via Room.whereRoom.Building.nameContains."
   nameContains: String
   isNull: Boolean
 }
@@ -636,7 +642,7 @@ input AllocatableWhere {
 Predicates for multi-select ALLOCATABLE attributes (rapla `multi-select=true`,
 typically `package=true` flavor). Symmetric mirror of CategoryListWhere.
 """
-input AllocatableListWhere {
+input ResourceListWhere {
   contains:    ID
   containsAny: [ID!]
   containsAll: [ID!]
@@ -664,20 +670,63 @@ type User {
 Permission group (PRD 035 §5c). Internally rapla stores these as categories
 under the user-groups subtree, but the GraphQL API treats them as a first-
 class type so the contract stays clean if the storage representation ever
-moves. Currently flat; hierarchical fields (parent / children) deferred
-to a separate PRD if real consumer demand emerges.
+moves. Hierarchy (PRD 113 § 5e): `parent` / `children` stay inside the user-groups
+subtree — the root itself is not a group, so a top-level group's parent is null.
+Groups only; members stay behind `User.groups`.
 """
 type Group {
+  id:       ID!
+  key:      String!
+  name:     String!
+  parent:   Group
+  children: [Group!]!
+}
+
+"""
+PRD 113 § 5b — one stored permission row. `level` is the full enum on read. Window fields are only ever
+evaluated on resource/person rows at REQUEST..EDIT; elsewhere they are stored but inert.
+"""
+type Permission {
+  principal:  PermissionPrincipal!
+  level:      AccessLevel!
+  start:      LocalDateTime
+  end:        LocalDateTime
+  minAdvance: Int
+  maxAdvance: Int
+}
+
+"PRD 113 § 5b — exactly one populated; a stored row with neither user nor group reads as everyone: true."
+type PermissionPrincipal {
+  user:     PermissionPrincipalUser
+  group:    PermissionPrincipalGroup
+  everyone: Boolean!
+}
+
+"PRD 113 OQ 3 — id + name of a row's user, visible to the entity admin even outside their user-admin scope. Deliberately NOT the User type: no email, authSource or groups."
+type PermissionPrincipalUser {
+  id:       ID!
+  username: String!
+  name:     String
+}
+
+"PRD 113 OQ 3 — id + name of a row's group."
+type PermissionPrincipalGroup {
   id:   ID!
-  key:  String!
   name: String!
 }
 
 type Period {
-  # rapla Periods have no synthetic id — they're identified by name.
+  "PRD 113 OQ 8 — the id of the underlying rapla:period resource."
+  id:    ID!
   name:  String!
   start: LocalDateTime!
   end:   LocalDateTime!
+  "PRD 113 OQ 12 — the stored multi-select category attribute."
+  categories: [Category!]!
+  "PRD 113 — may edit the permission list."
+  canAdmin:    Boolean!
+  "PRD 113 § 5b — null unless canAdmin (§12)."
+  permissions: [Permission!]
 }
 
 # rapla Category — a node in the hierarchical metadata tree (value-list roots,
@@ -711,13 +760,13 @@ enum CategoryKind {
   SYSTEM
 }
 
-# === Allocatables + classifications =========================================
+# === Resources + classifications =========================================
 
 """
-Whether an Allocatable represents a bookable resource or a person.
+Whether a Resource represents a bookable resource or a person.
 Derived from the DynamicType's classification-type annotation.
 """
-enum AllocatableType {
+enum ResourceKind {
   RESOURCE
   PERSON
 }
@@ -726,28 +775,32 @@ enum AllocatableType {
 A bookable entity in rapla — room, equipment, lecturer, student, etc.
 The `type` is structural (resource vs person); the `classification` carries
 deployment-specific attribute values typed via the DynamicType schema.
-The classification field is narrowed to `AllocatableClassification` so an
+The classification field is narrowed to `ResourceClassification` so an
 inline fragment on an event-only type (e.g. `... on LehrveranstaltungClassification`)
 fails GraphQL validation rather than silently returning null at runtime.
 """
-type Allocatable {
+type Resource {
   id:             ID!
-  type:           AllocatableType!
-  "PRD 080 — true when this allocatable is a person (== type PERSON). Universal across instances."
+  kind:           ResourceKind!
+  "PRD 080 — true when this resource is a person (== type PERSON). Universal across instances."
   isPerson:       Boolean!
-  "PRD 080 — true when the allocatable's DynamicType is annotated location=true (room/venue marker, same as iCal export). Deployment-configured; the annotation key is universal — no instance-specific type key needed."
+  "PRD 080 — true when the resource's DynamicType is annotated location=true (room/venue marker, same as iCal export). Deployment-configured; the annotation key is universal — no instance-specific type key needed."
   isLocation:     Boolean!
-  "PRD 074 — the allocatable's name composition (nameformat), locale-resolved. variant selects DISPLAY/EXPORT/PLANNING (EXPORT/PLANNING fall back to DISPLAY when the type lacks them)."
+  "PRD 074 — the resource's name composition (nameformat), locale-resolved. variant selects DISPLAY/EXPORT/PLANNING (EXPORT/PLANNING fall back to DISPLAY when the type lacks them)."
   name(variant: NameVariant = DISPLAY): String
   "Deprecated alias for name(variant: DISPLAY). Locale-resolved, classification-derived."
   displayName:    String! @deprecated(reason: "use name(variant: DISPLAY)")
   owner:          User
   createdAt:      DateTime
   lastModifiedAt: DateTime
-  classification: AllocatableClassification!
+  classification: ResourceClassification!
   "Server-derived per caller — gates the SPA's edit affordance without a second roundtrip (mirror of Reservation.canModify, PRD 096)."
   canModify:      Boolean!
-  "Evaluate a rapla expression against this allocatable (same engine as AppointmentBlock.compute and the stats group-key expr). Lifts a classification attribute onto a row-level, groupable column — e.g. compute(expr: \"email\") so @column(group: true) can group by it. Invalid/blank expr → null."
+  "PRD 113 — may edit the permission list (canAdmin)."
+  canAdmin:       Boolean!
+  "PRD 113 § 5b — the stored rows; null unless canAdmin (§12), never [] for a non-admin. An entity admin sees every principal's name (OQ 3)."
+  permissions:    [Permission!]
+  "Evaluate a rapla expression against this resource (same engine as AppointmentBlock.compute and the stats group-key expr). Lifts a classification attribute onto a row-level, groupable column — e.g. compute(expr: \"email\") so @column(group: true) can group by it. Invalid/blank expr → null."
   compute(expr: String!): String
   """
   The first of `keys` this row's own DynamicType actually has, formatted like the typed
@@ -805,7 +858,7 @@ enum Multiplicity {
 
 """
 A deployment-defined classification (event type, resource type, person type).
-The shape of values an `Allocatable` or `Reservation` of this type carries.
+The shape of values an `Resource` or `Reservation` of this type carries.
 
 Per-attribute structure (name, valueType, constraints) is exposed via
 **introspection of the generated `<TypeKey>Classification` type** + custom
@@ -832,6 +885,10 @@ type DynamicType {
   [] alike.
   """
   documents:          [DocumentRef!]
+  "PRD 113 § 1b — the stored READ_TYPE / CREATE rows, evaluated live against the type. Null unless global admin."
+  typeAccess:         [Permission!]
+  "PRD 113 § 1b — every other stored row, copied onto new instances at create time. Null unless global admin."
+  instanceDefaults:   [Permission!]
 }
 
 "PRD 111 D3 — one document offered on a type: `name` is the reference, the menu label and the future i18n key; `param` is the URL parameter that carries the entity id (derived from the view's by-id root, D2)."
@@ -843,7 +900,7 @@ type DocumentRef {
 # === Classification — interface + AttributeValue =============================
 
 """
-Classification — an Allocatable's or Reservation's typed attribute payload.
+Classification — a Resource's or Reservation's typed attribute payload.
 Implementations are GENERATED at startup, one per DynamicType
 (`<TypeKey>Classification`), exposing typed per-attribute fields for codegen
 consumers (plugins, MCP).
@@ -855,7 +912,7 @@ Three-way interface split:
 - `Classification` — the structural base. Every generated type implements it.
   Rapla-internal types (classification-type=rapla — Period, Template, etc.)
   implement ONLY this; they're invisible from entity-level narrowing.
-- `AllocatableClassification` — narrows the target type of `Allocatable.classification`.
+- `ResourceClassification` — narrows the target type of `Resource.classification`.
   Implemented by generated types whose DynamicType has
   classification-type ∈ {resource, person}.
 - `ReservationClassification` — narrows the target type of `Reservation.classification`
@@ -869,12 +926,12 @@ interface Classification {
 }
 
 """
-Resource / person classifications. The `Allocatable.classification` field
+Resource / person classifications. The `Resource.classification` field
 targets this interface so a typed-narrow fragment like
 `... on LehrveranstaltungClassification` (an event type) fails GraphQL
 validation up-front instead of resolving to null at runtime.
 """
-interface AllocatableClassification implements Classification {
+interface ResourceClassification implements Classification {
   typeKey: String!
   type:    DynamicType!
 }
@@ -882,7 +939,7 @@ interface AllocatableClassification implements Classification {
 """
 Reservation classifications. Targets `Reservation.classification` when
 the reservation resolvers land next batch. Same split rationale as
-`AllocatableClassification`.
+`ResourceClassification`.
 """
 interface ReservationClassification implements Classification {
   typeKey: String!
@@ -893,7 +950,7 @@ interface ReservationClassification implements Classification {
 # These replace the AttributeDescriptor + AttributeValue parallel surface.
 # The schema's typed field types ARE the descriptor; directives carry the
 # bits introspection doesn't natively expose (display names, expected
-# allocatable target type, category root, multiplicity flavor).
+# resource target type, category root, multiplicity flavor).
 
 """
 The locale-resolved human-readable name for a generated classification
@@ -943,7 +1000,7 @@ directive @window(into: String, from: WindowAnchor!, to: WindowAnchor!) repeatab
 """
 PRD 074 §"Window and inputs directives" — declares one public value input. `name` is the
 public URL key (document path, PRD 097), `into` the private dotted variable path it fills
-(e.g. "filter.allocatableIdsIn"); the coercion type is derived from `into` via the schema.
+(e.g. "filter.resourceIdsIn"); the coercion type is derived from `into` via the schema.
 On the document path, query params outside the declared set are rejected. `required` means
 the target must be filled from SOMEWHERE after the variable merge — a URL value, a document
 pin, or (authoring preview only) a default derived from the view's example defaultVariables;
@@ -972,7 +1029,7 @@ enum BlockMetricField { DURATION_MINUTES  DURATION_UNIT }
 """
 PRD 079 — one grouping dimension. Supply EXACTLY ONE of:
 - `date` (+ optional `by`) → time bucket of that block date,
-- `allocatables` → §12-readable allocatables (block fans out to each; e.g. rooms),
+- `resources` → §12-readable resources (block fans out to each; e.g. rooms),
 - `expr` → a custom compute expression (same engine as `AppointmentBlock.compute`; the
   string result is the bucket key — group by anything you can express).
 `key` names the dimension in the result bucket's `keys`.
@@ -981,7 +1038,7 @@ input BlockGroupKey {
   key: String!
   date: BlockDateField
   by: TimeBucket
-  allocatables: AllocatableFilter
+  resources: ResourceFilter
   expr: String
   "PRD 080 — group by the block's reservation (the event); the StatKey carries the Reservation as `entity`. \"hours/sessions per Veranstaltung\"."
   reservation: Boolean
@@ -1002,13 +1059,13 @@ input BlockAggregate {
 }
 
 """
-PRD 080 item 6 — one grouping dimension for `allocatableStats`. Supply EXACTLY ONE of:
-- `type: true` → group by the allocatable's DynamicType (value = type name; entity = null),
-- `expr` → a custom compute expression over the allocatable (string result = bucket key),
-- `self: true` → group by the allocatable itself; StatKey carries the Allocatable as `entity`.
+PRD 080 item 6 — one grouping dimension for `resourceStats`. Supply EXACTLY ONE of:
+- `type: true` → group by the resource's DynamicType (value = type name; entity = null),
+- `expr` → a custom compute expression over the resource (string result = bucket key),
+- `self: true` → group by the resource itself; StatKey carries the Resource as `entity`.
 `key` names the dimension in the result bucket's `keys`.
 """
-input AllocatableGroupKey {
+input ResourceGroupKey {
   key:  String!
   type: Boolean
   expr: String
@@ -1016,11 +1073,11 @@ input AllocatableGroupKey {
 }
 
 """
-PRD 080 item 6 — one metric for `allocatableStats`. `fn: COUNT` counts allocatables in the bucket
-(no `expr` needed). For SUM/MEAN/MIN/MAX supply a numeric `expr` over the allocatable (same engine
+PRD 080 item 6 — one metric for `resourceStats`. `fn: COUNT` counts resources in the bucket
+(no `expr` needed). For SUM/MEAN/MIN/MAX supply a numeric `expr` over the resource (same engine
 as `AppointmentBlock.compute`; result coerced to a number — e.g. a capacity attribute).
 """
-input AllocatableAggregate {
+input ResourceAggregate {
   key:  String!
   expr: String
   fn:   AggregateFn!
@@ -1061,12 +1118,12 @@ type BlockStatBucket {
 type StatKey {
   key:    String!
   value:  String!
-  "PRD 080 — the typed group entity for entity dimensions (allocatables/reservation/category-resolving expr); null for time/scalar dimensions. Select its fields directly (e.g. room size)."
+  "PRD 080 — the typed group entity for entity dimensions (resources/reservation/category-resolving expr); null for time/scalar dimensions. Select its fields directly (e.g. room size)."
   entity: StatEntity
 }
 
 "PRD 080 — the meaningful, selectable group entities a StatKey may resolve to."
-union StatEntity = Allocatable | Reservation | Category
+union StatEntity = Resource | Reservation | Category
 
 """
 PRD 073 — one rapla expression-language function available to `compute(expr:)`, stat `expr`
@@ -1082,7 +1139,7 @@ type ComputeFunction {
   minArgs:     Int!
   "Maximum argument count; -1 = unbounded (variadic, e.g. concat)."
   maxArgs:     Int!
-  "rapla-level result kind: String / Boolean / DateTime / Date / Int / TimeInterval / DynamicType / AttributeValue / Entity / list forms ([Allocatable]…) / generic T."
+  "rapla-level result kind: String / Boolean / DateTime / Date / Int / TimeInterval / DynamicType / AttributeValue / Entity / list forms ([Resource]…) / generic T."
   returnType:  String!
   "Where the subject comes from: EVENT | CLASSIFIABLE | ALLOCATABLE | ANY | VIEW_TITLE."
   sourceLevel: String!
@@ -1095,7 +1152,7 @@ type StatValue { key: String!  number: Float  text: String }
 
 """
 For ALLOCATABLE-typed attributes: which DynamicType the referenced
-allocatable must belong to. Renders the SPA's allocatable picker filter.
+resource must belong to. Renders the SPA's resource picker filter.
 """
 directive @expectedType(key: String!) on FIELD_DEFINITION
 
@@ -1156,22 +1213,26 @@ type NewEventOptions {
   templates:  [EventTemplate!]!
 }
 
-"An event template (rapla:template) the caller may instantiate from."
+"An event template (rapla:template). Stored as a resource; separate entity in the API (PRD 113 § 1c)."
 type EventTemplate {
   id:   ID!
   "Locale-resolved template name."
   name: String!
-  # PRD 104 — server-computed grouping path for the picker's browse mode, root
-  # first; [] = ungrouped top level. Token-prefix clustering with alphabetic
-  # range-chunk fallback (Swing BalancedHierarchicalMenu parity, max 25/node).
-  # Snapshot of THIS response: range-bucket labels depend on siblings — never
-  # cache paths across differently-filtered lists.
-  path: [String!]!
+  "Swing keepTime — day-offset vs minute-exact shift on instantiation (event-templates.md)."
+  fixedTimeAndDuration: Boolean!
+  owner:          User
+  createdAt:      DateTime
+  lastModifiedAt: DateTime
+  canModify:      Boolean!
+  "PRD 113 — may edit the permission list."
+  canAdmin:       Boolean!
+  "PRD 113 § 5b — null unless canAdmin (§12)."
+  permissions:    [Permission!]
 }
 
 """
 Calendar event — the central booking entity. One or more Appointments
-(time slots) carry the booking against Allocatables (resources/persons).
+(time slots) carry the booking against Resources (resources/persons).
 """
 type Reservation {
   id:             ID!
@@ -1199,11 +1260,15 @@ type Reservation {
   externalId:     String
   "Server-derived per caller — controls edit-button gating in the SPA without a second roundtrip."
   canModify:      Boolean!
+  "PRD 113 — may edit the permission list (canAdmin)."
+  canAdmin:       Boolean!
+  "PRD 113 § 5b — the stored rows; null unless canAdmin (§12), never [] for a non-admin."
+  permissions:    [Permission!]
   """
   PRD 028 Phase 1 — true if any visible conflict touches this reservation
   (allows the SPA's power-search badge UX without a second roundtrip).
   Visibility-filtered: conflicts where the caller can't read the other
-  side OR the allocatable do not count. The full conflict list lives on
+  side OR the resource do not count. The full conflict list lives on
   `Query.conflicts(reservationId:)` (PRD 064).
   """
   hasConflicts:   Boolean!
@@ -1223,16 +1288,16 @@ type Appointment {
   "Null = single-occurrence appointment."
   repeating: RepeatingRule
   """
-  Pre-resolved per-appointment allocatables (PRD 055 Q4 — restrictions
+  Pre-resolved per-appointment resources (PRD 055 Q4 — restrictions
   applied). Restriction-aware editing reads parent Reservation.allocations.
 
   PRD 074 A — optional `filter` narrows the (already §12-canRead-gated) list using the
-  FULL `AllocatableFilter` (same type + same evaluators as `Query.allocatables`): scalar
+  FULL `ResourceFilter` (same type + same evaluators as `Query.resources`): scalar
   predicates, `where<TypeKey>` attribute filters, `idIn`, `accessibleBy*`/`accessLevel`
   (e.g. "resources of this event I may edit"), `limit`. The canRead gate runs BEFORE the
-  filter, so narrowing can never leak a hidden allocatable.
+  filter, so narrowing can never leak a hidden resource.
   """
-  allocatables(filter: AllocatableFilter): [Allocatable!]!
+  resources(filter: ResourceFilter): [Resource!]!
   "Materialize blocks within a window. Server-side recurrence expansion."
   blocks(from: LocalDateTime!, to: LocalDateTime!): [AppointmentBlock!]!
   "PRD 074 Baustein 6 — the appointment pendant of `AppointmentBlock.compute`: evaluates an arbitrary rapla expression (same language as a nameformat; p = the appointment) against this appointment, e.g. {p->format(\"%1$ta %1$td.%1$tm.%1$ty %1$tH:%1$tM\",start(p))}. Composes what `times` cannot — a date-carrying range for a logic-less document template. Invalid expr returns null. Max 2000 chars."
@@ -1252,15 +1317,15 @@ type AppointmentBlock {
   name(variant: NameVariant = DISPLAY): String
   "PRD 074 — the reservation this block belongs to (block → reservation → displayName)."
   reservation: Reservation
-  "PRD 074 A — the block's allocatables, §12-gated, with the FULL AllocatableFilter (scalar + where<TypeKey> + idIn + accessibleBy*/accessLevel + limit; same evaluators as Query.allocatables). Per-appointment restriction applied for this block's appointment."
-  allocatables(filter: AllocatableFilter): [Allocatable!]!
-  "PRD 100 Phase 5 — match provenance (no argument): the SCOPED allocatables this block's appointment is bound to (belongsTo-resolved), as navigable Allocatables. The candidate pool is the QUERY'S OWN resolved allocatable scope (allocatableIdsIn / allocatableMatching) — so it can never diverge from the filter that selected the block — using the SAME AppointmentMapping.getMatchingAllocatables primitive + storage binding the Swing/HTML week view groups by. The week grid's lane grouping key is matchedBy[0] (the selected building/room that admitted the block, not necessarily one it allocates); empty ⇒ the query was unscoped OR the block was admitted by a non-resource criterion ⇒ compact fallback. §12: the pool is the query's canRead-gated scope set, so only readable, already-scoped resources can surface."
-  matchedBy: [Allocatable!]!
+  "PRD 074 A — the block's resources, §12-gated, with the FULL ResourceFilter (scalar + where<TypeKey> + idIn + accessibleBy*/accessLevel + limit; same evaluators as Query.resources). Per-appointment restriction applied for this block's appointment."
+  resources(filter: ResourceFilter): [Resource!]!
+  "PRD 100 Phase 5 — match provenance (no argument): the SCOPED resources this block's appointment is bound to (belongsTo-resolved), as navigable Resources. The candidate pool is the QUERY'S OWN resolved resource scope (resourceIdsIn / resourceMatching) — so it can never diverge from the filter that selected the block — using the SAME AppointmentMapping.getMatchingResources primitive + storage binding the Swing/HTML week view groups by. The week grid's lane grouping key is matchedBy[0] (the selected building/room that admitted the block, not necessarily one it allocates); empty ⇒ the query was unscoped OR the block was admitted by a non-resource criterion ⇒ compact fallback. §12: the pool is the query's canRead-gated scope set, so only readable, already-scoped resources can surface."
+  matchedBy: [Resource!]!
   "PRD 074 — server-evaluated event-time-calculator duration (e.g. 2 UE 0 Min), via the rapla function bridge. Null if the eventtimecalculator plugin is absent."
   duration: String
   "PRD 074 — server-evaluated formatted time range of the block (e.g. 10:00 - 11:30)."
   times: String
-  "PRD 095 — single effective block color as a CSS hex string: the event color when the reservation carries one, else the first readable allocatable color (RaplaBuilder resolution + BlockColors merge). Null when no color applies OR the color-bearing contributor is not readable by the caller (§12 / PRD 095 D3 — the block stays, the color nulls)."
+  "PRD 095 — single effective block color as a CSS hex string: the event color when the reservation carries one, else the first readable resource color (RaplaBuilder resolution + BlockColors merge). Null when no color applies OR the color-bearing contributor is not readable by the caller (§12 / PRD 095 D3 — the block stays, the color nulls)."
   color: String
   "PRD 074 — wall-clock occupancy of this block in whole minutes (end−start, no break adjustment). Numeric → aggregatable via @aggregate / groupable (PRD 079). Hours = /60. For break-adjusted teaching units use the `duration` string."
   durationMinutes: Int
@@ -1356,16 +1421,16 @@ type RepeatingRule {
 }
 
 """
-Per-allocatable restriction record. `appointmentIds: null` = bound to all
+Per-resource restriction record. `appointmentIds: null` = bound to all
 appointments (default). Non-null = restricted to those appointment ids
 (intra-document references to Appointment.id within the same Reservation).
 """
 type Allocation {
-  allocatable:    Allocatable!
+  resource:    Resource!
   appointmentIds: [ID!]
   """
   PRD 091 OQ5 — pending-request marker. `REQUESTED` = the allocation was made by someone who may
-  only REQUEST this allocatable, not allocate it outright; null = an ordinary allocation. The
+  only REQUEST this resource, not allocate it outright; null = an ordinary allocation. The
   server derives it on write (`PermissionController.isRequestOnly`) exactly as Swing does on
   assignment, and `SecurityManager` refuses a request-only allocation that lacks it.
   """
@@ -1432,8 +1497,17 @@ type Mutation {
 
   # ===== bulk transforms =====
 
-  "Reassign owner across N reservations to a single new owner. Admin/group-admin workflow."
+  "Reassign owner across N reservations to a single new owner. Admin only (Swing set-owner parity)."
   changeReservationOwner(ids: [ID!]!, newOwnerId: ID!): BulkResult!
+
+  "PRD 113 OQ 14 — reassign owner across N resources (resources, templates, periods). Admin only (Swing set-owner parity)."
+  changeResourceOwner(ids: [ID!]!, newOwnerId: ID!): BulkResult!
+
+  "PRD 113 § 1c — update a template (rapla:template). canModify for the data, canAdmin for a changed list. Unknown, non-template and unreadable ids answer REFERENCE_NOT_FOUND identically."
+  updateEventTemplate(id: ID!, input: EventTemplateInput!, expectedLastChanged: LocalDateTime): EventTemplate!
+
+  "PRD 113 § 1c — update a period (rapla:period). canModify for the data, canAdmin for a changed list. Unknown, non-period and unreadable ids answer REFERENCE_NOT_FOUND identically."
+  updatePeriod(id: ID!, input: PeriodInput!, expectedLastChanged: LocalDateTime): Period!
 
   """
   Shift N reservations (all their appointments) to a new anchor (PRD 101).
@@ -1473,7 +1547,7 @@ type Mutation {
   """
   Move/resize a SINGLE occurrence of a repeating appointment by splitting it off (PRD 101).
   The occurrence is cloned as a new NON-repeating appointment at `target` (carrying the
-  original appointment's per-allocatable restrictions), and the series gains an exception
+  original appointment's per-resource restrictions), and the series gains an exception
   on the original date. If that exception would empty the series, the whole appointment is
   removed instead (and if that empties the reservation, the reservation is removed). The
   response carries the new appointment id. Requires a repeating appointment.
@@ -1481,35 +1555,35 @@ type Mutation {
   splitOccurrence(appointmentId: ID!, occurrence: LocalDateTime!, target: ResizableTarget!,
                   expectedLastChanged: LocalDateTime): Reservation!
 
-  # ===== PRD 063 — Allocatable (resource / person) mutations =====
+  # ===== PRD 063 — Resource (resource / person) mutations =====
 
   """
-  Create a new Allocatable (resource or person). Owner defaults to the
-  caller; admins may override via `input.ownerId`. The classification's
+  Create a new Resource (resource or person). The owner is always the
+  caller (PRD 113 OQ 14 — reassign with `changeResourceOwner`). The classification's
   @oneOf variant must match `input.typeKey`. Same β² typed-input pattern
   as PRD 056 reservations.
   """
-  createAllocatable(input: AllocatableInput!): Allocatable!
+  createResource(input: ResourceInput!): Resource!
 
   """
-  Update an existing Allocatable's content (classification only). A typeKey
+  Update an existing Resource's content (classification only). A typeKey
   differing from stored is an in-place type change (PRD 096 Phase 4, mirrors
   the PRD 056 OQ1.c revision): the classification @oneOf variant must match
   the NEW typeKey and the caller needs create-permission on the target type;
-  attribute remapping is the client's job. Owner immutable here (future
-  `changeAllocatableOwner` if real demand). `expectedLastChanged`
+  attribute remapping is the client's job. Owner immutable here (use
+  `changeResourceOwner`). `expectedLastChanged`
   enables optimistic concurrency.
   """
-  updateAllocatable(id: ID!, input: AllocatableInput!,
-                    expectedLastChanged: LocalDateTime): Allocatable!
+  updateResource(id: ID!, input: ResourceInput!,
+                    expectedLastChanged: LocalDateTime): Resource!
 
   """
-  Delete N Allocatables. No per-id concurrency check. Rejected with
-  STORAGE_ERROR if any reservation references the allocatable (rapla's
+  Delete N Resources. No per-id concurrency check. Rejected with
+  STORAGE_ERROR if any reservation references the resource (rapla's
   storage layer enforces this; admin must delete dependent reservations
   first or reassign).
   """
-  deleteAllocatables(ids: [ID!]!): BulkResult!
+  deleteResources(ids: [ID!]!): BulkResult!
 
   # ===== applyChanges (escape hatch) =====
 
@@ -1563,6 +1637,12 @@ input DynamicTypeInput {
   attributes:         [AttributeInput!]!
   "Open-ended annotation map (name-format, etc.). v1: known keys only — server rejects unknown keys with INVALID_VALUE."
   annotations:        [KeyValueInput!]
+  "PRD 113 § 1b — the READ_TYPE / CREATE rows. Null = keep the stored subset; non-null replaces it."
+  typeAccess:               [TypeAccessInput!]
+  "PRD 113 § 1b — instance defaults of a RESOURCE/PERSON type. Null = keep; non-null replaces. Rejected (INVALID_VALUE) on a RESERVATION type."
+  resourceInstanceDefaults: [ResourcePermissionInput!]
+  "PRD 113 § 1b — instance defaults of a RESERVATION type. Null = keep; non-null replaces. Rejected (INVALID_VALUE) on a RESOURCE/PERSON type."
+  eventInstanceDefaults:    [SimplePermissionInput!]
 }
 
 """
@@ -1611,10 +1691,10 @@ input DefaultValueInput @oneOf {
   boolValue:      Boolean
   dateValue:      LocalDateTime
   categoryId:     ID
-  allocatableId:  ID
+  resourceId:  ID
   stringValues:   [String!]
   categoryIds:    [ID!]
-  allocatableIds: [ID!]
+  resourceIds: [ID!]
 }
 
 """
@@ -1647,8 +1727,8 @@ type ChangeResult {
   index:        Int!
   "Populated for create/update Reservation ops."
   reservation:  Reservation
-  "Populated for create/update Allocatable ops (future allocatables-write PRD)."
-  allocatable:  Allocatable
+  "Populated for create/update Resource ops (future resources-write PRD)."
+  resource:  Resource
   "Populated for create/update User ops (future users-write PRD)."
   user:         User
   "Populated for any delete op."
@@ -1679,15 +1759,15 @@ type ValidationError {
 """
 A single operation in an applyChanges batch. Exactly one variant must be
 set per op (engine-enforced by `@oneOf`). New entity types grow via
-additive variants for future allocatables-write / users-write PRDs.
+additive variants for future resources-write / users-write PRDs.
 """
 input ChangeOp @oneOf {
   createReservation: ReservationInput
   updateReservation: ChangeOpUpdateReservation
   deleteReservation: DeleteInput
-  createAllocatable: AllocatableInput
-  updateAllocatable: ChangeOpUpdateAllocatable
-  deleteAllocatable: DeleteInput
+  createResource: ResourceInput
+  updateResource: ChangeOpUpdateResource
+  deleteResource: DeleteInput
 }
 
 "Update variant wrapped with the id since update-by-id can't piggyback on a mutation-level argument inside ChangeOp."
@@ -1728,18 +1808,20 @@ input ReservationInput {
   appointments:   [AppointmentInput!]!
   "Restriction-aware allocations. Empty list valid (reservation with no resources is legal but unusual)."
   allocations:    [AllocationInput!]!
+  "PRD 113 § 2b — null = untouched (create: type defaults copied); non-null = replace the whole list ([] empties it). Changing the list requires canAdmin. Ignored by reservationChecks."
+  permissions:    [SimplePermissionInput!]
 }
 
 """
 PRD 105 — a draft to check. `draft` is the same shape `createReservation` takes (id optional here:
-nothing is written). `scopeAllocatableIds` are the caller's current view-scope resources — supplying
+nothing is written). `scopeResourceIds` are the caller's current view-scope resources — supplying
 them enables the NOT_IN_CALENDAR check (D3: the intersection half of Swing's
 `isMatchingSelectionAndFilter`; the classification-filter half is Swing-only). Omit or leave empty
 and that check is skipped — an absent scope is not an empty scope.
 """
 input ReservationCheckInput {
   draft:               ReservationInput!
-  scopeAllocatableIds: [ID!]
+  scopeResourceIds: [ID!]
 }
 
 """
@@ -1754,7 +1836,7 @@ input MoveCheckInput {
   reference:           LocalDateTime
   "The appointment gesture may also resize; a whole-reservation shift uses the day/dateTime variants only."
   target:              ResizableTarget!
-  scopeAllocatableIds: [ID!]
+  scopeResourceIds: [ID!]
 }
 
 """
@@ -1818,15 +1900,15 @@ of the parent reservation. Non-null = restricted to those appointment
 ids (must reference appointments declared in the same input).
 """
 input AllocationInput {
-  "References an existing allocatable, or a same-batch UUID for create."
-  allocatableId:  ID!
+  "References an existing resource, or a same-batch UUID for create."
+  resourceId:  ID!
   appointmentIds: [ID!]
 }
 
-# === PRD 063 — Allocatable mutation inputs ===
+# === PRD 063 — Resource mutation inputs ===
 
 """
-One input for both `createAllocatable` and `updateAllocatable` (PRD 113 § 1d —
+One input for both `createResource` and `updateResource` (PRD 113 § 1d —
 no separate create/update inputs). `id` is required on create (clients mint
 their own ids, PRD 056 §9); on update the `id` argument addresses the entity,
 so an input id naming anything else is rejected with INVALID_VALUE at path
@@ -1834,24 +1916,104 @@ so an input id naming anything else is rejected with INVALID_VALUE at path
 create — the @oneOf variant in classification must match it. On update a differing key is an
 in-place type change (PRD 096 Phase 4, mirroring the PRD 056 OQ1.c revision):
 the variant must match the NEW typeKey and the caller needs create-permission
-on the target type. `ownerId` is create-only and admin-only; non-null on update
-is rejected with INVALID_VALUE at path `input.ownerId` — the owner is immutable
-there (owner changes get their own verb).
+on the target type. There is no `ownerId` (PRD 113 OQ 14): the owner is the
+caller on create and changes only through `changeResourceOwner`.
 """
-input AllocatableInput {
+input ResourceInput {
   "Client-minted UUID for retry safety + same-batch refs (PRD 056 §9). Required on create; on update must be absent or equal to the id argument (INVALID_VALUE otherwise)."
   id:             ID
   "Discriminator — must match the @oneOf variant in classification (the DynamicType key, e.g. \"room\")."
   typeKey:        String!
-  classification: AllocatableClassificationInput!
-  "Create-only, admin-only. Null = caller becomes owner. Non-null on update is rejected."
-  ownerId:        ID
+  classification: ResourceClassificationInput!
+  "PRD 113 § 2b — null = untouched (create: type defaults copied); non-null = replace the whole list ([] empties it). Changing the list requires canAdmin. The owner is always the caller on create; reassign with changeResourceOwner."
+  permissions:    [ResourcePermissionInput!]
+}
+
+"PRD 113 § 2a — exactly one principal. `everyone` must be true when set."
+input PrincipalInput @oneOf {
+  userId:   ID
+  groupId:  ID
+  everyone: Boolean
+}
+
+"PRD 113 § 2a — levels a Resource/Person row may carry (READ_NO_ALLOCATION offered with note, OQ 10)."
+enum ResourceAccessLevel {
+  READ_NO_ALLOCATION
+  READ
+  REQUEST
+  ALLOCATE
+  ALLOCATE_CONFLICTS
+  EDIT
+  ADMIN
+}
+
+"PRD 113 § 2a — levels an Event / EventTemplate / Period row may carry."
+enum SimpleAccessLevel {
+  READ
+  EDIT
+  ADMIN
+}
+
+"""
+PRD 113 § 2a — a Resource/Person permission row. Window fields only on REQUEST, ALLOCATE,
+ALLOCATE_CONFLICTS and EDIT rows (OQ 7); absolute (start/end) XOR relative (minAdvance/maxAdvance).
+"""
+input ResourcePermissionInput {
+  principal:  PrincipalInput!
+  level:      ResourceAccessLevel!
+  start:      LocalDateTime
+  end:        LocalDateTime
+  minAdvance: Int
+  maxAdvance: Int
+}
+
+"PRD 113 § 2a — an Event / EventTemplate / Period permission row (no windows)."
+input SimplePermissionInput {
+  principal: PrincipalInput!
+  level:     SimpleAccessLevel!
+}
+
+"PRD 113 § 2a — a DynamicType access row: group or everyone only (Swing hides the user selector there)."
+input TypeAccessPrincipalInput @oneOf {
+  groupId:  ID
+  everyone: Boolean
+}
+
+"PRD 113 § 1b — the type-scoped levels. ADMIN is an instance default, not a type-access level."
+enum TypeAccessLevel {
+  READ_TYPE
+  CREATE
+}
+
+input TypeAccessInput {
+  principal: TypeAccessPrincipalInput!
+  level:     TypeAccessLevel!
+}
+
+"PRD 113 § 1c / OQ 12 — update-only. `id` absent or equal to the id argument."
+input EventTemplateInput {
+  id:                   ID
+  name:                 String!
+  fixedTimeAndDuration: Boolean!
+  "Null = untouched; non-null replaces the list (canAdmin when it changes)."
+  permissions:          [SimplePermissionInput!]
+}
+
+"PRD 113 § 1c / OQ 12 — update-only. `id` absent or equal to the id argument; start must be before end."
+input PeriodInput {
+  id:          ID
+  name:        String!
+  start:       LocalDateTime!
+  end:         LocalDateTime!
+  categoryIds: [ID!]!
+  "Null = untouched; non-null replaces the list (canAdmin when it changes)."
+  permissions: [SimplePermissionInput!]
 }
 
 "Update variant wrapped with the id for applyChanges."
-input ChangeOpUpdateAllocatable {
+input ChangeOpUpdateResource {
   id:                  ID!
-  input:               AllocatableInput!
+  input:               ResourceInput!
   expectedLastChanged: LocalDateTime
 }
 
@@ -1972,7 +2134,7 @@ type ResourceHit implements SearchHit {
   sublabel: String
   score: Float!
   "Carries the id the chip rail filters by."
-  allocatable: Allocatable!
+  resource: Resource!
 }
 
 """
@@ -2008,7 +2170,7 @@ extend type Mutation {
     """
     PRD 104 v3 "Sync": create STORED reservations from staged external events in one
     transaction (deployment mapping + per-type template copy + external-id stamp).
-    Authorization per item = booking right on its group allocatable; unknown ≡ forbidden.
+    Authorization per item = booking right on its group resource; unknown ≡ forbidden.
     Placement v1: everything materializes at `defaultStart` (ISO LocalDateTime) and is
     placed via the normal calendar. Errors when no deployment provides the create service.
     """
@@ -2090,14 +2252,14 @@ type BindCandidate {
 
 extend type Query {
     """
-    Staged external events for the given group allocatables — the Kurse the caller is working on.
+    Staged external events for the given group resources — the Kurse the caller is working on.
 
     Always scoped: there is no "everything I may book" mode, because the work happens per Kurs.
-    Scope is BOOKING RIGHTS on each requested allocatable — stricter than the §12 read floor.
-    Allocatables the caller may not book are dropped entirely, so an unknown one and a forbidden
+    Scope is BOOKING RIGHTS on each requested resource — stricter than the §12 read floor.
+    Resources the caller may not book are dropped entirely, so an unknown one and a forbidden
     one are indistinguishable. Empty when no deployment provides a staging source.
     """
-    externalEventWorklist(allocatableIds: [ID!]!, scopeKey: String): ExternalEventWorklist!
+    externalEventWorklist(resourceIds: [ID!]!, scopeKey: String): ExternalEventWorklist!
 }
 
 "Derived state of a staged item — only the timestamps are stored on the row."
@@ -2122,8 +2284,8 @@ type ExternalEventWorklist {
 }
 
 type ExternalEventGroup {
-    "The allocatable the caller's booking rights were checked against."
-    allocatableId: ID!
+    "The resource the caller's booking rights were checked against."
+    resourceId: ID!
     name: String!
     items: [ExternalEventItem!]!
     counts: ExternalEventCounts!

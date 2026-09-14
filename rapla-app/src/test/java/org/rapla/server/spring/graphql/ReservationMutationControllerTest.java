@@ -579,7 +579,7 @@ class ReservationMutationControllerTest
                         start: "2030-06-01T10:00:00", end: "2030-06-01T11:00:00", allDay: false }
                     ],
                     allocations: [
-                      { allocatableId: "%s" }
+                      { resourceId: "%s" }
                     ]
                   }) { id }
                 }
@@ -599,7 +599,7 @@ class ReservationMutationControllerTest
                     classification { typeKey type { id key } }
                     owner { username }
                     appointments { start end }
-                    allocations { allocatable { id } appointmentIds }
+                    allocations { resource { id } appointmentIds }
                   }
                 }
                 """)
@@ -632,7 +632,7 @@ class ReservationMutationControllerTest
         List<Map<String, Object>> allocs = (List<Map<String, Object>>) roundTrip.get("allocations");
         assertEquals(1, allocs.size(), "one allocation");
         @SuppressWarnings("unchecked")
-        Map<String, Object> alloc0 = (Map<String, Object>) allocs.get(0).get("allocatable");
+        Map<String, Object> alloc0 = (Map<String, Object>) allocs.get(0).get("resource");
         assertEquals(roomA66, alloc0.get("id"));
         // Unrestricted → appointmentIds null per Q4 lock
         assertEquals(null, allocs.get(0).get("appointmentIds"),
@@ -681,8 +681,8 @@ class ReservationMutationControllerTest
                       { id: "%s", start: "2030-07-02T10:00:00", end: "2030-07-02T11:00:00", allDay: false }
                     ],
                     allocations: [
-                      { allocatableId: "%s" },
-                      { allocatableId: "%s", appointmentIds: ["%s"] }
+                      { resourceId: "%s" },
+                      { resourceId: "%s", appointmentIds: ["%s"] }
                     ]
                   }) { id }
                 }
@@ -697,8 +697,8 @@ class ReservationMutationControllerTest
         Map<String, Object> rt = tester.document("""
                 query ($id: ID!) {
                   reservation(id: $id) {
-                    allocations { allocatable { id } appointmentIds }
-                    appointments { id allocatables { id } }
+                    allocations { resource { id } appointmentIds }
+                    appointments { id resources { id } }
                   }
                 }
                 """)
@@ -712,10 +712,10 @@ class ReservationMutationControllerTest
         List<Map<String, Object>> allocations = (List<Map<String, Object>>) rt.get("allocations");
         assertEquals(2, allocations.size(), "expected 2 allocations");
         Map<String, Object> roomAlloc = allocations.stream()
-                .filter(a -> roomA66.equals(((Map<?, ?>) a.get("allocatable")).get("id")))
+                .filter(a -> roomA66.equals(((Map<?, ?>) a.get("resource")).get("id")))
                 .findFirst().orElseThrow();
         Map<String, Object> erwinAlloc = allocations.stream()
-                .filter(a -> erwin.equals(((Map<?, ?>) a.get("allocatable")).get("id")))
+                .filter(a -> erwin.equals(((Map<?, ?>) a.get("resource")).get("id")))
                 .findFirst().orElseThrow();
         assertEquals(null, roomAlloc.get("appointmentIds"),
                 "Room A66 must be unrestricted (null appointmentIds)");
@@ -734,13 +734,13 @@ class ReservationMutationControllerTest
                 .filter(a -> appt2Id.equals(a.get("id"))).findFirst().orElseThrow();
 
         @SuppressWarnings("unchecked")
-        List<Map<String, Object>> a1Allocs = (List<Map<String, Object>>) a1.get("allocatables");
+        List<Map<String, Object>> a1Allocs = (List<Map<String, Object>>) a1.get("resources");
         List<String> a1Ids = a1Allocs.stream().map(m -> (String) m.get("id")).toList();
         assertTrue(a1Ids.contains(roomA66), "appt1 must include Room A66 (unrestricted)");
         assertTrue(a1Ids.contains(erwin),   "appt1 must include erwin (restricted to it)");
 
         @SuppressWarnings("unchecked")
-        List<Map<String, Object>> a2Allocs = (List<Map<String, Object>>) a2.get("allocatables");
+        List<Map<String, Object>> a2Allocs = (List<Map<String, Object>>) a2.get("resources");
         List<String> a2Ids = a2Allocs.stream().map(m -> (String) m.get("id")).toList();
         assertTrue(a2Ids.contains(roomA66), "appt2 must include Room A66 (unrestricted)");
         assertFalse(a2Ids.contains(erwin),
@@ -1347,7 +1347,7 @@ class ReservationMutationControllerTest
                                 "start", "2026-09-01T10:00:00",
                                 "end", "2026-09-01T11:00:00",
                                 "allDay", false)),
-                        "allocations", List.of(Map.of("allocatableId", requestOnly.getId()))))
+                        "allocations", List.of(Map.of("resourceId", requestOnly.getId()))))
                 .execute()
                 .path("createReservation.id")
                 .entity(String.class)
@@ -1355,7 +1355,7 @@ class ReservationMutationControllerTest
 
         tester.document("""
                 query ($id: ID!) {
-                  reservation(id: $id) { allocations { allocatable { id } requestStatus } }
+                  reservation(id: $id) { allocations { resource { id } requestStatus } }
                 }
                 """)
                 .variable("id", eventId)
@@ -1389,7 +1389,7 @@ class ReservationMutationControllerTest
                                 "end", "2026-09-02T11:00:00",
                                 "allDay", false)),
                         "allocations", List.of(Map.of(
-                                "allocatableId", facade.getAllocatables()[0].getId()))))
+                                "resourceId", facade.getAllocatables()[0].getId()))))
                 .execute()
                 .path("createReservation.id")
                 .entity(String.class)
@@ -1437,7 +1437,7 @@ class ReservationMutationControllerTest
                       { id: "a5555555-5555-4555-8555-555555555555",
                         start: "2030-06-01T10:00:00", end: "2030-06-01T11:00:00", allDay: false }
                     ],
-                    allocations: [ { allocatableId: "%s" } ]
+                    allocations: [ { resourceId: "%s" } ]
                   }) { id }
                 }
                 """.formatted(room.getId()))

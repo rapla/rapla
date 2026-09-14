@@ -96,15 +96,16 @@ public class RaplaJNLPController
         }
         response.setContentType("application/x-java-jnlp-file;charset=utf-8");
         out.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-        String codebase = getCodebase(request);
-        out.println("<jnlp spec=\"6.0+\" codebase=\"" + codebase + "\" href=\"" + codebase + "raplaclient.jnlp\" >");
+        // Security audit PH3 — no codebase and only relative hrefs: they resolve against the URL the launcher fetched this
+        // manifest from, so a forged Host / X-Forwarded-* header cannot point the client at another server.
+        out.println("<jnlp spec=\"6.0+\" href=\"raplaclient.jnlp\" >");
         out.println("<information>");
         out.println(" <title>" + menuName + "</title>");
         out.println(" <vendor>Rapla team</vendor>");
         out.println(" <homepage href=\"https://rapla.org\"/>");
         out.println(" <description>Resource Scheduling Application</description>");
-        out.println(" <icon kind=\"default\" href=\"" + codebase + "webclient/rapla_64x64.png\" width=\"64\" height=\"64\"/> ");
-        out.println(" <icon kind=\"shortcut\" href=\"" + codebase + "webclient/rapla_64x64.png\" width=\"64\" height=\"64\"/> ");
+        out.println(" <icon kind=\"default\" href=\"webclient/rapla_64x64.png\" width=\"64\" height=\"64\"/> ");
+        out.println(" <icon kind=\"shortcut\" href=\"webclient/rapla_64x64.png\" width=\"64\" height=\"64\"/> ");
         if (createShortcut)
         {
             out.println(" <shortcut online=\"true\">");
@@ -127,16 +128,7 @@ public class RaplaJNLPController
             out.println("  <j2se version=\"1.8+\"/>");
         }
 
-        // rapla.download.url is the server root URL WITHOUT the servlet context path —
-        // the REST proxy appends the context path itself. Emitting the full codebase
-        // (e.g. http://host:port/rapla/) caused doubled paths like /rapla/rapla/auth/login → 401.
-        String contextPath = request.getContextPath();
-        String rootUrl = codebase;
-        if (contextPath != null && !contextPath.isEmpty() && rootUrl.endsWith(contextPath + "/"))
-        {
-            rootUrl = rootUrl.substring(0, rootUrl.length() - contextPath.length() - 1) + "/";
-        }
-        out.println("  <property name=\"rapla.download.url\" value=\"" + rootUrl + "\"/>");
+        // rapla.download.url is not emitted: the client resolves its server URL against the Web Start codebase (PH3).
 
         String passedUsername = request.getParameter("username");
         if (passedUsername != null)
@@ -274,29 +266,6 @@ public class RaplaJNLPController
         }
 
         return java.util.Map.copyOf(result);
-    }
-
-    private String getCodebase(HttpServletRequest request)
-    {
-        StringBuffer codebaseBuffer = new StringBuffer();
-        String forwardProto = request.getHeader("X-Forwarded-Proto");
-        String forwardPort = request.getHeader("X-Forwarded-Port");
-        boolean secure = (forwardProto != null && forwardProto.equalsIgnoreCase("https")) || request.isSecure();
-        codebaseBuffer.append(secure ? "https://" : "http://");
-        codebaseBuffer.append(request.getServerName());
-        if (forwardPort != null)
-        {
-            codebaseBuffer.append(':');
-            codebaseBuffer.append(forwardPort);
-        }
-        else if (forwardProto == null && request.getServerPort() != (!secure ? 80 : 443))
-        {
-            codebaseBuffer.append(':');
-            codebaseBuffer.append(request.getServerPort());
-        }
-        codebaseBuffer.append(request.getContextPath());
-        codebaseBuffer.append('/');
-        return codebaseBuffer.toString();
     }
 
     private String getLibsJNLP(ServletContext context, String webstartRoot) throws IOException

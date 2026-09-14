@@ -136,10 +136,10 @@ public abstract class Tools
     public static final Set<String> RESERVED_GRAPHQL_SUFFIXES = Set.of("Classification", "Where", "Enum", "Rapla");
 
     /** DynamicType keys whose {@code <key>Where} would shadow a hand-written predicate type. */
-    private static final Set<String> RESERVED_TYPE_KEYS = Set.of("String", "Int", "Boolean", "LocalDateTime", "Category", "Allocatable");
+    private static final Set<String> RESERVED_TYPE_KEYS = Set.of("String", "Int", "Boolean", "LocalDateTime", "Category", "Resource");
 
     /** Attribute keys that would shadow the fixed fields of generated classification / where types. */
-    private static final Set<String> RESERVED_ATTRIBUTE_KEYS = Set.of("typeKey", "type", "AND", "OR", "NOT");
+    private static final Set<String> RESERVED_ATTRIBUTE_KEYS = Set.of("typeKey", "type", "kind", "AND", "OR", "NOT");
 
     public static boolean endsWithReservedGraphqlSuffix(String key)
     {

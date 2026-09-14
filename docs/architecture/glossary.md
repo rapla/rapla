@@ -81,14 +81,14 @@ Three unrelated concepts share this word. Two exist; one is planned.
 | **AppointmentBlock** — dt. *Termin(block)* | The materialised occurrence of one Appointment after expanding its repeating rule. Not persisted. | `AppointmentBlock` (rapla-core `entities/domain/`) |
 | **RaplaBlock** | The render-layer wrapper around an AppointmentBlock carrying build context (colors, permissions), produced by `RaplaBuilder`. | `RaplaBlock` (rapla-core `plugin/abstractcalendar/`) |
 | **SwingRaplaBlock** | The Swing-specific painted block (pixel geometry, always-black text). | rapla-client |
-| **GraphQL `AppointmentBlock`** | The wire shape exposed to the SPA (`color`, `matchedBy`, `allocatables(filter:)`). | `schema.graphqls`; see [calendar-rendering.md](calendar-rendering.md) |
+| **GraphQL `AppointmentBlock`** | The wire shape exposed to the SPA (`color`, `matchedBy`, `resources(filter:)`). | `schema.graphqls`; see [calendar-rendering.md](calendar-rendering.md) |
 
 ### "Filter"
 
 | Term | Meaning | Where |
 |---|---|---|
 | **ClassificationFilter** | A query predicate over Classification attribute values (the legacy "neue Regel für" rules). | `ClassificationFilter` (rapla-core `entities/dynamictype/`) |
-| **ReservationFilter / AllocatableFilter** (GraphQL) | The GraphQL input types carrying date range, type/where predicates, allocatable matching. | `schema.graphqls`; see [tableview-and-graphql-views.md](tableview-and-graphql-views.md) |
+| **ReservationFilter / ResourceFilter** (GraphQL) | The GraphQL input types carrying date range, type/where predicates, resource matching. | `schema.graphqls`; see [tableview-and-graphql-views.md](tableview-and-graphql-views.md) |
 | **CalendarModel allocatable/reservation filter** | The selected-object + classification filters on the in-memory calendar model. | `CalendarModel.setReservationFilter` / `setAllocatableFilter` |
 
 ### "Store"
@@ -208,7 +208,7 @@ Three unrelated concepts share this word. Two exist; one is planned.
 ## GraphQL & views
 
 - **`@view` / render modes** — The directive a stored GraphQL view uses to advertise its render modes. [PRD 074](../prd/074-graphql-declarative-views.md). See [tableview-and-graphql-views.md](tableview-and-graphql-views.md).
-- **ReservationFilter / AllocatableFilter** — GraphQL input types carrying date range, `typeKeyEq`, generated `whereXxx` predicates, `allocatableMatching`. `schema.graphqls`. See the "Filter" collision and [graphql.md](../graphql.md).
+- **ReservationFilter / ResourceFilter** — GraphQL input types carrying date range, `typeKeyEq`, generated `whereXxx` predicates, `resourceMatching`. `schema.graphqls`. See the "Filter" collision and [graphql.md](../graphql.md).
 - **Stored view (kind=VIEW)** — A saved GraphQL query artifact; BUILTIN + CUSTOM catalog managed by `ViewCatalogService`. See the "View" collision.
 - **`<TypeKey>Classification`** — The per-DynamicType narrowing type generated in the GraphQL schema; keys are API identity (ADR 0005). See [graphql.md](../graphql.md).
 

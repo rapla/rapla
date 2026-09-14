@@ -63,7 +63,7 @@ public class ClassificationGraphQLController
 
     // === Query roots ==========================================================
 
-    @QueryMapping
+    @QueryMapping(name = "resources")
     public List<Allocatable> allocatables(@Argument("filter") Map<String, Object> filterMap) throws RaplaException
     {
         // PRD 035 §5d Phase 2 — argument is the raw input map (not the
@@ -265,7 +265,7 @@ public class ClassificationGraphQLController
         return ClassificationSdlGenerator.isRaplaInternal(a.getClassification().getType());
     }
 
-    @QueryMapping
+    @QueryMapping(name = "resource")
     public Allocatable allocatable(@Argument("id") String id) throws RaplaException
     {
         if (id == null || id.isBlank()) return null;

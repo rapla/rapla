@@ -204,9 +204,11 @@ public class ToolsTest
     public void reservedTypeAndAttributeKeys() {
         Assert.assertTrue(Tools.isReservedTypeKey("String"));
         Assert.assertTrue(Tools.isReservedTypeKey("Category"));
+        Assert.assertTrue(Tools.isReservedTypeKey("Resource"));
         Assert.assertFalse(Tools.isReservedTypeKey("raum"));
         Assert.assertTrue(Tools.isReservedAttributeKey("AND"));
         Assert.assertTrue(Tools.isReservedAttributeKey("typeKey"));
+        Assert.assertTrue(Tools.isReservedAttributeKey("kind"));
         Assert.assertFalse(Tools.isReservedAttributeKey("name"));
     }
 

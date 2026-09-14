@@ -788,6 +788,22 @@ public class PermissionController
         return hasAccess(object, attribute, user, Permission.AccessLevel.READ);
     }
 
+    /**
+     * WP O1 — may {@code caller} hand {@code entity} from {@code oldOwner} to {@code newOwner}? Global admins always;
+     * a group admin only for an entity he can see (reservations: canRead, allocatables: canReadInformation) whose old and new owner are both inside his user-admin scope.
+     * Ownerless entities and DynamicTypes stay global-admin only. Shared by the store gate and the owner verbs.
+     */
+    public boolean canChangeOwner(User caller, Entity<?> entity, User oldOwner, User newOwner)
+    {
+        if (caller == null || newOwner == null) return false;
+        if (caller.isAdmin()) return true;
+        if (oldOwner == null || entity instanceof DynamicType) return false;
+        if (!canAdminUsers(caller) || !canAdminUser(caller, oldOwner) || !canAdminUser(caller, newOwner)) return false;
+        if (entity instanceof Reservation reservation) return canRead(reservation, caller);
+        if (entity instanceof Allocatable allocatable) return canReadInformation(allocatable, caller);
+        return false;
+    }
+
     public static boolean canAdminUsers(User workingUser)
     {
         final boolean isAdmin = workingUser.isAdmin();

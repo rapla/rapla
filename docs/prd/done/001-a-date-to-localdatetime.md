@@ -32,7 +32,7 @@
 
 #### Companion catalogs and scripts
 
-A read-only checkout of `origin/master` lives at `/home/chris/git/rapla-master-checkout/` for diff-friendly inspection.
+A read-only checkout of `origin/master` lives at `~/rapla-master-checkout/` for diff-friendly inspection.
 
 | Doc | Generator | What |
 |-----|-----------|------|

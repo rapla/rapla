@@ -32,7 +32,7 @@ public interface DocumentApi
 {
     /**
      * Render a document to a standalone HTML page. Query params are the view's variables, expanded
-     * by {@code RequestVariables}: a dot nests ({@code ?filter.allocatableIdsIn=r1}), a repeated key
+     * by {@code RequestVariables}: a dot nests ({@code ?filter.resourceIdsIn=r1}), a repeated key
      * is a list. {@code MultiValueMap} — not {@code Map} — so a repeat is not silently dropped.
      */
     @GetExchange(value = "/{name}", accept = "text/html")

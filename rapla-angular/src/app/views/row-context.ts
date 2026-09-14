@@ -6,11 +6,11 @@ import type { ViewColumn } from '../graphql/graphql.service';
  * View rows are `Record<string, unknown>` from arbitrary stored views: an
  * appointment block, a resource, a user, or a menu-less aggregate row. A view
  * that wants row actions selects a hidden subject field under a well-known
- * alias (`reservation @hidden { id canModify }`, `allocatable @hidden {...}`,
+ * alias (`reservation @hidden { id canModify }`, `resource @hidden {...}`,
  * `user @hidden { id }`) — the Swing analog is `SelectionMenuContext` carrying
  * a typed RaplaObject. A row without a subject simply has no menu.
  */
-export type EntityKind = 'reservation' | 'allocatable' | 'user';
+export type EntityKind = 'reservation' | 'resource' | 'user';
 
 export interface EntityRef {
   kind: EntityKind;
@@ -34,7 +34,7 @@ export interface RowContext {
    *  the context — multi-select ⇒ null, providers dispatch on {@link subjects}. */
   primary: EntityRef | null;
   /** All refs the row(s) carry: primaries first, then secondary refs from
-   *  Allocatable-typed cells (persons/resources already select `id`). */
+   *  Resource-typed cells (persons/resources already select `id`). */
   entities: EntityRef[];
   /** Per-row primary subjects in selection order (rows without a subject are
    *  skipped) — what multi-row actions iterate (PRD 099). Single row ⇒ [primary]. */
@@ -51,7 +51,7 @@ export interface RowContext {
 /** Subject aliases in priority order — first match wins. */
 const SUBJECT_ALIASES: readonly { alias: string; kind: EntityKind }[] = [
   { alias: 'reservation', kind: 'reservation' },
-  { alias: 'allocatable', kind: 'allocatable' },
+  { alias: 'resource', kind: 'resource' },
   { alias: 'user', kind: 'user' },
 ];
 
@@ -96,11 +96,11 @@ export function extractRowContext(
 
   const entities: EntityRef[] = primary ? [primary] : [];
   for (const col of columns) {
-    if (col.type !== 'Allocatable') continue;
+    if (col.type !== 'Resource') continue;
     const cell = row[col.alias];
     if (!Array.isArray(cell)) continue;
     for (const item of cell) {
-      const ref = asRef(item, 'allocatable');
+      const ref = asRef(item, 'resource');
       if (ref) entities.push(ref);
     }
   }

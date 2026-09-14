@@ -16,24 +16,24 @@ describe('buildVariablesByType', () => {
 
   it('Raumauslastung: BOTH variables get the selection, by type', () => {
     const vars = buildVariablesByType(
-      [v('filter', 'ReservationFilter!'), v('allocatableFilter', 'AllocatableFilter!')],
+      [v('filter', 'ReservationFilter!'), v('resourceFilter', 'ResourceFilter!')],
       { window: W, resourceIds: RES },
     );
     expect(vars).toEqual({
-      filter: { from: W.from, to: W.to, allocatableMatching: { idIn: RES } },
-      allocatableFilter: { idIn: RES },
+      filter: { from: W.from, to: W.to, resourceMatching: { idIn: RES } },
+      resourceFilter: { idIn: RES },
     });
   });
 
-  it('an AllocatableFilter variable can be named anything (binds by TYPE, not name)', () => {
+  it('an ResourceFilter variable can be named anything (binds by TYPE, not name)', () => {
     expect(
-      buildVariablesByType([v('rooms', 'AllocatableFilter!')], { window: W, resourceIds: RES }),
+      buildVariablesByType([v('rooms', 'ResourceFilter!')], { window: W, resourceIds: RES }),
     ).toEqual({ rooms: { idIn: RES } });
   });
 
-  it('an AllocatableFilter with no selection is omitted (server default applies)', () => {
+  it('an ResourceFilter with no selection is omitted (server default applies)', () => {
     expect(
-      buildVariablesByType([v('rooms', 'AllocatableFilter!')], { window: W, resourceIds: [] }),
+      buildVariablesByType([v('rooms', 'ResourceFilter!')], { window: W, resourceIds: [] }),
     ).toEqual({});
   });
 
@@ -43,7 +43,7 @@ describe('buildVariablesByType', () => {
         window: W,
         resourceIds: RES,
       }),
-    ).toEqual({ filter: { from: W.from, to: W.to, allocatableMatching: { idIn: RES } } });
+    ).toEqual({ filter: { from: W.from, to: W.to, resourceMatching: { idIn: RES } } });
   });
 
   it('null window → ReservationFilter is omitted (first load, server merges defaults)', () => {
@@ -62,7 +62,7 @@ describe('buildVariablesByType', () => {
     ).toEqual({ filter: { from: W.from, to: W.to, ownerEq: 'u-42' } });
   });
 
-  it('user + resource scope combine (ownerEq AND allocatableMatching)', () => {
+  it('user + resource scope combine (ownerEq AND resourceMatching)', () => {
     expect(
       buildVariablesByType([v('filter', 'ReservationFilter!')], {
         window: W,
@@ -70,7 +70,7 @@ describe('buildVariablesByType', () => {
         ownerId: 'u-42',
       }),
     ).toEqual({
-      filter: { from: W.from, to: W.to, allocatableMatching: { idIn: RES }, ownerEq: 'u-42' },
+      filter: { from: W.from, to: W.to, resourceMatching: { idIn: RES }, ownerEq: 'u-42' },
     });
   });
 });

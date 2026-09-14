@@ -33,7 +33,7 @@ export interface GqlError {
 export interface ViewColumn {
   alias: string;
   header: string;
-  /** GraphQL-ish type hint driving formatting: {@code String}, {@code LocalDateTime}, {@code Allocatable}, … */
+  /** GraphQL-ish type hint driving formatting: {@code String}, {@code LocalDateTime}, {@code Resource}, … */
   type?: string;
   /** Explicit column position (server-emitted). When present, columns sort by it; ties keep array order. */
   order?: number;
@@ -56,10 +56,10 @@ export interface ViewColumn {
 
 /** One operation variable of the stored view — the binding contract: the GUI
  *  fills each variable from ambient state BY TYPE (ReservationFilter ← window +
- *  selection, AllocatableFilter ← selection, …). */
+ *  selection, ResourceFilter ← selection, …). */
 export interface ViewVariable {
   name: string;
-  /** GraphQL type name, e.g. {@code "ReservationFilter!"}, {@code "AllocatableFilter!"}. */
+  /** GraphQL type name, e.g. {@code "ReservationFilter!"}, {@code "ResourceFilter!"}. */
   type: string;
 }
 

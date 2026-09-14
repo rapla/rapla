@@ -1,7 +1,7 @@
 # PRD 115 — Exchange sync hotfix 2026-09: paging, failure domain, series & delete semantics
 
 **Status:** done — 2026-09-13 — split out of [PRD 114](../114-exchange-sync-per-mailbox-lock.md) (which keeps only the open locking/executor work). Production (legacy WAR) runs hotfix **v11 = hunks 1–13**; **hunk 14** (weekly series with several weekdays) is in both trees incl. test but **not yet deployed** (v12 waits for the next build). All hunks are ported to `spring-boot` with `SynchronisationManagerHotfixTest`.
-**Related:** [PRD 114](../114-exchange-sync-per-mailbox-lock.md) (open: per-mailbox locks, executor split, connector lifecycle), [PRD 070](../070-restore-exchange-connector-wiring.md) (server wiring + scheduler split), [PRD 038](../038-graph-calendar-sync.md) (Graph backend, additive), [exchange-sync](../../architecture/exchange-sync.md) (the resulting rules, canonical), operational record with site/mailbox specifics and per-step counts: `dhbwrapla/docs/exchange-sweep-analysis-2026-09.md` (gitignored, not in this repo).
+**Related:** [PRD 114](../114-exchange-sync-per-mailbox-lock.md) (open: per-mailbox locks, executor split, connector lifecycle), [PRD 070](../070-restore-exchange-connector-wiring.md) (server wiring + scheduler split), [PRD 038](../038-graph-calendar-sync.md) (Graph backend, additive), [exchange-sync](../../architecture/exchange-sync.md) (the resulting rules, canonical), operational record with site/mailbox specifics and per-step counts kept in the affected deployment's private docs (gitignored, not in this repo).
 
 ## Abstract
 
@@ -163,7 +163,7 @@ Decided 2026-09-09: only mechanical hunks go to production; everything structura
    Existing series in Exchange keep their stamp, so they are only rewritten after a resync or
    an edit of the event. **Not yet deployed** (v12).
 
-Effect in production (per-step counts: dhbwrapla analysis file): sweep read phase from tens
+Effect in production (per-step counts: the deployment's private analysis file): sweep read phase from tens
 of minutes to under two minutes with zero read timeouts; the affected location's whole
 backlog written in one run; after hunks 3/4 one failed attempt per broken mailbox and zero
 co-participant rewrites; after v7 a steady state where the sweep log holds only the
