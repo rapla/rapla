@@ -27,8 +27,8 @@ OAuth) is additive and does not require migration work — it is just there.
 | Database | JDBC datasource declared in the container XML | `rapla.db-datasources.rapladb` key in `application.yml` | [§2](#2-database-configuration) |
 | Permissions | `USER > GROUP > WORLD` **precedence** with soft-deny | **Purely additive** (`max` over all matching rows); soft-deny abolished | [§3](#3-the-new-permission-model-prd-090) |
 
-The migration path in one line: **export your Rapla 2 store to `data.xml`, point
-a fresh Rapla 3 install at it, start once to import, then verify.**
+The migration path in one line: **make a backup of your Rapla 2 database or
+`data.xml`, point Rapla 3 at the same store, start once, then verify.**
 
 ## 1. Jetty → Spring Boot
 
@@ -118,8 +118,8 @@ Rapla 3 supports the same two backends as Rapla 2 — the **XML file store**
 ### Staying on the XML file store
 
 If your Rapla 2 instance used the XML store, you need to do nothing special:
-drop your migrated `data/data.xml` in place (see §"Migrating your data" below)
-and start. The default is:
+make a backup of your `data.xml`, place it at `data/data.xml` (see §"Migrating
+your data" below) and start. The default is:
 
 ```yaml
 rapla:
@@ -170,24 +170,24 @@ rapla:
 
 ### Migrating your data
 
-The store format is compatible across the migration; the import path is the same
-one Rapla has always used:
+The store format is compatible across the migration. No export or import is
+needed. Rapla 3 upgrades your existing store in place:
 
-1. **Export from Rapla 2** to `data.xml` (admin export, or the on-disk
-   `data.xml` if you ran the XML store).
-2. **Drop it at `data/data.xml`** in your Rapla 3 install directory.
-3. **First boot against an empty database** (DB mode): on first connect Rapla 3
-   creates the full schema and **imports the initial data from the XML file
-   source**. So a fresh database deployment still needs a readable
-   `data/data.xml` seed on first start.
+1. **Stop Rapla 2 and make a backup** of the database (DB mode) or of
+   `data.xml` (XML mode). Rapla 3 updates the store in place, so the backup is
+   your way back to Rapla 2.
+2. **Point Rapla 3 at the same store**: the same database in
+   `rapla.db-datasources.rapladb`, or the same `data.xml` at `data/data.xml`.
+3. **Start Rapla 3 once.** In DB mode the schema is updated in place on first
+   start; in XML mode the file is read directly.
 
-> A **pre-1.8 Rapla database schema is not auto-migrated** — Rapla stops with an
-> explicit message. Migrate by exporting `data.xml` from the old instance and
-> importing it (steps above). A 1.8+ schema is migrated in place on the next
-> start.
-
-After the first successful boot in DB mode, the database is the source of truth;
-the `data.xml` seed is no longer read.
+> **Export/import is only needed in special cases:** a pre-1.8 Rapla database
+> schema (Rapla stops with an explicit message), switching from the XML store to
+> a database, or changing the database product. Then export `data.xml` from the
+> old instance, place it at `data/data.xml`, and start Rapla 3 against an
+> **empty** database: it creates the schema and imports the XML file on first
+> start. After that the database is the source of truth and `data.xml` is no
+> longer read.
 
 > **In-place upgrade of a 1.8+ schema: the `CHANGES` history needs no manual step.**
 > Rapla 3 writes `CHANGES.CHANGED_AT` with the same wall-clock convention Rapla 2
@@ -324,11 +324,14 @@ migrated.
 - [ ] Translate your `raplaserver.xml` / sysprop settings into
       `config/application.yml` (§1 key table).
 - [ ] Don't rename keys in Rapla 2 from now on; speaking keys come after the switch (§2 *Generic keys*).
-- [ ] Export Rapla 2 data to `data.xml`; place at `data/data.xml`.
-- [ ] If using a database: configure `rapla.db-datasources.rapladb`, drop the
-      driver in `./lib/`, point at an **empty** database for first boot.
-- [ ] Start once; confirm the schema/data import and that you can log in.
-- [ ] Set the `admin` password (the seed ships with an empty one).
+- [ ] Stop Rapla 2 and make a backup of the database or `data.xml`.
+- [ ] XML store: place `data.xml` at `data/data.xml`. Database: configure
+      `rapla.db-datasources.rapladb` for the same database and drop the driver
+      in `./lib/`.
+- [ ] Start once; confirm the schema update and that you can log in.
+- [ ] Log in with your existing Rapla 2 admin account. Only a fresh install
+      without data creates `admin` with an empty password; set it before the
+      server is reachable.
 - [ ] Open the **permissions migration page**; review and resolve every
       escalated allocatable (§3).
 - [ ] Verify a few real users see exactly what they should (spot-check the most

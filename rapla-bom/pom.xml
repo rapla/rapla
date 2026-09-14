@@ -24,7 +24,6 @@
 		<hsqldb.version>2.7.4</hsqldb.version>
 		<h2.version>2.3.232</h2.version>
 		<postgresql.version>9.1-901-1.jdbc4</postgresql.version>
-		<mysql.version>8.0.28</mysql.version>
 
 		<maven.compiler.source>17</maven.compiler.source>
 		<maven.compiler.target>17</maven.compiler.target>
@@ -366,11 +365,6 @@
 				<groupId>com.h2database</groupId>
 				<artifactId>h2</artifactId>
 				<version>${h2.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>mysql</groupId>
-				<artifactId>mysql-connector-java</artifactId>
-				<version>${mysql.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>org.mariadb.jdbc</groupId>

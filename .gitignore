@@ -118,3 +118,6 @@ docs/coordination/
 
 # Angular CLI cache created when ng runs from the repo root
 /.angular/
+
+# npm/vitest run from the repo root leaves a stray cache here — never tracked (rapla-angular/ has its own)
+/node_modules/
