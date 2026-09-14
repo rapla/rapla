@@ -248,8 +248,8 @@ gh run watch
 ```
 
 - **Red tests never block the build.** The run turns red and the run summary lists failing test classes, but the JAR is still built and published.
-- **Nightly download (fixed link, no login):** `https://github.com/rapla/rapla/releases/download/nightly/rapla-nightly.jar` — prerelease `nightly`, overwritten each run (only runs on `master` publish), self-signed with `raplaselfsigned.ks`, not for production. The `nightly` tag is force-moved each run.
-- **Jobs:** `java` (default test lane + `package -Psign-jks`), `slow-tests` (`db`/`e2e`/`perf`), `angular` (lint + unit tests), `publish` (nightly release), `docker` (image build only, no registry push).
+- **Nightly download (fixed link, no login):** `https://github.com/rapla/rapla/releases/download/nightly/rapla.jar` — prerelease `nightly`, overwritten each run (only runs on `master` publish), self-signed with `raplaselfsigned.ks`, not for production. The `nightly` tag is force-moved each run.
+- **Jobs:** `java` (default test lane + `package -Psign-jks`), `slow-tests` (`db`/`e2e`/`perf`), `angular` (lint + unit tests), `publish` (nightly release), `docker` (image build on every branch; on `master` pushes `ghcr.io/rapla/rapla:nightly` and deletes untagged versions older than 10 days — see [deployment.md § Nightly image](deployment.md#nightly-image)).
 - **Reports:** run artefacts `surefire-reports` / `surefire-reports-slow` (3 days).
 
 ## Self-signed build — what's automated vs. manual
@@ -286,7 +286,7 @@ nohup java \
   -Dserver.tomcat.accesslog.prefix=access -Dserver.tomcat.accesslog.suffix=.log \
   -Dserver.tomcat.accesslog.pattern='%h %t "%r" %s %b "%{User-Agent}i"' \
   -Dserver.tomcat.accesslog.buffered=false \
-  -jar /home/chris/git/rapla/rapla-app/target/rapla-2.1-SNAPSHOT.jar \
+  -jar /home/chris/git/rapla/rapla-app/target/rapla.jar \
   > /home/chris/git/rapla/logs/rapla.log 2>&1 < /dev/null &
 disown
 ```

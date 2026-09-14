@@ -13,7 +13,7 @@ wrapper), which no longer apply.
 `mvn package` (module `rapla-app`) produces a single artifact:
 
 ```
-rapla-app/target/rapla-2.1-SNAPSHOT.jar
+rapla-app/target/rapla.jar
 ```
 
 A self-contained Spring Boot fat JAR — embedded Tomcat, all dependencies, the
@@ -66,7 +66,7 @@ from there:
 
 ```
 /opt/rapla/
-  rapla-2.1-SNAPSHOT.jar      ← the artifact, never modified
+  rapla.jar      ← the artifact, never modified
   config/
     application.yml           ← your overrides (only the keys you change)
   data/
@@ -79,7 +79,7 @@ from there:
 
 ```sh
 cd /opt/rapla
-java -jar rapla-2.1-SNAPSHOT.jar
+java -jar rapla.jar
 ```
 
 Browse to `http://localhost:8051`. The bundled store starts with one admin
@@ -286,6 +286,60 @@ with the **database modes only** — the file store saves by renaming its
 cannot take. For MariaDB list both overlays:
 `COMPOSE_FILE=compose.yaml:docker/compose.mariadb.yaml:docker/compose.seed.yaml`.
 
+### Nightly image
+
+Every nightly CI run on `master` pushes `ghcr.io/rapla/rapla:nightly` — the
+current `master` state with the self-signed dev certificate for the Web Start
+client. **Test builds only, not for production**; the tag moves every night.
+
+```sh
+docker pull ghcr.io/rapla/rapla:nightly
+docker run -d --name rapla -p 8051:8051 \
+  -v rapla-data:/opt/rapla/data -v rapla-logs:/opt/rapla/logs \
+  ghcr.io/rapla/rapla:nightly
+```
+
+Settings go in with `-e` or from the same `.env` file as above:
+
+```sh
+docker run -d --name rapla -p 8051:8051 \
+  -e RAPLA_DBDATASOURCES_RAPLADB_URL=jdbc:hsqldb:file:/opt/rapla/data/rapladb \
+  -e RAPLA_DBDATASOURCES_RAPLADB_USERNAME=SA \
+  -v rapla-data:/opt/rapla/data -v rapla-logs:/opt/rapla/logs \
+  ghcr.io/rapla/rapla:nightly
+
+docker run -d --name rapla -p 8051:8051 --env-file .env \
+  -v rapla-data:/opt/rapla/data -v rapla-logs:/opt/rapla/logs \
+  ghcr.io/rapla/rapla:nightly
+```
+
+`--env-file` hands every `KEY=value` line to the container; the
+`COMPOSE_FILE` / `RAPLA_SEED_XML` / `RAPLA_LIB_DIR` entries are Compose
+settings and have no effect there.
+
+With Compose, `compose.yaml` in the repo **builds the image locally**
+(`build: .`). To use the nightly image instead, replace that line with the
+registry image and run `docker compose pull && docker compose up -d`:
+
+```yaml
+services:
+  rapla:
+    image: ghcr.io/rapla/rapla:nightly
+```
+
+The overlays in `docker/` and `.env` work unchanged.
+
+The GitHub package is created **private** by the first push. Two one-time
+steps for an owner of the `rapla` organization, in the package settings — no
+workflow can do either:
+
+- *Change visibility* → public. Until then `docker pull` needs
+  `docker login ghcr.io` with a GitHub token.
+- *Manage Actions access* → `rapla/rapla` → **Admin**. Deleting old untagged
+  versions with the workflow's `GITHUB_TOKEN` needs the Admin role; without it
+  the cleanup step gets HTTP 403 and the `docker` job turns red right after a
+  successful push.
+
 ### Backup and restore
 
 **File store and HSQLDB** — archive the data volume with a throwaway
@@ -334,7 +388,7 @@ wholesale and never touches the rest:
 
 ```
 /opt/rapla/
-  rapla-2.1-SNAPSHOT.jar  ← the artifact, replaced on every upgrade
+  rapla.jar  ← the artifact, replaced on every upgrade
   config/application.yml  ← your overrides
   data/data.xml           ← datastore (XML mode) or first-boot seed (DB mode)
   lib/                    ← extra JDBC drivers (PostgreSQL / MariaDB / …)
@@ -345,7 +399,7 @@ wholesale and never touches the rest:
 
 ```sh
 sudo mkdir -p /opt/rapla/{config,data,lib,logs}
-sudo cp rapla-2.1-SNAPSHOT.jar /opt/rapla/
+sudo cp rapla.jar /opt/rapla/
 ```
 
 **2. Service account.** A dedicated, login-less system user owns the runtime:
@@ -378,7 +432,7 @@ User=rapla
 Group=rapla
 WorkingDirectory=/opt/rapla
 ExecStart=/usr/bin/java -Xmx2048m -Djava.awt.headless=true \
-  -jar /opt/rapla/rapla-2.1-SNAPSHOT.jar
+  -jar /opt/rapla/rapla.jar
 Restart=on-failure
 TimeoutStopSec=45
 SuccessExitStatus=143
@@ -443,8 +497,8 @@ Replace the JAR only — leave `config/`, `data/`, and `lib/` untouched:
 
 ```sh
 sudo systemctl stop rapla
-sudo cp rapla-2.1-SNAPSHOT.jar /opt/rapla/
-sudo chown root:rapla /opt/rapla/rapla-2.1-SNAPSHOT.jar
+sudo cp rapla.jar /opt/rapla/
+sudo chown root:rapla /opt/rapla/rapla.jar
 sudo systemctl start rapla
 ```
 
