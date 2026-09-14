@@ -1,0 +1,1183 @@
+<?xml version="1.0" encoding="utf-8"?><!--*- coding: utf-8 -*-->
+<rapla:data xmlns:rapla="http://rapla.sourceforge.net/rapla"
+ xmlns:relax="http://relaxng.org/ns/structure/1.0"
+ xmlns:dynatt="http://rapla.sourceforge.net/dynamictype"
+ xmlns:ext="http://rapla.sourceforge.net/extension"
+ xmlns:doc="http://rapla.sourceforge.net/annotation"
+ version="1.2">
+   <rapla:categories>
+      <rapla:category created-at="2026-05-28T16:17:10.589Z" last-changed="2026-05-28T16:17:10.589Z" id="ca803871-f482-4b55-a241-14363dce6655" key="user-groups">
+         <doc:name lang="en">user-groups</doc:name>
+         <rapla:category created-at="2026-05-28T16:17:10.589Z" last-changed="2026-05-28T16:17:10.589Z" id="c949c002-c68a-443a-9a41-ff191c05e8a5" key="read-events-from-others">
+            <doc:name lang="en">See events of other users</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2026-05-28T16:17:10.589Z" last-changed="2026-05-28T16:17:10.589Z" id="c9e93357-8d4b-4876-9468-6a27ecbb2898" key="create-events">
+            <doc:name lang="en">create events</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z" id="c9a38192-011a-5f99-a6ba-986d3564db13" key="planners">
+            <doc:name lang="de">Dienstplanung</doc:name><doc:name lang="en">Planners</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z" id="caa5b461-0471-592f-934e-0d568eca8eb9" key="staff">
+            <doc:name lang="de">Stationspersonal</doc:name><doc:name lang="en">Ward staff</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z" id="c16b6e02-45fc-51f7-899a-e4c5086ef6ee" key="display">
+            <doc:name lang="de">Stationsmonitor</doc:name><doc:name lang="en">Ward screen</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2026-05-28T16:17:10.589Z" last-changed="2026-05-28T16:17:10.589Z" id="c373ca42-e66f-4109-a9c0-4dbb0e6322ba" key="exchange-synchronization">
+            <doc:name lang="en">exchange-synchronization</doc:name>
+         </rapla:category>
+      </rapla:category>
+      <rapla:category created-at="2026-05-28T16:17:10.589Z" last-changed="2026-05-28T16:17:10.589Z" id="cf445cac-1fcb-4669-ba7f-2bea95986c5b" key="periods">
+         <doc:name lang="en">Periods</doc:name>
+         <rapla:category created-at="2026-05-28T16:17:10.589Z" last-changed="2026-05-28T16:17:10.589Z" id="c73a5564-67e4-4686-9fbc-f4ce74df21b6" key="holiday">
+            <doc:name lang="en">holiday</doc:name>
+         </rapla:category>
+      </rapla:category>
+      <rapla:category created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z" id="ceca0488-1c16-5330-9b81-9c14710120a3" key="qualification">
+         <doc:name lang="de">Qualifikation</doc:name><doc:name lang="en">Qualification</doc:name>
+         <rapla:category created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z" id="cf6c8cbd-7d6e-57c4-9414-840be574a30b" key="charge_nurse">
+            <doc:name lang="de">Schichtleitung</doc:name><doc:name lang="en">Charge nurse</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z" id="c83b7423-d154-5609-97b9-68035970b3d4" key="registered_nurse">
+            <doc:name lang="de">Pflegefachkraft</doc:name><doc:name lang="en">Registered nurse</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z" id="c307727b-0e3b-5a36-9ee8-2a04bade19a4" key="nursing_assistant">
+            <doc:name lang="de">Pflegehilfskraft</doc:name><doc:name lang="en">Nursing assistant</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z" id="c694c194-7c2c-51cf-a978-a061833991e5" key="trainee_nurse">
+            <doc:name lang="de">Auszubildende Pflege</doc:name><doc:name lang="en">Trainee nurse</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z" id="cf2236df-81ca-5d83-98ac-0ee010f93f00" key="ward_physician">
+            <doc:name lang="de">Stationsarzt</doc:name><doc:name lang="en">Ward physician</doc:name>
+         </rapla:category>
+      </rapla:category>
+      <rapla:category created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z" id="c161905b-f00e-50c2-9aad-dbc7fa4d0abd" key="shift_kind">
+         <doc:name lang="de">Schichtart</doc:name><doc:name lang="en">Shift kind</doc:name>
+         <rapla:category created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z" id="c490293e-c49e-51e1-a563-2ef5258c1255" key="night">
+            <doc:name lang="de">Nacht 00–06</doc:name><doc:name lang="en">Night 00–06</doc:name>
+            <rapla:annotation key="color">#5c7cc4</rapla:annotation>
+         </rapla:category>
+         <rapla:category created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z" id="c133f4d5-3eb9-55c1-83f0-a0750566cd4b" key="morning">
+            <doc:name lang="de">Früh 06–12</doc:name><doc:name lang="en">Morning 06–12</doc:name>
+            <rapla:annotation key="color">#f6d55c</rapla:annotation>
+         </rapla:category>
+         <rapla:category created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z" id="c1f66629-42cf-5227-9fbd-2d1f6b28ce9a" key="afternoon">
+            <doc:name lang="de">Mittag 12–18</doc:name><doc:name lang="en">Afternoon 12–18</doc:name>
+            <rapla:annotation key="color">#f4a259</rapla:annotation>
+         </rapla:category>
+         <rapla:category created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z" id="cba9408b-cb90-5d0a-992a-4be0e129122e" key="evening">
+            <doc:name lang="de">Spät 18–24</doc:name><doc:name lang="en">Evening 18–24</doc:name>
+            <rapla:annotation key="color">#b39ddb</rapla:annotation>
+         </rapla:category>
+         <rapla:category created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z" id="c69fb4ed-c9e0-5ba8-ab25-58f76e71b52d" key="training">
+            <doc:name lang="de">Fortbildung</doc:name><doc:name lang="en">Training</doc:name>
+            <rapla:annotation key="color">#7cc47f</rapla:annotation>
+         </rapla:category>
+      </rapla:category>
+   </rapla:categories>
+
+   <relax:grammar>
+      <relax:define name="rapla_anonymousEvent">
+         <relax:element name="dynatt:rapla_anonymousEvent" id="rapla:anonymousEvent" created-at="2026-05-28T18:17:10.588Z" last-changed="2026-05-28T16:17:10.625Z">
+            <doc:name lang="cs">neviditeně</doc:name>
+            <doc:name lang="de">nicht sichtbar</doc:name>
+            <doc:name lang="en">Not visible</doc:name>
+            <doc:name lang="es">no visible</doc:name>
+            <doc:name lang="fi">Ei näkyvä</doc:name>
+            <doc:name lang="fr">Non visible</doc:name>
+            <doc:name lang="nl">Onzichtbaar</doc:name>
+            <doc:name lang="pl">Uklkryty</doc:name>
+            <doc:name lang="pt">Invisível</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{p-&gt;type(p)}</rapla:annotation>
+               <rapla:annotation key="classification-type">reservation</rapla:annotation>
+            </doc:annotations>
+            <rapla:permission access="read_type"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:define name="staff">
+         <relax:element name="dynatt:staff" id="d89516a9-3d55-58ef-983f-c6ea298637be" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+            <doc:name lang="de">Pflegekraft</doc:name><doc:name lang="en">Staff member</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{firstname} {surname}</rapla:annotation>
+               <rapla:annotation key="classification-type">person</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="surname">
+                  <doc:name lang="de">Nachname</doc:name><doc:name lang="en">Surname</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="firstname">
+                  <doc:name lang="de">Vorname</doc:name><doc:name lang="en">First name</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="qualification">
+                  <doc:name lang="de">Qualifikation</doc:name><doc:name lang="en">Qualification</doc:name>
+                  <relax:data type="rapla:category"/>
+                  <rapla:constraint name="root-category">category[key='qualification']</rapla:constraint>
+                  <rapla:constraint name="multi-select">true</rapla:constraint>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="phone">
+                  <doc:name lang="de">Telefon</doc:name><doc:name lang="en">Phone</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="email">
+                  <doc:name lang="de">E-Mail</doc:name><doc:name lang="en">Email</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+            <rapla:permission access="allocate_conflicts"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:define name="ward">
+         <relax:element name="dynatt:ward" id="d33acf88-a1b8-5681-b937-b861725aa84c" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+            <doc:name lang="de">Station</doc:name><doc:name lang="en">Ward</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{name}</rapla:annotation>
+               <rapla:annotation key="classification-type">resource</rapla:annotation>
+               <rapla:annotation key="location">true</rapla:annotation>
+               <rapla:annotation key="colors">rapla:automated</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="name">
+                  <doc:name lang="de">Name</doc:name><doc:name lang="en">Name</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="beds">
+                  <doc:name lang="de">Betten</doc:name><doc:name lang="en">Beds</doc:name>
+                  <relax:data type="int"/>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+            <rapla:permission access="allocate_conflicts"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:define name="shift">
+         <relax:element name="dynatt:shift" id="d8ecd968-03ee-547c-b31e-ad96e59b8a8f" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+            <doc:name lang="de">Schicht</doc:name><doc:name lang="en">Shift</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{name}</rapla:annotation>
+               <rapla:annotation key="classification-type">reservation</rapla:annotation>
+               <rapla:annotation key="colors">color</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="name">
+                  <doc:name lang="de">Name</doc:name><doc:name lang="en">Name</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="shiftkind">
+                  <doc:name lang="de">Schichtart</doc:name><doc:name lang="en">Shift kind</doc:name>
+                  <doc:annotations><rapla:annotation key="color">true</rapla:annotation></doc:annotations>
+                  <relax:data type="rapla:category"/>
+                  <rapla:constraint name="root-category">category[key='shift_kind']</rapla:constraint>
+                  <rapla:constraint name="multi-select">false</rapla:constraint>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+            <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+            <rapla:permission group="category[key='user-groups']/category[key='planners']" access="create"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:define name="rapla_unresolvedResource">
+         <relax:element name="dynatt:rapla_unresolvedResource" id="rapla:unresolvedResource" created-at="2026-05-28T18:17:10.582Z" last-changed="2026-05-28T16:17:10.625Z">
+            <doc:name lang="cs">Not visible or deleted</doc:name>
+            <doc:name lang="de">nicht sichtbar oder gelöscht</doc:name>
+            <doc:name lang="en">Not visible or deleted</doc:name>
+            <doc:name lang="es">Not visible or deleted</doc:name>
+            <doc:name lang="fi">Not visible or deleted</doc:name>
+            <doc:name lang="fr">Not visible or deleted</doc:name>
+            <doc:name lang="nl">Not visible or deleted</doc:name>
+            <doc:name lang="pl">Not visible or deleted</doc:name>
+            <doc:name lang="pt">Not visible or deleted</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{p-&gt;type(p)}</rapla:annotation>
+               <rapla:annotation key="classification-type">resource</rapla:annotation>
+            </doc:annotations>
+            <rapla:permission access="read_type"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:start>
+         <relax:choice>
+            <relax:ref name="rapla_anonymousEvent"/>
+            <relax:ref name="staff"/>
+            <relax:ref name="ward"/>
+            <relax:ref name="shift"/>
+            <relax:ref name="rapla_unresolvedResource"/>
+         </relax:choice>
+      </relax:start>
+   </relax:grammar>
+
+   <rapla:preferences>
+      <rapla:entry key="org.rapla.server.graphql-key-migration.applied" value="2026-05-28T16:17:10.624321112Z"/>
+   </rapla:preferences>
+
+   <rapla:users>
+      <!-- Users of the system -->
+      <rapla:user id="u55b864a-acc1-4bf3-a526-360744025a62" created-at="2026-05-28T16:17:10.589Z" last-changed="2026-05-28T16:17:10.589Z" username="admin" password="" name="" email="" isAdmin="true">
+      </rapla:user>
+      <rapla:user id="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z" username="planner" password="demo" name="Pat Morgan" email="planner@example.org" isAdmin="false">
+         <rapla:group key="category[key='user-groups']/category[key='planners']"/>
+         <rapla:group key="category[key='user-groups']/category[key='read-events-from-others']"/>
+         <rapla:group key="category[key='user-groups']/category[key='create-events']"/>
+      </rapla:user>
+      <rapla:user id="u8d6f332-cf70-5eb7-87a2-1978e84b5db1" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z" username="alex" password="demo" name="Alex Turner" email="alex@example.org" isAdmin="false">
+         <rapla:group key="category[key='user-groups']/category[key='staff']"/>
+         <rapla:group key="category[key='user-groups']/category[key='read-events-from-others']"/>
+      </rapla:user>
+      <rapla:user id="u2f114b0-e93a-5c94-97a7-fe1ad68b1e86" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z" username="wardscreen" password="demo" name="Ward screen" email="wardscreen@example.org" isAdmin="false">
+         <rapla:group key="category[key='user-groups']/category[key='display']"/>
+         <rapla:group key="category[key='user-groups']/category[key='read-events-from-others']"/>
+      </rapla:user>
+   </rapla:users>
+
+   <rapla:resources>
+      <!-- resources -->
+      <rapla:resource id="r74fd241-60bd-5427-ba2e-f882925ee223" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:ward>
+            <dynatt:name>Ward 3 – Internal medicine</dynatt:name>
+            <dynatt:beds>32</dynatt:beds>
+         </dynatt:ward>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="r8e8853e-0716-57c1-b94b-36ab4f5801cf" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:staff>
+            <dynatt:surname>Turner</dynatt:surname>
+            <dynatt:firstname>Alex</dynatt:firstname>
+            <dynatt:qualification>category[key='charge_nurse']</dynatt:qualification><dynatt:qualification>category[key='registered_nurse']</dynatt:qualification>
+            <dynatt:phone>+49 555 0100</dynatt:phone>
+            <dynatt:email>alex.turner@example.org</dynatt:email>
+         </dynatt:staff>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="ra1571d3-3e17-5ff3-a36a-dba8279915b7" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:staff>
+            <dynatt:surname>Baker</dynatt:surname>
+            <dynatt:firstname>Jordan</dynatt:firstname>
+            <dynatt:qualification>category[key='registered_nurse']</dynatt:qualification>
+            <dynatt:phone>+49 555 0101</dynatt:phone>
+            <dynatt:email>jordan.baker@example.org</dynatt:email>
+         </dynatt:staff>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="r7ac2e43-f1a7-5842-858c-2eb2f3d03221" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:staff>
+            <dynatt:surname>Fischer</dynatt:surname>
+            <dynatt:firstname>Morgan</dynatt:firstname>
+            <dynatt:qualification>category[key='nursing_assistant']</dynatt:qualification>
+            <dynatt:phone>+49 555 0102</dynatt:phone>
+            <dynatt:email>morgan.fischer@example.org</dynatt:email>
+         </dynatt:staff>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="r02f42b2-e01d-5e60-a164-095b773220ff" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:staff>
+            <dynatt:surname>Novak</dynatt:surname>
+            <dynatt:firstname>Casey</dynatt:firstname>
+            <dynatt:qualification>category[key='charge_nurse']</dynatt:qualification><dynatt:qualification>category[key='registered_nurse']</dynatt:qualification>
+            <dynatt:phone>+49 555 0103</dynatt:phone>
+            <dynatt:email>casey.novak@example.org</dynatt:email>
+         </dynatt:staff>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="r5181780-885f-52ce-986e-ff6558abed7e" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:staff>
+            <dynatt:surname>Brooks</dynatt:surname>
+            <dynatt:firstname>Riley</dynatt:firstname>
+            <dynatt:qualification>category[key='registered_nurse']</dynatt:qualification>
+            <dynatt:phone>+49 555 0104</dynatt:phone>
+            <dynatt:email>riley.brooks@example.org</dynatt:email>
+         </dynatt:staff>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="r6e4b6f1-ddfc-5edf-bd55-1cdafab2ceb2" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:staff>
+            <dynatt:surname>Weber</dynatt:surname>
+            <dynatt:firstname>Taylor</dynatt:firstname>
+            <dynatt:qualification>category[key='nursing_assistant']</dynatt:qualification>
+            <dynatt:phone>+49 555 0105</dynatt:phone>
+            <dynatt:email>taylor.weber@example.org</dynatt:email>
+         </dynatt:staff>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="rc9255fd-05a8-5ad4-9b36-ba95aaef8b35" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:staff>
+            <dynatt:surname>Silva</dynatt:surname>
+            <dynatt:firstname>Jamie</dynatt:firstname>
+            <dynatt:qualification>category[key='charge_nurse']</dynatt:qualification><dynatt:qualification>category[key='registered_nurse']</dynatt:qualification>
+            <dynatt:phone>+49 555 0106</dynatt:phone>
+            <dynatt:email>jamie.silva@example.org</dynatt:email>
+         </dynatt:staff>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="r66923d0-cfbe-5b23-a014-d8b114df0c30" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:staff>
+            <dynatt:surname>Hartmann</dynatt:surname>
+            <dynatt:firstname>Robin</dynatt:firstname>
+            <dynatt:qualification>category[key='registered_nurse']</dynatt:qualification>
+            <dynatt:phone>+49 555 0107</dynatt:phone>
+            <dynatt:email>robin.hartmann@example.org</dynatt:email>
+         </dynatt:staff>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="rc6e184e-b00c-5c37-934f-2584a5940b7d" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:staff>
+            <dynatt:surname>Keller</dynatt:surname>
+            <dynatt:firstname>Sam</dynatt:firstname>
+            <dynatt:qualification>category[key='nursing_assistant']</dynatt:qualification>
+            <dynatt:phone>+49 555 0108</dynatt:phone>
+            <dynatt:email>sam.keller@example.org</dynatt:email>
+         </dynatt:staff>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="r3cfae06-81a9-5621-adc8-f92dbba0b59b" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:staff>
+            <dynatt:surname>Lindqvist</dynatt:surname>
+            <dynatt:firstname>Charlie</dynatt:firstname>
+            <dynatt:qualification>category[key='charge_nurse']</dynatt:qualification><dynatt:qualification>category[key='registered_nurse']</dynatt:qualification>
+            <dynatt:phone>+49 555 0109</dynatt:phone>
+            <dynatt:email>charlie.lindqvist@example.org</dynatt:email>
+         </dynatt:staff>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="r687390a-06ae-5e20-bf89-c63c1da79c69" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:staff>
+            <dynatt:surname>Moreau</dynatt:surname>
+            <dynatt:firstname>Drew</dynatt:firstname>
+            <dynatt:qualification>category[key='registered_nurse']</dynatt:qualification>
+            <dynatt:phone>+49 555 0110</dynatt:phone>
+            <dynatt:email>drew.moreau@example.org</dynatt:email>
+         </dynatt:staff>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="rac18464-f0ed-55c4-9aef-e7a49a8806d4" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:staff>
+            <dynatt:surname>Petrov</dynatt:surname>
+            <dynatt:firstname>Avery</dynatt:firstname>
+            <dynatt:qualification>category[key='nursing_assistant']</dynatt:qualification>
+            <dynatt:phone>+49 555 0111</dynatt:phone>
+            <dynatt:email>avery.petrov@example.org</dynatt:email>
+         </dynatt:staff>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="r9a3bf48-32a0-540c-b04b-b13cd40b7092" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:ward>
+            <dynatt:name>Ward 5 – Surgery</dynatt:name>
+            <dynatt:beds>28</dynatt:beds>
+         </dynatt:ward>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="r73cc92a-5315-58c8-b8bf-31025d10211c" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:staff>
+            <dynatt:surname>Okafor</dynatt:surname>
+            <dynatt:firstname>Kim</dynatt:firstname>
+            <dynatt:qualification>category[key='charge_nurse']</dynatt:qualification><dynatt:qualification>category[key='registered_nurse']</dynatt:qualification>
+            <dynatt:phone>+49 555 0112</dynatt:phone>
+            <dynatt:email>kim.okafor@example.org</dynatt:email>
+         </dynatt:staff>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="r70943d9-06d1-5111-b5e3-7974214507ad" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:staff>
+            <dynatt:surname>Richter</dynatt:surname>
+            <dynatt:firstname>Lee</dynatt:firstname>
+            <dynatt:qualification>category[key='registered_nurse']</dynatt:qualification>
+            <dynatt:phone>+49 555 0113</dynatt:phone>
+            <dynatt:email>lee.richter@example.org</dynatt:email>
+         </dynatt:staff>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="r1b811aa-1f9e-548e-8f11-8258c89624c0" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:staff>
+            <dynatt:surname>Santos</dynatt:surname>
+            <dynatt:firstname>Quinn</dynatt:firstname>
+            <dynatt:qualification>category[key='nursing_assistant']</dynatt:qualification>
+            <dynatt:phone>+49 555 0114</dynatt:phone>
+            <dynatt:email>quinn.santos@example.org</dynatt:email>
+         </dynatt:staff>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="r0862502-1d62-5ede-b67f-1ae5692ddc56" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:staff>
+            <dynatt:surname>Vogel</dynatt:surname>
+            <dynatt:firstname>Rowan</dynatt:firstname>
+            <dynatt:qualification>category[key='charge_nurse']</dynatt:qualification><dynatt:qualification>category[key='registered_nurse']</dynatt:qualification>
+            <dynatt:phone>+49 555 0115</dynatt:phone>
+            <dynatt:email>rowan.vogel@example.org</dynatt:email>
+         </dynatt:staff>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="re5116a3-0077-56cc-8a86-045d60d70f16" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:staff>
+            <dynatt:surname>Walsh</dynatt:surname>
+            <dynatt:firstname>Sky</dynatt:firstname>
+            <dynatt:qualification>category[key='registered_nurse']</dynatt:qualification>
+            <dynatt:phone>+49 555 0116</dynatt:phone>
+            <dynatt:email>sky.walsh@example.org</dynatt:email>
+         </dynatt:staff>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="r8204706-2277-577b-8cfb-4cad876be4e8" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:staff>
+            <dynatt:surname>Yilmaz</dynatt:surname>
+            <dynatt:firstname>Emery</dynatt:firstname>
+            <dynatt:qualification>category[key='nursing_assistant']</dynatt:qualification>
+            <dynatt:phone>+49 555 0117</dynatt:phone>
+            <dynatt:email>emery.yilmaz@example.org</dynatt:email>
+         </dynatt:staff>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="r8f66ef5-1017-5dee-aaaf-b52651953b73" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:staff>
+            <dynatt:surname>Adler</dynatt:surname>
+            <dynatt:firstname>Harper</dynatt:firstname>
+            <dynatt:qualification>category[key='charge_nurse']</dynatt:qualification><dynatt:qualification>category[key='registered_nurse']</dynatt:qualification>
+            <dynatt:phone>+49 555 0118</dynatt:phone>
+            <dynatt:email>harper.adler@example.org</dynatt:email>
+         </dynatt:staff>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="r313afb9-d5f0-5bd3-a694-887f3be5e477" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:staff>
+            <dynatt:surname>Berger</dynatt:surname>
+            <dynatt:firstname>Jules</dynatt:firstname>
+            <dynatt:qualification>category[key='registered_nurse']</dynatt:qualification>
+            <dynatt:phone>+49 555 0119</dynatt:phone>
+            <dynatt:email>jules.berger@example.org</dynatt:email>
+         </dynatt:staff>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="r11b2963-2166-5bad-8b1e-21e1f5d0212a" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:staff>
+            <dynatt:surname>Costa</dynatt:surname>
+            <dynatt:firstname>Noa</dynatt:firstname>
+            <dynatt:qualification>category[key='trainee_nurse']</dynatt:qualification>
+            <dynatt:phone>+49 555 0120</dynatt:phone>
+            <dynatt:email>noa.costa@example.org</dynatt:email>
+         </dynatt:staff>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="r583502b-f020-5239-9cdc-5b41e8201566" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:staff>
+            <dynatt:surname>Dunn</dynatt:surname>
+            <dynatt:firstname>Parker</dynatt:firstname>
+            <dynatt:qualification>category[key='charge_nurse']</dynatt:qualification><dynatt:qualification>category[key='registered_nurse']</dynatt:qualification>
+            <dynatt:phone>+49 555 0121</dynatt:phone>
+            <dynatt:email>parker.dunn@example.org</dynatt:email>
+         </dynatt:staff>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="rd89b19d-4560-55bd-a3c3-37419052c104" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:staff>
+            <dynatt:surname>Engel</dynatt:surname>
+            <dynatt:firstname>Reese</dynatt:firstname>
+            <dynatt:qualification>category[key='registered_nurse']</dynatt:qualification>
+            <dynatt:phone>+49 555 0122</dynatt:phone>
+            <dynatt:email>reese.engel@example.org</dynatt:email>
+         </dynatt:staff>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="r1d34421-249f-5052-b762-a009706574d4" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:staff>
+            <dynatt:surname>Frost</dynatt:surname>
+            <dynatt:firstname>Toni</dynatt:firstname>
+            <dynatt:qualification>category[key='trainee_nurse']</dynatt:qualification>
+            <dynatt:phone>+49 555 0123</dynatt:phone>
+            <dynatt:email>toni.frost@example.org</dynatt:email>
+         </dynatt:staff>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="allocate_conflicts"/>
+      </rapla:resource>
+
+      <rapla:extension id="r6421fcb-54f4-59b5-a7b1-eac3a8d0989d" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <ext:template>
+            <ext:name>Night shift 00–06</ext:name>
+            <ext:fixedtimeandduration>true</ext:fixedtimeandduration>
+         </ext:template>
+         <rapla:permission access="read"/>
+      </rapla:extension>
+      <rapla:extension id="r7d33dba-f054-5196-a8ec-dd51ef7e386e" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <ext:template>
+            <ext:name>Morning shift 06–12</ext:name>
+            <ext:fixedtimeandduration>true</ext:fixedtimeandduration>
+         </ext:template>
+         <rapla:permission access="read"/>
+      </rapla:extension>
+      <rapla:extension id="r4885918-c630-50ef-999b-7f2e9f908edf" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <ext:template>
+            <ext:name>Afternoon shift 12–18</ext:name>
+            <ext:fixedtimeandduration>true</ext:fixedtimeandduration>
+         </ext:template>
+         <rapla:permission access="read"/>
+      </rapla:extension>
+      <rapla:extension id="rbb9585d-7544-5e39-838c-23e4a372df42" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <ext:template>
+            <ext:name>Evening shift 18–24</ext:name>
+            <ext:fixedtimeandduration>true</ext:fixedtimeandduration>
+         </ext:template>
+         <rapla:permission access="read"/>
+      </rapla:extension>
+   </rapla:resources>
+
+   <rapla:reservations>
+      <rapla:reservation id="7016d2be-c02e-557e-89a6-661aa0ddedb3" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 3 · Team A – Night</dynatt:name>
+            <dynatt:shiftkind>category[key='night']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="adabb371-3490-53bb-bb87-5700c0c7db44" start-date="2026-09-01" start-time="00:00:00" end-date="2026-09-01" end-time="06:00:00">
+            <rapla:repeating type="daily" interval="4" end-date="2027-06-30">
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="r8e8853e-0716-57c1-b94b-36ab4f5801cf"/>
+         <rapla:allocate idref="ra1571d3-3e17-5ff3-a36a-dba8279915b7"/>
+         <rapla:allocate idref="r7ac2e43-f1a7-5842-858c-2eb2f3d03221"/>
+         <rapla:allocate idref="r74fd241-60bd-5427-ba2e-f882925ee223"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="3ebc3342-6a14-5497-b0b9-0048f97833dc" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 3 · Team A – Morning</dynatt:name>
+            <dynatt:shiftkind>category[key='morning']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="a08eabdc-2a58-592e-ae5e-fb51d3efea15" start-date="2026-09-04" start-time="06:00:00" end-date="2026-09-04" end-time="12:00:00">
+            <rapla:repeating type="daily" interval="4" end-date="2027-06-30">
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="r8e8853e-0716-57c1-b94b-36ab4f5801cf"/>
+         <rapla:allocate idref="ra1571d3-3e17-5ff3-a36a-dba8279915b7"/>
+         <rapla:allocate idref="r7ac2e43-f1a7-5842-858c-2eb2f3d03221"/>
+         <rapla:allocate idref="r74fd241-60bd-5427-ba2e-f882925ee223"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="36c675d2-d4d8-5237-97f4-99f18c316eb1" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 3 · Team A – Afternoon</dynatt:name>
+            <dynatt:shiftkind>category[key='afternoon']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="ab9bee95-6e29-55d5-96ae-84b223405b4a" start-date="2026-09-03" start-time="12:00:00" end-date="2026-09-03" end-time="18:00:00">
+            <rapla:repeating type="daily" interval="4" end-date="2027-06-30">
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="r8e8853e-0716-57c1-b94b-36ab4f5801cf"/>
+         <rapla:allocate idref="ra1571d3-3e17-5ff3-a36a-dba8279915b7"/>
+         <rapla:allocate idref="r7ac2e43-f1a7-5842-858c-2eb2f3d03221"/>
+         <rapla:allocate idref="r74fd241-60bd-5427-ba2e-f882925ee223"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="3c3fb101-a6c1-5f40-81e7-a25fc0bfbfb6" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 3 · Team A – Evening</dynatt:name>
+            <dynatt:shiftkind>category[key='evening']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="a33ffab6-69dc-554f-ab96-d8c6f65d8920" start-date="2026-09-02" start-time="18:00:00" end-date="2026-09-03" end-time="00:00:00">
+            <rapla:repeating type="daily" interval="4" end-date="2027-06-30">
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="r8e8853e-0716-57c1-b94b-36ab4f5801cf"/>
+         <rapla:allocate idref="ra1571d3-3e17-5ff3-a36a-dba8279915b7"/>
+         <rapla:allocate idref="r7ac2e43-f1a7-5842-858c-2eb2f3d03221"/>
+         <rapla:allocate idref="r74fd241-60bd-5427-ba2e-f882925ee223"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="f23abd8a-21c9-5ae5-8785-ce4ce9ab7de1" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 3 · Team B – Night</dynatt:name>
+            <dynatt:shiftkind>category[key='night']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="ac831318-a975-5a53-84d6-716c669ff7cc" start-date="2026-09-02" start-time="00:00:00" end-date="2026-09-02" end-time="06:00:00">
+            <rapla:repeating type="daily" interval="4" end-date="2027-06-30">
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="r02f42b2-e01d-5e60-a164-095b773220ff"/>
+         <rapla:allocate idref="r5181780-885f-52ce-986e-ff6558abed7e"/>
+         <rapla:allocate idref="r6e4b6f1-ddfc-5edf-bd55-1cdafab2ceb2"/>
+         <rapla:allocate idref="r74fd241-60bd-5427-ba2e-f882925ee223"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="2355e032-d5a8-5605-bbcd-93b50ef9244d" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 3 · Team B – Morning</dynatt:name>
+            <dynatt:shiftkind>category[key='morning']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="aabc70bf-cbdf-50f5-a12c-2cacba8191d4" start-date="2026-09-01" start-time="06:00:00" end-date="2026-09-01" end-time="12:00:00">
+            <rapla:repeating type="daily" interval="4" end-date="2027-06-30">
+               <rapla:exception>
+                  <rapla:date date="2026-09-17"/>
+               </rapla:exception>
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="r02f42b2-e01d-5e60-a164-095b773220ff"/>
+         <rapla:allocate idref="r5181780-885f-52ce-986e-ff6558abed7e"/>
+         <rapla:allocate idref="r6e4b6f1-ddfc-5edf-bd55-1cdafab2ceb2"/>
+         <rapla:allocate idref="r74fd241-60bd-5427-ba2e-f882925ee223"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="e900e923-3f77-5ec6-8b83-c72a4253368c" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 3 · Team B – Afternoon</dynatt:name>
+            <dynatt:shiftkind>category[key='afternoon']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="a72a78c9-c913-52a4-99d5-d4725d98642c" start-date="2026-09-04" start-time="12:00:00" end-date="2026-09-04" end-time="18:00:00">
+            <rapla:repeating type="daily" interval="4" end-date="2027-06-30">
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="r02f42b2-e01d-5e60-a164-095b773220ff"/>
+         <rapla:allocate idref="r5181780-885f-52ce-986e-ff6558abed7e"/>
+         <rapla:allocate idref="r6e4b6f1-ddfc-5edf-bd55-1cdafab2ceb2"/>
+         <rapla:allocate idref="r74fd241-60bd-5427-ba2e-f882925ee223"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="5aa071a2-2e77-534f-8a3c-62094085b6e9" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 3 · Team B – Evening</dynatt:name>
+            <dynatt:shiftkind>category[key='evening']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="ae6c7f3d-5c0a-5193-95cf-78e79eab5bda" start-date="2026-09-03" start-time="18:00:00" end-date="2026-09-04" end-time="00:00:00">
+            <rapla:repeating type="daily" interval="4" end-date="2027-06-30">
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="r02f42b2-e01d-5e60-a164-095b773220ff"/>
+         <rapla:allocate idref="r5181780-885f-52ce-986e-ff6558abed7e"/>
+         <rapla:allocate idref="r6e4b6f1-ddfc-5edf-bd55-1cdafab2ceb2"/>
+         <rapla:allocate idref="r74fd241-60bd-5427-ba2e-f882925ee223"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="713e7954-35c6-5db1-afaf-8966b7a56d1f" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 3 · Team C – Night</dynatt:name>
+            <dynatt:shiftkind>category[key='night']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="a56fb84c-89d2-5eb4-8924-dcf82e0a91bd" start-date="2026-09-03" start-time="00:00:00" end-date="2026-09-03" end-time="06:00:00">
+            <rapla:repeating type="daily" interval="4" end-date="2027-06-30">
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="rc9255fd-05a8-5ad4-9b36-ba95aaef8b35"/>
+         <rapla:allocate idref="r66923d0-cfbe-5b23-a014-d8b114df0c30"/>
+         <rapla:allocate idref="rc6e184e-b00c-5c37-934f-2584a5940b7d"/>
+         <rapla:allocate idref="r74fd241-60bd-5427-ba2e-f882925ee223"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="d1f73f0d-0cea-567e-913b-003761843a9f" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 3 · Team C – Morning</dynatt:name>
+            <dynatt:shiftkind>category[key='morning']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="ac3a1cbb-8c9b-54c5-b793-8e6ffac43957" start-date="2026-09-02" start-time="06:00:00" end-date="2026-09-02" end-time="12:00:00">
+            <rapla:repeating type="daily" interval="4" end-date="2027-06-30">
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="rc9255fd-05a8-5ad4-9b36-ba95aaef8b35"/>
+         <rapla:allocate idref="r66923d0-cfbe-5b23-a014-d8b114df0c30"/>
+         <rapla:allocate idref="rc6e184e-b00c-5c37-934f-2584a5940b7d"/>
+         <rapla:allocate idref="r74fd241-60bd-5427-ba2e-f882925ee223"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="7836668b-5bed-5a1f-b76e-ce902f123dac" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 3 · Team C – Afternoon</dynatt:name>
+            <dynatt:shiftkind>category[key='afternoon']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="a6aef6f5-53da-557f-97fd-24aabacf7bae" start-date="2026-09-01" start-time="12:00:00" end-date="2026-09-01" end-time="18:00:00">
+            <rapla:repeating type="daily" interval="4" end-date="2027-06-30">
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="rc9255fd-05a8-5ad4-9b36-ba95aaef8b35"/>
+         <rapla:allocate idref="r66923d0-cfbe-5b23-a014-d8b114df0c30"/>
+         <rapla:allocate idref="rc6e184e-b00c-5c37-934f-2584a5940b7d"/>
+         <rapla:allocate idref="r74fd241-60bd-5427-ba2e-f882925ee223"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="0316f68f-46fa-5c1e-8b05-acf99124b8f1" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 3 · Team C – Evening</dynatt:name>
+            <dynatt:shiftkind>category[key='evening']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="a85d26bc-802d-5226-9397-ac3e4cb75e8b" start-date="2026-09-04" start-time="18:00:00" end-date="2026-09-05" end-time="00:00:00">
+            <rapla:repeating type="daily" interval="4" end-date="2027-06-30">
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="rc9255fd-05a8-5ad4-9b36-ba95aaef8b35"/>
+         <rapla:allocate idref="r66923d0-cfbe-5b23-a014-d8b114df0c30"/>
+         <rapla:allocate idref="rc6e184e-b00c-5c37-934f-2584a5940b7d"/>
+         <rapla:allocate idref="r74fd241-60bd-5427-ba2e-f882925ee223"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="447d12e2-3bda-5cfa-9226-0391e4eb6bbe" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 3 · Team D – Night</dynatt:name>
+            <dynatt:shiftkind>category[key='night']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="adb47405-c069-542e-9a44-37bf03e68caf" start-date="2026-09-04" start-time="00:00:00" end-date="2026-09-04" end-time="06:00:00">
+            <rapla:repeating type="daily" interval="4" end-date="2027-06-30">
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="r3cfae06-81a9-5621-adc8-f92dbba0b59b"/>
+         <rapla:allocate idref="r687390a-06ae-5e20-bf89-c63c1da79c69"/>
+         <rapla:allocate idref="rac18464-f0ed-55c4-9aef-e7a49a8806d4"/>
+         <rapla:allocate idref="r74fd241-60bd-5427-ba2e-f882925ee223"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="07c73ef5-ebe6-51c8-b747-a9e80067bb2c" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 3 · Team D – Morning</dynatt:name>
+            <dynatt:shiftkind>category[key='morning']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="a167d229-7e2d-5b00-bd61-0ba03e98c6ae" start-date="2026-09-03" start-time="06:00:00" end-date="2026-09-03" end-time="12:00:00">
+            <rapla:repeating type="daily" interval="4" end-date="2027-06-30">
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="r3cfae06-81a9-5621-adc8-f92dbba0b59b"/>
+         <rapla:allocate idref="r687390a-06ae-5e20-bf89-c63c1da79c69"/>
+         <rapla:allocate idref="rac18464-f0ed-55c4-9aef-e7a49a8806d4"/>
+         <rapla:allocate idref="r74fd241-60bd-5427-ba2e-f882925ee223"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="b728fe0f-d23b-5ebe-a427-4ab782ccf880" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 3 · Team D – Afternoon</dynatt:name>
+            <dynatt:shiftkind>category[key='afternoon']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="a3e6e616-33f3-5d1c-b1ba-2c293ed86825" start-date="2026-09-02" start-time="12:00:00" end-date="2026-09-02" end-time="18:00:00">
+            <rapla:repeating type="daily" interval="4" end-date="2027-06-30">
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="r3cfae06-81a9-5621-adc8-f92dbba0b59b"/>
+         <rapla:allocate idref="r687390a-06ae-5e20-bf89-c63c1da79c69"/>
+         <rapla:allocate idref="rac18464-f0ed-55c4-9aef-e7a49a8806d4"/>
+         <rapla:allocate idref="r74fd241-60bd-5427-ba2e-f882925ee223"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="25842a82-8751-52b7-8e66-9a883fc0d75c" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 3 · Team D – Evening</dynatt:name>
+            <dynatt:shiftkind>category[key='evening']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="a909350e-a223-5f78-bd7e-33b730d3adbf" start-date="2026-09-01" start-time="18:00:00" end-date="2026-09-02" end-time="00:00:00">
+            <rapla:repeating type="daily" interval="4" end-date="2027-06-30">
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="r3cfae06-81a9-5621-adc8-f92dbba0b59b"/>
+         <rapla:allocate idref="r687390a-06ae-5e20-bf89-c63c1da79c69"/>
+         <rapla:allocate idref="rac18464-f0ed-55c4-9aef-e7a49a8806d4"/>
+         <rapla:allocate idref="r74fd241-60bd-5427-ba2e-f882925ee223"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="aa0f7e5b-02c8-58d8-8752-492d36d83842" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 5 · Team A – Night</dynatt:name>
+            <dynatt:shiftkind>category[key='night']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="af0125ab-492a-5fcc-9d6c-0079e06fa31e" start-date="2026-09-01" start-time="00:00:00" end-date="2026-09-01" end-time="06:00:00">
+            <rapla:repeating type="daily" interval="4" end-date="2027-06-30">
+               <rapla:exception>
+                  <rapla:date date="2026-12-26"/>
+               </rapla:exception>
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="r73cc92a-5315-58c8-b8bf-31025d10211c"/>
+         <rapla:allocate idref="r70943d9-06d1-5111-b5e3-7974214507ad"/>
+         <rapla:allocate idref="r1b811aa-1f9e-548e-8f11-8258c89624c0"/>
+         <rapla:allocate idref="r9a3bf48-32a0-540c-b04b-b13cd40b7092"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="3d42b5c2-6522-5163-bf54-22ba9d94a97f" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 5 · Team A – Morning</dynatt:name>
+            <dynatt:shiftkind>category[key='morning']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="a672cfb8-b1b0-54a5-81f7-b77fe639bbde" start-date="2026-09-04" start-time="06:00:00" end-date="2026-09-04" end-time="12:00:00">
+            <rapla:repeating type="daily" interval="4" end-date="2027-06-30">
+               <rapla:exception>
+                  <rapla:date date="2026-12-25"/>
+               </rapla:exception>
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="r73cc92a-5315-58c8-b8bf-31025d10211c"/>
+         <rapla:allocate idref="r70943d9-06d1-5111-b5e3-7974214507ad"/>
+         <rapla:allocate idref="r1b811aa-1f9e-548e-8f11-8258c89624c0"/>
+         <rapla:allocate idref="r9a3bf48-32a0-540c-b04b-b13cd40b7092"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="055ccc32-be27-5bda-bb33-8435ad2e6fd3" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 5 · Team A – Afternoon</dynatt:name>
+            <dynatt:shiftkind>category[key='afternoon']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="ac0fae77-4fc2-5055-b5ae-9966d1c56942" start-date="2026-09-03" start-time="12:00:00" end-date="2026-09-03" end-time="18:00:00">
+            <rapla:repeating type="daily" interval="4" end-date="2027-06-30">
+               <rapla:exception>
+                  <rapla:date date="2026-12-24"/>
+               </rapla:exception>
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="r73cc92a-5315-58c8-b8bf-31025d10211c"/>
+         <rapla:allocate idref="r70943d9-06d1-5111-b5e3-7974214507ad"/>
+         <rapla:allocate idref="r1b811aa-1f9e-548e-8f11-8258c89624c0"/>
+         <rapla:allocate idref="r9a3bf48-32a0-540c-b04b-b13cd40b7092"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="c5dbbca1-1eb5-5f3c-8498-66696a3a1acd" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 5 · Team A – Evening</dynatt:name>
+            <dynatt:shiftkind>category[key='evening']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="a72739dd-aeda-5781-8e63-ef261a41a2ec" start-date="2026-09-02" start-time="18:00:00" end-date="2026-09-03" end-time="00:00:00">
+            <rapla:repeating type="daily" interval="4" end-date="2027-06-30">
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="r73cc92a-5315-58c8-b8bf-31025d10211c"/>
+         <rapla:allocate idref="r70943d9-06d1-5111-b5e3-7974214507ad"/>
+         <rapla:allocate idref="r1b811aa-1f9e-548e-8f11-8258c89624c0"/>
+         <rapla:allocate idref="r9a3bf48-32a0-540c-b04b-b13cd40b7092"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="5db65344-f191-5ce9-b6ec-9d086491f5f9" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 5 · Team B – Night</dynatt:name>
+            <dynatt:shiftkind>category[key='night']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="a023e6e3-c205-5fd2-b4ab-d0833ec3c9f3" start-date="2026-09-02" start-time="00:00:00" end-date="2026-09-02" end-time="06:00:00">
+            <rapla:repeating type="daily" interval="4" end-date="2027-06-30">
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="r0862502-1d62-5ede-b67f-1ae5692ddc56"/>
+         <rapla:allocate idref="re5116a3-0077-56cc-8a86-045d60d70f16"/>
+         <rapla:allocate idref="r8204706-2277-577b-8cfb-4cad876be4e8"/>
+         <rapla:allocate idref="r9a3bf48-32a0-540c-b04b-b13cd40b7092"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="1efaa6b7-fc46-564f-b1e1-280bd268aba0" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 5 · Team B – Morning</dynatt:name>
+            <dynatt:shiftkind>category[key='morning']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="a5625b94-a5cd-576d-9e15-3e79ee077430" start-date="2026-09-01" start-time="06:00:00" end-date="2026-09-01" end-time="12:00:00">
+            <rapla:repeating type="daily" interval="4" end-date="2027-06-30">
+               <rapla:exception>
+                  <rapla:date date="2026-12-26"/>
+               </rapla:exception>
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="r0862502-1d62-5ede-b67f-1ae5692ddc56"/>
+         <rapla:allocate idref="re5116a3-0077-56cc-8a86-045d60d70f16"/>
+         <rapla:allocate idref="r8204706-2277-577b-8cfb-4cad876be4e8"/>
+         <rapla:allocate idref="r9a3bf48-32a0-540c-b04b-b13cd40b7092"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="da25eadf-66a5-5ab2-a8ce-f1e8aed2d86e" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 5 · Team B – Afternoon</dynatt:name>
+            <dynatt:shiftkind>category[key='afternoon']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="a4041907-e805-5ef8-a56e-d9d1d0108646" start-date="2026-09-04" start-time="12:00:00" end-date="2026-09-04" end-time="18:00:00">
+            <rapla:repeating type="daily" interval="4" end-date="2027-06-30">
+               <rapla:exception>
+                  <rapla:date date="2026-12-25"/>
+               </rapla:exception>
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="r0862502-1d62-5ede-b67f-1ae5692ddc56"/>
+         <rapla:allocate idref="re5116a3-0077-56cc-8a86-045d60d70f16"/>
+         <rapla:allocate idref="r8204706-2277-577b-8cfb-4cad876be4e8"/>
+         <rapla:allocate idref="r9a3bf48-32a0-540c-b04b-b13cd40b7092"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="ba9f3f89-2534-54bc-a2e7-602d4f23d626" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 5 · Team B – Evening</dynatt:name>
+            <dynatt:shiftkind>category[key='evening']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="aa7904d8-024c-505d-9d18-b331a986f1c1" start-date="2026-09-03" start-time="18:00:00" end-date="2026-09-04" end-time="00:00:00">
+            <rapla:repeating type="daily" interval="4" end-date="2027-06-30">
+               <rapla:exception>
+                  <rapla:date date="2026-12-24"/>
+               </rapla:exception>
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="r0862502-1d62-5ede-b67f-1ae5692ddc56"/>
+         <rapla:allocate idref="re5116a3-0077-56cc-8a86-045d60d70f16"/>
+         <rapla:allocate idref="r8204706-2277-577b-8cfb-4cad876be4e8"/>
+         <rapla:allocate idref="r9a3bf48-32a0-540c-b04b-b13cd40b7092"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="13494d71-35a2-5335-9578-5bbf761971d1" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 5 · Team C – Night</dynatt:name>
+            <dynatt:shiftkind>category[key='night']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="a22d08d7-6548-5141-864e-a5844281469d" start-date="2026-09-03" start-time="00:00:00" end-date="2026-09-03" end-time="06:00:00">
+            <rapla:repeating type="daily" interval="4" end-date="2027-06-30">
+               <rapla:exception>
+                  <rapla:date date="2026-12-24"/>
+               </rapla:exception>
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="r8f66ef5-1017-5dee-aaaf-b52651953b73"/>
+         <rapla:allocate idref="r313afb9-d5f0-5bd3-a694-887f3be5e477"/>
+         <rapla:allocate idref="r11b2963-2166-5bad-8b1e-21e1f5d0212a"/>
+         <rapla:allocate idref="r9a3bf48-32a0-540c-b04b-b13cd40b7092"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="4f53ecc1-bed7-59f5-bdbb-c152bafe0a04" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 5 · Team C – Morning</dynatt:name>
+            <dynatt:shiftkind>category[key='morning']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="abd5ae7d-27aa-5b72-818c-1e6238a8af24" start-date="2026-09-02" start-time="06:00:00" end-date="2026-09-02" end-time="12:00:00">
+            <rapla:repeating type="daily" interval="4" end-date="2027-06-30">
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="r8f66ef5-1017-5dee-aaaf-b52651953b73"/>
+         <rapla:allocate idref="r313afb9-d5f0-5bd3-a694-887f3be5e477"/>
+         <rapla:allocate idref="r11b2963-2166-5bad-8b1e-21e1f5d0212a"/>
+         <rapla:allocate idref="r9a3bf48-32a0-540c-b04b-b13cd40b7092"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="043ba102-5b12-59b4-951b-7f20a808ed42" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 5 · Team C – Afternoon</dynatt:name>
+            <dynatt:shiftkind>category[key='afternoon']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="a31e1bb5-333f-58c0-9adc-e03be29c41b7" start-date="2026-09-01" start-time="12:00:00" end-date="2026-09-01" end-time="18:00:00">
+            <rapla:repeating type="daily" interval="4" end-date="2027-06-30">
+               <rapla:exception>
+                  <rapla:date date="2026-12-26"/>
+               </rapla:exception>
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="r8f66ef5-1017-5dee-aaaf-b52651953b73"/>
+         <rapla:allocate idref="r313afb9-d5f0-5bd3-a694-887f3be5e477"/>
+         <rapla:allocate idref="r11b2963-2166-5bad-8b1e-21e1f5d0212a"/>
+         <rapla:allocate idref="r9a3bf48-32a0-540c-b04b-b13cd40b7092"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="610612b5-16d1-599b-849a-152af7b097cb" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 5 · Team C – Evening</dynatt:name>
+            <dynatt:shiftkind>category[key='evening']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="aef092b7-568c-5a00-ad16-cf6590c46e96" start-date="2026-09-04" start-time="18:00:00" end-date="2026-09-05" end-time="00:00:00">
+            <rapla:repeating type="daily" interval="4" end-date="2027-06-30">
+               <rapla:exception>
+                  <rapla:date date="2026-12-25"/>
+               </rapla:exception>
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="r8f66ef5-1017-5dee-aaaf-b52651953b73"/>
+         <rapla:allocate idref="r313afb9-d5f0-5bd3-a694-887f3be5e477"/>
+         <rapla:allocate idref="r11b2963-2166-5bad-8b1e-21e1f5d0212a"/>
+         <rapla:allocate idref="r9a3bf48-32a0-540c-b04b-b13cd40b7092"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="c401f878-09a3-5268-ae5b-fcb13d17f71e" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 5 · Team D – Night</dynatt:name>
+            <dynatt:shiftkind>category[key='night']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="aa565f07-6829-5f88-b71b-d778cfa19b7f" start-date="2026-09-04" start-time="00:00:00" end-date="2026-09-04" end-time="06:00:00">
+            <rapla:repeating type="daily" interval="4" end-date="2027-06-30">
+               <rapla:exception>
+                  <rapla:date date="2026-12-25"/>
+               </rapla:exception>
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="r583502b-f020-5239-9cdc-5b41e8201566"/>
+         <rapla:allocate idref="rd89b19d-4560-55bd-a3c3-37419052c104"/>
+         <rapla:allocate idref="r1d34421-249f-5052-b762-a009706574d4"/>
+         <rapla:allocate idref="r9a3bf48-32a0-540c-b04b-b13cd40b7092"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="1f952295-94f4-5172-90d1-47d88a201d15" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 5 · Team D – Morning</dynatt:name>
+            <dynatt:shiftkind>category[key='morning']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="a7f82dea-3f49-5762-a161-766ff1a98d73" start-date="2026-09-03" start-time="06:00:00" end-date="2026-09-03" end-time="12:00:00">
+            <rapla:repeating type="daily" interval="4" end-date="2027-06-30">
+               <rapla:exception>
+                  <rapla:date date="2026-12-24"/>
+               </rapla:exception>
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="r583502b-f020-5239-9cdc-5b41e8201566"/>
+         <rapla:allocate idref="rd89b19d-4560-55bd-a3c3-37419052c104"/>
+         <rapla:allocate idref="r1d34421-249f-5052-b762-a009706574d4"/>
+         <rapla:allocate idref="r9a3bf48-32a0-540c-b04b-b13cd40b7092"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="c62117df-c6a8-5506-9b7b-e04bb512a217" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 5 · Team D – Afternoon</dynatt:name>
+            <dynatt:shiftkind>category[key='afternoon']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="afe0d9e8-28ce-5e17-8510-d86982ee0ec6" start-date="2026-09-02" start-time="12:00:00" end-date="2026-09-02" end-time="18:00:00">
+            <rapla:repeating type="daily" interval="4" end-date="2027-06-30">
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="r583502b-f020-5239-9cdc-5b41e8201566"/>
+         <rapla:allocate idref="rd89b19d-4560-55bd-a3c3-37419052c104"/>
+         <rapla:allocate idref="r1d34421-249f-5052-b762-a009706574d4"/>
+         <rapla:allocate idref="r9a3bf48-32a0-540c-b04b-b13cd40b7092"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="65be691c-2ad0-53b4-8fd5-6c3825be3c1c" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 5 · Team D – Evening</dynatt:name>
+            <dynatt:shiftkind>category[key='evening']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="ae4aa148-6b80-5f14-b0c8-4749832dad66" start-date="2026-09-01" start-time="18:00:00" end-date="2026-09-02" end-time="00:00:00">
+            <rapla:repeating type="daily" interval="4" end-date="2027-06-30">
+               <rapla:exception>
+                  <rapla:date date="2026-12-26"/>
+               </rapla:exception>
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:allocate idref="r583502b-f020-5239-9cdc-5b41e8201566"/>
+         <rapla:allocate idref="rd89b19d-4560-55bd-a3c3-37419052c104"/>
+         <rapla:allocate idref="r1d34421-249f-5052-b762-a009706574d4"/>
+         <rapla:allocate idref="r9a3bf48-32a0-540c-b04b-b13cd40b7092"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="7c22669d-cede-504d-8cfa-bb1501d669a9" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Ward 3 · Team B – Morning (swap)</dynatt:name>
+            <dynatt:shiftkind>category[key='morning']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="ace41b51-68ef-590c-81b1-d6ca7fe94359" start-date="2026-09-17" start-time="06:00:00" end-date="2026-09-17" end-time="12:00:00"/>
+         <rapla:allocate idref="r02f42b2-e01d-5e60-a164-095b773220ff"/>
+         <rapla:allocate idref="rd89b19d-4560-55bd-a3c3-37419052c104"/>
+         <rapla:allocate idref="r6e4b6f1-ddfc-5edf-bd55-1cdafab2ceb2"/>
+         <rapla:allocate idref="r74fd241-60bd-5427-ba2e-f882925ee223"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="d205d584-1b71-5eb5-936c-cdd3f9b0c65f" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <dynatt:shift>
+            <dynatt:name>Hygiene training</dynatt:name>
+            <dynatt:shiftkind>category[key='training']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="ae0a8156-066a-5411-b535-287e6eb5571a" start-date="2026-09-16" start-time="08:00:00" end-date="2026-09-16" end-time="09:30:00"/>
+         <rapla:allocate idref="r8e8853e-0716-57c1-b94b-36ab4f5801cf"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="c2ef3b5b-79e7-5f82-814f-5aeefdf2064f" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <rapla:annotation key="template">r6421fcb-54f4-59b5-a7b1-eac3a8d0989d</rapla:annotation>
+         <dynatt:shift>
+            <dynatt:name>Night shift</dynatt:name>
+            <dynatt:shiftkind>category[key='night']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="af30c9d6-3400-5d29-984d-779b0cf5875a" start-date="2026-09-01" start-time="00:00:00" end-date="2026-09-01" end-time="06:00:00"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="a2344bd6-efbc-5e54-bbac-9a9f01d248ca" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <rapla:annotation key="template">r7d33dba-f054-5196-a8ec-dd51ef7e386e</rapla:annotation>
+         <dynatt:shift>
+            <dynatt:name>Morning shift</dynatt:name>
+            <dynatt:shiftkind>category[key='morning']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="a0dfe980-e55c-5d1c-b5b5-7c1950126f17" start-date="2026-09-01" start-time="06:00:00" end-date="2026-09-01" end-time="12:00:00"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="ca6923c1-7fc0-557d-99ae-0c076936a3d1" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <rapla:annotation key="template">r4885918-c630-50ef-999b-7f2e9f908edf</rapla:annotation>
+         <dynatt:shift>
+            <dynatt:name>Afternoon shift</dynatt:name>
+            <dynatt:shiftkind>category[key='afternoon']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="a6a37975-2262-518f-930a-927e50241fe1" start-date="2026-09-01" start-time="12:00:00" end-date="2026-09-01" end-time="18:00:00"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="cf22ad4e-2fa7-5c36-a087-ac7489d43b1b" owner="uf4e9def-91e1-5b81-88c8-eec6b6d5b949" created-at="2026-09-14T12:00:00.000Z" last-changed="2026-09-14T12:00:00.000Z">
+         <rapla:annotation key="template">rbb9585d-7544-5e39-838c-23e4a372df42</rapla:annotation>
+         <dynatt:shift>
+            <dynatt:name>Evening shift</dynatt:name>
+            <dynatt:shiftkind>category[key='evening']</dynatt:shiftkind>
+         </dynatt:shift>
+         <rapla:appointment id="af0daf23-c125-57e6-96fa-b7fe8dc05ff6" start-date="2026-09-01" start-time="18:00:00" end-date="2026-09-02" end-time="00:00:00"/>
+         <rapla:permission group="category[key='user-groups']/category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='user-groups']/category[key='planners']" access="edit"/>
+      </rapla:reservation>
+   </rapla:reservations>
+
+   <rapla:importexports>
+   </rapla:importexports>
+</rapla:data>
