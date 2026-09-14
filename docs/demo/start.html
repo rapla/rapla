@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rapla 3 demo</title>
+<style>
+  :root { color-scheme: light dark; --fg: #1d2330; --muted: #5b6475; --bg: #f7f7f4; --card: #fff; --line: #dcdcd6; --accent: #1f5fa8; }
+  @media (prefers-color-scheme: dark) { :root { --fg: #e6e8ec; --muted: #a3aab8; --bg: #16181d; --card: #1f2229; --line: #343844; --accent: #7fb0ea; } }
+  body { margin: 0; padding: 2.5rem 1rem; background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, sans-serif; }
+  main { max-width: 44rem; margin: 0 auto; }
+  h1 { margin: 0 0 .25rem; font-size: 1.9rem; }
+  .lead { margin: 0 0 2rem; color: var(--muted); }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+  h2 { margin: 0 0 .5rem; font-size: 1.1rem; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: .35rem .5rem .35rem 0; border-top: 1px solid var(--line); vertical-align: top; }
+  th { border-top: 0; color: var(--muted); font-weight: 600; font-size: .9rem; }
+  code { font-size: .95em; }
+  a { color: var(--accent); }
+  .button { display: inline-block; padding: .55rem 1rem; border-radius: 6px; background: var(--accent); color: var(--bg); text-decoration: none; font-weight: 600; }
+  ul { margin: .25rem 0; padding-left: 1.2rem; }
+  .small { color: var(--muted); font-size: .9rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Rapla 3 demo</h1>
+  <p class="lead">Resource scheduling and event planning. Try it in the browser, change anything you like.</p>
+
+  <section>
+    <h2>Open the demo</h2>
+    <p><a class="button" href="/app/">Open Rapla</a></p>
+  </section>
+
+  <section>
+    <h2>Logins</h2>
+    <table>
+      <tr><th>Username</th><th>Password</th><th>Role</th></tr>
+      <tr><td><code>admin</code></td><td><em>leave empty</em></td><td>System administrator — sees and edits everything</td></tr>
+      <tr><td><code>planner</code></td><td><code>planner</code></td><td>Timetable office — plans courses, rooms and lecturers</td></tr>
+      <tr><td><code>lehmann</code></td><td><code>lehmann</code></td><td>Lecturer — edits own events</td></tr>
+      <tr><td><code>student</code></td><td><code>student</code></td><td>Student — reads the timetable</td></tr>
+      <tr><td><code>desk</code></td><td><code>desk</code></td><td>Media desk — equipment loans</td></tr>
+      <tr><td><code>cs-head</code></td><td><code>cs-head</code></td><td>Group admin of the Computer Science faculty</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Direct links</h2>
+    <ul>
+      <li><a href="/app/">Web app</a> — calendar, resources, events</li>
+      <li>Built-in views (after logging in): <a href="/app/views/rapla_kalender">calendar</a>, <a href="/app/views/rapla_appointments">appointments</a>, <a href="/app/views/rapla_reservations">events</a></li>
+      <li><a href="/graphiql">GraphiQL</a> — explore the GraphQL API (log in to the web app first, then open this link)</li>
+    </ul>
+    <h2>Public calendars — no login</h2>
+    <table>
+      <tr><th>Calendar</th><th>Web</th><th>iCal</th></tr>
+      <tr><td>Timetable CS-24</td><td><a href="/rapla/calendar?user=planner&amp;file=cs-24">open</a></td><td><a href="/rapla/ical?user=planner&amp;file=cs-24">subscribe</a></td></tr>
+      <tr><td>Timetable CS-25</td><td><a href="/rapla/calendar?user=planner&amp;file=cs-25">open</a></td><td><a href="/rapla/ical?user=planner&amp;file=cs-25">subscribe</a></td></tr>
+      <tr><td>Timetable CS-26</td><td><a href="/rapla/calendar?user=planner&amp;file=cs-26">open</a></td><td><a href="/rapla/ical?user=planner&amp;file=cs-26">subscribe</a></td></tr>
+      <tr><td>Timetable BA-24</td><td><a href="/rapla/calendar?user=planner&amp;file=ba-24">open</a></td><td><a href="/rapla/ical?user=planner&amp;file=ba-24">subscribe</a></td></tr>
+      <tr><td>Timetable BA-25</td><td><a href="/rapla/calendar?user=planner&amp;file=ba-25">open</a></td><td><a href="/rapla/ical?user=planner&amp;file=ba-25">subscribe</a></td></tr>
+      <tr><td>Timetable BA-26</td><td><a href="/rapla/calendar?user=planner&amp;file=ba-26">open</a></td><td><a href="/rapla/ical?user=planner&amp;file=ba-26">subscribe</a></td></tr>
+      <tr><td>Lecture hall A001</td><td><a href="/rapla/calendar?user=planner&amp;file=lecture-hall-a001">open</a></td><td><a href="/rapla/ical?user=planner&amp;file=lecture-hall-a001">subscribe</a></td></tr>
+      <tr><td>Equipment loans</td><td><a href="/rapla/calendar?user=planner&amp;file=equipment-loans">open</a></td><td><a href="/rapla/ical?user=planner&amp;file=equipment-loans">subscribe</a></td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Good to know</h2>
+    <ul>
+      <li>All data is reset every night at 04:15 (Europe/Berlin).</li>
+      <li>Everything here is dummy data and visible to every visitor — do not enter personal information.</li>
+    </ul>
+  </section>
+
+  <p class="small">What the demo shows: <a href="https://rapla.org/rapla3/demo.html">the Rapla 3 demo story</a> · More about Rapla and downloads: <a href="https://rapla.org">rapla.org</a></p>
+</main>
+</body>
+</html>
