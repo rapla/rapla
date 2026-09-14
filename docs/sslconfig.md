@@ -69,7 +69,7 @@ The `/opt/rapla/` layout from `deployment.md` gains one directory:
 
 ```
 /opt/rapla/
-  rapla-2.1-SNAPSHOT.jar
+  rapla.jar
   config/application.yml
   certs/                     ← PEM cert + key, mode 0750, owned root:rapla
     server.crt

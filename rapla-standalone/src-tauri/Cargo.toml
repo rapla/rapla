@@ -1,6 +1,6 @@
 [package]
 name = "rapla"
-version = "2.1.0"
+version = "3.0.0"
 description = "Rapla — standalone trial install (Windows 11 desktop)"
 edition = "2021"
 

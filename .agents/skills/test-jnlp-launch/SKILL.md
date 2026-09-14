@@ -48,7 +48,7 @@ nohup java \
   -Dserver.tomcat.accesslog.prefix=access -Dserver.tomcat.accesslog.suffix=.log \
   -Dserver.tomcat.accesslog.pattern='%h %t "%r" %s %b "%{User-Agent}i"' \
   -Dserver.tomcat.accesslog.buffered=false \
-  -jar /home/chris/git/rapla/rapla-app/target/rapla-2.1-SNAPSHOT.jar \
+  -jar /home/chris/git/rapla/rapla-app/target/rapla.jar \
   > /home/chris/git/rapla/logs/rapla.log 2>&1 < /dev/null &
 disown
 ```

@@ -22,7 +22,7 @@
 
         <!-- Pin to the rapla release you're targeting. See docs/plugins.md
              § "API stability" — there is no cross-version guarantee. -->
-        <rapla.version>2.1-SNAPSHOT</rapla.version>
+        <rapla.version>3.0-SNAPSHOT</rapla.version>
     </properties>
 
     <dependencies>

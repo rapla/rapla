@@ -7,7 +7,7 @@ RUN groupadd --system --gid 999 rapla \
     && mkdir config data lib plugins logs work \
     && chown rapla:rapla data logs work
 
-COPY rapla-app/target/rapla-*.jar rapla.jar
+COPY rapla-app/target/rapla.jar rapla.jar
 
 USER rapla
 

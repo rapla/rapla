@@ -17,7 +17,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @OpenAPIDefinition(
         info = @Info(
                 title = "Rapla REST API",
-                version = "2.1-SNAPSHOT",
+                version = "3.0-SNAPSHOT",
                 description = "Resource scheduling and event planning. Authorize via OAuth2 (Authorization Code + PKCE) using Rapla's bundled Spring Authorization Server, or paste a raw bearer JWT."
         ),
         security = {

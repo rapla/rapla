@@ -103,8 +103,8 @@ Loaded by Spring Boot's PropertiesLauncher when the fat JAR boots
 
 | Jar | Size | Role |
 |---|---:|---|
-| `rapla-core-2.1-SNAPSHOT.jar` | 1.69 MB | Shared types: entities, facade, REST DTOs, storage interfaces, i18n bundles |
-| `rapla-server-2.1-SNAPSHOT.jar` | 701 KB | Server-side: JDBC storage, REST controllers, Spring auto-config |
+| `rapla-core-3.0-SNAPSHOT.jar` | 1.69 MB | Shared types: entities, facade, REST DTOs, storage interfaces, i18n bundles |
+| `rapla-server-3.0-SNAPSHOT.jar` | 701 KB | Server-side: JDBC storage, REST controllers, Spring auto-config |
 
 (`rapla-client` is NOT in `BOOT-INF/lib/` — it's Swing-only and lives in `BOOT-INF/classes/static/webclient/` instead.)
 
@@ -182,7 +182,7 @@ strategy — saves ~14 MB).
 | File | Size | Role |
 |---|---:|---|
 | `rxjava-3.1.5.jar` | 2.82 MB | RxJava — used by the Swing client's async layer |
-| `rapla-client-2.1-SNAPSHOT.jar` | 1.91 MB | Swing UI code (panels, dialogs, models) |
+| `rapla-client-3.0-SNAPSHOT.jar` | 1.91 MB | Swing UI code (panels, dialogs, models) |
 | `rapla_128x128.png` | 21 KB | JNLP launcher icon |
 | `rapla_64x64.png` | 7.3 KB | JNLP launcher icon |
 | `rapla_32x32.png` | 2.5 KB | JNLP launcher icon |
@@ -373,7 +373,7 @@ etc.) under `org/springframework/boot/loader/{jar,launch,net,zip,...}/`.
 | `META-INF/maven/org.rapla/rapla-app/pom.xml` | 48 KB | Build-time embedded copy of `rapla-app/pom.xml` |
 | `META-INF/MANIFEST.MF` | 561 B | Spring Boot manifest: `Main-Class: PropertiesLauncher`, `Start-Class: RaplaSpringBootApplication` |
 | `META-INF/services/java.nio.file.spi.FileSystemProvider` | 66 B | NIO FileSystem provider registration (Spring Boot's nested-jar provider) |
-| `META-INF/maven/org.rapla/rapla-app/pom.properties` | 60 B | `groupId=org.rapla` `artifactId=rapla-app` `version=2.1-SNAPSHOT` |
+| `META-INF/maven/org.rapla/rapla-app/pom.properties` | 60 B | `groupId=org.rapla` `artifactId=rapla-app` `version=3.0-SNAPSHOT` |
 
 (`META-INF/spring/AutoConfiguration.imports` etc. live INSIDE the per-module
 JARs in `BOOT-INF/lib/`, not at the fat-JAR root.)
@@ -420,7 +420,7 @@ at browser request time — not bundled.
 Re-run this inventory anytime with:
 
 ```bash
-JAR=/home/chris/git/rapla/rapla-app/target/rapla-2.1-SNAPSHOT.jar
+JAR=/home/chris/git/rapla/rapla-app/target/rapla.jar
 unzip -l "$JAR" | awk '/^[[:space:]]*[0-9]/ && NF >= 4 {sum+=$1; n++} END {printf "%d files, %d bytes uncompressed\n", n, sum}'
 unzip -l "$JAR" | awk '/^[[:space:]]*[0-9]/ && $NF ~ /\.jar$/' | sort -rn -k1
 ```

@@ -61,7 +61,7 @@
 
   <!-- Rolling file appender. Default location ./logs/rapla.log resolves
        relative to the JVM's CWD (= ${user.dir}):
-         - `java -jar rapla-*.jar`            → <install-dir>/logs/rapla.log
+         - `java -jar rapla.jar`            → <install-dir>/logs/rapla.log
          - `mvn -pl rapla-app spring-boot:run` → rapla-app/logs/rapla.log
        (The repo-root logs/ dir is unrelated — it's a dev convention for
        capturing mvn's stdout to logs/build.log, separate from the app log

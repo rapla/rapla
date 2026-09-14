@@ -77,7 +77,7 @@ public class HelloGraphQLController
     @QueryMapping
     public String version()
     {
-        return "2.1-SNAPSHOT";
+        return "3.0-SNAPSHOT";
     }
 
     // --- auth / user lookup ---------------------------------------------------

@@ -71,7 +71,7 @@ cd rapla-standalone
 .\build.ps1 -SkipJlink     # skip jlink (faster iteration during Tauri/Rust dev)
 ```
 
-Output: `src-tauri\target\release\bundle\msi\Rapla_2.1.0_x64_en-US.msi`
+Output: `src-tauri\target\release\bundle\msi\Rapla_3.0.0_x64_en-US.msi`
 (~110 MB).
 
 Don't have PowerShell-fluent users? Same thing via `.cmd`:

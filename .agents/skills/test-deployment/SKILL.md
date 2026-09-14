@@ -1,11 +1,11 @@
 ---
 name: test-deployment
-description: Use when the user wants to test the deployable Spring Boot fat JAR (`mvn package` artifact) — verifying that `java -jar rapla-2.1-SNAPSHOT.jar` boots, that the JNLP webclient/ jars are present and signed correctly, and that the bundled distribution archive looks right. Skip for routine dev work; the `mvn spring-boot:run` dev path in AGENTS.md §8 is faster and doesn't need any of this.
+description: Use when the user wants to test the deployable Spring Boot fat JAR (`mvn package` artifact) — verifying that `java -jar rapla.jar` boots, that the JNLP webclient/ jars are present and signed correctly, and that the bundled distribution archive looks right. Skip for routine dev work; the `mvn spring-boot:run` dev path in AGENTS.md §8 is faster and doesn't need any of this.
 ---
 
 # Testing the deployable rapla fat JAR
 
-This skill covers what `java -jar rapla-app/target/rapla-2.1-SNAPSHOT.jar` actually ships — the production-shape artifact, not the dev `mvn spring-boot:run` path that AGENTS.md §8 documents. Reach for this when:
+This skill covers what `java -jar rapla-app/target/rapla.jar` actually ships — the production-shape artifact, not the dev `mvn spring-boot:run` path that AGENTS.md §8 documents. Reach for this when:
 
 - A change touches `rapla-app/pom.xml` (assembly, signing, packaging plugins, `spring-boot-maven-plugin` config)
 - A change touches `rapla-app/src/assembly/` or `rapla-app/src/main/distribution/`
@@ -22,24 +22,24 @@ mvn -pl rapla-app -am package -DskipTests
 
 ~30 s. Produces:
 
-- `rapla-app/target/rapla-2.1-SNAPSHOT.jar` — the Spring Boot fat JAR (~40 MB). `<finalName>` keeps the filename stable for deployer scripts (PRD 005 OQ2).
+- `rapla-app/target/rapla.jar` — the Spring Boot fat JAR (~40 MB). `<finalName>` keeps the filename stable for deployer scripts (PRD 005 OQ2).
 - `rapla-app/target/webclient/*.jar` — the staged client-side jars (populated by `maven-dependency-plugin:copy-dependencies`, then optionally signed by a signing profile, then bundled into the fat JAR's `static/webclient/`).
-- `rapla-app/target/distribution/rapla-2.1-SNAPSHOT.{tar.gz,zip}` — the binary distribution archive (PRD 003).
+- `rapla-app/target/distribution/rapla.{tar.gz,zip}` — the binary distribution archive (PRD 003). **Not built yet — the assembly (`src/assembly/rapla.distribution.xml`) is not wired into any pom; planned: `application.yml` + start scripts around `rapla.jar`.**
 
 ## Quick sanity check the fat JAR's contents
 
 ```bash
 # Spring Boot launcher + main class present
-unzip -l rapla-app/target/rapla-2.1-SNAPSHOT.jar | grep -E 'JarLauncher|RaplaSpringBootApplication' | head
+unzip -l rapla-app/target/rapla.jar | grep -E 'JarLauncher|RaplaSpringBootApplication' | head
 
 # Modules bundled under BOOT-INF/lib/
-unzip -l rapla-app/target/rapla-2.1-SNAPSHOT.jar | grep -E 'BOOT-INF/lib/rapla-(core|client|server)-' | head
+unzip -l rapla-app/target/rapla.jar | grep -E 'BOOT-INF/lib/rapla-(core|client|server)-' | head
 
 # JNLP webclient/ jars are inside the fat JAR
-unzip -l rapla-app/target/rapla-2.1-SNAPSHOT.jar | grep 'static/webclient/' | head
+unzip -l rapla-app/target/rapla.jar | grep 'static/webclient/' | head
 
 # clientlibs.properties is at the root of classes
-unzip -p rapla-app/target/rapla-2.1-SNAPSHOT.jar BOOT-INF/classes/clientlibs.properties
+unzip -p rapla-app/target/rapla.jar BOOT-INF/classes/clientlibs.properties
 ```
 
 Expected: launcher present, all three rapla modules listed, `static/webclient/` populated, `clientlibs.properties` is a non-empty `;`-separated list of jar filenames.
@@ -50,7 +50,7 @@ Same lifecycle pattern as AGENTS.md §8 (PID file, graceful stop, log inspection
 
 ```bash
 mkdir -p logs
-java -jar rapla-app/target/rapla-2.1-SNAPSHOT.jar \
+java -jar rapla-app/target/rapla.jar \
   > logs/rapla.log 2>&1 &
 SERVER_PID=$!
 echo $SERVER_PID > logs/rapla.pid
@@ -74,7 +74,7 @@ Stop with the same snippet from AGENTS.md §8 (graceful SIGTERM, 10 s wait, SIGK
 curl -s http://localhost:8051/rapla/raplaclient.jnlp | head -30
 
 # Check a webclient/ jar is reachable (use a name from clientlibs.properties)
-JAR=$(unzip -p rapla-app/target/rapla-2.1-SNAPSHOT.jar BOOT-INF/classes/clientlibs.properties | tr ';' '\n' | head -1)
+JAR=$(unzip -p rapla-app/target/rapla.jar BOOT-INF/classes/clientlibs.properties | tr ';' '\n' | head -1)
 curl -sf -o /dev/null -w "$JAR -> %{http_code}\n" "http://localhost:8051/rapla/webclient/$JAR"
 ```
 
@@ -118,17 +118,19 @@ Common follow-ups when `attach` succeeds but signing still fails: `sudo systemct
 
 ## Distribution archive
 
+**Not built yet — the assembly (`src/assembly/rapla.distribution.xml`) is not wired into any pom; planned: `application.yml` + start scripts around `rapla.jar`.** The commands below describe the planned archive.
+
 ```bash
 # What's in the distribution tarball
-tar -tzf rapla-app/target/distribution/rapla-2.1-SNAPSHOT.tar.gz | head -20
+tar -tzf rapla-app/target/distribution/rapla.tar.gz | head -20
 
 # Sanity: launcher script present and executable in archive
-tar -tzvf rapla-app/target/distribution/rapla-2.1-SNAPSHOT.tar.gz | grep -E '\bbin/(rapla|raplaserver)' | head
+tar -tzvf rapla-app/target/distribution/rapla.tar.gz | grep -E '\bbin/(rapla|raplaserver)' | head
 ```
 
 ## Hard rules
 
-- **Don't run `mvn package` while `java -jar` is running** — `spring-boot:repackage` writes to the same `rapla-app/target/rapla-2.1-SNAPSHOT.jar` you'd be executing. Stop the server first.
+- **Don't run `mvn package` while `java -jar` is running** — `spring-boot:repackage` writes to the same `rapla-app/target/rapla.jar` you'd be executing. Stop the server first.
 - **Don't keep both `mvn spring-boot:run` (the dev path) and `java -jar` (this path) running at once** in the same checkout — they fight for port 8051. If you need both, use a worktree per §7.
 - **Don't sign with a different identity than rapla-core's** without first stripping the existing signatures from each jar (`zip -d X.jar 'META-INF/*.SF' 'META-INF/*.RSA' 'META-INF/*.DSA' 'META-INF/*.EC'`). Mixed signers break JWS launches under `<all-permissions/>`. See PRD 003 §JNLP for the full chain.
 

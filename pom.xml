@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.rapla</groupId>
 	<artifactId>rapla-aggregator</artifactId>
-	<version>2.1-SNAPSHOT</version>
+	<version>3.0-SNAPSHOT</version>
 	<url>https://github.com/rapla/rapla</url>
 	<description>rapla - reactor aggregator (formerly rapla-master)</description>
 	<name>rapla - aggregator</name>

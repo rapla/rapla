@@ -47,7 +47,7 @@ public class SpringDocGroupsConfig
                 .pathsToMatch("/api/auth/**")
                 .addOpenApiCustomizer(api -> api.info(new Info()
                         .title("rapla — Authentication & OIDC")
-                        .version("2.1-SNAPSHOT")
+                        .version("3.0-SNAPSHOT")
                         .description(AUTH_GROUP_DESCRIPTION)))
                 .build();
     }

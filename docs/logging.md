@@ -104,10 +104,10 @@ Pre-baked silencers in the bundled `application.yml` /
 
 `${user.dir}` is the JVM's current working directory.
 
-- **`java -jar rapla-*.jar`** — `user.dir` is wherever you launched from, typically the install directory:
+- **`java -jar rapla.jar`** — `user.dir` is wherever you launched from, typically the install directory:
   ```
   /opt/rapla/
-  ├── rapla-2.1-SNAPSHOT.jar
+  ├── rapla.jar
   ├── data/
   └── logs/
       ├── rapla.log                          # application log (rolling, gzipped archives)

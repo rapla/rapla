@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 @Tag("e2e")
 class PackagedJarShapeTest
 {
-    private static final String FAT_JAR = "target/rapla-2.1-SNAPSHOT.jar";
+    private static final String FAT_JAR = "target/rapla.jar";
 
     @Test
     void manifestDeclaresPropertiesLauncher() throws IOException

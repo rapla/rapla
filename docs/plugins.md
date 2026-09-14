@@ -1,7 +1,7 @@
 # Writing a rapla server plugin
 
 A rapla server plugin is a single jar dropped into `./plugins/` next to the
-deployed `rapla-*.jar`. On restart, rapla discovers it via the classpath, runs
+deployed `rapla.jar`. On restart, rapla discovers it via the classpath, runs
 its Spring Boot `@AutoConfiguration`, and the plugin's REST endpoints, beans,
 scheduled jobs, etc. become part of the running server.
 
@@ -90,7 +90,7 @@ on the classpath at boot — that's how your plugin is discovered.
     <dependency>
         <groupId>org.rapla</groupId>
         <artifactId>rapla-server</artifactId>
-        <version>2.1-SNAPSHOT</version>
+        <version>3.0-SNAPSHOT</version>
         <scope>provided</scope>
     </dependency>
     <!-- transitively pulls rapla-core, plus the Spring Boot stack -->

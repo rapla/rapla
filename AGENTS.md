@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**Rapla** is a Java-based resource scheduling and event planning application (v2.1-SNAPSHOT, AGPL/Apache2). It uses Maven, targets Java 17, runs on Java 21. Key technologies: Spring Boot 4.0 (Tomcat 11), Jackson 3, Swing, JAX-RS / Spring MVC, RxJava3, iCal4j 4.2, Exchange Web Services.
+**Rapla** is a Java-based resource scheduling and event planning application (v3.0-SNAPSHOT, AGPL/Apache2). It uses Maven, targets Java 17, runs on Java 21. Key technologies: Spring Boot 4.0 (Tomcat 11), Jackson 3, Swing, JAX-RS / Spring MVC, RxJava3, iCal4j 4.2, Exchange Web Services.
 
 **Jackson 3** (PRD 011, done): the runtime is Jackson 3 — databind/core live in the `tools.jackson.*` package, **not** `com.fasterxml.jackson.*`. Annotations (`@JsonIgnore`, `@JsonProperty`, …) stay in `com.fasterxml.jackson.annotation.*` (the version-shared package) — those imports are correct. Only `tools.jackson.databind.ObjectMapper` is the rapla mapper. Rapla uses only Jackson 3; every use of Jackson 2 (`com.fasterxml.jackson.databind`/`.core`) is forbidden except the build-time OpenAPI spec generation (springdoc, test scope only — never in the runtime classpath).
 
@@ -16,7 +16,7 @@ The codebase is a **5-module Maven reactor** (PRD 005, 2026-05-07) plus a **sepa
 | `rapla-core` | Shared layer: entities, facade, framework, scheduler, storage interfaces, REST DTOs/endpoint interfaces, components/{util,layout,restproxy,i18n}, logger, inject. NO Spring Boot, NO Swing. |
 | `rapla-client` | Swing client + presenters: `org.rapla.client.*`, components/{calendar,calendarview,iolayer,tablesorter,treetable}, plugin `*/client/*` and `*/swing/*`. Uses `spring-context` only — explicit `AnnotationConfigApplicationContext`, NOT `@SpringBootApplication`. Depends on rapla-core. |
 | `rapla-server` | Server: `org.rapla.server.*` (excl. the `RaplaSpringBootApplication` entry point), JDBC storage, REST controllers, Spring autoconfig (`META-INF/spring/AutoConfiguration.imports`), plugin `*/server/*`. Depends on rapla-core only (verified 2026-06-10 — the PRD 005 D3 rapla-client compromise is resolved; `RaplaBuilder`/abstractcalendar live in rapla-core). |
-| `rapla-app` | Runnable Spring Boot application: `RaplaSpringBootApplication`, `application.yml`, `src/assembly/`, `src/main/distribution/`, signing profiles, JNLP webclient/ staging. Produces `rapla-2.1-SNAPSHOT.jar` (Spring Boot fat JAR). |
+| `rapla-app` | Runnable Spring Boot application: `RaplaSpringBootApplication`, `application.yml`, `src/assembly/`, `src/main/distribution/`, signing profiles, JNLP webclient/ staging. Produces `rapla.jar` (Spring Boot fat JAR). |
 | `rapla-angular/` | Angular SPA — separate tree, **not in the Maven reactor**. Built with `npm`, served at `/app/` in dev (via `ng serve` proxy on :4200) and prod (via Spring Boot static handler). Talks to the rapla-app REST API at `/api/*`. Has its own `package.json`, Vitest tests; talks to the server via `HttpClient` (auth + `/api/graphql`), no generated client. See AGENTS.md §14 + the `angular-frontend` skill. |
 
 The repo-root `pom.xml` is the reactor aggregator (artifactId `rapla-aggregator`, packaging=pom, lists the five Maven modules); running `mvn` from the repo root walks the whole reactor.
@@ -202,7 +202,7 @@ PRD 017's pyramid. Pick the cheapest tier that exercises your code path. **Java:
 #### Nevers (apply to every test you write)
 
 - **Never add a constructor argument to `FacadeImpl` or `FileOperator` without updating `FacadeTestSupport` in the same change** — the rapla-app `@SpringBootTest` ring is the only CI signal that catches drift.
-- **Never tag inconsistently** — JDBC-hitting tests get `@Tag("db")`, `@SpringBootTest` acceptance tests get `@Tag("e2e")`. Both are excluded from the default `mvn test`; without the tag they break the fast lane.
+- **Never tag inconsistently** — JDBC → `@Tag("db")`, `@SpringBootTest` → `@Tag("e2e")`, needs display → `@Tag("swing")` (JUnit 5). `db`/`e2e`: slow lane only; `swing`: local only, not nightly.
 - **Never use `@SpringBootTest(webEnvironment=RANDOM_PORT)` when MockMvc would do.** MockMvc is ~5–10× faster.
 
 `FacadeTestSupport` usage, the `@Tag` table, full-lane `mvn test -Dtest.excludedGroups=` recipes: load the **`testing-conventions`** skill. JaCoCo coverage (release-prep only): **`coverage-report`** skill.

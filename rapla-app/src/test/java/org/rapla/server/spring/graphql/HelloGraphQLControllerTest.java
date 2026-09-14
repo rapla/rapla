@@ -104,7 +104,7 @@ class HelloGraphQLControllerTest
     {
         tester.document("{ version }")
               .execute()
-              .path("version").entity(String.class).isEqualTo("2.1-SNAPSHOT");
+              .path("version").entity(String.class).isEqualTo("3.0-SNAPSHOT");
     }
 
     @Test

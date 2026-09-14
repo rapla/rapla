@@ -54,10 +54,11 @@ In Rapla 3 **all of that is gone**:
 
 - No WAR. No external servlet container. No Jetty.
 - The deliverable is a single self-contained Spring Boot fat JAR
-  (`rapla-2.1-SNAPSHOT.jar`) with embedded Tomcat 11, all dependencies, the
+  (`rapla.jar`) with embedded Tomcat 11, all dependencies, the
   Angular SPA, and the signed Web Start webclient inside it. You never edit
-  inside the JAR. (Rapla 2 builds carry the same version string
-  `2.1-SNAPSHOT` — don't confuse the artifacts.)
+  inside the JAR. (Rapla 2 builds and older Rapla 3 snapshots both carry the
+  version `2.1-SNAPSHOT` — check the version, not the file name, and don't
+  confuse the artifacts.)
 - `contexts/rapla.xml`, `etc/jetty.xml` and the JNDI configuration no longer
   exist. All server configuration moves to `application.yml`.
 
@@ -69,7 +70,7 @@ dedicated directory and run it from there:
 
 ```
 /opt/rapla/
-  rapla-2.1-SNAPSHOT.jar      ← the artifact, never modified
+  rapla.jar      ← the artifact, never modified
   config/
     application.yml           ← your overrides (only the keys you change)
   data/
@@ -84,7 +85,7 @@ Start it:
 
 ```sh
 cd /opt/rapla
-java -jar rapla-2.1-SNAPSHOT.jar
+java -jar rapla.jar
 ```
 
 `lib/` and `plugins/` are on the classpath automatically — the JAR ships a
@@ -158,7 +159,7 @@ The Rapla 2 WAR-in-a-container / service-wrapper model is replaced by a plain
 `java -jar` under an OS service manager:
 
 - **Linux**: a systemd unit with `WorkingDirectory=/opt/rapla` and
-  `ExecStart=/usr/bin/java -jar /opt/rapla/rapla-2.1-SNAPSHOT.jar`. Full unit
+  `ExecStart=/usr/bin/java -jar /opt/rapla/rapla.jar`. Full unit
   file (service account, permissions, graceful shutdown) in
   [`deployment.md` §Running as a service](docs/deployment.md#running-as-a-service).
 - **Windows**: a wrapper such as WinSW (Spring Boot has no native
@@ -398,7 +399,7 @@ migrated.
 
 ## Migration checklist
 
-- [ ] Install Java 21. Build / obtain the Rapla 3 fat JAR (`rapla-2.1-SNAPSHOT.jar`).
+- [ ] Install Java 21. Build / obtain the Rapla 3 fat JAR (`rapla.jar`).
 - [ ] Create the install layout (`config/`, `data/`, `lib/`, `plugins/`, `logs/`).
 - [ ] Translate `contexts/rapla.xml` / `etc/jetty.xml` / sysprop settings into
       `config/application.yml` (§1 key table); set every service that was off

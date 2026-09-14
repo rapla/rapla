@@ -29,7 +29,7 @@ server:
     # ${user.dir}/logs/.
     #
     # ${user.dir} resolves to:
-    #   - The install dir for `java -jar rapla-*.jar`           → e.g. /opt/rapla/logs/
+    #   - The install dir for `java -jar rapla.jar`           → e.g. /opt/rapla/logs/
     #   - The module dir for `mvn -pl rapla-app spring-boot:run` → rapla-app/logs/
     # In dev the file `logs/rapla.log` at the REPO ROOT is unrelated to
     # the application log — it's whatever your shell redirected mvn's stdout

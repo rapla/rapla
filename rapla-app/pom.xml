@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.rapla</groupId>
         <artifactId>rapla-bom</artifactId>
-        <version>2.1-SNAPSHOT</version>
+        <version>3.0-SNAPSHOT</version>
         <relativePath>../rapla-bom/pom.xml</relativePath>
     </parent>
     <artifactId>rapla-app</artifactId>
@@ -25,10 +25,10 @@
         <webclient.force-sign>false</webclient.force-sign>
     </properties>
     <name>rapla - app</name>
-    <description>Runnable Spring Boot application: @SpringBootApplication entry point, JNLP webclient/ staging, signing profiles, distribution assembly. Depends on rapla-server + rapla-client. Final on-disk JAR is rapla-2.1-SNAPSHOT.jar via &lt;finalName&gt; (PRD 005 OQ2).</description>
+    <description>Runnable Spring Boot application: @SpringBootApplication entry point, JNLP webclient/ staging, signing profiles, distribution assembly. Depends on rapla-server + rapla-client. Final on-disk JAR is rapla.jar via &lt;finalName&gt; (PRD 005 OQ2).</description>
 
     <build>
-        <finalName>rapla-2.1-SNAPSHOT</finalName>
+        <finalName>rapla</finalName>
         <resources>
             <resource>
                 <directory>${basedir}/src/main/resources-filtered</directory>
@@ -276,7 +276,7 @@
                         <goals><goal>install-node-and-npm</goal></goals>
                         <phase>prepare-package</phase>
                         <configuration>
-                            <nodeVersion>v22.22.3</nodeVersion>
+                            <nodeVersion>v24.15.0</nodeVersion>
                         </configuration>
                     </execution>
                     <execution>
@@ -671,7 +671,7 @@
             <build>
                 <!-- Output as rapla-standalone.jar (no version suffix) so the
                      standalone artifact doesn't clobber the regular fat JAR
-                     (rapla-2.1-SNAPSHOT.jar) in target/. Both can live side by
+                     (rapla.jar) in target/. Both can live side by
                      side; the Tauri build script bundles this one specifically. -->
                 <finalName>rapla-standalone</finalName>
             </build>
