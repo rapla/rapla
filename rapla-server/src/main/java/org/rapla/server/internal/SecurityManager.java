@@ -203,6 +203,10 @@ import java.time.LocalDateTime;
         }
         if (!permitted && entity instanceof User)
         {
+            // Admin flag: canModify on the NEW state routes to RaplaDefaultPermissionImpl.hasAccess, whose User branch refuses
+            // any non-admin caller when entity.isAdmin() — that is the gate that keeps group admins from granting the admin flag
+            // (edit and create). Do not add a second guard here; if this line or hasAccess is relaxed,
+            // SecurityManagerDispatchFieldGuardTest.groupAdminCannot{GrantAdminFlag,CreateAdminUser} go red.
             if (permissionController.canModify(entity, user) && (original == null || permissionController.canModify(original, user)))
             {
                 final User userToModify = (User) entity;

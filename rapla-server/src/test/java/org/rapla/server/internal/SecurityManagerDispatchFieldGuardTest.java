@@ -178,6 +178,33 @@ class SecurityManagerDispatchFieldGuardTest extends FacadeTestSupport
         assertDoesNotThrow(() -> security.checkWritePermissions(homer, created));
     }
 
+    // === S9 — admin flag =======================================================
+
+    @Test
+    void groupAdminCannotGrantAdminFlag() throws Exception
+    {
+        User edit = facade.edit(smithers);
+        edit.setAdmin(true);
+        assertThrows(RaplaSecurityException.class, () -> security.checkWritePermissions(monty, edit),
+                "a group admin must not make a user of his scope a global admin");
+    }
+
+    @Test
+    void groupAdminCannotCreateAdminUser() throws Exception
+    {
+        User created = newUserInPowerplant("lenny", null);
+        created.setAdmin(true);
+        assertThrows(RaplaSecurityException.class, () -> security.checkWritePermissions(monty, created));
+    }
+
+    @Test
+    void globalAdminMayGrantAdminFlag() throws Exception
+    {
+        User edit = facade.edit(smithers);
+        edit.setAdmin(true);
+        assertDoesNotThrow(() -> security.checkWritePermissions(homer, edit));
+    }
+
     // === S8 / PRD 117 E8 — membership in admin groups =========================
 
     @Test

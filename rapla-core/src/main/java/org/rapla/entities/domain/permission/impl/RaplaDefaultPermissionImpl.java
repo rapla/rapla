@@ -39,7 +39,7 @@ public class RaplaDefaultPermissionImpl implements PermissionExtension
         }
         if ( type == User.class)
         {
-            // only admins can set admin flags or edit admins
+            // only admins can set admin flags or edit admins (pinned by SecurityManagerDispatchFieldGuardTest; PRD 117 § Admin flag)
             if (((User) entity).isAdmin() )
             {
                 return false;

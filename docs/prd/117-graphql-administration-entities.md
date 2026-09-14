@@ -8,12 +8,21 @@
 
 **In**
 1. **Users** — `createUser` / `updateUser` / `deleteUsers`.
-2. **Group membership** — a verb of its own (the only downward lever under [PRD 090](done/090-additive-permission-resolution.md): access never subtracts, so narrowing a person means changing membership).
+2. **Group membership** — a verb of its own (the only downward lever under [PRD 090](090-additive-permission-resolution.md): access never subtracts, so narrowing a person means changing membership).
 3. **Categories and groups** — create / update / delete.
 4. **Periods and event templates** — create / delete (update exists since PRD 113 W2: `updatePeriod`, `updateEventTemplate`).
 5. Residues handed over: group/user visibility scoping (113 P-2), direct-membership gate (S1 side finding), S1 review N1 (→ E2).
 
 **Security note (AGENTS.md § 17):** E2, E8 and E9 name open gate questions. Their reasoning and paths are kept in the gitignored `docs/security/117-open-findings-2026-09.md`, not here. If they are fixed in the running security block first (proposed S8), this PRD lists them as closed.
+
+### Admin flag (`isAdmin`) — invariant
+
+Not a gap; recorded so it is neither reported as one again nor forgotten in the GraphQL user writes. Sits next to E2 / E8 / E9 (§ 4), which are the actually open gate questions.
+
+1. **Only global admins set or revoke the admin flag.** Gate: `RaplaDefaultPermissionImpl.hasAccess`, User branch ("only admins can set admin flags or edit admins") — a non-admin never gets EDIT on a user whose `isAdmin` is true. Reached through `SecurityManager.checkModifyPermissions` → `permissionController.canModify(entity, user)` on the **new** state (and on the stored state when there is one), on create and on edit alike.
+2. In addition, `PermissionController.canAdminUser` refuses targets that already are admins.
+3. **Regression lock:** `SecurityManagerDispatchFieldGuardTest.groupAdminCannotGrantAdminFlag`, `groupAdminCannotCreateAdminUser`, `globalAdminMayGrantAdminFlag`.
+4. **Binding for the planned GraphQL user/group mutations (§ 3a–3c, E-decisions):** every write goes through `WriteGate` → `SecurityManager`; no controller sets fields past the operator's gate. A `UserInput` carrying `isAdmin` bypasses nothing. **Definition of done:** one tier-3 MockMvc test per mutation — group admin + `isAdmin: true` → error (§ 6).
 
 **Out — stay REST (or elsewhere)**
 Options and admin panels ([PRD 020](020-server-driven-admin-panels.md)), import/export, password set/reset (`RemoteStorage` `/change/password`), `disconnect-external-auth`, migrations (e.g. `/api/admin/permission-migration`), server status. Moving a category to a different parent (re-parenting) — see E10. The SPA admin UI itself.
@@ -169,6 +178,7 @@ Two separate surfaces:
 
 **Tier 3 — leak tests** (pattern `UsersInGroupFilterGraphQLTest` / `PermissionWriteGraphQLTest`; responses compared byte-identically):
 - `UserAdminLeakGraphQLTest`: `updateUser` / `deleteUsers` / `changeUserGroups` with an out-of-scope user id == unknown id; mixed batch visible + hidden + unknown → the same error at the same index as all-unknown; `deleteUsers` on a referenced in-scope user → `REFERENCE_EXISTS` with no referrer ids.
+- `AdminFlagGraphQLTest` (definition of done, § Admin flag invariant): for every user/group mutation that can carry or imply the admin flag (`createUser`, `updateUser`, `changeUserGroups`, group verbs) — group admin + `isAdmin: true` → error, stored state unchanged.
 - `PermissionPrincipalScopeGraphQLTest` (E1): monty grants a row to a user he cannot administer == unknown `userId`.
 - `GroupAdminGraphQLTest`: group verb on a category id == unknown; category verb on a group id == unknown; group outside scope on `changeUserGroups` → `PERMISSION_DENIED` (not hidden, groups are global).
 - `PeriodTemplateLifecycleGraphQLTest`: create without `canCreate` on the type → `PERMISSION_DENIED`; template created with null permissions reads back an empty list, period with the `newAllocatable` defaults; delete of a resource id via `deletePeriods` == unknown id.
