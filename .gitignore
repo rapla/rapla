@@ -124,3 +124,4 @@ docs/coordination/
 .claude/worktrees/
 .claude/settings.local.json
 .claude/agent-memory-local/
+.claude/settings.json

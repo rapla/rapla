@@ -1,6 +1,6 @@
 ---
 name: doc-coauthoring
-description: Use when writing or updating rapla docs — an architecture/admin/developer page under docs/, a PRD, or an ADR — especially after a PRD lands and its docs must catch up. Carries the announce→approve, targeted-edit (never wholesale-rewrite) co-authoring workflow from ADR 0004. Skip for code-only changes and for end-user *usage* docs (those are authored separately, not derived from build-time PRDs).
+description: Use when writing or updating rapla docs — an architecture/admin/developer page under docs/, a PRD, or an ADR — especially after a PRD lands and its docs must catch up. Carries the announce→approve, targeted-edit (never wholesale-rewrite) co-authoring workflow from ADR 0004, plus the portable link rules (relative markdown link + GitHub heading-anchor slug, never [[wikilinks]] or Obsidian-only syntax) moved out of AGENTS.md §2a. Skip for code-only changes and for end-user *usage* docs (those are authored separately, not derived from build-time PRDs).
 ---
 
 # Doc Co-Authoring
@@ -78,3 +78,14 @@ durable decision is **[ADR 0004](../../../docs/decisions/0004-ai-maintained-docs
 - `prd-management` skill — the PRD lifecycle that triggers this (its inline "which docs are affected?" prose points here).
 - [PRD 088](../../../docs/prd/088-spec-graph-formalization.md) D6/D7 — the rationale (rigidity, flexibility, three-modes-to-one).
 - `skill-authoring` skill — pressure-test this skill with a subagent before relying on it.
+
+## Cross-reference links (moved from AGENTS.md §2a)
+
+`docs/` is also opened as an Obsidian vault (`.obsidian/` config dir), but GitHub is the rendering target.
+
+**Links must work on GitHub *and* Obsidian.** `docs/` is hosted on GitHub, so every reference between docs/PRDs is a standard markdown link with a **relative path + heading anchor**: `[PRD 102 § Decisions locked](102-browser-credential-hardening.md#decisions-locked)` (same dir) or `[glossary](../architecture/glossary.md)` (cross dir).
+
+- **Never `[[wikilinks]]`** — GitHub renders them as literal text (they only work in the separate GitHub *Wiki* feature, which `docs/` is not).
+- **Anchors are the GitHub heading slug** — lowercase, spaces→hyphens, punctuation dropped; ` — ` and `: ` leave a double hyphen.
+- Prefer linking a specific `#section` over the bare file. When prose cites "PRD NNN" or "§ Section", make it such a link.
+- No Obsidian-only features that break on GitHub — block IDs (`^id`) render as visible cruft; YAML frontmatter renders as a metadata table.

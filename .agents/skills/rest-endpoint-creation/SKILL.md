@@ -1,6 +1,6 @@
 ---
 name: rest-endpoint-creation
-description: Use whenever you create, modify, or delete a rapla REST endpoint — that means any class with `@RestController`, any `@HttpExchange` interface in `rapla-core`, anywhere you'd add or change `@GetMapping`/`@PostMapping`/`@PutMapping`/`@DeleteMapping`/`@PatchMapping`/`@RequestMapping`, or any DTO/request/response shape on the wire. Carries the PRD 049 single-source-of-truth pattern (interface owns routing metadata, controller `implements` it), the PII-in-query-params guardrail with the worked `ChangeNamePost`/`ChangeEmailPost` example, the explicit-`@RequestParam("name")` rule that survives parameter-name erosion on `@Override`, the SpringDocGroupsConfig grouping, the OpenAPI spec-capture command, and the documented exceptions where class-level `@RequestMapping` is still acceptable (page generators, multi-impl SPIs, controllers with in-process impl callers, `ResponseEntity`-returning download endpoints). AGENTS.md §15 keeps just the invariant + the skill pointer; the implementation patterns live here.
+description: Use whenever you create, modify, or delete a rapla REST endpoint — that means any class with `@RestController`, any `@HttpExchange` interface in `rapla-core`, anywhere you'd add or change `@GetMapping`/`@PostMapping`/`@PutMapping`/`@DeleteMapping`/`@PatchMapping`/`@RequestMapping`, or any DTO/request/response shape on the wire. Carries the PRD 049 single-source-of-truth pattern (interface owns routing metadata, controller `implements` it), the PII-in-query-params guardrail with the worked `ChangeNamePost`/`ChangeEmailPost` example, the explicit-`@RequestParam("name")` rule that survives parameter-name erosion on `@Override`, the SpringDocGroupsConfig grouping, the OpenAPI spec-capture command, and the documented exceptions where class-level `@RequestMapping` is still acceptable (page generators, multi-impl SPIs, controllers with in-process impl callers, `ResponseEntity`-returning download endpoints). Also holds the allow-list table of controllers permitted outside /api/ (index, login, iCal/calendar subscriber URLs, JNLP, status page, OpenAPI meta) and how to add an exception to ApiPrefixArchitectureTest.ALLOWED_NON_API. AGENTS.md §15 keeps just the invariant + the skill pointer; the implementation patterns live here.
 ---
 
 # Creating a REST endpoint in rapla
@@ -177,3 +177,17 @@ PRD 049 removed `jakarta.ws.rs-api` from rapla entirely. `ApiPrefixArchitectureT
 - **Drift on `@RequestBody`-vs-`@RequestParam`** → SpringDoc reflects the interface declaration. If the OpenAPI doc shows a body param where the old controller had a query, the interface is wrong.
 - **Missing group entry in SpringDocGroupsConfig** → CI fails on `everyRestControllerBelongsToExactlyOneSpecGroup`.
 - **Adding a `WebMvcConfigurer` to inject a path prefix programmatically** → don't. The literal-`/api/`-on-the-interface invariant is what the architecture test guards.
+
+## Allow-list — controllers permitted outside `/api/` (moved from AGENTS.md §15)
+
+| FQCN | URL | Why exempt |
+|---|---|---|
+| `IndexPageController` | `/`, `/index` | Chooser landing page |
+| `LoginPageController` | `/login` | Spring form-login convention |
+| `CalendarPageController` | `/rapla/calendar(.csv)?`, `/rapla/internal_calendar(.csv)?` | 🔒 External iCal subscribers depend on these literal URLs |
+| `Export2iCalController` | `/rapla/ical`, `/rapla/internal_ical` | 🔒 Outlook/Google/Apple subscribe here — must not move |
+| `RaplaJNLPController` | `/raplaclient.jnlp`, `/webclient/**` | Java Web Start launcher manifest |
+| `StatusPageController` | `/server` | Server-status HTML page |
+| `StaticOpenApiController` | `/api/v3/api-docs/**` | Meta endpoint — describes the API rather than being part of it (PRD 041); active only when SpringDoc (test-scope) is absent |
+
+`rapla-app/src/test/java/.../ApiPrefixArchitectureTest` enforces this: any new `@RestController` whose path doesn't start with `/api/` and isn't in `ALLOWED_NON_API` fails CI. To add a genuine exception, add a row with its reason here and the FQCN to `ApiPrefixArchitectureTest.ALLOWED_NON_API` — same commit.

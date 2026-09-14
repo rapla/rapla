@@ -423,3 +423,11 @@ Key facts:
 | 8 | JNLP `Content-Type: charset=ISO-8859-1` vs body declares UTF-8 | Open (cosmetic; tolerated by all parsers we tested) |
 
 The two hardcoded localhost defaults in `org.rapla.client.spring` (`ClientConfig.java:131`, `ClientProxyConfig.java:54`) are migration-era regressions worth a follow-up: ideal flow is `BasicService.getCodeBase()` (the standard JNLP "where was I launched from?" API) before falling back to localhost. Item 5 above papers over this via `<property>` injection — works, but a `BasicService` fallback would survive an absent or hand-edited JNLP.
+
+## Agent skills — how engines find them
+
+Detailed agent how-tos live as **Agent Skills** (the cross-engine `SKILL.md` standard) under `.agents/skills/<name>/SKILL.md`, kept out of the always-on `AGENTS.md` so it stays rule-dense. Claude Code, opencode, Copilot/VS Code, Codex and Gemini CLI **auto-discover them by `name` + `description` and load the body on demand** (progressive disclosure) — there is no manual index, and nobody needs to `cat` a SKILL.md to "enable" it. AGENTS.md names the relevant skill at the point a rule applies; that contextual pointer is the reference.
+
+- **Claude Code is the exception:** it reads only `.claude/skills/`, so the repo ships a plugin manifest `.claude-plugin/plugin.json` pointing at `.agents/skills`. Start Claude Code with `claude --plugin-dir .` (a shell wrapper or the session script adds the flag); the skills then appear as `rapla:<name>`.
+- Claude-only files (`commands/`, `hooks.md`) live in `.claude/`; `.agents/` holds only the shared skills.
+- Engines that don't auto-surface skills (e.g. Cursor): they're plain Markdown at the path above.

@@ -1,10 +1,22 @@
 # Claude Code hooks — what's wired, where, and why
 
-Claude Code reads two layers of settings: per-user at `~/.claude/settings.json`, per-project at `.claude/settings.json`. Hooks in either file fire automatically — the agent doesn't need to know they exist, but you do, so this file documents the contract.
+Claude Code reads two layers of settings: per-user at `~/.claude/settings.json`, per-project at `.claude/settings.json`. **This repo ships no `settings.json`** (it is gitignored — settings are per user). The three guard hooks below are recommended for every Claude Code user of rapla: copy them into your `~/.claude/settings.json` (or a local `.claude/settings.json`) once. This file documents the contract so you know what fires and why.
 
 For settings format and adding new hooks, load the **`update-config`** skill. The Claude Code docs live at `claude.com/docs/en/docs/claude-code/hooks`.
 
-## Project-level — `.claude/settings.json`
+## Which AGENTS.md rules are hook-guarded
+
+AGENTS.md states the rules; this file is the only place that says which of them a hook
+enforces mechanically. Hooks fire even under `bypassPermissions`, where `ask`/`deny`
+rules don't.
+
+| AGENTS.md rule | Hook |
+|---|---|
+| §5 never `mvn install` | `PreToolUse: Bash`, exit 2 on `mvn … install` |
+| §6 never discard tracked changes | `PreToolUse: Bash`, exit 2 on `git restore` / `reset --hard` / `clean` / `stash` (except `list`/`show`). `git checkout … -- <file>` cannot be guarded (same verb as `git checkout <branch>`), it stays a text rule |
+| §8 no chained `pkill` | `PreToolUse: Bash`, exit 2 when `pkill` shares a command line with `&&`/`;`/`\|` |
+
+## Recommended guard hooks — not shipped, add them to your own settings
 
 ### `PreToolUse: Bash` — block `mvn install`
 
@@ -42,7 +54,7 @@ For settings format and adding new hooks, load the **`update-config`** skill. Th
 
 ### `PreToolUse: Bash` — block `git restore` / `git reset --hard` / `git clean` / `git stash`
 
-A second hook in the same `Bash` matcher (`.claude/settings.json`, `hooks.PreToolUse[0].hooks[1]`). Same shape as the `mvn install` guard: reads the pending command, greps it, `exit 2` to block.
+A second hook in the same `Bash` matcher (same `Bash` matcher). Same shape as the `mvn install` guard: reads the pending command, greps it, `exit 2` to block.
 
 ```
 ... grep -qE '\bgit\b[^|;&]*\b(restore|clean)\b' || grep -qE '\bgit\b[^|;&]*\breset\b[^|;&]*--hard'

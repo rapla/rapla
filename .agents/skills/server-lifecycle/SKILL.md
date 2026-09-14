@@ -1,6 +1,6 @@
 ---
 name: server-lifecycle
-description: Use whenever the user asks to start, stop, restart, status-check, or inspect the logs of the rapla dev (Spring Boot) server — including plain-chat phrasing like "start the server", "restart rapla", "stop the server", "is the server up/running?", "bounce the server", "show/tail the server logs", "bring the server up with the dhbw plugin". ALSO load it whenever YOU (the agent) are about to script any stop / restart / bounce cycle yourself — e.g. restarting to pick up a recompile, or passing run args / Spring flags like `-Dspring-boot.run.arguments=--rapla.foo=true` — not only when the user phrases it; a "plain fresh-checkout start" is the only case that stays inline per AGENTS.md §8, everything past that loads this skill. Carries — graceful-shutdown stop (10 s window, never kill -9 first), the restart procedure (separate stop + background-start Bash calls), the pkill self-match footgun, jps/HTTP status probes, tail -F log streaming + the wait-for-"Started Rapla"-marker recipe, the external-plugin (dhbwrapla) run recipe, and the lifecycle conventions (one server per checkout, worktree port offsets, never start during a package build). The minimal vanilla start command + the never-`mvn install` hard rules also live always-on in AGENTS.md §8.
+description: Use whenever the user asks to start, stop, restart, status-check, or inspect the logs of the rapla dev (Spring Boot) server — including plain-chat phrasing like "start the server", "restart rapla", "stop the server", "is the server up/running?", "bounce the server", "show/tail the server logs", "bring the server up with the dhbw plugin". ALSO load it whenever YOU (the agent) are about to script any stop / restart / bounce cycle yourself — e.g. restarting to pick up a recompile, or passing run args / Spring flags like `-Dspring-boot.run.arguments=--rapla.foo=true` — not only when the user phrases it; a "plain fresh-checkout start" is the only case that stays inline per AGENTS.md §8, everything past that loads this skill. Carries — graceful-shutdown stop (10 s window, never kill -9 first), the restart procedure (separate stop + background-start Bash calls), the pkill self-match footgun, jps/HTTP status probes, the is-the-server-fresh probe (build timestamp vs newer target/classes — 'does the server have my latest code?', 'is the fix deployed?'), tail -F log streaming + the wait-for-"Started Rapla"-marker recipe, the external-plugin (dhbwrapla) run recipe, and the lifecycle conventions (one server per checkout, worktree port offsets, never start during a package build). The minimal vanilla start command + the never-`mvn install` hard rules also live always-on in AGENTS.md §8.
 ---
 
 # Server lifecycle — stop, restart, status, inspect
@@ -152,3 +152,13 @@ plugin-specific knobs (workingDirectory, additional config locations, conditiona
 - **Never run two servers in the same checkout** — second one fails with `BindException` on 8051. Use a worktree (AGENTS.md §7) with port offset and `logs/rapla-N.{pid,log}`.
 - **Never start the server during a `mvn package` build** that produces a fat JAR (`spring-boot:repackage` writes the same JAR `java -jar` reads). Not a concern for `spring-boot:run` alone.
 - Restart cycles use `mvn -pl rapla-app -am compile` only — never `install` (see AGENTS.md §5).
+
+## Freshness probe — does the running server have my latest code? (moved from AGENTS.md §8)
+
+Check yourself; never ask the user "did you restart?". One self-contained probe — empty output = server is fresh; listed files = the server predates them:
+
+```bash
+find rapla-app/target/classes -name '*.class' -newermt "$(curl -s localhost:8051/server | grep -o '[0-9-]\{10\} [0-9:]\{5\} GMT' | head -1 | sed 's/ GMT/:00Z/; s/ /T/')" | head
+```
+
+The ISO-8601 conversion is required — `find` is `bfs` on this machine and rejects the raw `… GMT` string. In a worktree, substitute its port. Run it FIRST when a user reports a server-side fix "doesn't work", or before attributing any symptom to a stale server; only a non-empty result justifies suggesting a restart.

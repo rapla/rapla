@@ -1,8 +1,8 @@
 # `.claude/` — Claude Code only
 
-Claude Code reads project config from `.claude/` and nothing else: `settings.json`
-(hooks, permissions — see `hooks.md`), `commands/` (slash commands),
-`settings.local.json` (personal, gitignored).
+Claude Code reads project config from `.claude/` and nothing else. Tracked here: `commands/`
+(slash commands) and `hooks.md` (the guard hooks every rapla developer should copy into their
+own `~/.claude/settings.json`). `settings.json` and `settings.local.json` are per user and gitignored.
 
 The skills are **not** here. They live in `.agents/skills/` (the cross-engine
 Agent Skills standard, read natively by opencode, Codex, Copilot, Gemini CLI).
