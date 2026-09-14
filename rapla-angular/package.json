@@ -11,6 +11,7 @@
     "test": "ng test",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
+    "demo:shots": "playwright test --config playwright.demo.config.ts",
     "lint": "ng lint && prettier --check \"src/**/*.{ts,html,css,json}\"",
     "format": "prettier --write \"src/**/*.{ts,html,css,json}\""
   },
