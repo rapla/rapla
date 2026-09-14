@@ -194,6 +194,13 @@ import java.time.LocalDateTime;
                 permitted = true;
             }
         }
+        // PRD 117 E9 — deleting a group admin's own scope root or an admin group would dissolve or reshape the admin scope
+        if (needsAdminPermission && entity instanceof Category
+                && (PermissionController.getGroupsToAdmin(user).contains(entity)
+                    || "true".equals(((Category) entity).getAnnotation(CategoryAnnotations.CAN_ADMIN_PARENT))))
+        {
+            throw new RaplaSecurityException(i18n.format("error.modify_not_allowed", user.toString(), entity.toString()));
+        }
         if (!permitted && entity instanceof User)
         {
             if (permissionController.canModify(entity, user) && (original == null || permissionController.canModify(original, user)))
@@ -201,7 +208,9 @@ import java.time.LocalDateTime;
                 final User userToModify = (User) entity;
                 // Security audit F6-1 — the authentication source decides whether a local password may be set; a group
                 // admin clearing it could take the account over via change-password. Only global admins change it.
-                if (original != null && !Objects.equals(((User) original).getAuthenticationSource(), userToModify.getAuthenticationSource()))
+                // PRD 117 E2 — also on create: a new user carries no source unless a global admin sets one
+                String sourceBefore = original == null ? null : ((User) original).getAuthenticationSource();
+                if (!Objects.equals(sourceBefore, userToModify.getAuthenticationSource()))
                 {
                     throw new RaplaSecurityException(i18n.format("error.modify_not_allowed", user.toString(), userToModify));
                 }
@@ -218,6 +227,17 @@ import java.time.LocalDateTime;
                 final Collection<Category> groupsToAdmin = PermissionController.getGroupsToAdmin(user);
                 checkCanAdminGroups(newUserGroups, groupsToAdmin, user);
                 checkCanAdminGroups(removedUserGroups, groupsToAdmin, user);
+                // PRD 117 E8 — membership in a can_admin_parent group makes a group admin; only global admins grant or revoke it
+                for (Collection<Category> changedGroups : List.of(newUserGroups, removedUserGroups))
+                {
+                    for (Category group : changedGroups)
+                    {
+                        if ("true".equals(group.getAnnotation(CategoryAnnotations.CAN_ADMIN_PARENT)))
+                        {
+                            throw new RaplaSecurityException(i18n.format("error.modify_not_allowed", user.toString(), userToModify));
+                        }
+                    }
+                }
 
                 // check if new group list has still one group to admin
                 if (newCompleteUserGroups.isEmpty() || Collections.disjoint(newCompleteUserGroups,groupsToAdmin))

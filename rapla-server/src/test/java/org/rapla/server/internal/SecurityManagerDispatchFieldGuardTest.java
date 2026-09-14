@@ -139,4 +139,102 @@ class SecurityManagerDispatchFieldGuardTest extends FacadeTestSupport
         edit.setAnnotation(CategoryAnnotations.CAN_ADMIN_PARENT, "true");
         assertDoesNotThrow(() -> security.checkWritePermissions(homer, edit));
     }
+
+    // === S8 / PRD 117 E2 — authenticationSource on create =====================
+
+    private User newUserInPowerplant(String username, String authenticationSource) throws Exception
+    {
+        User u = facade.newUser();
+        u.setUsername(username);
+        // newUser() pre-fills the default groups, which lie outside monty's scope
+        for (Category group : u.getGroupList().toArray(new Category[0]))
+        {
+            u.removeGroup(group);
+        }
+        u.addGroup(powerplant);
+        u.setAuthenticationSource(authenticationSource);
+        return u;
+    }
+
+    @Test
+    void groupAdminCannotCreateUserWithAuthenticationSource() throws Exception
+    {
+        User created = newUserInPowerplant("lenny", "ldap");
+        assertThrows(RaplaSecurityException.class, () -> security.checkWritePermissions(monty, created),
+                "a group admin must not create a user bound to an external source");
+    }
+
+    @Test
+    void groupAdminMayCreatePlainUser() throws Exception
+    {
+        User created = newUserInPowerplant("lenny", null);
+        assertDoesNotThrow(() -> security.checkWritePermissions(monty, created));
+    }
+
+    @Test
+    void globalAdminMayCreateUserWithAuthenticationSource() throws Exception
+    {
+        User created = newUserInPowerplant("lenny", "ldap");
+        assertDoesNotThrow(() -> security.checkWritePermissions(homer, created));
+    }
+
+    // === S8 / PRD 117 E8 — membership in admin groups =========================
+
+    @Test
+    void groupAdminCannotAddUserToAdminGroup() throws Exception
+    {
+        User edit = facade.edit(smithers);
+        edit.addGroup(powerplant.getCategory("powerplant-admins"));
+        assertThrows(RaplaSecurityException.class, () -> security.checkWritePermissions(monty, edit),
+                "joining powerplant-admins would make smithers a group admin");
+    }
+
+    @Test
+    void groupAdminCannotRemoveUserFromAdminGroup() throws Exception
+    {
+        Category admins = powerplant.getCategory("powerplant-admins");
+        User u = facade.newUser();
+        u.setUsername("carl");
+        u.addGroup(powerplant);
+        u.addGroup(admins);
+        facade.store(u);
+        User edit = facade.edit(operator.getUser("carl"));
+        edit.removeGroup(admins);
+        assertThrows(RaplaSecurityException.class, () -> security.checkWritePermissions(monty, edit));
+    }
+
+    @Test
+    void globalAdminMayAddUserToAdminGroup() throws Exception
+    {
+        User edit = facade.edit(smithers);
+        edit.addGroup(powerplant.getCategory("powerplant-admins"));
+        assertDoesNotThrow(() -> security.checkWritePermissions(homer, edit));
+    }
+
+    // === S8 / PRD 117 E9 — deleting admin-scope categories ====================
+
+    @Test
+    void groupAdminCannotDeleteScopeRoot()
+    {
+        assertThrows(RaplaSecurityException.class, () -> security.checkDeletePermissions(monty, powerplant));
+    }
+
+    @Test
+    void groupAdminCannotDeleteAdminGroup()
+    {
+        Category admins = powerplant.getCategory("powerplant-admins");
+        assertThrows(RaplaSecurityException.class, () -> security.checkDeletePermissions(monty, admins));
+    }
+
+    @Test
+    void groupAdminMayDeleteSubGroup()
+    {
+        assertDoesNotThrow(() -> security.checkDeletePermissions(monty, staff));
+    }
+
+    @Test
+    void globalAdminMayDeleteScopeRoot()
+    {
+        assertDoesNotThrow(() -> security.checkDeletePermissions(homer, powerplant));
+    }
 }
