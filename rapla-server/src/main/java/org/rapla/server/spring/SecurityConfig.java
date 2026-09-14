@@ -152,12 +152,11 @@ public class SecurityConfig
                             "/rapla/ical", "/rapla/internal_ical",
                             "/raplaclient", "/raplaclient.jnlp",
                             "/api/v3/api-docs/**", "/v3/api-docs/**",
-                            // PRD 035 testbed: GraphQL endpoint open while
-                            // resolvers expose only trivial public data
-                            // (hello, serverTime, version). Tighten to
-                            // .authenticated() when real PRD 035 resolvers
-                            // land — every read/write field is §12-gated
-                            // server-side regardless of transport auth.
+                            // /api/graphql is deliberately permitAll — authorization happens
+                            // per resolver (docs/graphql.md § Auth): anonymous queries get
+                            // UNAUTHENTICATED / null / [], writes fail closed via requireCaller().
+                            // Tightening to .authenticated() is a documented open decision
+                            // (2026-09, see docs/graphql.md § Auth), not an omission.
                             "/api/graphql",
                             // GraphQL schema printer (spring.graphql.schema.printer.enabled)
                             // — the SDL pendant to the public /v3/api-docs above. API

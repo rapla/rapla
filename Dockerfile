@@ -2,7 +2,8 @@ FROM eclipse-temurin:21-jre
 
 WORKDIR /opt/rapla
 
-RUN useradd --system --user-group --home-dir /opt/rapla --shell /usr/sbin/nologin rapla \
+RUN groupadd --system --gid 999 rapla \
+    && useradd --system --uid 999 --gid rapla --home-dir /opt/rapla --shell /usr/sbin/nologin rapla \
     && mkdir config data lib plugins logs work \
     && chown rapla:rapla data logs work
 

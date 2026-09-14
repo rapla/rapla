@@ -319,8 +319,9 @@ docker compose exec -T mariadb sh -c 'mariadb -u rapla -p"$MARIADB_PASSWORD" rap
 **Host folder instead of a volume** — if the data should sit in a directory
 your host backup already covers, replace `rapla-data:/opt/rapla/data` in
 `compose.yaml` with `./data:/opt/rapla/data`. The container runs as the system
-user `rapla` (uid 999, check with `docker compose exec rapla id`), so the
-directory must be writable for it: `mkdir data && sudo chown 999:999 data`.
+user `rapla` with a fixed uid/gid 999 (pinned in the `Dockerfile`, check with
+`docker compose exec rapla id`), so the directory must be writable for it:
+`mkdir data && sudo chown 999:999 data`.
 
 ## Running as a service
 
