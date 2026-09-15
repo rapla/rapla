@@ -96,7 +96,8 @@ public class SecurityConfig
                                             LoginRateLimitFilter loginRateLimitFilter,
                                             ObjectProvider<org.springframework.security.oauth2.client.registration.ClientRegistrationRepository> clientRegistrationRepositoryProvider,
                                             ObjectProvider<org.rapla.server.spring.oauth.OidcLoginSuccessHandler> oidcSuccessHandlerProvider,
-                                            ObjectProvider<FormLoginSuccessHandler> formLoginSuccessHandlerProvider) throws Exception
+                                            ObjectProvider<FormLoginSuccessHandler> formLoginSuccessHandlerProvider,
+                                            CookieAuthSupport cookieAuthSupport) throws Exception
     {
         JwtDecoder decoder = jwtDecoderProvider.getIfAvailable();
         org.springframework.security.oauth2.client.registration.ClientRegistrationRepository clientRegistrations =
@@ -304,7 +305,7 @@ public class SecurityConfig
             http.oauth2ResourceServer(o -> o.jwt(j -> j.decoder(decoder)));
             // Promote cookie → Bearer AFTER CsrfFilter so CSRF sees the original
             // (cookie, no Authorization) request shape.
-            http.addFilterAfter(new CookieToBearerFilter(),
+            http.addFilterAfter(new CookieToBearerFilter(decoder, cookieAuthSupport),
                     org.springframework.security.web.csrf.CsrfFilter.class);
         }
         return http.build();

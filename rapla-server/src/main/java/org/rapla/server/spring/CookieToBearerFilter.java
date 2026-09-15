@@ -5,6 +5,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -36,6 +38,21 @@ import java.util.Enumeration;
  */
 public class CookieToBearerFilter extends OncePerRequestFilter
 {
+    private final JwtDecoder decoder;
+    private final CookieAuthSupport cookies;
+
+    public CookieToBearerFilter(JwtDecoder decoder, CookieAuthSupport cookies)
+    {
+        this.decoder = decoder;
+        this.cookies = cookies;
+    }
+
+    /**
+     * PRD 118 D8-11 — only a cookie that still verifies is promoted. One that doesn't (signed by a
+     * rotated key, expired, malformed) would fail the bearer filter on EVERY path, {@code /login}
+     * included; instead the request stays anonymous and the stale access cookie is expired. The
+     * refresh cookie is left alone so an expired access token can still be refreshed.
+     */
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException
@@ -45,11 +62,28 @@ public class CookieToBearerFilter extends OncePerRequestFilter
             String cookieToken = CookieAuthSupport.readCookie(request, CookieAuthSupport.ACCESS_TOKEN_COOKIE);
             if (cookieToken != null)
             {
-                chain.doFilter(new BearerHeaderRequestWrapper(request, cookieToken), response);
-                return;
+                if (verifies(cookieToken))
+                {
+                    chain.doFilter(new BearerHeaderRequestWrapper(request, cookieToken), response);
+                    return;
+                }
+                response.addHeader("Set-Cookie", cookies.buildAccessCookie("", 0).toString());
             }
         }
         chain.doFilter(request, response);
+    }
+
+    private boolean verifies(String token)
+    {
+        try
+        {
+            decoder.decode(token);
+            return true;
+        }
+        catch (JwtException e)
+        {
+            return false;
+        }
     }
 
     private static final class BearerHeaderRequestWrapper extends HttpServletRequestWrapper
