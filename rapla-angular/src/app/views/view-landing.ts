@@ -8,5 +8,9 @@
  */
 export function pickLandingView(last: string | null, names: string[]): string | null {
   if (last && names.includes(last)) return last;
+  if (names.includes(DEFAULT_LANDING_VIEW)) return DEFAULT_LANDING_VIEW;
   return names[0] ?? null;
 }
+
+/** First visit lands on Termine when the catalog lists it (user, 2026-09-15: "for now"). */
+const DEFAULT_LANDING_VIEW = 'rapla_appointments';
