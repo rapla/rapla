@@ -288,6 +288,9 @@
                <relax:element name="building">
                   <doc:name lang="de">Gebäude</doc:name>
                   <doc:name lang="en">Building</doc:name>
+                  <doc:annotations>
+                     <rapla:annotation key="categorization">true</rapla:annotation>
+                  </doc:annotations>
                   <relax:data type="rapla:category"/>
                   <rapla:constraint name="root-category">category[key='buildings']</rapla:constraint>
                   <rapla:constraint name="multi-select">false</rapla:constraint>
@@ -318,6 +321,9 @@
                <relax:element name="program">
                   <doc:name lang="de">Studiengang</doc:name>
                   <doc:name lang="en">Program of study</doc:name>
+                  <doc:annotations>
+                     <rapla:annotation key="categorization">true</rapla:annotation>
+                  </doc:annotations>
                   <relax:data type="rapla:category"/>
                   <rapla:constraint name="root-category">category[key='programs']</rapla:constraint>
                   <rapla:constraint name="multi-select">false</rapla:constraint>
@@ -413,6 +419,9 @@
                <relax:element name="storageLocation">
                   <doc:name lang="de">Lagerort</doc:name>
                   <doc:name lang="en">Storage location</doc:name>
+                  <doc:annotations>
+                     <rapla:annotation key="categorization">true</rapla:annotation>
+                  </doc:annotations>
                   <relax:data type="string"/>
                </relax:element>
             </relax:optional>
