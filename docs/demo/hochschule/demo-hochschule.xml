@@ -179,10 +179,12 @@
                   <doc:name lang="en">Kind</doc:name>
                   <doc:annotations>
                      <rapla:annotation key="color">true</rapla:annotation>
+                     <rapla:annotation key="edit-view">no-view</rapla:annotation>
                   </doc:annotations>
                   <relax:data type="rapla:category"/>
                   <rapla:constraint name="root-category">category[key='eventKinds']</rapla:constraint>
                   <rapla:constraint name="multi-select">false</rapla:constraint>
+                  <rapla:default>category[key='eventKinds']/category[key='lecture']</rapla:default>
                </relax:element>
             </relax:optional>
             <rapla:permission access="read_type"/>
@@ -214,10 +216,12 @@
                   <doc:name lang="en">Kind</doc:name>
                   <doc:annotations>
                      <rapla:annotation key="color">true</rapla:annotation>
+                     <rapla:annotation key="edit-view">no-view</rapla:annotation>
                   </doc:annotations>
                   <relax:data type="rapla:category"/>
                   <rapla:constraint name="root-category">category[key='eventKinds']</rapla:constraint>
                   <rapla:constraint name="multi-select">false</rapla:constraint>
+                  <rapla:default>category[key='eventKinds']/category[key='exam']</rapla:default>
                </relax:element>
             </relax:optional>
             <rapla:permission access="read_type"/>
@@ -266,10 +270,12 @@
                   <doc:name lang="en">Kind</doc:name>
                   <doc:annotations>
                      <rapla:annotation key="color">true</rapla:annotation>
+                     <rapla:annotation key="edit-view">no-view</rapla:annotation>
                   </doc:annotations>
                   <relax:data type="rapla:category"/>
                   <rapla:constraint name="root-category">category[key='eventKinds']</rapla:constraint>
                   <rapla:constraint name="multi-select">false</rapla:constraint>
+                  <rapla:default>category[key='eventKinds']/category[key='loan']</rapla:default>
                </relax:element>
             </relax:optional>
             <rapla:permission access="read_type"/>
