@@ -63,7 +63,7 @@ public class FormLoginSuccessHandler extends SavedRequestAwareAuthenticationSucc
                                         HttpServletResponse response,
                                         Authentication authentication) throws IOException, ServletException
     {
-        cookies.setRememberChoiceCookie(response, request.getParameter("remember-me") != null);
+        cookies.setRememberChoiceCookie(request, response, request.getParameter("remember-me") != null);
         try
         {
             User user = resolveUser(authentication.getName());

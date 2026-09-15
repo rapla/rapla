@@ -70,15 +70,19 @@ public class CookieAuthSupport
         return null;
     }
 
-    /** Records the login page's "stay signed in" tick for a year. Read back by the login page. */
-    public void setRememberChoiceCookie(HttpServletResponse response, boolean remember)
+    /** Records the login page's "stay signed in" tick for a year; no tick deletes an earlier one. Read back by the login page. */
+    public void setRememberChoiceCookie(HttpServletRequest request, HttpServletResponse response, boolean remember)
     {
-        response.addHeader("Set-Cookie", ResponseCookie.from(REMEMBER_CHOICE_COOKIE, remember ? "1" : "0")
+        if (!remember && readCookie(request, REMEMBER_CHOICE_COOKIE) == null)
+        {
+            return;
+        }
+        response.addHeader("Set-Cookie", ResponseCookie.from(REMEMBER_CHOICE_COOKIE, remember ? "1" : "")
                 .httpOnly(true)
                 .secure(secure)
                 .sameSite("Lax")
                 .path("/")
-                .maxAge(Duration.ofDays(365))
+                .maxAge(remember ? Duration.ofDays(365) : Duration.ZERO)
                 .build()
                 .toString());
     }

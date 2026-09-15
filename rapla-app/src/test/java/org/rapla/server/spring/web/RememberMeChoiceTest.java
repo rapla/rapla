@@ -79,20 +79,35 @@ class RememberMeChoiceTest
                 "checkbox must render checked, was: " + snippet(html));
     }
 
+    /** PRD 118 D8-12 — no tick, no cookie: an unticked login leaves nothing behind in the browser. */
     @Test
-    void untickedBoxStaysUnticked() throws Exception
+    void untickedLoginSetsNoChoiceCookie() throws Exception
     {
         MvcResult login = mockMvc.perform(post("/login")
                         .param("username", "monty").param("password", "burns")
                         .with(csrf()).session(new MockHttpSession()))
                 .andReturn();
-        Cookie choice = login.getResponse().getCookie("rapla-remember-choice");
-        assertNotNull(choice, "login must record the remember-me choice");
-        assertEquals("0", choice.getValue());
+        assertTrue(login.getResponse().getHeaders("Set-Cookie").stream()
+                        .noneMatch(h -> h.startsWith("rapla-remember-choice=")),
+                "unticked login must not set the choice cookie, was: " + login.getResponse().getHeaders("Set-Cookie"));
 
-        String html = mockMvc.perform(get("/login").cookie(choice))
-                .andReturn().getResponse().getContentAsString();
+        String html = mockMvc.perform(get("/login")).andReturn().getResponse().getContentAsString();
         assertFalse(html.contains("checked"), "checkbox must render unchecked, was: " + snippet(html));
+    }
+
+    /** PRD 118 D8-12 — unticking later deletes the earlier choice (same name and path, Max-Age 0). */
+    @Test
+    void untickedLoginDeletesAnEarlierChoice() throws Exception
+    {
+        MvcResult login = mockMvc.perform(post("/login")
+                        .param("username", "monty").param("password", "burns")
+                        .cookie(new Cookie("rapla-remember-choice", "1"))
+                        .with(csrf()).session(new MockHttpSession()))
+                .andReturn();
+        Cookie choice = login.getResponse().getCookie("rapla-remember-choice");
+        assertNotNull(choice, "unticked login must delete the earlier choice");
+        assertEquals(0, choice.getMaxAge());
+        assertEquals("/", choice.getPath());
     }
 
     private static String snippet(String html)
