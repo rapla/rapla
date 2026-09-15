@@ -1,0 +1,40 @@
+# rapla-view
+# public: true
+# updated: 2026-09-15T13:00
+
+query WeeklyOverview(
+  $filter: ReservationFilter!,
+  $sort: [BlockSort!] = [{ field: START, dir: ASC }]
+) @view(title: "Weekly overview", rowLabel: "Appointment|Appointments", renderModes: [table, week])
+  @window(from: {anchor: WEEK_START, offset: 0}, to: {anchor: WEEK_START, offset: 7})
+  @param(name: "room", into: "filter.resourceIdsIn")
+{
+  appointmentBlocks(filter: $filter, sort: $sort) {
+    start @column(header: "From", order: 1)
+    end   @column(header: "To", order: 2)
+    name  @column(header: "Title", order: 3)
+    details: reservation {
+      classification {
+        typeKey @column(header: "Kind", order: 4)
+        ... on lectureClassification { module @column(header: "Module", order: 5) }
+        ... on loanClassification { borrower @column(header: "Borrower", order: 6) }
+      }
+    }
+    courses: resources(filter: { typeIn: [course] })
+      @join(separator: ", ") @column(header: "Course", order: 7) { id name }
+    rooms: resources(filter: { typeIn: [room] })
+      @join(separator: ", ") @column(header: "Room", order: 8) {
+        id
+        name
+        classification { ... on roomClassification { seats } }
+        building: compute(expr: "building")
+      }
+    lecturers: resources(filter: { typeIn: [lecturer] })
+      @join(separator: ", ") @column(header: "Lecturer", order: 9) { id name }
+    color @hidden
+    reservation @hidden { id canModify appointmentCount classification { typeKey } }
+    appointment @hidden { id repeating { type } }
+    matchedBy @hidden { id }
+    isException @hidden
+  }
+}

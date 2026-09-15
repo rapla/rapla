@@ -103,6 +103,22 @@
             <rapla:annotation key="color">#fb8c00</rapla:annotation>
          </rapla:category>
       </rapla:category>
+      <rapla:category created-at="2026-09-14T08:00:00.000Z" last-changed="2026-09-14T08:00:00.000Z" id="c7bc6e0c-f40f-577d-85a9-3d3b80bf02d5" key="loanStatus">
+         <doc:name lang="de">Ausleihstatus</doc:name>
+         <doc:name lang="en">Loan status</doc:name>
+         <rapla:category created-at="2026-09-14T08:00:00.000Z" last-changed="2026-09-14T08:00:00.000Z" id="cec86203-f313-538a-806c-2e92bfa8029d" key="planned">
+            <doc:name lang="de">geplant</doc:name>
+            <doc:name lang="en">planned</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2026-09-14T08:00:00.000Z" last-changed="2026-09-14T08:00:00.000Z" id="c115fb41-43fc-57b2-8105-fdabaaa408f6" key="out">
+            <doc:name lang="de">ausgegeben</doc:name>
+            <doc:name lang="en">out</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2026-09-14T08:00:00.000Z" last-changed="2026-09-14T08:00:00.000Z" id="c9c3efe6-87c2-5143-92ca-1d8049bc76c9" key="returned">
+            <doc:name lang="de">zurückgegeben</doc:name>
+            <doc:name lang="en">returned</doc:name>
+         </rapla:category>
+      </rapla:category>
       <rapla:category created-at="2026-09-14T08:00:00.000Z" last-changed="2026-09-14T08:00:00.000Z" id="c167ea8a-76fc-57c9-945f-2bd307a1a560" key="condition">
          <doc:name lang="de">Zustand</doc:name>
          <doc:name lang="en">Condition</doc:name>
@@ -219,6 +235,7 @@
                <rapla:annotation key="nameformat">{name}</rapla:annotation>
                <rapla:annotation key="classification-type">reservation</rapla:annotation>
                <rapla:annotation key="colors">color</rapla:annotation>
+               <rapla:annotation key="documents">LoanForm</rapla:annotation>
             </doc:annotations>
             <relax:optional>
                <relax:element name="name">
@@ -232,6 +249,15 @@
                   <doc:name lang="de">Ausleihende</doc:name>
                   <doc:name lang="en">Borrower</doc:name>
                   <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="loanStatus">
+                  <doc:name lang="de">Status</doc:name>
+                  <doc:name lang="en">Status</doc:name>
+                  <relax:data type="rapla:category"/>
+                  <rapla:constraint name="root-category">category[key='loanStatus']</rapla:constraint>
+                  <rapla:constraint name="multi-select">false</rapla:constraint>
                </relax:element>
             </relax:optional>
             <relax:optional>
@@ -3637,6 +3663,7 @@
          <dynatt:loan>
             <dynatt:name>Video project BA-25</dynatt:name>
             <dynatt:borrower>BA-25 student group</dynatt:borrower>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
             <dynatt:kind>category[key='loan']</dynatt:kind>
          </dynatt:loan>
          <rapla:appointment id="a1d6e374-29dd-5019-87fb-10a36a3bc80a" start-date="2026-09-17" start-time="10:00:00" end-date="2026-09-17" end-time="14:00:00"/>
@@ -3648,6 +3675,7 @@
          <dynatt:loan>
             <dynatt:name>Open day recording</dynatt:name>
             <dynatt:borrower>Press office</dynatt:borrower>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
             <dynatt:kind>category[key='loan']</dynatt:kind>
          </dynatt:loan>
          <rapla:appointment id="ad83ac9b-f69c-5c2f-9f7b-767ddd55b4dc" start-date="2026-09-17" start-time="12:00:00" end-date="2026-09-17" end-time="16:00:00"/>
@@ -3659,6 +3687,7 @@
          <dynatt:loan>
             <dynatt:name>Beamer for Software Engineering</dynatt:name>
             <dynatt:borrower>Prof. Anna Lehmann</dynatt:borrower>
+            <dynatt:loanStatus>category[key='out']</dynatt:loanStatus>
             <dynatt:kind>category[key='loan']</dynatt:kind>
          </dynatt:loan>
          <rapla:appointment id="ae70d63f-10f6-5b57-b575-300d526a2784" start-date="2026-09-15" start-time="10:00:00" end-date="2026-09-15" end-time="12:00:00"/>
@@ -3670,6 +3699,7 @@
          <dynatt:loan>
             <dynatt:name>Beamer for Software Engineering</dynatt:name>
             <dynatt:borrower>Prof. Anna Lehmann</dynatt:borrower>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
             <dynatt:kind>category[key='loan']</dynatt:kind>
          </dynatt:loan>
          <rapla:appointment id="a9d80856-b508-5890-ae63-e1fb7ee06af7" start-date="2026-11-10" start-time="10:00:00" end-date="2026-11-10" end-time="12:00:00"/>
@@ -3681,6 +3711,7 @@
          <dynatt:loan>
             <dynatt:name>Laptops for programming exercise</dynatt:name>
             <dynatt:borrower>Dr. Martin Vogel</dynatt:borrower>
+            <dynatt:loanStatus>category[key='out']</dynatt:loanStatus>
             <dynatt:kind>category[key='loan']</dynatt:kind>
          </dynatt:loan>
          <rapla:appointment id="a4dc87bb-af9f-5253-8b78-86e1d32f0eb1" start-date="2026-09-16" start-time="08:15:00" end-date="2026-09-16" end-time="12:00:00"/>
@@ -3692,6 +3723,7 @@
          <dynatt:loan>
             <dynatt:name>Laptops for programming exercise</dynatt:name>
             <dynatt:borrower>Dr. Martin Vogel</dynatt:borrower>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
             <dynatt:kind>category[key='loan']</dynatt:kind>
          </dynatt:loan>
          <rapla:appointment id="af1e6f2a-688a-57cc-a47f-e183eff09704" start-date="2026-11-25" start-time="08:15:00" end-date="2026-11-25" end-time="12:00:00"/>
@@ -3703,6 +3735,7 @@
          <dynatt:loan>
             <dynatt:name>Beamer for faculty meeting</dynatt:name>
             <dynatt:borrower>Dr. Chris Head</dynatt:borrower>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
             <dynatt:kind>category[key='loan']</dynatt:kind>
          </dynatt:loan>
          <rapla:appointment id="a88863ba-d287-5484-a2bd-ad18e9572d1b" start-date="2026-11-04" start-time="14:00:00" end-date="2026-11-04" end-time="17:00:00"/>
@@ -3714,6 +3747,7 @@
          <dynatt:loan>
             <dynatt:name>Interview recordings</dynatt:name>
             <dynatt:borrower>CS-24 student group</dynatt:borrower>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
             <dynatt:kind>category[key='loan']</dynatt:kind>
          </dynatt:loan>
          <rapla:appointment id="a8be6d69-e0ad-5328-8971-9217a32937c9" start-date="2026-12-02" start-time="09:00:00" end-date="2026-12-02" end-time="17:00:00"/>
@@ -3725,6 +3759,7 @@
          <dynatt:loan>
             <dynatt:name>Beamer for guest lecture</dynatt:name>
             <dynatt:borrower>Prof. Julia Brandt</dynatt:borrower>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
             <dynatt:kind>category[key='loan']</dynatt:kind>
          </dynatt:loan>
          <rapla:appointment id="af843eb3-56c3-551b-af40-1c485602979b" start-date="2027-01-20" start-time="12:00:00" end-date="2027-01-20" end-time="14:30:00"/>
@@ -3736,6 +3771,7 @@
          <dynatt:loan>
             <dynatt:name>Exam supervision laptops</dynatt:name>
             <dynatt:borrower>Examination office</dynatt:borrower>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
             <dynatt:kind>category[key='loan']</dynatt:kind>
          </dynatt:loan>
          <rapla:appointment id="ab532a7e-4e35-5212-be94-09ceb5b30b75" start-date="2027-01-27" start-time="08:00:00" end-date="2027-01-27" end-time="12:00:00"/>
@@ -3747,6 +3783,7 @@
          <dynatt:loan>
             <dynatt:name>Open day stand</dynatt:name>
             <dynatt:borrower>Student council</dynatt:borrower>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
             <dynatt:kind>category[key='loan']</dynatt:kind>
          </dynatt:loan>
          <rapla:appointment id="ae04d708-e435-519f-bbe3-b4d4df9e6d12" start-date="2027-03-13" start-time="08:00:00" end-date="2027-03-13" end-time="18:00:00"/>
@@ -3759,6 +3796,7 @@
          <dynatt:loan>
             <dynatt:name>Beamer for Software Engineering</dynatt:name>
             <dynatt:borrower>Prof. Anna Lehmann</dynatt:borrower>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
             <dynatt:kind>category[key='loan']</dynatt:kind>
          </dynatt:loan>
          <rapla:appointment id="a74a7a0f-7333-5f89-87d1-1dea4be92014" start-date="2027-03-09" start-time="10:00:00" end-date="2027-03-09" end-time="12:00:00"/>
@@ -3770,6 +3808,7 @@
          <dynatt:loan>
             <dynatt:name>Excursion: cycling tour to the wind farm</dynatt:name>
             <dynatt:borrower>CS-25 student group</dynatt:borrower>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
             <dynatt:kind>category[key='loan']</dynatt:kind>
          </dynatt:loan>
          <rapla:appointment id="a7e80b93-5531-575e-81b0-942b2d8fd24e" start-date="2027-05-20" start-time="08:00:00" end-date="2027-05-20" end-time="18:00:00"/>
@@ -3786,6 +3825,7 @@
          <dynatt:loan>
             <dynatt:name>Campus tour for new staff</dynatt:name>
             <dynatt:borrower>Human resources</dynatt:borrower>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
             <dynatt:kind>category[key='loan']</dynatt:kind>
          </dynatt:loan>
          <rapla:appointment id="acc3c733-80f9-5e4b-8172-7499b525558b" start-date="2027-06-09" start-time="13:00:00" end-date="2027-06-09" end-time="16:00:00"/>
@@ -3798,6 +3838,7 @@
          <dynatt:loan>
             <dynatt:name>Project presentation</dynatt:name>
             <dynatt:borrower>BA-24 student group</dynatt:borrower>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
             <dynatt:kind>category[key='loan']</dynatt:kind>
          </dynatt:loan>
          <rapla:appointment id="a583a1e8-8cc7-50c6-87eb-1ba43d45a9ce" start-date="2027-07-07" start-time="09:00:00" end-date="2027-07-07" end-time="13:00:00"/>
@@ -3810,6 +3851,7 @@
          <dynatt:loan>
             <dynatt:name>Summer school recording</dynatt:name>
             <dynatt:borrower>Prof. Sabine Roth</dynatt:borrower>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
             <dynatt:kind>category[key='loan']</dynatt:kind>
          </dynatt:loan>
          <rapla:appointment id="ae290f45-484b-53c7-af94-9047d31955cc" start-date="2027-08-24" start-time="09:00:00" end-date="2027-08-24" end-time="17:00:00"/>
@@ -3821,11 +3863,36 @@
          <dynatt:loan>
             <dynatt:name>Welcome days</dynatt:name>
             <dynatt:borrower>Student council</dynatt:borrower>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
             <dynatt:kind>category[key='loan']</dynatt:kind>
          </dynatt:loan>
          <rapla:appointment id="a17c3fdf-aecd-541b-a48e-e359e0ab0ad7" start-date="2027-09-28" start-time="08:00:00" end-date="2027-09-28" end-time="18:00:00"/>
          <rapla:allocate idref="r737a9e1-2ab6-5ce1-9788-63f630d6a4a4"/>
          <rapla:allocate idref="r663fcda-4a4b-5628-8138-7fa93d9b8e5e"/>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='timetable-office']" access="admin"/>
+      </rapla:reservation>
+      <rapla:reservation id="e1fa91de-57a5-5199-9cb8-24a91d32503a" owner="ueff4245-703b-5101-bf31-9eaf19c7640a" created-at="2026-09-14T08:00:00.000Z" last-changed="2026-09-14T08:00:00.000Z">
+         <dynatt:loan>
+            <dynatt:name>Welcome video for first-years</dynatt:name>
+            <dynatt:borrower>Student council</dynatt:borrower>
+            <dynatt:loanStatus>category[key='returned']</dynatt:loanStatus>
+            <dynatt:kind>category[key='loan']</dynatt:kind>
+         </dynatt:loan>
+         <rapla:appointment id="a1ab3ac2-8eb0-58bf-b964-7e6b5424bec1" start-date="2026-09-08" start-time="09:00:00" end-date="2026-09-08" end-time="17:00:00"/>
+         <rapla:allocate idref="r5950242-25e7-56a5-b48d-21d7ecbf5244"/>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='timetable-office']" access="admin"/>
+      </rapla:reservation>
+      <rapla:reservation id="e911db4e-39bf-5c8f-864c-c91936f1ec43" owner="ueff4245-703b-5101-bf31-9eaf19c7640a" created-at="2026-09-14T08:00:00.000Z" last-changed="2026-09-14T08:00:00.000Z">
+         <dynatt:loan>
+            <dynatt:name>Field trip recordings</dynatt:name>
+            <dynatt:borrower>BA-24 student group</dynatt:borrower>
+            <dynatt:loanStatus>category[key='out']</dynatt:loanStatus>
+            <dynatt:kind>category[key='loan']</dynatt:kind>
+         </dynatt:loan>
+         <rapla:appointment id="a43e0817-1e9c-5ea1-ad78-722df6d1f931" start-date="2026-09-10" start-time="08:00:00" end-date="2026-09-10" end-time="17:00:00"/>
+         <rapla:allocate idref="r4780f78-c218-53df-b81e-bed285f152fc"/>
          <rapla:permission access="read"/>
          <rapla:permission group="category[key='timetable-office']" access="admin"/>
       </rapla:reservation>
@@ -3899,6 +3966,7 @@
          <dynatt:loan>
             <dynatt:name>Student film club shoot</dynatt:name>
             <dynatt:borrower>Sam Student</dynatt:borrower>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
             <dynatt:kind>category[key='request']</dynatt:kind>
          </dynatt:loan>
          <rapla:appointment id="af267b9d-d72f-5db5-b7a5-d8f109eb4b24" start-date="2026-09-18" start-time="09:00:00" end-date="2026-09-18" end-time="13:00:00"/>
@@ -3910,6 +3978,7 @@
          <dynatt:loan>
             <dynatt:name>Weekend bike trip</dynatt:name>
             <dynatt:borrower>Sam Student</dynatt:borrower>
+            <dynatt:loanStatus>category[key='planned']</dynatt:loanStatus>
             <dynatt:kind>category[key='request']</dynatt:kind>
          </dynatt:loan>
          <rapla:appointment id="a7804459-c308-5d6f-8904-e91dc5e0e1d0" start-date="2026-09-19" start-time="10:00:00" end-date="2026-09-19" end-time="16:00:00"/>

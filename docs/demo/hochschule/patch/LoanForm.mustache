@@ -1,0 +1,69 @@
+{{! rapla-document
+view: LoanForm
+public: true
+updated: 2026-09-15T12:00
+}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Loan form</title>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; line-height: 1.4;
+         max-width: 17cm; margin: 1.5cm auto; color: #000; background: #fff; }
+  h1 { font-size: 22px; margin: 0 0 .2em 0; }
+  .org { color: #555; margin: 0 0 1.5em 0; }
+  h2 { font-size: 14px; margin: 1.4em 0 .4em 0; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { border: 1px solid #999; padding: .3em .5em; text-align: left; vertical-align: top; }
+  th { background: #eee; }
+  dl { display: grid; grid-template-columns: 9em 1fr; gap: .2em 1em; margin: 0; }
+  dt { font-weight: bold; }
+  dd { margin: 0; }
+  ol li { margin-bottom: .3em; }
+  .sig { display: grid; grid-template-columns: 1fr 1fr; gap: 2em; margin-top: 3em; }
+  .sig p { border-top: 1px solid #000; padding-top: .3em; margin: 0; }
+  .return td { height: 2.5em; }
+  @media print { @page { margin: 2cm; } body { margin: 0 auto; } }
+</style>
+</head>
+<body>
+{{> rapla/print-hint}}
+{{#reservation}}
+<h1>Loan form</h1>
+<p class="org">University media desk (example) · Building A, room A0 · Mon–Fri 09:00–16:00 · media-desk@example.org · +49 555 0100</p>
+<dl>
+  <dt>Loan</dt><dd>{{name}}</dd>
+  <dt>Borrower</dt><dd>{{#classification}}{{borrower}}{{/classification}}</dd>
+  <dt>Booked by</dt><dd>{{owner.username}}</dd>
+</dl>
+{{#appointments}}
+<p><b>Status:</b> {{status}}</p>
+<h2>Loan period</h2>
+<p>{{period}}</p>
+<h2>Items</h2>
+<table>
+  <tr><th>Item</th><th>Inventory no.</th><th>Condition at hand-over</th><th>Storage location</th></tr>
+  {{#items}}<tr><td>{{name}}</td><td>{{inventoryNumber}}</td><td>{{condition}}</td><td>{{storageLocation}}</td></tr>{{/items}}
+</table>
+<h2>Terms</h2>
+<ol>
+  <li>The items are lent for the purpose stated above and may not be passed on to third parties.</li>
+  <li>The borrower checks the items at hand-over and reports visible defects immediately.</li>
+  <li>Loss or damage during the loan period must be reported to the media desk without delay.</li>
+  <li>The items are returned complete and on time, at the latest by {{returnBy}}.</li>
+</ol>
+{{/appointments}}
+<div class="sig">
+  <p>Date, signature media desk</p>
+  <p>Date, signature borrower</p>
+</div>
+<h2>Return</h2>
+<table class="return">
+  <tr><th>Returned on</th><th>Complete / defects</th><th>Signature media desk</th></tr>
+  <tr><td></td><td></td><td></td></tr>
+</table>
+{{/reservation}}
+{{^reservation}}<p>Loan not found.</p>{{/reservation}}
+</body>
+</html>

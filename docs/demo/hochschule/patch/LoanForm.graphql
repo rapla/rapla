@@ -1,0 +1,27 @@
+# rapla-view
+# public: true
+# updated: 2026-09-15T12:00
+
+query LoanForm($reservationId: ID!) @view(title: "Loan form", listed: false)
+  @param(name: "reservationId", into: "reservationId", required: true)
+{
+  reservation(id: $reservationId) {
+    id
+    name
+    owner { username }
+    classification {
+      ... on loanClassification { borrower }
+    }
+    appointments {
+      status: compute(expr: "{p->name(attribute(p,\"loanStatus\"))}")
+      period: compute(expr: "{p->format(\"%1$ta %1$td.%1$tm.%1$tY %1$tH:%1$tM\",start(p))} - {p->format(\"%1$ta %1$td.%1$tm.%1$tY %1$tH:%1$tM\",end(p))}")
+      returnBy: compute(expr: "{p->format(\"%1$tA %1$td.%1$tm.%1$tY %1$tH:%1$tM\",end(p))}")
+      items: resources(filter: { typeIn: [equipment] }) {
+        name
+        inventoryNumber: compute(expr: "inventoryNumber")
+        condition: compute(expr: "condition")
+        storageLocation: compute(expr: "storageLocation")
+      }
+    }
+  }
+}

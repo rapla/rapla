@@ -1,0 +1,35 @@
+# rapla-view
+# public: true
+# updated: 2026-09-15T13:00
+
+query EquipmentLoans(
+  $filter: ReservationFilter!,
+  $sort: [BlockSort!] = [{ field: END, dir: ASC }]
+) @view(title: "Equipment loans", rowLabel: "Loan|Loans", renderModes: [table, month])
+  @window(from: {anchor: TODAY, offset: -90}, to: {anchor: TODAY, offset: 90})
+  @param(name: "type", into: "filter.typeIn")
+{
+  # Usage: select the equipment chips first (desk's favourites are the 12 items) — the SPA does not
+  # apply ?type=loan yet (PRD 118 D8-6), without equipment chips lectures are listed too.
+  appointmentBlocks(filter: $filter, sort: $sort) {
+    name  @column(header: "Loan", order: 1)
+    start @column(header: "From", order: 2)
+    end   @column(header: "Return", order: 3)
+    status: compute(expr: "{p->if(and(equals(key(attribute(p,\"loanStatus\")),\"out\"),isBefore(end(p),now())),\"Overdue\",name(attribute(p,\"loanStatus\")))}")
+      @column(header: "Status", order: 4)
+    borrower: compute(expr: "{p->attribute(p,\"borrower\")}")
+      @column(header: "Borrower", order: 5)
+    items: resources(filter: { typeIn: [equipment] })
+      @join(separator: ", ") @column(header: "Equipment", order: 6) {
+        id
+        name
+        inventoryNumber: compute(expr: "inventoryNumber")
+        condition: compute(expr: "condition")
+      }
+    color @hidden
+    reservation @hidden { id canModify appointmentCount classification { typeKey } }
+    appointment @hidden { id repeating { type } }
+    matchedBy @hidden { id }
+    isException @hidden
+  }
+}
