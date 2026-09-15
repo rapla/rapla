@@ -4,6 +4,7 @@ import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.rapla.entities.User;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.plugin.archiver.server.ArchiverServiceImpl;
 import org.rapla.plugin.archiver.server.ArchiverServiceTask;
 import org.rapla.plugin.exchangeconnector.server.ExchangeSchedulerTrigger;
@@ -55,6 +56,7 @@ abstract class DemoProfileChecks extends IsolatedDefaultDatasetTest
     @Autowired MockMvc mockMvc;
     @Autowired ApplicationContext ctx;
     @Autowired CachableStorageOperator operator;
+    @Autowired RaplaFacade facade;
     @Autowired ViewCatalogService views;
     @Autowired DocumentCatalogService documents;
 
@@ -95,21 +97,34 @@ abstract class DemoProfileChecks extends IsolatedDefaultDatasetTest
         }
     }
 
+    /** D8-13 (user ruling 2026-09-15) — "switch to user" works under demo as everywhere: admin switches to a user and back. */
     @Test
-    void impersonationIsSwitchedOff() throws Exception
+    void adminCanSwitchToAUserAndBack() throws Exception
     {
-        MockHttpServletResponse response = asAdmin(post("/api/auth/impersonate").with(csrf())
-                .contentType("application/x-www-form-urlencoded").content("target_username=admin"));
-        if (demo())
+        if (operator.getUser("lehmann") == null)
         {
-            assertTrue(response.getStatus() == 403 || response.getStatus() == 404, response.getStatus() + " " + response.getContentAsString());
-            assertEquals("", response.getContentAsString());
+            User lehmann = facade.newUser();
+            lehmann.setUsername("lehmann");
+            facade.store(lehmann);
         }
-        else
-        {
-            assertEquals(200, response.getStatus(), response.getContentAsString());
-            assertTrue(response.getContentAsString().contains("access_token"), response.getContentAsString());
-        }
+        MockHttpServletResponse switched = asAdmin(post("/api/auth/impersonate/switch").with(csrf())
+                .param("target_username", "lehmann"));
+        assertEquals(200, switched.getStatus(), switched.getContentAsString());
+        Cookie asLehmann = switched.getCookie("access_token");
+        assertNotNull(asLehmann, "switch must set the impersonation cookie");
+        String me = mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", asLehmann.getValue())))
+                .andReturn().getResponse().getContentAsString();
+        assertTrue(me.contains("\"username\":\"lehmann\"") && me.contains("\"impersonating\":true")
+                && me.contains("\"actor\":\"admin\""), me);
+
+        MockHttpServletResponse ended = mockMvc.perform(post("/api/auth/impersonate/end").with(csrf())
+                .cookie(new Cookie("access_token", asLehmann.getValue()))).andReturn().getResponse();
+        assertEquals(200, ended.getStatus(), ended.getContentAsString());
+        Cookie back = ended.getCookie("access_token");
+        assertNotNull(back, "end must restore the admin cookie");
+        String meAgain = mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", back.getValue())))
+                .andReturn().getResponse().getContentAsString();
+        assertTrue(meAgain.contains("\"username\":\"admin\"") && meAgain.contains("\"impersonating\":false"), meAgain);
     }
 
     @Test

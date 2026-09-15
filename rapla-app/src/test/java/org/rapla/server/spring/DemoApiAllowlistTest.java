@@ -55,6 +55,7 @@ class DemoApiAllowlistTest extends IsolatedDefaultDatasetTest
     static final Set<String> OPEN = Set.of(
             "DELETE /api/auth/api-keys/{id}", "GET /api/auth/api-keys", "POST /api/auth/api-keys", "POST /api/auth/api-keys/{id}/rotate",
             "GET /api/auth/me", "POST /api/auth/session/logout", "POST /api/auth/session/refresh",
+            "POST /api/auth/impersonate", "POST /api/auth/impersonate/end", "POST /api/auth/impersonate/switch", // D8-13
             "DELETE /api/documents/{name}", "GET /api/documents", "GET /api/documents/{name}", "GET /api/documents/{name}/csv",
             "GET /api/documents/{name}/source", "POST /api/documents/preview", "POST /api/documents/result-shape", "PUT /api/documents/{name}",
             "DELETE /api/favorites/{id}", "GET /api/favorites", "POST /api/favorites",
@@ -68,7 +69,6 @@ class DemoApiAllowlistTest extends IsolatedDefaultDatasetTest
             "POST /api/_smoketest/upper",
             "GET /api/admin/panels", "GET /api/admin/panels/{id}", "POST /api/admin/panels/{id}/action/{actionId}", "POST /api/admin/panels/{id}/save",
             "GET /api/admin/permission-migration/findings", "POST /api/admin/permission-migration/{allocatableId}/resolve",
-            "POST /api/auth/impersonate", "POST /api/auth/impersonate/end", "POST /api/auth/impersonate/switch",
             "GET /api/auth/oauth/config", "POST /api/auth/oauth/exchange/{providerId}", "POST /api/auth/oauth/token-exchange/{providerId}",
             "GET /api/eventtimecalculator/system-config", "GET /api/eventtimecalculator/user-config",
             "GET /api/exchange/config/default", "GET /api/exchange/config/timezones", "GET /api/exchange/config/user", "GET /api/exchange/connect",

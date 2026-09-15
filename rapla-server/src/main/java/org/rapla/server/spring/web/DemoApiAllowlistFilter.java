@@ -21,7 +21,7 @@ public class DemoApiAllowlistFilter extends OncePerRequestFilter
     static final Set<String> OPEN_PATHS = Set.of("/api/auth/me", "/api/graphql", "/api/graphql/schema",
             "/api/storage/change/name", "/api/storage/profile/capabilities");
 
-    static final List<String> OPEN_PREFIXES = List.of("/api/auth/session", "/api/auth/api-keys", "/api/documents",
+    static final List<String> OPEN_PREFIXES = List.of("/api/auth/session", "/api/auth/api-keys", "/api/auth/impersonate", "/api/documents",
             "/api/favorites", "/api/recents", "/api/users");
 
     private static final List<String> SUSPICIOUS = List.of("..", ";", "//", "\\", "%2e", "%2f", "%5c", "%3b");

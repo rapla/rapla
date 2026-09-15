@@ -7,9 +7,6 @@ rapla:
   lock-passwords: true
   demo:
     banner: "Demo — data resets nightly at 04:15"
-  auth:
-    impersonation:
-      enabled: false
   exchange:
     enabled: false
   externalevents:

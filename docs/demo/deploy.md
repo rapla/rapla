@@ -88,7 +88,7 @@ ReadWritePaths=<demo-root>/data <demo-root>/logs <demo-root>/work
 WantedBy=multi-user.target
 ```
 
-`SPRING_PROFILES_ACTIVE=demo` activates the hardening profile shipped in the JAR (`application-demo.yml`): passwords locked, password grant, Swing/JNLP, impersonation, Exchange, iCal import and mail plugins off (the iCal export URLs stay available), a fail-closed `/api` allowlist and a demo banner. `MemoryMax=1G` caps the whole process; heap (640m) plus metaspace (192m) leave room for thread stacks and the code cache. A demo with a small seed starts at roughly 250 MB.
+`SPRING_PROFILES_ACTIVE=demo` activates the hardening profile shipped in the JAR (`application-demo.yml`): passwords locked, password grant, Swing/JNLP, Exchange, iCal import and mail plugins off (the iCal export URLs stay available), a fail-closed `/api` allowlist and a demo banner. "Switch to user" (impersonation) stays on (PRD 118 D8-13). `MemoryMax=1G` caps the whole process; heap (640m) plus metaspace (192m) leave room for thread stacks and the code cache. A demo with a small seed starts at roughly 250 MB.
 
 ## Daily reset
 
