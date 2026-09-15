@@ -27,6 +27,7 @@
 <main>
   <h1>Rapla 3 demo</h1>
   <p class="lead">Resource scheduling and event planning. Try it in the browser, change anything you like.</p>
+  <p class="small">This is a preview of the first Rapla 3 alpha version, planned for October 2026.</p>
 
   <section>
     <h2>Open the demo</h2>
@@ -68,8 +69,19 @@
   </section>
 
   <section>
+    <h2>What to try</h2>
+    <ul>
+      <li>Create an event in the week view and move it by drag &amp; drop.</li>
+      <li>Add a resource type with your own attributes in GraphiQL, using the <code>saveDynamicType</code> mutation.</li>
+      <li>Run a query in GraphiQL, for example <code>{ resources(filter: { limit: 5 }) { name } }</code>.</li>
+    </ul>
+  </section>
+
+  <section>
     <h2>Good to know</h2>
     <ul>
+      <li>Sample data: a small faculty over one academic year — courses, rooms, lecturers, loanable equipment and booking requests.</li>
+      <li>Web app only — the desktop client is not available on the demo.</li>
       <li>All data is reset every night at 04:15 (Europe/Berlin).</li>
       <li>Everything here is dummy data and visible to every visitor — do not enter personal information.</li>
     </ul>
