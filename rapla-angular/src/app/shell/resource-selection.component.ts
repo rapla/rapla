@@ -1,5 +1,4 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, ElementRef, computed, effect, inject, signal } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
@@ -8,25 +7,30 @@ import {
   ResourceEditDialogComponent,
   type ResourceEditDialogData,
 } from '../resource/resource-edit-dialog.component';
+import { ResourceSelectionStore, type ResourceItem } from '../state/resource-selection-store';
+import { filterRows, page, usersMatching } from '../state/resource-picker';
 import {
-  ResourceSelectionStore,
-  type ResourceSelectionTab,
-  type ResourceItem,
-} from '../state/resource-selection-store';
+  buildTree,
+  filterTree,
+  membersOf,
+  visibleRows,
+  type TreeNode,
+  type TreeRow,
+} from '../state/resource-tree';
 import { FilterStore, type FilterEntry } from '../state/filter-store';
 import { AuthService, type Identity } from '../auth/auth.service';
 import { entityIcon } from './entity-icon';
 import { TableSelection } from '../views/table-selection';
 
 /**
- * The persistent left ResourceSelection. Tabs pick the source (Zuletzt/
- * Favoriten/Gruppe); a local query narrows long lists (e.g. hundreds of
- * lecturers). A plain click {@link FilterStore.replace}s the filter with that
+ * The persistent left ResourceSelection. PRD 119 Phase 1: chips pick the source (Alle,
+ * Favoriten, Zuletzt, a loaded Gruppe, one chip per type) over the lean resource list; a
+ * local query narrows it in the browser (no server call per keystroke). A plain click {@link FilterStore.replace}s the filter with that
  * resource — the click-to-step rhythm — and marks it active ("▶ gezeigt").
  */
 @Component({
   selector: 'app-resource-selection',
-  imports: [FormsModule, MatIconModule, MatMenuModule],
+  imports: [MatIconModule, MatMenuModule],
   template: `
     <div class="stepper" tabindex="0" (keydown)="onListKeydown($event)">
       @if (me(); as user) {
@@ -45,27 +49,18 @@ import { TableSelection } from '../views/table-selection';
         </div>
       }
       <div class="sthead">DURCHSTEPPEN</div>
-      <div class="tabs">
-        @for (t of tabs; track t.key) {
-          <button [class.on]="store.activeTab() === t.key" (click)="store.setActiveTab(t.key)">
-            {{ t.label }}
+      <div class="chips">
+        @for (c of store.chips(); track c.key) {
+          <button
+            [class.on]="store.activeChip() === c.key"
+            [attr.aria-pressed]="store.activeChip() === c.key"
+            (click)="store.setActiveChip(c.key)"
+          >
+            {{ c.label }}
           </button>
         }
       </div>
-      @if (store.activeTab() === 'group' && store.groupLabel()) {
-        <div class="grouphdr">
-          <span>{{ store.groupLabel() }}</span>
-          <span
-            class="clr"
-            role="button"
-            tabindex="0"
-            (click)="store.clearGroup()"
-            (keydown.enter)="store.clearGroup()"
-            >× leeren</span
-          >
-        </div>
-      }
-      @if (store.activeTab() === 'recents' && store.recents().length) {
+      @if (store.activeChip() === 'recents' && store.recents().length) {
         <div class="grouphdr recents-hdr">
           <span>Zuletzt verwendet</span>
           <span
@@ -78,52 +73,78 @@ import { TableSelection } from '../views/table-selection';
           >
         </div>
       }
-      <input
-        class="stsearch"
-        placeholder="in der Liste filtern…"
-        [ngModel]="query()"
-        (ngModelChange)="query.set($event)"
-      />
-      @for (it of visible(); track it.id; let i = $index) {
-        <div
-          class="item"
-          role="button"
-          tabindex="0"
-          [class.active]="store.activeId() === it.id"
-          [class.selected]="filter.has(it.id)"
-          (mousedown)="onItemMousedown($event)"
-          (click)="step($event, it)"
-          (keydown.enter)="step($event, it)"
-        >
-          <mat-icon class="ico" [style.color]="it.color || null">{{ icon(it) }}</mat-icon>
-          <span class="lbl">{{ it.label }}</span>
-          @if (store.activeId() === it.id) {
-            <span class="now">▶ gezeigt</span>
-          }
-          <button
-            class="fav"
-            [class.on]="store.isFavorite(it.id)"
-            [attr.aria-label]="store.isFavorite(it.id) ? 'Aus Favoriten entfernen' : 'Zu Favoriten'"
-            [title]="store.isFavorite(it.id) ? 'Aus Favoriten entfernen' : 'Zu Favoriten'"
-            (click)="toggleFav($event, it)"
-          >
-            {{ store.isFavorite(it.id) ? '★' : '☆' }}
-          </button>
-          @if ((it.kind ?? 'resource') === 'resource') {
+      @for (row of rows(); track row.node.key) {
+        @if (row.node.kind === 'group') {
+          <div class="grouprow" [style.padding-left.rem]="0.5 + row.depth">
             <button
-              class="act"
-              aria-label="Aktionen"
-              title="Aktionen"
-              [matMenuTriggerFor]="itemMenu"
-              [matMenuTriggerData]="{ item: it }"
-              (click)="$event.stopPropagation()"
+              type="button"
+              class="toggle"
+              [attr.aria-expanded]="expandedGroups().has(row.node.key)"
+              [attr.aria-label]="row.node.label"
+              (click)="toggleGroup(row.node.key)"
             >
-              ⋮
+              {{ expandedGroups().has(row.node.key) ? '▾' : '▸' }}
             </button>
-          }
-        </div>
+            <span class="glabel">{{ row.node.label }}</span>
+            <span class="count">{{ row.node.count }}</span>
+            <button
+              type="button"
+              class="selectall"
+              [attr.aria-label]="'Alle in ' + row.node.label + ' wählen'"
+              (click)="selectGroup(row.node)"
+            >
+              alle wählen
+            </button>
+          </div>
+        } @else if (row.node.item; as it) {
+          <div
+            class="item"
+            role="button"
+            tabindex="0"
+            [class.active]="store.activeId() === it.id"
+            [class.selected]="filter.has(it.id)"
+            [style.padding-left.rem]="0.9 + row.depth"
+            (mousedown)="onItemMousedown($event)"
+            (click)="step($event, it)"
+            (keydown.enter)="step($event, it)"
+          >
+            <mat-icon class="ico" [style.color]="it.color || null">{{ icon(it) }}</mat-icon>
+            <span class="lbl">{{ it.label }}</span>
+            @if (store.activeId() === it.id) {
+              <span class="now">▶ gezeigt</span>
+            }
+            <button
+              class="fav"
+              [class.on]="store.isFavorite(it.id)"
+              [attr.aria-label]="
+                store.isFavorite(it.id) ? 'Aus Favoriten entfernen' : 'Zu Favoriten'
+              "
+              [title]="store.isFavorite(it.id) ? 'Aus Favoriten entfernen' : 'Zu Favoriten'"
+              (click)="toggleFav($event, it)"
+            >
+              {{ store.isFavorite(it.id) ? '★' : '☆' }}
+            </button>
+            @if ((it.kind ?? 'resource') === 'resource') {
+              <button
+                class="act"
+                aria-label="Aktionen"
+                title="Aktionen"
+                [matMenuTriggerFor]="itemMenu"
+                [matMenuTriggerData]="{ item: it }"
+                (click)="$event.stopPropagation()"
+              >
+                ⋮
+              </button>
+            }
+          </div>
+        }
       } @empty {
         <div class="more">— leer</div>
+      }
+      @if (hiddenCount() > 0) {
+        <button type="button" class="showmore" (click)="expanded.set(true)">
+          Weitere {{ hiddenCount() }} anzeigen
+        </button>
       }
       <mat-menu #itemMenu="matMenu">
         <ng-template matMenuContent let-item="item">
@@ -188,22 +209,22 @@ import { TableSelection } from '../views/table-selection';
         letter-spacing: 0.04em;
         color: rgba(0, 0, 0, 0.55);
       }
-      .tabs {
+      .chips {
         display: flex;
+        flex-wrap: wrap;
         gap: 0.35rem;
         padding: 0 0.75rem 0.5rem;
       }
-      .tabs button {
-        flex: 1;
+      .chips button {
         border: 1px solid rgba(0, 0, 0, 0.15);
         background: #fff;
-        border-radius: 6px;
-        padding: 0.35rem 0.25rem;
+        border-radius: 999px;
+        padding: 0.25rem 0.6rem;
         font-size: 0.72rem;
         cursor: pointer;
         color: rgba(0, 0, 0, 0.55);
       }
-      .tabs button.on {
+      .chips button.on {
         background: var(--mat-sys-primary, #3f51b5);
         color: #fff;
         border-color: transparent;
@@ -227,13 +248,35 @@ import { TableSelection } from '../views/table-selection';
         color: rgba(0, 0, 0, 0.55);
         font-weight: 600;
       }
-      .stsearch {
-        margin: 0 0.75rem 0.5rem;
-        height: 1.9rem;
-        border: 1px solid rgba(0, 0, 0, 0.15);
-        border-radius: 6px;
-        padding: 0 0.6rem;
-        font-size: 0.75rem;
+      .grouprow {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.35rem 0.9rem 0.35rem 0.5rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+      }
+      .grouprow .glabel {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .grouprow .count {
+        font-size: 0.7rem;
+        color: rgba(0, 0, 0, 0.45);
+      }
+      .grouprow button {
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        font: inherit;
+        padding: 0 0.2rem;
+      }
+      .grouprow .selectall {
+        font-size: 0.68rem;
+        font-weight: 400;
+        color: var(--mat-sys-primary, #3f51b5);
       }
       .item {
         display: flex;
@@ -308,6 +351,15 @@ import { TableSelection } from '../views/table-selection';
         font-size: 0.75rem;
         color: rgba(0, 0, 0, 0.45);
       }
+      .showmore {
+        border: none;
+        background: transparent;
+        text-align: left;
+        padding: 0.5rem 0.9rem;
+        font-size: 0.75rem;
+        cursor: pointer;
+        color: var(--mat-sys-primary, #3f51b5);
+      }
     `,
   ],
 })
@@ -325,18 +377,77 @@ export class ResourceSelectionComponent {
     return !!id && this.filter.entries().some((e) => e.kind === 'user' && e.id === id);
   });
 
-  protected readonly query = signal('');
+  /** "Weitere n anzeigen" was clicked for the current chip + query. */
+  protected readonly expanded = signal(false);
 
-  protected readonly tabs: { key: ResourceSelectionTab; label: string }[] = [
-    { key: 'recents', label: 'Zuletzt' },
-    { key: 'favorites', label: 'Favoriten' },
-    { key: 'group', label: 'Gruppe' },
-  ];
+  /** PRD 119 D1/D10 — rows of the active chip narrowed by the query; under Alle matching users follow. */
+  private readonly filtered = computed<ResourceItem[]>(() => {
+    const q = this.store.query();
+    const rows = filterRows(this.store.activeList(), q);
+    return this.store.activeChip() === 'all'
+      ? [...rows, ...usersMatching(this.store.users(), q)]
+      : rows;
+  });
 
-  protected readonly visible = computed<ResourceItem[]>(() => {
-    const q = this.query().trim().toLowerCase();
-    const list = this.store.activeList();
-    return q ? list.filter((x) => x.label.toLowerCase().includes(q)) : list;
+  /** PRD 119 D2/D11 — a type chip shows its resources as a collapsible group tree, without paging. */
+  private readonly treeMode = computed(() => this.store.activeChip().startsWith('type:'));
+
+  /** Group keys the user toggled against the default (collapsed, or opened by the query). */
+  private readonly toggled = signal<ReadonlySet<string>>(new Set());
+
+  private readonly tree = computed(() => {
+    const q = this.store.query();
+    if (this.treeMode()) return filterTree(buildTree(this.store.activeList()), q);
+    // Under Alle, groups whose own name matches the query appear as expandable rows.
+    const hits: TreeNode[] = [];
+    if (this.store.activeChip() === 'all' && q.trim()) {
+      const walk = (nodes: TreeNode[]) =>
+        nodes.forEach((n) => {
+          if (n.kind !== 'group') return;
+          if (filterRows([{ id: n.key, label: n.label }], q).length) hits.push(n);
+          else walk(n.children);
+        });
+      walk(buildTree(this.store.resources()));
+    }
+    return { nodes: hits, expanded: new Set<string>() };
+  });
+
+  protected readonly expandedGroups = computed(() => {
+    const open = new Set(this.tree().expanded);
+    for (const key of this.toggled()) {
+      if (open.has(key)) open.delete(key);
+      else open.add(key);
+    }
+    return open;
+  });
+
+  private readonly paged = computed(() =>
+    this.treeMode() ? { shown: [], hidden: 0 } : page(this.filtered(), this.expanded()),
+  );
+  protected readonly hiddenCount = computed(() => this.paged().hidden);
+
+  protected readonly rows = computed<TreeRow[]>(() => [
+    ...visibleRows(this.tree().nodes, this.expandedGroups()),
+    ...this.paged().shown.map(
+      (item): TreeRow => ({
+        node: {
+          key: `#${item.id}`,
+          label: item.label,
+          kind: 'resource',
+          item,
+          children: [],
+          count: 1,
+        },
+        depth: 0,
+      }),
+    ),
+  ]);
+
+  /** The distinct resources on screen — the rows the selection engine steps. */
+  protected readonly shown = computed(() => {
+    const byId = new Map<string, ResourceItem>();
+    for (const row of this.rows()) if (row.node.item) byId.set(row.node.item.id, row.node.item);
+    return [...byId.values()];
   });
 
   /**
@@ -352,8 +463,25 @@ export class ResourceSelectionComponent {
   private readonly selection = new TableSelection<string>();
 
   constructor() {
-    effect(() => this.selection.setRows(this.visible().map((it) => it.id)));
+    this.store.ensureLoaded();
+    effect(() => this.selection.setRows(this.shown().map((it) => it.id)));
+    effect(() => {
+      this.store.activeChip();
+      this.store.query();
+      this.expanded.set(false);
+      this.toggled.set(new Set());
+    });
+    effect(() => {
+      const request = this.store.pickerFocus();
+      if (request === this.focusRequest) return;
+      this.focusRequest = request;
+      this.host.nativeElement.querySelector<HTMLElement>('.stepper')?.focus();
+    });
   }
+
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  /** The focus request already served — the effect's first run must not steal focus. */
+  private focusRequest = this.store.pickerFocus();
 
   /** Material icon for a list item (by kind + rapla type key). */
   protected icon(it: ResourceItem): string {
@@ -377,8 +505,11 @@ export class ResourceSelectionComponent {
       shift: mods.shiftKey,
       ctrl: mods.ctrlKey || mods.metaKey,
     });
-    this.applySelection(!mods.shiftKey && !mods.ctrlKey && !mods.metaKey);
+    const plain = !mods.shiftKey && !mods.ctrlKey && !mods.metaKey;
+    this.applySelection(plain);
     this.store.setActive(it.id);
+    // PRD 119 D5 — a selection pushes a recent; not while stepping the Zuletzt list itself.
+    if (plain && this.store.activeChip() !== 'recents') this.store.pushRecent(it);
   }
 
   onListKeydown(event: KeyboardEvent): void {
@@ -401,7 +532,7 @@ export class ResourceSelectionComponent {
    *  the step rhythm) replaces the WHOLE filter; modifier gestures keep chips
    *  that don't belong to the visible list (search chips, other tabs). */
   private applySelection(exclusive: boolean): void {
-    const byId = new Map(this.visible().map((it) => [it.id, it]));
+    const byId = new Map(this.shown().map((it) => [it.id, it]));
     const selected = this.selection
       .selectedKeys()
       .map((id) => byId.get(id))
@@ -409,6 +540,19 @@ export class ResourceSelectionComponent {
       .map((it) => this.entry(it));
     const kept = exclusive ? [] : this.filter.entries().filter((c) => !byId.has(c.id));
     this.filter.setAll([...kept, ...selected]);
+  }
+
+  toggleGroup(key: string): void {
+    this.toggled.update((set) => {
+      const next = new Set(set);
+      if (!next.delete(key)) next.add(key);
+      return next;
+    });
+  }
+
+  /** "alle wählen" — the group's members replace the filter. */
+  selectGroup(node: TreeNode): void {
+    this.filter.setAll(membersOf(node).map((it) => this.entry(it)));
   }
 
   /** ★ pins/unpins to Favoriten without stepping the row. */
@@ -424,10 +568,15 @@ export class ResourceSelectionComponent {
 
   /** PRD 096 Phase 4 — Anzeigen/Bearbeiten on a resource item (⋮ menu). */
   openResource(it: ResourceItem, readOnly: boolean): void {
-    this.dialog.open(ResourceEditDialogComponent, {
-      data: { id: it.id, readOnly } satisfies ResourceEditDialogData,
-      maxWidth: '95vw',
-      restoreFocus: false,
-    });
+    this.dialog
+      .open(ResourceEditDialogComponent, {
+        data: { id: it.id, readOnly } satisfies ResourceEditDialogData,
+        maxWidth: '95vw',
+        restoreFocus: false,
+      })
+      .afterClosed()
+      .subscribe((result) => {
+        if (result === 'saved') this.store.reload();
+      });
   }
 }

@@ -872,6 +872,24 @@ public final class StructuralTypeFetchers
                 }
             };
 
+    /** PRD 119 — picker group paths; a categorization value that is a resource the caller cannot read is left out (§12). */
+    static final LightDataFetcher<List<List<String>>> ALLOCATABLE_GROUP_PATHS =
+            new LightSourceFetcher<org.rapla.entities.domain.Allocatable, List<List<String>>>(
+                    org.rapla.entities.domain.Allocatable.class)
+            {
+                @Override protected List<List<String>> read(org.rapla.entities.domain.Allocatable a,
+                        Supplier<DataFetchingEnvironment> env)
+                {
+                    var rc = ctxFrom(env);
+                    User caller = rc.caller();
+                    return org.rapla.server.internal.ResourceTreeRules.groupPaths(a.getClassification(), serverLocale,
+                            value -> !(value instanceof org.rapla.entities.domain.Allocatable reference)
+                                    || (caller != null && (caller.isAdmin()
+                                    || (rc.permissionController() != null
+                                    && rc.permissionController().canRead(reference, caller)))));
+                }
+            };
+
     /**
      * Restriction-aware editor view of allocations. Drops per-allocatable
      * entries the caller can't read (§12 rule 4).
@@ -1494,6 +1512,7 @@ public final class StructuralTypeFetchers
                 .dataFetcher("createdAt",      ALLOCATABLE_CREATED_AT)
                 .dataFetcher("lastModifiedAt", ALLOCATABLE_LAST_MODIFIED_AT)
                 .dataFetcher("canModify",      ALLOCATABLE_CAN_MODIFY)
+                .dataFetcher("groupPaths",     ALLOCATABLE_GROUP_PATHS)
                 .dataFetcher("canAdmin",       ALLOCATABLE_CAN_ADMIN)
                 .dataFetcher("permissions",    ALLOCATABLE_PERMISSIONS)
                 .dataFetcher("compute",        ALLOCATABLE_COMPUTE)

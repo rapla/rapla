@@ -170,12 +170,10 @@ public class SearchGraphQLController
 
     /**
      * EVENT bucket — windowless name scan over every cached reservation, gated
-     * per hit by {@code canModify}: the omnibox only surfaces events the caller
-     * can EDIT (event rows carry edit/navigate actions, so a non-editable event
-     * is noise and a wider leak surface). This is STRICTER than §12 read — it
-     * never exposes an event the caller couldn't already open for editing in the
-     * Swing client. SUBSTRING only (never FUZZY — large candidate set). Match
-     * BEFORE the permission walk: the name compare is microseconds; the walk is not.
+     * per hit by {@code canRead} (PRD 119 D9): everyone finds the events they may
+     * read; the SPA opens a non-editable hit read-only. Never wider than §12 read.
+     * SUBSTRING only (never FUZZY — large candidate set). Match BEFORE the
+     * permission walk: the name compare is microseconds; the walk is not.
      */
     private List<SearchHit> searchEvents(String needle, int cap, User caller,
             PermissionController pc, Locale locale,
@@ -192,7 +190,7 @@ public class SearchGraphQLController
             if (isInternalOrTemplate(r)) continue;
             int rank = SearchMatcher.rank(r.getName(locale), needle, SearchMatcher.MatchKind.SUBSTRING);
             if (rank == Integer.MAX_VALUE) continue;            // no name match — cheap, before the perm walk
-            if (!pc.canModify(r, caller)) continue;             // editable-only — never trust the scan
+            if (!pc.canRead(r, caller)) continue;               // §12 read scope — never trust the scan
             scored.add(new Scored(r, rank, SearchRankBoost.tierOf(r.getId(), favoriteIds, recentIds)));
         }
         if (scored.isEmpty()) return List.of();

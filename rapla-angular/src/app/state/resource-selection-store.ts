@@ -1,8 +1,15 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 
+import { GraphqlService } from '../graphql/graphql.service';
 import { RecentsFavoritesService } from './recents-favorites.service';
-
-export type ResourceSelectionTab = 'recents' | 'favorites' | 'group';
+import {
+  byLabel,
+  filterRows,
+  rankAll,
+  typeChips,
+  usersMatching,
+  type PickerChip,
+} from './resource-picker';
 
 /** A steppable item in the selection list. Usually a resource; a `user` item
  *  steps as an ownerEq scope chip instead of a resource filter. Defaults to
@@ -14,50 +21,153 @@ export interface ResourceItem {
   kind?: 'resource' | 'user';
   /** rapla type key (e.g. "Raum", "Kurs") — drives the type icon in the list. */
   typeKey?: string;
+  /** Localized type name — the label of the type chip (PRD 119). */
+  typeName?: string;
+  /** Login name of a user row — the search matches it too (PRD 119). */
+  username?: string;
+  /** Picker group paths, one per categorization value (PRD 119 D11). */
+  groupPaths?: string[][];
 }
+
+interface PickerWire {
+  resources?: {
+    id: string;
+    name: string | null;
+    classification: { typeKey: string; type: { name: string } };
+    groupPaths?: string[][];
+  }[];
+  users?: { id: string; username: string; name: string }[];
+}
+
+/** PRD 119 D8 — the lean list: only what the picker needs, never the full resource. */
+const PICKER_QUERY = `{
+  resources { id kind name classification { typeKey type { name } } groupPaths }
+  users { id username name }
+}`;
 
 /**
  * The persistent left ResourceSelection — the pool you pick/step resources from.
- * Three sources feed the same click-to-step rhythm: {@code recents} (resources
- * you found), {@code favorites} (pinned ★), {@code group} (a loaded group).
+ * PRD 119: the lean resource list is loaded once; chips pick what the list shows (Alle,
+ * Favoriten, Zuletzt, one chip per type); the one search field writes {@link query}.
  * {@link activeId} marks the "▶ gezeigt" item. Distinct from the FilterStore:
  * this is the candidate pool; a click here {@code replace}s the filter.
  *
- * PRD 089: recents + favorites are now PER-USER SERVER state, owned by
- * {@link RecentsFavoritesService} (rapla Preferences, follows the user across
- * devices, isolated per account). The store re-exposes the service signals so
- * its consumers (the ResourceSelection component, omnibox) are unchanged.
- * {@code group} is still a transient in-memory list.
+ * PRD 089: recents + favorites are PER-USER SERVER state, owned by
+ * {@link RecentsFavoritesService}; the store re-exposes the service signals.
  */
 @Injectable({ providedIn: 'root' })
 export class ResourceSelectionStore {
   private readonly lists = inject(RecentsFavoritesService);
+  private readonly gql = inject(GraphqlService);
 
-  private readonly _group = signal<ResourceItem[]>([]);
-  private readonly _groupLabel = signal<string | null>(null);
-  private readonly _activeTab = signal<ResourceSelectionTab>('recents');
+  private readonly _resources = signal<ResourceItem[]>([]);
+  private readonly _users = signal<ResourceItem[]>([]);
+  private readonly _activeChip = signal<string>('all');
   private readonly _activeId = signal<string | null>(null);
+  private readonly _query = signal('');
+  private readonly _pickerFocus = signal(0);
+  private loaded = false;
 
+  readonly resources = this._resources.asReadonly();
+  readonly users = this._users.asReadonly();
   readonly recents = this.lists.recents;
   readonly favorites = this.lists.favorites;
-  readonly group = this._group.asReadonly();
-  readonly groupLabel = this._groupLabel.asReadonly();
-  readonly activeTab = this._activeTab.asReadonly();
+  readonly activeChip = this._activeChip.asReadonly();
   readonly activeId = this._activeId.asReadonly();
+  /** PRD 119 D3 — the one search field writes it; the picker narrows by it. */
+  readonly query = this._query.asReadonly();
+  /** Bumped when the search dropdown sends the user to the picker (PRD 119 D4). */
+  readonly pickerFocus = this._pickerFocus.asReadonly();
+
+  readonly chips = computed<PickerChip[]>(() => [
+    { key: 'all', label: 'Alle' },
+    { key: 'favorites', label: '★ Favoriten' },
+    { key: 'recents', label: 'Zuletzt' },
+    ...typeChips(this._resources()),
+  ]);
 
   readonly activeList = computed<ResourceItem[]>(() => {
-    switch (this._activeTab()) {
+    const chip = this._activeChip();
+    switch (chip) {
+      case 'all':
+        return rankAll(this._resources(), this.favorites(), this.recents());
       case 'favorites':
         return this.favorites();
-      case 'group':
-        return this._group();
-      default:
+      case 'recents':
         return this.recents();
+      default: {
+        const typeKey = chip.slice('type:'.length);
+        return this._resources()
+          .filter((it) => it.typeKey === typeKey)
+          .sort(byLabel);
+      }
     }
   });
 
-  setActiveTab(tab: ResourceSelectionTab): void {
-    this._activeTab.set(tab);
+  /** Rows the picker shows under Alle for the current query — the dropdown's count row (PRD 119 D4). */
+  readonly matchCount = computed(
+    () =>
+      filterRows(rankAll(this._resources(), this.favorites(), this.recents()), this._query())
+        .length + usersMatching(this._users(), this._query()).length,
+  );
+
+  /** Loads the lean list once per SPA start. */
+  ensureLoaded(): void {
+    if (this.loaded) return;
+    this.loaded = true;
+    this.fetch();
+  }
+
+  /** PRD 119 OQ6 default — after the SPA's own resource edits. */
+  reload(): void {
+    this.loaded = true;
+    this.fetch();
+  }
+
+  private fetch(): void {
+    this.gql.query<PickerWire>(PICKER_QUERY).subscribe({
+      next: (resp) => {
+        if (!resp.data) {
+          this.loaded = false; // failed load must not leave the picker empty for the session
+          return;
+        }
+        this._resources.set(
+          (resp.data.resources ?? [])
+            .filter((r) => !!r.name)
+            .map((r) => ({
+              id: r.id,
+              label: r.name as string,
+              kind: 'resource',
+              typeKey: r.classification.typeKey,
+              typeName: r.classification.type.name,
+              groupPaths: r.groupPaths ?? [],
+            })),
+        );
+        this._users.set(
+          (resp.data.users ?? []).map((u) => ({
+            id: u.id,
+            label: u.name || u.username,
+            kind: 'user',
+            username: u.username,
+          })),
+        );
+      },
+      error: () => {
+        this.loaded = false;
+      },
+    });
+  }
+
+  setActiveChip(key: string): void {
+    this._activeChip.set(key);
+  }
+
+  setQuery(query: string): void {
+    this._query.set(query);
+  }
+
+  requestPickerFocus(): void {
+    this._pickerFocus.update((n) => n + 1);
   }
 
   /** A newly-found resource lands on top; one already present keeps its spot (no reshuffle). */
@@ -75,17 +185,6 @@ export class ResourceSelectionStore {
 
   toggleFavorite(item: ResourceItem): void {
     void this.lists.toggleFavorite(item);
-  }
-
-  loadGroup(label: string, items: ResourceItem[]): void {
-    this._group.set(items);
-    this._groupLabel.set(label);
-    this._activeTab.set('group');
-  }
-
-  clearGroup(): void {
-    this._group.set([]);
-    this._groupLabel.set(null);
   }
 
   setActive(id: string | null): void {

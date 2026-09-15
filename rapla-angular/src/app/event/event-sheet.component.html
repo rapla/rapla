@@ -15,6 +15,14 @@
       <button type="button" (click)="cancel()">Zurück</button>
     </section>
   } @else if (draft(); as d) {
+    @if (showSearchHint()) {
+      <p class="searchhint">
+        Keine Ressource dieser Veranstaltung ist ausgewählt — die Woche zeigt sie deshalb nicht.
+        <button type="button" (click)="selectEventResources()">
+          Ressourcen des Termins auswählen
+        </button>
+      </p>
+    }
     <!-- ============================================== Kopfbereich -->
     @if (headerOpen()) {
       <section

@@ -796,6 +796,8 @@ type Resource {
   classification: ResourceClassification!
   "Server-derived per caller — gates the SPA's edit affordance without a second roundtrip (mirror of Reservation.canModify, PRD 096)."
   canModify:      Boolean!
+  "PRD 119 — picker groups: one path per value of the type's categorization attribute (single level today). A value that is a resource the caller cannot read is left out (§12)."
+  groupPaths:     [[String!]!]!
   "PRD 113 — may edit the permission list (canAdmin)."
   canAdmin:       Boolean!
   "PRD 113 § 5b — the stored rows; null unless canAdmin (§12), never [] for a non-admin. An entity admin sees every principal's name (OQ 3)."

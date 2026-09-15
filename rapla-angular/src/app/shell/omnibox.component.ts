@@ -1,20 +1,28 @@
 import { Component, ElementRef, HostListener, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { switchMap } from 'rxjs';
-
+import { asyncScheduler, switchMap, throttleTime } from 'rxjs';
 import { SearchService, MIN_QUERY_LENGTH } from '../search/search.service';
 import type { SearchResult, SearchResultGroup } from '../search/search.types';
-import { FilterStore, type FilterKind } from '../state/filter-store';
 import { ResourceSelectionStore } from '../state/resource-selection-store';
+import { ViewStateStore } from '../state/view-state-store';
+import { EventSheetComponent, type EventSheetDialogData } from '../event/event-sheet.component';
+import { todayWindow } from './view-control-strip.component';
 import { entityIcon } from './entity-icon';
 
+/** Span used when no window is set yet: one week (Monday to Monday). */
+const ONE_WEEK = { from: '2026-01-05T00:00:00', to: '2026-01-12T00:00:00' };
+
+/** PRD 106 pattern — at most one server search per interval while typing, last term always sent. */
+const SEARCH_THROTTLE_MS = 300;
+
 /**
- * The omnibox — one search box over the whole corpus. Each hit renders one
- * button per {@code action} it carries; the buttons drive the same stores the
- * ResourceSelection does (filter step / accumulate, group-load). Search is the
- * STUB {@link SearchService} for now; result shape is stable.
+ * The one search field of the shell (PRD 119 D3/D4). Every keystroke narrows the resource picker
+ * on the left (shared query, no server call); from {@link MIN_QUERY_LENGTH} characters the
+ * dropdown lists matching EVENTS — a hit jumps to its week and opens its sheet. A first row points
+ * to the resources and groups the picker now shows.
  */
 @Component({
   selector: 'app-omnibox',
@@ -23,42 +31,33 @@ import { entityIcon } from './entity-icon';
     <div class="omnibox">
       <input
         class="obsearch"
-        placeholder="Suchen… (Ressourcen, Veranstaltungen, Termine, Gruppen)"
+        placeholder="Suchen… (Ressourcen, Veranstaltungen)"
         [ngModel]="term()"
         (ngModelChange)="onType($event)"
         (focus)="open.set(true)"
       />
       @if (showResults()) {
         <div class="results">
+          <button type="button" class="countrow" (click)="focusPicker()">
+            {{ store.matchCount() }} Ressourcen und Gruppen in der Liste links
+          </button>
           @for (g of groups(); track g.kind) {
             <div class="group">
               <div class="ghead">{{ g.heading }}</div>
               @for (r of g.results; track r.id) {
-                <div class="row">
+                <button type="button" class="row" (click)="openEvent(r)">
                   <mat-icon class="ico" [style.color]="r.color || null">{{ icon(r) }}</mat-icon>
                   <span class="meta">
-                    <span class="lbl">
-                      {{ r.label }}
-                      @if (r.count !== undefined && r.count !== null) {
-                        <span class="cnt">({{ r.count }})</span>
-                      }
-                    </span>
+                    <span class="lbl">{{ r.label }}</span>
                     @if (r.sublabel) {
                       <span class="sub">{{ r.sublabel }}</span>
                     }
                   </span>
-                  <span class="acts">
-                    @for (a of r.actions; track a) {
-                      <button class="act" [attr.data-action]="a" (click)="run(a, r)">
-                        {{ actionLabel(a) }}
-                      </button>
-                    }
-                  </span>
-                </div>
+                </button>
               }
             </div>
           } @empty {
-            <div class="none">— keine Treffer</div>
+            <div class="none">— keine Veranstaltungen</div>
           }
         </div>
       }
@@ -96,6 +95,24 @@ import { entityIcon } from './entity-icon';
         max-height: 60vh;
         overflow: auto;
       }
+      .countrow,
+      .row {
+        width: 100%;
+        border: none;
+        background: transparent;
+        text-align: left;
+        font: inherit;
+      }
+      .countrow {
+        padding: 0.55rem 0.9rem;
+        font-size: 0.8rem;
+        cursor: pointer;
+        color: var(--mat-sys-primary, #3f51b5);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+      }
+      .countrow:hover {
+        background: rgba(63, 81, 181, 0.06);
+      }
       .group {
         padding-bottom: 0.4rem;
       }
@@ -112,6 +129,7 @@ import { entityIcon } from './entity-icon';
         gap: 0.55rem;
         padding: 0.4rem 0.9rem;
         font-size: 0.84rem;
+        cursor: pointer;
       }
       .row:hover {
         background: rgba(63, 81, 181, 0.06);
@@ -134,31 +152,9 @@ import { entityIcon } from './entity-icon';
         text-overflow: ellipsis;
         white-space: nowrap;
       }
-      .row .cnt {
-        color: rgba(0, 0, 0, 0.5);
-        font-weight: 600;
-      }
       .row .sub {
         font-size: 0.68rem;
         color: rgba(0, 0, 0, 0.5);
-      }
-      .acts {
-        display: flex;
-        gap: 0.3rem;
-        flex: none;
-      }
-      .act {
-        border: 1px solid rgba(0, 0, 0, 0.15);
-        background: #fff;
-        border-radius: 6px;
-        padding: 0.2rem 0.45rem;
-        font-size: 0.72rem;
-        cursor: pointer;
-        color: rgba(0, 0, 0, 0.7);
-        white-space: nowrap;
-      }
-      .act:hover {
-        background: rgba(63, 81, 181, 0.1);
       }
       .none {
         padding: 0.6rem 0.9rem;
@@ -170,17 +166,20 @@ import { entityIcon } from './entity-icon';
 })
 export class OmniboxComponent {
   private readonly search = inject(SearchService);
-  private readonly filter = inject(FilterStore);
-  private readonly resources = inject(ResourceSelectionStore);
+  protected readonly store = inject(ResourceSelectionStore);
+  private readonly viewState = inject(ViewStateStore);
+  private readonly dialog = inject(MatDialog);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   protected readonly term = signal('');
-
   /** Whether the results dropdown is open (closes on Escape / outside-click / action). */
   protected readonly open = signal(false);
 
   protected readonly groups = toSignal(
-    toObservable(this.term).pipe(switchMap((t) => this.search.search(t))),
+    toObservable(this.term).pipe(
+      throttleTime(SEARCH_THROTTLE_MS, asyncScheduler, { leading: true, trailing: true }),
+      switchMap((t) => this.search.search(t)),
+    ),
     { initialValue: [] as SearchResultGroup[] },
   );
 
@@ -188,9 +187,10 @@ export class OmniboxComponent {
     () => this.open() && this.term().length >= MIN_QUERY_LENGTH,
   );
 
-  /** Typing reopens the dropdown and updates the query. */
+  /** Typing narrows the picker at once (no minimum) and reopens the dropdown. */
   onType(value: string): void {
     this.term.set(value);
+    this.store.setQuery(value);
     this.open.set(true);
   }
 
@@ -211,80 +211,26 @@ export class OmniboxComponent {
     return entityIcon(r.kind, r.sublabel);
   }
 
-  protected actionLabel(action: SearchResult['actions'][number]): string {
-    switch (action) {
-      case 'filter-replace':
-        return 'Belegung';
-      case 'filter-add':
-        return '+';
-      case 'navigate':
-        return '↵';
-      case 'edit':
-        return '✏️';
-      case 'load-group':
-        return 'in Liste laden';
+  /** The count row sends the user to the picker, where the resource hits live. */
+  focusPicker(): void {
+    this.store.requestPickerFocus();
+    this.open.set(false);
+  }
+
+  /** PRD 119 D4 — jump to the week of the event's first occurrence and open its sheet. */
+  openEvent(r: SearchResult): void {
+    if (r.start) {
+      this.viewState.setWindow(
+        todayWindow(this.viewState.window() ?? ONE_WEEK, new Date(`${r.start}Z`)),
+      );
     }
+    this.dialog.open(EventSheetComponent, {
+      data: { id: r.id, searchHint: true } satisfies EventSheetDialogData,
+      width: '960px',
+      maxWidth: '95vw',
+      height: '90vh',
+      restoreFocus: false,
+    });
+    this.open.set(false);
   }
-
-  run(action: SearchResult['actions'][number], r: SearchResult): void {
-    switch (action) {
-      case 'filter-replace':
-        this.filter.replace({
-          id: r.id,
-          kind: chipKind(r.kind),
-          label: r.label,
-          color: r.color,
-        });
-        this.rememberResource(r);
-        break;
-      case 'filter-add':
-        this.filter.add({
-          id: r.id,
-          kind: chipKind(r.kind),
-          label: r.label,
-          color: r.color,
-        });
-        this.rememberResource(r);
-        return; // keep the dropdown open so the user can accumulate more with +
-      case 'navigate':
-        this.navigate(r);
-        break;
-      case 'edit':
-        this.edit(r);
-        break;
-      case 'load-group':
-        this.resources.loadGroup(r.label, [{ id: r.id, label: r.label, color: r.color }]);
-        break;
-    }
-    this.open.set(false); // a terminal action closes the dropdown
-  }
-
-  navigate(r: SearchResult): void {
-    void r; // TODO: wire result navigation
-  }
-
-  edit(r: SearchResult): void {
-    void r; // TODO: wire result edit
-  }
-
-  /** A found resource OR user the user acted on lands in the ResourceSelection
-   *  "Zuletzt" list — so it can be pulled in again (a user steps as a `user`
-   *  scope, a resource as a resource filter). */
-  private rememberResource(r: SearchResult): void {
-    if (r.kind === 'resource' || r.kind === 'user') {
-      this.resources.pushRecent({
-        id: r.id,
-        label: r.label,
-        color: r.color,
-        kind: r.kind,
-        typeKey: r.sublabel,
-      });
-    }
-  }
-}
-
-/** Map a search-result kind to the scope-chip kind FilterStore understands
- *  ('resource' | 'event' | 'user'). Everything not event/user is a resource chip. */
-function chipKind(kind: SearchResult['kind']): FilterKind {
-  return kind === 'event' || kind === 'user' ? kind : 'resource';
 }

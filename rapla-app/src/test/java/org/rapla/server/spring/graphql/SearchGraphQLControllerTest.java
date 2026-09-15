@@ -87,6 +87,12 @@ class SearchGraphQLControllerTest
     @Autowired
     MockMvc mockMvc;
 
+    @Autowired
+    org.rapla.facade.RaplaFacade facade;
+
+    @Autowired
+    org.rapla.storage.CachableStorageOperator operator;
+
     HttpGraphQlTester tester;
 
     @BeforeEach
@@ -281,21 +287,15 @@ class SearchGraphQLControllerTest
     }
 
     /**
-     * EVENT bucket is EDIT-gated, not read-gated: the omnibox surfaces only
-     * events the caller can edit. monty CAN read homer's "test" events (the
-     * event type is world-readable) but CANNOT edit them — so the EVENT bucket
-     * must be empty. This is both the editable-only restriction and the leak
-     * guard: dropping the {@code canModify} gate would surface homer's events
-     * here. (Verified red-on-leak: replacing canModify with canRead turns this
-     * assertion red.)
+     * PRD 119 D9 — the EVENT bucket is READ-gated: everyone finds the events they may read
+     * (a student finds the exam in their course calendar). monty CAN read homer's "test" events
+     * but CANNOT edit them — they must appear, and exactly the ones monty's read path returns
+     * (§12: same ids, same count; nothing beyond the read scope).
      */
     @Test
     @WithMockUser(username = "monty", roles = "USER")
-    void eventSearchReturnsOnlyEditableEvents()
+    void eventSearchReturnsReadableEvents()
     {
-        // Sanity: monty CAN read homer's "test" events via the read path — they
-        // exist and are visible, so an empty search bucket is due to edit-gating,
-        // not absence.
         List<Map<String, Object>> readable = tester.document("""
                 { reservations(filter: { from: "2000-01-01T00:00:00", to: "2030-01-01T00:00:00",
                     searchText: "test" }) { id } }
@@ -306,10 +306,68 @@ class SearchGraphQLControllerTest
                 .get();
         assertFalse(readable.isEmpty(), "precondition: monty must be able to READ homer's 'test' events");
 
-        // But the edit-gated omnibox surfaces none of them (monty can't edit).
-        assertTrue(hits(groups("test", "[EVENT]"), "EVENT").isEmpty(),
-                () -> "edit-gated EVENT search must not surface events monty cannot edit; got "
-                        + groups("test", "[EVENT]"));
+        List<String> readIds = readable.stream().map(r -> (String) r.get("id")).sorted().toList();
+        List<String> searchIds = hits(groups("test", "[EVENT]", 100), "EVENT").stream()
+                .map(h -> (String) h.get("id"))
+                .sorted()
+                .toList();
+        assertEquals(readIds, searchIds,
+                () -> "read-gated EVENT search must return exactly monty's readable 'test' events; read=" + readIds
+                        + " search=" + searchIds);
+    }
+
+    private static boolean leakProbeSeeded;
+
+    /** A homer-owned event named "leakprobe" with no permission rows — monty cannot read it. */
+    private void seedLeakProbe() throws Exception
+    {
+        if (leakProbeSeeded) return;
+        org.rapla.entities.User homer = operator.getUser("homer");
+        org.rapla.entities.dynamictype.DynamicType eventType = facade.getDynamicTypes(
+                org.rapla.entities.dynamictype.DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0];
+        org.rapla.entities.dynamictype.Classification classification = eventType.newClassification();
+        classification.setValue("name", "leakprobe");
+        org.rapla.entities.domain.Reservation r = facade.newReservation(classification, homer);
+        r.addAppointment(facade.newAppointmentWithUser(java.time.LocalDateTime.of(2026, 6, 1, 10, 0),
+                java.time.LocalDateTime.of(2026, 6, 1, 11, 0), homer));
+        for (org.rapla.entities.domain.Permission p : r.getPermissionList().toArray(new org.rapla.entities.domain.Permission[0]))
+        {
+            r.removePermission(p);
+        }
+        facade.storeObjects(new org.rapla.entities.Entity[] { r });
+        leakProbeSeeded = true;
+    }
+
+    /**
+     * PRD 119 D9 / §12 — the read gate never widens the bucket beyond the read scope: an event
+     * monty cannot read, whose name matches, is absent, and the answer equals the one for a term
+     * nothing matches (no existence leak, no count leak).
+     */
+    @Test
+    @WithMockUser(username = "monty", roles = "USER")
+    void eventSearchNeverSurfacesAnUnreadableEvent() throws Exception
+    {
+        seedLeakProbe();
+        List<Map<String, Object>> readable = tester.document("""
+                { reservations(filter: { from: "2000-01-01T00:00:00", to: "2030-01-01T00:00:00",
+                    searchText: "leakprobe" }) { id } }
+                """)
+                .execute()
+                .path("reservations")
+                .entityList(MAP)
+                .get();
+        assertTrue(readable.isEmpty(), "precondition: monty must NOT be able to read the leakprobe event");
+        assertEquals(hits(groups("zzz-no-such-event", "[EVENT]"), "EVENT"), hits(groups("leakprobe", "[EVENT]"), "EVENT"),
+                "an unreadable matching event must answer exactly like a term nothing matches");
+    }
+
+    /** The probe exists and matches: the admin finds it — so monty's empty bucket is the gate, not absence. */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void adminFindsTheLeakProbeEvent() throws Exception
+    {
+        seedLeakProbe();
+        assertEquals(1, hits(groups("leakprobe", "[EVENT]"), "EVENT").size());
     }
 
     /**

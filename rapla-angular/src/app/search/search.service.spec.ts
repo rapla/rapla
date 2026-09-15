@@ -75,7 +75,7 @@ describe('SearchService', () => {
   it('counts spaces toward the minimum — a trailing space reaches 3 and searches', async () => {
     let called = false;
     const gql = fakeGql(
-      [{ kind: 'RESOURCE', heading: 'R', hits: [resourceHit('r1', 'C3')] }],
+      [{ kind: 'EVENT', heading: 'Veranstaltungen', hits: [eventHit('e1', 'C3')] }],
       () => (called = true),
     );
     const groups = await firstValueFrom(new SearchService(gql).search('C3 '));
@@ -83,29 +83,15 @@ describe('SearchService', () => {
     expect(groups.length).toBe(1);
   });
 
-  it('maps a RESOURCE bucket to a Ressourcen group with filter actions + sublabel', async () => {
-    const gql = fakeGql([
-      {
-        kind: 'RESOURCE',
-        heading: 'Ressourcen',
-        hits: [resourceHit('r1', 'C348 PC Hörsaal'), resourceHit('p1', 'Prof X', 'Person')],
-      },
-    ]);
-    const groups = await firstValueFrom(new SearchService(gql).search('C34'));
-    expect(groups.length).toBe(1);
-    expect(groups[0].kind).toBe('resource');
-    expect(groups[0].heading).toBe('Ressourcen');
-    expect(groups[0].results.map((r) => r.id)).toEqual(['r1', 'p1']);
-    expect(groups[0].results[0]).toMatchObject({
-      kind: 'resource',
-      label: 'C348 PC Hörsaal',
-      sublabel: 'Raum',
-      actions: ['filter-replace', 'filter-add'],
-    });
-    expect(groups[0].results[1].sublabel).toBe('Person');
+  /** PRD 119 D4 — resources and users live in the picker; the dropdown asks for events only. */
+  it('asks the server for EVENT hits only', async () => {
+    let vars: Record<string, unknown> | undefined;
+    const gql = fakeGql([], (v) => (vars = v));
+    await firstValueFrom(new SearchService(gql).search('Mathe'));
+    expect(vars?.['kinds']).toEqual(['EVENT']);
   });
 
-  it('maps an EVENT bucket to a Veranstaltungen group with navigate/edit actions', async () => {
+  it('maps an EVENT bucket to event results carrying the first occurrence start', async () => {
     const gql = fakeGql([
       { kind: 'EVENT', heading: 'Veranstaltungen', hits: [eventHit('e1', 'Mathe 1')] },
     ]);
@@ -113,37 +99,21 @@ describe('SearchService', () => {
     expect(groups.length).toBe(1);
     expect(groups[0].kind).toBe('event');
     expect(groups[0].results[0]).toMatchObject({
+      id: 'e1',
       kind: 'event',
       label: 'Mathe 1',
-      actions: ['navigate', 'edit'],
+      start: '2026-03-01T10:00:00',
     });
   });
 
-  it('maps a USER bucket to a Benutzer group with resource-like actions (Belegung / +)', async () => {
-    const gql = fakeGql([
-      { kind: 'USER', heading: 'Benutzer', hits: [userHit('u1', 'Burns Monty', 'monty')] },
-    ]);
-    const groups = await firstValueFrom(new SearchService(gql).search('monty'));
-    expect(groups.length).toBe(1);
-    expect(groups[0].kind).toBe('user');
-    expect(groups[0].heading).toBe('Benutzer');
-    expect(groups[0].results[0]).toMatchObject({
-      id: 'u1',
-      kind: 'user',
-      label: 'Burns Monty',
-      sublabel: 'monty',
-      actions: ['filter-replace', 'filter-add'],
-    });
-  });
-
-  it('preserves server bucket order across kinds', async () => {
+  it('drops RESOURCE and USER buckets (they are rows of the picker now)', async () => {
     const gql = fakeGql([
       { kind: 'RESOURCE', heading: 'Ressourcen', hits: [resourceHit('r1', 'Raum 1')] },
       { kind: 'EVENT', heading: 'Veranstaltungen', hits: [eventHit('e1', 'Event 1')] },
-      { kind: 'USER', heading: 'Benutzer', hits: [userHit('u1', 'Monty')] },
+      { kind: 'USER', heading: 'Benutzer', hits: [userHit('u1', 'Monty', 'monty')] },
     ]);
     const groups = await firstValueFrom(new SearchService(gql).search('123'));
-    expect(groups.map((g) => g.kind)).toEqual(['resource', 'event', 'user']);
+    expect(groups.map((g) => g.kind)).toEqual(['event']);
   });
 
   it('passes the trimmed query term + a positive limit to the resolver', async () => {
@@ -156,11 +126,11 @@ describe('SearchService', () => {
 
   it('drops unknown server kinds rather than guessing', async () => {
     const gql = fakeGql([
-      { kind: 'WHO_KNOWS', heading: '?', hits: [resourceHit('x', 'x')] },
-      { kind: 'RESOURCE', heading: 'Ressourcen', hits: [resourceHit('r1', 'Raum 1')] },
+      { kind: 'WHO_KNOWS', heading: '?', hits: [eventHit('x', 'x')] },
+      { kind: 'EVENT', heading: 'Veranstaltungen', hits: [eventHit('e1', 'Event 1')] },
     ]);
     const groups = await firstValueFrom(new SearchService(gql).search('xxx'));
-    expect(groups.map((g) => g.kind)).toEqual(['resource']);
+    expect(groups.map((g) => g.kind)).toEqual(['event']);
   });
 
   it('returns no groups when nothing matches', async () => {
@@ -171,9 +141,9 @@ describe('SearchService', () => {
   it('falls back to a placeholder label when label is null', async () => {
     const gql = fakeGql([
       {
-        kind: 'RESOURCE',
-        heading: 'Ressourcen',
-        hits: [{ __typename: 'ResourceHit', id: 'x', label: null, sublabel: null, score: 1 }],
+        kind: 'EVENT',
+        heading: 'Veranstaltungen',
+        hits: [{ __typename: 'EventHit', id: 'x', label: null, sublabel: null, score: 1 }],
       },
     ]);
     const groups = await firstValueFrom(new SearchService(gql).search('xxx'));

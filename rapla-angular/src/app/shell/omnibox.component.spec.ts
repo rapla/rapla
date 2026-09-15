@@ -1,204 +1,157 @@
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { of } from 'rxjs';
 import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { MatDialog } from '@angular/material/dialog';
 
 import { OmniboxComponent } from './omnibox.component';
-import { FilterStore } from '../state/filter-store';
 import { ResourceSelectionStore } from '../state/resource-selection-store';
+import { ViewStateStore } from '../state/view-state-store';
 import { SearchService } from '../search/search.service';
-import type { SearchResult, SearchResultGroup, SearchResultKind } from '../search/search.types';
+import { EventSheetComponent } from '../event/event-sheet.component';
+import type { SearchResult, SearchResultGroup } from '../search/search.types';
 
-// Canned corpus — exercises ALL result kinds the omnibox renders (the real
-// SearchService is resources-only today; this keeps the component's group/event
-// handling under test independently of the service).
-const CORPUS: SearchResult[] = [
-  { id: 'res-1', kind: 'resource', label: 'Raum A-101', actions: ['filter-replace', 'filter-add'] },
-  { id: 'grp-1', kind: 'group', label: 'Räume C-Bau', count: 12, actions: ['load-group'] },
-  {
-    id: 'evt-1',
-    kind: 'event',
-    label: 'Mathematik I',
-    actions: ['navigate', 'filter-add', 'edit'],
-  },
-  {
-    id: 'usr-1',
-    kind: 'user',
-    label: 'Burns Monty',
-    sublabel: 'monty',
-    actions: ['filter-replace', 'filter-add'],
-  },
+/** PRD 119 D4 — the dropdown lists events only; resources and users are rows of the picker. */
+const EVENTS: SearchResult[] = [
+  { id: 'evt-1', kind: 'event', label: 'Mathematik I', start: '2026-10-07T10:00:00' },
+  { id: 'evt-2', kind: 'event', label: 'Mathematik II', start: '2026-10-14T08:00:00' },
 ];
-const HEADINGS: Record<SearchResultKind, string> = {
-  resource: 'Ressourcen',
-  event: 'Veranstaltungen',
-  user: 'Benutzer',
-  occurrence: 'Termine',
-  group: 'Gruppen',
-  savedView: 'Ansichten',
-};
+
 const fakeSearch = {
   search: (term: string) => {
     const q = term.trim().toLowerCase();
-    const hits = q ? CORPUS.filter((r) => r.label.toLowerCase().includes(q)) : [];
-    const kinds = [...new Set(hits.map((r) => r.kind))];
-    const groups: SearchResultGroup[] = kinds.map((kind) => ({
-      kind,
-      heading: HEADINGS[kind],
-      results: hits.filter((r) => r.kind === kind),
-    }));
+    const hits = q ? EVENTS.filter((r) => r.label.toLowerCase().includes(q)) : [];
+    const groups: SearchResultGroup[] = hits.length
+      ? [{ kind: 'event', heading: 'Veranstaltungen', results: hits }]
+      : [];
     return of(groups);
   },
 };
 
+const room = (id: string, name: string) => ({
+  id,
+  kind: 'RESOURCE',
+  name,
+  classification: { typeKey: 'room', type: { name: 'Raum' } },
+});
+
 function setTerm(f: ComponentFixture<OmniboxComponent>, term: string): void {
-  // Drive via onType (sets the term AND opens the dropdown), mirroring a real
-  // keystroke without ngModel's zoneless input-event flakiness.
   (f.componentInstance as unknown as { onType(v: string): void }).onType(term);
 }
 
-/**
- * Flush the async term → toObservable → switchMap → toSignal chain. The
- * term-change emission needs a macrotask turn AFTER stability before the
- * filtered groups land in the DOM; a single whenStable() can render the prior
- * (empty-term) emission. Two rounds + a macrotask make it deterministic.
- */
+/** Flush the async term → toObservable → throttle/switchMap → toSignal chain. */
 async function settle(f: ComponentFixture<OmniboxComponent>): Promise<void> {
   await f.whenStable();
-  await new Promise((r) => setTimeout(r, 0));
+  await new Promise((r) => setTimeout(r, 350)); // past the search throttle's trailing edge
   f.detectChanges();
   await f.whenStable();
   f.detectChanges();
-}
-
-function buttonFor(el: HTMLElement, rowIndex: number, action: string): HTMLButtonElement {
-  const rows = el.querySelectorAll('.row');
-  return rows[rowIndex].querySelector(`button[data-action="${action}"]`) as HTMLButtonElement;
 }
 
 describe('OmniboxComponent', () => {
-  let filter: FilterStore;
   let resources: ResourceSelectionStore;
+  let viewState: ViewStateStore;
+  let http: HttpTestingController;
+  const dialogOpen = vi.fn();
 
   beforeEach(async () => {
-    localStorage.clear(); // ResourceSelection recents persist — isolate each test
+    localStorage.clear();
+    dialogOpen.mockReset();
     await TestBed.configureTestingModule({
       imports: [OmniboxComponent],
       providers: [
         { provide: SearchService, useValue: fakeSearch },
+        { provide: MatDialog, useValue: { open: dialogOpen } },
         provideHttpClient(),
         provideHttpClientTesting(),
       ],
     }).compileComponents();
-    filter = TestBed.inject(FilterStore);
     resources = TestBed.inject(ResourceSelectionStore);
-    filter.clear();
-    resources.clearGroup();
+    viewState = TestBed.inject(ViewStateStore);
+    http = TestBed.inject(HttpTestingController);
+    resources.setQuery('');
   });
 
-  it('typing a term renders result rows', async () => {
+  function loadPicker(rows: ReturnType<typeof room>[]): void {
+    resources.ensureLoaded();
+    http
+      .expectOne((r) => r.url === '/api/graphql' && String(r.body?.query).includes('resources'))
+      .flush({ data: { resources: rows, users: [] } });
+  }
+
+  it('typing writes the shared picker query from the first character, without a dropdown', async () => {
     const f = TestBed.createComponent(OmniboxComponent);
-    setTerm(f, 'mathe');
+    setTerm(f, 'm');
     await settle(f);
-    const rows = (f.nativeElement as HTMLElement).querySelectorAll('.row');
-    expect(rows.length).toBeGreaterThan(0);
+    expect(resources.query()).toBe('m');
+    expect((f.nativeElement as HTMLElement).querySelector('.results')).toBeNull();
   });
 
-  it('clicking "Belegung" on a resource row replaces the filter', async () => {
+  it('from three characters the dropdown shows the resource count row and event hits only', async () => {
+    loadPicker([room('r1', 'Mathe-Labor'), room('r2', 'Mathe-Raum'), room('r3', 'Chemie')]);
     const f = TestBed.createComponent(OmniboxComponent);
-    setTerm(f, 'Raum A-101');
+    setTerm(f, 'Mat');
     await settle(f);
     const el = f.nativeElement as HTMLElement;
-    buttonFor(el, 0, 'filter-replace').click();
-    await f.whenStable();
-    expect(filter.entries().length).toBe(1);
-    expect(filter.entries()[0]).toMatchObject({ id: 'res-1', kind: 'resource' });
+    expect(el.querySelector('.countrow')?.textContent).toContain(
+      '2 Ressourcen und Gruppen in der Liste links',
+    );
+    const rows = Array.from(el.querySelectorAll('.row')).map((r) => r.textContent ?? '');
+    expect(rows).toEqual([
+      expect.stringContaining('Mathematik I'),
+      expect.stringContaining('Mathematik II'),
+    ]);
+    expect(el.querySelectorAll('button[data-action]').length).toBe(0);
+    // real buttons: Enter AND Space activate them (P2 review S2)
+    expect(el.querySelector('.countrow')?.tagName).toBe('BUTTON');
+    expect(Array.from(el.querySelectorAll('.row')).every((r) => r.tagName === 'BUTTON')).toBe(true);
   });
 
-  it('clicking "+" adds to the filter without clearing', async () => {
-    filter.add({ id: 'pre', kind: 'resource', label: 'Pre' });
+  it('clicking an event hit jumps to its week (span kept) and opens its sheet with the search hint', async () => {
+    viewState.setWindow({ from: '2026-06-01T00:00:00', to: '2026-06-08T00:00:00' });
     const f = TestBed.createComponent(OmniboxComponent);
-    setTerm(f, 'Raum A-101');
+    setTerm(f, 'Mathematik I');
     await settle(f);
-    buttonFor(f.nativeElement as HTMLElement, 0, 'filter-add').click();
-    await f.whenStable();
-    expect(filter.has('pre')).toBe(true);
-    expect(filter.has('res-1')).toBe(true);
+    const el = f.nativeElement as HTMLElement;
+    (el.querySelector('.row') as HTMLElement).click();
+    await settle(f);
+    expect(viewState.window()).toEqual({ from: '2026-10-05T00:00:00', to: '2026-10-12T00:00:00' });
+    expect(dialogOpen).toHaveBeenCalledWith(
+      EventSheetComponent,
+      expect.objectContaining({ data: { id: 'evt-1', searchHint: true } }),
+    );
+    expect(el.querySelector('.results')).toBeNull();
   });
 
-  it('clicking "+" on a user row adds a user-kind scope chip (not a resource chip)', async () => {
+  it('clicking the count row asks the picker for focus and closes the dropdown', async () => {
     const f = TestBed.createComponent(OmniboxComponent);
-    setTerm(f, 'Burns Monty');
+    setTerm(f, 'Mathe');
     await settle(f);
-    buttonFor(f.nativeElement as HTMLElement, 0, 'filter-add').click();
-    await f.whenStable();
-    const chip = filter.entries().find((e) => e.id === 'usr-1');
-    expect(chip).toBeDefined();
-    expect(chip?.kind).toBe('user');
+    const before = resources.pickerFocus();
+    (f.nativeElement as HTMLElement).querySelector<HTMLElement>('.countrow')!.click();
+    await settle(f);
+    expect(resources.pickerFocus()).toBe(before + 1);
+    expect((f.nativeElement as HTMLElement).querySelector('.results')).toBeNull();
   });
 
   it('closes the dropdown on Escape', async () => {
     const f = TestBed.createComponent(OmniboxComponent);
-    setTerm(f, 'Raum A-101');
+    setTerm(f, 'Mathe');
     await settle(f);
     expect((f.nativeElement as HTMLElement).querySelector('.results')).not.toBeNull();
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
-    await f.whenStable();
-    f.detectChanges();
+    await settle(f);
     expect((f.nativeElement as HTMLElement).querySelector('.results')).toBeNull();
   });
 
   it('closes the dropdown on an outside click', async () => {
     const f = TestBed.createComponent(OmniboxComponent);
-    setTerm(f, 'Raum A-101');
+    setTerm(f, 'Mathe');
     await settle(f);
     expect((f.nativeElement as HTMLElement).querySelector('.results')).not.toBeNull();
     document.body.click();
-    await f.whenStable();
-    f.detectChanges();
+    await settle(f);
     expect((f.nativeElement as HTMLElement).querySelector('.results')).toBeNull();
-  });
-
-  it('closes the dropdown after a terminal action (Belegung)', async () => {
-    const f = TestBed.createComponent(OmniboxComponent);
-    setTerm(f, 'Raum A-101');
-    await settle(f);
-    buttonFor(f.nativeElement as HTMLElement, 0, 'filter-replace').click();
-    await f.whenStable();
-    f.detectChanges();
-    expect((f.nativeElement as HTMLElement).querySelector('.results')).toBeNull();
-  });
-
-  it('remembers a found resource in Recents when acted on', async () => {
-    const f = TestBed.createComponent(OmniboxComponent);
-    setTerm(f, 'Raum A-101');
-    await settle(f);
-    buttonFor(f.nativeElement as HTMLElement, 0, 'filter-replace').click();
-    await f.whenStable();
-    expect(resources.recents().map((x) => x.id)).toEqual(['res-1']);
-  });
-
-  it('a found user is pulled into Recents as a user item (like a resource)', async () => {
-    const f = TestBed.createComponent(OmniboxComponent);
-    setTerm(f, 'Burns Monty');
-    await settle(f);
-    buttonFor(f.nativeElement as HTMLElement, 0, 'filter-replace').click();
-    await f.whenStable();
-    const recent = resources.recents().find((x) => x.id === 'usr-1');
-    expect(recent).toBeDefined();
-    expect(recent?.kind).toBe('user');
-  });
-
-  it('clicking "in Liste laden" on a group populates the resource selection group', async () => {
-    const f = TestBed.createComponent(OmniboxComponent);
-    setTerm(f, 'C-Bau');
-    await settle(f);
-    // Only the group result matches 'C-Bau' → it is the sole row.
-    buttonFor(f.nativeElement as HTMLElement, 0, 'load-group').click();
-    await f.whenStable();
-    expect(resources.group().length).toBe(1);
-    expect(resources.group()[0].id).toBe('grp-1');
-    expect(resources.groupLabel()).toBe('Räume C-Bau');
   });
 });

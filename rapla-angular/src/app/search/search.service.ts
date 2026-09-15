@@ -3,27 +3,17 @@ import { Observable, of } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { GraphqlService } from '../graphql/graphql.service';
-import type {
-  SearchAction,
-  SearchResult,
-  SearchResultGroup,
-  SearchResultKind,
-} from './search.types';
+import type { SearchResult, SearchResultGroup, SearchResultKind } from './search.types';
 
 /**
  * Omnibox multisearch against the unified {@code search(query, kinds, limit)}
- * resolver (PRD 081, §12-scoped). The server returns kind + data, already
- * bucketed and ranked; ACTIONS are derived here per {@code kind} (the action
- * taxonomy is a client concern — see PRD 081 §"Actions are a CLIENT concern").
- * Phase 1 surfaces RESOURCE + EVENT; OCCURRENCE / GROUP land in later phases
- * and map automatically once the server produces them.
- *
- * <p>The {@code Observable<SearchResultGroup[]>} seam is unchanged from the
- * earlier resources-only fan-out — the omnibox component is untouched.
+ * resolver (PRD 081, §12-scoped). PRD 119 D4: the dropdown asks for EVENT hits
+ * only — resources and users are rows of the picker, filtered in the browser.
+ * The server returns the events already ranked; the omnibox opens a hit's sheet.
  */
 const SEARCH_QUERY = `
-query OmniSuche($query: String!, $limit: Int!) {
-  search(query: $query, limit: $limit) {
+query OmniSuche($query: String!, $kinds: [SearchKind!], $limit: Int!) {
+  search(query: $query, kinds: $kinds, limit: $limit) {
     groups {
       kind
       heading
@@ -54,17 +44,6 @@ const KIND_MAP: Record<string, SearchResultKind> = {
   OCCURRENCE: 'occurrence',
   GROUP: 'group',
   SAVED_VIEW: 'savedView',
-};
-
-/** Default action buttons per kind — the omnibox renders these. Events drop
- *  {@code filter-add} ("+") for now. A user is added as an ownerEq scope chip. */
-const ACTIONS: Record<SearchResultKind, SearchAction[]> = {
-  resource: ['filter-replace', 'filter-add'],
-  event: ['navigate', 'edit'],
-  user: ['filter-replace', 'filter-add'],
-  occurrence: ['navigate', 'edit'],
-  group: ['load-group'],
-  savedView: ['navigate'],
 };
 
 interface SearchHit {
@@ -98,7 +77,7 @@ export class SearchService {
     if (!term.trim() || term.length < MIN_QUERY_LENGTH) return of([]);
     const q = term.trim();
     return this.gql
-      .query<SearchData>(SEARCH_QUERY, { query: q, limit: SEARCH_LIMIT })
+      .query<SearchData>(SEARCH_QUERY, { query: q, kinds: ['EVENT'], limit: SEARCH_LIMIT })
       .pipe(map((res) => toGroups(res.data?.search?.groups ?? [])));
   }
 }
@@ -107,13 +86,13 @@ function toGroups(groups: SearchGroupDto[]): SearchResultGroup[] {
   const out: SearchResultGroup[] = [];
   for (const g of groups) {
     const kind = KIND_MAP[g.kind];
-    if (!kind) continue; // unknown server kind — drop rather than guess
+    if (kind !== 'event') continue; // PRD 119 D4 — resources/users are picker rows; unknown kinds dropped
     const results: SearchResult[] = g.hits.map((h) => ({
       id: h.id,
       kind,
       label: h.label ?? '(ohne Name)',
       sublabel: h.sublabel ?? undefined,
-      actions: ACTIONS[kind],
+      ...(h.firstOccurrenceStart ? { start: h.firstOccurrenceStart } : {}),
       ...(h.count != null ? { count: h.count } : {}),
     }));
     if (results.length) out.push({ kind, heading: g.heading, results });

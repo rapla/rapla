@@ -488,3 +488,15 @@ input.rep-num {
   /* small inset keeps clear of the dialog's rounded corner */
   padding-right: 6px;
 }
+
+/* PRD 119 D4 — opened from the search, event outside the current selection */
+.searchhint {
+  margin: 0 0 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  background: rgba(255, 193, 7, 0.15);
+  font-size: 0.85rem;
+}
+.searchhint button {
+  margin-left: 0.5rem;
+}

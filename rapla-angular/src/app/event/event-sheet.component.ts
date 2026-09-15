@@ -34,6 +34,7 @@ import {
   type DeleteScopeDialogData,
 } from '../views/delete-scope-dialog.component';
 import { FilterStore } from '../state/filter-store';
+import { allocationEntries, needsSearchHint } from './search-hint';
 import { ReservationChecksService } from './reservation-checks.service';
 import { buildDeleteCommand } from '../actions/event-commands';
 import { AvailabilitySearchService, type AvailabilityRow } from './availability-search.service';
@@ -91,6 +92,8 @@ export interface EventSheetDialogData {
   draft?: EventDraft;
   /** Force read-only regardless of the caller's canModify ("Anzeigen", PRD 094). */
   readOnly?: boolean;
+  /** Opened from the search (PRD 119 D4): hint when none of the event's resources is selected. */
+  searchHint?: boolean;
 }
 
 const CIRCLED = '①②③④⑤⑥⑦⑧⑨⑩';
@@ -153,6 +156,23 @@ export class EventSheetComponent {
 
   readonly draft = signal<EventDraft | null>(null);
   readonly canModify = signal(!this.dialogData?.readOnly);
+
+  /** PRD 119 D4 — the search jumped here, but the week would not show this event with the current selection. */
+  readonly showSearchHint = computed(() => {
+    const d = this.draft();
+    this.filter.entries();
+    return (
+      !!this.dialogData?.searchHint &&
+      !!d &&
+      needsSearchHint(d.allocations, (id) => this.filter.has(id))
+    );
+  });
+
+  /** "Ressourcen des Termins auswählen" — replaces the selection with the event's resources. */
+  selectEventResources(): void {
+    const d = this.draft();
+    if (d) this.filter.setAll(allocationEntries(d.allocations));
+  }
   readonly notFound = signal(false);
   readonly loading = signal(true);
 

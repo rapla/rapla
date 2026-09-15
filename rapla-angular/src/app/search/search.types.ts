@@ -1,9 +1,6 @@
 /** A search hit's domain category — drives icon, grouping, and default actions. */
 export type SearchResultKind = 'resource' | 'event' | 'user' | 'occurrence' | 'group' | 'savedView';
 
-/** What a result row's button does when clicked. */
-export type SearchAction = 'filter-replace' | 'filter-add' | 'navigate' | 'edit' | 'load-group';
-
 /** One hit in the omnibox. {@link count} is set for group results, e.g. "Räume C-Bau (12)". */
 export interface SearchResult {
   id: string;
@@ -11,7 +8,8 @@ export interface SearchResult {
   label: string;
   sublabel?: string;
   color?: string;
-  actions: SearchAction[];
+  /** EVENT hits: LocalDateTime of the first occurrence — the week the dropdown jumps to (PRD 119 D4). */
+  start?: string;
   count?: number;
 }
 
