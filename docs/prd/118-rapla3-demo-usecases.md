@@ -1,6 +1,6 @@
 # PRD 118 — Rapla 3 demo: four use-case data sets, screenshots, demo site and demo instance
 
-**Status:** in-progress 2026-09-15 — demo live at https://demo.rapla.org with the hardened build, PRD 119 phases 1–3 (one search field, picker with chips + group tree) and the U1 seed v4 (v5 with stored views + loan form on master, swap pending); four use-case data sets + SPA screenshots + feature shots merged (docs/demo/); site pages live on rapla.org; open: Swing shots by the user, deep links D8-4…D8-7/D8-10, PRD 119 into the demo (Wed 2026-09-16).
+**Status:** in-progress 2026-09-15 — demo live at https://demo.rapla.org with the hardened build (allowlist from configuration, stale-cookie fix, remember-choice cookie, Switch to user on), PRD 119 phases 1–3b (one search field, picker with chips + group tree, display caps, Termine/week defaults) and the U1 seed v6 (stored views Weekly overview + Equipment loans, loan form, hidden kind attribute); four use-case data sets + SPA screenshots + feature shots merged (docs/demo/); site pages live on rapla.org; open: Swing shots by the user, deep links D8-4…D8-7/D8-10, PRD 119 into the demo (Wed 2026-09-16).
 **Related:** PRD 104 (template picker, shown in every use case), PRD 097 / 111 (document templates, loaning), PRD 093 (loaning), PRD 090 / 113 (permissions), PRD 074 (declarative GraphQL views), PRD 034 + `rapla/rapla-releases` (docker image the demo instance runs), `rapla/site` (the public website that consumes the screenshots).
 
 ## Abstract
