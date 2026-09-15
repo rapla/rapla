@@ -1,7 +1,15 @@
 import { describe, it, expect } from 'vitest';
 
 import type { ResourceItem } from './resource-selection-store';
-import { PAGE_SIZE, filterRows, page, rankAll, typeChips, usersMatching } from './resource-picker';
+import {
+  FIRST_PAGE,
+  PAGE_SIZE,
+  filterRows,
+  page,
+  rankAll,
+  typeChips,
+  usersMatching,
+} from './resource-picker';
 
 const res = (id: string, label: string, typeKey = 'room', typeName = 'Raum'): ResourceItem => ({
   id,
@@ -63,14 +71,15 @@ describe('resource picker (PRD 119 Phase 1)', () => {
     expect(usersMatching(users, 'mon').map((x) => x.id)).toEqual(['u1']);
   });
 
-  it('shows the first page and counts the rest; expanded shows all', () => {
-    const rows = Array.from({ length: 27 }, (_, i) => res(`r${i}`, `Raum ${i}`));
-    expect(PAGE_SIZE).toBe(20);
-    const collapsed = page(rows, false);
-    expect(collapsed.shown.length).toBe(20);
-    expect(collapsed.hidden).toBe(7);
-    const expanded = page(rows, true);
-    expect(expanded.shown.length).toBe(27);
-    expect(expanded.hidden).toBe(0);
+  it('D12 — a page stops at the limit and counts the rest', () => {
+    const rows = Array.from({ length: 270 }, (_, i) => res(`r${i}`, `Raum ${i}`));
+    expect(FIRST_PAGE).toBe(20);
+    expect(PAGE_SIZE).toBe(100);
+    expect(page(rows, FIRST_PAGE)).toMatchObject({ hidden: 250 });
+    expect(page(rows, FIRST_PAGE).shown.length).toBe(20);
+    expect(page(rows, 120).shown.length).toBe(120);
+    expect(page(rows, 120).hidden).toBe(150);
+    expect(page(rows, 300)).toMatchObject({ hidden: 0 });
+    expect(page(rows, 300).shown.length).toBe(270);
   });
 });

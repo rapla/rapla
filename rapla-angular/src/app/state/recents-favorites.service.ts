@@ -51,6 +51,9 @@ export class RecentsFavoritesService {
 
   readonly recents = this._recents.asReadonly();
   readonly favorites = this._favorites.asReadonly();
+  private readonly _reloaded = signal(0);
+  /** Bumped after every server (re)load or clear — not by a push — so views that rank by a recents snapshot can refresh it. */
+  readonly reloaded = this._reloaded.asReadonly();
 
   private lastUserId: string | null = null;
 
@@ -66,12 +69,14 @@ export class RecentsFavoritesService {
       } else {
         this._recents.set([]);
         this._favorites.set([]);
+        this._reloaded.update((n) => n + 1);
       }
     });
   }
 
   async reload(): Promise<void> {
     await Promise.all([this.loadRecents(), this.loadFavorites()]);
+    this._reloaded.update((n) => n + 1);
   }
 
   private async loadRecents(): Promise<void> {

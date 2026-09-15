@@ -8,13 +8,15 @@ import {
   type ResourceEditDialogData,
 } from '../resource/resource-edit-dialog.component';
 import { ResourceSelectionStore, type ResourceItem } from '../state/resource-selection-store';
-import { filterRows, page, usersMatching } from '../state/resource-picker';
+import { FIRST_PAGE, PAGE_SIZE, filterRows, page, usersMatching } from '../state/resource-picker';
 import {
   buildTree,
   filterTree,
   membersOf,
+  pathKeysTo,
   visibleRows,
   type TreeNode,
+  type NodeRow,
   type TreeRow,
 } from '../state/resource-tree';
 import { FilterStore, type FilterEntry } from '../state/filter-store';
@@ -73,8 +75,17 @@ import { TableSelection } from '../views/table-selection';
           >
         </div>
       }
-      @for (row of rows(); track row.node.key) {
-        @if (row.node.kind === 'group') {
+      @for (row of rows(); track row.node ? row.node.key : 'more:' + row.more) {
+        @if (!row.node) {
+          <button
+            type="button"
+            class="showmore"
+            [style.padding-left.rem]="0.9 + row.depth"
+            (click)="showMoreChildren(row.more)"
+          >
+            Weitere {{ block(row.hidden) }} anzeigen
+          </button>
+        } @else if (row.node.kind === 'group') {
           <div class="grouprow" [style.padding-left.rem]="0.5 + row.depth">
             <button
               type="button"
@@ -96,7 +107,7 @@ import { TableSelection } from '../views/table-selection';
               alle wählen
             </button>
           </div>
-        } @else if (row.node.item; as it) {
+        } @else if (row.node?.item; as it) {
           <div
             class="item"
             role="button"
@@ -142,8 +153,8 @@ import { TableSelection } from '../views/table-selection';
         <div class="more">— leer</div>
       }
       @if (hiddenCount() > 0) {
-        <button type="button" class="showmore" (click)="expanded.set(true)">
-          Weitere {{ hiddenCount() }} anzeigen
+        <button type="button" class="showmore" (click)="extra.update((n) => n + 1)">
+          Weitere {{ block(hiddenCount()) }} anzeigen
         </button>
       }
       <mat-menu #itemMenu="matMenu">
@@ -377,8 +388,10 @@ export class ResourceSelectionComponent {
     return !!id && this.filter.entries().some((e) => e.kind === 'user' && e.id === id);
   });
 
-  /** "Weitere n anzeigen" was clicked for the current chip + query. */
-  protected readonly expanded = signal(false);
+  /** PRD 119 D12 — extra blocks of 100 revealed by "Weitere n anzeigen" for the current chip + query. */
+  protected readonly extra = signal(0);
+  /** PRD 119 D12 — per tree level (node key, '' = top), how many children are revealed. */
+  private readonly limits = signal<ReadonlyMap<string, number>>(new Map());
 
   /** PRD 119 D1/D10 — rows of the active chip narrowed by the query; under Alle matching users follow. */
   private readonly filtered = computed<ResourceItem[]>(() => {
@@ -389,11 +402,11 @@ export class ResourceSelectionComponent {
       : rows;
   });
 
-  /** PRD 119 D2/D11 — a type chip shows its resources as a collapsible group tree, without paging. */
+  /** PRD 119 D2/D11 — a type chip shows its resources as a collapsible group tree. */
   private readonly treeMode = computed(() => this.store.activeChip().startsWith('type:'));
 
-  /** Group keys the user toggled against the default (collapsed, or opened by the query). */
-  private readonly toggled = signal<ReadonlySet<string>>(new Set());
+  /** Groups the user opened (true) or closed (false); others follow the default (D12). */
+  private readonly toggled = signal<ReadonlyMap<string, boolean>>(new Map());
 
   private readonly tree = computed(() => {
     const q = this.store.query();
@@ -412,24 +425,33 @@ export class ResourceSelectionComponent {
     return { nodes: hits, expanded: new Set<string>() };
   });
 
+  /** Default open: groups the query opened and the path to a selected resource (D12); user toggles win. */
   protected readonly expandedGroups = computed(() => {
-    const open = new Set(this.tree().expanded);
-    for (const key of this.toggled()) {
-      if (open.has(key)) open.delete(key);
-      else open.add(key);
+    const selected = new Set(this.filter.entries().map((e) => e.id));
+    const open = new Set([...this.tree().expanded, ...pathKeysTo(this.tree().nodes, selected)]);
+    for (const [key, isOpen] of this.toggled()) {
+      if (isOpen) open.add(key);
+      else open.delete(key);
     }
     return open;
   });
 
   private readonly paged = computed(() =>
-    this.treeMode() ? { shown: [], hidden: 0 } : page(this.filtered(), this.expanded()),
+    this.treeMode()
+      ? { shown: [], hidden: 0 }
+      : page(this.filtered(), this.firstBlock() + this.extra() * PAGE_SIZE),
   );
   protected readonly hiddenCount = computed(() => this.paged().hidden);
 
+  /** D12 — Alle without a query starts with 20 rows, every other list with 100. */
+  private readonly firstBlock = computed(() =>
+    this.store.activeChip() === 'all' && !this.store.query().trim() ? FIRST_PAGE : PAGE_SIZE,
+  );
+
   protected readonly rows = computed<TreeRow[]>(() => [
-    ...visibleRows(this.tree().nodes, this.expandedGroups()),
+    ...visibleRows(this.tree().nodes, this.expandedGroups(), this.limits()),
     ...this.paged().shown.map(
-      (item): TreeRow => ({
+      (item): NodeRow => ({
         node: {
           key: `#${item.id}`,
           label: item.label,
@@ -446,7 +468,7 @@ export class ResourceSelectionComponent {
   /** The distinct resources on screen — the rows the selection engine steps. */
   protected readonly shown = computed(() => {
     const byId = new Map<string, ResourceItem>();
-    for (const row of this.rows()) if (row.node.item) byId.set(row.node.item.id, row.node.item);
+    for (const row of this.rows()) if (row.node?.item) byId.set(row.node.item.id, row.node.item);
     return [...byId.values()];
   });
 
@@ -468,8 +490,9 @@ export class ResourceSelectionComponent {
     effect(() => {
       this.store.activeChip();
       this.store.query();
-      this.expanded.set(false);
-      this.toggled.set(new Set());
+      this.extra.set(0);
+      this.limits.set(new Map());
+      this.toggled.set(new Map());
     });
     effect(() => {
       const request = this.store.pickerFocus();
@@ -543,11 +566,17 @@ export class ResourceSelectionComponent {
   }
 
   toggleGroup(key: string): void {
-    this.toggled.update((set) => {
-      const next = new Set(set);
-      if (!next.delete(key)) next.add(key);
-      return next;
-    });
+    const open = this.expandedGroups().has(key);
+    this.toggled.update((map) => new Map(map).set(key, !open));
+  }
+
+  /** D12 — reveal the next block of one tree level's children. */
+  showMoreChildren(key: string): void {
+    this.limits.update((map) => new Map(map).set(key, (map.get(key) ?? PAGE_SIZE) + PAGE_SIZE));
+  }
+
+  protected block(hidden: number): number {
+    return Math.min(hidden, PAGE_SIZE);
   }
 
   /** "alle wählen" — the group's members replace the filter. */

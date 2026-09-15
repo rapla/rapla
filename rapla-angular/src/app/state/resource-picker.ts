@@ -1,7 +1,9 @@
 import type { ResourceItem } from './resource-selection-store';
 
-/** PRD 119 D1 — rows shown at once; the rest sits behind "Weitere n anzeigen". */
-export const PAGE_SIZE = 20;
+/** PRD 119 D1/D12 — rows Alle shows without a query before "Weitere n anzeigen". */
+export const FIRST_PAGE = 20;
+/** PRD 119 D12 — rows per block for every other list and for the children of one tree node. */
+export const PAGE_SIZE = 100;
 
 export interface PickerChip {
   key: string;
@@ -62,8 +64,7 @@ export function usersMatching(users: readonly ResourceItem[], query: string): Re
 
 export function page(
   rows: readonly ResourceItem[],
-  expanded: boolean,
+  limit: number,
 ): { shown: ResourceItem[]; hidden: number } {
-  if (expanded || rows.length <= PAGE_SIZE) return { shown: [...rows], hidden: 0 };
-  return { shown: rows.slice(0, PAGE_SIZE), hidden: rows.length - PAGE_SIZE };
+  return { shown: rows.slice(0, limit), hidden: Math.max(0, rows.length - limit) };
 }

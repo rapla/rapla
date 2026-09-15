@@ -1,4 +1,4 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 
 import { GraphqlService } from '../graphql/graphql.service';
 import { RecentsFavoritesService } from './recents-favorites.service';
@@ -66,6 +66,8 @@ export class ResourceSelectionStore {
   private readonly _activeId = signal<string | null>(null);
   private readonly _query = signal('');
   private readonly _pickerFocus = signal(0);
+  /** PRD 119 P3b (user ruling A) — Alle ranks by this copy of the recents, so a click never moves its row. */
+  private readonly _recentsSnapshot = signal<ResourceItem[]>([]);
   private loaded = false;
 
   readonly resources = this._resources.asReadonly();
@@ -79,6 +81,14 @@ export class ResourceSelectionStore {
   /** Bumped when the search dropdown sends the user to the picker (PRD 119 D4). */
   readonly pickerFocus = this._pickerFocus.asReadonly();
 
+  constructor() {
+    // Recents answered after the lean list: refresh the snapshot on every server (re)load, never on a push.
+    effect(() => {
+      this.lists.reloaded();
+      untracked(() => this.snapshotRecents());
+    });
+  }
+
   readonly chips = computed<PickerChip[]>(() => [
     { key: 'all', label: 'Alle' },
     { key: 'favorites', label: '★ Favoriten' },
@@ -90,7 +100,7 @@ export class ResourceSelectionStore {
     const chip = this._activeChip();
     switch (chip) {
       case 'all':
-        return rankAll(this._resources(), this.favorites(), this.recents());
+        return rankAll(this._resources(), this.favorites(), this._recentsSnapshot());
       case 'favorites':
         return this.favorites();
       case 'recents':
@@ -107,12 +117,15 @@ export class ResourceSelectionStore {
   /** Rows the picker shows under Alle for the current query — the dropdown's count row (PRD 119 D4). */
   readonly matchCount = computed(
     () =>
-      filterRows(rankAll(this._resources(), this.favorites(), this.recents()), this._query())
-        .length + usersMatching(this._users(), this._query()).length,
+      filterRows(
+        rankAll(this._resources(), this.favorites(), this._recentsSnapshot()),
+        this._query(),
+      ).length + usersMatching(this._users(), this._query()).length,
   );
 
   /** Loads the lean list once per SPA start. */
   ensureLoaded(): void {
+    this.snapshotRecents();
     if (this.loaded) return;
     this.loaded = true;
     this.fetch();
@@ -143,6 +156,7 @@ export class ResourceSelectionStore {
               groupPaths: r.groupPaths ?? [],
             })),
         );
+        this.snapshotRecents();
         this._users.set(
           (resp.data.users ?? []).map((u) => ({
             id: u.id,
@@ -159,11 +173,18 @@ export class ResourceSelectionStore {
   }
 
   setActiveChip(key: string): void {
+    this.snapshotRecents();
     this._activeChip.set(key);
   }
 
   setQuery(query: string): void {
+    if (!query.trim() && this._query().trim()) this.snapshotRecents();
     this._query.set(query);
+  }
+
+  /** Refreshed only on load, chip change and a cleared search — never by the click that pushes a recent. */
+  private snapshotRecents(): void {
+    this._recentsSnapshot.set(this.recents());
   }
 
   requestPickerFocus(): void {

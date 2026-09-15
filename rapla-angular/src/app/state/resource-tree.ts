@@ -1,5 +1,5 @@
 import type { ResourceItem } from './resource-selection-store';
-import { byLabel, filterRows } from './resource-picker';
+import { PAGE_SIZE, byLabel, filterRows } from './resource-picker';
 
 /** PRD 119 D2/D11 — a node of the picker tree under a type chip: a group level or a resource. */
 export interface TreeNode {
@@ -12,10 +12,22 @@ export interface TreeNode {
   count: number;
 }
 
-export interface TreeRow {
+export interface NodeRow {
   node: TreeNode;
   depth: number;
+  more?: undefined;
+  hidden?: undefined;
 }
+
+/** PRD 119 D12 — "Weitere n anzeigen" after the first block of one node's children (`more` = that node's key, '' = top level). */
+export interface MoreRow {
+  node?: undefined;
+  more: string;
+  hidden: number;
+  depth: number;
+}
+
+export type TreeRow = NodeRow | MoreRow;
 
 interface Level {
   groups: Map<string, Level>;
@@ -94,20 +106,38 @@ export function membersOf(node: TreeNode): ResourceItem[] {
   return [...seen.values()];
 }
 
-/** The rows the picker renders: every node of an expanded group, indented by depth. */
+/** The rows the picker renders: every node of an expanded group, indented by depth; each level stops at its limit (D12). */
 export function visibleRows(
   nodes: readonly TreeNode[],
   expanded: ReadonlySet<string>,
+  limits: ReadonlyMap<string, number> = new Map(),
   depth = 0,
+  parentKey = '',
 ): TreeRow[] {
+  const limit = limits.get(parentKey) ?? PAGE_SIZE;
   const rows: TreeRow[] = [];
-  for (const node of nodes) {
+  for (const node of nodes.slice(0, limit)) {
     rows.push({ node, depth });
     if (node.kind === 'group' && expanded.has(node.key)) {
-      rows.push(...visibleRows(node.children, expanded, depth + 1));
+      rows.push(...visibleRows(node.children, expanded, limits, depth + 1, node.key));
     }
   }
+  if (nodes.length > limit) rows.push({ more: parentKey, hidden: nodes.length - limit, depth });
   return rows;
+}
+
+/** The groups on the path to any of the given resources — open by default (D12). */
+export function pathKeysTo(nodes: readonly TreeNode[], ids: ReadonlySet<string>): Set<string> {
+  const keys = new Set<string>();
+  const walk = (node: TreeNode): boolean => {
+    if (node.kind === 'resource') return !!node.item && ids.has(node.item.id);
+    let hit = false;
+    for (const child of node.children) if (walk(child)) hit = true;
+    if (hit) keys.add(node.key);
+    return hit;
+  };
+  nodes.forEach(walk);
+  return keys;
 }
 
 /**

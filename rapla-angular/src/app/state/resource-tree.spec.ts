@@ -1,7 +1,14 @@
 import { describe, it, expect } from 'vitest';
 
 import type { ResourceItem } from './resource-selection-store';
-import { buildTree, filterTree, membersOf, visibleRows, type TreeNode } from './resource-tree';
+import {
+  buildTree,
+  filterTree,
+  membersOf,
+  pathKeysTo,
+  visibleRows,
+  type TreeNode,
+} from './resource-tree';
 
 const res = (id: string, label: string, groupPaths: string[][] = []): ResourceItem => ({
   id,
@@ -73,16 +80,51 @@ describe('resource tree (PRD 119 D2/D11)', () => {
 
   it('shows only the expanded levels as rows, with their depth', () => {
     const tree = buildTree([res('r1', 'Hörsaal 1', [['Gebäude A']]), res('r2', 'Aula')]);
-    expect(visibleRows(tree, new Set()).map((r) => [r.node.label, r.depth])).toEqual([
+    expect(visibleRows(tree, new Set()).map((r) => [r.node?.label, r.depth])).toEqual([
       ['Gebäude A', 0],
       ['Aula', 0],
     ]);
     const open = new Set([tree[0].key]);
-    expect(visibleRows(tree, open).map((r) => [r.node.label, r.depth])).toEqual([
+    expect(visibleRows(tree, open).map((r) => [r.node?.label, r.depth])).toEqual([
       ['Gebäude A', 0],
       ['Hörsaal 1', 1],
       ['Aula', 0],
     ]);
+  });
+
+  describe('D12 caps and the path to the selection', () => {
+    const many = (n: number, path: string[][] = []) =>
+      Array.from({ length: n }, (_, i) => res(`r${i}`, `Raum ${String(i).padStart(3, '0')}`, path));
+    const shape = (rows: ReturnType<typeof visibleRows>) =>
+      rows.map((r) => (r.node ? r.node.label : `+${r.hidden}@${r.more}`));
+
+    it('the children of one node stop at 100, followed by a "more" row for that node', () => {
+      const tree = buildTree(many(150, [['Gebäude A']]));
+      const rows = visibleRows(tree, new Set(['/Gebäude A']));
+      expect(rows.length).toBe(1 + 100 + 1);
+      expect(shape(rows).at(-1)).toBe('+50@/Gebäude A');
+      expect(rows.at(-1)?.depth).toBe(1);
+    });
+
+    it('the top level is capped too, and a raised limit reveals the next block', () => {
+      const tree = buildTree(many(250));
+      expect(shape(visibleRows(tree, new Set())).at(-1)).toBe('+150@');
+      const more = visibleRows(tree, new Set(), new Map([['', 200]]));
+      expect(more.length).toBe(201);
+      expect(shape(more).at(-1)).toBe('+50@');
+    });
+
+    it('names the groups on the path to the selected resources', () => {
+      const tree = buildTree([
+        res('r1', 'Hörsaal 1', [['Gebäude A', 'EG']]),
+        res('r2', 'Labor', [['Gebäude B']]),
+        res('r3', 'Aula'),
+      ]);
+      expect([...pathKeysTo(tree, new Set(['r1', 'r3']))].sort()).toEqual([
+        '/Gebäude A',
+        '/Gebäude A/EG',
+      ]);
+    });
   });
 
   describe('filterTree', () => {
