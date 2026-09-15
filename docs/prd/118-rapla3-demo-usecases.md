@@ -1,6 +1,6 @@
 # PRD 118 — Rapla 3 demo: four use-case data sets, screenshots, demo site and demo instance
 
-**Status:** in-progress 2026-09-15 — demo live at https://demo.rapla.org with the hardened build and the U1 seed; four use-case data sets + SPA screenshots + feature shots merged (docs/demo/); site pages live on rapla.org; open: Swing shots by the user, deep links D8-4…D8-7/D8-10, PRD 119 into the demo (Wed 2026-09-16).
+**Status:** in-progress 2026-09-15 — demo live at https://demo.rapla.org with the hardened build, PRD 119 phases 1–3 (one search field, picker with chips + group tree) and the U1 seed v4 (v5 with stored views + loan form on master, swap pending); four use-case data sets + SPA screenshots + feature shots merged (docs/demo/); site pages live on rapla.org; open: Swing shots by the user, deep links D8-4…D8-7/D8-10, PRD 119 into the demo (Wed 2026-09-16).
 **Related:** PRD 104 (template picker, shown in every use case), PRD 097 / 111 (document templates, loaning), PRD 093 (loaning), PRD 090 / 113 (permissions), PRD 074 (declarative GraphQL views), PRD 034 + `rapla/rapla-releases` (docker image the demo instance runs), `rapla/site` (the public website that consumes the screenshots).
 
 ## Abstract
@@ -87,7 +87,7 @@ Not a scenario: the website's feature page needs current screenshots per feature
 - [x] Phase 1 — data sets: all four start cleanly, scrubbed of credentials, checklists in the status file (2026-09-15; in worktrees, uncommitted).
 - [x] Phase 2 — SPA screenshot scripts + images for U1–U4 and the U5 feature set done 2026-09-15 (worktrees, uncommitted); [ ] Swing shots by the user on Windows (lists in the status file).
 - [ ] Phase 3 — website pages in `rapla/site` (a separate session is building the site since 2026-09-14; it consumes `docs/demo/<usecase>/NN-<scene>.png` and the stories in § Use-case catalogue — those paths and scene numbers are the contract, keep them stable).
-- [ ] Phase 4 — demo instance: (a) app demo-compatible — D8 minimum D8-1 demo profile, D8-3 fail-closed API allowlist, D8-2 password lock, D8-9 reset proof, D8-8 banner all implemented and review-PASS 2026-09-15 (uncommitted); deep links D8-4…D8-7, D8-10 pending the commit; [x] (b) installed on erdkante behind Apache (D7, 2026-09-14) and since 2026-09-15 running the HARDENED build: demo profile active, U1 Hochschule seed, key rotated + nightly fresh key, static start page at /, banner on /login, /server + JNLP + /change-password 404 (coordinator probe 2026-09-15); [x] URL on the website (rapla.org/rapla3/demo.html live).
+- [ ] Phase 4 — demo instance: (a) app demo-compatible — D8 minimum D8-1 demo profile, D8-3 fail-closed API allowlist, D8-2 password lock, D8-9 reset proof, D8-8 banner all implemented and review-PASS 2026-09-15 (uncommitted); D8-11 (stale cookie → anonymous) and D8-12 (remember-choice cookie only when ticked) live 2026-09-15; deep links D8-4…D8-7, D8-10 parked; [x] (b) installed on erdkante behind Apache (D7, 2026-09-14) and since 2026-09-15 running the HARDENED build: demo profile active, U1 Hochschule seed, key rotated + nightly fresh key, static start page at /, banner on /login, /server + JNLP + /change-password 404 (coordinator probe 2026-09-15); [x] URL on the website (rapla.org/rapla3/demo.html live).
 
 ## Open questions
 
