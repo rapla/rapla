@@ -32,6 +32,7 @@ public class RaplaServerProperties
     private Readmodel readmodel = new Readmodel();
     private Views views = new Views();
     private Documents documents = new Documents();
+    private ApiAllowlist apiAllowlist = new ApiAllowlist();
 
     public Map<String, DataSourceProperties> getDbDatasources()
     {
@@ -182,6 +183,59 @@ public class RaplaServerProperties
     public void setViews(Views views)
     {
         this.views = views;
+    }
+
+    public ApiAllowlist getApiAllowlist()
+    {
+        return apiAllowlist;
+    }
+
+    public void setApiAllowlist(ApiAllowlist apiAllowlist)
+    {
+        this.apiAllowlist = apiAllowlist;
+    }
+
+    /**
+     * {@code rapla.api-allowlist.*} &mdash; PRD 118 D8-3a: a fail-closed HTTP surface. When {@code enabled}, every guarded
+     * path answers 404 unless it is an open path or lies under an open prefix. A prefix matches itself and its
+     * subtree ({@code prefix/...}). Nothing is open by default; the entries are validated at startup. The guarded set
+     * itself ({@code /api}, {@code /raplaclient*}, {@code /webclient}) is fixed in code and cannot be narrowed.
+     */
+    public static class ApiAllowlist
+    {
+        private boolean enabled = false;
+        private List<String> openPaths = new ArrayList<>();
+        private List<String> openPrefixes = new ArrayList<>();
+
+        public boolean isEnabled()
+        {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled)
+        {
+            this.enabled = enabled;
+        }
+
+        public List<String> getOpenPaths()
+        {
+            return openPaths;
+        }
+
+        public void setOpenPaths(List<String> openPaths)
+        {
+            this.openPaths = openPaths;
+        }
+
+        public List<String> getOpenPrefixes()
+        {
+            return openPrefixes;
+        }
+
+        public void setOpenPrefixes(List<String> openPrefixes)
+        {
+            this.openPrefixes = openPrefixes;
+        }
     }
 
     /**

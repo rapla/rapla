@@ -7,6 +7,7 @@ import org.rapla.server.spring.web.OAuthTestSupport;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -14,19 +15,27 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
-/** PRD 118 D8-3 — without {@code demo} the allowlist is absent: a sample of the closed paths answers as before. */
+/** PRD 118 D8-3/D8-3a — without {@code rapla.api-allowlist.enabled} the allowlist is absent: a sample of the closed paths answers as before. */
 @SpringBootTest(classes = RaplaSpringBootApplication.class)
 @AutoConfigureMockMvc
 @Tag("e2e")
 class DemoApiAllowlistDefaultTest extends IsolatedDefaultDatasetTest
 {
     @Autowired MockMvc mockMvc;
+    @Autowired ApplicationContext ctx;
+
+    @Test
+    void theFilterIsNotRegistered()
+    {
+        assertFalse(ctx.containsBean("demoApiAllowlistFilter"));
+    }
 
     @Test
     void closedSampleStillAnswers() throws Exception

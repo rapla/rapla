@@ -21,8 +21,25 @@ rapla:
     author-scripts: false
   graphql:
     max-query-window-days: 400
+  # D8-3a: fail-closed /api surface — everything under /api, /raplaclient* and /webclient answers 404
+  # unless listed here (validated at startup; no wildcards, no "/" or "/api").
+  api-allowlist:
+    enabled: true
+    open-paths:
+      - /api/auth/me
+      - /api/graphql
+      - /api/graphql/schema
+      - /api/storage/change/name
+      - /api/storage/profile/capabilities
+    open-prefixes:
+      - /api/auth/session
+      - /api/auth/api-keys
+      - /api/auth/impersonate
+      - /api/documents
+      - /api/favorites
+      - /api/recents
+      - /api/users
   # D8-3: Swing is out of the demo — no password grant, no loopback/WSL redirects, no Swing callback path.
-  # The /api allowlist itself is DemoApiAllowlistConfig (@Profile("demo")).
   oauth:
     local-accounts-enabled: false
     allow-loopback-redirects: false

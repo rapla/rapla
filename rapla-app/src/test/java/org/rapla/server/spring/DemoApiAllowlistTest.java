@@ -118,6 +118,20 @@ class DemoApiAllowlistTest extends IsolatedDefaultDatasetTest
 
     @Autowired MockMvc mockMvc;
     @Autowired ApplicationContext ctx;
+    @Autowired RaplaServerProperties properties;
+
+    /** D8-3a — the demo's allowlist comes from application-demo.yml, bound into {@code rapla.api-allowlist}. */
+    @Test
+    void theListsComeFromTheDemoConfiguration()
+    {
+        RaplaServerProperties.ApiAllowlist lists = properties.getApiAllowlist();
+        assertTrue(lists.isEnabled());
+        assertTrue(ctx.containsBean("demoApiAllowlistFilter"));
+        assertEquals(new TreeSet<>(List.of("/api/auth/me", "/api/graphql", "/api/graphql/schema", "/api/storage/change/name",
+                "/api/storage/profile/capabilities")), new TreeSet<>(lists.getOpenPaths()));
+        assertEquals(new TreeSet<>(List.of("/api/auth/session", "/api/auth/api-keys", "/api/auth/impersonate", "/api/documents",
+                "/api/favorites", "/api/recents", "/api/users")), new TreeSet<>(lists.getOpenPrefixes()));
+    }
 
     private Set<String> apiMappings()
     {
