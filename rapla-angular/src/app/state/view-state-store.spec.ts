@@ -63,4 +63,14 @@ describe('ViewStateStore', () => {
     store.applyViewModes(['week', 'table']); // fresh store, no user choice
     expect(store.renderMode()).toBe('week');
   });
+
+  it('applyViewModes opens week when no mode was ever chosen, even if the view lists table first', () => {
+    store.applyViewModes(['table', 'day', 'week', 'month']); // e.g. Termine
+    expect(store.renderMode()).toBe('week');
+  });
+
+  it('applyViewModes keeps the view default when no mode was chosen and the view has no week', () => {
+    store.applyViewModes(['table', 'month']);
+    expect(store.renderMode()).toBe('table');
+  });
 });

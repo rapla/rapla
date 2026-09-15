@@ -83,12 +83,15 @@ export class ViewStateStore {
   }
 
   /** Apply a view's supported modes (from the server): keep the user's remembered
-   *  mode when this view supports it, else fall to the view's default (first mode). */
+   *  mode when this view supports it; with no remembered choice open week when the
+   *  view offers it (user, 2026-09-15), else fall to the view's default (first mode). */
   applyViewModes(modes: ViewRenderMode[]): void {
     const supported = modes.length ? modes : (['table'] as ViewRenderMode[]);
     this._renderModes.set(supported);
     const pref = this._userMode();
-    this._renderMode.set(pref && supported.includes(pref) ? pref : supported[0]);
+    if (pref && supported.includes(pref)) this._renderMode.set(pref);
+    else if (!pref && supported.includes('week')) this._renderMode.set('week');
+    else this._renderMode.set(supported[0]);
   }
 
   setWindow(window: DateWindow): void {
