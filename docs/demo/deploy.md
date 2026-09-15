@@ -6,7 +6,16 @@ Placeholders: `<demo-root>` (state root, e.g. `/opt/rapla-demo`), `<demo-user>` 
 
 ## The JAR
 
-Build `rapla.jar` from a clean checkout of the commit you ship (a fresh clone or a git worktree), or take a published release. A development checkout can contain untracked files under `src/main/resources` (local Spring profiles) that Maven packs into the JAR.
+Build `rapla.jar` in the working copy, like any other release (`mvn -pl rapla-app -am clean package -DskipTests`), or take a published release. A working copy can hold untracked files that Maven packs into the JAR, so check both sides:
+
+```sh
+git ls-files --others -- 'rapla-*/src/main'          # before: untracked sources and resources get compiled in
+unzip -l rapla-app/target/rapla.jar | grep 'application-.*\.yml'
+zip -d rapla-app/target/rapla.jar 'BOOT-INF/classes/application-<local-profile>.yml'   # after: strip untracked profiles
+sha256sum rapla-app/target/rapla.jar
+```
+
+`clean` removes `target/classes`, so a development server started from that checkout stops working until it is restarted.
 
 ## Layout
 
