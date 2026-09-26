@@ -57,6 +57,17 @@ public class SynchronizationTask implements Serializable
 		this( box.getMailboxName(), appointmentId, box.getUserId(), box.getResourceId(), 0, null, null);
 	}
 	
+	private boolean forced;
+
+	/** true for tasks of an explicit resync: rapla overwrites the owner's edits (PRD 114 hunk 12) */
+	public boolean isForced() {
+		return forced;
+	}
+
+	public void setForced(boolean forced) {
+		this.forced = forced;
+	}
+
 	public void increaseRetries(String lastError)
 	{
         this.lastError = lastError;
@@ -143,7 +154,7 @@ public class SynchronizationTask implements Serializable
 
 	@Override
 	public String toString() {
-		return "SynchronizationTask [userId=" + userId + ", appointmentId="
+		return "SynchronizationTask [mailbox=" + mailboxName + ", userId=" + userId + ", appointmentId="
 				+ appointmentId  
 				+ ", retries=" + retries
 		        + ", lastRetry=" + lastRetry

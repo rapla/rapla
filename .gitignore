@@ -32,3 +32,5 @@ parent/target/
 /*.crt
 /erdkante-chain.pem
 /pkcs11.cfg
+/certificate-chain.pem
+/rapla.ksold

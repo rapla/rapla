@@ -52,8 +52,12 @@ detected.
              <Set name="User">db_user</Set>
              <Set name="Password">your_pwd</Set>
            </New>
-            <!--
-          -->
+        <!--
+
+        <New class="org.mariadb.jdbc.MariaDbPoolDataSource">
+            <Set name="Url">jdbc:mariadb://localhost:3306/your_db_name?user=db_user&amp;password=your_password</Set>
+            </New>
+            -->
 
   <!-- Mysql Database -->
             <!--
@@ -87,24 +91,20 @@ detected.
     </Arg>
   </New>
 
- <New class="org.eclipse.jetty.plus.jndi.EnvEntry">
-    <Arg></Arg>
-	<Arg>rapladatafile</Arg>
-	<!--  change to jdbc/rapladb,raplafile if you want to use a database as datasource -->
-        <Arg type="java.lang.String">rapladb</Arg>
-     <!--
-     <Arg type="java.lang.String">jdbc/rapladb,raplafile</Arg>
--->
-
-     <Arg type="boolean">true</Arg>
- </New>
+    <New id="rapladatasource" class="org.eclipse.jetty.plus.jndi.EnvEntry">
+        <Arg></Arg>
+        <Arg>rapladatasource</Arg>
+        <!--  change to rapladb if you want to use a database as datasource -->
+        <Arg type="java.lang.String">raplafile</Arg>
+        <Arg type="boolean">true</Arg>
+    </New>
 
   <!-- Normaly you don't have to modify the settings below -->
 
   <New class="org.eclipse.jetty.plus.jndi.EnvEntry">
       <Arg></Arg>
       <Arg>raplaservices</Arg>
-      <Arg type="java.lang.String">org.rapla.plugin.notification=true,org.rapla.ExchangeConnector=true,org.rapla.plugin.archiver.server=true</Arg>
+      <Arg type="java.lang.String">org.rapla.plugin.notification=true,org.rapla.ExchangeConnector=true,org.rapla.dhbw.interface.dualis=false</Arg>
       <Arg type="boolean">true</Arg>
   </New>
 
