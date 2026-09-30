@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, map, of } from 'rxjs';
+import { Observable, forkJoin, map, of } from 'rxjs';
 
 import { GraphqlService } from '../graphql/graphql.service';
 import type { DraftAppointment } from './event-draft';
@@ -26,6 +26,9 @@ interface AvailabilityWire {
     conflictingAppointmentIds: string[];
   }[];
 }
+
+/** Mirrors AvailabilityGraphQLController.MAX_CANDIDATE_IDS — more ids answer INVALID_VALUE. */
+export const MAX_CANDIDATE_IDS = 200;
 
 const QUERY = `
   query ($input: AvailabilityInput!) {
@@ -63,31 +66,48 @@ export class AvailabilitySearchService {
       if (a.repeating) input['repeating'] = a.repeating;
       return input;
     });
-    const input = {
-      appointments: appointmentInputs,
-      candidates: { ids },
-      ignoreReservationIds: ignoreReservationId ? [ignoreReservationId] : [],
-    };
-    return this.gql.query<AvailabilityWire>(QUERY, { input }).pipe(
-      map((resp) => {
-        // Never swallow errors[] silently (PRD 091 Phase 4.5 side-finding: the
-        // repeating-UNSUPPORTED gap hid behind empty rows) — log, keep the
-        // pipeline alive with an empty result.
-        if (resp.errors?.length) {
-          console.warn('[availability] resourceAvailability errors:', resp.errors);
-        }
-        return new Map(
-          (resp.data?.resourceAvailability ?? []).map((r) => [
-            r.resource.id,
-            {
-              id: r.resource.id,
-              name: r.resource.name ?? r.resource.id,
-              status: r.status,
-              conflictingAppointmentIds: r.conflictingAppointmentIds,
-            },
-          ]),
-        );
-      }),
+    // The server caps input.candidates.ids at MAX_CANDIDATE_IDS (AvailabilityGraphQLController);
+    // the picker can show more after "Weitere…", so ask in blocks and merge.
+    const blocks: string[][] = [];
+    for (let i = 0; i < ids.length; i += MAX_CANDIDATE_IDS) {
+      blocks.push(ids.slice(i, i + MAX_CANDIDATE_IDS));
+    }
+    const calls = blocks.map((block) =>
+      this.gql
+        .query<AvailabilityWire>(QUERY, {
+          input: {
+            appointments: appointmentInputs,
+            candidates: { ids: block },
+            ignoreReservationIds: ignoreReservationId ? [ignoreReservationId] : [],
+          },
+        })
+        .pipe(
+          map((resp) => {
+            // Never swallow errors[] silently (PRD 091 Phase 4.5 side-finding: the
+            // repeating-UNSUPPORTED gap hid behind empty rows) — log, keep the
+            // pipeline alive with an empty result.
+            if (resp.errors?.length) {
+              console.warn('[availability] resourceAvailability errors:', resp.errors);
+            }
+            return resp.data?.resourceAvailability ?? [];
+          }),
+        ),
+    );
+    return forkJoin(calls).pipe(
+      map(
+        (parts) =>
+          new Map(
+            parts.flat().map((r) => [
+              r.resource.id,
+              {
+                id: r.resource.id,
+                name: r.resource.name ?? r.resource.id,
+                status: r.status,
+                conflictingAppointmentIds: r.conflictingAppointmentIds,
+              },
+            ]),
+          ),
+      ),
     );
   }
 }

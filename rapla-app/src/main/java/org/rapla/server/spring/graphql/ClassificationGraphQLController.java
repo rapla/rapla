@@ -51,9 +51,6 @@ import org.springframework.stereotype.Controller;
 @Controller
 public class ClassificationGraphQLController
 {
-    private static final java.util.Comparator<String> NAME_ORDER =
-            java.util.Comparator.nullsLast(java.text.Collator.getInstance(Locale.getDefault())::compare);
-
     private final StorageOperator operator;
     private final org.rapla.server.spring.JwtUserResolver jwtUserResolver;
 
@@ -154,12 +151,15 @@ public class ClassificationGraphQLController
             SearchMatcher.MatchKind kind = filter.matchKind() != null
                     ? filter.matchKind() : SearchMatcher.MatchKind.SUBSTRING;
             String needle = filter.searchText();
+            // Collator is not thread-safe — one per request (like newEventOptions), never a shared static.
+            java.util.Comparator<String> nameOrder =
+                    java.util.Comparator.nullsLast(java.text.Collator.getInstance(Locale.getDefault())::compare);
             visible.sort((x, y) -> {
                 int rx = SearchMatcher.rank(x.getName(Locale.getDefault()), needle, kind);
                 int ry = SearchMatcher.rank(y.getName(Locale.getDefault()), needle, kind);
                 if (rx != ry) return Integer.compare(rx, ry);
                 // PRD 123 D7 — equal rank sorts by name, not by id (ids look random to the user).
-                int byName = NAME_ORDER.compare(x.getName(Locale.getDefault()), y.getName(Locale.getDefault()));
+                int byName = nameOrder.compare(x.getName(Locale.getDefault()), y.getName(Locale.getDefault()));
                 if (byName != 0) return byName;
                 String ix = x.getId();
                 String iy = y.getId();

@@ -1,6 +1,5 @@
 package org.rapla.server.spring.web;
 
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.rapla.server.spring.RaplaSpringBootApplication;
 import org.rapla.storage.CachableStorageOperator;
@@ -22,7 +21,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * {@code RemoteOperator.updateTimestamps} stores 0 and {@code today()} is UTC-based until the
  * first refresh arrives — then it jumps by a day (visible between 22:00 and 24:00 UTC in CEST).
  */
-@Tag("e2e")
 @SpringBootTest(classes = RaplaSpringBootApplication.class)
 @AutoConfigureMockMvc
 class BootstrapTimezoneOffsetIntegrationTest extends IsolatedDefaultDatasetTest

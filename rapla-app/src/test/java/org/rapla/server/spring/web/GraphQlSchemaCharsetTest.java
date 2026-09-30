@@ -25,19 +25,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * PRD-follow-up (2026-06-05): the Spring-GraphQL schema printer endpoint
- * ({@code spring.graphql.schema.printer.enabled=true}) is served by
- * {@code SchemaHandler.handleRequest}, which hard-codes
- * {@code MediaType.TEXT_PLAIN} with <b>no charset</b>. The SDL bytes are
- * UTF-8 (em-dashes in the descriptions etc.), but a bare {@code text/plain}
- * header makes legacy browsers/clients fall back to ISO-8859-1 → mojibake
- * ("â€"" instead of "—").
- *
- * <p>{@code GraphQlSchemaCharsetFilter} compensates by stamping
- * {@code text/plain;charset=UTF-8} on responses for the schema path only
- * (option B — path-scoped, no side effect on the JSON {@code /api/graphql}
- * endpoint). This test pins both the public reachability (matches the
- * SecurityConfig whitelist) and the charset header.
+ * GET /api/graphql/schema is public (SecurityConfig whitelist) and declares
+ * {@code text/plain;charset=UTF-8} — the SDL contains UTF-8 (em-dashes etc.) and a bare
+ * {@code text/plain} makes legacy clients fall back to ISO-8859-1 (mojibake). Served by
+ * {@code GraphQlSchemaController}, which sets the charset itself; Spring's schema printer
+ * and its former charset filter are gone.
  */
 @SpringBootTest(classes = {RaplaSpringBootApplication.class})
 @AutoConfigureMockMvc
@@ -71,7 +63,7 @@ class GraphQlSchemaCharsetTest
     {
         mockMvc.perform(get("/api/graphql/schema"))
                 .andExpect(status().isOk())
-                // text/plain WITH charset — the whole point of the filter.
+                // text/plain WITH charset.
                 .andExpect(header().string("Content-Type", "text/plain;charset=UTF-8"))
                 .andExpect(content().contentTypeCompatibleWith("text/plain"));
     }

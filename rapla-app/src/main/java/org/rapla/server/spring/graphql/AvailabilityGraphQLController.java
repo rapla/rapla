@@ -63,6 +63,9 @@ public class AvailabilityGraphQLController
 
     // ============================================================ resourceAvailability
 
+    /** Review L6 — the SPA asks for the rendered rows only (PRD 119 D12 caps); 200 leaves headroom. */
+    static final int MAX_CANDIDATE_IDS = 200;
+
     @QueryMapping
     public List<ResourceAvailabilityRow> resourceAvailability(
             @Argument("input") Map<String, Object> input,
@@ -344,8 +347,15 @@ public class AvailabilityGraphQLController
             Map<String, Object> filterMap = (Map<String, Object>) filter;
             return allocatableQueries.allocatables(filterMap);
         }
+        List<String> ids = stringList(candidates.get("ids"));
+        // Counted before any lookup, so the answer never depends on which ids exist (§12).
+        if (ids.size() > MAX_CANDIDATE_IDS)
+        {
+            throw new ReservationMutationException("INVALID_VALUE", "input.candidates.ids",
+                    "at most " + MAX_CANDIDATE_IDS + " ids per request");
+        }
         List<Allocatable> out = new ArrayList<>();
-        for (String id : stringList(candidates.get("ids")))
+        for (String id : ids)
         {
             Allocatable a = tryResolveAllocatable(id);
             if (a == null || !rc.canReadAllocatable(a)) continue;   // §12 — hidden ≡ nonexistent

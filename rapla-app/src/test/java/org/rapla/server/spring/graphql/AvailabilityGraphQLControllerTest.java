@@ -538,6 +538,47 @@ class AvailabilityGraphQLControllerTest
         assertEquals("2032-03-05T08:00:00", rows.get(4).get("start"));
     }
 
+    // ============================================================ ids cap (review L6)
+
+    private static final String IDS_QUERY = """
+            query ($ids: [ID!]!) {
+              resourceAvailability(input: {
+                appointments: [
+                  { id: "a1d5ca90-0000-4000-8000-000000000001", start: "2032-04-01T08:00:00", end: "2032-04-01T09:00:00", allDay: false }
+                ],
+                candidates: { ids: $ids }
+              }) { status }
+            }
+            """;
+
+    private static List<String> fakeIds(int n)
+    {
+        return java.util.stream.IntStream.range(0, n)
+                .mapToObj(i -> String.format("a0000000-0000-4000-8000-%012d", i)).toList();
+    }
+
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void resourceAvailabilityAcceptsTwoHundredIds()
+    {
+        tester.document(IDS_QUERY).variable("ids", fakeIds(200)).execute()
+                .path("resourceAvailability").entityList(Object.class).hasSize(0);
+    }
+
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void resourceAvailabilityRejectsMoreThanTwoHundredIds()
+    {
+        tester.document(IDS_QUERY).variable("ids", fakeIds(201)).execute()
+                .errors()
+                .satisfy(errs -> {
+                    assertFalse(errs.isEmpty(), "201 ids must be rejected");
+                    String joined = errs.toString();
+                    assertTrue(joined.contains("INVALID_VALUE") && joined.contains("input.candidates.ids"),
+                            () -> "expected INVALID_VALUE on input.candidates.ids; got " + joined);
+                });
+    }
+
     @Test
     @WithAnonymousUser
     void anonymousExpandOccurrencesRejected()

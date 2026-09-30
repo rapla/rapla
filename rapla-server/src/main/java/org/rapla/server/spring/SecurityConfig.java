@@ -158,7 +158,7 @@ public class SecurityConfig
                             "/rapla/ical", "/rapla/internal_ical",
                             "/raplaclient", "/raplaclient.jnlp",
                             "/api/v3/api-docs/**", "/v3/api-docs/**",
-                            // GraphQL schema printer (spring.graphql.schema.printer.enabled)
+                            // GraphQL SDL (GraphQlSchemaController; Spring's printer is off)
                             // — the SDL pendant to the public /v3/api-docs above. API
                             // shape metadata only, no entity data; public to match Swagger.
                             "/api/graphql/schema",

@@ -93,9 +93,9 @@ D1–D7, the behaviour inventory, tests below.
 Tier 3 `ClassificationGraphQLControllerTest#searchTextEqualRankHitsSortByName` (D7); tier 5 `resource-selection-store.spec.ts` (D5), `import-worklist.service.spec.ts` (D6), `availability-search.service.spec.ts`; tier 6 `resource-picker.component.spec.ts`, `resource-selection.component.spec.ts` (D3, M2), `omnibox.component.spec.ts` (D4, M1), `event-sheet-assign.spec.ts` (D2); tier 7 in `rapla-angular/tests/` (open).
 
 ### Review residue (rapla-review pass 2, noted only)
-- L3: the picker state (D5) writes localStorage on every keystroke of the query.
+- L3: the picker state (D5) writes localStorage on every keystroke of the query. **Won't fix (2026-10-01):** a debounce races the per-user rehydrate (`bindPerUser` re-reads `saved()` on identity change) — a user switch inside the debounce window would store the old user's query under the new user's key; ~60 bytes per keystroke is not worth that logic.
 - L5: the sheet re-fetches availability from an effect on `picker.shown()`; fine at D12 sizes.
-- L6: the availability query carries the rendered ids without a cap (PRD 119 OQ4 territory).
+- L6: ~~the availability query carries the rendered ids without a cap~~ — fixed 2026-10-01: `AvailabilitySearchService.statuses` asks in blocks of `MAX_CANDIDATE_IDS` (200, the server cap in `AvailabilityGraphQLController`) and merges; spec "splits more than 200 ids into blocks of 200". Load volume itself stays PRD 119 OQ4 territory.
 
 ## Open Questions
 

@@ -52,6 +52,34 @@ describe('AvailabilitySearchService', () => {
     );
   });
 
+  it('splits more than 200 ids into blocks of 200 and merges the statuses (server MAX_CANDIDATE_IDS)', async () => {
+    query.mockImplementation((_q: string, vars: { input: { candidates: { ids: string[] } } }) =>
+      of({
+        data: {
+          resourceAvailability: vars.input.candidates.ids.map((id) => ({
+            resource: { id, name: id },
+            status: 'AVAILABLE',
+            conflictingAppointmentIds: [],
+          })),
+        },
+      }),
+    );
+    const svc = TestBed.inject(AvailabilitySearchService);
+    const ids = Array.from({ length: 250 }, (_, i) => `r${i}`);
+
+    const result = (await new Promise((resolve) =>
+      svc.statuses([APPOINTMENT], ids, null).subscribe(resolve),
+    )) as Map<string, unknown>;
+
+    expect(query).toHaveBeenCalledTimes(2);
+    const sent = query.mock.calls.map(
+      (c) => (c[1] as { input: { candidates: { ids: string[] } } }).input.candidates.ids.length,
+    );
+    expect(sent).toEqual([200, 50]);
+    expect(result.size).toBe(250);
+    expect(result.get('r249')).toMatchObject({ status: 'AVAILABLE' });
+  });
+
   it('does not warn on a clean response', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     query.mockReturnValue(
