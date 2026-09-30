@@ -26,6 +26,7 @@ describe('ResourceSelectionStore', () => {
   let http: HttpTestingController;
 
   beforeEach(() => {
+    localStorage.clear();
     TestBed.configureTestingModule({
       providers: [
         ResourceSelectionStore,
@@ -204,5 +205,28 @@ describe('ResourceSelectionStore', () => {
     expect(store.activeId()).toBe('C348');
     store.setActive(null);
     expect(store.activeId()).toBeNull();
+  });
+  // PRD 123 D5 — chip, query and active row survive a reload (per user, like FilterStore)
+  it('persists chip, query and active id and restores them in a fresh store', () => {
+    store.ensureLoaded();
+    flushList([wire('r1', 'Hörsaal 1', 'room', 'Raum')]);
+    store.setActiveChip('type:room');
+    store.setQuery('Hör');
+    store.setActive('r1');
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        ResourceSelectionStore,
+        RecentsFavoritesService,
+        AuthService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
+    });
+    const fresh = TestBed.inject(ResourceSelectionStore);
+    http = TestBed.inject(HttpTestingController);
+    expect(fresh.activeChip()).toBe('type:room');
+    expect(fresh.query()).toBe('Hör');
+    expect(fresh.activeId()).toBe('r1');
   });
 });

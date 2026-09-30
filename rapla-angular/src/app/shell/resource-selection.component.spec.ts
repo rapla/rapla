@@ -10,6 +10,7 @@ import { ResourceSelectionStore } from '../state/resource-selection-store';
 import { FilterStore } from '../state/filter-store';
 import { RecentsFavoritesService } from '../state/recents-favorites.service';
 import { ResourceEditDialogComponent } from '../resource/resource-edit-dialog.component';
+import { AuthService, type Identity } from '../auth/auth.service';
 
 const room = (i: number) => ({
   id: `r${i}`,
@@ -61,20 +62,96 @@ describe('ResourceSelectionComponent', () => {
   });
 
   /** The picker loads the lean list once on creation (PRD 119 D8). */
-  function flushPickerList(rows: Wire[] = [], users: UserWire[] = []): void {
+  interface Creatable {
+    key: string;
+    name: string;
+    classificationType: string;
+  }
+
+  function flushPickerList(
+    rows: Wire[] = [],
+    users: UserWire[] = [],
+    creatable: Creatable[] = [],
+  ): void {
     for (const req of http.match(
       (r) => r.url === '/api/graphql' && String(r.body?.query).includes('resources'),
     )) {
       req.flush({ data: { resources: rows, users } });
     }
+    // PRD 122 — the "+ Neu" button asks for the creatable types once per rail.
+    for (const req of http.match(
+      (r) => r.url === '/api/graphql' && String(r.body?.query).includes('newResourceOptions'),
+    )) {
+      req.flush({ data: { newResourceOptions: { resourceTypes: creatable } } });
+    }
   }
 
-  async function create(rows: Wire[] = [], users: UserWire[] = []) {
-    const f = TestBed.createComponent(ResourceSelectionComponent);
-    flushPickerList(rows, users);
+  /** PRD 123 D3 — the types sit in one select. */
+  async function pickType(f: ComponentFixture<ResourceSelectionComponent>, typeKey: string) {
+    const select = (f.nativeElement as HTMLElement).querySelector(
+      'select.typesel',
+    ) as HTMLSelectElement;
+    select.value = `type:${typeKey}`;
+    select.dispatchEvent(new Event('change'));
     await f.whenStable();
+    f.detectChanges();
+  }
+
+  async function create(rows: Wire[] = [], users: UserWire[] = [], creatable: Creatable[] = []) {
+    const f = TestBed.createComponent(ResourceSelectionComponent);
+    flushPickerList(rows, users, creatable);
+    await f.whenStable();
+    f.detectChanges();
     return f;
   }
+
+  const newButton = (f: ComponentFixture<ResourceSelectionComponent>) =>
+    (f.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button.newbtn');
+
+  // PRD 122 D1/D3 (ruling B1) — the "+ Neu" button in the rail header
+  it('"+ Neu" is hidden when the server offers no creatable type', async () => {
+    const f = await create([room(1)]);
+    expect(newButton(f)).toBeNull();
+  });
+
+  it('"+ Neu" opens the create dialog with the active type chip; under Alle the first creatable type', async () => {
+    const creatable: Creatable[] = [
+      { key: 'lecturer', name: 'Dozent', classificationType: 'lecturerClassification' },
+      { key: 'room', name: 'Raum', classificationType: 'roomClassification' },
+    ];
+    resources.setActiveChip('all');
+    const f = await create([room(1), lecturer], [], creatable);
+    newButton(f)!.click();
+    expect(dialogOpen).toHaveBeenLastCalledWith(
+      ResourceEditDialogComponent,
+      expect.objectContaining({ data: { create: { typeKey: 'lecturer' } } }),
+    );
+    await pickType(f, 'room');
+    newButton(f)!.click();
+    expect(dialogOpen).toHaveBeenLastCalledWith(
+      ResourceEditDialogComponent,
+      expect.objectContaining({ data: { create: { typeKey: 'room' } } }),
+    );
+  });
+
+  it('a saved new resource reloads the picker list (PRD 122 D6)', async () => {
+    dialogOpen.mockReturnValue({ afterClosed: () => of('saved') });
+    resources.setActiveChip('all');
+    const f = await create(
+      [room(1)],
+      [],
+      [{ key: 'room', name: 'Raum', classificationType: 'roomClassification' }],
+    );
+    newButton(f)!.click();
+    await f.whenStable();
+    const reload = http.match(
+      (r) => r.url === '/api/graphql' && String(r.body?.query).includes('resources'),
+    );
+    expect(reload.length).toBe(1);
+    reload[0].flush({ data: { resources: [room(1), room(2)], users: [] } });
+    await f.whenStable();
+    expect(labels(f.nativeElement as HTMLElement)).toEqual(['Raum 01', 'Raum 02']);
+  });
 
   async function typeQuery(f: ComponentFixture<ResourceSelectionComponent>, q: string) {
     resources.setQuery(q);
@@ -140,32 +217,28 @@ describe('ResourceSelectionComponent', () => {
     expect((f.nativeElement as HTMLElement).querySelector('input')).toBeNull();
   });
 
-  it('shows a chip row (Alle, Favoriten, Zuletzt, one per type) with aria-pressed on the active chip', async () => {
+  it('shows a chip row (Alle, Favoriten, Zuletzt) plus the type select (PRD 123 D3) with aria-pressed on the active chip', async () => {
     const f = await create([room(1), lecturer]);
     const el = f.nativeElement as HTMLElement;
     expect(chipButtons(el).map((b) => b.textContent?.trim())).toEqual([
       'Alle',
       '★ Favoriten',
       'Zuletzt',
-      'Dozent',
-      'Raum',
     ]);
     expect(chipButtons(el).map((b) => b.getAttribute('aria-pressed'))).toEqual([
       'false',
       'false',
       'true',
-      'false',
-      'false',
     ]);
+    expect(
+      Array.from(el.querySelectorAll('select.typesel option')).map((o) => o.textContent?.trim()),
+    ).toEqual(['Typ ▾', 'Dozent (1)', 'Raum (1)']);
   });
 
   it('a type chip lists only resources of that type, name-sorted', async () => {
     const f = await create([room(2), lecturer, room(1)]);
     const el = f.nativeElement as HTMLElement;
-    chipButtons(el)
-      .find((b) => b.textContent?.trim() === 'Raum')!
-      .click();
-    await f.whenStable();
+    await pickType(f, 'room');
     expect(labels(el)).toEqual(['Raum 01', 'Raum 02']);
   });
 
@@ -223,6 +296,29 @@ describe('ResourceSelectionComponent', () => {
     expect(document.activeElement).toBe((f.nativeElement as HTMLElement).querySelector('.stepper'));
   });
 
+  it('an activate-first request steps the first shown row of the picker — also under a type tree (PRD 123 M2)', async () => {
+    resources.setActiveChip('all');
+    const f = await create([room(2), room(1)]);
+    resources.setQuery('Raum');
+    await f.whenStable();
+    resources.requestActivateFirst(false);
+    await f.whenStable();
+    expect(filter.entries().map((e) => e.id)).toEqual(['r1']);
+    expect(resources.activeId()).toBe('r1');
+    expect(recentPosts()).toBe(1);
+    resources.setQuery('02');
+    await f.whenStable();
+    resources.requestActivateFirst(true); // Ctrl = add
+    await f.whenStable();
+    expect(filter.entries().map((e) => e.id)).toEqual(['r1', 'r2']);
+    await pickType(f, 'room');
+    resources.setQuery('');
+    await f.whenStable();
+    resources.requestActivateFirst(false);
+    await f.whenStable();
+    expect(filter.entries().map((e) => e.id)).toEqual(['r1']);
+  });
+
   it('renders the items of the active chip', async () => {
     resources.pushRecent({ id: 'C348', label: 'C348 PC-Hörsaal' });
     resources.pushRecent({ id: 'C452', label: 'C452 Labor' });
@@ -237,10 +333,7 @@ describe('ResourceSelectionComponent', () => {
     const f = await create([room(1)]);
     const el = f.nativeElement as HTMLElement;
     expect(labels(el)).toEqual(['Recent']);
-    chipButtons(el)
-      .find((b) => b.textContent?.trim() === 'Raum')!
-      .click();
-    await f.whenStable();
+    await pickType(f, 'room');
     expect(labels(el)).toEqual(['Raum 01']);
   });
 
@@ -339,6 +432,73 @@ describe('ResourceSelectionComponent', () => {
       expect(chipIds()).toEqual(['EXT', 'r1']);
       click(items(f)[1]);
       expect(chipIds()).toEqual(['r2']);
+    });
+
+    describe('the pinned "meine" card acts like a list row (Swing parity, user ruling 2026-09-30)', () => {
+      const ME: Identity = {
+        userId: 'U-ME',
+        username: 'admin',
+        name: '',
+        admin: true,
+        roles: [],
+        impersonating: false,
+        actor: null,
+        target: null,
+      };
+      const pinned = (f: { nativeElement: HTMLElement }) =>
+        f.nativeElement.querySelector<HTMLElement>('.pinned')!;
+
+      async function makeListWithMe() {
+        TestBed.inject(AuthService).identity.set(ME);
+        return makeList();
+      }
+
+      it('plain click replaces the selection with the user scope', async () => {
+        const f = await makeListWithMe();
+        click(items(f)[0]);
+        click(pinned(f));
+        expect(chipIds()).toEqual(['U-ME']);
+        expect(filter.entries()[0].kind).toBe('user');
+        f.detectChanges();
+        expect(resources.activeId()).toBeNull();
+        expect(f.nativeElement.querySelector('.item.active')).toBeNull();
+      });
+
+      it('a second plain click on the active card clears the user scope (user, 2026-09-30)', async () => {
+        const f = await makeListWithMe();
+        click(pinned(f));
+        expect(chipIds()).toEqual(['U-ME']);
+        click(pinned(f));
+        expect(chipIds()).toEqual([]);
+        f.detectChanges();
+        expect(pinned(f).classList.contains('active')).toBe(false);
+      });
+
+      it('ctrl-click keeps the stepped resource marked as shown', async () => {
+        const f = await makeListWithMe();
+        click(items(f)[0]);
+        click(pinned(f), { ctrlKey: true });
+        expect(resources.activeId()).toBe('r1');
+      });
+
+      it('ctrl-click adds the user scope to the selected resources, ctrl-click again removes it', async () => {
+        const f = await makeListWithMe();
+        click(items(f)[0]);
+        click(pinned(f), { ctrlKey: true });
+        expect(chipIds()).toEqual(['r1', 'U-ME']);
+        click(pinned(f), { ctrlKey: true });
+        expect(chipIds()).toEqual(['r1']);
+        expect(pinned(f).classList.contains('active')).toBe(false);
+      });
+
+      it('a plain click on a resource drops the user scope; ctrl-click on a resource keeps it', async () => {
+        const f = await makeListWithMe();
+        click(pinned(f));
+        click(items(f)[1], { ctrlKey: true });
+        expect(chipIds()).toEqual(['U-ME', 'r2']);
+        click(items(f)[0]);
+        expect(chipIds()).toEqual(['r1']);
+      });
     });
 
     it('ArrowDown steps to the next item (keyboard stepping)', async () => {

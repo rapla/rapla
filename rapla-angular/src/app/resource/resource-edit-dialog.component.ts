@@ -19,10 +19,15 @@ import { EntityIdChipComponent } from '../common/entity-id-chip.component';
 import { remapValues } from '../classification/classification-schema';
 import { ClassificationSchemaService } from '../classification/classification-schema.service';
 import type { MutationIssue } from '../graphql/mutation-result';
+import { typedId } from '../event/event-draft';
 import { ResourceDataService, type ResourceDraft } from './resource-data.service';
+import { UnsavedChangesService } from '../shell/unsaved-changes';
 
 export interface ResourceEditDialogData {
-  id: string;
+  /** Edit mode — absent in create mode. */
+  id?: string;
+  /** PRD 122 — create mode: a new resource of this type (the select may change it). */
+  create?: { typeKey: string };
   /** "Anzeigen" — force read-only regardless of canModify. */
   readOnly?: boolean;
 }
@@ -30,8 +35,8 @@ export interface ResourceEditDialogData {
 /**
  * PRD 096 Phase 4 — the resource editor: a thin MatDialog around the
  * reusable classification component. Deliberately simpler than the event
- * sheet: no appointments/allocations, no type change (the server still
- * rejects it for resources — PRD 063), no memento history v1 (a handful
+ * sheet: no appointments/allocations (a type change remaps values client-side,
+ * PRD 096 Phase 4), no memento history v1 (a handful
  * of flat fields; Abbrechen is the undo). `name` is NOT special-cased —
  * for resources it is an ordinary attribute rendered by the component.
  */
@@ -53,13 +58,23 @@ export interface ResourceEditDialogData {
         </div>
       } @else if (draft(); as d) {
         <div class="head">
-          <h2>{{ displayName() }}</h2>
+          <h2>{{ heading() }}</h2>
           @if (editable() && typeOptions().length > 1) {
             <label class="typesel">
               <span class="hint">Typ</span>
               <select [ngModel]="d.typeKey" (ngModelChange)="setTypeKey($event)">
-                @for (t of typeOptions(); track t.key) {
-                  <option [value]="t.key">{{ t.name }}</option>
+                @if (typeGroups(); as groups) {
+                  @for (g of groups; track g.label) {
+                    <optgroup [label]="g.label">
+                      @for (t of g.types; track t.key) {
+                        <option [value]="t.key">{{ t.name }}</option>
+                      }
+                    </optgroup>
+                  }
+                } @else {
+                  @for (t of typeOptions(); track t.key) {
+                    <option [value]="t.key">{{ t.name }}</option>
+                  }
                 }
               </select>
             </label>
@@ -208,7 +223,8 @@ export class ResourceEditDialogComponent {
   private readonly schema = inject(ClassificationSchemaService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly dialogData = inject<ResourceEditDialogData>(MAT_DIALOG_DATA);
-  readonly entityId = this.dialogData.id;
+  readonly entityId = this.dialogData.id ?? typedId('a');
+  private readonly createMode = !this.dialogData.id;
   private readonly dialogRef = inject<MatDialogRef<ResourceEditDialogComponent>>(MatDialogRef);
 
   readonly loading = signal(true);
@@ -217,12 +233,31 @@ export class ResourceEditDialogComponent {
   readonly displayName = signal('');
   readonly typeName = signal('');
   readonly canModify = signal(false);
-  readonly typeOptions = signal<{ key: string; name: string }[]>([]);
+  readonly typeOptions = signal<{ key: string; name: string; classificationType?: string }[]>([]);
   readonly saving = signal(false);
   readonly issues = signal<MutationIssue[]>([]);
   readonly notice = signal('');
 
   readonly editable = computed(() => this.canModify() && this.dialogData.readOnly !== true);
+
+  /** PRD 122 D9 — create mode groups the mixed list, resources first; null = flat (one kind). */
+  readonly typeGroups = computed(() => {
+    const opts = this.typeOptions();
+    if (!opts.some((t) => t.classificationType)) return null;
+    return [
+      { label: 'Ressourcen', types: opts.filter((t) => t.classificationType === 'RESOURCE') },
+      { label: 'Personen', types: opts.filter((t) => t.classificationType === 'PERSON') },
+    ].filter((g) => g.types.length > 0);
+  });
+
+  /** PRD 122 M4 — create mode names the kind of the chosen type (Swing: "Ressource" / "Person"). */
+  readonly heading = computed(() => {
+    if (!this.createMode) return this.displayName();
+    const kind = this.typeOptions().find(
+      (t) => t.key === this.draft()?.typeKey,
+    )?.classificationType;
+    return kind === 'PERSON' ? 'Neue Person' : 'Neue Ressource';
+  });
 
   private baseline = '';
   readonly dirty = computed(() => {
@@ -230,10 +265,38 @@ export class ResourceEditDialogComponent {
     return d !== null && JSON.stringify({ t: d.typeKey, v: d.values }) !== this.baseline;
   });
 
+  constructor() {
+    inject(UnsavedChangesService).register(this.dirty, this.destroyRef);
+  }
+
   // eslint-disable-next-line @angular-eslint/use-lifecycle-interface
   ngOnInit(): void {
+    if (this.createMode) {
+      const typeKey = this.dialogData.create?.typeKey ?? '';
+      this.loading.set(false);
+      this.draft.set({ id: this.entityId, typeKey, values: {}, lastChanged: null });
+      this.baseline = JSON.stringify({ t: typeKey, v: {} });
+      this.canModify.set(true);
+      this.schema
+        .prototype(typeKey)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe((values) => {
+          const d = this.draft();
+          if (!values || !d || d.typeKey !== typeKey) return;
+          // PRD 107 — the seeds are the baseline; input typed before they arrived wins (M1/M2).
+          this.baseline = JSON.stringify({ t: typeKey, v: values });
+          this.draft.set({ ...d, values: { ...values, ...d.values } });
+        });
+      // Every type the caller may create, grouped Ressourcen / Personen — a deliberate
+      // deviation from Swing, whose type field shows one kind only (PRD 122 D9, ruling A3).
+      this.data
+        .creatableTypes()
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe((opts) => this.typeOptions.set(opts));
+      return;
+    }
     this.data
-      .load(this.dialogData.id)
+      .load(this.entityId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((loaded) => {
         this.loading.set(false);
@@ -272,6 +335,17 @@ export class ResourceEditDialogComponent {
         ? { name: d.values['name'] }
         : {};
     this.draft.set({ ...d, typeKey: key, values });
+    if (this.createMode) {
+      // Create mode: the target type's attribute defaults fill the gaps; remapped values win.
+      this.schema
+        .prototype(key)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe((proto) => {
+          const cur = this.draft();
+          if (proto && cur && cur.typeKey === key)
+            this.draft.set({ ...cur, values: { ...proto, ...cur.values } });
+        });
+    }
   }
 
   applyPatch(p: ClassificationPatch): void {
@@ -286,8 +360,7 @@ export class ResourceEditDialogComponent {
     this.saving.set(true);
     this.issues.set([]);
     this.notice.set('');
-    this.data
-      .save(d)
+    (this.createMode ? this.data.create(d) : this.data.save(d))
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((result) => {
         this.saving.set(false);

@@ -2,6 +2,8 @@ import { Injectable, computed, effect, inject, signal, untracked } from '@angula
 
 import { GraphqlService } from '../graphql/graphql.service';
 import { RecentsFavoritesService } from './recents-favorites.service';
+import { AuthService } from '../auth/auth.service';
+import { ScopedStorage, bindPerUser } from './persist';
 import {
   byLabel,
   filterRows,
@@ -28,6 +30,14 @@ export interface ResourceItem {
   /** Picker group paths, one per categorization value (PRD 119 D11). */
   groupPaths?: string[][];
 }
+
+interface PickerState {
+  chip: string;
+  query: string;
+  activeId: string | null;
+}
+
+const EMPTY_STATE: PickerState = { chip: 'all', query: '', activeId: null };
 
 interface PickerWire {
   resources?: {
@@ -60,12 +70,15 @@ export class ResourceSelectionStore {
   private readonly lists = inject(RecentsFavoritesService);
   private readonly gql = inject(GraphqlService);
 
+  /** PRD 123 D5 — chip, query and active row survive a reload, per user like the FilterStore. */
+  private readonly storage = new ScopedStorage(inject(AuthService), 'rapla.picker');
   private readonly _resources = signal<ResourceItem[]>([]);
   private readonly _users = signal<ResourceItem[]>([]);
-  private readonly _activeChip = signal<string>('all');
-  private readonly _activeId = signal<string | null>(null);
-  private readonly _query = signal('');
+  private readonly _activeChip = signal<string>(this.saved().chip);
+  private readonly _activeId = signal<string | null>(this.saved().activeId);
+  private readonly _query = signal(this.saved().query);
   private readonly _pickerFocus = signal(0);
+  private readonly _activateFirst = signal<{ n: number; ctrl: boolean }>({ n: 0, ctrl: false });
   /** PRD 119 P3b (user ruling A) — Alle ranks by this copy of the recents, so a click never moves its row. */
   private readonly _recentsSnapshot = signal<ResourceItem[]>([]);
   private loaded = false;
@@ -80,6 +93,8 @@ export class ResourceSelectionStore {
   readonly query = this._query.asReadonly();
   /** Bumped when the search dropdown sends the user to the picker (PRD 119 D4). */
   readonly pickerFocus = this._pickerFocus.asReadonly();
+  /** PRD 123 D4 — Enter in the search field: the rail steps its first shown row (Ctrl = add). */
+  readonly activateFirst = this._activateFirst.asReadonly();
 
   constructor() {
     // Recents answered after the lean list: refresh the snapshot on every server (re)load, never on a push.
@@ -87,6 +102,24 @@ export class ResourceSelectionStore {
       this.lists.reloaded();
       untracked(() => this.snapshotRecents());
     });
+    bindPerUser(inject(AuthService), () => {
+      const saved = this.saved();
+      this._activeChip.set(saved.chip);
+      this._activeId.set(saved.activeId);
+      this._query.set(saved.query);
+    });
+  }
+
+  private saved(): PickerState {
+    return { ...EMPTY_STATE, ...this.storage.load<Partial<PickerState>>({}) };
+  }
+
+  private persist(): void {
+    this.storage.save({
+      chip: this._activeChip(),
+      query: this._query(),
+      activeId: this._activeId(),
+    } satisfies PickerState);
   }
 
   readonly chips = computed<PickerChip[]>(() => [
@@ -96,8 +129,10 @@ export class ResourceSelectionStore {
     ...typeChips(this._resources()),
   ]);
 
-  readonly activeList = computed<ResourceItem[]>(() => {
-    const chip = this._activeChip();
+  readonly activeList = computed<ResourceItem[]>(() => this.listFor(this._activeChip()));
+
+  /** PRD 123 D1 — the rows a chip shows; a second picker (the event sheet) asks for its own chip. */
+  listFor(chip: string): ResourceItem[] {
     switch (chip) {
       case 'all':
         return rankAll(this._resources(), this.favorites(), this._recentsSnapshot());
@@ -112,7 +147,7 @@ export class ResourceSelectionStore {
           .sort(byLabel);
       }
     }
-  });
+  }
 
   /** Rows the picker shows under Alle for the current query — the dropdown's count row (PRD 119 D4). */
   readonly matchCount = computed(
@@ -175,11 +210,13 @@ export class ResourceSelectionStore {
   setActiveChip(key: string): void {
     this.snapshotRecents();
     this._activeChip.set(key);
+    this.persist();
   }
 
   setQuery(query: string): void {
     if (!query.trim() && this._query().trim()) this.snapshotRecents();
     this._query.set(query);
+    this.persist();
   }
 
   /** Refreshed only on load, chip change and a cleared search — never by the click that pushes a recent. */
@@ -189,6 +226,10 @@ export class ResourceSelectionStore {
 
   requestPickerFocus(): void {
     this._pickerFocus.update((n) => n + 1);
+  }
+
+  requestActivateFirst(ctrl: boolean): void {
+    this._activateFirst.update(({ n }) => ({ n: n + 1, ctrl }));
   }
 
   /** A newly-found resource lands on top; one already present keeps its spot (no reshuffle). */
@@ -210,5 +251,6 @@ export class ResourceSelectionStore {
 
   setActive(id: string | null): void {
     this._activeId.set(id);
+    this.persist();
   }
 }

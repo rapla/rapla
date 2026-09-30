@@ -42,10 +42,10 @@ describe('AvailabilitySearchService', () => {
     const svc = TestBed.inject(AvailabilitySearchService);
 
     const result = await new Promise((resolve) =>
-      svc.search([APPOINTMENT], '', ['r1'], null).subscribe(resolve),
+      svc.statuses([APPOINTMENT], ['r1'], null).subscribe(resolve),
     );
 
-    expect(result).toEqual({ hits: [], byId: new Map() });
+    expect(result).toEqual(new Map());
     expect(warn).toHaveBeenCalledWith(
       '[availability] resourceAvailability errors:',
       expect.arrayContaining([expect.objectContaining({ message: 'boom' })]),
@@ -70,10 +70,10 @@ describe('AvailabilitySearchService', () => {
     const svc = TestBed.inject(AvailabilitySearchService);
 
     const result = (await new Promise((resolve) =>
-      svc.search([APPOINTMENT], '', ['r1'], null).subscribe(resolve),
-    )) as { byId: Map<string, unknown> };
+      svc.statuses([APPOINTMENT], ['r1'], null).subscribe(resolve),
+    )) as Map<string, unknown>;
 
-    expect(result.byId.get('r1')).toMatchObject({ status: 'AVAILABLE' });
+    expect(result.get('r1')).toMatchObject({ status: 'AVAILABLE' });
     expect(warn).not.toHaveBeenCalled();
   });
 });

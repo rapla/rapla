@@ -35,6 +35,7 @@ const SEARCH_THROTTLE_MS = 300;
         [ngModel]="term()"
         (ngModelChange)="onType($event)"
         (focus)="open.set(true)"
+        (keydown)="onKeydown($event)"
       />
       @if (showResults()) {
         <div class="results">
@@ -171,7 +172,8 @@ export class OmniboxComponent {
   private readonly dialog = inject(MatDialog);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  protected readonly term = signal('');
+  /** Starts from the store so a query restored after a reload (PRD 123 D5) shows in the field. */
+  protected readonly term = signal(this.store.query());
   /** Whether the results dropdown is open (closes on Escape / outside-click / action). */
   protected readonly open = signal(false);
 
@@ -192,6 +194,30 @@ export class OmniboxComponent {
     this.term.set(value);
     this.store.setQuery(value);
     this.open.set(true);
+  }
+
+  /**
+   * PRD 123 D4 — the keyboard path from the search field: Enter asks the rail to step its first
+   * shown row (Ctrl/⌘ = add; the rail's step is the only row semantics), ↓ hands the focus to
+   * the picker, Esc clears the query.
+   */
+  onKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Escape') {
+      if (this.term()) {
+        this.onType('');
+        event.stopPropagation();
+      }
+      return;
+    }
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      this.focusPicker();
+      return;
+    }
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    this.store.requestActivateFirst(event.ctrlKey || event.metaKey);
+    this.open.set(false);
   }
 
   @HostListener('document:keydown.escape')

@@ -102,17 +102,58 @@ export class ResourceDataService {
 
   /** Type options for the select — same classificationType as the loaded resource. */
   typeOptions(classificationType: string): Observable<{ key: string; name: string }[]> {
+    return this.allTypes().pipe(
+      map((types) =>
+        types
+          .filter((t) => t.classificationType === classificationType)
+          .map((t) => ({ key: t.key, name: t.name })),
+      ),
+    );
+  }
+
+  /** PRD 122 — type options of the same kind as `typeKey` (create mode has no loaded resource). */
+  typeOptionsLike(typeKey: string): Observable<{ key: string; name: string }[]> {
+    return this.allTypes().pipe(
+      map((types) => {
+        const kind = types.find((t) => t.key === typeKey)?.classificationType;
+        return types
+          .filter((t) => t.classificationType === kind)
+          .map((t) => ({ key: t.key, name: t.name }));
+      }),
+    );
+  }
+
+  private allTypes(): Observable<{ key: string; name: string; classificationType: string }[]> {
     return this.gql
       .query<{
         types: { key: string; name: string; classificationType: string }[];
       }>(`query { types { key name classificationType } }`)
-      .pipe(
-        map((resp) =>
-          (resp.data?.types ?? [])
-            .filter((t) => t.classificationType === classificationType)
-            .map((t) => ({ key: t.key, name: t.name })),
-        ),
-      );
+      .pipe(map((resp) => resp.data?.types ?? []));
+  }
+
+  /** PRD 122 D4 — RESOURCE/PERSON types the caller may create (server canCreate-filtered). */
+  creatableTypes(): Observable<{ key: string; name: string; classificationType: string }[]> {
+    return this.gql
+      .query<{
+        newResourceOptions: {
+          resourceTypes: { key: string; name: string; classificationType: string }[];
+        };
+      }>(`query { newResourceOptions { resourceTypes { key name classificationType } } }`)
+      .pipe(map((resp) => resp.data?.newResourceOptions.resourceTypes ?? []));
+  }
+
+  /** PRD 122 — createResource with the client-minted id in `draft.id`. */
+  create(draft: ResourceDraft): Observable<MutationResult<{ id: string }>> {
+    const input = {
+      id: draft.id,
+      typeKey: draft.typeKey,
+      classification: { [draft.typeKey]: { ...draft.values } },
+    };
+    return this.gql
+      .mutate<{
+        createResource: { id: string };
+      }>(`mutation ($input: ResourceInput!) { createResource(input: $input) { id } }`, { input })
+      .pipe(map((r) => (r.kind === 'ok' ? { kind: 'ok', data: r.data.createResource } : r)));
   }
 
   save(draft: ResourceDraft): Observable<MutationResult<{ id: string }>> {

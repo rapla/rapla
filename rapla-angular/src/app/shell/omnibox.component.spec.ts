@@ -154,4 +154,64 @@ describe('OmniboxComponent', () => {
     await settle(f);
     expect((f.nativeElement as HTMLElement).querySelector('.results')).toBeNull();
   });
+  // PRD 123 D4 — keyboard path from the search field
+  function key(
+    f: ComponentFixture<OmniboxComponent>,
+    k: string,
+    init: KeyboardEventInit = {},
+  ): void {
+    const input = (f.nativeElement as HTMLElement).querySelector(
+      'input.obsearch',
+    ) as HTMLInputElement;
+    input.dispatchEvent(
+      new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true, ...init }),
+    );
+    f.detectChanges();
+  }
+
+  it('Enter asks the rail to step its first shown row; Ctrl+Enter asks for an add (PRD 123 D4, M2)', async () => {
+    const f = TestBed.createComponent(OmniboxComponent);
+    setTerm(f, 'Mat');
+    await settle(f);
+    const before = resources.activateFirst().n;
+    key(f, 'Enter');
+    expect(resources.activateFirst()).toEqual({ n: before + 1, ctrl: false });
+    expect((f.nativeElement as HTMLElement).querySelector('.results')).toBeNull();
+    key(f, 'Enter', { ctrlKey: true });
+    expect(resources.activateFirst()).toEqual({ n: before + 2, ctrl: true });
+  });
+
+  it('shows a query restored from storage in the field, and Escape clears field and store (M1)', async () => {
+    resources.setQuery('Hör');
+    const f = TestBed.createComponent(OmniboxComponent);
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+    const input = (f.nativeElement as HTMLElement).querySelector(
+      'input.obsearch',
+    ) as HTMLInputElement;
+    expect(input.value).toBe('Hör');
+    key(f, 'Escape');
+    expect(resources.query()).toBe('');
+    await f.whenStable();
+    f.detectChanges();
+    expect(input.value).toBe('');
+  });
+
+  it('ArrowDown hands the focus to the picker, Escape clears the query', async () => {
+    const f = TestBed.createComponent(OmniboxComponent);
+    setTerm(f, 'Mat');
+    await settle(f);
+    const before = resources.pickerFocus();
+    key(f, 'ArrowDown');
+    expect(resources.pickerFocus()).toBe(before + 1);
+    key(f, 'Escape');
+    expect(resources.query()).toBe('');
+    await f.whenStable();
+    f.detectChanges();
+    expect((f.nativeElement as HTMLElement).querySelector('input.obsearch')).toHaveProperty(
+      'value',
+      '',
+    );
+  });
 });

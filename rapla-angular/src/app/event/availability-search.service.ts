@@ -1,15 +1,13 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, forkJoin, map, of } from 'rxjs';
+import { Observable, map, of } from 'rxjs';
 
 import { GraphqlService } from '../graphql/graphql.service';
 import type { DraftAppointment } from './event-draft';
 
 /**
- * PRD 091 Phase 2.6 — the add-mode search: one `resourceAvailability` call
- * with a filter (search hits, ranking from the resources resolver) plus
- * one with ids (pins + assigned rows need statuses too; `CandidateInput` is
- * `@oneOf`, so ids can't ride in the filter call). Both are the CHEAP
- * display path from Phase 1 — §12-scoped server-side.
+ * PRD 091 Phase 2.6 / PRD 123 D2 — availability by ids for the rows the sheet renders (assigned
+ * rows and the picker's visible rows). The CHEAP display path from Phase 1 — §12-scoped
+ * server-side. The former searchText branch went with the sheet's own search field (PRD 123).
  */
 
 export type AllocationStatus = 'AVAILABLE' | 'PARTIAL' | 'CONFLICT' | 'REQUEST_ONLY' | 'FORBIDDEN';
@@ -49,12 +47,12 @@ export interface SearchResult {
 export class AvailabilitySearchService {
   private readonly gql = inject(GraphqlService);
 
-  search(
+  statuses(
     appointments: DraftAppointment[],
-    searchText: string,
     ids: string[],
     ignoreReservationId: string | null,
-  ): Observable<SearchResult> {
+  ): Observable<Map<string, AvailabilityRow>> {
+    if (ids.length === 0) return of(new Map());
     const appointmentInputs = appointments.map((a) => {
       const input: Record<string, unknown> = {
         id: a.id,
@@ -65,44 +63,31 @@ export class AvailabilitySearchService {
       if (a.repeating) input['repeating'] = a.repeating;
       return input;
     });
-    const base = (candidates: Record<string, unknown>) => ({
+    const input = {
       appointments: appointmentInputs,
-      candidates,
+      candidates: { ids },
       ignoreReservationIds: ignoreReservationId ? [ignoreReservationId] : [],
-    });
-    // Never swallow errors[] silently (PRD 091 Phase 4.5 side-finding: the
-    // repeating-UNSUPPORTED gap hid behind empty rows) — log, keep the
-    // pipeline alive with an empty result.
-    const rows = (resp: { data?: AvailabilityWire; errors?: unknown[] }): AvailabilityRow[] => {
-      if (resp.errors?.length) {
-        console.warn('[availability] resourceAvailability errors:', resp.errors);
-      }
-      return (resp.data?.resourceAvailability ?? []).map((r) => ({
-        id: r.resource.id,
-        name: r.resource.name ?? r.resource.id,
-        status: r.status,
-        conflictingAppointmentIds: r.conflictingAppointmentIds,
-      }));
     };
-
-    const hits$ =
-      searchText.trim().length > 0
-        ? this.gql
-            .query<AvailabilityWire>(QUERY, {
-              input: base({ filter: { searchText: searchText.trim(), limit: 50 } }),
-            })
-            .pipe(map(rows))
-        : of([] as AvailabilityRow[]);
-    const byId$ =
-      ids.length > 0
-        ? this.gql.query<AvailabilityWire>(QUERY, { input: base({ ids }) }).pipe(map(rows))
-        : of([] as AvailabilityRow[]);
-
-    return forkJoin({ hits: hits$, idRows: byId$ }).pipe(
-      map(({ hits, idRows }) => ({
-        hits,
-        byId: new Map(idRows.map((r) => [r.id, r])),
-      })),
+    return this.gql.query<AvailabilityWire>(QUERY, { input }).pipe(
+      map((resp) => {
+        // Never swallow errors[] silently (PRD 091 Phase 4.5 side-finding: the
+        // repeating-UNSUPPORTED gap hid behind empty rows) — log, keep the
+        // pipeline alive with an empty result.
+        if (resp.errors?.length) {
+          console.warn('[availability] resourceAvailability errors:', resp.errors);
+        }
+        return new Map(
+          (resp.data?.resourceAvailability ?? []).map((r) => [
+            r.resource.id,
+            {
+              id: r.resource.id,
+              name: r.resource.name ?? r.resource.id,
+              status: r.status,
+              conflictingAppointmentIds: r.conflictingAppointmentIds,
+            },
+          ]),
+        );
+      }),
     );
   }
 }

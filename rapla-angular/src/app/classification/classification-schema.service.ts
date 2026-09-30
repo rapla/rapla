@@ -40,12 +40,12 @@ export class ClassificationSchemaService {
   }
 
   /**
-   * PRD 099 — the server-computed birth values of a new reservation of this
-   * type (`reservationPrototype` query: attribute defaults via
+   * PRD 099 / PRD 122 — the server-computed birth values of a new entity of this
+   * type (`reservationPrototype` / `resourcePrototype` query by kind: attribute defaults via
    * `newClassification()`, nothing persisted). Cached per typeKey with the
    * SDL cache's lifetime — one consistent schema snapshot per JS context.
-   * Emits null for unknown/non-creatable/non-reservation types and on
-   * transport errors (errors are NOT cached).
+   * Emits null for unknown/non-creatable types, types without attributes and
+   * on transport errors (errors are NOT cached).
    */
   prototype(typeKey: string): Observable<Record<string, unknown> | null> {
     let p$ = this.prototypes.get(typeKey);
@@ -53,20 +53,18 @@ export class ClassificationSchemaService {
       p$ = this.load().pipe(
         switchMap((types) => {
           const type = types.get(typeKey);
-          if (!type || type.kind !== 'RESERVATION' || type.attributes.length === 0) {
+          if (!type || type.attributes.length === 0) {
             return of(null);
           }
+          const field = type.kind === 'RESERVATION' ? 'reservationPrototype' : 'resourcePrototype';
           const fragment = `... on ${typeKey}Classification { ${valueSelections(type.attributes)} }`;
           return this.gql
-            .query<{
-              reservationPrototype: { classification: Record<string, unknown> } | null;
-            }>(
-              `query ($k: String!) { reservationPrototype(typeKey: $k) { classification { ${fragment} } } }`,
-              { k: typeKey },
-            )
+            .query<
+              Record<string, { classification: Record<string, unknown> } | null>
+            >(`query ($k: String!) { ${field}(typeKey: $k) { classification { ${fragment} } } }`, { k: typeKey })
             .pipe(
               map((resp) => {
-                const cls = resp.data?.reservationPrototype?.classification;
+                const cls = resp.data?.[field]?.classification;
                 return cls ? normalizeClassificationValues(cls) : null;
               }),
             );

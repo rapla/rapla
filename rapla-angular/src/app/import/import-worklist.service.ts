@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, type HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, catchError, forkJoin, map, of, shareReplay, switchMap, tap } from 'rxjs';
 
@@ -181,8 +181,11 @@ export class ImportWorklistService {
     this.metaLoaded = true;
     this.http.get<{ sourceName?: string }>('/api/externaleventimport/metadata').subscribe({
       next: (m) => this.sourceName.set(m.sourceName ?? ''),
-      error: () => {
-        this.metaLoaded = false;
+      // PRD 123 D6 — 404 = no import plugin deployed, final for the session; any other
+      // failure is retried on the next call.
+      error: (e: HttpErrorResponse) => {
+        if (e.status === 404) this.sourceName.set('');
+        else this.metaLoaded = false;
       },
     });
   }
