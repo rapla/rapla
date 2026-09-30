@@ -12,18 +12,25 @@ import org.rapla.facade.RaplaFacade;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class RaplaJNLPControllerTest
 {
     private RaplaJNLPController controller;
+    private RaplaFacade facade;
+    private RaplaResources i18n;
     private HttpServletRequest request;
     private HttpServletResponse response;
     private StringWriter body;
@@ -32,19 +39,20 @@ class RaplaJNLPControllerTest
     @BeforeEach
     void setUp() throws Exception
     {
-        RaplaFacade facade = mock(RaplaFacade.class);
+        facade = mock(RaplaFacade.class);
         Preferences prefs = mock(Preferences.class);
         when(facade.getSystemPreferences()).thenReturn(prefs);
         when(prefs.getEntryAsString(any(), anyString())).thenAnswer(inv -> inv.getArgument(1));
         when(prefs.getEntryAsBoolean(any(), anyBoolean())).thenAnswer(inv -> inv.getArgument(1));
         when(prefs.getEntryAsInteger(any(), anyInt())).thenAnswer(inv -> inv.getArgument(1));
 
-        RaplaResources i18n = mock(RaplaResources.class);
+        i18n = mock(RaplaResources.class);
         when(i18n.getString("rapla.title")).thenReturn("Rapla");
 
-        controller = new RaplaJNLPController(facade, i18n);
+        controller = new RaplaJNLPController(facade, i18n, "");
 
         request = mock(HttpServletRequest.class);
+        when(request.getScheme()).thenReturn("http");
         when(request.getServerName()).thenReturn("localhost");
         when(request.getServerPort()).thenReturn(8051);
         when(request.getContextPath()).thenReturn("/rapla");
@@ -120,5 +128,62 @@ class RaplaJNLPControllerTest
             assertFalse(path.contains("//"),
                     "URL in JNLP has a doubled slash in its path: " + url);
         }
+    }
+
+    // ============================================================ codebase (ruling 2026-10-01, option 1)
+
+    private String codebaseOf(String jnlp)
+    {
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("codebase=\"([^\"]*)\"").matcher(jnlp);
+        assertTrue(m.find(), "no codebase in:\n" + jnlp);
+        return m.group(1);
+    }
+
+    @Test
+    void codebaseIsTheRequestOriginIncludingANonStandardPort() throws Exception
+    {
+        controller.generateJnlp(request, response);
+        assertEquals("http://localhost:8051/", codebaseOf(body.toString()));
+    }
+
+    @Test
+    void configuredBaseUrlOnTheRequestHostIsTheCodebase() throws Exception
+    {
+        new RaplaJNLPController(facade, i18n, "https://localhost").generateJnlp(request, response);
+        assertEquals("https://localhost/", codebaseOf(body.toString()));
+    }
+
+    /** An external IdP origin (Keycloak) is not rapla's origin — the request origin wins. */
+    @Test
+    void configuredBaseUrlOnAnotherHostIsIgnored() throws Exception
+    {
+        new RaplaJNLPController(facade, i18n, "https://keycloak.example.com").generateJnlp(request, response);
+        assertEquals("http://localhost:8051/", codebaseOf(body.toString()));
+    }
+
+    @Test
+    void ipv6LiteralHostIsBracketed() throws Exception
+    {
+        when(request.getServerName()).thenReturn("::1");
+        controller.generateJnlp(request, response);
+        assertEquals("http://[::1]:8051/", codebaseOf(body.toString()));
+    }
+
+    @Test
+    void hostWithMarkupCharactersAnswers400WithoutWritingTheJnlp() throws Exception
+    {
+        when(request.getServerName()).thenReturn("evil\"><x");
+        controller.generateJnlp(request, response);
+        verify(response).sendError(400);
+        assertEquals("", body.toString());
+    }
+
+    /** Cache-Control: no-store is the contract; an Expires date contradicts it. */
+    @Test
+    void noExpiresHeader() throws Exception
+    {
+        controller.generateJnlp(request, response);
+        verify(response, never()).addDateHeader(eq("Expires"), anyLong());
+        verify(response, never()).setDateHeader(eq("Expires"), anyLong());
     }
 }

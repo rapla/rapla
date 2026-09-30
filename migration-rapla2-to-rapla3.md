@@ -24,7 +24,7 @@ Five things matter to an operator:
 |---|---|---|---|
 | Server runtime | Embedded **Jetty**, started by custom bootstrap code; deployed as a WAR / service-wrapper | **Spring Boot** fat JAR (embedded Tomcat 11), `java -jar`, Java 21 | [§1](#1-jetty--spring-boot) |
 | Configuration | Jetty context file `contexts/rapla.xml` (JNDI entries) + `etc/jetty.xml` + system properties | `application.yml` (Spring Boot externalized config) | [§1](#1-jetty--spring-boot) |
-| URLs and APIs | Webapp under a context path; JNLP with `codebase`; JAX-RS REST API | Context root `/`; JNLP resolves relative to its own URL; GraphQL API + OAuth2 | [§1](#urls-web-start-and-integrations) |
+| URLs and APIs | Webapp under a context path; JNLP with `codebase`; JAX-RS REST API | Context root `/`; JNLP `codebase` = the request's own origin; GraphQL API + OAuth2 | [§1](#urls-web-start-and-integrations) |
 | Database | JDBC datasource declared in `contexts/rapla.xml` | `rapla.db-datasources.rapladb` key in `application.yml` | [§2](#2-database-configuration) |
 | Permissions | `USER > GROUP > WORLD` **precedence** with soft-deny | **Purely additive** (`max` over all matching rows); soft-deny abolished | [§3](#3-the-new-permission-model-prd-090) |
 
@@ -135,9 +135,17 @@ provider; leave it empty behind a reverse proxy. Details:
 ### URLs, Web Start and integrations
 
 - **Context root is required.** Rapla 3 must run at `/` (no
-  `server.servlet.context-path`). The Web Start JNLP no longer carries a
-  `codebase` or `rapla.download.url`: the client resolves the server from the
-  JNLP's own URL. Remove any old `codebase` / download-URL settings.
+  `server.servlet.context-path`). The Web Start JNLP emits the request's own
+  origin (scheme, host, port) as `codebase`, so a JNLP a browser saved as a
+  local file still finds its server; nothing to update when the server moves.
+  `server.forward-headers-strategy: native` does not stop a client from sending
+  its own `Host` — it only limits which proxies may rewrite scheme, host and port
+  via `X-Forwarded-*`. A client-chosen `Host` reaches only that client: the JNLP
+  is sent with `Cache-Control: no-store`, so no shared cache passes it on. Behind
+  a TLS-terminating proxy that does not forward the scheme, set
+  `rapla.oauth.public-base-url` to Rapla's public origin; it becomes the
+  `codebase` when its host matches the request's. The JNLP does not carry
+  `rapla.download.url`.
 - **Web Start URL:** `/raplaclient.jnlp` (Rapla 2: `/rapla/raplaclient.jnlp`).
   The webclient JARs are signed; with a self-signed build the Java launcher
   shows an "unknown publisher" warning, so clients have to trust that

@@ -119,7 +119,7 @@ change. Profiles work too: `config/application-prod.yml` activated with
 | Key | Default | Notes |
 |---|---|---|
 | `server.port` | `8051` | HTTP port |
-| `rapla.oauth.public-base-url` | empty (request-derived) | Leave empty behind a reverse proxy that sets `X-Forwarded-*`; set explicitly only for an external IdP. |
+| `rapla.oauth.public-base-url` | empty (request-derived) | Leave empty behind a reverse proxy that sets `X-Forwarded-*`; set explicitly for an external IdP. When it names Rapla's own host it is also the Web Start `codebase` (e.g. to force `https` behind a TLS proxy that does not forward the scheme). |
 | `rapla.file-datasources.raplafile` | `data/data.xml` | XML store path, or use a database (below) |
 | `logging.level.org.rapla` | `INFO` | See [`logging.md`](logging.md) for the full picture (file locations, access log, profile-based stdout-only, full-replace, JUL bridge). |
 
@@ -135,7 +135,9 @@ redirects` is on by default) — no per-deployment redirect URI to register.
 If your proxy connects from an address outside loopback and the private ranges,
 list it in `server.tomcat.remoteip.internal-proxies` (a regular expression of
 trusted proxy IPs); the value replaces the built-in default, so keep the ranges
-you still need in it.
+you still need in it. The default trusts every loopback and private-range address,
+so any host in those networks may set `X-Forwarded-*`; if that is too wide, set
+`server.tomcat.remoteip.internal-proxies` to your proxy's IP only.
 
 The auth cookies' `Secure` flag follows the request scheme; behind a TLS-terminating
 proxy, pass `X-Forwarded-Proto` through or set `rapla.oauth.web.cookie-secure=true`.

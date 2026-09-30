@@ -15,10 +15,15 @@ Apple) hold these exact URLs, so they must never move.
 ## Client side — URL generators must emit the prefix explicitly
 
 Under Jetty, client code built subscription/export URLs as `codeBase + "calendar"` and
-the *container* supplied `/rapla/`. (The Web Start `codeBase` itself is no longer
-emitted: since audit fix S3, 2026-09-14, the JNLP has no `codebase`/`rapla.download.url`
-and the client resolves its server URL against the JNLP's own URL — which is why rapla
-must run at the context root, see `docs/deployment.md`.) Since the context-root move, the same code silently
+the *container* supplied `/rapla/`. The Web Start JNLP now emits the request's own
+origin as `codebase` so browser-downloaded JNLP files retain their server origin; it
+does not emit `rapla.download.url`. The `Host` is taken from the request
+(`forward-headers-strategy: native` only restricts `X-Forwarded-*` to trusted proxies),
+so a client can only get its own `Host` back; `Cache-Control: no-store` keeps shared
+caches from passing it on. `rapla.oauth.public-base-url` overrides scheme and port when
+its host matches the request's (ruling 2026-10-01). Rapla must still run at the context root because
+the webclient resources and API are root-relative (see [`deployment.md`](../deployment.md)).
+Since the context-root move, the same code silently
 produces `/calendar` — a 404 — while the server routes still answer at
 `/rapla/calendar`. **Any code that generates a user-facing calendar/export URL (Swing
 dialogs, HTML pages, iCal export, autoexport links) must emit the `/rapla/` prefix

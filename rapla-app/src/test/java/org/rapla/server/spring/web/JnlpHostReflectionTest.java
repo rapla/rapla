@@ -24,8 +24,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 /**
- * Security audit PH3 — the unauthenticated JNLP launcher manifest must not reflect the request host: a forged Host /
- * X-Forwarded-* header would otherwise point the victim's Web Start client at an attacker's host for the jars.
+ * The JNLP codebase is the request's own origin (scheme, Host, port as the servlet container reports
+ * them), never raw {@code X-Forwarded-*} headers from the client. Whether a proxy's forwarded headers
+ * are trusted is decided by Tomcat's RemoteIpValve ({@code server.tomcat.remoteip.internal-proxies}),
+ * i.e. deployment configuration, not this controller. The response is {@code no-store}, so a reflected
+ * Host can only reach the client that sent it. A configured {@code rapla.oauth.public-base-url} on the
+ * same host overrides scheme/port (unit-tested in {@code RaplaJNLPControllerTest}).
  */
 @SpringBootTest(classes = RaplaSpringBootApplication.class)
 @AutoConfigureMockMvc
@@ -55,38 +59,59 @@ class JnlpHostReflectionTest
     @Autowired
     MockMvc mockMvc;
 
-    private String jnlp(String url, String forwardedProto, String forwardedPort) throws Exception
+    @Test
+    void hostHeaderWithMarkupCharactersAnswers400() throws Exception
+    {
+        MvcResult result = mockMvc.perform(get("/raplaclient.jnlp").header("Host", "evil\"><x")).andReturn();
+        assertEquals(400, result.getResponse().getStatus());
+        assertFalse(result.getResponse().getContentAsString().contains("<x"), "Host must never be echoed");
+    }
+
+    @Test
+    void ipv6HostIsEmittedBracketed() throws Exception
+    {
+        MvcResult result = mockMvc.perform(get("/raplaclient.jnlp").header("Host", "[::1]:8051")).andReturn();
+        assertEquals(200, result.getResponse().getStatus());
+        String body = result.getResponse().getContentAsString();
+        assertTrue(body.contains("codebase=\"http://[::1]:8051/\""), body);
+    }
+
+    private MvcResult jnlpResult(String url, String forwardedProto, String forwardedPort) throws Exception
     {
         var request = get(url);
+        if (url.startsWith("https://")) request.secure(true).with(mockRequest -> {
+            mockRequest.setServerPort(443);
+            return mockRequest;
+        });
         if (forwardedProto != null) request.header("X-Forwarded-Proto", forwardedProto);
         if (forwardedPort != null) request.header("X-Forwarded-Port", forwardedPort);
         MvcResult result = mockMvc.perform(request).andReturn();
         assertEquals(200, result.getResponse().getStatus(), () -> "jnlp must be served for " + url);
-        return result.getResponse().getContentAsString();
+        return result;
     }
 
     @Test
-    void forgedHostIsNotReflected() throws Exception
+    void codebaseIsTheRequestOrigin() throws Exception
     {
-        String body = jnlp("http://evil.example/raplaclient.jnlp", null, null);
-        assertTrue(body.contains("<jnlp"), body);
-        assertFalse(body.contains("evil.example"), () -> "forged host reflected:\n" + body);
+        String body = jnlpResult("https://rapla.example/raplaclient.jnlp", null, null)
+                .getResponse().getContentAsString();
+        assertTrue(body.contains("codebase=\"https://rapla.example/\""), body);
     }
 
     @Test
-    void forgedForwardedHeadersAreNotReflected() throws Exception
+    void rawForwardedHeadersFromAnUntrustedClientAreNotReflected() throws Exception
     {
-        String body = jnlp("http://localhost/raplaclient.jnlp", "https", "6666");
+        String body = jnlpResult("http://localhost/raplaclient.jnlp", "https", "6666")
+                .getResponse().getContentAsString();
+        assertTrue(body.contains("codebase=\"http://localhost/\""), body);
         assertFalse(body.contains("6666"), () -> "forged X-Forwarded-Port reflected:\n" + body);
-        // the manifest carries the static homepage link https://rapla.org — only a proto+host URL would be a reflection
         assertFalse(body.contains("https://localhost"), () -> "forged X-Forwarded-Proto reflected:\n" + body);
     }
 
     @Test
-    void responseIsIndependentOfTheRequestHost() throws Exception
+    void jnlpResponseIsNotStoredBySharedCaches() throws Exception
     {
-        assertEquals(jnlp("http://localhost/raplaclient.jnlp", null, null),
-                jnlp("http://evil.example:8443/raplaclient.jnlp", "https", "6666"),
-                "the manifest must be byte-identical whatever host the request names");
+        MvcResult result = jnlpResult("https://rapla.example/raplaclient.jnlp", null, null);
+        assertEquals("no-cache, no-store, must-revalidate", result.getResponse().getHeader("Cache-Control"));
     }
 }

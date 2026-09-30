@@ -4,13 +4,13 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.rapla.RaplaResources;
-import org.rapla.components.util.DateTools;
 import org.rapla.components.util.IOUtil;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.internal.AbstractRaplaLocale;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -24,6 +24,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -49,11 +51,14 @@ public class RaplaJNLPController
 
     private final RaplaFacade facade;
     private final RaplaResources i18n;
+    private final String publicBaseUrl;
 
-    public RaplaJNLPController(RaplaFacade facade, RaplaResources i18n)
+    public RaplaJNLPController(RaplaFacade facade, RaplaResources i18n,
+            @Value("${rapla.oauth.public-base-url:}") String publicBaseUrl)
     {
         this.facade = facade;
         this.i18n = i18n;
+        this.publicBaseUrl = publicBaseUrl == null ? "" : publicBaseUrl.trim();
     }
 
     @GetMapping("/raplaclient")
@@ -72,13 +77,23 @@ public class RaplaJNLPController
      *  full JNLP-XML generation flow without going through MockMvc. */
     void generateJnlp(HttpServletRequest request, HttpServletResponse response) throws IOException
     {
+        String codebase;
+        try
+        {
+            codebase = codebase(request);
+        }
+        catch (URISyntaxException e)
+        {
+            // Resolved before any output, so a bad Host never reaches the XML (no partial body, no 500).
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
         PrintWriter out = response.getWriter();
         String webstartRoot = ".";
         long currentTimeMillis = System.currentTimeMillis();
         response.setDateHeader("Last-Modified", currentTimeMillis);
-        response.addDateHeader("Expires", currentTimeMillis + DateTools.MILLISECONDS_PER_MINUTE);
         response.addDateHeader("Date", currentTimeMillis);
-        response.setHeader("Cache-Control", "no-cache");
+        response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
         final String defaultTitle = i18n.getString("rapla.title");
         String menuName;
         boolean createShortcut = true;
@@ -96,9 +111,7 @@ public class RaplaJNLPController
         }
         response.setContentType("application/x-java-jnlp-file;charset=utf-8");
         out.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-        // Security audit PH3 — no codebase and only relative hrefs: they resolve against the URL the launcher fetched this
-        // manifest from, so a forged Host / X-Forwarded-* header cannot point the client at another server.
-        out.println("<jnlp spec=\"6.0+\" href=\"raplaclient.jnlp\" >");
+        out.println("<jnlp spec=\"6.0+\" codebase=\"" + codebase + "\" href=\"raplaclient.jnlp\" >");
         out.println("<information>");
         out.println(" <title>" + menuName + "</title>");
         out.println(" <vendor>Rapla team</vendor>");
@@ -147,6 +160,57 @@ public class RaplaJNLPController
         out.println("</application-desc>");
         out.println("</jnlp>");
         out.close();
+    }
+
+    /**
+     * Ruling 2026-10-01 (option 1): {@code rapla.oauth.public-base-url} is the codebase when it names
+     * the request's own host — it corrects scheme/port behind a TLS proxy. It can also hold an
+     * external IdP's origin, so on any other host the request origin is used.
+     */
+    private String codebase(HttpServletRequest request) throws URISyntaxException
+    {
+        String origin = requestOrigin(request);
+        if (!publicBaseUrl.isEmpty())
+        {
+            try
+            {
+                URI configured = new URI(publicBaseUrl);
+                String scheme = configured.getScheme();
+                if (("http".equals(scheme) || "https".equals(scheme)) && configured.getHost() != null
+                        && unbracketed(configured.getHost()).equalsIgnoreCase(unbracketed(request.getServerName())))
+                {
+                    String path = configured.getPath() == null || configured.getPath().isEmpty()
+                            ? "/" : configured.getPath().endsWith("/") ? configured.getPath() : configured.getPath() + "/";
+                    return new URI(scheme, null, configured.getHost(), configured.getPort(), path, null, null)
+                            .toASCIIString();
+                }
+            }
+            catch (URISyntaxException ignored)
+            {
+                // misconfigured property — fall back to the request origin
+            }
+        }
+        return origin;
+    }
+
+    private static String unbracketed(String host)
+    {
+        return host.startsWith("[") && host.endsWith("]") ? host.substring(1, host.length() - 1) : host;
+    }
+
+    private static String requestOrigin(HttpServletRequest request) throws URISyntaxException
+    {
+        String scheme = request.getScheme();
+        if (!"http".equals(scheme) && !"https".equals(scheme))
+        {
+            throw new URISyntaxException(String.valueOf(scheme), "unsupported JNLP request scheme");
+        }
+        int port = request.getServerPort();
+        if (("http".equals(scheme) && port == 80) || ("https".equals(scheme) && port == 443))
+        {
+            port = -1;
+        }
+        return new URI(scheme, null, request.getServerName(), port, "/", null, null).toASCIIString();
     }
 
     @GetMapping("/webclient/{name:.+\\.jar}")
