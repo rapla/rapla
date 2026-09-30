@@ -40,9 +40,10 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
- * PRD 119 D11 — {@code Resource.groupPaths} on the lean picker list, and §12: a group only ever arrives on a resource
+ * PRD 119 D11/S2 — {@code Resource.groupPaths}, {@code belongsTo} and {@code packageIds} on the lean picker list, and §12: a group only ever arrives on a resource
  * the caller can read, and a categorization value that is itself a resource the caller cannot read is left out (its
  * name would leak otherwise). Fixture {@code testdefault.xml}: rooms "Room A66" (springfield-powerplant) and "erwin"
  * (set to channel-6) grouped by the {@code room} category attribute {@code belongsto}; "Room A66.1" grouped by its
@@ -55,6 +56,8 @@ class ResourceTreeFieldsGraphQLTest
     private static final String ROOM_A66 = "c24ce517-4697-4e52-9917-ec000c84563c";
     private static final String ROOM_A66_1 = "rdd6b473-7c77-4344-a73d-1f27008341cb";
     private static final String ERWIN = "5521686b-0ab4-4ff4-a56e-0bdf148e8d1d";
+    private static final String DOZ_GRUPPE = "r9b69d90-46a0-41bb-94fa-82079b424c03";
+    private static final String BURNS = "f92e9a11-c342-4413-a924-81eee17ccf92";
 
     private static final ParameterizedTypeReference<Map<String, Object>> ROW = new ParameterizedTypeReference<>() {};
 
@@ -134,7 +137,11 @@ class ResourceTreeFieldsGraphQLTest
         erwin.getClassification().setValues(belongsto, List.of(department("channel-6")));
         Allocatable part = facade.edit(operator.resolve(ROOM_A66_1, Allocatable.class));
         everyoneReads(part);
-        facade.storeObjects(new Entity[] { hidden, erwin, part });
+        Allocatable group = facade.edit(operator.resolve(DOZ_GRUPPE, Allocatable.class));
+        everyoneReads(group);
+        Allocatable burns = facade.edit(operator.resolve(BURNS, Allocatable.class));
+        clearPermissions(burns);
+        facade.storeObjects(new Entity[] { hidden, erwin, part, group, burns });
         seeded = true;
     }
 
@@ -154,7 +161,7 @@ class ResourceTreeFieldsGraphQLTest
     private Map<String, Map<String, Object>> rows()
     {
         List<Map<String, Object>> list = tester.document("{ resources(filter: { idIn: [\"" + ROOM_A66 + "\", \"" + ERWIN
-                        + "\", \"" + ROOM_A66_1 + "\"] }) { id groupPaths } }")
+                        + "\", \"" + ROOM_A66_1 + "\", \"" + DOZ_GRUPPE + "\"] }) { id groupPaths belongsTo packageIds } }")
                 .execute()
                 .path("resources")
                 .entityList(ROW)
@@ -178,6 +185,10 @@ class ResourceTreeFieldsGraphQLTest
         assertEquals(path(department("springfield powerplant").getName(Locale.ENGLISH)), byId.get(ROOM_A66).get("groupPaths"));
         assertEquals(path(department("channel-6").getName(Locale.ENGLISH)), byId.get(ERWIN).get("groupPaths"));
         assertEquals(path("Room A66"), byId.get(ROOM_A66_1).get("groupPaths"));
+        assertEquals(ROOM_A66, byId.get(ROOM_A66_1).get("belongsTo"));
+        assertNull(byId.get(ERWIN).get("belongsTo"));
+        assertEquals(List.of(BURNS), byId.get(DOZ_GRUPPE).get("packageIds"));
+        assertEquals(List.of(), byId.get(ERWIN).get("packageIds"));
     }
 
     @Test
@@ -188,7 +199,10 @@ class ResourceTreeFieldsGraphQLTest
         assertFalse(byId.containsKey(ROOM_A66), "precondition: monty must not read Room A66");
         assertEquals(path(department("channel-6").getName(Locale.ENGLISH)), byId.get(ERWIN).get("groupPaths"));
         assertEquals(List.of(), byId.get(ROOM_A66_1).get("groupPaths"));
-        String body = raw("{ resources { id groupPaths } }");
+        assertNull(byId.get(ROOM_A66_1).get("belongsTo"));
+        assertEquals(List.of(), byId.get(DOZ_GRUPPE).get("packageIds"));
+        String body = raw("{ resources { id groupPaths belongsTo packageIds } }");
+        assertFalse(body.contains(BURNS), body);
         assertFalse(body.contains(ROOM_A66), body);
         assertFalse(body.contains(department("springfield powerplant").getName(Locale.ENGLISH)), body);
         assertFalse(body.contains("[\"Room A66\"]"), body);

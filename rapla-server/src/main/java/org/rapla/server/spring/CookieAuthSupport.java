@@ -5,16 +5,21 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.Duration;
 
 /**
  * PRD 072 Phase 2 — central cookie helper for the browser credential model A.
  * Owns the two cookie names, their attributes, and the configurable
- * {@code Secure} flag (review S5 — {@code rapla.oauth.web.cookie-secure},
- * default {@code true}; a dev-over-HTTP smoke test sets it {@code false} so the
- * browser keeps the cookie). {@code HttpOnly} and {@code SameSite=Lax} are
- * always on.
+ * {@code Secure} flag (review S5 — {@code rapla.oauth.web.cookie-secure}). Unset,
+ * the flag follows the current request's scheme: https (also via
+ * {@code X-Forwarded-Proto}, {@code forward-headers-strategy: native}) sets it,
+ * plain http does not — a browser drops a Secure cookie on {@code http://<ip>},
+ * which broke login on intranet installs. Outside a request it stays on. An
+ * explicit {@code true}/{@code false} always wins. {@code HttpOnly} and
+ * {@code SameSite=Lax} are always on.
  *
  * <ul>
  *   <li>{@code access_token} — the rapla access JWT. Path {@code /} so it is
@@ -40,16 +45,21 @@ public class CookieAuthSupport
     public static final String ACCESS_TOKEN_PATH = "/";
     public static final String REFRESH_TOKEN_PATH = "/api/auth/session";
 
-    private final boolean secure;
+    private final Boolean secure;
 
-    public CookieAuthSupport(@Value("${rapla.oauth.web.cookie-secure:true}") boolean secure)
+    public CookieAuthSupport(@Value("${rapla.oauth.web.cookie-secure:#{null}}") Boolean secure)
     {
         this.secure = secure;
     }
 
     public boolean isSecure()
     {
-        return secure;
+        if (secure != null)
+        {
+            return secure;
+        }
+        return !(RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attributes)
+                || attributes.getRequest().isSecure();
     }
 
     /** Reads a named cookie value off the request, or {@code null} if absent. */
@@ -79,7 +89,7 @@ public class CookieAuthSupport
         }
         response.addHeader("Set-Cookie", ResponseCookie.from(REMEMBER_CHOICE_COOKIE, remember ? "1" : "")
                 .httpOnly(true)
-                .secure(secure)
+                .secure(isSecure())
                 .sameSite("Lax")
                 .path("/")
                 .maxAge(remember ? Duration.ofDays(365) : Duration.ZERO)
@@ -101,7 +111,7 @@ public class CookieAuthSupport
     {
         return ResponseCookie.from(ACCESS_TOKEN_COOKIE, accessToken)
                 .httpOnly(true)
-                .secure(secure)
+                .secure(isSecure())
                 .sameSite("Lax")
                 .path(ACCESS_TOKEN_PATH)
                 .maxAge(Duration.ofSeconds(maxAgeSeconds))
@@ -112,7 +122,7 @@ public class CookieAuthSupport
     {
         return ResponseCookie.from(REFRESH_TOKEN_COOKIE, refreshToken)
                 .httpOnly(true)
-                .secure(secure)
+                .secure(isSecure())
                 .sameSite("Lax")
                 .path(REFRESH_TOKEN_PATH)
                 .maxAge(Duration.ofSeconds(maxAgeSeconds))

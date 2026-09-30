@@ -425,6 +425,55 @@ class AllocatableMutationControllerTest
     }
 
     /**
+     * PRD 122 sibling (user ruling 2026-09-30) — a type change may only target a non-internal type
+     * of the SAME kind (Swing ClassificationField); internal, reservation, other-kind and unknown
+     * types answer identically, without echoing the key, and the resource stays unchanged.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void updateTypeChangeToInternalWrongOrOtherKindAnswersLikeUnknown()
+    {
+        String id = "b3333333-3333-4333-8333-333333333333";
+        tester.document("""
+                mutation ($id: ID!) {
+                  createResource(input: { id: $id, typeKey: "room", classification: { room: { name: "Bleibt Raum" } } }) { id }
+                }
+                """).variable("id", id).execute().path("createResource.id").entity(String.class).get();
+
+        String unknown = typeChangeErrors(id, "doesnotexist1234");
+        assertEquals(unknown, typeChangeErrors(id, "rapla:period"), "internal type must look unknown");
+        assertEquals(unknown, typeChangeErrors(id, "event"), "reservation type must look unknown");
+        assertEquals(unknown, typeChangeErrors(id, "lecturer"), "a person type must look unknown for a resource");
+
+        Map<String, Object> stored = tester.document("""
+                query ($id: ID!) { resource(id: $id) { displayName classification { typeKey } } }
+                """).variable("id", id).execute().path("resource")
+                .entity(new ParameterizedTypeReference<Map<String, Object>>() {}).get();
+        assertEquals("Bleibt Raum", stored.get("displayName"), "resource must stay unchanged");
+        assertEquals(Map.of("typeKey", "room"), stored.get("classification"), "type must stay room");
+    }
+
+    private String typeChangeErrors(String id, String typeKey)
+    {
+        StringBuilder out = new StringBuilder();
+        tester.document("""
+                mutation ($id: ID!, $k: String!) {
+                  updateResource(id: $id, input: { typeKey: $k, classification: { room: { name: "Umgewidmet" } } }) { id }
+                }
+                """)
+                .variable("id", id)
+                .variable("k", typeKey)
+                .execute()
+                .errors()
+                .satisfy(errs -> {
+                    assertFalse(errs.isEmpty(), "expected an error for typeKey " + typeKey);
+                    errs.forEach(e -> out.append(e.getErrorType()).append('|').append(e.getMessage())
+                            .append('|').append(e.getPath()).append('|').append(e.getExtensions()).append('\n'));
+                });
+        return out.toString();
+    }
+
+    /**
      * PRD 099 ride-along — VALUE_LIST enum input on allocatables. `room` has
      * the CATEGORY attribute `belongsto` (root=department, VALUE_LIST → the
      * @oneOf variant field is the generated enum whose values are leaf keys).

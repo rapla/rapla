@@ -76,13 +76,12 @@ spring:
       path: /api/graphql
     graphiql:
       enabled: false
-    # Expose the full runtime SDL (incl. generated *Classification types) at
-    # GET /api/graphql/schema — the GraphQL pendant to Swagger's public
-    # /v3/api-docs. API-shape metadata only, no entity data; SecurityConfig
-    # whitelists the path, GraphQlSchemaCharsetFilter stamps charset=UTF-8.
+    # GET /api/graphql/schema is served by GraphQlSchemaController (definition
+    # order, charset=UTF-8) — the built-in printer sorts fields alphabetically,
+    # which broke the SPA's attribute order. Keep it off.
     schema:
       printer:
-        enabled: true
+        enabled: false
   security:
     oauth2:
       authorizationserver:

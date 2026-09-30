@@ -137,6 +137,21 @@ class CookieAuthControllerTest
                 .andExpect(status().isUnauthorized());
     }
 
+    @Test
+    void passwordGrantLoginOverHttpsSetsSecureCookies() throws Exception
+    {
+        MvcResult login = mockMvc.perform(post("/oauth2/token").secure(true)
+                        .contentType("application/x-www-form-urlencoded")
+                        .content("grant_type=password&username=homer&password="
+                                + URLEncoder.encode("duffs", StandardCharsets.UTF_8)
+                                + "&client_id=rapla-client"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        assertTrue(login.getResponse().getCookie("access_token").getSecure(), "access cookie must be Secure over https");
+        assertTrue(login.getResponse().getCookie("refresh_token").getSecure(), "refresh cookie must be Secure over https");
+    }
+
     // ---------------------------------------------------------------------
     // 2a. SAS password-grant login ALSO sets the browser credential cookies.
     // ---------------------------------------------------------------------
@@ -160,6 +175,9 @@ class CookieAuthControllerTest
         assertTrue(refresh.isHttpOnly());
         assertEquals("Lax", access.getAttribute("SameSite"));
         assertEquals("Lax", refresh.getAttribute("SameSite"));
+        // cookie-secure unset follows the scheme: plain http → not Secure (a browser drops it on http://<ip>).
+        assertFalse(access.getSecure(), "access cookie must not be Secure over http");
+        assertFalse(refresh.getSecure(), "refresh cookie must not be Secure over http");
         // Path-scoped refresh cookie — NOT sent on every /api call.
         assertEquals("/api/auth/session", refresh.getPath());
         assertEquals("/", access.getPath());

@@ -77,6 +77,7 @@ class OidcLoginSuccessHandlerTest
         registry.add("rapla.oauth.external.keycloak.base-url", () -> "https://kc.example.com");
         registry.add("rapla.oauth.external.keycloak.realm", () -> "rapla-test");
         registry.add("rapla.oauth.external.keycloak.client-id", () -> "rapla-app");
+        registry.add("rapla.oauth.web.cookie-secure", () -> "true");
     }
 
     @Autowired
@@ -139,7 +140,7 @@ class OidcLoginSuccessHandlerTest
         assertNotNull(cookie, "access_token cookie must be set by the success handler");
         assertFalse(cookie.getValue() == null || cookie.getValue().isEmpty(), "cookie value must be a minted JWT");
         assertTrue(cookie.isHttpOnly(), "cookie must be HttpOnly");
-        assertTrue(cookie.getSecure(), "cookie must be Secure");
+        assertTrue(cookie.getSecure(), "cookie must be Secure when rapla.oauth.web.cookie-secure=true");
         assertEquals("Lax", cookie.getAttribute("SameSite"), "cookie must be SameSite=Lax (CSRF-relevant; review N3)");
         // The minted token is a JWT (three dot-separated segments).
         assertTrue(cookie.getValue().chars().filter(c -> c == '.').count() == 2,

@@ -1568,6 +1568,44 @@ class ClassificationGraphQLControllerTest
                 () -> "PREFIX hit should rank first; got " + rooms);
     }
 
+    /** PRD 123 D7 — equal-rank hits sort by name, not by id. A room "Room A66 Z" with an id
+     *  below the fixture ids would come first by id; by name "Room A66" stays first. */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void searchTextEqualRankHitsSortByName()
+    {
+        tester.document("""
+                mutation {
+                  createResource(input: {
+                    id: "a0000000-0000-4000-8000-000000000123",
+                    typeKey: "room",
+                    classification: { room: { name: "Room A66 Z" } }
+                  }) { id }
+                }
+                """).execute().path("createResource.id").entity(String.class).get();
+        List<String> names;
+        try
+        {
+            List<Map<String, Object>> rooms = tester.document("""
+                    {
+                      resources(filter: { typeIn: [room], searchText: "room", matchKind: SUBSTRING }) { displayName }
+                    }
+                    """)
+                    .execute()
+                    .path("resources")
+                    .entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                    .get();
+            names = rooms.stream().map(r -> (String) r.get("displayName")).toList();
+        }
+        finally
+        {
+            tester.document("""
+                    mutation { deleteResources(ids: ["a0000000-0000-4000-8000-000000000123"]) { __typename } }
+                    """).execute();
+        }
+        assertEquals(List.of("Room A66", "Room A66 Z"), names);
+    }
+
     // ============================================================ @editView (PRD 096 D5 rev.)
 
     /**

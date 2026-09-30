@@ -108,6 +108,15 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
         return currentInterval;
     }
 
+    /** The offset a client adds to a server timestamp to get rapla time. EVERY UpdateEvent that
+     *  reaches RemoteOperator.updateTimestamps has to carry it — the bootstrap event included —
+     *  otherwise the client computes today() without it until the next event and then jumps by a day. */
+    public static int getTimezoneOffset(CachableStorageOperator operator, LocalDateTime time)
+    {
+        final TimeZone systemTimeZone = operator.getTimeZone();
+        return TimeZoneConverterImpl.getOffset(IOUtil.getTimeZone(), systemTimeZone, DateTools.toMilli(time));
+    }
+
     public UpdateEvent createUpdateEvent(User user, LocalDateTime lastSynced) throws RaplaException
     {
         return createUpdateEventInternal(user, lastSynced, false);
@@ -129,9 +138,7 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
             lastSynced = currentTimestamp;
         }
         final UpdateEvent safeResultEvent = new UpdateEvent();
-        TimeZone systemTimeZone = operator.getTimeZone();
-        int timezoneOffset = TimeZoneConverterImpl.getOffset(IOUtil.getTimeZone(), systemTimeZone, DateTools.toMilli(currentTimestamp));
-        safeResultEvent.setTimezoneOffset(timezoneOffset);
+        safeResultEvent.setTimezoneOffset(getTimezoneOffset(operator, currentTimestamp));
         TimeInterval timeInterval= null;
         final UpdateResult updateResult = operator.getUpdateResult(lastSynced, user);
         safeResultEvent.setLastValidated(updateResult.getUntil());

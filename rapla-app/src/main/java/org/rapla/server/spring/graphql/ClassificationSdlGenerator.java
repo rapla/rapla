@@ -121,6 +121,18 @@ public final class ClassificationSdlGenerator
         return DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE.equals(kind);
     }
 
+    /** PRD 122 — a type a new resource may be created from: RESOURCE or PERSON, not internal; null → false. */
+    public static boolean isResourceOrPersonType(DynamicType dt)
+    {
+        if (dt == null || isRaplaInternal(dt)) return false;
+        String kind = dt.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
+        return DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE.equals(kind)
+                || DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON.equals(kind);
+    }
+
+    /** §12 — the one answer for unknown, wrong-kind and internal types; never echoes the key. */
+    public static final String TYPE_NOT_CREATABLE = "DynamicType not found or not creatable";
+
     /**
      * Generate the SDL fragment for all classification types + the per-
      * VALUE_LIST-root enums referenced by CATEGORY-typed attributes. The
@@ -938,7 +950,7 @@ public final class ClassificationSdlGenerator
         // @displayName — always emitted (server-configured "Server Sprache"
         // resolved at SDL-gen time; NOT the JVM default — see ServerLocaleResolver)
         String name = attr.getName(locale);
-        if (name != null && !name.isBlank() && !name.equals(attr.getKey()))
+        if (name != null && !name.isBlank())
         {
             sb.append(" @displayName(value: \"").append(escapeStringLiteral(name)).append("\")");
         }

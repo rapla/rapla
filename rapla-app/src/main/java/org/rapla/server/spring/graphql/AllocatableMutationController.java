@@ -10,6 +10,7 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.storage.internal.SimpleEntity;
@@ -86,7 +87,13 @@ public class AllocatableMutationController
             throw new ReservationMutationException("REQUIRED", "input.typeKey",
                     "typeKey is required");
         }
-        DynamicType dt = resolveType(typeKey);
+        DynamicType dt = ClassificationInputMapper.tryResolveType(operator, typeKey);
+        // §12 — unknown, internal and non-resource/person types answer identically (PRD 122 H1).
+        if (!ClassificationSdlGenerator.isResourceOrPersonType(dt))
+        {
+            throw new ReservationMutationException("REFERENCE_NOT_FOUND", "input.typeKey",
+                    ClassificationSdlGenerator.TYPE_NOT_CREATABLE);
+        }
 
         // §12: caller must canCreate this type
         if (!caller.isAdmin())
@@ -173,7 +180,17 @@ public class AllocatableMutationController
         String targetTypeKey = storedTypeKey;
         if (inputTypeKey != null && !inputTypeKey.equals(storedTypeKey))
         {
-            targetType = resolveType(inputTypeKey);
+            targetType = ClassificationInputMapper.tryResolveType(operator, inputTypeKey);
+            // §12 — the target must be a non-internal type of the SAME kind (Swing ClassificationField);
+            // anything else answers like an unknown type (PRD 122 sibling, user ruling 2026-09-30).
+            DynamicType currentType = stored.getClassification().getType();
+            if (!ClassificationSdlGenerator.isResourceOrPersonType(targetType)
+                    || !targetType.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE)
+                            .equals(currentType.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE)))
+            {
+                throw new ReservationMutationException("REFERENCE_NOT_FOUND", "input.typeKey",
+                        ClassificationSdlGenerator.TYPE_NOT_CREATABLE);
+            }
             if (!caller.isAdmin())
             {
                 PermissionController pc = operator.getPermissionController();
@@ -467,17 +484,6 @@ public class AllocatableMutationController
                     "Mutations require an authenticated caller");
         }
         return caller;
-    }
-
-    private DynamicType resolveType(String typeKey) throws RaplaException
-    {
-        DynamicType dt = ClassificationInputMapper.tryResolveType(operator, typeKey);
-        if (dt == null)
-        {
-            throw new ReservationMutationException("REFERENCE_NOT_FOUND", "input.typeKey",
-                    "DynamicType " + typeKey + " not found");
-        }
-        return dt;
     }
 
     @SuppressWarnings("unchecked")

@@ -880,15 +880,44 @@ public final class StructuralTypeFetchers
                 @Override protected List<List<String>> read(org.rapla.entities.domain.Allocatable a,
                         Supplier<DataFetchingEnvironment> env)
                 {
-                    var rc = ctxFrom(env);
-                    User caller = rc.caller();
+                    var readable = readableResource(ctxFrom(env));
                     return org.rapla.server.internal.ResourceTreeRules.groupPaths(a.getClassification(), serverLocale,
-                            value -> !(value instanceof org.rapla.entities.domain.Allocatable reference)
-                                    || (caller != null && (caller.isAdmin()
-                                    || (rc.permissionController() != null
-                                    && rc.permissionController().canRead(reference, caller)))));
+                            value -> !(value instanceof org.rapla.entities.domain.Allocatable) || readable.test(value));
                 }
             };
+
+    /** PRD 119 S2 — the belongsTo parent's id; null when the caller cannot read the parent (§12). */
+    static final LightDataFetcher<String> ALLOCATABLE_BELONGS_TO =
+            new LightSourceFetcher<org.rapla.entities.domain.Allocatable, String>(
+                    org.rapla.entities.domain.Allocatable.class)
+            {
+                @Override protected String read(org.rapla.entities.domain.Allocatable a,
+                        Supplier<DataFetchingEnvironment> env)
+                {
+                    return org.rapla.server.internal.ResourceTreeRules.belongsTo(a.getClassification(), readableResource(ctxFrom(env)));
+                }
+            };
+
+    /** PRD 119 S2 — the packaged resources' ids, only those the caller can read (§12). */
+    static final LightDataFetcher<List<String>> ALLOCATABLE_PACKAGE_IDS =
+            new LightSourceFetcher<org.rapla.entities.domain.Allocatable, List<String>>(
+                    org.rapla.entities.domain.Allocatable.class)
+            {
+                @Override protected List<String> read(org.rapla.entities.domain.Allocatable a,
+                        Supplier<DataFetchingEnvironment> env)
+                {
+                    return org.rapla.server.internal.ResourceTreeRules.packageIds(a.getClassification(), readableResource(ctxFrom(env)));
+                }
+            };
+
+    private static java.util.function.Predicate<Object> readableResource(RequestContextInstrumentation.RequestCtx rc)
+    {
+        User caller = rc.caller();
+        return value -> value instanceof org.rapla.entities.domain.Allocatable resource
+                && caller != null && (caller.isAdmin()
+                || (rc.permissionController() != null
+                && rc.permissionController().canRead(resource, caller)));
+    }
 
     /**
      * Restriction-aware editor view of allocations. Drops per-allocatable
@@ -1531,6 +1560,7 @@ public final class StructuralTypeFetchers
                 .dataFetcher("path",     categoryPath(operator))
                 .dataFetcher("parent",   categoryParent(operator))
                 .dataFetcher("children", CATEGORY_CHILDREN)
+                .dataFetcher("hasChildren", CATEGORY_HAS_CHILDREN)
                 .dataFetcher("kind",     categoryKind(operator)));
         b.type("Reservation", t -> t
                 .dataFetcher("name",           RESERVATION_NAME)

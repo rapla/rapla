@@ -153,6 +153,7 @@ public class SpringDocGroupsConfig
                         "/api/locale",
                         "/api/locale/**",
                         "/api/logger/**",
+                        "/api/graphql/schema",
                         // Admin UI
                         "/api/users",
                         "/api/users/**",

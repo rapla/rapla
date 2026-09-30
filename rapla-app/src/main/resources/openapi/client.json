@@ -1981,6 +1981,24 @@
         }
       }
     },
+    "/api/graphql/schema" : {
+      "get" : {
+        "tags" : [ "graph-ql-schema-controller" ],
+        "operationId" : "schema",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/exchange/config/user" : {
       "get" : {
         "tags" : [ "exchange-connector-config-controller" ],

@@ -51,6 +51,9 @@ import org.springframework.stereotype.Controller;
 @Controller
 public class ClassificationGraphQLController
 {
+    private static final java.util.Comparator<String> NAME_ORDER =
+            java.util.Comparator.nullsLast(java.text.Collator.getInstance(Locale.getDefault())::compare);
+
     private final StorageOperator operator;
     private final org.rapla.server.spring.JwtUserResolver jwtUserResolver;
 
@@ -155,6 +158,9 @@ public class ClassificationGraphQLController
                 int rx = SearchMatcher.rank(x.getName(Locale.getDefault()), needle, kind);
                 int ry = SearchMatcher.rank(y.getName(Locale.getDefault()), needle, kind);
                 if (rx != ry) return Integer.compare(rx, ry);
+                // PRD 123 D7 — equal rank sorts by name, not by id (ids look random to the user).
+                int byName = NAME_ORDER.compare(x.getName(Locale.getDefault()), y.getName(Locale.getDefault()));
+                if (byName != 0) return byName;
                 String ix = x.getId();
                 String iy = y.getId();
                 return (ix == null ? "" : ix).compareTo(iy == null ? "" : iy);
@@ -307,6 +313,40 @@ public class ClassificationGraphQLController
             out.add(dt);
         }
         return out;
+    }
+
+    /** PRD 122 D4 — see type NewResourceOptions in the schema. */
+    public record NewResourceOptions(List<DynamicType> resourceTypes) {}
+
+    @QueryMapping
+    public NewResourceOptions newResourceOptions() throws RaplaException
+    {
+        User caller = UnauthenticatedException.require(resolveCaller());
+        PermissionController pc = operator.getPermissionController();
+        List<DynamicType> out = new ArrayList<>();
+        for (DynamicType dt : operator.getDynamicTypes())
+        {
+            if (ClassificationSdlGenerator.isResourceOrPersonType(dt) && pc.canCreate(dt, caller)) out.add(dt);
+        }
+        return new NewResourceOptions(out);
+    }
+
+    /** PRD 122 D5 — unpersisted birth state of a new resource (see schema doc). */
+    public record ResourcePrototype(String typeKey, org.rapla.entities.dynamictype.Classification classification) {}
+
+    @QueryMapping
+    public ResourcePrototype resourcePrototype(@Argument("typeKey") String typeKey) throws RaplaException
+    {
+        User caller = UnauthenticatedException.require(resolveCaller());
+        DynamicType dt = ClassificationInputMapper.tryResolveType(operator, typeKey);
+        PermissionController pc = operator.getPermissionController();
+        // §12 — unknown, non-resource/person and non-creatable typeKeys answer IDENTICALLY.
+        if (!ClassificationSdlGenerator.isResourceOrPersonType(dt) || !pc.canCreate(dt, caller))
+        {
+            throw new ReservationMutationController.ReservationMutationException("REFERENCE_NOT_FOUND", "typeKey",
+                    ClassificationSdlGenerator.TYPE_NOT_CREATABLE);
+        }
+        return new ResourcePrototype(dt.getKey(), dt.newClassification());
     }
 
     @QueryMapping
