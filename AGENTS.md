@@ -42,7 +42,7 @@ Detailed how-tos live as **Agent Skills** under `.agents/skills/<name>/SKILL.md`
 
 ### 0. Session discipline — context budget + risky-change branching
 
-**Hard rule first: the canonical checkout `~/git/rapla` stays on its branch.** NEVER `git checkout <branch>`, `checkout -b`, or `git switch` here — several sessions share this tree, and a switch drags all of them onto your branch (scar 2026-09-13: a subagent did `checkout -b` with ~60 foreign uncommitted changes). Branch work = a worktree (§7, `git-worktrees` skill; for the Agent tool: `isolation: "worktree"`). Uncommitted edits on the current branch are fine; a branch label without a worktree is not.
+**Hard rule first: the canonical checkout `~/git/rapla` stays on its branch.** NEVER `git checkout <branch>`, `checkout -b`, or `git switch` here — several sessions share this tree, and a switch drags all of them onto your branch (scar 2026-09-13: a subagent did `checkout -b` with ~60 foreign uncommitted changes). Branch work needs the user's explicit go for a worktree (§7). Uncommitted edits on the current branch are fine; a branch label without a worktree is not.
 
 - **Don't let context exceed ~60% of the window** — auto-compact is lossy. Run `/compact <hint>` naming what to keep before it fires; after any compact, restate goal + acceptance criteria in one line. Verification fan-outs batch ~10 items per subagent — never one agent per item; name the expected agent count before launching.
 - **Use `/branch` (or `/fork`) before a risky mechanical sweep** (Date→LocalDateTime, package renames, the kind the `bulk-refactor-scripts` skill records scars from) — a session snapshot you can abandon at no rollback cost.
@@ -156,9 +156,9 @@ Before implementing anything, check **`docs/prd/` AND `docs/prd/done/`** for an 
 
 Before writing a script that mechanically rewrites Java sources across the reactor (cross-module rename, signature-regex sweep, diff-based recovery), load the **`bulk-refactor-scripts`** skill — anchor rules for signature regexes, the SequenceMatcher diff-recovery trap, the no-wrapper rule for entity/facade/storage tier, compile-after-every-script discipline (scars from the 2026-05-09 Date → LocalDateTime migration).
 
-### 7. Parallel Work — Use a Git Worktree
+### 7. Parallel Work — shared checkout, file ownership
 
-If you may run in parallel with another agent, or need a long-running dev server alongside an existing one, **work in your own git worktree**. Protocol (creation, port allocation, sharing model, hard rules): load the **`git-worktrees`** skill before touching a worktree. On a quiet branch with no other agent active, you can ignore this rule.
+**Default: every session works in the shared checkout `~/git/rapla`, coordinated by file ownership** — announce the files you take (§7a), ask the owner before touching theirs, and ask the user to commit before a wide sweep. **No git worktrees unless the user explicitly says so** (ruling 2026-10-01: "keine worktrees"); the `git-worktrees` skill covers only that case (creation, port allocation, hard rules). Never run two `mvn` invocations against the checkout at the same time — Maven has no project lock and corrupts `target/`.
 
 **Hard rule: NEVER fix or revert work in files another session is editing** — even when the failure looks trivial (one missing import), looks like a consequence of your own change, or sits in a class you already touched. Their working-copy files are snapshots, not finished work. A compile error in a file not on your change list: check `stat -c '%Y %y' <file>` against `git log -1 --format=%ct -- <file>` — working copy newer than your session start and not yours = parallel edit. Don't fix it: move to unrelated work or tell the user. **Don't stash, `git checkout`, or discard your own changes** to "let theirs land" either.
 
@@ -177,7 +177,7 @@ If you may run in parallel with another agent, or need a long-running dev server
 The dev server runs via `mvn spring-boot:run` from `target/classes` (start command: Project Overview; hard rules: §5). The canonical checkout binds **8051**; worktree N uses `8051 + 10·N` and `logs/rapla-N.{pid,log}`. For anything beyond a plain start — background recipe, startup-wait loop, restart, JDWP, logs, external plugins like dhbwrapla (run through the *plugin's* aggregator pom; read that repo's `AGENTS.md` first) — load the **`server-lifecycle`** skill. Fat JAR + signed JNLP: **`test-deployment`** skill.
 
 - Stop: `pkill -f 'RaplaSpringBoot[A]pplication'` (10 s graceful window — never `kill -9` first). The `[A]` avoids pkill matching the wrapping shell's own command line; **exit 144 from any compound pkill command = pkill killed its own shell** — run every pkill in its own Bash call, never chained with wait/status logic.
-- One server per checkout (port 8051 binds once); use a worktree per §7 for parallel work. Never start the server during a `mvn package` build.
+- One server per checkout (port 8051 binds once); sessions share it and announce restarts (§7a). Never start the server during a `mvn package` build.
 - **Is the running server fresh? Check yourself — never ask the user "did you restart?" and never assume they didn't.** Run the freshness probe from the `server-lifecycle` skill (server build timestamp vs newer `target/classes`) FIRST whenever a user reports a server-side fix "doesn't work" or you're about to blame a stale server; mention restarting only with the probe output, not a hunch.
 - Dev DB ships one admin (`admin` / empty password). JWT login, bootstrap fetch, queryAppointments, URL-namespace map: **`api-testing`** skill.
 

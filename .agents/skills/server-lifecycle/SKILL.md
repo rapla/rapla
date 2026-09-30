@@ -1,38 +1,47 @@
 ---
 name: server-lifecycle
-description: Use whenever the user asks to start, stop, restart, status-check, or inspect the logs of the rapla dev (Spring Boot) server — including plain-chat phrasing like "start the server", "restart rapla", "stop the server", "is the server up/running?", "bounce the server", "show/tail the server logs", "bring the server up with the dhbw plugin". ALSO load it whenever YOU (the agent) are about to script any stop / restart / bounce cycle yourself — e.g. restarting to pick up a recompile, or passing run args / Spring flags like `-Dspring-boot.run.arguments=--rapla.foo=true` — not only when the user phrases it; a "plain fresh-checkout start" is the only case that stays inline per AGENTS.md §8, everything past that loads this skill. Carries — graceful-shutdown stop (10 s window, never kill -9 first), the restart procedure (separate stop + background-start Bash calls), the pkill self-match footgun, jps/HTTP status probes, the is-the-server-fresh probe (build timestamp vs newer target/classes — 'does the server have my latest code?', 'is the fix deployed?'), tail -F log streaming + the wait-for-"Started Rapla"-marker recipe, the external-plugin (dhbwrapla) run recipe, and the lifecycle conventions (one server per checkout, worktree port offsets, never start during a package build). The minimal vanilla start command + the never-`mvn install` hard rules also live always-on in AGENTS.md §8.
+description: Use whenever the user asks to start, stop, restart, status-check, or inspect the logs of the rapla dev (Spring Boot) server — including plain-chat phrasing like "start the server", "restart rapla", "stop the server", "is the server up/running?", "bounce the server", "show/tail the server logs", "bring the server up with the dhbw plugin". ALSO load it whenever YOU (the agent) are about to script any stop / restart / bounce cycle yourself — e.g. restarting to pick up a recompile, or passing run args / Spring flags like `-Dspring-boot.run.arguments=--rapla.foo=true` — not only when the user phrases it; a "plain fresh-checkout start" is the only case that stays inline per AGENTS.md §8, everything past that loads this skill. Carries — graceful-shutdown stop (10 s window, never kill -9 first), the restart procedure (separate stop + background-start Bash calls), the own-PID-only stop rule (never pkill/pgrep/kill by pattern; exit 144), ss/HTTP status probes, the is-the-server-fresh probe (build timestamp vs newer target/classes — 'does the server have my latest code?', 'is the fix deployed?'), tail -F log streaming + the wait-for-"Started Rapla"-marker recipe, the external-plugin (dhbwrapla) run recipe, and the lifecycle conventions (one server per checkout, worktree port offsets, never start during a package build). The minimal vanilla start command + the never-`mvn install` hard rules also live always-on in AGENTS.md §8.
 ---
 
 # Server lifecycle — stop, restart, status, inspect
 
 For the **start** recipe and the hard rules (never `mvn install`, never run from `~/.m2`, etc.) see AGENTS.md §8 — they need to be in always-loaded context. Everything below is reach-for-when-needed.
 
-## Stop
+## Stop — only your own numeric PID
 
-> **Safe for ng-serve users:** the patterns below match `spring-boot:run`
-> and `RaplaSpringBootApplication` only. They will NOT touch `ng serve` /
-> `node` / Vite worker processes — feel free to run them while an Angular
-> dev server is up in another terminal.
+Stop only a PID you recorded for a port you own. Match-and-kill in any form — `pkill -f`,
+`pgrep -f … | kill`, a loop over `/proc/*/cmdline`, `jps | grep` + kill — is the same mistake:
+a main class (`RaplaSpringBootApplication`, `RaplaServerLoader`), a Maven goal
+(`spring-boot:run`) or an artifact name matches every peer's server and wrapper AND your own
+calling shell. Violating the letter is violating the spirit: filtering the matches first,
+"only this once", "they're all mine anyway", an urgent user order ("stop it NOW, it's sending
+mails") is still killing by name. So is a PID picked from `ps` by eye, and a process-group kill
+(`kill -- -PGID`). **Your port** = one you started in this session and can point to (tool call or
+`logs/`); unsure → ask, don't kill. Scar 2026-09-30:
+another session's 8051 server killed twice (a `/proc` loop, then `pgrep -f 'spring-boot:run'
+| kill` as "cleanup" after a correct PID-file stop); its owner restarted three times.
 
+Record the PID once the port answers (separate Bash call after the start):
 ```bash
-if [ -f logs/rapla.pid ]; then
-  kill "$(cat logs/rapla.pid)" 2>/dev/null && echo "Sent SIGTERM to $(cat logs/rapla.pid)"
-  # Wait up to 10 s for graceful shutdown — never SIGKILL first; lets JDBC connections / file locks release.
-  for i in 1 2 3 4 5 6 7 8 9 10; do
-    if ! kill -0 "$(cat logs/rapla.pid)" 2>/dev/null; then break; fi
-    sleep 1
-  done
-  if kill -0 "$(cat logs/rapla.pid)" 2>/dev/null; then
-    kill -9 "$(cat logs/rapla.pid)" && echo "Sent SIGKILL after 10 s wait"
-  fi
-  rm -f logs/rapla.pid
-else
-  # Fallback when the PID file is missing/stale.
-  pkill -f 'spring-boot:run|RaplaSpringBootApplication' && echo "Killed by command-line match"
-fi
+PORT=8051; ss -lntpH "sport = :$PORT" | grep -oP 'pid=\K[0-9]+' > logs/rapla.pid
 ```
+Anchor the extraction on `pid=` — a bare `grep -oE '[0-9]+'` also grabs digits from labels
+(`R2_JAVA_PID=…` → `2`).
 
-For the agent flow where the PID file doesn't track the JVM (see §8), `pkill -f RaplaSpringBootApplication` is simpler and equivalent.
+Stop:
+```bash
+PID=$(cat logs/rapla.pid); kill "$PID"
+for i in $(seq 10); do kill -0 "$PID" 2>/dev/null || break; sleep 1; done
+kill -0 "$PID" 2>/dev/null && kill -9 "$PID"; rm -f logs/rapla.pid
+```
+- **No PID file:** take the PID from `ss -lntp` on YOUR port — never search by name. Port not
+  yours (8051 = canonical checkout, often another session): announce + ask the owner first
+  (AGENTS.md §7a).
+- **A wrapper survives** (the mvn JVM; the listener is the forked app JVM): leave it and
+  report it — don't hunt for it.
+- **Always verify:** `ss -lntp "sport = :<port>"` after the stop, report port + PID.
+- **Exit 144:** your pattern hit your own shell, so it probably hit more. Don't retry;
+  `ss -lntp` to see which servers are still up, then report.
 
 ## Restart
 
@@ -49,34 +58,17 @@ command line before stopping — see also the `feedback_dev_server_flavor` memor
 running server is often dhbw-flavored, not vanilla).
 
 **No multi-minute foreground watch loops.** Background start + one instant probe
-(`jps` / `curl`), report the result immediately; the 30 s startup-wait below is the upper
+(`ss -lntp` / `curl`), report the result immediately; the 30 s startup-wait below is the upper
 bound for foreground waiting. If something needs ongoing watching, use a background
 `tail -F` + Monitor — and when launching long background work, tell the user the expected
 duration and report on completion; don't leave them typing "status" (happened 4× in one
 session, plus "are you still running?" during a rejected 400 s foreground wait).
 
-> **pkill self-match footgun (cost a chain of exit-144 mysteries, 2026-06-21).**
-> `pkill -f <pattern>` matches against the FULL command line of every process —
-> **including the very shell running your `pkill`.** So a one-liner that both kills
-> and starts, like `pkill -f 'spring-boot:run'; mvn ... spring-boot:run ...`, makes
-> pkill match its own parent shell (whose argv contains `spring-boot:run`) and SIGTERM
-> it before `mvn` ever runs — the call dies with exit 144 (128+SIGTERM-ish) and an
-> **empty log**. Same trap if you `pkill -f RaplaSpringBootApplication` inside a script
-> whose later lines mention `RaplaSpringBootApplication`. Two fixes:
-> 1. Keep stop and start in **separate** Bash calls (the rule above already does this).
-> 2. When a kill pattern could appear in your own command, break the literal with a
->    regex class so it can't self-match: `pkill -f 'RaplaSpringBoot[A]pplication'`
->    (matches the JVM, never the shell line `…[A]…`). `pgrep -f` self-matches the same
->    way — that's why a bare `pgrep -f RaplaSpringBootApplication` reports "still
->    running" forever (it's seeing your own grep). Verify down via the **port**
->    (`curl localhost:8051/server`) or `ps -eo args | grep` excluding bash, not pgrep.
-
 ## Status / health
 
 ```bash
-# Process alive? (Use jps for the Bash-tool flow; the PID file is unreliable
-# when started via run_in_background.)
-jps -l | grep RaplaSpringBoot && echo RUNNING || echo "NOT RUNNING"
+# Who listens on my port? (read-only; the pid here is what Stop kills)
+ss -lntp "sport = :8051"
 
 # HTTP port answering? (no Actuator endpoint enabled today; hit a known URL.)
 curl -sf -o /dev/null -w '%{http_code}\n' "http://localhost:8051/raplaclient.jnlp" \
@@ -143,7 +135,7 @@ plugin-specific knobs (workingDirectory, additional config locations, conditiona
 - **`spring-boot:run` test-compiles first** — a red test-first file anywhere in the reactor
   blocks the dev restart; start with `-Dmaven.test.skip=true` only as a stop-gap and say so.
 - **Port answers but no WSL process:** a Windows instance of the packaged JAR on mirrored
-  networking owns 8051; `pkill` finds nothing. Stop it on the Windows side.
+  networking owns 8051; `ss -lntp` shows no pid. Stop it on the Windows side.
 
 ## Conventions
 

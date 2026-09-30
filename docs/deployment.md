@@ -39,9 +39,17 @@ mvn -pl rapla-app -am clean package -DskipTests -Psign-pkcs11
 ```
 
 The Web Start client requires rapla at the context root (no
-`server.servlet.context-path`); the JNLP carries no `codebase` and no
-`rapla.download.url` — it is resolved relative to its own URL (audit fix S3,
-2026-09-14).
+`server.servlet.context-path`). The JNLP carries the effective request origin as
+its `codebase`, so a file downloaded by the browser still resolves the relative
+webclient JAR URLs against the server. No deployment-specific public URL is
+configured, so moving the installation does not require a config change.
+
+With the shipped `server.forward-headers-strategy: native`, Tomcat accepts
+forwarded host/protocol information only from its trusted proxy ranges. Direct
+clients cannot override the effective origin with `X-Forwarded-*`. The JNLP is
+served with `Cache-Control: no-store`; OpenWebStart also keys cached resources by
+their complete URL, including scheme, host and port. Consequently, a response
+requested under another host is not the cached JNLP for the real host.
 
 The bundled Java Web Start webclient jars **must be signed** or the JNLP client
 won't launch. Two signing profiles:
@@ -128,6 +136,9 @@ If your proxy connects from an address outside loopback and the private ranges,
 list it in `server.tomcat.remoteip.internal-proxies` (a regular expression of
 trusted proxy IPs); the value replaces the built-in default, so keep the ranges
 you still need in it.
+
+The auth cookies' `Secure` flag follows the request scheme; behind a TLS-terminating
+proxy, pass `X-Forwarded-Proto` through or set `rapla.oauth.web.cookie-secure=true`.
 
 Authentication (OAuth2, external IdPs, API keys) is covered in
 [`authentication.md`](authentication.md).

@@ -1,21 +1,15 @@
 ---
 name: git-worktrees
-description: Use when the user wants to work on a branch in parallel with another agent, run two long-lived dev servers at once, or otherwise needs a sibling checkout that doesn't fight the main one for `target/` or ports. Skip on the canonical `master`/main branch when no other agent is active.
+description: Use ONLY when the user has explicitly asked for a git worktree (a branch in parallel, a second long-lived dev server). Default for parallel sessions is the shared checkout with file-ownership coordination (AGENTS.md §7, user ruling 2026-10-01) — never propose a worktree on your own.
 ---
 
 # Parallel work in git worktrees
 
-When multiple agents (or developers in multiple panes) work on this repo in parallel, **each agent must run in its own git worktree.** Do NOT run concurrent `mvn` invocations against the same checkout — Maven holds no project-level lock and will silently corrupt `target/classes/` and `target/*.jar` when two builds race. A worktree gives each agent its own working tree and its own `target/`, so concurrent builds never touch the same files.
+**Worktrees are the exception, not the rule** (user ruling 2026-10-01): parallel sessions share `/home/chris/git/rapla/` and coordinate by file ownership (AGENTS.md §7/§7a). Use this skill only when the user explicitly asked for a worktree — typically a second long-lived dev server or a branch that must not disturb the shared checkout. Do NOT run concurrent `mvn` invocations against the same checkout — Maven holds no project-level lock and will silently corrupt `target/classes/` and `target/*.jar` when two builds race; serialise builds instead.
 
-## Decide first: do you actually need a worktree?
+## Decide first: did the user ask for one?
 
-You need one if any of these are true:
-- another agent is already running in `/home/chris/git/rapla/`
-- you've been told to work in parallel
-- you want a long-running dev server (Spring Boot, Angular) at the same time another instance is up
-- you're going to make commits on a feature branch that shouldn't disturb whatever the main checkout has open
-
-You don't need one for: read-only inspection, single-shot compile checks, anything that finishes before another agent could start.
+No explicit go from the user → no worktree. Being told "work in parallel" or finding another agent in the checkout is NOT a reason; take your files by ownership and message the owners.
 
 ## Protocol — what to actually do
 
@@ -56,7 +50,7 @@ git branch -d <task-slug>                     # only if merged
 - Never switch the branch of the canonical checkout `/home/chris/git/rapla/` (`git checkout <branch>`, `checkout -b`, `git switch`) — every parallel session lives on that HEAD. A new branch always means `git worktree add ../rapla-<slug> -b <slug>`.
 - Never run two `mvn` invocations against the same worktree at the same time — Maven has no project lock and will silently corrupt `target/`.
 - Never check out the same branch in two worktrees — git refuses, and trying to force it via `git switch -C` corrupts the index.
-- Never edit files in `/home/chris/git/rapla/` while another agent is also working there. If in doubt, make a worktree.
+- Never edit another session's files in `/home/chris/git/rapla/` without the owner's release (AGENTS.md §7). If in doubt, ask the owner — not a worktree.
 - Never delete a worktree directory with `rm -rf`. Use `git worktree remove` so the metadata under `rapla/.git/worktrees/` stays consistent. If you already did `rm -rf`, run `git worktree prune` to clean up.
 
 ## Port allocation for long-running servers

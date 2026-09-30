@@ -1,6 +1,6 @@
 # PRD index
 
-79 active PRDs in this directory, 33 done under `done/`, 6 under `wont-fix/`. AGENTS.md §2 and the `prd-management` skill cover the lifecycle (move to `done/` when complete; `git mv` back to reopen).
+82 active PRDs in this directory, 34 done under `done/`, 6 under `wont-fix/`. AGENTS.md §2 and the `prd-management` skill cover the lifecycle (move to `done/` when complete; `git mv` back to reopen).
 
 Each active PRD below carries a generated header (status, locked decisions, dependencies, governed code) plus a keyword line in German and English so that agents and search find it from either language. When a PRD's status or decisions change, update its header here in the same edit (wrap-up checklist).
 
@@ -153,12 +153,6 @@ PRD 113 designs exposing rapla's permission model (Permission rows: principal, l
 *Keywords:* PRD 113, Berechtigung, permission, GraphQL, canAdmin, canRead, PermissionController, SecurityManager, DynamicType, typeAccess, instanceDefaults, EventTemplate, Period, AccessLevel, principal, Gruppe, group, Sichtbarkeit, Zugriffsrecht, Reservation
 
 
-### 116-graphql-allocatable-to-resource-rename.md
-
-PRD 116 renames the whole `Allocatable*` family on the GraphQL wire to `Resource*` (schema, SDL generator output, controllers' wire names, DTO record components, SPA identifiers and folder `app/allocatable` → `app/resource`, GraphQL docs and skills) in one breaking sweep; Java core keeps `Allocatable` and its class names (D4, "nur in graphql und spa"). Status: implemented 2026-09-13, uncommitted, review PASS; open OQ1 (Siegen store-only views) and the Siegen deployment with rewritten patch files. Locked: D1 umbrella `Resource` with `ResourceKind { RESOURCE, PERSON }` and `Resource.type` → `Resource.kind`; D2 `Reservation` stays (PRD 055 D1 not overturned); D3 no in-app migration of stored query texts, repair via PRD 112 patch directory per ADR 0005; D4 schema + SPA only. Related: PRD 063 (renamed write verbs), 055, done/035, 112, 074, 097.
-
-*Keywords:* Resource, Ressource, Allocatable, rename, Umbenennung, GraphQL schema, ResourceKind, kind, resources(filter:), createResource, PRD 116, PRD 063, PRD 112 patch, ADR 0005, SPA app/resource, Person, breaking change
-
 ### REST API / server architecture
 
 ### 009-server-bulk-storage-rest-api.md
@@ -235,6 +229,36 @@ PRD 108 fixes a legacy in-place-migration bug where Rapla 3 wrote the CHANGES.CH
 
 
 ### Frontend / SPA
+
+### 119-spa-one-search-resource-picker.md
+
+Draft 2026-09-15 (direction decided by the user after two clickable prototypes): the SPA resource picker opens empty and resources are searchable in two places, while omnibox event hits do nothing. Replaces both with one search field at the top that narrows the picker instantly, plus a dropdown with events only (jump to the week + open the event sheet). The picker becomes type chips (Alle, Favoriten, Zuletzt, one per resource type; users only as search hits) over a list; "Alle" shows favorites, recents and the first 20 A–Z; type chips show the resource hierarchy as a simple expandable tree, one level per categorization value (deliberate first cut, grouping will change again), computed server-side (no Swing tree parity — user ruling 2026-09-15; belongsTo nesting later), with "alle wählen" per node. The "Gruppe" tab and the omnibox resource/user/group actions go (behaviour inventory in the PRD). Data: the SPA loads one lean resource list once (id, kind, name, typeKey + new server field `groupPaths`, §12 leak test) and filters, ranks and builds the tree in the browser — no server call per keystroke; event search stays server-side and throttled, and finds every event the caller may read (was: may edit). Tree levels Swing-flat first. Open: list size for large deployments (no perf test for now), narrow screens, keeping the list current (later), event search cost.
+
+*Keywords:* resource picker, Ressourcenauswahl, ResourceSelection, omnibox, Suche, one search field, chips, Typ-Chips, Baum, resource tree, TreeFactoryImpl, categorization, belongsTo, packages, Gruppen, Gebäude, Studiengang, recents, favorites, event search, Terminsuche, PRD 119
+
+### 120-resource-hierarchy-parents-children.md
+
+Draft 2026-09-16: buildings cannot be expanded in the SPA resource picker because the PRD 119 tree only groups by categorization, while deployments model hierarchy with the attribute constraints belongsTo (room → building) and package (course group → courses). Adds fixed GraphQL fields `Resource.parents` / `Resource.children`, read from the dependency graph the server already keeps for conflicts (`LocalCache.graph`, new direct-neighbour read), §12-filtered with a leak test; the SPA nests the picker tree by `parents`. Replaces the per-kind store-time cycle check with one upward walk over both kinds with normalised direction (invariant: no resource is its own transitive parent or child; room belongsTo building plus building packages room is not a cycle). Decisions: constraints stay input (no rename), one belongsTo/package attribute per type stays, legacy data unchecked (visited set as safety net). Open: children in the SPA list, DHBW belongsTo on a category attribute, load-time warning.
+
+*Keywords:* Ressourcenhierarchie, resource hierarchy, parents, children, Eltern, Kinder, belongsTo, gehört zu, package, gruppiert, Zyklus, cycle check, checkBelongsTo, checkPackages, LocalCache graph, GraphNode, getDependent, DependencyIndex, Gebäude, Raum, Kursgruppe, picker tree, PRD 119, PRD 082
+
+### 122-spa-new-resource.md
+
+Draft 2026-09-30, all decisions made (D1–D8): the SPA can edit but not create resources. A "+ Neu" button above the picker chips opens the event "Neu" picker (reused via dialog data) with the creatable resource and person types from a new `newResourceOptions` query (canCreate-filtered like `newEventOptions`), the active type chip preselected, one type skipping the picker (Swing parity). The existing resource dialog gets a create mode calling `createResource` (PRD 063), prefilled with attribute defaults from a new `resourcePrototype` query mirroring `reservationPrototype` (PRD 107). After save only the list reloads. Resource templates later; parent from the tree node waits for PRD 120.
+
+*Keywords:* neue Ressource, new resource, Neu, createResource, newResourceOptions, resourcePrototype, reservationPrototype, ResourceEditDialogComponent, NewEventPickerComponent, newEventOptions, canCreate, Attribut-Defaults, attribute defaults, type chip, Typ-Chips, preselect, Ressourcenvorlagen, PRD 063, PRD 096, PRD 104, PRD 107, PRD 119, PRD 122
+
+### 124-spa-i18n.md
+
+Draft 2026-09-30, concept only: the SPA is hard-wired German (`LOCALE_ID de-DE`, ~285–350 literal strings in 47–66 files, hand-rolled weekday arrays, partly English strings). D1 locked: runtime catalogue from the server — the SPA loads all texts of the user's language in one `/api/locale` request (existing `RemoteLocaleController`, Swing properties keys, English fallback server-side) plus a new `SpaResources` bundle translated via the PRD 103 process; dates via `Intl`/`LOCALE_ID`. Rejected: build-time `@angular/localize` and runtime `$localize`. Open: language precedence without user preference, per-user GraphQL names, Angular locale data loading, the `org.rapla.language` vs `org.rapla.locale` system-preference mismatch in `ServerLocaleResolver`, key naming; caching of `/api/locale` moved to PRD 125. Estimate 4–6 days.
+
+*Keywords:* i18n, Internationalisierung, Übersetzung, translation, Sprache, language, locale, LOCALE_ID, Intl, DatePipe, @angular/localize, $localize, RemoteLocaleService, RemoteLocaleController, LocalePackage, ResourceBundleList, SpaResources, RaplaResources, org.rapla.language, org.rapla.locale, ServerLocaleResolver, MatPaginatorIntl, Wochentage, Caching, Cache-Control, PRD 103, PRD 026, PRD 072, PRD 124
+
+### 125-spa-caching-version-skew.md
+
+Draft 2026-09-30, concept only: the SPA is never cached — `SpaResourceConfig` serves all of `/app/**` with `no-store` (probed locally and on demo.rapla.org), although the Angular build hashes file names. Plan: hashed bundles `max-age=1y, immutable`, `index.html` `no-cache`; one build id per `mvn package` known to server and SPA (`ng build --define`), sent as `X-Rapla-Build` on every `/api` request; on a mismatch (tab open across a deploy, rolling deploy) the server only adds a mismatch header and the SPA shows a cancellable reload dialog — D1: no request is ever rejected, unsaved changes stay savable. `/api/locale` (PRD 124) gets ETag = build id + language with `private, no-cache`. Open: build id source, sticky sessions, dialog text key. Estimate 2–2.5 days.
+
+*Keywords:* Caching, Cache-Control, no-store, immutable, ETag, 304, If-None-Match, SpaResourceConfig, outputHashing, build id, Build-ID, X-Rapla-Build, version skew, Versionsabgleich, veralteter Client, reload, Neu laden, rolling deploy, Reload-Dialog, /api/locale, PRD 026, PRD 118, PRD 124, PRD 125
 
 ### 026-angular-frontend.md
 
@@ -505,9 +529,9 @@ Adopted decision PRD (2026-05-11) establishing rapla's mock-framework policy for
 
 ### 034-ci-baseline-workflow.md
 
-Draft PRD (2026-05-13) proposing a minimal GitHub Actions CI workflow (.github/workflows/ci.yml) running on every PR to master and every push to spring-boot/master, since spring-boot (the working trunk, 64+ untested commits) currently has no CI coverage beyond Dependabot. Phase 1 scope: a Java job (JDK 21 Temurin, mvn -B verify covering test-pyramid tiers 1-2 excluding @Tag(db)/@Tag(e2e)) and an Angular job (npm ci && npm run build). Phases 2-4 (deferred): tier-3 MockMvc web-slice tests, tier-4 full e2e gated by a PR label, and Playwright browser e2e. Cross-references PRD 017 (test coverage strategy/pyramid this workflow exercises), PRD 007 (build/test performance), PRD 033 (Playwright MCP browser testing, deferred Phase 4), and AGENTS.md §5 build discipline. Governs the .github/workflows/ci.yml file only — no application code.
+Active PRD (Phases 1–3 implemented 2026-09-14) for the GitHub Actions workflow `.github/workflows/ci.yml`: nightly (01:17 UTC) + on-demand `workflow_dispatch`, no push/PR trigger. Jobs: `java` (default test lane + `package -Psign-jks`, display-dependent `@Tag("swing")` tests excluded), `slow-tests` (`db`/`e2e`/`perf`), `angular` (lint + Vitest), `docker` (image build on every branch, no push). Red tests are reported, never block the build. The workflow publishes nothing: since 2026-09-14 (user ruling) the nightly JAR, `ghcr.io/rapla/rapla:nightly` and releases from 3.0 on come from the separate owners-only repository `rapla/rapla-releases` (renamed from `rapla-nightly`), after the environment + PAT approach inside rapla/rapla was rejected. Closed: OQ2 retention, OQ4 Node pin (24.15.0), OQ5 registry. Open: OQ1 nightly time, OQ3 PR trigger. Cross-references PRD 017 (test pyramid), AGENTS.md §5, docs/development.md § CI, docs/deployment.md § Nightly image.
 
-*Keywords:* CI, GitHub Actions, PRD 034, ci.yml, mvn verify, test pyramid, PRD 017, tier 1, tier 2, Angular build, npm ci, Dependabot, spring-boot branch, e2e, Playwright, MockMvc, surefire
+*Keywords:* CI, GitHub Actions, PRD 034, ci.yml, nightly, workflow_dispatch, schedule, surefire, @Tag swing, slow-tests, Angular lint, Vitest, docker build, rapla-releases, rapla-nightly, ghcr, attestation, Node 24.15.0, -Psign-jks
 
 
 
@@ -546,6 +570,7 @@ Draft PRD (2026-05-13) proposing a minimal GitHub Actions CI workflow (.github/w
 - [098-server-artifact-store.md](done/098-server-artifact-store.md)
 - [099-spa-table-selection.md](done/099-spa-table-selection.md)
 - [115-exchange-sync-hotfix-2026-09.md](done/115-exchange-sync-hotfix-2026-09.md)
+- [116-graphql-allocatable-to-resource-rename.md](done/116-graphql-allocatable-to-resource-rename.md)
 
 
 ## Won't fix
