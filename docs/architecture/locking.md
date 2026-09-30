@@ -125,7 +125,23 @@ Entity changes reach the other pods through the `CHANGES` history,
 preference changes through a timestamp comparison on the `PREFERENCE`
 table. Both compare inclusively against the pod's last refresh time, so a
 row stamped exactly at that moment is still picked up; reading the same
-row again on the next refresh is harmless. Robustness notes:
+row again on the next refresh is harmless.
+
+Why the equal-timestamp case is the normal case, not a rare coincidence: a
+pod's refresh bound (`RaplaSQL.getLastUpdated`) is the older of "now" and the
+timestamp of the oldest *active* `WRITE_LOCK` row, and the pod stores that bound
+as its last refresh time. A write takes its lock with the same database
+timestamp it stamps on the rows it writes, so a refresh that runs while the
+write holds its lock ends exactly on that row's stamp. The same bound also
+covers commit lag: a write that is still uncommitted holds the bound back.
+
+Re-reading a preference row is idempotent because the `PREFERENCE` table
+holds at most one row per user and role: a write deletes the rows of every
+role it puts or removes before inserting, in one transaction, and a removal is
+stored as a row with both value columns `NULL`. A re-read therefore always
+returns the role's current state.
+
+Robustness notes:
 
 - The timestamp columns have whole-second resolution on MySQL/MariaDB;
   explicit millisecond precision would be more robust (a candidate for the

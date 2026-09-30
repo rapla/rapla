@@ -32,7 +32,7 @@ happened. Separate three buckets:
 Only for code this session touched: Java → full `mvn test` (or the targeted lane
 the user prefers); Angular → `npm run build` (lint + build) and `npm test`.
 Report failures honestly — a red gate doesn't block wrap-up, it becomes a line in
-Step 6's residue list. Never restart `ng serve` (§14).
+Step 7's residue list. Never restart `ng serve` (§14).
 
 ## Step 3 — PRD pass → load the `prd-management` skill
 
@@ -80,7 +80,13 @@ Two halves, both mandatory:
    tag, run `git log --oneline --since=<since-date> -- <watch-path>`; entries
    with newer commits get re-verified, updated, or deleted.
 
-## Step 6 — Commit proposal + residue list (present, never execute)
+## Step 6 — Vault link check
+
+When wrapping up work in `~/vault`, run `skills/vault/scripts/linkcheck` without
+`--quiet` after all note edits and before the hand-off. Report its summary and findings
+in the conversation; fix findings introduced by this session and list older ones as residue.
+
+## Step 7 — Commit proposal + residue list (present, never execute)
 
 - **Proactively** group the session's changes into logical commits and draft a
   message for each — presented in your hand-off for the user to run or adapt.
