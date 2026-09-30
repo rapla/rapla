@@ -161,7 +161,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         this.promiseWait = promiseWait;
         disconnectLock = new DefaultRaplaLock(logger);
         //context.lookupDeprecated( CommandScheduler.class);
-        this.history = new EntityHistory(this);
+        this.history = new EntityHistory(this, logger);
 
         appointmentBindings = new AppointmentMapClass(logger);
     }
@@ -1458,7 +1458,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     protected void addToDeleteUpdate(EntityHistory.HistoryEntry historyEntry)
     {
-        Entity current = history.getEntity(historyEntry);
+        Entity current = history.tryGetEntity(historyEntry);
         final boolean isDelete = historyEntry.isDelete();
         final Date timestamp = new Date(historyEntry.getTimestamp());
         ReferenceInfo ref = historyEntry.getId();
@@ -3878,7 +3878,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             } else if (update.getType() != Conflict.class) {
                 final EntityHistory.HistoryEntry latest = history.getLatest(update);
                 if (latest != null) {
-                    oldEntity = history.getEntity(latest);
+                    oldEntity = history.tryGetEntity(latest);
                 } else {
                     getLogger().warn("the entity " + update + " was deleted but not found in the history.");
                 }

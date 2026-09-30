@@ -109,6 +109,9 @@ import java.util.stream.Collectors;
             }
         }
         evt.setLastValidated(operator.getLastRefreshed());
+        // the client adds this to every server timestamp; without it today() is UTC based until
+        // the first refresh event arrives and then jumps by a day
+        evt.setTimezoneOffset(UpdateDataManagerImpl.getTimezoneOffset(operator, serverTime));
         return evt;
     }
 

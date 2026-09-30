@@ -45,6 +45,7 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
+import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -67,6 +68,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.TimeZone;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -778,5 +780,31 @@ public class ServerTest
                 return reservation;
         }
         return null;
+    }
+
+    /** A freshly connected client must agree with the server about which day it is. The
+     *  bootstrap event omitted the timezone offset, so today() was UTC-based until the first
+     *  refresh arrived and then jumped by the offset. */
+    @Test
+    public void clientTodayMatchesServerRightAfterLogin() throws Exception
+    {
+        // A server timezone whose day differs from the UTC day at this very moment, so the test
+        // does not wait for a particular hour: shifting back by (UTC hour + 1) always lands on
+        // the previous day, and past 18:00 UTC a forward shift does the same.
+        final Calendar utc = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
+        final int utcHour = utc.get(Calendar.HOUR_OF_DAY);
+        final String zoneId = utcHour < 18 ? "GMT-" + (utcHour + 1) : "GMT+" + (24 - utcHour);
+        ((LocalAbstractCachableOperator) getServerOperator()).setTimeZone(TimeZone.getTimeZone(zoneId));
+
+        final ClientFacade freshClient = clientFacadeProvider.get();
+        Assert.assertTrue(login(freshClient, "homer", "duffs".toCharArray()));
+        try
+        {
+            Assert.assertEquals("server zone " + zoneId, getServerFacade().today(), freshClient.getRaplaFacade().today());
+        }
+        finally
+        {
+            logout(freshClient);
+        }
     }
 }

@@ -26,6 +26,8 @@ import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
+import org.rapla.entities.configuration.Preferences;
+import org.rapla.framework.TypedComponentRole;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Period;
@@ -950,9 +952,126 @@ public class SQLOperatorTest extends AbstractOperatorTest
     	Assert.assertEquals(4,updates.getIds(UpdateResult.Remove.class).size());
     
     }
+
+    /** One unparseable CHANGES row (e.g. written by a Rapla 3 node) must not block the
+     *  periodic refresh, and must not make a store that already committed look failed. */
+    @Test
+    public void brokenHistoryEntryDoesNotBreakStore() throws Exception
+    {
+        final DBOperator operator = (DBOperator) facade.getOperator();
+        final User user = facade.getUser("homer");
+        final Allocatable existing = facade.getAllocatables()[0];
+        final String insert = "INSERT INTO CHANGES (ID, TYPE, ENTITY_CLASS, XML_VALUE, CHANGED_AT, ISDELETE)"
+                + " VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, 0)";
+        try (final Connection c = operator.createConnection(); final PreparedStatement stmt = c.prepareStatement(insert))
+        {
+            stmt.setString(1, existing.getId());
+            stmt.setString(2, RaplaType.getLocalName(existing));
+            stmt.setString(3, existing.getClass().getName());
+            stmt.setString(4, "{kaputt");
+            stmt.executeUpdate();
+            c.commit();
+        }
+
+        final Allocatable newResource = facade.newAllocatable(
+                facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)[0].newClassification(), user);
+        final Classification classification = newResource.getClassification();
+        final Attribute attribute = classification.getAttributes()[0];
+        classification.setValueForAttribute(attribute, "afterBrokenHistory");
+        facade.storeAndRemove(new Entity[] { newResource }, Entity.ENTITY_ARRAY, user);
+
+        boolean found = false;
+        for (Allocatable allocatable : facade.getAllocatables())
+        {
+            if (allocatable.getId().equals(newResource.getId()))
+            {
+                found = true;
+                Assert.assertEquals("afterBrokenHistory",
+                        allocatable.getClassification().getValueForAttribute(attribute));
+            }
+        }
+        Assert.assertTrue("the stored resource must be visible although one history entry is broken", found);
+    }
+
+    /** A pod advances lastRefreshed to exactly the DB time a writer may also have stamped,
+     *  so a strict ">" loses that row for good (MariaDB TIMESTAMP keeps whole seconds). */
+    @Test
+    public void preferencePatchAtRefreshBoundaryIsSeen() throws Exception
+    {
+        final DBOperator operator = (DBOperator) facade.getOperator();
+        final User user = facade.getUser("homer");
+        final String roleName = "org.rapla.test.boundary";
+        final Date lastRefreshed = operator.getLastRefreshed();
+        final String insert = "INSERT INTO PREFERENCE (USER_ID, ROLE, STRING_VALUE, XML_VALUE, LAST_CHANGED)"
+                + " VALUES (?, ?, ?, NULL, ?)";
+        try (final Connection c = operator.createConnection(); final PreparedStatement stmt = c.prepareStatement(insert))
+        {
+            stmt.setString(1, user.getId());
+            stmt.setString(2, roleName);
+            stmt.setString(3, "boundaryValue");
+            stmt.setTimestamp(4, new Timestamp(lastRefreshed.getTime()));
+            stmt.executeUpdate();
+            c.commit();
+        }
+
+        operator.refresh();
+        Assert.assertEquals("boundaryValue",
+                facade.getPreferences(user).getEntryAsString(new TypedComponentRole<String>(roleName), null));
+    }
+
+    /** Rapla 3 marks a removed preference entry with a row whose both values are NULL,
+     *  because a plain DELETE is invisible to the patch query. */
+    @Test
+    public void preferenceTombstoneRemovesTheEntry() throws Exception
+    {
+        final DBOperator operator = (DBOperator) facade.getOperator();
+        final User user = facade.getUser("homer");
+        final TypedComponentRole<String> role = new TypedComponentRole<String>("org.rapla.test.tombstone");
+        Preferences edit = facade.edit(facade.getPreferences(user));
+        edit.putEntry(role, "willBeRemoved");
+        facade.store(edit);
+        Assert.assertEquals("willBeRemoved", facade.getPreferences(user).getEntryAsString(role, null));
+
+        final String tombstone = "UPDATE PREFERENCE SET STRING_VALUE = NULL, XML_VALUE = NULL,"
+                + " LAST_CHANGED = CURRENT_TIMESTAMP WHERE USER_ID = ? AND ROLE = ?";
+        try (final Connection c = operator.createConnection(); final PreparedStatement stmt = c.prepareStatement(tombstone))
+        {
+            stmt.setString(1, user.getId());
+            stmt.setString(2, role.getId());
+            Assert.assertEquals(1, stmt.executeUpdate());
+            c.commit();
+        }
+
+        operator.refresh();
+        Assert.assertNull(facade.getPreferences(user).getEntryAsString(role, null));
+    }
+
+    /** Symmetric to the read side: removing an entry must leave the marker row, otherwise a
+     *  Rapla 3 pod only notices the removal after a restart. */
+    @Test
+    public void removingAPreferenceWritesATombstone() throws Exception
+    {
+        final DBOperator operator = (DBOperator) facade.getOperator();
+        final User user = facade.getUser("homer");
+        final TypedComponentRole<String> role = new TypedComponentRole<String>("org.rapla.test.removal");
+
+        Preferences edit = facade.edit(facade.getPreferences(user));
+        edit.putEntry(role, "toRemove");
+        facade.store(edit);
+
+        edit = facade.edit(facade.getPreferences(user));
+        edit.putEntry(role, (String) null);
+        facade.store(edit);
+
+        final String select = "SELECT STRING_VALUE, XML_VALUE FROM PREFERENCE WHERE USER_ID = ? AND ROLE = ?";
+        try (final Connection c = operator.createConnection(); final PreparedStatement stmt = c.prepareStatement(select))
+        {
+            stmt.setString(1, user.getId());
+            stmt.setString(2, role.getId());
+            final ResultSet rset = stmt.executeQuery();
+            Assert.assertTrue("a removal must leave a marker row, not just delete", rset.next());
+            Assert.assertNull(rset.getString(1));
+            Assert.assertNull(rset.getString(2));
+        }
+    }
 }
-
-
-
-
-

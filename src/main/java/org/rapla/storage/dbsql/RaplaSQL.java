@@ -2084,7 +2084,9 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
         super(context, Preferences.class, "PREFERENCE",
                 new String[] { "USER_ID VARCHAR(255) KEY", "ROLE VARCHAR(255) NOT NULL", "STRING_VALUE VARCHAR(10000)", "XML_VALUE TEXT",
                         "LAST_CHANGED TIMESTAMP KEY" }, false);
-        this.updateSql = "SELECT USER_ID, ROLE, STRING_VALUE, XML_VALUE, LAST_CHANGED FROM PREFERENCE WHERE LAST_CHANGED > ?";
+        // ">=" like the CHANGES history query: lastRefreshed advances to exactly the DB time a writer may
+        // also have stamped, so a strict ">" loses that row for good (MariaDB TIMESTAMP keeps whole seconds).
+        this.updateSql = "SELECT USER_ID, ROLE, STRING_VALUE, XML_VALUE, LAST_CHANGED FROM PREFERENCE WHERE LAST_CHANGED >= ?";
     }
 
     public List<PreferencePatch> getPatches(Date lastUpdated) throws SQLException, RaplaException
@@ -2117,6 +2119,11 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
                         processXML(preferenceReader, entityXml);
                         RaplaObject type = preferenceReader.getChildType();
                         preferencePatch.putPrivate(role, type);
+                    }
+                    else
+                    {
+                        // both values empty: the marker row a removal leaves behind
+                        preferencePatch.addRemove(role);
                     }
                 }
                 else
@@ -2218,6 +2225,13 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
                     insertEntry(stmt, userId, role, entry, lastChanged);
                     count++;
                 }
+                // a plain DELETE is invisible to getPatches, which only reads changed rows, so
+                // every other node would keep the removed entry until its next restart
+                for (String role : patch.getRemovedEntries())
+                {
+                    insertEntry(stmt, userId, role, null, lastChanged);
+                    count++;
+                }
             }
 
             if (count > 0)
@@ -2283,7 +2297,13 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
         setString(stmt, 2, role);
         String xml;
         String entryString;
-        if (entry instanceof String)
+        if (entry == null)
+        {
+            // marker row for a removed entry: both values stay empty
+            entryString = null;
+            xml = null;
+        }
+        else if (entry instanceof String)
         {
             entryString = (String) entry;
             xml = null;
@@ -2980,7 +3000,11 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
                     final HistoryEntry before = history.getLastChangedUntil(id, connectionTimestamp);
                     if (before != null && before.getTimestamp() >= connectionTimestamp.getTime())
                     {
-                        put(history.getEntity(before));
+                        final Entity restored = history.tryGetEntity(before);
+                        if (restored != null)
+                        {
+                            put(restored);
+                        }
                     }
                     continue;
                 }
@@ -2994,7 +3018,11 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
                             final HistoryEntry before = history.getLastChangedUntil(id, connectionTimestamp);
                             if (before != null)
                             {
-                                put(history.getEntity(before));
+                                final Entity restored = history.tryGetEntity(before);
+                                if (restored != null)
+                                {
+                                    put(restored);
+                                }
                             }
                         }
                     }

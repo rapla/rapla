@@ -381,7 +381,11 @@ import java.util.Set;
             }
             else
             {
-                final Entity entity = history.getEntity(before);
+                final Entity entity = history.tryGetEntity(before);
+                if (entity == null)
+                {
+                    continue;
+                }
                 setResolver(Collections.singleton(entity));
                 toStore.add(entity);
             }
@@ -1032,9 +1036,12 @@ import java.util.Set;
             final HistoryEntry latest = history.getLatest(Category.SUPER_CATEGORY_REF);
             if (latest != null)
             {
-                final Category historyCategory = (Category) history.getEntity(latest);
-                superCategory.setLastChanged(historyCategory.getLastChanged());
-                superCategory.setCreateDate(historyCategory.getCreateDate());
+                final Category historyCategory = (Category) history.tryGetEntity(latest);
+                if (historyCategory != null)
+                {
+                    superCategory.setLastChanged(historyCategory.getLastChanged());
+                    superCategory.setCreateDate(historyCategory.getCreateDate());
+                }
             }
         }
         cache.putAll(list);

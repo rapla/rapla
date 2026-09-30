@@ -20,6 +20,7 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
+import org.rapla.logger.Logger;
 import org.rapla.rest.JsonParserWrapper;
 
 import java.util.ArrayList;
@@ -31,6 +32,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class EntityHistory
 {
@@ -89,10 +92,12 @@ public class EntityHistory
     private final Map<ReferenceInfo, List<EntityHistory.HistoryEntry>> map = new ConcurrentHashMap<>();
     private final JsonParserWrapper.JsonParser gson;
     private EntityResolver resolver;
-    public EntityHistory(EntityResolver resolver)
+    private final Logger logger;
+    public EntityHistory(EntityResolver resolver, Logger logger)
     {
         gson = JsonParserWrapper.defaultJson().get();
         this.resolver = resolver;
+        this.logger = logger;
     }
 
     public HistoryEntry getLatest(ReferenceInfo id) throws RaplaException
@@ -186,18 +191,70 @@ public class EntityHistory
         typeImpl.put(type, impl);
     }
 
+    /** Rapla 3 writes LocalDateTime with 1-9 fractional digits, restinject reads the
+     *  fraction as a plain millisecond integer ("…58.12" -> 12ms, nanoseconds shift the
+     *  date by days). Rewrite the fraction to exactly 3 digits before parsing. */
+    private static final Pattern FRACTIONAL_SECONDS = Pattern
+            .compile("\"(\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2})\\.(\\d{1,9})(Z?)\"");
+
+    static String normalizeFractionalSeconds(String json)
+    {
+        if (json == null)
+        {
+            return null;
+        }
+        final Matcher matcher = FRACTIONAL_SECONDS.matcher(json);
+        StringBuffer result = null;
+        while (matcher.find())
+        {
+            final String fraction = matcher.group(2);
+            if (fraction.length() == 3)
+            {
+                continue;
+            }
+            if (result == null)
+            {
+                result = new StringBuffer();
+            }
+            final String millis = (fraction + "000").substring(0, 3);
+            matcher.appendReplacement(result,
+                    Matcher.quoteReplacement("\"" + matcher.group(1) + "." + millis + matcher.group(3) + "\""));
+        }
+        if (result == null)
+        {
+            return json;
+        }
+        matcher.appendTail(result);
+        return result.toString();
+    }
+
     public Entity getEntity(HistoryEntry entry)
     {
         String json = entry.json;
         final Class typeClass = entry.getId().getType();
         final Class<? extends Entity> implementingClass = typeImpl.get(typeClass);
-        final Entity entity = gson.fromJson(json, implementingClass);
+        final Entity entity = gson.fromJson(normalizeFractionalSeconds(json), implementingClass);
 
         if (entity instanceof EntityReferencer && resolver != null)
         {
             ((EntityReferencer)entity).setResolver(resolver);
         }
         return entity;
+    }
+
+    /** getEntity, but a single unreadable entry only costs that entry. One broken row in
+     *  CHANGES must not stop a start-up, a refresh or a client update. */
+    public Entity tryGetEntity(HistoryEntry entry)
+    {
+        try
+        {
+            return getEntity(entry);
+        }
+        catch (Exception e)
+        {
+            logger.error("Skipping unreadable history entry for " + entry.getId() + ": " + e.getMessage(), e);
+            return null;
+        }
     }
 
     public EntityHistory.HistoryEntry addHistoryEntry(ReferenceInfo id, String json, Date timestamp, boolean isDelete)

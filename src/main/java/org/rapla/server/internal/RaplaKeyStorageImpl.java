@@ -1,5 +1,7 @@
 package org.rapla.server.internal;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import org.apache.commons.codec.binary.Base64;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
@@ -19,8 +21,11 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @DefaultImplementation(of=RaplaKeyStorage.class,context = InjectionContext.server)
 @Singleton
@@ -33,6 +38,13 @@ public class RaplaKeyStorageImpl implements RaplaKeyStorage
 	private static final TypedComponentRole<String> PUBLIC_KEY = new TypedComponentRole<>("org.rapla.crypto.publicKey");
 	private static final TypedComponentRole<String> APIKEY = new TypedComponentRole<>("org.rapla.crypto.server.refreshToken");
 	private static final TypedComponentRole<String> PRIVATE_KEY = new TypedComponentRole<>("org.rapla.crypto.server.privateKey");
+
+    /** The slot Rapla 2 owns. Rapla 3 keeps its own API keys under other client ids
+     *  in the same preference, as a JSON map. */
+    private static final String REFRESH_TOKEN_SLOT = "refreshToken";
+    private static final Type SLOT_MAP_TYPE = new TypeToken<LinkedHashMap<String, String>>()
+    {
+    }.getType();
 
     private String rootKey;
 	private String rootPublicKey;
@@ -91,21 +103,69 @@ public class RaplaKeyStorageImpl implements RaplaKeyStorage
     
     @Override
     public void storeAPIKey(User user,String clientId, String newApiKey) throws RaplaException {
-        Preferences preferences = facade.getPreferences(user);
-        Preferences edit = facade.edit( preferences);
-        edit.putEntry(APIKEY, newApiKey);
+        Map<String, String> slots = readSlots(user);
+        slots.put(clientId, newApiKey);
+        Preferences edit = facade.edit( facade.getPreferences(user));
+        edit.putEntry(APIKEY, writeSlots(slots));
         facade.store( edit);
     }
 
     @Override
     public Collection<String> getAPIKeys(User user) throws RaplaException {
-        String annotation = facade.getPreferences(user).getEntryAsString(APIKEY, null);
-        if (annotation == null)
+        // only our own slot, so a Rapla 3 API key is never handed to a Rapla 2 client
+        String token = readSlots(user).get(REFRESH_TOKEN_SLOT);
+        if (token == null)
         {
             return Collections.emptyList();
         }
-        Collection<String> keyList = Collections.singleton( annotation );
-        return keyList;
+        return Collections.singleton(token);
+    }
+
+    private Map<String, String> readSlots(User user) throws RaplaException {
+        String raw = facade.getPreferences(user).getEntryAsString(APIKEY, null);
+        try
+        {
+            return parseSlots(raw);
+        }
+        catch (Exception e)
+        {
+            logger.warn("Ignoring corrupt api key slots of user " + user.getUsername() + ": " + e.getMessage());
+            return new LinkedHashMap<String, String>();
+        }
+    }
+
+    /** A value that does not start with { is a bare token from the legacy single slot. */
+    public static Map<String, String> parseSlots(String raw) {
+        Map<String, String> slots = new LinkedHashMap<String, String>();
+        if (raw == null || raw.isEmpty())
+        {
+            return slots;
+        }
+        if (!raw.startsWith("{"))
+        {
+            slots.put(REFRESH_TOKEN_SLOT, raw);
+            return slots;
+        }
+        Map<String, String> parsed = new Gson().fromJson(raw, SLOT_MAP_TYPE);
+        if (parsed != null)
+        {
+            slots.putAll(parsed);
+        }
+        return slots;
+    }
+
+    /** Keeps the bare string format as long as we are the only slot, so Rapla 2 nodes
+     *  without this patch still read the token. */
+    public static String writeSlots(Map<String, String> slots) {
+        if (slots.size() == 1)
+        {
+            String onlyOurs = slots.get(REFRESH_TOKEN_SLOT);
+            if (onlyOurs != null)
+            {
+                return onlyOurs;
+            }
+        }
+        return new Gson().toJson(slots);
     }
 
     @Override
