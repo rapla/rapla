@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
+import { copyText } from './copy-text';
 
 /**
  * Small copyable rapla-id chip for edit surfaces (event sheet, resource
@@ -52,7 +53,8 @@ export class EntityIdChipComponent {
 
   copy(event: Event): void {
     event.stopPropagation();
-    void navigator.clipboard?.writeText(this.id()).then(() => {
+    void copyText(this.id()).then((ok) => {
+      if (!ok) return;
       this.copied.set(true);
       setTimeout(() => this.copied.set(false), 1500);
     });

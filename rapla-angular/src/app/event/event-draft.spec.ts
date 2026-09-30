@@ -14,6 +14,7 @@ import {
   withEnd,
   withStart,
   type ReservationWire,
+  typedId,
 } from './event-draft';
 
 const WIRE: ReservationWire = {
@@ -290,5 +291,20 @@ describe('rangeScopedDraft (month-grid drag-create — PRD 095 Phase 3)', () => 
     expect(draft.typeKey).toBe('ausleihe');
     expect(draft.allocations.map((a) => a.resourceId)).toEqual(['r1']);
     expect(draft.persisted).toBe(false);
+  });
+});
+
+describe('typedId (insecure-context fallback, customer intranet over plain http, 2026-09-30)', () => {
+  it('mints a typed UUID v4 even when crypto.randomUUID is unavailable (http over an IP)', () => {
+    // eslint-disable-next-line no-restricted-properties -- the spec stubs the API away
+    const original = crypto.randomUUID;
+    Object.defineProperty(crypto, 'randomUUID', { value: undefined, configurable: true });
+    try {
+      const id = typedId('a');
+      expect(id).toMatch(/^a[0-9a-f]{7}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+      expect(typedId('e')).not.toBe(typedId('e'));
+    } finally {
+      Object.defineProperty(crypto, 'randomUUID', { value: original, configurable: true });
+    }
   });
 });
