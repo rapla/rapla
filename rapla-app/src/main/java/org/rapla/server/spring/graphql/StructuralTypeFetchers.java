@@ -404,6 +404,16 @@ public final class StructuralTypeFetchers
         };
     }
 
+    static final LightDataFetcher<Boolean> CATEGORY_HAS_CHILDREN =
+            new LightSourceFetcher<Category, Boolean>(Category.class)
+            {
+                @Override protected Boolean read(Category c, Supplier<DataFetchingEnvironment> env)
+                {
+                    Category[] arr = c.getCategories();
+                    return arr != null && arr.length > 0;
+                }
+            };
+
     static final LightDataFetcher<List<Category>> CATEGORY_CHILDREN =
             new LightSourceFetcher<Category, List<Category>>(Category.class)
             {
@@ -1542,6 +1552,8 @@ public final class StructuralTypeFetchers
                 .dataFetcher("lastModifiedAt", ALLOCATABLE_LAST_MODIFIED_AT)
                 .dataFetcher("canModify",      ALLOCATABLE_CAN_MODIFY)
                 .dataFetcher("groupPaths",     ALLOCATABLE_GROUP_PATHS)
+                .dataFetcher("belongsTo",      ALLOCATABLE_BELONGS_TO)
+                .dataFetcher("packageIds",     ALLOCATABLE_PACKAGE_IDS)
                 .dataFetcher("canAdmin",       ALLOCATABLE_CAN_ADMIN)
                 .dataFetcher("permissions",    ALLOCATABLE_PERMISSIONS)
                 .dataFetcher("compute",        ALLOCATABLE_COMPUTE)

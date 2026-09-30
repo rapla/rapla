@@ -367,6 +367,19 @@ class HelloGraphQLControllerTest
               .path("category").valueIsNull();
     }
 
+    /** PRD 096 Phase 5: hasChildren lets a tree client load one level at a time. */
+    @Test
+    void categoryHasChildrenDistinguishesInnerNodeFromLeaf()
+    {
+        tester.document("{ category(path: \"department\") { hasChildren } }")
+              .execute()
+              .path("category.hasChildren").entity(Boolean.class).isEqualTo(true);
+        tester.document("{ category(path: \"department\") { children { hasChildren } } }")
+              .execute()
+              .path("category.children[*].hasChildren").entityList(Boolean.class)
+              .hasSizeGreaterThan(0).doesNotContain(true);
+    }
+
     /**
      * PRD 035 §5a: every returned Category carries a {@code kind} discriminator
      * (VALUE_LIST / ORGANIZATION / SYSTEM). The fixture's user-groups root is

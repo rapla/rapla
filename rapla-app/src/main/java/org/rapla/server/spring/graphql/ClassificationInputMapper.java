@@ -110,13 +110,19 @@ final class ClassificationInputMapper
                 case CATEGORY    -> {
                     if (raw instanceof Category cat) yield cat;
                     String s = raw.toString();
-                    // Tree-category input carries the category ID
+                    Object rootConstraint = attr.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
+                    Category root = rootConstraint instanceof Category r ? r : null;
+                    // Tree-category input carries the category ID — only below the root (PRD 096 OQ6)
                     Category byId = operator.tryResolve(new ReferenceInfo<>(s, Category.class));
-                    if (byId != null) yield byId;
+                    if (byId != null)
+                    {
+                        if (root == null || root.isAncestorOf(byId)) yield byId;
+                        LOGGER.warn("Category {} is not below the root category of attribute '{}' — value dropped", s, attr.getKey());
+                        yield null;
+                    }
                     // VALUE_LIST enum input — the enum value IS the leaf key,
                     // resolved within the attribute's root-category constraint
-                    Object rootConstraint = attr.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
-                    yield rootConstraint instanceof Category root ? findCategoryByKey(root, s) : null;
+                    yield root != null ? findCategoryByKey(root, s) : null;
                 }
                 case ALLOCATABLE -> operator.tryResolve(new ReferenceInfo<>(raw.toString(), Allocatable.class));
             };

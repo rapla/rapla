@@ -754,6 +754,7 @@ type Category {
   kind:     CategoryKind!   # how the consumer should render this Category
   parent:   Category        # null at the top-level (super-category is hidden)
   children: [Category!]!
+  hasChildren: Boolean!     # PRD 096 Phase 5 — lets a tree load one level at a time
 }
 
 """

@@ -1,7 +1,7 @@
 # PRD 096 — SPA classification editor (reusable, events + allocatables)
 
 **Status:** draft — 2026-07-07; Phases 1–4 landed, layout redesign + main/extended
-split + server-locale fix 2026-07-08
+split + server-locale fix 2026-07-08; Phase 5 (tree-category picker) landed 2026-10-01
 **Related:** [PRD 091](091-spa-reservation-edit-and-availability.md) (event sheet — §2.4 defers exactly this), [PRD 035](done/035-graphql-foundations.md) §5 (widget-mapping
 table + descriptor-on-edit, done), [PRD 055](055-graphql-events-read-api.md) (schema-as-data β refactor — SDL directives
 are the descriptor), [PRD 056](056-graphql-events-write-api.md) (typed `<TypeKey>ClassificationInput @oneOf`, events),
@@ -56,7 +56,7 @@ widget; server stays validation-authoritative, `ValidationError
 | BOOLEAN | `mat-checkbox` | — |
 | DATE | `mat-datepicker` (rapla stores DATE as LocalDateTime) | — |
 | CATEGORY (VALUE_LIST enum) | `mat-select` from generated enum values | — |
-| CATEGORY (tree, `@rootCategory`) | read-only display | tree picker |
+| CATEGORY (tree, `@rootCategory`) | read-only display | tree picker (Phase 5) |
 | ALLOCATABLE (`@expectedType`) | read-only display | picker (reuse AvailabilitySearch search) |
 | LIST multiplicity | read-only display | chips multi-select |
 
@@ -81,7 +81,7 @@ data loss, just no widget yet.
 - Type-change value remapping helper.
 
 ### Out of scope
-- Tree-category picker, allocatable-reference picker, LIST chips (later phases here).
+- Allocatable-reference picker, LIST chips (later phases here; the tree-category picker is Phase 5).
 - DynamicType administration (attribute schema editing) — [PRD 057](done/057-graphql-dt-mutations-v1.md) territory.
 - Permission tab of the Swing edit dialogs.
 - Further server-side changes to the mutation surface (PRD [056](056-graphql-events-write-api.md)/[063](063-graphql-allocatables-write-api.md) cover both
@@ -196,6 +196,39 @@ data loss, just no widget yet.
       `overflow-y:auto`, `min-height:0` for the flex-child shrink), and a fixed
       `.bar` with a top divider. Buttons always visible; fields scroll.
 
+### Phase 5 — Tree-category picker (landed 2026-10-01, user request)
+Trigger: a CATEGORY attribute whose `@rootCategory` has grandchildren is
+ORGANIZATION ([PRD 035](done/035-graphql-foundations.md#5a-category-kind-discriminator--concrete-descriptor-schema) §5a), wires as `Category` (read) / `ID` (write), and
+the v1 component shows its raw UUID read-only. Flat roots are enums and
+already have the select. Seen on Siegen data: `person.a1` / `resource2.a6`
+(root `gruppierungen`, one sub-level under a single branch).
+- [x] 5.0 DONE (2026-10-01) — server: `Category.hasChildren: Boolean!`
+      (`CATEGORY_HAS_CHILDREN` in `StructuralTypeFetchers`) as groundwork for a
+      lazy one-level-per-request tree (pattern 3); the SPA does not use it yet.
+      Tier-3 `HelloGraphQLControllerTest.categoryHasChildrenDistinguishesInnerNodeFromLeaf`.
+- [x] 5.1 DONE (2026-10-01) — name instead of UUID: the field shows the
+      path relative to the attribute root (Swing
+      `CategorySelectField.getNodeName` = `getPath(rootCategory)`), looked up
+      in the loaded subtree (5.3) — the value read stays `{ id }`; the draft
+      still carries only the id.
+- [x] 5.2 DONE (2026-10-01) — tree widget: `widgetOf` maps non-enum CATEGORY to `'tree'`. The
+      field shows that path plus a button that opens a tree dialog (Swing
+      `AbstractSelectField.showDialog`: root hidden, single selection, every
+      node selectable, double click on a leaf applies, Übernehmen/Abbrechen).
+      Emits the chosen category id as the patch. `CategoryTreeDialogComponent`
+      (MatDialog), starts collapsed except the path to the current value.
+- [x] 5.3 DONE (2026-10-01) — data: `ClassificationSchemaService` loads the subtree once per
+      root path via `category(path: $rootCategoryPath) { children { id name
+      children { … } } }` (fixed depth `CATEGORY_TREE_DEPTH` = 5, cached per
+      path in `ClassificationSchemaService.categoryTree`). Live-probed on the
+      siegen profile: the full `gruppierungen` tree comes back.
+- Tests: tier 5 `categoryTreeSelection`/`flattenCategoryTree`; tier 6
+  `CategoryTreeDialogComponent` spec + tree-field cases in
+  `classification-edit.component.spec.ts`; tier 3
+  `HelloGraphQLControllerTest.categoryHasChildrenDistinguishesInnerNodeFromLeaf`,
+  `TreeCategoryInputGraphQLTest`. Browser check on the siegen profile
+  (pick/clear `person.a1`, save, reopen) passed 2026-10-01 (user).
+
 ### Bugfix ride-along (2026-07-08)
 - [x] Server names shown in English despite admin **"Server Sprache = Deutsch"**.
       Root cause: two shared name-resolution paths ignored the system-preference
@@ -243,6 +276,26 @@ data loss, just no widget yet.
   "Weitere Felder" expander (no longer rendered like main).
 - **OQ2** — expected-rows/columns annotations (textarea sizing) — emit in SDL
   or ignore? *Resolution:* pending.
+- **OQ4** — Phase 5: may a tree category be cleared? Swing offers a
+  "nothing selected" button (when `useNull`); D4 forbids clearing for enums.
+  *Resolution:* RESOLVED 2026-10-01 (user: yes) — the tree dialog has a
+  "Nichts ausgewählt" button (Swing `useNull` parity) that clears the value
+  (null patch). D4 stays for enums.
+- **OQ5** — Phase 5: nesting depth of the subtree query (GraphQL has no
+  recursion). *Resolution:* RESOLVED 2026-10-01 (user) — pattern 1, fixed
+  depth 5 in the SPA; `Category.hasChildren` added server-side so a lazy
+  per-level tree (pattern 3) can replace it when trees get deeper.
+  Review 2026-10-01 (user: option a): a subtree deeper than 5 levels is cut
+  off at level 5 without a marker, and a value outside the loaded rows
+  shows its raw id — both accepted until a deeper tree appears; upgrade =
+  lazy per-level loading via `hasChildren`.
+- **OQ6** — Phase 5: `ClassificationInputMapper` resolves a tree-category id
+  against ALL categories without checking it lies under the attribute's
+  `@rootCategory` (`isAncestorOf`), unverified whether a later layer rejects
+  it. *Resolution:* RESOLVED 2026-10-01 (user: yes) — it was stored (red
+  tier-3 `TreeCategoryInputGraphQLTest`); the id branch now requires
+  `root.isAncestorOf(byId)`, otherwise the value is dropped (own warn log,
+  like any unresolvable input).
 - **OQ3** — allocatable editor entry point placement ([PRD 094](094-spa-main-view-actions-and-popups.md) command layer
   vs. plain button in resource views). *Resolution:* pending.
 
