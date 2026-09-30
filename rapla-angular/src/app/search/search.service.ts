@@ -3,6 +3,7 @@ import { Observable, of } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { GraphqlService } from '../graphql/graphql.service';
+import { t } from '../i18n/i18n.service';
 import type { SearchResult, SearchResultGroup, SearchResultKind } from './search.types';
 
 /**
@@ -90,7 +91,7 @@ function toGroups(groups: SearchGroupDto[]): SearchResultGroup[] {
     const results: SearchResult[] = g.hits.map((h) => ({
       id: h.id,
       kind,
-      label: h.label ?? '(ohne Name)',
+      label: h.label ?? t('search_no_name'),
       sublabel: h.sublabel ?? undefined,
       ...(h.firstOccurrenceStart ? { start: h.firstOccurrenceStart } : {}),
       ...(h.count != null ? { count: h.count } : {}),

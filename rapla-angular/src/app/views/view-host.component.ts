@@ -75,6 +75,7 @@ import {
   type MoveGesture,
 } from './move-scope';
 import { MoveScopeDialogComponent, type MoveScopeDialogData } from './move-scope-dialog.component';
+import { TPipe, t } from '../i18n/i18n.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { groupByWeekday, groupByColumn } from '../graphql/weekday-grouping';
 import { ViewStateStore, type DateWindow } from '../state/view-state-store';
@@ -157,6 +158,7 @@ export function hasScope(chips: FilterEntry[]): boolean {
     MatMenuModule,
     MonthGridComponent,
     WeekGridComponent,
+    TPipe,
   ],
   template: `
     <div class="host-row">
@@ -164,8 +166,8 @@ export function hasScope(chips: FilterEntry[]): boolean {
         @if (bindPick.pending(); as p) {
           <div class="bind-banner">
             <mat-icon inline>link</mat-icon>
-            „{{ p.label }}" verknüpfen — Ziel-Veranstaltung im Kalender anklicken
-            <button type="button" (click)="bindPick.cancel()">Abbrechen</button>
+            {{ 'view_bind_pick' | t: p.label }}
+            <button type="button" (click)="bindPick.cancel()">{{ 'cancel' | t }}</button>
           </div>
         }
         <!-- Print-only: on screen the title lives in the view tabs and the count in the
@@ -173,12 +175,9 @@ export function hasScope(chips: FilterEntry[]): boolean {
         <h2 class="view-title">{{ printTitle() }}</h2>
 
         @if (noScope()) {
-          <p class="empty">
-            Wähle links eine Ressource, Gruppe oder Person als <strong>Scope</strong> (oder füge
-            über die Suche einen Scope-Chip hinzu), um Termine zu laden.
-          </p>
+          <p class="empty">{{ 'view_no_scope' | t }}</p>
         } @else if (loading()) {
-          <p class="meta">lädt…</p>
+          <p class="meta">{{ 'view_loading' | t }}</p>
         } @else if (error()) {
           <p class="error">{{ error() }}</p>
         } @else {
@@ -242,7 +241,7 @@ export function hasScope(chips: FilterEntry[]): boolean {
                     <button
                       type="button"
                       class="row-menu-btn"
-                      aria-label="Aktionen"
+                      [attr.aria-label]="'view_actions' | t"
                       [matMenuTriggerFor]="rowMenu"
                       (click)="prepareMenu(row); $event.stopPropagation()"
                     >
@@ -282,7 +281,7 @@ export function hasScope(chips: FilterEntry[]): boolean {
               ></tr>
             </table>
           } @else {
-            <p class="empty">Keine Termine im Zeitraum.</p>
+            <p class="empty">{{ 'view_no_appointments' | t }}</p>
           }
         }
       </section>
@@ -469,7 +468,7 @@ export class ViewHostComponent {
   readonly total = signal(0);
   readonly groupCount = signal(0);
   readonly rowLabelText = computed(() => {
-    const parts = (this.meta()?.rowLabel ?? 'Eintrag|Einträge').split('|');
+    const parts = this.meta()?.rowLabel?.split('|') ?? [t('view_row_one'), t('view_row_many')];
     return this.total() === 1 ? parts[0] : (parts[1] ?? parts[0]);
   });
   readonly groupLabelText = computed(() => {
@@ -672,18 +671,16 @@ export class ViewHostComponent {
     // Dualis binding + fields onto the created reservation. See PRD 104.
     const templateId = e.item.kind === 'p' ? e.item.examTemplateId : e.item.lectureTemplateId;
     if (!templateId) {
-      this.snackBar.open(
-        `„${e.item.name}": keine Vorlage aufgelöst — bitte im Sync-Dialog eine wählen`,
-        undefined,
-        { duration: 5000 },
-      );
+      this.snackBar.open(t('view_no_template_resolved', e.item.name), undefined, {
+        duration: 5000,
+      });
       return;
     }
     this.templateInstantiation
       .instantiate(templateId, { day: e.day, startMin: e.startMin })
       .subscribe((templateDraft) => {
         if (!templateDraft) {
-          this.snackBar.open(`Vorlage für „${e.item.name}" nicht ladbar`, undefined, {
+          this.snackBar.open(t('view_template_not_loadable', e.item.name), undefined, {
             duration: 5000,
           });
           return;
@@ -704,8 +701,8 @@ export class ViewHostComponent {
               if (ok) this.parked.remove(e.item.sourceId);
               this.snackBar.open(
                 ok
-                  ? `„${e.item.name}" angelegt und mit Dualis verknüpft`
-                  : `„${e.item.name}": angelegt, aber Verknüpfung fehlgeschlagen — Eintrag bleibt offen`,
+                  ? t('view_created_and_linked', e.item.name)
+                  : t('view_created_link_failed', e.item.name),
                 undefined,
                 { duration: 5000 },
               );
@@ -721,7 +718,7 @@ export class ViewHostComponent {
       const res = r['reservation'] as Record<string, unknown> | null | undefined;
       return res?.['id'] === e.targetReservationId;
     });
-    const targetName = String(target?.['name'] ?? '') || 'Veranstaltung';
+    const targetName = String(target?.['name'] ?? '') || t('event');
     this.dialog
       .open(BindConfirmDialogComponent, {
         data: {
@@ -737,8 +734,8 @@ export class ViewHostComponent {
           if (ok) this.parked.remove(e.item.sourceId);
           this.snackBar.open(
             ok
-              ? `„${e.item.name}" mit „${targetName}" verknüpft`
-              : `„${e.item.name}" konnte nicht verknüpft werden`,
+              ? t('view_linked_with', e.item.name, targetName)
+              : t('view_link_failed', e.item.name),
             undefined,
             { duration: 5000 },
           );
@@ -756,7 +753,7 @@ export class ViewHostComponent {
     if (!reservationId) return;
     // Confirm before firing: the bind overwrites the target's fields and has no
     // undo yet — and the manual pick is exactly where same-number mix-ups happen.
-    const targetName = String(row['name'] ?? '') || 'Veranstaltung';
+    const targetName = String(row['name'] ?? '') || t('event');
     this.dialog
       .open(BindConfirmDialogComponent, {
         data: { sourceLabel: pending.label, targetName } satisfies BindConfirmDialogData,
@@ -768,9 +765,7 @@ export class ViewHostComponent {
         this.bindPick.cancel();
         this.worklist.bindStagedEvent(pending.sourceItemId, reservationId).subscribe((ok) => {
           this.snackBar.open(
-            ok
-              ? `„${pending.label}" verknüpft`
-              : `„${pending.label}" konnte nicht verknüpft werden`,
+            ok ? t('view_linked', pending.label) : t('view_link_failed', pending.label),
             undefined,
             { duration: 4000 },
           );
@@ -831,14 +826,12 @@ export class ViewHostComponent {
       return;
     }
     const question =
-      gesture.kind === 'resize'
-        ? 'Für welche Termine gilt die neue Dauer?'
-        : `Was möchtest du an „${facts.name}" verschieben?`;
+      gesture.kind === 'resize' ? t('view_resize_question') : t('view_move_question', facts.name);
     this.dialog
       .open(MoveScopeDialogComponent, {
         data: {
           question,
-          confirmLabel: gesture.kind === 'resize' ? 'Größe ändern' : 'Verschieben',
+          confirmLabel: gesture.kind === 'resize' ? t('view_resize') : t('move'),
           options,
         } satisfies MoveScopeDialogData,
         width: '420px',
@@ -1204,17 +1197,15 @@ export class ViewHostComponent {
               const draft =
                 instantiated && withScopeAllocations(instantiated, this.filter.entries());
               if (!draft) {
-                this.snackBar.open(
-                  'Die Vorlage enthält keine Termine — bitte zuerst Termine in der Vorlage anlegen.',
-                  undefined,
-                  { duration: 4000 },
-                );
+                this.snackBar.open(t('view_template_no_appointments'), undefined, {
+                  duration: 4000,
+                });
                 return;
               }
               this.openSheet(draft);
             },
             error: () =>
-              this.snackBar.open('Vorlage konnte nicht geladen werden (Serverfehler).', undefined, {
+              this.snackBar.open(t('view_template_load_failed'), undefined, {
                 duration: 4000,
               }),
           });

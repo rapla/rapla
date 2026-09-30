@@ -10,6 +10,8 @@ import {
   signal,
 } from '@angular/core';
 
+import { TPipe } from '../i18n/i18n.service';
+import { weekdayName } from './group-format';
 import { CHIP_BASE_CSS, chipColor, chipName, chipTime, isDraggableRow } from './block-style';
 import { type ParkedItem } from '../import/parked-events.service';
 import { ViewStateStore } from '../state/view-state-store';
@@ -94,6 +96,7 @@ function rowMatchedRefs(row: Row): NamedRef[] {
  */
 @Component({
   selector: 'app-week-grid',
+  imports: [TPipe],
   host: { '[class.print-stacked]': 'printStacked()' },
   template: `
     <!-- PRD 104 v3 Parkstreifen (client-only): NOTHING is stored while parked.
@@ -101,7 +104,7 @@ function rowMatchedRefs(row: Row): NamedRef[] {
          existing chip = verknüpfen. Abbrechen/Reload forgets the list. -->
     @if (parkedItems().length > 0) {
       <div class="park">
-        <span class="park-label">Parkstreifen — per Drag platzieren oder verknüpfen:</span>
+        <span class="park-label">{{ 'view_park_hint' | t }}</span>
         @for (item of parkedItems(); track item.sourceId) {
           <span
             class="chip parked neutral"
@@ -112,7 +115,9 @@ function rowMatchedRefs(row: Row): NamedRef[] {
             <span class="n">{{ item.name }}</span>
           </span>
         }
-        <button type="button" class="park-cancel" (click)="parkCancel.emit()">Abbrechen</button>
+        <button type="button" class="park-cancel" (click)="parkCancel.emit()">
+          {{ 'cancel' | t }}
+        </button>
       </div>
     }
     <div
@@ -126,7 +131,7 @@ function rowMatchedRefs(row: Row): NamedRef[] {
         <div class="gutter">
           <select
             class="raster"
-            title="Zeitraster"
+            [title]="'view_time_raster' | t"
             [value]="rowsPerHour()"
             (change)="onRaster($event)"
           >
@@ -233,7 +238,7 @@ function rowMatchedRefs(row: Row): NamedRef[] {
                 <span class="t"
                   >{{ b.contLeft ? '‹ ' : '' }}{{ timeOf(b.row) }}
                   @if (linkedIds().has(rowKey(b.row))) {
-                    <span class="linked-mark" title="Mit Dualis verknüpft">🔗</span>
+                    <span class="linked-mark" [title]="'view_linked_dualis' | t">🔗</span>
                   }
                 </span>
                 <span class="n">{{ nameOf(b.row) }}{{ b.contRight ? ' ›' : '' }}</span>
@@ -735,7 +740,7 @@ export class WeekGridComponent {
 
   dowOf(day: string): string {
     const idx = weekDays(day).indexOf(day);
-    return ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'][idx] ?? '';
+    return idx < 0 ? '' : weekdayName((idx + 1) % 7, 'short');
   }
 
   dayNum(day: string): number {

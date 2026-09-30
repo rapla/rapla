@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 
+import { TPipe } from '../i18n/i18n.service';
 import { isBlocked, warningText, type ReservationWarning } from './reservation-warnings';
 
 /** One clashing booking, as `potentialConflicts` reports it (§12: side 2 may be masked). */
@@ -27,9 +28,11 @@ export interface WarningsDialogData {
  */
 @Component({
   selector: 'app-reservation-warnings-dialog',
-  imports: [MatDialogModule, MatButtonModule],
+  imports: [MatDialogModule, MatButtonModule, TPipe],
   template: `
-    <h2 mat-dialog-title>{{ blocked ? 'Speichern nicht möglich' : 'Vor dem Speichern prüfen' }}</h2>
+    <h2 mat-dialog-title>
+      {{ blocked ? ('event_warnings_blocked_title' | t) : ('event_warnings_check_title' | t) }}
+    </h2>
     <mat-dialog-content>
       <ul class="findings">
         @for (w of data.warnings; track w.code + w.args.join('|')) {
@@ -40,7 +43,7 @@ export interface WarningsDialogData {
                 @for (c of data.conflicts; track c.resourceName + c.when) {
                   <li>
                     <strong>{{ c.resourceName }}</strong> — {{ c.when }} —
-                    {{ c.otherEventName ?? 'belegt (nicht einsehbar)' }}
+                    {{ c.otherEventName ?? ('event_conflict_not_visible' | t) }}
                   </li>
                 }
               </ul>
@@ -51,11 +54,11 @@ export interface WarningsDialogData {
     </mat-dialog-content>
     <mat-dialog-actions align="end">
       <button matButton type="button" (click)="close(false)">
-        {{ blocked ? 'Verstanden' : 'Abbrechen' }}
+        {{ blocked ? ('event_warnings_understood' | t) : ('cancel' | t) }}
       </button>
       @if (!blocked) {
         <button matButton type="button" class="primary" (click)="close(true)">
-          Trotzdem speichern
+          {{ 'event_save_anyway' | t }}
         </button>
       }
     </mat-dialog-actions>

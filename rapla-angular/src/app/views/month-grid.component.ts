@@ -1,6 +1,7 @@
 import { Component, computed, input, output, signal } from '@angular/core';
 
 import { CHIP_BASE_CSS, chipColor, chipName, chipTime, isDraggableRow } from './block-style';
+import { weekdayName } from './group-format';
 import { monthGridDays, chunkWeek, TOP0, type WeekChunk } from './month-chunks';
 
 type Row = Record<string, unknown>;
@@ -215,7 +216,7 @@ export class MonthGridComponent {
    *  selection emits {from, to} ('YYYY-MM-DD', to inclusive, sorted). */
   readonly createRange = output<{ from: string; to: string }>();
 
-  readonly dows = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+  readonly dows = [1, 2, 3, 4, 5, 6, 7].map((i) => weekdayName(i % 7, 'short'));
   readonly today = localToday();
 
   readonly weeks = computed<WeekRender[]>(() => {

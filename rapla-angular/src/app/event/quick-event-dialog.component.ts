@@ -10,6 +10,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTimepickerModule } from '@angular/material/timepicker';
 
 import { GraphqlService } from '../graphql/graphql.service';
+import { TPipe, t as tr } from '../i18n/i18n.service';
 import type { MutationIssue } from '../graphql/mutation-result';
 import { EventDataService } from './event-data.service';
 import { EventSheetComponent, type EventSheetDialogData } from './event-sheet.component';
@@ -34,6 +35,7 @@ import { newDraft, withEnd, withStart, type EventDraft } from './event-draft';
     MatInputModule,
     MatSelectModule,
     MatTimepickerModule,
+    TPipe,
   ],
   styles: `
     .card {
@@ -95,14 +97,16 @@ import { newDraft, withEnd, withStart, type EventDraft } from './event-draft';
     <div class="card" cdkDrag cdkDragRootElement=".cdk-overlay-pane">
       @if (draft(); as d) {
         <div class="grip" cdkDragHandle>
-          <span>⠿ &nbsp;Neue Veranstaltung</span>
+          <span>⠿ &nbsp;{{ 'event_new_title' | t }}</span>
           <span class="spacer"></span>
-          <button matIconButton aria-label="Schließen" (click)="dialogRef.close()">✕</button>
+          <button matIconButton [attr.aria-label]="'close' | t" (click)="dialogRef.close()">
+            ✕
+          </button>
         </div>
         <div class="body">
           <div class="row">
             <mat-form-field class="f-type" appearance="outline" subscriptSizing="dynamic">
-              <mat-label>Veranstaltungstyp</mat-label>
+              <mat-label>{{ 'reservation_type' | t }}</mat-label>
               <mat-select [value]="d.typeKey" (valueChange)="setTypeKey($event)">
                 @for (t of typeOptions(); track t.key) {
                   <mat-option [value]="t.key">{{ t.name }}</mat-option>
@@ -110,13 +114,13 @@ import { newDraft, withEnd, withStart, type EventDraft } from './event-draft';
               </mat-select>
             </mat-form-field>
             <mat-form-field class="grow" appearance="outline" subscriptSizing="dynamic">
-              <mat-label>Name</mat-label>
+              <mat-label>{{ 'name' | t }}</mat-label>
               <input matInput [value]="name()" (input)="setName($any($event.target).value)" />
             </mat-form-field>
           </div>
           <div class="row">
             <mat-form-field class="f-date" appearance="outline" subscriptSizing="dynamic">
-              <mat-label>Beginn</mat-label>
+              <mat-label>{{ 'start_date' | t }}</mat-label>
               <input
                 matInput
                 [matDatepicker]="sd"
@@ -138,7 +142,7 @@ import { newDraft, withEnd, withStart, type EventDraft } from './event-draft';
             </mat-form-field>
             <span class="dash">–</span>
             <mat-form-field class="f-date" appearance="outline" subscriptSizing="dynamic">
-              <mat-label>Ende</mat-label>
+              <mat-label>{{ 'end_date' | t }}</mat-label>
               <input
                 matInput
                 [matDatepicker]="ed"
@@ -164,10 +168,10 @@ import { newDraft, withEnd, withStart, type EventDraft } from './event-draft';
           }
         </div>
         <div class="foot">
-          <button matButton (click)="moreOptions()">Mehr Optionen</button>
+          <button matButton (click)="moreOptions()">{{ 'event_more_options' | t }}</button>
           <span class="spacer"></span>
           <button matButton="filled" [disabled]="saving()" (click)="save()">
-            {{ saving() ? 'Speichere…' : 'Speichern' }}
+            {{ saving() ? ('event_saving' | t) : ('save' | t) }}
           </button>
         </div>
       }
@@ -321,7 +325,7 @@ export class QuickEventDialogComponent {
             break;
           case 'concurrent':
             this.issues.set([
-              { code: 'CONCURRENT', path: '', message: 'Zwischenzeitlich geändert.' },
+              { code: 'CONCURRENT', path: '', message: tr('event_changed_meanwhile') },
             ]);
             break;
           case 'transport':

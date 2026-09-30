@@ -1,3 +1,5 @@
+import { t } from '../i18n/i18n.service';
+
 /**
  * PRD 105 — the pre-save findings, as the SPA consumes them.
  *
@@ -39,7 +41,7 @@ export function conflictDetails(warnings: ReservationWarning[]): {
 }[] {
   return warnings.flatMap((w) =>
     (w.conflicts ?? []).map((c) => ({
-      resourceName: c.resource?.name ?? 'Ressource',
+      resourceName: c.resource?.name ?? t('resource'),
       otherEventName: c.reservation2?.name ?? null,
       when: c.startDate,
     })),
@@ -52,16 +54,19 @@ function arg(args: string[], index: number, fallback: string): string {
   return value === undefined || value === '' ? fallback : value;
 }
 
-/** German texts mirroring the `RaplaResources_de` keys the Swing dialog renders. */
+/** Texts mirroring the `RaplaResources` texts the Swing dialog renders. */
 const TEXTS: Record<WarningCode, (args: string[]) => string> = {
-  NO_RESERVATION_NAME: () => 'Die Veranstaltung hat keinen Namen.',
-  DUPLICATED_APPOINTMENTS: (a) => `Zwei Termine sind identisch${a[0] ? ` (${a[0]})` : ''}.`,
-  NO_ALLOCATABLES_SELECTED: () => 'Sie haben keine Ressourcen/Personen ausgewählt.',
+  NO_RESERVATION_NAME: () => t('event_warning_no_name'),
+  DUPLICATED_APPOINTMENTS: (a) =>
+    a[0] ? t('event_warning_duplicated_detail', a[0]) : t('event_warning_duplicated'),
+  NO_ALLOCATABLES_SELECTED: () => t('event_warning_no_allocatables'),
   NOT_IN_CALENDAR: (a) =>
-    `${arg(a, 0, 'Die Veranstaltung')} erscheint nicht in der aktuellen Ansicht.`,
-  CONFLICT: () => 'Die Veranstaltung erzeugt Konflikte.',
-  REQUEST_PENDING: (a) => `${arg(a, 0, 'Eine Ressource')} ist nur auf Anfrage buchbar (Antrag).`,
-  HOLIDAY_ON_APPOINTMENT: (a) => `Ein Termin liegt auf einem Feiertag${a[0] ? ` (${a[0]})` : ''}.`,
+    t('event_warning_not_in_calendar', arg(a, 0, t('event_warning_fallback_event'))),
+  CONFLICT: () => t('event_warning_conflict'),
+  REQUEST_PENDING: (a) =>
+    t('event_warning_request_pending', arg(a, 0, t('event_warning_fallback_resource'))),
+  HOLIDAY_ON_APPOINTMENT: (a) =>
+    a[0] ? t('event_warning_holiday_detail', a[0]) : t('event_warning_holiday'),
 };
 
 export function warningText(warning: ReservationWarning): string {

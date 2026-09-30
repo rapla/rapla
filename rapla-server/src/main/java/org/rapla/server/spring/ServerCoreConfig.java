@@ -74,6 +74,12 @@ public class ServerCoreConfig
     }
 
     @Bean
+    public org.rapla.SpaResources spaResources(BundleManager bundleManager)
+    {
+        return new org.rapla.SpaResources(bundleManager);
+    }
+
+    @Bean
     public RaplaSystemInfo raplaSystemInfo(BundleManager bundleManager)
     {
         return new RaplaSystemInfo(bundleManager);

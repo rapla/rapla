@@ -10,6 +10,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { AuthService } from './auth.service';
 import { UsersService, UserSummary } from './users.service';
+import { TPipe, t } from '../i18n/i18n.service';
 
 /**
  * PRD 051 — "Switch to user" dialog. Opens from the username chip
@@ -36,26 +37,27 @@ import { UsersService, UserSummary } from './users.service';
     MatAutocompleteModule,
     MatIconModule,
     MatProgressSpinnerModule,
+    TPipe,
   ],
   template: `
     <h2 mat-dialog-title>
       <mat-icon class="icon" aria-hidden="true">person_search</mat-icon>
-      Switch to user
+      {{ 'auth_switch_title' | t }}
     </h2>
     <mat-dialog-content>
       @if (loading()) {
         <div class="centered"><mat-spinner diameter="28"></mat-spinner></div>
       } @else if (users().length === 0) {
-        <p class="hint">No users found in your admin scope.</p>
+        <p class="hint">{{ 'auth_no_users' | t }}</p>
       } @else {
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Target user</mat-label>
+          <mat-label>{{ 'auth_target_user' | t }}</mat-label>
           <input
             type="text"
             matInput
             [formControl]="usernameControl"
             [matAutocomplete]="auto"
-            placeholder="Type a username…"
+            [placeholder]="'auth_username_placeholder' | t"
           />
           <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayUser">
             @for (user of filtered(); track user.username) {
@@ -74,7 +76,7 @@ import { UsersService, UserSummary } from './users.service';
       }
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button matButton mat-dialog-close>Cancel</button>
+      <button matButton mat-dialog-close>{{ 'cancel' | t }}</button>
       <button
         matButton="filled"
         cdkFocusInitial
@@ -84,7 +86,7 @@ import { UsersService, UserSummary } from './users.service';
         @if (submitting()) {
           <mat-spinner diameter="16"></mat-spinner>
         } @else {
-          Switch
+          {{ 'auth_switch' | t }}
         }
       </button>
     </mat-dialog-actions>
@@ -186,9 +188,7 @@ export class SwitchToUserDialogComponent implements OnInit {
     if (ok) {
       this.ref.close({ target });
     } else {
-      this.errorMessage.set(
-        `Could not impersonate '${target}'. Either the user was removed or you are no longer authorised — pick a different target.`,
-      );
+      this.errorMessage.set(t('auth_impersonate_failed', target));
     }
   }
 }

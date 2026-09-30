@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { parseClassificationSdl, remapValues } from './classification-schema';
+import {
+  categoryTreeSelection,
+  flattenCategoryTree,
+  parseClassificationSdl,
+  remapValues,
+} from './classification-schema';
 
 /**
  * Tier-5 — PRD 096 Phase 1.1. Fixture mirrors the LIVE printed SDL from
@@ -137,5 +142,31 @@ describe('remapValues (PRD 096 Phase 2.2 — Swing newClassificationFrom parity)
   it('never invents keys and ignores values absent from the source descriptors', () => {
     const values = { unknown: 'y', name: 'z' };
     expect(remapValues(values, event, room)).toEqual({ name: 'z' });
+  });
+});
+
+describe('category tree helpers (PRD 096 Phase 5)', () => {
+  it('nests exactly `depth` children levels', () => {
+    expect(categoryTreeSelection(2)).toBe('children { id name children { id name } }');
+    expect(categoryTreeSelection(5).match(/children/g)).toHaveLength(5);
+  });
+
+  it('flattens depth-first with the root-relative name path (Swing getPath)', () => {
+    const rows = flattenCategoryTree([
+      { id: 'a', name: 'A - E', children: [] },
+      { id: 'k', name: 'Kabel', children: [{ id: 'h', name: 'HDMI Kabel' }] },
+    ]);
+    expect(rows).toEqual([
+      { id: 'a', name: 'A - E', path: 'A - E', depth: 0, parentId: null, hasChildren: false },
+      { id: 'k', name: 'Kabel', path: 'Kabel', depth: 0, parentId: null, hasChildren: true },
+      {
+        id: 'h',
+        name: 'HDMI Kabel',
+        path: 'Kabel/HDMI Kabel',
+        depth: 1,
+        parentId: 'k',
+        hasChildren: false,
+      },
+    ]);
   });
 });

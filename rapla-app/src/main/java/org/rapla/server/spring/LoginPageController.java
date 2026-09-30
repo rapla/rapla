@@ -62,7 +62,7 @@ public class LoginPageController
     private static final Logger LOGGER = LoggerFactory.getLogger(LoginPageController.class);
 
     /** Explicit language choice from the login page's chooser (per-browser). */
-    static final String LANG_COOKIE = "raplaLocale";
+    static final String LANG_COOKIE = org.rapla.server.spring.web.RequestLanguage.COOKIE;
 
     private final ExternalProvidersProperties externalProviders;
     private final boolean passwordLoginEnabled;
@@ -187,10 +187,15 @@ public class LoginPageController
         {
             Cookie cookie = new Cookie(LANG_COOKIE, chosenLang);
             cookie.setMaxAge(365 * 24 * 3600);
-            cookie.setPath("/login");
+            // PRD 124 — path "/" so the SPA's /api/locale and /api/auth/me see the choice.
+            cookie.setPath("/");
             cookie.setHttpOnly(true);
             cookie.setSecure(request.isSecure());
             response.addCookie(cookie);
+            Cookie legacy = new Cookie(LANG_COOKIE, "");
+            legacy.setMaxAge(0);
+            legacy.setPath("/login");
+            response.addCookie(legacy);
         }
         Locale locale = resolveLocale(request, lang);
         String banner = "";

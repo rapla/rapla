@@ -8,6 +8,8 @@ import {
   inject,
   input,
   signal,
+  effect,
+  viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
@@ -24,6 +26,7 @@ import {
   type ClassificationPatch,
 } from '../classification/classification-edit.component';
 import { EntityIdChipComponent } from '../common/entity-id-chip.component';
+import { TPipe, t as tr } from '../i18n/i18n.service';
 import { remapValues } from '../classification/classification-schema';
 import { ClassificationSchemaService } from '../classification/classification-schema.service';
 import { GraphqlService } from '../graphql/graphql.service';
@@ -38,8 +41,11 @@ import { allocationEntries, needsSearchHint } from './search-hint';
 import { ReservationChecksService } from './reservation-checks.service';
 import { buildDeleteCommand } from '../actions/event-commands';
 import { AvailabilitySearchService, type AvailabilityRow } from './availability-search.service';
+import { ResourcePickerComponent, type PickEvent } from '../resource/resource-picker.component';
+import { ResourceSelectionStore } from '../state/resource-selection-store';
 import { DraftHistory, type DraftContent } from './draft-history';
 import { EventDataService } from './event-data.service';
+import { UnsavedChangesService } from '../shell/unsaved-changes';
 import {
   generateAppointmentId,
   isDirty,
@@ -56,9 +62,12 @@ import {
   RAPLA_WEEKDAYS_MONDAY_FIRST,
   defaultRule,
   endModeOf,
+  occurrencesOverlap,
   ruleSummary,
   toggleException,
+  raplaWeekday,
   toggleWeekday,
+  withAnchorWeekday,
   withCount,
   withEndMode,
   withInterval,
@@ -73,16 +82,12 @@ import {
  * UI contract from the mockup/prototype round (all locked 2026-07-06):
  * compact header (type · name, click to expand), sections "Termine" and
  * "Ressourcen", active-section principle (only the focused section shows its
- * edit affordances), add mode without route change (ONE Auswählbar list with
- * pins stuck on top, closes only via Fertig/Esc/save), "gilt für" date picker
+ * edit affordances), add mode without route change (PRD 123: the shared resource
+ * picker in assign mode, toggled by the "+ Ressource…" button), "gilt für" date picker
  * per allocation, sticky save bar. Recurrence editing via the per-row panel
  * (Phase 4.3, ↻ toggle — preview from `expandOccurrences`, click-to-skip
  * exceptions); unknown classification attributes pass through untouched (2.0b).
  */
-
-interface CandidateVm extends AvailabilityRow {
-  pinned: boolean;
-}
 
 /** Dialog-mode inputs — the editor is a dialog OVER the current view; the
  *  route form (/app/event/:id) stays as the deep-link only. */
@@ -120,6 +125,8 @@ function nonNullEntries(values: Record<string, unknown>): Record<string, unknown
     MatFormFieldModule,
     MatInputModule,
     MatTimepickerModule,
+    ResourcePickerComponent,
+    TPipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './event-sheet.component.html',
@@ -179,8 +186,11 @@ export class EventSheetComponent {
   readonly headerOpen = signal(false);
   readonly active = signal<'header' | 'termine' | 'ressourcen' | null>(null);
   readonly addMode = signal(false);
-  readonly searchText = signal('');
-  readonly pins = signal<string[]>([]);
+  /** PRD 123 — the sheet's picker keeps its own chip and query, apart from the rail's. */
+  readonly pickerChip = signal('all');
+  readonly pickerQuery = signal('');
+  private readonly picker = viewChild(ResourcePickerComponent);
+  private readonly resourceStore = inject(ResourceSelectionStore);
   readonly giltOpen = signal<string | null>(null);
   readonly editingAppointment = signal<string | null>(null);
 
@@ -230,53 +240,36 @@ export class EventSheetComponent {
   readonly undoLabel = computed(() => (this.historyTick() >= 0 ? this.history.undoLabel() : ''));
   readonly redoLabel = computed(() => (this.historyTick() >= 0 ? this.history.redoLabel() : ''));
 
-  /** Statuses for assigned rows + pins, keyed by resource id. */
+  /** Statuses for the assigned rows and the picker's rendered rows, keyed by resource id. */
   readonly statusById = signal<Map<string, AvailabilityRow>>(new Map());
-  /** Ranked search hits (excluding pinned + assigned, computed in the vm). */
-  readonly hits = signal<AvailabilityRow[]>([]);
 
-  readonly candidates = computed<CandidateVm[]>(() => {
-    const d = this.draft();
-    if (!d) return [];
-    const assigned = new Set(d.allocations.map((a) => a.resourceId));
-    const pinned = this.pins()
-      .filter((p) => !assigned.has(p))
-      .map((p) => {
-        const row = this.statusById().get(p);
-        return row ? { ...row, pinned: true } : null;
-      })
-      .filter((r): r is CandidateVm => r !== null);
-    const pinnedIds = new Set(pinned.map((p) => p.id));
-    const rest = this.hits()
-      .filter((h) => !assigned.has(h.id) && !pinnedIds.has(h.id))
-      .map((h) => ({ ...h, pinned: false }));
-    return [...pinned, ...rest];
-  });
+  readonly assignedIds = computed(
+    () => new Set(this.draft()?.allocations.map((a) => a.resourceId) ?? []),
+  );
 
   private readonly refresh$ = new Subject<void>();
   private readonly preview$ = new Subject<void>();
 
   constructor() {
+    inject(UnsavedChangesService).register(this.dirty, this.destroyRef);
     this.refresh$
       .pipe(
         debounceTime(250),
         switchMap(() => {
           const d = this.draft();
           if (!d || !this.hasValidAppointments(d)) return [];
-          const ids = [...new Set([...this.pins(), ...d.allocations.map((a) => a.resourceId)])];
-          return this.availability.search(
-            d.appointments,
-            this.addMode() ? this.searchText() : '',
-            ids,
-            d.persisted ? d.id : null,
-          );
+          const shown = this.addMode() ? (this.picker()?.shown() ?? []).map((it) => it.id) : [];
+          const ids = [...new Set([...d.allocations.map((a) => a.resourceId), ...shown])];
+          return this.availability.statuses(d.appointments, ids, d.persisted ? d.id : null);
         }),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe((result) => {
-        this.statusById.set(result.byId);
-        this.hits.set(result.hits);
-      });
+      .subscribe((byId) => this.statusById.set(byId));
+    // PRD 123 — the picker's visible rows changed (chip, query, Weitere…) → their pills.
+    effect(() => {
+      this.picker()?.shown();
+      this.refresh$.next();
+    });
     // occurrence preview for the open recurrence panel — server-owned
     // expansion (Phase 4.1); re-fetched on every draft change like the
     // availability pills (current truth, never snapshot-time)
@@ -390,13 +383,13 @@ export class EventSheetComponent {
   }
 
   giltLabel(al: DraftAllocation): string {
-    if (!al.appointmentIds) return 'alle Termine';
+    if (!al.appointmentIds) return tr('event_all_appointments');
     const d = this.draft();
     if (!d) return '';
     const marks = d.appointments
       .map((a, i) => (al.appointmentIds!.includes(a.id) ? this.circled(i) : null))
       .filter((m): m is string => m !== null);
-    return marks.length ? `Termine ${marks.join(' ')}` : 'keine Termine';
+    return marks.length ? `${tr('appointments')} ${marks.join(' ')}` : tr('event_no_appointments');
   }
 
   statusFor(id: string): AvailabilityRow | undefined {
@@ -419,7 +412,7 @@ export class EventSheetComponent {
       })
       .filter((v): v is string => v !== null)
       .join(' ');
-    return joined.length > 0 ? joined : 'ohne Namen';
+    return joined.length > 0 ? joined : tr('event_unnamed');
   }
 
   typeName(key: string): string {
@@ -431,14 +424,14 @@ export class EventSheetComponent {
   }
 
   repeatingLabel(a: DraftAppointment): string {
-    if (!a.repeating) return 'Einzeltermin';
+    if (!a.repeating) return tr('event_single_appointment');
     const names: Record<string, string> = {
-      DAILY: 'täglich',
-      WEEKLY: 'wöchentlich',
-      MONTHLY: 'monatlich',
-      YEARLY: 'jährlich',
+      DAILY: tr('daily'),
+      WEEKLY: tr('weekly'),
+      MONTHLY: tr('monthly'),
+      YEARLY: tr('yearly'),
     };
-    return `Serie · ${names[a.repeating.type] ?? a.repeating.type}`;
+    return tr('event_series', names[a.repeating.type] ?? a.repeating.type);
   }
 
   // ------------------------------------------------------------ actions
@@ -466,7 +459,7 @@ export class EventSheetComponent {
   /** THE single mutation funnel — every edit records its pre-state (D5). */
   private mutateDraft(
     fn: (d: EventDraft) => void,
-    label = 'Änderung',
+    label = tr('alteration'),
     coalesceKey: string | null = null,
   ): void {
     const d = this.draft();
@@ -549,7 +542,7 @@ export class EventSheetComponent {
             }
           }
           d.typeKey = key;
-        }, 'Veranstaltungstyp');
+        }, tr('reservation_type'));
       });
   }
 
@@ -589,6 +582,7 @@ export class EventSheetComponent {
       (d) => {
         const a = d.appointments.find((x) => x.id === id);
         if (a) {
+          if (a.repeating) a.repeating = withAnchorWeekday(a.repeating, a.start, times.start);
           a.start = times.start;
           a.end = times.end;
         }
@@ -601,13 +595,15 @@ export class EventSheetComponent {
   setStartDate(a: DraftAppointment, v: Date | null): void {
     if (!v) return;
     const next = this.isoFrom(v, new Date(a.start));
-    if (next !== a.start) this.applyTimes(a.id, withStart(a, next), 'Beginn', `appt:${a.id}:start`);
+    if (next !== a.start)
+      this.applyTimes(a.id, withStart(a, next), tr('start_date'), `appt:${a.id}:start`);
   }
 
   setStartTime(a: DraftAppointment, v: Date | null): void {
     if (!v) return;
     const next = this.isoFrom(new Date(a.start), v);
-    if (next !== a.start) this.applyTimes(a.id, withStart(a, next), 'Beginn', `appt:${a.id}:start`);
+    if (next !== a.start)
+      this.applyTimes(a.id, withStart(a, next), tr('start_date'), `appt:${a.id}:start`);
   }
 
   setEndDate(a: DraftAppointment, v: Date | null): void {
@@ -635,7 +631,7 @@ export class EventSheetComponent {
       if (d) this.draft.set({ ...d });
       return;
     }
-    this.applyTimes(a.id, times, 'Ende', `appt:${a.id}:end`);
+    this.applyTimes(a.id, times, tr('end_date'), `appt:${a.id}:end`);
   }
 
   addAppointment(): void {
@@ -654,7 +650,7 @@ export class EventSheetComponent {
         allDay: false,
         repeating: null,
       });
-    }, '+ Termin');
+    }, tr('event_add_appointment'));
   }
 
   removeAppointment(id: string): void {
@@ -666,7 +662,7 @@ export class EventSheetComponent {
           al.appointmentIds = al.appointmentIds.filter((x) => x !== id);
         }
       }
-    }, 'Termin gelöscht');
+    }, tr('event_appointment_deleted'));
     if (this.repeatingOpen() === id) this.repeatingOpen.set(null);
   }
 
@@ -706,7 +702,7 @@ export class EventSheetComponent {
     this.mutateRule(
       a.id,
       (ap) => (ap.repeating = type === 'NONE' ? null : defaultRule(type, ap.start)),
-      'Wiederholung',
+      tr('repeating'),
     );
   }
 
@@ -714,16 +710,26 @@ export class EventSheetComponent {
     this.mutateRule(
       a.id,
       (ap) => (ap.repeating = withInterval(ap.repeating!, Number(value))),
-      'Intervall',
+      tr('event_interval'),
       `appt:${a.id}:rep:interval`,
     );
   }
 
+  overlaps(a: DraftAppointment): boolean {
+    return !!a.repeating && occurrencesOverlap(a.repeating, a);
+  }
+
+  /** The start's weekday: always selected, never toggled (Swing locks its checkbox). */
+  startWeekday(a: DraftAppointment): number {
+    return raplaWeekday(a.start);
+  }
+
   toggleRepWeekday(a: DraftAppointment, weekday: number): void {
+    if (weekday === this.startWeekday(a)) return;
     this.mutateRule(
       a.id,
       (ap) => (ap.repeating = toggleWeekday(ap.repeating!, weekday)),
-      'Wochentage',
+      tr('event_weekdays'),
     );
   }
 
@@ -731,7 +737,7 @@ export class EventSheetComponent {
     this.mutateRule(
       a.id,
       (ap) => (ap.repeating = withEndMode(ap.repeating!, mode, ap.start)),
-      'Serienende',
+      tr('event_series_end'),
     );
   }
 
@@ -742,7 +748,7 @@ export class EventSheetComponent {
     this.mutateRule(
       a.id,
       (ap) => (ap.repeating = withUntil(ap.repeating!, day)),
-      'Serienende',
+      tr('event_series_end'),
       `appt:${a.id}:rep:until`,
     );
   }
@@ -751,7 +757,7 @@ export class EventSheetComponent {
     this.mutateRule(
       a.id,
       (ap) => (ap.repeating = withCount(ap.repeating!, Number(value))),
-      'Serienende',
+      tr('event_series_end'),
       `appt:${a.id}:rep:count`,
     );
   }
@@ -761,7 +767,7 @@ export class EventSheetComponent {
     this.mutateRule(
       a.id,
       (ap) => (ap.repeating = toggleException(ap.repeating!, row.start.slice(0, 10))),
-      'Ausnahme',
+      tr('event_exception'),
     );
   }
 
@@ -781,7 +787,11 @@ export class EventSheetComponent {
     return row.exception || (a.repeating?.exceptions.includes(row.start.slice(0, 10)) ?? false);
   }
 
-  openAddMode(): void {
+  toggleAddMode(): void {
+    if (this.addMode()) {
+      this.closeAddMode();
+      return;
+    }
     if (!this.canModify()) return;
     this.addMode.set(true);
     this.active.set('ressourcen');
@@ -790,35 +800,30 @@ export class EventSheetComponent {
 
   closeAddMode(): void {
     this.addMode.set(false);
-    this.searchText.set('');
+    this.pickerQuery.set('');
   }
 
-  onSearch(value: string): void {
-    this.searchText.set(value);
-    this.refresh$.next();
-  }
-
-  togglePin(id: string): void {
-    this.pins.update((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
-    this.refresh$.next();
-  }
-
-  assign(row: AvailabilityRow): void {
+  /** PRD 123 D2 — click assigns and collapses, Ctrl/⌘ assigns and stays, an assigned row unassigns. */
+  onPick(e: PickEvent): void {
+    if (this.assignedIds().has(e.item.id)) {
+      this.unassign(e.item.id);
+      return;
+    }
     this.mutateDraft((d) => {
-      if (d.allocations.some((a) => a.resourceId === row.id)) return;
       d.allocations.push({
-        resourceId: row.id,
-        resourceName: row.name,
+        resourceId: e.item.id,
+        resourceName: e.item.label,
         appointmentIds: null,
       });
-    }, 'Ressource zugeordnet');
-    this.pins.update((p) => p.filter((x) => x !== row.id));
+    }, tr('event_resource_assigned'));
+    this.resourceStore.pushRecent(e.item);
+    if (!e.ctrl) this.closeAddMode();
   }
 
   unassign(id: string): void {
     this.mutateDraft((d) => {
       d.allocations = d.allocations.filter((a) => a.resourceId !== id);
-    }, 'Ressource entfernt');
+    }, tr('event_resource_removed'));
     if (this.giltOpen() === id) this.giltOpen.set(null);
   }
 
@@ -833,7 +838,7 @@ export class EventSheetComponent {
         if (!target) return;
         target.appointmentIds = mode === 'all' ? null : d.appointments.map((a) => a.id);
       },
-      'gilt für',
+      tr('event_applies_to_label'),
       `gilt:${al.resourceId}`,
     );
   }
@@ -847,7 +852,7 @@ export class EventSheetComponent {
           ? [...new Set([...target.appointmentIds, appointmentId])]
           : target.appointmentIds.filter((x) => x !== appointmentId);
       },
-      'gilt für',
+      tr('event_applies_to_label'),
       `gilt:${al.resourceId}`,
     );
   }
@@ -926,7 +931,7 @@ export class EventSheetComponent {
               this.dialogRef.close('saved');
               break;
             }
-            this.notice.set('Gespeichert.');
+            this.notice.set(tr('event_saved'));
             // Reload — fresh lastChanged + server-normalized state.
             this.data
               .load(d.id)
@@ -947,7 +952,7 @@ export class EventSheetComponent {
             // PRD 056 §9 retry contract: ID_COLLISION on the draft's own id
             // after a create means "already applied".
             if (!d.persisted && result.issues.some((i) => i.code === 'ID_COLLISION')) {
-              this.notice.set('Bereits gespeichert (Wiederholung erkannt).');
+              this.notice.set(tr('event_already_saved'));
               this.reloadAsPersisted(d.id);
             } else {
               this.issues.set(result.issues);
@@ -1020,8 +1025,8 @@ export class EventSheetComponent {
         this.dialog
           .open(DeleteScopeDialogComponent, {
             data: {
-              eventName: String(loaded.draft.values['name'] ?? '') || 'Veranstaltung',
-              options: [{ scope: 'event' as const, label: 'Ganze Veranstaltung' }],
+              eventName: String(loaded.draft.values['name'] ?? '') || tr('event'),
+              options: [{ scope: 'event' as const, label: tr('event_whole_event') }],
             } satisfies DeleteScopeDialogData,
             width: '420px',
             autoFocus: false,

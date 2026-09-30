@@ -35,6 +35,7 @@ import {
   semesterRange,
   windowSemesterDate,
 } from '../import/import-models';
+import { TPipe, t as tr } from '../i18n/i18n.service';
 
 /**
  * PRD 078 — the global app toolbar (account chrome). The right-hand side is now
@@ -57,15 +58,27 @@ import {
  */
 @Component({
   selector: 'app-toolbar',
-  imports: [MatToolbarModule, MatButtonModule, MatIconModule, MatMenuModule, OmniboxComponent],
+  imports: [
+    TPipe,
+    MatToolbarModule,
+    MatButtonModule,
+    MatIconModule,
+    MatMenuModule,
+    OmniboxComponent,
+  ],
   template: `
     <mat-toolbar color="primary" class="appbar">
       <span class="app-title">Rapla</span>
       <app-omnibox class="toolbar-search" />
       @if (canCreate()) {
-        <button matButton class="new-event" (click)="newEvent()" title="Neues Ereignis anlegen">
+        <button
+          matButton
+          class="new-event"
+          (click)="newEvent()"
+          [title]="'shell_new_event_tooltip' | t"
+        >
           <mat-icon>add</mat-icon>
-          <span class="new-event-label">Neu</span>
+          <span class="new-event-label">{{ 'new' | t }}</span>
         </button>
       }
       @if (importSyncAvailable()) {
@@ -73,7 +86,7 @@ import {
           matButton
           class="new-event"
           (click)="openImportSync()"
-          title="Externe Veranstaltungen der aktuellen Auswahl: übernehmen, Verknüpfte und Auffällige ansehen"
+          [title]="'shell_import_sync_tooltip' | t"
         >
           <mat-icon>move_to_inbox</mat-icon>
           <span class="new-event-label">{{ importSyncLabel() }}</span>
@@ -86,7 +99,7 @@ import {
         matIconButton
         class="undo-btn"
         [disabled]="!undo.canUndo()"
-        [title]="undo.canUndo() ? 'Rückgängig: ' + undo.undoLabel() : 'Rückgängig'"
+        [title]="undo.canUndo() ? ('shell_undo_label' | t: undo.undoLabel()) : ('action_undo' | t)"
         (click)="undo.undo()"
       >
         <mat-icon>undo</mat-icon>
@@ -95,7 +108,7 @@ import {
         matIconButton
         class="redo-btn"
         [disabled]="!undo.canRedo()"
-        [title]="undo.canRedo() ? 'Wiederholen: ' + undo.redoLabel() : 'Wiederholen'"
+        [title]="undo.canRedo() ? ('shell_redo_label' | t: undo.redoLabel()) : ('event_redo' | t)"
         (click)="undo.redo()"
       >
         <mat-icon>redo</mat-icon>
@@ -110,8 +123,8 @@ import {
           [matMenuTriggerFor]="userMenu"
           [title]="
             auth.isImpersonating()
-              ? 'Acting as ' + effectiveUsername() + ' via admin ' + adminUsername()
-              : 'Account menu'
+              ? ('shell_acting_as' | t: effectiveUsername() : adminUsername())
+              : ('shell_account_menu' | t)
           "
         >
           <span class="avatar">{{ initials() }}</span>
@@ -125,43 +138,43 @@ import {
         <mat-menu #userMenu="matMenu">
           <button mat-menu-item [matMenuTriggerFor]="accountMenu">
             <mat-icon>manage_accounts</mat-icon>
-            <span>Account settings</span>
+            <span>{{ 'shell_account_settings' | t }}</span>
           </button>
 
           @if (canImpersonate() && !auth.isImpersonating()) {
             <button mat-menu-item (click)="openSwitchToUser()">
               <mat-icon>swap_horiz</mat-icon>
-              <span>Switch to user…</span>
+              <span>{{ 'shell_switch_to_user' | t }}</span>
             </button>
           }
           @if (auth.isImpersonating()) {
             <button mat-menu-item class="switch-back" (click)="switchBack()">
               <mat-icon>undo</mat-icon>
-              <span>Switch back to admin</span>
+              <span>{{ 'shell_switch_back' | t }}</span>
             </button>
           }
 
           <button mat-menu-item (click)="signOut()">
             <mat-icon>logout</mat-icon>
-            <span>Sign out</span>
+            <span>{{ 'shell_sign_out' | t }}</span>
           </button>
         </mat-menu>
 
         <mat-menu #accountMenu="matMenu">
           <button mat-menu-item (click)="openApiKeys()">
             <mat-icon>key</mat-icon>
-            <span>Manage API keys</span>
+            <span>{{ 'shell_manage_api_keys' | t }}</span>
           </button>
           @if (showEditAccount()) {
             <button mat-menu-item (click)="openEditAccount()">
               <mat-icon>badge</mat-icon>
-              <span>Edit account</span>
+              <span>{{ 'account_edit_title' | t }}</span>
             </button>
           }
           @if (showPermissionMigration()) {
             <button mat-menu-item (click)="openPermissionMigration()">
               <mat-icon>rule</mat-icon>
-              <span>Permission migration</span>
+              <span>{{ 'shell_permission_migration' | t }}</span>
             </button>
           }
         </mat-menu>
@@ -311,8 +324,8 @@ export class AppToolbarComponent implements OnInit {
       this.importOpenCount() === 0 &&
       this.importWorklist.linked().length > 0,
   );
-  protected readonly importSyncLabel = computed(
-    () => `${this.importWorklist.sourceName() || 'Import'}-Sync`,
+  protected readonly importSyncLabel = computed(() =>
+    tr('shell_sync_label', this.importWorklist.sourceName() || tr('import_default_source')),
   );
 
   protected openImportSync(): void {
@@ -320,7 +333,7 @@ export class AppToolbarComponent implements OnInit {
     const w = this.viewState.window();
     const data: ImportSyncDialogData = {
       groupIds: groups.length > 0 ? groups.map((g) => g.id) : this.chipIds(),
-      groupLabel: groups.map((g) => g.name).join(', ') || 'aktuelle Auswahl',
+      groupLabel: groups.map((g) => g.name).join(', ') || tr('shell_current_selection'),
       semester: currentSemester(w ? windowSemesterDate(w) : new Date()),
       defaultStart: `${(this.viewState.window()?.from ?? new Date().toISOString()).slice(0, 10)}T08:00:00`,
     };
@@ -444,17 +457,15 @@ export class AppToolbarComponent implements OnInit {
       next: (instantiated) => {
         const draft = instantiated && withScopeAllocations(instantiated, this.filter.entries());
         if (!draft) {
-          this.snackBar.open(
-            'Die Vorlage enthält keine Termine — bitte zuerst Termine in der Vorlage anlegen.',
-            undefined,
-            { duration: 4000 },
-          );
+          this.snackBar.open(tr('view_template_no_appointments'), undefined, {
+            duration: 4000,
+          });
           return;
         }
         this.openSheet(draft);
       },
       error: () =>
-        this.snackBar.open('Vorlage konnte nicht geladen werden (Serverfehler).', undefined, {
+        this.snackBar.open(tr('view_template_load_failed'), undefined, {
           duration: 4000,
         }),
     });

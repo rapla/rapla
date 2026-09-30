@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
@@ -184,5 +184,109 @@ describe('ClassificationEditComponent (PRD 096 Phase 2)', () => {
     for (const w of Array.from(widgets)) {
       expect(w.disabled).toBe(true);
     }
+  });
+});
+
+const TREE_SDL = `
+type personClassification implements Classification & ResourceClassification {
+  gruppierung: Category @displayName(value : "Gruppierung") @rootCategory(path : "gruppierungen")
+  type: DynamicType!
+  typeKey: String!
+}
+`;
+
+@Component({
+  standalone: true,
+  imports: [ClassificationEditComponent],
+  template: `<app-classification-edit
+    [typeKey]="'person'"
+    [values]="{ gruppierung: 'h' }"
+    (patch)="patches.push($event)"
+  />`,
+})
+class TreeHostComponent {
+  readonly patches: ClassificationPatch[] = [];
+}
+
+describe('ClassificationEditComponent tree category (PRD 096 Phase 5)', () => {
+  beforeEach(async () => {
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [TreeHostComponent],
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    }).compileComponents();
+  });
+
+  async function create() {
+    const fixture = TestBed.createComponent(TreeHostComponent);
+    fixture.detectChanges();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne('/api/graphql/schema').flush(TREE_SDL);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const req = http.expectOne('/api/graphql');
+    expect(req.request.body.variables).toEqual({ p: 'gruppierungen' });
+    req.flush({
+      data: {
+        category: {
+          children: [
+            { id: 'a', name: 'A - E', children: [] },
+            { id: 'k', name: 'Kabel', children: [{ id: 'h', name: 'HDMI Kabel', children: [] }] },
+          ],
+        },
+      },
+    });
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  it('shows the root-relative name path instead of the id', async () => {
+    const el = (await create()).nativeElement as HTMLElement;
+    const pick = el.querySelector('button.pick') as HTMLButtonElement;
+    expect(pick.textContent?.trim()).toBe('Kabel/HDMI Kabel');
+    expect(el.textContent).not.toContain('>h<');
+  });
+
+  it('clears the value with a null patch via "Nichts ausgewählt"', async () => {
+    const fixture = await create();
+    const host = fixture.componentInstance;
+    (fixture.nativeElement.querySelector('button.pick') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const dlg = document.querySelector('app-category-tree-dialog') as HTMLElement;
+    (dlg.querySelector('.clear') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    await vi.waitFor(() =>
+      expect(host.patches.at(-1)).toEqual({
+        key: 'gruppierung',
+        value: null,
+        label: 'Gruppierung',
+        coalesceKey: null,
+      }),
+    );
+  });
+
+  it('opens the tree dialog and emits the chosen category id as a patch', async () => {
+    const fixture = await create();
+    const host = fixture.componentInstance;
+    (fixture.nativeElement.querySelector('button.pick') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const dlg = document.querySelector('app-category-tree-dialog') as HTMLElement;
+    expect(dlg).toBeTruthy();
+    (dlg.querySelectorAll('.name')[0] as HTMLElement).click();
+    fixture.detectChanges();
+    (dlg.querySelector('.apply') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    await vi.waitFor(() =>
+      expect(host.patches.at(-1)).toEqual({
+        key: 'gruppierung',
+        value: 'a',
+        label: 'Gruppierung',
+        coalesceKey: null,
+      }),
+    );
   });
 });

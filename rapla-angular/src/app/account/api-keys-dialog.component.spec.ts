@@ -5,6 +5,7 @@ import { of } from 'rxjs';
 
 import { ApiKeysDialogComponent } from './api-keys-dialog.component';
 import { ApiKeysService, ApiKeyCreated, ApiKeyMetadata } from './api-keys.service';
+import { t } from '../i18n/i18n.service';
 
 const KEY: ApiKeyMetadata = {
   id: 'k1',
@@ -118,13 +119,13 @@ describe('ApiKeysDialogComponent', () => {
   it('shows expiry relative — minutes for a grace window, days for a long-lived key', () => {
     configure({ list: () => of([KEY]) });
     const c = TestBed.createComponent(ApiKeysDialogComponent).componentInstance;
-    expect(c.expiryLabel(null)).toBe('no expiry');
-    expect(c.expiryLabel(new Date(Date.now() - 1000).toISOString())).toBe('expired');
+    expect(c.expiryLabel(null)).toBe(t('account_no_expiry'));
+    expect(c.expiryLabel(new Date(Date.now() - 1000).toISOString())).toBe(t('account_expired'));
     expect(c.expiryLabel(new Date(Date.now() + 30 * 60_000).toISOString())).toBe(
-      'expires in 30 min',
+      t('account_expires_min', 30),
     );
     expect(c.expiryLabel(new Date(Date.now() + 5 * 86_400_000).toISOString())).toBe(
-      'expires in 5 days',
+      t('account_expires_days', 5),
     );
   });
 

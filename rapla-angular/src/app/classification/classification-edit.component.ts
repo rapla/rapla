@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   input,
   output,
@@ -9,9 +10,15 @@ import {
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MatDialog } from '@angular/material/dialog';
 
 import { ClassificationSchemaService } from './classification-schema.service';
 import type { AttributeDescriptor } from './classification-schema';
+import {
+  CategoryTreeDialogComponent,
+  type CategoryTreeDialogData,
+} from './category-tree-dialog.component';
+import { TPipe } from '../i18n/i18n.service';
 
 /**
  * A single attribute edit, routed through the HOST's mutation funnel —
@@ -25,19 +32,19 @@ export interface ClassificationPatch {
   coalesceKey: string | null;
 }
 
-type Widget = 'text' | 'number' | 'checkbox' | 'select' | 'date' | 'readonly';
+type Widget = 'text' | 'number' | 'checkbox' | 'select' | 'tree' | 'date' | 'readonly';
 
 /**
  * PRD 096 Phase 2 — reusable, CONTROLLED classification form. Renders the
  * DynamicType-driven attribute fields for whatever `typeKey` the host puts
  * in; never holds its own copy of the values. Widget mapping per PRD 035 §5
- * (v1 subset — tree-category / resource / list attributes render
- * read-only and ride along untouched).
+ * (v1 subset — resource / list attributes render read-only and ride
+ * along untouched; tree categories pick via a tree dialog, Phase 5).
  */
 @Component({
   selector: 'app-classification-edit',
   standalone: true,
-  imports: [FormsModule, NgTemplateOutlet],
+  imports: [TPipe, FormsModule, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="cgrid">
@@ -55,7 +62,7 @@ type Widget = 'text' | 'number' | 'checkbox' | 'select' | 'date' | 'readonly';
           (click)="showExtended.set(!showExtended())"
         >
           <span class="chev" aria-hidden="true">▸</span>
-          Weitere Felder
+          {{ 'classification_more_fields' | t }}
           <span class="count">({{ additionalDescriptors().length }})</span>
         </button>
         @if (showExtended()) {
@@ -75,7 +82,7 @@ type Widget = 'text' | 'number' | 'checkbox' | 'select' | 'date' | 'readonly';
       @if (widgetOf(d) === 'readonly') {
         <div class="field readonly span-full">
           <span class="lab">{{ d.label }}</span>
-          <span class="ro" title="Bearbeitung folgt (PRD 096)">{{
+          <span class="ro" [title]="'classification_readonly_hint' | t">{{
             displayValue(values()[d.key])
           }}</span>
         </div>
@@ -99,7 +106,7 @@ type Widget = 'text' | 'number' | 'checkbox' | 'select' | 'date' | 'readonly';
         </div>
       } @else {
         <div class="field">
-          <div class="ctrl" [class.select]="widgetOf(d) === 'select'">
+          <div class="ctrl" [class.select]="widgetOf(d) === 'select' || widgetOf(d) === 'tree'">
             @switch (widgetOf(d)) {
               @case ('text') {
                 <input
@@ -148,6 +155,17 @@ type Widget = 'text' | 'number' | 'checkbox' | 'select' | 'date' | 'readonly';
                     <option [value]="e.key">{{ e.label }}</option>
                   }
                 </select>
+              }
+              @case ('tree') {
+                <button
+                  [id]="'cls-' + d.key"
+                  type="button"
+                  class="pick"
+                  (click)="openTree(d)"
+                  [disabled]="disabled()"
+                >
+                  {{ treePath(d) }}
+                </button>
               }
             }
           </div>
@@ -219,7 +237,8 @@ type Widget = 'text' | 'number' | 'checkbox' | 'select' | 'date' | 'readonly';
       color: var(--mat-sys-primary, #0061a4);
     }
     .ctrl input,
-    .ctrl select {
+    .ctrl select,
+    .ctrl .pick {
       font: inherit;
       border: none;
       outline: none;
@@ -230,6 +249,11 @@ type Widget = 'text' | 'number' | 'checkbox' | 'select' | 'date' | 'readonly';
     }
     .ctrl select {
       appearance: none;
+      cursor: pointer;
+    }
+    .ctrl .pick {
+      min-height: 1.2em;
+      text-align: left;
       cursor: pointer;
     }
     .field.check {
@@ -301,6 +325,7 @@ type Widget = 'text' | 'number' | 'checkbox' | 'select' | 'date' | 'readonly';
 })
 export class ClassificationEditComponent {
   private readonly schema = inject(ClassificationSchemaService);
+  private readonly dialog = inject(MatDialog);
 
   readonly typeKey = input.required<string>();
   readonly values = input.required<Record<string, unknown>>();
@@ -342,6 +367,11 @@ export class ClassificationEditComponent {
 
   constructor() {
     this.schema.load();
+    effect(() => {
+      for (const d of this.descriptors()) {
+        if (this.widgetOf(d) === 'tree') this.schema.categoryTree(d.rootCategoryPath!);
+      }
+    });
   }
 
   widgetOf(d: AttributeDescriptor): Widget {
@@ -356,7 +386,7 @@ export class ClassificationEditComponent {
       case 'DATE':
         return 'date';
       case 'CATEGORY':
-        return d.enumValues ? 'select' : 'readonly';
+        return d.enumValues ? 'select' : d.rootCategoryPath ? 'tree' : 'readonly';
       default:
         return 'readonly';
     }
@@ -375,6 +405,31 @@ export class ClassificationEditComponent {
     if (v == null || v === '') return '—';
     if (Array.isArray(v)) return v.length === 0 ? '—' : v.map((x) => String(x)).join(', ');
     return String(v);
+  }
+
+  /** Root-relative name path of the current tree-category value (Swing getPath); the id until the tree loads. */
+  treePath(d: AttributeDescriptor): string {
+    const id = this.values()[d.key];
+    if (id == null || id === '') return '';
+    const rows = this.schema.categoryRows().get(d.rootCategoryPath!) ?? [];
+    return rows.find((r) => r.id === id)?.path ?? String(id);
+  }
+
+  openTree(d: AttributeDescriptor): void {
+    const data: CategoryTreeDialogData = {
+      label: d.label,
+      rows: this.schema.categoryRows().get(d.rootCategoryPath!) ?? [],
+      selected: (this.values()[d.key] as string | null) ?? null,
+    };
+    this.dialog
+      .open<CategoryTreeDialogComponent, CategoryTreeDialogData, string | null>(
+        CategoryTreeDialogComponent,
+        { data },
+      )
+      .afterClosed()
+      .subscribe((id) => {
+        if (id !== undefined) this.emitPatch(d, id, null);
+      });
   }
 
   emitPatch(d: AttributeDescriptor, value: unknown, coalesceKey: string | null): void {

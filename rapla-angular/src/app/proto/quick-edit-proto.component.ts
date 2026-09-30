@@ -17,6 +17,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTimepickerModule } from '@angular/material/timepicker';
+import { TPipe, t as tr } from '../i18n/i18n.service';
 
 /**
  * THROWAWAY PROTOTYPE — PRD 091 quick-edit window exploration.
@@ -60,6 +61,7 @@ const DAY_TO = 18;
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [provideNativeDateAdapter()],
   imports: [
+    TPipe,
     DatePipe,
     DragDropModule,
     MatButtonModule,
@@ -271,17 +273,18 @@ const DAY_TO = 18;
   `,
   template: `
     <div class="topbar">
-      <span class="brand">rapla· Kalender <small>(Material-Prototyp)</small></span>
+      <span class="brand"
+        >rapla· {{ 'calendar' | t }} <small>{{ 'proto_material_prototype' | t }}</small></span
+      >
       <span class="spacer"></span>
       <button mat-stroked-button (click)="mobile.set(!mobile())">
-        {{ mobile() ? '🖥 Desktop-Modus' : '📱 Mobil-Modus' }}
+        {{ (mobile() ? 'proto_desktop_mode' : 'proto_mobile_mode') | t }}
       </button>
-      <button mat-flat-button (click)="openNew($event)">Neu</button>
+      <button mat-flat-button (click)="openNew($event)">{{ 'new' | t }}</button>
     </div>
     <p class="hint">
-      Klick in eine freie Zelle → Quick-Edit-Fenster (echte Material-Widgets, verschiebbar am
-      Griff). Start verschieben nimmt das Ende mit (Dauer bleibt); Ende vor Start wird geklemmt.
-      {{ mobile() ? 'Mobil: Klick öffnet direkt das Sheet.' : '' }}
+      {{ 'proto_quick_hint' | t }}
+      {{ mobile() ? ('proto_quick_hint_mobile' | t) : '' }}
     </p>
 
     <div class="cal" [style.max-width.px]="mobile() ? 420 : null">
@@ -332,14 +335,14 @@ const DAY_TO = 18;
       @if (quick(); as q) {
         <div class="quick-card" cdkDrag cdkDragRootElement=".cdk-overlay-pane">
           <div class="grip" cdkDragHandle>
-            <span>⠿ &nbsp;Schnell bearbeiten</span>
+            <span>⠿ &nbsp;{{ 'proto_quick_edit' | t }}</span>
             <span class="spacer"></span>
-            <button mat-icon-button aria-label="Schließen" (click)="closeAll()">✕</button>
+            <button mat-icon-button [attr.aria-label]="'close' | t" (click)="closeAll()">✕</button>
           </div>
           <div class="body">
             <div class="row">
               <mat-form-field class="type" appearance="outline">
-                <mat-label>Veranstaltungstyp</mat-label>
+                <mat-label>{{ 'reservation_type' | t }}</mat-label>
                 <mat-select [value]="q.type" (valueChange)="patch({ type: $event })">
                   @for (t of types; track t.key) {
                     <mat-option [value]="t.key">{{ t.name }}</mat-option>
@@ -347,7 +350,7 @@ const DAY_TO = 18;
                 </mat-select>
               </mat-form-field>
               <mat-form-field class="grow" appearance="outline">
-                <mat-label>Name</mat-label>
+                <mat-label>{{ 'name' | t }}</mat-label>
                 <input
                   matInput
                   [value]="q.title"
@@ -357,7 +360,7 @@ const DAY_TO = 18;
             </div>
             <div class="row">
               <mat-form-field class="date" appearance="outline">
-                <mat-label>Beginn</mat-label>
+                <mat-label>{{ 'start_date' | t }}</mat-label>
                 <input
                   matInput
                   [matDatepicker]="sd"
@@ -379,7 +382,7 @@ const DAY_TO = 18;
               </mat-form-field>
               <span class="dash">–</span>
               <mat-form-field class="date" appearance="outline">
-                <mat-label>Ende</mat-label>
+                <mat-label>{{ 'end_date' | t }}</mat-label>
                 <input
                   matInput
                   [matDatepicker]="ed"
@@ -402,16 +405,14 @@ const DAY_TO = 18;
             </div>
             <p class="hint">
               {{
-                q.res.length
-                  ? q.res.join(', ') + ' · Zuordnung im Editor'
-                  : 'Keine Ressourcen — im Editor zuordnen'
+                q.res.length ? ('proto_res_assigned' | t: q.res.join(', ')) : ('proto_res_none' | t)
               }}
             </p>
           </div>
           <div class="foot">
-            <button mat-button (click)="openSheet()">Mehr Optionen</button>
+            <button mat-button (click)="openSheet()">{{ 'event_more_options' | t }}</button>
             <span class="spacer"></span>
-            <button mat-flat-button (click)="saveQuick()">Speichern</button>
+            <button mat-flat-button (click)="saveQuick()">{{ 'save' | t }}</button>
           </div>
         </div>
       }
@@ -422,19 +423,20 @@ const DAY_TO = 18;
       @if (quick(); as q) {
         <div class="sheet-page">
           <div class="ed-top">
-            <button mat-icon-button aria-label="Schließen" (click)="closeAll()">✕</button>
+            <button mat-icon-button [attr.aria-label]="'close' | t" (click)="closeAll()">✕</button>
             <span class="crumb">
-              <span class="muted">{{ typeName(q.type) }} · </span>{{ q.title || '(ohne Namen)' }}
+              <span class="muted">{{ typeName(q.type) }} · </span
+              >{{ q.title || ('proto_unnamed' | t) }}
             </span>
             <span class="spacer"></span>
-            <button mat-flat-button (click)="saveQuick()">Speichern</button>
+            <button mat-flat-button (click)="saveQuick()">{{ 'save' | t }}</button>
           </div>
           <div class="sheet">
             <div class="sec">
-              <div class="sec-title">Veranstaltungstyp &amp; Attribute</div>
+              <div class="sec-title">{{ 'proto_type_attributes' | t }}</div>
               <div class="row">
                 <mat-form-field class="type" appearance="outline">
-                  <mat-label>Veranstaltungstyp</mat-label>
+                  <mat-label>{{ 'reservation_type' | t }}</mat-label>
                   <mat-select [value]="q.type" (valueChange)="patch({ type: $event })">
                     @for (t of types; track t.key) {
                       <mat-option [value]="t.key">{{ t.name }}</mat-option>
@@ -442,7 +444,7 @@ const DAY_TO = 18;
                   </mat-select>
                 </mat-form-field>
                 <mat-form-field class="grow" appearance="outline">
-                  <mat-label>Name</mat-label>
+                  <mat-label>{{ 'name' | t }}</mat-label>
                   <input
                     matInput
                     [value]="q.title"
@@ -452,11 +454,11 @@ const DAY_TO = 18;
               </div>
             </div>
             <div class="sec">
-              <div class="sec-title">Termine</div>
+              <div class="sec-title">{{ 'appointments' | t }}</div>
               <div class="row">
                 <span>①</span>
                 <mat-form-field class="date" appearance="outline">
-                  <mat-label>Beginn</mat-label>
+                  <mat-label>{{ 'start_date' | t }}</mat-label>
                   <input
                     matInput
                     [matDatepicker]="sd2"
@@ -478,7 +480,7 @@ const DAY_TO = 18;
                 </mat-form-field>
                 <span class="dash">–</span>
                 <mat-form-field class="date" appearance="outline">
-                  <mat-label>Ende</mat-label>
+                  <mat-label>{{ 'end_date' | t }}</mat-label>
                   <input
                     matInput
                     [matDatepicker]="ed2"
@@ -502,12 +504,15 @@ const DAY_TO = 18;
             </div>
             <div class="sec">
               <div class="sec-title">
-                Ressourcen <small class="muted">(statisch — wie Sheet-Prototyp)</small>
+                {{ 'resources' | t }}
+                <small class="muted">{{ 'proto_static_like_sheet' | t }}</small>
               </div>
               <div class="rrow">
-                <span>Raum A66</span><span class="pill belegt">belegt an ①</span>
+                <span>Raum A66</span><span class="pill belegt">{{ 'proto_booked_at' | t }}</span>
               </div>
-              <div class="rrow"><span>Kamera 2</span><span class="pill frei">frei</span></div>
+              <div class="rrow">
+                <span>Kamera 2</span><span class="pill frei">{{ 'event_free' | t }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -748,7 +753,7 @@ export class QuickEditProtoComponent {
   saveQuick(): void {
     const q = this.quick();
     if (!q) return;
-    const title = q.title.trim() || `${this.typeName(q.type)} (ohne Titel)`;
+    const title = q.title.trim() || `${this.typeName(q.type)} ${tr('proto_untitled_suffix')}`;
     this.events.update((list) => {
       if (q.id === null) {
         return [

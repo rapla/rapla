@@ -11,6 +11,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { API_KEY_SCOPES, ApiKeyMetadata, ApiKeysService } from './api-keys.service';
+import { copyText } from '../common/copy-text';
+import { TPipe, t } from '../i18n/i18n.service';
 
 /**
  * PRD 043 / 076 — "Manage API keys" dialog, reached from the user menu's
@@ -34,22 +36,23 @@ import { API_KEY_SCOPES, ApiKeyMetadata, ApiKeysService } from './api-keys.servi
     MatCheckboxModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
+    TPipe,
   ],
   template: `
     <h2 mat-dialog-title>
       <mat-icon class="title-icon" aria-hidden="true">key</mat-icon>
-      API keys
+      {{ 'account_api_keys_title' | t }}
     </h2>
     <mat-dialog-content>
       @if (freshSecret(); as secret) {
         <div class="secret-box">
           <div class="secret-head">
             <mat-icon aria-hidden="true">check_circle</mat-icon>
-            <span>Copy your key now — it is shown only once.</span>
+            <span>{{ 'account_key_copy_now' | t }}</span>
           </div>
           <code class="secret">{{ secret }}</code>
           <button matButton (click)="copy(secret)">
-            <mat-icon>content_copy</mat-icon> {{ copied() ? 'Copied' : 'Copy' }}
+            <mat-icon>content_copy</mat-icon> {{ copied() ? ('account_copied' | t) : ('copy' | t) }}
           </button>
         </div>
       }
@@ -58,16 +61,20 @@ import { API_KEY_SCOPES, ApiKeyMetadata, ApiKeysService } from './api-keys.servi
         <div class="centered"><mat-spinner diameter="28"></mat-spinner></div>
       } @else {
         @if (keys().length === 0) {
-          <p class="hint">No API keys yet.</p>
+          <p class="hint">{{ 'account_no_keys' | t }}</p>
         }
         @for (k of keys(); track k.id) {
           <div class="key-row">
             <mat-icon class="key-icon" aria-hidden="true">vpn_key</mat-icon>
             <div class="kmeta">
-              <div class="klabel">{{ k.label || '(unlabeled)' }}</div>
+              <div class="klabel">{{ k.label || ('account_unlabeled' | t) }}</div>
               <div class="ksub">
-                Created {{ k.createdAt | slice: 0 : 10 }} · {{ expiryLabel(k.expiresAt) }} · …{{
-                  k.thumbprint | slice: -4
+                {{
+                  'account_key_created'
+                    | t
+                      : (k.createdAt | slice: 0 : 10)
+                      : expiryLabel(k.expiresAt)
+                      : (k.thumbprint | slice: -4)
                 }}
               </div>
               <div class="scopes">
@@ -79,7 +86,7 @@ import { API_KEY_SCOPES, ApiKeyMetadata, ApiKeysService } from './api-keys.servi
             @if (isRotatable(k)) {
               <button
                 matIconButton
-                matTooltip="Rotate — issue a fresh key with the same scopes; the old one expires after a grace window"
+                [matTooltip]="'account_rotate_tooltip' | t"
                 (click)="startRotate(k)"
                 [disabled]="busyId() === k.id"
               >
@@ -88,7 +95,7 @@ import { API_KEY_SCOPES, ApiKeyMetadata, ApiKeysService } from './api-keys.servi
             }
             <button
               matIconButton
-              matTooltip="Revoke"
+              [matTooltip]="'account_revoke' | t"
               (click)="revoke(k)"
               [disabled]="busyId() === k.id"
             >
@@ -97,18 +104,18 @@ import { API_KEY_SCOPES, ApiKeyMetadata, ApiKeysService } from './api-keys.servi
           </div>
           @if (rotatingId() === k.id) {
             <div class="rotate-bar">
-              <span class="rotate-hint">Old key stays valid for a grace window, then expires.</span>
+              <span class="rotate-hint">{{ 'account_rotate_hint' | t }}</span>
               <mat-form-field appearance="outline" class="grace-field" subscriptSizing="dynamic">
-                <mat-label>Grace (minutes)</mat-label>
+                <mat-label>{{ 'account_grace_minutes' | t }}</mat-label>
                 <input matInput type="number" min="0" max="2880" [formControl]="graceControl" />
               </mat-form-field>
-              <button matButton (click)="cancelRotate()">Cancel</button>
+              <button matButton (click)="cancelRotate()">{{ 'cancel' | t }}</button>
               <button
                 matButton="filled"
                 [disabled]="graceControl.invalid || busyId() === k.id"
                 (click)="confirmRotate(k)"
               >
-                Rotate
+                {{ 'account_rotate' | t }}
               </button>
             </div>
           }
@@ -122,15 +129,19 @@ import { API_KEY_SCOPES, ApiKeyMetadata, ApiKeysService } from './api-keys.servi
       @if (creating()) {
         <form [formGroup]="form" class="create-form" (ngSubmit)="submitCreate()">
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Label</mat-label>
-            <input matInput formControlName="label" placeholder="e.g. CI export job" />
+            <mat-label>{{ 'account_label' | t }}</mat-label>
+            <input
+              matInput
+              formControlName="label"
+              [placeholder]="'account_label_placeholder' | t"
+            />
           </mat-form-field>
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Expires in days (blank = never)</mat-label>
+            <mat-label>{{ 'account_expires_in_days_field' | t }}</mat-label>
             <input matInput type="number" min="1" formControlName="expiresInDays" />
           </mat-form-field>
           <div class="scope-pick">
-            <span class="scope-label">Scopes</span>
+            <span class="scope-label">{{ 'account_scopes' | t }}</span>
             @for (s of allScopes; track s) {
               <mat-checkbox
                 [checked]="selectedScopes().includes(s)"
@@ -145,9 +156,9 @@ import { API_KEY_SCOPES, ApiKeyMetadata, ApiKeysService } from './api-keys.servi
       }
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button matButton mat-dialog-close>Close</button>
+      <button matButton mat-dialog-close>{{ 'close' | t }}</button>
       @if (creating()) {
-        <button matButton (click)="cancelCreate()">Cancel</button>
+        <button matButton (click)="cancelCreate()">{{ 'cancel' | t }}</button>
         <button
           matButton="filled"
           [disabled]="form.invalid || busyId() === 'new'"
@@ -156,11 +167,13 @@ import { API_KEY_SCOPES, ApiKeyMetadata, ApiKeysService } from './api-keys.servi
           @if (busyId() === 'new') {
             <mat-spinner diameter="16"></mat-spinner>
           } @else {
-            Create key
+            {{ 'account_create_key' | t }}
           }
         </button>
       } @else {
-        <button matButton="filled" (click)="startCreate()"><mat-icon>add</mat-icon> New key</button>
+        <button matButton="filled" (click)="startCreate()">
+          <mat-icon>add</mat-icon> {{ 'account_new_key' | t }}
+        </button>
       }
     </mat-dialog-actions>
   `,
@@ -346,13 +359,13 @@ export class ApiKeysDialogComponent implements OnInit {
    * not a same-day date), "expires in N days" otherwise. {@code null} → "no expiry".
    */
   expiryLabel(expiresAt: string | null): string {
-    if (!expiresAt) return 'no expiry';
+    if (!expiresAt) return t('account_no_expiry');
     const ms = new Date(expiresAt).getTime() - Date.now();
-    if (ms <= 0) return 'expired';
+    if (ms <= 0) return t('account_expired');
     const days = Math.floor(ms / 86_400_000);
-    if (days >= 1) return `expires in ${days} day${days === 1 ? '' : 's'}`;
+    if (days >= 1) return t(days === 1 ? 'account_expires_day' : 'account_expires_days', days);
     const minutes = Math.max(1, Math.round(ms / 60_000));
-    return `expires in ${minutes} min`;
+    return t('account_expires_min', minutes);
   }
 
   startCreate(): void {
@@ -392,7 +405,7 @@ export class ApiKeysDialogComponent implements OnInit {
           this.busyId.set(null);
           this.reload();
         },
-        error: (err) => this.fail('Could not create the key.', err),
+        error: (err) => this.fail(t('account_key_create_failed'), err),
       });
   }
 
@@ -427,9 +440,7 @@ export class ApiKeysDialogComponent implements OnInit {
       error: (err) => {
         // 409 — a prior grace key in this chain is still alive (D14 max-2 cap).
         const msg =
-          err?.status === 409
-            ? 'A previous key from an earlier rotation is still in its grace window. Revoke it first — only two keys per rotation are allowed at once.'
-            : 'Could not rotate the key.';
+          err?.status === 409 ? t('account_key_rotate_grace') : t('account_key_rotate_failed');
         this.fail(msg, err);
       },
     });
@@ -443,17 +454,12 @@ export class ApiKeysDialogComponent implements OnInit {
         this.busyId.set(null);
         this.reload();
       },
-      error: (err) => this.fail('Could not revoke the key.', err),
+      error: (err) => this.fail(t('account_key_revoke_failed'), err),
     });
   }
 
   async copy(secret: string): Promise<void> {
-    try {
-      await navigator.clipboard.writeText(secret);
-      this.copied.set(true);
-    } catch {
-      this.copied.set(false);
-    }
+    this.copied.set(await copyText(secret));
   }
 
   private reload(): void {
@@ -465,7 +471,7 @@ export class ApiKeysDialogComponent implements OnInit {
       },
       error: (err) => {
         this.loading.set(false);
-        this.fail('Could not load API keys.', err);
+        this.fail(t('account_keys_load_failed'), err);
       },
     });
   }

@@ -4274,6 +4274,9 @@
           },
           "demoBanner" : {
             "type" : "string"
+          },
+          "language" : {
+            "type" : "string"
           }
         }
       },

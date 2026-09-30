@@ -9,20 +9,29 @@
  * old "0-6" comment was wrong).
  */
 
+import { localeId, t } from '../i18n/i18n.service';
 import type { RepeatingRule } from './event-draft';
 
 export type RepeatType = RepeatingRule['type'];
 export type EndMode = 'FOREVER' | 'UNTIL' | 'COUNT';
 
+/** Short weekday name for a rapla weekday (1=Sunday … 7=Saturday); 2024-01-01 is a Monday. */
+function weekdayShort(raplaDay: number): string {
+  return new Intl.DateTimeFormat(localeId(), { weekday: 'short' })
+    .format(new Date(2024, 0, raplaDay - 1))
+    .replace(/\.$/, '');
+}
+
+const weekdayEntry = (value: number): { value: number; label: string } => ({
+  value,
+  get label() {
+    return weekdayShort(value);
+  },
+});
+
 export const RAPLA_WEEKDAYS_MONDAY_FIRST: readonly { value: number; label: string }[] = [
-  { value: 2, label: 'Mo' },
-  { value: 3, label: 'Di' },
-  { value: 4, label: 'Mi' },
-  { value: 5, label: 'Do' },
-  { value: 6, label: 'Fr' },
-  { value: 7, label: 'Sa' },
-  { value: 1, label: 'So' },
-];
+  2, 3, 4, 5, 6, 7, 1,
+].map(weekdayEntry);
 
 /** rapla weekday (1=So…7=Sa) of an ISO LocalDateTime / date string. */
 export function raplaWeekday(iso: string): number {
@@ -32,15 +41,15 @@ export function raplaWeekday(iso: string): number {
 /**
  * Fresh rule on type selection — type-specific fields reset (the Swing
  * `savedRepeatingType` analog): WEEKLY seeds the start's weekday, everything
- * else derives from the start date; ending defaults to FOREVER (gcal parity;
- * Swing's default too).
+ * else derives from the start date; ending defaults to "after 10 occurrences"
+ * (user ruling 2026-09-30 — an open-ended series is the exception, not the default).
  */
 export function defaultRule(type: RepeatType, startIso: string): RepeatingRule {
   return {
     type,
     interval: 1,
     end: null,
-    count: null,
+    count: 10,
     weekdays: type === 'WEEKLY' ? [raplaWeekday(startIso)] : null,
     exceptions: [],
   };
@@ -114,6 +123,68 @@ export function toggleWeekday(rule: RepeatingRule, weekday: number): RepeatingRu
   return { ...rule, weekdays, exceptions: [...rule.exceptions] };
 }
 
+/**
+ * The start's weekday is the series anchor and always part of a WEEKLY rule
+ * (Swing locks its checkbox). When the start moves to another weekday the anchor
+ * follows: the old weekday leaves unless the new one was already selected —
+ * the {@code AppointmentImpl.move} rule.
+ */
+export function withAnchorWeekday(
+  rule: RepeatingRule,
+  oldStartIso: string,
+  newStartIso: string,
+): RepeatingRule {
+  if (rule.type !== 'WEEKLY' || !rule.weekdays) return rule;
+  const oldWd = raplaWeekday(oldStartIso);
+  const newWd = raplaWeekday(newStartIso);
+  if (oldWd === newWd) return rule;
+  const kept = rule.weekdays.includes(newWd)
+    ? rule.weekdays
+    : rule.weekdays.filter((w) => w !== oldWd);
+  const weekdays = [...new Set([...kept, newWd])].sort((a, b) => a - b);
+  return { ...rule, weekdays, exceptions: [...rule.exceptions] };
+}
+
+const DAY_MS = 24 * 60 * 60_000;
+
+/**
+ * True when one occurrence lasts longer than the shortest gap to the next one,
+ * i.e. the repetitions overlap themselves (a two-day appointment repeated daily).
+ * The gap is the rule's smallest period: interval × 1/7/28/365 days, for WEEKLY
+ * with several weekdays the closest pair (wrapping over the interval).
+ */
+export function occurrencesOverlap(
+  rule: RepeatingRule,
+  a: { start: string; end: string },
+): boolean {
+  const duration = new Date(a.end).getTime() - new Date(a.start).getTime();
+  const interval = Math.max(1, rule.interval);
+  let gapDays: number;
+  switch (rule.type) {
+    case 'DAILY':
+      gapDays = interval;
+      break;
+    case 'WEEKLY': {
+      const wds = [...(rule.weekdays ?? [])].sort((x, y) => x - y);
+      gapDays = 7 * interval;
+      for (let i = 0; i < wds.length; i++) {
+        const next = i + 1 < wds.length ? wds[i + 1] : wds[0] + 7 * interval;
+        gapDays = Math.min(gapDays, next - wds[i]);
+      }
+      break;
+    }
+    case 'MONTHLY':
+      gapDays = 28 * interval;
+      break;
+    case 'YEARLY':
+      gapDays = 365 * interval;
+      break;
+    default:
+      return false;
+  }
+  return duration > gapDays * DAY_MS;
+}
+
 /** Toggle a skip date ('YYYY-MM-DD') — the preview's click-to-skip gesture (UC-E4). */
 export function toggleException(rule: RepeatingRule, day: string): RepeatingRule {
   const exceptions = rule.exceptions.includes(day)
@@ -123,36 +194,37 @@ export function toggleException(rule: RepeatingRule, day: string): RepeatingRule
 }
 
 const TYPE_NAMES: Record<RepeatType, [string, string]> = {
-  DAILY: ['Täglich', 'Tage'],
-  WEEKLY: ['Wöchentlich', 'Wochen'],
-  MONTHLY: ['Monatlich', 'Monate'],
-  YEARLY: ['Jährlich', 'Jahre'],
+  DAILY: ['event_rep_daily_one', 'event_rep_daily_many'],
+  WEEKLY: ['event_rep_weekly_one', 'event_rep_weekly_many'],
+  MONTHLY: ['event_rep_monthly_one', 'event_rep_monthly_many'],
+  YEARLY: ['event_rep_yearly_one', 'event_rep_yearly_many'],
 };
-
-const WEEKDAY_LABELS: Record<number, string> = Object.fromEntries(
-  RAPLA_WEEKDAYS_MONDAY_FIRST.map((w) => [w.value, w.label]),
-);
 
 /** One-line human summary, e.g. "Wöchentlich am Di + Do · 10 Termine". */
 export function ruleSummary(rule: RepeatingRule, startIso: string): string {
   const [oneName, manyName] = TYPE_NAMES[rule.type];
-  let pattern = rule.interval === 1 ? oneName : `Alle ${rule.interval} ${manyName}`;
+  let pattern = rule.interval === 1 ? t(oneName) : t('event_rep_every', rule.interval, t(manyName));
   if (rule.type === 'WEEKLY') {
-    const days = (rule.weekdays ?? []).map((w) => WEEKDAY_LABELS[w] ?? String(w)).join(' + ');
-    pattern += ` am ${days || '—'}`;
+    const days = (rule.weekdays ?? []).map((w) => weekdayShort(w)).join(' + ');
+    pattern = t('event_rep_on', pattern, days || '—');
   } else if (rule.type === 'MONTHLY') {
     const start = new Date(startIso);
-    pattern += ` am ${Math.ceil(start.getDate() / 7)}. ${WEEKDAY_LABELS[raplaWeekday(startIso)]}`;
+    pattern = t(
+      'event_rep_on_nth',
+      pattern,
+      Math.ceil(start.getDate() / 7),
+      weekdayShort(raplaWeekday(startIso)),
+    );
   } else if (rule.type === 'YEARLY') {
     const start = new Date(startIso);
-    pattern += ` am ${start.getDate()}.${start.getMonth() + 1}.`;
+    pattern = t('event_rep_on', pattern, `${start.getDate()}.${start.getMonth() + 1}.`);
   }
   const mode = endModeOf(rule);
   const end =
     mode === 'FOREVER'
-      ? 'endet nie'
+      ? t('event_rep_ends_never')
       : mode === 'COUNT'
-        ? `${rule.count} Termine`
-        : `bis ${rule.end}`;
+        ? t('event_rep_count', rule.count)
+        : t('event_rep_until', rule.end);
   return `${pattern} · ${end}`;
 }

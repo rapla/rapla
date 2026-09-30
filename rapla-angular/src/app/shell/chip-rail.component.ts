@@ -4,6 +4,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 
 import { FilterStore } from '../state/filter-store';
+import { TPipe } from '../i18n/i18n.service';
 
 /**
  * The chip rail — the visible, removable filter (= what the view shows). One
@@ -12,12 +13,12 @@ import { FilterStore } from '../state/filter-store';
  */
 @Component({
   selector: 'app-chip-rail',
-  imports: [MatChipsModule, MatIconModule, MatButtonModule],
+  imports: [TPipe, MatChipsModule, MatIconModule, MatButtonModule],
   template: `
     <div class="rail" [class.is-empty]="store.isEmpty()">
-      <span class="rlabel">FILTER:</span>
+      <span class="rlabel">{{ 'shell_filter_label' | t }}</span>
       @if (store.isEmpty()) {
-        <span class="empty-hint">— nichts ausgewählt</span>
+        <span class="empty-hint">{{ 'shell_filter_empty' | t }}</span>
       } @else {
         <mat-chip-set>
           @for (e of store.entries(); track e.id) {
@@ -27,7 +28,7 @@ import { FilterStore } from '../state/filter-store';
               <button
                 class="chip-remove"
                 type="button"
-                [attr.aria-label]="'Entfernen: ' + e.label"
+                [attr.aria-label]="'shell_chip_remove' | t: e.label"
                 (click)="store.remove(e.id)"
               >
                 <mat-icon>cancel</mat-icon>
@@ -35,7 +36,9 @@ import { FilterStore } from '../state/filter-store';
             </mat-chip>
           }
         </mat-chip-set>
-        <button matButton class="clear-all" (click)="store.clear()">× alle</button>
+        <button matButton class="clear-all" (click)="store.clear()">
+          {{ 'shell_clear_all' | t }}
+        </button>
       }
     </div>
   `,

@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject } from 'rxjs';
 
+import { t } from '../i18n/i18n.service';
 import type { SpaCommand } from './command';
 import type { MutationResult } from '../graphql/mutation-result';
 
@@ -49,7 +50,7 @@ export class UndoToastService {
         this.past.update((s) => [...s, command].slice(-CAP));
         this.future.set([]);
       }
-      const ref = this.snackBar.open(command.label, command.undo ? 'Rückgängig' : undefined, {
+      const ref = this.snackBar.open(command.label, command.undo ? t('action_undo') : undefined, {
         duration: command.undo ? 15000 : 5000,
       });
       if (command.undo) ref.onAction().subscribe(() => this.undo());
@@ -71,7 +72,7 @@ export class UndoToastService {
       }
       this.future.update((s) => [...s, command].slice(-CAP));
       this.mutated$.next();
-      this.snackBar.open('Rückgängig gemacht', undefined, { duration: 5000 });
+      this.snackBar.open(t('action_undone'), undefined, { duration: 5000 });
     });
   }
 
@@ -93,12 +94,12 @@ export class UndoToastService {
   private showError(result: MutationResult<unknown>): void {
     const message =
       result.kind === 'concurrent'
-        ? 'Nicht möglich — die Veranstaltung wurde inzwischen geändert.'
+        ? t('action_err_concurrent')
         : result.kind === 'denied'
-          ? 'Keine Berechtigung.'
+          ? t('action_err_denied')
           : result.kind === 'invalid'
-            ? 'Nicht möglich: ' + result.issues.map((i) => i.message).join('; ')
-            : 'Serverfehler — bitte erneut versuchen.';
+            ? t('action_err_invalid', result.issues.map((i) => i.message).join('; '))
+            : t('action_err_server');
     this.snackBar.open(message, undefined, { duration: 8000 });
   }
 }

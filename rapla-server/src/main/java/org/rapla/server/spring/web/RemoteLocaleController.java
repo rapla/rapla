@@ -6,7 +6,6 @@ import org.rapla.components.i18n.LocalePackage;
 import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.components.util.LocaleTools;
 import org.rapla.entities.User;
-import org.rapla.entities.configuration.Preferences;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.server.RemoteSession;
@@ -31,13 +30,15 @@ public class RemoteLocaleController implements RemoteLocaleService
     private final StorageOperator operator;
     private final ResourceBundleList resourceBundleList;
     private final HttpServletRequest request;
+    private final RequestLanguage requestLanguage;
 
     public RemoteLocaleController(ServerBundleManager bundleManager,
                                   RaplaLocale raplaLocale,
                                   RemoteSession session,
                                   StorageOperator operator,
                                   ResourceBundleList resourceBundleList,
-                                  HttpServletRequest request)
+                                  HttpServletRequest request,
+                                  RequestLanguage requestLanguage)
     {
         this.bundleManager = bundleManager;
         this.raplaLocale = raplaLocale;
@@ -45,6 +46,7 @@ public class RemoteLocaleController implements RemoteLocaleService
         this.operator = operator;
         this.resourceBundleList = resourceBundleList;
         this.request = request;
+        this.requestLanguage = requestLanguage;
     }
 
     @Override
@@ -54,27 +56,17 @@ public class RemoteLocaleController implements RemoteLocaleService
         {
             if (localeString == null)
             {
-                // PRD 050 Phase 7a: single resolveJwtOrThrow per request — the
-                // previous isAuthentified() + checkAndGetUser() pair fired the
-                // JWT resolve (and pre-Phase-7b the IdP sync write) twice.
+                // PRD 050 Phase 7a: single resolveJwtOrThrow per request.
+                User validUser = null;
                 try
                 {
-                    final User validUser = session.checkAndGetUser(request);
-                    final Preferences preferences = operator.getPreferences(validUser, true);
-                    final String entry = preferences.getEntryAsString(RaplaLocale.LANGUAGE_ENTRY, null);
-                    if (entry != null)
-                    {
-                        localeString = new Locale(entry).toString();
-                    }
+                    validUser = session.checkAndGetUser(request);
                 }
                 catch (RaplaSecurityException unauthenticated)
                 {
-                    // Anonymous request — fall through to server default.
+                    // Anonymous request — no user preference.
                 }
-                if (localeString == null)
-                {
-                    localeString = raplaLocale.getLocale().toString();
-                }
+                localeString = requestLanguage.resolve(request, validUser).toString();
             }
             Locale locale = LocaleTools.getLocale(localeString);
             final I18nLocaleFormats formats = bundleManager.getFormats(locale);

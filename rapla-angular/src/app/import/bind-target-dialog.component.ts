@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 
 import type { BindCandidate } from './import-models';
+import { TPipe } from '../i18n/i18n.service';
 
 export interface BindTargetDialogData {
   sourceLabel: string;
@@ -20,12 +21,12 @@ export type BindTargetResult = { reservationId: string; targetName: string } | '
  */
 @Component({
   selector: 'app-bind-target-dialog',
-  imports: [MatDialogModule],
+  imports: [MatDialogModule, TPipe],
   template: `
-    <h2 mat-dialog-title>„{{ data.sourceLabel }}" verknüpfen</h2>
+    <h2 mat-dialog-title>{{ 'import_bind_title' | t: data.sourceLabel }}</h2>
     <mat-dialog-content>
       @if (data.candidates.length > 0) {
-        <p class="section">Vorschläge</p>
+        <p class="section">{{ 'import_suggestions' | t }}</p>
         @for (c of data.candidates; track c.reservationId) {
           <button
             type="button"
@@ -35,12 +36,12 @@ export type BindTargetResult = { reservationId: string; targetName: string } | '
           >
             <span class="name">{{ c.name }}</span>
             @if (c.firstDate) {
-              <span class="date">ab {{ c.firstDate.slice(0, 10) }}</span>
+              <span class="date">{{ 'import_from_date' | t: c.firstDate.slice(0, 10) }}</span>
             }
           </button>
         }
       } @else {
-        <p class="empty">Keine Vorschläge im angezeigten Zeitraum.</p>
+        <p class="empty">{{ 'import_no_suggestions' | t }}</p>
       }
       <button
         type="button"
@@ -48,16 +49,17 @@ export type BindTargetResult = { reservationId: string; targetName: string } | '
         [class.sel]="selected() === 'pick'"
         (click)="selected.set('pick')"
       >
-        <span class="name">Ziel im Kalender anklicken…</span>
+        <span class="name">{{ 'import_pick_in_calendar' | t }}</span>
       </button>
       <p class="warn">
-        Beim Verknüpfen überschreiben die Dualis-Felder (Name, Nummer, Art, …) die bisherigen Werte
-        der Ziel-Veranstaltung. Das lässt sich derzeit nicht rückgängig machen.
+        {{ 'import_bind_warning' | t }}
       </p>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button mat-dialog-close>Abbrechen</button>
-      <button class="primary" [disabled]="!selected()" (click)="confirm()">Verknüpfen</button>
+      <button mat-dialog-close>{{ 'cancel' | t }}</button>
+      <button class="primary" [disabled]="!selected()" (click)="confirm()">
+        {{ 'import_bind' | t }}
+      </button>
     </mat-dialog-actions>
   `,
   styles: `

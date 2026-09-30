@@ -6,6 +6,8 @@
  * into the wrong day. No DOM, no Angular: tier-5 unit-testable in isolation.
  */
 
+import { localeId, t } from '../i18n/i18n.service';
+
 export interface WeekdayGroup {
   /** 1=Montag … 7=Sonntag; 0 = the trailing "Ohne Datum" bucket. */
   weekday: number;
@@ -45,17 +47,11 @@ export function groupByColumn(rows: Record<string, unknown>[], alias: string): R
   return keys.map((k) => ({ key: k, label: k === '' ? '—' : k, rows: buckets.get(k)! }));
 }
 
-const WEEKDAY_LABELS: Record<number, string> = {
-  1: 'Montag',
-  2: 'Dienstag',
-  3: 'Mittwoch',
-  4: 'Donnerstag',
-  5: 'Freitag',
-  6: 'Samstag',
-  7: 'Sonntag',
-};
-
-const NO_DATE_LABEL = 'Ohne Datum';
+// 2024-01-01 is a Monday, so weekday 1..7 = Monday..Sunday.
+const weekdayLabel = (weekday: number): string =>
+  new Intl.DateTimeFormat(localeId(), { weekday: 'long', timeZone: 'UTC' }).format(
+    new Date(Date.UTC(2024, 0, weekday)),
+  );
 
 /**
  * Weekday (1=Montag … 7=Sonntag) of a LocalDateTime string, or 0 when the date
@@ -109,13 +105,13 @@ export function groupByWeekday(
   for (let weekday = 1; weekday <= 7; weekday++) {
     const bucket = buckets.get(weekday);
     if (bucket && bucket.length > 0) {
-      groups.push({ weekday, label: WEEKDAY_LABELS[weekday], rows: bucket });
+      groups.push({ weekday, label: weekdayLabel(weekday), rows: bucket });
     }
   }
 
   const noDate = buckets.get(0);
   if (noDate && noDate.length > 0) {
-    groups.push({ weekday: 0, label: NO_DATE_LABEL, rows: noDate });
+    groups.push({ weekday: 0, label: t('graphql_no_date'), rows: noDate });
   }
 
   return groups;

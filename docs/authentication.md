@@ -322,6 +322,15 @@ token for the user, single-token-per-user) even when the access token has
 already expired. Sign-out therefore both revokes server-side AND expires the
 cookies; it is not a cookie-only clear.
 
+**Display language.** The language chooser on `/login` (`?lang=`) stores the choice in
+the `raplaLocale` cookie with `Path=/` (since [PRD 124](prd/124-spa-i18n.md); it was
+`/login` before, so the API never saw it — the old `/login` cookie is expired when a new
+choice is made). `RequestLanguage` (rapla-server) resolves a browser request's language
+as `raplaLocale` cookie (shipped languages only) → the user's `org.rapla.language`
+preference → the server language; `/api/locale` (the SPA's text catalogue) and
+`GET /api/auth/me` (field `language`) both use it. The choice is not written back into
+the user preference. Swing sends no cookie and is unaffected.
+
 #### Reactive-401 refresh must not be tied to a request subscription
 
 `auth.interceptor.ts` does the reactive refresh: on a 401 from `/api`,

@@ -28,7 +28,7 @@ class ImpersonationKillSwitchTest
     void cookieImpersonateSwitch_disabled_throws()
     {
         AuthCookieController controller =
-                new AuthCookieController(null, null, null, null, null, null, null, false, null);
+                new AuthCookieController(null, null, null, null, null, null, null, false, null, null);
         assertThrows(RaplaSecurityException.class, () -> controller.impersonateSwitch("monty"));
     }
 }

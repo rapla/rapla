@@ -5,6 +5,7 @@ import { MatInputModule } from '@angular/material/input';
 import { provideNativeDateAdapter } from '@angular/material/core';
 
 import { ViewStateStore } from '../state/view-state-store';
+import { TPipe, localeId, t as tr } from '../i18n/i18n.service';
 
 /** Local-midnight {@code Date} for a 'YYYY-MM-DD' string (calendar day, no TZ drift for display). */
 function toDate(dateOnly: string): Date | null {
@@ -74,10 +75,10 @@ export function shiftMonth(
   return monthWindowOf(firstOfMonth(yy, mm));
 }
 
-/** German month label ('Juli 2026') for a LocalDateTime string's month. */
+/** Month label ('Juli 2026') for a LocalDateTime string's month. */
 export function monthLabel(fromIso: string): string {
   const [y, m] = datePart(fromIso).split('-').map(Number);
-  return new Date(y, m - 1, 1).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+  return new Date(y, m - 1, 1).toLocaleDateString(localeId(), { month: 'long', year: 'numeric' });
 }
 
 function firstOfMonth(year: number, month: number): string {
@@ -104,7 +105,7 @@ export function todayWindow(
  */
 @Component({
   selector: 'app-view-control-strip',
-  imports: [MatDatepickerModule, MatFormFieldModule, MatInputModule],
+  imports: [TPipe, MatDatepickerModule, MatFormFieldModule, MatInputModule],
   providers: [provideNativeDateAdapter()],
   template: `
     <div class="strip">
@@ -121,24 +122,24 @@ export function todayWindow(
       @if (isMonth()) {
         <!-- MONTH: navigation steps whole months; the window is the anchor month (PRD 095 D4). -->
         <div class="nav">
-          <button class="navbtn" title="zurück" (click)="prev()">◀</button>
+          <button class="navbtn" [title]="'shell_prev' | t" (click)="prev()">◀</button>
           <span class="range month-label">{{ monthLabelText() }}</span>
-          <button class="navbtn" title="vor" (click)="next()">▶</button>
-          <button class="navbtn today" (click)="today()">Heute</button>
+          <button class="navbtn" [title]="'shell_next' | t" (click)="next()">▶</button>
+          <button class="navbtn today" (click)="today()">{{ 'today' | t }}</button>
         </div>
       } @else if (isWeek()) {
         <!-- WEEK: navigation walks the window; range is read-only. -->
         <div class="nav">
-          <button class="navbtn" title="zurück" (click)="prev()">◀</button>
-          <button class="navbtn today" (click)="today()">Heute</button>
-          <button class="navbtn" title="vor" (click)="next()">▶</button>
+          <button class="navbtn" [title]="'shell_prev' | t" (click)="prev()">◀</button>
+          <button class="navbtn today" (click)="today()">{{ 'today' | t }}</button>
+          <button class="navbtn" [title]="'shell_next' | t" (click)="next()">▶</button>
           <span class="range">{{ rangeLabel() }}</span>
         </div>
       } @else {
         <!-- TABLE: pick an arbitrary from/to range; no navigation. -->
         <div class="range-edit">
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Von</mat-label>
+            <mat-label>{{ 'shell_from' | t }}</mat-label>
             <input
               matInput
               [matDatepicker]="fromPicker"
@@ -149,7 +150,7 @@ export function todayWindow(
             <mat-datepicker #fromPicker />
           </mat-form-field>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Bis</mat-label>
+            <mat-label>{{ 'shell_to' | t }}</mat-label>
             <input
               matInput
               [matDatepicker]="toPicker"
@@ -238,17 +239,18 @@ export function todayWindow(
 export class ViewControlStripComponent {
   protected readonly viewState = inject(ViewStateStore);
 
-  private static readonly LABELS: Record<string, string> = {
-    table: 'Tabelle',
-    grouped: 'Gruppiert',
-    week: 'Woche',
-    month: 'Monat',
-    day: 'Tag',
-    program: 'Programm',
+  private static readonly LABEL_KEYS: Record<string, string> = {
+    table: 'table',
+    grouped: 'shell_mode_grouped',
+    week: 'week',
+    month: 'month',
+    day: 'day',
+    program: 'shell_mode_program',
   };
 
   modeLabel(mode: string): string {
-    return ViewControlStripComponent.LABELS[mode] ?? mode;
+    const key = ViewControlStripComponent.LABEL_KEYS[mode];
+    return key ? tr(key) : mode;
   }
 
   /** WEEK-RANGE layout (navigation + read-only range) when the active mode is the

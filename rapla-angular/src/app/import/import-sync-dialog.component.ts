@@ -33,6 +33,7 @@ import {
 import { EventSheetComponent, type EventSheetDialogData } from '../event/event-sheet.component';
 import { ViewStateStore } from '../state/view-state-store';
 import { NewEventOptionsService, type EventTemplate } from '../event/new-event-options.service';
+import { TPipe, t as tr } from '../i18n/i18n.service';
 
 export interface ImportSyncDialogData {
   groupIds: string[];
@@ -63,17 +64,18 @@ type SyncTab = 'open' | 'linked';
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
+    TPipe,
   ],
   template: `
     <h2 mat-dialog-title>{{ title() }}</h2>
-    <div class="sub">{{ data.semester }} · aus der aktuellen Auswahl</div>
+    <div class="sub">{{ data.semester }} · {{ 'import_from_selection' | t }}</div>
 
     <div class="tabs">
       <button [class.on]="tab() === 'open'" (click)="tab.set('open')">
-        Offen ({{ openItems().length }})
+        {{ 'import_tab_open' | t: openItems().length }}
       </button>
       <button [class.on]="tab() === 'linked'" (click)="tab.set('linked')">
-        Verknüpft ({{ linkedItems().length }})
+        {{ 'import_tab_linked' | t: linkedItems().length }}
       </button>
     </div>
 
@@ -81,10 +83,10 @@ type SyncTab = 'open' | 'linked';
       @switch (tab()) {
         @case ('open') {
           <mat-form-field class="tpl-select" appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Vorlage (leer = automatisch)</mat-label>
+            <mat-label>{{ 'import_template_field' | t }}</mat-label>
             <input
               matInput
-              placeholder="Vorlage suchen…"
+              [placeholder]="'import_template_search' | t"
               [value]="templateQuery()"
               (input)="templateQuery.set($any($event.target).value)"
               [matAutocomplete]="tplAuto"
@@ -94,7 +96,7 @@ type SyncTab = 'open' | 'linked';
                 matSuffix
                 type="button"
                 class="tpl-clear"
-                aria-label="Vorlagenwahl zurücksetzen"
+                [attr.aria-label]="'import_template_reset' | t"
                 (click)="clearTemplate()"
               >
                 ✕
@@ -108,15 +110,17 @@ type SyncTab = 'open' | 'linked';
               @for (t of templates(); track t.id) {
                 <mat-option [value]="t">{{ t.name }}</mat-option>
               } @empty {
-                <mat-option disabled>Keine Vorlage gefunden</mat-option>
+                <mat-option disabled>{{ 'import_no_template_found' | t }}</mat-option>
               }
             </mat-autocomplete>
           </mat-form-field>
 
           <div class="list">
             <div class="section">
-              Veranstaltungen ({{ lectures().length }})
-              <span class="section-tpl">Vorlage: {{ lectureTemplateLabel() }}</span>
+              {{ 'import_events_section' | t: lectures().length }}
+              <span class="section-tpl">{{
+                'import_template_label' | t: lectureTemplateLabel()
+              }}</span>
             </div>
             @for (item of lectures(); track item.sourceId) {
               <label class="row item" [class.off]="!checked().has(item.sourceId)">
@@ -131,21 +135,23 @@ type SyncTab = 'open' | 'linked';
                     <span class="full">{{ item.fullName }}</span>
                   }
                 </span>
-                <span class="tag new">neu</span>
+                <span class="tag new">{{ 'import_tag_new' | t }}</span>
                 <button
                   type="button"
                   class="bind-btn"
-                  title="Mit bestehender Veranstaltung verknüpfen (Vorschläge oder Kalender-Auswahl)"
+                  [title]="'import_bind_tooltip' | t"
                   (click)="openBindDialog(item); $event.preventDefault()"
                 >
-                  verknüpfen…
+                  {{ 'import_bind_button' | t }}
                 </button>
                 <span class="unit">{{ item.unit }}</span>
               </label>
             }
             <div class="section">
-              Prüfungen ({{ exams().length }})
-              <span class="section-tpl">Vorlage: {{ examTemplateLabel() }}</span>
+              {{ 'import_exams_section' | t: exams().length }}
+              <span class="section-tpl">{{
+                'import_template_label' | t: examTemplateLabel()
+              }}</span>
             </div>
             @for (item of exams(); track item.sourceId) {
               <label class="row item" [class.off]="!checked().has(item.sourceId)">
@@ -160,14 +166,14 @@ type SyncTab = 'open' | 'linked';
                     <span class="full">{{ item.fullName }}</span>
                   }
                 </span>
-                <span class="tag new">neu</span>
+                <span class="tag new">{{ 'import_tag_new' | t }}</span>
                 <button
                   type="button"
                   class="bind-btn"
-                  title="Mit bestehender Veranstaltung verknüpfen (Vorschläge oder Kalender-Auswahl)"
+                  [title]="'import_bind_tooltip' | t"
                   (click)="openBindDialog(item); $event.preventDefault()"
                 >
-                  verknüpfen…
+                  {{ 'import_bind_button' | t }}
                 </button>
                 <span class="unit">{{ item.unit }}</span>
               </label>
@@ -179,7 +185,7 @@ type SyncTab = 'open' | 'linked';
             @for (e of linkedItems(); track e.id) {
               <div
                 class="row item openable"
-                title="Klick: zum ersten Termin springen · Doppelklick: bearbeiten"
+                [title]="'import_linked_tooltip' | t"
                 role="button"
                 tabindex="0"
                 (click)="jumpToEvent(e)"
@@ -194,16 +200,16 @@ type SyncTab = 'open' | 'linked';
                 <span class="name">
                   {{ e.name }}
                   @if (changedOf(e.id); as ch) {
-                    <span class="tag warn">geändert</span>
-                    <span class="note">geändert seit {{ ch.changedSince }}</span>
+                    <span class="tag warn">{{ 'import_tag_changed' | t }}</span>
+                    <span class="note">{{ 'import_changed_since' | t: ch.changedSince }}</span>
                   } @else if (isGone(e.id)) {
-                    <span class="tag gone">nicht mehr im Export</span>
+                    <span class="tag gone">{{ 'import_tag_gone' | t }}</span>
                   }
                 </span>
                 <span class="unit">{{ semesterOf(e) }}</span>
               </div>
             } @empty {
-              <p class="empty">Noch nichts verknüpft.</p>
+              <p class="empty">{{ 'import_nothing_linked' | t }}</p>
             }
           </div>
         }
@@ -215,16 +221,14 @@ type SyncTab = 'open' | 'linked';
         @if (error(); as e) {
           <span class="pending error">{{ e }}</span>
         } @else {
-          <span class="pending"
-            >Übernehmen parkt nur — gespeichert wird erst beim Platzieren im Kalender</span
-          >
+          <span class="pending">{{ 'import_park_hint' | t }}</span>
         }
-        <button mat-dialog-close>Schließen</button>
+        <button mat-dialog-close>{{ 'close' | t }}</button>
         <button class="primary" [disabled]="checked().size === 0 || busy()" (click)="submit()">
-          {{ busy() ? 'läuft…' : checked().size + ' übernehmen' }}
+          {{ busy() ? ('import_running' | t) : ('import_accept' | t: checked().size) }}
         </button>
       } @else {
-        <button mat-dialog-close>Schließen</button>
+        <button mat-dialog-close>{{ 'close' | t }}</button>
       }
     </mat-dialog-actions>
   `,
@@ -502,8 +506,8 @@ export class ImportSyncDialogComponent {
         this.service.bindStagedEvent(item.sourceId, result.reservationId).subscribe((ok) => {
           this.snackBar.open(
             ok
-              ? `„${item.name}" mit „${result.targetName}" verknüpft`
-              : `„${item.name}" konnte nicht verknüpft werden`,
+              ? tr('view_linked_with', item.name, result.targetName)
+              : tr('view_link_failed', item.name),
             undefined,
             { duration: 4000 },
           );
@@ -564,8 +568,12 @@ export class ImportSyncDialogComponent {
     return currentSemester(new Date(e.firstDate));
   }
 
-  readonly title = computed(
-    () => `${this.service.sourceName() || 'Import'}-Sync — ${this.data.groupLabel}`,
+  readonly title = computed(() =>
+    tr(
+      'import_sync_title',
+      this.service.sourceName() || tr('import_default_source'),
+      this.data.groupLabel,
+    ),
   );
 
   readonly templates = computed(() => {
@@ -582,16 +590,16 @@ export class ImportSyncDialogComponent {
     if (sel && !sel.name.toLowerCase().includes('pruefung')) return sel.name;
     const auto = this.autoTemplates();
     return auto.lectureTemplateId
-      ? `${auto.lectureTemplateName} (automatisch)`
-      : 'ohne Vorlage (keine passende gefunden)';
+      ? tr('import_template_auto', auto.lectureTemplateName)
+      : tr('import_without_template');
   });
   readonly examTemplateLabel = computed(() => {
     const sel = this.selectedTemplate();
     if (sel && sel.name.toLowerCase().includes('pruefung')) return sel.name;
     const auto = this.autoTemplates();
     return auto.examTemplateId
-      ? `${auto.examTemplateName} (automatisch)`
-      : 'ohne Vorlage (keine passende gefunden)';
+      ? tr('import_template_auto', auto.examTemplateName)
+      : tr('import_without_template');
   });
 
   readonly checked = signal<Set<string>>(new Set());

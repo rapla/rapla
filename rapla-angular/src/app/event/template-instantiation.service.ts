@@ -3,6 +3,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Observable, map, of, switchMap } from 'rxjs';
 
 import { GraphqlService } from '../graphql/graphql.service';
+import { t } from '../i18n/i18n.service';
 import { EventDataService } from './event-data.service';
 import type { EventDraft } from './event-draft';
 import { draftFromTemplate, type PlacementTarget } from './new-event-picker-model';
@@ -39,11 +40,9 @@ export class TemplateInstantiationService {
           // not decided: Swing creates every reservation of the template, so a Semestervorlage
           // would look like it worked while n-1 events never came into being.
           if (all.length > 1) {
-            this.snackBar.open(
-              `Die Vorlage enthält ${all.length} Veranstaltungen — hier wird nur die erste angelegt (im Swing-Client werden alle angelegt).`,
-              undefined,
-              { duration: 8000 },
-            );
+            this.snackBar.open(t('event_template_multiple', all.length), undefined, {
+              duration: 8000,
+            });
           }
           return all[0] ? this.eventData.load(all[0].id) : of(null);
         }),

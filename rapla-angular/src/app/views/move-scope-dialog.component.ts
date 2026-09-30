@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 
+import { TPipe } from '../i18n/i18n.service';
 import type { MoveScope, MoveScopeOption } from './move-scope';
 
 export interface MoveScopeDialogData {
@@ -18,7 +19,7 @@ export interface MoveScopeDialogData {
  */
 @Component({
   selector: 'app-move-scope-dialog',
-  imports: [MatDialogModule, MatButtonModule],
+  imports: [MatDialogModule, MatButtonModule, TPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h2 mat-dialog-title>{{ data.confirmLabel }}</h2>
@@ -38,7 +39,7 @@ export interface MoveScopeDialogData {
       }
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button matButton (click)="ref.close(undefined)">Abbrechen</button>
+      <button matButton (click)="ref.close(undefined)">{{ 'cancel' | t }}</button>
       <button matButton="filled" class="confirm" (click)="ref.close(selected())">
         {{ data.confirmLabel }}
       </button>

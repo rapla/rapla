@@ -10,6 +10,7 @@ import {
   PermissionMigrationFinding,
   PermissionMigrationService,
 } from './permission-migration.service';
+import { TPipe, t } from '../i18n/i18n.service';
 
 /**
  * PRD 090 — "Permission migration" admin dialog. One row + one checkbox per
@@ -27,17 +28,16 @@ import {
     MatIconModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
+    TPipe,
   ],
   template: `
     <h2 mat-dialog-title>
       <mat-icon class="title-icon" aria-hidden="true">rule</mat-icon>
-      Permission migration
+      {{ 'account_migration_title' | t }}
     </h2>
     <mat-dialog-content>
       <p class="intro">
-        Switching to additive permissions raised access on these resources (a previous “soft deny”
-        no longer applies). Review each, then mark it resolved — this prunes the obsolete
-        <code>DENIED</code> rows and clears it from the list.
+        {{ 'account_migration_intro' | t }}
       </p>
 
       @if (loading()) {
@@ -45,7 +45,7 @@ import {
       } @else if (findings().length === 0) {
         <p class="done">
           <mat-icon aria-hidden="true">check_circle</mat-icon>
-          Nothing to migrate — every resource is additive-clean.
+          {{ 'account_migration_done' | t }}
         </p>
       } @else {
         @for (f of findings(); track f.resourceId) {
@@ -53,7 +53,7 @@ import {
             <mat-checkbox
               [disabled]="busyId() === f.resourceId"
               (change)="resolve(f)"
-              matTooltip="Mark resolved — prune obsolete DENIED rows and acknowledge"
+              [matTooltip]="'account_migration_resolve_tooltip' | t"
             ></mat-checkbox>
             <div class="fmeta">
               <div class="fname">{{ f.resourceName }}</div>
@@ -65,7 +65,7 @@ import {
                       >{{ levelLabel(e.currentLevel) }} → {{ e.additiveLevel }}</span
                     >
                     @if (e.form === 'DENIED') {
-                      <span class="badge denied">was denied</span>
+                      <span class="badge denied">{{ 'account_migration_was_denied' | t }}</span>
                     }
                   </li>
                 }
@@ -80,7 +80,7 @@ import {
       }
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button matButton mat-dialog-close>Close</button>
+      <button matButton mat-dialog-close>{{ 'close' | t }}</button>
     </mat-dialog-actions>
   `,
   styles: [
@@ -184,7 +184,7 @@ export class PermissionMigrationDialogComponent implements OnInit {
       error: (err) => {
         console.warn('[permission-migration] resolve failed', err);
         this.busyId.set(null);
-        this.errorMessage.set('Could not resolve this resource.');
+        this.errorMessage.set(t('account_migration_resolve_failed'));
       },
     });
   }
@@ -199,7 +199,7 @@ export class PermissionMigrationDialogComponent implements OnInit {
       error: (err) => {
         console.warn('[permission-migration] load failed', err);
         this.loading.set(false);
-        this.errorMessage.set('Could not load the migration worklist.');
+        this.errorMessage.set(t('account_migration_load_failed'));
       },
     });
   }

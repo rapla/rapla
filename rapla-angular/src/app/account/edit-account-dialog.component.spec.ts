@@ -7,6 +7,7 @@ import { of } from 'rxjs';
 import { EditAccountDialogComponent } from './edit-account-dialog.component';
 import { ProfileService, ProfileEditCapabilities } from './profile.service';
 import { AuthService, Identity } from '../auth/auth.service';
+import { t } from '../i18n/i18n.service';
 
 const IDENTITY: Identity = {
   userId: 'u1',
@@ -54,9 +55,9 @@ describe('EditAccountDialogComponent', () => {
     fixture.detectChanges();
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
     expect(text).toContain('Name');
-    expect(text).toContain('E-mail');
-    expect(text).toContain('Password');
-    expect(text).not.toContain('managed by your identity provider');
+    expect(text).toContain(t('account_email_heading'));
+    expect(text).toContain(t('account_password_heading'));
+    expect(fixture.nativeElement.querySelector('.banner')).toBeNull();
   });
 
   it('shows the read-only banner and no sections for a provisioned user', async () => {
@@ -68,8 +69,7 @@ describe('EditAccountDialogComponent', () => {
     const c = fixture.componentInstance;
     expect(c.externalIdpLabel()).toBe('keycloak:dhbw');
     expect(c.canChangeName()).toBe(false);
-    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
-    expect(text).toContain('managed by your identity provider');
+    expect(fixture.nativeElement.querySelector('.banner')).not.toBeNull();
   });
 
   it('posts a name change carrying the caller username and three parts', async () => {
@@ -84,7 +84,7 @@ describe('EditAccountDialogComponent', () => {
     c.saveName();
 
     expect(changeName).toHaveBeenCalledWith('homer', 'Mr', 'Homer', 'Simpson');
-    expect(c.successMessage()).toContain('Name updated');
+    expect(c.successMessage()).toContain(t('account_name_updated'));
   });
 
   it('blocks the password save until the confirmation matches', () => {

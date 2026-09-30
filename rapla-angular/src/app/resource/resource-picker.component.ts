@@ -25,6 +25,7 @@ import {
 } from '../state/resource-tree';
 import { entityIcon } from '../shell/entity-icon';
 import type { AvailabilityRow } from '../event/availability-search.service';
+import { TPipe, t as tr } from '../i18n/i18n.service';
 
 /** A row gesture — the host decides what it means (PRD 123 D2). */
 export interface PickEvent {
@@ -42,7 +43,7 @@ export interface PickEvent {
  */
 @Component({
   selector: 'app-resource-picker',
-  imports: [MatIconModule],
+  imports: [TPipe, MatIconModule],
   template: `
     <div class="chips">
       @for (c of baseChips; track c.key) {
@@ -57,12 +58,12 @@ export interface PickEvent {
       }
       <select
         class="typesel"
-        aria-label="Typ"
+        [attr.aria-label]="'type' | t"
         [class.on]="treeMode()"
         [value]="treeMode() ? chip() : ''"
         (change)="onTypeChange($event)"
       >
-        <option value="">Typ ▾</option>
+        <option value="">{{ 'type' | t }} ▾</option>
         @for (t of typeChips(); track t.key) {
           <option [value]="t.key">{{ t.label }} ({{ t.count }})</option>
         }
@@ -70,14 +71,14 @@ export interface PickEvent {
     </div>
     @if (chip() === 'recents' && store.recents().length) {
       <div class="grouphdr recents-hdr">
-        <span>Zuletzt verwendet</span>
+        <span>{{ 'resource_recently_used' | t }}</span>
         <span
           class="clr"
           role="button"
           tabindex="0"
           (click)="store.clearRecents()"
           (keydown.enter)="store.clearRecents()"
-          >× leeren</span
+          >× {{ 'resource_clear' | t }}</span
         >
       </div>
     }
@@ -89,7 +90,7 @@ export interface PickEvent {
           [style.padding-left.rem]="0.9 + row.depth"
           (click)="showMoreChildren(row.more)"
         >
-          Weitere {{ block(row.hidden) }} anzeigen
+          {{ 'resource_show_more' | t: block(row.hidden) }}
         </button>
       } @else if (row.node.kind === 'group') {
         <div class="grouprow" [style.padding-left.rem]="0.5 + row.depth">
@@ -108,10 +109,10 @@ export interface PickEvent {
             <button
               type="button"
               class="selectall"
-              [attr.aria-label]="'Alle in ' + row.node.label + ' wählen'"
+              [attr.aria-label]="'resource_select_all_in' | t: row.node.label"
               (click)="selectGroup.emit(membersOf(row.node))"
             >
-              alle wählen
+              {{ 'resource_select_all' | t }}
             </button>
           }
         </div>
@@ -134,7 +135,7 @@ export interface PickEvent {
           <mat-icon class="ico" [style.color]="it.color || null">{{ icon(it) }}</mat-icon>
           <span class="lbl">{{ it.label }}</span>
           @if (activeId() === it.id) {
-            <span class="now">▶ gezeigt</span>
+            <span class="now">▶ {{ 'resource_shown' | t }}</span>
           }
           @if (mode() === 'assign' && availability().get(it.id); as st) {
             <span class="pill" [class]="'pill ' + st.status">{{ pillLabel(st) }}</span>
@@ -143,8 +144,10 @@ export interface PickEvent {
             type="button"
             class="fav"
             [class.on]="store.isFavorite(it.id)"
-            [attr.aria-label]="store.isFavorite(it.id) ? 'Aus Favoriten entfernen' : 'Zu Favoriten'"
-            [title]="store.isFavorite(it.id) ? 'Aus Favoriten entfernen' : 'Zu Favoriten'"
+            [attr.aria-label]="
+              (store.isFavorite(it.id) ? 'resource_unfavorite' : 'resource_favorite') | t
+            "
+            [title]="(store.isFavorite(it.id) ? 'resource_unfavorite' : 'resource_favorite') | t"
             (click)="toggleFav($event, it)"
           >
             {{ store.isFavorite(it.id) ? '★' : '☆' }}
@@ -153,8 +156,8 @@ export interface PickEvent {
             <button
               type="button"
               class="act"
-              aria-label="Aktionen"
-              title="Aktionen"
+              [attr.aria-label]="'resource_actions' | t"
+              [title]="'resource_actions' | t"
               (click)="$event.stopPropagation(); menu.emit({ item: it, anchor: $event.target })"
             >
               ⋮
@@ -163,11 +166,11 @@ export interface PickEvent {
         </div>
       }
     } @empty {
-      <div class="more">— leer</div>
+      <div class="more">{{ 'resource_empty' | t }}</div>
     }
     @if (hiddenCount() > 0) {
       <button type="button" class="showmore" (click)="extra.update((n) => n + 1)">
-        Weitere {{ block(hiddenCount()) }} anzeigen
+        {{ 'resource_show_more' | t: block(hiddenCount()) }}
       </button>
     }
   `,
@@ -384,9 +387,9 @@ export class ResourcePickerComponent {
   readonly menu = output<{ item: ResourceItem; anchor: EventTarget | null }>();
 
   protected readonly baseChips = [
-    { key: 'all', label: 'Alle' },
-    { key: 'favorites', label: '★ Favoriten' },
-    { key: 'recents', label: 'Zuletzt' },
+    { key: 'all', label: tr('state_chip_all') },
+    { key: 'favorites', label: tr('state_chip_favorites') },
+    { key: 'recents', label: tr('state_chip_recents') },
   ];
 
   /** PRD 123 D3 — the types fold into one select, A–Z with their counts. */
@@ -497,7 +500,13 @@ export class ResourcePickerComponent {
   }
 
   protected pillLabel(st: AvailabilityRow): string {
-    return st.status === 'AVAILABLE' ? 'frei' : st.status === 'REQUEST_ONLY' ? 'Anfrage' : 'belegt';
+    return tr(
+      st.status === 'AVAILABLE'
+        ? 'event_free'
+        : st.status === 'REQUEST_ONLY'
+          ? 'resource_request'
+          : 'event_booked',
+    );
   }
 
   protected onTypeChange(event: Event): void {

@@ -12,6 +12,7 @@ import {
   usersMatching,
   type PickerChip,
 } from './resource-picker';
+import { t as tr } from '../i18n/i18n.service';
 
 /** A steppable item in the selection list. Usually a resource; a `user` item
  *  steps as an ownerEq scope chip instead of a resource filter. Defaults to
@@ -123,9 +124,9 @@ export class ResourceSelectionStore {
   }
 
   readonly chips = computed<PickerChip[]>(() => [
-    { key: 'all', label: 'Alle' },
-    { key: 'favorites', label: '★ Favoriten' },
-    { key: 'recents', label: 'Zuletzt' },
+    { key: 'all', label: tr('state_chip_all') },
+    { key: 'favorites', label: tr('state_chip_favorites') },
+    { key: 'recents', label: tr('state_chip_recents') },
     ...typeChips(this._resources()),
   ]);
 

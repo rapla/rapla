@@ -4,10 +4,12 @@ import type { RepeatingRule } from './event-draft';
 import {
   defaultRule,
   endModeOf,
+  occurrencesOverlap,
   raplaWeekday,
   ruleSummary,
   toggleException,
   toggleWeekday,
+  withAnchorWeekday,
   withCount,
   withEndMode,
   withInterval,
@@ -24,17 +26,17 @@ describe('repeating-edit (PRD 091 Phase 4.2, pure)', () => {
     expect(raplaWeekday('2026-07-11T00:00:00')).toBe(7); // Saturday
   });
 
-  it('defaultRule WEEKLY seeds the start weekday, FOREVER ending', () => {
+  it('defaultRule WEEKLY seeds the start weekday, ends after 10 occurrences (user, 2026-09-30)', () => {
     const rule = defaultRule('WEEKLY', START);
     expect(rule).toEqual({
       type: 'WEEKLY',
       interval: 1,
       end: null,
-      count: null,
+      count: 10,
       weekdays: [3],
       exceptions: [],
     });
-    expect(endModeOf(rule)).toBe('FOREVER');
+    expect(endModeOf(rule)).toBe('COUNT');
   });
 
   it('defaultRule resets type-specific fields on switch (savedRepeatingType analog)', () => {
@@ -76,6 +78,36 @@ describe('repeating-edit (PRD 091 Phase 4.2, pure)', () => {
     expect(none.weekdays).toEqual([]);
   });
 
+  it('withAnchorWeekday follows the start weekday like AppointmentImpl.move (Swing parity)', () => {
+    const tue = defaultRule('WEEKLY', START); // [3]
+    const tueThu = toggleWeekday(tue, 5);
+    // start moves Tue → Wed: Tue leaves, Wed joins
+    expect(withAnchorWeekday(tueThu, START, '2026-07-08T10:00:00').weekdays).toEqual([4, 5]);
+    // start moves Tue → Thu (already selected): Tue stays, nothing else changes
+    expect(withAnchorWeekday(tueThu, START, '2026-07-09T10:00:00').weekdays).toEqual([3, 5]);
+    // same weekday or non-weekly: untouched
+    expect(withAnchorWeekday(tueThu, START, '2026-07-14T10:00:00').weekdays).toEqual([3, 5]);
+    expect(
+      withAnchorWeekday(defaultRule('DAILY', START), START, '2026-07-08T10:00:00').weekdays,
+    ).toBeNull();
+  });
+
+  it('occurrencesOverlap flags a duration longer than the gap between repetitions (user, 2026-09-30)', () => {
+    const twoDays = { start: START, end: '2026-07-09T10:00:00' };
+    const oneHour = { start: START, end: '2026-07-07T11:00:00' };
+    expect(occurrencesOverlap(defaultRule('DAILY', START), twoDays)).toBe(true);
+    expect(occurrencesOverlap(defaultRule('DAILY', START), oneHour)).toBe(false);
+    expect(occurrencesOverlap(withInterval(defaultRule('DAILY', START), 2), twoDays)).toBe(false);
+    // weekly Tue + Wed: the gap is one day
+    expect(occurrencesOverlap(toggleWeekday(defaultRule('WEEKLY', START), 4), twoDays)).toBe(true);
+    expect(occurrencesOverlap(defaultRule('WEEKLY', START), twoDays)).toBe(false);
+    // exactly the gap (24 h daily) is still fine
+    expect(
+      occurrencesOverlap(defaultRule('DAILY', START), { start: START, end: '2026-07-08T10:00:00' }),
+    ).toBe(false);
+    expect(occurrencesOverlap(defaultRule('MONTHLY', START), twoDays)).toBe(false);
+  });
+
   it('toggleException adds sorted / removes day keys', () => {
     const rule = defaultRule('WEEKLY', START);
     const skipped = toggleException(rule, '2026-07-14');
@@ -96,9 +128,9 @@ describe('repeating-edit (PRD 091 Phase 4.2, pure)', () => {
     const weekly = toggleWeekday(defaultRule('WEEKLY', START), 5);
     expect(ruleSummary(withCount(weekly, 10), START)).toBe('Wöchentlich am Di + Do · 10 Termine');
     expect(ruleSummary(withInterval(defaultRule('DAILY', START), 2), START)).toBe(
-      'Alle 2 Tage · endet nie',
+      'Alle 2 Tage · 10 Termine',
     );
-    expect(ruleSummary(defaultRule('MONTHLY', START), START)).toBe(
+    expect(ruleSummary(withEndMode(defaultRule('MONTHLY', START), 'FOREVER', START), START)).toBe(
       'Monatlich am 1. Di · endet nie',
     );
     const yearly = withUntil(defaultRule('YEARLY', START), '2030-07-07');

@@ -19,6 +19,7 @@ import { UndoToastService } from '../actions/undo-toast.service';
 import { FilterStore } from '../state/filter-store';
 import { ImportWorklistService } from '../import/import-worklist.service';
 import { signal as ngSignal } from '@angular/core';
+import { t } from '../i18n/i18n.service';
 
 const dialogOpen = vi.fn();
 
@@ -118,8 +119,8 @@ describe('AppToolbarComponent', () => {
     const fixture = TestBed.createComponent(AppToolbarComponent);
     fixture.detectChanges();
     const labels = openMenuItems(fixture).map((b) => b.textContent ?? '');
-    expect(labels.some((t) => t.includes('Account settings'))).toBe(true);
-    expect(labels.some((t) => t.includes('Sign out'))).toBe(true);
+    expect(labels.some((l) => l.includes(t('shell_account_settings')))).toBe(true);
+    expect(labels.some((l) => l.includes(t('shell_sign_out')))).toBe(true);
   });
 
   it('offers Switch to user only when the caller can admin users', () => {
@@ -127,7 +128,7 @@ describe('AppToolbarComponent', () => {
     const fixture = TestBed.createComponent(AppToolbarComponent);
     fixture.detectChanges();
     const labels = openMenuItems(fixture).map((b) => b.textContent ?? '');
-    expect(labels.some((t) => t.includes('Switch to user'))).toBe(true);
+    expect(labels.some((l) => l.includes(t('shell_switch_to_user')))).toBe(true);
   });
 
   it('omits Switch to user when the caller cannot admin anyone', () => {
@@ -135,7 +136,7 @@ describe('AppToolbarComponent', () => {
     const fixture = TestBed.createComponent(AppToolbarComponent);
     fixture.detectChanges();
     const labels = openMenuItems(fixture).map((b) => b.textContent ?? '');
-    expect(labels.some((t) => t.includes('Switch to user'))).toBe(false);
+    expect(labels.some((l) => l.includes(t('shell_switch_to_user')))).toBe(false);
   });
 
   // PRD 090 — the "Permission migration" entry (in the Account settings submenu) is
@@ -150,7 +151,7 @@ describe('AppToolbarComponent', () => {
   /** Open the user menu, then the Account-settings submenu; return its item labels. */
   function openAccountSubmenuLabels(fixture: ReturnType<typeof TestBed.createComponent>): string[] {
     const items = openMenuItems(fixture);
-    const account = items.find((b) => (b.textContent ?? '').includes('Account settings'));
+    const account = items.find((b) => (b.textContent ?? '').includes(t('shell_account_settings')));
     account?.click();
     fixture.detectChanges();
     return (Array.from(document.querySelectorAll('button.mat-mdc-menu-item')) as HTMLElement[]).map(
@@ -162,27 +163,27 @@ describe('AppToolbarComponent', () => {
     configure(ADMIN, [], undefined, [FINDING]);
     const fixture = TestBed.createComponent(AppToolbarComponent);
     fixture.detectChanges();
-    expect(openAccountSubmenuLabels(fixture).some((t) => t.includes('Permission migration'))).toBe(
-      true,
-    );
+    expect(
+      openAccountSubmenuLabels(fixture).some((l) => l.includes(t('shell_permission_migration'))),
+    ).toBe(true);
   });
 
   it('hides Permission migration when the worklist is empty', () => {
     configure(ADMIN, [], undefined, []);
     const fixture = TestBed.createComponent(AppToolbarComponent);
     fixture.detectChanges();
-    expect(openAccountSubmenuLabels(fixture).some((t) => t.includes('Permission migration'))).toBe(
-      false,
-    );
+    expect(
+      openAccountSubmenuLabels(fixture).some((l) => l.includes(t('shell_permission_migration'))),
+    ).toBe(false);
   });
 
   it('hides Permission migration from a non-admin even if items exist', () => {
     configure(LOGGED_IN, [], undefined, [FINDING]);
     const fixture = TestBed.createComponent(AppToolbarComponent);
     fixture.detectChanges();
-    expect(openAccountSubmenuLabels(fixture).some((t) => t.includes('Permission migration'))).toBe(
-      false,
-    );
+    expect(
+      openAccountSubmenuLabels(fixture).some((l) => l.includes(t('shell_permission_migration'))),
+    ).toBe(false);
   });
 });
 

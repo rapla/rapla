@@ -1,3 +1,4 @@
+import { t } from '../i18n/i18n.service';
 import type { EventDraft } from '../event/event-draft';
 
 /**
@@ -36,15 +37,15 @@ export function deleteScopeOptions(draft: EventDraft, block: BlockRef): DeleteSc
     : null;
   const multi = draft.appointments.length > 1;
 
-  const options: DeleteScopeOption[] = [{ scope: 'event', label: 'Ganze Veranstaltung' }];
+  const options: DeleteScopeOption[] = [{ scope: 'event', label: t('view_scope_whole_event') }];
   if (!appointment) return options;
 
   if (appointment.repeating !== null && multi) {
-    options.push({ scope: 'serie', label: 'Serie (alle Termine dieser Wiederholung)' });
+    options.push({ scope: 'serie', label: t('view_scope_series_all') });
   }
   if (appointment.repeating !== null || multi) {
     const day = block.start ? ` (${formatDay(block.start)})` : '';
-    options.push({ scope: 'single', label: `Nur dieser Termin${day}` });
+    options.push({ scope: 'single', label: t('view_scope_only_this_day', day) });
   }
   return options;
 }

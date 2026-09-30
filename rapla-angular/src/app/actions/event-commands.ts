@@ -1,5 +1,6 @@
 import { catchError, forkJoin, map, of, switchMap, type Observable } from 'rxjs';
 
+import { t } from '../i18n/i18n.service';
 import type { SpaCommand } from './command';
 import type { MutationIssue, MutationResult } from '../graphql/mutation-result';
 import type { GraphqlService } from '../graphql/graphql.service';
@@ -24,11 +25,11 @@ export function buildDeleteCommand(
   original: EventDraft,
   action: DeleteAction,
 ): SpaCommand {
-  const name = String(original.values['name'] ?? '') || 'Veranstaltung';
+  const name = String(original.values['name'] ?? '') || t('event');
 
   if (action.kind === 'deleteEvent') {
     return {
-      label: `„${name}" gelöscht`,
+      label: t('action_event_deleted', name),
       execute: () =>
         gql.mutate<{ deleteReservations: { overallStatus: string } }>(
           `mutation ($ids: [ID!]!) { deleteReservations(ids: $ids) { overallStatus } }`,
@@ -60,7 +61,7 @@ export function buildBulkDeleteCommand(
 ): SpaCommand {
   const n = originals.length;
   return {
-    label: n === 1 ? '1 Veranstaltung gelöscht' : `${n} Veranstaltungen gelöscht`,
+    label: n === 1 ? t('action_events_deleted_one') : t('action_events_deleted', n),
     execute: () =>
       gql.mutate<{ deleteReservations: { overallStatus: string } }>(
         `mutation ($ids: [ID!]!) { deleteReservations(ids: $ids) { overallStatus } }`,
@@ -74,7 +75,10 @@ export function buildBulkDeleteCommand(
           restored.lastChanged = null;
           return (data.save(restored) as Observable<MutationResult<unknown>>).pipe(
             catchError(() =>
-              of({ kind: 'transport', message: 'Netzwerkfehler' } as MutationResult<unknown>),
+              of({
+                kind: 'transport',
+                message: t('action_network_error'),
+              } as MutationResult<unknown>),
             ),
             map((result) => ({ original, result })),
           );
@@ -92,12 +96,16 @@ function aggregateRestore(
     {
       code: 'BULK_UNDO_PARTIAL',
       path: '',
-      message: `${outcomes.length - failed.length} von ${outcomes.length} wiederhergestellt`,
+      message: t('action_bulk_restored', outcomes.length - failed.length, outcomes.length),
     },
     ...failed.map((f) => ({
       code: 'BULK_UNDO_FAILED',
       path: '',
-      message: `„${String(f.original.values['name'] ?? '') || 'Veranstaltung'}" nicht wiederhergestellt (${restoreFailureReason(f.result)})`,
+      message: t(
+        'action_bulk_not_restored',
+        String(f.original.values['name'] ?? '') || t('event'),
+        restoreFailureReason(f.result),
+      ),
     })),
   ];
   return { kind: 'invalid', issues };
@@ -106,13 +114,13 @@ function aggregateRestore(
 function restoreFailureReason(result: MutationResult<unknown>): string {
   switch (result.kind) {
     case 'concurrent':
-      return 'inzwischen geändert';
+      return t('action_reason_concurrent');
     case 'denied':
-      return 'keine Berechtigung';
+      return t('action_reason_denied');
     case 'transport':
-      return 'Netzwerkfehler';
+      return t('action_network_error');
     default:
-      return 'ungültig';
+      return t('action_reason_invalid');
   }
 }
 
@@ -152,7 +160,7 @@ export function buildMoveCommand(
       },
     ) as Observable<MutationResult<unknown>>;
   return {
-    label: `„${name}" verschoben`,
+    label: t('action_moved', name),
     execute: () => move(shiftMinutes),
     undo: () => move(-shiftMinutes),
   };
@@ -181,7 +189,7 @@ export function buildMoveAppointmentCommand(
       { id: appointmentId, occ, target: { dateTime: { start } } },
     ) as Observable<MutationResult<unknown>>;
   return {
-    label: `„${name}" verschoben`,
+    label: t('action_moved', name),
     execute: () => move(occurrence, shifted),
     undo: () => move(shifted, occurrence),
   };
@@ -209,7 +217,7 @@ export function buildResizeAppointmentCommand(
       { id: appointmentId, occ: occurrence, target: { dateTime: { start: occurrence, end } } },
     ) as Observable<MutationResult<unknown>>;
   return {
-    label: `„${name}" Dauer geändert`,
+    label: t('action_duration_changed', name),
     execute: () => resize(newEnd),
     undo: () => resize(oldEnd),
   };
@@ -231,7 +239,7 @@ export function buildSplitOccurrenceCommand(
   target: { dateTime: { start: string; end?: string } },
 ): SpaCommand {
   return {
-    label: `„${name}" – Termin geändert`,
+    label: t('action_appointment_changed', name),
     execute: () =>
       gql.mutate<{ splitOccurrence: { id: string } }>(
         `mutation ($id: ID!, $occ: LocalDateTime!, $target: ResizableTarget!) {
@@ -250,7 +258,7 @@ function scopedDeleteCommand(
 ): SpaCommand {
   let postDeleteLastChanged: string | null = null;
   return {
-    label: `Termin aus „${name}" gelöscht`,
+    label: t('action_appointment_deleted', name),
     execute: () =>
       (data.save(action.draft) as Observable<MutationResult<unknown>>).pipe(
         switchMap((result) => {

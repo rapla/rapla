@@ -232,3 +232,45 @@ export function remapValues(
   }
   return out;
 }
+
+/** PRD 096 Phase 5 — a tree-category node as `category(path:) { children … }` returns it. */
+export interface CategoryNode {
+  id: string;
+  name: string;
+  children?: CategoryNode[];
+}
+
+/** One row of a flattened category tree; `path` is relative to the attribute root (Swing getPath). */
+export interface CategoryRow {
+  id: string;
+  name: string;
+  path: string;
+  depth: number;
+  parentId: string | null;
+  hasChildren: boolean;
+}
+
+// ponytail: fixed depth (GraphQL has no recursion) — Category.hasChildren allows lazy per-level loading if trees get deeper.
+export const CATEGORY_TREE_DEPTH = 5;
+
+export function categoryTreeSelection(depth = CATEGORY_TREE_DEPTH): string {
+  if (depth === 0) return '';
+  const inner = depth > 1 ? ` ${categoryTreeSelection(depth - 1)}` : '';
+  return `children { id name${inner} }`;
+}
+
+export function flattenCategoryTree(
+  nodes: CategoryNode[],
+  prefix = '',
+  depth = 0,
+  parentId: string | null = null,
+): CategoryRow[] {
+  return nodes.flatMap((n) => {
+    const path = prefix ? `${prefix}/${n.name}` : n.name;
+    const kids = n.children ?? [];
+    return [
+      { id: n.id, name: n.name, path, depth, parentId, hasChildren: kids.length > 0 },
+      ...flattenCategoryTree(kids, path, depth + 1, n.id),
+    ];
+  });
+}

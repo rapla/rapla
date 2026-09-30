@@ -1,3 +1,4 @@
+import { t } from '../i18n/i18n.service';
 import type { GraphqlService } from '../graphql/graphql.service';
 import type { SpaCommand } from '../actions/command';
 import {
@@ -65,7 +66,7 @@ export function moveBlockFacts(row: Record<string, unknown>): MoveBlockFacts | n
     multi: typeof count === 'number' && count > 1,
     isException: row['isException'] === true,
     canModify: reservation['canModify'] === true,
-    name: String(row['name'] ?? '') || 'Veranstaltung',
+    name: String(row['name'] ?? '') || t('event'),
   };
 }
 
@@ -83,18 +84,18 @@ export function moveScopeOptions(facts: MoveBlockFacts, gesture: MoveGesture): M
   if (gesture.kind === 'resize') {
     if (facts.repeating) {
       return [
-        { scope: 'serie', label: 'Ganze Serie' },
-        { scope: 'single', label: 'Nur dieser Termin' },
+        { scope: 'serie', label: t('view_scope_whole_series') },
+        { scope: 'single', label: t('view_scope_only_this') },
       ];
     }
-    return [{ scope: 'serie', label: 'Ganze Serie' }];
+    return [{ scope: 'serie', label: t('view_scope_whole_series') }];
   }
-  const options: MoveScopeOption[] = [{ scope: 'event', label: 'Ganze Veranstaltung' }];
+  const options: MoveScopeOption[] = [{ scope: 'event', label: t('view_scope_whole_event') }];
   if (facts.repeating && facts.multi) {
-    options.push({ scope: 'serie', label: 'Serie (alle Termine dieser Wiederholung)' });
+    options.push({ scope: 'serie', label: t('view_scope_series_all') });
   }
   if (facts.repeating || facts.multi) {
-    options.push({ scope: 'single', label: 'Nur dieser Termin' });
+    options.push({ scope: 'single', label: t('view_scope_only_this') });
   }
   return options;
 }

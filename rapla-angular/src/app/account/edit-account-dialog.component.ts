@@ -9,6 +9,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { AuthService } from '../auth/auth.service';
 import { ProfileService } from './profile.service';
+import { TPipe, t } from '../i18n/i18n.service';
 
 /**
  * PRD 050 — "Edit account" dialog (local users only). Reached from the user
@@ -30,11 +31,12 @@ import { ProfileService } from './profile.service';
     MatInputModule,
     MatIconModule,
     MatProgressSpinnerModule,
+    TPipe,
   ],
   template: `
     <h2 mat-dialog-title>
       <mat-icon class="title-icon" aria-hidden="true">badge</mat-icon>
-      Edit account
+      {{ 'account_edit_title' | t }}
     </h2>
     <mat-dialog-content>
       @if (loading()) {
@@ -44,8 +46,7 @@ import { ProfileService } from './profile.service';
           <div class="banner">
             <mat-icon aria-hidden="true">info</mat-icon>
             <div>
-              Your profile is managed by your identity provider (<b>{{ externalIdpLabel() }}</b
-              >). Name, e-mail and password are read-only here.
+              {{ 'account_idp_managed' | t: externalIdpLabel() }}
             </div>
           </div>
         }
@@ -53,33 +54,34 @@ import { ProfileService } from './profile.service';
         @if (canChangeName()) {
           <section [formGroup]="nameForm">
             <h3>
-              Name <span class="hint">(current: {{ currentName() }})</span>
+              {{ 'name' | t }}
+              <span class="hint">{{ 'account_current_name' | t: currentName() }}</span>
             </h3>
             <div class="name-row">
               <mat-form-field appearance="outline" class="title-field">
-                <mat-label>Title</mat-label>
+                <mat-label>{{ 'account_title' | t }}</mat-label>
                 <input matInput formControlName="title" />
               </mat-form-field>
               <mat-form-field appearance="outline">
-                <mat-label>First name</mat-label>
+                <mat-label>{{ 'firstname' | t }}</mat-label>
                 <input matInput formControlName="firstname" />
               </mat-form-field>
               <mat-form-field appearance="outline">
-                <mat-label>Last name</mat-label>
+                <mat-label>{{ 'account_last_name' | t }}</mat-label>
                 <input matInput formControlName="lastname" />
               </mat-form-field>
             </div>
             <button matButton="filled" [disabled]="busy() === 'name'" (click)="saveName()">
-              Save name
+              {{ 'account_save_name' | t }}
             </button>
           </section>
         }
 
         @if (canChangeEmail()) {
           <section [formGroup]="emailForm">
-            <h3>E-mail</h3>
+            <h3>{{ 'account_email_heading' | t }}</h3>
             <mat-form-field appearance="outline" class="full-width">
-              <mat-label>New e-mail</mat-label>
+              <mat-label>{{ 'account_new_email' | t }}</mat-label>
               <input matInput type="email" formControlName="email" />
             </mat-form-field>
             <button
@@ -87,24 +89,24 @@ import { ProfileService } from './profile.service';
               [disabled]="emailForm.invalid || busy() === 'email'"
               (click)="saveEmail()"
             >
-              Save e-mail
+              {{ 'account_save_email' | t }}
             </button>
           </section>
         }
 
         @if (canChangePassword()) {
           <section [formGroup]="passwordForm">
-            <h3>Password</h3>
+            <h3>{{ 'account_password_heading' | t }}</h3>
             <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Current password</mat-label>
+              <mat-label>{{ 'account_current_password' | t }}</mat-label>
               <input matInput type="password" formControlName="oldPassword" />
             </mat-form-field>
             <mat-form-field appearance="outline" class="full-width">
-              <mat-label>New password</mat-label>
+              <mat-label>{{ 'account_new_password' | t }}</mat-label>
               <input matInput type="password" formControlName="newPassword" />
             </mat-form-field>
             <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Confirm new password</mat-label>
+              <mat-label>{{ 'account_confirm_password' | t }}</mat-label>
               <input matInput type="password" formControlName="confirm" />
             </mat-form-field>
             <button
@@ -112,10 +114,10 @@ import { ProfileService } from './profile.service';
               [disabled]="passwordForm.invalid || !passwordsMatch() || busy() === 'password'"
               (click)="savePassword()"
             >
-              Change password
+              {{ 'account_change_password' | t }}
             </button>
             @if (passwordForm.value.confirm && !passwordsMatch()) {
-              <p class="error">Passwords do not match.</p>
+              <p class="error">{{ 'account_passwords_mismatch' | t }}</p>
             }
           </section>
         }
@@ -129,7 +131,7 @@ import { ProfileService } from './profile.service';
       }
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button matButton mat-dialog-close>Close</button>
+      <button matButton mat-dialog-close>{{ 'close' | t }}</button>
     </mat-dialog-actions>
   `,
   styles: [
@@ -256,7 +258,7 @@ export class EditAccountDialogComponent implements OnInit {
       error: (err) => {
         console.warn('[edit-account] capabilities failed', err);
         this.loading.set(false);
-        this.errorMessage.set('Could not load account capabilities.');
+        this.errorMessage.set(t('account_capabilities_failed'));
       },
     });
   }
@@ -275,7 +277,7 @@ export class EditAccountDialogComponent implements OnInit {
         this.nameForm.controls.firstname.value,
         this.nameForm.controls.lastname.value,
       ),
-      'Name updated.',
+      t('account_name_updated'),
       () =>
         this.currentName.set(
           [
@@ -294,7 +296,7 @@ export class EditAccountDialogComponent implements OnInit {
     this.run(
       'email',
       this.profile.changeEmail(this.username, this.emailForm.controls.email.value),
-      'E-mail updated.',
+      t('account_email_updated'),
     );
   }
 
@@ -307,7 +309,7 @@ export class EditAccountDialogComponent implements OnInit {
         this.passwordForm.controls.oldPassword.value,
         this.passwordForm.controls.newPassword.value,
       ),
-      'Password changed.',
+      t('account_password_changed'),
       () => this.passwordForm.reset(),
     );
   }
@@ -331,7 +333,7 @@ export class EditAccountDialogComponent implements OnInit {
         this.busy.set(null);
         const serverMsg = err?.error?.message ?? err?.error ?? null;
         this.errorMessage.set(
-          typeof serverMsg === 'string' && serverMsg ? serverMsg : 'Update failed.',
+          typeof serverMsg === 'string' && serverMsg ? serverMsg : t('account_update_failed'),
         );
       },
     });

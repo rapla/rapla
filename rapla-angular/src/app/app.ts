@@ -12,6 +12,7 @@ import { ViewControlStripComponent } from './shell/view-control-strip.component'
 import { ChipRailComponent } from './shell/chip-rail.component';
 import { ViewCatalogService, type ViewInfo } from './views/view-catalog.service';
 import { AuthService } from './auth/auth.service';
+import { TPipe, t } from './i18n/i18n.service';
 
 @Component({
   selector: 'app-root',
@@ -26,6 +27,7 @@ import { AuthService } from './auth/auth.service';
     ResourceSelectionComponent,
     ViewControlStripComponent,
     ChipRailComponent,
+    TPipe,
   ],
   templateUrl: './app.html',
   styleUrl: './app.css',
@@ -60,7 +62,7 @@ export class App {
    */
   readonly activeTitle = computed(() => {
     const active = this.routedView();
-    if (!active) return 'Sicht';
+    if (!active) return t('app_view');
     return this.views().find((v) => v.name === active)?.title ?? active;
   });
 

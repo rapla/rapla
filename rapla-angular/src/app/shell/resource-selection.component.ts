@@ -21,6 +21,7 @@ import { ResourceSelectionStore, type ResourceItem } from '../state/resource-sel
 import { FilterStore, type FilterEntry } from '../state/filter-store';
 import { AuthService, type Identity } from '../auth/auth.service';
 import { TableSelection } from '../views/table-selection';
+import { TPipe } from '../i18n/i18n.service';
 
 /**
  * The persistent left ResourceSelection: the pinned "meine" card, the DURCHSTEPPEN header with
@@ -31,7 +32,7 @@ import { TableSelection } from '../views/table-selection';
  */
 @Component({
   selector: 'app-resource-selection',
-  imports: [MatMenuModule, ResourcePickerComponent],
+  imports: [TPipe, MatMenuModule, ResourcePickerComponent],
   template: `
     <div class="stepper" tabindex="0" (keydown)="onListKeydown($event)">
       @if (me(); as user) {
@@ -42,23 +43,23 @@ import { TableSelection } from '../views/table-selection';
           [class.active]="meActive()"
           (click)="scopeToMe($event, user)"
           (keydown.enter)="scopeToMe($event, user)"
-          title="Auf meine eigenen Veranstaltungen filtern (Strg: zur Auswahl hinzufügen, erneuter Klick: aufheben)"
+          [title]="'shell_scope_to_me_tooltip' | t"
         >
           <span class="dot person">👤</span>
           <span class="lbl">{{ user.name || user.username }}</span>
-          <span class="meta">meine</span>
+          <span class="meta">{{ 'shell_mine' | t }}</span>
         </div>
       }
       <div class="sthead">
-        DURCHSTEPPEN
+        {{ 'shell_step_through' | t }}
         @if (newTypeKey()) {
           <button
             type="button"
             class="newbtn"
             (click)="newResource()"
-            title="Neue Ressource anlegen"
+            [title]="'shell_new_resource_tooltip' | t"
           >
-            + Neu
+            + {{ 'new' | t }}
           </button>
         }
       </div>
@@ -76,8 +77,8 @@ import { TableSelection } from '../views/table-selection';
       />
       <mat-menu #itemMenu="matMenu">
         <ng-template matMenuContent let-item="item">
-          <button mat-menu-item (click)="openResource(item, false)">Bearbeiten</button>
-          <button mat-menu-item (click)="openResource(item, true)">Anzeigen</button>
+          <button mat-menu-item (click)="openResource(item, false)">{{ 'edit' | t }}</button>
+          <button mat-menu-item (click)="openResource(item, true)">{{ 'shell_show' | t }}</button>
         </ng-template>
       </mat-menu>
       <span

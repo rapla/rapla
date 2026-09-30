@@ -46,6 +46,9 @@ public final class IdentityResponse
     /** PRD 118 D8-8 — {@code rapla.demo.banner} for the SPA shell; null outside the demo. */
     @JsonProperty("demoBanner")
     private String demoBanner;
+    /** PRD 124 — the caller's display language (login choice, else preference, else server). */
+    @JsonProperty("language")
+    private String language;
 
     public IdentityResponse() {}
 
@@ -87,4 +90,6 @@ public final class IdentityResponse
     public void setTarget(String target) { this.target = target; }
     public String getDemoBanner() { return demoBanner; }
     public void setDemoBanner(String demoBanner) { this.demoBanner = demoBanner; }
+    public String getLanguage() { return language; }
+    public void setLanguage(String language) { this.language = language; }
 }

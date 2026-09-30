@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 
+import { TPipe } from '../i18n/i18n.service';
 import { ViewCatalogService } from './view-catalog.service';
 import { LastViewStore } from './last-view-store';
 import { pickLandingView } from './view-landing';
@@ -16,12 +17,12 @@ import { pickLandingView } from './view-landing';
  */
 @Component({
   selector: 'app-default-view-redirect',
-  imports: [],
+  imports: [TPipe],
   template: `
     @if (empty()) {
-      <p class="meta">Keine Ansichten verfügbar.</p>
+      <p class="meta">{{ 'view_no_views' | t }}</p>
     } @else {
-      <p class="meta">lädt…</p>
+      <p class="meta">{{ 'view_loading' | t }}</p>
     }
   `,
   styles: [

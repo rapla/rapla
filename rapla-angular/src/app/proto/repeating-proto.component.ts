@@ -9,6 +9,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTimepickerModule } from '@angular/material/timepicker';
+import { TPipe, localeId, t } from '../i18n/i18n.service';
 
 /**
  * THROWAWAY PROTOTYPE — PRD 091 Phase 4.0 recurrence editor exploration
@@ -44,11 +45,17 @@ interface PreviewRow {
 }
 
 const DAY_MS = 86400e3;
-const WEEKDAY_NAMES = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+const WEEKDAY_COUNT = 7;
 const PREVIEW_CAP = 30;
 
 function dayKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function weekdayName(i: number): string {
+  return new Intl.DateTimeFormat(localeId(), { weekday: 'short' })
+    .format(new Date(2024, 0, 1 + i))
+    .replace(/\.$/, '');
 }
 
 /** Monday-based weekday index 0..6. */
@@ -62,6 +69,7 @@ function weekdayIndex(d: Date): number {
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [provideNativeDateAdapter()],
   imports: [
+    TPipe,
     DatePipe,
     MatButtonModule,
     MatButtonToggleModule,
@@ -222,18 +230,14 @@ function weekdayIndex(d: Date): number {
     }
   `,
   template: `
-    <h2>Wiederholung — Prototyp (PRD 091 Phase 4.0)</h2>
-    <p class="hint">
-      Swing-Parität: Typ / Intervall / Wochentage / Ende (nie · Datum · N-mal) / Ausnahmen. Klick
-      auf einen Vorschau-Termin überspringt ihn (Ausnahme, UC-E4). Monats-/Jahresmuster leiten sich
-      aus dem Starttermin ab — wie im Kernmodell.
-    </p>
+    <h2>{{ 'proto_repeating_title' | t }}</h2>
+    <p class="hint">{{ 'proto_repeating_hint' | t }}</p>
 
     <div class="sec">
-      <div class="sec-title">Termin</div>
+      <div class="sec-title">{{ 'appointment' | t }}</div>
       <div class="row">
         <mat-form-field class="date" appearance="outline">
-          <mat-label>Beginn</mat-label>
+          <mat-label>{{ 'start_date' | t }}</mat-label>
           <input
             matInput
             [matDatepicker]="sd"
@@ -264,24 +268,24 @@ function weekdayIndex(d: Date): number {
 
     <div class="sec">
       <div class="sec-title">
-        Wiederholung
+        {{ 'repeating' | t }}
         @if (rule().exceptions.length) {
-          <span class="badge">{{ rule().exceptions.length }} Ausnahmen</span>
+          <span class="badge">{{ 'event_rep_exceptions' | t: rule().exceptions.length }}</span>
         }
       </div>
       <div class="row center">
         <mat-form-field class="rep-type" appearance="outline">
-          <mat-label>Wiederholt sich</mat-label>
+          <mat-label>{{ 'event_repeats' | t }}</mat-label>
           <mat-select [value]="rule().type" (valueChange)="setType($event)">
-            <mat-option value="NONE">nie (Einzeltermin)</mat-option>
-            <mat-option value="DAILY">täglich</mat-option>
-            <mat-option value="WEEKLY">wöchentlich</mat-option>
-            <mat-option value="MONTHLY">monatlich</mat-option>
-            <mat-option value="YEARLY">jährlich</mat-option>
+            <mat-option value="NONE">{{ 'event_repeat_none' | t }}</mat-option>
+            <mat-option value="DAILY">{{ 'event_rep_daily_one' | t }}</mat-option>
+            <mat-option value="WEEKLY">{{ 'event_rep_weekly_one' | t }}</mat-option>
+            <mat-option value="MONTHLY">{{ 'event_rep_monthly_one' | t }}</mat-option>
+            <mat-option value="YEARLY">{{ 'event_rep_yearly_one' | t }}</mat-option>
           </mat-select>
         </mat-form-field>
         @if (rule().type !== 'NONE') {
-          <span>alle</span>
+          <span>{{ 'event_every' | t }}</span>
           <mat-form-field class="num" appearance="outline">
             <input
               matInput
@@ -309,17 +313,17 @@ function weekdayIndex(d: Date): number {
           }
         </div>
         @if (!rule().weekdays.length) {
-          <p class="wd-error">Mindestens ein Wochentag — sonst hat die Serie keine Termine.</p>
+          <p class="wd-error">{{ 'event_rep_weekday_required' | t }}</p>
         }
       }
 
       @if (rule().type !== 'NONE') {
         <mat-radio-group [value]="rule().endMode" (change)="setEndMode($event.value)">
           <div class="end-line">
-            <mat-radio-button value="FOREVER">endet nie</mat-radio-button>
+            <mat-radio-button value="FOREVER">{{ 'event_rep_ends_never' | t }}</mat-radio-button>
           </div>
           <div class="end-line">
-            <mat-radio-button value="UNTIL">endet am</mat-radio-button>
+            <mat-radio-button value="UNTIL">{{ 'event_rep_ends_on' | t }}</mat-radio-button>
             <mat-form-field class="date" appearance="outline">
               <input
                 matInput
@@ -333,7 +337,7 @@ function weekdayIndex(d: Date): number {
             </mat-form-field>
           </div>
           <div class="end-line">
-            <mat-radio-button value="COUNT">endet nach</mat-radio-button>
+            <mat-radio-button value="COUNT">{{ 'event_rep_ends_after' | t }}</mat-radio-button>
             <mat-form-field class="num" appearance="outline">
               <input
                 matInput
@@ -344,7 +348,7 @@ function weekdayIndex(d: Date): number {
                 (input)="setCount($any($event.target).value)"
               />
             </mat-form-field>
-            <span>Terminen</span>
+            <span>{{ 'event_rep_ends_after_count' | t }}</span>
           </div>
         </mat-radio-group>
 
@@ -354,7 +358,7 @@ function weekdayIndex(d: Date): number {
 
     @if (rule().type !== 'NONE') {
       <div class="sec">
-        <div class="sec-title">Vorschau</div>
+        <div class="sec-title">{{ 'proto_preview' | t }}</div>
         <div class="preview">
           @for (occ of preview(); track occ.start.getTime(); let i = $index) {
             <button
@@ -370,19 +374,19 @@ function weekdayIndex(d: Date): number {
                 }}</span
               >
               @if (occ.skipped) {
-                <span class="tag skip">übersprungen — Klick stellt wieder her</span>
+                <span class="tag skip">{{ 'proto_skipped_restore' | t }}</span>
               } @else {
-                <span class="tag hover-only">Klick: überspringen</span>
+                <span class="tag hover-only">{{ 'proto_click_skip' | t }}</span>
               }
             </button>
           }
           @if (truncated()) {
             <div class="more">
-              … Vorschau auf {{ previewCap }} Termine gekürzt (Serie läuft weiter).
+              {{ 'proto_preview_truncated' | t: previewCap }}
             </div>
           }
           @if (!preview().length) {
-            <div class="more">Keine Termine — Regel ergibt keine Vorkommen.</div>
+            <div class="more">{{ 'proto_no_occurrences' | t }}</div>
           }
         </div>
         <div class="row" style="margin-top: 8px">
@@ -391,16 +395,14 @@ function weekdayIndex(d: Date): number {
             [disabled]="rule().endMode === 'FOREVER'"
             (click)="splitInfo.set(true)"
           >
-            In Einzeltermine umwandeln
+            {{ 'appointment.convert' | t }}
           </button>
           @if (rule().endMode === 'FOREVER') {
-            <span class="hint" style="align-self: center"
-              >nur für endliche Serien (Swing-Regel)</span
-            >
+            <span class="hint" style="align-self: center">{{ 'proto_finite_only' | t }}</span>
           }
           @if (splitInfo()) {
             <span class="hint" style="align-self: center">
-              → würde {{ activeCount() }} Einzeltermine erzeugen (Mock, Phase 4.6)
+              {{ 'proto_split_mock' | t: activeCount() }}
             </span>
           }
         </div>
@@ -409,7 +411,9 @@ function weekdayIndex(d: Date): number {
   `,
 })
 export class RepeatingProtoComponent {
-  readonly weekdayNames = WEEKDAY_NAMES;
+  get weekdayNames(): string[] {
+    return Array.from({ length: WEEKDAY_COUNT }, (_, i) => weekdayName(i));
+  }
   readonly previewCap = PREVIEW_CAP;
 
   readonly start = signal(new Date(2026, 6, 7, 10, 0, 0, 0)); // Di 07.07.2026
@@ -522,13 +526,13 @@ export class RepeatingProtoComponent {
     const plural = this.rule().interval !== 1;
     switch (this.rule().type) {
       case 'DAILY':
-        return plural ? 'Tage' : 'Tag';
+        return t(plural ? 'event_rep_daily_many' : 'day');
       case 'WEEKLY':
-        return plural ? 'Wochen' : 'Woche';
+        return t(plural ? 'event_rep_weekly_many' : 'week');
       case 'MONTHLY':
-        return plural ? 'Monate' : 'Monat';
+        return t(plural ? 'event_rep_monthly_many' : 'month');
       default:
-        return plural ? 'Jahre' : 'Jahr';
+        return t(plural ? 'event_rep_yearly_many' : 'proto_year');
     }
   }
 
@@ -538,31 +542,55 @@ export class RepeatingProtoComponent {
     let pattern: string;
     switch (r.type) {
       case 'DAILY':
-        pattern = r.interval === 1 ? 'Täglich' : `Alle ${r.interval} Tage`;
+        pattern =
+          r.interval === 1
+            ? t('event_rep_daily_one')
+            : t('event_rep_every', r.interval, t('event_rep_daily_many'));
         break;
       case 'WEEKLY': {
-        const days = r.weekdays.map((w) => WEEKDAY_NAMES[w]).join(' + ') || '—';
-        pattern = (r.interval === 1 ? 'Wöchentlich' : `Alle ${r.interval} Wochen`) + ` am ${days}`;
+        const days = r.weekdays.map((w) => weekdayName(w)).join(' + ') || '—';
+        pattern = t(
+          'event_rep_on',
+          r.interval === 1
+            ? t('event_rep_weekly_one')
+            : t('event_rep_every', r.interval, t('event_rep_weekly_many')),
+          days,
+        );
         break;
       }
       case 'MONTHLY': {
         const nth = Math.ceil(s.getDate() / 7);
-        pattern =
-          (r.interval === 1 ? 'Monatlich' : `Alle ${r.interval} Monate`) +
-          ` am ${nth}. ${WEEKDAY_NAMES[weekdayIndex(s)]} (aus Starttermin)`;
+        pattern = t(
+          'proto_from_start',
+          t(
+            'event_rep_on_nth',
+            r.interval === 1
+              ? t('event_rep_monthly_one')
+              : t('event_rep_every', r.interval, t('event_rep_monthly_many')),
+            nth,
+            weekdayName(weekdayIndex(s)),
+          ),
+        );
         break;
       }
       default:
-        pattern =
-          (r.interval === 1 ? 'Jährlich' : `Alle ${r.interval} Jahre`) +
-          ` am ${s.getDate()}.${s.getMonth() + 1}. (aus Starttermin)`;
+        pattern = t(
+          'proto_from_start',
+          t(
+            'event_rep_on',
+            r.interval === 1
+              ? t('event_rep_yearly_one')
+              : t('event_rep_every', r.interval, t('event_rep_yearly_many')),
+            `${s.getDate()}.${s.getMonth() + 1}.`,
+          ),
+        );
     }
     const end =
       r.endMode === 'FOREVER'
-        ? 'endet nie'
+        ? t('event_rep_ends_never')
         : r.endMode === 'COUNT'
-          ? `${r.count} Termine`
-          : `bis ${r.until ? dayKey(r.until) : '—'}`;
+          ? t('event_rep_count', r.count)
+          : t('event_rep_until', r.until ? dayKey(r.until) : '—');
     return `${pattern} · ${end}`;
   }
 

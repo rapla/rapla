@@ -284,24 +284,6 @@ button.star.on {
   max-height: 55vh;
   overflow-y: auto;
 }
-.cand {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.4rem 0.55rem;
-  margin: 0.25rem 0;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
-  font-size: 0.88rem;
-}
-.cand.pinned {
-  background: rgba(0, 97, 164, 0.1);
-  border-color: var(--mat-sys-primary, #0061a4);
-}
-.cand .grow {
-  flex: 1;
-  min-width: 0;
-}
 .warnbox {
   display: flex;
   gap: 0.6rem;
@@ -380,6 +362,32 @@ input.rep-num {
   background: #1a73e8;
   border-color: #1a73e8;
   color: #fff;
+}
+
+.rep-weekdays .wd:disabled {
+  cursor: default;
+}
+
+.rep-weekdays .wd:disabled {
+  outline: 2px solid #1a73e8;
+  outline-offset: 2px;
+  position: relative;
+}
+
+.rep-weekdays .wd-first {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 16px;
+  height: 14px;
+  line-height: 14px;
+  font-size: 9px;
+  text-align: center;
+  border-radius: 8px;
+  background: #fff;
+  color: #1a73e8;
+  border: 1px solid #1a73e8;
+  vertical-align: baseline;
 }
 
 .rep-error {

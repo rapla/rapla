@@ -70,7 +70,8 @@ public class AuthCookieController implements AuthCookieService
                                HttpServletRequest request,
                                HttpServletResponse response,
                                @org.springframework.beans.factory.annotation.Value("${rapla.auth.impersonation.enabled:true}") boolean impersonationEnabled,
-                               @org.springframework.beans.factory.annotation.Value("${rapla.demo.banner:}") String demoBanner)
+                               @org.springframework.beans.factory.annotation.Value("${rapla.demo.banner:}") String demoBanner,
+                               RequestLanguage requestLanguage)
     {
         this.session = session;
         this.facade = facade;
@@ -81,10 +82,12 @@ public class AuthCookieController implements AuthCookieService
         this.response = response;
         this.impersonationEnabled = impersonationEnabled;
         this.demoBanner = demoBanner == null || demoBanner.isBlank() ? null : demoBanner;
+        this.requestLanguage = requestLanguage;
     }
 
     /** PRD 118 D8-8 — {@code rapla.demo.banner}, shown by the SPA shell; null outside the demo. */
     private final String demoBanner;
+    private final RequestLanguage requestLanguage;
 
     @Override
     public IdentityResponse me() throws RaplaException
@@ -126,6 +129,7 @@ public class AuthCookieController implements AuthCookieService
         IdentityResponse identity = new IdentityResponse(user.getId(), user.getUsername(), user.getName(), user.isAdmin(),
                 roles, impersonating, actor, target);
         identity.setDemoBanner(demoBanner);
+        identity.setLanguage(requestLanguage.resolve(request, user).getLanguage());
         return identity;
     }
 

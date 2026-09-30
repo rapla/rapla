@@ -4,9 +4,13 @@ import { Observable, catchError, map, of, shareReplay, switchMap } from 'rxjs';
 
 import { GraphqlService } from '../graphql/graphql.service';
 import {
+  categoryTreeSelection,
+  flattenCategoryTree,
   normalizeClassificationValues,
   parseClassificationSdl,
   valueSelections,
+  type CategoryNode,
+  type CategoryRow,
   type ClassificationType,
 } from './classification-schema';
 
@@ -24,6 +28,10 @@ export class ClassificationSchemaService {
 
   private types$: Observable<Map<string, ClassificationType>> | null = null;
   private readonly prototypes = new Map<string, Observable<Record<string, unknown> | null>>();
+  private readonly trees = new Map<string, Observable<CategoryRow[]>>();
+
+  /** PRD 096 Phase 5 — sync view of the loaded tree-category subtrees, keyed by root path. */
+  readonly categoryRows = signal<ReadonlyMap<string, CategoryRow[]>>(new Map());
 
   /** Sync view of the parsed schema; null until the first load completes. */
   readonly typeMap = signal<Map<string, ClassificationType> | null>(null);
@@ -78,5 +86,29 @@ export class ClassificationSchemaService {
       this.prototypes.set(typeKey, p$);
     }
     return p$;
+  }
+
+  /** PRD 096 Phase 5 — the subtree below a `@rootCategory` path, flattened; loaded once per path. */
+  categoryTree(rootPath: string): Observable<CategoryRow[]> {
+    let t$ = this.trees.get(rootPath);
+    if (!t$) {
+      t$ = this.gql
+        .query<{
+          category: { children: CategoryNode[] } | null;
+        }>(`query ($p: String!) { category(path: $p) { ${categoryTreeSelection()} } }`, {
+          p: rootPath,
+        })
+        .pipe(
+          map((resp) => flattenCategoryTree(resp.data?.category?.children ?? [])),
+          catchError(() => {
+            this.trees.delete(rootPath);
+            return of([]);
+          }),
+          shareReplay(1),
+        );
+      this.trees.set(rootPath, t$);
+      t$.subscribe((rows) => this.categoryRows.update((m) => new Map(m).set(rootPath, rows)));
+    }
+    return t$;
   }
 }

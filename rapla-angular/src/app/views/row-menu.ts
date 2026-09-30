@@ -1,3 +1,4 @@
+import { t } from '../i18n/i18n.service';
 import { Injectable, InjectionToken, inject } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 
@@ -49,16 +50,16 @@ export class EventRowMenuProvider implements RowMenuProvider {
     if (subject?.kind !== 'reservation') return [];
     const items: RowMenuItem[] = [];
     if (subject.canModify) {
-      items.push({ id: 'edit', label: 'Bearbeiten', run: () => this.open({ id: subject.id }) });
+      items.push({ id: 'edit', label: t('edit'), run: () => this.open({ id: subject.id }) });
     }
     items.push({
       id: 'view',
-      label: 'Anzeigen',
+      label: t('view_show'),
       run: () => this.open({ id: subject.id, readOnly: true }),
     });
     // Swing parity: exception blocks (already-skipped occurrences) offer no delete.
     if (subject.canModify && !ctx.block.isException) {
-      items.push({ id: 'delete', label: 'Löschen', run: () => this.deleteFlow(ctx) });
+      items.push({ id: 'delete', label: t('delete'), run: () => this.deleteFlow(ctx) });
     }
     return items;
   }
@@ -76,8 +77,8 @@ export class EventRowMenuProvider implements RowMenuProvider {
     if (deletable.length === 0) return [];
     const label =
       deletable.length === events.length
-        ? `Löschen (${events.length})`
-        : `Löschen (${deletable.length} von ${events.length})`;
+        ? t('view_delete_count', events.length)
+        : t('view_delete_count_partial', deletable.length, events.length);
     return [
       {
         id: 'delete-selection',
@@ -91,12 +92,14 @@ export class EventRowMenuProvider implements RowMenuProvider {
     forkJoin(ids.map((id) => this.data.load(id))).subscribe((loadedAll) => {
       const drafts = loadedAll.filter((l): l is LoadedEvent => !!l).map((l) => l.draft);
       if (drafts.length === 0) return;
-      const noun = drafts.length === 1 ? 'Veranstaltung' : 'Veranstaltungen';
       this.dialog
         .open(DeleteScopeDialogComponent, {
           data: {
-            eventName: `${drafts.length} ${noun}`,
-            options: [{ scope: 'event', label: 'Ganze Veranstaltungen' }],
+            eventName:
+              drafts.length === 1
+                ? t('view_event_count_one')
+                : t('view_event_count', drafts.length),
+            options: [{ scope: 'event', label: t('view_scope_whole_events') }],
           } satisfies DeleteScopeDialogData,
           width: '420px',
           autoFocus: false,
@@ -116,7 +119,7 @@ export class EventRowMenuProvider implements RowMenuProvider {
       if (!loaded) return;
       const draft = loaded.draft;
       const options = deleteScopeOptions(draft, ctx.block);
-      const eventName = String(draft.values['name'] ?? '') || 'Veranstaltung';
+      const eventName = String(draft.values['name'] ?? '') || t('event');
       this.dialog
         .open(DeleteScopeDialogComponent, {
           data: { eventName, options } satisfies DeleteScopeDialogData,

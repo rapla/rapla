@@ -1,5 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
+import { TPipe } from '../i18n/i18n.service';
 
 export interface BindConfirmDialogData {
   sourceLabel: string;
@@ -16,25 +17,21 @@ export interface BindConfirmDialogData {
  */
 @Component({
   selector: 'app-bind-confirm-dialog',
-  imports: [MatDialogModule],
+  imports: [MatDialogModule, TPipe],
   template: `
-    <h2 mat-dialog-title>Verknüpfen bestätigen</h2>
+    <h2 mat-dialog-title>{{ 'import_confirm_bind_title' | t }}</h2>
     <mat-dialog-content>
-      <p>
-        <strong>„{{ data.sourceLabel }}"</strong> (Dualis) mit
-        <strong>„{{ data.targetName }}"</strong> (Kalender) verknüpfen?
-      </p>
+      <p>{{ 'import_confirm_bind_question' | t: data.sourceLabel : data.targetName }}</p>
       <p class="warn">
-        Die Dualis-Felder (Name, Nummer, Art, …) überschreiben die bisherigen Werte der
-        Ziel-Veranstaltung. Das lässt sich derzeit nicht rückgängig machen.
+        {{ 'import_overwrite_warning' | t }}
       </p>
       @if (data.note) {
         <p class="warn">{{ data.note }}</p>
       }
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button mat-dialog-close>Abbrechen</button>
-      <button class="primary" [mat-dialog-close]="true">Verknüpfen</button>
+      <button mat-dialog-close>{{ 'cancel' | t }}</button>
+      <button class="primary" [mat-dialog-close]="true">{{ 'import_bind' | t }}</button>
     </mat-dialog-actions>
   `,
   styles: `

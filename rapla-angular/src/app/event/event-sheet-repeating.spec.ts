@@ -90,6 +90,34 @@ type eventClassification implements Classification & ReservationClassification {
     expect(cmp.draft()!.appointments[0].repeating!.weekdays).toHaveLength(1);
   });
 
+  it('the start weekday is locked: its chip is disabled, a toggle is a no-op, a start move shifts it (Swing parity, user 2026-09-30)', async () => {
+    const fixture = await create();
+    const cmp = fixture.componentInstance;
+    const a0 = cmp.draft()!.appointments[0];
+    cmp.toggleRepeatingPanel(a0);
+    cmp.setRepeatingType(a0, 'WEEKLY');
+    fixture.detectChanges();
+    const a = cmp.draft()!.appointments[0];
+    const startWd = a.repeating!.weekdays![0];
+    const chips = (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>(
+      '.rep-weekdays .wd',
+    );
+    const locked = Array.from(chips).filter((c) => c.disabled);
+    expect(locked).toHaveLength(1);
+    expect(locked[0].classList.contains('on')).toBe(true);
+    expect(locked[0].querySelector('.wd-first')?.textContent?.trim()).toBe('1.');
+
+    cmp.toggleRepWeekday(a, startWd);
+    expect(cmp.draft()!.appointments[0].repeating!.weekdays).toEqual([startWd]);
+
+    const next = new Date(a.start);
+    next.setDate(next.getDate() + 1);
+    cmp.setStartDate(cmp.draft()!.appointments[0], next);
+    const shifted = cmp.draft()!.appointments[0].repeating!.weekdays!;
+    expect(shifted).toHaveLength(1);
+    expect(shifted[0]).toBe((startWd % 7) + 1);
+  });
+
   it('end-mode switch seeds count/until and the summary line renders', async () => {
     const fixture = await create();
     const cmp = fixture.componentInstance;

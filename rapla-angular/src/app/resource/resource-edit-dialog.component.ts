@@ -22,6 +22,7 @@ import type { MutationIssue } from '../graphql/mutation-result';
 import { typedId } from '../event/event-draft';
 import { ResourceDataService, type ResourceDraft } from './resource-data.service';
 import { UnsavedChangesService } from '../shell/unsaved-changes';
+import { TPipe, t as tr } from '../i18n/i18n.service';
 
 export interface ResourceEditDialogData {
   /** Edit mode — absent in create mode. */
@@ -43,25 +44,25 @@ export interface ResourceEditDialogData {
 @Component({
   selector: 'app-resource-edit-dialog',
   standalone: true,
-  imports: [ClassificationEditComponent, EntityIdChipComponent, FormsModule],
+  imports: [TPipe, ClassificationEditComponent, EntityIdChipComponent, FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="dlg">
       <app-entity-id-chip class="idchip" [id]="entityId" />
       @if (loading()) {
-        <p class="hint">Lade Ressource…</p>
+        <p class="hint">{{ 'resource_loading' | t }}</p>
       } @else if (notFound()) {
-        <h2>Nicht gefunden</h2>
-        <p class="hint">Die Ressource existiert nicht oder ist für dich nicht sichtbar.</p>
+        <h2>{{ 'event_not_found' | t }}</h2>
+        <p class="hint">{{ 'resource_not_found_hint' | t }}</p>
         <div class="bar">
-          <button type="button" (click)="cancel()">Zurück</button>
+          <button type="button" (click)="cancel()">{{ 'back' | t }}</button>
         </div>
       } @else if (draft(); as d) {
         <div class="head">
           <h2>{{ heading() }}</h2>
           @if (editable() && typeOptions().length > 1) {
             <label class="typesel">
-              <span class="hint">Typ</span>
+              <span class="hint">{{ 'type' | t }}</span>
               <select [ngModel]="d.typeKey" (ngModelChange)="setTypeKey($event)">
                 @if (typeGroups(); as groups) {
                   @for (g of groups; track g.label) {
@@ -82,7 +83,7 @@ export interface ResourceEditDialogData {
             <span class="hint">{{ typeName() }}</span>
           }
           @if (!editable()) {
-            <span class="pill">nur ansehen</span>
+            <span class="pill">{{ 'resource_view_only' | t }}</span>
           }
         </div>
         <div class="body">
@@ -102,10 +103,10 @@ export interface ResourceEditDialogData {
         <div class="bar">
           <span class="hint grow">
             @if (dirty()) {
-              ungespeicherte Änderungen
+              {{ 'resource_unsaved' | t }}
             }
           </span>
-          <button type="button" (click)="cancel()">Abbrechen</button>
+          <button type="button" (click)="cancel()">{{ 'cancel' | t }}</button>
           @if (editable()) {
             <button
               type="button"
@@ -113,7 +114,7 @@ export interface ResourceEditDialogData {
               [disabled]="saving() || !dirty()"
               (click)="save()"
             >
-              {{ saving() ? 'Speichere…' : 'Speichern' }}
+              {{ (saving() ? 'event_saving' : 'save') | t }}
             </button>
           }
         </div>
@@ -245,8 +246,8 @@ export class ResourceEditDialogComponent {
     const opts = this.typeOptions();
     if (!opts.some((t) => t.classificationType)) return null;
     return [
-      { label: 'Ressourcen', types: opts.filter((t) => t.classificationType === 'RESOURCE') },
-      { label: 'Personen', types: opts.filter((t) => t.classificationType === 'PERSON') },
+      { label: tr('resources'), types: opts.filter((t) => t.classificationType === 'RESOURCE') },
+      { label: tr('persons'), types: opts.filter((t) => t.classificationType === 'PERSON') },
     ].filter((g) => g.types.length > 0);
   });
 
@@ -256,7 +257,7 @@ export class ResourceEditDialogComponent {
     const kind = this.typeOptions().find(
       (t) => t.key === this.draft()?.typeKey,
     )?.classificationType;
-    return kind === 'PERSON' ? 'Neue Person' : 'Neue Ressource';
+    return tr(kind === 'PERSON' ? 'resource_new_person' : 'resource_new_resource');
   });
 
   private baseline = '';
@@ -369,9 +370,7 @@ export class ResourceEditDialogComponent {
             this.dialogRef.close('saved');
             break;
           case 'concurrent':
-            this.notice.set(
-              'Zwischenzeitlich geändert — bitte Dialog schließen und neu öffnen (deine Eingaben gehen verloren).',
-            );
+            this.notice.set(tr('resource_changed_meanwhile'));
             break;
           case 'transport':
             this.notice.set(result.message);

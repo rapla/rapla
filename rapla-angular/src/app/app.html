@@ -12,7 +12,7 @@
         class="view-trigger"
         [matMenuTriggerFor]="viewMenu"
         [title]="activeTitle()"
-        aria-label="Sicht wechseln"
+        [attr.aria-label]="'app_switch_view' | t"
       >
         <mat-icon class="view-glyph">calendar_view_week</mat-icon>
         <span class="view-label">{{ activeTitle() }}</span>

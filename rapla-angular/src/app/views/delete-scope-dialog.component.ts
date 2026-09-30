@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 
+import { TPipe } from '../i18n/i18n.service';
 import type { DeleteScope, DeleteScopeOption } from './delete-scope';
 
 export interface DeleteScopeDialogData {
@@ -16,13 +17,13 @@ export interface DeleteScopeDialogData {
  */
 @Component({
   selector: 'app-delete-scope-dialog',
-  imports: [MatDialogModule, MatButtonModule],
+  imports: [MatDialogModule, MatButtonModule, TPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <h2 mat-dialog-title>Löschen</h2>
+    <h2 mat-dialog-title>{{ 'delete' | t }}</h2>
     <mat-dialog-content>
       @if (data.options.length > 1) {
-        <p class="question">Was möchtest du aus „{{ data.eventName }}" löschen?</p>
+        <p class="question">{{ 'view_delete_which' | t: data.eventName }}</p>
         @for (option of data.options; track option.scope) {
           <label class="option">
             <input
@@ -36,12 +37,14 @@ export interface DeleteScopeDialogData {
           </label>
         }
       } @else {
-        <p class="question">„{{ data.eventName }}" wirklich löschen?</p>
+        <p class="question">{{ 'view_delete_confirm' | t: data.eventName }}</p>
       }
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button matButton (click)="ref.close(undefined)">Abbrechen</button>
-      <button matButton="filled" class="confirm" (click)="ref.close(selected())">Löschen</button>
+      <button matButton (click)="ref.close(undefined)">{{ 'cancel' | t }}</button>
+      <button matButton="filled" class="confirm" (click)="ref.close(selected())">
+        {{ 'delete' | t }}
+      </button>
     </mat-dialog-actions>
   `,
   styles: [

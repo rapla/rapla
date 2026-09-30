@@ -1,3 +1,5 @@
+import { localeId } from '../i18n/i18n.service';
+
 /**
  * Client-side interpreter for the server's opaque {@code groupFormat} token
  * (e.g. {@code "EE dd.MM"}) — formats a group's date value into its section
@@ -13,44 +15,13 @@
  * (already display-ready strings) pass through untouched.
  */
 
-const WEEKDAY_SHORT = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
-const WEEKDAY_FULL = [
-  'Sonntag',
-  'Montag',
-  'Dienstag',
-  'Mittwoch',
-  'Donnerstag',
-  'Freitag',
-  'Samstag',
-];
-const MONTH_SHORT = [
-  'Jan',
-  'Feb',
-  'Mär',
-  'Apr',
-  'Mai',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Okt',
-  'Nov',
-  'Dez',
-];
-const MONTH_FULL = [
-  'Januar',
-  'Februar',
-  'März',
-  'April',
-  'Mai',
-  'Juni',
-  'Juli',
-  'August',
-  'September',
-  'Oktober',
-  'November',
-  'Dezember',
-];
+// Intl over a fixed reference date (2024-01-07 is a Sunday), so index 0 = Sunday; a trailing '.' is dropped.
+const name = (date: Date, opts: Intl.DateTimeFormatOptions): string =>
+  new Intl.DateTimeFormat(localeId(), { ...opts, timeZone: 'UTC' }).format(date).replace(/\.$/, '');
+export const weekdayName = (dow: number, style: 'short' | 'long'): string =>
+  name(new Date(Date.UTC(2024, 0, 7 + dow)), { weekday: style });
+const monthName = (month: number, style: 'short' | 'long'): string =>
+  name(new Date(Date.UTC(2024, month - 1, 1)), { month: style });
 
 interface ParsedDate {
   year: number;
@@ -76,12 +47,12 @@ const pad2 = (n: number): string => String(n).padStart(2, '0');
 function token(letter: string, len: number, d: ParsedDate): string {
   switch (letter) {
     case 'E':
-      return len >= 4 ? WEEKDAY_FULL[d.dow] : WEEKDAY_SHORT[d.dow];
+      return weekdayName(d.dow, len >= 4 ? 'long' : 'short');
     case 'd':
       return len >= 2 ? pad2(d.day) : String(d.day);
     case 'M':
-      if (len >= 4) return MONTH_FULL[d.month - 1];
-      if (len === 3) return MONTH_SHORT[d.month - 1];
+      if (len >= 4) return monthName(d.month, 'long');
+      if (len === 3) return monthName(d.month, 'short');
       return len === 2 ? pad2(d.month) : String(d.month);
     case 'y':
       return len === 2 ? pad2(d.year % 100) : String(d.year);

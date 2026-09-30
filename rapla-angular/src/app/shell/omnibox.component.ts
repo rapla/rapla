@@ -11,6 +11,7 @@ import { ViewStateStore } from '../state/view-state-store';
 import { EventSheetComponent, type EventSheetDialogData } from '../event/event-sheet.component';
 import { todayWindow } from './view-control-strip.component';
 import { entityIcon } from './entity-icon';
+import { TPipe } from '../i18n/i18n.service';
 
 /** Span used when no window is set yet: one week (Monday to Monday). */
 const ONE_WEEK = { from: '2026-01-05T00:00:00', to: '2026-01-12T00:00:00' };
@@ -26,12 +27,12 @@ const SEARCH_THROTTLE_MS = 300;
  */
 @Component({
   selector: 'app-omnibox',
-  imports: [FormsModule, MatIconModule],
+  imports: [TPipe, FormsModule, MatIconModule],
   template: `
     <div class="omnibox">
       <input
         class="obsearch"
-        placeholder="Suchen… (Ressourcen, Veranstaltungen)"
+        [placeholder]="'shell_omnibox_placeholder' | t"
         [ngModel]="term()"
         (ngModelChange)="onType($event)"
         (focus)="open.set(true)"
@@ -40,7 +41,7 @@ const SEARCH_THROTTLE_MS = 300;
       @if (showResults()) {
         <div class="results">
           <button type="button" class="countrow" (click)="focusPicker()">
-            {{ store.matchCount() }} Ressourcen und Gruppen in der Liste links
+            {{ 'shell_omnibox_count' | t: store.matchCount() }}
           </button>
           @for (g of groups(); track g.kind) {
             <div class="group">
@@ -58,7 +59,7 @@ const SEARCH_THROTTLE_MS = 300;
               }
             </div>
           } @empty {
-            <div class="none">— keine Veranstaltungen</div>
+            <div class="none">{{ 'shell_no_events' | t }}</div>
           }
         </div>
       }
