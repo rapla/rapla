@@ -16,7 +16,7 @@ rapla:
     org.rapla.plugin.archiver: false
     org.rapla.plugin.jndi: false
     org.rapla.plugin.ical: false
-    3_status: false
+    3_status: true   # /server status page open on the demo (user, 2026-10-01)
   documents:
     author-scripts: false
   graphql:
