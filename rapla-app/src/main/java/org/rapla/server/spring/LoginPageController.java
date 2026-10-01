@@ -101,6 +101,9 @@ public class LoginPageController
 
     private String cookieLanguage(HttpServletRequest request)
     {
+        // Browsers send the Path=/login cookie of older releases before the Path=/ one:
+        // the last value is the current choice.
+        String value = null;
         Cookie[] cookies = request.getCookies();
         if (cookies != null)
         {
@@ -108,11 +111,11 @@ public class LoginPageController
             {
                 if (LANG_COOKIE.equals(c.getName()))
                 {
-                    return c.getValue();
+                    value = c.getValue();
                 }
             }
         }
-        return null;
+        return value;
     }
 
     /**
@@ -183,6 +186,11 @@ public class LoginPageController
                             HttpServletResponse response)
     {
         String chosenLang = validLanguage(lang);
+        if (chosenLang == null)
+        {
+            // PRD 124 — re-issue a stored choice under Path=/ (migrates the old /login-scoped cookie)
+            chosenLang = validLanguage(cookieLanguage(request));
+        }
         if (chosenLang != null)
         {
             Cookie cookie = new Cookie(LANG_COOKIE, chosenLang);

@@ -36,6 +36,25 @@ class SpaLocaleCookieTest extends IsolatedDefaultDatasetTest
     }
 
     @Test
+    void loginPageMigratesAChoiceStoredUnderTheOldPath() throws Exception
+    {
+        // a browser that chose before PRD 124 only holds raplaLocale with Path=/login,
+        // which /api never sees — the next /login visit re-issues it with Path=/
+        mockMvc.perform(get("/login").cookie(new Cookie("raplaLocale", "fr")).accept(MediaType.TEXT_HTML))
+                .andExpect(cookie().value("raplaLocale", "fr"))
+                .andExpect(cookie().path("raplaLocale", "/"));
+    }
+
+    @Test
+    void theCurrentChoiceBeatsALeftoverOldPathCookie() throws Exception
+    {
+        // browsers send the longer-path (/login) cookie first, the Path=/ one last
+        mockMvc.perform(get("/login").cookie(new Cookie("raplaLocale", "fr"), new Cookie("raplaLocale", "de"))
+                        .accept(MediaType.TEXT_HTML))
+                .andExpect(cookie().value("raplaLocale", "de"));
+    }
+
+    @Test
     void localeFollowsTheLoginChoice() throws Exception
     {
         String token = OAuthTestSupport.loginAs(mockMvc, "admin", "");
