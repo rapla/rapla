@@ -30,12 +30,13 @@ describe('ResourcePickerComponent', () => {
   async function create(
     rows: ReturnType<typeof room>[],
     inputs: Record<string, unknown> = {},
+    users: { id: string; username: string; name: string }[] = [],
   ): Promise<ComponentFixture<ResourcePickerComponent>> {
     const f = TestBed.createComponent(ResourcePickerComponent);
     for (const [k, v] of Object.entries(inputs)) f.componentRef.setInput(k, v);
     f.detectChanges();
     for (const req of http.match((r) => r.url === '/api/graphql')) {
-      req.flush({ data: { resources: rows, users: [] } });
+      req.flush({ data: { resources: rows, users } });
     }
     await f.whenStable();
     f.detectChanges();
@@ -62,6 +63,36 @@ describe('ResourcePickerComponent', () => {
     f.detectChanges();
     expect(f.componentInstance.chip()).toBe('type:room');
     expect(labels(el)).toEqual(['Raum 01', 'Raum 02']);
+  });
+
+  it('D3 — with resources and persons the type select groups them like the create dialog (PRD 122 D9)', async () => {
+    const person = (i: number, typeKey: string, typeName: string) => ({
+      ...room(i, typeKey, typeName),
+      kind: 'PERSON',
+    });
+    const f = await create([
+      room(1),
+      room(2),
+      person(3, 'lecturer', 'Dozent'),
+      room(4, 'camera', 'Kamera'),
+      person(5, 'student', 'Assistenz'),
+    ]);
+    const select = (f.nativeElement as HTMLElement).querySelector('select.typesel')!;
+    expect(select.querySelector(':scope > option')?.textContent?.trim()).toBe('Typ ▾');
+    expect(
+      Array.from(select.querySelectorAll('optgroup')).map((g) => ({
+        label: g.getAttribute('label'),
+        types: Array.from(g.querySelectorAll('option')).map((o) => o.textContent?.trim()),
+      })),
+    ).toEqual([
+      { label: 'Ressourcen', types: ['Kamera (1)', 'Raum (2)'] },
+      { label: 'Personen', types: ['Assistenz (1)', 'Dozent (1)'] },
+    ]);
+  });
+
+  it('D3 — one kind only keeps the type select flat', async () => {
+    const f = await create([room(1), room(2, 'camera', 'Kamera')]);
+    expect((f.nativeElement as HTMLElement).querySelector('select.typesel optgroup')).toBeNull();
   });
 
   it('assign mode renders checkbox rows with the availability pill and emits the gesture', async () => {
@@ -112,6 +143,21 @@ describe('ResourcePickerComponent', () => {
     items[100].focus();
     items[100].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
     expect(document.activeElement).toBe(items[99]);
+  });
+
+  it('D9 — the Benutzer chip is rail-only: the assign host cannot assign accounts', async () => {
+    const users = [
+      { id: 'u1', username: 'monty', name: 'Burns Monty' },
+      { id: 'u2', username: 'homer', name: 'Simpson Homer' },
+    ];
+    const chipLabels = (f: ComponentFixture<ResourcePickerComponent>) =>
+      Array.from((f.nativeElement as HTMLElement).querySelectorAll('.chips button')).map((b) =>
+        b.textContent?.trim(),
+      );
+    expect(chipLabels(await create([room(1)], {}, users))).toContain('Benutzer');
+    expect(chipLabels(await create([room(1)], { mode: 'assign' }, users))).not.toContain(
+      'Benutzer',
+    );
   });
 
   it('assign mode: arrows step the rows and Enter picks', async () => {

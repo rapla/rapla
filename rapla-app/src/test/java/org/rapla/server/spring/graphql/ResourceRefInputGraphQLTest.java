@@ -12,6 +12,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.rapla.entities.domain.Allocatable;
@@ -47,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @SpringBootTest(classes = RaplaSpringBootApplication.class)
 @AutoConfigureMockMvc(addFilters = false)
+@Tag("e2e")
 class ResourceRefInputGraphQLTest
 {
     static final String READABLE_ROOM = "c24ce517-4697-4e52-9917-ec000c84563c";

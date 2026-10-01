@@ -24,6 +24,7 @@ import {
   type TreeRow,
 } from '../state/resource-tree';
 import { entityIcon } from '../shell/entity-icon';
+import { groupByKind } from './type-groups';
 import type { AvailabilityRow } from '../event/availability-search.service';
 import { TPipe, t as tr } from '../i18n/i18n.service';
 
@@ -46,12 +47,14 @@ export interface PickEvent {
   imports: [TPipe, MatIconModule],
   template: `
     <div class="chips">
-      @for (c of baseChips; track c.key) {
+      @for (c of baseChips(); track c.key) {
         <button
           type="button"
           [class.on]="chip() === c.key"
+          [class.mine]="c.mine"
+          [attr.title]="c.mine ? ('shell_scope_to_me_tooltip' | t) : null"
           [attr.aria-pressed]="chip() === c.key"
-          (click)="chip.set(c.key)"
+          (click)="c.mine ? activateMine($event) : chip.set(c.key)"
         >
           {{ c.label }}
         </button>
@@ -64,8 +67,18 @@ export interface PickEvent {
         (change)="onTypeChange($event)"
       >
         <option value="">{{ 'type' | t }} ▾</option>
-        @for (t of typeChips(); track t.key) {
-          <option [value]="t.key">{{ t.label }} ({{ t.count }})</option>
+        @if (typeGroups(); as groups) {
+          @for (g of groups; track g.label) {
+            <optgroup [label]="g.label">
+              @for (t of g.types; track t.key) {
+                <option [value]="t.key">{{ t.label }} ({{ t.count }})</option>
+              }
+            </optgroup>
+          }
+        } @else {
+          @for (t of typeChips(); track t.key) {
+            <option [value]="t.key">{{ t.label }} ({{ t.count }})</option>
+          }
         }
       </select>
     </div>
@@ -80,6 +93,14 @@ export interface PickEvent {
           (keydown.enter)="store.clearRecents()"
           >× {{ 'resource_clear' | t }}</span
         >
+      </div>
+    }
+    @if (mode() === 'rail' && allHits().length) {
+      <div class="grouphdr listhdr">
+        <span>{{ 'resource_hits' | t: allHits().length }}</span>
+        <button type="button" class="listall" (click)="emitGroup($event, allHits())">
+          {{ (allChecked() ? 'resource_deselect_all' : 'resource_select_all') | t }}
+        </button>
       </div>
     }
     @for (row of rows(); track row.node ? row.node.key : 'more:' + row.more) {
@@ -110,7 +131,7 @@ export interface PickEvent {
               type="button"
               class="selectall"
               [attr.aria-label]="'resource_select_all_in' | t: row.node.label"
-              (click)="selectGroup.emit(membersOf(row.node))"
+              (click)="emitGroup($event, membersOf(row.node))"
             >
               {{ 'resource_select_all' | t }}
             </button>
@@ -199,12 +220,15 @@ export interface PickEvent {
         color: rgba(0, 0, 0, 0.55);
         max-width: 11rem;
       }
+      .chips select {
+        flex-basis: 100%;
+        max-width: none;
+      }
       .chips button.on,
       .chips select.on {
         background: var(--mat-sys-primary, #3f51b5);
         color: #fff;
         border-color: transparent;
-        font-weight: 600;
       }
       .grouphdr {
         display: flex;
@@ -243,6 +267,13 @@ export interface PickEvent {
         cursor: pointer;
         font: inherit;
         padding: 0 0.2rem;
+      }
+      .listhdr .listall {
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        font: inherit;
+        color: var(--mat-sys-primary, #3f51b5);
       }
       .grouprow .selectall {
         font-size: 0.68rem;
@@ -383,26 +414,49 @@ export class ResourcePickerComponent {
   readonly availability = input<ReadonlyMap<string, AvailabilityRow>>(new Map());
 
   readonly pick = output<PickEvent>();
-  readonly selectGroup = output<ResourceItem[]>();
+  /** A group's members or every hit of the list (PRD 123 D8) — the host replaces, adds (Ctrl) or clears. */
+  readonly selectGroup = output<{ items: ResourceItem[]; ctrl: boolean }>();
   readonly menu = output<{ item: ResourceItem; anchor: EventTarget | null }>();
 
-  protected readonly baseChips = [
-    { key: 'all', label: tr('state_chip_all') },
-    { key: 'favorites', label: tr('state_chip_favorites') },
-    { key: 'recents', label: tr('state_chip_recents') },
-  ];
+  /** PRD 123 D9 — Benutzer after Zuletzt, rail only (accounts cannot be assigned). */
+  protected readonly baseChips = computed(() => {
+    const users = this.mode() === 'rail' ? this.store.usersChip() : null;
+    return [
+      { key: 'all', label: tr('state_chip_all'), mine: false },
+      { key: 'favorites', label: tr('state_chip_favorites'), mine: false },
+      { key: 'recents', label: tr('state_chip_recents'), mine: false },
+      ...(users
+        ? [
+            {
+              key: 'users',
+              label: tr(users.mine ? 'shell_mine' : 'state_chip_users'),
+              mine: users.mine,
+            },
+          ]
+        : []),
+    ];
+  });
 
   /** PRD 123 D3 — the types fold into one select, A–Z with their counts. */
   protected readonly typeChips = computed(() => {
     const counts = new Map<string, number>();
+    const kinds = new Map<string, string | undefined>();
     for (const it of this.store.resources()) {
-      if (it.typeKey) counts.set(it.typeKey, (counts.get(it.typeKey) ?? 0) + 1);
+      if (!it.typeKey) continue;
+      counts.set(it.typeKey, (counts.get(it.typeKey) ?? 0) + 1);
+      kinds.set(it.typeKey, it.classificationType);
     }
     return this.store
       .chips()
       .filter((c) => c.key.startsWith('type:'))
-      .map((c) => ({ ...c, count: counts.get(c.key.slice('type:'.length)) ?? 0 }));
+      .map((c) => {
+        const key = c.key.slice('type:'.length);
+        return { ...c, count: counts.get(key) ?? 0, classificationType: kinds.get(key) };
+      });
   });
+
+  /** PRD 122 D9 parity — resources, then persons; flat with one kind. */
+  protected readonly typeGroups = computed(() => groupByKind(this.typeChips()));
 
   protected readonly treeMode = computed(() => this.chip().startsWith('type:'));
 
@@ -410,6 +464,9 @@ export class ResourcePickerComponent {
   protected readonly extra = signal(0);
   private readonly limits = signal<ReadonlyMap<string, number>>(new Map());
   private readonly toggled = signal<ReadonlyMap<string, boolean>>(new Map());
+  /** PRD 123 D8 — a bulk selection does not open the paths to its members, also across chip changes,
+   *  until the next single pick (D8). */
+  private readonly bulk = signal(false);
 
   private readonly list = computed(() => this.store.listFor(this.chip()));
 
@@ -440,7 +497,7 @@ export class ResourcePickerComponent {
   protected readonly expandedGroups = computed(() => {
     const open = new Set([
       ...this.tree().expanded,
-      ...pathKeysTo(this.tree().nodes, this.checked()),
+      ...(this.bulk() ? [] : pathKeysTo(this.tree().nodes, this.checked())),
     ]);
     for (const [key, isOpen] of this.toggled()) {
       if (isOpen) open.add(key);
@@ -476,6 +533,19 @@ export class ResourcePickerComponent {
       }),
     ),
   ]);
+
+  /** PRD 123 D8 — every hit of the active chip + query: the filtered tree's members, else the whole filtered list. */
+  protected readonly allHits = computed<ResourceItem[]>(() => {
+    if (!this.treeMode()) return this.filtered();
+    const byId = new Map<string, ResourceItem>();
+    for (const node of this.tree().nodes) for (const it of membersOf(node)) byId.set(it.id, it);
+    return [...byId.values()];
+  });
+
+  protected readonly allChecked = computed(() => {
+    const checked = this.checked();
+    return this.allHits().every((it) => checked.has(it.id));
+  });
 
   /** The distinct resources on screen — the host's selection engine and availability fetch use it. */
   readonly shown = computed(() => {
@@ -519,7 +589,24 @@ export class ResourcePickerComponent {
     if (event.shiftKey) event.preventDefault();
   }
 
+  /** PRD 123 D9 — "meine" is the Benutzer chip of a one-account user: activating it picks the
+   *  own account like a row click (Ctrl adds); on the active chip a click deselects it. */
+  protected activateMine(event: MouseEvent): void {
+    const own = this.store.listFor('users')[0];
+    const deselect = this.chip() === 'users' && !!own && this.checked().has(own.id);
+    this.chip.set('users');
+    if (!own) return;
+    this.bulk.set(false);
+    this.pick.emit({ item: own, ctrl: deselect || event.ctrlKey || event.metaKey, shift: false });
+  }
+
+  protected emitGroup(event: MouseEvent, items: ResourceItem[]): void {
+    this.bulk.set(true);
+    this.selectGroup.emit({ items, ctrl: event.ctrlKey || event.metaKey });
+  }
+
   protected emitPick(event: MouseEvent | KeyboardEvent, item: ResourceItem): void {
+    this.bulk.set(false);
     this.pick.emit({ item, ctrl: event.ctrlKey || event.metaKey, shift: event.shiftKey });
   }
 

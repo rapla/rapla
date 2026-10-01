@@ -71,6 +71,7 @@ describe('ResourceSelectionStore', () => {
         kind: 'resource',
         typeKey: 'room',
         typeName: 'Raum',
+        classificationType: 'RESOURCE',
         groupPaths: [],
       },
       {
@@ -79,9 +80,67 @@ describe('ResourceSelectionStore', () => {
         kind: 'resource',
         typeKey: 'lecturer',
         typeName: 'Dozent',
+        classificationType: 'RESOURCE',
         groupPaths: [],
       },
     ]);
+  });
+
+  it('shows no Benutzer chip before the lean list is loaded (no "meine" flash)', () => {
+    TestBed.inject(AuthService).identity.set({
+      userId: 'U-ME',
+      username: 'me',
+      name: 'me',
+      admin: false,
+      roles: [],
+      impersonating: false,
+      actor: null,
+      target: null,
+    });
+    expect(store.usersChip()).toBeNull();
+  });
+
+  it('an identity switch drops the lean list and reloads it for the new user (R-22)', () => {
+    const who = (userId: string, admin: boolean) => ({
+      userId,
+      username: userId,
+      name: userId,
+      admin,
+      roles: [],
+      impersonating: false,
+      actor: null,
+      target: null,
+    });
+    const answer = (rows: ReturnType<typeof wire>[], users: { id: string }[]) => {
+      for (const req of http.match(() => true)) {
+        const lean = String(req.request.body?.query ?? '').includes('resources {');
+        req.flush(
+          lean
+            ? {
+                data: {
+                  resources: rows,
+                  users: users.map((u) => ({ ...u, username: u.id, name: u.id })),
+                },
+              }
+            : {},
+        );
+      }
+    };
+    const auth = TestBed.inject(AuthService);
+    auth.identity.set(who('U-ADMIN', true));
+    TestBed.tick();
+    store.ensureLoaded();
+    answer([wire('r1', 'Hörsaal 1', 'room', 'Raum')], [{ id: 'U-ADMIN' }, { id: 'U-WOLF' }]);
+    expect(store.usersChip()).toEqual({ mine: false });
+
+    auth.identity.set(who('U-WOLF', false));
+    TestBed.tick();
+    expect(store.resources()).toEqual([]);
+    expect(store.users()).toEqual([]);
+    answer([wire('r9', 'Labor', 'room', 'Raum')], [{ id: 'U-WOLF' }]);
+    expect(store.resources().map((r) => r.id)).toEqual(['r9']);
+    expect(store.users().map((u) => u.id)).toEqual(['U-WOLF']);
+    expect(store.usersChip()).toEqual({ mine: true });
   });
 
   it('reload() fetches the list again', () => {

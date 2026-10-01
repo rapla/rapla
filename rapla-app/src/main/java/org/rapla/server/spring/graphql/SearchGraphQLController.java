@@ -219,7 +219,7 @@ public class SearchGraphQLController
      * every user they {@code canAdminUser}. Matching is FUZZY (the user set is
      * small) over BOTH the display name and the login username, so typing either
      * finds the person. The hit {@code id} is the user id — the SPA binds it into
-     * a {@code user} scope chip (ownerEq). User counts are small, so no windowing.
+     * a {@code user} scope chip (ownerIn). User counts are small, so no windowing.
      */
     private List<SearchHit> searchUsers(String needle, int cap, User caller,
             Set<String> favoriteIds, Set<String> recentIds) throws RaplaException

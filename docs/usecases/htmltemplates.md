@@ -296,7 +296,7 @@ Die heute hand-codierten HTML-Export-Seiten (AbstractHTMLCalendarPage → HTMLWe
 Konsument (Dozent/Student, UC-8 'Read my own schedule') ruft sein eigenes Wochen-/Listen-Dokument ab — heute außerhalb des SPA-Scopes und nur über publizierte Kalender oder iCal abgedeckt; als session-Dokument bekommt jeder Eingeloggte automatisch seinen §12-Ausschnitt ohne pro-Person-Konfiguration.
 
 - **Tier:** gruppiert (1D) · **Auth:** Session · **mehrere Dokumente pro View:** nein
-- **Datenquelle:** appointmentBlocks(filter:{allocatableMatching: eigene Person / ownerEq}) — §12-Scope des Aufrufers macht die Personalisierung gratis; als Liste (grouped-1d) sofort, als Wochenraster erst mit Phase 5
+- **Datenquelle:** appointmentBlocks(filter:{allocatableMatching: eigene Person / ownerIn}) — §12-Scope des Aufrufers macht die Personalisierung gratis; als Liste (grouped-1d) sofort, als Wochenraster erst mit Phase 5
 - **Link-Navigation:** Termin → Raum-Tagesplan (Wo ist der Raum belegt?) optional
 - **Uni-Beleg:** Usecases-Doku des Deployments UC-8-Persona (Consumer, constant) — Personen sind der größte potenzielle Konsumentenkreis; heute über Export2iCalController (/rapla/ical) bzw. publizierte HTML-Kalender bedient
 

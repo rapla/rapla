@@ -19,12 +19,11 @@ import { ResourceDataService } from '../resource/resource-data.service';
 import { ResourcePickerComponent, type PickEvent } from '../resource/resource-picker.component';
 import { ResourceSelectionStore, type ResourceItem } from '../state/resource-selection-store';
 import { FilterStore, type FilterEntry } from '../state/filter-store';
-import { AuthService, type Identity } from '../auth/auth.service';
 import { TableSelection } from '../views/table-selection';
 import { TPipe } from '../i18n/i18n.service';
 
 /**
- * The persistent left ResourceSelection: the pinned "meine" card, the DURCHSTEPPEN header with
+ * The persistent left ResourceSelection: the DURCHSTEPPEN header with
  * "+ Neu" (PRD 122) and the shared {@link ResourcePickerComponent} in rail mode (PRD 123 D1).
  * A plain click {@link FilterStore.replace}s the filter with that resource — the
  * click-to-step rhythm — and marks it active ("▶ gezeigt"); Strg/Shift follow the selection
@@ -35,21 +34,6 @@ import { TPipe } from '../i18n/i18n.service';
   imports: [TPipe, MatMenuModule, ResourcePickerComponent],
   template: `
     <div class="stepper" tabindex="0" (keydown)="onListKeydown($event)">
-      @if (me(); as user) {
-        <div
-          class="pinned"
-          role="button"
-          tabindex="0"
-          [class.active]="meActive()"
-          (click)="scopeToMe($event, user)"
-          (keydown.enter)="scopeToMe($event, user)"
-          [title]="'shell_scope_to_me_tooltip' | t"
-        >
-          <span class="dot person">👤</span>
-          <span class="lbl">{{ user.name || user.username }}</span>
-          <span class="meta">{{ 'shell_mine' | t }}</span>
-        </div>
-      }
       <div class="sthead">
         {{ 'shell_step_through' | t }}
         @if (newTypeKey()) {
@@ -102,42 +86,6 @@ import { TPipe } from '../i18n/i18n.service';
       .stepper:focus {
         outline: none;
       }
-      .pinned {
-        display: flex;
-        align-items: center;
-        gap: 0.55rem;
-        margin: 0.6rem 0.6rem 0.2rem;
-        padding: 0.5rem 0.6rem;
-        border: 1px solid rgba(63, 81, 181, 0.25);
-        border-radius: 6px;
-        background: rgba(63, 81, 181, 0.06);
-        cursor: pointer;
-        font-size: 0.84rem;
-      }
-      .pinned:hover {
-        background: rgba(63, 81, 181, 0.12);
-      }
-      .pinned.active {
-        background: rgba(46, 125, 50, 0.12);
-        border-color: #2e7d32;
-        font-weight: 600;
-      }
-      .pinned .dot.person {
-        font-size: 0.9rem;
-        line-height: 1;
-      }
-      .pinned .lbl {
-        flex: 1;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      .pinned .meta {
-        font-size: 0.62rem;
-        font-weight: 700;
-        color: var(--mat-sys-primary, #3f51b5);
-        text-transform: uppercase;
-      }
       .sthead {
         display: flex;
         align-items: center;
@@ -168,19 +116,10 @@ import { TPipe } from '../i18n/i18n.service';
 export class ResourceSelectionComponent {
   protected readonly store = inject(ResourceSelectionStore);
   protected readonly filter = inject(FilterStore);
-  private readonly auth = inject(AuthService);
   private readonly dialog = inject(MatDialog);
   private readonly resourceData = inject(ResourceDataService);
   private readonly picker = viewChild.required(ResourcePickerComponent);
   private readonly menuTrigger = viewChild.required<MatMenuTrigger>('menuTrigger');
-
-  /** The logged-in user, pinned at the top for a one-click "my events" scope. */
-  protected readonly me = this.auth.identity;
-  /** True when a `user` scope chip for the logged-in user is active. */
-  protected readonly meActive = computed(() => {
-    const id = this.auth.identity()?.userId;
-    return !!id && this.filter.entries().some((e) => e.kind === 'user' && e.id === id);
-  });
 
   protected readonly selectedIds = computed(() => new Set(this.filter.entries().map((e) => e.id)));
 
@@ -238,6 +177,12 @@ export class ResourceSelectionComponent {
   }
 
   step(e: PickEvent): void {
+    // A pick in the same tick as a list switch ("meine") must not wait for the setRows effect.
+    this.selection.setRows(
+      this.picker()
+        .shown()
+        .map((it) => it.id),
+    );
     this.selection.syncSelected(this.filter.entries().map((e) => e.id));
     this.selection.pointer(e.item.id, { shift: e.shift, ctrl: e.ctrl });
     const plain = !e.shift && !e.ctrl;
@@ -286,27 +231,13 @@ export class ResourceSelectionComponent {
     this.filter.setAll([...kept, ...selected]);
   }
 
-  /** "alle wählen" — the group's members replace the filter. */
-  selectGroup(members: ResourceItem[]): void {
-    this.filter.setAll(members.map((it) => this.entry(it)));
-  }
-
-  /**
-   * Step to the logged-in user's own events — a `user` scope chip (ownerEq:<me>). Same gesture
-   * rhythm as a list row (Swing parity, user ruling 2026-09-30): a plain click replaces the
-   * selection, ctrl/cmd-click toggles the chip next to the selected resources.
-   */
-  scopeToMe(event: Event, user: Identity): void {
-    const mods = event as MouseEvent | KeyboardEvent;
-    const entry = { id: user.userId, kind: 'user' as const, label: user.name || user.username };
-    if (this.filter.has(entry.id)) {
-      this.filter.remove(entry.id); // a second click (plain or ctrl) clears the scope
-    } else if (mods.ctrlKey || mods.metaKey) {
-      this.filter.add(entry);
-    } else {
-      this.filter.replace(entry);
-      this.store.setActive(null); // the stepped row is no longer shown (Swing: single selection)
-    }
+  /** PRD 123 D8 — "alle wählen" (a group or the whole list): replace, Ctrl adds, all selected → clear them. */
+  selectGroup(e: { items: ResourceItem[]; ctrl: boolean }): void {
+    const ids = new Set(e.items.map((it) => it.id));
+    const others = this.filter.entries().filter((c) => !ids.has(c.id));
+    if (e.items.every((it) => this.filter.has(it.id))) this.filter.setAll(others);
+    else this.filter.setAll([...(e.ctrl ? others : []), ...e.items.map((it) => this.entry(it))]);
+    this.store.setActive(null);
   }
 
   /** PRD 122 D4 — creatable types from the server; empty hides the button. */

@@ -15,7 +15,7 @@ import {
 import { t as tr } from '../i18n/i18n.service';
 
 /** A steppable item in the selection list. Usually a resource; a `user` item
- *  steps as an ownerEq scope chip instead of a resource filter. Defaults to
+ *  steps as an ownerIn scope chip instead of a resource filter. Defaults to
  *  `resource` when omitted (back-compat with persisted recents/favorites). */
 export interface ResourceItem {
   id: string;
@@ -26,6 +26,8 @@ export interface ResourceItem {
   typeKey?: string;
   /** Localized type name — the label of the type chip (PRD 119). */
   typeName?: string;
+  /** RESOURCE | PERSON — groups the type select like the create dialog (PRD 122 D9). */
+  classificationType?: string;
   /** Login name of a user row — the search matches it too (PRD 119). */
   username?: string;
   /** Picker group paths, one per categorization value (PRD 119 D11). */
@@ -43,6 +45,7 @@ const EMPTY_STATE: PickerState = { chip: 'all', query: '', activeId: null };
 interface PickerWire {
   resources?: {
     id: string;
+    kind?: string;
     name: string | null;
     classification: { typeKey: string; type: { name: string } };
     groupPaths?: string[][];
@@ -70,6 +73,7 @@ const PICKER_QUERY = `{
 export class ResourceSelectionStore {
   private readonly lists = inject(RecentsFavoritesService);
   private readonly gql = inject(GraphqlService);
+  private readonly auth = inject(AuthService);
 
   /** PRD 123 D5 — chip, query and active row survive a reload, per user like the FilterStore. */
   private readonly storage = new ScopedStorage(inject(AuthService), 'rapla.picker');
@@ -83,6 +87,10 @@ export class ResourceSelectionStore {
   /** PRD 119 P3b (user ruling A) — Alle ranks by this copy of the recents, so a click never moves its row. */
   private readonly _recentsSnapshot = signal<ResourceItem[]>([]);
   private loaded = false;
+  /** The lean list has answered — the Benutzer chip waits for it (no "meine" flash). */
+  private readonly listLoaded = signal(false);
+  /** The identity the lean list was fetched for (R-22). */
+  private loadedFor: string | null = null;
 
   readonly resources = this._resources.asReadonly();
   readonly users = this._users.asReadonly();
@@ -103,11 +111,18 @@ export class ResourceSelectionStore {
       this.lists.reloaded();
       untracked(() => this.snapshotRecents());
     });
-    bindPerUser(inject(AuthService), () => {
+    bindPerUser(this.auth, () => {
       const saved = this.saved();
       this._activeChip.set(saved.chip);
       this._activeId.set(saved.activeId);
       this._query.set(saved.query);
+      // R-22 — the lean list is the caller's read scope: a new identity must not see the old one.
+      if (!this.loaded || (this.auth.identity()?.userId ?? null) === this.loadedFor) return;
+      this._resources.set([]);
+      this._users.set([]);
+      this.listLoaded.set(false);
+      if (this.auth.identity()) untracked(() => this.fetch());
+      else this.loaded = false;
     });
   }
 
@@ -132,6 +147,21 @@ export class ResourceSelectionStore {
 
   readonly activeList = computed<ResourceItem[]>(() => this.listFor(this._activeChip()));
 
+  /** PRD 123 D9 — every readable account, the own one first, the rest A–Z. */
+  private readonly accounts = computed(() => {
+    const me = this.auth.identity()?.userId;
+    return [...this._users()].sort(
+      (a, b) => Number(b.id === me) - Number(a.id === me) || byLabel(a, b),
+    );
+  });
+
+  /** PRD 123 D9 — the Benutzer chip; `mine` when the own account is the only readable one. */
+  readonly usersChip = computed<{ mine: boolean } | null>(() => {
+    const me = this.auth.identity()?.userId;
+    if (!this.listLoaded() || (!me && !this._users().length)) return null;
+    return { mine: this._users().every((u) => u.id === me) };
+  });
+
   /** PRD 123 D1 — the rows a chip shows; a second picker (the event sheet) asks for its own chip. */
   listFor(chip: string): ResourceItem[] {
     switch (chip) {
@@ -141,6 +171,8 @@ export class ResourceSelectionStore {
         return this.favorites();
       case 'recents':
         return this.recents();
+      case 'users':
+        return this.accounts();
       default: {
         const typeKey = chip.slice('type:'.length);
         return this._resources()
@@ -174,6 +206,7 @@ export class ResourceSelectionStore {
   }
 
   private fetch(): void {
+    this.loadedFor = this.auth.identity()?.userId ?? null;
     this.gql.query<PickerWire>(PICKER_QUERY).subscribe({
       next: (resp) => {
         if (!resp.data) {
@@ -189,10 +222,12 @@ export class ResourceSelectionStore {
               kind: 'resource',
               typeKey: r.classification.typeKey,
               typeName: r.classification.type.name,
+              classificationType: r.kind,
               groupPaths: r.groupPaths ?? [],
             })),
         );
         this.snapshotRecents();
+        this.listLoaded.set(true);
         this._users.set(
           (resp.data.users ?? []).map((u) => ({
             id: u.id,

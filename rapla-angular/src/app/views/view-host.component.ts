@@ -80,7 +80,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { groupByWeekday, groupByColumn } from '../graphql/weekday-grouping';
 import { ViewStateStore, type DateWindow } from '../state/view-state-store';
 import { FilterStore, type FilterEntry } from '../state/filter-store';
-import { buildVariablesByType } from './variable-binder';
+import { buildVariablesByType, scopeOf } from './variable-binder';
 import { LastViewStore } from './last-view-store';
 import { formatGroupLabel } from './group-format';
 import { isProjectedView, projectRow } from './stat-projection';
@@ -1084,11 +1084,7 @@ export class ViewHostComponent {
     // here would make the effect re-fire on every response (meta.set) → infinite
     // loop. The one-time re-query when the signature lands is driven by bindingKey.
     const signature = untracked(() => this.meta()?.variables) ?? [];
-    const resourceIds = chips.filter((c) => c.kind === 'resource').map((c) => c.id);
-    // ReservationFilter.ownerEq is single — take the first user chip (the pinned
-    // self is the common case; multi-user scope would need ownerIdsIn server-side).
-    const ownerId = chips.find((c) => c.kind === 'user')?.id ?? null;
-    const variables = buildVariablesByType(signature, { window, resourceIds, ownerId });
+    const variables = buildVariablesByType(signature, { window, ...scopeOf(chips) });
     this.trigger$.next({ viewName, variables, seedWindow: !window });
   }
 

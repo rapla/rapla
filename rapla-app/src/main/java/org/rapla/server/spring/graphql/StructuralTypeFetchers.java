@@ -1181,7 +1181,7 @@ public final class StructuralTypeFetchers
             if (caller != null && !(readableIds != null ? readableIds.contains(alloc.getId()) : pc.canRead(alloc, caller))) continue;  // §12 FIRST (PRD 082 #8 membership when flipped)
             if (filterArg != null)
             {
-                if (!ClassificationGraphQLController.matchesMap(alloc, filterArg)) continue;  // scalar
+                if (!ClassificationGraphQLController.matchesMap(alloc, filterArg, caller, operator)) continue;  // scalar
                 if (!WhereEvaluator.evaluate(alloc, filterArg, caller, pc)) continue;           // where<TypeKey> (+ §12 ref-recursion)
                 if (idIn != null && !idIn.isEmpty() && !idInMatchesHierarchy(alloc, idIn)) continue; // idIn (belongsTo-aware)
                 if (accessFilter != null && !accessFilter.test(alloc)) continue;              // PRD 069 access

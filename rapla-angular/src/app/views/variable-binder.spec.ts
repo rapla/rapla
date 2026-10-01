@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildVariablesByType } from './variable-binder';
+import { buildVariablesByType, scopeOf } from './variable-binder';
 import type { ViewVariable } from '../graphql/graphql.service';
 
 const W = { from: '2026-06-15T00:00:00', to: '2026-06-22T00:00:00' };
@@ -52,25 +52,36 @@ describe('buildVariablesByType', () => {
     ).toEqual({});
   });
 
-  it('a user scope binds into ReservationFilter.ownerEq ("my events")', () => {
+  it('user scopes bind into ReservationFilter.ownerIn ("my events")', () => {
     expect(
       buildVariablesByType([v('filter', 'ReservationFilter!')], {
         window: W,
         resourceIds: [],
-        ownerId: 'u-42',
+        ownerIds: ['u-42'],
       }),
-    ).toEqual({ filter: { from: W.from, to: W.to, ownerEq: 'u-42' } });
+    ).toEqual({ filter: { from: W.from, to: W.to, ownerIn: ['u-42'] } });
   });
 
-  it('user + resource scope combine (ownerEq AND resourceMatching)', () => {
+  it('user + resource scope are both sent (the server unions them, PRD 123 D10)', () => {
     expect(
       buildVariablesByType([v('filter', 'ReservationFilter!')], {
         window: W,
         resourceIds: RES,
-        ownerId: 'u-42',
+        ownerIds: ['u-42', 'u-7'],
       }),
     ).toEqual({
-      filter: { from: W.from, to: W.to, resourceMatching: { idIn: RES }, ownerEq: 'u-42' },
+      filter: { from: W.from, to: W.to, resourceMatching: { idIn: RES }, ownerIn: ['u-42', 'u-7'] },
     });
+  });
+
+  it('scopeOf splits the chips: every user chip is an owner, no first-chip pick', () => {
+    expect(
+      scopeOf([
+        { id: 'r1', kind: 'resource', label: 'R1' },
+        { id: 'u-42', kind: 'user', label: 'A' },
+        { id: 'e1', kind: 'event', label: 'E' },
+        { id: 'u-7', kind: 'user', label: 'B' },
+      ]),
+    ).toEqual({ resourceIds: ['r1'], ownerIds: ['u-42', 'u-7'] });
   });
 });

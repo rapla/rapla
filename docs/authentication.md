@@ -1218,6 +1218,15 @@ outbound request. On the **Angular** SPA, switch-back is
 `POST /api/auth/impersonate/end` (`AuthService.endImpersonation()`);
 the server re-mints the `access_token` cookie back to the admin.
 
+**SPA: switch and end reload the page** (R-22, 2026-10-01). After a
+successful `impersonate/switch` or `impersonate/end` the SPA reloads
+completely, so nothing loaded under the previous identity survives
+(picker lean list, "+ Neu" types, "Neu" event options, schema caches);
+per-identity caches need no `identity()` effect for this. An open
+draft is asked about BEFORE the POST (`UnsavedChangesService.confirmDiscard`)
+— a cancel after the cookie swap would leave the old page talking as
+the new user; the reload then skips the browser's second question.
+
 ### Switching from one target to another mid-impersonation
 
 If an admin is impersonating user A and wants to switch to user B

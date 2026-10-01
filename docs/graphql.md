@@ -660,7 +660,7 @@ input ReservationFilter {
   from:                LocalDateTime!     # inclusive
   to:                  LocalDateTime!     # exclusive
   typeIn: [ReservationTypeKey!]         # narrow to reservation DTs (per-kind enum)
-  ownerEq:             ID                 # who created it
+  ownerIn:          [ID!]              # PRD 123 D10 — created by ANY of these users
   resourceIdsIn:    [ID!]              # PRD 055 — uses ANY of these ids
   resourceMatching: ResourceFilter  # PRD 066 — uses ANY resource matching this filter
   nameContains:        String
@@ -673,6 +673,18 @@ same `typeIn` + per-type `whereXxx` ([PRD 059](prd/done/059-graphql-typed-where-
 sidebar produces. Semantic: result is the union of the type-bucket
 predicate set and `idIn`; per-type filter rules apply only to the
 type-bucket; `idIn` is additive and ignores filter rules.
+
+`ownerIn`, `resourceIdsIn` and `resourceMatching` are the three scope
+sources and are UNIONed — users OR resources, as in Swing
+([PRD 123 D10](prd/123-spa-unified-resource-picker.md#decisions-locked-user-2026-09-30)).
+Owner ids the caller may not see (self + `canAdminUser`) are dropped
+silently (§12); an empty or absent `ownerIn` adds no owner scope.
+Owner-admitted blocks carry an empty `matchedBy` and fall back to their
+own room's lane. `ResourceFilter.ownerIn` is a different field: it
+narrows resources by their owner and ANDs with the other fields.
+With none of the three set, the query resolves to every resource the caller
+can read, so a reservation that allocates NO resource is never returned that
+way — it is reachable through `ownerIn` only (Swing: the user branch).
 
 ```graphql
 # Calendar query — "show me events in this building over the semester"
@@ -1054,6 +1066,8 @@ private static boolean canReadAllocatable(Allocatable a, Supplier<DataFetchingEn
     return rc.permissionController().canRead(a, rc.caller());
 }
 ```
+
+Today `RequestCtx` carries two allocatable gates: `canReadAllocatable` (`canRead`, for queries that list resources or their bookings) and `canReadAllocatableInformation` (`READ_NO_ALLOCATION`, for expanding from a readable entity: `Reservation.allocations`, allocatable attributes, block colour), both O(1) from the `PermissionIndex` when the read model is authoritative — see [permissions.md § 5](architecture/permissions.md#5-read_no_allocation--resource-visibility-vs-booking-visibility-verified-2026-06-24).
 
 **Caveat — env materialization cost:** calling `envSupplier.get()` materializes the full `DataFetchingEnvironment`. For fields that always need it (ALLOCATABLE attrs needing §12), unavoidable. For fields that don't (locale-aware names), cache the value at wire time instead.
 

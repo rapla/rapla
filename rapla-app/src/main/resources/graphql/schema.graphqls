@@ -370,16 +370,21 @@ input ReservationFilter {
   to:                LocalDateTime!
   # Type selection lives on the GENERATED `typeIn: [ReservationTypeKey!]` field
   # (PRD 059 Phase 7 — SDL `extend input` emitted by ClassificationSdlGenerator).
-  "Exact-match on owner id."
-  ownerEq:           ID
-  "Reservations using ANY of the listed resource ids."
+  """
+  PRD 123 D10 — reservations owned by ANY of the listed user ids. UNIONed with
+  `resourceIdsIn` and `resourceMatching` (Swing: users OR resources). Ids of
+  users the caller may not see (self + canAdminUser) are dropped silently.
+  Empty or absent = no owner scope.
+  """
+  ownerIn:           [ID!]
+  "Reservations using ANY of the listed resource ids. UNIONed with `resourceMatching` and `ownerIn`."
   resourceIdsIn:  [ID!]
   """
   PRD 066 — reservations using ANY resource matching this
   ResourceFilter. Lets the SPA pass its tree-selection
   (`typeIn` + per-type `whereXxx` + `idIn`) in one shot instead of
   resolving resource ids in a separate roundtrip. UNIONed with
-  `resourceIdsIn` when both are set.
+  `resourceIdsIn` and `ownerIn`.
   """
   resourceMatching: ResourceFilter
   "Case-insensitive substring match on default-locale name (legacy — prefer `searchText` + `matchKind` for new flows). ANDs with `searchText` if both are set."
@@ -518,8 +523,8 @@ input ResourceFilter {
   searchText:   String
   "PRD 028 Phase 1 — algorithm choice for `searchText`. Defaults to SUBSTRING (matches the legacy `nameContains` behavior)."
   matchKind:    MatchKind = SUBSTRING
-  "Exact-match on owner id."
-  ownerEq:      ID
+  "Resources owned by ANY of the listed user ids (ANDs with the other fields). Ids of users the caller may not see (self + canAdminUser) are dropped silently, like ReservationFilter.ownerIn."
+  ownerIn:      [ID!]
   """
   PRD 066 — additive id-selection that ALWAYS appears in the result
   (subject only to §12 canRead). Ids matching the type-bucket
@@ -2127,7 +2132,7 @@ extend type Mutation {
 enum SearchKind {
   RESOURCE
   EVENT
-  USER         # selectable scope chips (ownerEq) — visible users (self + canAdminUser)
+  USER         # selectable scope chips (ownerIn) — visible users (self + canAdminUser)
   OCCURRENCE   # Phase 3 — not yet produced
   GROUP        # Phase 2 — not yet produced
 }
@@ -2183,7 +2188,7 @@ type EventHit implements SearchHit {
 
 """
 A user hit → SPA derives a filter-add action (a `user` scope chip the SPA binds
-into ReservationFilter.ownerEq). §12: only users the caller may see (self +
+into ReservationFilter.ownerIn). §12: only users the caller may see (self +
 canAdminUser, mirroring `users(filter:)`) — `id` is the user id the chip scopes by.
 """
 type UserHit implements SearchHit {

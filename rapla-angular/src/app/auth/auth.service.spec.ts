@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 
+import { UnsavedChangesService } from '../shell/unsaved-changes';
 import { AuthService, Identity } from './auth.service';
 
 /**
@@ -38,13 +39,8 @@ describe('AuthService (cookie model)', () => {
   afterEach(() => {
     httpMock.verify();
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
-
-  /** Drain microtasks so a chained call (e.g. loadIdentity after a switch
-   *  POST resolves) registers its request before we assert on it. */
-  async function flushMicrotasks() {
-    for (let i = 0; i < 5; i++) await Promise.resolve();
-  }
 
   it('NEVER touches localStorage or sessionStorage (H4 closed)', () => {
     // The whole service surface must not read/write web storage. A spy that
@@ -96,8 +92,13 @@ describe('AuthService (cookie model)', () => {
     expect(auth.actorUsername()).toBe('admin');
   });
 
-  it('impersonate(target) POSTs the cookie switch endpoint with target_username, then reloads identity', async () => {
+  /** The switch reloads the page (R-22); the test stubs the reload, never the real location. */
+  const stubReload = () =>
+    vi.spyOn(TestBed.inject(UnsavedChangesService), 'reload').mockImplementation(() => undefined);
+
+  it('impersonate(target) POSTs the cookie switch endpoint with target_username, then reloads the page', async () => {
     auth.identity.set(identity({ username: 'admin', admin: true }));
+    const reload = stubReload();
 
     const p = auth.impersonate('alice');
     const switchReq = httpMock.expectOne(
@@ -105,16 +106,9 @@ describe('AuthService (cookie model)', () => {
     );
     expect(switchReq.request.params.get('target_username')).toBe('alice');
     switchReq.flush(null);
-    await flushMicrotasks();
-
-    // After switch, the service reloads identity.
-    httpMock
-      .expectOne('/api/auth/me')
-      .flush(identity({ username: 'alice', impersonating: true, actor: 'admin', target: 'alice' }));
 
     expect(await p).toBe(true);
-    expect(auth.isImpersonating()).toBe(true);
-    expect(auth.username()).toBe('alice');
+    expect(reload).toHaveBeenCalledOnce();
   });
 
   it('impersonate(self) when not impersonating short-circuits — no switch call', async () => {
@@ -124,31 +118,52 @@ describe('AuthService (cookie model)', () => {
     httpMock.expectNone('/api/auth/impersonate/switch');
   });
 
-  it('impersonate() returns false on a failed switch and does NOT reload identity', async () => {
+  it('impersonate() returns false on a failed switch and does NOT reload', async () => {
     auth.identity.set(identity({ username: 'admin', admin: true }));
+    const reload = stubReload();
     const p = auth.impersonate('alice');
     httpMock
       .expectOne((r) => r.url === '/api/auth/impersonate/switch')
       .flush(null, { status: 403, statusText: 'Forbidden' });
     expect(await p).toBe(false);
-    await flushMicrotasks();
-    httpMock.expectNone('/api/auth/me');
+    expect(reload).not.toHaveBeenCalled();
   });
 
-  it('endImpersonation() POSTs the cookie end endpoint, then reloads identity', async () => {
+  it('an open draft asks first; cancelling keeps the identity — no switch call, no reload', async () => {
+    auth.identity.set(identity({ username: 'admin', admin: true }));
+    const reload = stubReload();
+    vi.spyOn(TestBed.inject(UnsavedChangesService), 'any').mockReturnValue(true);
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    expect(await auth.impersonate('alice')).toBeNull();
+    expect(await auth.endImpersonation()).toBeNull();
+    expect(confirm).toHaveBeenCalledTimes(2);
+    httpMock.expectNone('/api/auth/impersonate/switch');
+    httpMock.expectNone('/api/auth/impersonate/end');
+    expect(reload).not.toHaveBeenCalled();
+  });
+
+  it('an open draft confirmed → the switch goes through and the page reloads', async () => {
+    auth.identity.set(identity({ username: 'admin', admin: true }));
+    const reload = stubReload();
+    vi.spyOn(TestBed.inject(UnsavedChangesService), 'any').mockReturnValue(true);
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const p = auth.impersonate('alice');
+    httpMock.expectOne((r) => r.url === '/api/auth/impersonate/switch').flush(null);
+    expect(await p).toBe(true);
+    expect(reload).toHaveBeenCalledOnce();
+  });
+
+  it('endImpersonation() POSTs the cookie end endpoint, then reloads the page', async () => {
     auth.identity.set(
       identity({ username: 'alice', impersonating: true, actor: 'admin', target: 'alice' }),
     );
+    const reload = stubReload();
     const p = auth.endImpersonation();
     httpMock
       .expectOne((r) => r.url === '/api/auth/impersonate/end' && r.method === 'POST')
       .flush(null);
-    await flushMicrotasks();
-    httpMock.expectOne('/api/auth/me').flush(identity({ username: 'admin', admin: true }));
-
     expect(await p).toBe(true);
-    expect(auth.isImpersonating()).toBe(false);
-    expect(auth.username()).toBe('admin');
+    expect(reload).toHaveBeenCalledOnce();
   });
 
   it('redirectToLogin() does a full browser navigation to the server /login (relative)', () => {

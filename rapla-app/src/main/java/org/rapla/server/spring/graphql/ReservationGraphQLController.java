@@ -336,6 +336,11 @@ public class ReservationGraphQLController
         // If neither is set, fall back to "everything the caller can read."
         boolean hasIdsIn = filter.allocatableIdsIn() != null && !filter.allocatableIdsIn().isEmpty();
         boolean hasMatching = filter.allocatableMatching() != null && !filter.allocatableMatching().isEmpty();
+        // PRD 123 D10 — owners join the resource scope as a UNION (Swing's queryAppointmentsSync
+        // owners argument). Unknown and invisible ids drop silently (§12); a requested-but-empty
+        // owner scope still counts as scoped, so it never widens to "everything readable".
+        boolean hasOwners = filter.ownerIn() != null && !filter.ownerIn().isEmpty();
+        List<User> owners = hasOwners ? readableUsers(operator, filter.ownerIn(), caller) : List.of();
 
         Collection<Reservation> all;
         // PRD 086 window-first — a FULL ADMIN with NO explicit scope skips the ~48k-allocatable
@@ -343,7 +348,7 @@ public class ReservationGraphQLController
         // to "everything" for a full admin (isAdmin()), so there is no §12 post-filter and no leak risk.
         // The gate is exactly isAdmin() — a group-admin (canAdminUsers) or any non-admin does NOT see
         // everything and so falls through to resource-first below. Behind the read-model flip.
-        if (!hasIdsIn && !hasMatching && caller.isAdmin()
+        if (!hasIdsIn && !hasMatching && !hasOwners && caller.isAdmin()
                 && operator instanceof org.rapla.storage.impl.server.LocalAbstractCachableOperator lo
                 && lo.isReadModelAuthoritative())
         {
@@ -378,6 +383,10 @@ public class ReservationGraphQLController
                 catch (RaplaException e) { /* fall through — empty scope */ }
                 visibleAllocatables = new ArrayList<>(byId.values());
             }
+            else if (hasOwners)
+            {
+                visibleAllocatables = List.of();
+            }
             else
             {
                 visibleAllocatables = operator.getAllocatables(null).stream()
@@ -401,7 +410,7 @@ public class ReservationGraphQLController
             // compact, exactly Swing's empty-selection fallback.
             org.rapla.entities.domain.AppointmentMapping scopedMapping =
                     ((org.rapla.storage.SyncStorageOperator) operator)
-                            .queryAppointmentsSync(null, visibleAllocatables, null,
+                            .queryAppointmentsSync(null, visibleAllocatables, owners,
                                     filter.from(), filter.to(), null, null, false);
             all = scopedMapping.getAllReservations();
             if (hasIdsIn || hasMatching)
@@ -1224,6 +1233,27 @@ public class ReservationGraphQLController
         catch (IllegalArgumentException e) { throw new IllegalArgumentException("Unknown accessLevel: " + s); }
     }
 
+    /** The requested users the caller may see (self + canAdminUser); unknown and hidden ids drop silently. */
+    static List<User> readableUsers(org.rapla.storage.StorageOperator operator, List<String> ids, User caller)
+    {
+        List<User> out = new ArrayList<>();
+        for (String id : new java.util.LinkedHashSet<>(ids))
+        {
+            User u = readableUser(operator, id, caller);
+            if (u != null) out.add(u);
+        }
+        return out;
+    }
+
+    /** PRD 123 D10 — the owner-id rule of both `ownerIn` fields: the user if the caller may see it
+     *  (self + canAdminUser), else null — unknown and hidden ids look the same (§12). */
+    static User readableUser(org.rapla.storage.StorageOperator operator, String id, User caller)
+    {
+        User u = id == null ? null : operator.tryResolve(new org.rapla.entities.storage.ReferenceInfo<>(id, User.class));
+        if (u == null) return null;
+        return u.getId().equals(caller.getId()) || PermissionController.canAdminUser(caller, u) ? u : null;
+    }
+
     private static boolean matches(Reservation r, ReservationFilter f)
     {
         if (f.typeIn() != null && !f.typeIn().isEmpty())
@@ -1232,11 +1262,6 @@ public class ReservationGraphQLController
             // typeIn carries ReservationTypeKey ENUM values = the sanitized key.
             if (type == null || !f.typeIn().contains(
                     ClassificationSdlGenerator.checkGraphQlCompliantName(type.getKey()))) return false;
-        }
-        if (f.ownerEq() != null && !f.ownerEq().isBlank())
-        {
-            var ownerRef = r.getOwnerRef();
-            if (ownerRef == null || !f.ownerEq().equals(ownerRef.getId())) return false;
         }
         if (f.nameContains() != null && !f.nameContains().isBlank())
         {
@@ -1282,7 +1307,7 @@ public class ReservationGraphQLController
                 (LocalDateTime) m.get("from"),
                 (LocalDateTime) m.get("to"),
                 (List<String>) m.get("typeIn"),
-                (String) m.get("ownerEq"),
+                (List<String>) m.get("ownerIn"),
                 (List<String>) m.get("resourceIdsIn"),
                 (java.util.Map<String, Object>) m.get("resourceMatching"),
                 (String) m.get("nameContains"),
@@ -1301,7 +1326,7 @@ public class ReservationGraphQLController
             LocalDateTime from,
             LocalDateTime to,
             List<String> typeIn,
-            String ownerEq,
+            List<String> ownerIn,               // PRD 123 D10 — UNIONed with the resource scope
             List<String> allocatableIdsIn,
             java.util.Map<String, Object> allocatableMatching,    // PRD 066 — raw AllocatableFilter map
             String nameContains,

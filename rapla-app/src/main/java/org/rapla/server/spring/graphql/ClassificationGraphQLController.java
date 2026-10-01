@@ -115,7 +115,7 @@ public class ClassificationGraphQLController
                 // Match-then-canRead — matches() is microseconds on hash-compare;
                 // canRead can be a permission-graph walk for non-admins. Filtering
                 // first short-circuits the expensive check for non-matching entries.
-                if (!matches(a, filter)) continue;
+                if (!matches(a, filter, caller, operator)) continue;
                 if (!evaluateWhere(a, filterMap, caller, pc)) continue;
                 if (readableIds != null ? !readableIds.contains(a.getId()) : !pc.canRead(a, caller)) continue;
                 if (accessFilter != null && !accessFilter.test(a)) continue;   // PRD 069
@@ -182,7 +182,7 @@ public class ClassificationGraphQLController
         if (f.isPersonEq() != null) return true;
         if (f.nameContains() != null && !f.nameContains().isBlank()) return true;
         if (f.searchText() != null && !f.searchText().isBlank()) return true;
-        if (f.ownerEq() != null && !f.ownerEq().isBlank()) return true;
+        if (f.ownerIn() != null && !f.ownerIn().isEmpty()) return true;
         if (filterMap != null)
         {
             for (Map.Entry<String, Object> e : filterMap.entrySet())
@@ -217,7 +217,7 @@ public class ClassificationGraphQLController
                 (String) m.get("nameContains"),
                 (String) m.get("searchText"),
                 matchKind,
-                (String) m.get("ownerEq"),
+                (List<String>) m.get("ownerIn"),
                 (List<String>) m.get("idIn"),       // PRD 066
                 (Integer) m.get("limit"));
     }
@@ -239,7 +239,7 @@ public class ClassificationGraphQLController
      * {@code typeIn}. Returns null (= "all types") otherwise. The storage
      * layer's filter does coarse-grained "DynamicType match"; the in-resolver
      * loop still applies the rest of the predicates (isPerson, nameContains,
-     * ownerEq, limit). Unknown / rapla-internal keys are skipped; if NONE of
+     * ownerIn, limit). Unknown / rapla-internal keys are skipped; if NONE of
      * the listed keys resolves, null is returned and the in-resolver
      * {@code matches()} pass yields the empty result (§12 — no existence leak).
      */
@@ -384,12 +384,12 @@ public class ClassificationGraphQLController
      * {@code accessibleBy*} / {@code limit} alongside it — same unified {@code AllocatableFilter} as
      * {@code Query.allocatables}.
      */
-    static boolean matchesMap(Allocatable a, Map<String, Object> m)
+    static boolean matchesMap(Allocatable a, Map<String, Object> m, User caller, StorageOperator operator)
     {
-        return matches(a, fromMap(m));
+        return matches(a, fromMap(m), caller, operator);
     }
 
-    private static boolean matches(Allocatable a, AllocatableFilter f)
+    private static boolean matches(Allocatable a, AllocatableFilter f, User caller, StorageOperator operator)
     {
         if (f == null) return true;
         if (f.typeIn() != null && !f.typeIn().isEmpty())
@@ -414,10 +414,12 @@ public class ClassificationGraphQLController
                     ? f.matchKind() : SearchMatcher.MatchKind.SUBSTRING;
             if (!SearchMatcher.matches(hay, f.searchText(), kind)) return false;
         }
-        if (f.ownerEq() != null && !f.ownerEq().isBlank())
+        if (f.ownerIn() != null && !f.ownerIn().isEmpty())
         {
+            // Owners the caller cannot see count as unknown ids (§12, same rule as ReservationFilter).
             ReferenceInfo<User> ref = a.getOwnerRef();
-            if (ref == null || !f.ownerEq().equals(ref.getId())) return false;
+            if (ref == null || !f.ownerIn().contains(ref.getId())
+                    || ReservationGraphQLController.readableUser(operator, ref.getId(), caller) == null) return false;
         }
         return true;
     }
@@ -464,7 +466,7 @@ public class ClassificationGraphQLController
             String                   nameContains,
             String                   searchText,
             SearchMatcher.MatchKind  matchKind,
-            String                   ownerEq,
+            List<String>             ownerIn,
             List<String>             idIn,             // PRD 066 — additive id-selection
             Integer                  limit) {}
 

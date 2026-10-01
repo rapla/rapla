@@ -101,7 +101,7 @@ class ViewParamSaveValidationTest
         assertTrue(message.contains("resourceIdsInX"), message);
         assertTrue(message.contains("available:"), message);
         assertTrue(message.contains("resourceIdsIn"), message);
-        assertTrue(message.contains("ownerEq"), message);
+        assertTrue(message.contains("ownerIn"), message);
     }
 
     @Test
@@ -125,7 +125,7 @@ class ViewParamSaveValidationTest
         String query = """
                 query psv_dup($filter: ReservationFilter!) @view(title: "x")
                   @param(name: "resource", into: "filter.resourceIdsIn")
-                  @param(name: "resource", into: "filter.ownerEq")
+                  @param(name: "resource", into: "filter.ownerIn")
                 """ + BODY;
         List<String> errors = save("psv_dup", query);
         assertFalse(errors.isEmpty());
@@ -138,7 +138,7 @@ class ViewParamSaveValidationTest
         String query = """
                 query psv_fromclash($filter: ReservationFilter!) @view(title: "x")
                   @window(from: { anchor: TODAY, offset: 0 }, to: { anchor: TODAY, offset: 7 })
-                  @param(name: "from", into: "filter.ownerEq")
+                  @param(name: "from", into: "filter.ownerIn")
                 """ + BODY;
         List<String> errors = save("psv_fromclash", query);
         assertFalse(errors.isEmpty());

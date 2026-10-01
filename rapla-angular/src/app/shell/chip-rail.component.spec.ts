@@ -58,4 +58,28 @@ describe('ChipRailComponent', () => {
     await f.whenStable();
     expect(store.isEmpty()).toBe(true);
   });
+
+  it('PRD 123 D8 — 10 or more resource chips fold into one "N Ressourcen" chip; user and event chips stay single', async () => {
+    for (let i = 1; i <= 10; i++) store.add({ id: `r${i}`, kind: 'resource', label: `Raum ${i}` });
+    store.add({ id: 'u1', kind: 'user', label: 'Burns Monty' });
+    store.add({ id: 'e1', kind: 'event', label: 'Prog II' });
+    const f = TestBed.createComponent(ChipRailComponent);
+    await f.whenStable();
+    const el = f.nativeElement as HTMLElement;
+    const labels = Array.from(el.querySelectorAll('mat-chip')).map(
+      (c) => c.textContent?.trim() ?? '',
+    );
+    expect(labels.length).toBe(3);
+    expect(labels[0]).toContain('10 Ressourcen');
+    (el.querySelector('mat-chip .chip-remove') as HTMLButtonElement).click();
+    await f.whenStable();
+    expect(store.entries().map((e) => e.id)).toEqual(['u1', 'e1']);
+  });
+
+  it('9 resource chips stay single', async () => {
+    for (let i = 1; i <= 9; i++) store.add({ id: `r${i}`, kind: 'resource', label: `Raum ${i}` });
+    const f = TestBed.createComponent(ChipRailComponent);
+    await f.whenStable();
+    expect((f.nativeElement as HTMLElement).querySelectorAll('mat-chip').length).toBe(9);
+  });
 });

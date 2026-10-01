@@ -10,6 +10,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.rapla.server.spring.RaplaSpringBootApplication;
@@ -37,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @SpringBootTest(classes = RaplaSpringBootApplication.class)
 @AutoConfigureMockMvc(addFilters = false)
+@Tag("e2e")
 class TreeCategoryInputGraphQLTest
 {
     static final String LEAF = "c0a1b2c3-0000-4000-8000-000000000003";

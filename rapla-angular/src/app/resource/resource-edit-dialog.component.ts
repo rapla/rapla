@@ -23,6 +23,7 @@ import { typedId } from '../event/event-draft';
 import { ResourceDataService, type ResourceDraft } from './resource-data.service';
 import { UnsavedChangesService } from '../shell/unsaved-changes';
 import { TPipe, t as tr } from '../i18n/i18n.service';
+import { groupByKind } from './type-groups';
 
 export interface ResourceEditDialogData {
   /** Edit mode — absent in create mode. */
@@ -242,14 +243,7 @@ export class ResourceEditDialogComponent {
   readonly editable = computed(() => this.canModify() && this.dialogData.readOnly !== true);
 
   /** PRD 122 D9 — create mode groups the mixed list, resources first; null = flat (one kind). */
-  readonly typeGroups = computed(() => {
-    const opts = this.typeOptions();
-    if (!opts.some((t) => t.classificationType)) return null;
-    return [
-      { label: tr('resources'), types: opts.filter((t) => t.classificationType === 'RESOURCE') },
-      { label: tr('persons'), types: opts.filter((t) => t.classificationType === 'PERSON') },
-    ].filter((g) => g.types.length > 0);
-  });
+  readonly typeGroups = computed(() => groupByKind(this.typeOptions()));
 
   /** PRD 122 M4 — create mode names the kind of the chosen type (Swing: "Ressource" / "Person"). */
   readonly heading = computed(() => {

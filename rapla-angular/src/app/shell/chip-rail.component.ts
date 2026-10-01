@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -21,7 +21,22 @@ import { TPipe } from '../i18n/i18n.service';
         <span class="empty-hint">{{ 'shell_filter_empty' | t }}</span>
       } @else {
         <mat-chip-set>
-          @for (e of store.entries(); track e.id) {
+          @if (resourceCount() >= FOLD_AT) {
+            <mat-chip class="sum">
+              {{ 'shell_n_resources' | t: resourceCount() }}
+              <button
+                class="chip-remove"
+                type="button"
+                [attr.aria-label]="
+                  'shell_chip_remove' | t: ('shell_n_resources' | t: resourceCount())
+                "
+                (click)="removeResources()"
+              >
+                <mat-icon>cancel</mat-icon>
+              </button>
+            </mat-chip>
+          }
+          @for (e of singles(); track e.id) {
             <mat-chip>
               <span class="cd" [style.background]="e.color ?? 'transparent'"></span>
               {{ e.label }}
@@ -93,4 +108,18 @@ import { TPipe } from '../i18n/i18n.service';
 })
 export class ChipRailComponent {
   protected readonly store = inject(FilterStore);
+  /** PRD 123 D8 — from this many resource chips on, they fold into one "N Ressourcen" chip. */
+  protected readonly FOLD_AT = 10;
+  protected readonly resourceCount = computed(
+    () => this.store.entries().filter((e) => e.kind === 'resource').length,
+  );
+  protected readonly singles = computed(() =>
+    this.resourceCount() >= this.FOLD_AT
+      ? this.store.entries().filter((e) => e.kind !== 'resource')
+      : this.store.entries(),
+  );
+
+  protected removeResources(): void {
+    this.store.setAll(this.store.entries().filter((e) => e.kind !== 'resource'));
+  }
 }

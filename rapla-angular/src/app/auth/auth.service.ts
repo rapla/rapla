@@ -1,6 +1,8 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { type Observable, firstValueFrom } from 'rxjs';
+
+import { UnsavedChangesService } from '../shell/unsaved-changes';
 
 /**
  * PRD 072 Phase 4 — cookie-credential (model A) identity for the SPA.
@@ -35,6 +37,7 @@ export interface Identity {
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
+  private readonly unsaved = inject(UnsavedChangesService);
 
   /**
    * The current identity, or null when unauthenticated. Populated by
@@ -112,39 +115,41 @@ export class AuthService {
    * PRD 072 — start impersonation via the cookie-shaped endpoint
    * {@code POST /api/auth/impersonate/switch?target_username=…}. The server
    * validates {@code canAdminUser} and swaps the {@code access_token} cookie
-   * for an impersonation JWT. On success we reload the identity (now reflecting
-   * the target). Returns false on any failure; the caller stays as admin.
+   * for an impersonation JWT. On success the page reloads (R-22: no per-identity
+   * cache survives). Returns false on failure (the caller stays as admin), null
+   * when the user kept an open draft instead.
    */
-  async impersonate(targetUsername: string): Promise<boolean> {
+  async impersonate(targetUsername: string): Promise<boolean | null> {
     // Self-target → end impersonation rather than mint a self-as-self token.
     if (this.identity()?.username === targetUsername && !this.isImpersonating()) {
       return true;
     }
-    try {
-      await firstValueFrom(
-        this.http.post('/api/auth/impersonate/switch', null, {
-          params: { target_username: targetUsername },
-        }),
-      );
-      await this.loadIdentity();
-      return true;
-    } catch {
-      return false;
-    }
+    return this.switchIdentity(
+      this.http.post('/api/auth/impersonate/switch', null, {
+        params: { target_username: targetUsername },
+      }),
+    );
   }
 
   /**
    * PRD 072 — end impersonation via {@code POST /api/auth/impersonate/end}.
-   * The server restores the admin's {@code access_token} cookie. We reload the
-   * identity (back to the admin). Returns false on failure.
+   * The server restores the admin's {@code access_token} cookie; the page reloads.
+   * Returns false on failure, null when the user kept an open draft instead.
    */
-  async endImpersonation(): Promise<boolean> {
+  async endImpersonation(): Promise<boolean | null> {
+    return this.switchIdentity(this.http.post('/api/auth/impersonate/end', null));
+  }
+
+  /** Ask about open drafts BEFORE the cookie changes — a cancel after it would leave the
+   *  old page talking as the new user — then switch and reload the whole SPA. */
+  private async switchIdentity(request: Observable<unknown>): Promise<boolean | null> {
+    if (!this.unsaved.confirmDiscard()) return null;
     try {
-      await firstValueFrom(this.http.post('/api/auth/impersonate/end', null));
-      await this.loadIdentity();
-      return true;
+      await firstValueFrom(request);
     } catch {
       return false;
     }
+    this.unsaved.reload();
+    return true;
   }
 }

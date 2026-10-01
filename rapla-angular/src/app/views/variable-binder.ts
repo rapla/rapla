@@ -1,4 +1,5 @@
 import type { ViewVariable } from '../graphql/graphql.service';
+import type { FilterEntry } from '../state/filter-store';
 
 /**
  * Type-driven variable binder. The GUI owns the LOGIC of how each rapla input
@@ -21,9 +22,17 @@ export interface SelectionContext {
   window: { from: string; to: string } | null;
   /** Ids of the currently-selected resources (chips). */
   resourceIds: string[];
-  /** The user scope (a `user` chip / the pinned own user) → ReservationFilter.ownerEq.
-   *  Single, because ReservationFilter.ownerEq takes one id (no ownerIdsIn). */
-  ownerId?: string | null;
+  /** Every `user` chip → ReservationFilter.ownerIn, unioned server-side with the resources (PRD 123 D10). */
+  ownerIds?: string[];
+}
+
+/** The scope the chips carry: resource ids and owner (user) ids; event chips are navigation, not scope. */
+export function scopeOf(chips: readonly FilterEntry[]): {
+  resourceIds: string[];
+  ownerIds: string[];
+} {
+  const ids = (kind: FilterEntry['kind']) => chips.filter((c) => c.kind === kind).map((c) => c.id);
+  return { resourceIds: ids('resource'), ownerIds: ids('user') };
 }
 
 /** Strip GraphQL type wrappers ({@code !}, {@code [ ]}) to the base type name. */
@@ -39,8 +48,8 @@ function fillByType(type: string, ctx: SelectionContext): unknown | undefined {
       // Selection narrows the reservation search via resourceMatching (an
       // ResourceFilter — future-proof for groups, not just ids).
       if (ctx.resourceIds.length) filter['resourceMatching'] = { idIn: ctx.resourceIds };
-      // A user scope → events owned by that user ("my events" for the pinned self).
-      if (ctx.ownerId) filter['ownerEq'] = ctx.ownerId;
+      // User scopes → events owned by those users, OR-ed with the resources server-side.
+      if (ctx.ownerIds?.length) filter['ownerIn'] = ctx.ownerIds;
       return filter;
     }
     case 'ResourceFilter':

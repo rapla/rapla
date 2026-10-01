@@ -230,9 +230,10 @@ describe('ResourceSelectionComponent', () => {
       'false',
       'true',
     ]);
+    // PRD 122 D9 parity — resources, then persons (the lecturer fixture is a PERSON).
     expect(
       Array.from(el.querySelectorAll('select.typesel option')).map((o) => o.textContent?.trim()),
-    ).toEqual(['Typ ▾', 'Dozent (1)', 'Raum (1)']);
+    ).toEqual(['Typ ▾', 'Raum (1)', 'Dozent (1)']);
   });
 
   it('a type chip lists only resources of that type, name-sorted', async () => {
@@ -263,6 +264,127 @@ describe('ResourceSelectionComponent', () => {
     expect(filter.entries()).toEqual([
       { id: 'u1', kind: 'user', label: 'Burns Monty', color: undefined },
     ]);
+  });
+
+  describe('the Benutzer chip (PRD 123 D9)', () => {
+    const ME: Identity = {
+      userId: 'U-ME',
+      username: 'admin',
+      name: 'Admin X',
+      admin: true,
+      roles: [],
+      impersonating: false,
+      actor: null,
+      target: null,
+    };
+    const USERS: UserWire[] = [
+      { id: 'u2', username: 'monty', name: 'Burns Monty' },
+      { id: 'U-ME', username: 'admin', name: 'Admin X' },
+      { id: 'u3', username: 'homer', name: 'Simpson Homer' },
+    ];
+    const usersChip = (el: HTMLElement) =>
+      Array.from(el.querySelectorAll<HTMLButtonElement>('.chips button')).find(
+        (b) => b.textContent?.trim() === 'Benutzer',
+      );
+
+    it('sits after Zuletzt and lists every readable account, the own one first, the rest A–Z', async () => {
+      TestBed.inject(AuthService).identity.set(ME);
+      resources.setActiveChip('all');
+      const f = await create([room(1)], USERS);
+      const el = f.nativeElement as HTMLElement;
+      expect(
+        Array.from(el.querySelectorAll('.chips button')).map((b) => b.textContent?.trim()),
+      ).toEqual(['Alle', '★ Favoriten', 'Zuletzt', 'Benutzer']);
+      usersChip(el)!.click();
+      await f.whenStable();
+      f.detectChanges();
+      expect(resources.activeChip()).toBe('users');
+      expect(labels(el)).toEqual(['Admin X', 'Burns Monty', 'Simpson Homer']);
+    });
+
+    it('rows follow the selection gestures and become user scope chips', async () => {
+      TestBed.inject(AuthService).identity.set(ME);
+      resources.setActiveChip('users');
+      const f = await create([room(1)], USERS);
+      const rows = Array.from(
+        (f.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('.item'),
+      );
+      rows[0].click();
+      rows[2].dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true }));
+      expect(filter.entries().map((e) => [e.id, e.kind])).toEqual([
+        ['U-ME', 'user'],
+        ['u3', 'user'],
+      ]);
+    });
+
+    it('the pinned card is gone', async () => {
+      TestBed.inject(AuthService).identity.set(ME);
+      const f = await create([room(1)], USERS);
+      expect((f.nativeElement as HTMLElement).querySelector('.pinned')).toBeNull();
+    });
+  });
+
+  describe('"alle wählen" for the current list (PRD 123 D8)', () => {
+    const many = Array.from({ length: 25 }, (_, i) => room(i + 1));
+    const header = (el: HTMLElement) => el.querySelector<HTMLElement>('.listhdr');
+    const all = (el: HTMLElement) => el.querySelector<HTMLButtonElement>('.listhdr .listall')!;
+
+    it('takes every hit, not just the first block of 20, and replaces the selection', async () => {
+      resources.setActiveChip('all');
+      filter.add({ id: 'OLD', kind: 'resource', label: 'old' });
+      const f = await create(many);
+      const el = f.nativeElement as HTMLElement;
+      expect(labels(el).length).toBe(20);
+      expect(header(el)?.textContent).toContain('25 Treffer');
+      all(el).click();
+      await f.whenStable();
+      expect(filter.entries().length).toBe(25);
+      expect(filter.has('OLD')).toBe(false);
+    });
+
+    it('Ctrl adds; when everything is selected the button reads "Auswahl aufheben" and clears the hits', async () => {
+      resources.setActiveChip('all');
+      filter.add({ id: 'OLD', kind: 'event', label: 'old' });
+      const f = await create(many);
+      const el = f.nativeElement as HTMLElement;
+      all(el).dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true }));
+      await f.whenStable();
+      f.detectChanges();
+      expect(filter.entries().length).toBe(26);
+      expect(all(el).textContent?.trim()).toBe('Auswahl aufheben');
+      all(el).click();
+      await f.whenStable();
+      expect(filter.entries().map((e) => e.id)).toEqual(['OLD']);
+    });
+
+    it('resets the ▶ marker and pushes no recent', async () => {
+      resources.setActiveChip('all');
+      const f = await create(many);
+      const el = f.nativeElement as HTMLElement;
+      (el.querySelector('.item') as HTMLElement).click();
+      const recents = resources.recents().length;
+      all(el).click();
+      await f.whenStable();
+      expect(resources.activeId()).toBeNull();
+      expect(resources.recents().length).toBe(recents);
+    });
+
+    it('under Benutzer it selects the accounts as user chips', async () => {
+      resources.setActiveChip('users');
+      const f = await create(
+        [room(1)],
+        [
+          { id: 'u1', username: 'monty', name: 'Burns Monty' },
+          { id: 'u2', username: 'homer', name: 'Simpson Homer' },
+        ],
+      );
+      all(f.nativeElement as HTMLElement).click();
+      await f.whenStable();
+      expect(filter.entries().map((e) => [e.id, e.kind])).toEqual([
+        ['u1', 'user'],
+        ['u2', 'user'],
+      ]);
+    });
   });
 
   it('a plain click on a row pushes a recent (PRD 119 D5)', async () => {
@@ -434,70 +556,68 @@ describe('ResourceSelectionComponent', () => {
       expect(chipIds()).toEqual(['r2']);
     });
 
-    describe('the pinned "meine" card acts like a list row (Swing parity, user ruling 2026-09-30)', () => {
+    describe('with only the own account, the Benutzer chip reads "meine" (PRD 123 D9, user 2026-10-01)', () => {
       const ME: Identity = {
         userId: 'U-ME',
         username: 'admin',
-        name: '',
+        name: 'Admin X',
         admin: true,
         roles: [],
         impersonating: false,
         actor: null,
         target: null,
       };
-      const pinned = (f: { nativeElement: HTMLElement }) =>
-        f.nativeElement.querySelector<HTMLElement>('.pinned')!;
+      const mine = (f: { nativeElement: HTMLElement }) =>
+        f.nativeElement.querySelector<HTMLElement>('.chips button.mine')!;
 
       async function makeListWithMe() {
         TestBed.inject(AuthService).identity.set(ME);
-        return makeList();
+        resources.setActiveChip('type:room');
+        return create(
+          [room(1), room(2), room(3), room(4)],
+          [{ id: 'U-ME', username: 'admin', name: 'Admin X' }],
+        );
       }
 
-      it('plain click replaces the selection with the user scope', async () => {
+      it('a click activates it like any chip: the list is the own row, the type select clears, the own account replaces the selection', async () => {
         const f = await makeListWithMe();
+        expect(mine(f).textContent?.trim()).toBe('meine');
         click(items(f)[0]);
-        click(pinned(f));
-        expect(chipIds()).toEqual(['U-ME']);
-        expect(filter.entries()[0].kind).toBe('user');
+        click(mine(f));
+        await f.whenStable();
         f.detectChanges();
-        expect(resources.activeId()).toBeNull();
-        expect(f.nativeElement.querySelector('.item.active')).toBeNull();
+        const el = f.nativeElement as HTMLElement;
+        expect(resources.activeChip()).toBe('users');
+        expect(labels(el)).toEqual(['Admin X']);
+        expect((el.querySelector('select.typesel') as HTMLSelectElement).value).toBe('');
+        expect(mine(f).classList.contains('on')).toBe(true);
+        expect(filter.entries().map((e) => [e.id, e.kind])).toEqual([['U-ME', 'user']]);
       });
 
-      it('a second plain click on the active card clears the user scope (user, 2026-09-30)', async () => {
-        const f = await makeListWithMe();
-        click(pinned(f));
-        expect(chipIds()).toEqual(['U-ME']);
-        click(pinned(f));
-        expect(chipIds()).toEqual([]);
-        f.detectChanges();
-        expect(pinned(f).classList.contains('active')).toBe(false);
-      });
-
-      it('ctrl-click keeps the stepped resource marked as shown', async () => {
+      it('Ctrl adds the own account to the selection', async () => {
         const f = await makeListWithMe();
         click(items(f)[0]);
-        click(pinned(f), { ctrlKey: true });
-        expect(resources.activeId()).toBe('r1');
-      });
-
-      it('ctrl-click adds the user scope to the selected resources, ctrl-click again removes it', async () => {
-        const f = await makeListWithMe();
-        click(items(f)[0]);
-        click(pinned(f), { ctrlKey: true });
+        click(mine(f), { ctrlKey: true });
         expect(chipIds()).toEqual(['r1', 'U-ME']);
-        click(pinned(f), { ctrlKey: true });
-        expect(chipIds()).toEqual(['r1']);
-        expect(pinned(f).classList.contains('active')).toBe(false);
       });
 
-      it('a plain click on a resource drops the user scope; ctrl-click on a resource keeps it', async () => {
+      it('a second click on the active chip deselects the own account; the chip stays active', async () => {
         const f = await makeListWithMe();
-        click(pinned(f));
-        click(items(f)[1], { ctrlKey: true });
-        expect(chipIds()).toEqual(['U-ME', 'r2']);
-        click(items(f)[0]);
-        expect(chipIds()).toEqual(['r1']);
+        click(mine(f));
+        await f.whenStable();
+        f.detectChanges();
+        expect(chipIds()).toEqual(['U-ME']);
+        click(mine(f));
+        await f.whenStable();
+        f.detectChanges();
+        expect(chipIds()).toEqual([]);
+        expect(resources.activeChip()).toBe('users');
+        expect(mine(f).classList.contains('on')).toBe(true);
+      });
+
+      it('the pinned card is gone', async () => {
+        const f = await makeListWithMe();
+        expect(f.nativeElement.querySelector('.pinned')).toBeNull();
       });
     });
 
@@ -641,6 +761,38 @@ describe('ResourceSelectionComponent', () => {
         .click();
       await f.whenStable();
       expect(filter.entries().map((e) => e.id)).toEqual(['r1', 'r2']);
+    });
+
+    it('the group button shares the D8 mechanics: Ctrl adds, a second click clears, no auto-expand', async () => {
+      resources.setActiveChip('type:room');
+      filter.add({ id: 'OLD', kind: 'resource', label: 'old' });
+      const f = await create(fixture);
+      const el = f.nativeElement as HTMLElement;
+      const btn = () => group(el, 'Gebäude A').querySelector<HTMLButtonElement>('.selectall')!;
+      btn().dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true }));
+      await f.whenStable();
+      f.detectChanges();
+      expect(filter.entries().map((e) => e.id)).toEqual(['OLD', 'r1', 'r2']);
+      expect(rows(el)).toEqual(['▸ Gebäude A (2)', '▸ Gebäude B (1)', 'Aula']);
+      btn().click();
+      await f.whenStable();
+      expect(filter.entries().map((e) => e.id)).toEqual(['OLD']);
+    });
+
+    it('D8 — the header button selects every member of the filtered tree, collapsed groups included', async () => {
+      resources.setActiveChip('type:room');
+      const f = await create(fixture);
+      const el = f.nativeElement as HTMLElement;
+      expect(el.querySelector('.listhdr')?.textContent).toContain('4 Treffer');
+      await typeQuery(f, 'hörsaal');
+      el.querySelector<HTMLButtonElement>('.listhdr .listall')!.click();
+      await f.whenStable();
+      expect(
+        filter
+          .entries()
+          .map((e) => e.id)
+          .sort(),
+      ).toEqual(['r1', 'r3']);
     });
 
     it('the query opens the branches with matches and drops the rest', async () => {

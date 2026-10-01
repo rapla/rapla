@@ -34,7 +34,7 @@ The SPA's resource picker opens empty: the left list only shows recents, favorit
 
 **D9 — Events are found by everyone who may read them (user, 2026-09-15).** The event bucket of the search checks `canRead` instead of `canModify`, so a student finds the exam in their course calendar. Opening an event the caller can't edit opens the sheet read-only (`EventSheetDialogData.readOnly` follows `canModify`). A §12 leak test covers the change (S3).
 
-**D10 — No *Benutzer* chip (user, 2026-09-15).** Users (rapla accounts, owner scope) appear only as hits under *Alle* while typing; the pinned "meine" entry stays for the caller's own events.
+**D10 — No *Benutzer* chip (user, 2026-09-15).** Users (rapla accounts, owner scope) appear only as hits under *Alle* while typing; the pinned "meine" entry stays for the caller's own events. **Overruled 2026-10-01 by [PRD 123 D9](123-spa-unified-resource-picker.md#decisions-locked-user-2026-09-30): a *Benutzer* chip (degrading to *meine* for a one-account user), the pinned card goes; user hits while typing stay.**
 
 **D11 — Flat tree levels first (user, 2026-09-15).** A categorization value is one tree level carrying its name. Nesting by a category's parent chain (faculty ▸ programme ▸ course, as in the prototype) is a later extension; each entry of `groupPaths` is a path from the start, so deeper levels only make the paths longer without breaking the API.
 

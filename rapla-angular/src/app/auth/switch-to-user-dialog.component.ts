@@ -185,6 +185,7 @@ export class SwitchToUserDialogComponent implements OnInit {
     this.errorMessage.set(null);
     const ok = await this.auth.impersonate(target);
     this.submitting.set(false);
+    if (ok === null) return; // kept an open draft — no switch, no error
     if (ok) {
       this.ref.close({ target });
     } else {
