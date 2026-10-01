@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.IOUtil;
+import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
@@ -88,6 +89,8 @@ public class RaplaJNLPController
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
             return;
         }
+        // Before getWriter(): the writer fixes the encoding, otherwise the body is ISO-8859-1 under a UTF-8 declaration.
+        response.setContentType("application/x-java-jnlp-file;charset=utf-8");
         PrintWriter out = response.getWriter();
         String webstartRoot = ".";
         long currentTimeMillis = System.currentTimeMillis();
@@ -109,7 +112,7 @@ public class RaplaJNLPController
         {
             menuName = defaultTitle;
         }
-        response.setContentType("application/x-java-jnlp-file;charset=utf-8");
+        menuName = XMLWriter.encode(menuName);
         out.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
         out.println("<jnlp spec=\"6.0+\" codebase=\"" + codebase + "\" href=\"raplaclient.jnlp\" >");
         out.println("<information>");

@@ -21,7 +21,10 @@ does not emit `rapla.download.url`. The `Host` is taken from the request
 (`forward-headers-strategy: native` only restricts `X-Forwarded-*` to trusted proxies),
 so a client can only get its own `Host` back; `Cache-Control: no-store` keeps shared
 caches from passing it on. `rapla.oauth.public-base-url` overrides scheme and port when
-its host matches the request's (ruling 2026-10-01). Rapla must still run at the context root because
+its host matches the request's (ruling 2026-10-01). Checked 2026-10-01 with OpenWebStart 1.14.0 on Linux: a JNLP saved from the dev
+server as a local file resolved its `codebase` `http://localhost:8051/` and downloaded the
+webclient jars from it; the launch then stopped at the unsigned dev jars as expected. A launch
+of a signed build is still to be verified. Rapla must still run at the context root because
 the webclient resources and API are root-relative (see [`deployment.md`](../deployment.md)).
 Since the context-root move, the same code silently
 produces `/calendar` — a 404 — while the server routes still answer at

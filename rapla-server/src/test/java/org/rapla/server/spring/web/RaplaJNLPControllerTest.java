@@ -31,6 +31,7 @@ class RaplaJNLPControllerTest
     private RaplaJNLPController controller;
     private RaplaFacade facade;
     private RaplaResources i18n;
+    private Preferences prefs;
     private HttpServletRequest request;
     private HttpServletResponse response;
     private StringWriter body;
@@ -40,7 +41,7 @@ class RaplaJNLPControllerTest
     void setUp() throws Exception
     {
         facade = mock(RaplaFacade.class);
-        Preferences prefs = mock(Preferences.class);
+        prefs = mock(Preferences.class);
         when(facade.getSystemPreferences()).thenReturn(prefs);
         when(prefs.getEntryAsString(any(), anyString())).thenAnswer(inv -> inv.getArgument(1));
         when(prefs.getEntryAsBoolean(any(), anyBoolean())).thenAnswer(inv -> inv.getArgument(1));
@@ -176,6 +177,31 @@ class RaplaJNLPControllerTest
         controller.generateJnlp(request, response);
         verify(response).sendError(400);
         assertEquals("", body.toString());
+    }
+
+    /** The admin-set title goes into element text and an attribute — it must be XML-escaped in both. */
+    @Test
+    void titleIsXmlEscaped() throws Exception
+    {
+        when(prefs.getEntryAsString(any(), anyString())).thenReturn("R<&\"x");
+        controller.generateJnlp(request, response);
+        String jnlp = body.toString();
+        assertTrue(jnlp.contains("<title>R&lt;&amp;&quot;x</title>"), jnlp);
+        assertTrue(jnlp.contains("<menu submenu=\"R&lt;&amp;&quot;x\"/>"), jnlp);
+        assertFalse(jnlp.contains("R<&"), jnlp);
+    }
+
+    /** The XML declares UTF-8, so the body must be UTF-8 too — the charset has to be set before getWriter(). */
+    @Test
+    void bodyIsUtf8EncodedAndDeclaredSo() throws Exception
+    {
+        when(prefs.getEntryAsString(any(), anyString())).thenReturn("Hörsaalplanung");
+        org.springframework.mock.web.MockHttpServletResponse real = new org.springframework.mock.web.MockHttpServletResponse();
+        controller.generateJnlp(request, real);
+        assertEquals("application/x-java-jnlp-file;charset=utf-8", real.getContentType().toLowerCase(java.util.Locale.ROOT));
+        byte[] bytes = real.getContentAsByteArray();
+        assertTrue(new String(bytes, java.nio.charset.StandardCharsets.UTF_8).contains("<title>Hörsaalplanung</title>"),
+                "body must carry the umlaut as UTF-8 bytes");
     }
 
     /** Cache-Control: no-store is the contract; an Expires date contradicts it. */
