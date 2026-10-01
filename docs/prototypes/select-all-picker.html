@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Picker „alle wählen“</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.35 Roboto, system-ui, sans-serif; color: rgba(0,0,0,.87); background: #f4f5f9; }
+  .switches { display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; align-items: center; padding: .6rem 1rem; background: #fff; border-bottom: 1px solid rgba(0,0,0,.12); font-size: .78rem; }
+  .switches fieldset { border: none; margin: 0; padding: 0; display: flex; gap: .5rem; align-items: center; }
+  .switches legend { float: left; font-weight: 700; margin-right: .3rem; color: rgba(0,0,0,.55); }
+  .switches input[type=number] { width: 4rem; }
+  .tabs { display: flex; gap: .25rem; padding: .5rem 1rem 0; }
+  .tabs button { border: 1px solid rgba(0,0,0,.15); border-bottom: none; background: #e8eaf2; padding: .4rem .9rem; border-radius: 6px 6px 0 0; cursor: pointer; font: inherit; }
+  .tabs button.on { background: #fff; font-weight: 600; }
+  .stage { display: flex; gap: 1rem; margin: 0 1rem 1rem; background: #fff; border: 1px solid rgba(0,0,0,.12); min-height: 70vh; }
+  .rail { width: 290px; flex: none; border-right: 1px solid rgba(0,0,0,.12); overflow: auto; max-height: 85vh; }
+  .main { flex: 1; min-width: 0; padding: 1rem; }
+  .hint { font-size: .72rem; color: rgba(0,0,0,.5); margin-top: 1rem; }
+  @media (max-width: 700px) { .stage { flex-direction: column; } .rail { width: 100%; border-right: none; } }
+
+  /* resource-selection.component */
+  .pinned { display: flex; align-items: center; gap: .55rem; margin: .6rem .6rem .2rem; padding: .5rem .6rem; border: 1px solid rgba(63,81,181,.25); border-radius: 6px; background: rgba(63,81,181,.06); cursor: pointer; font-size: .84rem; }
+  .pinned:hover { background: rgba(63,81,181,.12); }
+  .pinned.active { background: rgba(46,125,50,.12); border-color: #2e7d32; font-weight: 600; }
+  .pinned .lbl { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pinned .meta { font-size: .62rem; font-weight: 700; color: #3f51b5; text-transform: uppercase; }
+  .pinned.all { border-style: dashed; }
+  .sthead { display: flex; align-items: center; justify-content: space-between; padding: .75rem .9rem .5rem; font-size: .7rem; font-weight: 700; letter-spacing: .04em; color: rgba(0,0,0,.55); }
+  .search { margin: 0 .75rem .5rem; width: calc(100% - 1.5rem); padding: .35rem .6rem; border: 1px solid rgba(0,0,0,.2); border-radius: 4px; font: inherit; font-size: .8rem; }
+
+  /* resource-picker.component */
+  .chips { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; padding: 0 .75rem .5rem; }
+  .chips button, .chips select { border: 1px solid rgba(0,0,0,.15); background: #fff; border-radius: 999px; padding: .25rem .6rem; font-size: .72rem; cursor: pointer; color: rgba(0,0,0,.55); max-width: 11rem; }
+  .chips button.on, .chips select.on { background: #3f51b5; color: #fff; border-color: transparent; font-weight: 600; }
+  .grouphdr { display: flex; align-items: center; justify-content: space-between; padding: .35rem .9rem; background: rgba(0,0,0,.04); font-size: .68rem; font-weight: 600; color: rgba(0,0,0,.55); }
+  .linkbtn { border: none; background: transparent; cursor: pointer; font: inherit; font-size: .68rem; color: #3f51b5; padding: 0 .2rem; }
+  .linkbtn.undo { color: #c62828; }
+  .grouprow { display: flex; align-items: center; gap: .35rem; padding: .35rem .9rem .35rem .5rem; font-size: .8rem; font-weight: 600; }
+  .grouprow .glabel { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .grouprow .count { font-size: .7rem; color: rgba(0,0,0,.45); }
+  .grouprow .toggle { border: none; background: transparent; cursor: pointer; font: inherit; padding: 0 .2rem; }
+  .item { display: flex; align-items: center; gap: .55rem; padding: .5rem .9rem; font-size: .84rem; cursor: pointer; border-left: 3px solid transparent; user-select: none; }
+  .item:hover { background: rgba(63,81,181,.06); }
+  .item.selected { background: rgba(63,81,181,.12); }
+  .item.active { background: rgba(46,125,50,.1); border-left-color: #2e7d32; font-weight: 600; }
+  .item .chk { flex: none; width: .95rem; height: .95rem; border: 1px solid rgba(0,0,0,.4); border-radius: 3px; font-size: .7rem; line-height: .95rem; text-align: center; }
+  .item.selected .chk { background: #3f51b5; border-color: transparent; color: #fff; }
+  .item .ico { flex: none; width: 1.15rem; text-align: center; }
+  .item .lbl { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item .now { font-size: .62rem; font-weight: 700; color: #2e7d32; }
+  .item .pill { font-size: .68rem; padding: .05rem .45rem; border-radius: 999px; background: rgba(46,125,50,.12); color: #2e7d32; }
+  .item .pill.CONFLICT { background: rgba(198,40,40,.1); color: #c62828; }
+  .item .pill.REQUEST_ONLY { background: rgba(183,129,3,.12); color: #8a5a00; }
+  .item .fav { color: rgba(0,0,0,.3); font-size: .95rem; }
+  .item .fav.on { color: #f5a623; }
+  .more { padding: .5rem .9rem; font-size: .75rem; color: rgba(0,0,0,.45); }
+  .showmore { display: block; border: none; background: transparent; text-align: left; padding: .5rem .9rem; font-size: .75rem; cursor: pointer; color: #3f51b5; }
+
+  /* selection bar / sheet */
+  .bar { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; min-height: 2rem; }
+  .fchip { display: inline-flex; align-items: center; gap: .3rem; border: 1px solid rgba(63,81,181,.3); background: rgba(63,81,181,.08); border-radius: 999px; padding: .15rem .3rem .15rem .6rem; font-size: .75rem; }
+  .fchip.sum { background: #3f51b5; color: #fff; font-weight: 600; }
+  .fchip button { border: none; background: transparent; cursor: pointer; color: inherit; font-size: .85rem; line-height: 1; }
+  .query { font: .72rem/1.4 ui-monospace, monospace; color: rgba(0,0,0,.6); background: rgba(0,0,0,.04); padding: .4rem .6rem; border-radius: 4px; margin-top: .6rem; word-break: break-all; }
+  .h { font-size: .7rem; font-weight: 700; letter-spacing: .04em; color: rgba(0,0,0,.55); margin: 0 0 .4rem; }
+  .sheet { max-width: 420px; border: 1px solid rgba(0,0,0,.12); border-radius: 8px; padding: 1rem; }
+  .addbtn { border: 1px dashed rgba(0,0,0,.3); background: transparent; border-radius: 6px; padding: .35rem .7rem; cursor: pointer; font: inherit; font-size: .8rem; margin: .6rem 0; }
+  .sheetpicker { border: 1px solid rgba(0,0,0,.12); border-radius: 6px; padding-top: .5rem; max-height: 60vh; overflow: auto; }
+  .cal { border: 1px dashed rgba(0,0,0,.15); border-radius: 6px; height: 40vh; display: grid; place-items: center; color: rgba(0,0,0,.3); margin-top: 1rem; }
+</style>
+</head>
+<body>
+<div class="switches">
+  <fieldset><legend>Datensatz</legend>
+    <label><input type="radio" name="ds" value="siegen"> Siegen (~120)</label>
+    <label><input type="radio" name="ds" value="dhbw" checked> DHBW (~1.200)</label></fieldset>
+  <fieldset><legend>„alle“ =</legend>
+    <label><input type="radio" name="scope" value="hits" checked> alle Treffer</label>
+    <label><input type="radio" name="scope" value="page"> nur geladene Seite</label></fieldset>
+  <fieldset><legend>Geste</legend>
+    <label><input type="radio" name="gesture" value="header" checked> Button im Listenkopf</label>
+    <label><input type="radio" name="gesture" value="entry"> Pseudo-Eintrag oben</label></fieldset>
+  <fieldset><legend>Zusammenfassen ab</legend>
+    <input type="number" id="threshold" min="1" value="10"></fieldset>
+  <fieldset><legend>Sheet</legend>
+    <label><input type="checkbox" id="always"> „alle Treffer zuordnen“ immer anbieten</label></fieldset>
+  <fieldset><legend>Benutzer unter „Alle“</legend>
+    <label><input type="radio" name="usersInAll" value="always" checked> immer</label>
+    <label><input type="radio" name="usersInAll" value="typing"> nur beim Tippen (heute, PRD 119 D10)</label>
+    <label><input type="radio" name="usersInAll" value="never"> nie</label></fieldset>
+  <fieldset><legend>„alle wählen“ unter Alle</legend>
+    <label><input type="checkbox" id="allUsers"> nimmt Benutzer mit</label></fieldset>
+</div>
+<div class="tabs">
+  <button data-tab="rail" class="on">Linke Leiste (Kalender)</button>
+  <button data-tab="sheet">Termin-Sheet, Zuordnen-Modus</button>
+</div>
+<div class="stage" id="stage"></div>
+
+<script>
+const FIRST_PAGE = 20, PAGE_SIZE = 100;
+const TYPES = [
+  { key: 'raum', label: 'Raum', ico: '🚪', n: 420 },
+  { key: 'person', label: 'Person', ico: '👤', n: 380 },
+  { key: 'kurs', label: 'Kurs', ico: '🎓', n: 180 },
+  { key: 'beamer', label: 'Beamer', ico: '📽', n: 90 },
+  { key: 'laptop', label: 'Laptop', ico: '💻', n: 60 },
+  { key: 'labor', label: 'Labor', ico: '🧪', n: 30 },
+  { key: 'fahrzeug', label: 'Fahrzeug', ico: '🚐', n: 20 },
+  { key: 'kamera', label: 'Kamera', ico: '📷', n: 20 },
+];
+const ICO = { ...Object.fromEntries(TYPES.map((t) => [t.key, t.ico])), user: '🔑' };
+const pad = (n, w) => String(n).padStart(w, '0');
+
+function mulberry(seed) {
+  return () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+
+function generate(scale) {
+  const rnd = mulberry(scale === 1 ? 7 : 3), items = [];
+  for (const t of TYPES) {
+    const n = Math.max(2, Math.round(t.n * scale));
+    for (let i = 1; i <= n; i++) {
+      const it = { id: `${t.key.slice(0, 3)}-${pad(i, 4)}`, typeKey: t.key, groupPaths: [] };
+      if (t.key === 'raum') {
+        const b = 'ABC'[(i - 1) % 3], floor = Math.floor((i - 1) / 3) % 4, nr = Math.floor((i - 1) / 12) + 1;
+        it.label = `Raum ${b}${floor}.${pad(nr, 2)}`;
+        it.groupPaths = [[`Gebäude ${b}`, `Etage ${floor}`]];
+      } else if (t.key === 'person') it.label = `Prof X ${pad(i, 3)}`;
+      else if (t.key === 'kurs') it.label = `Kurs K${pad(i, 3)}`;
+      else if (t.key === 'labor') it.label = `Labor L-${pad(i, 2)}`;
+      else it.label = `${t.label} ${pad(i, 2)}`;
+      it.fav = rnd() < 0.02;
+      it.avail = ['AVAILABLE', 'AVAILABLE', 'AVAILABLE', 'CONFLICT', 'REQUEST_ONLY'][Math.floor(rnd() * 5)];
+      items.push(it);
+    }
+  }
+  items.sort((a, b) => a.label.localeCompare(b.label, 'de', { numeric: true }));
+  const recents = items.filter(() => rnd() < 0.01).slice(0, 8);
+  const users = Array.from({ length: Math.round(300 * scale) }, (_, i) =>
+    ({ id: `usr-${pad(i + 1, 4)}`, label: `Benutzer ${pad(i + 1, 3)}`, typeKey: 'user', groupPaths: [] }));
+  return { items, recents, users, byId: new Map([...items, ...users].map((it) => [it.id, it])) };
+}
+const DATASETS = { dhbw: generate(1), siegen: generate(0.1) };
+
+const opts = { ds: 'dhbw', scope: 'hits', gesture: 'header', threshold: 10, always: false, tab: 'rail', usersInAll: 'always', allUsers: false };
+const fresh = () => ({ chip: 'all', query: '', extra: 0, limits: new Map(), toggled: new Map() });
+let rail, sheet;
+function reset() {
+  rail = { ...fresh(), sel: new Map(), active: null, anchor: null };
+  sheet = { ...fresh(), sel: new Map(), open: true };
+}
+reset();
+const D = () => DATASETS[opts.ds];
+const ME = { id: 'u-me', label: 'meine', typeKey: 'user' };
+
+function listFor(chip) {
+  if (chip === 'favorites') return D().items.filter((it) => it.fav);
+  if (chip === 'recents') return D().recents;
+  if (chip === 'users') return D().users;
+  if (chip.startsWith('type:')) return D().items.filter((it) => it.typeKey === chip.slice(5));
+  return D().items;
+}
+const tokens = (q) => q.toLowerCase().split(/\s+/).filter(Boolean);
+const hit = (label, q) => tokens(q).every((t) => label.toLowerCase().includes(t));
+const filterRows = (rows, q) => rows.filter((it) => hit(it.label, q));
+
+function buildTree(items) {
+  const root = { children: [], map: new Map() }, loose = [];
+  for (const it of items) {
+    if (!it.groupPaths.length) { loose.push({ kind: 'item', key: '#' + it.id, item: it }); continue; }
+    for (const path of it.groupPaths) {
+      let parent = root, key = '';
+      for (const seg of path) {
+        key += '/' + seg;
+        if (!parent.map.has(seg)) {
+          const g = { kind: 'group', key, label: seg, children: [], map: new Map(), members: [] };
+          parent.map.set(seg, g); parent.children.push(g);
+        }
+        parent = parent.map.get(seg);
+        parent.members.push(it);
+      }
+      parent.children.push({ kind: 'item', key: key + '#' + it.id, item: it });
+    }
+  }
+  return [...root.children, ...loose];
+}
+
+/** Picker view model for one host: rows, shown items, all hits. */
+function model(st, mode) {
+  const q = st.query.trim(), tree = st.chip.startsWith('type:');
+  const hits = filterRows(listFor(st.chip), q);
+  if (mode === 'rail' && st.chip === 'all' && (opts.usersInAll === 'always' || (opts.usersInAll === 'typing' && q)))
+    hits.push(...filterRows(D().users, q));
+  const rows = [];
+  const selected = st.sel;
+  const isOpen = (g) => st.toggled.has(g.key) ? st.toggled.get(g.key) : !!q || g.members.some((m) => selected.has(m.id));
+  const walk = (nodes, depth, parentKey) => {
+    const lim = st.limits.get(parentKey) ?? PAGE_SIZE;
+    for (const n of nodes.slice(0, lim)) {
+      rows.push({ node: n, depth });
+      if (n.kind === 'group' && isOpen(n)) walk(n.children, depth + 1, n.key);
+    }
+    if (nodes.length > lim) rows.push({ more: parentKey, hidden: nodes.length - lim, depth });
+  };
+  let hidden = 0;
+  if (tree) walk(buildTree(hits), 0, '');
+  else {
+    if (st.chip === 'all' && q) {
+      const groups = [];
+      const find = (nodes) => nodes.forEach((n) => { if (n.kind !== 'group') return; if (hit(n.label, q)) groups.push(n); else find(n.children); });
+      find(buildTree(D().items));
+      walk(groups, 0, '');
+    }
+    const cap = (st.chip === 'all' && !q ? FIRST_PAGE : PAGE_SIZE) + st.extra * PAGE_SIZE;
+    hits.slice(0, cap).forEach((it) => rows.push({ node: { kind: 'item', key: '#' + it.id, item: it }, depth: 0 }));
+    hidden = Math.max(0, hits.length - cap);
+  }
+  const shown = [...new Map(rows.filter((r) => r.node?.kind === 'item').map((r) => [r.node.item.id, r.node.item])).values()];
+  return { rows, shown, hits, hidden, isOpen, tree, q };
+}
+
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+function renderPicker(st, mode, m) {
+  const typeCounts = Object.fromEntries(TYPES.map((t) => [t.key, D().items.filter((it) => it.typeKey === t.key).length]));
+  let h = `<input class="search" data-act="query" placeholder="Suchen …" value="${esc(st.query)}">`;
+  h += `<div class="chips">` + [['all', 'Alle'], ['favorites', '★ Favoriten'], ['recents', 'Zuletzt'], ...(mode === 'rail' ? [['users', `🔑 Benutzer (${D().users.length})`]] : [])]
+    .map(([k, l]) => `<button data-act="chip" data-k="${k}" class="${st.chip === k ? 'on' : ''}">${l}</button>`).join('');
+  h += `<select data-act="type" class="${m.tree ? 'on' : ''}"><option value="">Typ ▾</option>` +
+    TYPES.map((t) => `<option value="type:${t.key}" ${st.chip === 'type:' + t.key ? 'selected' : ''}>${t.label} (${typeCounts[t.key]})</option>`).join('') +
+    `</select></div>`;
+  h += selectAll(st, mode, m);
+  for (const r of m.rows) {
+    if (!r.node) { h += `<button class="showmore" data-act="morechildren" data-k="${esc(r.more)}" style="padding-left:${0.9 + r.depth}rem">Weitere ${Math.min(r.hidden, PAGE_SIZE)} anzeigen</button>`; continue; }
+    const n = r.node;
+    if (n.kind === 'group') {
+      h += `<div class="grouprow" style="padding-left:${0.5 + r.depth}rem"><button class="toggle" data-act="toggle" data-k="${esc(n.key)}">${m.isOpen(n) ? '▾' : '▸'}</button>` +
+        `<span class="glabel">${esc(n.label)}</span><span class="count">${n.members.length}</span>` +
+        (mode === 'rail' ? `<button class="linkbtn" data-act="group" data-k="${esc(n.key)}">alle wählen</button>` : '') + `</div>`;
+      continue;
+    }
+    const it = n.item, sel = st.sel.has(it.id), act = mode === 'rail' && rail.active === it.id;
+    h += `<div class="item ${sel ? 'selected' : ''} ${act ? 'active' : ''}" data-act="pick" data-id="${it.id}" style="padding-left:${0.9 + r.depth}rem">` +
+      (mode === 'assign' ? `<span class="chk">${sel ? '✓' : ''}</span>` : '') +
+      `<span class="ico">${ICO[it.typeKey]}</span><span class="lbl">${esc(it.label)}</span>` +
+      (act ? `<span class="now">▶ gezeigt</span>` : '') +
+      (mode === 'assign' ? `<span class="pill ${it.avail}">${{ AVAILABLE: 'frei', CONFLICT: 'belegt', REQUEST_ONLY: 'Anfrage' }[it.avail]}</span>` : '') +
+      `<span class="fav ${it.fav ? 'on' : ''}">${it.fav ? '★' : '☆'}</span></div>`;
+  }
+  if (!m.rows.length) h += `<div class="more">Keine Treffer</div>`;
+  if (m.hidden > 0) h += `<button class="showmore" data-act="more">Weitere ${Math.min(m.hidden, PAGE_SIZE)} anzeigen</button>`;
+  return h;
+}
+
+/** The "alle wählen" gesture: list header button or a pseudo-entry, per switch. */
+function targets(m, st) {
+  const t = opts.scope === 'page' ? m.shown : m.hits;
+  return st.chip === 'users' || opts.allUsers ? t : t.filter((it) => it.typeKey !== 'user');
+}
+function selectAll(st, mode, m) {
+  const t = targets(m, st), n = t.length;
+  const all = n > 0 && t.every((it) => st.sel.has(it.id));
+  const head = `${m.hits.length} Treffer` + (opts.scope === 'page' ? ` · ${m.shown.length} geladen` : '');
+  let label, offered = true;
+  if (mode === 'rail') label = all ? 'Auswahl aufheben' : `alle wählen (${n})`;
+  else {
+    label = all ? 'Zuordnung aufheben' : `alle Treffer zuordnen (${n})`;
+    offered = opts.always || !!m.q || st.chip !== 'all';
+  }
+  if (!n) offered = false;
+  if (opts.gesture === 'header' || !offered)
+    return `<div class="grouphdr"><span>${head}</span>${offered ? `<button class="linkbtn ${all ? 'undo' : ''}" data-act="all">${label}</button>` : ''}</div>`;
+  return `<div class="grouphdr"><span>${head}</span></div>` +
+    `<div class="pinned all" data-act="all" role="button"><span>${all ? '✕' : '☰'}</span><span class="lbl">${label}</span><span class="meta">${m.q ? 'Suche' : st.chip === 'all' ? 'Alle' : 'Liste'}</span></div>`;
+}
+
+/** Resources and users summarize separately: a user chip scopes by owner, not by allocation. */
+function bar(sel) {
+  const items = [...sel.values()];
+  if (!items.length) return `<div class="bar"><span class="more" style="padding:0">— keine Auswahl —</span></div>`;
+  const chip = (it) => `<span class="fchip">${it === ME ? '👤' : ICO[it.typeKey]} ${esc(it.label)}<button data-act="unsel" data-id="${it.id}">×</button></span>`;
+  const part = (list, noun, clear) => {
+    if (list.length < opts.threshold) return list.map(chip).join('');
+    const byType = {};
+    list.forEach((it) => (byType[it.typeKey] = (byType[it.typeKey] ?? 0) + 1));
+    const tip = Object.entries(byType).map(([k, c]) => `${c} ${k}`).join(', ');
+    return `<span class="fchip sum" title="${esc(tip)}">${list.length} ${noun}<button data-act="${clear}">×</button></span>`;
+  };
+  return `<div class="bar">` + (sel.has(ME.id) ? chip(ME) : '') +
+    part(items.filter((it) => it.typeKey !== 'user'), 'Ressourcen', 'clearRes') +
+    part(items.filter((it) => it.typeKey === 'user' && it !== ME), 'Benutzer', 'clearUsers') + `</div>`;
+}
+function queryLine(sel) {
+  const list = (ids) => ids.slice(0, 12).join(', ') + (ids.length > 12 ? `, … +${ids.length - 12}` : '');
+  const res = [...sel.values()].filter((it) => it.typeKey !== 'user').map((it) => it.id);
+  const owners = [...sel.values()].filter((it) => it.typeKey === 'user').map((it) => (it === ME ? '&lt;me&gt;' : it.id));
+  return `Query: ids=[${list(res)}] (${res.length})` + (owners.length ? `<br>ownerEq=[${list(owners)}] (${owners.length})` : '');
+}
+const RIGHTS = `Rechte nicht nachgebildet: in echt enthält die Liste nur lesbare Ressourcen, das Zuordnen prüft zusätzlich das Belegungsrecht (§12).`;
+
+let lastRail;
+function render() {
+  const stage = document.getElementById('stage');
+  if (opts.tab === 'rail') {
+    const m = (lastRail = model(rail, 'rail'));
+    stage.innerHTML =
+      `<div class="rail" id="picker"><div class="pinned ${rail.sel.has(ME.id) ? 'active' : ''}" data-act="me"><span>👤</span><span class="lbl">Benutzer X</span><span class="meta">meine</span></div>` +
+      `<div class="sthead">DURCHSTEPPEN</div>${renderPicker(rail, 'rail', m)}</div>` +
+      `<div class="main"><p class="h">AUSWAHL (FILTER)</p>${bar(rail.sel)}<div class="query">${queryLine(rail.sel)}</div>` +
+      `<div class="cal">Kalender</div><p class="hint">Zeile: Klick = zeigen/ersetzen · Strg = umschalten · Shift = Bereich (PRD 119 D5). „alle wählen“: Klick ersetzt, Strg ergänzt, zweiter Klick hebt auf. 🔑 Benutzer = Konto, Chip filtert nach Besitzer (ownerEq), nicht nach Belegung.<br>${RIGHTS}</p></div>`;
+  } else {
+    const m = model(sheet, 'assign');
+    stage.innerHTML =
+      `<div class="main"><div class="sheet"><p class="h">TERMIN · Mo 06.10. 09:00–12:00</p><p class="h">ZUGEORDNET</p>${bar(sheet.sel)}` +
+      `<div class="query">${queryLine(sheet.sel)}</div>` +
+      `<button class="addbtn" data-act="openlist">${sheet.open ? '▴ einklappen' : '+ Ressource…'}</button>` +
+      (sheet.open ? `<div class="sheetpicker" id="picker">${renderPicker(sheet, 'assign', m)}</div>` : '') +
+      `<p class="hint">Zeile: Klick = zuordnen + einklappen · Strg = zuordnen, Liste bleibt offen · Klick auf zugeordnete Zeile = entfernen (PRD 123 D2). „alle Treffer zuordnen“ ergänzt immer, zweiter Klick entfernt die Treffer wieder.<br>${RIGHTS}</p></div></div>`;
+  }
+}
+
+function onPick(st, mode, it, e) {
+  if (mode === 'assign') {
+    if (st.sel.has(it.id)) st.sel.delete(it.id); else st.sel.set(it.id, it);
+    if (!(e.ctrlKey || e.metaKey)) st.open = false;
+    return;
+  }
+  const shown = lastRail.shown;
+  if (e.shiftKey && st.anchor) {
+    const a = shown.findIndex((x) => x.id === st.anchor), b = shown.findIndex((x) => x.id === it.id);
+    if (a >= 0 && b >= 0) { st.sel = new Map(shown.slice(Math.min(a, b), Math.max(a, b) + 1).map((x) => [x.id, x])); st.active = it.id; return; }
+  }
+  if (e.ctrlKey || e.metaKey) { if (st.sel.has(it.id)) st.sel.delete(it.id); else st.sel.set(it.id, it); }
+  else st.sel = new Map([[it.id, it]]);
+  st.anchor = it.id; st.active = it.id;
+}
+
+function onAll(st, mode, e) {
+  const m = model(st, mode), t = targets(m, st);
+  if (t.every((it) => st.sel.has(it.id))) { t.forEach((it) => st.sel.delete(it.id)); return; }
+  if (mode === 'rail' && !(e.ctrlKey || e.metaKey)) { st.sel = new Map(); st.active = null; }
+  t.forEach((it) => st.sel.set(it.id, it));
+}
+
+const cur = () => (opts.tab === 'rail' ? rail : sheet);
+const mode = () => (opts.tab === 'rail' ? 'rail' : 'assign');
+const resetPaging = (st) => { st.extra = 0; st.limits = new Map(); st.toggled = new Map(); };
+
+document.getElementById('stage').addEventListener('mousedown', (e) => { if (e.shiftKey) e.preventDefault(); });
+document.getElementById('stage').addEventListener('click', (e) => {
+  const el = e.target.closest('[data-act]');
+  if (!el || el.tagName === 'INPUT' || el.tagName === 'SELECT') return;
+  const st = cur(), k = el.dataset.k;
+  switch (el.dataset.act) {
+    case 'chip': st.chip = k; resetPaging(st); break;
+    case 'toggle': { const m = model(st, mode()); const g = findGroup(k, st); st.toggled.set(k, !m.isOpen(g)); break; }
+    case 'group': { const g = findGroup(k, st); st.sel = new Map(g.members.map((it) => [it.id, it])); break; }
+    case 'morechildren': st.limits.set(k, (st.limits.get(k) ?? PAGE_SIZE) + PAGE_SIZE); break;
+    case 'more': st.extra++; break;
+    case 'pick': onPick(st, mode(), D().byId.get(el.dataset.id), e); break;
+    case 'all': onAll(st, mode(), e); break;
+    case 'unsel': st.sel.delete(el.dataset.id); break;
+    case 'clearRes': case 'clearUsers': { const u = el.dataset.act === 'clearUsers'; for (const [id, it] of st.sel) if (it !== ME && (it.typeKey === 'user') === u) st.sel.delete(id); break; }
+    case 'me':
+      if (rail.sel.has(ME.id)) rail.sel.delete(ME.id);
+      else if (e.ctrlKey || e.metaKey) rail.sel.set(ME.id, ME);
+      else { rail.sel = new Map([[ME.id, ME]]); rail.active = null; }
+      break;
+    case 'openlist': sheet.open = !sheet.open; break;
+  }
+  render();
+});
+function findGroup(key, st) {
+  const find = (nodes) => { for (const n of nodes) if (n.kind === 'group') { if (n.key === key) return n; const r = find(n.children); if (r) return r; } };
+  const hits = filterRows(listFor(st.chip), st.chip.startsWith('type:') ? st.query.trim() : '');
+  return find(buildTree(st.chip.startsWith('type:') ? hits : D().items));
+}
+document.getElementById('stage').addEventListener('input', (e) => {
+  const st = cur();
+  if (e.target.dataset.act === 'query') {
+    st.query = e.target.value; resetPaging(st); render();
+    const s = document.querySelector('.search'); s.focus(); s.setSelectionRange(s.value.length, s.value.length);
+  }
+});
+document.getElementById('stage').addEventListener('change', (e) => {
+  if (e.target.dataset.act === 'type') { const st = cur(); st.chip = e.target.value || 'all'; resetPaging(st); render(); }
+});
+document.querySelector('.switches').addEventListener('change', (e) => {
+  const t = e.target;
+  if (t.name === 'ds') { opts.ds = t.value; reset(); }
+  else if (t.name === 'scope' || t.name === 'gesture') opts[t.name] = t.value;
+  else if (t.id === 'threshold') opts.threshold = Math.max(1, +t.value || 10);
+  else if (t.id === 'always') opts.always = t.checked;
+  else if (t.name === 'usersInAll') opts.usersInAll = t.value;
+  else if (t.id === 'allUsers') opts.allUsers = t.checked;
+  render();
+});
+document.querySelector('.tabs').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-tab]');
+  if (!b) return;
+  opts.tab = b.dataset.tab;
+  document.querySelectorAll('.tabs button').forEach((x) => x.classList.toggle('on', x === b));
+  render();
+});
+render();
+</script>
+</body>
+</html>
