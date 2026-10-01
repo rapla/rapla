@@ -61,7 +61,8 @@ class DemoApiAllowlistTest extends IsolatedDefaultDatasetTest
             "DELETE /api/favorites/{id}", "GET /api/favorites", "POST /api/favorites",
             "DELETE /api/recents", "GET /api/recents", "POST /api/recents",
             "GET /api/users", "GET /api/users/me",
-            "POST /api/graphql",
+            "POST /api/graphql", "GET /api/graphql/schema",
+            "GET /api/locale/{id}", "POST /api/locale",
             "POST /api/storage/change/name", "GET /api/storage/profile/capabilities");
 
     static final Set<String> CLOSED = Set.of(
@@ -78,7 +79,6 @@ class DemoApiAllowlistTest extends IsolatedDefaultDatasetTest
             "POST /api/externalids/resolve",
             "GET /api/ical/config", "GET /api/ical/config/default", "GET /api/ical/config/user", "GET /api/ical/timezones",
             "GET /api/ical/timezones/default",
-            "GET /api/locale/{id}", "POST /api/locale",
             "GET /api/mail/config", "GET /api/mail/config/external", "POST /api/mail/config",
             "GET /api/plugins", "GET /api/plugins/{id}", "PUT /api/plugins/{id}/enabled",
             "GET /api/settings/calendar", "GET /api/settings/me", "GET /api/settings/system",
@@ -130,7 +130,7 @@ class DemoApiAllowlistTest extends IsolatedDefaultDatasetTest
         assertEquals(new TreeSet<>(List.of("/api/auth/me", "/api/graphql", "/api/graphql/schema", "/api/storage/change/name",
                 "/api/storage/profile/capabilities")), new TreeSet<>(lists.getOpenPaths()));
         assertEquals(new TreeSet<>(List.of("/api/auth/session", "/api/auth/api-keys", "/api/auth/impersonate", "/api/documents",
-                "/api/favorites", "/api/recents", "/api/users")), new TreeSet<>(lists.getOpenPrefixes()));
+                "/api/favorites", "/api/locale", "/api/recents", "/api/users")), new TreeSet<>(lists.getOpenPrefixes()));
     }
 
     private Set<String> apiMappings()

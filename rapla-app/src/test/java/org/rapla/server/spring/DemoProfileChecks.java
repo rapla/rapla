@@ -170,10 +170,11 @@ abstract class DemoProfileChecks extends IsolatedDefaultDatasetTest
     }
 
     @Test
-    void serverStatusPageIsOff() throws Exception
+    /** The status page stays open under the demo profile (user ruling 2026-10-01). */
+    void serverStatusPageIsOn() throws Exception
     {
         int status = mockMvc.perform(get("/server")).andReturn().getResponse().getStatus();
-        assertEquals(demo() ? 404 : 200, status);
+        assertEquals(200, status);
     }
 
     @Test

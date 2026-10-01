@@ -118,13 +118,11 @@ describe('buildCheckInterceptor', () => {
 
   it('reports the mismatch header of an error response', () => {
     http.get('/api/x').subscribe({ error: () => undefined });
-    backend
-      .expectOne('/api/x')
-      .flush('boom', {
-        status: 500,
-        statusText: 'x',
-        headers: { [MISMATCH_HEADER]: 'main-BBBB2222.js' },
-      });
+    backend.expectOne('/api/x').flush('boom', {
+      status: 500,
+      statusText: 'x',
+      headers: { [MISMATCH_HEADER]: 'main-BBBB2222.js' },
+    });
     expect(seen).toEqual(['main-BBBB2222.js']);
   });
 
