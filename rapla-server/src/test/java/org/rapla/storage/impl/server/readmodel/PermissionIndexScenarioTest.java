@@ -278,6 +278,8 @@ class PermissionIndexScenarioTest extends FacadeTestSupport
         // Separate canReadInformation path: the user CAN see info on it.
         assertTrue(controller().canReadInformation(resident(room), residentLisa),
                 "READ_NO_ALLOCATION still grants canReadInformation visibility (separate path)");
+        assertTrue(index().informationOnlyAllocatables(residentLisa).contains(resident(room).getId()),
+                "READ_NO_ALLOCATION puts the resource in the information-only set");
     }
 
     /** A5: ALLOCATE_CONFLICTS grant -> readable, and accessLevel includes ALLOCATE. */
@@ -461,6 +463,32 @@ class PermissionIndexScenarioTest extends FacadeTestSupport
         index.invalidateAll();
         assertTrue(index.readableAllocatables(residentLisa).contains(id),
                 "after invalidateAll the new grant is picked up");
+    }
+
+    /** B10b: a store that changes permissions invalidates the information-only set through the operator seam. */
+    @Test
+    void storeInvalidatesInformationOnlySet() throws Exception
+    {
+        createUser("lisa");
+        final User residentLisa = facade.getUser("lisa");
+        final Allocatable room = newRoom("late-info-room");
+        facade.store(room);
+        final String id = resident(room).getId();
+        final org.rapla.storage.impl.server.LocalAbstractCachableOperator lo =
+                (org.rapla.storage.impl.server.LocalAbstractCachableOperator) operator;
+        assertFalse(lo.informationOnlyAllocatableIds(residentLisa).contains(id), "not granted yet -> absent");
+
+        final Allocatable edit = facade.edit(resident(room));
+        grant(edit, null, residentLisa, AccessLevel.READ_NO_ALLOCATION);
+        facade.store(edit);
+        assertTrue(lo.informationOnlyAllocatableIds(residentLisa).contains(id), "grant picked up after store");
+
+        final Allocatable upgrade = facade.edit(resident(room));
+        for (Permission p : upgrade.getPermissionList().toArray(new Permission[0])) upgrade.removePermission(p);
+        grant(upgrade, null, residentLisa, AccessLevel.READ);
+        facade.store(upgrade);
+        assertFalse(lo.informationOnlyAllocatableIds(residentLisa).contains(id), "upgraded to READ -> leaves the set");
+        assertTrue(lo.readableAllocatableIds(residentLisa).contains(id));
     }
 
     /** B11: gaining group membership grows the readable set. */

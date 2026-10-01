@@ -1,8 +1,10 @@
 # PRD 090 — Purely additive permission resolution + soft-deny migration
 
-**Status:** in-progress — Phases 1–4 landed 2026-06-28 (server resolver + migration + worklist + admin
-REST API + SPA dialog + docs, all tested). Editor effective-access transparency deferred to a future SPA
-permission editor (no Swing work). Phase 5 cleanup is post-migration future.
+**Status:** done except cleanup — Phases 1–4 landed 2026-06-28 (server resolver + migration + worklist + admin
+REST API + SPA dialog + docs, all tested). Phase 4 closed 2026-09-30 (user ruling): the SPA migration dialog
+is the effective-access display; no separate permission editor planned. Phase 5 cleanup deliberately
+**kept back** (2026-09-30): `SoftDenyAnalyzer` + one-shot stay while Rapla 2 (precedence model) and Rapla 3
+share databases — see PRD 121.
 **Related:** [ADR 0003](../decisions/0003-permissions-are-grant-only.md) (revised 2026-06-28 — records this decision); `docs/architecture/permissions.md`; `docs/spec/permissions.md`
 
 ## Abstract
@@ -117,7 +119,7 @@ recomputed from live permissions for display.
 ### GraphQL implications (future permission-write API — deferred)
 - The migration is **REST, not GraphQL** (admin-only operational tool). GraphQL needs no migration verb.
 - When a permission-*write* mutation lands ([PRD 063](063-graphql-allocatables-write-api.md) OQ2), additive makes it simpler/safer:
-  - **Input enum `SettableAccessLevel` without `DENIED`** (output enum keeps `DENIED` to read legacy rows).
+  - **Input enum `SettableAccessLevel` without `DENIED`** (2026-10-01, user ruling: the output enum drops `DENIED` too — `PermissionDto.of` skips `DENIED` rows, and `PermissionInputMapper` keeps the stored `DENIED` rows on every replace so a read-modify-write cannot strip them before Phase 5; the REST migration dialog is the only place they show).
   - **Whole-list-replace is now safe** — additive has no load-bearing subtraction to accidentally drop,
     so a `setPermissions(allocatable, [grants])` shape no longer risks silent escalation.
   - **A `DENIED` row blocks the save** — it is inexpressible in the input enum. `setPermissions`
@@ -129,8 +131,7 @@ recomputed from live permissions for display.
     (reveal, don't hard-block — mirrors the editor). The migration UI's "resolved" for these is
     *accept (acknowledge)*, not prune, so they remain expressible.
   - Add an **`effectiveAccess(forUser/forGroup)`** read field — clean `max` under additive.
-- [PRD 069](069-graphql-resource-access-read-api.md) access-query: **`accessLevel: DENIED` becomes degenerate** (matches all) → drop it from that
-  filter input or document as match-all.
+- [PRD 069](069-graphql-resource-access-read-api.md) access-query: **`accessLevel: DENIED` becomes degenerate** (matches all) → dropped (2026-10-01, same change).
 
 ### Already landed (compatible, keep)
 - Swing `DENIED` deprecation (`PermissionField` filters it off new rows; renders existing as
@@ -194,13 +195,18 @@ recomputed from live permissions for display.
 - [x] Docs synced to additive: ADR 0003 Confirmation/Future, `architecture/permissions.md`, `spec/permissions.md`.
 - [x] Swing: the `DENIED`-deprecation dropdown filtering already landed — **no further Swing work** (decided
   2026-06-28: the legacy Swing editor won't get the live effective-access display).
-- [ ] **Deferred to a future SPA permission editor:** live additive effective-access display / dominated-row
-  hint belongs with the SPA's permission-editing UI when it exists — not built here (there is no SPA
-  permission editor yet). Tracked for that future PRD.
+- [x] **SPA display (closed 2026-09-30, user ruling):** the `PermissionMigrationDialogComponent` worklist is
+  the effective-access display — it shows each escalated allocatable with the additive vs. precedence level.
+  No separate SPA permission editor is planned; the dominated-row hint is dropped.
 
-### Phase 5 — Cleanup (later)
+### Phase 5 — Cleanup (parked 2026-09-30)
 - [ ] Delete the precedence one-shot code (`SoftDenyAnalyzer` + migration) once deployments have migrated;
-  consider retiring `DENIED`.
+  consider retiring `DENIED`. **Not before Rapla 2 is retired:** while a Rapla 2 node (precedence model)
+  shares the database, every first Rapla 3 start against such a store needs the one-shot to produce the
+  worklist (PRD 121). Revisit when the last legacy node is gone.
+- **Transition ruling (user, 2026-09-30):** the worklist does **not** have to be worked off before Rapla 3
+  starts next to Rapla 2. Rapla 3 granting more than Rapla 2 on the escalated allocatables is accepted for
+  the transition phase; the admin triages the worklist alongside.
 
 ## Tests
 
@@ -262,3 +268,8 @@ into this worklist).
 **D5 — No hard block on new soft-denies; reveal instead.** `DENIED` stays removed from the new-row
 dropdown; a user-below-group is two valid rows and inert, so the editor *shows effective access*
 (a visible no-op) rather than forbidding it.
+
+**D6 — Escalations tolerated during the Rapla 2 / Rapla 3 transition (2026-09-30).** While both versions
+share a database, Rapla 3's additive result may exceed Rapla 2's precedence result on the worklist
+allocatables. Accepted by the user; no pre-start gate on the worklist. The one-shot and `SoftDenyAnalyzer`
+stay until the last Rapla 2 node is retired (Phase 5).

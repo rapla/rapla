@@ -597,7 +597,7 @@ public final class StructuralTypeFetchers
                             String c = org.rapla.plugin.abstractcalendar.RaplaBuilder
                                     .getColorForClassifiable(a);
                             if (c == null) continue;
-                            if (!rc.canReadAllocatable(a)) return null;   // D3: null, not drop
+                            if (!rc.canReadAllocatableInformation(a)) return null;   // D3: null, not drop
                             resourceColors.add(c);
                             break;   // first color-bearing allocatable decides
                         }
@@ -954,7 +954,7 @@ public final class StructuralTypeFetchers
                 for (Allocatable a : allocatables)
                 {
                     if (a == null) continue;
-                    if (caller != null && !rc.canReadAllocatable(a)) continue;   // PRD 082 #8 — index membership when flipped, else canRead (§12)
+                    if (caller != null && !rc.canReadAllocatableInformation(a)) continue;   // READ_NO_ALLOCATION expands, like the Swing block (§12)
                     org.rapla.entities.domain.Appointment[] restriction = r.getRestriction(a);
                     List<String> appointmentIds = null;
                     if (restriction != null && restriction.length > 0)

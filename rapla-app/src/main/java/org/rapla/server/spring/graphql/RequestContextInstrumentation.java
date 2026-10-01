@@ -64,11 +64,13 @@ public class RequestContextInstrumentation extends SimplePerformantInstrumentati
         // user pays one full scan). All allocatable §12 gates then become O(1) membership instead of a
         // per-entity canRead graph walk. null when off / anonymous / not the server operator → canRead.
         Set<String> readableAllocatableIds = null;
+        Set<String> informationOnlyAllocatableIds = null;
         if (caller != null && operator instanceof LocalAbstractCachableOperator lo && lo.isReadModelAuthoritative())
         {
             readableAllocatableIds = lo.readableAllocatableIds(caller);
+            informationOnlyAllocatableIds = lo.informationOnlyAllocatableIds(caller);
         }
-        ctx.put(RequestCtx.KEY, new RequestCtx(caller, pc, locale, readableAllocatableIds));
+        ctx.put(RequestCtx.KEY, new RequestCtx(caller, pc, locale, readableAllocatableIds, informationOnlyAllocatableIds));
         return SimpleInstrumentationContext.noOp();
     }
 
@@ -89,14 +91,14 @@ public class RequestContextInstrumentation extends SimplePerformantInstrumentati
      * {@code locale} defaults to the request's resolved locale or the JVM default.
      */
     public record RequestCtx(User caller, PermissionController permissionController, Locale locale,
-            Set<String> readableAllocatableIds)
+            Set<String> readableAllocatableIds, Set<String> informationOnlyAllocatableIds)
     {
         static final String KEY = "rapla.requestCtx";
 
         /** Used when no instrumentation ran (e.g. unit-test paths that bypass
          *  the standard execution chain). Caller is null; PC is null too —
          *  fetchers must handle the null-PC case (it means "trust no one"). */
-        static final RequestCtx EMPTY = new RequestCtx(null, null, Locale.getDefault(), null);
+        static final RequestCtx EMPTY = new RequestCtx(null, null, Locale.getDefault(), null, null);
 
         /**
          * PRD 082 #8 §12 — the single allocatable read gate for every field resolver. Uses the
@@ -110,6 +112,21 @@ public class RequestContextInstrumentation extends SimplePerformantInstrumentati
             return readableAllocatableIds != null
                     ? readableAllocatableIds.contains(a.getId())
                     : permissionController.canRead(a, caller);
+        }
+
+        /**
+         * The gate for expanding an allocatable from an entity the caller already reads (a reservation's
+         * allocations, allocatable-typed attributes, the block colour): {@code canReadInformation}
+         * (READ_NO_ALLOCATION), like the Swing block. Queries that list allocatables or their bookings keep
+         * {@link #canReadAllocatable}. See docs/architecture/permissions.md § 5.
+         */
+        public boolean canReadAllocatableInformation(Allocatable a)
+        {
+            if (canReadAllocatable(a)) return true;
+            if (a == null || caller == null || permissionController == null) return false;
+            return informationOnlyAllocatableIds != null
+                    ? informationOnlyAllocatableIds.contains(a.getId())
+                    : permissionController.canReadInformation(a, caller);
         }
     }
 }

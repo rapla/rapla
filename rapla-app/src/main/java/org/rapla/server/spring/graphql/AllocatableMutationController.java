@@ -108,7 +108,7 @@ public class AllocatableMutationController
 
         // Build classification + allocatable
         Map<String, Object> classificationInput = (Map<String, Object>) input.get("classification");
-        Classification classification = buildClassificationFromInput(dt, classificationInput, typeKey);
+        Classification classification = buildClassificationFromInput(dt, classificationInput, typeKey, caller, null);
 
         AllocatableImpl a = new AllocatableImpl(operator.getCurrentTimestamp(),
                 operator.getCurrentTimestamp());
@@ -218,7 +218,7 @@ public class AllocatableMutationController
 
         Map<String, Object> classificationInput = (Map<String, Object>) input.get("classification");
         Classification newClassification = buildClassificationFromInput(targetType, classificationInput,
-                targetTypeKey);
+                targetTypeKey, caller, stored.getClassification());
         draft.setClassification(newClassification);
         PermissionInputMapper.apply(draft, (List<Map<String, Object>>) input.get("permissions"),
                 PermissionInputMapper.Kind.RESOURCE, "input.permissions", operator);
@@ -489,9 +489,9 @@ public class AllocatableMutationController
     @SuppressWarnings("unchecked")
     /** Delegates to the shared {@link ClassificationInputMapper} (dedup 2026-07-08). */
     private Classification buildClassificationFromInput(DynamicType dt,
-            Map<String, Object> classificationInput, String expectedTypeKey)
+            Map<String, Object> classificationInput, String expectedTypeKey, User caller, Classification stored)
     {
-        return ClassificationInputMapper.buildClassificationFromInput(operator, dt, classificationInput, expectedTypeKey);
+        return ClassificationInputMapper.buildClassificationFromInput(operator, dt, classificationInput, expectedTypeKey, caller, stored);
     }
 
     private static Map<String, Object> bulkEntry(int index)

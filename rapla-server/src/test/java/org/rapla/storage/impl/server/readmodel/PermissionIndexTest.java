@@ -71,6 +71,27 @@ class PermissionIndexTest extends FacadeTestSupport
     }
 
     @Test
+    void informationOnlySetEqualsCanReadInformationMinusCanRead() throws Exception
+    {
+        final PermissionController controller = controller();
+        final PermissionIndex index = index();
+
+        for (User user : operator.getUsers())
+        {
+            final Set<String> expected = new LinkedHashSet<>();
+            for (Allocatable a : operator.getAllocatables(null))
+            {
+                if (controller.canReadInformation(a, user) && !controller.canRead(a, user))
+                {
+                    expected.add(a.getId());
+                }
+            }
+            assertEquals(expected, index.informationOnlyAllocatables(user),
+                    "information-only set must equal canReadInformation minus canRead for user " + user.getId());
+        }
+    }
+
+    @Test
     void adminReadsEveryAllocatable() throws Exception
     {
         final User homer = operator.getUser("homer");

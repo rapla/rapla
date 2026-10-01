@@ -324,13 +324,37 @@ Belegungen)` — "read, no bookings"):
 
 | Method | Threshold | Gates | Call sites |
 |---|---:|---|---|
-| `canReadInformation(alloc, user)` | ≥ `READ_NO_ALLOCATION` (50) | the **resource itself** — existence, name, attributes; whether it appears in pickers, the calendar resource column, the client store, and is an allowed `queryAppointments` target | `LocalCache.getVisibleEntities`, `UpdateDataManagerImpl` (client store filter), `SecurityManager.checkRead`, `RemoteStorageController.queryAppointments`, `RaplaBuilder.isVisible` (calendar column), `ParsedText` (name render) |
-| `canRead(alloc/appointment/reservation, user)` | ≥ `READ` (100) | the **bookings on it** — appointment blocks render with reservation detail; below `READ` a block is anonymized/suppressed (`RaplaBuilder`: `!canRead(appointment,user)` ⇒ anonymous) | `RaplaBuilder` block build, the GraphQL `canReadAllocatable` gate |
+| `canReadInformation(alloc, user)` | ≥ `READ_NO_ALLOCATION` (50) | the **resource itself** — existence, name, attributes, as shown when expanding an entity the user already reads: the resource/person names inside an appointment block, reference attributes; the client store; an allowed `queryAppointments` target | `LocalCache.getVisibleEntities`, `UpdateDataManagerImpl` (client store filter), `SecurityManager.checkRead`, `RemoteStorageController.queryAppointments`, `RaplaBuilder.isVisible` (names in the block), `ParsedText` (name render), GraphQL `canReadAllocatableInformation` |
+| `canRead(alloc, user)` | ≥ `READ` (100) | **listing the resource and its bookings** — the resource tree / picker and the calendar model's selectable resources | `CalendarModelImpl.getFilteredAllocatables`, `FacadeImpl.getVisibleAllocatables`, the GraphQL `canReadAllocatable` gate |
 
-So `READ_NO_ALLOCATION` literally means **"the resource can be seen and
-expanded, but without its allocations"**: a user at level 50 sees "Room A101
-exists" and can select it; the appointments on it stay hidden/anonymous until
-the user reaches `READ` (100).
+Whether a block itself is anonymous depends on the reservation
+(`canRead(reservation)`, `RaplaBuilder.isAnonymous`), not on the resource level.
+
+So `READ_NO_ALLOCATION` means **"the resource can be seen when expanded from
+something the user reads, but not listed or opened with its allocations"**: a
+user at level 50 sees "Room A101" on a lecture they can read, but cannot pick
+A101 and browse its calendar until they reach `READ` (100). Expanding only runs
+one way — the GraphQL `Resource` type has no bookings field; a resource's
+bookings are reached only through queries, which stay at `canRead`.
+
+**Saving references (one rule, two places).** A reference *newly* introduced
+by a save needs `canRead` (plus `@expectedType` for attribute references),
+otherwise it is answered exactly like an unknown id; a reference the stored
+entity already holds stays. Allocations:
+`ReservationMutationController.applyAllocations`; attribute references:
+`ClassificationInputMapper.buildClassificationFromInput` (gets the stored
+classification at the update sites). Whether the user may *allocate* is
+decided only by `SecurityManager` (`checkPermissions`, or `canExchange` for
+users who may not modify the reservation). A kept allocation the user may not
+allocate (only `READ_NO_ALLOCATION`) therefore fails the save with
+`PERMISSION_DENIED` — Swing parity: `canExchange` runs only for non-editors
+(`SecurityManager.java:130–141`) and `hasPermissionToAllocate` skips rows below
+`READ` (`PermissionController.java:380–383`). Attribute references are not
+re-validated by `SecurityManager` (Swing has no such check either), allocations
+are — hence a kept information-only *reference* survives a save while a kept
+information-only *allocation* does not. Residue, pre-existing and Swing-equal: an
+allocation on a resource the user cannot see at all is absent from
+`allocations`, so saving the list without it removes it.
 
 **Caveat for the [PRD 082](../prd/082-storage-memory-model.md) #8 / [PRD 083](../prd/083-user-change-subscription.md) `PermissionIndex`.**
 `PermissionIndex.readableAllocatables(user)` delegates to **`canRead`**
@@ -344,10 +368,16 @@ the user reaches `READ` (100).
   `READ_NO_ALLOCATION` resources the legacy path shows (over-restrictive /
   fail-closed — not a leak). [PRD 083](../prd/083-user-change-subscription.md) scopes the index to GraphQL for exactly
   this reason.
-- Net effect: on a `READ_NO_ALLOCATION`-only resource the **Swing client**
-  (RemoteStorage → `canReadInformation`) shows it with bookings hidden, while
-  the **SPA** (GraphQL → `canRead`) omits it from the catalog. This is a
-  pre-existing boundary difference, not introduced by the index.
+- The index also caches the `canReadInformation && !canRead` set
+  (`informationOnlyAllocatables`, same scan and invalidation); GraphQL's
+  expand gate `canReadAllocatableInformation` uses it (2026-10-01).
+- Net effect: Swing and the SPA agree — both list a `READ_NO_ALLOCATION`-only
+  resource nowhere (catalog / picker at `canRead`) and both show it when
+  expanding a readable reservation (Swing block names, GraphQL
+  `Reservation.allocations`, reference attributes, block colour).
+  *Corrected 2026-10-01: this section earlier claimed Swing lists such a
+  resource in pickers and calendar columns; `CalendarModelImpl` and
+  `FacadeImpl` filter at `canRead`.*
 
 ## Client mirror
 

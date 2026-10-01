@@ -300,8 +300,12 @@ already have the select. Seen on Siegen data: `person.a1` / `resource2.a6`
   resource id — also one the caller cannot read (§12) or of another type
   than `@expectedType` (red tier-3 `ResourceRefInputGraphQLTest`). The
   mapper now takes the caller (all six call sites in
-  Allocatable-/ReservationMutationController) and keeps only a readable
-  resource of the expected type; otherwise dropped with a warn log.
+  Allocatable-/ReservationMutationController): a newly referenced resource
+  must be readable (canRead) and of the expected type, otherwise it is
+  masked like an unknown id (warn log). A reference already stored passes
+  unchanged — on update the mapper gets the stored classification (user
+  ruling A 2026-10-01, Swing parity; same rule as allocations,
+  permissions.md § 5).
 - **OQ3** — allocatable editor entry point placement ([PRD 094](094-spa-main-view-actions-and-popups.md) command layer
   vs. plain button in resource views). *Resolution:* pending.
 

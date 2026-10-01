@@ -458,9 +458,10 @@ Used by the `accessLevel` argument of the access-by-target filters
 (`accessibleByUsername` / `accessibleByUserId` / `accessibleByGroup`). Levels are
 ordered; a filter for level L matches when the target's effective level ≥ L.
 The two everyday values: `READ` ("what can they see"), `EDIT` ("what can they edit").
+Legacy `DENIED` rows are inert under additive resolution (PRD 090) and not exposed; the admin
+permission-migration dialog shows them.
 """
 enum AccessLevel {
-  DENIED
   READ_TYPE
   CREATE
   READ_NO_ALLOCATION

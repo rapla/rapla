@@ -120,7 +120,7 @@ public class ReservationMutationController
 
         // Build classification + reservation
         Map<String, Object> classificationInput = (Map<String, Object>) input.get("classification");
-        Classification classification = buildClassificationFromInput(dt, classificationInput, typeKey);
+        Classification classification = buildClassificationFromInput(dt, classificationInput, typeKey, caller, null);
 
         ReservationImpl r = new ReservationImpl(operator.getCurrentTimestamp(), operator.getCurrentTimestamp());
         r.setClassification(classification);
@@ -165,7 +165,7 @@ public class ReservationMutationController
         List<Map<String, Object>> allocations = (List<Map<String, Object>>) input.get("allocations");
         if (allocations != null)
         {
-            applyAllocations(r, allocations, appointmentByClientId, caller,
+            applyAllocations(r, null, allocations, appointmentByClientId, caller,
                     "operations[0].createReservation.allocations");
         }
 
@@ -229,7 +229,7 @@ public class ReservationMutationController
 
         // Replace classification attrs from input
         Map<String, Object> classificationInput = (Map<String, Object>) input.get("classification");
-        Classification newClassification = buildClassificationFromInput(targetType, classificationInput, targetTypeKey);
+        Classification newClassification = buildClassificationFromInput(targetType, classificationInput, targetTypeKey, caller, stored.getClassification());
         draft.setClassification(newClassification);
         PermissionInputMapper.apply(draft, (List<Map<String, Object>>) input.get("permissions"),
                 PermissionInputMapper.Kind.SIMPLE, "input.permissions", operator);
@@ -264,7 +264,7 @@ public class ReservationMutationController
         List<Map<String, Object>> allocations = (List<Map<String, Object>>) input.get("allocations");
         if (allocations != null)
         {
-            applyAllocations(draft, allocations, appointmentByClientId, caller, "input.allocations");
+            applyAllocations(draft, stored, allocations, appointmentByClientId, caller, "input.allocations");
         }
 
         UpdateEvent event = new UpdateEvent();
@@ -780,9 +780,9 @@ public class ReservationMutationController
     @SuppressWarnings("unchecked")
     /** Delegates to the shared {@link ClassificationInputMapper} (dedup 2026-07-08). */
     private Classification buildClassificationFromInput(DynamicType dt, Map<String, Object> classificationInput,
-            String expectedTypeKey)
+            String expectedTypeKey, User caller, Classification stored)
     {
-        return ClassificationInputMapper.buildClassificationFromInput(operator, dt, classificationInput, expectedTypeKey);
+        return ClassificationInputMapper.buildClassificationFromInput(operator, dt, classificationInput, expectedTypeKey, caller, stored);
     }
 
     private Appointment buildAppointment(Map<String, Object> ai, String path)
@@ -817,9 +817,10 @@ public class ReservationMutationController
     }
 
     @SuppressWarnings("unchecked")
-    private void applyAllocations(Reservation r, List<Map<String, Object>> allocations,
+    private void applyAllocations(Reservation r, Reservation stored, List<Map<String, Object>> allocations,
             Map<String, Appointment> appointmentByClientId, User caller, String pathBase)
     {
+        List<Allocatable> storedAllocatables = stored == null ? List.of() : java.util.Arrays.asList(stored.getAllocatables());
         for (int i = 0; i < allocations.size(); i++)
         {
             Map<String, Object> alloc = allocations.get(i);
@@ -831,7 +832,12 @@ public class ReservationMutationController
                         pathBase + "[" + i + "].resourceId",
                         "Resource " + allocId + " not found");
             }
-            if (caller != null && !operator.getPermissionController().canRead(a, caller))
+            // Only an allocation the stored reservation does not hold yet is gated here; a kept one
+            // (READ_NO_ALLOCATION shows it, see canReadAllocatableInformation) is re-checked by
+            // SecurityManager like any change (canExchange / checkPermissions). permissions.md § 5.
+            boolean kept = storedAllocatables.contains(a)
+                    && (caller == null || operator.getPermissionController().canReadInformation(a, caller));
+            if (caller != null && !kept && !operator.getPermissionController().canRead(a, caller))
             {
                 // §12 / security-audit A0d — an unreadable id must answer EXACTLY like an unknown
                 // one. A distinct PERMISSION_DENIED here was an existence oracle: probing guessed
@@ -898,7 +904,7 @@ public class ReservationMutationController
         DynamicType dt = resolveType(typeKey);
         requireCanCreate(dt, caller);
         Map<String, Object> classificationInput = (Map<String, Object>) input.get("classification");
-        Classification classification = buildClassificationFromInput(dt, classificationInput, typeKey);
+        Classification classification = buildClassificationFromInput(dt, classificationInput, typeKey, caller, null);
         ReservationImpl r = new ReservationImpl(operator.getCurrentTimestamp(), operator.getCurrentTimestamp());
         r.setClassification(classification);
         r.setOwner(caller);
@@ -931,7 +937,7 @@ public class ReservationMutationController
         List<Map<String, Object>> allocations = (List<Map<String, Object>>) input.get("allocations");
         if (allocations != null)
         {
-            applyAllocations(r, allocations, appointmentByClientId, caller, path + ".allocations");
+            applyAllocations(r, null, allocations, appointmentByClientId, caller, path + ".allocations");
         }
         return r;
     }
@@ -962,7 +968,7 @@ public class ReservationMutationController
         }
         Reservation draft = editObject(stored);
         Map<String, Object> classificationInput = (Map<String, Object>) input.get("classification");
-        draft.setClassification(buildClassificationFromInput(targetType, classificationInput, targetTypeKey));
+        draft.setClassification(buildClassificationFromInput(targetType, classificationInput, targetTypeKey, caller, stored.getClassification()));
         PermissionInputMapper.apply(draft, (List<Map<String, Object>>) input.get("permissions"),
                 PermissionInputMapper.Kind.SIMPLE, path + ".permissions", operator);
         for (Appointment existing : draft.getAppointments()) draft.removeAppointment(existing);
@@ -981,7 +987,7 @@ public class ReservationMutationController
         List<Map<String, Object>> allocations = (List<Map<String, Object>>) input.get("allocations");
         if (allocations != null)
         {
-            applyAllocations(draft, allocations, appointmentByClientId, caller,
+            applyAllocations(draft, stored, allocations, appointmentByClientId, caller,
                     path + ".input.allocations");
         }
         return draft;

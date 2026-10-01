@@ -2,9 +2,12 @@ package org.rapla.server.spring.graphql;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.rapla.entities.Category;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
@@ -42,8 +45,20 @@ final class ClassificationInputMapper
 
     @SuppressWarnings("unchecked")
     static Classification buildClassificationFromInput(StorageOperator operator, DynamicType dt,
-            Map<String, Object> classificationInput, String expectedTypeKey)
+            Map<String, Object> classificationInput, String expectedTypeKey, User caller, Classification stored)
     {
+        // Resource references already stored pass unchanged; only new ids are gated (PRD 096 OQ6 sibling, Swing parity)
+        Set<String> storedRefs = new HashSet<>();
+        if (stored != null)
+        {
+            for (Attribute a : stored.getAttributes())
+            {
+                for (Object v : stored.getValues(a))
+                {
+                    if (v instanceof Allocatable ref) storedRefs.add(ref.getId());
+                }
+            }
+        }
         Classification c = dt.newClassification();
         if (classificationInput == null) return c;
         // @oneOf variant: classificationInput has exactly one key matching the typeKey
@@ -70,14 +85,14 @@ final class ClassificationInputMapper
                     c.setValueForAttribute(attr, null);
                     continue;
                 }
-                Object value = coerceValue(operator, attr, raw);
+                Object value = coerceValue(operator, attr, raw, caller, storedRefs);
                 if (value != null) c.setValueForAttribute(attr, value);
             }
         }
         return c;
     }
 
-    static Object coerceValue(StorageOperator operator, Attribute attr, Object raw)
+    static Object coerceValue(StorageOperator operator, Attribute attr, Object raw, User caller, Set<String> storedRefs)
     {
         if (raw == null) return null;
         AttributeType t = attr.getType();
@@ -88,15 +103,16 @@ final class ClassificationInputMapper
             List<Object> out = new ArrayList<>();
             for (Object item : rawList)
             {
-                Object coerced = coerceSingleValue(operator, attr, t, item);
+                Object coerced = coerceSingleValue(operator, attr, t, item, caller, storedRefs);
                 if (coerced != null) out.add(coerced);
             }
             return out;
         }
-        return coerceSingleValue(operator, attr, t, raw);
+        return coerceSingleValue(operator, attr, t, raw, caller, storedRefs);
     }
 
-    private static Object coerceSingleValue(StorageOperator operator, Attribute attr, AttributeType t, Object raw)
+    private static Object coerceSingleValue(StorageOperator operator, Attribute attr, AttributeType t, Object raw,
+            User caller, Set<String> storedRefs)
     {
         if (raw == null) return null;
         try
@@ -124,7 +140,21 @@ final class ClassificationInputMapper
                     // resolved within the attribute's root-category constraint
                     yield root != null ? findCategoryByKey(root, s) : null;
                 }
-                case ALLOCATABLE -> operator.tryResolve(new ReferenceInfo<>(raw.toString(), Allocatable.class));
+                case ALLOCATABLE -> {
+                    Allocatable ref = operator.tryResolve(new ReferenceInfo<>(raw.toString(), Allocatable.class));
+                    if (ref == null) yield null;
+                    if (storedRefs.contains(ref.getId())) yield ref;
+                    // §12 + @expectedType (PRD 096 OQ6 sibling): a NEW reference must be readable and of the expected type
+                    Object expected = attr.getConstraint(ConstraintIds.KEY_DYNAMIC_TYPE);
+                    if (operator.getPermissionController().canRead(ref, caller)
+                            && (!(expected instanceof DynamicType type) || type.equals(ref.getClassification().getType())))
+                    {
+                        yield ref;
+                    }
+                    LOGGER.warn("Resource {} is not a readable {} for attribute '{}' — value dropped", ref.getId(),
+                            expected instanceof DynamicType type ? type.getKey() : "(any type)", attr.getKey());
+                    yield null;
+                }
             };
         }
         catch (Exception e)

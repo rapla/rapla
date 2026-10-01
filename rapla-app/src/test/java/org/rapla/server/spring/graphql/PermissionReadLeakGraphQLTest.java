@@ -73,7 +73,7 @@ class PermissionReadLeakGraphQLTest
     static Path dataFile;
 
     static boolean seeded;
-    static String resA, resB, resC, resD, evA, evB, evC, tplRead, tplPriv, periodId, lennyId;
+    static String resA, resB, resC, resD, resE, resG, refH, refJ, evA, evB, evC, evE, evF, tplRead, tplPriv, periodId, lennyId;
 
     @BeforeAll
     static void copyFixture() throws IOException
@@ -145,6 +145,21 @@ class PermissionReadLeakGraphQLTest
         evA = store(event(homer), List.of(row(AccessLevel.EDIT, null, myGroup)));
         evB = store(event(homer), List.of(row(AccessLevel.ADMIN, monty, null)));
         evC = store(event(homer), List.of());
+
+        resE = store(resource("PRD113-E", homer), List.of(row(AccessLevel.READ_NO_ALLOCATION, null, myGroup)));
+        Reservation e = event(homer);
+        e.addAllocatable(operator.tryResolve(resE, Allocatable.class));
+        evE = store(e, List.of(row(AccessLevel.EDIT, null, myGroup)));
+        Reservation f = event(homer);
+        f.addAllocatable(operator.tryResolve(resE, Allocatable.class));
+        evF = store(f, List.of(row(AccessLevel.EDIT, null, myGroup)));
+        resG = store(resource("PRD113-G", homer), List.of(row(AccessLevel.READ_NO_ALLOCATION, null, myGroup)));
+        Allocatable h = named(operator.getDynamicType("resource1"), "PRD113-H", homer);
+        h.getClassification().setValue("a1", operator.tryResolve(resE, Allocatable.class));
+        refH = store(h, List.of(row(AccessLevel.READ, null, myGroup)));
+        Allocatable j = named(operator.getDynamicType("resource1"), "PRD113-J", homer);
+        j.getClassification().setValue("a1", operator.tryResolve(resC, Allocatable.class));
+        refJ = store(j, List.of(row(AccessLevel.READ, null, myGroup)));
 
         DynamicType templateType = operator.getDynamicType(StorageOperator.RAPLA_TEMPLATE);
         tplRead = store(named(templateType, "PRD113-TPL-READ", homer), List.of(row(AccessLevel.READ, null, myGroup)));
@@ -265,6 +280,63 @@ class PermissionReadLeakGraphQLTest
         assertEquals(true, b.get("canAdmin"));
         assertFalse(((List<?>) b.get("permissions")).isEmpty(), "ADMIN → rows visible");
         tester.document("{ reservation(id: \"" + evC + sel).execute().path("reservation").valueIsNull();
+    }
+
+    @Test
+    @WithMockUser(username = "monty")
+    void readNoAllocationResourceShownWhenExpandingAReadableEventButNotInCatalog()
+    {
+        Map<String, Object> ev = tester.document("{ reservation(id: \"" + evE + "\") { allocations { resource { id } } } }")
+                .execute().path("reservation").entity(ROW).get();
+        List<?> allocations = (List<?>) ev.get("allocations");
+        assertEquals(1, allocations.size(), "READ_NO_ALLOCATION resource of a readable event must be expanded");
+        assertEquals(resE, ((Map<?, ?>) ((Map<?, ?>) allocations.get(0)).get("resource")).get("id"));
+        assertEquals(List.of(), rows("{ resources(filter: { idIn: " + ids(resE) + " }) { id } }", "resources"),
+                "the catalog query stays at canRead");
+    }
+
+    @Test
+    @WithMockUser(username = "monty")
+    void referenceAttributeExpandsInformationOnlyButNotUnreadable()
+    {
+        Map<String, Map<String, Object>> res = byId(rows("{ resources(filter: { idIn: " + ids(refH, refJ)
+                + " }) { id classification { ... on resource1Classification { a1 { id } } } } }", "resources"));
+        assertEquals(Set.of(refH, refJ), res.keySet());
+        Map<?, ?> h = (Map<?, ?>) res.get(refH).get("classification");
+        assertEquals(resE, ((Map<?, ?>) h.get("a1")).get("id"), "READ_NO_ALLOCATION reference expands");
+        Map<?, ?> j = (Map<?, ?>) res.get(refJ).get("classification");
+        assertNull(j.get("a1"), "unreadable reference stays null");
+    }
+
+    private String updateEvF(String resourceId)
+    {
+        Appointment app = operator.tryResolve(evF, Reservation.class).getAppointments()[0];
+        return "mutation { updateReservation(id: \"" + evF + "\", input: { typeKey: \"event\", classification: { event: {} }, "
+                + "appointments: [{ id: \"" + app.getId() + "\", start: \"2026-06-01T10:00:00\", end: \"2026-06-01T11:00:00\", allDay: false }], "
+                + "allocations: [{ resourceId: \"" + resourceId + "\" }] }) { id } }";
+    }
+
+    @Test
+    @WithMockUser(username = "monty")
+    void unchangedReadNoAllocationAllocationIsDeniedLikeSwing()
+    {
+        String body = raw(updateEvF(resE));
+        assertTrue(body.contains("PERMISSION_DENIED"), body);
+        assertFalse(body.contains("REFERENCE_NOT_FOUND"), body);
+        List<String> allocated = java.util.Arrays.stream(operator.tryResolve(evF, Reservation.class).getAllocatables())
+                .map(Allocatable::getId).toList();
+        assertEquals(List.of(resE), allocated);
+    }
+
+    @Test
+    @WithMockUser(username = "monty")
+    void newReadNoAllocationAllocationAnswersLikeAnUnknownId()
+    {
+        String unknown = UUID.randomUUID().toString();
+        String hidden = raw(updateEvF(resG)).replace(resG, "<id>");
+        String missing = raw(updateEvF(unknown)).replace(unknown, "<id>");
+        assertTrue(hidden.contains("REFERENCE_NOT_FOUND"), hidden);
+        assertEquals(missing, hidden);
     }
 
     // === 2 ===================================================================

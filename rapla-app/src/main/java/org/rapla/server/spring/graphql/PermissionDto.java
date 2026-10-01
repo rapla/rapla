@@ -43,7 +43,7 @@ public record PermissionDto(Principal principal, String level, LocalDateTime sta
         List<PermissionDto> out = new ArrayList<>();
         for (Permission p : rows)
         {
-            if (keep.test(p)) out.add(from(p));
+            if (p.getAccessLevel() != Permission.AccessLevel.DENIED && keep.test(p)) out.add(from(p));
         }
         return out;
     }

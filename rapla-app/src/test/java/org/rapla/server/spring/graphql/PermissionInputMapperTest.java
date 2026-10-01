@@ -274,6 +274,34 @@ class PermissionInputMapperTest
         assertEquals(List.of(AccessLevel.ADMIN, AccessLevel.EDIT), levels);
     }
 
+    @Test
+    void replaceKeepsLegacyDeniedRows()
+    {
+        Permission denied = container.newPermission();
+        denied.setUser(lenny);
+        denied.setAccessLevel(AccessLevel.DENIED);
+        container.addPermission(denied);
+        PermissionInputMapper.apply(container, List.of(row(principal("groupId", myGroup.getId()), "EDIT")),
+                Kind.RESOURCE, PATH, resolver);
+        List<AccessLevel> levels = new ArrayList<>();
+        container.getPermissionList().forEach(p -> levels.add(p.getAccessLevel()));
+        assertEquals(List.of(AccessLevel.EDIT, AccessLevel.DENIED), levels);
+    }
+
+    @Test
+    void replaceInstanceDefaultsKeepsLegacyDeniedRows()
+    {
+        DynamicTypeImpl type = typeWithStoredRows();
+        Permission denied = type.newPermission();
+        denied.setUser(lenny);
+        denied.setAccessLevel(AccessLevel.DENIED);
+        type.addPermission(denied);
+        PermissionInputMapper.replaceTypeLists(type, null,
+                List.of(row(principal("groupId", myGroup.getId()), "EDIT")), Kind.RESOURCE,
+                "input.typeAccess", "input.resourceInstanceDefaults", resolver);
+        assertEquals(List.of("READ_TYPE", "CREATE", "EDIT", "DENIED"), levels(type));
+    }
+
     // === round trip through the R1 projection ================================
 
     @Test
@@ -297,6 +325,21 @@ class PermissionInputMapperTest
         assertTrue(read.get(2).principal().everyone());
         assertEquals(1, read.get(2).minAdvance());
         assertEquals(14, read.get(2).maxAdvance());
+    }
+
+    @Test
+    void deniedRowsAreNotProjected()
+    {
+        Permission denied = container.newPermission();
+        denied.setUser(lenny);
+        denied.setAccessLevel(AccessLevel.DENIED);
+        Permission read = container.newPermission();
+        read.setAccessLevel(AccessLevel.READ);
+
+        List<PermissionDto> out = PermissionDto.of(List.of(denied, read), p -> true);
+
+        assertEquals(1, out.size());
+        assertEquals("READ", out.get(0).level());
     }
 
     // === W2 — DynamicType lists (§ 1b, § 5d) ==================================

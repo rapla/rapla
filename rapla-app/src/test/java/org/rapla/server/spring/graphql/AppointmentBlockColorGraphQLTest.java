@@ -8,7 +8,11 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Permission;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.server.spring.RaplaSpringBootApplication;
+import org.rapla.storage.CachableStorageOperator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -103,6 +107,10 @@ class AppointmentBlockColorGraphQLTest
 
     @Autowired
     MockMvc mockMvc;
+    @Autowired
+    RaplaFacade facade;
+    @Autowired
+    CachableStorageOperator operator;
 
     /** Reservation 2's single appointment on 2001-10-16 allocates the colored Room A66. */
     private static final String BLOCK_QUERY = """
@@ -130,6 +138,33 @@ class AppointmentBlockColorGraphQLTest
                 // …but the color of the unreadable contributor must not leak (D3: null, not drop)
                 .andExpect(jsonPath("$.data.appointmentBlocks[?(@.name=='Reservation 2' && @.color != null)]")
                         .isEmpty());
+    }
+
+    @Test
+    @WithMockUser(username = "monty")
+    void informationOnlyColorContributorKeepsColor() throws Exception
+    {
+        Allocatable a66 = facade.edit(operator.tryResolve(ROOM_A66_ID, Allocatable.class));
+        Permission grant = a66.newPermission();
+        grant.setUser(operator.getUser("monty"));
+        grant.setAccessLevel(Permission.AccessLevel.READ_NO_ALLOCATION);
+        a66.addPermission(grant);
+        facade.store(a66);
+        try
+        {
+            mockMvc.perform(post("/api/graphql").contentType(MediaType.APPLICATION_JSON).content(gqlBody(BLOCK_QUERY)))
+                    .andExpect(jsonPath("$.data.appointmentBlocks[?(@.name=='Reservation 2')].color")
+                            .value(contains("#ff0000")));
+        }
+        finally
+        {
+            Allocatable undo = facade.edit(operator.tryResolve(ROOM_A66_ID, Allocatable.class));
+            for (Permission p : undo.getPermissionList().toArray(new Permission[0]))
+            {
+                if (p.getAccessLevel() == Permission.AccessLevel.READ_NO_ALLOCATION) undo.removePermission(p);
+            }
+            facade.store(undo);
+        }
     }
 
     private static String gqlBody(String query)

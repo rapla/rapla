@@ -72,8 +72,10 @@ public class PermissionIndex
     private final StorageOperator operator;
     private final PermissionController permissionController;
 
-    /** user-id → readable allocatable-id set (immutable snapshot). */
-    private final Map<String, Set<String>> readableByUser = new ConcurrentHashMap<>();
+    /** user-id → readable and information-only allocatable-id sets (immutable snapshots). */
+    private final Map<String, Sets> byUser = new ConcurrentHashMap<>();
+
+    private record Sets(Set<String> readable, Set<String> informationOnly) {}
 
     public PermissionIndex(StorageOperator operator, PermissionController permissionController)
     {
@@ -91,17 +93,32 @@ public class PermissionIndex
      */
     public Set<String> readableAllocatables(User user)
     {
+        return sets(user).readable();
+    }
+
+    /**
+     * The set of allocatable ids {@code user} may see but not READ
+     * ({@code READ_NO_ALLOCATION}): {@code canReadInformation && !canRead}.
+     * Usually empty; computed in the same scan as the readable set.
+     */
+    public Set<String> informationOnlyAllocatables(User user)
+    {
+        return sets(user).informationOnly();
+    }
+
+    private Sets sets(User user)
+    {
         if (user == null)
         {
-            return Collections.emptySet();
+            return new Sets(Collections.emptySet(), Collections.emptySet());
         }
         final String userId = user.getId();
         if (userId == null)
         {
             // Unsaved / synthetic user — can't key the cache; compute directly.
-            return computeReadable(user);
+            return compute(user);
         }
-        return readableByUser.computeIfAbsent(userId, id -> computeReadable(user));
+        return byUser.computeIfAbsent(userId, id -> compute(user));
     }
 
     /**
@@ -143,7 +160,7 @@ public class PermissionIndex
     {
         if (user != null && user.getId() != null)
         {
-            readableByUser.remove(user.getId());
+            byUser.remove(user.getId());
         }
     }
 
@@ -152,17 +169,17 @@ public class PermissionIndex
     {
         if (userId != null)
         {
-            readableByUser.remove(userId);
+            byUser.remove(userId);
         }
     }
 
     /** Drop every cached entry (allocatable-permission or hierarchy change). */
     public void invalidateAll()
     {
-        readableByUser.clear();
+        byUser.clear();
     }
 
-    private Set<String> computeReadable(User user)
+    private Sets compute(User user)
     {
         final Collection<Allocatable> allocatables;
         try
@@ -172,17 +189,22 @@ public class PermissionIndex
         catch (RaplaException ex)
         {
             LOGGER.error("Could not enumerate allocatables for permission index", ex);
-            return Collections.emptySet();
+            return new Sets(Collections.emptySet(), Collections.emptySet());
         }
         final Set<String> readable = new LinkedHashSet<>();
+        final Set<String> informationOnly = new LinkedHashSet<>();
         for (Allocatable allocatable : allocatables)
         {
             if (permissionController.canRead(allocatable, user))
             {
                 readable.add(allocatable.getId());
             }
+            else if (permissionController.canReadInformation(allocatable, user))
+            {
+                informationOnly.add(allocatable.getId());
+            }
         }
-        return Collections.unmodifiableSet(readable);
+        return new Sets(Collections.unmodifiableSet(readable), Collections.unmodifiableSet(informationOnly));
     }
 
     private Allocatable findAllocatable(String allocatableId)

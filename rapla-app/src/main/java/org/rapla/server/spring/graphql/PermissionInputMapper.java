@@ -37,7 +37,24 @@ final class PermissionInputMapper
             EntityResolver resolver)
     {
         if (input == null) return;
-        PermissionContainer.Util.replace(container, toRows(container, input, kind, path, resolver));
+        List<Permission> rows = toRows(container, input, kind, path, resolver);
+        rows.addAll(storedDenied(container.getPermissionList()));
+        PermissionContainer.Util.replace(container, rows);
+    }
+
+    /**
+     * PRD 090 — legacy DENIED rows are not projected (PermissionDto) and not settable, so a replace keeps them:
+     * a read-modify-write must not strip them while Rapla 2 still evaluates them and the migration worklist
+     * still shows them. Drop with PRD 090 Phase 5.
+     */
+    private static List<Permission> storedDenied(Iterable<Permission> stored)
+    {
+        List<Permission> out = new ArrayList<>();
+        for (Permission p : stored)
+        {
+            if (p.getAccessLevel() == AccessLevel.DENIED) out.add(p);
+        }
+        return out;
     }
 
     /**
@@ -63,7 +80,9 @@ final class PermissionInputMapper
         }
         if (instanceDefaults != null)
         {
+            List<Permission> storedInstanceRows = instanceRows;
             instanceRows = toRows(container, instanceDefaults, instanceKind, instancePath, resolver);
+            instanceRows.addAll(storedDenied(storedInstanceRows));
         }
         List<Permission> merged = new ArrayList<>(typeRows);
         merged.addAll(instanceRows);

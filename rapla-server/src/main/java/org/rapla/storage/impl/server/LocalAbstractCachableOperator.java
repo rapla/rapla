@@ -2296,6 +2296,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return permissionIndex().readableAllocatables(user);
     }
 
+    /** PRD 082 #8 — the cached {@code canReadInformation && !canRead} set ({@code READ_NO_ALLOCATION}); same flip gate. */
+    public java.util.Set<String> informationOnlyAllocatableIds(User user)
+    {
+        return permissionIndex().informationOnlyAllocatables(user);
+    }
+
     private void updateExternalId(UpdateOperation op, ReferenceInfo id)
     {
         final String oldExternalId = externalIds.getKey(id);
