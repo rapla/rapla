@@ -266,8 +266,15 @@ type Category {
   kind:     CategoryKind!
   parent:   Category
   children: [Category!]!
+  hasChildren: Boolean!   # PRD 096 Phase 5 — lets a tree load one level per request
 }
 ```
+
+**Tree categories in the SPA (PRD 096 Phase 5).** An ORGANIZATION-rooted
+attribute reads as `Category` and writes as `ID`; the SPA loads the subtree with
+`category(path: <@rootCategory>) { children { … } }` at a fixed depth of 5.
+On write, `ClassificationInputMapper` accepts a category id only below the
+attribute's root; anything else is dropped like an unknown value.
 
 The `kind` field lets a generic consumer (SPA renderer, MCP tool, admin
 explorer) render any Category appropriately without prior deployment
