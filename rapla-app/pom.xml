@@ -66,7 +66,7 @@
                      target/webclient/. The server JVM doesn't care about signatures; the
                      same single physical copy serves the JNLP launcher.
 
-                 See docs/development.md and .agents/skills/test-jnlp-launch/SKILL.md. -->
+                 See docs/development.md and .claude/skills/test-jnlp-launch/SKILL.md. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>

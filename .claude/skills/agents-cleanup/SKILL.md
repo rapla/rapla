@@ -78,7 +78,7 @@ Ask, in order:
 ### Lens 1 — move to skills
 Verbose how-to that's only needed while performing a specific task does not belong in
 always-on context. Target: command recipes, multi-step procedures, debugging playbooks,
-worked configuration. Move the body into the matching `.agents/skills/<name>/SKILL.md`
+worked configuration. Move the body into the matching `.claude/skills/<name>/SKILL.md`
 (create one if none fits — frontmatter format below), and leave inline only the
 always-on rule + `load the <name> skill`.
 
@@ -155,7 +155,7 @@ inline version also exists in AGENTS.md.
 ## Process
 
 1. **Scope** — parse `$ARGUMENTS`; if empty, full four-lens scan.
-2. **Read** the current AGENTS.md, list `.agents/skills/`, and skim the `docs/` tree so you
+2. **Read** the current AGENTS.md, list `.claude/skills/`, and skim the `docs/` tree so you
    know what receiving homes already exist (don't create a duplicate skill/doc).
 3. **Classify** each candidate with the decision test. Build a findings list: for each item —
    the location (§N), the lens, the proposed action (inline-trim / dedup→§N / →skill / →doc),

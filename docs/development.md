@@ -8,8 +8,8 @@ This guide covers what's specific to developing rapla on **WSL2 with the OpenWeb
 |---|---|
 | Reactor build, server lifecycle | [AGENTS.md](../AGENTS.md) §5, §8 |
 | Swing client launched directly (no JNLP) | [AGENTS.md](../AGENTS.md) §9 |
-| Fat-JAR test (no signing, no OWS) | `.agents/skills/test-deployment/SKILL.md` |
-| **Full JNLP + OWS launch with self-signing** (this guide) | `.agents/skills/test-jnlp-launch/SKILL.md` |
+| Fat-JAR test (no signing, no OWS) | `.claude/skills/test-deployment/SKILL.md` |
+| **Full JNLP + OWS launch with self-signing** (this guide) | `.claude/skills/test-jnlp-launch/SKILL.md` |
 | JNLP code signing — YubiKey (`sign-pkcs11`) & self-signed (`sign-jks`) profiles | [docs/signing.md](signing.md) |
 | Six known JNLP build/code defects | [memory: project_jnlp_signing_pitfalls](#known-jnlp-defects) (also in agent memory) |
 | Where logs land, how to change levels, what's bundled | [docs/logging.md](logging.md) |
@@ -446,8 +446,8 @@ The repo ships `.gitattributes` with `* text=auto eol=lf` (plus `eol=crlf` for `
 
 ## Agent skills — how engines find them
 
-Detailed agent how-tos live as **Agent Skills** (the cross-engine `SKILL.md` standard) under `.agents/skills/<name>/SKILL.md`, kept out of the always-on `AGENTS.md` so it stays rule-dense. Claude Code, opencode, Copilot/VS Code, Codex and Gemini CLI **auto-discover them by `name` + `description` and load the body on demand** (progressive disclosure) — there is no manual index, and nobody needs to `cat` a SKILL.md to "enable" it. AGENTS.md names the relevant skill at the point a rule applies; that contextual pointer is the reference.
+Detailed agent how-tos live as **Agent Skills** (the cross-engine `SKILL.md` standard) under `.claude/skills/<name>/SKILL.md`, kept out of the always-on `AGENTS.md` so it stays rule-dense. Claude Code, opencode, Copilot/VS Code, Codex and Gemini CLI **auto-discover them by `name` + `description` and load the body on demand** (progressive disclosure) — there is no manual index, and nobody needs to `cat` a SKILL.md to "enable" it. AGENTS.md names the relevant skill at the point a rule applies; that contextual pointer is the reference.
 
-- **Claude Code is the exception:** it reads only `.claude/skills/`, so the repo ships a plugin manifest `.claude-plugin/plugin.json` pointing at `.agents/skills`. Start Claude Code with `claude --plugin-dir .` (a shell wrapper or the session script adds the flag); the skills then appear as `rapla:<name>`.
-- Claude-only files (`commands/`, `hooks.md`) live in `.claude/`; `.agents/` holds only the shared skills.
+- **Why `.claude/skills/`, not `.agents/skills/`** (moved 2026-10-01, user ruling): Claude Code reads skills only from `.claude/skills/` ([docs](https://code.claude.com/docs/en/skills)); opencode ([docs](https://opencode.ai/docs/skills/)) and the GitHub Copilot CLI ([docs](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-skills)) read `.claude/skills/` natively too. Codex and Gemini CLI were not re-checked. The former plugin manifest (`.claude-plugin/plugin.json` + `claude --plugin-dir .`) is gone: with the repo root as plugin root, Claude Code treats every repo file as a plugin file and sends Write/Edit to the auto-mode classifier, which failed with "no verdict" (A/B-tested 2026-10-01; anthropics/claude-code#95982). Skills appear under their plain names.
+- Claude-only files (`commands/`, `hooks.md`) live in `.claude/` as well.
 - Engines that don't auto-surface skills (e.g. Cursor): they're plain Markdown at the path above.

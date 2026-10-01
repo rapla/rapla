@@ -71,7 +71,7 @@ Two guardrails remain, and both are about **correctness, not ceremony**:
 
 This is a process decision, so the check is softer than an arch-test, but it is nameable and reviewable:
 
-- A **doc-coauthoring skill** (`.agents/skills/doc-coauthoring/`) encodes the two guardrails: announce intent + targeted edit;
+- A **doc-coauthoring skill** (`.claude/skills/doc-coauthoring/`) encodes the two guardrails: announce intent + targeted edit;
   no wholesale page rewrite without an explicit "yes".
 - **git history review:** doc commits are section-scoped diffs, not full-file rewrites — a full-file rewrite
   of a curated page is the smell this decision exists to prevent.

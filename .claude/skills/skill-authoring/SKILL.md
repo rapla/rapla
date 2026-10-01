@@ -1,6 +1,6 @@
 ---
 name: skill-authoring
-description: Use when writing a new .agents/skills/<name>/SKILL.md or substantially
+description: Use when writing a new .claude/skills/<name>/SKILL.md or substantially
   editing one — especially a discipline/guardrail skill that must survive an agent
   rationalizing its way around it. Pressure-test wording with a fresh subagent first.
 ---

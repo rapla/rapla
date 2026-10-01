@@ -36,7 +36,7 @@ The repo-root `pom.xml` is the reactor aggregator (artifactId `rapla-aggregator`
 
 ## Skills
 
-Detailed how-tos live as **Agent Skills** under `.agents/skills/<name>/SKILL.md`, auto-discovered by `name` + `description` and loaded on demand — the rules below name the relevant skill where it applies (*"load the X skill"*). Claude Code sees them as `rapla:<name>` only when started with `claude --plugin-dir .`; other engines and the setup details: [`docs/development.md`](docs/development.md#agent-skills--how-engines-find-them). Restructuring this file or its skills: load the **`agents-cleanup`** skill.
+Detailed how-tos live as **Agent Skills** under `.claude/skills/<name>/SKILL.md`, auto-discovered by `name` + `description` and loaded on demand — the rules below name the relevant skill where it applies (*"load the X skill"*). Claude Code, opencode and Copilot CLI read that path natively; never start Claude Code with `--plugin-dir .` (every repo file becomes a plugin file → Write/Edit fail in auto mode). Setup details: [`docs/development.md`](docs/development.md#agent-skills--how-engines-find-them). Restructuring this file or its skills: load the **`agents-cleanup`** skill.
 
 ## Rules
 
