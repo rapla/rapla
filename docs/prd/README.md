@@ -1,6 +1,6 @@
 # PRD index
 
-82 active PRDs in this directory, 34 done under `done/`, 6 under `wont-fix/`. AGENTS.md §2 and the `prd-management` skill cover the lifecycle (move to `done/` when complete; `git mv` back to reopen).
+86 active PRDs in this directory, 34 done under `done/`, 6 under `wont-fix/`. AGENTS.md §2 and the `prd-management` skill cover the lifecycle (move to `done/` when complete; `git mv` back to reopen).
 
 Each active PRD below carries a generated header (status, locked decisions, dependencies, governed code) plus a keyword line in German and English so that agents and search find it from either language. When a PRD's status or decisions change, update its header here in the same edit (wrap-up checklist).
 
@@ -230,6 +230,12 @@ PRD 108 fixes a legacy in-place-migration bug where Rapla 3 wrote the CHANGES.CH
 
 ### Frontend / SPA
 
+### 117-graphql-administration-entities.md
+
+Draft 2026-09-14: GraphQL administration of users, groups, categories, periods and dynamic types (decisions E1–E16 open); the three security guards E2/E8/E9 and the admin-flag invariant are implemented and test-pinned, no GraphQL mutations yet. Sibling of PRD 113.
+
+*Keywords:* administration, Verwaltung, users, groups, categories, periods, dynamic types, Benutzerverwaltung, GraphQL mutations, admin flag, E1–E16
+
 ### 119-spa-one-search-resource-picker.md
 
 Draft 2026-09-15 (direction decided by the user after two clickable prototypes): the SPA resource picker opens empty and resources are searchable in two places, while omnibox event hits do nothing. Replaces both with one search field at the top that narrows the picker instantly, plus a dropdown with events only (jump to the week + open the event sheet). The picker becomes type chips (Alle, Favoriten, Zuletzt, one per resource type; users only as search hits) over a list; "Alle" shows favorites, recents and the first 20 A–Z; type chips show the resource hierarchy as a simple expandable tree, one level per categorization value (deliberate first cut, grouping will change again), computed server-side (no Swing tree parity — user ruling 2026-09-15; belongsTo nesting later), with "alle wählen" per node. The "Gruppe" tab and the omnibox resource/user/group actions go (behaviour inventory in the PRD). Data: the SPA loads one lean resource list once (id, kind, name, typeKey + new server field `groupPaths`, §12 leak test) and filters, ranks and builds the tree in the browser — no server call per keystroke; event search stays server-side and throttled, and finds every event the caller may read (was: may edit). Tree levels Swing-flat first. Open: list size for large deployments (no perf test for now), narrow screens, keeping the list current (later), event search cost.
@@ -242,11 +248,23 @@ Draft 2026-09-16: buildings cannot be expanded in the SPA resource picker becaus
 
 *Keywords:* Ressourcenhierarchie, resource hierarchy, parents, children, Eltern, Kinder, belongsTo, gehört zu, package, gruppiert, Zyklus, cycle check, checkBelongsTo, checkPackages, LocalCache graph, GraphNode, getDependent, DependencyIndex, Gebäude, Raum, Kursgruppe, picker tree, PRD 119, PRD 082
 
+### 121-rapla2-rapla3-shared-database.md
+
+Draft 2026-09-30, number reserved: Rapla 2.1 and Rapla 3 on one shared database during the transition. The planning record (schema comparison, six legacy patches, BL1 BCrypt rehash, OQ1 keep DENIED, OQ3 bootstrap timezone offset, OQ6) lives in the private dhbwrapla docs; rapla carries only the stub plus the Rapla 3 side (bootstrap timezone offset 12fb1bfb4, DENIED rows kept on write cec7a8f54).
+
+*Keywords:* Rapla 2, Rapla 2.1, legacy, shared database, gemeinsame Datenbank, Übergang, migration, timezoneOffset, DENIED, BCrypt, EntityHistory, PREFERENCE, dhbwrapla
+
 ### 122-spa-new-resource.md
 
-Draft 2026-09-30, all decisions made (D1–D8): the SPA can edit but not create resources. A "+ Neu" button above the picker chips opens the event "Neu" picker (reused via dialog data) with the creatable resource and person types from a new `newResourceOptions` query (canCreate-filtered like `newEventOptions`), the active type chip preselected, one type skipping the picker (Swing parity). The existing resource dialog gets a create mode calling `createResource` (PRD 063), prefilled with attribute defaults from a new `resourcePrototype` query mirroring `reservationPrototype` (PRD 107). After save only the list reloads. Resource templates later; parent from the tree node waits for PRD 120.
+Implemented 2026-10-01 (D1–D9): "+ Neu" in the resource rail opens the create dialog directly (ruling B1 dropped the picker) with the active type chip preselected, else the first creatable type; the dialog seeds attribute defaults from `resourcePrototype`, keeps typed input, groups the type select "Ressourcen" then "Personen" (ruling A3, D9), titles "Neue Person" for person types; `createResource` and the `updateResource` type change accept only RESOURCE/PERSON types of the same kind (§12-identical answers for internal/event/unknown types). Reviewed, all findings fixed.
 
 *Keywords:* neue Ressource, new resource, Neu, createResource, newResourceOptions, resourcePrototype, reservationPrototype, ResourceEditDialogComponent, NewEventPickerComponent, newEventOptions, canCreate, Attribut-Defaults, attribute defaults, type chip, Typ-Chips, preselect, Ressourcenvorlagen, PRD 063, PRD 096, PRD 104, PRD 107, PRD 119, PRD 122
+
+### 123-spa-unified-resource-picker.md
+
+Implemented 2026-09-30/10-01: the rail's list, chips, group tree and "Weitere…" live in `ResourcePickerComponent`; the event sheet reuses it in assign mode (click assigns and collapses, ctrl-click keeps it open); Omnibox Enter asks the rail to step the first shown row (one row semantic); search term survives a reload; arrow keys skip group rows; availability requests are chunked to the server cap of 200 ids. Open: tier-7 e2e; an explicit "alle wählen" for the current list (Swing root-node parity) under discussion.
+
+*Keywords:* Ressourcenauswahl, resource picker, ResourcePickerComponent, Omnibox, resource-selection, assign mode, Zuordnen, alle wählen, select all, chips, Weitere, MAX_CANDIDATE_IDS, availability chunks
 
 ### 124-spa-i18n.md
 

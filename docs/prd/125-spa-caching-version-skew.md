@@ -1,6 +1,6 @@
 # PRD 125 — SPA caching + client/server version skew
 
-**Status:** in-progress — 2026-10-01 (Phase 1 reviewed, Phase 2 implemented except the `beforeunload` guard, in review; OQ3/OQ4 open)
+**Status:** implemented — 2026-10-01 (Phase 1 + 2 incl. the `beforeunload` guard reviewed and fixed, committed 3dead9ffc + 746eb3a06; live on demo.rapla.org; OQ3/OQ4 open)
 **Related:** [PRD 124](124-spa-i18n.md) (SPA i18n — caching of `/api/locale` moved here), [PRD 026](026-angular-frontend.md) (SPA hosting, `SpaResourceConfig`), [PRD 118](118-rapla3-demo-usecases.md) (demo.rapla.org serves the fat JAR)
 
 ## Abstract

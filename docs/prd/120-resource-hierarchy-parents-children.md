@@ -1,6 +1,6 @@
 # PRD 120 — Resource hierarchy for UIs: `Resource.parents` / `children` and a store-time cycle check over both kinds
 
-**Status:** draft — 2026-09-16. Direction decided by the user in the same session (rulings D1–D6). Nothing implemented
+**Status:** draft — 2026-09-16; interim spike landed 2026-10-01 (`Resource.belongsTo` / `packageIds` with read-scoped ids, `ResourceTreeRules`, commit 12fb1bfb4). Direction decided by the user in the same session (rulings D1–D6). The full plan (parents/children, cycle guard) is not implemented
 yet; an interim spike (`Resource.belongsTo: ID`, `Resource.packageIds: [ID!]!`, uncommitted) is replaced by this PRD
 (§ Implementation).
 **Related:** [PRD 119](119-spa-one-search-resource-picker.md) (picker tree; this PRD delivers its deferred S2

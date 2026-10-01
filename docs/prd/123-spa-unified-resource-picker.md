@@ -1,6 +1,6 @@
 # PRD 123 — SPA: one resource picker for the left rail and the event sheet
 
-**Status:** implemented — 2026-09-30, uncommitted. Option "B mit A" chosen by the user on 2026-09-30 after a click-through analysis; Phases A and B built the same day (rapla-impl2), live-checked against the dev server; tier-7 e2e still open.
+**Status:** implemented — 2026-09-30, committed 2026-10-01 (8a72d81cd + review residue b6b7ccc12); an explicit "alle wählen" for the current list (Swing root-node parity, customer request) is under discussion with the user (2026-10-01, six design points, not started). Option "B mit A" chosen by the user on 2026-09-30 after a click-through analysis; Phases A and B built the same day (rapla-impl2), live-checked against the dev server; tier-7 e2e still open.
 **Related:** [PRD 119](119-spa-one-search-resource-picker.md) (picker with chips, tree, lean list — D7 is overturned here), [PRD 091](091-spa-reservation-edit-and-availability.md) (event sheet add mode, `resourceAvailability`), [PRD 099](done/099-spa-table-selection.md) (selection gestures), [PRD 089](089-server-side-recents-favorites.md) (recents/favorites), [PRD 106](106-query-request-lifecycle.md) (query throttle), [PRD 122](122-spa-new-resource.md) (+ Neu in the picker — same files, lands first)
 
 ## Abstract

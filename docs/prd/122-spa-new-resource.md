@@ -1,6 +1,6 @@
 # PRD 122 — SPA: create new resources from the resource picker
 
-**Status:** in-progress — 2026-09-30. All decisions made by the user in the same session (D1–D9). Phases 1 and 2 implemented as a quick win (rapla-impl, uncommitted); the type picker was dropped (ruling B1, D2/D3 revised). Since PRD 123 the rail's list lives in `ResourcePickerComponent`; the "+ Neu" button stays in the rail header.
+**Status:** implemented — 2026-10-01 (commits 12fb1bfb4 server, 8a72d81cd SPA; reviewed, all findings fixed). All decisions made by the user (D1–D9); the type picker was dropped (ruling B1, D2/D3 revised). Since PRD 123 the rail's list lives in `ResourcePickerComponent`; the "+ Neu" button stays in the rail header.
 **Related:** [PRD 063](063-graphql-allocatables-write-api.md) (`createResource`, server side done), [PRD 096](096-spa-classification-editor.md) (resource edit dialog, Phase 4), [PRD 104](104-spa-template-picker.md) (event "Neu" picker, `newEventOptions`), [PRD 107](107-reservation-prototype-prefill.md) (`reservationPrototype`), [PRD 119](119-spa-one-search-resource-picker.md) (picker with type chips), [PRD 120](120-resource-hierarchy-parents-children.md) (parents/children)
 
 ## Abstract
