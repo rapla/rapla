@@ -628,6 +628,19 @@ Input null-semantics on the write side (same PRD): in a classification
 value; an OMITTED key falls back to the type default (create and update
 rebuild from `newClassification()` — replace semantics, not merge).
 
+### 10b. newResourceOptions + resourcePrototype — new resources (PRD 122)
+
+`newResourceOptions { resourceTypes }` lists the RESOURCE and PERSON types the
+caller may CREATE (internal `rapla:` types never). `resourcePrototype(typeKey:)`
+is the resource sibling of `reservationPrototype`: attribute defaults via
+`newClassification()`, nothing persisted; unknown, internal, wrong-kind and
+non-creatable typeKeys answer with the identical `REFERENCE_NOT_FOUND`, which never
+echoes the key (§12). `createResource` and an `updateResource` type change use the
+same kind gate (`ClassificationSdlGenerator.isResourceOrPersonType`; a type change
+also keeps the kind — resource stays resource, person stays person, like Swing):
+unknown, internal and wrong-kind types answer like the prototype, while a valid type
+without CREATE permission answers `PERMISSION_DENIED`.
+
 ### 11. reservations + the calendar query ([PRD 055](prd/055-graphql-events-read-api.md) + [PRD 066](prd/066-graphql-reservation-allocatable-matching.md))
 
 `reservations(filter:)` requires a mandatory time window and supports
