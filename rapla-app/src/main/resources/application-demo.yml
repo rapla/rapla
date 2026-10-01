@@ -33,6 +33,7 @@ rapla:
       - /api/storage/profile/capabilities
     open-prefixes:
       - /api/auth/session
+      - /api/locale          # PRD 124 — SPA text catalogue (/api/locale/spa), else the UI shows keys
       - /api/auth/api-keys
       - /api/auth/impersonate
       - /api/documents
