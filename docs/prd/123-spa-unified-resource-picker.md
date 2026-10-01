@@ -1,6 +1,6 @@
 # PRD 123 — SPA: one resource picker for the left rail and the event sheet
 
-**Status:** implemented — 2026-09-30, committed 2026-10-01 (8a72d81cd + review residue b6b7ccc12); Phase C ("alle wählen" + Benutzer chip + owner OR, D8–D10) built 2026-10-01 (rapla-impl, uncommitted; live `ownerIn` probe + tier 7 open). Option "B mit A" chosen by the user on 2026-09-30 after a click-through analysis; Phases A and B built the same day (rapla-impl2), live-checked against the dev server; tier-7 e2e still open.
+**Status:** implemented — 2026-09-30, committed 2026-10-01 (8a72d81cd + review residue b6b7ccc12); Phase C ("alle wählen" + Benutzer chip + owner OR, D8–D10) built 2026-10-01 by rapla-impl and committed in f6d01be31 (unpushed at wrap-up 2026-10-01; live `ownerIn` probe green, no tier 7 by user ruling). Option "B mit A" chosen by the user on 2026-09-30 after a click-through analysis; Phases A and B built the same day (rapla-impl2), live-checked against the dev server; no tier-7 e2e (user, 2026-10-01).
 **Related:** [PRD 119](119-spa-one-search-resource-picker.md) (picker with chips, tree, lean list — D7 is overturned here), [PRD 091](091-spa-reservation-edit-and-availability.md) (event sheet add mode, `resourceAvailability`), [PRD 099](done/099-spa-table-selection.md) (selection gestures), [PRD 089](089-server-side-recents-favorites.md) (recents/favorites), [PRD 106](106-query-request-lifecycle.md) (query throttle), [PRD 122](122-spa-new-resource.md) (+ Neu in the picker — same files, lands first)
 
 ## Abstract
@@ -92,15 +92,15 @@ D1–D7, the behaviour inventory, tests below.
 - [x] `resource/resource-picker.component.ts` (+spec); the rail delegates, all 41 rail specs green; `store.listFor(chip)` serves a second host.
 - [x] Sheet add mode renders the picker in assign mode; `AvailabilitySearchService.statuses(appointments, ids, ignore)` for assigned + rendered rows; pins/search hits/Fertig removed per inventory.
 - [x] Tier-6 `event-sheet-assign.spec.ts`: click assigns + collapses, Ctrl-click assigns + stays, click on an assigned row unassigns, the toggle button; availability by ids with pills.
-- [ ] Tier-7: pick a room via chip + Enter → week shows its events; assign from the sheet → saved reservation has the allocation.
+- ~~Tier-7~~ — dropped (user, 2026-10-01): no browser e2e for this PRD; tiers 3/5/6 carry it.
 
-### Phase C — "alle wählen", Benutzer chip, owner OR (D8–D10; built 2026-10-01, uncommitted)
+### Phase C — "alle wählen", Benutzer chip, owner OR (D8–D10; built 2026-10-01, committed f6d01be31)
 Order: server first (schema change), then SPA.
 - [x] Server: `ownerEq` → `ownerIn` on `ReservationFilter` and `ResourceFilter` (`schema.graphqls`, both controllers' records + parsers, `docs/graphql.md`); reservations: resolve readable users → `owners` of `queryAppointmentsSync`, drop the `matches()` owner clause. Tier 3: a monty reservation in the fixture; cases resource only / owner only / both = union / hidden owner ignored / two owners.
 - [x] SPA binding: all `user` chips → `ownerIn` (`variable-binder.ts`), remove the first-chip workaround (`view-host.component.ts`), specs.
 - [x] *Benutzer* chip + *meine* degradation, own account first, "meine" card removed (D9); PRD 119 D10 marked overruled; tier 5/6 specs.
 - [x] "alle wählen" header button + `selectGroup { items, ctrl }` + toggle + no auto-expand (D8); chip-rail fold ≥ 10; texts en + de; tier 6 specs.
-- [ ] Tier 7: Benutzer chip → own events in the week; room + user → union.
+- ~~Tier 7~~ — dropped (user, 2026-10-01), see Phase B.
 - Live probe 2026-10-01 (8051, Siegen data, admin): resource only 1, owner only 10, resource + owner = union 10 (AND would be 1), hidden/unknown owner → `[]` without error, `ownerIn: []` = no filter, `ownerEq` rejected by validation. Pre-existing, decided 2026-10-01 (user, review S6): an unscoped `reservations` query (wire only — the SPA fires no query without chips, `view-host.component.ts`) resolves to "all readable resources" and therefore never returns reservations WITHOUT any resource; they are reachable through `ownerIn` only, as in Swing's user branch. Left as is; documented in `docs/graphql.md`.
 - Review 2026-10-01 (rapla-review): PASS, 0 MUST, 6 SHOULD — S1 (direct `pick.emit` in `activateMine`), S2 (`usersChip` null until the list is loaded), S4 (`@Tag("e2e")` + javadoc on the three `@SpringBootTest` GraphQL input tests), S5 (`ResourceFilter.ownerIn` applies the same visibility rule as `ownerIn` on reservations, `readableUser`) folded in; S3 (reset the no-auto-expand flag on chip change) rejected by design — returning to the type chip would reopen the hundreds of rows D8 avoids, a single pick already resets it; S6 see above.
 - Identity switch (user, 2026-10-01): impersonation switch/end now reloads the page (`auth.service.ts`), guarded by the unsaved-changes check — closes PRD 119 residue R-22 (stale lean list) and the sibling per-session caches (new-event options, import worklist, classification SDL) at once; the store additionally drops its lean list on an identity change.
@@ -108,7 +108,7 @@ Order: server first (schema change), then SPA.
 
 ## Tests
 
-Tier 3 `ClassificationGraphQLControllerTest#searchTextEqualRankHitsSortByName` (D7); tier 5 `resource-selection-store.spec.ts` (D5), `import-worklist.service.spec.ts` (D6), `availability-search.service.spec.ts`; tier 6 `resource-picker.component.spec.ts`, `resource-selection.component.spec.ts` (D3, M2), `omnibox.component.spec.ts` (D4, M1), `event-sheet-assign.spec.ts` (D2); tier 7 in `rapla-angular/tests/` (open).
+Tier 3 `ClassificationGraphQLControllerTest#searchTextEqualRankHitsSortByName` (D7); tier 5 `resource-selection-store.spec.ts` (D5), `import-worklist.service.spec.ts` (D6), `availability-search.service.spec.ts`; tier 6 `resource-picker.component.spec.ts`, `resource-selection.component.spec.ts` (D3, M2), `omnibox.component.spec.ts` (D4, M1), `event-sheet-assign.spec.ts` (D2); no tier 7 (user ruling 2026-10-01).
 
 ### Review residue (rapla-review pass 2, noted only)
 - L3: the picker state (D5) writes localStorage on every keystroke of the query. **Won't fix (2026-10-01):** a debounce races the per-user rehydrate (`bindPerUser` re-reads `saved()` on identity change) — a user switch inside the debounce window would store the old user's query under the new user's key; ~60 bytes per keystroke is not worth that logic.

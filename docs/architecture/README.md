@@ -169,7 +169,7 @@ The top-level architecture map for Rapla, a resource-scheduling and event-planni
 
 Canonical reference for Rapla's grant-only, additive, role-based, hierarchical, time-aware permission model (ADR 0003 revised, PRD 090). Explains the nine-level AccessLevel enum (DENIED..ADMIN) and its bands (read/allocate/edit), the PermissionImpl row shape (user/group, accessLevel, absolute pStart/pEnd and relative minAdvance/maxAdvance windows), the max-wins additive resolution algorithm (no precedence between USER/GROUP/WORLD, DENIED is inert and deprecated in the UI), the target-entity access-level matrix (DynamicType/Allocatable/Reservation/Category), and server enforcement points in SecurityManager and PermissionController (read filter getVisibleEntities, allocate gate hasPermissionToAllocate, canRead on Reservation, checkModifyPermissions). Distinguishes canReadInformation (READ_NO_ALLOCATION, resource visibility) from canRead (READ, booking visibility), notes the PermissionIndex caveat from PRD 082/083, covers JWT-to-User resolution, RequestStatus workflow, and gives a worked Alice/Room-A101 example.
 
-*Keywords:* Permissions, Berechtigung, AccessLevel, PermissionController, PermissionImpl, grant-only, additive, ADR 0003, PRD 090, DENIED, READ_NO_ALLOCATION, ALLOCATE, canReadInformation, canRead, SecurityManager, RequestStatus, JWT, Sichtbarkeit, Gruppe, PermissionIndex, PRD 083
+*Keywords:* Permissions, Berechtigung, AccessLevel, PermissionController, PermissionImpl, grant-only, additive, ADR 0003, PRD 090, DENIED, READ_NO_ALLOCATION, ALLOCATE, canReadInformation, canRead, canReadAllocatableInformation, informationOnlyAllocatables, applyAllocations, SecurityManager, RequestStatus, JWT, Sichtbarkeit, Gruppe, PermissionIndex, PRD 083
 
 ### reservation-edit-ui-inventory.md
 
@@ -193,7 +193,7 @@ A catalog of every HTTP REST endpoint the Rapla Spring Boot server exposes to br
 
 Reference doc for row/item selection and multi-select bulk actions in the Angular SPA, covering the generic table view (ViewHostComponent) and the resource rail (ResourceSelectionComponent), both driven by the shared headless TableSelection<K> engine (views/table-selection.ts). Documents Swing/Excel-parity pointer semantics (click/Strg-click/Shift-click/right-click), keyboard map, accessibility (active-descendant pattern), the planned touch/mobile selection mode, how selection feeds RowContext for menu providers (single-row 'primary' rule, bulk-delete subset-wins with best-effort composite-undo), and the resource rail's chip-as-filter model where FilterStore stays the source of truth. Derives from PRD 099 (selection + bulk actions) and PRD 094 (row menu/command/undo infra); Swing analogs are SwingTableView and RaplaTree/MenuFactoryImpl.
 
-*Keywords:* Selection, TableSelection, ViewHostComponent, ResourceSelectionComponent, PRD 099, PRD 094, RowContext, bulk delete, Mehrfachauswahl, FilterStore, UndoToastService, Angular SPA, Auswahl, keyboard navigation, row menu, SpaCommand, PRD 077, PRD 095
+*Keywords:* Selection, TableSelection, ViewHostComponent, ResourceSelectionComponent, ResourcePickerComponent, assign mode, PRD 099, PRD 094, PRD 123, RowContext, bulk delete, Mehrfachauswahl, FilterStore, UndoToastService, Angular SPA, Auswahl, keyboard navigation, row menu, SpaCommand, PRD 077, PRD 095
 
 ### swing-platform-quirks.md
 

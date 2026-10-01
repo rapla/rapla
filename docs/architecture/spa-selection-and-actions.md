@@ -95,6 +95,15 @@ an arbitrary row).
 
 ## Surface 2 — the resource rail (`ResourceSelectionComponent`)
 
+Since [PRD 123](../prd/123-spa-unified-resource-picker.md) the list itself (chips, type select, group tree, "Weitere…" caps, ★) lives in
+`ResourcePickerComponent` (`resource/resource-picker.component.ts`). The picker never decides
+what a click means: it emits `pick { item, ctrl, shift }`, and each host applies its own
+semantics. The rail (`mode="rail"`) owns the selection engine described here; the event
+sheet (`mode="assign"`) toggles allocations instead (click assigns and collapses the list,
+Strg-click assigns and keeps it open, a click on an assigned row unassigns). Enter in the
+shell's search field is a store request (`requestActivateFirst(ctrl)`) that the rail serves
+with the same step on the picker's first shown row, so there is one row semantic.
+
 The rail's "selection" **is the filter**: the `FilterStore` chips stay the
 single source of truth. The `TableSelection` engine only computes each
 interaction — it re-syncs from the chips **before** every pointer/key event
@@ -110,10 +119,10 @@ stale anchor.
   foreign chips (search-added event chips, other tabs).
 - Items whose chip is active are highlighted `.selected`; the „▶ gezeigt"
   `.active` marker (last-stepped item) is unchanged and independent.
-- Keys typed into the list-filter input or on the tab/★/⋮ buttons are never
-  interpreted as list interaction — ALL keys, including Escape: an Escape
-  pressed inside the search box does NOT clear the selection (the handler
-  returns before the selection model sees the event).
+- Keys on the chip buttons, the type select and the ★/⋮ buttons are never
+  interpreted as list interaction — ALL keys, including Escape (the handler
+  returns before the selection model sees the event). The rail has no own
+  filter input since [PRD 119](../prd/119-spa-one-search-resource-picker.md) D3; the shell's search field narrows the picker.
 
 ## Where to extend
 
