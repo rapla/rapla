@@ -28,6 +28,7 @@ import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.framework.TypedComponentRole;
+import org.rapla.storage.UpdateEvent;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Period;
@@ -1073,5 +1074,81 @@ public class SQLOperatorTest extends AbstractOperatorTest
             Assert.assertNull(rset.getString(1));
             Assert.assertNull(rset.getString(2));
         }
+    }
+
+    /** WP17: the patch delete compared USER_ID = NULL (never true), so every save of a system
+     *  preference appended a row instead of replacing it. */
+    @Test
+    public void savingASystemPreferenceTwiceKeepsOneRow() throws Exception
+    {
+        final DBOperator operator = (DBOperator) facade.getOperator();
+        final TypedComponentRole<String> role = new TypedComponentRole<String>("org.rapla.test.systemrole");
+        for (String value : new String[] { "first", "second" })
+        {
+            Preferences edit = facade.edit(facade.getSystemPreferences());
+            edit.putEntry(role, value);
+            facade.store(edit);
+        }
+        try (final Connection c = operator.createConnection();
+             final PreparedStatement stmt = c.prepareStatement("SELECT COUNT(*) FROM PREFERENCE WHERE USER_ID IS NULL AND ROLE = ?"))
+        {
+            stmt.setString(1, role.getId());
+            final ResultSet rset = stmt.executeQuery();
+            rset.next();
+            Assert.assertEquals(1, rset.getInt(1));
+        }
+    }
+
+    /** WP17: the entity delete compared the VARCHAR column with the number 0; MariaDB casts every
+     *  non-numeric user id to 0 and deletes all user preferences, HSQLDB refuses the cast. */
+    @Test
+    public void storingSystemPreferencesAsEntityKeepsUserPreferences() throws Exception
+    {
+        final DBOperator operator = (DBOperator) facade.getOperator();
+        final User user = facade.getUser("homer");
+        final TypedComponentRole<String> role = new TypedComponentRole<String>("org.rapla.test.userrole");
+        Preferences edit = facade.edit(facade.getPreferences(user));
+        edit.putEntry(role, "userValue");
+        facade.store(edit);
+
+        final UpdateEvent evt = new UpdateEvent();
+        evt.addStore(operator.editObject(facade.getSystemPreferences(), null));
+        operator.dispatch(evt);
+
+        try (final Connection c = operator.createConnection();
+             final PreparedStatement stmt = c.prepareStatement("SELECT COUNT(*) FROM PREFERENCE WHERE USER_ID = ? AND ROLE = ?"))
+        {
+            stmt.setString(1, user.getId());
+            stmt.setString(2, role.getId());
+            final ResultSet rset = stmt.executeQuery();
+            rset.next();
+            Assert.assertEquals(1, rset.getInt(1));
+        }
+    }
+
+    /** WP17/F3: the last row read wins, so the load must order by LAST_CHANGED; otherwise an older
+     *  duplicate row of a system preference can win (e.g. after a dump/restore). */
+    @Test
+    public void theNewestRowOfAPreferenceWinsOnLoad() throws Exception
+    {
+        final DBOperator operator = (DBOperator) facade.getOperator();
+        final TypedComponentRole<String> role = new TypedComponentRole<String>("org.rapla.test.order");
+        final long now = operator.getCurrentTimestamp().getTime() / 1000 * 1000;
+        final String insert = "INSERT INTO PREFERENCE (USER_ID, ROLE, STRING_VALUE, XML_VALUE, LAST_CHANGED) VALUES (NULL, ?, ?, NULL, ?)";
+        try (final Connection c = operator.createConnection(); final PreparedStatement stmt = c.prepareStatement(insert))
+        {
+            stmt.setString(1, role.getId());
+            stmt.setString(2, "newer");
+            stmt.setTimestamp(3, new Timestamp(now - DateTools.MILLISECONDS_PER_HOUR));
+            stmt.executeUpdate();
+            stmt.setString(1, role.getId());
+            stmt.setString(2, "older");
+            stmt.setTimestamp(3, new Timestamp(now - DateTools.MILLISECONDS_PER_DAY));
+            stmt.executeUpdate();
+            c.commit();
+        }
+        operator.disconnect();
+        operator.connect();
+        Assert.assertEquals("newer", facade.getSystemPreferences().getEntryAsString(role, null));
     }
 }

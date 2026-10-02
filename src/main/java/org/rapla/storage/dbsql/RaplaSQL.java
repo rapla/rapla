@@ -2086,7 +2086,9 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
                         "LAST_CHANGED TIMESTAMP KEY" }, false);
         // ">=" like the CHANGES history query: lastRefreshed advances to exactly the DB time a writer may
         // also have stamped, so a strict ">" loses that row for good (MariaDB TIMESTAMP keeps whole seconds).
-        this.updateSql = "SELECT USER_ID, ROLE, STRING_VALUE, XML_VALUE, LAST_CHANGED FROM PREFERENCE WHERE LAST_CHANGED >= ?";
+        this.updateSql = "SELECT USER_ID, ROLE, STRING_VALUE, XML_VALUE, LAST_CHANGED FROM PREFERENCE WHERE LAST_CHANGED >= ? ORDER BY LAST_CHANGED";
+        // the last row read wins: without an order an older duplicate row could win after a restore (WP16)
+        selectSql += " ORDER BY LAST_CHANGED";
     }
 
     public List<PreferencePatch> getPatches(Date lastUpdated) throws SQLException, RaplaException
@@ -2156,7 +2158,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
 
                 final String deleteSqlWithRole;
                 int count = 0;
-                if (userId != null)
+                if (patch.getUserId() != null)
                 {
                     deleteSqlWithRole = deleteSql + " and role=?";
                     stmt = con.prepareStatement(deleteSqlWithRole);
@@ -2438,7 +2440,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
         }
         if (deleteNullUserPreference)
         {
-            PreparedStatement deleteNullStmt = con.prepareStatement("DELETE FROM " + getTableName() + " WHERE USER_ID IS NULL OR USER_ID=0");
+            PreparedStatement deleteNullStmt = con.prepareStatement("DELETE FROM " + getTableName() + " WHERE USER_ID IS NULL OR USER_ID = '0'");
             deleteNullStmt.execute();
         }
     }
