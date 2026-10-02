@@ -55,6 +55,12 @@ class ConflictCleanupAuditTest extends FacadeTestSupport
         sharedRoom = all[0];
     }
 
+    /** conflicts are only computed for the future, so test dates follow today (a fixed date broke on 2026-10-02) */
+    private LocalDateTime inDays(int days, int hour)
+    {
+        return facade.today().plusDays(days).atTime(hour, 0);
+    }
+
     private Reservation makeAndStore(String name, LocalDateTime start, LocalDateTime end,
                                      Allocatable allocatable) throws Exception
     {
@@ -80,8 +86,8 @@ class ConflictCleanupAuditTest extends FacadeTestSupport
     @DisplayName("conflict disappears from getConflicts() when one of its reservations is removed")
     void conflictRemovedWhenReservationRemoved() throws Exception
     {
-        LocalDateTime start = LocalDateTime.of(2026, 10, 1, 10, 0);
-        LocalDateTime end   = LocalDateTime.of(2026, 10, 1, 11, 0);
+        LocalDateTime start = inDays(1, 10);
+        LocalDateTime end   = inDays(1, 11);
 
         Reservation r1 = makeAndStore("conflictA", start, end, sharedRoom);
         Reservation r2 = makeAndStore("conflictB", start, end, sharedRoom);
@@ -121,8 +127,8 @@ class ConflictCleanupAuditTest extends FacadeTestSupport
         if (all.length < 2) return; // guard small fixture
         Allocatable other = all[1];
 
-        LocalDateTime start = LocalDateTime.of(2026, 10, 5, 10, 0);
-        LocalDateTime end   = LocalDateTime.of(2026, 10, 5, 11, 0);
+        LocalDateTime start = inDays(5, 10);
+        LocalDateTime end   = inDays(5, 11);
 
         Reservation r1 = makeAndStore("moveA", start, end, sharedRoom);
         Reservation r2 = makeAndStore("moveB", start, end, sharedRoom);
@@ -158,16 +164,16 @@ class ConflictCleanupAuditTest extends FacadeTestSupport
     @DisplayName("conflict disappears when its appointment is removed from the parent reservation")
     void conflictRemovedWhenAppointmentRemoved() throws Exception
     {
-        LocalDateTime start = LocalDateTime.of(2026, 10, 8, 10, 0);
-        LocalDateTime end   = LocalDateTime.of(2026, 10, 8, 11, 0);
+        LocalDateTime start = inDays(8, 10);
+        LocalDateTime end   = inDays(8, 11);
 
         // r1 has TWO appointments — the second overlaps with r2.
         Classification c1 = eventType.newClassification();
         if (c1.getType().getAttribute("name") != null) c1.setValue("name", "twoAppts");
         Reservation r1 = facade.newReservation(c1, admin);
         Appointment r1NonOverlapping = facade.newAppointmentWithUser(
-                LocalDateTime.of(2026, 10, 7, 10, 0),
-                LocalDateTime.of(2026, 10, 7, 11, 0), admin);
+                inDays(7, 10),
+                inDays(7, 11), admin);
         Appointment r1Overlapping = facade.newAppointmentWithUser(start, end, admin);
         r1.addAppointment(r1NonOverlapping);
         r1.addAppointment(r1Overlapping);
