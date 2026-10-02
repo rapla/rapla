@@ -22,20 +22,12 @@ server:
   # load-bearing legacy URLs (/rapla/calendar, /rapla/ical, etc.) explicitly via
   # class-level @RequestMapping in CalendarPageController + Export2iCalController.
   tomcat:
-    # Tomcat resolves the access-log `directory` relative to basedir; without
-    # this, basedir defaults to /tmp/tomcat.<port>.<random>/ and access logs
-    # land in a hard-to-find temp dir. Pinning basedir to ${user.dir} (the
-    # JVM's CWD) puts the access log alongside the application log in
-    # ${user.dir}/logs/.
-    #
-    # ${user.dir} resolves to:
-    #   - The install dir for `java -jar rapla.jar`           → e.g. /opt/rapla/logs/
-    #   - The module dir for `mvn -pl rapla-app spring-boot:run` → rapla-app/logs/
-    # In dev the file `logs/rapla.log` at the REPO ROOT is unrelated to
-    # the application log — it's whatever your shell redirected mvn's stdout
-    # to (the team convention is to redirect mvn to logs/build.log so the
-    # two stay separate; see docs/logging.md when it lands).
-    basedir: ${user.dir}
+    # No basedir pin: Tomcat's work/ stays in its temp dir, so the install
+    # directory need not be writable (DHBW app1: /opt/rapla belongs to root →
+    # WARN "Failed to create work directory"). The access log is pinned with an
+    # absolute directory instead and lands next to the application log in
+    # ${user.dir}/logs/ (install dir for `java -jar rapla.jar`, rapla-app/ for
+    # `mvn -pl rapla-app spring-boot:run`).
     # HTTP access log via Tomcat's built-in AccessLogValve. Lands at
     # ${user.dir}/logs/rapla_access.YYYY-MM-DD.log, rotated daily, Apache
     # Combined Log Format. Operators tune via env vars without editing this
@@ -48,7 +40,7 @@ server:
     #   SERVER_TOMCAT_ACCESSLOG_MAX_DAYS=14
     accesslog:
       enabled: true
-      directory: logs
+      directory: ${user.dir}/logs
       prefix: rapla_access
       suffix: .log
       file-date-format: .yyyy-MM-dd

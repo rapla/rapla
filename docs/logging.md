@@ -196,9 +196,12 @@ dependency, an extra XML file, and the same operational outcome.
 
 ### `server.tomcat.basedir`
 
-Pinned to `${user.dir}` so the access log lands in `${user.dir}/logs/` next
-to the application log. Without this, Tomcat defaults `basedir` to a
-`/tmp/tomcat.<port>.<random>/` directory and the access log gets lost.
+Not pinned. Tomcat keeps its `basedir` (and `work/`) in a
+`/tmp/tomcat.<port>.<random>/` directory, so the install directory does not
+have to be writable. An earlier `${user.dir}` pin made Tomcat create `work/` in
+a root-owned `/opt/rapla` and log `Failed to create work directory`. The access
+log does not depend on `basedir`: `server.tomcat.accesslog.directory` is the
+absolute `${user.dir}/logs`, so it still lands next to the application log.
 
 ### Profiles
 
