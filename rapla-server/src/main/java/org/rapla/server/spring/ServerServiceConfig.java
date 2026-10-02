@@ -56,6 +56,8 @@ public class ServerServiceConfig
         operator.migrateAdditivePermissionsIfNeeded();
         // PRD 090 Phase 6 — persist the load-time removal of non-load-bearing DENIED rows (one-shot).
         operator.removeRedundantDeniesIfNeeded();
+        // WP17/F4 — one row per system preference role again (the patch delete missed USER_ID NULL before F1).
+        operator.removeDuplicateSystemPreferencesIfNeeded();
         return operator;
     }
 

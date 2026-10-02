@@ -199,4 +199,18 @@ class SecurityManagerPermissionChangeTest extends FacadeTestSupport
         assertDoesNotThrow(() -> security.checkWritePermissions(monty, edit),
                 "the owner must still be able to change their reservation's permission list");
     }
+
+    // WP17: PreferencePatch.getUserRef() is never null, so the system-preferences check must use getUserId()
+    @Test
+    void onlyAdminsWriteSystemPreferencePatches() throws Exception
+    {
+        org.rapla.storage.PreferencePatch system = new org.rapla.storage.PreferencePatch();
+        org.rapla.storage.PreferencePatch own = new org.rapla.storage.PreferencePatch();
+        own.setUserId(monty.getId());
+        User admin = java.util.Arrays.stream(facade.getUsers()).filter(User::isAdmin).findFirst().orElseThrow();
+
+        assertThrows(RaplaSecurityException.class, () -> security.checkWritePermissions(monty, system));
+        assertDoesNotThrow(() -> security.checkWritePermissions(monty, own));
+        assertDoesNotThrow(() -> security.checkWritePermissions(admin, system));
+    }
 }

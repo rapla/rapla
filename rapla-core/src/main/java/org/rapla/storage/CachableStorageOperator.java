@@ -60,6 +60,10 @@ public interface CachableStorageOperator extends StorageOperator {
      *  normalizer dropped (ADR 0003) by storing the affected entities. Marker-guarded. */
     void removeRedundantDeniesIfNeeded() throws RaplaException;
 
+    /** WP17/F4: once, rewrite every system preference role stored in more than one row (the patch delete
+     *  missed USER_ID NULL until F1), keeping the newest value. Marker-guarded; no-op for file storage. */
+    default void removeDuplicateSystemPreferencesIfNeeded() throws RaplaException {}
+
     /** PRD 048: logical restart — reloads all data from the store, clears and
      *  rebuilds the caches and re-arms the operator's scheduled tasks, without
      *  a JVM/Spring restart. Reloads only the serving pod; other pods re-sync

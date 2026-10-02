@@ -617,10 +617,10 @@ import java.time.LocalDateTime;
 
     public void checkWritePermissions(User user, PreferencePatch patch) throws RaplaSecurityException
     {
-        ReferenceInfo<User> ownerRef = patch.getUserRef();
-        if (user != null && !user.isAdmin() && (ownerRef == null || !user.getReference().equals(ownerRef)))
+        String ownerId = patch.getUserId();
+        if (user != null && !user.isAdmin() && (ownerId == null || !user.getId().equals(ownerId)))
         {
-            throw new RaplaSecurityException("User " + user + " can't modify preferences " + ownerRef);
+            throw new RaplaSecurityException("User " + user + " can't modify preferences " + ownerId);
         }
 
     }

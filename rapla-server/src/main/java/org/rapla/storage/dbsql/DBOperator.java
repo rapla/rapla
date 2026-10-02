@@ -1190,6 +1190,43 @@ import java.time.LocalDateTime;
         LOGGER.info("Import complete for {}", connectionName);
     }
 
+    /** WP17/F4 — see {@link DuplicateSystemPreferenceCleanup}; same marker + lock + re-check protocol as the other startup migrations. */
+    @Override
+    public void removeDuplicateSystemPreferencesIfNeeded() throws RaplaException
+    {
+        if (DuplicateSystemPreferenceCleanup.markerSet(this))
+        {
+            return;
+        }
+        RaplaLock.WriteLock writeLock = writeLockIfLoaded("duplicate system preference cleanup");
+        try
+        {
+            if (DuplicateSystemPreferenceCleanup.markerSet(this))
+            {
+                return;
+            }
+            Map<String, Integer> duplicates;
+            Connection connection = createConnection();
+            try
+            {
+                duplicates = DuplicateSystemPreferenceCleanup.findDuplicates(connection);
+            }
+            catch (SQLException e)
+            {
+                throw new RaplaException("Could not read duplicate system preferences", e);
+            }
+            finally
+            {
+                close(connection);
+            }
+            DuplicateSystemPreferenceCleanup.runUnderLock(this, duplicates);
+        }
+        finally
+        {
+            lockManager.unlock(writeLock);
+        }
+    }
+
     private void close(Connection connection)
     {
 
