@@ -765,6 +765,37 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
     }
 
+    /**
+     * PRD 090 Phase 6 — stores the entities the load-time normalizer changed, so their non-load-bearing
+     * DENIED rows leave the store too. Stored through the operator on purpose (user decision 2026-10-02):
+     * the entity really changes, and lastChanged is the contract every observer relies on (Rapla 2 refresh
+     * via CHANGES, Exchange stamp, client caches, other pods); a DELETE beneath the stamp would be the bug.
+     * Same marker + lock + re-check protocol as {@link #migrateAdditivePermissionsIfNeeded()}.
+     */
+    @Override
+    public void removeRedundantDeniesIfNeeded() throws RaplaException
+    {
+        if (RedundantDenyCleanup.markerSet(this))
+        {
+            LOGGER.debug("PRD 090 Phase 6 — redundant deny cleanup marker present; skipping");
+            return;
+        }
+        RaplaLock.WriteLock writeLock = writeLockIfLoaded("redundant deny cleanup");
+        try
+        {
+            if (RedundantDenyCleanup.markerSet(this))
+            {
+                LOGGER.debug("PRD 090 Phase 6 — marker appeared while waiting on lock; skipping");
+                return;
+            }
+            RedundantDenyCleanup.runUnderLock(this, redundantDenyEntities, redundantDenyRows);
+        }
+        finally
+        {
+            lockManager.unlock(writeLock);
+        }
+    }
+
     protected abstract Collection<ExternalSyncEntity> getAllExternalSyncEntities() throws RaplaException;
 
     /**
@@ -1176,18 +1207,24 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         processUserPersonLink(entities);
     }
 
+    /** entities the last load normalized; persisted once by {@link #removeRedundantDeniesIfNeeded()} */
+    private final Set<ReferenceInfo<Entity>> redundantDenyEntities = ConcurrentHashMap.newKeySet();
+    private int redundantDenyRows;
+
     protected void normalizeRedundantDeniesOnLoad(Collection<Entity> list)
     {
         long start = System.nanoTime();
         int removed = 0, affected = 0;
+        redundantDenyEntities.clear();
         for (Entity entity : list)
         {
             if (entity instanceof Allocatable || entity instanceof Reservation)
             {
                 int n = org.rapla.entities.domain.PermissionContainer.Util.normalizeRedundantDenies((org.rapla.entities.domain.PermissionContainer) entity);
-                if (n > 0) { removed += n; affected++; }
+                if (n > 0) { removed += n; affected++; redundantDenyEntities.add(entity.getReference()); }
             }
         }
+        redundantDenyRows = removed;
         long tookMs = (System.nanoTime() - start) / 1_000_000;
         LOGGER.info("Load-time permission normalization (ADR 0003): dropped {} redundant DENIED permission(s) from {} entit(ies) in {} ms (scanned {} entities)", removed, affected, tookMs, list.size());
     }

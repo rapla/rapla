@@ -56,6 +56,10 @@ public interface CachableStorageOperator extends StorageOperator {
      *  subsequent boots skip-fast. */
     void migrateAdditivePermissionsIfNeeded() throws RaplaException;
 
+    /** PRD 090 Phase 6: once, persist the removal of the DENIED rows the load-time
+     *  normalizer dropped (ADR 0003) by storing the affected entities. Marker-guarded. */
+    void removeRedundantDeniesIfNeeded() throws RaplaException;
+
     /** PRD 048: logical restart — reloads all data from the store, clears and
      *  rebuilds the caches and re-arms the operator's scheduled tasks, without
      *  a JVM/Spring restart. Reloads only the serving pod; other pods re-sync

@@ -54,6 +54,8 @@ public class ServerServiceConfig
         // PRD 090 — freeze the additive-permission migration worklist (one-shot,
         // marker-guarded). The live resolver is already additive.
         operator.migrateAdditivePermissionsIfNeeded();
+        // PRD 090 Phase 6 — persist the load-time removal of non-load-bearing DENIED rows (one-shot).
+        operator.removeRedundantDeniesIfNeeded();
         return operator;
     }
 
