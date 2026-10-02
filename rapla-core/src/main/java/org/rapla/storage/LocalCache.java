@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage;
 
+import org.rapla.components.util.DateTools;
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -430,7 +431,7 @@ public class LocalCache implements EntityResolver
         }
         if (lastChanged == null)
         {
-            lastChanged = LocalDateTime.now();
+            lastChanged = DateTools.toLocalDateTime(System.currentTimeMillis());
         }
         conflict.setLastChanged(lastChanged);
         if (user != null)
@@ -477,7 +478,7 @@ public class LocalCache implements EntityResolver
             LocalDateTime lastChanged = conflictLastChanged.get(conflictId);
             if (lastChanged == null)
             {
-                lastChanged = LocalDateTime.now();
+                lastChanged = DateTools.toLocalDateTime(System.currentTimeMillis());
             }
             Conflict conflict;
             try

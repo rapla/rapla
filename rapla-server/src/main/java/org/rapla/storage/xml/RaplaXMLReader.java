@@ -13,6 +13,7 @@
 
 package org.rapla.storage.xml;
 
+import org.rapla.components.util.DateTools;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
@@ -100,7 +101,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
         dateTimeFormat = raplaLocale.getSerializableFormat();
         this.localnameMap = context.lookup( PreferenceReader.LOCALNAMEMAPENTRY );
         this.readerMap = context.lookup( PreferenceReader.READERMAP );
-        now = LocalDateTime.now();
+        now = DateTools.toLocalDateTime(System.currentTimeMillis());
     }
     
     public TimestampDates readTimestamps(RaplaSAXAttributes atts) throws RaplaSAXParseException
