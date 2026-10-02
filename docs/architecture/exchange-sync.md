@@ -19,7 +19,7 @@ Spring wiring.
 | **EWS** | `EWSConnector` | per call | `ExchangeService` with the sync account's credentials; `loadMailboxes()` discovers the shared calendars from the account's Outlook "Common Views" links |
 
 **Watermark.** The DB write lock `EXCHANGE` is not only a mutex: `requestLock` returns its
-`LAST_CHANGED` ("changes since") and `releaseLock(id, updatedUntil)` advances it. Only the poll
+`LAST_REQUESTED` column ("changes since") and `releaseLock(id, updatedUntil)` advances it. Only the poll
 takes it; the sweep does not — poll and sweep are serialised by nothing but the shared RxJava
 computation workers (see [locking](locking.md) and PRD 114 Phase 2/3).
 
@@ -29,12 +29,36 @@ legacy and are neither read nor written. Consequences: retries do not survive a 
 sweep recomputes the full diff every hour, and anything that relied on stored tasks (the poll's
 delete path before hunk 8) silently does nothing.
 
+**Which calendars a login syncs.** `EWSConnector.loadMailboxes()` returns the login's own
+calendar (only if the rapla user has an e-mail address, resolved to the primary SMTP) plus every
+calendar linked in the Outlook groups "Weitere Kalender" / "Andere Kalender" / "Other Calendars".
+Only calendars whose address matches a person (see below) are synced. For a controlled run, two
+properties (application yml or `-D`) limit what the sync touches:
+- `rapla.exchange.mailboxes`: a comma-separated string, not a YAML list (`@Value` does not bind
+  list indices). Only these addresses are bound — the own calendar included — and synced; the
+  check runs before `Folder.bind`. Empty means all. Each login logs
+  `mailboxes after allowlist: N [...]`.
+- `rapla.exchange.dry-run=true`: every read runs, every Exchange write and delete is replaced by
+  a log line `DRY-RUN <mailbox> <action> <raplaId> <subject> <start>` (create, update, recreate,
+  delete, skip-owner-edit, skip-foreign-uptodate). Each sweep and poll run ends with
+  `DRY-RUN summary <sweep|poll>: …` per mailbox. The resync delete-all, the result mail and the
+  password mail are suppressed as well. Single occurrence deletes of a series
+  (`removeRecurrenceExceptions`) are not simulated. The poll still advances the watermark, so a
+  dry run against a database a second sync instance works on takes that instance's changes.
+
 ## How rapla marks its items
 
 Every item rapla writes carries three extended properties in `DefaultExtendedPropertySet.Appointment`:
 `raplaId` (the rapla appointment id), `isRaplaMeeting` (marker used for the sweep's search) and
 `raplaLastUpdate` (the reservation's `lastChanged`, the sweep's "is it stale" stamp). The sweep
 finds items with `Exists(isRaplaMeeting)`, the writer with `IsEqualTo(raplaId)`.
+
+The stamp is the UTC rendering of `lastChanged` (`SerializableDateTimeFormat.formatTimestamp`,
+`.mmm` and `Z`). `lastChanged` is read from the entity tables with the JVM default time zone
+(`AbstractTableStorage`). The stamp is therefore stable only while every sync node runs in the same
+default time zone as the database server — otherwise the first sweep after a node or version change
+finds every stamp shifted by the offset and rewrites every item in the window. Rapla 2 and Rapla 3
+produce the same string for the same row, so an upgrade alone rewrites nothing.
 
 Owner actions in Outlook never touch these properties — but an **Outlook copy of a rapla item
 keeps them**, so a copy looks like a rapla item to every search.
@@ -126,6 +150,19 @@ Failure handling: an access-denied on one calendar marks only that calendar's ta
 the run (`processTasks` skips the rest of that resource; only HTTP 401 of the sync account aborts
 the user), a `FailureBackoff` skips a calendar for as many sweeps as it has failed (max 24), a
 delete failure is rethrown so it reaches the result mail instead of being logged as done.
+
+## Runtime dependencies
+
+`ews-java-api` 2.0 references two `javax` APIs that Java 11+ no longer ships (found with `jdeps`):
+`javax.xml.ws.http.HTTPException` (caught in `ServiceRequestBase`, so every request needs it) and
+`javax.xml.bind.DatatypeConverter` (`TimeChange`, legacy time-zone XML). `rapla-server` therefore
+depends on `javax.xml.ws:jaxws-api` and `javax.xml.bind:jaxb-api` 2.3.1 at runtime (versions in
+`rapla-bom`, soap/annotation/activation excluded). The `jakarta.*` 2.3.x artifacts would carry
+the same packages but do not work here: the Spring Boot BOM manages them at 4.x, which uses the
+`jakarta.*` packages. `SynchronisationManagerHotfixTest.ewsJavaApiRuntimeDependenciesArePresent`
+loads both classes; after an `ews-java-api` update, run `jdeps` again and extend the list. The
+JNLP `webclient/` staging takes only allow-listed artifacts, so these server libraries never reach
+the client.
 
 ## Diagnosing without writing
 

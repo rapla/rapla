@@ -4,7 +4,8 @@
 REST API + SPA dialog + docs, all tested). Phase 4 closed 2026-09-30 (user ruling): the SPA migration dialog
 is the effective-access display; no separate permission editor planned. Phase 5 cleanup deliberately
 **kept back** (2026-09-30): `SoftDenyAnalyzer` + one-shot stay while Rapla 2 (precedence model) and Rapla 3
-share databases — see PRD 121.
+share databases — see PRD 121. Phase 6 (2026-10-02): the load-time deny normalization is persisted once
+at startup.
 **Related:** [ADR 0003](../decisions/0003-permissions-are-grant-only.md) (revised 2026-06-28 — records this decision); `docs/architecture/permissions.md`; `docs/spec/permissions.md`
 
 ## Abstract
@@ -207,6 +208,21 @@ recomputed from live permissions for display.
 - **Transition ruling (user, 2026-09-30):** the worklist does **not** have to be worked off before Rapla 3
   starts next to Rapla 2. Rapla 3 granting more than Rapla 2 on the escalated allocatables is accepted for
   the transition phase; the admin triages the worklist alongside.
+
+### Phase 6 — persist the load-time deny normalization ✅ (2026-10-02)
+- [x] The load-time normalizer ([ADR 0003](../decisions/0003-permissions-are-grant-only.md)) dropped
+  non-load-bearing DENIED rows in memory only; they stayed in the store until the entity was next written.
+  `RedundantDenyCleanup` stores the affected entities once at startup (marker
+  `org.rapla.server.redundant-deny-cleanup.applied`, same lock + re-check protocol as Phase 2), so the
+  rows leave the store through the normal write path. A failed store logs an error, leaves the marker
+  unset and is retried on the next start.
+- **Stored through the operator on purpose (user decision, 2026-10-02):** the entity really changes, and
+  `lastChanged` is the contract for every observer — Rapla 2 refresh via CHANGES, the Exchange stamp,
+  client caches, other pods; a DELETE beneath the stamp would be the bug. Consequence: one Exchange
+  rewrite per affected event in a synced calendar, which is correct reconciliation.
+- Safe for Rapla 2 in parallel operation: it ranks WORLD &lt; GROUP &lt; USER and lets a grant beat a
+  DENIED on the same level, so a non-load-bearing DENIED changes nothing there either.
+- Test: `RedundantDenyCleanupTest` (raw data file, `lastChanged`, idempotence).
 
 ## Tests
 
