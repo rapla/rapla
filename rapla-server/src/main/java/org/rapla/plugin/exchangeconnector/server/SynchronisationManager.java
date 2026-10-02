@@ -33,6 +33,7 @@ import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig.ConfigReader;
 import org.rapla.plugin.exchangeconnector.extensionpoints.ExchangeConfigExtensionPoint;
 import org.rapla.plugin.exchangeconnector.server.SynchronizationTask.SyncStatus;
 import org.rapla.plugin.exchangeconnector.server.exchange.AppointmentSynchronizer;
+import org.rapla.plugin.exchangeconnector.server.exchange.DryRunLog;
 import org.rapla.plugin.exchangeconnector.server.exchange.EWSConnector;
 import org.rapla.plugin.exchangeconnector.server.exchange.ExchangeAppointment;
 import org.rapla.plugin.mail.server.MailToUserImpl;
@@ -101,6 +102,8 @@ public class SynchronisationManager
     private final int syncPeriodPast;
     private final Set<ExchangeConfigExtensionPoint> configExtensions;
     private final MailToUserImpl mailToUserInterface;
+    private final Collection<String> mailboxAllowlist;
+    private final boolean dryRun;
     boolean enabled;
     ShowExchangeForUser showExchangeForUser;
 
@@ -109,10 +112,16 @@ public class SynchronisationManager
     @Autowired
     public SynchronisationManager(RaplaFacade facade, RaplaResources i18nRapla, ExchangeConnectorResources i18nExchange,
                                   TimeZoneConverter converter, AppointmentFormater appointmentFormater, RaplaKeyStorage keyStorage, ExchangeAppointmentStorage appointmentStorage,
-                                  ConfigReader config, Set<ExchangeConfigExtensionPoint> configExtensions, MailToUserImpl mailToUserInterface, ShowExchangeForUser showExchangeForUser) throws
+                                  ConfigReader config, Set<ExchangeConfigExtensionPoint> configExtensions, MailToUserImpl mailToUserInterface, ShowExchangeForUser showExchangeForUser,
+                                  Collection<String> mailboxAllowlist, boolean dryRun) throws
             RaplaInitializationException
     {
         super();
+        this.mailboxAllowlist = mailboxAllowlist;
+        this.dryRun = dryRun;
+        if (dryRun) {
+            LOGGER.warn("Exchange sync in DRY-RUN mode: nothing is written to or deleted from Exchange");
+        }
         this.converter = converter;
         this.facade = facade;
         this.configExtensions = configExtensions;
@@ -131,6 +140,9 @@ public class SynchronisationManager
 
         this.appointmentStorage = appointmentStorage;
         this.showExchangeForUser = showExchangeForUser;
+        if (enabled) {
+            LOGGER.info("Exchange sync config: exch-sync-past={} days, mailboxes={}, dry-run={}", syncPeriodPast, mailboxAllowlist, dryRun);
+        }
     }
 
     /** Long-period sweep that re-pulls every shared mailbox and re-aligns all rapla
@@ -158,7 +170,7 @@ public class SynchronisationManager
                     try {
                         userConnect = refreshMailbox(user, allocatablesPerMailbox, false);
                     } catch (Throwable e) {
-                        LOGGER.error("Aborting refresh");
+                        LOGGER.error("Aborting refresh for user {}", user.getUsername(), e);
                         continue;
                     }
                     if (userConnect == null) {
@@ -277,7 +289,7 @@ public class SynchronisationManager
                 LOGGER.info("{}: {} private/copied rapla item(s) up to date, nothing written", e.getKey(), e.getValue());
             }
             lastForeignReport = foreignReport;
-            executeTasks(synchronizationTasks );
+            executeTasks(synchronizationTasks, "sweep");
             if ( synchronizationTasks.size() >0 ) {
                 LOGGER.info("Executing done.");
             }
@@ -828,7 +840,7 @@ public class SynchronisationManager
             }
 
         }
-        executeTasks(tasks);
+        executeTasks(tasks, "poll");
         if(!resynchronizeUsers.isEmpty())
         {
             for (UserAndMailbox userAndMailbox : resynchronizeUsers)
@@ -881,7 +893,11 @@ public class SynchronisationManager
                         for (String line : foreign) sb.append("  ").append(line).append("\n");
                     }
                 }
-                try
+                if (dryRun)
+                {
+                    LOGGER.info("DRY-RUN resync result mail to {} not sent", user.getUsername());
+                }
+                else try
                 {
                     mailToUserInterface.sendMailToUser(user.getUsername(), "Rapla Exchange synchronization", sb.toString());
                 }
@@ -899,15 +915,20 @@ public class SynchronisationManager
         }
     }
 
-    private void executeTasks(Collection<SynchronizationTask> tasks) throws RaplaException {
+    private void executeTasks(Collection<SynchronizationTask> tasks, String run) throws RaplaException {
         final int size = tasks.size();
+        final DryRunLog dryRunLog = dryRun ? new DryRunLog() : null;
         if (size > 0) {
             Collection<SynchronizationTask> toRemove = Collections.emptyList();
             //appointmentStorage.storeAndRemove(tasks, toRemove);
-            final SynchronizeResult execute = execute(tasks);
+            final SynchronizeResult execute = processTasks(tasks, false, dryRunLog);
             if (execute.changed > 0 || execute.open > 0 || execute.removed > 0 || execute.errorMessages.size() > 0) {
                 LOGGER.info("synchronisaction result {}", execute);
             }
+        }
+        if (dryRunLog != null) {
+            dryRunLog.summary(run).forEach(LOGGER::info);
+            LOGGER.info("DRY-RUN note: deletes of single occurrences of a series (removeRecurrenceExceptions) are not simulated");
         }
     }
 
@@ -973,8 +994,10 @@ public class SynchronisationManager
         try {
             String mailboxAddress = user.getEmail();
             EWSConnector ewsConnector = new EWSConnector(exchangeUrl, username, password, mailboxAddress);
+            ewsConnector.setMailboxAllowlist(mailboxAllowlist);
             ewsConnector.test();
             userConnect = ewsConnector.loadMailboxes();
+            LOGGER.info("{}: mailboxes after allowlist: {} {}", username, userConnect.getSharedMailboxes().size(), userConnect.getSharedMailboxes().keySet());
             //userConnect = new UserConnect(ewsConnector, sharedMailboxes, username);
         } catch (Exception ex) {
             LOGGER.error("Internal error while fetching mailboxes for  {}. Ignoring task. {}", username, ex.getMessage());
@@ -1042,7 +1065,11 @@ public class SynchronisationManager
         SynchronizationBox firstBox = first.get();
         String mailboxName = firstBox.getMailboxName();
         EWSConnector.UserConnect userConnect = firstBox.getUserConnect();
-        removeAllAppointmentsFromExchangeAndAppointmentStore(userRef,userConnect, mailboxName);
+        if (dryRun) {
+            LOGGER.info("DRY-RUN {} delete-all (resync) not executed", mailboxName);
+        } else {
+            removeAllAppointmentsFromExchangeAndAppointmentStore(userRef,userConnect, mailboxName);
+        }
         Set<Appointment> appointments = queryAppointments(allocatables).getAllAppointments();
         final Collection<SynchronizationTask> result = new HashSet<>();
         Set<String> appointmentsFound = new HashSet<>();
@@ -1111,11 +1138,6 @@ public class SynchronisationManager
         return synchronizationBoxMap.entrySet().stream().filter(entry -> userAndMailbox.getUserRef().equals(entry.getValue().getUserId()) && userAndMailbox.getMailbox().equals(entry.getValue().getMailboxName())).collect(Collectors.toMap(entry -> entry.getKey(), entry -> entry.getValue()));
     }
 
-    private SynchronizeResult execute(Collection<SynchronizationTask> tasks) throws RaplaException
-    {
-        SynchronizeResult result = processTasks(tasks,false);
-        return result;
-    }
 
 
     private String getAppointmentMessage(SynchronizationTask task)
@@ -1181,7 +1203,7 @@ public class SynchronisationManager
         return result;
     }
 
-    private SynchronizeResult processTasks(Collection<SynchronizationTask> tasks, boolean skipNotification) throws RaplaException
+    private SynchronizeResult processTasks(Collection<SynchronizationTask> tasks, boolean skipNotification, DryRunLog dryRunLog) throws RaplaException
     {
         Map<String, List<SynchronizationTask>> groups = tasks.stream().collect(Collectors.groupingBy(SynchronizationTask::getUserId));
         final Collection<SynchronizationTask> toStore = new HashSet<>();
@@ -1296,7 +1318,7 @@ public class SynchronisationManager
                     continue;
                 }
                 final AppointmentSynchronizer worker = new AppointmentSynchronizer(converter, exchangeTimezoneId, exchangeAppointmentCategory, user, userConnect.getEwsConnector(),
-                        notificationMail, task, appointment, i18n.getLocale(), usedSharedMailboxes);
+                        notificationMail, task, appointment, i18n.getLocale(), usedSharedMailboxes, dryRunLog);
 
                 try {
                     try {
@@ -1314,7 +1336,7 @@ public class SynchronisationManager
                         }
                     }
                     final Preferences userPreferences = facade.getPreferences(user);
-                    if (userPreferences.getEntryAsBoolean(PASSWORD_MAIL_USER, false)) {
+                    if (!dryRun && userPreferences.getEntryAsBoolean(PASSWORD_MAIL_USER, false)) {
                         final Preferences userPreferencesEdit = facade.edit(userPreferences);
                         userPreferencesEdit.putEntry(PASSWORD_MAIL_USER, false);
                         facade.store(userPreferencesEdit);
@@ -1333,7 +1355,9 @@ public class SynchronisationManager
                             message = "Exchangezugriff verweigert. Ist das eingetragenen Exchange Passwort noch aktuell fuer den user '" + user.getUsername() + "' ?";
                             final Preferences preferences = facade.getPreferences(user);
                             final Boolean mailSent = preferences.getEntryAsBoolean(PASSWORD_MAIL_USER, false);
-                            if (!mailSent) {
+                            if (dryRun) {
+                                LOGGER.info("DRY-RUN password mail to {} not sent", user.getUsername());
+                            } else if (!mailSent) {
                                 final Preferences editPreferences = facade.edit(preferences);
                                 editPreferences.putEntry(PASSWORD_MAIL_USER, true);
                                 facade.store(editPreferences);

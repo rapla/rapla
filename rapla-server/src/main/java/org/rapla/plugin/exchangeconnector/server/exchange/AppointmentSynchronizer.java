@@ -107,12 +107,14 @@ public class AppointmentSynchronizer
     private final String exchangeTimezoneId;
     private final String exchangeAppointmentCategory;
     private final Locale locale;
+    private final DryRunLog dryRun;
 
 
     public AppointmentSynchronizer(TimeZoneConverter converter, final String exchangeTimezoneId,
             final String exchangeAppointmentCategory, User user, EWSConnector ewsConnector, boolean sendNotificationMail,
-            SynchronizationTask appointmentTask, Appointment appointment, Locale locale, Map<ReferenceInfo<Allocatable>, CalendarFolder> usedSharedMailboxes)
+            SynchronizationTask appointmentTask, Appointment appointment, Locale locale, Map<ReferenceInfo<Allocatable>, CalendarFolder> usedSharedMailboxes, DryRunLog dryRun)
     {
+        this.dryRun = dryRun;
         this.usedSharedMailboxes = usedSharedMailboxes;
         this.sendNotificationMail = sendNotificationMail;
         this.raplaUser = user;
@@ -335,6 +337,10 @@ public class AppointmentSynchronizer
             microsoft.exchange.webservices.data.core.service.item.Appointment exchangeAppointment = getExchangeAppointmentByRaplaId(service, raplaAppointment.getId());
             if (isDeletedRecurrenceRemoved(exchangeAppointment, calcExceptionDates()))
             {
+                if (dryRun != null) {
+                    recordDryRun(DryRunLog.RECREATE);
+                    return;
+                }
                 delete();
             }
         }
@@ -344,10 +350,15 @@ public class AppointmentSynchronizer
                 && !sameStartEndSubject(rapla2exchange(raplaAppointment.getStart()), rapla2exchange(raplaAppointment.getEnd()), NameFormatUtil.getExportName(raplaAppointment, locale), existing.getStart(), existing.getEnd(), existing.getSubject())) {
             LOGGER.info("{} leaving {} as edited by the mailbox owner on {} (after rapla's last change)", getMailboxName(), raplaAppointment.getId(), existing.getLastModifiedTime());
             skipReason = "vom Postfach-Inhaber am " + existing.getLastModifiedTime() + " bearbeitet (nach Raplas letzter Aenderung) - unveraendert gelassen";
+            recordDryRun(DryRunLog.SKIP_OWNER_EDIT);
             return;
         }
         if (existing != null && isRecurringMaster(existing) != null && isRecurringMaster(existing) != (raplaAppointment.getRepeating() != null)) {
             LOGGER.info("{} re-creating {}: recurrence shape differs from the existing item", getMailboxName(), raplaAppointment.getId());
+            if (dryRun != null) {
+                recordDryRun(DryRunLog.RECREATE);
+                return;
+            }
             existing.delete(DeleteMode.SoftDelete, SendCancellationsMode.SendToNone);
             existing = null;
         }
@@ -355,11 +366,17 @@ public class AppointmentSynchronizer
             for (ExchangeAppointment candidate : getExchangeAppointmentsById(service, raplaAppointment.getId())) {
                 if (candidate.isForeign() && foreignItemUpToDate(timeZoneConverter, locale, raplaAppointment, candidate)) {
                     LOGGER.info("{} not creating {}: the owner's private/copied item already has the same start, end and subject", getMailboxName(), raplaAppointment.getId());
+                    recordDryRun(DryRunLog.SKIP_FOREIGN_UPTODATE);
                     return;
                 }
             }
         }
         microsoft.exchange.webservices.data.core.service.item.Appointment exchangeAppointment = getEquivalentExchangeAppointment(raplaAppointment);
+        if (dryRun != null) {
+            // removeRecurrenceExceptions needs the saved item, so occurrence deletes are not part of the dry run
+            dryRun.record(getMailboxName(), exchangeAppointment.isNew() ? DryRunLog.CREATE : DryRunLog.UPDATE, raplaAppointment.getId(), exchangeAppointment.getSubject(), raplaAppointment.getStart());
+            return;
+        }
         saveToExchangeServer(exchangeAppointment, sendNotificationMail);
         // FIXME it an error occurs exceptions may not be serialized correctly
         removeRecurrenceExceptions(exchangeAppointment);
@@ -402,6 +419,11 @@ public class AppointmentSynchronizer
         {
             ExchangeService service = ewsConnector.getService();
             microsoft.exchange.webservices.data.core.service.item.Appointment exchangeAppointment = getExchangeAppointmentByRaplaId(service, identifier);
+            if (exchangeAppointment != null && dryRun != null)
+            {
+                dryRun.record(getMailboxName(), DryRunLog.DELETE, identifier, exchangeAppointment.getSubject(), exchangeAppointment.getStart());
+                return;
+            }
             if (exchangeAppointment != null)
             {
                 LOGGER.debug("{}: Deleting {} {}", getMailboxName(), exchangeAppointment.getId().getUniqueId(), exchangeAppointment);
@@ -434,6 +456,12 @@ public class AppointmentSynchronizer
             SendInvitationsOrCancellationsMode sendMode = notify ? SendInvitationsOrCancellationsMode.SendOnlyToAll
                     : SendInvitationsOrCancellationsMode.SendToNone;
             exchangeAppointment.update(ConflictResolutionMode.AlwaysOverwrite, sendMode);
+        }
+    }
+
+    private void recordDryRun(String action) {
+        if (dryRun != null) {
+            dryRun.record(getMailboxName(), action, raplaAppointment.getId(), NameFormatUtil.getExportName(raplaAppointment, locale), raplaAppointment.getStart());
         }
     }
 

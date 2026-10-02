@@ -8,14 +8,18 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.plugin.exchangeconnector.server.exchange.AppointmentSynchronizer;
+import org.rapla.plugin.exchangeconnector.server.exchange.DryRunLog;
+import org.rapla.plugin.exchangeconnector.server.exchange.EWSConnector;
 
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -132,6 +136,42 @@ class SynchronisationManagerHotfixTest {
         assertEquals(List.of(microsoft.exchange.webservices.data.core.enumeration.property.time.DayOfTheWeek.Sunday,
                         microsoft.exchange.webservices.data.core.enumeration.property.time.DayOfTheWeek.Saturday),
                 Arrays.asList(AppointmentSynchronizer.weeklyDays(new java.util.TreeSet<>(Arrays.asList(1, 7)))));
+    }
+
+    // WP3 (rapla3 sync test): rapla.exchange.mailboxes restricts the loaded calendars; empty = all
+    @Test
+    void mailboxAllowlistIsCaseInsensitiveAndEmptyMeansAll() {
+        Set<String> allow = EWSConnector.normalizeMailboxes(List.of(" Lecturer-1@Site-A.example.org "));
+        assertTrue(EWSConnector.isAllowedMailbox("lecturer-1@site-a.example.org", allow));
+        assertTrue(EWSConnector.isAllowedMailbox("LECTURER-1@site-a.example.org", allow));
+        assertFalse(EWSConnector.isAllowedMailbox("lecturer-2@site-a.example.org", allow));
+        assertFalse(EWSConnector.isAllowedMailbox(null, allow));
+        assertTrue(EWSConnector.isAllowedMailbox("anyone@site-a.example.org", EWSConnector.normalizeMailboxes(List.of())));
+        assertTrue(EWSConnector.isAllowedMailbox("anyone@site-a.example.org", EWSConnector.normalizeMailboxes(List.of(""))));
+    }
+
+    // WP3: rapla.exchange.dry-run collects every intended write and sums it per mailbox at the end of a run
+    @Test
+    void dryRunSummarizesActionsPerMailbox() {
+        DryRunLog log = new DryRunLog();
+        log.record("mb-b@example.org", DryRunLog.UPDATE, "a1", "Lecture", "2026-10-02T09:00");
+        log.record("mb-a@example.org", DryRunLog.CREATE, "a2", "Lab", "2026-10-03T10:00");
+        log.record("mb-a@example.org", DryRunLog.CREATE, "a3", "Lab", "2026-10-04T10:00");
+        log.record("mb-a@example.org", DryRunLog.DELETE, "a4", "Old", "2026-09-30T08:00");
+        assertEquals(List.of(
+                "DRY-RUN summary poll: mb-a@example.org create=2 update=0 recreate=0 delete=1 skip-owner-edit=0 skip-foreign-uptodate=0",
+                "DRY-RUN summary poll: mb-b@example.org create=0 update=1 recreate=0 delete=0 skip-owner-edit=0 skip-foreign-uptodate=0"),
+                log.summary("poll"));
+        assertEquals(List.of("DRY-RUN summary sweep: no changes"), new DryRunLog().summary("sweep"));
+    }
+
+    // WP7: ews-java-api 2.0 references javax.xml.ws/bind (jdeps), which Java 11+ and the Boot BOM's jakarta 4.x no longer ship
+    @Test
+    void ewsJavaApiRuntimeDependenciesArePresent() {
+        for (String className : List.of("javax.xml.ws.http.HTTPException", "javax.xml.bind.DatatypeConverter")) {
+            assertDoesNotThrow(() -> Class.forName(className), className);
+        }
+        assertDoesNotThrow(() -> Class.forName("javax.xml.bind.DatatypeConverter").getMethod("parseDate", String.class).invoke(null, "2026-10-01"));
     }
 
     private static SynchronizationTask task(String appointmentId, String resourceId) {

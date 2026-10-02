@@ -340,12 +340,15 @@ public class ServerServiceConfig
             org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig.ConfigReader config,
             Set<org.rapla.plugin.exchangeconnector.extensionpoints.ExchangeConfigExtensionPoint> configExtensions,
             org.rapla.plugin.mail.server.MailToUserImpl mailToUserInterface,
-            org.rapla.plugin.exchangeconnector.ShowExchangeForUser showExchangeForUser)
+            org.rapla.plugin.exchangeconnector.ShowExchangeForUser showExchangeForUser,
+            @org.springframework.beans.factory.annotation.Value("${rapla.exchange.mailboxes:}") java.util.List<String> mailboxAllowlist,
+            @org.springframework.beans.factory.annotation.Value("${rapla.exchange.dry-run:false}") boolean dryRun)
             throws RaplaInitializationException
     {
         return new org.rapla.plugin.exchangeconnector.server.SynchronisationManager(
                 facade, i18nRapla, i18nExchange, converter, appointmentFormater, keyStorage,
-                appointmentStorage, config, configExtensions, mailToUserInterface, showExchangeForUser);
+                appointmentStorage, config, configExtensions, mailToUserInterface, showExchangeForUser,
+                mailboxAllowlist, dryRun);
     }
 
     // PRD 070: the @Scheduled trigger. @ConditionalOnProperty binds the existing

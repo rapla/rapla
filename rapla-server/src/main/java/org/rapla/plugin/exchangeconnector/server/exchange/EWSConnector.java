@@ -39,6 +39,7 @@ import javax.net.ssl.SSLContext;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * This class is obliged with the task to provide a connection to a specific Exchange Server-instance
@@ -60,6 +61,20 @@ public class EWSConnector {
         return exchangeUsername;
     }
     private String mailboxAddress;
+    private Set<String> mailboxAllowlist = Set.of();
+
+    /** rapla.exchange.mailboxes: only these calendars are bound and synced; empty = all */
+    public void setMailboxAllowlist(Collection<String> mailboxes) {
+        this.mailboxAllowlist = normalizeMailboxes(mailboxes);
+    }
+
+    public static Set<String> normalizeMailboxes(Collection<String> mailboxes) {
+        return mailboxes.stream().map(m -> m.trim().toLowerCase()).filter(m -> !m.isEmpty()).collect(Collectors.toUnmodifiableSet());
+    }
+
+    public static boolean isAllowedMailbox(String mailbox, Set<String> allowlist) {
+        return allowlist.isEmpty() || (mailbox != null && allowlist.contains(mailbox.toLowerCase()));
+    }
 
 //	private final Character DOMAIN_SEPERATION_SYMBOL = new Character('@');
 
@@ -157,15 +172,14 @@ public class EWSConnector {
         ExchangeService service = getService();
         FolderView view = new FolderView(1000);
 
-        CalendarFolder calendarFolder  = CalendarFolder.bind( service, WellKnownFolderName.Calendar);
         ArrayList<Folder> folders = service.findFolders(WellKnownFolderName.Root,sfSearchFilter, view).getFolders();
         Map<String, CalendarFolder> rtList = new LinkedHashMap<>();
         if ( !mailboxAddress.isEmpty()) {
             NameResolutionCollection resolvedNames = service.resolveName(mailboxAddress, ResolveNameSearchLocation.ContactsThenDirectory, true);
             if (resolvedNames.getCount() > 0) {
                 EmailAddress mailbox = resolvedNames.iterator().next().getMailbox();
-                if (mailbox != null) {
-                    rtList.put(mailbox.getAddress().toLowerCase(), calendarFolder);
+                if (mailbox != null && isAllowedMailbox(mailbox.getAddress(), mailboxAllowlist)) {
+                    rtList.put(mailbox.getAddress().toLowerCase(), CalendarFolder.bind( service, WellKnownFolderName.Calendar));
                 }
             }
         }
@@ -227,6 +241,9 @@ public class EWSConnector {
                             LOGGER.warn(message);
                             continue;
                         }
+                    }
+                    if (!isAllowedMailbox(mailbox, mailboxAllowlist)) {
+                        continue;
                     }
                     FolderId SharedCalendarId = new FolderId(WellKnownFolderName.Calendar, new Mailbox(mailbox));
                     CalendarFolder sharedFolder;
