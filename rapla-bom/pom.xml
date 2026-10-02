@@ -372,6 +372,33 @@
 				<artifactId>ews-java-api</artifactId>
 				<version>${exchange.webservice.api}</version>
 			</dependency>
+			<!-- javax.* APIs ews-java-api 2.0 needs at runtime; old coordinates on purpose: the Boot BOM pins the jakarta.* ones to 4.x -->
+			<dependency>
+				<groupId>javax.xml.ws</groupId>
+				<artifactId>jaxws-api</artifactId>
+				<version>2.3.1</version>
+				<exclusions>
+					<exclusion>
+						<groupId>javax.xml.soap</groupId>
+						<artifactId>javax.xml.soap-api</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>javax.annotation</groupId>
+						<artifactId>javax.annotation-api</artifactId>
+					</exclusion>
+				</exclusions>
+			</dependency>
+			<dependency>
+				<groupId>javax.xml.bind</groupId>
+				<artifactId>jaxb-api</artifactId>
+				<version>2.3.1</version>
+				<exclusions>
+					<exclusion>
+						<groupId>javax.activation</groupId>
+						<artifactId>javax.activation-api</artifactId>
+					</exclusion>
+				</exclusions>
+			</dependency>
 			<dependency>
 				<groupId>com.ibm.icu</groupId>
 				<artifactId>icu4j</artifactId>
