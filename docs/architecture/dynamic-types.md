@@ -115,7 +115,8 @@ Defines one column. Fields:
 - `KEY_BELONGS_TO`, `KEY_PACKAGE` — resource-reference attributes that build the resource graph (at most one of
   each per type). Normalised direction: a belongsTo value is a **parent** of its holder, a package value a
   **child**. Invariant: no resource is its own transitive parent; the store-time check walks up from every stored
-  resource over both kinds, data loaded at startup is not checked. The graph lives in `LocalCache.graph` (used by
+  resource over both kinds and also rejects chains longer than 10 edges; at startup a cycle or a too-deep chain is
+  logged as ERROR (read from the attribute values), never removed. The graph lives in `LocalCache.graph` (used by
   conflicts, calendar expansion and GraphQL `Resource.parents` / `children`) —
   [PRD 120](../prd/120-resource-hierarchy-parents-children.md#decisions-locked).
 

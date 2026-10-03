@@ -1,9 +1,7 @@
 # PRD 120 — Resource hierarchy for UIs: `Resource.parents` / `children` and a store-time cycle check over both kinds
 
-**Status:** in progress — 2026-10-03: Phases 1+2 done (uncommitted, rapla-impl); the Phase 3 `idInMatchesHierarchy`
-bullet is with rapla-impl, the rest of Phase 3 plus Phases 4–5 with rapla-impl2. D7 (no "alle wählen" on resource
-nodes) and D8 (nest under categorization groups) added 2026-10-03. Drafted 2026-09-16 (D1–D6); the spike
-`Resource.belongsTo` / `packageIds` (12fb1bfb4) is still live until Phase 3 removes it.
+**Status:** implemented — Phases 1–4 and the Phase 5 docs committed (d38a499fa, 4dd0f02fd, 2026-10-03; review 0 HIGH);
+open: signed build + deploy to dhbw-test, OQ8. Decisions D1–D6 (2026-09-16), D7–D10 (2026-10-03).
 **Related:** [PRD 119](119-spa-one-search-resource-picker.md) (picker tree; this PRD delivers its deferred S2
 "belongsTo nesting" in a different shape), [PRD 082](082-storage-memory-model.md) (`DependencyIndex` — built, not
 wired), [PRD 116](done/116-graphql-allocatable-to-resource-rename.md) (`Resource` wire names),
@@ -118,7 +116,7 @@ rules methods; the `readableResource` predicate and the test seed (DozGruppe →
 - [x] Announce the schema change; server restart on 8051 before the SPA query uses the fields (AGENTS.md §7a).
 
 ### Phase 4 — SPA picker tree
-*Code done 2026-10-03 (uncommitted, rapla-impl2); Vitest green (resource-tree 19/19, resource-picker 8/8, 96/96 in the run), `tsc --noEmit` ok. `parents { id }` is out of the live query until Phase 3 is in the schema and 8051 restarted (AGENTS §7a); `parentIds` maps to [] meanwhile. Group "alle wählen" (`membersOf`) does not descend into resource nodes (D7); in a search, hits under a parent kept only as path still count.*
+*Code done 2026-10-03 (uncommitted, rapla-impl2); Vitest green (resource-tree 19/19, resource-picker 8/8, 96/96 in the run), `tsc --noEmit` ok. `parents { id }` is live since d38a499fa. Group "alle wählen" (`membersOf`) does not descend into resource nodes (D7); in a search, hits under a parent kept only as path still count.*
 - [x] `resource-selection-store.ts`: lean list query adds `parents { id }`; `ResourceItem.parentIds`.
 - [x] `resource-tree.ts` `buildTree`: a resource node's children = resources of the whole lean list (any type) whose
       `parentIds` contain it, recursively, with a path guard; a node with several parents appears under each; resources
@@ -177,7 +175,11 @@ rules methods; the `readableResource` predicate and the test seed (DozGruppe →
 - **OQ6** — In the flat chips, should the path to a selected child open automatically (as `pathKeysTo` does in the
   type tree, PRD 123 D8)? *Resolution (user, 2026-10-03):* no — in "Alle" the child is its own row anyway.
 - **OQ7** — D10 "10 levels": edges (11 resources in a chain, as implemented) or resources (10, constant 9)?
-  *Resolution:* pending user.
+  *Resolution (user 09:35 via coordinator, 2026-10-03):* edges — "10 Kanten sind ok"; stays as implemented.
+- **OQ8** — The depth rule (D10) reports `error.belongsToCycle`, so a user reads "cycle" for a too-long chain. An own
+  key `error.hierarchyTooDeep` needs all SPA/Swing languages (PRD 103). *Resolution:* pending (review M1).
+- **Residue (review L1):** the load-time report logs one ERROR per leaf of a too-deep chain; a wide, too-deep hierarchy
+  can produce many lines.
 - **Graph limit (finding 2026-10-03):** `GraphNode.connections` holds one type per neighbour pair, so a loaded 2-cycle
   A↔B (both belongsTo) appears in one direction only; walks terminate but cannot see it. Store-time detection is
   unaffected (overlay); D6 tests use 3-node cycles.

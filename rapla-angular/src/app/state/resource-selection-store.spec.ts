@@ -44,7 +44,7 @@ describe('ResourceSelectionStore', () => {
     http.verify();
   });
 
-  function flushList(rows: ReturnType<typeof wire>[]): void {
+  function flushList(rows: (ReturnType<typeof wire> & { parents?: { id: string }[] })[]): void {
     const req = http.expectOne('/api/graphql');
     expect(req.request.body.query).toContain('resources');
     req.flush({ data: { resources: rows } });
@@ -61,7 +61,7 @@ describe('ResourceSelectionStore', () => {
     store.ensureLoaded();
     store.ensureLoaded();
     flushList([
-      wire('r1', 'Hörsaal 1', 'room', 'Raum'),
+      { ...wire('r1', 'Hörsaal 1', 'room', 'Raum'), parents: [{ id: 'b1' }] },
       wire('p1', 'Prof. Lehmann', 'lecturer', 'Dozent'),
     ]);
     expect(store.resources()).toEqual([
@@ -73,6 +73,7 @@ describe('ResourceSelectionStore', () => {
         typeName: 'Raum',
         classificationType: 'RESOURCE',
         groupPaths: [],
+        parentIds: ['b1'],
       },
       {
         id: 'p1',
@@ -82,6 +83,7 @@ describe('ResourceSelectionStore', () => {
         typeName: 'Dozent',
         classificationType: 'RESOURCE',
         groupPaths: [],
+        parentIds: [],
       },
     ]);
   });
