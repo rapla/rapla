@@ -90,6 +90,46 @@ describe('ResourcePickerComponent', () => {
     ]);
   });
 
+  it('PRD 120 D7 — a building row toggles open to its rooms; the row has no count and no alle wählen', async () => {
+    const building = { ...room(1, 'building', 'Gebäude'), name: 'Gebäude A' };
+    const child = { ...room(2), parents: [{ id: 'r1' }] };
+    const f = await create([building, child], { mode: 'rail' });
+    const el = f.nativeElement as HTMLElement;
+    const select = el.querySelector('select.typesel') as HTMLSelectElement;
+    select.value = 'type:building';
+    select.dispatchEvent(new Event('change'));
+    await f.whenStable();
+    f.detectChanges();
+    expect(labels(el)).toEqual(['Gebäude A']);
+    const row = el.querySelector('.item')!;
+    expect(row.querySelector('.count, .selectall')).toBeNull();
+    const toggle = row.querySelector('button.toggle') as HTMLButtonElement;
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    toggle.click();
+    f.detectChanges();
+    expect(labels(el)).toEqual(['Gebäude A', 'Raum 02']);
+    const childRow = el.querySelectorAll('.item')[1] as HTMLElement;
+    expect(childRow.querySelector('button.toggle')).toBeNull();
+    expect(childRow.querySelector('.tspace')).not.toBeNull();
+    expect(parseFloat(childRow.style.paddingLeft)).toBeGreaterThan(
+      parseFloat((row as HTMLElement).style.paddingLeft),
+    );
+  });
+
+  it('an active search shows its filter with the hit count and × clears it', async () => {
+    const f = await create([room(1), room(2)], { query: 'sdsa' });
+    const el = f.nativeElement as HTMLElement;
+    expect(labels(el)).toEqual([]);
+    expect(el.querySelector('.searchnote')?.textContent).toContain(
+      'Suchfilter „sdsa“ aktiv · 0 Treffer',
+    );
+    (el.querySelector('.searchnote button') as HTMLButtonElement).click();
+    f.detectChanges();
+    expect(f.componentInstance.query()).toBe('');
+    expect(el.querySelector('.searchnote')).toBeNull();
+    expect(labels(el)).toEqual(['Raum 01', 'Raum 02']);
+  });
+
   it('D3 — one kind only keeps the type select flat', async () => {
     const f = await create([room(1), room(2, 'camera', 'Kamera')]);
     expect((f.nativeElement as HTMLElement).querySelector('select.typesel optgroup')).toBeNull();

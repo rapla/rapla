@@ -335,11 +335,27 @@ public abstract class AbstractCachableOperator implements StorageOperator
 
     public Collection<Allocatable> getDependent(Collection<Allocatable> allocatables)
     {
-        final Set<ReferenceInfo<Allocatable>> dependentIds = cache.getDependent(allocatables);
+        return resolveAll(cache.getDependent(allocatables));
+    }
+
+    @Override
+    public Collection<Allocatable> getParents(Allocatable allocatable)
+    {
+        return resolveAll(cache.getParentRefs(allocatable.getReference()));
+    }
+
+    @Override
+    public Collection<Allocatable> getChildren(Allocatable allocatable)
+    {
+        return resolveAll(cache.getChildRefs(allocatable.getReference()));
+    }
+
+    private Collection<Allocatable> resolveAll(Set<ReferenceInfo<Allocatable>> ids)
+    {
         final Set<Allocatable> result = new LinkedHashSet<>();
-        for (ReferenceInfo<Allocatable> dependentId : dependentIds)
+        for (ReferenceInfo<Allocatable> id : ids)
         {
-            Allocatable allocatable = tryResolve(dependentId);
+            Allocatable allocatable = tryResolve(id);
             if (allocatable != null)
             {
                 result.add(allocatable);

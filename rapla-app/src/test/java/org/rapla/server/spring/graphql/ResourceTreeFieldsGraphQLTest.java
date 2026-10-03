@@ -40,10 +40,9 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
- * PRD 119 D11/S2 — {@code Resource.groupPaths}, {@code belongsTo} and {@code packageIds} on the lean picker list, and §12: a group only ever arrives on a resource
+ * PRD 119 D11 / PRD 120 — {@code Resource.groupPaths}, {@code parents} and {@code children} on the lean picker list, and §12: a group only ever arrives on a resource
  * the caller can read, and a categorization value that is itself a resource the caller cannot read is left out (its
  * name would leak otherwise). Fixture {@code testdefault.xml}: rooms "Room A66" (springfield-powerplant) and "erwin"
  * (set to channel-6) grouped by the {@code room} category attribute {@code belongsto}; "Room A66.1" grouped by its
@@ -161,7 +160,8 @@ class ResourceTreeFieldsGraphQLTest
     private Map<String, Map<String, Object>> rows()
     {
         List<Map<String, Object>> list = tester.document("{ resources(filter: { idIn: [\"" + ROOM_A66 + "\", \"" + ERWIN
-                        + "\", \"" + ROOM_A66_1 + "\", \"" + DOZ_GRUPPE + "\"] }) { id groupPaths belongsTo packageIds } }")
+                        + "\", \"" + ROOM_A66_1 + "\", \"" + DOZ_GRUPPE + "\", \"" + BURNS
+                        + "\"] }) { id groupPaths parents { id } children { id } } }")
                 .execute()
                 .path("resources")
                 .entityList(ROW)
@@ -185,10 +185,17 @@ class ResourceTreeFieldsGraphQLTest
         assertEquals(path(department("springfield powerplant").getName(Locale.ENGLISH)), byId.get(ROOM_A66).get("groupPaths"));
         assertEquals(path(department("channel-6").getName(Locale.ENGLISH)), byId.get(ERWIN).get("groupPaths"));
         assertEquals(path("Room A66"), byId.get(ROOM_A66_1).get("groupPaths"));
-        assertEquals(ROOM_A66, byId.get(ROOM_A66_1).get("belongsTo"));
-        assertNull(byId.get(ERWIN).get("belongsTo"));
-        assertEquals(List.of(BURNS), byId.get(DOZ_GRUPPE).get("packageIds"));
-        assertEquals(List.of(), byId.get(ERWIN).get("packageIds"));
+        assertEquals(ids(ROOM_A66), byId.get(ROOM_A66_1).get("parents"));
+        assertEquals(ids(ROOM_A66_1), byId.get(ROOM_A66).get("children"));
+        assertEquals(ids(BURNS), byId.get(DOZ_GRUPPE).get("children"));
+        assertEquals(ids(DOZ_GRUPPE), byId.get(BURNS).get("parents"));
+        assertEquals(List.of(), byId.get(ERWIN).get("parents"));
+        assertEquals(List.of(), byId.get(ERWIN).get("children"));
+    }
+
+    private static List<Map<String, String>> ids(String id)
+    {
+        return List.of(Map.of("id", id));
     }
 
     @Test
@@ -199,9 +206,9 @@ class ResourceTreeFieldsGraphQLTest
         assertFalse(byId.containsKey(ROOM_A66), "precondition: monty must not read Room A66");
         assertEquals(path(department("channel-6").getName(Locale.ENGLISH)), byId.get(ERWIN).get("groupPaths"));
         assertEquals(List.of(), byId.get(ROOM_A66_1).get("groupPaths"));
-        assertNull(byId.get(ROOM_A66_1).get("belongsTo"));
-        assertEquals(List.of(), byId.get(DOZ_GRUPPE).get("packageIds"));
-        String body = raw("{ resources { id groupPaths belongsTo packageIds } }");
+        assertEquals(List.of(), byId.get(ROOM_A66_1).get("parents"));
+        assertEquals(List.of(), byId.get(DOZ_GRUPPE).get("children"));
+        String body = raw("{ resources { id groupPaths parents { id } children { id } } }");
         assertFalse(body.contains(BURNS), body);
         assertFalse(body.contains(ROOM_A66), body);
         assertFalse(body.contains(department("springfield powerplant").getName(Locale.ENGLISH)), body);

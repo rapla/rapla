@@ -20,10 +20,8 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.NameFormatUtil;
 import org.rapla.entities.domain.PermissionContainer;
-import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
-import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.ReferenceInfo;
@@ -896,29 +894,20 @@ public final class StructuralTypeFetchers
                 }
             };
 
-    /** PRD 119 S2 — the belongsTo parent's id; null when the caller cannot read the parent (§12). */
-    static final LightDataFetcher<String> ALLOCATABLE_BELONGS_TO =
-            new LightSourceFetcher<org.rapla.entities.domain.Allocatable, String>(
-                    org.rapla.entities.domain.Allocatable.class)
+    /** PRD 120 — direct parents / children on the resource graph, only those the caller can read (§12). */
+    static LightDataFetcher<List<Allocatable>> allocatableNeighbours(StorageOperator operator, boolean parents)
+    {
+        return new LightSourceFetcher<Allocatable, List<Allocatable>>(Allocatable.class)
+        {
+            @Override protected List<Allocatable> read(Allocatable a, Supplier<DataFetchingEnvironment> env)
             {
-                @Override protected String read(org.rapla.entities.domain.Allocatable a,
-                        Supplier<DataFetchingEnvironment> env)
-                {
-                    return org.rapla.server.internal.ResourceTreeRules.belongsTo(a.getClassification(), readableResource(ctxFrom(env)));
-                }
-            };
-
-    /** PRD 119 S2 — the packaged resources' ids, only those the caller can read (§12). */
-    static final LightDataFetcher<List<String>> ALLOCATABLE_PACKAGE_IDS =
-            new LightSourceFetcher<org.rapla.entities.domain.Allocatable, List<String>>(
-                    org.rapla.entities.domain.Allocatable.class)
-            {
-                @Override protected List<String> read(org.rapla.entities.domain.Allocatable a,
-                        Supplier<DataFetchingEnvironment> env)
-                {
-                    return org.rapla.server.internal.ResourceTreeRules.packageIds(a.getClassification(), readableResource(ctxFrom(env)));
-                }
-            };
+                var readable = readableResource(ctxFrom(env));
+                return (parents ? operator.getParents(a) : operator.getChildren(a)).stream()
+                        .filter(readable)
+                        .toList();
+            }
+        };
+    }
 
     private static java.util.function.Predicate<Object> readableResource(RequestContextInstrumentation.RequestCtx rc)
     {
@@ -1183,7 +1172,7 @@ public final class StructuralTypeFetchers
             {
                 if (!ClassificationGraphQLController.matchesMap(alloc, filterArg, caller, operator)) continue;  // scalar
                 if (!WhereEvaluator.evaluate(alloc, filterArg, caller, pc)) continue;           // where<TypeKey> (+ §12 ref-recursion)
-                if (idIn != null && !idIn.isEmpty() && !idInMatchesHierarchy(alloc, idIn)) continue; // idIn (belongsTo-aware)
+                if (idIn != null && !idIn.isEmpty() && !operator.isSelfOrAncestorIn(alloc, idIn)) continue; // idIn over both kinds (PRD 120)
                 if (accessFilter != null && !accessFilter.test(alloc)) continue;              // PRD 069 access
             }
             if (!appointmentBound(r, alloc, a)) continue;                          // per-appointment restriction
@@ -1191,46 +1180,6 @@ public final class StructuralTypeFetchers
             if (limit > 0 && out.size() >= limit) break;                          // limit
         }
         return out;
-    }
-
-    /**
-     * belongsTo-aware {@code idIn} match for the stats fan-out / nested allocatable filter. An
-     * allocatable matches if its OWN id is in {@code idIn} OR a belongsTo ancestor's id is — so a
-     * building id selects the building's rooms, mirroring the filter path's {@code getDependentRef}
-     * down-expansion (here read upward, from the room to its building). Scoped to this nested context
-     * ONLY; the global {@code Query.allocatables} idIn keeps exact-id semantics (returns the building,
-     * not its rooms).
-     */
-    private static boolean idInMatchesHierarchy(Allocatable alloc, List<String> idIn)
-    {
-        Allocatable current = alloc;
-        for (int guard = 0; current != null && guard <= 20; guard++)
-        {
-            String id = current.getId();
-            if (id != null && idIn.contains(id)) return true;
-            current = belongsToParent(current);
-        }
-        return false;
-    }
-
-    /** The allocatable referenced by {@code alloc}'s belongsTo attribute (its hierarchy parent), or
-     *  null if the type has no belongsTo attribute or the value is unset/unresolved. Mirrors
-     *  {@code DynamicTypeImpl.getBelongsToAttribute} via the public constraint API (no impl cast). */
-    private static Allocatable belongsToParent(Allocatable alloc)
-    {
-        Classification c = alloc.getClassification();
-        if (c == null) return null;
-        DynamicType t = c.getType();
-        if (t == null) return null;
-        for (Attribute attr : t.getAttributes())
-        {
-            Object bt = attr.getConstraint(ConstraintIds.KEY_BELONGS_TO);
-            boolean isBelongsTo = bt instanceof Boolean b ? b : (bt != null && "true".equalsIgnoreCase(bt.toString()));
-            if (!isBelongsTo) continue;
-            Object v = c.getValue(attr.getKey());
-            return v instanceof Allocatable parent ? parent : null;
-        }
-        return null;
     }
 
     /** True if {@code alloc} is bound to appointment {@code a} (no restriction = bound to all). */
@@ -1552,8 +1501,8 @@ public final class StructuralTypeFetchers
                 .dataFetcher("lastModifiedAt", ALLOCATABLE_LAST_MODIFIED_AT)
                 .dataFetcher("canModify",      ALLOCATABLE_CAN_MODIFY)
                 .dataFetcher("groupPaths",     ALLOCATABLE_GROUP_PATHS)
-                .dataFetcher("belongsTo",      ALLOCATABLE_BELONGS_TO)
-                .dataFetcher("packageIds",     ALLOCATABLE_PACKAGE_IDS)
+                .dataFetcher("parents",        allocatableNeighbours(operator, true))
+                .dataFetcher("children",       allocatableNeighbours(operator, false))
                 .dataFetcher("canAdmin",       ALLOCATABLE_CAN_ADMIN)
                 .dataFetcher("permissions",    ALLOCATABLE_PERMISSIONS)
                 .dataFetcher("compute",        ALLOCATABLE_COMPUTE)

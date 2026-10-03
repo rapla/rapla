@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * PRD 119 D11 (user rulings 2026-09-15: minimum, own rule, no Swing parity; coordinator: {@code groupPaths}) — one
@@ -25,9 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 public class ResourceTreeRulesTest extends FacadeTestSupport
 {
     private static final String ROOM_A66 = "c24ce517-4697-4e52-9917-ec000c84563c";
-    private static final String ROOM_A66_1 = "rdd6b473-7c77-4344-a73d-1f27008341cb";
-    private static final String DOZ_GRUPPE = "r9b69d90-46a0-41bb-94fa-82079b424c03";
-    private static final String MONTY = "f92e9a11-c342-4413-a924-81eee17ccf92";
 
     private Allocatable roomA66() throws Exception
     {
@@ -122,47 +118,5 @@ public class ResourceTreeRulesTest extends FacadeTestSupport
         setValues(attribute, List.of(hidden, department("channel-6")));
         assertEquals(List.of(List.of(name("channel-6"))),
                 ResourceTreeRules.groupPaths(roomA66().getClassification(), Locale.ENGLISH, value -> !value.equals(hidden)));
-    }
-
-    /** PRD 119 S2 — the parent via the type's belongsTo attribute (fixture: resource1.a1, Room A66.1 → Room A66). */
-    @Test
-    public void belongsToIsTheParentResourceId() throws Exception
-    {
-        Allocatable part = operator.resolve(ROOM_A66_1, Allocatable.class);
-        assertEquals(ROOM_A66, ResourceTreeRules.belongsTo(part.getClassification(), value -> true));
-    }
-
-    @Test
-    public void withoutABelongsToAttributeThereIsNoParent() throws Exception
-    {
-        assertNull(ResourceTreeRules.belongsTo(roomA66().getClassification(), value -> true));
-    }
-
-    @Test
-    public void aParentTheCallerCannotReadIsNoParent() throws Exception
-    {
-        Allocatable part = operator.resolve(ROOM_A66_1, Allocatable.class);
-        assertNull(ResourceTreeRules.belongsTo(part.getClassification(), value -> false));
-    }
-
-    /** PRD 119 S2 — the reverse direction: the resources the type's packages attribute lists (fixture: resource2.a1, DozGruppe → Burns Monty). */
-    @Test
-    public void packageIdsAreThePackagedResources() throws Exception
-    {
-        Allocatable group = operator.resolve(DOZ_GRUPPE, Allocatable.class);
-        assertEquals(List.of(MONTY), ResourceTreeRules.packageIds(group.getClassification(), value -> true));
-    }
-
-    @Test
-    public void withoutAPackagesAttributeThereAreNoPackageIds() throws Exception
-    {
-        assertEquals(List.of(), ResourceTreeRules.packageIds(roomA66().getClassification(), value -> true));
-    }
-
-    @Test
-    public void aPackagedResourceTheCallerCannotReadIsLeftOut() throws Exception
-    {
-        Allocatable group = operator.resolve(DOZ_GRUPPE, Allocatable.class);
-        assertEquals(List.of(), ResourceTreeRules.packageIds(group.getClassification(), value -> false));
     }
 }

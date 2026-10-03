@@ -32,6 +32,8 @@ export interface ResourceItem {
   username?: string;
   /** Picker group paths, one per categorization value (PRD 119 D11). */
   groupPaths?: string[][];
+  /** Direct parents on the resource graph (PRD 120) — a room's building, a course's group. */
+  parentIds?: string[];
 }
 
 interface PickerState {
@@ -49,13 +51,14 @@ interface PickerWire {
     name: string | null;
     classification: { typeKey: string; type: { name: string } };
     groupPaths?: string[][];
+    parents?: { id: string }[];
   }[];
   users?: { id: string; username: string; name: string }[];
 }
 
 /** PRD 119 D8 — the lean list: only what the picker needs, never the full resource. */
 const PICKER_QUERY = `{
-  resources { id kind name classification { typeKey type { name } } groupPaths }
+  resources { id kind name classification { typeKey type { name } } groupPaths parents { id } }
   users { id username name }
 }`;
 
@@ -224,6 +227,7 @@ export class ResourceSelectionStore {
               typeName: r.classification.type.name,
               classificationType: r.kind,
               groupPaths: r.groupPaths ?? [],
+              parentIds: (r.parents ?? []).map((p) => p.id),
             })),
         );
         this.snapshotRecents();

@@ -4088,7 +4088,117 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             checkConsitency(entity, store);
         }
+        checkResourceCycles(evt.getStoreObjects());
+    }
 
+    /**
+     * PRD 120 D3/D4 — one store-time check over belongsTo and packages: a belongsTo value is a parent of its holder,
+     * a package value is a child of it. Walking up from every stored resource must never return to it. Stored
+     * resources contribute their new values; cache edges whose source is in the event are stale and ignored. Only
+     * store events are checked (D6); the visited set keeps a pre-existing cycle elsewhere from looping the walk.
+     */
+    private void checkResourceCycles(Collection<Entity> storeObjects) throws RaplaException
+    {
+        Map<ReferenceInfo<Allocatable>, Allocatable> stored = new LinkedHashMap<>();
+        for (Entity entity : storeObjects)
+        {
+            if (entity instanceof Allocatable)
+            {
+                stored.put(((Allocatable) entity).getReference(), (Allocatable) entity);
+            }
+        }
+        if (stored.isEmpty())
+        {
+            return;
+        }
+        Map<ReferenceInfo<Allocatable>, Set<ReferenceInfo<Allocatable>>> newBelongsTo = new HashMap<>();
+        Map<ReferenceInfo<Allocatable>, Set<ReferenceInfo<Allocatable>>> newPackagedBy = new HashMap<>();
+        for (Allocatable holder : stored.values())
+        {
+            ReferenceInfo<Allocatable> ref = holder.getReference();
+            Set<ReferenceInfo<Allocatable>> parents = newBelongsTo.computeIfAbsent(ref, r -> new LinkedHashSet<>());
+            for (ReferenceInfo<Allocatable> parent : referencedResources(holder, ConstraintIds.KEY_BELONGS_TO))
+            {
+                if (parent.equals(ref))
+                {
+                    throw new RaplaException(getI18n().format("error.belongsToCantReferToSelf", getName(holder)));
+                }
+                parents.add(parent);
+            }
+            for (ReferenceInfo<Allocatable> child : referencedResources(holder, ConstraintIds.KEY_PACKAGE))
+            {
+                if (child.equals(ref))
+                {
+                    throw new RaplaException(getI18n().format("error.packageCantReferToSelf", getName(holder)));
+                }
+                newPackagedBy.computeIfAbsent(child, r -> new LinkedHashSet<>()).add(ref);
+            }
+        }
+        for (Allocatable start : stored.values())
+        {
+            ReferenceInfo<Allocatable> startRef = start.getReference();
+            Set<ReferenceInfo<Allocatable>> visited = new HashSet<>();
+            Deque<ReferenceInfo<Allocatable>> toVisit = new ArrayDeque<>(parentsOf(startRef, stored, newBelongsTo, newPackagedBy));
+            while (!toVisit.isEmpty())
+            {
+                ReferenceInfo<Allocatable> current = toVisit.pop();
+                if (current.equals(startRef))
+                {
+                    throw new RaplaException(getI18n().format("error.belongsToCycle", getName(start)));
+                }
+                if (visited.add(current))
+                {
+                    toVisit.addAll(parentsOf(current, stored, newBelongsTo, newPackagedBy));
+                }
+            }
+        }
+    }
+
+    private Set<ReferenceInfo<Allocatable>> parentsOf(ReferenceInfo<Allocatable> ref, Map<ReferenceInfo<Allocatable>, Allocatable> stored,
+            Map<ReferenceInfo<Allocatable>, Set<ReferenceInfo<Allocatable>>> newBelongsTo, Map<ReferenceInfo<Allocatable>, Set<ReferenceInfo<Allocatable>>> newPackagedBy)
+    {
+        Set<ReferenceInfo<Allocatable>> parents = new LinkedHashSet<>();
+        if (stored.containsKey(ref))
+        {
+            parents.addAll(newBelongsTo.getOrDefault(ref, Collections.emptySet()));
+        }
+        else
+        {
+            parents.addAll(cache.getBelongsToRefs(ref));
+        }
+        parents.addAll(newPackagedBy.getOrDefault(ref, Collections.emptySet()));
+        for (ReferenceInfo<Allocatable> packager : cache.getPackagedByRefs(ref))
+        {
+            if (!stored.containsKey(packager))
+            {
+                parents.add(packager);
+            }
+        }
+        return parents;
+    }
+
+    private static Collection<ReferenceInfo<Allocatable>> referencedResources(Allocatable holder, String constraint)
+    {
+        List<ReferenceInfo<Allocatable>> result = new ArrayList<>();
+        Classification classification = holder.getClassification();
+        if (classification == null)
+        {
+            return result;
+        }
+        for (Attribute attribute : classification.getAttributes())
+        {
+            if (Boolean.TRUE.equals(attribute.getConstraint(constraint)))
+            {
+                for (Object value : classification.getValues(attribute))
+                {
+                    if (value instanceof Allocatable)
+                    {
+                        result.add(((Allocatable) value).getReference());
+                    }
+                }
+            }
+        }
+        return result;
     }
 
     protected void checkConsitency(Entity entity, EntityResolver store) throws RaplaException
@@ -4178,92 +4288,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 if (keyName != null)
                 {
                     throw new RaplaException(i18n.format("error.no_entry_for", keyName));
-                }
-            }
-        }
-        checkBelongsTo(entity, entity,0);
-        checkPackages(entity, entity,0);
-    }
-
-    private void checkPackages(final Object originalEntity,final Object currentEntity, final int depth) throws RaplaException
-    {
-        if (depth > 20)
-        {
-            final String name = getName(currentEntity);
-            final String format = i18n.format("error.packageCycle", name);
-            throw new RaplaException(format);
-        }
-        if (currentEntity instanceof Classifiable)
-        {
-            final Classifiable classifiable = (Classifiable) currentEntity;
-            final Classification classification = classifiable.getClassification();
-            if (classification != null)
-            {
-                final Attribute[] attributes = classification.getAttributes();
-                for (Attribute att : attributes)
-                {
-                    final Boolean packages = (Boolean) att.getConstraint(ConstraintIds.KEY_PACKAGE);
-                    if (packages != null && packages)
-                    {
-                        final Collection<Object> targets = classification.getValues(att);
-                        if (targets != null)
-                        {
-                            for (Object target : targets)
-                            {
-                                if (target.equals(originalEntity))
-                                {
-                                    final String name = getName(originalEntity);
-                                    final String format = getI18n().format("error.packageCantReferToSelf", name);
-                                    throw new RaplaException(format);
-                                }
-                                else
-                                {
-                                    checkPackages(originalEntity,target, depth + 1);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private void checkBelongsTo(final Object originalEntity,final Object currentEntity, final int depth) throws RaplaException
-    {
-        if (depth > 20)
-        {
-            final String name = getName(originalEntity);
-            final String format = i18n.format("error.belongsToCycle", name);
-            throw new RaplaException(format);
-        }
-
-        if (currentEntity instanceof Classifiable)
-        {
-            final Classifiable classifiable = (Classifiable) currentEntity;
-            final Classification classification = classifiable.getClassification();
-            if (classification != null)
-            {
-                final Attribute[] attributes = classification.getAttributes();
-                for (Attribute att : attributes)
-                {
-                    final Boolean belongsTo = (Boolean) att.getConstraint(ConstraintIds.KEY_BELONGS_TO);
-                    if (belongsTo != null && belongsTo)
-                    {
-                        final Object target = classification.getValueForAttribute(att);
-                        if (target != null)
-                        {
-                            if (target.equals(originalEntity))
-                            {
-                                final String name = getName(originalEntity);
-                                final String format = getI18n().format("error.belongsToCantReferToSelf", name);
-                                throw new RaplaException(format);
-                            }
-                            else
-                            {
-                                checkBelongsTo(originalEntity,target, depth + 1);
-                            }
-                        }
-                    }
                 }
             }
         }

@@ -10,6 +10,8 @@ export interface TreeNode {
   children: TreeNode[];
   /** Distinct resources below this node (1 for a resource). */
   count: number;
+  /** filterTree kept this resource only for a matching descendant (PRD 120). */
+  viaChild?: boolean;
 }
 
 export interface NodeRow {
@@ -40,8 +42,15 @@ function byNodeLabel(a: TreeNode, b: TreeNode): number {
   return collator.compare(a.label, b.label);
 }
 
-/** Groups by `groupPaths` (any depth); a resource sits under each of its paths, ungrouped ones after the groups. */
-export function buildTree(items: readonly ResourceItem[]): TreeNode[] {
+/**
+ * Groups by `groupPaths` (any depth); a resource sits under each of its paths, ungrouped ones after the groups.
+ * PRD 120 — a resource node's children are the resources of `all` that name it in `parentIds`; a cycle stops at the
+ * first repeat on the path.
+ */
+export function buildTree(
+  items: readonly ResourceItem[],
+  all: readonly ResourceItem[] = items,
+): TreeNode[] {
   const root: Level = { groups: new Map(), items: [] };
   for (const item of items) {
     const paths = (item.groupPaths ?? [])
@@ -64,10 +73,43 @@ export function buildTree(items: readonly ResourceItem[]): TreeNode[] {
       if (!level.items.some((x) => x.id === item.id)) level.items.push(item);
     }
   }
-  return toNodes(root, '');
+  const childrenOf = new Map<string, ResourceItem[]>();
+  for (const item of all) {
+    for (const parent of new Set(item.parentIds ?? [])) {
+      const list = childrenOf.get(parent) ?? [];
+      list.push(item);
+      childrenOf.set(parent, list);
+    }
+  }
+  return toNodes(root, '', childrenOf);
 }
 
-function toNodes(level: Level, prefix: string): TreeNode[] {
+function resourceNode(
+  item: ResourceItem,
+  prefix: string,
+  childrenOf: ReadonlyMap<string, ResourceItem[]>,
+  path: ReadonlySet<string>,
+): TreeNode {
+  const key = `${prefix}#${item.id}`;
+  const below = new Set(path).add(item.id);
+  return {
+    key,
+    label: item.label,
+    kind: 'resource',
+    item,
+    children: (childrenOf.get(item.id) ?? [])
+      .filter((child) => !below.has(child.id))
+      .sort(byLabel)
+      .map((child) => resourceNode(child, key, childrenOf, below)),
+    count: 1,
+  };
+}
+
+function toNodes(
+  level: Level,
+  prefix: string,
+  childrenOf: ReadonlyMap<string, ResourceItem[]>,
+): TreeNode[] {
   const groups = [...level.groups.entries()]
     .map(([name, child]) => {
       const key = `${prefix}/${name}`;
@@ -75,32 +117,28 @@ function toNodes(level: Level, prefix: string): TreeNode[] {
         key,
         label: name,
         kind: 'group',
-        children: toNodes(child, key),
+        children: toNodes(child, key, childrenOf),
         count: 0,
       };
       node.count = membersOf(node).length;
       return node;
     })
     .sort(byNodeLabel);
-  const leaves = [...level.items].sort(byLabel).map(
-    (item): TreeNode => ({
-      key: `${prefix}#${item.id}`,
-      label: item.label,
-      kind: 'resource',
-      item,
-      children: [],
-      count: 1,
-    }),
-  );
+  const leaves = [...level.items]
+    .sort(byLabel)
+    .map((item) => resourceNode(item, prefix, childrenOf, new Set()));
   return [...groups, ...leaves];
 }
 
-/** The distinct resources below a node — what "alle wählen" selects. */
+/**
+ * The distinct resources below a node — what "alle wählen" selects. PRD 120 D7: a resource stands for its subtree,
+ * so the walk does not descend into it, unless filterTree kept it only for a matching descendant.
+ */
 export function membersOf(node: TreeNode): ResourceItem[] {
   const seen = new Map<string, ResourceItem>();
   const walk = (n: TreeNode) => {
-    if (n.item && !seen.has(n.item.id)) seen.set(n.item.id, n.item);
-    n.children.forEach(walk);
+    if (n.item && !n.viaChild && !seen.has(n.item.id)) seen.set(n.item.id, n.item);
+    if (n.kind === 'group' || n.viaChild) n.children.forEach(walk);
   };
   walk(node);
   return [...seen.values()];
@@ -118,7 +156,7 @@ export function visibleRows(
   const rows: TreeRow[] = [];
   for (const node of nodes.slice(0, limit)) {
     rows.push({ node, depth });
-    if (node.kind === 'group' && expanded.has(node.key)) {
+    if (node.children.length && expanded.has(node.key)) {
       rows.push(...visibleRows(node.children, expanded, limits, depth + 1, node.key));
     }
   }
@@ -126,15 +164,14 @@ export function visibleRows(
   return rows;
 }
 
-/** The groups on the path to any of the given resources — open by default (D12). */
+/** The groups and resources on the path to any of the given resources — open by default (D12). */
 export function pathKeysTo(nodes: readonly TreeNode[], ids: ReadonlySet<string>): Set<string> {
   const keys = new Set<string>();
   const walk = (node: TreeNode): boolean => {
-    if (node.kind === 'resource') return !!node.item && ids.has(node.item.id);
     let hit = false;
     for (const child of node.children) if (walk(child)) hit = true;
     if (hit) keys.add(node.key);
-    return hit;
+    return hit || (!!node.item && ids.has(node.item.id));
   };
   nodes.forEach(walk);
   return keys;
@@ -155,7 +192,15 @@ export function filterTree(
     const out: TreeNode[] = [];
     for (const node of list) {
       if (node.kind === 'resource') {
-        if (node.item && filterRows([node.item], query).length) out.push(node);
+        if (node.item && filterRows([node.item], query).length) {
+          out.push(node);
+          continue;
+        }
+        const below = walk(node.children);
+        if (below.length) {
+          expanded.add(node.key);
+          out.push({ ...node, children: below, viaChild: true });
+        }
         continue;
       }
       if (matches(node.label)) {

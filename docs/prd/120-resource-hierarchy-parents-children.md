@@ -1,8 +1,9 @@
 # PRD 120 — Resource hierarchy for UIs: `Resource.parents` / `children` and a store-time cycle check over both kinds
 
-**Status:** draft — 2026-09-16; interim spike landed 2026-10-01 (`Resource.belongsTo` / `packageIds` with read-scoped ids, `ResourceTreeRules`, commit 12fb1bfb4). Direction decided by the user in the same session (rulings D1–D6). The full plan (parents/children, cycle guard) is not implemented
-yet; an interim spike (`Resource.belongsTo: ID`, `Resource.packageIds: [ID!]!`, uncommitted) is replaced by this PRD
-(§ Implementation).
+**Status:** in progress — 2026-10-03: Phases 1+2 done (uncommitted, rapla-impl); the Phase 3 `idInMatchesHierarchy`
+bullet is with rapla-impl, the rest of Phase 3 plus Phases 4–5 with rapla-impl2. D7 (no "alle wählen" on resource
+nodes) and D8 (nest under categorization groups) added 2026-10-03. Drafted 2026-09-16 (D1–D6); the spike
+`Resource.belongsTo` / `packageIds` (12fb1bfb4) is still live until Phase 3 removes it.
 **Related:** [PRD 119](119-spa-one-search-resource-picker.md) (picker tree; this PRD delivers its deferred S2
 "belongsTo nesting" in a different shape), [PRD 082](082-storage-memory-model.md) (`DependencyIndex` — built, not
 wired), [PRD 116](done/116-graphql-allocatable-to-resource-rename.md) (`Resource` wire names),
@@ -34,7 +35,8 @@ make a resource its own transitive parent.
 - **`DependencyIndex`** (rapla-server readmodel) duplicates the graph and is not wired (PRD 082). Not touched.
 - **Store-time cycle check.** `LocalAbstractCachableOperator.checkConsitency` → `checkBelongsTo` / `checkPackages`:
   per kind, depth > 20 → `error.belongsToCycle` / `error.packageCycle`, self-reference → `…CantReferToSelf`. A mixed
-  cycle (A belongsTo B, B packages A) is accepted.
+  cycle (A belongsTo B, B belongsTo C, A packages C — C is A's child and ancestor) is accepted. (A belongsTo B plus
+  B packages A is the same edge twice, not a cycle — D3.)
 - **Other walks.** `StructuralTypeFetchers.idInMatchesHierarchy` walks belongsTo upward with a counter (≤ 21 steps,
   own `belongsToParent` helper). Swing `TreeFactoryImpl` (`addBelongsToNodes`, `fillPackages`) recurses without a
   guard but never mixes the kinds.
@@ -75,46 +77,54 @@ rules methods; the `readableResource` predicate and the test seed (DozGruppe →
 ## Plan
 
 ### Phase 1 — Direct neighbours on the existing graph
-- [ ] `LocalCache.getParentRefs(ref)` = connections `BelongsTo` ∪ `PackagesTarget`; `getChildRefs(ref)` =
+*Done 2026-10-03 (uncommitted): `ResourceNeighboursTest`.*
+- [x] `LocalCache.getParentRefs(ref)` = connections `BelongsTo` ∪ `PackagesTarget`; `getChildRefs(ref)` =
       `BelongsToTarget` ∪ `Packages`. O(degree); unknown node → empty.
-- [ ] `StorageOperator.getParents(Allocatable)` / `getChildren(Allocatable)` in `AbstractCachableOperator`, resolved via
+- [x] `StorageOperator.getParents(Allocatable)` / `getChildren(Allocatable)` in `AbstractCachableOperator`, resolved via
       `tryResolve`, unresolved ids dropped (same idiom as `getDependent`).
-- [ ] Tier-2 test: Room A66.1 ↔ Room A66 (belongsTo, `resource1.a1`), DozGruppe ↔ Burns Monty (package,
+- [x] Tier-2 test: Room A66.1 ↔ Room A66 (belongsTo, `resource1.a1`), DozGruppe ↔ Burns Monty (package,
       `resource2.a1`), neighbours follow an edited value.
 
 ### Phase 2 — Store-time cycle check over both kinds
-- [ ] Replace `checkBelongsTo` / `checkPackages` with one check: for **every** resource in the event, walk **up** over
+*Done 2026-10-03 (uncommitted): `checkResourceCycles`, `ResourceCycleCheckTest` (9). Load-time cycle check (`removeInconsistentEntities`) dropped with the old per-kind checks (D6); `error.packageCycle` now unused, key kept.*
+- [x] Replace `checkBelongsTo` / `checkPackages` with one check: for **every** resource in the event, walk **up** over
       normalised parents (D3) with a visited set; reaching the start → reject.
-- [ ] Overlay: event objects contribute their **new** belongsTo / package values; cache edges whose source is in the
+- [x] Overlay: event objects contribute their **new** belongsTo / package values; cache edges whose source is in the
       event are ignored (stale); everything else from Phase 1's neighbour read.
-- [ ] Messages: self-reference keeps `…CantReferToSelf`; a cycle uses `error.belongsToCycle` (no new i18n key). Depth
+- [x] Messages: self-reference keeps `…CantReferToSelf`; a cycle uses `error.belongsToCycle` (no new i18n key). Depth
       limit 20 goes.
-- [ ] Tier-2 tests: see § Tests.
+- [x] Tier-2 tests: see § Tests.
 
 ### Phase 3 — GraphQL fields
-- [ ] `schema.graphqls` `type Resource`: `parents: [Resource!]!`, `children: [Resource!]!` with descriptions.
-- [ ] `StructuralTypeFetchers`: two fetchers over the Phase 1 operator methods, filtered by `readableResource` (admin or
+*Code done 2026-10-03 (uncommitted, rapla-impl2 + rapla-impl for idIn); default lanes green. Open: 8051 restart, then arm `parents { id }` in the SPA.*
+- [x] `schema.graphqls` `type Resource`: `parents: [Resource!]!`, `children: [Resource!]!` with descriptions.
+- [x] `StructuralTypeFetchers`: two fetchers over the Phase 1 operator methods, filtered by `readableResource` (admin or
       `canRead`).
-- [ ] Remove the spike fields `belongsTo` / `packageIds`, their fetchers and `ResourceTreeRules.belongsTo` / `packageIds`
+- [x] Remove the spike fields `belongsTo` / `packageIds`, their fetchers and `ResourceTreeRules.belongsTo` / `packageIds`
       with their tests.
-- [ ] Tier-3 `ResourceTreeFieldsGraphQLTest`: admin sees both directions; monty (Room A66 and Burns unreadable) gets `[]`
+- [x] (rapla-impl, user go 2026-10-03; done uncommitted: `StorageOperator.isSelfOrAncestorIn`, `AppointmentResourcesIdInHierarchyGraphQLTest`; the §12 case is still open, see OQ4) `idInMatchesHierarchy` walks up over `getParentRefs` (both kinds, several parents) with a visited set instead of
+      the belongsTo-only `belongsToParent` chain with its counter; a course matches its group's id like a room its
+      building's (same expansion as `getDependentRef`). A pre-existing cycle (D6) must not loop. Tier-3: course
+      matched via group id; cyclic data terminates; an `idIn` id the caller cannot read matches nothing (§12).
+- [x] Tier-3 `ResourceTreeFieldsGraphQLTest`: admin sees both directions; monty (Room A66 and Burns unreadable) gets `[]`
       and the raw `{ resources { id parents { id } children { id } } }` body contains neither id; mutation check (drop the
       filter → red).
 - [ ] Announce the schema change; server restart on 8051 before the SPA query uses the fields (AGENTS.md §7a).
 
 ### Phase 4 — SPA picker tree
-- [ ] `resource-selection-store.ts`: lean list query adds `parents { id }`; `ResourceItem.parentIds`.
-- [ ] `resource-tree.ts` `buildTree`: a resource node's children = resources of the whole lean list (any type) whose
+*Code done 2026-10-03 (uncommitted, rapla-impl2); Vitest green (resource-tree 19/19, resource-picker 8/8, 96/96 in the run), `tsc --noEmit` ok. `parents { id }` is out of the live query until Phase 3 is in the schema and 8051 restarted (AGENTS §7a); `parentIds` maps to [] meanwhile. Group "alle wählen" (`membersOf`) does not descend into resource nodes (D7); in a search, hits under a parent kept only as path still count.*
+- [x] `resource-selection-store.ts`: lean list query adds `parents { id }`; `ResourceItem.parentIds`.
+- [x] `resource-tree.ts` `buildTree`: a resource node's children = resources of the whole lean list (any type) whose
       `parentIds` contain it, recursively, with a path guard; a node with several parents appears under each; resources
-      keep their place under their own type (Swing parity).
-- [ ] `visibleRows` / `pathKeysTo` handle expandable resource nodes; `resource-selection.component.ts` shows the ▸/▾ toggle
+      keep their place under their own type (Swing parity); nesting also applies under categorization group nodes (D8).
+- [x] `visibleRows` / `pathKeysTo` handle expandable resource nodes; `resource/resource-picker.component.ts` shows the ▸/▾ toggle
       on resource rows with children (reuse `toggleGroup`), label click still steps; no count / "alle wählen" on
-      resource nodes.
-- [ ] Tier-5 `resource-tree.spec.ts`, tier-6 `resource-selection.component.spec.ts` (§ Tests).
+      resource nodes (D7).
+- [x] Tier-5 `resource-tree.spec.ts`, tier-6 `resource-picker.component.spec.ts` (§ Tests).
 
 ### Phase 5 — Docs and rollout
-- [ ] PRD 119: S2 / D2 point to this PRD (file is rapla-concept's working copy — coordinate first).
-- [ ] `docs/graphql.md`: parents / children vs. constraints; `docs/architecture/`: the invariant (D3) and the graph.
+- [x] PRD 119: S2 / D2 point to this PRD (file is rapla-concept's working copy — coordinate first).
+- [x] `docs/graphql.md`: parents / children vs. constraints; `docs/architecture/`: the invariant (D3) and the graph.
 - [ ] Signed build + deploy to dhbw-test; check the Goal probes.
 
 ## Tests
@@ -140,6 +150,16 @@ rules methods; the `readableResource` predicate and the test seed (DozGruppe →
   `parents { id }` and derives children in the browser.
 - **OQ2** — Two course-style types of a production deployment carry `belongsTo=true` on a *category* attribute, which `AttributeImpl` should refuse (keys: dhbwrapla docs). Data error, or should the programme become a grouping via `categorization`? *Resolution:* pending; the graph ignores non-resource values either way.
 - **OQ3** — Log a warning when a pre-existing cycle is met at load time? *Resolution:* pending; not required (D6).
+- **OQ4** — `idIn` matches via ancestors without a read check, so an unreadable id that hits reveals it is an
+  ancestor of a readable resource (pre-existing, unchanged by the fix). (a) filter `idIn` to readable ids first, or
+  (b) stop the walk at unreadable ancestors. *Resolution:* pending user; recommended (a) (same expansion as the
+  calendar, D2).
+- **OQ5** — The old load path deleted resources failing the per-kind check (`removeInconsistentEntities` →
+  `DBOperator` `removeObjects`; also chains deeper than 20). Phase 2 drops this (D6). Log a warning instead (cf. OQ3)?
+  *Resolution:* pending user; recommended: log only.
+- **Graph limit (finding 2026-10-03):** `GraphNode.connections` holds one type per neighbour pair, so a loaded 2-cycle
+  A↔B (both belongsTo) appears in one direction only; walks terminate but cannot see it. Store-time detection is
+  unaffected (overlay); D6 tests use 3-node cycles.
 
 ## Decisions locked
 
@@ -171,3 +191,17 @@ kept; the graph reads that one attribute.
 **D6 — Legacy data: no code (user, 2026-09-16).** Data loaded at startup or imported without a store event is not
 checked. The visited set is the safety net: a pre-existing cycle elsewhere neither loops the walk nor blocks storing an
 unrelated resource.
+
+**D7 — A resource node stands for its subtree; no "alle wählen" on it (user, 2026-10-03).** Selecting a building or
+course group already selects everything below it: Swing expands the selection with `getDependent` (down over
+`Packages` / `BelongsToTarget`, `CalendarModelImpl.getAllAllocatables`), and the server's appointment lookup does the
+same (`LocalAbstractCachableOperator.getAppointments` → `cache.getDependentRef`). Resource nodes therefore get the toggle and are
+selectable themselves, without count or "alle wählen"; type and category group nodes keep theirs (PRD 119 D2,
+PRD 123 D8). Rejected: "alle wählen" per resource node (one chip per room, same calendar result).
+
+**D8 — Nest under categorization groups too (user, 2026-10-03).** Swing nests only resources outside a categorization
+group (`TreeFactoryImpl`: `fillPackages` / `addBelongsToNodes` only on uncategorized nodes). Neither commit
+(`e39c6705c`, `f5399eb7c`, rapla2, 2016) gives a reason; the likely cause is the 1:1 `objectToNamedNode` map, while a
+categorized resource has one node per value. The restriction prevents neither duplicates (Swing lists a part under
+its type and its parent anyway) nor cycles (both Swing recursions have no guard). The SPA nests everywhere; Phase 4's
+path guard handles cycles. Rejected: copying the restriction (a building with a category value could not be expanded).

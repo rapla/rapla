@@ -622,6 +622,47 @@ public class LocalCache implements EntityResolver
     }
 
 
+    /** PRD 120 D3: direct parents = belongsTo values of the resource and the resources that package it. */
+    public Set<ReferenceInfo<Allocatable>> getParentRefs(ReferenceInfo<Allocatable> allocatableRef)
+    {
+        return neighbours(allocatableRef, GraphNode.ConnectionType.BelongsTo, GraphNode.ConnectionType.PackagesTarget);
+    }
+
+    /** the parents a resource names itself (its belongsTo values) */
+    public Set<ReferenceInfo<Allocatable>> getBelongsToRefs(ReferenceInfo<Allocatable> allocatableRef)
+    {
+        return neighbours(allocatableRef, GraphNode.ConnectionType.BelongsTo, GraphNode.ConnectionType.BelongsTo);
+    }
+
+    /** the parents that name the resource (resources listing it in their packages) */
+    public Set<ReferenceInfo<Allocatable>> getPackagedByRefs(ReferenceInfo<Allocatable> allocatableRef)
+    {
+        return neighbours(allocatableRef, GraphNode.ConnectionType.PackagesTarget, GraphNode.ConnectionType.PackagesTarget);
+    }
+
+    /** PRD 120 D3: direct children = packages values of the resource and the resources that belong to it. */
+    public Set<ReferenceInfo<Allocatable>> getChildRefs(ReferenceInfo<Allocatable> allocatableRef)
+    {
+        return neighbours(allocatableRef, GraphNode.ConnectionType.BelongsToTarget, GraphNode.ConnectionType.Packages);
+    }
+
+    private Set<ReferenceInfo<Allocatable>> neighbours(ReferenceInfo<Allocatable> allocatableRef, GraphNode.ConnectionType first, GraphNode.ConnectionType second)
+    {
+        Set<ReferenceInfo<Allocatable>> result = new LinkedHashSet<>();
+        GraphNode node = allocatableRef != null ? graph.get(allocatableRef) : null;
+        if (node != null)
+        {
+            for (Map.Entry<GraphNode, GraphNode.ConnectionType> entry : node.connections.entrySet())
+            {
+                if (entry.getValue() == first || entry.getValue() == second)
+                {
+                    result.add(entry.getKey().alloc);
+                }
+            }
+        }
+        return result;
+    }
+
     public Set<ReferenceInfo<Allocatable>> getDependentRef(ReferenceInfo<Allocatable> allocatableRef)
     {
         Set<ReferenceInfo<Allocatable>> allocatableIds = new LinkedHashSet<>();

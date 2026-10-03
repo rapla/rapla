@@ -559,6 +559,17 @@ classification:
 §12 is enforced at every step — an unreadable target yields a null
 reference, never a partial object.
 
+### 7a. resource hierarchy — `parents` / `children` ([PRD 120](prd/120-resource-hierarchy-parents-children.md))
+
+```graphql
+{ resources { id parents { id } children { id } } }
+```
+
+Direct neighbours on the resource graph, both constraint kinds folded into one direction: a `belongsTo` value is a
+parent of its holder, a `package` value a child (a room lists its building in `parents`, a course group its courses
+in `children`). Which attribute or kind made the edge is not on the wire (D1). Only resources the caller can read
+(§12); no recursion — clients walk the tree themselves and guard against cycles in legacy data (D6).
+
 ### 8. multi-query batch
 
 One round-trip for a workbench:

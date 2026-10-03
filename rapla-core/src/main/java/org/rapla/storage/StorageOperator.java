@@ -165,6 +165,37 @@ public interface StorageOperator extends EntityResolver {
 
     Collection<Allocatable> getDependent(Collection<Allocatable> allocatables);
 
+    /** PRD 120: direct parents of the resource on the resource graph (belongsTo values and packaging resources). */
+    Collection<Allocatable> getParents(Allocatable allocatable);
+
+    /** PRD 120: direct children of the resource on the resource graph (packages values and resources belonging to it). */
+    Collection<Allocatable> getChildren(Allocatable allocatable);
+
+    /** PRD 120: true if the resource or one of its ancestors (parents of both kinds, transitively) has an id in {@code ids}. */
+    default boolean isSelfOrAncestorIn(Allocatable allocatable, Collection<String> ids)
+    {
+        java.util.Set<String> visited = new java.util.HashSet<>();
+        java.util.Deque<Allocatable> toVisit = new java.util.ArrayDeque<>();
+        toVisit.push(allocatable);
+        while (!toVisit.isEmpty())
+        {
+            Allocatable current = toVisit.pop();
+            if (!visited.add(current.getId()))
+            {
+                continue;   // the visited set ends a pre-existing cycle (PRD 120 D6)
+            }
+            if (ids.contains(current.getId()))
+            {
+                return true;
+            }
+            for (Allocatable parent : getParents(current))
+            {
+                toVisit.push(parent);
+            }
+        }
+        return false;
+    }
+
     /** returns an Interface for accessing the periods
      * @throws RaplaException */
     PeriodModel getPeriodModelFor(String key) throws RaplaException;

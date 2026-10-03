@@ -95,6 +95,20 @@ export interface PickEvent {
         >
       </div>
     }
+    @if (query().trim()) {
+      <div class="searchnote">
+        <span>{{ 'resource_search_active' | t: query().trim() : allHits().length }}</span>
+        <button
+          type="button"
+          class="clearsearch"
+          [attr.aria-label]="'resource_search_clear' | t"
+          [title]="'resource_search_clear' | t"
+          (click)="query.set('')"
+        >
+          ×
+        </button>
+      </div>
+    }
     @if (mode() === 'rail' && allHits().length) {
       <div class="grouphdr listhdr">
         <span>{{ 'resource_hits' | t: allHits().length }}</span>
@@ -152,6 +166,20 @@ export interface PickEvent {
         >
           @if (mode() === 'assign') {
             <span class="chk" aria-hidden="true">{{ checked().has(it.id) ? '✓' : '' }}</span>
+          }
+          @if (row.node.children.length) {
+            <button
+              type="button"
+              class="toggle"
+              [attr.aria-expanded]="expandedGroups().has(row.node.key)"
+              [attr.aria-label]="it.label"
+              (click)="$event.stopPropagation(); toggleGroup(row.node.key)"
+              (keydown)="$event.stopPropagation()"
+            >
+              {{ expandedGroups().has(row.node.key) ? '▾' : '▸' }}
+            </button>
+          } @else if (treeMode()) {
+            <span class="tspace" aria-hidden="true"></span>
           }
           <mat-icon class="ico" [style.color]="it.color || null">{{ icon(it) }}</mat-icon>
           <span class="lbl">{{ it.label }}</span>
@@ -243,6 +271,25 @@ export interface PickEvent {
       .grouphdr .clr {
         cursor: pointer;
       }
+      .searchnote {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.25rem 0.9rem;
+        font-size: 0.75rem;
+        background: var(--mat-sys-secondary-container, #fff3cd);
+      }
+      .searchnote span {
+        flex: 1;
+      }
+      .searchnote button {
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        font: inherit;
+        font-size: 1rem;
+        padding: 0 0.2rem;
+      }
       .grouprow {
         display: flex;
         align-items: center;
@@ -261,7 +308,13 @@ export interface PickEvent {
         font-size: 0.7rem;
         color: rgba(0, 0, 0, 0.45);
       }
-      .grouprow button {
+      .item .toggle,
+      .item .tspace {
+        flex: none;
+        width: 1rem;
+      }
+      .grouprow button,
+      .item .toggle {
         border: none;
         background: transparent;
         cursor: pointer;
@@ -480,7 +533,7 @@ export class ResourcePickerComponent {
 
   private readonly tree = computed(() => {
     const q = this.query();
-    if (this.treeMode()) return filterTree(buildTree(this.list()), q);
+    if (this.treeMode()) return filterTree(buildTree(this.list(), this.store.resources()), q);
     const hits: TreeNode[] = [];
     if (this.chip() === 'all' && q.trim()) {
       const walk = (nodes: TreeNode[]) =>

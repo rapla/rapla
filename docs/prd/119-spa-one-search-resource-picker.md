@@ -27,7 +27,7 @@ The SPA's resource picker opens empty: the left list only shows recents, favorit
 **D2 — Type chips show a simple group tree of its own (user ruling 2026-09-15, relayed by the coordinator: "Parität zum Swing-Baum overruled").**
 - **Deliberate first cut:** the grouping will change again (user, 2026-09-15: "wir werden die Gruppierung eh nochmal ändern — ist jetzt die erste Stufe"). The API is shaped so that change needs no break (`groupPaths`, S1).
 - **Rule:** under a type chip the list is an expandable tree with one level per categorization value (D11). Every node shows its member count and offers "alle wählen" (select all resources below it). Resources without a categorization value sit directly under the type.
-- **Not in scope:** the Swing `TreeFactoryImpl` rules are deliberately **not** mirrored. There is no belongsTo nesting yet (later), no packages, and no parity test.
+- **Not in scope:** the Swing `TreeFactoryImpl` rules are deliberately **not** mirrored. belongsTo / package nesting is delivered by [PRD 120](120-resource-hierarchy-parents-children.md) (`Resource.parents`, D7/D8 there); no parity test.
 - **Who computes what:** the **server computes** the group values per resource (`groupPaths`, D8); the SPA only nests by that field and never interprets deployment-specific attributes (PRD 081 principle).
 
 **D8 — One lean resource list, filtered in the browser (user, 2026-09-15).** On start the SPA loads all readable resources once, with only the fields the picker needs: `id`, `kind`, `name`, `classification { typeKey type { name } }` (the type name labels the chip), `groupPaths` (`belongsTo` later, D2). It never loads the full resource (classification values, permissions) like the Swing client. Typing, chip counts, "first 20 A–Z", favorites/recents ordering and the tree are then computed in the browser, **with no server call per keystroke**. How the list learns about added, changed or deleted resources is solved later (OQ 6); until then the list reloads when the SPA starts.
@@ -87,7 +87,7 @@ Resources stay part of the top search — the user rejected moving them out — 
 The existing `resources(filter:)` query carries the list; GraphQL resolves only the selected fields. Two new fields on `Resource`:
 
 - **S1 — `groupPaths: [[String!]!]!`.** One path per value of the type's attribute annotated `categorization=true` (`AttributeAnnotations.KEY_CATEGORIZATION`). Each path has one level today (the value's name, D11); a multi-valued attribute yields sibling paths, so the resource appears under each value. Empty when the type has no such attribute or the resource has no value. Deeper levels later only lengthen the paths — no API break (D2 first cut). **§12:** when the categorization attribute references another resource, a value the caller cannot read is left out — its name must not surface.
-- **S2 — `belongsTo: ID` (later, D2 — not part of the first delivery).** The parent resource via the type's belongsTo attribute. **§12:** `null` when the caller cannot read the parent — neither the id nor the name of an unreadable parent may surface. The packages relation (a resource contains others) follows the same pattern if needed (`packageIds: [ID!]`, filtered to readable ids).
+- **S2 — `belongsTo: ID` (later, D2 — not part of the first delivery). Superseded by [PRD 120](120-resource-hierarchy-parents-children.md): `Resource.parents` / `children` replace `belongsTo` / `packageIds` (removed 2026-10-03).** The parent resource via the type's belongsTo attribute. **§12:** `null` when the caller cannot read the parent — neither the id nor the name of an unreadable parent may surface. The packages relation (a resource contains others) follows the same pattern if needed (`packageIds: [ID!]`, filtered to readable ids).
 - **Cost.** The query is one pass over the type buckets with an O(1) readable-id check per resource (per-user cache, `rapla.readmodel.authoritative`, default on) and cached names (`ClassificationImpl.TextCache`). The payload is about 100 bytes per resource: roughly 200 KB for 2,000 resources, 2 MB for 20,000. These are estimates from the code, not measurements; no perf test for now (user, 2026-09-15).
 - **S3 — event search gate (D9).** `SearchGraphQLController.searchEvents` checks `canRead` instead of `canModify`. The query stays `search(kinds: [EVENT])`: a windowless name scan over all reservations per request, with the permission check on name matches only. More callers now get hits, so more permission checks run per request.
 - **Not needed any more:** a separate tree query, sort-before-`limit` in `resources`, a count query — all computed in the browser from the list.
@@ -117,7 +117,7 @@ The existing `resources(filter:)` query carries the list; GraphQL resolves only 
 
 ### Later
 - Keeping the loaded list current while the SPA is open (OQ 6).
-- belongsTo nesting (S2) and deeper category levels (D11).
+- Deeper category levels (D11). belongsTo nesting (S2) → [PRD 120](120-resource-hierarchy-parents-children.md).
 
 ### Out of scope
 - The event sheet's add mode (D7) — now [PRD 123](123-spa-unified-resource-picker.md).

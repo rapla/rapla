@@ -112,7 +112,12 @@ Defines one column. Fields:
   reference target to allocatables of a given DynamicType
   (e.g. "instructor must be a person").
 - `KEY_MULTI_SELECT` — boolean; allows multiple values per key.
-- `KEY_BELONGS_TO`, `KEY_PACKAGE` — bookkeeping flags.
+- `KEY_BELONGS_TO`, `KEY_PACKAGE` — resource-reference attributes that build the resource graph (at most one of
+  each per type). Normalised direction: a belongsTo value is a **parent** of its holder, a package value a
+  **child**. Invariant: no resource is its own transitive parent; the store-time check walks up from every stored
+  resource over both kinds, data loaded at startup is not checked. The graph lives in `LocalCache.graph` (used by
+  conflicts, calendar expansion and GraphQL `Resource.parents` / `children`) —
+  [PRD 120](../prd/120-resource-hierarchy-parents-children.md#decisions-locked).
 
 ### `AttributeAnnotations` (UI hints)
 
