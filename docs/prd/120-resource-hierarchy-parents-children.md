@@ -40,7 +40,7 @@ make a resource its own transitive parent.
 - **Other walks.** `StructuralTypeFetchers.idInMatchesHierarchy` walks belongsTo upward with a counter (≤ 21 steps,
   own `belongsToParent` helper). Swing `TreeFactoryImpl` (`addBelongsToNodes`, `fillPackages`) recurses without a
   guard but never mixes the kinds.
-- **Deployment data.** One production deployment uses belongsTo on three room/course-style types plus on a category attribute (see OQ2), and package on a course-group type; the concrete keys are in the private dhbwrapla docs (`docs/prd/rapla-120-hierarchy-data.md`).
+- **Deployment data.** One production deployment uses belongsTo on five room/course-style types (OQ2), and package on a course-group type; the concrete keys are in the private dhbwrapla docs (`docs/prd/rapla-120-hierarchy-data.md`).
 - **Demo Hochschule** has no hierarchy — only `categorization` on `room.building`, `course.program`,
   `equipment.storageLocation` (seed v4, `1bee9639f`); unaffected.
 
@@ -55,7 +55,7 @@ rules methods; the `readableResource` predicate and the test seed (DozGruppe →
   a building lists its rooms in `children`, a course group lists its courses in `children`.
 - Tier-3 leak test: a non-admin never receives the id of an unreadable parent or child.
 - SPA picker on the test deployment: building chip → a building expands to its rooms (→ sub-rooms); course-group chip → a
-  group expands to its courses.
+  group expands to its courses. The same holds in the "Alle" / "Favoriten" / "Zuletzt" chips (D9).
 - Tier-2: storing a mixed belongsTo/package cycle is rejected; room belongsTo building **and** building packages room
   stores.
 
@@ -72,7 +72,6 @@ rules methods; the `readableResource` predicate and the test seed (DozGruppe →
 - More than one belongsTo / package attribute per type (D5).
 - Checking data loaded at startup or imported without a store event (D6).
 - Wiring or deleting `DependencyIndex`.
-- belongsTo on a category attribute in one deployment (OQ2).
 
 ## Plan
 
@@ -92,8 +91,15 @@ rules methods; the `readableResource` predicate and the test seed (DozGruppe →
 - [x] Overlay: event objects contribute their **new** belongsTo / package values; cache edges whose source is in the
       event are ignored (stale); everything else from Phase 1's neighbour read.
 - [x] Messages: self-reference keeps `…CantReferToSelf`; a cycle uses `error.belongsToCycle` (no new i18n key). Depth
-      limit 20 goes.
+      limit 20 as cycle detector goes (kept as a separate rule, D10).
 - [x] Tier-2 tests: see § Tests.
+- [x] (done uncommitted, rapla-impl: `MAX_HIERARCHY_LEVELS`, counted in edges — 10 edges = 11 resources; OQ7) Depth limit kept (D10): a store is rejected when the longest chain through a stored resource (ancestors +
+      descendants, both kinds normalised) exceeds 10 levels; message as before (`error.belongsToCycle`). Tier-2: a
+      10-level chain stores, extending it to 11 from either end is rejected.
+- [x] (done uncommitted, rapla-impl: `logResourceCyclesOnLoad`, `ResourceCycleCheckTest` 16/16) Load time (OQ5): an ERROR log per pre-existing cycle with its resource ids, read from the attribute values; no
+      removal, loading continues. Tier-2 test: a cycle injected without a store event is logged and stays loaded.
+      Plus: storing a cycle member with the edge removed (cycle broken) stores; any other edit of a cycle member is
+      rejected with `error.belongsToCycle` until the cycle is broken (overlay reads the new values).
 
 ### Phase 3 — GraphQL fields
 *Code done 2026-10-03 (uncommitted, rapla-impl2 + rapla-impl for idIn); default lanes green. Open: 8051 restart, then arm `parents { id }` in the SPA.*
@@ -102,14 +108,14 @@ rules methods; the `readableResource` predicate and the test seed (DozGruppe →
       `canRead`).
 - [x] Remove the spike fields `belongsTo` / `packageIds`, their fetchers and `ResourceTreeRules.belongsTo` / `packageIds`
       with their tests.
-- [x] (rapla-impl, user go 2026-10-03; done uncommitted: `StorageOperator.isSelfOrAncestorIn`, `AppointmentResourcesIdInHierarchyGraphQLTest`; the §12 case is still open, see OQ4) `idInMatchesHierarchy` walks up over `getParentRefs` (both kinds, several parents) with a visited set instead of
+- [x] (rapla-impl, user go 2026-10-03; done uncommitted: `StorageOperator.isSelfOrAncestorIn`, `AppointmentResourcesIdInHierarchyGraphQLTest`; §12 residual case accepted, OQ4) `idInMatchesHierarchy` walks up over `getParentRefs` (both kinds, several parents) with a visited set instead of
       the belongsTo-only `belongsToParent` chain with its counter; a course matches its group's id like a room its
       building's (same expansion as `getDependentRef`). A pre-existing cycle (D6) must not loop. Tier-3: course
       matched via group id; cyclic data terminates; an `idIn` id the caller cannot read matches nothing (§12).
 - [x] Tier-3 `ResourceTreeFieldsGraphQLTest`: admin sees both directions; monty (Room A66 and Burns unreadable) gets `[]`
       and the raw `{ resources { id parents { id } children { id } } }` body contains neither id; mutation check (drop the
       filter → red).
-- [ ] Announce the schema change; server restart on 8051 before the SPA query uses the fields (AGENTS.md §7a).
+- [x] Announce the schema change; server restart on 8051 before the SPA query uses the fields (AGENTS.md §7a).
 
 ### Phase 4 — SPA picker tree
 *Code done 2026-10-03 (uncommitted, rapla-impl2); Vitest green (resource-tree 19/19, resource-picker 8/8, 96/96 in the run), `tsc --noEmit` ok. `parents { id }` is out of the live query until Phase 3 is in the schema and 8051 restarted (AGENTS §7a); `parentIds` maps to [] meanwhile. Group "alle wählen" (`membersOf`) does not descend into resource nodes (D7); in a search, hits under a parent kept only as path still count.*
@@ -121,6 +127,10 @@ rules methods; the `readableResource` predicate and the test seed (DozGruppe →
       on resource rows with children (reuse `toggleGroup`), label click still steps; no count / "alle wählen" on
       resource nodes (D7).
 - [x] Tier-5 `resource-tree.spec.ts`, tier-6 `resource-picker.component.spec.ts` (§ Tests).
+- [x] (done uncommitted, rapla-impl2: `childIndex` / `resourceNodes`; auto-open of the path to a selected child only in the type tree — OQ6) Flat chips too (user, 2026-10-03: "im alle/recent/fav modus nicht"): in "Alle" / "Favoriten" / "Zuletzt"
+      (`treeMode()` false → flat `paged()` rows) a resource row with children gets the same toggle and expands to its
+      children from the whole lean list (`store.resources()`), recursively with the path guard; paging (D12) still
+      counts top-level rows only; search hits stay expandable (D9).
 
 ### Phase 5 — Docs and rollout
 - [x] PRD 119: S2 / D2 point to this PRD (file is rapla-concept's working copy — coordinate first).
@@ -146,17 +156,28 @@ rules methods; the `readableResource` predicate and the test seed (DozGruppe →
 
 ## Open Questions
 
-- **OQ1** — Does the SPA list need `children` too, or only `parents`? *Resolution:* pending; plan loads only
-  `parents { id }` and derives children in the browser.
-- **OQ2** — Two course-style types of a production deployment carry `belongsTo=true` on a *category* attribute, which `AttributeImpl` should refuse (keys: dhbwrapla docs). Data error, or should the programme become a grouping via `categorization`? *Resolution:* pending; the graph ignores non-resource values either way.
-- **OQ3** — Log a warning when a pre-existing cycle is met at load time? *Resolution:* pending; not required (D6).
+- **OQ1** — Does the SPA list need `children` too, or only `parents`? *Resolution (2026-10-03):* only `parents { id }`;
+  children are derived in the browser (`childIndex`, d38a499fa).
+- **OQ2** — Two course-style types of a production deployment were thought to carry `belongsTo=true` on a *category*
+  attribute. *Resolution (2026-10-03, checked in the production export):* not a category — the attribute is a resource
+  reference (`rapla:allocatable`, no type constraint) to a resource type of its own, so it is a valid belongsTo and the
+  courses nest under it; no data error.
+- **OQ3** — Log a warning when a pre-existing cycle is met at load time? *Resolution:* superseded by OQ5 (ERROR).
 - **OQ4** — `idIn` matches via ancestors without a read check, so an unreadable id that hits reveals it is an
   ancestor of a readable resource (pre-existing, unchanged by the fix). (a) filter `idIn` to readable ids first, or
-  (b) stop the walk at unreadable ancestors. *Resolution:* pending user; recommended (a) (same expansion as the
-  calendar, D2).
+  (b) stop the walk at unreadable ancestors. *Resolution (user, 2026-10-03):* neither — normally a user may read the parent
+  resource, so the residual case is accepted; no change.
 - **OQ5** — The old load path deleted resources failing the per-kind check (`removeInconsistentEntities` →
   `DBOperator` `removeObjects`; also chains deeper than 20). Phase 2 drops this (D6). Log a warning instead (cf. OQ3)?
-  *Resolution:* pending user; recommended: log only.
+  The removal deleted whole resources (`RaplaSQL.remove` → DELETE), not just the links. Rapla 2 on a shared DB keeps
+  this load path, but parallel operation is a two-week exception for one customer (user, 2026-10-03); Rapla 2 is not
+  changed. *Resolution (user, 2026-10-03):* no delete, no warning — Rapla 3 logs an **ERROR** at load naming the
+  ids of the resources on each cycle; loading continues. The detection reads the belongsTo / package values (not the
+  graph, which cannot show a 2-cycle). An existing chain deeper than 10 (D10) is logged as ERROR too.
+- **OQ6** — In the flat chips, should the path to a selected child open automatically (as `pathKeysTo` does in the
+  type tree, PRD 123 D8)? *Resolution (user, 2026-10-03):* no — in "Alle" the child is its own row anyway.
+- **OQ7** — D10 "10 levels": edges (11 resources in a chain, as implemented) or resources (10, constant 9)?
+  *Resolution:* pending user.
 - **Graph limit (finding 2026-10-03):** `GraphNode.connections` holds one type per neighbour pair, so a loaded 2-cycle
   A↔B (both belongsTo) appears in one direction only; walks terminate but cannot see it. Store-time detection is
   unaffected (overlay); D6 tests use 3-node cycles.
@@ -205,3 +226,17 @@ group (`TreeFactoryImpl`: `fillPackages` / `addBelongsToNodes` only on uncategor
 categorized resource has one node per value. The restriction prevents neither duplicates (Swing lists a part under
 its type and its parent anyway) nor cycles (both Swing recursions have no guard). The SPA nests everywhere; Phase 4's
 path guard handles cycles. Rejected: copying the restriction (a building with a category value could not be expanded).
+
+**D9 — Nesting in every chip, children from the whole list (user, 2026-10-03).** The hierarchy is not a type-chip
+feature: in "Alle", "Favoriten" and "Zuletzt" a resource row with children expands as under a type chip (D7 rules,
+path guard). Children come from the whole lean list, not from the chip's list — a favourite building shows all its
+rooms, matching what selecting it brings into the calendar (D7). Paging (PRD 119 D12) counts top-level rows only.
+Rejected: tree only under type chips (first cut — the hierarchy disappeared in the default chip); children filtered to
+the chip (favourites would show a partial building).
+
+**D10 — Chains are limited to 10 levels (user, 2026-10-03: "mehr als 10 — da gibt es keinen Use Case").** Phase 2 dropped the depth limit together with the old
+cycle check, but `LocalCache.fillDependent` (calendar expansion, `getDependentRef`) still throws beyond depth 20, so a
+deeper chain would break appointment queries for its top resource. The limit returns as its own store-time rule next
+to the cycle check (D4 rejected it only as a cycle detector), at 10 — below `fillDependent`'s 20; an existing chain
+of 11–20 stays loaded and queryable, is logged as ERROR at load (OQ5), and its resources can only be stored once the
+chain is shortened. Rejected: allowing deep chains and dropping the limit in `fillDependent` (no real need, larger change).

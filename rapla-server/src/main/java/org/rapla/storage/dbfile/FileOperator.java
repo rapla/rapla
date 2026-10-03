@@ -336,6 +336,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
                 ((RefEntity) entity).setReadOnly();
             }
             normalizeRedundantDeniesOnLoad(list);
+            logResourceCyclesOnLoad(list);
             for (Entity entity : list)
             {
                 ((RefEntity) entity).setReadOnly();

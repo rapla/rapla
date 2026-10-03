@@ -6,6 +6,7 @@ import {
   filterTree,
   membersOf,
   pathKeysTo,
+  resourceNodes,
   visibleRows,
   type TreeNode,
 } from './resource-tree';
@@ -215,6 +216,19 @@ describe('resource tree (PRD 119 D2/D11)', () => {
     it('opens the parents on the path to a selected child', () => {
       const tree = buildTree([building], [building, room, part]);
       expect([...pathKeysTo(tree, new Set(['p']))]).toEqual([tree[0].children[0].key, tree[0].key]);
+    });
+
+    it('resourceNodes nests flat-chip rows from the whole list, with the path guard', () => {
+      const [b] = resourceNodes([building], [building, room, part]);
+      expect(b.key).toBe('#b');
+      expect(ids(b.children)).toEqual(['r']);
+      expect(ids(b.children[0].children)).toEqual(['p']);
+      const [a] = resourceNodes(
+        [node('a', 'A', ['c'])],
+        [node('a', 'A', ['c']), node('c', 'C', ['a'])],
+      );
+      expect(ids(a.children)).toEqual(['c']);
+      expect(ids(a.children[0].children)).toEqual([]);
     });
 
     it('search keeps the path to a matching child, opens it, and alle wählen takes the hit', () => {

@@ -199,6 +199,125 @@ class ResourceCycleCheckTest extends FacadeTestSupport
     }
 
     /**
+     * PRD 120 Phase 2 (user decision): a cycle found when loading is logged as ERROR with the resource ids and stays
+     * loaded — no removal, no delete. Detected from the attribute values, so a 2-cycle the graph cannot hold counts.
+     */
+    @Test
+    void aCycleFoundWhenLoadingIsLoggedAndKept() throws Exception
+    {
+        Allocatable a = node("loadA");
+        Allocatable b = node("loadB");
+        belongsTo(a, b);
+        facade.storeObjects(new Allocatable[] { a, b });
+        Allocatable closing = facade.edit(stored(b));
+        belongsTo(closing, stored(a));
+        operator.cache.put(closing);
+        facade.store(node("writesTheFile"));   // FileOperator writes the whole cache, now including b belongsTo a
+
+        ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent> appender = new ch.qos.logback.core.read.ListAppender<>();
+        appender.start();
+        ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(org.rapla.storage.impl.server.LocalAbstractCachableOperator.class);
+        logger.addAppender(appender);
+        try
+        {
+            operator.disconnect();
+            operator.connect();
+        }
+        finally
+        {
+            logger.detachAppender(appender);
+        }
+
+        List<ch.qos.logback.classic.spi.ILoggingEvent> cycleErrors = appender.list.stream()
+                .filter(e -> e.getLevel() == ch.qos.logback.classic.Level.ERROR && e.getFormattedMessage().contains(a.getId()) && e.getFormattedMessage().contains(b.getId()))
+                .toList();
+        assertEquals(1, cycleErrors.size(), "one ERROR naming both resources of the cycle");
+        assertEquals(b.getId(), stored(a).getClassification().getValue("parent") instanceof Allocatable p ? p.getId() : null, "a stays loaded with its value");
+        assertEquals(a.getId(), stored(b).getClassification().getValue("parent") instanceof Allocatable p ? p.getId() : null, "b stays loaded with its value");
+    }
+
+    /** OQ5: a loaded cycle stays repairable — storing a member without its cycle edge succeeds. */
+    @Test
+    void aLoadedCycleIsRepairedByRemovingAnEdge() throws Exception
+    {
+        Allocatable[] cycle = injectCycle("repair");
+        Allocatable editC = facade.edit(stored(cycle[2]));
+        editC.getClassification().setValues(nodeType.getAttribute("parent"), List.of());
+        assertDoesNotThrow(() -> facade.store(editC));
+    }
+
+    /** OQ5: storing a member of a loaded cycle with any other change is rejected. */
+    @Test
+    void aLoadedCycleBlocksAnUnrelatedChangeOfAMember() throws Exception
+    {
+        Allocatable[] cycle = injectCycle("member");
+        Allocatable editB = facade.edit(stored(cycle[1]));
+        editB.getClassification().setValue("name", "renamed");
+        assertCycle(() -> facade.store(editB));
+    }
+
+    /** D10: 10 levels (11 resources) store; an 11th level from above or below is rejected. */
+    @Test
+    void chainsStopAtTenLevels() throws Exception
+    {
+        Allocatable[] chain = chain("level", 11);
+        assertDoesNotThrow(() -> facade.storeObjects(chain));
+
+        Allocatable newTop = node("newTop");
+        facade.store(newTop);
+        Allocatable editTop = facade.edit(stored(chain[0]));
+        belongsTo(editTop, stored(newTop));
+        assertCycle(() -> facade.store(editTop));
+
+        Allocatable newBottom = node("newBottom");
+        belongsTo(newBottom, stored(chain[10]));
+        assertCycle(() -> facade.store(newBottom));
+    }
+
+    /** D10: a chain deeper than 10 levels that came in without a store event is logged as ERROR when loading. */
+    @Test
+    void aTooDeepChainIsLoggedWhenLoading() throws Exception
+    {
+        Allocatable[] chain = chain("deep", 11);
+        facade.storeObjects(chain);
+        Allocatable extra = node("deepExtra");
+        facade.store(extra);
+        Allocatable link = facade.edit(stored(extra));
+        belongsTo(link, stored(chain[10]));
+        operator.cache.put(link);
+        facade.store(node("writesTheFile"));
+
+        ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent> appender = new ch.qos.logback.core.read.ListAppender<>();
+        appender.start();
+        ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(org.rapla.storage.impl.server.LocalAbstractCachableOperator.class);
+        logger.addAppender(appender);
+        try
+        {
+            operator.disconnect();
+            operator.connect();
+        }
+        finally
+        {
+            logger.detachAppender(appender);
+        }
+        assertEquals(1, appender.list.stream()
+                .filter(e -> e.getLevel() == ch.qos.logback.classic.Level.ERROR && e.getFormattedMessage().contains(extra.getId()))
+                .count(), "one ERROR naming the lowest resource of the too-deep chain");
+        assertEquals(chain[10].getId(), ((Allocatable) stored(extra).getClassification().getValue("parent")).getId(), "the chain stays loaded");
+    }
+
+    private Allocatable[] chain(String prefix, int length) throws Exception
+    {
+        Allocatable[] chain = new Allocatable[length];
+        for (int i = 0; i < length; i++)
+        {
+            chain[i] = node(prefix + i);
+            if (i > 0) belongsTo(chain[i], chain[i - 1]);
+        }
+        return chain;
+    }
+
+    /**
      * Puts a belongsTo cycle a → b → c → a into the cache without a store event (D6: data that came in by load or
      * import). Three nodes, because the graph keeps one connection type per neighbour pair and cannot hold a 2-cycle.
      */

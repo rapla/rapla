@@ -15,12 +15,13 @@ import { ResourceSelectionStore, type ResourceItem } from '../state/resource-sel
 import { FIRST_PAGE, PAGE_SIZE, filterRows, page, usersMatching } from '../state/resource-picker';
 import {
   buildTree,
+  childIndex,
+  resourceNodes,
   filterTree,
   membersOf,
   pathKeysTo,
   visibleRows,
   type TreeNode,
-  type NodeRow,
   type TreeRow,
 } from '../state/resource-tree';
 import { entityIcon } from '../shell/entity-icon';
@@ -178,7 +179,7 @@ export interface PickEvent {
             >
               {{ expandedGroups().has(row.node.key) ? '▾' : '▸' }}
             </button>
-          } @else if (treeMode()) {
+          } @else if (nested()) {
             <span class="tspace" aria-hidden="true"></span>
           }
           <mat-icon class="ico" [style.color]="it.color || null">{{ icon(it) }}</mat-icon>
@@ -563,6 +564,8 @@ export class ResourcePickerComponent {
     this.chip() === 'all' && !this.query().trim() ? FIRST_PAGE : PAGE_SIZE,
   );
 
+  private readonly childrenOf = computed(() => childIndex(this.store.resources()));
+
   private readonly paged = computed(() =>
     this.treeMode()
       ? { shown: [], hidden: 0 }
@@ -572,20 +575,15 @@ export class ResourcePickerComponent {
 
   protected readonly rows = computed<TreeRow[]>(() => [
     ...visibleRows(this.tree().nodes, this.expandedGroups(), this.limits()),
-    ...this.paged().shown.map(
-      (item): NodeRow => ({
-        node: {
-          key: `#${item.id}`,
-          label: item.label,
-          kind: 'resource',
-          item,
-          children: [],
-          count: 1,
-        },
-        depth: 0,
-      }),
+    ...visibleRows(
+      resourceNodes(this.paged().shown, this.store.resources(), this.childrenOf()),
+      this.expandedGroups(),
+      new Map(this.limits()).set('', Infinity),
     ),
   ]);
+
+  /** A row with a toggle shifts its icon; the other rows get a spacer once any row has one. */
+  protected readonly nested = computed(() => this.rows().some((row) => row.node?.children.length));
 
   /** PRD 123 D8 — every hit of the active chip + query: the filtered tree's members, else the whole filtered list. */
   protected readonly allHits = computed<ResourceItem[]>(() => {

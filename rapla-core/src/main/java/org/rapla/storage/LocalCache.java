@@ -634,6 +634,18 @@ public class LocalCache implements EntityResolver
         return neighbours(allocatableRef, GraphNode.ConnectionType.BelongsTo, GraphNode.ConnectionType.BelongsTo);
     }
 
+    /** the children a resource names itself (its package values) */
+    public Set<ReferenceInfo<Allocatable>> getPackagesRefs(ReferenceInfo<Allocatable> allocatableRef)
+    {
+        return neighbours(allocatableRef, GraphNode.ConnectionType.Packages, GraphNode.ConnectionType.Packages);
+    }
+
+    /** the children that name the resource (resources with it as belongsTo value) */
+    public Set<ReferenceInfo<Allocatable>> getBelongedByRefs(ReferenceInfo<Allocatable> allocatableRef)
+    {
+        return neighbours(allocatableRef, GraphNode.ConnectionType.BelongsToTarget, GraphNode.ConnectionType.BelongsToTarget);
+    }
+
     /** the parents that name the resource (resources listing it in their packages) */
     public Set<ReferenceInfo<Allocatable>> getPackagedByRefs(ReferenceInfo<Allocatable> allocatableRef)
     {

@@ -6,6 +6,7 @@ import { provideNoopAnimations } from '@angular/platform-browser/animations';
 
 import { ResourcePickerComponent, type PickEvent } from './resource-picker.component';
 import type { AvailabilityRow } from '../event/availability-search.service';
+import { RecentsFavoritesService } from '../state/recents-favorites.service';
 
 const room = (i: number, typeKey = 'room', typeName = 'Raum') => ({
   id: `r${i}`,
@@ -114,6 +115,57 @@ describe('ResourcePickerComponent', () => {
     expect(parseFloat(childRow.style.paddingLeft)).toBeGreaterThan(
       parseFloat((row as HTMLElement).style.paddingLeft),
     );
+  });
+
+  it('PRD 120 — a favorite building toggles open to its rooms from the whole list', async () => {
+    const building = { ...room(1, 'building', 'Gebäude'), name: 'Gebäude A' };
+    const child = { ...room(2), parents: [{ id: 'r1' }] };
+    const f = await create([building, child]);
+    const lists = TestBed.inject(RecentsFavoritesService);
+    const loaded = lists.reload();
+    http.expectOne('/api/recents').flush([]);
+    http
+      .expectOne('/api/favorites')
+      .flush([
+        { id: 'r1', kind: 'resource', label: 'Gebäude A', color: null, typeKey: 'building' },
+      ]);
+    await loaded;
+    f.componentInstance.chip.set('favorites');
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
+    expect(labels(el)).toEqual(['Gebäude A']);
+    (el.querySelector('.item button.toggle') as HTMLButtonElement).click();
+    f.detectChanges();
+    expect(labels(el)).toEqual(['Gebäude A', 'Raum 02']);
+  });
+
+  it('PRD 120 — a search hit in Alle stays expandable', async () => {
+    const building = { ...room(1, 'building', 'Gebäude'), name: 'Gebäude A' };
+    const child = { ...room(2), parents: [{ id: 'r1' }] };
+    const f = await create([building, child], {
+      query: 'gebäude',
+    });
+    const el = f.nativeElement as HTMLElement;
+    expect(labels(el)).toEqual(['Gebäude A']);
+    (el.querySelector('.item button.toggle') as HTMLButtonElement).click();
+    f.detectChanges();
+    expect(labels(el)).toEqual(['Gebäude A', 'Raum 02']);
+  });
+
+  it('PRD 120 D12 — in Alle the page counts top-level rows only; an expanded building adds its rooms', async () => {
+    const building = { ...room(0, 'building', 'Gebäude'), name: 'Aaa Gebäude' };
+    const children = [1, 2, 3].map((i) => ({ ...room(i), parents: [{ id: 'r0' }] }));
+    const rest = Array.from({ length: 30 }, (_, i) => room(10 + i));
+    const f = await create([building, ...children, ...rest]);
+    const el = f.nativeElement as HTMLElement;
+    const more = () => el.querySelector('.showmore')?.textContent?.trim();
+    expect(labels(el).length).toBe(20);
+    const before = more();
+    (el.querySelector('.item button.toggle') as HTMLButtonElement).click();
+    f.detectChanges();
+    expect(labels(el).length).toBe(23);
+    expect(labels(el).slice(0, 4)).toEqual(['Aaa Gebäude', 'Raum 01', 'Raum 02', 'Raum 03']);
+    expect(more()).toBe(before);
   });
 
   it('an active search shows its filter with the hit count and × clears it', async () => {

@@ -73,6 +73,11 @@ export function buildTree(
       if (!level.items.some((x) => x.id === item.id)) level.items.push(item);
     }
   }
+  return toNodes(root, '', childIndex(all));
+}
+
+/** PRD 120 — parent id → the resources of `all` that name it in `parentIds`. */
+export function childIndex(all: readonly ResourceItem[]): Map<string, ResourceItem[]> {
   const childrenOf = new Map<string, ResourceItem[]>();
   for (const item of all) {
     for (const parent of new Set(item.parentIds ?? [])) {
@@ -81,7 +86,16 @@ export function buildTree(
       childrenOf.set(parent, list);
     }
   }
-  return toNodes(root, '', childrenOf);
+  return childrenOf;
+}
+
+/** PRD 120 D9 — the flat chips' rows as resource nodes, in their order, nested by `parentIds` like {@link buildTree}. */
+export function resourceNodes(
+  items: readonly ResourceItem[],
+  all: readonly ResourceItem[],
+  childrenOf: ReadonlyMap<string, ResourceItem[]> = childIndex(all),
+): TreeNode[] {
+  return items.map((item) => resourceNode(item, '', childrenOf, new Set()));
 }
 
 function resourceNode(

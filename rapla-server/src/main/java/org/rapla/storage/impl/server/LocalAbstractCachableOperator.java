@@ -1211,6 +1211,116 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     private final Set<ReferenceInfo<Entity>> redundantDenyEntities = ConcurrentHashMap.newKeySet();
     private int redundantDenyRows;
 
+    /**
+     * PRD 120 (user decision 2026-10-03): a belongsTo/package cycle found when loading is logged as ERROR with its
+     * resource ids and left in place — no removal, no delete; storing a member stays possible once an edge is removed.
+     * Read from the attribute values, not from the cache graph, which holds one connection type per neighbour pair and
+     * so cannot show a 2-cycle. Deep chains are not an error.
+     */
+    protected void logResourceCyclesOnLoad(Collection<Entity> list)
+    {
+        Map<String, Set<String>> parents = new HashMap<>();
+        for (Entity entity : list)
+        {
+            if (!(entity instanceof Allocatable))
+            {
+                continue;
+            }
+            Allocatable holder = (Allocatable) entity;
+            String id = holder.getId();
+            for (String parent : referencedIds(holder, ConstraintIds.KEY_BELONGS_TO))
+            {
+                parents.computeIfAbsent(id, k -> new LinkedHashSet<>()).add(parent);
+            }
+            for (String child : referencedIds(holder, ConstraintIds.KEY_PACKAGE))
+            {
+                parents.computeIfAbsent(child, k -> new LinkedHashSet<>()).add(id);
+            }
+        }
+        Set<String> done = new HashSet<>();
+        Set<Set<String>> reported = new HashSet<>();
+        for (String start : parents.keySet())
+        {
+            if (done.contains(start))
+            {
+                continue;
+            }
+            // iterative depth-first walk over parent edges; a back edge onto the current path closes a cycle
+            List<String> path = new ArrayList<>();
+            Set<String> onPath = new HashSet<>();
+            Deque<Iterator<String>> iterators = new ArrayDeque<>();
+            path.add(start);
+            onPath.add(start);
+            iterators.push(parents.getOrDefault(start, Collections.emptySet()).iterator());
+            while (!iterators.isEmpty())
+            {
+                Iterator<String> it = iterators.peek();
+                if (!it.hasNext())
+                {
+                    iterators.pop();
+                    String finished = path.remove(path.size() - 1);
+                    onPath.remove(finished);
+                    done.add(finished);
+                    continue;
+                }
+                String next = it.next();
+                if (onPath.contains(next))
+                {
+                    List<String> cycle = new ArrayList<>(path.subList(path.indexOf(next), path.size()));
+                    if (reported.add(new HashSet<>(cycle)))
+                    {
+                        LOGGER.error("Resource cycle over belongsTo/packages (PRD 120): {} — loaded unchanged; remove one of the edges to fix it", cycle);
+                    }
+                }
+                else if (!done.contains(next))
+                {
+                    path.add(next);
+                    onPath.add(next);
+                    iterators.push(parents.getOrDefault(next, Collections.emptySet()).iterator());
+                }
+            }
+        }
+        // PRD 120 D10: a chain deeper than the allowed levels is an error too, logged once per lowest resource
+        Set<String> hasChild = new HashSet<>();
+        parents.values().forEach(hasChild::addAll);
+        Map<String, Integer> depth = new HashMap<>();
+        for (String leaf : parents.keySet())
+        {
+            if (!hasChild.contains(leaf))
+            {
+                int levels = longestPath(leaf, id -> parents.getOrDefault(id, Collections.emptySet()), depth, new HashSet<>());
+                if (levels > MAX_HIERARCHY_LEVELS)
+                {
+                    LOGGER.error("Resource chain over belongsTo/packages deeper than {} levels (PRD 120): {} levels above {} — loaded unchanged; shorten it", MAX_HIERARCHY_LEVELS, levels, leaf);
+                }
+            }
+        }
+    }
+
+    private static Collection<String> referencedIds(Allocatable holder, String constraint)
+    {
+        List<String> result = new ArrayList<>();
+        Classification classification = holder.getClassification();
+        if (!(classification instanceof ClassificationImpl))
+        {
+            return result;
+        }
+        for (Attribute attribute : classification.getAttributes())
+        {
+            if (Boolean.TRUE.equals(attribute.getConstraint(constraint)))
+            {
+                for (String id : ((ClassificationImpl) classification).getValuesUnresolvedStrings(attribute))
+                {
+                    if (id != null)
+                    {
+                        result.add(id);
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
     protected void normalizeRedundantDeniesOnLoad(Collection<Entity> list)
     {
         long start = System.nanoTime();
@@ -4134,6 +4244,21 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 newPackagedBy.computeIfAbsent(child, r -> new LinkedHashSet<>()).add(ref);
             }
         }
+        Map<ReferenceInfo<Allocatable>, Set<ReferenceInfo<Allocatable>>> newChildren = new HashMap<>();
+        for (Map.Entry<ReferenceInfo<Allocatable>, Set<ReferenceInfo<Allocatable>>> e : newBelongsTo.entrySet())
+        {
+            for (ReferenceInfo<Allocatable> parent : e.getValue())
+            {
+                newChildren.computeIfAbsent(parent, r -> new LinkedHashSet<>()).add(e.getKey());
+            }
+        }
+        for (Map.Entry<ReferenceInfo<Allocatable>, Set<ReferenceInfo<Allocatable>>> e : newPackagedBy.entrySet())
+        {
+            for (ReferenceInfo<Allocatable> holder : e.getValue())
+            {
+                newChildren.computeIfAbsent(holder, r -> new LinkedHashSet<>()).add(e.getKey());
+            }
+        }
         for (Allocatable start : stored.values())
         {
             ReferenceInfo<Allocatable> startRef = start.getReference();
@@ -4152,6 +4277,63 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 }
             }
         }
+        // PRD 120 D10 (user: no use case for more than 10 levels): no chain through a stored resource may be longer;
+        // checked after the cycle walk, so the graph around the stored resources is acyclic
+        Map<ReferenceInfo<Allocatable>, Integer> up = new HashMap<>();
+        Map<ReferenceInfo<Allocatable>, Integer> down = new HashMap<>();
+        for (Allocatable start : stored.values())
+        {
+            ReferenceInfo<Allocatable> ref = start.getReference();
+            int levels = longestPath(ref, r -> parentsOf(r, stored, newBelongsTo, newPackagedBy), up, new HashSet<>())
+                    + longestPath(ref, r -> childrenOf(r, stored, newChildren), down, new HashSet<>());
+            if (levels > MAX_HIERARCHY_LEVELS)
+            {
+                throw new RaplaException(getI18n().format("error.belongsToCycle", getName(start)));
+            }
+        }
+    }
+
+    /** PRD 120 D10: the deepest allowed belongsTo/package chain, in levels (edges); well below LocalCache.fillDependent's 20 */
+    static final int MAX_HIERARCHY_LEVELS = 10;
+
+    /** number of edges on the longest path from {@code ref} along {@code next}; a node met again on the path counts 0 (pre-existing cycle, D6) */
+    private static <T> int longestPath(T ref, java.util.function.Function<T, Collection<T>> next, Map<T, Integer> memo, Set<T> onPath)
+    {
+        Integer known = memo.get(ref);
+        if (known != null)
+        {
+            return known;
+        }
+        if (!onPath.add(ref))
+        {
+            return 0;
+        }
+        int best = 0;
+        for (T n : next.apply(ref))
+        {
+            best = Math.max(best, 1 + longestPath(n, next, memo, onPath));
+        }
+        onPath.remove(ref);
+        memo.put(ref, best);
+        return best;
+    }
+
+    private Set<ReferenceInfo<Allocatable>> childrenOf(ReferenceInfo<Allocatable> ref, Map<ReferenceInfo<Allocatable>, Allocatable> stored,
+            Map<ReferenceInfo<Allocatable>, Set<ReferenceInfo<Allocatable>>> newChildren)
+    {
+        Set<ReferenceInfo<Allocatable>> children = new LinkedHashSet<>(newChildren.getOrDefault(ref, Collections.emptySet()));
+        if (!stored.containsKey(ref))
+        {
+            children.addAll(cache.getPackagesRefs(ref));
+        }
+        for (ReferenceInfo<Allocatable> holder : cache.getBelongedByRefs(ref))
+        {
+            if (!stored.containsKey(holder))
+            {
+                children.add(holder);
+            }
+        }
+        return children;
     }
 
     private Set<ReferenceInfo<Allocatable>> parentsOf(ReferenceInfo<Allocatable> ref, Map<ReferenceInfo<Allocatable>, Allocatable> stored,
