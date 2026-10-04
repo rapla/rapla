@@ -960,6 +960,8 @@ public final class StructuralTypeFetchers
                     out.add(new ReservationGraphQLController.AllocationDto(a, appointmentIds,
                             r.getRequestStatus(a)));
                 }
+                out.sort(java.util.Comparator.comparing(ReservationGraphQLController.AllocationDto::resource,
+                        ClassificationGraphQLController.treeOrder()));
                 return out;
             }
         };
@@ -1100,7 +1102,9 @@ public final class StructuralTypeFetchers
                     org.rapla.entities.domain.AppointmentMapping mapping =
                             envSup.get().getGraphQlContext().get(MATCHED_BY_SCOPE_KEY);
                     if (mapping == null) return List.of();   // unscoped query → compact
-                    return mapping.getMatchingAllocatables(dto.appointment(), null);
+                    List<Allocatable> matched = mapping.getMatchingAllocatables(dto.appointment(), null);
+                    matched.sort(ClassificationGraphQLController.treeOrder());
+                    return matched;
                 }
             };
 
@@ -1179,6 +1183,7 @@ public final class StructuralTypeFetchers
             out.add(alloc);
             if (limit > 0 && out.size() >= limit) break;                          // limit
         }
+        out.sort(ClassificationGraphQLController.treeOrder());
         return out;
     }
 

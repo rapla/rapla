@@ -6,12 +6,13 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ResourceSelectionStore, type ResourceItem } from './resource-selection-store';
 import { RecentsFavoritesService } from './recents-favorites.service';
 import { AuthService } from '../auth/auth.service';
+import { FilterStore } from './filter-store';
 
 const item = (id: string): ResourceItem => ({ id, label: id });
 
-const wire = (id: string, name: string, typeKey: string, typeName: string) => ({
+const wire = (id: string, name: string, typeKey: string, typeName: string, kind = 'RESOURCE') => ({
   id,
-  kind: 'RESOURCE',
+  kind,
   name,
   classification: { typeKey, type: { name: typeName } },
 });
@@ -50,11 +51,35 @@ describe('ResourceSelectionStore', () => {
     req.flush({ data: { resources: rows } });
   }
 
-  it('starts on Alle with empty lists and loads nothing by itself', () => {
-    expect(store.activeChip()).toBe('all');
+  it('starts on Ressourcen with empty lists and loads nothing by itself (PRD 127 D1)', () => {
+    expect(store.activeChip()).toBe('resources');
     expect(store.recents()).toEqual([]);
     expect(store.favorites()).toEqual([]);
-    expect(store.activeList()).toEqual([]);
+    expect(store.listFor('resources')).toEqual([]);
+  });
+
+  it('a restored filter drops chips that no longer resolve and relabels the rest from the current list (user ruling 2026-10-04)', () => {
+    const filter = TestBed.inject(FilterStore);
+    filter.setAll([
+      { id: 'r1', kind: 'resource', label: 'Old name', color: '#f00' },
+      { id: 'gone', kind: 'resource', label: 'Deleted room' },
+      { id: 'u1', kind: 'user', label: 'Old user' },
+      { id: 'u-gone', kind: 'user', label: 'Hidden user' },
+      { id: 'e1', kind: 'event', label: 'Some event' },
+    ]);
+    store.ensureLoaded();
+    const req = http.expectOne('/api/graphql');
+    req.flush({
+      data: {
+        resources: [wire('r1', 'New name', 'room', 'Raum')],
+        users: [{ id: 'u1', username: 'u1', name: 'New user' }],
+      },
+    });
+    expect(filter.entries()).toEqual([
+      { id: 'r1', kind: 'resource', label: 'New name', color: '#f00' },
+      { id: 'u1', kind: 'user', label: 'New user' },
+      { id: 'e1', kind: 'event', label: 'Some event' },
+    ]);
   });
 
   it('ensureLoaded() fetches the lean list once and maps it to items', () => {
@@ -153,31 +178,48 @@ describe('ResourceSelectionStore', () => {
     expect(store.resources().map((x) => x.id)).toEqual(['r1', 'r2']);
   });
 
-  it('offers Alle, Favoriten, Zuletzt and one chip per type', () => {
-    store.ensureLoaded();
-    flushList([
-      wire('p1', 'Prof. Lehmann', 'lecturer', 'Dozent'),
-      wire('r1', 'Hörsaal 1', 'room', 'Raum'),
-    ]);
-    expect(store.chips().map((c) => c.key)).toEqual([
-      'all',
-      'favorites',
-      'recents',
-      'type:lecturer',
-      'type:room',
-    ]);
-  });
-
-  it('Alle lists the whole list A–Z; a type chip lists only that type', () => {
+  it('Ressourcen and Personen list their kind in server order (PRD 127 D6)', () => {
     store.ensureLoaded();
     flushList([
       wire('r2', 'Hörsaal 2', 'room', 'Raum'),
-      wire('p1', 'Prof. Lehmann', 'lecturer', 'Dozent'),
+      wire('p1', 'Prof. Lehmann', 'lecturer', 'Dozent', 'PERSON'),
       wire('r1', 'Hörsaal 1', 'room', 'Raum'),
     ]);
-    expect(store.activeList().map((x) => x.id)).toEqual(['r1', 'r2', 'p1']);
-    store.setActiveChip('type:room');
-    expect(store.activeList().map((x) => x.id)).toEqual(['r1', 'r2']);
+    expect(store.listFor('resources').map((x) => x.id)).toEqual(['r2', 'r1']);
+    expect(store.listFor('persons').map((x) => x.id)).toEqual(['p1']);
+  });
+
+  it('counts the search hits over resources and users (omnibox count row)', () => {
+    store.ensureLoaded();
+    http.expectOne('/api/graphql').flush({
+      data: {
+        resources: [wire('r1', 'Hörsaal 1', 'room', 'Raum'), wire('r2', 'Labor', 'room', 'Raum')],
+        users: [{ id: 'u1', username: 'hoermann', name: 'Hörmann' }],
+      },
+    });
+    store.setQuery('hör');
+    expect(store.matchCount()).toBe(2);
+  });
+
+  it('hands the filter the tree order: resources in server order, then users A–Z (PRD 127 OQ6)', () => {
+    const filter = TestBed.inject(FilterStore);
+    store.ensureLoaded();
+    http.expectOne('/api/graphql').flush({
+      data: {
+        resources: [wire('r2', 'Zelt', 'room', 'Raum'), wire('r1', 'Aula', 'room', 'Raum')],
+        users: [
+          { id: 'uZ', username: 'zed', name: 'Zed' },
+          { id: 'uA', username: 'abe', name: 'Abe' },
+        ],
+      },
+    });
+    filter.setAll([
+      { id: 'uZ', kind: 'user', label: 'Zed' },
+      { id: 'r1', kind: 'resource', label: 'Aula' },
+      { id: 'uA', kind: 'user', label: 'Abe' },
+      { id: 'r2', kind: 'resource', label: 'Zelt' },
+    ]);
+    expect(filter.entries().map((e) => e.id)).toEqual(['r2', 'r1', 'uA', 'uZ']);
   });
 
   it('pushRecent() optimistically prepends and reconciles with the server', async () => {
@@ -227,11 +269,7 @@ describe('ResourceSelectionStore', () => {
     expect(store.resources().map((x) => x.id)).toEqual(['r1']);
   });
 
-  it('offers no group chip (groups come with the tree, PRD 119 D2/D6)', () => {
-    expect(store.chips().map((c) => c.key)).toEqual(['all', 'favorites', 'recents']);
-  });
-
-  it('activeList() follows the Favoriten and Zuletzt chips', async () => {
+  it('Favoriten and Zuletzt open once they have entries', async () => {
     store.pushRecent(item('R'));
     http
       .expectOne('/api/recents')
@@ -242,10 +280,11 @@ describe('ResourceSelectionStore', () => {
       .flush([{ id: 'F', kind: 'resource', label: 'F', color: null, typeKey: null }]);
     await Promise.resolve();
 
+    expect(store.activeChip()).toBe('favorites');
     store.setActiveChip('recents');
-    expect(store.activeList().map((x) => x.id)).toEqual(['R']);
-    store.setActiveChip('favorites');
-    expect(store.activeList().map((x) => x.id)).toEqual(['F']);
+    expect(store.activeChip()).toBe('recents');
+    expect(store.listFor('recents').map((x) => x.id)).toEqual(['R']);
+    expect(store.listFor('favorites').map((x) => x.id)).toEqual(['F']);
   });
 
   it('clearRecents() DELETEs and empties the list', async () => {
@@ -267,11 +306,11 @@ describe('ResourceSelectionStore', () => {
     store.setActive(null);
     expect(store.activeId()).toBeNull();
   });
-  // PRD 123 D5 — chip, query and active row survive a reload (per user, like FilterStore)
-  it('persists chip, query and active id and restores them in a fresh store', () => {
+  // PRD 123 D5 / PRD 127 D1 — open section, query and active row survive a reload (per user)
+  it('persists the open section, query and active id and restores them in a fresh store', () => {
     store.ensureLoaded();
     flushList([wire('r1', 'Hörsaal 1', 'room', 'Raum')]);
-    store.setActiveChip('type:room');
+    store.setActiveChip('persons');
     store.setQuery('Hör');
     store.setActive('r1');
     TestBed.resetTestingModule();
@@ -286,8 +325,49 @@ describe('ResourceSelectionStore', () => {
     });
     const fresh = TestBed.inject(ResourceSelectionStore);
     http = TestBed.inject(HttpTestingController);
-    expect(fresh.activeChip()).toBe('type:room');
+    fresh.ensureLoaded();
+    http.expectOne('/api/graphql').flush({
+      data: { resources: [wire('p1', 'Prof. Lehmann', 'lecturer', 'Dozent', 'PERSON')] },
+    });
+    expect(fresh.activeChip()).toBe('persons');
     expect(fresh.query()).toBe('Hör');
     expect(fresh.activeId()).toBe('r1');
+  });
+
+  it('maps an old saved type chip to Ressourcen (PRD 127 D1)', () => {
+    localStorage.clear();
+    TestBed.resetTestingModule();
+    const key = 'rapla.picker::u=anon';
+    localStorage.setItem(key, JSON.stringify({ chip: 'type:room', query: '', activeId: null }));
+    TestBed.configureTestingModule({
+      providers: [
+        ResourceSelectionStore,
+        RecentsFavoritesService,
+        AuthService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
+    });
+    const fresh = TestBed.inject(ResourceSelectionStore);
+    http = TestBed.inject(HttpTestingController);
+    expect(fresh.activeChip()).toBe('resources');
+  });
+
+  it('a closed accordion survives a reload (PRD 127 D1)', () => {
+    store.setActiveChip('none');
+    expect(store.activeChip()).toBeNull();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        ResourceSelectionStore,
+        RecentsFavoritesService,
+        AuthService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
+    });
+    const fresh = TestBed.inject(ResourceSelectionStore);
+    http = TestBed.inject(HttpTestingController);
+    expect(fresh.activeChip()).toBeNull();
   });
 });

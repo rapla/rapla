@@ -177,8 +177,9 @@ function mergeSlots<R>(slots: Seg<R>[][]): void {
  * scope chip is a container (building/category) the server expands it for the
  * query but no block carries the chip id, and per-room fallback lanes reproduce
  * Swing's dense per-room columns (a room's sequential lectures share one lane).
- * Blocks with no resources land in a trailing group. Groups ordered by
- * locale-collated name.
+ * Blocks with no resources land in a trailing group. PRD 127 D6 — groups follow
+ * the order of `selected` (the chips, in picker-tree order); keys outside it
+ * (fallback lanes) come after, by locale-collated name.
  */
 /**
  * The grouping key (lane) for a row. PRD 100 Phase 5 — server match provenance wins:
@@ -215,7 +216,7 @@ function groupBySelected<R>(
   // for a selected resource absent that day (Swing fixed-slots) is pure dead space — the
   // very "big empty column" we want gone. Groups form ONLY from blocks; a resource with
   // no block that day gets no lane. (fixed vs compact still differ via mergeSlots.)
-  const groups = new Map<string, { name: string; blocks: Seg<R>[] }>();
+  const groups = new Map<string, { id: string; name: string; blocks: Seg<R>[] }>();
   const noAlloc: Seg<R>[] = [];
 
   for (const seg of segs) {
@@ -226,14 +227,18 @@ function groupBySelected<R>(
     }
     let group = groups.get(key.id);
     if (!group) {
-      group = { name: key.name, blocks: [] };
+      group = { id: key.id, name: key.name, blocks: [] };
       groups.set(key.id, group);
     }
     group.blocks.push(seg);
   }
 
-  const sorted = Array.from(groups.values()).sort((a, b) =>
-    a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }),
+  const position = new Map(selected.map((s, i) => [s.id, i]));
+  const rank = (g: { id: string }) => position.get(g.id) ?? Infinity;
+  const sorted = Array.from(groups.values()).sort(
+    (a, b) =>
+      (rank(a) === rank(b) ? 0 : rank(a) < rank(b) ? -1 : 1) ||
+      a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }),
   );
   const result = sorted.map((g) => g.blocks);
   if (noAlloc.length) result.push(noAlloc);

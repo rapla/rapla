@@ -54,6 +54,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -520,6 +521,38 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     @SuppressWarnings("unchecked")
 	public Collection<AttributeImpl> getSubEntities() {
     	return attributes;
+    }
+
+    public static final Comparator<DynamicType> TYPE_ORDER = Comparator
+            .comparingInt(DynamicTypeImpl::classificationRank)
+            .thenComparing(DynamicTypeImpl::order, Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing((t1, t2) -> ((DynamicTypeImpl) t1).compareTo(t2));
+
+    private static Integer order(DynamicType type)
+    {
+        String order = type.getAnnotation(DynamicTypeAnnotations.KEY_ORDER);
+        try
+        {
+            return order == null ? null : Integer.valueOf(order.trim());
+        }
+        catch (NumberFormatException e)
+        {
+            return null;
+        }
+    }
+
+    private static int classificationRank(DynamicType type)
+    {
+        String classificationType = type.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
+        if (DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE.equals(classificationType))
+        {
+            return 1;
+        }
+        if (DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON.equals(classificationType))
+        {
+            return 2;
+        }
+        return 3;
     }
 
     @Override

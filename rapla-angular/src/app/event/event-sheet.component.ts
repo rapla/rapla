@@ -189,6 +189,8 @@ export class EventSheetComponent {
   /** PRD 123 — the sheet's picker keeps its own chip and query, apart from the rail's. */
   readonly pickerChip = signal('all');
   readonly pickerQuery = signal('');
+  /** The picker's open folders survive its collapse on a plain click (user, 2026-10-04). */
+  readonly pickerExpanded = signal<ReadonlyMap<string, boolean>>(new Map());
   private readonly picker = viewChild(ResourcePickerComponent);
   private readonly resourceStore = inject(ResourceSelectionStore);
   readonly giltOpen = signal<string | null>(null);

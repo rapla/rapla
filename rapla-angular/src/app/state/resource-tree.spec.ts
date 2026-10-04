@@ -3,10 +3,10 @@ import { describe, it, expect } from 'vitest';
 import type { ResourceItem } from './resource-selection-store';
 import {
   buildTree,
-  filterTree,
   membersOf,
-  pathKeysTo,
   resourceNodes,
+  searchGroups,
+  typeFolders,
   visibleRows,
   type TreeNode,
 } from './resource-tree';
@@ -23,14 +23,14 @@ const res = (id: string, label: string, groupPaths: string[][] = []): ResourceIt
 const labels = (nodes: TreeNode[]) => nodes.map((n) => n.label);
 
 describe('resource tree (PRD 119 D2/D11)', () => {
-  it('groups by the first path level, A–Z, with the ungrouped resources after the groups', () => {
+  it('groups by the first path level, A–Z, with the ungrouped resources after the groups in list order (PRD 127 D6)', () => {
     const tree = buildTree([
       res('r1', 'Hörsaal 1', [['Gebäude B']]),
       res('r2', 'Labor', []),
       res('r3', 'Hörsaal 2', [['Gebäude A']]),
       res('r4', 'Aula', []),
     ]);
-    expect(labels(tree)).toEqual(['Gebäude A', 'Gebäude B', 'Aula', 'Labor']);
+    expect(labels(tree)).toEqual(['Gebäude A', 'Gebäude B', 'Labor', 'Aula']);
     expect(tree[0].kind).toBe('group');
     expect(tree[2].kind).toBe('resource');
   });
@@ -93,7 +93,7 @@ describe('resource tree (PRD 119 D2/D11)', () => {
     ]);
   });
 
-  describe('D12 caps and the path to the selection', () => {
+  describe('D12 caps', () => {
     const many = (n: number, path: string[][] = []) =>
       Array.from({ length: n }, (_, i) => res(`r${i}`, `Raum ${String(i).padStart(3, '0')}`, path));
     const shape = (rows: ReturnType<typeof visibleRows>) =>
@@ -114,47 +114,8 @@ describe('resource tree (PRD 119 D2/D11)', () => {
       expect(more.length).toBe(201);
       expect(shape(more).at(-1)).toBe('+50@');
     });
-
-    it('names the groups on the path to the selected resources', () => {
-      const tree = buildTree([
-        res('r1', 'Hörsaal 1', [['Gebäude A', 'EG']]),
-        res('r2', 'Labor', [['Gebäude B']]),
-        res('r3', 'Aula'),
-      ]);
-      expect([...pathKeysTo(tree, new Set(['r1', 'r3']))].sort()).toEqual([
-        '/Gebäude A',
-        '/Gebäude A/EG',
-      ]);
-    });
   });
 
-  describe('filterTree', () => {
-    const tree = buildTree([
-      res('r1', 'Hörsaal 1', [['Gebäude A']]),
-      res('r2', 'Labor', [['Gebäude A']]),
-      res('r3', 'Hörsaal 2', [['Gebäude B']]),
-      res('r4', 'Aula'),
-    ]);
-
-    it('keeps matching resources with their groups and opens those groups', () => {
-      const { nodes, expanded } = filterTree(tree, 'hörsaal');
-      expect(labels(nodes)).toEqual(['Gebäude A', 'Gebäude B']);
-      expect(labels(nodes[0].children)).toEqual(['Hörsaal 1']);
-      expect(expanded.has(nodes[0].key) && expanded.has(nodes[1].key)).toBe(true);
-    });
-
-    it('a group whose own name matches keeps all its members', () => {
-      const { nodes } = filterTree(tree, 'gebäude a');
-      expect(labels(nodes)).toEqual(['Gebäude A']);
-      expect(labels(nodes[0].children)).toEqual(['Hörsaal 1', 'Labor']);
-    });
-
-    it('a blank query keeps the whole tree and opens nothing', () => {
-      const { nodes, expanded } = filterTree(tree, '  ');
-      expect(nodes).toEqual(tree);
-      expect(expanded.size).toBe(0);
-    });
-  });
   describe('PRD 120 — nesting by parents', () => {
     const node = (
       id: string,
@@ -198,7 +159,6 @@ describe('resource tree (PRD 119 D2/D11)', () => {
       expect(ids(tree[0].children[0].children)).toEqual([]);
       const open = new Set([tree[0].key, tree[0].children[0].key]);
       expect(visibleRows(tree, open).map((r) => r.node?.label)).toEqual(['A', 'B', 'B']);
-      expect(filterTree(tree, 'zzz').nodes).toEqual([]);
     });
 
     it('an expanded resource shows its children; alle wählen stops at a resource (D7)', () => {
@@ -213,11 +173,6 @@ describe('resource tree (PRD 119 D2/D11)', () => {
       expect(membersOf(tree[0]).map((x) => x.id)).toEqual(['b']);
     });
 
-    it('opens the parents on the path to a selected child', () => {
-      const tree = buildTree([building], [building, room, part]);
-      expect([...pathKeysTo(tree, new Set(['p']))]).toEqual([tree[0].children[0].key, tree[0].key]);
-    });
-
     it('resourceNodes nests flat-chip rows from the whole list, with the path guard', () => {
       const [b] = resourceNodes([building], [building, room, part]);
       expect(b.key).toBe('#b');
@@ -230,13 +185,63 @@ describe('resource tree (PRD 119 D2/D11)', () => {
       expect(ids(a.children)).toEqual(['c']);
       expect(ids(a.children[0].children)).toEqual([]);
     });
+  });
 
-    it('search keeps the path to a matching child, opens it, and alle wählen takes the hit', () => {
-      const { nodes, expanded } = filterTree(buildTree([building], [building, room, part]), '1a');
-      expect(ids(nodes)).toEqual(['b']);
-      expect(ids(nodes[0].children[0].children)).toEqual(['p']);
-      expect(expanded.has(nodes[0].key) && expanded.has(nodes[0].children[0].key)).toBe(true);
-      expect(membersOf(nodes[0]).map((x) => x.id)).toEqual(['p']);
+  describe('PRD 127 — server order, type folders, grouped search', () => {
+    const it2 = (
+      id: string,
+      label: string,
+      typeKey: string,
+      typeName: string,
+      parentIds: string[] = [],
+    ): ResourceItem => ({ id, label, kind: 'resource', typeKey, typeName, parentIds });
+    const kurs = it2('k', 'Zeta-Kurs', 'course', 'Kurse');
+    const raum2 = it2('r2', 'Raum Z', 'room', 'Räume');
+    const raum1 = it2('r1', 'Raum A', 'room', 'Räume');
+    const teil2 = it2('t2', 'Teil Z', 'room', 'Räume', ['r2']);
+    const teil1 = it2('t1', 'Teil A', 'room', 'Räume', ['r2']);
+    const ids = (nodes: TreeNode[]) => nodes.map((n) => n.item?.id);
+
+    it('children of a resource keep the order of the whole list, not A–Z (D6)', () => {
+      const tree = buildTree([raum2], [raum2, teil2, teil1]);
+      expect(ids(tree[0].children)).toEqual(['t2', 't1']);
+    });
+
+    it('one folder per type in order of first appearance, each holding its type tree', () => {
+      const all = [kurs, raum2, raum1];
+      const folders = typeFolders(all, all);
+      expect(folders.map((f) => [f.key, f.label, f.kind, f.count])).toEqual([
+        ['@course', 'Kurse', 'type', 1],
+        ['@room', 'Räume', 'type', 2],
+      ]);
+      expect(ids(folders[1].children)).toEqual(['r2', 'r1']);
+      expect(membersOf(folders[1]).map((x) => x.id)).toEqual(['r2', 'r1']);
+    });
+
+    it('rows of two folders never share a key, even under equal group names', () => {
+      const a = { ...it2('a', 'A', 'room', 'Räume'), groupPaths: [['Campus']] };
+      const b = { ...it2('b', 'B', 'course', 'Kurse'), groupPaths: [['Campus']] };
+      const folders = typeFolders([a, b], [a, b]);
+      expect(folders[0].children[0].key).not.toBe(folders[1].children[0].key);
+    });
+
+    it('search is flat and grouped by type in folder order, users last (D2)', () => {
+      const users: ResourceItem[] = [{ id: 'u1', label: 'Raumplaner', kind: 'user' }];
+      const all = [kurs, raum2, teil2, raum1];
+      const groups = searchGroups(all, users, 'ra', 'Benutzer');
+      expect(groups.map((g) => [g.key, g.label, g.kind, g.count])).toEqual([
+        ['?room', 'Räume', 'heading', 2],
+        ['?users', 'Benutzer', 'heading', 1],
+      ]);
+      expect(ids(groups[0].children)).toEqual(['r2', 'r1']);
+      expect(ids(groups[0].children[0].children)).toEqual(['t2']);
+      expect(groups[1].children[0].item?.id).toBe('u1');
+      expect(searchGroups(all, users, '  ', 'Benutzer')).toEqual([]);
+    });
+
+    it('alle wählen on a heading takes its hits', () => {
+      const [rooms] = searchGroups([raum2, teil2, raum1], [], 'raum', 'Benutzer');
+      expect(membersOf(rooms).map((x) => x.id)).toEqual(['r2', 'r1']);
     });
   });
 });

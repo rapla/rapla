@@ -12,20 +12,18 @@ import {
 import { MatIconModule } from '@angular/material/icon';
 
 import { ResourceSelectionStore, type ResourceItem } from '../state/resource-selection-store';
-import { FIRST_PAGE, PAGE_SIZE, filterRows, page, usersMatching } from '../state/resource-picker';
+import { PAGE_SIZE, openSection, type Section } from '../state/resource-picker';
 import {
-  buildTree,
   childIndex,
-  resourceNodes,
-  filterTree,
   membersOf,
-  pathKeysTo,
+  resourceNodes,
+  searchGroups,
+  typeFolders,
   visibleRows,
   type TreeNode,
   type TreeRow,
 } from '../state/resource-tree';
 import { entityIcon } from '../shell/entity-icon';
-import { groupByKind } from './type-groups';
 import type { AvailabilityRow } from '../event/availability-search.service';
 import { TPipe, t as tr } from '../i18n/i18n.service';
 
@@ -36,10 +34,18 @@ export interface PickEvent {
   shift: boolean;
 }
 
+const SECTION_ICONS: Record<string, string> = {
+  favorites: 'star',
+  recents: 'history',
+  resources: 'inventory_2',
+  persons: 'group',
+  users: 'manage_accounts',
+};
+
 /**
- * PRD 123 D1 — the one resource picker. Chips Alle / ★ Favoriten / Zuletzt plus a type select
- * (D3) over the lean list; a type shows its group tree (PRD 119 D2), everything else a flat
- * list with the D12 caps. Two hosts: the left rail (`mode="rail"`: ▶ gezeigt, ⋮ menu, the
+ * PRD 123 D1 / PRD 127 D1 — the one resource picker: an accordion of Favoriten / Zuletzt / Ressourcen / Personen /
+ * Benutzer, exactly one open; Ressourcen and Personen hold one folder per type (D5) with its group tree (PRD 119 D2,
+ * PRD 120); a search lists the hits flat under one heading per type (D2). Two hosts: the left rail (`mode="rail"`: ▶ gezeigt, ⋮ menu, the
  * host's selection engine) and the event sheet (`mode="assign"`: checkbox rows with
  * availability pills). The picker never decides what a click means — it emits {@link pick}.
  */
@@ -47,58 +53,14 @@ export interface PickEvent {
   selector: 'app-resource-picker',
   imports: [TPipe, MatIconModule],
   template: `
-    <div class="chips">
-      @for (c of baseChips(); track c.key) {
-        <button
-          type="button"
-          [class.on]="chip() === c.key"
-          [class.mine]="c.mine"
-          [attr.title]="c.mine ? ('shell_scope_to_me_tooltip' | t) : null"
-          [attr.aria-pressed]="chip() === c.key"
-          (click)="c.mine ? activateMine($event) : chip.set(c.key)"
-        >
-          {{ c.label }}
-        </button>
-      }
-      <select
-        class="typesel"
-        [attr.aria-label]="'type' | t"
-        [class.on]="treeMode()"
-        [value]="treeMode() ? chip() : ''"
-        (change)="onTypeChange($event)"
-      >
-        <option value="">{{ 'type' | t }} ▾</option>
-        @if (typeGroups(); as groups) {
-          @for (g of groups; track g.label) {
-            <optgroup [label]="g.label">
-              @for (t of g.types; track t.key) {
-                <option [value]="t.key">{{ t.label }} ({{ t.count }})</option>
-              }
-            </optgroup>
-          }
-        } @else {
-          @for (t of typeChips(); track t.key) {
-            <option [value]="t.key">{{ t.label }} ({{ t.count }})</option>
-          }
-        }
-      </select>
-    </div>
-    @if (chip() === 'recents' && store.recents().length) {
-      <div class="grouphdr recents-hdr">
-        <span>{{ 'resource_recently_used' | t }}</span>
-        <span
-          class="clr"
-          role="button"
-          tabindex="0"
-          (click)="store.clearRecents()"
-          (keydown.enter)="store.clearRecents()"
-          >× {{ 'resource_clear' | t }}</span
-        >
-      </div>
-    }
     @if (query().trim()) {
       <div class="searchnote">
         <span>{{ 'resource_search_active' | t: query().trim() : allHits().length }}</span>
+        @if (mode() === 'rail' && allHits().length) {
+          <button type="button" class="listall" (click)="emitGroup($event, allHits())">
+            {{ (allChecked() ? 'resource_deselect_all' : 'resource_select_all') | t }}
+          </button>
+        }
         <button
           type="button"
           class="clearsearch"
@@ -107,14 +69,6 @@ export interface PickEvent {
           (click)="query.set('')"
         >
           ×
-        </button>
-      </div>
-    }
-    @if (mode() === 'rail' && allHits().length) {
-      <div class="grouphdr listhdr">
-        <span>{{ 'resource_hits' | t: allHits().length }}</span>
-        <button type="button" class="listall" (click)="emitGroup($event, allHits())">
-          {{ (allChecked() ? 'resource_deselect_all' : 'resource_select_all') | t }}
         </button>
       </div>
     }
@@ -128,17 +82,56 @@ export interface PickEvent {
         >
           {{ 'resource_show_more' | t: block(row.hidden) }}
         </button>
-      } @else if (row.node.kind === 'group') {
-        <div class="grouprow" [style.padding-left.rem]="0.5 + row.depth">
+      } @else if (row.node.kind === 'section') {
+        <div
+          class="sechead"
+          [class.open]="section() === row.node.key"
+          [class.below]="stickyBelow().has(row.node.key)"
+          [style.bottom]="bottomOf(row.node.key)"
+        >
+          <button
+            type="button"
+            class="secbtn"
+            [attr.aria-expanded]="section() === row.node.key"
+            (click)="chip.set(section() === row.node.key ? 'none' : row.node.key)"
+          >
+            <mat-icon class="ico">{{ sectionIcon(row.node.key) }}</mat-icon>
+            <span class="glabel">{{ row.node.label }}</span>
+            <span class="count">{{ row.node.count }}</span>
+          </button>
+          @if (row.node.key === 'recents' && section() === 'recents') {
+            <button type="button" class="clr" (click)="store.clearRecents()">
+              × {{ 'resource_clear' | t }}
+            </button>
+          }
+        </div>
+      } @else if (row.node.kind === 'heading') {
+        <button
+          type="button"
+          class="grouphdr typehdr"
+          [attr.aria-expanded]="expandedGroups().has(row.node.key)"
+          (click)="toggleGroup(row.node)"
+        >
+          {{ expandedGroups().has(row.node.key) ? '▾' : '▸' }}
+          <span class="glabel">{{ row.node.label }}</span>
+          <span class="count">{{ row.node.count }}</span>
+        </button>
+      } @else if (row.node.kind === 'group' || row.node.kind === 'type') {
+        <div class="grouprow" [style.padding-left.rem]="0.5 + row.depth" [title]="row.node.label">
           <button
             type="button"
             class="toggle"
             [attr.aria-expanded]="expandedGroups().has(row.node.key)"
             [attr.aria-label]="row.node.label"
-            (click)="toggleGroup(row.node.key)"
+            (click)="toggleGroup(row.node)"
           >
             {{ expandedGroups().has(row.node.key) ? '▾' : '▸' }}
           </button>
+          @if (row.node.kind === 'type') {
+            <mat-icon class="ico">{{
+              expandedGroups().has(row.node.key) ? 'folder_open' : 'folder'
+            }}</mat-icon>
+          }
           <span class="glabel">{{ row.node.label }}</span>
           <span class="count">{{ row.node.count }}</span>
           @if (mode() === 'rail') {
@@ -148,7 +141,10 @@ export interface PickEvent {
               [attr.aria-label]="'resource_select_all_in' | t: row.node.label"
               (click)="emitGroup($event, membersOf(row.node))"
             >
-              {{ 'resource_select_all' | t }}
+              {{
+                (groupChecked().get(row.node.key) ? 'resource_deselect_all' : 'resource_select_all')
+                  | t
+              }}
             </button>
           }
         </div>
@@ -161,6 +157,7 @@ export interface PickEvent {
           [class.active]="activeId() === it.id"
           [class.selected]="checked().has(it.id)"
           [style.padding-left.rem]="0.9 + row.depth"
+          [title]="it.label"
           (mousedown)="onItemMousedown($event)"
           (click)="emitPick($event, it)"
           (keydown)="onRowKeydown($event, it)"
@@ -174,7 +171,7 @@ export interface PickEvent {
               class="toggle"
               [attr.aria-expanded]="expandedGroups().has(row.node.key)"
               [attr.aria-label]="it.label"
-              (click)="$event.stopPropagation(); toggleGroup(row.node.key)"
+              (click)="$event.stopPropagation(); toggleGroup(row.node)"
               (keydown)="$event.stopPropagation()"
             >
               {{ expandedGroups().has(row.node.key) ? '▾' : '▸' }}
@@ -183,7 +180,12 @@ export interface PickEvent {
             <span class="tspace" aria-hidden="true"></span>
           }
           <mat-icon class="ico" [style.color]="it.color || null">{{ icon(it) }}</mat-icon>
-          <span class="lbl">{{ it.label }}</span>
+          <span class="lbl"
+            >{{ it.label }}
+            @if (searching() && row.depth === 1 && parentsOf(it); as parents) {
+              <span class="path">{{ parents }}</span>
+            }
+          </span>
           @if (activeId() === it.id) {
             <span class="now">▶ {{ 'resource_shown' | t }}</span>
           }
@@ -218,46 +220,32 @@ export interface PickEvent {
     } @empty {
       <div class="more">{{ 'resource_empty' | t }}</div>
     }
-    @if (hiddenCount() > 0) {
-      <button type="button" class="showmore" (click)="extra.update((n) => n + 1)">
-        {{ 'resource_show_more' | t: block(hiddenCount()) }}
-      </button>
+    @if (!searching() && users()?.mine) {
+      <div
+        class="sechead mine"
+        [class.below]="stickyBelow().has('mine')"
+        [style.bottom]="bottomOf('mine')"
+      >
+        <button
+          type="button"
+          class="secbtn"
+          [attr.aria-pressed]="mineChecked()"
+          [title]="'shell_scope_to_me_tooltip' | t"
+          (click)="activateMine($event)"
+        >
+          <mat-icon class="ico">person</mat-icon>
+          <span class="glabel">{{ 'resource_my_bookings' | t }}</span>
+        </button>
+      </div>
     }
   `,
   styles: [
     `
       :host {
+        --sechead-h: 2.25rem;
         display: flex;
         flex-direction: column;
         min-width: 0;
-      }
-      .chips {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.35rem;
-        align-items: center;
-        padding: 0 0.75rem 0.5rem;
-      }
-      .chips button,
-      .chips select {
-        border: 1px solid rgba(0, 0, 0, 0.15);
-        background: #fff;
-        border-radius: 999px;
-        padding: 0.25rem 0.6rem;
-        font-size: 0.72rem;
-        cursor: pointer;
-        color: rgba(0, 0, 0, 0.55);
-        max-width: 11rem;
-      }
-      .chips select {
-        flex-basis: 100%;
-        max-width: none;
-      }
-      .chips button.on,
-      .chips select.on {
-        background: var(--mat-sys-primary, #3f51b5);
-        color: #fff;
-        border-color: transparent;
       }
       .grouphdr {
         display: flex;
@@ -269,8 +257,92 @@ export interface PickEvent {
         font-weight: 600;
         color: rgba(0, 0, 0, 0.55);
       }
-      .grouphdr .clr {
+      .sechead .clr {
+        border: none;
+        background: transparent;
         cursor: pointer;
+        font: inherit;
+        color: var(--mat-sys-primary, #3f51b5);
+        padding: 0;
+      }
+      .typehdr {
+        justify-content: flex-start;
+        gap: 0.35rem;
+        width: 100%;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        font-family: inherit;
+        text-align: left;
+        padding-left: 0.9rem;
+      }
+      .typehdr .glabel {
+        flex: 1;
+      }
+      .sechead {
+        box-sizing: border-box;
+        height: var(--sechead-h);
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0 0.9rem 0 0.25rem;
+        border-top: 1px solid rgba(0, 0, 0, 0.06);
+      }
+      .sechead.open {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background: var(--mat-sys-secondary-container, #e8eaf6);
+      }
+      .sechead.below {
+        position: sticky;
+        z-index: 1;
+        background: var(--mat-sys-surface, #fff);
+      }
+      .sechead .secbtn {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        min-width: 0;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        font: inherit;
+        font-size: 0.84rem;
+        font-weight: 600;
+        padding: 0.5rem 0.25rem;
+        text-align: left;
+      }
+      .sechead.mine .secbtn[aria-pressed='true'] {
+        color: var(--mat-sys-primary, #3f51b5);
+      }
+      .sechead .glabel,
+      .grouprow .glabel {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .sechead .count {
+        font-size: 0.7rem;
+        font-weight: 400;
+        color: rgba(0, 0, 0, 0.45);
+      }
+      .sechead .ico,
+      .grouprow .ico {
+        flex: none;
+        font-size: 1.15rem;
+        width: 1.15rem;
+        height: 1.15rem;
+        color: rgba(0, 0, 0, 0.5);
+      }
+      .item .path {
+        display: block;
+        font-size: 0.68rem;
+        color: rgba(0, 0, 0, 0.45);
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
       .searchnote {
         display: flex;
@@ -299,12 +371,6 @@ export interface PickEvent {
         font-size: 0.8rem;
         font-weight: 600;
       }
-      .grouprow .glabel {
-        flex: 1;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
       .grouprow .count {
         font-size: 0.7rem;
         color: rgba(0, 0, 0, 0.45);
@@ -322,11 +388,9 @@ export interface PickEvent {
         font: inherit;
         padding: 0 0.2rem;
       }
-      .listhdr .listall {
-        border: none;
-        background: transparent;
-        cursor: pointer;
-        font: inherit;
+      .searchnote .listall {
+        flex: none;
+        font-size: 0.75rem;
         color: var(--mat-sys-primary, #3f51b5);
       }
       .grouprow .selectall {
@@ -457,8 +521,8 @@ export class ResourcePickerComponent {
   protected readonly membersOf = membersOf;
 
   readonly mode = input<'rail' | 'assign'>('rail');
-  /** The active chip: 'all' | 'favorites' | 'recents' | 'type:<key>' — owned by the host. */
-  readonly chip = model('all');
+  /** PRD 127 D1 — the open section as chosen ('' = start section); resolved by {@link section}. Owned by the host. */
+  readonly chip = model('');
   readonly query = model('');
   /** Rows shown as selected (rail: the filter; assign: the assigned resources). */
   readonly checked = input<ReadonlySet<string>>(new Set<string>());
@@ -471,125 +535,117 @@ export class ResourcePickerComponent {
   /** A group's members or every hit of the list (PRD 123 D8) — the host replaces, adds (Ctrl) or clears. */
   readonly selectGroup = output<{ items: ResourceItem[]; ctrl: boolean }>();
   readonly menu = output<{ item: ResourceItem; anchor: EventTarget | null }>();
+  /** PRD 127 D7 — the type of the last clicked type folder or resource (Swing: the focused tree node). */
+  readonly typeClick = output<string>();
 
-  /** PRD 123 D9 — Benutzer after Zuletzt, rail only (accounts cannot be assigned). */
-  protected readonly baseChips = computed(() => {
-    const users = this.mode() === 'rail' ? this.store.usersChip() : null;
+  /** PRD 123 D9 / PRD 127 OQ4 — rail only (accounts cannot be assigned); `mine` = only the own account is readable. */
+  protected readonly users = computed(() =>
+    this.mode() === 'rail' ? this.store.usersChip() : null,
+  );
+
+  protected readonly section = computed<Section | null>(() =>
+    openSection(this.chip(), {
+      favorites: this.store.favorites().length,
+      recents: this.store.recents().length,
+      persons: this.store.listFor('persons').length,
+      users: !!this.users() && !this.users()!.mine,
+    }),
+  );
+
+  protected readonly searching = computed(() => !!this.query().trim());
+
+  private readonly limits = signal<ReadonlyMap<string, number>>(new Map());
+  /** Expansions below the sections; kept across section changes, dropped by "zuklappen". A host that re-creates the
+   *  picker (the event sheet) keeps them by binding it. */
+  readonly expanded = model<ReadonlyMap<string, boolean>>(new Map());
+  /** PRD 127 D2 — expansions made during a search, dropped when the query changes. */
+  private readonly searchToggled = signal<ReadonlyMap<string, boolean>>(new Map());
+
+  private readonly childrenOf = computed(() => childIndex(this.store.resources()));
+
+  private readonly sections = computed<TreeNode[]>(() => {
+    const all = this.store.resources();
+    const childrenOf = this.childrenOf();
+    const section = (key: Section, label: string, children: TreeNode[], count: number) => ({
+      key,
+      label: tr(label),
+      kind: 'section' as const,
+      children,
+      count,
+    });
+    const flat = (key: Section, label: string) => {
+      const items = this.store.listFor(key);
+      return section(key, label, resourceNodes(items, all, childrenOf, key), items.length);
+    };
+    const folders = (key: Section, label: string) => {
+      const items = this.store.listFor(key);
+      return section(key, label, typeFolders(items, all, childrenOf), items.length);
+    };
+    const persons = this.store.listFor('persons').length > 0;
+    const users = this.users();
     return [
-      { key: 'all', label: tr('state_chip_all'), mine: false },
-      { key: 'favorites', label: tr('state_chip_favorites'), mine: false },
-      { key: 'recents', label: tr('state_chip_recents'), mine: false },
-      ...(users
-        ? [
-            {
-              key: 'users',
-              label: tr(users.mine ? 'shell_mine' : 'state_chip_users'),
-              mine: users.mine,
-            },
-          ]
-        : []),
+      ...(this.store.favorites().length ? [flat('favorites', 'resource_section_favorites')] : []),
+      ...(this.store.recents().length ? [flat('recents', 'resource_section_recents')] : []),
+      folders('resources', 'resource_section_resources'),
+      ...(persons ? [folders('persons', 'resource_section_persons')] : []),
+      ...(users && !users.mine ? [flat('users', 'resource_section_users')] : []),
     ];
   });
 
-  /** PRD 123 D3 — the types fold into one select, A–Z with their counts. */
-  protected readonly typeChips = computed(() => {
-    const counts = new Map<string, number>();
-    const kinds = new Map<string, string | undefined>();
-    for (const it of this.store.resources()) {
-      if (!it.typeKey) continue;
-      counts.set(it.typeKey, (counts.get(it.typeKey) ?? 0) + 1);
-      kinds.set(it.typeKey, it.classificationType);
-    }
-    return this.store
-      .chips()
-      .filter((c) => c.key.startsWith('type:'))
-      .map((c) => {
-        const key = c.key.slice('type:'.length);
-        return { ...c, count: counts.get(key) ?? 0, classificationType: kinds.get(key) };
-      });
-  });
+  private readonly search = computed(() =>
+    searchGroups(
+      this.store.resources(),
+      this.mode() === 'rail' ? this.store.users() : [],
+      this.query(),
+      tr('resource_section_users'),
+    ),
+  );
 
-  /** PRD 122 D9 parity — resources, then persons; flat with one kind. */
-  protected readonly typeGroups = computed(() => groupByKind(this.typeChips()));
-
-  protected readonly treeMode = computed(() => this.chip().startsWith('type:'));
-
-  /** PRD 119 D12 — extra blocks of 100 revealed by "Weitere n anzeigen" for the current chip + query. */
-  protected readonly extra = signal(0);
-  private readonly limits = signal<ReadonlyMap<string, number>>(new Map());
-  private readonly toggled = signal<ReadonlyMap<string, boolean>>(new Map());
-  /** PRD 123 D8 — a bulk selection does not open the paths to its members, also across chip changes,
-   *  until the next single pick (D8). */
-  private readonly bulk = signal(false);
-
-  private readonly list = computed(() => this.store.listFor(this.chip()));
-
-  private readonly filtered = computed<ResourceItem[]>(() => {
-    const q = this.query();
-    const rows = filterRows(this.list(), q);
-    return this.chip() === 'all' && this.mode() === 'rail'
-      ? [...rows, ...usersMatching(this.store.users(), q)]
-      : rows;
-  });
-
-  private readonly tree = computed(() => {
-    const q = this.query();
-    if (this.treeMode()) return filterTree(buildTree(this.list(), this.store.resources()), q);
-    const hits: TreeNode[] = [];
-    if (this.chip() === 'all' && q.trim()) {
-      const walk = (nodes: TreeNode[]) =>
-        nodes.forEach((n) => {
-          if (n.kind !== 'group') return;
-          if (filterRows([{ id: n.key, label: n.label }], q).length) hits.push(n);
-          else walk(n.children);
-        });
-      walk(buildTree(this.store.resources()));
-    }
-    return { nodes: hits, expanded: new Set<string>() };
-  });
+  private readonly tree = computed(() => (this.searching() ? this.search() : this.sections()));
 
   protected readonly expandedGroups = computed(() => {
-    const open = new Set([
-      ...this.tree().expanded,
-      ...(this.bulk() ? [] : pathKeysTo(this.tree().nodes, this.checked())),
-    ]);
-    for (const [key, isOpen] of this.toggled()) {
+    const section = this.section();
+    const open = new Set<string>(
+      this.searching() ? this.search().map((g) => g.key) : section ? [section] : [],
+    );
+    for (const [key, isOpen] of this.searching() ? this.searchToggled() : this.expanded()) {
       if (isOpen) open.add(key);
       else open.delete(key);
     }
     return open;
   });
 
-  private readonly firstBlock = computed(() =>
-    this.chip() === 'all' && !this.query().trim() ? FIRST_PAGE : PAGE_SIZE,
+  /** PRD 127 D1 — the heads below the open one stick to the bottom, stacked: key → heads still below it. */
+  protected readonly stickyBelow = computed(() => {
+    const heads = [...this.sections().map((n) => n.key), ...(this.users()?.mine ? ['mine'] : [])];
+    const open = heads.indexOf(this.section() ?? '');
+    const below = new Map<string, number>();
+    if (open < 0) return below;
+    heads.slice(open + 1).forEach((key, i, rest) => below.set(key, rest.length - 1 - i));
+    return below;
+  });
+
+  protected bottomOf(key: string): string | null {
+    const n = this.stickyBelow().get(key);
+    return n === undefined ? null : `calc(var(--sechead-h) * ${n})`;
+  }
+
+  protected readonly rows = computed<TreeRow[]>(() =>
+    visibleRows(this.tree(), this.expandedGroups(), this.limits()),
   );
-
-  private readonly childrenOf = computed(() => childIndex(this.store.resources()));
-
-  private readonly paged = computed(() =>
-    this.treeMode()
-      ? { shown: [], hidden: 0 }
-      : page(this.filtered(), this.firstBlock() + this.extra() * PAGE_SIZE),
-  );
-  protected readonly hiddenCount = computed(() => this.paged().hidden);
-
-  protected readonly rows = computed<TreeRow[]>(() => [
-    ...visibleRows(this.tree().nodes, this.expandedGroups(), this.limits()),
-    ...visibleRows(
-      resourceNodes(this.paged().shown, this.store.resources(), this.childrenOf()),
-      this.expandedGroups(),
-      new Map(this.limits()).set('', Infinity),
-    ),
-  ]);
 
   /** A row with a toggle shifts its icon; the other rows get a spacer once any row has one. */
-  protected readonly nested = computed(() => this.rows().some((row) => row.node?.children.length));
+  protected readonly nested = computed(() =>
+    this.rows().some((row) => row.node?.kind === 'resource' && row.node.children.length),
+  );
 
-  /** PRD 123 D8 — every hit of the active chip + query: the filtered tree's members, else the whole filtered list. */
+  /** PRD 123 D8 — what the count row's "alle wählen" takes: every search hit, else every resource and person. */
   protected readonly allHits = computed<ResourceItem[]>(() => {
-    if (!this.treeMode()) return this.filtered();
     const byId = new Map<string, ResourceItem>();
-    for (const node of this.tree().nodes) for (const it of membersOf(node)) byId.set(it.id, it);
+    const nodes = this.searching()
+      ? this.search()
+      : this.sections().filter((n) => n.key === 'resources' || n.key === 'persons');
+    for (const node of nodes) for (const it of membersOf(node)) byId.set(it.id, it);
     return [...byId.values()];
   });
 
@@ -598,22 +654,60 @@ export class ResourcePickerComponent {
     return this.allHits().every((it) => checked.has(it.id));
   });
 
-  /** The distinct resources on screen — the host's selection engine and availability fetch use it. */
+  /** PRD 127 D8 — per visible type folder / group: are all its members selected? (checked is a Set: O(members)). */
+  protected readonly groupChecked = computed(() => {
+    const checked = this.checked();
+    const all = new Map<string, boolean>();
+    for (const row of this.rows()) {
+      const node = row.node;
+      if (node && (node.kind === 'group' || node.kind === 'type'))
+        all.set(
+          node.key,
+          membersOf(node).every((it) => checked.has(it.id)),
+        );
+    }
+    return all;
+  });
+
+  protected readonly mineChecked = computed(() => {
+    const own = this.store.listFor('users')[0];
+    return !!own && this.checked().has(own.id);
+  });
+
+  private readonly labelById = computed(
+    () => new Map(this.store.resources().map((it) => [it.id, it.label])),
+  );
+
+  /** The distinct resources on screen — the host's selection engine and availability fetch use it; the own account
+   *  while the "Meine Buchungen" row stands for it. */
   readonly shown = computed(() => {
     const byId = new Map<string, ResourceItem>();
     for (const row of this.rows()) if (row.node?.item) byId.set(row.node.item.id, row.node.item);
+    const own = !this.searching() && this.users()?.mine ? this.store.listFor('users')[0] : null;
+    if (own) byId.set(own.id, own);
     return [...byId.values()];
   });
 
   constructor() {
     this.store.ensureLoaded();
     effect(() => {
-      this.chip();
       this.query();
-      this.extra.set(0);
       this.limits.set(new Map());
-      this.toggled.set(new Map());
+      this.searchToggled.set(new Map());
     });
+  }
+
+  protected sectionIcon(key: string): string {
+    return SECTION_ICONS[key] ?? 'folder';
+  }
+
+  /** PRD 127 D2 — a hit's parents in small text below it. */
+  protected parentsOf(it: ResourceItem): string {
+    const labels = this.labelById();
+    return (it.parentIds ?? [])
+      .map((id) => labels.get(id))
+      .filter((label): label is string => !!label)
+      .join(' · ');
   }
 
   protected icon(it: ResourceItem): string {
@@ -630,34 +724,29 @@ export class ResourcePickerComponent {
     );
   }
 
-  protected onTypeChange(event: Event): void {
-    const value = (event.target as HTMLSelectElement).value;
-    this.chip.set(value || 'all');
-  }
-
   /** Shift-click must range-select, not select text. */
   protected onItemMousedown(event: MouseEvent): void {
     if (event.shiftKey) event.preventDefault();
   }
 
-  /** PRD 123 D9 — "meine" is the Benutzer chip of a one-account user: activating it picks the
-   *  own account like a row click (Ctrl adds); on the active chip a click deselects it. */
+  /** PRD 127 OQ4 — "Meine Buchungen" picks the own account like a row click (Ctrl adds); when it is selected a click
+   *  deselects it. */
   protected activateMine(event: MouseEvent): void {
     const own = this.store.listFor('users')[0];
-    const deselect = this.chip() === 'users' && !!own && this.checked().has(own.id);
-    this.chip.set('users');
     if (!own) return;
-    this.bulk.set(false);
-    this.pick.emit({ item: own, ctrl: deselect || event.ctrlKey || event.metaKey, shift: false });
+    this.pick.emit({
+      item: own,
+      ctrl: this.mineChecked() || event.ctrlKey || event.metaKey,
+      shift: false,
+    });
   }
 
   protected emitGroup(event: MouseEvent, items: ResourceItem[]): void {
-    this.bulk.set(true);
     this.selectGroup.emit({ items, ctrl: event.ctrlKey || event.metaKey });
   }
 
   protected emitPick(event: MouseEvent | KeyboardEvent, item: ResourceItem): void {
-    this.bulk.set(false);
+    if (item.typeKey) this.typeClick.emit(item.typeKey);
     this.pick.emit({ item, ctrl: event.ctrlKey || event.metaKey, shift: event.shiftKey });
   }
 
@@ -680,9 +769,13 @@ export class ResourcePickerComponent {
     }
   }
 
-  protected toggleGroup(key: string): void {
-    const open = this.expandedGroups().has(key);
-    this.toggled.update((map) => new Map(map).set(key, !open));
+  protected toggleGroup(node: TreeNode): void {
+    if (node.kind === 'type') this.typeClick.emit(node.key.slice(1));
+    else if (node.item?.typeKey) this.typeClick.emit(node.item.typeKey);
+    const open = this.expandedGroups().has(node.key);
+    (this.searching() ? this.searchToggled : this.expanded).update((map) =>
+      new Map(map).set(node.key, !open),
+    );
   }
 
   protected showMoreChildren(key: string): void {

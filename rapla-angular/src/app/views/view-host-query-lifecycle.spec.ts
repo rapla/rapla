@@ -199,3 +199,53 @@ describe('ViewHostComponent — signature recovery from an errored first query (
     expect(f.componentInstance.error()).toBeNull();
   });
 });
+
+/** Answers by view name, like the server: Termine knows only `filter`, Raumauslastung also needs `resourceFilter`. */
+const perViewGql = {
+  executeView: (name: string, variables: Record<string, unknown> = {}) => {
+    calls.push(variables);
+    if (name === 'Termine') return of(RESPONSE);
+    return of(
+      variables['resourceFilter']
+        ? ({
+            data: { appointmentBlockStats: [] },
+            extensions: { view: TWO_FILTER_META },
+          } as GqlResponse<unknown>)
+        : ({
+            errors: [{ message: "Variable 'resourceFilter' has coerced Null value" }],
+            extensions: { view: TWO_FILTER_META },
+          } as GqlResponse<unknown>),
+    );
+  },
+  mutate: vi.fn(() => of({ kind: 'ok', data: {} })),
+};
+
+describe('ViewHostComponent — switching views keeps the component (route param change)', () => {
+  beforeEach(() => {
+    calls = [];
+    aborted = 0;
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    TestBed.resetTestingModule();
+  });
+
+  it('a view with a second NonNull filter, opened from another view, recovers its signature instead of staying on the error', async () => {
+    await configure(perViewGql);
+    const f = mount(); // Termine: signature { filter } is bound
+    f.detectChanges();
+    vi.advanceTimersByTime(300);
+
+    f.componentRef.setInput('viewName', 'Raumauslastung');
+    f.detectChanges();
+    vi.advanceTimersByTime(300);
+    f.detectChanges();
+    vi.advanceTimersByTime(300);
+    f.detectChanges();
+
+    expect(f.componentInstance.error()).toBeNull();
+    expect(calls[calls.length - 1]['resourceFilter']).toEqual({ idIn: ['scope-1'] });
+  });
+});

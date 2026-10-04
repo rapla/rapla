@@ -15,6 +15,8 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.SortedClassifiableComparator;
+import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.PermissionController;
@@ -166,7 +168,18 @@ public class ClassificationGraphQLController
                 return (ix == null ? "" : ix).compareTo(iy == null ? "" : iy);
             });
         }
+        else
+        {
+            visible.sort(treeOrder());
+        }
         return visible;
+    }
+
+    /** PRD 127 D5/D6 — Swing tree order: type order, then SortedClassifiableComparator within the type. New per call (collator). */
+    static java.util.Comparator<Allocatable> treeOrder()
+    {
+        return java.util.Comparator.comparing((Allocatable a) -> a.getClassification().getType(), DynamicTypeImpl.TYPE_ORDER)
+                .thenComparing(new SortedClassifiableComparator(Locale.getDefault()));
     }
 
     /**

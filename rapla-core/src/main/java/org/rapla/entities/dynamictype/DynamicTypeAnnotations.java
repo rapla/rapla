@@ -29,6 +29,9 @@ public interface DynamicTypeAnnotations
      *  in menu order. The document name is the reference, the menu label and the future i18n key. */
     String KEY_DOCUMENTS="documents";
 
+    /** PRD 127 D5 — numeric position of the type; unset or non-numeric types follow in creation order. */
+    String KEY_ORDER="order";
+
     String KEY_COLORS="colors";
 	String VALUE_COLORS_AUTOMATED = "rapla:automated";
 	String VALUE_COLORS_COLOR_ATTRIBUTE = "color";

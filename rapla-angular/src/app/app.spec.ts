@@ -120,6 +120,26 @@ describe('App', () => {
   });
 
   /** PRD 118 D8-8 — the demo instance says so in the shell; the text comes from GET /api/auth/me. */
+  it('dragging the grip at the rail edge resizes the sidenav; a double click restores 290 px (PRD 127)', () => {
+    localStorage.clear();
+    const f = TestBed.createComponent(App);
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
+    const nav = el.querySelector<HTMLElement>('mat-sidenav')!;
+    const grip = el.querySelector('mat-sidenav .nav-resize')!;
+    expect(nav.style.width).toBe('290px');
+    const fire = (type: string, clientX: number) =>
+      grip.dispatchEvent(new MouseEvent(type, { clientX, bubbles: true }));
+    fire('pointerdown', 290);
+    fire('pointermove', 410);
+    fire('pointerup', 410);
+    f.detectChanges();
+    expect(nav.style.width).toBe('410px');
+    fire('dblclick', 0);
+    f.detectChanges();
+    expect(nav.style.width).toBe('290px');
+  });
+
   it('shows the demo banner from the identity', () => {
     identity.set({ ...IDENTITY, demoBanner: 'Demo — data resets nightly at 04:15' });
     const fixture = TestBed.createComponent(App);

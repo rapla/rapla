@@ -139,6 +139,12 @@ Defines one column. Fields:
   templates.
 - `KEY_CLASSIFICATION_TYPE` — see table above.
 - `KEY_COLORS`, `KEY_CONFLICTS`, `KEY_LOCATION` — admin flags.
+- `KEY_ORDER` (`order`) — numeric position of the type; set in the data only, no edit UI yet
+  ([PRD 127](../prd/127-picker-accordion-type-order.md) D5). `DynamicTypeImpl.TYPE_ORDER` sorts resource
+  types before person types, then types with `order` (ascending; non-numeric = unset), then creation order.
+  The Swing resource tree, GraphQL `resources` and every nested resource list
+  (`ClassificationGraphQLController.treeOrder()`: `TYPE_ORDER`, then `KEY_SORTING`/name within a type) and the
+  SPA picker, chips and week lanes all follow this one order.
 
 ## The instance side: Classification
 

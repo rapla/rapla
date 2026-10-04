@@ -15,7 +15,7 @@ const room = (i: number, typeKey = 'room', typeName = 'Raum') => ({
   classification: { typeKey, type: { name: typeName } },
 });
 
-/** PRD 123 D1/D3 — the shared picker in its assign host and the folded type select. */
+/** PRD 123 D1 / PRD 127 — the shared picker: accordion sections, type folders, grouped search, the assign host. */
 describe('ResourcePickerComponent', () => {
   let http: HttpTestingController;
 
@@ -45,50 +45,60 @@ describe('ResourcePickerComponent', () => {
   }
 
   const labels = (el: HTMLElement) =>
-    Array.from(el.querySelectorAll('.item .lbl')).map((i) => i.textContent?.trim() ?? '');
-
-  it('D3 — the types fold into one select with counts; picking one shows its tree', async () => {
-    const f = await create([room(1), room(2), room(3, 'lecturer', 'Dozent')]);
-    const el = f.nativeElement as HTMLElement;
-    expect(
-      Array.from(el.querySelectorAll('.chips button')).map((b) => b.textContent?.trim()),
-    ).toEqual(['Alle', '★ Favoriten', 'Zuletzt']);
-    const options = Array.from(el.querySelectorAll('select.typesel option')).map((o) =>
-      o.textContent?.trim(),
+    Array.from(el.querySelectorAll('.item .lbl')).map(
+      (i) => i.childNodes[0]?.textContent?.trim() ?? '',
     );
-    expect(options).toEqual(['Typ ▾', 'Dozent (1)', 'Raum (2)']);
-    const select = el.querySelector('select.typesel') as HTMLSelectElement;
-    select.value = 'type:room';
-    select.dispatchEvent(new Event('change'));
+  const heads = (el: HTMLElement) =>
+    Array.from(el.querySelectorAll('.sechead .secbtn .glabel')).map((g) => g.textContent?.trim());
+  const folders = (el: HTMLElement) =>
+    Array.from(el.querySelectorAll('.grouprow')).map(
+      (r) =>
+        `${r.querySelector('.glabel')?.textContent?.trim()} ${r.querySelector('.count')?.textContent?.trim()}`,
+    );
+
+  async function openFolder(f: ComponentFixture<ResourcePickerComponent>, typeName: string) {
+    const row = Array.from(
+      (f.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('.grouprow'),
+    ).find((r) => r.querySelector('.glabel')?.textContent?.trim() === typeName)!;
+    row.querySelector<HTMLButtonElement>('.toggle')!.click();
     await f.whenStable();
     f.detectChanges();
-    expect(f.componentInstance.chip()).toBe('type:room');
-    expect(labels(el)).toEqual(['Raum 01', 'Raum 02']);
+  }
+
+  it('PRD 127 D5 — Ressourcen holds one folder per type in server order; a folder opens its resources', async () => {
+    const f = await create([room(2, 'room', 'Raum'), room(1, 'camera', 'Kamera'), room(3)]);
+    const el = f.nativeElement as HTMLElement;
+    expect(heads(el)).toEqual(['Ressourcen']); // no persons → no Personen section
+    expect(folders(el)).toEqual(['Raum 2', 'Kamera 1']);
+    expect(el.querySelector('.grouprow .ico')?.textContent?.trim()).toBe('folder');
+    await openFolder(f, 'Raum');
+    expect(labels(el)).toEqual(['Raum 02', 'Raum 03']);
+    expect(el.querySelector('.grouprow .ico')?.textContent?.trim()).toBe('folder_open');
   });
 
-  it('D3 — with resources and persons the type select groups them like the create dialog (PRD 122 D9)', async () => {
+  it('PRD 127 D1 — persons sit in their own section; exactly one section is open', async () => {
     const person = (i: number, typeKey: string, typeName: string) => ({
       ...room(i, typeKey, typeName),
       kind: 'PERSON',
     });
     const f = await create([
       room(1),
-      room(2),
       person(3, 'lecturer', 'Dozent'),
-      room(4, 'camera', 'Kamera'),
       person(5, 'student', 'Assistenz'),
     ]);
-    const select = (f.nativeElement as HTMLElement).querySelector('select.typesel')!;
-    expect(select.querySelector(':scope > option')?.textContent?.trim()).toBe('Typ ▾');
+    const el = f.nativeElement as HTMLElement;
+    expect(folders(el)).toEqual(['Raum 1']);
+    const personsHead = el.querySelectorAll<HTMLButtonElement>('.sechead .secbtn')[1];
+    personsHead.click();
+    await f.whenStable();
+    f.detectChanges();
+    expect(f.componentInstance.chip()).toBe('persons');
+    expect(folders(el)).toEqual(['Dozent 1', 'Assistenz 1']);
     expect(
-      Array.from(select.querySelectorAll('optgroup')).map((g) => ({
-        label: g.getAttribute('label'),
-        types: Array.from(g.querySelectorAll('option')).map((o) => o.textContent?.trim()),
-      })),
-    ).toEqual([
-      { label: 'Ressourcen', types: ['Kamera (1)', 'Raum (2)'] },
-      { label: 'Personen', types: ['Assistenz (1)', 'Dozent (1)'] },
-    ]);
+      Array.from(el.querySelectorAll('.sechead .secbtn')).map((b) =>
+        b.getAttribute('aria-expanded'),
+      ),
+    ).toEqual(['false', 'true']);
   });
 
   it('PRD 120 D7 — a building row toggles open to its rooms; the row has no count and no alle wählen', async () => {
@@ -96,11 +106,7 @@ describe('ResourcePickerComponent', () => {
     const child = { ...room(2), parents: [{ id: 'r1' }] };
     const f = await create([building, child], { mode: 'rail' });
     const el = f.nativeElement as HTMLElement;
-    const select = el.querySelector('select.typesel') as HTMLSelectElement;
-    select.value = 'type:building';
-    select.dispatchEvent(new Event('change'));
-    await f.whenStable();
-    f.detectChanges();
+    await openFolder(f, 'Gebäude');
     expect(labels(el)).toEqual(['Gebäude A']);
     const row = el.querySelector('.item')!;
     expect(row.querySelector('.count, .selectall')).toBeNull();
@@ -152,18 +158,22 @@ describe('ResourcePickerComponent', () => {
     expect(labels(el)).toEqual(['Gebäude A', 'Raum 02']);
   });
 
-  it('PRD 120 D12 — in Alle the page counts top-level rows only; an expanded building adds its rooms', async () => {
-    const building = { ...room(0, 'building', 'Gebäude'), name: 'Aaa Gebäude' };
-    const children = [1, 2, 3].map((i) => ({ ...room(i), parents: [{ id: 'r0' }] }));
-    const rest = Array.from({ length: 30 }, (_, i) => room(10 + i));
+  it('PRD 120 D12 — a folder pages its top-level rows; an expanded building adds its rooms without moving "Weitere"', async () => {
+    const building = { ...room(0), name: 'Aaa Gebäude' };
+    const children = [1, 2, 3].map((i) => ({
+      ...room(i, 'part', 'Teil'),
+      parents: [{ id: 'r0' }],
+    }));
+    const rest = Array.from({ length: 120 }, (_, i) => room(10 + i));
     const f = await create([building, ...children, ...rest]);
     const el = f.nativeElement as HTMLElement;
+    await openFolder(f, 'Raum');
     const more = () => el.querySelector('.showmore')?.textContent?.trim();
-    expect(labels(el).length).toBe(20);
+    expect(labels(el).length).toBe(100);
     const before = more();
     (el.querySelector('.item button.toggle') as HTMLButtonElement).click();
     f.detectChanges();
-    expect(labels(el).length).toBe(23);
+    expect(labels(el).length).toBe(103);
     expect(labels(el).slice(0, 4)).toEqual(['Aaa Gebäude', 'Raum 01', 'Raum 02', 'Raum 03']);
     expect(more()).toBe(before);
   });
@@ -179,12 +189,146 @@ describe('ResourcePickerComponent', () => {
     f.detectChanges();
     expect(f.componentInstance.query()).toBe('');
     expect(el.querySelector('.searchnote')).toBeNull();
-    expect(labels(el)).toEqual(['Raum 01', 'Raum 02']);
+    expect(folders(el)).toEqual(['Raum 2']);
   });
 
-  it('D3 — one kind only keeps the type select flat', async () => {
+  it('PRD 127 D2 — a search is flat under one heading per type, parents in small text, users last', async () => {
+    const building = { ...room(1, 'building', 'Gebäude'), name: 'Haus Nord' };
+    const hit = { ...room(2), name: 'Nordsaal', parents: [{ id: 'r1' }] };
+    const f = await create([building, hit], { query: 'nord' }, [
+      { id: 'u1', username: 'nordmann', name: 'Nordmann X' },
+    ]);
+    const el = f.nativeElement as HTMLElement;
+    expect(
+      Array.from(el.querySelectorAll('.typehdr')).map((h) =>
+        Array.from(h.querySelectorAll('span'), (t) => t.textContent?.trim()).join(' '),
+      ),
+    ).toEqual(['Gebäude 1', 'Raum 1', 'Benutzer 1']);
+    expect(labels(el)).toEqual(['Haus Nord', 'Nordsaal', 'Nordmann X']);
+    expect(el.querySelectorAll('.item .path')[0]?.textContent?.trim()).toBe('Haus Nord');
+    expect(el.querySelector('.sechead')).toBeNull();
+  });
+
+  it('PRD 127 D1 — a click on the open head closes it', async () => {
+    const f = await create([room(1)]);
+    const el = f.nativeElement as HTMLElement;
+    const expanded = () =>
+      Array.from(el.querySelectorAll('.sechead .secbtn')).map((b) =>
+        b.getAttribute('aria-expanded'),
+      );
+    expect(expanded()).toEqual(['true']);
+    el.querySelector<HTMLButtonElement>('.sechead .secbtn')!.click();
+    await f.whenStable();
+    f.detectChanges();
+    expect(f.componentInstance.chip()).toBe('none');
+    expect(expanded()).toEqual(['false']);
+    expect(el.querySelector('.grouprow')).toBeNull();
+  });
+
+  it('PRD 127 D1 — the heads below the open section stick to the bottom, stacked; the heads above do not', async () => {
+    const person = { ...room(2, 'lecturer', 'Dozent'), kind: 'PERSON' };
+    const f = await create([room(1), person], {}, [
+      { id: 'u1', username: 'monty', name: 'Burns Monty' },
+      { id: 'u2', username: 'homer', name: 'Simpson Homer' },
+    ]);
+    const el = f.nativeElement as HTMLElement;
+    const sticky = () =>
+      Array.from(el.querySelectorAll<HTMLElement>('.sechead')).map((h) => [
+        h.querySelector('.glabel')?.textContent?.trim(),
+        h.classList.contains('below'),
+        h.style.bottom,
+      ]);
+    expect(sticky()).toEqual([
+      ['Ressourcen', false, ''],
+      ['Personen', true, 'calc(var(--sechead-h) * 1)'],
+      ['Benutzer', true, 'calc(var(--sechead-h) * 0)'],
+    ]);
+    el.querySelectorAll<HTMLButtonElement>('.sechead .secbtn')[1].click();
+    await f.whenStable();
+    f.detectChanges();
+    expect(sticky()).toEqual([
+      ['Ressourcen', false, ''],
+      ['Personen', false, ''],
+      ['Benutzer', true, 'calc(var(--sechead-h) * 0)'],
+    ]);
+  });
+
+  it('PRD 127 — every row names its full label in a native tooltip', async () => {
+    const long = { ...room(1), name: 'Raum mit einem sehr langen Namen, der abgeschnitten wird' };
+    const grouped = { ...room(2), groupPaths: [['Gebäude A']] } as ReturnType<typeof room>;
+    const f = await create([long, grouped]);
+    const el = f.nativeElement as HTMLElement;
+    await openFolder(f, 'Raum');
+    expect(el.querySelector('.grouprow')?.getAttribute('title')).toBe('Raum');
+    expect(
+      Array.from(el.querySelectorAll('.grouprow')).map((g) => g.getAttribute('title')),
+    ).toContain('Gebäude A');
+    expect(el.querySelector('.item')?.getAttribute('title')).toBe(long.name);
+  });
+
+  it('PRD 127 D2 — a type heading in the search folds its hits away, keeps its count, and opens again for a new query', async () => {
+    const f = await create([room(1), room(2), room(3, 'camera', 'Kamera')], { query: 'raum' });
+    const el = f.nativeElement as HTMLElement;
+    const heading = () => el.querySelector<HTMLButtonElement>('button.typehdr')!;
+    expect(heading().getAttribute('aria-expanded')).toBe('true');
+    expect(heading().textContent).toContain('▾');
+    expect(labels(el)).toEqual(['Raum 01', 'Raum 02', 'Raum 03']);
+    heading().click();
+    f.detectChanges();
+    expect(heading().getAttribute('aria-expanded')).toBe('false');
+    expect(heading().textContent).toContain('▸');
+    expect(heading().querySelector('.count')?.textContent?.trim()).toBe('2');
+    expect(labels(el)).toEqual(['Raum 03']);
+    expect(heading().querySelector('.selectall')).toBeNull();
+    f.componentInstance.query.set('raum 0');
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+    expect(heading().getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('PRD 127 D7 — a folder toggle and a resource click report their type', async () => {
     const f = await create([room(1), room(2, 'camera', 'Kamera')]);
-    expect((f.nativeElement as HTMLElement).querySelector('select.typesel optgroup')).toBeNull();
+    const types: string[] = [];
+    f.componentInstance.typeClick.subscribe((t) => types.push(t));
+    await openFolder(f, 'Kamera');
+    (f.nativeElement as HTMLElement).querySelector<HTMLElement>('.item')!.click();
+    await openFolder(f, 'Raum');
+    expect(types).toEqual(['camera', 'camera', 'room']);
+  });
+
+  it('PRD 127 D8 — section heads carry label and count only; no count row, no "zuklappen"', async () => {
+    const f = await create([room(1), room(2)]);
+    const el = f.nativeElement as HTMLElement;
+    expect(el.querySelector('.sechead .selectall')).toBeNull();
+    expect(el.querySelector('.sechead .count')?.textContent?.trim()).toBe('2');
+    expect(el.querySelector('.listhdr, .collapse')).toBeNull();
+  });
+
+  it('PRD 127 D8 — the search bar carries the hit count and "alle wählen", flipping to "Auswahl aufheben"', async () => {
+    const f = await create([room(1), room(2), room(3)], { query: 'raum' });
+    const el = f.nativeElement as HTMLElement;
+    const btn = () => el.querySelector<HTMLButtonElement>('.searchnote .listall');
+    expect(el.querySelector('.searchnote')?.textContent).toContain('3 Treffer');
+    expect(btn()?.textContent?.trim()).toBe('alle wählen');
+    f.componentRef.setInput('checked', new Set(['r1', 'r2', 'r3']));
+    f.detectChanges();
+    expect(btn()?.textContent?.trim()).toBe('Auswahl aufheben');
+    const assign = await create([room(1)], { query: 'raum', mode: 'assign' });
+    expect((assign.nativeElement as HTMLElement).querySelector('.listall')).toBeNull();
+  });
+
+  it('PRD 127 D8 — a type folder\'s "alle wählen" flips to "Auswahl aufheben" once all its members are selected', async () => {
+    const f = await create([room(1), room(2)]);
+    const el = f.nativeElement as HTMLElement;
+    const btn = () => el.querySelector<HTMLButtonElement>('.grouprow .selectall')!;
+    expect(btn().textContent?.trim()).toBe('alle wählen');
+    f.componentRef.setInput('checked', new Set(['r1']));
+    f.detectChanges();
+    expect(btn().textContent?.trim()).toBe('alle wählen');
+    f.componentRef.setInput('checked', new Set(['r1', 'r2']));
+    f.detectChanges();
+    expect(btn().textContent?.trim()).toBe('Auswahl aufheben');
   });
 
   it('assign mode renders checkbox rows with the availability pill and emits the gesture', async () => {
@@ -198,6 +342,8 @@ describe('ResourcePickerComponent', () => {
       availability,
     });
     const el = f.nativeElement as HTMLElement;
+    expect(el.querySelector('.sechead .selectall')).toBeNull();
+    await openFolder(f, 'Raum');
     const picks: PickEvent[] = [];
     f.componentInstance.pick.subscribe((p) => picks.push(p));
     const items = Array.from(el.querySelectorAll<HTMLElement>('.item'));
@@ -220,11 +366,10 @@ describe('ResourcePickerComponent', () => {
     const grouped = (i: number, group: string) => ({ ...room(i), groupPaths: [[group]] });
     const rows = [grouped(1, 'A'), ...Array.from({ length: 101 }, (_, i) => grouped(i + 2, 'B'))];
     const f = await create(rows, { mode: 'assign' });
-    f.componentInstance.chip.set('type:room');
-    await f.whenStable();
-    f.detectChanges();
+    await openFolder(f, 'Raum');
     const el = f.nativeElement as HTMLElement;
-    for (const t of Array.from(el.querySelectorAll<HTMLElement>('.grouprow .toggle'))) t.click();
+    for (const t of Array.from(el.querySelectorAll<HTMLElement>('.grouprow .toggle')).slice(1))
+      t.click();
     await f.whenStable();
     f.detectChanges();
     const items = Array.from(el.querySelectorAll<HTMLElement>('.item'));
@@ -237,23 +382,20 @@ describe('ResourcePickerComponent', () => {
     expect(document.activeElement).toBe(items[99]);
   });
 
-  it('D9 — the Benutzer chip is rail-only: the assign host cannot assign accounts', async () => {
+  it('D9 — the Benutzer section is rail-only: the assign host cannot assign accounts', async () => {
     const users = [
       { id: 'u1', username: 'monty', name: 'Burns Monty' },
       { id: 'u2', username: 'homer', name: 'Simpson Homer' },
     ];
-    const chipLabels = (f: ComponentFixture<ResourcePickerComponent>) =>
-      Array.from((f.nativeElement as HTMLElement).querySelectorAll('.chips button')).map((b) =>
-        b.textContent?.trim(),
-      );
-    expect(chipLabels(await create([room(1)], {}, users))).toContain('Benutzer');
-    expect(chipLabels(await create([room(1)], { mode: 'assign' }, users))).not.toContain(
+    expect(heads((await create([room(1)], {}, users)).nativeElement)).toContain('Benutzer');
+    expect(heads((await create([room(1)], { mode: 'assign' }, users)).nativeElement)).not.toContain(
       'Benutzer',
     );
   });
 
   it('assign mode: arrows step the rows and Enter picks', async () => {
     const f = await create([room(1), room(2)], { mode: 'assign' });
+    await openFolder(f, 'Raum');
     const el = f.nativeElement as HTMLElement;
     const picks: PickEvent[] = [];
     f.componentInstance.pick.subscribe((p) => picks.push(p));

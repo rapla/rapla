@@ -86,13 +86,22 @@ describe('ResourceSelectionComponent', () => {
     }
   }
 
-  /** PRD 123 D3 — the types sit in one select. */
-  async function pickType(f: ComponentFixture<ResourceSelectionComponent>, typeKey: string) {
-    const select = (f.nativeElement as HTMLElement).querySelector(
-      'select.typesel',
-    ) as HTMLSelectElement;
-    select.value = `type:${typeKey}`;
-    select.dispatchEvent(new Event('change'));
+  /** PRD 127 D5 — toggle a type folder of the open section. */
+  async function openFolder(f: ComponentFixture<ResourceSelectionComponent>, typeName = 'Raum') {
+    const row = Array.from(
+      (f.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('.grouprow'),
+    ).find((r) => r.querySelector('.glabel')?.textContent?.trim() === typeName)!;
+    row.querySelector<HTMLButtonElement>('.toggle')!.click();
+    await f.whenStable();
+    f.detectChanges();
+  }
+
+  /** PRD 127 D1 — click a section head. */
+  async function openSectionHead(f: ComponentFixture<ResourceSelectionComponent>, label: string) {
+    const head = Array.from(
+      (f.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('.sechead .secbtn'),
+    ).find((b) => b.querySelector('.glabel')?.textContent?.trim() === label)!;
+    head.click();
     await f.whenStable();
     f.detectChanges();
   }
@@ -109,34 +118,54 @@ describe('ResourceSelectionComponent', () => {
     (f.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button.newbtn');
 
   // PRD 122 D1/D3 (ruling B1) — the "+ Neu" button in the rail header
-  it('"+ Neu" is hidden when the server offers no creatable type', async () => {
+  it('"+ Neu" is hidden when the server offers no creatable type, and with it the header row (PRD 127)', async () => {
     const f = await create([room(1)]);
     expect(newButton(f)).toBeNull();
+    expect((f.nativeElement as HTMLElement).querySelector('.sthead')).toBeNull();
   });
 
-  it('"+ Neu" opens the create dialog with the active type chip; under Alle the first creatable type', async () => {
+  it('the rail header carries no label, only "+ Neu" (PRD 127, user 2026-10-04)', async () => {
+    const f = await create(
+      [room(1)],
+      [],
+      [{ key: 'room', name: 'Raum', classificationType: 'roomClassification' }],
+    );
+    const head = (f.nativeElement as HTMLElement).querySelector('.sthead')!;
+    expect(head.textContent?.trim()).toBe('+ Neu');
+  });
+
+  it('"+ Neu" preselects the type of the last clicked type folder or resource, else the first creatable type (PRD 127 D7)', async () => {
     const creatable: Creatable[] = [
       { key: 'lecturer', name: 'Dozent', classificationType: 'lecturerClassification' },
       { key: 'room', name: 'Raum', classificationType: 'roomClassification' },
     ];
-    resources.setActiveChip('all');
+    resources.setActiveChip('resources');
     const f = await create([room(1), lecturer], [], creatable);
     newButton(f)!.click();
     expect(dialogOpen).toHaveBeenLastCalledWith(
       ResourceEditDialogComponent,
       expect.objectContaining({ data: { create: { typeKey: 'lecturer' } } }),
     );
-    await pickType(f, 'room');
+    await openFolder(f, 'Raum');
     newButton(f)!.click();
     expect(dialogOpen).toHaveBeenLastCalledWith(
       ResourceEditDialogComponent,
       expect.objectContaining({ data: { create: { typeKey: 'room' } } }),
     );
+    await openSectionHead(f, 'Personen');
+    await openFolder(f, 'Dozent');
+    (f.nativeElement as HTMLElement).querySelector<HTMLElement>('.item')!.click();
+    await openSectionHead(f, 'Ressourcen');
+    newButton(f)!.click();
+    expect(dialogOpen).toHaveBeenLastCalledWith(
+      ResourceEditDialogComponent,
+      expect.objectContaining({ data: { create: { typeKey: 'lecturer' } } }),
+    );
   });
 
   it('a saved new resource reloads the picker list (PRD 122 D6)', async () => {
     dialogOpen.mockReturnValue({ afterClosed: () => of('saved') });
-    resources.setActiveChip('all');
+    resources.setActiveChip('');
     const f = await create(
       [room(1)],
       [],
@@ -150,6 +179,7 @@ describe('ResourceSelectionComponent', () => {
     expect(reload.length).toBe(1);
     reload[0].flush({ data: { resources: [room(1), room(2)], users: [] } });
     await f.whenStable();
+    await openFolder(f);
     expect(labels(f.nativeElement as HTMLElement)).toEqual(['Raum 01', 'Raum 02']);
   });
 
@@ -160,15 +190,18 @@ describe('ResourceSelectionComponent', () => {
 
   const labels = (el: HTMLElement) =>
     Array.from(el.querySelectorAll('.item .lbl')).map((i) => i.textContent?.trim() ?? '');
-  const chipButtons = (el: HTMLElement) =>
-    Array.from(el.querySelectorAll<HTMLButtonElement>('.chips button'));
+  const heads = (el: HTMLElement) =>
+    Array.from(el.querySelectorAll<HTMLButtonElement>('.sechead .secbtn'));
+  const headLabels = (el: HTMLElement) =>
+    heads(el).map((b) => b.querySelector('.glabel')?.textContent?.trim());
   const recentPosts = () =>
     http.match((r) => r.url === '/api/recents' && r.method === 'POST').length;
 
-  it('a click under Alle never moves the clicked row; the new recent ranks up after a chip change (PRD 119 P3b, user ruling A)', async () => {
-    resources.setActiveChip('all');
+  it('a click in a type folder never moves the clicked row (server order, PRD 127 D6)', async () => {
+    resources.setActiveChip('resources');
     const f = await create(Array.from({ length: 5 }, (_, i) => room(i + 1)));
     const el = f.nativeElement as HTMLElement;
+    await openFolder(f);
     const row = (label: string) =>
       Array.from(el.querySelectorAll<HTMLElement>('.item')).find(
         (i) => i.querySelector('.lbl')?.textContent?.trim() === label,
@@ -176,18 +209,13 @@ describe('ResourceSelectionComponent', () => {
     row('Raum 03').click();
     await f.whenStable();
     expect(labels(el)).toEqual(['Raum 01', 'Raum 02', 'Raum 03', 'Raum 04', 'Raum 05']);
-    resources.setActiveChip('favorites');
-    await f.whenStable();
-    resources.setActiveChip('all');
-    await f.whenStable();
-    expect(labels(el)[0]).toBe('Raum 03');
   });
 
-  it('recents that arrive after the list still rank on top under Alle (P3b review SHOULD)', async () => {
-    resources.setActiveChip('all');
+  it('recents that arrive after the list add the Zuletzt section (PRD 127 D1)', async () => {
+    resources.setActiveChip('');
     const f = await create(Array.from({ length: 5 }, (_, i) => room(i + 1)));
     const el = f.nativeElement as HTMLElement;
-    expect(labels(el)[0]).toBe('Raum 01');
+    expect(headLabels(el)).toEqual(['Ressourcen']);
     const reload = TestBed.inject(RecentsFavoritesService).reload();
     http
       .expectOne((r) => r.url === '/api/recents' && r.method === 'GET')
@@ -195,21 +223,17 @@ describe('ResourceSelectionComponent', () => {
     http.expectOne((r) => r.url === '/api/favorites' && r.method === 'GET').flush([]);
     await reload;
     await f.whenStable();
-    expect(labels(el)[0]).toBe('Raum 04');
+    expect(headLabels(el)).toEqual(['Zuletzt', 'Ressourcen']);
   });
 
-  it('a new user with no recents or favorites sees the first 20 resources on Alle, the rest behind a "Weitere" button', async () => {
-    resources.setActiveChip('all');
+  it('a new user with no recents or favorites starts on Ressourcen with its type folders closed (PRD 127 D1)', async () => {
+    resources.setActiveChip('');
     const f = await create(Array.from({ length: 25 }, (_, i) => room(i + 1)));
     const el = f.nativeElement as HTMLElement;
-    expect(labels(el).length).toBe(20);
-    expect(labels(el)[0]).toBe('Raum 01');
-    const more = el.querySelector('.showmore') as HTMLElement;
-    expect(more.tagName).toBe('BUTTON');
-    expect(more.textContent).toContain('Weitere 5 anzeigen');
-    more.click();
-    await f.whenStable();
-    expect(labels(el).length).toBe(25);
+    expect(resources.activeChip()).toBe('resources');
+    expect(labels(el)).toEqual([]);
+    expect(el.querySelector('.grouprow .glabel')?.textContent?.trim()).toBe('Raum');
+    expect(el.querySelector('.grouprow .count')?.textContent?.trim()).toBe('25');
   });
 
   it('has no search input of its own — the top field drives the list (PRD 119 D3)', async () => {
@@ -217,34 +241,43 @@ describe('ResourceSelectionComponent', () => {
     expect((f.nativeElement as HTMLElement).querySelector('input')).toBeNull();
   });
 
-  it('shows a chip row (Alle, Favoriten, Zuletzt) plus the type select (PRD 123 D3) with aria-pressed on the active chip', async () => {
+  it("the stepper fills the 290px drawer's border-box content (289px) instead of a fixed width that adds a horizontal scrollbar", async () => {
+    const f = await create([room(1)]);
+    const stepper = (f.nativeElement as HTMLElement).querySelector<HTMLElement>('.stepper')!;
+    expect(getComputedStyle(stepper).width).toBe('100%');
+  });
+
+  it('shows the section heads with aria-expanded and a sticky highlight on the one open section (PRD 127 D1)', async () => {
+    resources.pushRecent({ id: 'R', label: 'Recent' });
     const f = await create([room(1), lecturer]);
     const el = f.nativeElement as HTMLElement;
-    expect(chipButtons(el).map((b) => b.textContent?.trim())).toEqual([
-      'Alle',
-      '★ Favoriten',
-      'Zuletzt',
+    expect(headLabels(el)).toEqual(['Zuletzt', 'Ressourcen', 'Personen']);
+    expect(heads(el).map((b) => b.getAttribute('aria-expanded'))).toEqual([
+      'true',
+      'false',
+      'false',
     ]);
-    expect(chipButtons(el).map((b) => b.getAttribute('aria-pressed'))).toEqual([
+    expect(el.querySelectorAll('.sechead.open').length).toBe(1);
+    await openSectionHead(f, 'Personen');
+    expect(heads(el).map((b) => b.getAttribute('aria-expanded'))).toEqual([
       'false',
       'false',
       'true',
     ]);
-    // PRD 122 D9 parity — resources, then persons (the lecturer fixture is a PERSON).
-    expect(
-      Array.from(el.querySelectorAll('select.typesel option')).map((o) => o.textContent?.trim()),
-    ).toEqual(['Typ ▾', 'Raum (1)', 'Dozent (1)']);
+    expect(resources.activeChip()).toBe('persons');
+    expect(el.querySelector('.grouprow .glabel')?.textContent?.trim()).toBe('Dozent');
   });
 
-  it('a type chip lists only resources of that type, name-sorted', async () => {
+  it('a type folder lists only resources of that type, in server order (PRD 127 D6)', async () => {
+    resources.setActiveChip('resources');
     const f = await create([room(2), lecturer, room(1)]);
     const el = f.nativeElement as HTMLElement;
-    await pickType(f, 'room');
-    expect(labels(el)).toEqual(['Raum 01', 'Raum 02']);
+    await openFolder(f, 'Raum');
+    expect(labels(el)).toEqual(['Raum 02', 'Raum 01']);
   });
 
   it('the shared query narrows the list without any request to the server', async () => {
-    resources.setActiveChip('all');
+    resources.setActiveChip('');
     const f = await create([room(1), room(2), room(12)]);
     await typeQuery(f, '1');
     expect(labels(f.nativeElement as HTMLElement)).toEqual(['Raum 01', 'Raum 12']);
@@ -252,10 +285,11 @@ describe('ResourceSelectionComponent', () => {
     http.expectNone('/api/users');
   });
 
-  it('under Alle, matching users appear only while typing (also by username) and step as a user scope chip', async () => {
-    resources.setActiveChip('all');
+  it('matching users appear in the search only (also by username), last, and step as a user scope chip', async () => {
+    resources.setActiveChip('');
     const f = await create([room(1)], [{ id: 'u1', username: 'monty', name: 'Burns Monty' }]);
     const el = f.nativeElement as HTMLElement;
+    await openFolder(f);
     expect(labels(el)).toEqual(['Raum 01']);
     await typeQuery(f, 'mont');
     expect(labels(el)).toEqual(['Burns Monty']);
@@ -266,7 +300,7 @@ describe('ResourceSelectionComponent', () => {
     ]);
   });
 
-  describe('the Benutzer chip (PRD 123 D9)', () => {
+  describe('the Benutzer section (PRD 123 D9, PRD 127 D1)', () => {
     const ME: Identity = {
       userId: 'U-ME',
       username: 'admin',
@@ -282,22 +316,13 @@ describe('ResourceSelectionComponent', () => {
       { id: 'U-ME', username: 'admin', name: 'Admin X' },
       { id: 'u3', username: 'homer', name: 'Simpson Homer' },
     ];
-    const usersChip = (el: HTMLElement) =>
-      Array.from(el.querySelectorAll<HTMLButtonElement>('.chips button')).find(
-        (b) => b.textContent?.trim() === 'Benutzer',
-      );
-
-    it('sits after Zuletzt and lists every readable account, the own one first, the rest A–Z', async () => {
+    it('comes last and lists every readable account, the own one first, the rest A–Z', async () => {
       TestBed.inject(AuthService).identity.set(ME);
-      resources.setActiveChip('all');
+      resources.setActiveChip('');
       const f = await create([room(1)], USERS);
       const el = f.nativeElement as HTMLElement;
-      expect(
-        Array.from(el.querySelectorAll('.chips button')).map((b) => b.textContent?.trim()),
-      ).toEqual(['Alle', '★ Favoriten', 'Zuletzt', 'Benutzer']);
-      usersChip(el)!.click();
-      await f.whenStable();
-      f.detectChanges();
+      expect(headLabels(el)).toEqual(['Ressourcen', 'Benutzer']);
+      await openSectionHead(f, 'Benutzer');
       expect(resources.activeChip()).toBe('users');
       expect(labels(el)).toEqual(['Admin X', 'Burns Monty', 'Simpson Homer']);
     });
@@ -324,29 +349,36 @@ describe('ResourceSelectionComponent', () => {
     });
   });
 
-  describe('"alle wählen" for the current list (PRD 123 D8)', () => {
+  describe('"alle wählen" in the search bar (PRD 123 D8, PRD 127 D8)', () => {
     const many = Array.from({ length: 25 }, (_, i) => room(i + 1));
-    const header = (el: HTMLElement) => el.querySelector<HTMLElement>('.listhdr');
-    const all = (el: HTMLElement) => el.querySelector<HTMLButtonElement>('.listhdr .listall')!;
+    const bar = (el: HTMLElement) => el.querySelector<HTMLElement>('.searchnote');
+    const all = (el: HTMLElement) => el.querySelector<HTMLButtonElement>('.searchnote .listall')!;
 
-    it('takes every hit, not just the first block of 20, and replaces the selection', async () => {
-      resources.setActiveChip('all');
-      filter.add({ id: 'OLD', kind: 'resource', label: 'old' });
+    it('no count row and no button without a search; the heads carry the numbers', async () => {
       const f = await create(many);
       const el = f.nativeElement as HTMLElement;
-      expect(labels(el).length).toBe(20);
-      expect(header(el)?.textContent).toContain('25 Treffer');
+      expect(el.querySelector('.listhdr, .listall, .collapse')).toBeNull();
+      expect(el.querySelector('.sechead .count')?.textContent?.trim()).toBe('25');
+    });
+
+    it('takes every hit, also inside closed folders, and replaces the selection', async () => {
+      filter.add({ id: 'OLD', kind: 'resource', label: 'old' });
+      const f = await create(many);
+      await typeQuery(f, 'raum');
+      const el = f.nativeElement as HTMLElement;
+      expect(bar(el)?.textContent).toContain('25 Treffer');
       all(el).click();
       await f.whenStable();
       expect(filter.entries().length).toBe(25);
       expect(filter.has('OLD')).toBe(false);
     });
 
-    it('Ctrl adds; when everything is selected the button reads "Auswahl aufheben" and clears the hits', async () => {
-      resources.setActiveChip('all');
+    it('Ctrl adds; when every hit is selected the button reads "Auswahl aufheben" and clears the hits', async () => {
       filter.add({ id: 'OLD', kind: 'event', label: 'old' });
       const f = await create(many);
+      await typeQuery(f, 'raum');
       const el = f.nativeElement as HTMLElement;
+      expect(all(el).textContent?.trim()).toBe('alle wählen');
       all(el).dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true }));
       await f.whenStable();
       f.detectChanges();
@@ -358,8 +390,8 @@ describe('ResourceSelectionComponent', () => {
     });
 
     it('resets the ▶ marker and pushes no recent', async () => {
-      resources.setActiveChip('all');
       const f = await create(many);
+      await typeQuery(f, 'raum');
       const el = f.nativeElement as HTMLElement;
       (el.querySelector('.item') as HTMLElement).click();
       const recents = resources.recents().length;
@@ -369,8 +401,7 @@ describe('ResourceSelectionComponent', () => {
       expect(resources.recents().length).toBe(recents);
     });
 
-    it('under Benutzer it selects the accounts as user chips', async () => {
-      resources.setActiveChip('users');
+    it('selects matching accounts as user chips', async () => {
       const f = await create(
         [room(1)],
         [
@@ -378,21 +409,11 @@ describe('ResourceSelectionComponent', () => {
           { id: 'u2', username: 'homer', name: 'Simpson Homer' },
         ],
       );
+      await typeQuery(f, 'simpson');
       all(f.nativeElement as HTMLElement).click();
       await f.whenStable();
-      expect(filter.entries().map((e) => [e.id, e.kind])).toEqual([
-        ['u1', 'user'],
-        ['u2', 'user'],
-      ]);
+      expect(filter.entries().map((e) => [e.id, e.kind])).toEqual([['u2', 'user']]);
     });
-  });
-
-  it('a plain click on a row pushes a recent (PRD 119 D5)', async () => {
-    resources.setActiveChip('all');
-    const f = await create([room(1)]);
-    (f.nativeElement as HTMLElement).querySelector<HTMLElement>('.item')!.click();
-    await f.whenStable();
-    expect(recentPosts()).toBe(1);
   });
 
   it('stepping under Zuletzt does NOT push a recent (the stepped list must not reshuffle)', async () => {
@@ -418,30 +439,30 @@ describe('ResourceSelectionComponent', () => {
     expect(document.activeElement).toBe((f.nativeElement as HTMLElement).querySelector('.stepper'));
   });
 
-  it('an activate-first request steps the first shown row of the picker — also under a type tree (PRD 123 M2)', async () => {
-    resources.setActiveChip('all');
+  it('an activate-first request steps the first shown row of the picker — also in a type folder (PRD 123 M2)', async () => {
+    resources.setActiveChip('resources');
     const f = await create([room(2), room(1)]);
     resources.setQuery('Raum');
     await f.whenStable();
     resources.requestActivateFirst(false);
     await f.whenStable();
-    expect(filter.entries().map((e) => e.id)).toEqual(['r1']);
-    expect(resources.activeId()).toBe('r1');
+    expect(filter.entries().map((e) => e.id)).toEqual(['r2']);
+    expect(resources.activeId()).toBe('r2');
     expect(recentPosts()).toBe(1);
-    resources.setQuery('02');
+    resources.setQuery('01');
     await f.whenStable();
     resources.requestActivateFirst(true); // Ctrl = add
     await f.whenStable();
-    expect(filter.entries().map((e) => e.id)).toEqual(['r1', 'r2']);
-    await pickType(f, 'room');
+    expect(filter.entries().map((e) => e.id)).toEqual(['r2', 'r1']);
     resources.setQuery('');
     await f.whenStable();
+    await openFolder(f);
     resources.requestActivateFirst(false);
     await f.whenStable();
-    expect(filter.entries().map((e) => e.id)).toEqual(['r1']);
+    expect(filter.entries().map((e) => e.id)).toEqual(['r2']);
   });
 
-  it('renders the items of the active chip', async () => {
+  it('renders the items of the open section', async () => {
     resources.pushRecent({ id: 'C348', label: 'C348 PC-Hörsaal' });
     resources.pushRecent({ id: 'C452', label: 'C452 Labor' });
     const f = await create();
@@ -450,12 +471,13 @@ describe('ResourceSelectionComponent', () => {
     expect(items[0]).toContain('C452');
   });
 
-  it('switching chip changes the rendered list', async () => {
+  it('opening another section changes the rendered list', async () => {
     resources.pushRecent({ id: 'R', label: 'Recent' });
     const f = await create([room(1)]);
     const el = f.nativeElement as HTMLElement;
     expect(labels(el)).toEqual(['Recent']);
-    await pickType(f, 'room');
+    await openSectionHead(f, 'Ressourcen');
+    await openFolder(f);
     expect(labels(el)).toEqual(['Raum 01']);
   });
 
@@ -512,8 +534,10 @@ describe('ResourceSelectionComponent', () => {
 
   describe('Swing-tree selection semantics (PRD 099 Phase 4)', () => {
     async function makeList() {
-      resources.setActiveChip('type:room');
-      return create([room(1), room(2), room(3), room(4)]);
+      resources.setActiveChip('resources');
+      const f = await create([room(1), room(2), room(3), room(4)]);
+      await openFolder(f);
+      return f;
     }
     const items = (f: { nativeElement: HTMLElement }) =>
       Array.from(f.nativeElement.querySelectorAll<HTMLElement>('.item'));
@@ -556,7 +580,7 @@ describe('ResourceSelectionComponent', () => {
       expect(chipIds()).toEqual(['r2']);
     });
 
-    describe('with only the own account, the Benutzer chip reads "meine" (PRD 123 D9, user 2026-10-01)', () => {
+    describe('with only the own account, a "Meine Buchungen" row replaces the Benutzer section (PRD 127 OQ4)', () => {
       const ME: Identity = {
         userId: 'U-ME',
         username: 'admin',
@@ -568,29 +592,30 @@ describe('ResourceSelectionComponent', () => {
         target: null,
       };
       const mine = (f: { nativeElement: HTMLElement }) =>
-        f.nativeElement.querySelector<HTMLElement>('.chips button.mine')!;
+        f.nativeElement.querySelector<HTMLElement>('.sechead.mine .secbtn')!;
 
       async function makeListWithMe() {
         TestBed.inject(AuthService).identity.set(ME);
-        resources.setActiveChip('type:room');
-        return create(
+        resources.setActiveChip('resources');
+        const f = await create(
           [room(1), room(2), room(3), room(4)],
           [{ id: 'U-ME', username: 'admin', name: 'Admin X' }],
         );
+        await openFolder(f);
+        return f;
       }
 
-      it('a click activates it like any chip: the list is the own row, the type select clears, the own account replaces the selection', async () => {
+      it('a click picks the own account, replacing the selection; the open section stays', async () => {
         const f = await makeListWithMe();
-        expect(mine(f).textContent?.trim()).toBe('meine');
+        const el = f.nativeElement as HTMLElement;
+        expect(mine(f).querySelector('.glabel')?.textContent?.trim()).toBe('Meine Buchungen');
+        expect(headLabels(el)).not.toContain('Benutzer');
         click(items(f)[0]);
         click(mine(f));
         await f.whenStable();
         f.detectChanges();
-        const el = f.nativeElement as HTMLElement;
-        expect(resources.activeChip()).toBe('users');
-        expect(labels(el)).toEqual(['Admin X']);
-        expect((el.querySelector('select.typesel') as HTMLSelectElement).value).toBe('');
-        expect(mine(f).classList.contains('on')).toBe(true);
+        expect(resources.activeChip()).toBe('resources');
+        expect(mine(f).getAttribute('aria-pressed')).toBe('true');
         expect(filter.entries().map((e) => [e.id, e.kind])).toEqual([['U-ME', 'user']]);
       });
 
@@ -601,7 +626,7 @@ describe('ResourceSelectionComponent', () => {
         expect(chipIds()).toEqual(['r1', 'U-ME']);
       });
 
-      it('a second click on the active chip deselects the own account; the chip stays active', async () => {
+      it('a second click deselects the own account', async () => {
         const f = await makeListWithMe();
         click(mine(f));
         await f.whenStable();
@@ -611,8 +636,7 @@ describe('ResourceSelectionComponent', () => {
         await f.whenStable();
         f.detectChanges();
         expect(chipIds()).toEqual([]);
-        expect(resources.activeChip()).toBe('users');
-        expect(mine(f).classList.contains('on')).toBe(true);
+        expect(mine(f).getAttribute('aria-pressed')).toBe('false');
       });
 
       it('the pinned card is gone', async () => {
@@ -690,7 +714,7 @@ describe('ResourceSelectionComponent', () => {
     expect(resources.activeId()).toBeNull();
   });
 
-  describe('group tree under a type chip (PRD 119 D2/D11)', () => {
+  describe('group tree in a type folder (PRD 119 D2/D11, PRD 127 D5)', () => {
     const grouped = (id: string, name: string, groupPaths: string[][] = []) => ({
       id,
       kind: 'RESOURCE',
@@ -714,11 +738,17 @@ describe('ResourceSelectionComponent', () => {
       grouped('r3', 'Hörsaal 2', [['Gebäude B']]),
       grouped('r4', 'Aula'),
     ];
+    async function inFolder(rows: ReturnType<typeof grouped>[] | Wire[]) {
+      resources.setActiveChip('resources');
+      const f = await create(rows as Wire[]);
+      await openFolder(f);
+      return f;
+    }
 
     it('shows collapsed groups with member counts, the ungrouped resources after them', async () => {
-      resources.setActiveChip('type:room');
-      const f = await create(fixture);
+      const f = await inFolder(fixture);
       expect(rows(f.nativeElement as HTMLElement)).toEqual([
+        '▸ Raum (4)',
         '▸ Gebäude A (2)',
         '▸ Gebäude B (1)',
         'Aula',
@@ -726,14 +756,14 @@ describe('ResourceSelectionComponent', () => {
     });
 
     it('expanding a group shows its members', async () => {
-      resources.setActiveChip('type:room');
-      const f = await create(fixture);
+      const f = await inFolder(fixture);
       const el = f.nativeElement as HTMLElement;
       const toggle = group(el, 'Gebäude A').querySelector<HTMLButtonElement>('.toggle')!;
       expect(toggle.getAttribute('aria-expanded')).toBe('false');
       toggle.click();
       await f.whenStable();
       expect(rows(el)).toEqual([
+        '▸ Raum (4)',
         '▸ Gebäude A (2)',
         'Hörsaal 1',
         'Labor',
@@ -753,9 +783,8 @@ describe('ResourceSelectionComponent', () => {
     });
 
     it('"alle wählen" replaces the selection with the members of the group', async () => {
-      resources.setActiveChip('type:room');
       filter.add({ id: 'OLD', kind: 'resource', label: 'old' });
-      const f = await create(fixture);
+      const f = await inFolder(fixture);
       group(f.nativeElement as HTMLElement, 'Gebäude A')
         .querySelector<HTMLButtonElement>('.selectall')!
         .click();
@@ -764,28 +793,29 @@ describe('ResourceSelectionComponent', () => {
     });
 
     it('the group button shares the D8 mechanics: Ctrl adds, a second click clears, no auto-expand', async () => {
-      resources.setActiveChip('type:room');
-      filter.add({ id: 'OLD', kind: 'resource', label: 'old' });
-      const f = await create(fixture);
+      filter.add({ id: 'r4', kind: 'resource', label: 'Aula' });
+      const f = await inFolder(fixture);
       const el = f.nativeElement as HTMLElement;
       const btn = () => group(el, 'Gebäude A').querySelector<HTMLButtonElement>('.selectall')!;
       btn().dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true }));
       await f.whenStable();
       f.detectChanges();
-      expect(filter.entries().map((e) => e.id)).toEqual(['OLD', 'r1', 'r2']);
-      expect(rows(el)).toEqual(['▸ Gebäude A (2)', '▸ Gebäude B (1)', 'Aula']);
+      expect(filter.entries().map((e) => e.id)).toEqual(['r4', 'r1', 'r2']);
+      expect(rows(el)).toEqual(['▸ Raum (4)', '▸ Gebäude A (2)', '▸ Gebäude B (1)', 'Aula']);
+      expect(btn().textContent?.trim()).toBe('Auswahl aufheben');
       btn().click();
       await f.whenStable();
-      expect(filter.entries().map((e) => e.id)).toEqual(['OLD']);
+      f.detectChanges();
+      expect(filter.entries().map((e) => e.id)).toEqual(['r4']);
+      expect(btn().textContent?.trim()).toBe('alle wählen');
     });
 
-    it('D8 — the header button selects every member of the filtered tree, collapsed groups included', async () => {
-      resources.setActiveChip('type:room');
-      const f = await create(fixture);
+    it('D8 — the search bar button selects every hit', async () => {
+      const f = await inFolder(fixture);
       const el = f.nativeElement as HTMLElement;
-      expect(el.querySelector('.listhdr')?.textContent).toContain('4 Treffer');
       await typeQuery(f, 'hörsaal');
-      el.querySelector<HTMLButtonElement>('.listhdr .listall')!.click();
+      expect(el.querySelector('.searchnote')?.textContent).toContain('2 Treffer');
+      el.querySelector<HTMLButtonElement>('.searchnote .listall')!.click();
       await f.whenStable();
       expect(
         filter
@@ -795,32 +825,20 @@ describe('ResourceSelectionComponent', () => {
       ).toEqual(['r1', 'r3']);
     });
 
-    it('the query opens the branches with matches and drops the rest', async () => {
-      resources.setActiveChip('type:room');
-      const f = await create(fixture);
+    it('a search lists the hits flat under their type heading, parents below (PRD 127 D2)', async () => {
+      const f = await inFolder(fixture);
       await typeQuery(f, 'hörsaal');
-      expect(rows(f.nativeElement as HTMLElement)).toEqual([
-        '▸ Gebäude A (1)',
-        'Hörsaal 1',
-        '▸ Gebäude B (1)',
-        'Hörsaal 2',
-      ]);
-    });
-
-    it('under Alle, a group whose name matches the query appears as an expandable row', async () => {
-      resources.setActiveChip('all');
-      const f = await create(fixture);
-      await typeQuery(f, 'gebäude a');
       const el = f.nativeElement as HTMLElement;
-      expect(group(el, 'Gebäude A')).toBeTruthy();
-      group(el, 'Gebäude A').querySelector<HTMLButtonElement>('.toggle')!.click();
-      await f.whenStable();
-      expect(rows(el)).toContain('Labor');
+      expect(rows(el)).toEqual(['Hörsaal 1', 'Hörsaal 2']);
+      expect(
+        Array.from(el.querySelectorAll('.typehdr')).map((h) =>
+          Array.from(h.querySelectorAll('span'), (t) => t.textContent?.trim()).join(' '),
+        ),
+      ).toEqual(['Raum 2']);
     });
 
     it('D12 — a type with more than 100 resources shows 100, then "Weitere 50 anzeigen" reveals the rest', async () => {
-      resources.setActiveChip('type:room');
-      const f = await create(Array.from({ length: 150 }, (_, i) => room(i + 1)));
+      const f = await inFolder(Array.from({ length: 150 }, (_, i) => room(i + 1)));
       const el = f.nativeElement as HTMLElement;
       expect(labels(el).length).toBe(100);
       const more = el.querySelector<HTMLButtonElement>('.showmore')!;
@@ -832,8 +850,7 @@ describe('ResourceSelectionComponent', () => {
     });
 
     it('D12 — an open group with more than 100 members shows 100 of them, then "Weitere"', async () => {
-      resources.setActiveChip('type:room');
-      const f = await create(
+      const f = await inFolder(
         Array.from({ length: 120 }, (_, i) => grouped(`g${i}`, `Raum ${i}`, [['Gebäude A']])),
       );
       const el = f.nativeElement as HTMLElement;
@@ -848,7 +865,7 @@ describe('ResourceSelectionComponent', () => {
     });
 
     it('D12 — a search result stops at 100 rows, "Weitere" reveals the next block', async () => {
-      resources.setActiveChip('all');
+      resources.setActiveChip('');
       const f = await create(Array.from({ length: 150 }, (_, i) => room(i + 1)));
       await typeQuery(f, 'raum');
       const el = f.nativeElement as HTMLElement;
@@ -856,26 +873,18 @@ describe('ResourceSelectionComponent', () => {
       expect(el.querySelector('.showmore')?.textContent?.trim()).toBe('Weitere 50 anzeigen');
     });
 
-    it('D12 — groups start collapsed except the path to a selected resource', async () => {
-      resources.setActiveChip('type:room');
+    it('groups stay collapsed even on the path to a selected resource (PRD 127 D1, Q1)', async () => {
       filter.add({ id: 'r2', kind: 'resource', label: 'Labor' });
-      const f = await create(fixture);
+      const f = await inFolder(fixture);
       const el = f.nativeElement as HTMLElement;
-      expect(rows(el)).toEqual([
-        '▸ Gebäude A (2)',
-        'Hörsaal 1',
-        'Labor',
-        '▸ Gebäude B (1)',
-        'Aula',
-      ]);
+      expect(rows(el)).toEqual(['▸ Raum (4)', '▸ Gebäude A (2)', '▸ Gebäude B (1)', 'Aula']);
       expect(group(el, 'Gebäude A').querySelector('.toggle')?.getAttribute('aria-expanded')).toBe(
-        'true',
+        'false',
       );
     });
 
     it('click, Ctrl and Shift select over the resource rows of an expanded tree', async () => {
-      resources.setActiveChip('type:room');
-      const f = await create(fixture);
+      const f = await inFolder(fixture);
       const el = f.nativeElement as HTMLElement;
       for (const g of ['Gebäude A', 'Gebäude B']) {
         group(el, g).querySelector<HTMLButtonElement>('.toggle')!.click();
@@ -904,6 +913,7 @@ describe('ResourceSelectionComponent', () => {
       expect(ids()).toEqual(['r1', 'r3']);
       // selecting inside an open group keeps it open
       expect(rows(el)).toEqual([
+        '▸ Raum (4)',
         '▸ Gebäude A (2)',
         'Hörsaal 1',
         'Labor',
@@ -914,8 +924,7 @@ describe('ResourceSelectionComponent', () => {
     });
 
     it('shows every resource of a type without the "Weitere" page (the tree is collapsible)', async () => {
-      resources.setActiveChip('type:room');
-      const f = await create(Array.from({ length: 25 }, (_, i) => room(i + 1)));
+      const f = await inFolder(Array.from({ length: 25 }, (_, i) => room(i + 1)));
       const el = f.nativeElement as HTMLElement;
       expect(labels(el).length).toBe(25);
       expect(el.querySelector('.showmore')).toBeNull();

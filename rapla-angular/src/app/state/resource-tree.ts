@@ -1,17 +1,15 @@
 import type { ResourceItem } from './resource-selection-store';
-import { PAGE_SIZE, byLabel, filterRows } from './resource-picker';
+import { PAGE_SIZE, filterRows } from './resource-picker';
 
-/** PRD 119 D2/D11 — a node of the picker tree under a type chip: a group level or a resource. */
+/** PRD 119 D2/D11, PRD 127 — a node of the picker tree: a section, a type folder, a search heading, a group level or a resource. */
 export interface TreeNode {
   key: string;
   label: string;
-  kind: 'group' | 'resource';
+  kind: 'section' | 'type' | 'heading' | 'group' | 'resource';
   item?: ResourceItem;
   children: TreeNode[];
   /** Distinct resources below this node (1 for a resource). */
   count: number;
-  /** filterTree kept this resource only for a matching descendant (PRD 120). */
-  viaChild?: boolean;
 }
 
 export interface NodeRow {
@@ -50,6 +48,8 @@ function byNodeLabel(a: TreeNode, b: TreeNode): number {
 export function buildTree(
   items: readonly ResourceItem[],
   all: readonly ResourceItem[] = items,
+  prefix = '',
+  childrenOf: ReadonlyMap<string, ResourceItem[]> = childIndex(all),
 ): TreeNode[] {
   const root: Level = { groups: new Map(), items: [] };
   for (const item of items) {
@@ -73,7 +73,7 @@ export function buildTree(
       if (!level.items.some((x) => x.id === item.id)) level.items.push(item);
     }
   }
-  return toNodes(root, '', childIndex(all));
+  return toNodes(root, prefix, childrenOf);
 }
 
 /** PRD 120 — parent id → the resources of `all` that name it in `parentIds`. */
@@ -94,8 +94,9 @@ export function resourceNodes(
   items: readonly ResourceItem[],
   all: readonly ResourceItem[],
   childrenOf: ReadonlyMap<string, ResourceItem[]> = childIndex(all),
+  prefix = '',
 ): TreeNode[] {
-  return items.map((item) => resourceNode(item, '', childrenOf, new Set()));
+  return items.map((item) => resourceNode(item, prefix, childrenOf, new Set()));
 }
 
 function resourceNode(
@@ -113,7 +114,6 @@ function resourceNode(
     item,
     children: (childrenOf.get(item.id) ?? [])
       .filter((child) => !below.has(child.id))
-      .sort(byLabel)
       .map((child) => resourceNode(child, key, childrenOf, below)),
     count: 1,
   };
@@ -138,24 +138,72 @@ function toNodes(
       return node;
     })
     .sort(byNodeLabel);
-  const leaves = [...level.items]
-    .sort(byLabel)
-    .map((item) => resourceNode(item, prefix, childrenOf, new Set()));
+  const leaves = level.items.map((item) => resourceNode(item, prefix, childrenOf, new Set()));
   return [...groups, ...leaves];
 }
 
-/**
- * The distinct resources below a node — what "alle wählen" selects. PRD 120 D7: a resource stands for its subtree,
- * so the walk does not descend into it, unless filterTree kept it only for a matching descendant.
- */
+/** The distinct resources below a node — what "alle wählen" selects. PRD 120 D7: a resource stands for its subtree. */
 export function membersOf(node: TreeNode): ResourceItem[] {
   const seen = new Map<string, ResourceItem>();
   const walk = (n: TreeNode) => {
-    if (n.item && !n.viaChild && !seen.has(n.item.id)) seen.set(n.item.id, n.item);
-    if (n.kind === 'group' || n.viaChild) n.children.forEach(walk);
+    if (n.item && !seen.has(n.item.id)) seen.set(n.item.id, n.item);
+    if (n.kind !== 'resource') n.children.forEach(walk);
   };
   walk(node);
   return [...seen.values()];
+}
+
+/** PRD 127 D1/D5 — one folder per type, in order of first appearance in the server-sorted list, holding its type tree. */
+export function typeFolders(
+  items: readonly ResourceItem[],
+  all: readonly ResourceItem[],
+  childrenOf: ReadonlyMap<string, ResourceItem[]> = childIndex(all),
+): TreeNode[] {
+  return [...byType(items).entries()].map(([typeKey, members]) => ({
+    key: `@${typeKey}`,
+    label: members[0].typeName ?? typeKey,
+    kind: 'type' as const,
+    children: buildTree(members, all, `@${typeKey}`, childrenOf),
+    count: members.length,
+  }));
+}
+
+function byType(items: readonly ResourceItem[]): Map<string, ResourceItem[]> {
+  const types = new Map<string, ResourceItem[]>();
+  for (const item of items) {
+    const key = item.typeKey ?? '';
+    const list = types.get(key);
+    if (list) list.push(item);
+    else types.set(key, [item]);
+  }
+  return types;
+}
+
+/**
+ * PRD 127 D2 — the search hits flat under one heading per type, in folder order, users last; each hit keeps its own
+ * children (PRD 120).
+ */
+export function searchGroups(
+  resources: readonly ResourceItem[],
+  users: readonly ResourceItem[],
+  query: string,
+  usersLabel: string,
+  all: readonly ResourceItem[] = resources,
+): TreeNode[] {
+  if (!query.trim()) return [];
+  const childrenOf = childIndex(all);
+  const heading = (key: string, label: string, hits: ResourceItem[]): TreeNode => ({
+    key,
+    label,
+    kind: 'heading',
+    children: hits.map((item) => resourceNode(item, key, childrenOf, new Set())),
+    count: hits.length,
+  });
+  const groups = [...byType(filterRows(resources, query)).entries()].map(([typeKey, hits]) =>
+    heading(`?${typeKey}`, hits[0].typeName ?? typeKey, hits),
+  );
+  const userHits = filterRows(users, query);
+  return userHits.length ? [...groups, heading('?users', usersLabel, userHits)] : groups;
 }
 
 /** The rows the picker renders: every node of an expanded group, indented by depth; each level stops at its limit (D12). */
@@ -176,61 +224,4 @@ export function visibleRows(
   }
   if (nodes.length > limit) rows.push({ more: parentKey, hidden: nodes.length - limit, depth });
   return rows;
-}
-
-/** The groups and resources on the path to any of the given resources — open by default (D12). */
-export function pathKeysTo(nodes: readonly TreeNode[], ids: ReadonlySet<string>): Set<string> {
-  const keys = new Set<string>();
-  const walk = (node: TreeNode): boolean => {
-    let hit = false;
-    for (const child of node.children) if (walk(child)) hit = true;
-    if (hit) keys.add(node.key);
-    return hit || (!!node.item && ids.has(node.item.id));
-  };
-  nodes.forEach(walk);
-  return keys;
-}
-
-/**
- * PRD 119 D3 — narrow the tree by the query: matching resources keep their groups, which open; a group whose own
- * name matches keeps all its members.
- */
-export function filterTree(
-  nodes: readonly TreeNode[],
-  query: string,
-): { nodes: TreeNode[]; expanded: Set<string> } {
-  const expanded = new Set<string>();
-  if (!query.trim()) return { nodes: [...nodes], expanded };
-  const matches = (label: string) => filterRows([{ id: label, label }], query).length > 0;
-  const walk = (list: readonly TreeNode[]): TreeNode[] => {
-    const out: TreeNode[] = [];
-    for (const node of list) {
-      if (node.kind === 'resource') {
-        if (node.item && filterRows([node.item], query).length) {
-          out.push(node);
-          continue;
-        }
-        const below = walk(node.children);
-        if (below.length) {
-          expanded.add(node.key);
-          out.push({ ...node, children: below, viaChild: true });
-        }
-        continue;
-      }
-      if (matches(node.label)) {
-        expanded.add(node.key);
-        out.push(node);
-        continue;
-      }
-      const children = walk(node.children);
-      if (children.length) {
-        expanded.add(node.key);
-        const kept: TreeNode = { ...node, children };
-        kept.count = membersOf(kept).length;
-        out.push(kept);
-      }
-    }
-    return out;
-  };
-  return { nodes: walk(nodes), expanded };
 }

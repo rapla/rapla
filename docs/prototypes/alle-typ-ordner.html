@@ -1,0 +1,300 @@
+<title>Picker Typ-Ordner</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,400,0,0&display=swap">
+<style>
+/* Layout: the 290 px rail as in the SPA on the left, decision switches + notes on the right; stacks below 760 px. */
+:root {
+  --bg: #f4f7fb; --rail: #f6f9fc; --panel: #ffffff; --fg: #1d2430; --muted: #66707e; --line: #dfe5ec;
+  --accent: #0b5cad; --accent-weak: #e1ecf8; --sel: #d6e6f7; --star: #e8a33a; --head: #e9edf2; --warn: #9a5b00;
+  --font: "Roboto", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12161c; --rail: #171c23; --panel: #1d232b; --fg: #e3e8ef; --muted: #98a2b0; --line: #2c343e;
+  --accent: #7fb3ec; --accent-weak: #1f3249; --sel: #24405f; --star: #f0b85a; --head: #222a33; --warn: #e2a64a; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #12161c; --rail: #171c23; --panel: #1d232b; --fg: #e3e8ef; --muted: #98a2b0; --line: #2c343e;
+  --accent: #7fb3ec; --accent-weak: #1f3249; --sel: #24405f; --star: #f0b85a; --head: #222a33; --warn: #e2a64a; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--fg); font: 14px/1.4 var(--font); padding: 16px }
+.wrap { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; max-width: 1100px; margin: 0 auto }
+.ms { font-family: "Material Symbols Outlined"; font-size: 18px; line-height: 1; color: var(--muted); width: 20px; text-align: center; flex: none }
+.rail { width: 290px; max-width: 100%; background: var(--rail); border: 1px solid var(--line); border-radius: 8px; overflow: hidden }
+.top { padding: 12px 12px 6px; display: grid; gap: 8px }
+.hdr { display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 700; letter-spacing: .06em; color: var(--muted) }
+.btn-s { border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 12px; font-size: 11px; padding: 1px 8px; cursor: pointer }
+.chips { display: flex; gap: 4px; flex-wrap: wrap }
+.chip { border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 14px; padding: 3px 10px; font: inherit; font-size: 12px; cursor: pointer }
+.chip.on { background: var(--accent); border-color: var(--accent); color: var(--panel) }
+.search { width: 100%; border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 6px; padding: 6px 8px; font: inherit }
+select { border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 14px; padding: 2px 6px; font: inherit; font-size: 12px; justify-self: start }
+.count { display: flex; justify-content: space-between; padding: 6px 12px; background: var(--head); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums }
+.count a, .link { color: var(--accent); cursor: pointer; text-decoration: none; font-weight: 500 }
+.list { max-height: 640px; overflow-y: auto; padding-bottom: 8px }
+.sec { padding: 10px 12px 4px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between }
+.kind { padding: 8px 12px 2px 12px; font-size: 11px; color: var(--muted); border-top: 1px solid var(--line); margin-top: 4px }
+.row { display: flex; align-items: center; gap: 6px; padding: 6px 10px 6px 0; cursor: pointer; min-height: 32px }
+.row:hover { background: var(--accent-weak) }
+.row.sel { background: var(--sel) }
+.tog { width: 18px; flex: none; text-align: center; color: var(--fg); font-size: 11px; user-select: none }
+.lbl { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.path { display: block; font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis }
+.sub { color: var(--muted); font-size: 11px; flex: none }
+.star { color: var(--line); font-size: 15px; flex: none; width: 18px; text-align: center }
+.star.on { color: var(--star) }
+.folder .lbl { font-weight: 500 }
+.row.acc { padding-left: 12px; font-weight: 500; border-top: 1px solid var(--line) }
+.row.acc .lbl { font-weight: 500 }
+.row.acc.open { background: var(--head); position: sticky; top: 0; z-index: 1 }
+.grp .lbl { color: var(--fg) }
+.pick { visibility: hidden; font-size: 11px }
+.row:hover .pick { visibility: visible }
+.more { padding: 6px 0; font-size: 12px }
+.active-filter { margin: 6px 12px 0; padding: 4px 8px; border-radius: 6px; background: var(--accent-weak); font-size: 12px; display: flex; justify-content: space-between }
+.selbar { padding: 0 12px 8px; display: flex; gap: 4px; flex-wrap: wrap }
+.selchip { background: var(--accent-weak); border-radius: 12px; padding: 1px 8px; font-size: 11px; max-width: 100% ; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.side { flex: 1 1 320px; min-width: 0; max-width: 560px; display: grid; gap: 16px }
+.side h1 { font-size: 20px; margin: 0; text-wrap: balance }
+.box { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; display: grid; gap: 12px }
+.box h2 { font-size: 13px; margin: 0; letter-spacing: .04em; text-transform: uppercase; color: var(--muted) }
+.opt { display: grid; gap: 4px }
+.opt b { font-weight: 500 }
+.seg { display: flex; gap: 0; flex-wrap: wrap }
+.seg button { border: 1px solid var(--line); background: var(--panel); color: var(--fg); padding: 4px 10px; font: inherit; font-size: 12px; cursor: pointer }
+.seg button:first-child { border-radius: 6px 0 0 6px } .seg button:last-child { border-radius: 0 6px 6px 0 }
+.seg button.on { background: var(--accent); color: var(--panel); border-color: var(--accent) }
+.note { font-size: 12px; color: var(--muted) }
+.swing { color: var(--warn); font-size: 11px; font-weight: 500 }
+ul { margin: 0; padding-left: 18px; display: grid; gap: 4px }
+button:focus-visible, .row:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px }
+</style>
+
+<div class="wrap">
+  <div class="rail" id="rail"></div>
+  <div class="side">
+    <h1>„Alle“ mit Typ-Ordnern wie in Swing</h1>
+    <div class="box">
+      <h2>Typ-Reihenfolge (PRD 127 D5)</h2>
+      <div id="opts"></div>
+    </div>
+    <div class="box">
+      <h2>Zum Ausprobieren</h2>
+      <ul class="note">
+        <li><b>Räume</b> → <b>Labor</b> → „A054 Planspiellabor“ aufklappen: die Kabinen (Typ Teilraum) hängen darunter und stehen zusätzlich im Ordner Teilräume, wie in Swing.</li>
+        <li><b>Gebäude</b> aufklappen: Räume stehen dort eingerückt und zusätzlich im Ordner Räume, weil Gebäude ein anderer Typ ist.</li>
+        <li>Suchbegriff „A054“ oder „inf“ eintippen: Die Liste wird flach, jeder Treffer ist eine eigene Zeile, darunter klein das Elternteil.</li>
+        <li>Keine Chips mehr: Favoriten, Zuletzt, Ressourcen, Personen und Benutzer sind Ordner. „⊟ zuklappen“ stellt den Startzustand wieder her.</li>
+        <li>★ funktioniert. Klick wählt aus, Strg+Klick fügt hinzu.</li>
+      </ul>
+      <div class="note">Beispieldaten, frei erfunden.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const TYPES = [
+  { key: 'gebaeude', name: 'Gebäude', kind: 'r', icon: 'domain' },
+  { key: 'raum', name: 'Räume', kind: 'r', icon: 'meeting_room' },
+  { key: 'teilraum', name: 'Teilräume', kind: 'r', icon: 'door_sliding' },
+  { key: 'studiengang', name: 'Studiengänge', kind: 'r', icon: 'school' },
+  { key: 'kurs', name: 'Kurse', kind: 'r', icon: 'menu_book' },
+  { key: 'geraet', name: 'Geräte', kind: 'r', icon: 'devices' },
+  { key: 'dozent', name: 'Dozierende', kind: 'p', icon: 'person' },
+  { key: 'mitarbeiter', name: 'Mitarbeitende', kind: 'p', icon: 'badge' },
+];
+const T = Object.fromEntries(TYPES.map((t) => [t.key, t]));
+const items = [];
+const add = (id, label, type, groups = [], parents = []) => items.push({ id, label, type, groups, parents });
+
+const buildings = [['b1', 'Campus Nord, Hauptgebäude', 'N'], ['b2', 'Campus Nord, Laborbau', 'L'], ['b3', 'Campus Süd, Pavillon', 'S'], ['b4', 'Altbau, Schlossplatz 3', 'A']];
+const kinds = ['Hörsaal', 'Seminarraum', 'Labor'];
+buildings.forEach(([id, name, p], bi) => {
+  add(id, name, 'gebaeude');
+  for (let i = 1; i <= 9; i++) {
+    const k = kinds[(i + bi) % 3];
+    add(`${id}r${i}`, `${p}${bi}${String(i).padStart(2, '0')} ${k}${k === 'Labor' ? ' ' + ['Elektrotechnik', 'Chemie', 'Netzwerke', 'Robotik'][i % 4] : ''}`, 'raum', [[k]], [id]);
+  }
+});
+add('a054', 'A054 Planspiellabor', 'raum', [['Labor']], ['b4']);
+add('a054a', 'A054a Kabine 1', 'teilraum', [], ['a054']);
+add('a054b', 'A054b Kabine 2', 'teilraum', [], ['a054']);
+add('a054c', 'A054c Regie', 'teilraum', [], ['a054']);
+add('w003', '0.03 Werkstatt', 'raum', [], ['b2']);
+add('tst', '!!!Test-Raum', 'raum');
+const stg = [['s1', 'INF Informatik', 'INF'], ['s2', 'WI Wirtschaftsinformatik', 'WI'], ['s3', 'BWL-H Handel', 'BWLH'], ['s4', 'MB Maschinenbau', 'MB']];
+stg.forEach(([id, name, k]) => {
+  add(id, name, 'studiengang');
+  for (const y of [24, 25, 26]) for (const s of ['A', 'B']) add(`${id}k${y}${s}`, `${k}${y}${s}`, 'kurs', [[`Jahrgang 20${y}`]], [id]);
+});
+add('kq', '???', 'kurs');
+add('lw1', 'Laptopwagen 1', 'geraet');
+for (let i = 1; i <= 8; i++) add(`lw1l${i}`, `Laptop ${String(i).padStart(2, '0')}`, 'geraet', [], ['lw1']);
+for (let i = 1; i <= 3; i++) add(`bm${i}`, `Beamer mobil ${i}`, 'geraet');
+const sur = ['Albrecht', 'Bauer', 'Conrad', 'Dietz', 'Engel', 'Fuchs', 'Graf', 'Hahn', 'Imhof', 'Jäger', 'Keller', 'Lang', 'Mohr', 'Nagel', 'Ott', 'Pohl', 'Quast', 'Roth', 'Sauer', 'Thiel', 'Ulrich', 'Vogt', 'Wolf', 'Zander'];
+const ini = 'ABCDEFGHIK';
+let n = 0;
+for (const s of sur) for (const c of ini) add(`d${n++}`, `${s}, ${c}.`, 'dozent');
+add('dx', ', .', 'dozent');
+['Hausmeister', 'IT-Service', 'Medientechnik', 'Prüfungsamt', 'Sekretariat INF', 'Sekretariat WI'].forEach((s, i) => add(`m${i}`, s, 'mitarbeiter'));
+const accounts = ['admin (ich)', 'planung-inf', 'planung-wi', 'sekretariat'].map((l, i) => ({ id: `u${i}`, label: l, type: 'user' }));
+const byId = new Map(items.map((it) => [it.id, it]));
+const childrenOf = new Map();
+for (const it of items) for (const p of it.parents) (childrenOf.get(p) ?? childrenOf.set(p, []).get(p)).push(it);
+
+const S = {
+  chip: 'all', type: '', query: '', mode: 'acc', order: 'swing', dup: 'show', broken: 'normal', typeSel: 'keep',
+  favorites: ['b1', 's1'], recents: ['s1k26B', 'a054', 'b2r3'], sel: new Set(), open: null, limit: new Map(),
+};
+const PAGE = 100;
+const TOPS = ['sec:fav', 'sec:rec', 'K:r', 'K:p', 'sec:users'];
+const defaultOpen = () => S.mode === 'acc' ? new Set([S.favorites.length ? 'sec:fav' : 'K:r']) : new Set(['sec:fav', 'K:r', 'K:p', ...(S.favorites.length < 5 ? ['sec:rec'] : [])]);
+S.open = defaultOpen();
+const coll = new Intl.Collator('de');
+const broken = (l) => !/^[\p{L}\p{N}]/u.test(l.trim());
+const cmp = (a, b) => (S.broken === 'last' ? broken(a.label) - broken(b.label) : 0) || coll.compare(a.label, b.label);
+const typeOrder = () => {
+  const r = TYPES.filter((t) => t.kind === 'r'), p = TYPES.filter((t) => t.kind === 'p');
+  const ORDER = S.order === 'set' ? { raum: 10, kurs: 20 } : {};
+  const by = (a, b) => ((a.key in ORDER) ? 0 : 1) - ((b.key in ORDER) ? 0 : 1) || (ORDER[a.key] ?? 0) - (ORDER[b.key] ?? 0) || TYPES.indexOf(a) - TYPES.indexOf(b);
+  return [...r.sort(by), ...p.sort(by)];
+};
+const dedupe = (level) => {
+  if (S.dup !== 'hide') return level;
+  const ids = new Set(level.map((i) => i.id));
+  return level.filter((i) => !i.parents.some((p) => ids.has(p)));
+};
+
+function resNode(it, key, path) {
+  const below = new Set(path).add(it.id);
+  const kids = (childrenOf.get(it.id) ?? []).filter((c) => !below.has(c.id)).sort(cmp);
+  return { key: `${key}#${it.id}`, kind: 'res', item: it, children: () => kids.map((c) => resNode(c, `${key}#${it.id}`, below)) };
+}
+function levelNodes(list, key) {
+  const groups = new Map(), leaves = [];
+  for (const it of list) {
+    if (!it.groups.length) leaves.push(it);
+    else for (const g of it.groups) (groups.get(g[0]) ?? groups.set(g[0], []).get(g[0])).push(it);
+  }
+  const gs = [...groups.entries()].sort((a, b) => coll.compare(a[0], b[0]))
+    .map(([name, members]) => ({ key: `${key}/${name}`, kind: 'grp', label: name, count: members.length, members, children: () => levelNodes(members.map((m) => ({ ...m, groups: [] })), `${key}/${name}`) }));
+  return [...gs, ...dedupe(leaves).sort(cmp).map((it) => resNode(byId.get(it.id), key, new Set()))];
+}
+function folderNode(t) {
+  const members = items.filter((i) => i.type === t.key);
+  return { key: `T:${t.key}`, kind: 'folder', type: t, label: t.name, count: members.length, members, children: () => levelNodes(members, `T:${t.key}`) };
+}
+
+function flatten(nodes, depth, key, out) {
+  const lim = S.limit.get(key) ?? PAGE;
+  nodes.slice(0, lim).forEach((nd) => {
+    out.push({ nd, depth });
+    if (S.open.has(nd.key)) flatten(nd.children(), depth + 1, nd.key, out);
+  });
+  if (nodes.length > lim) out.push({ more: key, hidden: nodes.length - lim, depth });
+  return out;
+}
+
+const h = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+function rowHtml({ nd, depth, more, hidden }) {
+  const pad = 6 + depth * 16;
+  if (more) return `<div class="row more" style="padding-left:${pad + 24}px"><a class="link" data-more="${h(more)}">Weitere ${Math.min(PAGE, hidden)} anzeigen</a></div>`;
+  if (nd.kind === 'res') {
+    const it = nd.item, kids = childrenOf.get(it.id)?.length;
+    const icon = it.type === 'user' ? 'account_circle' : T[it.type].icon;
+    const tog = kids ? (S.open.has(nd.key) ? '▾' : '▸') : '';
+    const path = nd.showType && it.parents?.length ? `<span class="path">${it.parents.map((p) => h(byId.get(p).label)).join(' · ')}</span>` : '';
+    const sub = '';
+    const fav = it.type === 'user' ? '' : `<span class="star ${S.favorites.includes(it.id) ? 'on' : ''}" data-star="${it.id}">${S.favorites.includes(it.id) ? '★' : '☆'}</span>`;
+    return `<div class="row ${S.sel.has(it.id) ? 'sel' : ''}" tabindex="0" style="padding-left:${pad}px" data-pick="${it.id}"><span class="tog" ${kids ? `data-tog="${h(nd.key)}"` : ''}>${tog}</span><span class="ms">${icon}</span><span class="lbl">${h(it.label)}${path}</span>${sub}${fav}</div>`;
+  }
+  const open = S.open.has(nd.key);
+  const icon = nd.icon ?? (nd.kind === 'folder' ? (open ? 'folder_open' : 'folder') : 'label');
+  if (S.mode === 'acc' && TOPS.includes(nd.key))
+    return `<div class="row acc ${open ? 'open' : ''}" tabindex="0" role="button" aria-expanded="${open}" data-tog="${h(nd.key)}"><span class="ms">${icon}</span><span class="lbl">${h(nd.label)}</span><a class="link pick" data-group="${h(nd.key)}">wählen</a><span class="sub">${nd.count}</span></div>`;
+  return `<div class="row ${nd.kind}" tabindex="0" style="padding-left:${pad}px" data-tog="${h(nd.key)}"><span class="tog">${open ? '▾' : '▸'}</span><span class="ms">${icon}</span><span class="lbl">${h(nd.label)}</span><a class="link pick" data-group="${h(nd.key)}">wählen</a><span class="sub">${nd.count}</span></div>`;
+}
+
+let groupIndex = new Map();
+function render() {
+  groupIndex = new Map();
+  const reg = (nodes) => { nodes.forEach((n) => n.members && groupIndex.set(n.key, n.members)); return nodes; };
+  const q = S.query.trim().toLocaleLowerCase('de');
+  let body = '', total = 0, allIds = [];
+  const top = (key, label, icon, members, children) => ({ key, kind: 'folder', icon, label, count: members.length, members, children });
+  const favs = S.favorites.map((id) => byId.get(id));
+  const recs = S.recents.map((id) => byId.get(id));
+  const kindNode = (k, label, icon) => {
+    const ts = typeOrder().filter((t) => t.kind === k);
+    return top(`K:${k}`, label, icon, items.filter((i) => T[i.type].kind === k), () => reg(ts.map(folderNode)));
+  };
+  if (q) {
+    let hits = items.filter((i) => i.label.toLocaleLowerCase('de').includes(q)).concat(accounts.filter((a) => a.label.includes(q)));
+    total = hits.length; allIds = hits.map((i) => i.id);
+    const shown = (S.dup === 'hide' ? dedupe(hits.map((i) => ({ ...i, parents: i.parents ?? [] }))) : hits).sort(cmp)
+      .map((it) => ({ ...(it.type === 'user' ? { key: `q#${it.id}`, kind: 'res', item: it, children: () => [] } : resNode(byId.get(it.id), 'q', new Set())), showType: true }));
+    body = `<div class="active-filter"><span>Suchfilter „${h(S.query)}“ aktiv · ${total} Treffer</span><a class="link" data-clear>×</a></div>` + [...typeOrder().map((t) => [t.key, t.name]), ['user', 'Benutzer']].map(([k, name]) => {
+        const rows = shown.filter((nd) => nd.item.type === k);
+        return rows.length ? `<div class="sec"><span>${h(name)}</span><span>${rows.length}</span></div>` + flatten(rows, 1, `q:${k}`, []).map(rowHtml).join('') : '';
+      }).join('');
+  } else {
+    total = items.length; allIds = items.map((i) => i.id);
+    const roots = [
+      favs.length && top('sec:fav', 'Favoriten', 'star', favs, () => favs.map((it) => resNode(it, 'sec:fav', new Set()))),
+      recs.length && top('sec:rec', 'Zuletzt', 'history', recs, () => recs.map((it) => resNode(it, 'sec:rec', new Set()))),
+      kindNode('r', 'Ressourcen', 'inventory_2'),
+      kindNode('p', 'Personen', 'group'),
+      top('sec:users', 'Benutzer', 'manage_accounts', accounts, () => accounts.map((it) => ({ key: `u#${it.id}`, kind: 'res', item: it, children: () => [] }))),
+    ].filter(Boolean);
+    body = flatten(reg(roots), 0, 'root', []).map(rowHtml).join('');
+  }
+  S.allIds = allIds;
+  const selLabels = [...S.sel].map((id) => byId.get(id)?.label ?? accounts.find((a) => a.id === id)?.label);
+  const selbar = selLabels.length ? `<div class="selbar">${selLabels.length >= 10 ? `<span class="selchip">${selLabels.length} Ressourcen ×</span>` : selLabels.map((l) => `<span class="selchip">${h(l)}</span>`).join('')}</div>` : '';
+  const rail = document.getElementById('rail');
+  const focusSearch = document.activeElement?.id === 'q';
+  rail.innerHTML = `<div class="top"><div class="hdr"><span>DURCHSTEPPEN</span><button class="btn-s">+ Neu</button></div>
+    <input class="search" id="q" placeholder="Suchen …" value="${h(S.query)}" autocomplete="off"></div>${selbar}
+    <div class="count"><span>${total} Treffer${q ? '' : ' · <a class="link" data-collapse title="Alles zuklappen">⊟ zuklappen</a>'}</span><a class="link" data-all>${allIds.length && allIds.every((id) => S.sel.has(id)) ? 'Auswahl aufheben' : 'alle wählen'}</a></div>
+    <div class="list">${body}</div>`;
+  if (focusSearch) { const el = document.getElementById('q'); el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+  renderOpts();
+}
+
+const OPTS = [
+  ['order', 'Annotation „order“ an den Typen', [['swing', 'nirgends gesetzt (Anlage-Reihenfolge)', true], ['set', 'Räume = 10, Kurse = 20']]],
+];
+function renderOpts() {
+  document.getElementById('opts').innerHTML = OPTS.map(([k, label, vals]) =>
+    `<div class="opt"><b>${label}</b><div class="seg">${vals.map(([v, l, swing]) => `<button class="${S[k] === v ? 'on' : ''}" data-opt="${k}" data-val="${v}">${l}</button>`).join('')}</div>${vals.some((v) => v[2]) ? `<span class="swing">Swing: ${vals.find((v) => v[2])[1]}</span>` : ''}</div>`).join('');
+}
+
+function pick(id, ctrl) {
+  if (ctrl) S.sel.has(id) ? S.sel.delete(id) : S.sel.add(id);
+  else S.sel = new Set([id]);
+  if (!ctrl && byId.has(id)) S.recents = [id, ...S.recents.filter((r) => r !== id)].slice(0, 10);
+}
+document.addEventListener('click', (e) => {
+  const t = e.target.closest('[data-opt],[data-collapse],[data-star],[data-more],[data-group],[data-clear],[data-all],[data-tog],[data-pick]');
+  if (!t) return;
+  const d = t.dataset;
+  if (d.opt) { S[d.opt] = d.val; if (d.opt === 'mode') S.open = defaultOpen(); if (d.opt === 'typeSel' && d.val === 'drop') S.type = ''; }
+  else if ('collapse' in d) S.open = defaultOpen();
+  else if (d.star) { S.favorites = S.favorites.includes(d.star) ? S.favorites.filter((f) => f !== d.star) : [...S.favorites, d.star]; }
+  else if (d.more) S.limit.set(d.more, (S.limit.get(d.more) ?? PAGE) + PAGE);
+  else if (d.group) { const m = groupIndex.get(d.group) ?? []; S.sel = new Set([...(e.ctrlKey ? S.sel : []), ...m.map((i) => i.id)]); }
+  else if ('clear' in d) S.query = '';
+  else if ('all' in d) { const all = S.allIds; S.sel = all.every((id) => S.sel.has(id)) ? new Set() : new Set([...(e.ctrlKey ? S.sel : []), ...all]); }
+  else if (d.tog && (!d.pick || e.target.closest('.tog'))) {
+    if (S.open.has(d.tog)) S.open.delete(d.tog);
+    else { if (S.mode === 'acc' && TOPS.includes(d.tog)) TOPS.forEach((k) => S.open.delete(k)); S.open.add(d.tog); }
+  }
+  else if (d.pick) pick(d.pick, e.ctrlKey || e.metaKey);
+  render();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && e.target.classList?.contains('row')) e.target.click();
+  if (e.key === 'Escape' && e.target.id === 'q') { S.query = ''; render(); }
+});
+document.addEventListener('input', (e) => { if (e.target.id === 'q') { S.query = e.target.value; render(); } });
+document.addEventListener('change', (e) => { if (e.target.id === 'typ') { S.type = e.target.value; render(); } });
+render();
+</script>

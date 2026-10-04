@@ -238,6 +238,24 @@ describe('group-by-selected-resource (Swing GroupResourcesStrategy)', () => {
     expect(day(result, '2026-06-08').lanes).toBe(1);
   });
 
+  it('lanes follow the order of the selection (tree order), not the names (PRD 127 D6)', () => {
+    const result = lay(
+      [
+        { start: '2026-06-08T09:00:00', end: '2026-06-08T10:00:00', allocs: [ROOM_A] },
+        { start: '2026-06-08T09:00:00', end: '2026-06-08T10:00:00', allocs: [ROOM_B] },
+        {
+          start: '2026-06-08T09:00:00',
+          end: '2026-06-08T10:00:00',
+          allocs: [{ id: 'rX', name: 'Aaa Extern' }],
+        },
+      ],
+      { ...scoped, selected: [ROOM_B, ROOM_A] },
+    );
+    const d = day(result, '2026-06-08');
+    const laneOf = (id: string) => d.blocks.find((b) => (b.row as Blk).allocs?.[0].id === id)?.lane;
+    expect([laneOf('rB'), laneOf('rA'), laneOf('rX')]).toEqual([0, 1, 2]);
+  });
+
   it('a block matching no selected resource falls back to its own resource group (others DO match)', () => {
     const other = { id: 'rX', name: 'Zzz Extern' };
     const result = lay(

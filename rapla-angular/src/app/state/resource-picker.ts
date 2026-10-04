@@ -1,49 +1,38 @@
 import type { ResourceItem } from './resource-selection-store';
 
-/** PRD 119 D1/D12 — rows Alle shows without a query before "Weitere n anzeigen". */
-export const FIRST_PAGE = 20;
 /** PRD 119 D12 — rows per block for every other list and for the children of one tree node. */
 export const PAGE_SIZE = 100;
 
-export interface PickerChip {
-  key: string;
-  label: string;
+/** PRD 127 D1 — the accordion's sections, at most one open. */
+export type Section = 'favorites' | 'recents' | 'resources' | 'persons' | 'users';
+
+/**
+ * PRD 127 D1 — the section to open for a stored value: Favoriten/Zuletzt/Personen only while they have entries, Benutzer only where
+ * the host shows it, an old type chip (PRD 123) as Ressourcen; 'none' = all closed; otherwise the start section, Favoriten
+ * when there are any.
+ */
+export function openSection(
+  chip: string,
+  lists: { favorites: number; recents: number; persons: number; users: boolean },
+): Section | null {
+  if (chip === 'none') return null;
+  if (chip === 'favorites' && lists.favorites) return 'favorites';
+  if (chip === 'recents' && lists.recents) return 'recents';
+  if (chip === 'users' && lists.users) return 'users';
+  if (chip === 'persons' && lists.persons) return 'persons';
+  if (chip === 'resources' || chip.startsWith('type:')) return 'resources';
+  return lists.favorites ? 'favorites' : 'resources';
+}
+
+/** The lean list's resources or persons, in server order (PRD 127 D6); a row without a kind counts as a resource. */
+export function ofKind(list: readonly ResourceItem[], kind: 'RESOURCE' | 'PERSON'): ResourceItem[] {
+  return list.filter((it) => (it.classificationType === 'PERSON' ? 'PERSON' : 'RESOURCE') === kind);
 }
 
 const collator = new Intl.Collator('de');
 
 export function byLabel(a: ResourceItem, b: ResourceItem): number {
   return collator.compare(a.label, b.label);
-}
-
-/** One chip per resource type present in the list, A–Z by type name. */
-export function typeChips(list: readonly ResourceItem[]): PickerChip[] {
-  const names = new Map<string, string>();
-  for (const it of list) {
-    if (it.typeKey && !names.has(it.typeKey)) names.set(it.typeKey, it.typeName ?? it.typeKey);
-  }
-  return [...names.entries()]
-    .map(([key, label]) => ({ key: `type:${key}`, label }))
-    .sort((a, b) => collator.compare(a.label, b.label));
-}
-
-/** PRD 119 D1 — Alle: favorites, then recents, then every other resource A–Z; each id once. */
-export function rankAll(
-  list: readonly ResourceItem[],
-  favorites: readonly ResourceItem[],
-  recents: readonly ResourceItem[],
-): ResourceItem[] {
-  const seen = new Set<string>();
-  const out: ResourceItem[] = [];
-  const take = (it: ResourceItem) => {
-    if (seen.has(it.id)) return;
-    seen.add(it.id);
-    out.push(it);
-  };
-  favorites.forEach(take);
-  recents.forEach(take);
-  [...list].sort(byLabel).forEach(take);
-  return out;
 }
 
 /** Case-insensitive substring match on the label; a blank query keeps every row. */
@@ -60,11 +49,4 @@ export function filterRows(rows: readonly ResourceItem[], query: string): Resour
 /** PRD 119 D10 — users only appear as hits while typing. */
 export function usersMatching(users: readonly ResourceItem[], query: string): ResourceItem[] {
   return query.trim() ? filterRows(users, query) : [];
-}
-
-export function page(
-  rows: readonly ResourceItem[],
-  limit: number,
-): { shown: ResourceItem[]; hidden: number } {
-  return { shown: rows.slice(0, limit), hidden: Math.max(0, rows.length - limit) };
 }

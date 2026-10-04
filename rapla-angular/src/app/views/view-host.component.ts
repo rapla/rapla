@@ -522,14 +522,13 @@ export class ViewHostComponent {
   readonly isWeekGrid = computed(() => this.viewState.renderMode() === 'week');
   /** DAY mode: the SAME time grid with a single column (1-day window + ±1-day nav). */
   readonly isDayGrid = computed(() => this.viewState.renderMode() === 'day');
-  /** Scoped resources for the week grid's lane grouping (PRD 100 D3):
-   *  resource chips, locale-sorted by label (Swing NamedComparator). */
+  /** Scoped resources for the week grid's lane grouping (PRD 100 D3): the resource chips in chip order, which is
+   *  the picker-tree order (PRD 127 D6, Swing getSelectedAllocatablesSorted). */
   readonly scopeResources = computed(() =>
     this.filter
       .entries()
       .filter((c) => c.kind === 'resource')
-      .map((c) => ({ id: c.id, name: c.label }))
-      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })),
+      .map((c) => ({ id: c.id, name: c.label })),
   );
   /** Anchor date for the week grid — the window's from (kept week-aligned by the nav). */
   readonly weekAnchor = computed(() => this.monthAnchor());
@@ -1094,7 +1093,8 @@ export class ViewHostComponent {
       // NonNull variable fails coercion, but the server still sends extensions.view.
       // Bind it so bindingKey flips and the re-query goes out with filled variables.
       const errMeta = res.extensions?.view;
-      if (errMeta && !untracked(() => this.meta())) this.meta.set(errMeta);
+      const bound = untracked(() => this.meta());
+      if (errMeta && (!bound || bound.key !== errMeta.key)) this.meta.set(errMeta);
       this.error.set(res.errors.map((e) => e.message).join('; '));
       this.loading.set(false);
       return;

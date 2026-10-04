@@ -75,6 +75,11 @@ describe('EventSheetComponent — assign from the shared picker (PRD 123)', () =
     f.detectChanges();
     (f.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button.addtoggle')!.click();
     await settle(f);
+    // PRD 127 D5 — the resources sit in a closed type folder.
+    (f.nativeElement as HTMLElement)
+      .querySelector<HTMLButtonElement>('app-resource-picker .grouprow .toggle')!
+      .click();
+    await settle(f);
     return f;
   }
 
@@ -135,5 +140,15 @@ describe('EventSheetComponent — assign from the shared picker (PRD 123)', () =
       'frei',
     ]);
     expect((f.nativeElement as HTMLElement).querySelector('app-resource-picker .star')).toBeNull();
+  });
+
+  it('a reopened picker keeps the folders opened before (user, 2026-10-04)', async () => {
+    const f = await open();
+    rows(f)[0].click();
+    await settle(f);
+    expect(pickerOpen(f)).toBe(false);
+    (f.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button.addtoggle')!.click();
+    await settle(f);
+    expect(rows(f).length).toBe(3);
   });
 });

@@ -111,6 +111,17 @@ describe('ViewHostComponent — table selection (PRD 099 Phase 2)', () => {
     });
   });
 
+  it('hands the week grid the resource chips in chip order, without re-sorting by name (PRD 127 D6)', async () => {
+    const filter = TestBed.inject(FilterStore);
+    filter.setAll([
+      { id: 'rZ', kind: 'resource', label: 'Zelt' },
+      { id: 'u1', kind: 'user', label: 'User' },
+      { id: 'rA', kind: 'resource', label: 'Aula' },
+    ]);
+    const f = await makeHost();
+    expect(f.componentInstance.scopeResources().map((r) => r.id)).toEqual(['rZ', 'rA']);
+  });
+
   it('plain click selects exactly that row', async () => {
     const f = await makeHost();
     click(dataRows(f)[1]);

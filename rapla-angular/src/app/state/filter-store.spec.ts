@@ -67,4 +67,58 @@ describe('FilterStore', () => {
     const reloaded = TestBed.inject(FilterStore);
     expect(reloaded.entries()).toEqual([room('A'), room('B')]);
   });
+
+  describe('PRD 127 D6/OQ6 — chips in tree order', () => {
+    const user = (id: string): FilterEntry => ({ id, kind: 'user', label: id });
+    const tree = new Map([
+      ['r2', 'r2'],
+      ['r1', 'r1'],
+      ['p1', 'p1'],
+      ['uA', 'uA'],
+      ['uB', 'uB'],
+    ]);
+
+    it('a bulk selection lands in the order of the lean list, not in click order', () => {
+      store.reconcile(tree);
+      store.setAll([user('uB'), room('r1'), room('p1'), room('r2'), user('uA')]);
+      expect(store.entries().map((e) => e.id)).toEqual(['r2', 'r1', 'p1', 'uA', 'uB']);
+    });
+
+    it('add() inserts at the tree position', () => {
+      store.reconcile(tree);
+      store.add(room('r1'));
+      store.add(user('uA'));
+      store.add(room('r2'));
+      expect(store.entries().map((e) => e.id)).toEqual(['r2', 'r1', 'uA']);
+    });
+
+    it('restored chips are reordered once the list arrives; unknown ones keep their order at the end', () => {
+      store.setAll([room('r1'), event('E'), room('r2')]);
+      expect(store.entries().map((e) => e.id)).toEqual(['r1', 'E', 'r2']);
+      store.reconcile(tree);
+      expect(store.entries().map((e) => e.id)).toEqual(['r2', 'r1', 'E']);
+    });
+  });
+
+  describe('selectGroup — "alle wählen" (PRD 123 D8, PRD 127 D8)', () => {
+    it('replaces the selection, Ctrl adds, all selected → removes them', () => {
+      store.setAll([room('X')]);
+      store.selectGroup([room('A'), room('B')], false);
+      expect(store.entries().map((e) => e.id)).toEqual(['A', 'B']);
+      store.selectGroup([room('C')], true);
+      expect(store.entries().map((e) => e.id)).toEqual(['A', 'B', 'C']);
+      store.selectGroup([room('A'), room('C')], false);
+      expect(store.entries().map((e) => e.id)).toEqual(['B']);
+    });
+
+    it('10 000 entries select and clear in well under 200 ms (no O(n²))', () => {
+      const many = Array.from({ length: 10000 }, (_, i) => room(`r${i}`));
+      store.selectGroup(many, false);
+      const start = performance.now();
+      store.selectGroup(many, false);
+      const ms = performance.now() - start;
+      expect(store.isEmpty()).toBe(true);
+      expect(ms).toBeLessThan(200);
+    });
+  });
 });

@@ -3,7 +3,7 @@
 }
 <app-toolbar />
 <mat-sidenav-container class="shell" [class.with-banner]="demoBanner()">
-  <mat-sidenav mode="side" opened class="nav">
+  <mat-sidenav mode="side" opened class="nav" [style.width.px]="navWidth.width()">
     <div class="view-switch">
       <!-- A plain button, not matButton: the Material button hoists its icons ahead of the
            label, which would put the chevron on the left of the view name. -->
@@ -28,6 +28,12 @@
       </mat-menu>
     </div>
     <app-resource-selection />
+    <div
+      class="nav-resize"
+      [appResizeDivider]="navWidth.width()"
+      (widthChange)="resizeNav($event)"
+      (widthReset)="resizeNav(null)"
+    ></div>
   </mat-sidenav>
   <mat-sidenav-content>
     <div class="content-col">

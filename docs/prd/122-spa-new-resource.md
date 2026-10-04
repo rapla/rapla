@@ -5,7 +5,7 @@
 
 ## Abstract
 
-The SPA can edit resources but not create them. A "+ Neu" button in the resource picker opens a type picker, then the existing resource dialog in a create mode, prefilled with the type's attribute defaults. End state: a user with create permission on a resource or person type creates one from the SPA and sees it in the picker list.
+The SPA can edit resources but not create them. A "+ Neu" button in the resource picker opens the existing resource dialog in a create mode with a preselected type (D2/D3), prefilled with the type's attribute defaults. End state: a user with create permission on a resource or person type creates one from the SPA and sees it in the picker list.
 
 ## Current state (read 2026-09-30)
 
@@ -61,14 +61,14 @@ Same resolver as `reservationPrototype`, accepting RESOURCE and PERSON types; un
 ## Implementation
 
 1. **Server:** `newResourceOptions` and `resourcePrototype` resolvers next to their event siblings + schema entries.
-2. **Picker reuse:** `NewEventPickerComponent` takes items, recents key and preselected id via `MAT_DIALOG_DATA` instead of injecting `NewEventOptionsService`.
+2. ~~**Picker reuse:** `NewEventPickerComponent` takes items via `MAT_DIALOG_DATA`~~ — dropped with the picker (ruling B1).
 3. **Create mode:** `ResourceEditDialogData` gets `id?` + `typeKey?`; without `id` the dialog starts from the prototype and `save` calls `createResource` with an id from an exported `typedId('a')`. Title "Neue Ressource", no `expectedLastChanged`.
-4. **Flow:** button → picker (or direct) → dialog → on `'saved'` `store.reload()`.
+4. **Flow:** button → dialog (type preselected, D3) → on `'saved'` `store.reload()`.
 
 ## Scope
 
 ### In scope
-- Button, type picker, create mode, `newResourceOptions`, `resourcePrototype`, stale comment.
+- Button, create mode with type select, `newResourceOptions`, `resourcePrototype`, stale comment.
 
 ### Out of scope
 - Resource templates (D7), parent from the tree node (PRD 120), permission editing on create, delete.

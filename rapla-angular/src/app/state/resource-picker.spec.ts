@@ -1,49 +1,71 @@
 import { describe, it, expect } from 'vitest';
 
 import type { ResourceItem } from './resource-selection-store';
-import {
-  FIRST_PAGE,
-  PAGE_SIZE,
-  filterRows,
-  page,
-  rankAll,
-  typeChips,
-  usersMatching,
-} from './resource-picker';
+import { filterRows, ofKind, openSection, usersMatching } from './resource-picker';
 
-const res = (id: string, label: string, typeKey = 'room', typeName = 'Raum'): ResourceItem => ({
+const res = (
+  id: string,
+  label: string,
+  typeKey = 'room',
+  typeName = 'Raum',
+  classificationType = 'RESOURCE',
+): ResourceItem => ({
   id,
   label,
   kind: 'resource',
   typeKey,
   typeName,
+  classificationType,
 });
 
 describe('resource picker (PRD 119 Phase 1)', () => {
-  it('derives one chip per type present in the list, A–Z by type name', () => {
+  describe('PRD 127 D1 — the open section', () => {
+    const lists = { favorites: 0, recents: 0, persons: 1, users: true };
+
+    it('starts on Favoriten when there are any, else on Ressourcen', () => {
+      expect(openSection('', lists)).toBe('resources');
+      expect(openSection('', { ...lists, favorites: 2 })).toBe('favorites');
+    });
+
+    it('keeps a chosen section', () => {
+      expect(openSection('persons', lists)).toBe('persons');
+      expect(openSection('users', lists)).toBe('users');
+      expect(openSection('recents', { ...lists, recents: 1 })).toBe('recents');
+    });
+
+    it('an empty Favoriten or Zuletzt is hidden, so the default opens instead', () => {
+      expect(openSection('recents', lists)).toBe('resources');
+      expect(openSection('favorites', { ...lists, recents: 3 })).toBe('resources');
+    });
+
+    it('an empty Personen is hidden like Favoriten and Zuletzt (user, 2026-10-04)', () => {
+      expect(openSection('persons', { ...lists, persons: 0 })).toBe('resources');
+    });
+
+    it("'none' keeps every section closed (D1: at most one open)", () => {
+      expect(openSection('none', { ...lists, favorites: 3 })).toBeNull();
+    });
+
+    it('Benutzer falls back to the default where the host has no Benutzer section', () => {
+      expect(openSection('users', { ...lists, users: false })).toBe('resources');
+    });
+
+    it('maps the old saved chips: a type chip to Ressourcen, Alle and unknown values to the default', () => {
+      expect(openSection('type:room', lists)).toBe('resources');
+      expect(openSection('all', { ...lists, favorites: 1 })).toBe('favorites');
+      expect(openSection('bogus', lists)).toBe('resources');
+    });
+  });
+
+  it('splits the lean list into resources and persons in server order', () => {
     const list = [
-      res('r1', 'Hörsaal 1', 'room', 'Raum'),
-      res('p1', 'Prof. Lehmann', 'lecturer', 'Dozent'),
-      res('r2', 'Hörsaal 2', 'room', 'Raum'),
-      res('b1', 'Beamer 1', 'equipment', 'Ausleihgerät'),
+      res('r2', 'Zelt'),
+      res('p1', 'Prof. Lehmann', 'lecturer', 'Dozent', 'PERSON'),
+      res('r1', 'Aula'),
+      { id: 'x', label: 'ohne Art' },
     ];
-    expect(typeChips(list)).toEqual([
-      { key: 'type:equipment', label: 'Ausleihgerät' },
-      { key: 'type:lecturer', label: 'Dozent' },
-      { key: 'type:room', label: 'Raum' },
-    ]);
-  });
-
-  it('ranks Alle as favorites, then recents, then the rest A–Z without duplicates', () => {
-    const list = [res('a', 'Zeta'), res('b', 'Alpha'), res('c', 'Ärger'), res('d', 'Beta')];
-    const favorites = [res('d', 'Beta')];
-    const recents = [res('a', 'Zeta'), res('d', 'Beta')];
-    expect(rankAll(list, favorites, recents).map((x) => x.id)).toEqual(['d', 'a', 'b', 'c']);
-  });
-
-  it('sorts the A–Z part with German collation (umlauts next to their base letter)', () => {
-    const list = [res('1', 'Zelt'), res('2', 'Öfen'), res('3', 'Ofen'), res('4', 'Apfel')];
-    expect(rankAll(list, [], []).map((x) => x.label)).toEqual(['Apfel', 'Ofen', 'Öfen', 'Zelt']);
+    expect(ofKind(list, 'RESOURCE').map((x) => x.id)).toEqual(['r2', 'r1', 'x']);
+    expect(ofKind(list, 'PERSON').map((x) => x.id)).toEqual(['p1']);
   });
 
   it('filters case-insensitively on the label with no minimum length', () => {
@@ -69,17 +91,5 @@ describe('resource picker (PRD 119 Phase 1)', () => {
     ];
     expect(usersMatching(users, '')).toEqual([]);
     expect(usersMatching(users, 'mon').map((x) => x.id)).toEqual(['u1']);
-  });
-
-  it('D12 — a page stops at the limit and counts the rest', () => {
-    const rows = Array.from({ length: 270 }, (_, i) => res(`r${i}`, `Raum ${i}`));
-    expect(FIRST_PAGE).toBe(20);
-    expect(PAGE_SIZE).toBe(100);
-    expect(page(rows, FIRST_PAGE)).toMatchObject({ hidden: 250 });
-    expect(page(rows, FIRST_PAGE).shown.length).toBe(20);
-    expect(page(rows, 120).shown.length).toBe(120);
-    expect(page(rows, 120).hidden).toBe(150);
-    expect(page(rows, 300)).toMatchObject({ hidden: 0 });
-    expect(page(rows, 300).shown.length).toBe(270);
   });
 });

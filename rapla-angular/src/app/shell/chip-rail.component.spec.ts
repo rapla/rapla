@@ -82,4 +82,31 @@ describe('ChipRailComponent', () => {
     await f.whenStable();
     expect((f.nativeElement as HTMLElement).querySelectorAll('mat-chip').length).toBe(9);
   });
+
+  it('10 or more user chips fold into one "N Benutzer" chip after the resource chip; its × removes only the user chips', async () => {
+    store.add({ id: 'e1', kind: 'event', label: 'Prog II' });
+    for (let i = 1; i <= 10; i++) store.add({ id: `u${i}`, kind: 'user', label: `user-${i}` });
+    for (let i = 1; i <= 10; i++) store.add({ id: `r${i}`, kind: 'resource', label: `Raum ${i}` });
+    const f = TestBed.createComponent(ChipRailComponent);
+    await f.whenStable();
+    const el = f.nativeElement as HTMLElement;
+    const labels = () =>
+      Array.from(el.querySelectorAll('mat-chip')).map((c) => c.textContent?.trim() ?? '');
+    expect(labels().length).toBe(3);
+    expect(labels()[0]).toContain('10 Ressourcen');
+    expect(labels()[1]).toContain('10 Benutzer');
+    expect(labels()[2]).toContain('Prog II');
+    (el.querySelectorAll('mat-chip')[1].querySelector('.chip-remove') as HTMLButtonElement).click();
+    await f.whenStable();
+    expect(store.entries().filter((e) => e.kind === 'user')).toEqual([]);
+    expect(store.entries().filter((e) => e.kind === 'resource').length).toBe(10);
+    expect(store.has('e1')).toBe(true);
+  });
+
+  it('9 user chips stay single', async () => {
+    for (let i = 1; i <= 9; i++) store.add({ id: `u${i}`, kind: 'user', label: `user-${i}` });
+    const f = TestBed.createComponent(ChipRailComponent);
+    await f.whenStable();
+    expect((f.nativeElement as HTMLElement).querySelectorAll('mat-chip').length).toBe(9);
+  });
 });

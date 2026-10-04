@@ -73,46 +73,6 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
         this.treeItemFactory = treeItemFactory;
     }
 
-    class DynamicTypeComperator implements Comparator<DynamicType>
-    {
-        public int compare(DynamicType o1, DynamicType o2)
-        {
-            int rang1 = getRang(o1);
-            int rang2 = getRang(o2);
-            if (rang1 < rang2)
-            {
-                return -1;
-            }
-            if (rang1 > rang2)
-            {
-                return 1;
-            }
-            return compareIds((DynamicTypeImpl) o1, (DynamicTypeImpl) o2);
-        }
-
-        private int compareIds(DynamicTypeImpl o1, DynamicTypeImpl o2)
-        {
-            return o1.compareTo(o2);
-        }
-
-        private int getRang(DynamicType o1)
-        {
-            String t2 = o1.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
-            if (t2 != null && t2.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE))
-            {
-                return 1;
-            }
-            if (t2 != null && t2.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON))
-            {
-                return 2;
-            }
-            else
-            {
-                return 3;
-            }
-        }
-    }
-
     public RaplaTreeNode createClassifiableModel(Allocatable[] classifiables, boolean useCategorizations)
     {
         @SuppressWarnings({ "rawtypes" })
@@ -129,7 +89,7 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
             typeSet.add(type);
         }
         List<DynamicType> typeList = new ArrayList<>(typeSet);
-        Collections.sort(typeList, new DynamicTypeComperator());
+        Collections.sort(typeList, DynamicTypeImpl.TYPE_ORDER);
         Map<DynamicType, RaplaTreeNode> nodeMap = new HashMap<>();
         for (DynamicType type : typeList)
         {
@@ -424,6 +384,7 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
         boolean resourcesFiltered = false;
 
         DynamicType[] types = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
+        Arrays.sort(types, DynamicTypeImpl.TYPE_ORDER);
         for (int i = 0; i < types.length; i++)
         {
             DynamicType type = types[i];
@@ -444,6 +405,7 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
 
         // creates typ folders
         types = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
+        Arrays.sort(types, DynamicTypeImpl.TYPE_ORDER);
         for (int i = 0; i < types.length; i++)
         {
             DynamicType type = types[i];
@@ -669,6 +631,7 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
         String[] classificationTypes = new String[] {DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE,DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON};
         for (String classificationType: classificationTypes) {
             final DynamicType[] dynamicTypes = getQuery().getDynamicTypes(classificationType);
+            Arrays.sort(dynamicTypes, DynamicTypeImpl.TYPE_ORDER);
             for (DynamicType type: dynamicTypes) {
                 RaplaTreeNode node = newNamedNode(type);
                 nodeMap.put(type, node);
@@ -712,6 +675,7 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
         String[] classificationTypes = new String[] {DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE,DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON};
         for (String classificationType: classificationTypes) {
             final DynamicType[] dynamicTypes = getQuery().getDynamicTypes(classificationType);
+            Arrays.sort(dynamicTypes, DynamicTypeImpl.TYPE_ORDER);
             for (DynamicType type: dynamicTypes) {
                 RaplaTreeNode node = newNamedNode(type);
                 nodeMap.put(type, node);

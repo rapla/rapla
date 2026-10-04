@@ -23,8 +23,8 @@ import { TableSelection } from '../views/table-selection';
 import { TPipe } from '../i18n/i18n.service';
 
 /**
- * The persistent left ResourceSelection: the DURCHSTEPPEN header with
- * "+ Neu" (PRD 122) and the shared {@link ResourcePickerComponent} in rail mode (PRD 123 D1).
+ * The persistent left ResourceSelection: a header row with "+ Neu" (PRD 122; no label since
+ * PRD 127) and the shared {@link ResourcePickerComponent} in rail mode (PRD 123 D1).
  * A plain click {@link FilterStore.replace}s the filter with that resource — the
  * click-to-step rhythm — and marks it active ("▶ gezeigt"); Strg/Shift follow the selection
  * engine (PRD 099).
@@ -34,9 +34,8 @@ import { TPipe } from '../i18n/i18n.service';
   imports: [TPipe, MatMenuModule, ResourcePickerComponent],
   template: `
     <div class="stepper" tabindex="0" (keydown)="onListKeydown($event)">
-      <div class="sthead">
-        {{ 'shell_step_through' | t }}
-        @if (newTypeKey()) {
+      @if (newTypeKey()) {
+        <div class="sthead">
           <button
             type="button"
             class="newbtn"
@@ -45,11 +44,11 @@ import { TPipe } from '../i18n/i18n.service';
           >
             + {{ 'new' | t }}
           </button>
-        }
-      </div>
+        </div>
+      }
       <app-resource-picker
         mode="rail"
-        [chip]="store.activeChip()"
+        [chip]="store.activeChip() ?? 'none'"
         (chipChange)="store.setActiveChip($event)"
         [query]="store.query()"
         (queryChange)="store.setQuery($event)"
@@ -58,6 +57,7 @@ import { TPipe } from '../i18n/i18n.service';
         (pick)="step($event)"
         (selectGroup)="selectGroup($event)"
         (menu)="openMenu($event)"
+        (typeClick)="lastType.set($event)"
       />
       <mat-menu #itemMenu="matMenu">
         <ng-template matMenuContent let-item="item">
@@ -77,7 +77,7 @@ import { TPipe } from '../i18n/i18n.service';
   styles: [
     `
       .stepper {
-        width: 290px;
+        width: 100%;
         display: flex;
         flex-direction: column;
         overflow: auto;
@@ -89,7 +89,7 @@ import { TPipe } from '../i18n/i18n.service';
       .sthead {
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        justify-content: flex-end;
         padding: 0.75rem 0.9rem 0.5rem;
         font-size: 0.7rem;
         font-weight: 700;
@@ -231,24 +231,25 @@ export class ResourceSelectionComponent {
     this.filter.setAll([...kept, ...selected]);
   }
 
-  /** PRD 123 D8 — "alle wählen" (a group or the whole list): replace, Ctrl adds, all selected → clear them. */
+  /** PRD 123 D8 — "alle wählen" (a group or every search hit). */
   selectGroup(e: { items: ResourceItem[]; ctrl: boolean }): void {
-    const ids = new Set(e.items.map((it) => it.id));
-    const others = this.filter.entries().filter((c) => !ids.has(c.id));
-    if (e.items.every((it) => this.filter.has(it.id))) this.filter.setAll(others);
-    else this.filter.setAll([...(e.ctrl ? others : []), ...e.items.map((it) => this.entry(it))]);
+    this.filter.selectGroup(
+      e.items.map((it) => this.entry(it)),
+      e.ctrl,
+    );
     this.store.setActive(null);
   }
 
   /** PRD 122 D4 — creatable types from the server; empty hides the button. */
   private readonly creatable = signal<{ key: string; name: string }[]>([]);
 
-  /** PRD 122 D3 — an active type chip preselects its type (if creatable), else the first creatable one. */
+  /** PRD 127 D7 — the type of the last clicked type folder or resource (Swing: the focused tree node). */
+  protected readonly lastType = signal<string | null>(null);
+
+  /** PRD 122 D3 / PRD 127 D7 — the last clicked type preselects (if creatable), else the first creatable one. */
   protected readonly newTypeKey = computed(() => {
     const types = this.creatable();
-    const active = this.store.activeChip();
-    const chipKey = active.startsWith('type:') ? active.slice('type:'.length) : null;
-    return types.find((t) => t.key === chipKey)?.key ?? types[0]?.key ?? null;
+    return types.find((t) => t.key === this.lastType())?.key ?? types[0]?.key ?? null;
   });
 
   newResource(): void {

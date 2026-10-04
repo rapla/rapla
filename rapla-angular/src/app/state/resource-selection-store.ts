@@ -1,18 +1,18 @@
-import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
+import { Injectable, computed, inject, signal, untracked } from '@angular/core';
 
 import { GraphqlService } from '../graphql/graphql.service';
 import { RecentsFavoritesService } from './recents-favorites.service';
 import { AuthService } from '../auth/auth.service';
 import { ScopedStorage, bindPerUser } from './persist';
+import { FilterStore } from './filter-store';
 import {
   byLabel,
   filterRows,
-  rankAll,
-  typeChips,
+  ofKind,
+  openSection,
   usersMatching,
-  type PickerChip,
+  type Section,
 } from './resource-picker';
-import { t as tr } from '../i18n/i18n.service';
 
 /** A steppable item in the selection list. Usually a resource; a `user` item
  *  steps as an ownerIn scope chip instead of a resource filter. Defaults to
@@ -37,12 +37,13 @@ export interface ResourceItem {
 }
 
 interface PickerState {
-  chip: string;
+  /** PRD 127 D1 — the open section as last chosen; '' = the start section. */
+  open: string;
   query: string;
   activeId: string | null;
 }
 
-const EMPTY_STATE: PickerState = { chip: 'all', query: '', activeId: null };
+const EMPTY_STATE: PickerState = { open: '', query: '', activeId: null };
 
 interface PickerWire {
   resources?: {
@@ -64,8 +65,8 @@ const PICKER_QUERY = `{
 
 /**
  * The persistent left ResourceSelection — the pool you pick/step resources from.
- * PRD 119: the lean resource list is loaded once; chips pick what the list shows (Alle,
- * Favoriten, Zuletzt, one chip per type); the one search field writes {@link query}.
+ * PRD 119: the lean resource list is loaded once, in server order (PRD 127 D6); one accordion section is open
+ * (PRD 127 D1: Favoriten, Zuletzt, Ressourcen, Personen, Benutzer); the one search field writes {@link query}.
  * {@link activeId} marks the "▶ gezeigt" item. Distinct from the FilterStore:
  * this is the candidate pool; a click here {@code replace}s the filter.
  *
@@ -77,18 +78,17 @@ export class ResourceSelectionStore {
   private readonly lists = inject(RecentsFavoritesService);
   private readonly gql = inject(GraphqlService);
   private readonly auth = inject(AuthService);
+  private readonly filter = inject(FilterStore);
 
-  /** PRD 123 D5 — chip, query and active row survive a reload, per user like the FilterStore. */
+  /** PRD 123 D5 — open section, query and active row survive a reload, per user like the FilterStore. */
   private readonly storage = new ScopedStorage(inject(AuthService), 'rapla.picker');
   private readonly _resources = signal<ResourceItem[]>([]);
   private readonly _users = signal<ResourceItem[]>([]);
-  private readonly _activeChip = signal<string>(this.saved().chip);
+  private readonly _open = signal<string>(this.saved().open);
   private readonly _activeId = signal<string | null>(this.saved().activeId);
   private readonly _query = signal(this.saved().query);
   private readonly _pickerFocus = signal(0);
   private readonly _activateFirst = signal<{ n: number; ctrl: boolean }>({ n: 0, ctrl: false });
-  /** PRD 119 P3b (user ruling A) — Alle ranks by this copy of the recents, so a click never moves its row. */
-  private readonly _recentsSnapshot = signal<ResourceItem[]>([]);
   private loaded = false;
   /** The lean list has answered — the Benutzer chip waits for it (no "meine" flash). */
   private readonly listLoaded = signal(false);
@@ -99,7 +99,15 @@ export class ResourceSelectionStore {
   readonly users = this._users.asReadonly();
   readonly recents = this.lists.recents;
   readonly favorites = this.lists.favorites;
-  readonly activeChip = this._activeChip.asReadonly();
+  /** PRD 127 D1 — the open section of the rail's picker. */
+  readonly activeChip = computed<Section | null>(() =>
+    openSection(this._open(), {
+      favorites: this.favorites().length,
+      recents: this.recents().length,
+      persons: this.listFor('persons').length,
+      users: true,
+    }),
+  );
   readonly activeId = this._activeId.asReadonly();
   /** PRD 119 D3 — the one search field writes it; the picker narrows by it. */
   readonly query = this._query.asReadonly();
@@ -109,14 +117,9 @@ export class ResourceSelectionStore {
   readonly activateFirst = this._activateFirst.asReadonly();
 
   constructor() {
-    // Recents answered after the lean list: refresh the snapshot on every server (re)load, never on a push.
-    effect(() => {
-      this.lists.reloaded();
-      untracked(() => this.snapshotRecents());
-    });
     bindPerUser(this.auth, () => {
       const saved = this.saved();
-      this._activeChip.set(saved.chip);
+      this._open.set(saved.open);
       this._activeId.set(saved.activeId);
       this._query.set(saved.query);
       // R-22 — the lean list is the caller's read scope: a new identity must not see the old one.
@@ -129,26 +132,19 @@ export class ResourceSelectionStore {
     });
   }
 
+  /** An old state (PRD 123) saved a `chip`; {@link openSection} maps it. */
   private saved(): PickerState {
-    return { ...EMPTY_STATE, ...this.storage.load<Partial<PickerState>>({}) };
+    const { chip, ...state } = this.storage.load<Partial<PickerState> & { chip?: string }>({});
+    return { ...EMPTY_STATE, open: chip ?? '', ...state };
   }
 
   private persist(): void {
     this.storage.save({
-      chip: this._activeChip(),
+      open: this._open(),
       query: this._query(),
       activeId: this._activeId(),
     } satisfies PickerState);
   }
-
-  readonly chips = computed<PickerChip[]>(() => [
-    { key: 'all', label: tr('state_chip_all') },
-    { key: 'favorites', label: tr('state_chip_favorites') },
-    { key: 'recents', label: tr('state_chip_recents') },
-    ...typeChips(this._resources()),
-  ]);
-
-  readonly activeList = computed<ResourceItem[]>(() => this.listFor(this._activeChip()));
 
   /** PRD 123 D9 — every readable account, the own one first, the rest A–Z. */
   private readonly accounts = computed(() => {
@@ -165,38 +161,31 @@ export class ResourceSelectionStore {
     return { mine: this._users().every((u) => u.id === me) };
   });
 
-  /** PRD 123 D1 — the rows a chip shows; a second picker (the event sheet) asks for its own chip. */
-  listFor(chip: string): ResourceItem[] {
-    switch (chip) {
-      case 'all':
-        return rankAll(this._resources(), this.favorites(), this._recentsSnapshot());
+  /** PRD 127 — the rows of a section; Ressourcen and Personen in server order (D6). */
+  listFor(section: Section): ResourceItem[] {
+    switch (section) {
       case 'favorites':
         return this.favorites();
       case 'recents':
         return this.recents();
       case 'users':
         return this.accounts();
-      default: {
-        const typeKey = chip.slice('type:'.length);
-        return this._resources()
-          .filter((it) => it.typeKey === typeKey)
-          .sort(byLabel);
-      }
+      case 'persons':
+        return ofKind(this._resources(), 'PERSON');
+      default:
+        return ofKind(this._resources(), 'RESOURCE');
     }
   }
 
-  /** Rows the picker shows under Alle for the current query — the dropdown's count row (PRD 119 D4). */
+  /** The picker's search hits for the current query — the dropdown's count row (PRD 119 D4). */
   readonly matchCount = computed(
     () =>
-      filterRows(
-        rankAll(this._resources(), this.favorites(), this._recentsSnapshot()),
-        this._query(),
-      ).length + usersMatching(this._users(), this._query()).length,
+      filterRows(this._resources(), this._query()).length +
+      usersMatching(this._users(), this._query()).length,
   );
 
   /** Loads the lean list once per SPA start. */
   ensureLoaded(): void {
-    this.snapshotRecents();
     if (this.loaded) return;
     this.loaded = true;
     this.fetch();
@@ -230,7 +219,6 @@ export class ResourceSelectionStore {
               parentIds: (r.parents ?? []).map((p) => p.id),
             })),
         );
-        this.snapshotRecents();
         this.listLoaded.set(true);
         this._users.set(
           (resp.data.users ?? []).map((u) => ({
@@ -240,6 +228,14 @@ export class ResourceSelectionStore {
             username: u.username,
           })),
         );
+        this.filter.reconcile(
+          new Map(
+            [...this._resources(), ...[...this._users()].sort(byLabel)].map((it) => [
+              it.id,
+              it.label,
+            ]),
+          ),
+        );
       },
       error: () => {
         this.loaded = false;
@@ -248,20 +244,13 @@ export class ResourceSelectionStore {
   }
 
   setActiveChip(key: string): void {
-    this.snapshotRecents();
-    this._activeChip.set(key);
+    this._open.set(key);
     this.persist();
   }
 
   setQuery(query: string): void {
-    if (!query.trim() && this._query().trim()) this.snapshotRecents();
     this._query.set(query);
     this.persist();
-  }
-
-  /** Refreshed only on load, chip change and a cleared search — never by the click that pushes a recent. */
-  private snapshotRecents(): void {
-    this._recentsSnapshot.set(this.recents());
   }
 
   requestPickerFocus(): void {

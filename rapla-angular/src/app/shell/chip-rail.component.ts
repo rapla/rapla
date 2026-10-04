@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
@@ -13,7 +14,7 @@ import { TPipe } from '../i18n/i18n.service';
  */
 @Component({
   selector: 'app-chip-rail',
-  imports: [TPipe, MatChipsModule, MatIconModule, MatButtonModule],
+  imports: [NgTemplateOutlet, TPipe, MatChipsModule, MatIconModule, MatButtonModule],
   template: `
     <div class="rail" [class.is-empty]="store.isEmpty()">
       <span class="rlabel">{{ 'shell_filter_label' | t }}</span>
@@ -36,21 +37,40 @@ import { TPipe } from '../i18n/i18n.service';
               </button>
             </mat-chip>
           }
-          @for (e of singles(); track e.id) {
-            <mat-chip>
-              <span class="cd" [style.background]="e.color ?? 'transparent'"></span>
-              {{ e.label }}
+          @for (e of resourceSingles(); track e.id) {
+            <ng-container *ngTemplateOutlet="single; context: { $implicit: e }" />
+          }
+          @if (userCount() >= FOLD_AT) {
+            <mat-chip class="sum">
+              {{ 'shell_n_users' | t: userCount() }}
               <button
                 class="chip-remove"
                 type="button"
-                [attr.aria-label]="'shell_chip_remove' | t: e.label"
-                (click)="store.remove(e.id)"
+                [attr.aria-label]="'shell_chip_remove' | t: ('shell_n_users' | t: userCount())"
+                (click)="removeUsers()"
               >
                 <mat-icon>cancel</mat-icon>
               </button>
             </mat-chip>
           }
+          @for (e of otherSingles(); track e.id) {
+            <ng-container *ngTemplateOutlet="single; context: { $implicit: e }" />
+          }
         </mat-chip-set>
+        <ng-template #single let-e>
+          <mat-chip>
+            <span class="cd" [style.background]="e.color ?? 'transparent'"></span>
+            {{ e.label }}
+            <button
+              class="chip-remove"
+              type="button"
+              [attr.aria-label]="'shell_chip_remove' | t: e.label"
+              (click)="store.remove(e.id)"
+            >
+              <mat-icon>cancel</mat-icon>
+            </button>
+          </mat-chip>
+        </ng-template>
         <button matButton class="clear-all" (click)="store.clear()">
           {{ 'shell_clear_all' | t }}
         </button>
@@ -108,18 +128,33 @@ import { TPipe } from '../i18n/i18n.service';
 })
 export class ChipRailComponent {
   protected readonly store = inject(FilterStore);
-  /** PRD 123 D8 — from this many resource chips on, they fold into one "N Ressourcen" chip. */
+  /** PRD 123 D8 — from this many resource chips on, they fold into one "N Ressourcen" chip; user chips fold the same way into "N Benutzer". */
   protected readonly FOLD_AT = 10;
   protected readonly resourceCount = computed(
     () => this.store.entries().filter((e) => e.kind === 'resource').length,
   );
-  protected readonly singles = computed(() =>
+  protected readonly userCount = computed(
+    () => this.store.entries().filter((e) => e.kind === 'user').length,
+  );
+  protected readonly resourceSingles = computed(() =>
     this.resourceCount() >= this.FOLD_AT
-      ? this.store.entries().filter((e) => e.kind !== 'resource')
-      : this.store.entries(),
+      ? []
+      : this.store.entries().filter((e) => e.kind === 'resource'),
+  );
+  /** User chips (unless folded) and events — after the resource chips (PRD 127 OQ6: resources before users). */
+  protected readonly otherSingles = computed(() =>
+    this.store
+      .entries()
+      .filter(
+        (e) => e.kind !== 'resource' && (e.kind !== 'user' || this.userCount() < this.FOLD_AT),
+      ),
   );
 
   protected removeResources(): void {
     this.store.setAll(this.store.entries().filter((e) => e.kind !== 'resource'));
+  }
+
+  protected removeUsers(): void {
+    this.store.setAll(this.store.entries().filter((e) => e.kind !== 'user'));
   }
 }
