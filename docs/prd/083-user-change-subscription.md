@@ -1,6 +1,6 @@
 # PRD 083 — permission-scoped read index + user change-subscription
 
-**Status:** draft — 2026-06-24 (absorbed [PRD 082](082-storage-memory-model.md) Workstream B — the permission read index — 2026-06-24)
+**Status:** in progress — Part A first cut built (per-user cached readable set, `PermissionIndex`, live in every GraphQL request); `access_grant` inverted index not built; Part B (`changesSince`) not started. State checked 2026-10-05. (Absorbed [PRD 082](082-storage-memory-model.md) Workstream B — the permission read index — 2026-06-24.)
 **Related:** [PRD 082](082-storage-memory-model.md) (storage memory model — foundation: H2 read-model + put/remove projection seam this index sits on), [PRD 086](086-appointment-block-index.md) (appointment index — dual-API sibling), [PRD 087](087-classification-type-indices.md) (classification indices — GraphQL-only sibling), [PRD 035](done/035-graphql-foundations.md) (GraphQL foundations), [PRD 026](026-angular-frontend.md) (Angular SPA), [`docs/authentication.md`](../authentication.md) (stateless JWT), AGENTS.md §12 (data-leak prevention)
 
 **This PRD both *owns* and *consumes* the permission index.** **Part A** builds the `access_grant`
@@ -18,6 +18,14 @@ too, but only if the amortized session-refresh measurably hurts (today it does n
 ---
 
 # Part A — the permission read index (`access_grant`)
+
+## State (2026-10-05) — first cut built, not the inverted index
+
+- `rapla-server/.../storage/impl/server/readmodel/PermissionIndex.java` computes, per user, the readable allocatable ids (and the information-only set) once by delegating to `PermissionController.canRead`, and caches them keyed by user id; §12 equivalence holds by construction.
+- Wired in `LocalAbstractCachableOperator` (`permissionIndex()`, `readableAllocatableIds`, `informationOnlyAllocatableIds`), flip-gated by `isReadModelAuthoritative()`; `RequestContextInstrumentation` puts the caller's readable set into every GraphQL request context, `StructuralTypeFetchers` reads it.
+- Invalidation in `updateReadModel`, the seam for local writes and other pods' changes (`refresh` → `updateIndizes` → `updateReadModel`): user added/changed/removed → that user's entry; category, allocatable or dynamic type added/changed/removed → all entries; reservation changes → none. Built lazily per user on first request (`computeIfAbsent` over all allocatables); `clear()`/`remove()` wait for a running build and drop its result (ConcurrentHashMap bin lock). Active when `rapla.readmodel.authoritative` (default true). Source: rapla-permission, 2026-10-05.
+- Not built: the inverted `access_grant` structure (avoids the once-per-user full scan), world-readable / READ_TYPE union (PRD 087), owner-based reservation scoping. AQ1–AQ5 below still apply to that structure.
+- [PRD 129](129-cached-permission-groups.md) (cached permission groups, uncommitted) is the caller-context cache this Part sketches: the index build reads groups from `UserGroupsCache`, cleared at the same seam before the index (build per location admin 300–680 ms → 40–63 ms). That answers **AQ5** in favour of the per-user cache (not principals in the JWT).
 
 **Problem.** At large instances a user may read only *part* of the store, and `canRead` checks are a
 read-path bottleneck — the measured untyped `allocatables({})` = 155 ms is dominated by
@@ -114,11 +122,13 @@ sets; existing §12 MockMvc leak tests stay green. The flattening must reproduce
 - **AQ3** — Reservations vs allocatables: reuse `access_grant`, or a separate owner-based index for the
   reservation `canModify` path.
 - **AQ4** — Closure home: app-side cached `category → ancestors` map vs an in-engine closure table.
-- **AQ5** — Caller principals in the JWT (no cache, ≤TTL stale) vs the per-user cache.
+- **AQ5** — Caller principals in the JWT (no cache, ≤TTL stale) vs the per-user cache. *Resolution (2026-10-05):* per-user cache — [PRD 129](129-cached-permission-groups.md) `UserGroupsCache`.
 
 ---
 
 # Part B — user change-subscription (consumes Part A)
+
+**State (2026-10-05):** not started — no `changesSince` in schema, server or SPA. The SPA has no refresh path for changes by others at all (no polling, no visibility hook); concept round with the user pending.
 
 **Consumes Part A.** 083 Part A answers "what can this user read/allocate, fast"; Part B answers "what
 changed that is relevant to this user, so the UI can refresh" — the same `access_grant` index +

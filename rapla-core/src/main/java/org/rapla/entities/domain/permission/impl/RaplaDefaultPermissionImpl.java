@@ -29,6 +29,13 @@ public class RaplaDefaultPermissionImpl implements PermissionExtension
     public boolean hasAccess(Entity entity, User user, Permission.AccessLevel accessLevel, LocalDateTime start, LocalDateTime end, java.time.LocalDate today,
             boolean checkOnlyToday)
     {
+        return hasAccess(entity, user, accessLevel, start, end, today, checkOnlyToday, null);
+    }
+
+    @Override
+    public boolean hasAccess(Entity entity, User user, Permission.AccessLevel accessLevel, LocalDateTime start, LocalDateTime end, java.time.LocalDate today,
+            boolean checkOnlyToday, Collection<String> knownGroups)
+    {
         if (user == null || user.isAdmin())
             return true;
 
@@ -87,7 +94,7 @@ public class RaplaDefaultPermissionImpl implements PermissionExtension
         // row is the floor and a more-specific lower-level row can never cap a
         // broader grant downward.
         AccessLevel maxAccessLevel = AccessLevel.DENIED;
-        Collection<String> groups = UserImpl.getGroupsIncludingParents(user);
+        Collection<String> groups = knownGroups != null ? knownGroups : UserImpl.getGroupsIncludingParents(user);
         Iterable<? extends Permission> permissions = container.getPermissionList();
         for (Permission p : permissions)
         {

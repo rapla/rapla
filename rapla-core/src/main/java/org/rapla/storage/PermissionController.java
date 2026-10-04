@@ -49,6 +49,16 @@ public class PermissionController
         this.operator = operator;
     }
 
+    /** The user's groups including parents, from the operator's cache on the server (PRD 129). */
+    Collection<String> groupsOf(User user)
+    {
+        if (user == null)
+        {
+            return null;
+        }
+        return operator != null ? operator.getGroupsIncludingParents(user) : UserImpl.getGroupsIncludingParents(user);
+    }
+
     public static boolean isOwner(Ownable classifiable, User user)
     {
         ReferenceInfo<User> ownerId = classifiable.getOwnerRef();
@@ -119,7 +129,7 @@ public class PermissionController
             final LocalDateTime start = null;
             final LocalDateTime end = null;
             final java.time.LocalDate today = null;
-            if (!permissionExtension.hasAccess(entity, user, accessLevel, start, end, today,false))
+            if (!permissionExtension.hasAccess(entity, user, accessLevel, start, end, today, false, groupsOf(user)))
             {
                 return false;
             }
@@ -132,7 +142,7 @@ public class PermissionController
     {
         for (PermissionExtension permissionExtension : permissionExtensions)
         {
-            if (!permissionExtension.hasAccess(entity, user, permission, start, end, today, checkOnlyToday))
+            if (!permissionExtension.hasAccess(entity, user, permission, start, end, today, checkOnlyToday, groupsOf(user)))
             {
                 return false;
             }
@@ -299,7 +309,8 @@ public class PermissionController
 
     public boolean hasPermissionToAllocate(User user, Allocatable a)
     {
-        Collection<String> groups = UserImpl.getGroupsIncludingParents(user);
+        java.util.Objects.requireNonNull(user, "user");
+        Collection<String> groups = groupsOf(user);
         final ReferenceInfo<User> ownerRef = a.getOwnerRef();
         if ( user != null && ownerRef != null && user.getReference().equals(ownerRef))
         {
@@ -371,7 +382,7 @@ public class PermissionController
         {
             return true;
         }
-        Collection<String> groups = UserImpl.getGroupsIncludingParents(user);
+        Collection<String> groups = groupsOf(user);
 
         LocalDateTime start = appointment.getStart();
         LocalDateTime end = appointment.getMaxEnd();
@@ -471,7 +482,7 @@ public class PermissionController
         if (user == null || user.isAdmin())
             return true;
 
-        Collection<String> groups = UserImpl.getGroupsIncludingParents(user);
+        Collection<String> groups = groupsOf(user);
         for (Permission p : permissions)
         {
             for (AccessLevel accessLevel : accessLevels)

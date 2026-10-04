@@ -143,6 +143,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
      * user's entry. Reservation churn does NOT touch it (permissions live on allocatables/users).
      */
     private volatile org.rapla.storage.impl.server.readmodel.PermissionIndex permissionIndex;
+    private final org.rapla.storage.impl.server.readmodel.UserGroupsCache userGroupsCache = new org.rapla.storage.impl.server.readmodel.UserGroupsCache();
     /**
      * PRD 086/087 Phase 4b — the flip flag. When {@code true} flipped consumers serve from the in-memory
      * read-model (the perf win); when {@code false} they return the legacy {@code appointmentMap} result.
@@ -1762,6 +1763,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     {
         deleteUpdateSet = new IndexedSortedMap<>(Comparator.naturalOrder());
         externalIds = new TwoWayMap<>();
+        userGroupsCache.invalidateAll();
         // The appointment map
 
         final Collection<Allocatable> alloctables = cache.getAllocatables();
@@ -2371,27 +2373,40 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         try
         {
             boolean invalidateAllPermissions = false;
+            boolean invalidateAllGroups = false;
             for (UpdateResult.Add add : result.getOperations(UpdateResult.Add.class))
             {
                 Entity e = tryResolve(add.getReference());
                 indexEntityBucket(e);
                 invalidateAllPermissions |= permissionAffecting(e);
+                invalidateAllGroups |= e instanceof Category;
             }
             for (UpdateResult.Change change : result.getOperations(UpdateResult.Change.class))
             {
                 Entity e = tryResolve(change.getReference());
                 indexEntityBucket(e);
-                if (e instanceof User && permissionIndex != null) permissionIndex.invalidate(((User) e).getId());
+                if (e instanceof User)
+                {
+                    userGroupsCache.invalidate(e.getId());
+                    if (permissionIndex != null) permissionIndex.invalidate(e.getId());
+                }
                 else invalidateAllPermissions |= permissionAffecting(e);
+                invalidateAllGroups |= e instanceof Category;
             }
             for (UpdateResult.Remove remove : result.getOperations(UpdateResult.Remove.class))
             {
                 ReferenceInfo<?> ref = remove.getReference();
                 removeFromTypeBuckets(ref.getId());
                 Class<?> type = ref.getType();
-                if (type == User.class && permissionIndex != null) permissionIndex.invalidate(ref.getId());
+                if (type == User.class)
+                {
+                    userGroupsCache.invalidate(ref.getId());
+                    if (permissionIndex != null) permissionIndex.invalidate(ref.getId());
+                }
                 else if (type == Allocatable.class || type == DynamicType.class || type == Category.class) invalidateAllPermissions = true;
+                invalidateAllGroups |= type == Category.class;
             }
+            if (invalidateAllGroups) userGroupsCache.invalidateAll();
             if (invalidateAllPermissions && permissionIndex != null) permissionIndex.invalidateAll();
         }
         catch (RuntimeException ex)
@@ -2410,6 +2425,22 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     private static boolean permissionAffecting(Entity e)
     {
         return e instanceof Allocatable || e instanceof DynamicType || e instanceof Category;
+    }
+
+    /** PRD 129 — groups including parents, served only for the resident user instance (drafts are computed fresh). */
+    @Override
+    public Collection<String> getGroupsIncludingParents(User user)
+    {
+        if (user == null || user.getId() == null || tryResolve(user.getReference()) != user)
+        {
+            return org.rapla.entities.internal.UserImpl.getGroupsIncludingParents(user);
+        }
+        return userGroupsCache.groupsOf(user);
+    }
+
+    public org.rapla.storage.impl.server.readmodel.UserGroupsCache getUserGroupsCache()
+    {
+        return userGroupsCache;
     }
 
     /** PRD 082 #8 — lazily build the permission index (the {@link PermissionController} is ready only post-construction). */

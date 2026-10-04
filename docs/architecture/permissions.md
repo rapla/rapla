@@ -368,6 +368,7 @@ allocation on a resource the user cannot see at all is absent from
   `READ_NO_ALLOCATION` resources the legacy path shows (over-restrictive /
   fail-closed — not a leak). [PRD 083](../prd/083-user-change-subscription.md) scopes the index to GraphQL for exactly
   this reason.
+- The server operator caches each user's groups including parents (`getGroupsIncludingParents`, `readmodel.UserGroupsCache`) — 91 % of the permission time otherwise. A user change drops that user's entry, a category change drops all; only the resident user instance is served, drafts are computed fresh ([PRD 129](../prd/129-cached-permission-groups.md)).
 - The index also caches the `canReadInformation && !canRead` set
   (`informationOnlyAllocatables`, same scan and invalidation); GraphQL's
   expand gate `canReadAllocatableInformation` uses it (2026-10-01).

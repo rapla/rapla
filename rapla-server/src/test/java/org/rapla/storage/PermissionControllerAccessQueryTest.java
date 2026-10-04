@@ -14,6 +14,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -111,6 +112,18 @@ class PermissionControllerAccessQueryTest extends FacadeTestSupport
                 "union: any matching group in the list grants access");
         assertFalse(pc.hasGroupAccessAtLeast(a, List.of(powerplantAdmins), AccessLevel.READ),
                 "no permission for powerplant-admins on this resource");
+    }
+
+    @Test
+    void hasPermissionToAllocateRejectsANullUser() throws Exception
+    {
+        Allocatable a = facade.newAllocatable(roomType.newClassification(), getAdmin());
+        a.getClassification().setValue("name", "ALL-USERS-ALLOCATE");
+        Permission p = a.newPermission();
+        p.setAccessLevel(AccessLevel.ALLOCATE);
+        a.addPermission(p);
+
+        assertThrows(NullPointerException.class, () -> pc.hasPermissionToAllocate(null, a));
     }
 
     private void addGroupPermission(Allocatable a, Category group, AccessLevel level)

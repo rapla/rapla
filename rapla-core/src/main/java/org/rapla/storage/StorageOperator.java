@@ -122,6 +122,12 @@ public interface StorageOperator extends EntityResolver {
 
     Category getSuperCategory();
 
+    /** The user's groups including parents. The server operator caches them (PRD 129); read only. */
+    default Collection<String> getGroupsIncludingParents(User user)
+    {
+        return org.rapla.entities.internal.UserImpl.getGroupsIncludingParents(user);
+    }
+
     /** changes the password for the user */
     void changePassword(User user,char[] oldPassword,char[] newPassword) throws RaplaException;
 
