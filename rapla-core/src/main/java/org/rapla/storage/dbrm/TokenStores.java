@@ -31,18 +31,18 @@ public final class TokenStores
         if (jnlp.isPresent())
         {
             LOGGER.info("token store: JNLP PersistenceService");
-            return jnlp.get();
+            return new ConsentingTokenStore(jnlp.get(), "jnlp");
         }
         try
         {
             FileTokenStore file = new FileTokenStore();
             LOGGER.info("token store: file (~/.rapla/tokens.json)");
-            return file;
+            return new ConsentingTokenStore(file, "file");
         }
         catch (Throwable t)
         {
             LOGGER.warn("token store: no backend available; persistence disabled");
-            return noOp();
+            return new ConsentingTokenStore(noOp(), "none");
         }
     }
 

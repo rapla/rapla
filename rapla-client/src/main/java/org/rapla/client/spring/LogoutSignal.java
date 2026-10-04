@@ -65,6 +65,12 @@ public class LogoutSignal
         this.forceOauthLoginNext = forceOauthLoginNext;
     }
 
+    /** Non-consuming read (PRD 126: no SSO auto-start after an explicit logout). */
+    public boolean isForceOauthLoginNext()
+    {
+        return forceOauthLoginNext;
+    }
+
     /** One-shot read: returns the flag and clears it. */
     public boolean consumeForceOauthLoginNext()
     {

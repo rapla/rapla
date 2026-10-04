@@ -37,6 +37,10 @@ public interface TokenStore
      *  SSO entry; the per-provider id is gone). */
     String KEY_LOGIN_METHOD = "loginMethod";
 
+    /** Preference key: the user's standing answer to "keep me signed in on this machine" —
+     *  {@code "yes"} / {@code "no"}; absent = ask at the next interactive login (PRD 126 Phase 2). */
+    String KEY_REMEMBER = "remember";
+
     /** Returns the cached refresh token, or empty on any failure. Never throws. */
     Optional<String> read();
 

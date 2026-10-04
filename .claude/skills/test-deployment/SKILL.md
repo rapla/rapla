@@ -130,7 +130,7 @@ tar -tzvf rapla-app/target/distribution/rapla.tar.gz | grep -E '\bbin/(rapla|rap
 
 ## Hard rules
 
-- **Don't run `mvn package` while `java -jar` is running** — `spring-boot:repackage` writes to the same `rapla-app/target/rapla.jar` you'd be executing. Stop the server first.
+- **A running `java -jar` need not be stopped for a rebuild (user ruling 2026-10-04).** On Linux the JVM keeps the old JAR open via its file handle; `mvn clean package` replaces the path, the server keeps running on the old inode, and only the restart picks up the new JAR. Stop first only on Windows (the file is locked) and only for `spring-boot:run` / `mvn exec:java`, which load from `target/classes` lazily and break under `clean`.
 - **Don't keep both `mvn spring-boot:run` (the dev path) and `java -jar` (this path) running at once** in the same checkout — they fight for port 8051. If you need both, use a worktree per §7.
 - **Don't sign with a different identity than rapla-core's** without first stripping the existing signatures from each jar (`zip -d X.jar 'META-INF/*.SF' 'META-INF/*.RSA' 'META-INF/*.DSA' 'META-INF/*.EC'`). Mixed signers break JWS launches under `<all-permissions/>`. See PRD 003 §JNLP for the full chain.
 

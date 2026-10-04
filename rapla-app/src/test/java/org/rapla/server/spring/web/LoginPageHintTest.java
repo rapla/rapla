@@ -23,6 +23,8 @@ import java.nio.file.StandardCopyOption;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
@@ -82,5 +84,17 @@ class LoginPageHintTest
         operator.changePassword(facade.getUser("admin"), new char[0], "realpw".toCharArray());
         mockMvc.perform(get("/login").accept(MediaType.TEXT_HTML))
                 .andExpect(content().string(not(containsString("Dev default"))));
+    }
+
+    /** A provisioning failure stored by OidcLoginSuccessHandler is shown once instead of the generic error. */
+    @Test
+    void showsStoredLoginReasonOnce() throws Exception
+    {
+        org.springframework.mock.web.MockHttpSession session = new org.springframework.mock.web.MockHttpSession();
+        session.setAttribute(org.rapla.server.spring.oauth.OidcLoginSuccessHandler.LOGIN_ERROR_ATTR, "Konto <KA> passt nicht");
+        mockMvc.perform(get("/login").param("error", "").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Konto &lt;KA&gt; passt nicht")));
+        assertNull(session.getAttribute(org.rapla.server.spring.oauth.OidcLoginSuccessHandler.LOGIN_ERROR_ATTR));
     }
 }

@@ -78,6 +78,72 @@ class OidcLoginSuccessHandlerTest
         registry.add("rapla.oauth.external.keycloak.realm", () -> "rapla-test");
         registry.add("rapla.oauth.external.keycloak.client-id", () -> "rapla-app");
         registry.add("rapla.oauth.web.cookie-secure", () -> "true");
+        // A second provider that must not create accounts — an unknown login fails provisioning.
+        registry.add("rapla.oauth.external.strict.enabled", () -> "true");
+        registry.add("rapla.oauth.external.strict.type", () -> "keycloak");
+        registry.add("rapla.oauth.external.strict.base-url", () -> "https://kc.example.com");
+        registry.add("rapla.oauth.external.strict.realm", () -> "rapla-strict");
+        registry.add("rapla.oauth.external.strict.client-id", () -> "rapla-app");
+        registry.add("rapla.oauth.external.strict.auto-provision", () -> "false");
+    }
+
+    private OAuth2AuthenticationToken unknownUserOnStrictProvider()
+    {
+        Instant now = Instant.now();
+        OidcIdToken idToken = new OidcIdToken("header.payload.sig", now, now.plusSeconds(3600),
+                Map.of("iss", "https://kc.example.com/realms/rapla-strict", "sub", "kc-subject-nobody",
+                        "preferred_username", "nobody", "email", "nobody@example.com"));
+        OidcUser oidcUser = new DefaultOidcUser(AuthorityUtils.createAuthorityList("ROLE_USER"), idToken, "preferred_username");
+        return new OAuth2AuthenticationToken(oidcUser, oidcUser.getAuthorities(), "strict");
+    }
+
+    /** Provisioning failed with a Swing loopback authorize saved: the login is aborted — no cookie,
+     *  no session context, no code — and the reason travels to the loopback as error_description. */
+    @Test
+    void failedProvisioningRedirectsLoopbackWithErrorDescription() throws Exception
+    {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/login/oauth2/code/strict");
+        MockHttpSession session = new MockHttpSession();
+        request.setSession(session);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockHttpServletRequest original = new MockHttpServletRequest("GET", "/oauth2/authorize");
+        original.setServerName("localhost");
+        original.setServerPort(8051);
+        original.setScheme("http");
+        original.setQueryString("response_type=code&client_id=rapla-client&redirect_uri=http://127.0.0.1:54321/callback&state=xyz");
+        original.setParameter("redirect_uri", "http://127.0.0.1:54321/callback");
+        original.setParameter("state", "xyz");
+        original.setSession(session);
+        new HttpSessionRequestCache().saveRequest(original, response);
+
+        handler.onAuthenticationSuccess(request, response, unknownUserOnStrictProvider());
+
+        assertNull(response.getCookie("access_token"), "no rapla session on failed provisioning");
+        assertTrue(session.isInvalid(), "the external login session must be ended");
+        String redirect = response.getRedirectedUrl();
+        assertNotNull(redirect);
+        assertTrue(redirect.startsWith("http://127.0.0.1:54321/callback?"), "must answer the loopback, was: " + redirect);
+        assertTrue(redirect.contains("error=access_denied"), redirect);
+        assertTrue(redirect.contains("error_description="), redirect);
+        assertTrue(redirect.contains("state=xyz"), redirect);
+        assertFalse(redirect.contains("code="), redirect);
+    }
+
+    /** Provisioning failed in a browser login: back to /login with the reason stored for the page. */
+    @Test
+    void failedProvisioningWithoutSavedRequestGoesToLoginPageWithReason() throws Exception
+    {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/login/oauth2/code/strict");
+        request.setSession(new MockHttpSession());
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        handler.onAuthenticationSuccess(request, response, unknownUserOnStrictProvider());
+
+        assertNull(response.getCookie("access_token"));
+        assertEquals("/login?error", response.getRedirectedUrl());
+        Object reason = request.getSession(false).getAttribute(OidcLoginSuccessHandler.LOGIN_ERROR_ATTR);
+        assertNotNull(reason, "the reason must be stored for the login page");
+        assertTrue(reason.toString().contains("nobody"), reason.toString());
     }
 
     @Autowired

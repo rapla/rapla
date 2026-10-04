@@ -50,6 +50,9 @@ class OAuthConfigControllerTest
     @Autowired
     MockMvc mockMvc;
 
+    @Autowired
+    org.rapla.facade.RaplaFacade raplaFacade;
+
     @Test
     void discoveryReturnsAuthorizeAndTokenUrls() throws Exception
     {
@@ -96,5 +99,28 @@ class OAuthConfigControllerTest
                 .andExpect(jsonPath("$.providers[0].webPickerVisible").value(true))
                 .andExpect(jsonPath("$.providers[0].authorizeUrl").value(
                         org.hamcrest.Matchers.endsWith("/oauth2/authorize")));
+    }
+
+    /** PRD 126: the Swing login dialog renders in the server language, the same the browser login page uses. */
+    @Test
+    void discoveryCarriesTheServerLanguage() throws Exception
+    {
+        org.rapla.entities.configuration.Preferences before = raplaFacade.getSystemPreferences();
+        String previous = before.getEntryAsString(org.rapla.framework.internal.AbstractRaplaLocale.LOCALE, null);
+        org.rapla.entities.configuration.Preferences edit = raplaFacade.edit(before);
+        edit.putEntry(org.rapla.framework.internal.AbstractRaplaLocale.LOCALE, "fr_FR");
+        raplaFacade.store(edit);
+        try
+        {
+            mockMvc.perform(get("/api/auth/oauth/config"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.language").value("fr"));
+        }
+        finally
+        {
+            org.rapla.entities.configuration.Preferences restore = raplaFacade.edit(raplaFacade.getSystemPreferences());
+            restore.putEntry(org.rapla.framework.internal.AbstractRaplaLocale.LOCALE, previous);
+            raplaFacade.store(restore);
+        }
     }
 }

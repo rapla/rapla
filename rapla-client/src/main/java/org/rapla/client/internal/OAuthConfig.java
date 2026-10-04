@@ -34,6 +34,8 @@ public final class OAuthConfig
     // PRD 029 Phase 4 — one OAuthConfig per discovery providers[] entry
     // (rapla SAS, Keycloak, …). Empty on a provider-level config.
     private final List<OAuthConfig> providers;
+    /** Server language (system locale) for the login dialog, or null. */
+    private final String language;
 
     public OAuthConfig(boolean enabled, String clientId, String authorizeUrl, String tokenUrl, List<String> scopes)
     {
@@ -59,6 +61,16 @@ public final class OAuthConfig
                        boolean swingLegacyLogin, boolean swingLegacyShowSsoButton,
                        String id, String displayName, List<OAuthConfig> providers)
     {
+        this(enabled, clientId, authorizeUrl, tokenUrl, logoutUrl, scopes, swingLegacyLogin, swingLegacyShowSsoButton,
+                id, displayName, providers, null);
+    }
+
+    public OAuthConfig(boolean enabled, String clientId, String authorizeUrl, String tokenUrl,
+                       String logoutUrl, List<String> scopes,
+                       boolean swingLegacyLogin, boolean swingLegacyShowSsoButton,
+                       String id, String displayName, List<OAuthConfig> providers, String language)
+    {
+        this.language = language;
         this.enabled = enabled;
         this.clientId = clientId;
         this.authorizeUrl = authorizeUrl;
@@ -83,4 +95,5 @@ public final class OAuthConfig
     public String getId() { return id; }
     public String getDisplayName() { return displayName; }
     public List<OAuthConfig> getProviders() { return providers; }
+    public String getLanguage() { return language; }
 }

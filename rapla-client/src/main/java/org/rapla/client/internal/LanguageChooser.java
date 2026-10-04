@@ -31,6 +31,10 @@ final public class LanguageChooser implements RaplaWidget
     String country;
 
     public LanguageChooser(final RaplaResources i18n, final RaplaLocale raplaLocale)  {
+        this(i18n, raplaLocale, i18n.getString("default") + " " + i18n.getString("preferences"));
+    }
+
+    public LanguageChooser(final RaplaResources i18n, final RaplaLocale raplaLocale, final String defaultLabel)  {
         country = raplaLocale.getLocale().getCountry();
         String[] languages = raplaLocale.getAvailableLanguages().toArray(new String[0]);
 
@@ -54,7 +58,7 @@ final public class LanguageChooser implements RaplaWidget
                 }
                 else
                 {
-                    value = i18n.getString("default") + " " + i18n.getString("preferences");
+                    value = defaultLabel;
                 }
                 return super.getListCellRendererComponent(list,
                                                           value,

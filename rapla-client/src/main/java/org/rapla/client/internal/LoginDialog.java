@@ -163,6 +163,18 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 		methodChooser.setVisible(methodChooserVisible);
 	}
 
+	/** Re-layout after a mode switch; grow the window if the content needs more height (logo stays whole). */
+	private void fitToContent()
+	{
+		revalidate();
+		java.awt.Dimension pref = getPreferredSize();
+		if (pref.height > getHeight() || pref.width > getWidth())
+		{
+			setSize(Math.max(pref.width, getWidth()), Math.max(pref.height, getHeight()));
+		}
+		repaint();
+	}
+
 	/** Index of the selected sign-in method (0 = local username/password). */
 	public int getSelectedMethodIndex()
 	{
@@ -210,9 +222,15 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 	 * @param message status text displayed where the username/password rows
 	 *                normally are (e.g. "Sign in via the browser tab that just opened")
 	 */
-	public void setBrowserLoginInProgress(String message)
+	/** Replaces the status text only (e.g. "load" after the browser login), keeping buttons and fields. */
+	public void setStatus(String message)
 	{
 		statusLabel.setText("<html><body style='width:280px;padding:8px;'>" + message + "</body></html>");
+	}
+
+	public void setBrowserLoginInProgress(String message)
+	{
+		setStatus(message);
 		statusLabel.setVisible(true);
 		username.setVisible(false);
 		password.setVisible(false);
@@ -220,14 +238,15 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 		passwordLabel.setVisible(false);
 		methodLabel.setVisible(false);
 		methodChooser.setVisible(false);
-		// Button row becomes Exit + Abort. Abort cancels the browser-login
-		// wait and returns to the credential dialog; Exit quits the app.
+		// Button row becomes Exit (disabled) + Abort. Abort cancels the
+		// browser-login wait and returns to the credential dialog, where Exit
+		// is enabled again (PRD 126: Exit mid-wait only interrupted the worker).
 		buttonPanel.removeAll();
 		buttonPanel.setLayout(buttonGrid(2));
+		exitBtn.setEnabled(false);
 		buttonPanel.add(exitBtn);
 		buttonPanel.add(abortBtn);
-		revalidate();
-		repaint();
+		fitToContent();
 	}
 
 	/** Restore the dialog to its normal state (e.g. when OAuth fails or is
@@ -244,10 +263,10 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 		methodChooser.setVisible(methodChooserVisible);
 		buttonPanel.removeAll();
 		buttonPanel.setLayout(buttonGrid(2));
+		exitBtn.setEnabled(true);
 		buttonPanel.add(exitBtn);
 		buttonPanel.add(loginBtn);
-		revalidate();
-		repaint();
+		fitToContent();
 	}
 
 	private void init(JComponent languageSelector)
@@ -366,6 +385,9 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 		// these are the dimensions of the rapla picture
 		int picturewidth = 372;
 		int pictureheight = 182;
+		// The lower panel grew (language row, method combo, waiting text); without a
+		// preferred size BorderLayout squeezes the canvas and cuts the logo (PRD 126).
+		canvas.setPreferredSize(new java.awt.Dimension(picturewidth, pictureheight));
 		// and a border around it
 		int border = 10;
 		// canvas.setBounds(0, 0, picturewidth, pictureheight);
@@ -373,7 +395,8 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 		this.getRootPane().setDefaultButton(loginBtn);
 		// with the picture dimensions as basis we determine the size
 		// of the frame, including some additional space below the picture
-		this.setSize(picturewidth + 2 * border, pictureheight + 240);
+		pack();
+		this.setSize(Math.max(getWidth(), picturewidth + 2 * border), Math.max(getHeight(), pictureheight + 240));
 		this.setResizable(false);
 
 		// ################## END FRAME ###################

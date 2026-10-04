@@ -142,7 +142,7 @@ plugin-specific knobs (workingDirectory, additional config locations, conditiona
 - **`logs/`** is the project-root directory (gitignored). PID file at `logs/rapla.pid`, log at `logs/rapla.log`.
 - **Never `kill -9` first** — the stop snippet gives 10 s for graceful shutdown so JDBC connections and file locks release cleanly.
 - **Never run two servers in the same checkout** — second one fails with `BindException` on 8051. Use a worktree (AGENTS.md §7) with port offset and `logs/rapla-N.{pid,log}`.
-- **Never start the server during a `mvn package` build** that produces a fat JAR (`spring-boot:repackage` writes the same JAR `java -jar` reads). Not a concern for `spring-boot:run` alone.
+- **Never start the server during a `mvn package` build** that produces a fat JAR (`spring-boot:repackage` writes the same JAR `java -jar` reads). Not a concern for `spring-boot:run` alone. A server **already running** from the packaged JAR keeps working through the rebuild on Linux (open file handle) and only needs the restart afterwards — don't stop it for the build (user ruling 2026-10-04); a `spring-boot:run` server or `mvn exec:java` client does break under `clean`.
 - Restart cycles use `mvn -pl rapla-app -am compile` only — never `install` (see AGENTS.md §5).
 
 ## Freshness probe — does the running server have my latest code? (moved from AGENTS.md §8)

@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.rapla.server.spring.oauth.OidcLoginSuccessHandler;
 import org.springframework.web.util.HtmlUtils;
 
 import java.util.ArrayList;
@@ -209,7 +210,11 @@ public class LoginPageController
         String banner = "";
         if (error != null)
         {
-            banner = "<p style=\"color:#c00;\">" + msg("error.login", locale) + "</p>";
+            jakarta.servlet.http.HttpSession session = request.getSession(false);
+            Object reason = session == null ? null : session.getAttribute(OidcLoginSuccessHandler.LOGIN_ERROR_ATTR);
+            if (reason != null) session.removeAttribute(OidcLoginSuccessHandler.LOGIN_ERROR_ATTR);
+            String text = reason != null ? HtmlUtils.htmlEscape(reason.toString()) : msg("error.login", locale);
+            banner = "<p style=\"color:#c00;\">" + text + "</p>";
         }
         else if (logout != null)
         {

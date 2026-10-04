@@ -209,4 +209,41 @@ public class SwingOAuthLoginFlowTest
             out.write(bytes);
         }
     }
+
+    @Test
+    public void signedInPageLinksBackToRaplaStartPage()
+    {
+        String page = SwingOAuthLoginFlow.signedInMessage("http://localhost:8051/oauth2/authorize");
+        assertTrue(page, page.contains("href=\"http://localhost:8051/\""));
+    }
+
+    @Test
+    public void errorDescriptionFromTheCallbackReachesTheCaller() throws Exception
+    {
+        OAuthConfig cfg = new OAuthConfig(true, "rapla-client",
+                fakeAuthServerUrl() + "/oauth2/authorize",
+                fakeAuthServerUrl() + "/oauth2/token",
+                List.of("openid"));
+        SwingOAuthLoginFlow flow = new SwingOAuthLoginFlow(cfg, (url) -> {
+            Map<String, String> params = parseForm(url.getRawQuery());
+            String callback = params.get("redirect_uri") + "?error=access_denied&error_description="
+                    + java.net.URLEncoder.encode("Konto gehoert zu einem anderen Standort", StandardCharsets.UTF_8)
+                    + "&state=" + params.get("state");
+            try
+            {
+                HttpClient.newHttpClient().send(HttpRequest.newBuilder(URI.create(callback)).GET().build(),
+                        HttpResponse.BodyHandlers.ofString());
+            }
+            catch (InterruptedException e) { throw new IOException(e); }
+        });
+        try
+        {
+            flow.start().future().get(10, TimeUnit.SECONDS);
+            fail("expected ExecutionException");
+        }
+        catch (ExecutionException expected)
+        {
+            assertTrue(expected.getCause().getMessage(), expected.getCause().getMessage().contains("anderen Standort"));
+        }
+    }
 }

@@ -226,8 +226,10 @@ public final class SwingOAuthLoginFlow
             String error = params.get("error");
             if (error != null)
             {
-                respond(exchange, 400, "Login failed: " + escape(error) + " — you can close this tab.");
-                result.completeExceptionally(new IllegalStateException("OAuth error: " + error));
+                String description = params.get("error_description");
+                String reason = description == null || description.isEmpty() ? error : description;
+                respond(exchange, 400, "Login failed: " + escape(reason) + " — you can close this tab.");
+                result.completeExceptionally(new IllegalStateException("OAuth error: " + reason));
                 return;
             }
             String code = params.get("code");
@@ -238,7 +240,7 @@ public final class SwingOAuthLoginFlow
                 result.completeExceptionally(new IllegalStateException("OAuth callback missing code or state mismatch"));
                 return;
             }
-            respond(exchange, 200, "Signed in. You can close this tab.");
+            respond(exchange, 200, signedInMessage(config.getAuthorizeUrl()));
             try
             {
                 OAuthTokens tokens = exchangeCodeForTokens(code);
@@ -297,6 +299,13 @@ public final class SwingOAuthLoginFlow
         {
             out.write(body);
         }
+    }
+
+    /** Callback page after a successful sign-in: closes nothing itself, links back to the rapla start page. */
+    static String signedInMessage(String authorizeUrl)
+    {
+        String origin = URI.create(authorizeUrl).resolve("/").toString();
+        return "Signed in. You can close this tab or go to <a href=\"" + origin + "\">" + origin + "</a>.";
     }
 
     private static String htmlPage(String message)

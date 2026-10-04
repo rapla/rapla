@@ -3,6 +3,12 @@ package org.rapla.server.spring.oauth;
 import com.nimbusds.jose.JOSEException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.SavedRequest;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import jakarta.servlet.http.HttpServletResponse;
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaException;
@@ -131,11 +137,56 @@ public class OidcLoginSuccessHandler extends SavedRequestAwareAuthenticationSucc
         }
         catch (RaplaException | JOSEException e)
         {
-            LOGGER.warn("Could not establish a rapla session after {} login: {}", registrationId, e.getMessage());
-            // No cookie set — the SPA's first /api call will 401 and bounce to /login.
+            LOGGER.error("Could not establish a rapla session after {} login: {}", registrationId, e.getMessage());
+            abortLogin(request, response, e.getMessage());
+            return;
         }
         // Resume the saved request (Swing /oauth2/authorize) if present, else /app/.
         super.onAuthenticationSuccess(request, response, authentication);
+    }
+
+    /** Session attribute carrying the reason of a refused external login to the {@code /login} page (read once). */
+    public static final String LOGIN_ERROR_ATTR = "org.rapla.login.error";
+
+    /**
+     * The external login succeeded but no rapla account could be bound: end the
+     * login instead of resuming it. Continuing would let the Authorization Server
+     * issue Swing a code for the external principal, which fails later at the
+     * token exchange with a meaningless "cannot resolve user". A saved Swing
+     * loopback authorize gets the reason as RFC 6749 §4.1.2.1 error response;
+     * a browser login gets it on {@code /login}.
+     */
+    private void abortLogin(HttpServletRequest request, HttpServletResponse response, String reason) throws IOException
+    {
+        SavedRequest saved = new HttpSessionRequestCache().getRequest(request, response);
+        SecurityContextHolder.clearContext();
+        HttpSession session = request.getSession(false);
+        if (session != null) session.invalidate();
+        String loopback = loopbackErrorRedirect(saved, reason);
+        if (loopback != null)
+        {
+            getRedirectStrategy().sendRedirect(request, response, loopback);
+            return;
+        }
+        request.getSession(true).setAttribute(LOGIN_ERROR_ATTR, reason);
+        getRedirectStrategy().sendRedirect(request, response, "/login?error");
+    }
+
+    /** Error redirect for a saved Swing {@code /oauth2/authorize} whose redirect_uri is a loopback address; null otherwise. */
+    static String loopbackErrorRedirect(SavedRequest saved, String reason)
+    {
+        if (saved == null || !URI.create(saved.getRedirectUrl()).getPath().endsWith("/oauth2/authorize")) return null;
+        String[] redirectUri = saved.getParameterValues("redirect_uri");
+        if (redirectUri == null || redirectUri.length != 1) return null;
+        String host;
+        try { host = URI.create(redirectUri[0]).getHost(); }
+        catch (IllegalArgumentException e) { return null; }
+        if (host == null || !(host.equals("127.0.0.1") || host.equals("localhost") || host.equals("[::1]") || host.equals("::1"))) return null;
+        String[] state = saved.getParameterValues("state");
+        StringBuilder url = new StringBuilder(redirectUri[0]).append(redirectUri[0].contains("?") ? '&' : '?')
+                .append("error=access_denied&error_description=").append(URLEncoder.encode(reason, StandardCharsets.UTF_8));
+        if (state != null && state.length == 1) url.append("&state=").append(URLEncoder.encode(state[0], StandardCharsets.UTF_8));
+        return url.toString();
     }
 
     /**

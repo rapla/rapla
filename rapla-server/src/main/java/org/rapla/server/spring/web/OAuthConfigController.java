@@ -49,6 +49,7 @@ public class OAuthConfigController
     private final String pickerMode;
     private final String pickerPrimary;
     private final boolean raplaInPicker;
+    private final org.rapla.storage.CachableStorageOperator operator;
 
     public OAuthConfigController(
             @Value("${rapla.oauth.enabled:true}") boolean enabled,
@@ -68,6 +69,7 @@ public class OAuthConfigController
             @Value("${rapla.oauth.web.picker.mode:auto}") String pickerMode,
             @Value("${rapla.oauth.web.picker.primary:rapla}") String pickerPrimary,
             @Value("${rapla.oauth.web.rapla-in-picker:true}") boolean raplaInPicker,
+            org.rapla.storage.CachableStorageOperator operator,
             ExternalProvidersProperties externalProviders)
     {
         this.enabled = enabled;
@@ -88,6 +90,7 @@ public class OAuthConfigController
         this.pickerMode = pickerMode == null || pickerMode.isEmpty() ? "auto" : pickerMode;
         this.pickerPrimary = pickerPrimary == null || pickerPrimary.isEmpty() ? "rapla" : pickerPrimary;
         this.raplaInPicker = raplaInPicker;
+        this.operator = operator;
     }
 
     @GetMapping("/config")
@@ -97,7 +100,7 @@ public class OAuthConfigController
         {
             return new OAuthConfig(false, null, null, null, null, null, null, null, null,
                     List.of(), swingLegacyLogin, swingLegacyShowSsoButton,
-                    new Picker("never", "rapla"), List.of());
+                    new Picker("never", "rapla"), List.of(), serverLanguage());
         }
         // App-facing base: respects X-Forwarded-* so dev proxy on :4200 produces
         // :4200 URLs. Used for the rapla REST API (/api/auth/session/refresh, /session/logout).
@@ -147,7 +150,23 @@ public class OAuthConfigController
                 swingLegacyLogin,
                 swingLegacyShowSsoButton,
                 new Picker(pickerMode, pickerPrimary),
-                providers);
+                providers,
+                serverLanguage());
+    }
+
+    /** Language of the server's system locale (what the browser login page renders in), or null. */
+    private String serverLanguage()
+    {
+        try
+        {
+            org.rapla.entities.configuration.Preferences sys = operator.getPreferences(null, false);
+            String localeId = sys == null ? null : sys.getEntryAsString(org.rapla.framework.internal.AbstractRaplaLocale.LOCALE, null);
+            return localeId == null || localeId.isBlank() ? null : org.rapla.components.util.LocaleTools.getLocale(localeId).getLanguage();
+        }
+        catch (Exception e)
+        {
+            return null;
+        }
     }
 
     private List<ProviderEntry> buildProviders(String localClientId, String localIssuer,
@@ -254,13 +273,14 @@ public class OAuthConfigController
         public final boolean swingLegacyShowSsoButton;
         public final Picker picker;
         public final List<ProviderEntry> providers;
+        public final String language;
 
         public OAuthConfig(boolean enabled, String clientId, String issuer, String authorizeUrl,
                            String tokenUrl, String logoutUrl, String jwksUrl,
                            String userinfoUrl, String endSessionUrl, List<String> scopes,
                            boolean swingLegacyLogin,
                            boolean swingLegacyShowSsoButton, Picker picker,
-                           List<ProviderEntry> providers)
+                           List<ProviderEntry> providers, String language)
         {
             this.enabled = enabled;
             this.clientId = clientId;
@@ -276,6 +296,7 @@ public class OAuthConfigController
             this.swingLegacyShowSsoButton = swingLegacyShowSsoButton;
             this.picker = picker;
             this.providers = providers;
+            this.language = language;
         }
 
         public boolean isEnabled() { return enabled; }
@@ -290,6 +311,7 @@ public class OAuthConfigController
         public List<String> getScopes() { return scopes; }
         public boolean isSwingLegacyLogin() { return swingLegacyLogin; }
         public boolean isSwingLegacyShowSsoButton() { return swingLegacyShowSsoButton; }
+        public String getLanguage() { return language; }
         public Picker getPicker() { return picker; }
         public List<ProviderEntry> getProviders() { return providers; }
     }

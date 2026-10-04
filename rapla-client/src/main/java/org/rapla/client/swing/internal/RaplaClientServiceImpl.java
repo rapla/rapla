@@ -115,6 +115,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     /** The login dialog's language chooser for the current login attempt, so a
      *  successful login can persist the chosen language (PRD 029 Phase 4). */
     private LanguageChooser activeLanguageChooser;
+    private volatile LoginDialog activeLoginDialog;
 
     @Autowired
     public RaplaClientServiceImpl(StartupEnvironment env, DialogUiFactoryInterface dialogUiFactory, ClientFacade facade, RaplaResources i18n, RaplaSystemInfo systemInfo,
@@ -305,6 +306,28 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                 if ( language != null)
                 {
                     bundleManager.setLanguage(language);
+                }
+            }
+
+            // PRD 126: ask after load, so the question uses the language of the user's preferences;
+            // only with an interactive login dialog open (silent reauth and impersonation never ask).
+            LoginDialog loginDialog = activeLoginDialog;
+            activeLoginDialog = null;
+            if (loginDialog != null)
+            {
+                String refreshToken = connectionInfo.getRefreshToken();
+                Runnable ask = () -> {
+                    loginDialog.setStatus(i18n.getString("load"));
+                    askRememberLogin(loginDialog, refreshToken);
+                };
+                try
+                {
+                    if (SwingUtilities.isEventDispatchThread()) ask.run();
+                    else SwingUtilities.invokeAndWait(ask);
+                }
+                catch (Throwable t)
+                {
+                    LOGGER.warn("remember-login dialog failed: {}", t.toString());
                 }
             }
 
@@ -556,13 +579,13 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         LOGGER.info("startup: probing /api/auth/oauth/config to decide silent-reauth vs login dialog…");
         commandScheduler.supply(this::fetchOauthConfig)
                 .thenAccept(cfg -> {
-                    boolean silentReauthAllowed = cfg != null && cfg.isEnabled() && !cfg.isSwingLegacyLogin();
+                    boolean silentReauthAllowed = autoSso(cfg, readLoginPref(TokenStore.KEY_LOGIN_METHOD), logoutSignal.isForceOauthLoginNext());
                     if (!silentReauthAllowed)
                     {
                         LOGGER.info("startup: silent reauth disabled ({}) — showing login dialog",
                                 (cfg == null ? "no discovery"
                                         : !cfg.isEnabled() ? "OAuth disabled server-side"
-                                        : "swing-legacy-login=true"));
+                                        : "swing-legacy-login=true and last login was not SSO"));
                         SwingSafe.invokeLater(this::startLoginInThread);
                         return;
                     }
@@ -751,9 +774,10 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                 try { localeSelector.setLanguage(savedLanguage); }
                 catch (Exception ex) { LOGGER.debug("could not restore saved language '{}': {}", savedLanguage, ex); }
             }
-            final LanguageChooser languageChooser = new LanguageChooser(i18n, raplaLocale);
+            final LanguageChooser languageChooser = new LanguageChooser(i18n, raplaLocale, i18n.getString("login.language.user_setting"));
             activeLanguageChooser = languageChooser;
             final LoginDialog dlg = LoginDialog.create(env, i18n, localeSelector, raplaLocale, languageChooser.getComponent());
+            activeLoginDialog = dlg;
             // PRD 072 Phase 5: the per-provider menu is gone. In the legacy
             // password dialog the user may optionally also be offered a single
             // "SSO" method (the rapla SSO entry — index 1 in the method combo).
@@ -916,11 +940,22 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             // dialog (gated by swing-legacy-show-sso-button), pointing at the same
             // rapla SSO entry.
             commandScheduler.supply(this::fetchOauthConfig).thenAccept(cfg -> SwingSafe.invokeLater(() -> {
+                // PRD 126: with "default" chosen, render the dialog in the server's language
+                // (the same the browser login page uses) instead of the JVM locale.
+                if (savedLanguage.isEmpty() && cfg != null && cfg.getLanguage() != null)
+                {
+                    try { localeSelector.setLanguage(cfg.getLanguage()); }
+                    catch (Exception ex) { LOGGER.debug("could not apply server language '{}': {}", cfg.getLanguage(), ex); }
+                }
                 boolean oauthEnabled = cfg != null && cfg.isEnabled();
                 boolean legacyLogin = cfg != null && cfg.isSwingLegacyLogin();
-                if (oauthEnabled && !legacyLogin)
+                if (autoSso(cfg, readLoginPref(TokenStore.KEY_LOGIN_METHOD), logoutSignal.isForceOauthLoginNext()))
                 {
-                    LOGGER.info("startup: discovery confirms OAuth enabled — auto-launching rapla SSO flow (Swing dialog stays in waiting mode)");
+                    // PRD 126: the SSO auto-start keeps the password form behind
+                    // Abort, with SSO selectable again — configure the methods first.
+                    configureLegacyDialogMethods(dlg, cfg, ssoConfig);
+                    LOGGER.info("startup: auto-launching rapla SSO flow (Swing dialog stays in waiting mode){}",
+                            legacyLogin ? " — legacy dialog, last login was SSO" : "");
                     dlg.setBrowserLoginInProgress(i18n.getString("login.oauth.waiting"));
                     dlg.setVisible(true);
                     runOauthLogin(dlg, loginMutex, cfg);
@@ -961,6 +996,61 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         finally
         {
             loginMutex.release();
+        }
+    }
+
+    /**
+     * PRD 126: whether a start may skip the password dialog — silent reauth from
+     * the cached refresh token, then the browser SSO flow. Always in the default
+     * (non-legacy) mode; in the legacy dialog only when SSO is offered, the
+     * last successful login used it, and this start does not follow an
+     * explicit logout (then the password dialog is shown, OQ3).
+     */
+    static boolean autoSso(OAuthConfig cfg, String savedMethod, boolean afterLogout)
+    {
+        if (cfg == null || !cfg.isEnabled()) return false;
+        if (!cfg.isSwingLegacyLogin()) return true;
+        if (afterLogout) return false;
+        return cfg.isSwingLegacyShowSsoButton() && "sso".equals(savedMethod);
+    }
+
+    /**
+     * PRD 126 Phase 2: after an interactive login, ask once per machine whether
+     * the refresh token may be stored (until its expiry or the next logout).
+     * Yes and stored → continue silently; yes but the backend cannot store →
+     * one information box; "don't ask again" persists the answer. Never throws.
+     */
+    private void askRememberLogin(java.awt.Component parent, String refreshToken)
+    {
+        try
+        {
+            if (!(tokenStore instanceof org.rapla.storage.dbrm.ConsentingTokenStore store) || !store.needsDecision()) return;
+            String question = org.rapla.storage.dbrm.ConsentingTokenStore.expiryOf(refreshToken)
+                    .map(exp -> i18n.format("login.remember.question", java.time.format.DateTimeFormatter
+                            .ofLocalizedDate(java.time.format.FormatStyle.MEDIUM).withLocale(raplaLocale.getLocale())
+                            .format(exp.atZone(java.time.ZoneId.systemDefault()).toLocalDate())))
+                    .orElse(i18n.getString("login.remember.question.nodate"));
+            javax.swing.JCheckBox dontAsk = new javax.swing.JCheckBox(i18n.getString("login.remember.dontask"));
+            javax.swing.JPanel panel = new javax.swing.JPanel(new java.awt.BorderLayout(0, 8));
+            panel.add(new javax.swing.JLabel("<html>" + question + "<br>" + i18n.getString("login.remember.logout_note") + "</html>"), java.awt.BorderLayout.CENTER);
+            panel.add(dontAsk, java.awt.BorderLayout.SOUTH);
+            Object[] options = { i18n.getString("yes"), i18n.getString("no") };
+            String title = i18n.getString("login.remember.title");
+            int choice = javax.swing.JOptionPane.showOptionDialog(parent, panel, title, javax.swing.JOptionPane.YES_NO_OPTION,
+                    javax.swing.JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+            boolean yes = choice == 0;
+            if (dontAsk.isSelected()) store.rememberDecision(yes);
+            boolean stored = store.setConsent(yes);
+            LOGGER.info("remember login: {} (backend {}, stored {})", yes ? "yes" : "no", store.backend(), stored);
+            if (yes && !stored)
+            {
+                javax.swing.JOptionPane.showMessageDialog(parent, i18n.getString("login.remember.failed"), title,
+                        javax.swing.JOptionPane.INFORMATION_MESSAGE);
+            }
+        }
+        catch (Throwable t)
+        {
+            LOGGER.warn("remember-login dialog failed: {}", t.toString());
         }
     }
 
@@ -1103,8 +1193,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             return session.future().get();
         }).thenAccept(tokens -> SwingSafe.invokeLater(() -> finishOauthLogin(dlg, loginMutex, tokens, provider)))
                 .exceptionally(ex -> SwingSafe.invokeLater(() -> {
-                    Throwable root = unwrap(ex);
-                    if (root instanceof java.util.concurrent.CancellationException)
+                    if (isLoginCancelled(ex))
                     {
                         LOGGER.info("OAuth login cancelled — restoring Swing login dialog to full state");
                         dlg.idle();
@@ -1118,6 +1207,14 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                     if (!dlg.isVisible()) dlg.setVisible(true);
                     dialogUiFactory.showException(ex, new SwingPopupContext(dlg, null));
                 }));
+    }
+
+    /** Abort (CancellationException) and Exit while the browser wait runs (the scheduler
+     *  interrupts the worker) are cancellations, not errors to show. */
+    static boolean isLoginCancelled(Throwable t)
+    {
+        Throwable root = unwrap(t);
+        return root instanceof java.util.concurrent.CancellationException || root instanceof InterruptedException;
     }
 
     private static Throwable unwrap(Throwable t)
@@ -1143,7 +1240,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         // rapla-remember-me cookie is not cleared → next OAuth flow silently
         // re-authenticates via the surviving cookie.
         connectionInfo.setIdToken(tokens.getIdToken());
-        login(info).thenAccept(success -> {
+        login(info).thenAccept(success -> SwingSafe.invokeLater(() -> {
             if (!success)
             {
                 dlg.idle();
@@ -1163,10 +1260,10 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                 dlg.idle();
                 fireClientAborted();
             });
-        }).exceptionally(ex -> {
+        })).exceptionally(ex -> SwingSafe.invokeLater(() -> {
             dialogUiFactory.showException(ex, new SwingPopupContext(dlg, null));
             dlg.idle();
-        });
+        }));
     }
 
     private OAuthConfig fetchOauthConfig() throws Exception
@@ -1208,6 +1305,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         // the chooser now lives server-side. The discovery providers[] array is
         // therefore not consumed by Swing anymore (the server still publishes it
         // for the SPA / explorers); Swing only needs the top-level rapla config.
+        String language = tree.hasNonNull("language") ? tree.get("language").asString() : null;
         return new OAuthConfig(
                 true,
                 tree.path("clientId").asString(),
@@ -1219,7 +1317,8 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                 swingLegacyShowSsoButton,
                 "rapla",
                 null,
-                List.of());
+                List.of(),
+                language);
     }
 
     /** centers the window around the specified center */
@@ -1350,6 +1449,8 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         // prompt=login (nextOauthForcesLogin below + the server /login page forcing
         // a re-prompt for Keycloak), not by a logout redirect here.
         tokenStore.tryClear();
+        // PRD 126 Phase 2: an explicit logout means "ask me again on this machine".
+        if (tokenStore instanceof org.rapla.storage.dbrm.ConsentingTokenStore consenting) consenting.forgetDecision();
         // PRD 051 — discard any active impersonation. Logout is a clean
         // state-change boundary; surviving impersonation into the next
         // login session would surprise the next admin.

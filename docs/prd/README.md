@@ -48,6 +48,12 @@ PRD 102 defines how rapla contains its browser session credential (access_token/
 *Keywords:* CSP, Sandbox, Cookie, Zugriffstoken, access_token, Sicherheit, Same-Origin, Capability-Token, Berechtigung, GraphiQL, Refresh-Token, PRD 072, PRD 076, PRD 097, XSS, Formular speichern, write-capability, opaque origin
 
 
+### 126-swing-sso-auto-login.md
+
+Implemented 2026-10-03 (uncommitted, dhbw-test check open): in the legacy Swing login mode (`swing-legacy-login=true`, DHBW) silent reauth from the stored refresh token and an automatic start of the browser SSO flow when the last login was SSO; Abort returns to the password form. Findings: the refresh token is already persisted, only the `startLogin()` / `startLoginInThread()` legacy branches skip it; no server or config change. D1–D5 locked (no auto-start after an explicit logout); open: token-store check on DHBW Windows clients. Estimate half a day.
+
+*Keywords:* Swing, SSO, Keycloak, auto login, silent reauth, refresh token, TokenStore, KEY_LOGIN_METHOD, swing-legacy-login, swing-legacy-show-sso-button, RaplaClientServiceImpl, startLogin, runOauthLogin, DHBW, PRD 029, PRD 072, PRD 126
+
 ### GraphQL API
 
 ### 055-graphql-events-read-api.md

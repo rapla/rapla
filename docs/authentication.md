@@ -394,16 +394,29 @@ error".
    + PKCE flow against rapla's `/oauth2/token` ([PRD 029](prd/029-swing-oauth-login.md) Phase 2). Since
    [PRD 072](prd/done/072-server-side-login-dialog.md) this is the **single "SSO" entry** — rapla brokers the upstream
    IdP via the `/login` chooser (see § "Swing SSO flow" below); there is no
-   per-provider Swing menu. The credential fields are never shown.
+   per-provider Swing menu. The credential fields show only after Abort, together
+   with the method combo (password / SSO), so SSO can be retried without a restart
+   ([PRD 126](prd/126-swing-sso-auto-login.md) D11).
 3. **Admin opted into the legacy dialog — OAuth enabled,
    `swing-legacy-login=true`**: the dialog is shown in full state with
    username/password fields ([PRD 029](prd/029-swing-oauth-login.md) Phase 3). When
    `swing-legacy-show-sso-button=true`, the "Sign in with browser…"
    button is also rendered so users can try SSO; otherwise it's hidden.
+   When the last successful login used SSO (`TokenStore.KEY_LOGIN_METHOD`)
+   and the SSO method is offered, the start behaves like case 2: silent
+   reauth from the cached refresh token, then the browser flow auto-starts;
+   Abort returns to the password form
+   ([PRD 126](prd/126-swing-sso-auto-login.md), `RaplaClientServiceImpl.autoSso`).
 4. **Fallback — OAuth disabled server-side, or the discovery probe
    fails**: the dialog is shown in full state with username/password
    fields and no SSO button (a button would have no auth server to
    reach).
+
+Swing stores the refresh token only with the user's consent: after an interactive
+login the client asks once per machine ("Anmeldung auf diesem Rechner speichern bis
+<Datum> oder bis zur Abmeldung?", Ja/Nein, "Nicht mehr fragen"); `ConsentingTokenStore`
+holds the token in memory until then, writes and verifies on Ja, clears on Nein, and an
+explicit logout asks again next time ([PRD 126](prd/126-swing-sso-auto-login.md) Phase 2).
 
 Token refresh for every client kind is OAuth-standard:
 `POST /oauth2/token grant_type=refresh_token`
@@ -434,6 +447,15 @@ Keycloak-BFF branch in `RefreshOn401Interceptor.doRefresh` +
 defaults to SSO and remembers the last-used method via
 `TokenStore.KEY_LOGIN_METHOD`; the rapla password form stays available,
 gated by `rapla.oauth.swing-legacy-login`.
+
+When the IdP login succeeds but no rapla account can be bound (provisioning
+refused, e.g. dhbwrapla's Standort check), `OidcLoginSuccessHandler.abortLogin`
+ends the login instead of resuming it: the session is invalidated, a saved Swing
+loopback authorize gets `error=access_denied&error_description=<reason>&state`
+(RFC 6749 §4.1.2.1, loopback hosts only), a browser login lands on `/login?error`
+with the reason shown once from the session. Before 2026-10-03 the authorize was
+resumed anyway and Swing's token exchange failed with "Cannot resolve user for
+refresh-token issuance" ([PRD 126](prd/126-swing-sso-auto-login.md)).
 
 Two bugs were fixed (verified [PRD 072](prd/done/072-server-side-login-dialog.md)) to make rapla-brokered SSO work:
 
