@@ -33,6 +33,7 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
     private String email = "";
     private String name = "";
     private boolean admin = false;
+    private String authenticationSource = null;
     
     private Date lastChanged;
     private Date createDate;
@@ -127,6 +128,15 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
     public void setAdmin(boolean bAdmin)  {
         checkWritable();
         this.admin=bAdmin;
+    }
+
+    public String getAuthenticationSource() {
+        return authenticationSource;
+    }
+
+    public void setAuthenticationSource(String authenticationSource)  {
+        checkWritable();
+        this.authenticationSource = authenticationSource;
     }
 
     public String getName(Locale locale) 
@@ -226,6 +236,7 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
         clone.name = name;
         clone.email = email;
         clone.admin = admin;
+        clone.authenticationSource = authenticationSource;
         clone.lastChanged = lastChanged;
         clone.createDate = createDate;
         return clone;

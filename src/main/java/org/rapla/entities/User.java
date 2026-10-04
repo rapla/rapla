@@ -40,6 +40,9 @@ public interface User extends Entity<User>, Named, Comparable, Timestamp
     void setName(String name);
     void setEmail(String email);
     void setAdmin(boolean isAdmin);
+    /** external IdP marker written by Rapla 3 (PRD 050); null = local password */
+    String getAuthenticationSource();
+    void setAuthenticationSource(String authenticationSource);
 
     void addGroup(Category group);
     boolean removeGroup(Category group);

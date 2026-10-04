@@ -2143,6 +2143,15 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         for (Entity entity : storeObjects)
         {
             store.put(entity);
+            // a client with an older jar does not know the field and sends null; only Rapla 3 clears a source
+            if (entity instanceof UserImpl && ((UserImpl) entity).getAuthenticationSource() == null)
+            {
+                final User persistent = cache.tryResolve(entity.getId(), User.class);
+                if (persistent != null && persistent.getAuthenticationSource() != null)
+                {
+                    ((UserImpl) entity).setAuthenticationSource(persistent.getAuthenticationSource());
+                }
+            }
         }
         //    Map<String,Category> categoriesToStore = new LinkedHashMap<String,Category>();
         //    Collections.sort(categoriesToStore, new Comparator<Category>()

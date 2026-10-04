@@ -62,6 +62,7 @@ public class UserReader extends RaplaXMLReader
             user.setName( getString( atts, "name", "" ) );
             user.setEmail( getString( atts, "email", "" ) );
             user.setAdmin( getString( atts, "isAdmin", "false" ).equals( "true" ) );
+            user.setAuthenticationSource( getString( atts, "authentication-source", null ) );
             String password = getString( atts, "password", null );
             preferenceHandler.setUser( user );
             if ( password != null)

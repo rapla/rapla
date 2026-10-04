@@ -20,6 +20,7 @@ import org.junit.runners.JUnit4;
 import org.rapla.entities.storage.ImportExportDirections;
 import org.rapla.entities.storage.ExternalSyncEntity;
 import org.rapla.entities.storage.internal.ExternalSyncEntityImpl;
+import org.rapla.entities.User;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.logger.Logger;
 import org.rapla.storage.CachableStorageOperator;
@@ -165,9 +166,17 @@ public class FileOperatorTest extends AbstractOperatorTest {
             Assert.assertEquals(0, importExportEntities.size());
         }
     }
+
+    /** P8a: the XML export keeps the authentication source Rapla 3 writes (attribute authentication-source). */
+    @Test
+    public void authenticationSourceSurvivesWriteAndRead() throws Exception
+    {
+        final User edit = facade.edit(facade.getUser("homer"));
+        edit.setAuthenticationSource("test-source");
+        facade.store(edit);
+        final CachableStorageOperator operator = getOperator();
+        operator.disconnect();
+        operator.connect();
+        Assert.assertEquals("test-source", facade.getUser("homer").getAuthenticationSource());
+    }
 }
-
-
-
-
-

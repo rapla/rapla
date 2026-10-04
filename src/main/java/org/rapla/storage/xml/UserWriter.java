@@ -49,6 +49,10 @@ public class UserWriter extends RaplaXMLWriter {
 //            att("person", person.getId());
 //        }
         att("isAdmin",String.valueOf(user.isAdmin()));
+        if (user.getAuthenticationSource() != null)
+        {
+            att("authentication-source", user.getAuthenticationSource());
+        }
         closeTag();
         
         for (Category group:user.getGroupList()) {

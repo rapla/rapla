@@ -2454,7 +2454,8 @@ class UserStorage extends RaplaTypeStorage<User>
     {
         super(context, User.class, "RAPLA_USER",
                 new String[] { "ID VARCHAR(255) NOT NULL PRIMARY KEY", "USERNAME VARCHAR(255) NOT NULL", "PASSWORD VARCHAR(255)", "NAME VARCHAR(255) NOT NULL",
-                        "EMAIL VARCHAR(255) NOT NULL", "ISADMIN INTEGER NOT NULL", "CREATION_TIME TIMESTAMP", "LAST_CHANGED TIMESTAMP KEY" });
+                        "EMAIL VARCHAR(255) NOT NULL", "ISADMIN INTEGER NOT NULL", "CREATION_TIME TIMESTAMP", "LAST_CHANGED TIMESTAMP KEY",
+                        "AUTHENTICATION_SOURCE VARCHAR(64)" });
         groupStorage = new UserGroupStorage(context);
         addSubStorage(groupStorage);
     }
@@ -2464,6 +2465,7 @@ class UserStorage extends RaplaTypeStorage<User>
     {
         super.createOrUpdateIfNecessary(schema);
         checkAndDrop(schema, "DELETED");
+        checkAndAdd(schema, "AUTHENTICATION_SOURCE");
     }
 
     @Override
@@ -2485,6 +2487,7 @@ class UserStorage extends RaplaTypeStorage<User>
         stmt.setInt(6, user.isAdmin() ? 1 : 0);
         setTimestamp(stmt, 7, user.getCreateDate());
         setTimestamp(stmt, 8, user.getLastChanged());
+        setString(stmt, 9, user.getAuthenticationSource());
         stmt.addBatch();
         return 1;
     }
@@ -2505,6 +2508,7 @@ class UserStorage extends RaplaTypeStorage<User>
         boolean isAdmin = rset.getInt(6) == 1;
         Date createDate = getTimestampOrNow(rset, 7);
         Date lastChanged = getTimestampOrNow(rset, 8);
+        String authenticationSource = getString(rset, 9, null);
 
         UserImpl user = new UserImpl(createDate, lastChanged);
         //        if ( personId != null)
@@ -2516,6 +2520,7 @@ class UserStorage extends RaplaTypeStorage<User>
         user.setName(name);
         user.setEmail(email);
         user.setAdmin(isAdmin);
+        user.setAuthenticationSource(authenticationSource);
         if (password != null)
         {
             putPassword(userId, password);

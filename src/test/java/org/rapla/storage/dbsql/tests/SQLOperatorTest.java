@@ -1151,4 +1151,172 @@ public class SQLOperatorTest extends AbstractOperatorTest
         operator.connect();
         Assert.assertEquals("newer", facade.getSystemPreferences().getEntryAsString(role, null));
     }
+
+    /** P8a: Rapla 3 stores AUTHENTICATION_SOURCE in RAPLA_USER on the shared database; Rapla 2 loads it,
+     *  keeps it when the user is saved and writes it into the history row Rapla 3 refreshes from. */
+    @Test
+    public void savingAUserKeepsTheAuthenticationSource() throws Exception
+    {
+        final DBOperator operator = (DBOperator) facade.getOperator();
+        final String userId = facade.getUser("homer").getId();
+        final String email = "p8a-" + System.currentTimeMillis() + "@example.com";
+        setAuthenticationSource(operator, userId, "test-source");
+        try
+        {
+            operator.disconnect();
+            operator.connect();
+            Assert.assertEquals("test-source", facade.getUser("homer").getAuthenticationSource());
+            final User edit = facade.edit(facade.getUser("homer"));
+            edit.setEmail(email);
+            facade.store(edit);
+            try (final Connection c = operator.createConnection())
+            {
+                try (final PreparedStatement stmt = c.prepareStatement("SELECT AUTHENTICATION_SOURCE FROM RAPLA_USER WHERE ID = ?"))
+                {
+                    stmt.setString(1, userId);
+                    final ResultSet rset = stmt.executeQuery();
+                    Assert.assertTrue(rset.next());
+                    Assert.assertEquals("test-source", rset.getString(1));
+                }
+                String history = null;
+                try (final PreparedStatement stmt = c.prepareStatement("SELECT XML_VALUE FROM CHANGES WHERE ID = ?"))
+                {
+                    stmt.setString(1, userId);
+                    final ResultSet rset = stmt.executeQuery();
+                    while (rset.next())
+                    {
+                        final String json = rset.getString(1);
+                        if (json.contains(email))
+                        {
+                            history = json;
+                        }
+                    }
+                }
+                Assert.assertNotNull(history);
+                Assert.assertTrue(history, history.contains("\"authenticationSource\":\"test-source\""));
+            }
+        }
+        finally
+        {
+            setAuthenticationSource(operator, userId, null);
+            operator.disconnect();
+            operator.connect();
+        }
+    }
+
+    /** P8a/S1: a Swing client with the old jar does not know the field and sends null; the server keeps the stored source. */
+    @Test
+    public void storingAUserWithoutSourceFromAnOldClientKeepsTheSource() throws Exception
+    {
+        final DBOperator operator = (DBOperator) facade.getOperator();
+        final String userId = facade.getUser("homer").getId();
+        final String email = "p8a-old-client-" + System.currentTimeMillis() + "@example.com";
+        setAuthenticationSource(operator, userId, "test-source");
+        try
+        {
+            operator.disconnect();
+            operator.connect();
+            final User edit = operator.editObject(facade.getUser("homer"), null);
+            edit.setEmail(email);
+            edit.setAuthenticationSource(null);
+            final UpdateEvent evt = new UpdateEvent();
+            evt.addStore(edit);
+            operator.dispatch(evt);
+            Assert.assertEquals("test-source", facade.getUser("homer").getAuthenticationSource());
+            try (final Connection c = operator.createConnection())
+            {
+                try (final PreparedStatement stmt = c.prepareStatement("SELECT AUTHENTICATION_SOURCE FROM RAPLA_USER WHERE ID = ?"))
+                {
+                    stmt.setString(1, userId);
+                    final ResultSet rset = stmt.executeQuery();
+                    Assert.assertTrue(rset.next());
+                    Assert.assertEquals("test-source", rset.getString(1));
+                }
+                String history = null;
+                try (final PreparedStatement stmt = c.prepareStatement("SELECT XML_VALUE FROM CHANGES WHERE ID = ?"))
+                {
+                    stmt.setString(1, userId);
+                    final ResultSet rset = stmt.executeQuery();
+                    while (rset.next())
+                    {
+                        final String json = rset.getString(1);
+                        if (json.contains(email))
+                        {
+                            history = json;
+                        }
+                    }
+                }
+                Assert.assertNotNull(history);
+                Assert.assertTrue(history, history.contains("\"authenticationSource\":\"test-source\""));
+            }
+        }
+        finally
+        {
+            setAuthenticationSource(operator, userId, null);
+            operator.disconnect();
+            operator.connect();
+        }
+    }
+
+    /** P8a/S1: a new user without source stays local. */
+    @Test
+    public void aNewUserWithoutSourceStaysLocal() throws Exception
+    {
+        final User user = facade.newUser();
+        user.setUsername("p8a-new-" + System.currentTimeMillis());
+        facade.store(user);
+        Assert.assertNull(facade.getUser(user.getUsername()).getAuthenticationSource());
+        try (final Connection c = ((DBOperator) facade.getOperator()).createConnection();
+             final PreparedStatement stmt = c.prepareStatement("SELECT AUTHENTICATION_SOURCE FROM RAPLA_USER WHERE ID = ?"))
+        {
+            stmt.setString(1, user.getId());
+            final ResultSet rset = stmt.executeQuery();
+            Assert.assertTrue(rset.next());
+            Assert.assertNull(rset.getString(1));
+        }
+    }
+
+    /** P8a: a database Rapla 3 never touched gets the AUTHENTICATION_SOURCE column on connect. */
+    @Test
+    public void connectAddsTheAuthenticationSourceColumn() throws Exception
+    {
+        final DBOperator operator = (DBOperator) facade.getOperator();
+        try (final Connection c = operator.createConnection())
+        {
+            if (hasAuthenticationSourceColumn(c))
+            {
+                try (final Statement stmt = c.createStatement())
+                {
+                    stmt.execute("ALTER TABLE RAPLA_USER DROP COLUMN AUTHENTICATION_SOURCE");
+                }
+                c.commit();
+            }
+        }
+        operator.disconnect();
+        operator.connect();
+        try (final Connection c = operator.createConnection())
+        {
+            Assert.assertTrue(hasAuthenticationSourceColumn(c));
+        }
+    }
+
+    private static void setAuthenticationSource(DBOperator operator, String userId, String source) throws Exception
+    {
+        try (final Connection c = operator.createConnection();
+             final PreparedStatement stmt = c.prepareStatement("UPDATE RAPLA_USER SET AUTHENTICATION_SOURCE = ? WHERE ID = ?"))
+        {
+            stmt.setString(1, source);
+            stmt.setString(2, userId);
+            stmt.executeUpdate();
+            c.commit();
+        }
+    }
+
+    private static boolean hasAuthenticationSourceColumn(Connection c) throws SQLException
+    {
+        try (final ResultSet rset = c.getMetaData().getColumns(null, null, "RAPLA_USER", "AUTHENTICATION_SOURCE"))
+        {
+            return rset.next();
+        }
+    }
 }
