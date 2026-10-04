@@ -134,8 +134,8 @@ When the JNLP launcher is on Windows and the server is in WSL:
 ## Cleanup
 
 ```bash
-# stop server
-pkill -f RaplaSpringBootApplication
+# stop server: only the PID on YOUR port, never by pattern (server-lifecycle skill § Stop)
+kill "$(ss -lntpH "sport = :8051" | grep -oP 'pid=\K[0-9]+')"
 # keystore + cert may stay for next test
 ```
 

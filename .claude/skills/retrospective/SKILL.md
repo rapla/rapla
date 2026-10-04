@@ -50,7 +50,9 @@ Transcripts live at `~/.claude/projects/<project-slug>/<session-id>.jsonl` (mult
    `## F<N> [category] — <one-line defect>` + **Evidence** (session id, date, verbatim
    quote — **PII-scrubbed per AGENTS.md §17**, real names → `<name>`) + **Proposal**
    (concrete edit) + **Route** (see table) + seen-in count.
-6. Move mined session ids from `queue.jsonl` to `analyzed.txt`. Do NOT apply anything —
+6. Move mined session ids from `queue.jsonl` to `analyzed.txt` as `<sid> <transcript-mtime-epoch>`
+   (replace an existing line) — scan-session.sh re-queues a resumed session with
+   `resumedAfter`; mine only records newer than that. Do NOT apply anything —
    in analyze mode, no edits land outside `~/.claude/retrospective/`.
 
 ## Mode: review (`/retrospective review`, findings-pending.md non-empty)

@@ -61,7 +61,7 @@ From [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) ("the
 7. Only then: the minimum that works
 ```
 
-Step 2 is the one that gets skipped, and it costs one `grep`. **If the concept already exists twice, extract it once — never add the third copy** — extracted *into rapla*, never imported from dhbwrapla (the dependency runs one way). Scar 2026-08-05: a third hand-written block-dispatch loop, extracted as `org.rapla.storage.impl.server.BlockedDispatch` only after the user asked. The ladder fires at *design time*, not review time: a design proposal names the rung it stops at, and material handed over "as context" is context, not requirements — scope stays what was explicitly asked.
+Step 2 is the one that gets skipped, and it costs one `grep`. **If the concept already exists twice, extract it once — never add the third copy** — extracted *into rapla*, never imported from dhbwrapla (the dependency runs one way). Scar 2026-08-05: a third hand-written block-dispatch loop, extracted as `org.rapla.storage.impl.server.BlockedDispatch` only after the user asked. The ladder fires at *design time*, not review time: a design proposal names the rung it stops at, a new schema field or UI control names its concrete consumer ("for the label" is not one), and material handed over "as context" is context, not requirements — scope stays what was explicitly asked.
 
 ### 0a. Working principles — Karpathy's four rules
 
@@ -176,7 +176,7 @@ Before writing a script that mechanically rewrites Java sources across the react
 
 The dev server runs via `mvn spring-boot:run` from `target/classes` (start command: Project Overview; hard rules: §5). The canonical checkout binds **8051**; worktree N uses `8051 + 10·N` and `logs/rapla-N.{pid,log}`. For anything beyond a plain start — background recipe, startup-wait loop, restart, JDWP, logs, external plugins like dhbwrapla (run through the *plugin's* aggregator pom; read that repo's `AGENTS.md` first) — load the **`server-lifecycle`** skill. Fat JAR + signed JNLP: **`test-deployment`** skill.
 
-- Stop: `pkill -f 'RaplaSpringBoot[A]pplication'` (10 s graceful window — never `kill -9` first). The `[A]` avoids pkill matching the wrapping shell's own command line; **exit 144 from any compound pkill command = pkill killed its own shell** — run every pkill in its own Bash call, never chained with wait/status logic.
+- Stop: only the numeric PID of YOUR port (`logs/rapla*.pid` or `ss -lntp "sport = :<port>"`), never by pattern — `pkill -f`, `pgrep … | kill`, `/proc/*/cmdline` loops hit other sessions' servers and your own shell; **exit 144 = pattern too wide, check what else died**. 10 s graceful window, never `kill -9` first. Recipe: `server-lifecycle` skill.
 - One server per checkout (port 8051 binds once); sessions share it and announce restarts (§7a). Never start the server during a `mvn package` build.
 - **Is the running server fresh? Check yourself — never ask the user "did you restart?" and never assume they didn't.** Run the freshness probe from the `server-lifecycle` skill (server build timestamp vs newer `target/classes`) FIRST whenever a user reports a server-side fix "doesn't work" or you're about to blame a stale server; mention restarting only with the probe output, not a hunch.
 - Dev DB ships one admin (`admin` / empty password). JWT login, bootstrap fetch, queryAppointments, URL-namespace map: **`api-testing`** skill.

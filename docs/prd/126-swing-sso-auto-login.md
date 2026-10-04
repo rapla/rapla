@@ -1,6 +1,6 @@
 # PRD 126 — Swing: silent reauth + SSO auto-start in the legacy login dialog
 
-**Status:** implemented, uncommitted — 2026-10-03 (D1–D5 as below; local `-Psign-jks` build for a localhost login test; OQ1–OQ3 ruled, dhbw-test check open)
+**Status:** implemented, committed e47923557 (2026-10-04), on DHBW app1 since 2026-10-04 18:38 with `swing-legacy-login=false` (D11) and the consent dialog (Phase 2); open: plan step 5 — Swing SSO login on app1 not yet confirmed by a user
 **Related:** [PRD 029](029-swing-oauth-login.md) (Swing OAuth, Phase 3 legacy dialog), [PRD 072](done/072-server-side-login-dialog.md) (rapla brokers Keycloak; `prompt=login` rules), [PRD 031](done/031-token-refresh-and-api-keys.md) (refresh-token model), [docs/authentication.md § Swing client](../authentication.md#swing-client--default-oauth-fallback-password-dialog)
 
 ## Abstract
@@ -76,7 +76,7 @@ still returns to the password form.
 3. ✅ `startLoginInThread()`: auto-fire when `autoSso`, after
    `configureLegacyDialogMethods` in legacy mode (Abort → password form).
 4. ✅ docs/authentication.md § Swing client item 3.
-5. ⏳ Manual check on dhbw-test with a Windows OpenWebStart client: log line
+5. ⏳ Manual check on app1 (prod, Rapla 3 since 2026-10-02) with a Windows OpenWebStart client: log line
    `token store: JNLP PersistenceService` or `file`, then start → no dialog; delete the
    store → browser opens by itself; Abort → password form.
 
