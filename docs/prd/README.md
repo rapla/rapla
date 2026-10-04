@@ -1,6 +1,6 @@
 # PRD index
 
-86 active PRDs in this directory, 34 done under `done/`, 6 under `wont-fix/`. AGENTS.md §2 and the `prd-management` skill cover the lifecycle (move to `done/` when complete; `git mv` back to reopen).
+90 active PRDs in this directory, 34 done under `done/`, 6 under `wont-fix/`. AGENTS.md §2 and the `prd-management` skill cover the lifecycle (move to `done/` when complete; `git mv` back to reopen).
 
 Each active PRD below carries a generated header (status, locked decisions, dependencies, governed code) plus a keyword line in German and English so that agents and search find it from either language. When a PRD's status or decisions change, update its header here in the same edit (wrap-up checklist).
 
@@ -50,9 +50,21 @@ PRD 102 defines how rapla contains its browser session credential (access_token/
 
 ### 126-swing-sso-auto-login.md
 
-Implemented 2026-10-03 (uncommitted, dhbw-test check open): in the legacy Swing login mode (`swing-legacy-login=true`, DHBW) silent reauth from the stored refresh token and an automatic start of the browser SSO flow when the last login was SSO; Abort returns to the password form. Findings: the refresh token is already persisted, only the `startLogin()` / `startLoginInThread()` legacy branches skip it; no server or config change. D1–D5 locked (no auto-start after an explicit logout); open: token-store check on DHBW Windows clients. Estimate half a day.
+Implemented and committed 2026-10-04 (e47923557), live on DHBW app1: silent reauth from the stored refresh token before every start, SSO auto-start (DHBW runs the default mode now, D11: browser at once, Abort → password/SSO combo; legacy mode auto-starts only when the last login was SSO, not after a logout, D1–D3), consent before storing the refresh token (Phase 2: `ConsentingTokenStore`, once per machine, asked after the session load, logout asks again), dialog language from the discovery field `language`, login abort when provisioning is refused (`OidcLoginSuccessHandler.abortLogin`, reason shown). Open: Swing SSO login on app1 confirmed by a user.
 
 *Keywords:* Swing, SSO, Keycloak, auto login, silent reauth, refresh token, TokenStore, KEY_LOGIN_METHOD, swing-legacy-login, swing-legacy-show-sso-button, RaplaClientServiceImpl, startLogin, runOauthLogin, DHBW, PRD 029, PRD 072, PRD 126
+
+### 127-picker-accordion-type-order.md
+
+Draft 2026-10-04: the SPA resource picker becomes one accordion (Favoriten, Zuletzt, Ressourcen, Personen, Benutzer; one section open) with Swing-style type folders, replacing the chips and "Typ ▾" (overturns PRD 123 D3/D9, PRD 119 D1); search stays flat, grouped by type, parent shown below each hit. Type order becomes configurable via an `order` annotation on the type (ordered types first, the rest in creation order as today), edited by drag in the admin type tree; in-type order comes from the server's SortedClassifiableComparator. Answers rapla/rapla#598.
+
+*Keywords:* Picker, Akkordeon, accordion, Typ-Reihenfolge, type order, order annotation, DynamicTypeAnnotations, DynamicTypeComperator, SortedClassifiableComparator, Favoriten, Zuletzt, Benutzer, resource-picker, #598, PRD 119, PRD 120, PRD 123
+
+### 128-picker-conflicts-requests-chip-model.md
+
+Draft 2026-10-04: conflicts and resource requests as accordion sections in the SPA picker (Swing's two extra panes), and the chip model behind them — chips contribute scope (what loads) and/or focus (what is drawn normally, the rest pale, like Swing's RaplaBuilder); conflict and request become own chip kinds; two selection contexts Planen (resources, users) and Prüfen (conflicts, requests). Needs user-scoped all-conflicts / all-requests queries (PRD 064 deferred allConflicts). Builds on PRD 127.
+
+*Keywords:* Konflikte, conflicts, Ressourcenanfragen, resource requests, Chip, scope, focus, Fokus, blass, Planen, Prüfen, allConflicts, ConflictImpl.getMap, getRequestMap, RaplaBuilder, filter-store, PRD 064, PRD 078, PRD 127
 
 ### GraphQL API
 
@@ -427,6 +439,12 @@ PRD 087 is a draft (2026-06-24) split from PRD 082's Workstream A, defining Grap
 PRD 088 is a draft (2026-06-24, condensed with D6/D7 added 2026-06-27) proposing a lightweight, git-versioned spec graph and CI-enforced linkability layer on top of rapla's existing PRD/architecture-doc corpus, plus an AI-maintained-by-conversational-diff approach for architecture/admin/developer docs. It explicitly rejects adopting any SDD framework (OpenSpec, Spec Kit, Kiro) as a tool (D1), targeting spec-as-review-gate plus executable conformance rather than code generation (D2). Locked decisions D1-D7 cover YAML front-matter, dangling-ref CI lint, capability-spec extraction starting with REST/GraphQL/permissions, and dogfooding via ADR 0004. Depends on/references PRD 049, 035, 022, 067, 082-087, and ADRs 0001/0002/0004. Plan has four phases (linkability, doc dogfood, spec graph materialization, capability-spec pilot), none yet executed beyond design.
 
 *Keywords:* Spec-Driven Development, PRD-Graph, spec graph, OpenSpec, ADR, CI Lint, dangling reference, capability spec, AI-maintained docs, conversational diff, docs/prd, architecture docs, PRD 049, PRD 035, MADR, Mermaid, REST-Endpoint-Katalog, Dokumentation, Wissensgraph
+
+### 129-cached-permission-groups.md
+
+Draft 2026-10-04, measured: recomputing the caller's groups incl. parents (UserImpl.getGroupsIncludingParents) was 91 % of the pure permission time for location admins with 30–45 groups on a production-sized store. The server operator now caches them per resident user (readmodel.UserGroupsCache): a user change drops only that user, a category change drops all, drafts are never served from the cache; query and write paths share it. Identical answers, 8–13× less permission time (resource list 440–580 → 34–53 ms). No resource × user memo, no reverse index, no micro-optimisation (0–8 %). Implementation uncommitted.
+
+*Keywords:* Berechtigung, Performance, Cache, Gruppen, PermissionController, getGroupsIncludingParents, UserGroupsCache, StorageOperator, LocalAbstractCachableOperator, updateReadModel, RaplaDefaultPermissionImpl, PermissionExtension, canModify, canAdmin, SecurityManager, async-profiler, PRD 090, PRD 082, PRD 128
 
 ### 090-additive-permission-resolution.md
 
