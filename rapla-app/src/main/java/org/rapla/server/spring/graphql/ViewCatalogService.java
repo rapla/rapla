@@ -5,6 +5,7 @@ import graphql.language.BooleanValue;
 import graphql.language.Definition;
 import graphql.language.Directive;
 import graphql.language.Document;
+import graphql.language.EnumValue;
 import graphql.language.OperationDefinition;
 import graphql.language.SourceLocation;
 import graphql.language.StringValue;
@@ -82,6 +83,63 @@ public class ViewCatalogService
                     + "    appointmentCount @hidden\n"
                     + "  }\n"
                     + "}"),
+            // PRD 128 D7 — the review views: appointmentBlocks FIRST for the calendar renderers (focus
+            // from the chips, D1), the review list second for the table (tableField). selection names the
+            // left pane's source; $filter / $conflicts / $requests are bound by type from the scope.
+            ViewEntry.builtin("rapla_conflicts", "Konflikte", """
+                    query rapla_conflicts($filter: ReservationFilter!, $conflicts: ConflictFilter)
+                      @view(title: "Konflikte", rowLabel: "Konflikt|Konflikte", renderModes: [table, day, week, month],
+                            selection: CONFLICTS, tableField: "conflicts", defaultRenderMode: day)
+                    {
+                      appointmentBlocks(filter: $filter) {
+                        start @column(header: "Von", order: 1)
+                        end   @column(header: "Bis", order: 2)
+                        name  @column(header: "Titel", order: 3)
+                        color @hidden
+                        reservation @hidden { id  canModify  appointmentCount  classification { typeKey } }
+                        appointment @hidden { id  repeating { type } }
+                        matchedBy @hidden { id }
+                        isException @hidden
+                        appointmentId @hidden
+                        reservationId @hidden
+                      }
+                      conflicts(filter: $conflicts) {
+                        startDate    @column(header: "Datum", order: 1, format: "dd.MM.yyyy HH:mm")
+                        resource     @column(header: "Ressource", order: 2) { id name }
+                        reservation1 @column(header: "Veranstaltung", order: 3) { id name }
+                        description  @column(header: "Konflikt mit", order: 4)
+                        id @hidden
+                        disabled @hidden
+                        reservation1Id @hidden
+                        appointment1Id @hidden
+                        reservation2Id @hidden
+                        appointment2Id @hidden
+                      }
+                    }"""),
+            ViewEntry.builtin("rapla_requests", "Ressourcenanfragen", """
+                    query rapla_requests($filter: ReservationFilter!, $requests: ResourceRequestFilter)
+                      @view(title: "Ressourcenanfragen", rowLabel: "Anfrage|Anfragen", renderModes: [table, day, week, month],
+                            selection: REQUESTS, tableField: "resourceRequests", defaultRenderMode: day)
+                    {
+                      appointmentBlocks(filter: $filter) {
+                        start @column(header: "Von", order: 1)
+                        end   @column(header: "Bis", order: 2)
+                        name  @column(header: "Titel", order: 3)
+                        color @hidden
+                        reservation @hidden { id  canModify  appointmentCount  classification { typeKey } }
+                        appointment @hidden { id  repeating { type } }
+                        matchedBy @hidden { id }
+                        isException @hidden
+                        appointmentId @hidden
+                        reservationId @hidden
+                      }
+                      resourceRequests(filter: $requests) {
+                        resource    @column(header: "Ressource", order: 1) { id name }
+                        reservation @column(header: "Veranstaltung", order: 2) { id name }
+                        reservationId @hidden
+                        appointments @hidden { id }
+                      }
+                    }"""),
             // PRD 097 Phase 5 — the default calendar views behind the BUILTIN documents
             // (DocumentCatalogService.BUILTIN_DOCUMENTS). Convention: data field FIRST, strips
             // after (columns/groupBy derive from the first root field). rapla_kalender is the
@@ -421,6 +479,24 @@ public class ViewCatalogService
     static boolean isListed(String queryText)
     {
         return !(viewArg(queryText, "listed") instanceof BooleanValue bv) || bv.isValue();
+    }
+
+    /** PRD 128 D7 — {@code @view(selection:)} as its enum name; null = the resource picker. */
+    public static String selection(String queryText)
+    {
+        return viewArg(queryText, "selection") instanceof EnumValue ev ? ev.getName() : null;
+    }
+
+    /** PRD 128 D7 — {@code @view(tableField:)}; null = the first root field. */
+    public static String tableField(String queryText)
+    {
+        return viewArg(queryText, "tableField") instanceof StringValue sv ? sv.getValue() : null;
+    }
+
+    /** PRD 128 D7 — {@code @view(defaultRenderMode:)} as its enum name; null = the client's rule. */
+    public static String defaultRenderMode(String queryText)
+    {
+        return viewArg(queryText, "defaultRenderMode") instanceof EnumValue ev ? ev.getName() : null;
     }
 
     /** The value of one {@code @view} argument in the query's operation; null if absent or unparsable. */

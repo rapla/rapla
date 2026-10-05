@@ -73,12 +73,13 @@ class BuiltinDocumentsTest
     void everyBuiltinViewValidatesAgainstTheLiveSchema() throws Exception
     {
         User admin = operator.getUser("homer");
-        // 2 SPA contracts + rapla_kalender (unified, 2026-07-15); rapla_wochenprogramm is
-        // listed:false (2026-08-12) and validated via its by-name lookup below.
+        // 2 SPA contracts + rapla_kalender (unified, 2026-07-15) + the PRD 128 D7 review views
+        // rapla_conflicts / rapla_requests; rapla_wochenprogramm is listed:false (2026-08-12) and
+        // validated via its by-name lookup below.
         List<org.rapla.server.spring.graphql.ViewEntry> builtins = new java.util.ArrayList<>(
                 views.listViewsForCaller(admin)
                         .stream().filter(org.rapla.server.spring.graphql.ViewEntry::builtin).toList());
-        assertEquals(3, builtins.size(), "expected 3 listed builtin views, got " + builtins);
+        assertEquals(5, builtins.size(), "expected 5 listed builtin views, got " + builtins);
         builtins.add(views.findView("rapla_wochenprogramm").orElseThrow());
         for (var view : builtins)
         {

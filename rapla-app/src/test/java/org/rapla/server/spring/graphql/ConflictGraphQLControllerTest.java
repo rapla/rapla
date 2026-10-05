@@ -117,7 +117,7 @@ class ConflictGraphQLControllerTest
                 "reservation2Id", "appointment2Id",
                 "reservation1", "reservation2",
                 "appointment1", "appointment2",
-                "description", "startDate")),
+                "description", "startDate", "disabled")),
                 () -> "Conflict type missing expected fields; got " + names);
     }
 
@@ -126,7 +126,7 @@ class ConflictGraphQLControllerTest
     void anonymousConflictsRejected()
     {
         tester.document("""
-                query { conflicts(reservationId: "any-id") { id } }
+                query { conflicts { id } }
                 """)
                 .execute()
                 .errors()
@@ -142,7 +142,7 @@ class ConflictGraphQLControllerTest
     void unknownReservationIdReturnsEmpty()
     {
         List<Map<String, Object>> result = tester.document("""
-                query { conflicts(reservationId: "00000000-0000-0000-0000-deadbeef0000") { id } }
+                query { conflicts(filter: { reservationIdsIn: ["00000000-0000-0000-0000-deadbeef0000"] }) { id } }
                 """)
                 .execute()
                 .path("conflicts")

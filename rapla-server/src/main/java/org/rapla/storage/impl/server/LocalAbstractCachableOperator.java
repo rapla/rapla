@@ -144,6 +144,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
      */
     private volatile org.rapla.storage.impl.server.readmodel.PermissionIndex permissionIndex;
     private final org.rapla.storage.impl.server.readmodel.UserGroupsCache userGroupsCache = new org.rapla.storage.impl.server.readmodel.UserGroupsCache();
+    private final org.rapla.storage.impl.server.readmodel.OpenRequestIndex openRequests = new org.rapla.storage.impl.server.readmodel.OpenRequestIndex();
     /**
      * PRD 086/087 Phase 4b — the flip flag. When {@code true} flipped consumers serve from the in-memory
      * read-model (the perf win); when {@code false} they return the legacy {@code appointmentMap} result.
@@ -2347,6 +2348,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             reservationTypeBucket.clear();
             allocatableBucketKey.clear();
             reservationBucketKey.clear();
+            openRequests.clear();
             for (Allocatable a : cache.getAllocatables())
             {
                 indexAllocatableBucket(a);
@@ -2354,6 +2356,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             for (Reservation r : reservations)
             {
                 indexReservationBucket(r);
+                openRequests.put(r);
             }
         }
         catch (RuntimeException ex)
@@ -2398,6 +2401,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 ReferenceInfo<?> ref = remove.getReference();
                 removeFromTypeBuckets(ref.getId());
                 Class<?> type = ref.getType();
+                if (type == Reservation.class) openRequests.remove(ref.getId());
                 if (type == User.class)
                 {
                     userGroupsCache.invalidate(ref.getId());
@@ -2418,7 +2422,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     private void indexEntityBucket(Entity e)
     {
         if (e instanceof Allocatable) indexAllocatableBucket((Allocatable) e);
-        else if (e instanceof Reservation) indexReservationBucket((Reservation) e);
+        else if (e instanceof Reservation)
+        {
+            indexReservationBucket((Reservation) e);
+            openRequests.put((Reservation) e);
+        }
     }
 
     /** A change to any of these can change {@code canRead(allocatable, *)} for many users → drop the whole permission cache. */
@@ -2441,6 +2449,18 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     public org.rapla.storage.impl.server.readmodel.UserGroupsCache getUserGroupsCache()
     {
         return userGroupsCache;
+    }
+
+    /** PRD 128 D4 — ids of the resources with at least one open request. */
+    public java.util.Set<String> openRequestResourceIds()
+    {
+        return openRequests.resourceIds();
+    }
+
+    /** PRD 128 D4 — ids of the reservations with an open request on {@code resourceId}. */
+    public java.util.Set<String> openRequestReservationIds(String resourceId)
+    {
+        return openRequests.reservationIds(resourceId);
     }
 
     /** PRD 082 #8 — lazily build the permission index (the {@link PermissionController} is ready only post-construction). */

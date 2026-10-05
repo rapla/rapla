@@ -21,14 +21,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.graphql.test.tester.HttpGraphQlTester;
+import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.client.MockMvcWebTestClient;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -453,5 +458,54 @@ class ViewCatalogControllerTest
                           "VIEW_NOT_FOUND".equals(e.getExtensions().get("code"))
                           || "VIEW_INVALID".equals(e.getExtensions().get("code"))),
                       "Saved valid view must execute without catalog errors"));
+    }
+
+    /** PRD 128 D7 — the review views name their selection source and table field before the first query. */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void listViewsCarriesSelectionAndTableField()
+    {
+        List<Map<String, Object>> views = tester.document("{ listViews { name selection tableField defaultRenderMode } }")
+                .execute().path("listViews").entityList(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {}).get();
+        Map<String, Map<String, Object>> byName = new java.util.HashMap<>();
+        views.forEach(v -> byName.put((String) v.get("name"), v));
+        assertEquals("CONFLICTS", byName.get("rapla_conflicts").get("selection"));
+        assertEquals("conflicts", byName.get("rapla_conflicts").get("tableField"));
+        assertEquals("REQUESTS", byName.get("rapla_requests").get("selection"));
+        assertEquals("resourceRequests", byName.get("rapla_requests").get("tableField"));
+        assertEquals(null, byName.get("rapla_appointments").get("selection"), "planning views keep the resource picker");
+        assertEquals(null, byName.get("rapla_appointments").get("tableField"));
+        assertEquals("day", byName.get("rapla_conflicts").get("defaultRenderMode"));
+        assertEquals("day", byName.get("rapla_requests").get("defaultRenderMode"));
+        assertEquals(null, byName.get("rapla_appointments").get("defaultRenderMode"));
+    }
+
+    /** PRD 128 D7 — one run feeds the calendar (appointmentBlocks) and the table (the tableField root). */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void reviewViewsReturnBothRootFieldsAndTableColumns() throws Exception
+    {
+        assertReviewView("rapla_conflicts", "conflicts", "CONFLICTS", "\"conflicts\":{}", "Konflikt mit");
+        assertReviewView("rapla_requests", "resourceRequests", "REQUESTS", "\"requests\":{}", "Veranstaltung");
+    }
+
+    private void assertReviewView(String name, String tableField, String selection, String reviewVariable, String header) throws Exception
+    {
+        String body = "{\"operationName\":\"" + name + "\",\"query\":\"{__typename}\",\"extensions\":{\"storedView\":true},"
+                + "\"variables\":{\"filter\":{\"from\":\"2027-01-01T00:00\",\"to\":\"2027-01-08T00:00\"}," + reviewVariable + "}}";
+        String response = mockMvc.perform(post("/api/graphql").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andReturn().getResponse().getContentAsString();
+        JsonNode json = JsonMapper.builder().build().readTree(response);
+        assertTrue(json.path("errors").isMissingNode() || json.path("errors").isEmpty(), response);
+        assertTrue(json.path("data").path("appointmentBlocks").isArray(), response);
+        assertTrue(json.path("data").path(tableField).isArray(), response);
+        JsonNode view = json.path("extensions").path("view");
+        assertEquals(selection, view.path("selection").asString(), response);
+        assertEquals(tableField, view.path("tableField").asString(), response);
+        assertEquals("day", view.path("defaultRenderMode").asString(), "PRD 128 D7 — review views open in the day renderer: " + response);
+        assertEquals("table", view.path("renderModes").get(0).asString(), "renderModes order unchanged: " + response);
+        String columns = view.path("columns").toString();
+        assertTrue(columns.contains("\"" + header + "\"") && !columns.contains("\"Titel\""),
+                "the table columns come from the tableField root, not appointmentBlocks: " + columns);
     }
 }

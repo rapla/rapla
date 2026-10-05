@@ -47,6 +47,9 @@ public class ViewGraphQLController
             m.put("groups", v.groups());
             m.put("defaultVariables", v.defaultVariables());
             m.put("listed", catalog.isListed(v));
+            m.put("selection", ViewCatalogService.selection(v.queryText()));
+            m.put("tableField", ViewCatalogService.tableField(v.queryText()));
+            m.put("defaultRenderMode", ViewCatalogService.defaultRenderMode(v.queryText()));
             result.add(m);
         }
         return result;

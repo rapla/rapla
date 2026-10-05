@@ -34,7 +34,7 @@ import org.springframework.stereotype.Controller;
  * per candidate a status + which own draft appointments clash.
  * {@code potentialConflicts} is the EXPENSIVE detail path (drill-down /
  * save preflight): full potential-conflict rows, same {@link ConflictRow}
- * shape as the realized {@code conflicts(reservationId:)} query.
+ * shape as the realized {@code conflicts(filter:)} query.
  *
  * <p>Both compose {@code getAllAllocatableBindingsSync} +
  * {@link AllocationConflictModel} — the same service path
@@ -43,8 +43,8 @@ import org.springframework.stereotype.Controller;
  * <p>§12: candidate resolution silently drops unreadable/nonexistent ids
  * (indistinguishable); the filter case delegates to the §12-scoped
  * {@code allocatables(filter:)} resolver. In {@code potentialConflicts}
- * an unreadable counterparty is MASKED (side-2 fields null, generic
- * description) — never dropped, the resource IS busy.
+ * an unreadable counterparty is MASKED (side-2 objects null, generic
+ * description, ids kept — PRD 128 D6) — never dropped, the resource IS busy.
  */
 @Controller
 public class AvailabilityGraphQLController
@@ -207,7 +207,7 @@ public class AvailabilityGraphQLController
     /**
      * The shared row builder behind {@code potentialConflicts} — also used by the PRD 105 pre-save
      * checks, so a CONFLICT finding can name WHAT it clashes with instead of only that it does.
-     * §12 masking (unreadable counterparty → null fields + generic description) lives here, once.
+     * §12 masking (unreadable counterparty → null objects + generic description, ids kept — PRD 128 D6) lives here, once.
      */
     List<ConflictRow> buildConflictRows(String draftReservationId, List<Allocatable> allocatables,
             List<Appointment> appointments, Collection<Reservation> ignoreList, Reservation ownStored,
@@ -237,20 +237,19 @@ public class AvailabilityGraphQLController
                     LocalDateTime startDate = ConflictImpl.getFirstConflictDate(null, null, ownApp, foreignApp);
                     if (startDate == null) startDate = ownApp.getStart();
 
-                    String rowId = ownApp.getId() + "/" + a.getId() + "/"
-                            + (readable ? foreignApp.getId() : startDate.toString());
                     rows.add(new ConflictRow(
-                            rowId,
+                            ownApp.getId() + "/" + a.getId() + "/" + foreignApp.getId(),
                             a,
                             draftReservationId, ownApp.getId(),
-                            readable ? foreignRes.getId() : null,
-                            readable ? foreignApp.getId() : null,
+                            foreignRes.getId(),
+                            foreignApp.getId(),
                             ownApp,
                             ownStored,
                             readable ? foreignRes : null,
                             readable ? foreignApp : null,
                             readable ? displayName(foreignRes, locale) : masked,
-                            startDate));
+                            startDate,
+                            false));
                 }
             }
         }
@@ -258,7 +257,7 @@ public class AvailabilityGraphQLController
     }
 
     /** description must never be blank — nameless events fall back to their id. */
-    private static String displayName(Reservation r, Locale locale)
+    static String displayName(Reservation r, Locale locale)
     {
         String name = r.getName(locale);
         return name == null || name.isBlank() ? r.getId() : name;

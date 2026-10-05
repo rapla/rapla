@@ -130,6 +130,7 @@ public final class GeneratedClassificationWiring
         final String gqlType = FunctionFieldGenerator.returnTypeToGraphql(d.returnType());
         return env -> {
             Object src = env.getSource();
+            if (src instanceof ReservationGraphQLController.AppointmentBlockDto dto && dto.masked()) return null;   // PRD 128 Phase 1b
             Object subject = src instanceof ReservationGraphQLController.AppointmentBlockDto dto
                     ? dto.block() : src;
             var rc = RequestContextInstrumentation.from(env.getGraphQlContext());

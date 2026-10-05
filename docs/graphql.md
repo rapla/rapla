@@ -805,19 +805,41 @@ appointment, not cross-appointment id selection.
 One `Conflict` wire type for **realized** and **potential** conflicts ([PRD 091](prd/091-spa-reservation-edit-and-availability.md) D4) —
 a potential conflict is a Conflict whose side 1 is not persisted (yet). Id pair
 fields always present; entity fields (`reservation1/2`, `appointment2`) are nullable
-with *semantic* nulls only: `reservation1` null = brand-new draft, side-2 nulls =
-§12-masked. `appointment1` is never null (potential side is materialized from the
-input and shows the draft state). Perspectival queries normalize side 1 = queried
-reservation / draft.
+with *semantic* nulls only: `reservation1` null = brand-new draft, `reservation2` /
+`appointment2` null = §12-masked — the masked side keeps `reservation2Id` /
+`appointment2Id` ([PRD 128](prd/128-picker-conflicts-requests-chip-model.md) D6: a party to the conflict may know them, an id
+alone resolves to nothing). `appointment1` is never null (potential side is
+materialized from the input and shows the draft state). Side 1 = the queried
+reservation / the draft, otherwise the side the caller may modify. A realized conflict's `id`
+(`CONFLICT;<resource>;<appointment>;<appointment>`) is stable and may be persisted;
+`disabled` mirrors Swing's `!checkEnabled()` for the caller.
 
-Three queries, three call profiles:
+The query profiles:
 
 | Query | Profile | §12 behavior |
 |---|---|---|
-| `conflicts(reservationId:)` | realized, per saved event | unreadable conflicts **dropped** |
+| `conflicts(filter: ConflictFilter)` | realized ([PRD 128](prd/128-picker-conflicts-requests-chip-model.md) D5): the conflicts the caller may **modify** — Swing's `getConflictsSync(user)` list, no window by default; `ConflictFilter { reservationIdsIn, resourceIdsIn ∪ resourceMatching, from, to, disabledEq }`, fields ANDed | resource must be readable; unreadable other side **masked** (objects null + `not_visible` text, ids kept); hidden/unknown filter ids dropped silently |
+| `conflictStats(filter:, groupBy: [RESOURCE\|TYPE\|DISABLED], aggregate: [COUNT])` | counts for the picker section head / tree, as `BlockStatBucket` (RESOURCE value = resource id + `entity`, TYPE = type key, DISABLED = `"true"`/`"false"`); no groupBy = one total bucket, no match = `[]` | counts exactly the `conflicts(filter:)` rows; closed key set, so no bucket names a masked side |
+| `resourceRequests(filter: ResourceRequestFilter)` | open requests the caller may approve (Swing `getResourceRequests`, OQ6): one row per reservation × requested resource the caller may modify; served from the operator's open-request index (`readmodel.OpenRequestIndex`, D4) | resource readable + modifiable; an unreadable requesting reservation is **masked** (OQ22: `reservationId` kept, `reservation` null, `appointments` empty; its times appear as anonymous `appointmentBlocks` on the scoped resource) |
 | `resourceAvailability(input:)` | cheap finder/picker: per candidate `status` (`AVAILABLE\|PARTIAL\|CONFLICT\|REQUEST_ONLY\|FORBIDDEN`) + `conflictingAppointmentIds` | candidates silently reduced; hidden ≡ nonexistent |
-| `potentialConflicts(input:)` | expensive drill-down / save preflight: full `Conflict` rows vs. a draft | unreadable counterparty **masked** (side-2 null + `not_visible` text), never dropped |
+| `potentialConflicts(input:)` | expensive drill-down / save preflight: full `Conflict` rows vs. a draft | unreadable counterparty **masked** (side-2 objects null + `not_visible` text, ids kept), never dropped |
 | `expandOccurrences(appointment:, limit: = 30)` | recurrence-editor preview: ONE draft appointment's rule expanded to concrete `Occurrence` rows (`start`/`end`/`exception`) | pure function of the input — auth gate only, no stored data touched |
+
+**Review views ([PRD 128](prd/128-picker-conflicts-requests-chip-model.md) D7):** the builtin views `rapla_conflicts`
+(*Konflikte*) and `rapla_requests` (*Ressourcenanfragen*) have two root fields — `appointmentBlocks(filter: $filter)`
+first for the calendar renderers, then `conflicts(filter: $conflicts)` / `resourceRequests(filter: $requests)` for
+the table. `@view(selection: CONFLICTS|REQUESTS)` names the left pane's selection source (absent = resource
+picker) and `@view(tableField:)` the root field the table draws and `columns` describe (absent = the first root
+field); both appear in `listViews` and `extensions.view`, like `@view(defaultRenderMode:)` — the mode a view opens in (both review views: `day`).
+
+**Anonymous calendar blocks ([PRD 128](prd/128-picker-conflicts-requests-chip-model.md) Phase 1b, Swing's "nicht sichtbar"):** an
+`appointmentBlocks` query scoped by `resourceIdsIn` / `resourceMatching` — and without `typeIn`, `nameContains`,
+`searchText`, `where<Type>` or `accessibleBy*`, which are never evaluated on hidden bookings — also returns the
+blocks of reservations the caller cannot read, for appointments bound to a scoped (readable) resource. Kept:
+`start`, `end`, `isException`, `appointmentId`, `reservationId`, `duration`/`times`, geometry, `matchedBy`. Masked:
+`reservation` and `appointment` null, `name` = the "not visible" type name (NAME sort uses it too), `color`,
+`compute` and every generated function field null, `resources` = only the scoped readable ones.
+`reservations(filter:)`, `appointmentBlockStats` and unscoped queries never contain them (`ReservationGraphQLController.select`).
 
 Contract points: draft appointment ids are REQUIRED (D3 id-first — join key for the
 result); `repeating` and `allDay` are materialized exactly like the mutation path

@@ -287,6 +287,19 @@ public class ReservationGraphQLController
     public List<Reservation> reservations(@Argument("filter") java.util.Map<String, Object> filterMap,
             graphql.schema.DataFetchingEnvironment env) throws RaplaException
     {
+        return select(filterMap, env, false).visible();
+    }
+
+    /**
+     * The reservations a filter selects. {@code hidden} (PRD 128 Phase 1b) = the unreadable candidates of an
+     * explicitly resource-scoped query without content filters, for anonymous calendar blocks; empty otherwise.
+     */
+    private record Selection(List<Reservation> visible, List<Reservation> hidden,
+            org.rapla.entities.domain.AppointmentMapping scope, Collection<Allocatable> scopeAllocatables) {}
+
+    private Selection select(java.util.Map<String, Object> filterMap, graphql.schema.DataFetchingEnvironment env,
+            boolean collectHidden) throws RaplaException
+    {
         // PRD 059 Phase 6 — argument is the raw input map (not the record):
         // the record can't carry the GENERATED `where<EventTypeKey>` fields
         // that the SDL extension adds per reservation DynamicType. Same
@@ -343,6 +356,8 @@ public class ReservationGraphQLController
         List<User> owners = hasOwners ? readableUsers(operator, filter.ownerIn(), caller) : List.of();
 
         Collection<Reservation> all;
+        org.rapla.entities.domain.AppointmentMapping scope = null;
+        Collection<Allocatable> scopeAllocatables = List.of();
         // PRD 086 window-first — a FULL ADMIN with NO explicit scope skips the ~48k-allocatable
         // iteration entirely: one global window lookup. It is filter-free because canRead short-circuits
         // to "everything" for a full admin (isAdmin()), so there is no §12 post-filter and no leak risk.
@@ -416,14 +431,25 @@ public class ReservationGraphQLController
             if (hasIdsIn || hasMatching)
             {
                 env.getGraphQlContext().put(StructuralTypeFetchers.MATCHED_BY_SCOPE_KEY, scopedMapping);
+                scope = scopedMapping;
+                scopeAllocatables = visibleAllocatables;
             }
         }
 
+        // PRD 128 Phase 1b — content filters are never evaluated on hidden bookings (a match would leak).
+        boolean anonymousBlocks = collectHidden && scope != null && filter.typeIn() == null && filter.nameContains() == null
+                && filter.searchText() == null && accessFilter == null
+                && filterMap.keySet().stream().noneMatch(k -> k.startsWith("where"));
+        List<Reservation> hidden = new ArrayList<>();
         List<Reservation> visible = new ArrayList<>(Math.min(limit, 256));
         for (Reservation r : all)
         {
             if (r == null) continue;
-            if (!pc.canRead(r, caller)) continue;
+            if (!pc.canRead(r, caller))
+            {
+                if (anonymousBlocks) hidden.add(r);
+                continue;
+            }
             if (!matches(r, filter)) continue;
             // PRD 059 Phase 6 — generated where<EventTypeKey> predicates run
             // through the SAME WhereEvaluator as the allocatable path.
@@ -447,7 +473,7 @@ public class ReservationGraphQLController
                 return (ia == null ? "" : ia).compareTo(ib == null ? "" : ib);
             });
         }
-        return visible;
+        return new Selection(visible, hidden, scope, scopeAllocatables);
     }
 
     /**
@@ -465,7 +491,8 @@ public class ReservationGraphQLController
             graphql.schema.DataFetchingEnvironment env) throws RaplaException
     {
         ReservationFilter filter = fromMap(filterMap);
-        List<Reservation> visible = reservations(filterMap, env);
+        Selection selection = select(filterMap, env, true);
+        List<Reservation> visible = selection.visible();
         LocalDateTime from = filter.from();
         LocalDateTime to = filter.to();
         int limit = filter.limit() != null && filter.limit() > 0
@@ -490,18 +517,30 @@ public class ReservationGraphQLController
         java.util.Set<java.time.DayOfWeek> daySet =
                 CalendarGridGraphQLController.parseWeekdays(filter.weekdays());
         List<AppointmentBlock> blocks = new ArrayList<>();
-        for (Reservation r : visible)
+        // PRD 128 Phase 1b — hidden reservations of a scoped query follow as anonymous blocks, only for
+        // appointments bound to a scoped (readable) resource; the name is the "not visible" type's.
+        List<Reservation> candidates = new ArrayList<>(visible);
+        candidates.addAll(selection.hidden());
+        String maskedName = selection.hidden().isEmpty() ? null : operator.getDynamicType(StorageOperator.ANONYMOUSEVENT_TYPE)
+                .getName(RequestContextInstrumentation.from(env.getGraphQlContext()).locale());
+        java.util.Set<String> scopeIds = selection.scopeAllocatables().stream().map(Allocatable::getId)
+                .collect(Collectors.toSet());
+        for (int ri = 0; ri < candidates.size(); ri++)
         {
+            Reservation r = candidates.get(ri);
+            boolean masked = ri >= visible.size();
             for (org.rapla.entities.domain.Appointment a : r.getAppointments())
             {
+                if (masked && selection.scope().getMatchingAllocatables(a, selection.scopeAllocatables()).isEmpty()) continue;
                 blocks.clear();
                 a.createBlocks(from, to, blocks);
                 for (AppointmentBlock b : blocks)
                 {
                     if (daySet != null && !CalendarGridLayout.touchesWeekdays(
                             b.getStartDateTime(), b.getEndDateTime(), daySet)) continue;
-                    AppointmentBlockDto dto = new AppointmentBlockDto(
-                            b.getStartDateTime(), b.getEndDateTime(), b.isException(), r, a, b);
+                    AppointmentBlockDto dto = masked
+                            ? new AppointmentBlockDto(b.getStartDateTime(), b.getEndDateTime(), b.isException(), r, a, b, maskedName, scopeIds)
+                            : new AppointmentBlockDto(b.getStartDateTime(), b.getEndDateTime(), b.isException(), r, a, b);
                     if (heap.size() < keep)
                     {
                         heap.offer(dto);
@@ -1221,6 +1260,7 @@ public class ReservationGraphQLController
 
     private static String blockNameKey(AppointmentBlockDto d, java.util.Locale loc)
     {
+        if (d.masked()) return d.maskedName();
         if (d.block() == null) return "";
         String n = org.rapla.entities.domain.NameFormatUtil.getName(d.block(), loc);
         return n == null ? "" : n;
@@ -1356,9 +1396,26 @@ public class ReservationGraphQLController
      * (block → reservation → displayName, Baustein 2) and the source {@code appointment}
      * (block → allocatables(filter:), Baustein 3 — the appointment is needed for the
      * per-appointment allocatable restriction). */
+    /**
+     * PRD 128 Phase 1b — {@code maskedName != null} marks an anonymous block of a reservation the caller cannot read:
+     * {@code reservation}/{@code appointment}/{@code block} stay for sorting and geometry only, every field that
+     * exposes them is masked; {@code maskedScope} = the scoped readable resource ids it may list.
+     */
     public record AppointmentBlockDto(LocalDateTime start, LocalDateTime end, boolean isException,
             Reservation reservation, org.rapla.entities.domain.Appointment appointment,
-            org.rapla.entities.domain.AppointmentBlock block) {}
+            org.rapla.entities.domain.AppointmentBlock block, String maskedName, java.util.Set<String> maskedScope)
+    {
+        public AppointmentBlockDto(LocalDateTime start, LocalDateTime end, boolean isException, Reservation reservation,
+                org.rapla.entities.domain.Appointment appointment, org.rapla.entities.domain.AppointmentBlock block)
+        {
+            this(start, end, isException, reservation, appointment, block, null, null);
+        }
+
+        public boolean masked()
+        {
+            return maskedName != null;
+        }
+    }
 
     /** Mirror of {@code RepeatingRule} output type. Maps rapla {@link Repeating}. */
     public record RepeatingRuleDto(

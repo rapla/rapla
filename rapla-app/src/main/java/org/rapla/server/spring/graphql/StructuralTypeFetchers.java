@@ -580,7 +580,7 @@ public final class StructuralTypeFetchers
                 @Override protected String read(ReservationGraphQLController.AppointmentBlockDto dto,
                         Supplier<DataFetchingEnvironment> env)
                 {
-                    if (dto == null || dto.reservation() == null) return null;
+                    if (dto == null || dto.reservation() == null || dto.masked()) return null;
                     String eventColor = org.rapla.plugin.abstractcalendar.RaplaBuilder
                             .getColorForClassifiable(dto.reservation());
                     List<String> resourceColors = new ArrayList<>();
@@ -618,7 +618,31 @@ public final class StructuralTypeFetchers
                         ReservationGraphQLController.AppointmentBlockDto dto,
                         Supplier<DataFetchingEnvironment> env)
                 {
-                    return dto == null ? null : dto.appointment();
+                    return dto == null || dto.masked() ? null : dto.appointment();
+                }
+            };
+
+    /** PRD 128 Phase 1b — null for an anonymous block (the caller cannot read the reservation). */
+    static final LightDataFetcher<org.rapla.entities.domain.Reservation> APPOINTMENT_BLOCK_RESERVATION =
+            new LightSourceFetcher<ReservationGraphQLController.AppointmentBlockDto, org.rapla.entities.domain.Reservation>(
+                    ReservationGraphQLController.AppointmentBlockDto.class)
+            {
+                @Override protected org.rapla.entities.domain.Reservation read(ReservationGraphQLController.AppointmentBlockDto dto,
+                        Supplier<DataFetchingEnvironment> env)
+                {
+                    return dto == null || dto.masked() ? null : dto.reservation();
+                }
+            };
+
+    /** PRD 128 Phase 1b — the reservation id, also for an anonymous block. */
+    static final LightDataFetcher<String> APPOINTMENT_BLOCK_RESERVATION_ID =
+            new LightSourceFetcher<ReservationGraphQLController.AppointmentBlockDto, String>(
+                    ReservationGraphQLController.AppointmentBlockDto.class)
+            {
+                @Override protected String read(ReservationGraphQLController.AppointmentBlockDto dto,
+                        Supplier<DataFetchingEnvironment> env)
+                {
+                    return dto == null || dto.reservation() == null ? null : dto.reservation().getId();
                 }
             };
 
@@ -656,6 +680,7 @@ public final class StructuralTypeFetchers
                 @Override protected String read(ReservationGraphQLController.AppointmentBlockDto dto,
                         Supplier<DataFetchingEnvironment> env)
                 {
+                    if (dto != null && dto.masked()) return dto.maskedName();   // PRD 128 Phase 1b
                     if (dto == null || dto.reservation() == null || dto.block() == null) return null;
                     Object v = env.get().getArgument("variant");
                     String variant = v == null ? "DISPLAY" : v.toString();
@@ -1068,7 +1093,9 @@ public final class StructuralTypeFetchers
                     Supplier<DataFetchingEnvironment> env)
             {
                 if (dto == null || dto.appointment() == null) return List.of();
-                return resolveAppointmentAllocatables(dto.appointment(), env.get(), operator);
+                List<Allocatable> resources = resolveAppointmentAllocatables(dto.appointment(), env.get(), operator);
+                // PRD 128 Phase 1b — an anonymous block lists only the scoped readable resources it is bound to.
+                return dto.masked() ? resources.stream().filter(a -> dto.maskedScope().contains(a.getId())).toList() : resources;
             }
         };
     }
@@ -1278,7 +1305,7 @@ public final class StructuralTypeFetchers
                 @Override protected String read(ReservationGraphQLController.AppointmentBlockDto dto,
                         Supplier<DataFetchingEnvironment> env)
                 {
-                    if (dto == null || dto.block() == null) return null;
+                    if (dto == null || dto.block() == null || dto.masked()) return null;
                     DataFetchingEnvironment dfe = env.get();
                     String expr = dfe.getArgument("expr");
                     var rc = RequestContextInstrumentation.from(dfe.getGraphQlContext());
@@ -1556,6 +1583,8 @@ public final class StructuralTypeFetchers
                 .dataFetcher("name",         APPOINTMENT_BLOCK_NAME)
                 .dataFetcher("appointmentId", APPOINTMENT_BLOCK_APPOINTMENT_ID)
                 .dataFetcher("appointment",  APPOINTMENT_BLOCK_APPOINTMENT)
+                .dataFetcher("reservation",  APPOINTMENT_BLOCK_RESERVATION)
+                .dataFetcher("reservationId", APPOINTMENT_BLOCK_RESERVATION_ID)
                 .dataFetcher("color",        APPOINTMENT_BLOCK_COLOR)
                 .dataFetcher("resources", appointmentBlockAllocatables(operator))
                 .dataFetcher("matchedBy",    APPOINTMENT_BLOCK_MATCHED_BY)

@@ -198,10 +198,21 @@ type Query {
   # every registered FunctionFactory's declared FunctionDescriptors (core + active plugins).
   computeFunctions: [ComputeFunction!]!
 
-  # PRD 064 — conflicts touching this reservation. §12: caller must be able
-  # to read BOTH sides of each conflict + the resource; unreadable
-  # conflicts are silently dropped.
-  conflicts(reservationId: ID!): [Conflict!]!
+  # PRD 128 D5 — the conflicts the caller may MODIFY (Swing getConflictsSync:
+  # resource readable + at least one side modifiable), narrowed by `filter`;
+  # no filter = all of them, no time window. §12: an unreadable other side is
+  # masked (objects null, description generic), its ids stay (D6).
+  conflicts(filter: ConflictFilter): [Conflict!]!
+
+  # PRD 128 D5 — counts over the same conflicts as `conflicts(filter:)`, grouped
+  # by a closed key set (no key on the other side, so a masked side cannot leak
+  # through a bucket). No groupBy = one bucket (the total); no match = [].
+  conflictStats(filter: ConflictFilter, groupBy: [ConflictGroupKey!], aggregate: [ConflictAggregate!]): [BlockStatBucket!]!
+
+  # PRD 128 D5/OQ6 — open resource requests the caller may approve (Swing
+  # getResourceRequests): one row per reservation × requested resource the
+  # caller may modify; no time window. §12: resource and reservation readable.
+  resourceRequests(filter: ResourceRequestFilter): [ResourceRequest!]!
 
   # PRD 091 — CHEAP availability display path (finder/picker): many candidates,
   # per candidate a status + which own draft appointments clash (yes/no,
@@ -213,10 +224,10 @@ type Query {
 
   # PRD 091 — EXPENSIVE detail path (chip drill-down / save preflight): full
   # potential-conflict list for concrete resources against a draft. Same
-  # result type as the realized `conflicts(reservationId:)` — a potential
-  # conflict is a Conflict whose side 1 is not persisted (yet). §12: unlike
-  # the realized query, unreadable counterparties are MASKED (side-2 fields
-  # null + generic description), never dropped — the resource IS busy.
+  # result type as the realized `conflicts(filter:)` — a potential
+  # conflict is a Conflict whose side 1 is not persisted (yet). §12: as in
+  # the realized query, unreadable counterparties are MASKED (side-2 objects
+  # null + generic description, ids kept — PRD 128 D6), never dropped.
   potentialConflicts(input: PotentialConflictInput!): [Conflict!]!
 
   # PRD 091 Phase 4.1 — the recurrence editor's occurrence preview: expand ONE
@@ -264,14 +275,14 @@ a potential conflict is a Conflict whose side 1 is not persisted (yet).
 The id pair fields are always present (§12 permitting); the entity fields
 resolve when the side is persisted and readable.
 
-Perspectival queries (`conflicts(reservationId:)`, `potentialConflicts`) use
-the convention side 1 = the queried reservation / the draft. Remaining
-nullability is semantic: `reservation1` null = brand-new draft;
-`reservation2`/`appointment2`/`appointment2Id` null = §12-masked (only in
-`potentialConflicts` — the realized query drops unreadable conflicts).
+Side 1 is the queried reservation (`conflicts(filter: {reservationIdsIn})`) or
+the draft (`potentialConflicts`), otherwise the side the caller may modify.
+Remaining nullability is semantic: `reservation1` null = brand-new draft;
+`reservation2`/`appointment2` null = §12-masked (the caller cannot read the
+other side; its ids stay, PRD 128 D6).
 
-`id` is derived from the involved reservation/appointment ids and is
-session-scoped — treat as opaque, do not persist.
+`id` of a realized conflict is `CONFLICT;<resource>;<appointment>;<appointment>`
+(PRD 128 D6) — stable while both appointments exist, may be persisted.
 """
 type Conflict {
   id:              ID!
@@ -290,6 +301,56 @@ type Conflict {
   description:     String!
   "First clash date (ConflictImpl.getFirstConflictDate) — realized and potential."
   startDate:       LocalDateTime!
+  "PRD 128 — disabled for the caller (Swing `!checkEnabled()`); always false for a potential conflict."
+  disabled:        Boolean!
+}
+
+"""
+PRD 128 D5/OQ22 — one open request: reservation `reservationId` asks for `resource`.
+§12: when the caller (who may modify the resource) cannot read the reservation,
+`reservation` is null and `appointments` empty; the requested times appear as
+anonymous `appointmentBlocks` on the (scoped) resource.
+"""
+type ResourceRequest {
+  resource:      Resource!
+  reservationId: ID!
+  reservation:   Reservation
+  "The reservation's appointments on this resource; empty when masked."
+  appointments:  [Appointment!]!
+}
+
+"PRD 128 D5 — narrows `resourceRequests`; fields ANDed, `resourceIdsIn` ∪ `resourceMatching`, unknown/unreadable ids dropped silently."
+input ResourceRequestFilter {
+  resourceIdsIn:    [ID!]
+  resourceMatching: ResourceFilter
+  reservationIdsIn: [ID!]
+}
+
+"""
+PRD 128 D5 — `conflictStats` dimensions. StatKey.value: RESOURCE = resource id
+(StatKey.entity = the Resource), TYPE = the resource's type key, DISABLED =
+"true" / "false".
+"""
+enum ConflictGroupKey { RESOURCE TYPE DISABLED }
+
+"PRD 128 D5 — `conflictStats` metric; default [COUNT], StatValue.key = \"COUNT\"."
+enum ConflictAggregate { COUNT }
+
+"""
+PRD 128 D5 — narrows `conflicts` / `conflictStats`. Fields are ANDed;
+`resourceIdsIn` and `resourceMatching` are UNIONed into one resource set.
+Unknown and unreadable ids are dropped silently (§12).
+"""
+input ConflictFilter {
+  "Conflicts with either side in these reservations; side 1 is the listed one."
+  reservationIdsIn: [ID!]
+  resourceIdsIn:    [ID!]
+  resourceMatching: ResourceFilter
+  "Only conflicts that clash in [from, to); each bound optional, none = no window (like Swing)."
+  from:             LocalDateTime
+  to:               LocalDateTime
+  "Absent = both, true = only disabled, false = only active."
+  disabledEq:       Boolean
 }
 
 """
@@ -1001,8 +1062,17 @@ directive @view(
   switcher. This is presentation, NOT permission: an unlisted view resolves by name exactly as
   before, and who may read it is still decided by its public/groups visibility alone.
   """
-  listed: Boolean = true
+  listed: Boolean = true,
+  "PRD 128 D7 — the left pane's selection source; absent = the resource picker."
+  selection: ViewSelection,
+  "PRD 128 D7 — the root field (response key) the table renderer draws and the columns describe; absent = the first root field."
+  tableField: String,
+  "PRD 128 D7 — the render mode a view opens in (one of its renderModes); absent = the client's rule."
+  defaultRenderMode: ViewRenderMode
 ) on QUERY
+
+"PRD 128 D7 — selection source of a review view: the conflict tree or the request tree."
+enum ViewSelection { CONFLICTS REQUESTS }
 
 "One end of a @window — resolved server-side at request time so it is never stale. offset is a signed integer; 0 = the anchor itself."
 input WindowAnchor {
@@ -1303,7 +1373,7 @@ type Reservation {
   (allows the SPA's power-search badge UX without a second roundtrip).
   Visibility-filtered: conflicts where the caller can't read the other
   side OR the resource do not count. The full conflict list lives on
-  `Query.conflicts(reservationId:)` (PRD 064).
+  `Query.conflicts(filter: {reservationIdsIn})` (PRD 128; its rule differs — conflicts the caller may modify, unreadable side masked).
   """
   hasConflicts:   Boolean!
 }
@@ -1338,7 +1408,17 @@ type Appointment {
   compute(expr: String!): String
 }
 
-"Materialized occurrence of a recurring Appointment. No id (synthetic per-expansion)."
+"""
+Materialized occurrence of a recurring Appointment. No id (synthetic per-expansion).
+
+PRD 128 Phase 1b — anonymous block: a query scoped by `resourceIdsIn` / `resourceMatching`
+(and without type/name/search/where/accessibleBy filters) also returns the blocks of
+reservations the caller cannot read on the scoped readable resources, like Swing's
+"nicht sichtbar" block. Such a block keeps its times, `appointmentId` and `reservationId`;
+`reservation` and `appointment` are null, `name` is the generic "not visible" text,
+`color`, `compute` and every generated function field are null, `resources` lists only
+the scoped readable resources. `reservations(filter:)` and the stats never contain them.
+"""
 type AppointmentBlock {
   start:       LocalDateTime!
   end:         LocalDateTime!
@@ -1346,7 +1426,9 @@ type AppointmentBlock {
   "PRD 094 D4 — the owning appointment's id; the SPA delete-scope flow keys on the (appointmentId, blockStart) pair per row."
   appointmentId: ID!
   "PRD 095 Phase 3b (OQ3) — the owning appointment, navigable (id, repeating, allDay, …). Same §12 scope as Reservation.appointments; appointmentId stays as scalar sugar for the PRD 094 delete flow. The month-grid drag gate reads repeating from here."
-  appointment: Appointment!
+  appointment: Appointment
+  "PRD 128 Phase 1b — the owning reservation's id; set also on an anonymous block."
+  reservationId: ID!
   "PRD 074 Baustein 9 — FLAT block-aware name (block → reservation.formatAppointmentBlock). NOT the reservation name: honors appointment-note overrides (appointmentnote plugin), so a block can name differently than its reservation. DISPLAY/EXPORT/PLANNING variants; EXPORT/PLANNING fall back to DISPLAY when the type defines no such format."
   name(variant: NameVariant = DISPLAY): String
   "PRD 074 — the reservation this block belongs to (block → reservation → displayName)."
@@ -2072,6 +2154,12 @@ type ViewMeta {
     `includeUnlisted: true`; the default listing already filters on it.
     """
     listed:           Boolean!
+    "PRD 128 D7 — `@view(selection:)`; null = the resource picker."
+    selection:        ViewSelection
+    "PRD 128 D7 — `@view(tableField:)`; null = the first root field."
+    tableField:       String
+    "PRD 128 D7 — `@view(defaultRenderMode:)`; null = the client's rule."
+    defaultRenderMode: ViewRenderMode
 }
 
 type SaveViewResult {

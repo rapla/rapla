@@ -89,7 +89,13 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
         if (rowLabel != null) meta.put("rowLabel", rowLabel);
         String groupLabel = stringArg(view, "groupLabel");
         if (groupLabel != null) meta.put("groupLabel", groupLabel);
-        List<Map<String, Object>> columns = columnsFrom(op.getSelectionSet(), schema);
+        String tableField = stringArg(view, "tableField");
+        if (tableField != null) meta.put("tableField", tableField);
+        Argument selection = argByName(view, "selection");
+        if (selection != null && selection.getValue() instanceof EnumValue ev) meta.put("selection", ev.getName());
+        Argument defaultRenderMode = argByName(view, "defaultRenderMode");
+        if (defaultRenderMode != null && defaultRenderMode.getValue() instanceof EnumValue dm) meta.put("defaultRenderMode", dm.getName());
+        List<Map<String, Object>> columns = columnsFrom(op.getSelectionSet(), schema, tableField);
         meta.put("columns", columns);
         // PRD 074 — render-hint: the column marked @column(group: true) is the row-grouping key.
         // Emitted as the column's alias so a generic renderer reads one field (row[view.groupBy]).
@@ -251,14 +257,15 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
      * hint (the unwrapped scalar/object type name, e.g. {@code LocalDateTime}/{@code Allocatable})
      * so the GUI can pick alignment + formatting without re-deriving it.
      */
-    private static List<Map<String, Object>> columnsFrom(SelectionSet opSel, GraphQLSchema schema)
+    private static List<Map<String, Object>> columnsFrom(SelectionSet opSel, GraphQLSchema schema, String tableField)
     {
         List<Map<String, Object>> cols = new ArrayList<>();
         if (opSel == null) return cols;
         GraphQLObjectType queryType = schema != null ? schema.getQueryType() : null;
         for (Selection<?> s : opSel.getSelections())
         {
-            if (s instanceof Field root && root.getSelectionSet() != null)
+            if (s instanceof Field root && root.getSelectionSet() != null
+                    && (tableField == null || tableField.equals(root.getResultKey())))
             {
                 GraphQLFieldsContainer container = resolveContainer(queryType, root.getName());
                 // PRD 079/080 — a stats root (BlockStatBucket) is logically ONE flat row whose
@@ -277,7 +284,7 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
                         cols.add(columnDescriptor(col, container, idx++));
                     }
                 }
-                break;   // first root field only
+                break;   // the tableField root, else the first root field
             }
         }
         // Sort by effective order (explicit @column(order:) else declaration index); stable.
