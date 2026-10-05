@@ -33,6 +33,7 @@ every grid component, with the server keeping color/§12 authority.
 - Special block states tint the *background*, not the text: exceptions, conflicts,
   not-visible/anonymous blocks, request-state blocks (alpha-adjusted colors in
   `SwingRaplaBlock`).
+- SPA ([PRD 128](../prd/128-picker-conflicts-requests-chip-model.md) D1, Phase 1b): with a conflict or request chip set, every block outside the focus is drawn pale (`paleRows` in `views/block-style.ts`) — a conflict keeps the blocks of either side that overlap a block of the other side (Swing `overlapsBlock`), a request the blocks of its reservation. Anonymous blocks of unreadable reservations (`reservation: null`, flat `appointmentId`/`reservationId`) count for that overlap but have no row menu, no open, no drag (`isAnonymousRow`, `views/row-context.ts`).
 
 ## 2. Lane (slot) model — how overlapping blocks get columns
 

@@ -141,7 +141,7 @@ Before implementing anything, check **`docs/prd/` AND `docs/prd/done/`** for an 
 - **Cross-module test gotcha:** if `mvn -pl rapla-app -am test -Dtest=Foo` test-compiles an upstream module with broken test sources, add `-Dsurefire.failIfNoSpecifiedTests=false`. **Never replace `-am` with an explicit module list** — a missed module silently resolves from `~/.m2/repository`.
 - **Don't `mvn clean` routinely** — incremental compile is reliable.
 - **ALWAYS `mvn clean compile` after deleting, renaming, or moving a class.** Stale `.class` files for the old name linger in `target/` and make broken references resolve at compile time but blow up at runtime. No exceptions; fires even for a single-class delete.
-- **ALWAYS `mvn clean` before `mvn package` / packaging.** Stale `target/` artefacts shadow assembly inputs — you ship a broken artifact. Recipe: `mvn -pl rapla-app -am clean package -DskipTests [-Psign-pkcs11|-Psign-jks]`.
+- **ALWAYS `mvn clean` before `mvn package` / packaging.** Stale `target/` artefacts shadow assembly inputs — you ship a broken artifact. That `clean` wipes the `target/classes` other sessions' `spring-boot:run` / `exec:java` run from — announce it first (§7a). Recipe: `mvn -pl rapla-app -am clean package -DskipTests [-Psign-pkcs11|-Psign-jks]`.
 
 ### 6. Git
 - Never commit unless explicitly asked.

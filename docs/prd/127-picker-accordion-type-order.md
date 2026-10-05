@@ -1,6 +1,6 @@
 # PRD 127 — Picker accordion and configurable type order
 
-**Status:** implemented — 2026-10-04 (Phases 1–3 built by rapla-impl, browser-checked on the DHBW copy; uncommitted, user acceptance pending); concept 2026-10-04
+**Status:** implemented — 2026-10-05 (phases 1–3 + acceptance round + D8 cleanup built by rapla-impl, browser-checked on the DHBW copy, accepted by the user, committed 1fcccd51a, on dhbw-test since 2026-10-05 02:22); concept 2026-10-04
 **Related:** [PRD 123](123-spa-unified-resource-picker.md) (overturns D3 chip wall/"Typ ▾" and D9 *Benutzer* chip), [PRD 119](119-spa-one-search-resource-picker.md) (overturns D1 ranking in *Alle*), [PRD 120](120-resource-hierarchy-parents-children.md) (nesting stays), [rapla/rapla#598](https://github.com/rapla/rapla/issues/598) (type order not alphabetical since 2.0)
 
 ## Abstract

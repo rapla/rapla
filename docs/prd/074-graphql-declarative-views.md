@@ -109,7 +109,7 @@ navigation. No directive for the common cases:
 | `reservationTypes: [String!]` | reservation-type checkboxes (Lehrveranstaltung / Prüfung / …) |
 | `allocatableIds: [ID!]` | resource-tree picker (rooms / courses / persons) |
 | `name` / search string | search combobox |
-| query is pageable (offset/cursor) | next / prev — *future* |
+| query is pageable (cursor) | "Weitere laden" appends the next page (`$after` = `endCursor` of the last page; offset form landed and superseded 2026-10-05); header click = `$sort` + reload page 0; prev/next *future* |
 
 Controls are state over variables: the control mutates a variable, the query re-runs.
 Non-conventional bindings use a `@control` client directive (override only).
@@ -347,6 +347,37 @@ ASCII `String.CASE_INSENSITIVE_ORDER`.
 - **Invariants:** a server **result-cap** (DoS, configurable default) even without a client limit;
   the deterministic sort tiebreaker (above).
 - Offset-drift under concurrent mutation is acceptable for date-windowed views (cursor only if strict).
+
+> **Superseded 2026-10-05 — cursor instead of offset** (user ruling after a 10-year table of a large deployment).
+> Offset paging bounds the server heap at `offset + limit + 1`, so it needed a hard cap on the
+> total (20 000 blocks, `ReservationGraphQLController` `Math.min(keepL, 20_000)`); a table of
+> ~200k person blocks ended at page 20 with `hasMore=false` and pages beyond were empty.
+> Decided: `appointmentBlocks(filter, sort, after: String)` — `after` is the opaque cursor of the
+> last row of the previous page (sort value + reservation id + appointment id + exception flag);
+> the heap keeps `limit + 1`; the per-request cap is on `limit` only (max 2 500, default 1 000),
+> the 20 000 total cap is removed; `extensions.view.page = { limit, returned, hasMore, endCursor }`
+> (`offset` dropped). The flat root list stays (no Relay `edges`). The stable tiebreaker becomes
+> reservation id + appointment id + START + exception flag (implemented 2026-10-05: without START the
+> repeats of one appointment tie on a NAME sort and the cursor skipped rows; also closes the
+> duplicate-at-page-boundary gap of equal-time appointments). Cursor = base64url of
+> start/end/name/reservation id/appointment id/exception, invalid cursor → IllegalArgumentException.
+> Stored custom views that still pass `offset:` fail validation (none known besides the builtin). Lost: random access to page N (not needed for
+> "Weitere laden"); won: constant memory per page, no drift (no duplicate/gap on concurrent
+> insert/delete). CPU per page unchanged — every page still expands every block of the window
+> (block index: [PRD 086](086-appointment-block-index.md)). Builtin `rapla_appointments` declares
+> `$after: String` instead of `$offset: Int`. Other APIs (Relay spec, GitHub, GitLab, Shopify,
+> Linear) paginate the same way.
+>
+> **Sort × cursor (decided 2026-10-05):** the cursor is bound to the sort order, so a header click
+> must be a server sort: the SPA binds `$sort: [BlockSort!]` from the clicked column
+> (Datum/Zeit → `START`, Bis → `END`, Titel → `NAME`, `ASC`/`DESC`), reloads page 0 and "Weitere laden"
+> follows the cursor in that order; Material's client sort is off for those columns. Columns the
+> server cannot sort (`@join`/`@column` over joined resources — Kurs, Dozenten, Raum) stay
+> client-sorted over the loaded rows, marked as such in the header. Server sort by column alias
+> (value computed per block before the heap, cursor carrying the value) is a residue: 1–2 days,
+> CPU-heavy at 200k blocks per page.
+> Residue: the SPA maps column → sort field by alias (`start`/`date`/`times` → START, `end` → END,
+> `name` → NAME); a renamed alias stays client-sorted until the server emits the source field per column.
 
 ### Worked queries — the three real dhbw tables
 
@@ -1233,7 +1264,19 @@ serves both internal and public export; the difference is **only** the server-se
   `AllocatableFilter` (`typeIn`/`isPersonEq` + per-type `where*`,
   [PRD 059](done/059-graphql-typed-where-predicates.md)) on `Query.allocatables` only. Closing these (PRD [073](073-graphql-function-equivalents.md) + [065](wont-fix/065-graphql-declared-type-groups.md)) keeps the
   transform thin.
-- **Pagination + prev/next + server-side `aggregate`** are future. Client-side
+- **Load more landed 2026-10-05** (offset form, uncommitted): the SPA reads `extensions.view.page.hasMore`
+  ("N+ Einträge"), binds `$offset: Int` (by name, from the rows on screen) and appends the next page;
+  the server default limit is 1000, the 5000 cap on `limit` is gone. Same day: `select()` no longer
+  stops after `limit` reservations for `appointmentBlocks`/`appointmentBlockStats` (the 10-year table
+  had ended at the blocks of the first 500 reservations, `hasMore=false`). **Cursor replaces offset**
+  — see § Sort & pagination, "Superseded 2026-10-05". Review residues (rapla-review 2026-10-05):
+  load-more button only when the view declares the paging variable (else page 0 is appended
+  twice — conflicts/requests/calendar/custom views); page-0 key guard against the 250 ms
+  throttle race (nav + load-more → next page of the NEW window appended to OLD rows); button also
+  in day/week/month modes (they show "N+" but drop blocks silently); `reservationStats` still goes
+  through the reservation-limited `reservations()`; the builtin `rapla_reservations` table
+  (`reservations(filter:)`) has no page meta and no paging — truncates at 1000 silently.
+  **Prev/next + server-side `aggregate`** are future. Client-side
   aggregation covers non-paginated admin tables; once paginated, full-set totals
   move to a server `aggregate` field (Hasura-style).
 
@@ -1427,8 +1470,11 @@ query Termine @view(title: "Termine KW") {
    (The component registry + `monaco-graphql` authoring editor are SPA → **[PRD 078](078-spa-graphql-view-renderer.md)**.)
 4. **Phase 4 — Authoring scope + shared views** (global vs group-admin; personal vs
    shared).
-5. **Future — pagination/prev-next; optional aggregate-field convention; companion
-   charts/forms PRDs.**
+5. **Phase 5 — cursor paging + server sort from the header (decided 2026-10-05, in progress):**
+   server `after`/`endCursor`, tiebreaker + appointment id, `limit` ≤ 2 500, 20 000 cap removed,
+   `reservationStats` unlimited, builtin on `$after`; SPA `$after` + `$sort` binding, page-0 guard,
+   button gating + grid modes. Residues: sort by joined columns, `rapla_reservations` paging.
+6. **Future — prev/next; optional aggregate-field convention; companion charts/forms PRDs.**
 
 ## Tests
 

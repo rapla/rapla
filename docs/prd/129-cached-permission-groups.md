@@ -1,6 +1,6 @@
 # PRD 129 — Cached permission groups
 
-**Status:** implemented — 2026-10-05 (reviewed by rapla-review, review round + F1/F2/delete-test built by rapla-impl2, all lanes green; uncommitted, full `mvn test` and commit pending)
+**Status:** implemented — 2026-10-05 (reviewed by rapla-review, review round + F1/F2/delete-test built by rapla-impl2, all lanes green, full `mvn test` green 2026-10-05 01:12, committed 0d3467cf3, on dhbw-test since 2026-10-05 02:22)
 **Related:** [PRD 090](090-additive-permission-resolution.md) (additive `hasAccess`), [PRD 082](082-storage-memory-model.md) / [PRD 083](083-user-change-subscription.md) (`PermissionIndex` — cached `canRead` on allocatables, same invalidation seam), [PRD 128](128-picker-conflicts-requests-chip-model.md) (needs fast `canModify` for conflicts and requests), [permissions.md § 5](../architecture/permissions.md#5-read_no_allocation--resource-visibility-vs-booking-visibility-verified-2026-06-24)
 
 ## Abstract
