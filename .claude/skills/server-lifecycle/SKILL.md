@@ -51,8 +51,11 @@ Stop in one Bash call (returns immediately), then start in a separate Bash call 
 Profiles, `-P<plugin-id>`, run arguments: dropping any of them silently changes server
 behavior (scar 2026-06-24: a restart without `profiles=local` lost an OAuth flag and broke
 the production-Keycloak login; the user found out via screenshot 30 min later). Recipe: on
-every start, first write the full command to `logs/rapla.cmd` (`echo "<full mvn command>"
-> logs/rapla.cmd`); on restart, `cat logs/rapla.cmd` and reuse it verbatim. If there is no
+every start, first write the full command, **starting with `cd <cwd> &&`**, to
+`logs/<name>.cmd` (`rapla`, `rapla-dhbw`, …); on restart, stop by `logs/<name>.pid` and run
+`bash logs/<name>.cmd`. The cwd is part of the flavor: the DHBW copy resolves its HSQLDB
+relative to `~/git/dhbwrapla` — started from elsewhere it silently creates an EMPTY store
+(scar 2026-10-04: empty HSQLDB in `~/git/rapla/data`). If there is no
 `.cmd` file (server started by the user), ask or check `ps -eo args` for the running
 command line before stopping — see also the `feedback_dev_server_flavor` memory (the
 running server is often dhbw-flavored, not vanilla).
