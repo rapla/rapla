@@ -82,6 +82,8 @@ export interface ViewMeta {
   renderModes?: ViewRenderMode[];
   /** The operation's variable signature — the type-driven binding contract. */
   variables?: ViewVariable[];
+  /** PRD 074 — pagination meta of the flat block list ({@code appointmentBlocks}). */
+  page?: { limit: number; returned: number; hasMore: boolean; endCursor?: string | null };
   /** PRD 128 D7 — the root field the table draws (`@view(tableField:)`); absent = the first one. */
   tableField?: string;
   /** PRD 128 D7 — what the left pane picks from (`@view(selection:)`); absent = the resource picker. */

@@ -8,6 +8,21 @@ const RES = ['a1', 'a2'];
 const v = (name: string, type: string): ViewVariable => ({ name, type });
 
 describe('buildVariablesByType', () => {
+  it('fills $after: String from ctx.after (load more); unset without one, other Strings untouched', () => {
+    const vars = [v('filter', 'ReservationFilter!'), v('after', 'String'), v('q', 'String')];
+    const out = buildVariablesByType(vars, { window: W, resourceIds: [], after: 'c1' });
+    expect(out).toMatchObject({ after: 'c1' });
+    expect(out).not.toHaveProperty('q');
+    expect(buildVariablesByType(vars, { window: W, resourceIds: [] })).not.toHaveProperty('after');
+  });
+
+  it('fills [BlockSort!] from ctx.sort; unset without one (server default)', () => {
+    const vars = [v('sort', '[BlockSort!]')];
+    const sort = [{ field: 'NAME', dir: 'DESC' }];
+    expect(buildVariablesByType(vars, { window: W, resourceIds: [], sort })).toEqual({ sort });
+    expect(buildVariablesByType(vars, { window: W, resourceIds: [] })).toEqual({});
+  });
+
   it('fills a ReservationFilter with the window (no selection)', () => {
     expect(
       buildVariablesByType([v('filter', 'ReservationFilter!')], { window: W, resourceIds: [] }),

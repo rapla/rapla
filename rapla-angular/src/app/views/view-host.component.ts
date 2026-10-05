@@ -10,7 +10,7 @@ import {
   untracked,
 } from '@angular/core';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
-import { MatSort, MatSortModule } from '@angular/material/sort';
+import { MatSort, MatSortModule, type Sort } from '@angular/material/sort';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule, MatMenuTrigger } from '@angular/material/menu';
 
@@ -104,6 +104,10 @@ interface QueryArgs {
   variables: Record<string, unknown>;
   /** No window was bound yet → seed the date-nav from `extensions.view.window`. */
   seedWindow: boolean;
+  /** Load more: the response is the next page → append to the rows on screen. */
+  append: boolean;
+  /** Page 0's variables (without {@code $after}) — an append only lands on rows of the same key. */
+  key: string;
 }
 
 interface HttpFailure {
@@ -149,6 +153,15 @@ export function rowsOf(
     (Object.values(data ?? {}).find(Array.isArray) as Record<string, unknown>[] | undefined) ?? []
   );
 }
+
+/** Column alias → {@code BlockSortField}; a renamed alias stays client-sorted (PRD 074 residue). */
+const SERVER_SORT_FIELDS: Record<string, string> = {
+  start: 'START',
+  date: 'START',
+  times: 'START',
+  end: 'END',
+  name: 'NAME',
+};
 
 export function hasScope(chips: FilterEntry[]): boolean {
   return chips.some((c) => c.kind !== 'event');
@@ -236,8 +249,9 @@ export function hasScope(chips: FilterEntry[]): boolean {
               [dataSource]="dataSource"
               matSort
               [matSortDisabled]="isGrouped()"
-              [matSortActive]="isGrouped() ? '' : defaultSortAlias()"
-              matSortDirection="asc"
+              [matSortActive]="isGrouped() ? '' : sortActive()"
+              [matSortDirection]="sortDirection()"
+              (matSortChange)="onSortChange($event)"
               class="grid"
               tabindex="0"
               aria-multiselectable="true"
@@ -246,7 +260,15 @@ export function hasScope(chips: FilterEntry[]): boolean {
             >
               @for (col of tableColumns(); track col.alias) {
                 <ng-container [matColumnDef]="col.alias">
-                  <th mat-header-cell *matHeaderCellDef mat-sort-header [disabled]="isGrouped()">
+                  <th
+                    mat-header-cell
+                    *matHeaderCellDef
+                    mat-sort-header
+                    [disabled]="isGrouped()"
+                    [attr.title]="
+                      canLoadMore() && !sortField(col.alias) ? ('view_sort_loaded_only' | t) : null
+                    "
+                  >
                     {{ col.header ?? col.alias }}
                   </th>
                   <td mat-cell *matCellDef="let row">{{ cell(row, col) }}</td>
@@ -302,6 +324,14 @@ export function hasScope(chips: FilterEntry[]): boolean {
             </table>
           } @else {
             <p class="empty">{{ 'view_no_appointments' | t }}</p>
+          }
+          @if (canLoadMore()) {
+            <button type="button" class="load-more" [disabled]="loadingMore()" (click)="loadMore()">
+              {{ 'view_load_more' | t }}
+            </button>
+            @if (loadingMore()) {
+              <span class="meta">{{ 'view_loading' | t }}</span>
+            }
           }
         }
       </section>
@@ -411,6 +441,9 @@ export function hasScope(chips: FilterEntry[]): boolean {
         color: rgba(0, 0, 0, 0.5);
         font-style: italic;
       }
+      .load-more {
+        margin: 12px 0;
+      }
       .bind-banner {
         display: flex;
         align-items: center;
@@ -486,6 +519,35 @@ export class ViewHostComponent {
   readonly meta = signal<ViewMeta | null>(null);
   readonly rows = signal<Record<string, unknown>[]>([]);
   readonly total = signal(0);
+  /** The server cut the list at its page limit (`extensions.view.page.hasMore`). */
+  readonly hasMore = signal(false);
+  /** "Weitere laden" only when the view pages by cursor — else page 0 would be appended again. */
+  readonly canLoadMore = computed(
+    () => this.hasMore() && !!this.meta()?.variables?.some((v) => v.name === 'after'),
+  );
+  /** Header sort bound to {@code $sort} — only for the view it was clicked in. */
+  private readonly serverSort = signal<{
+    view: string;
+    alias: string;
+    sort: { field: string; dir: string }[];
+  } | null>(null);
+  /** The header arrow follows the server sort — the table is rebuilt after every page-0 load. */
+  private readonly ownSort = computed(() => {
+    const s = this.serverSort();
+    return s?.view === this.viewName() ? s : null;
+  });
+  /** What {@code $sort} binds: none in grouped mode (the day sections keep their order). */
+  private readonly effectiveSort = computed(() => (this.isGrouped() ? null : this.ownSort()));
+  readonly sortActive = computed(() => this.ownSort()?.alias ?? this.defaultSortAlias());
+  readonly sortDirection = computed(
+    () => (this.ownSort()?.sort[0].dir.toLowerCase() as 'asc' | 'desc' | undefined) ?? 'asc',
+  );
+  /** An append is in flight — the rows stay on screen (no loading flip, no scroll jump). */
+  readonly loadingMore = signal(false);
+  private page0: { viewName: string; variables: Record<string, unknown>; key: string } | null =
+    null;
+  private shownKey: string | null = null;
+  private endCursor: string | undefined;
   readonly groupCount = signal(0);
   readonly rowLabelText = computed(() => {
     const parts = this.meta()?.rowLabel?.split('|') ?? [t('view_row_one'), t('view_row_many')];
@@ -501,7 +563,7 @@ export class ViewHostComponent {
    *  {@link ViewStateStore} so the control strip can show it (right-aligned). */
   readonly resultInfoText = computed<string | null>(() => {
     if (this.noScope() || this.loading() || this.error()) return null;
-    const base = `${this.total()} ${this.rowLabelText()}`;
+    const base = `${this.total()}${this.hasMore() ? '+' : ''} ${this.rowLabelText()}`;
     const group = this.groupLabelText();
     return group ? `${base} · ${this.groupCount()} ${group}` : base;
   });
@@ -990,7 +1052,7 @@ export class ViewHostComponent {
         // window nothing is in flight, and the previous result stays on screen.
         tap((args) => {
           if (!args) return;
-          this.loading.set(true);
+          (args.append ? this.loadingMore : this.loading).set(true);
           this.error.set(null);
         }),
         switchMap((args) =>
@@ -1012,7 +1074,7 @@ export class ViewHostComponent {
     // by their raw ISO value (chronological, not by the formatted label).
     this.dataSource.sortingDataAccessor = (row, id) => {
       const col = (this.meta()?.columns ?? []).find((c) => c.alias === id);
-      if (!col) return '';
+      if (!col || this.sortField(id)) return ''; // server-sorted: keep the server's order
       if (col.type === 'Date' || col.type === 'LocalDateTime') {
         const raw = row[id];
         return typeof raw === 'string' ? raw : '';
@@ -1068,6 +1130,7 @@ export class ViewHostComponent {
       const day = this.isDayGrid();
       this.bindingKey(); // re-query when the variable signature resolves
       this.refreshTick(); // re-query after a main-view mutation (delete / undo)
+      this.effectiveSort(); // header sort → page 0 in the new order (the cursor is bound to it)
       if (!hasScope(chips)) {
         this.clearForNoScope();
         return;
@@ -1094,8 +1157,44 @@ export class ViewHostComponent {
     this.error.set(null);
     this.rows.set([]);
     this.total.set(0);
+    this.hasMore.set(false);
     this.groupCount.set(0);
     this.noScope.set(true);
+  }
+
+  /** The server sort field of a column, when the view binds {@code [BlockSort!]} (PRD 074 § Sort × cursor). */
+  sortField(alias: string): string | undefined {
+    const bindsSort = this.meta()?.variables?.some(
+      (v) => v.type.replace(/[![\]]/g, '') === 'BlockSort',
+    );
+    return bindsSort ? SERVER_SORT_FIELDS[alias] : undefined;
+  }
+
+  onSortChange(e: Sort): void {
+    const field = this.sortField(e.active);
+    if (!field) return; // client sort over the loaded rows
+    this.serverSort.set(
+      e.direction
+        ? {
+            view: this.viewName(),
+            alias: e.active,
+            sort: [{ field, dir: e.direction.toUpperCase() }],
+          }
+        : null,
+    );
+  }
+
+  /** Next page: page 0's query + `$after` = endCursor, result appended (PRD 074 § Sort × cursor).
+   *  A page 0 still pending (nav / chip / sort inside the throttle) → no-op; the new page 0 comes anyway. */
+  loadMore(): void {
+    const page0 = this.page0;
+    if (!page0 || page0.key !== this.shownKey || !this.endCursor) return;
+    this.trigger$.next({
+      ...page0,
+      variables: { ...page0.variables, after: this.endCursor },
+      seedWindow: false,
+      append: true,
+    });
   }
 
   private run(viewName: string, window: DateWindow | null, chips: FilterEntry[]): void {
@@ -1109,11 +1208,20 @@ export class ViewHostComponent {
     // here would make the effect re-fire on every response (meta.set) → infinite
     // loop. The one-time re-query when the signature lands is driven by bindingKey.
     const signature = untracked(() => this.meta()?.variables) ?? [];
-    const variables = buildVariablesByType(signature, { window, ...scopeOf(chips) });
-    this.trigger$.next({ viewName, variables, seedWindow: !window });
+    const sorted = untracked(() => this.effectiveSort());
+    const variables = buildVariablesByType(signature, {
+      window,
+      ...scopeOf(chips),
+      ...(sorted ? { sort: sorted.sort } : {}),
+    });
+    const key = JSON.stringify([viewName, variables]);
+    this.page0 = { viewName, variables, key };
+    this.trigger$.next({ viewName, variables, seedWindow: !window, append: false, key });
   }
 
   private onQueryResult(args: QueryArgs, res: GqlResponse<ViewData>): void {
+    this.loadingMore.set(false);
+    if (args.append && args.key !== this.shownKey) return; // a page of rows no longer on screen
     if (res.errors?.length) {
       // Signature recovery (PRD 097 D8): the {} first query of a view with a second
       // NonNull variable fails coercion, but the server still sends extensions.view.
@@ -1126,12 +1234,16 @@ export class ViewHostComponent {
       return;
     }
     const viewMeta = res.extensions?.view ?? null;
-    const rows = rowsOf(
+    const page = rowsOf(
       res.data as Record<string, unknown> | undefined,
       viewMeta?.tableField,
       untracked(() => this.isMonth() || this.isWeekGrid() || this.isDayGrid()),
     );
+    const rows = args.append ? [...untracked(() => this.rows()), ...page] : page;
+    this.shownKey = args.key;
+    this.endCursor = viewMeta?.page?.endCursor ?? undefined;
     this.meta.set(viewMeta);
+    this.hasMore.set(viewMeta?.page?.hasMore ?? false);
     this.total.set(rows.length);
     const groupAlias = viewMeta?.groupBy;
     this.groupCount.set(groupAlias ? new Set(rows.map((r) => r[groupAlias])).size : 0);
@@ -1157,6 +1269,7 @@ export class ViewHostComponent {
     if (err?.status === 401) return;
     this.error.set(err?.error?.message ?? `Request failed (HTTP ${err?.status ?? '?'})`);
     this.loading.set(false);
+    this.loadingMore.set(false);
   }
 
   cell(row: Record<string, unknown>, col: ViewColumn): string {

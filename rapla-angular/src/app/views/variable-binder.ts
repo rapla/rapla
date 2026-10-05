@@ -24,6 +24,10 @@ export interface SelectionContext {
   resourceIds: string[];
   /** Every `user` chip → ReservationFilter.ownerIn, unioned server-side with the resources (PRD 123 D10). */
   ownerIds?: string[];
+  /** {@code extensions.view.page.endCursor} of the rows on screen → {@code $after: String} (load more). */
+  after?: string;
+  /** Header click on a server-sortable column → {@code [BlockSort!]} (PRD 074 § Sort × cursor). */
+  sort?: { field: string; dir: string }[];
 }
 
 /**
@@ -45,8 +49,12 @@ function baseType(type: string): string {
   return type.replace(/[![\]]/g, '');
 }
 
-function fillByType(type: string, ctx: SelectionContext): unknown | undefined {
+function fillByType(name: string, type: string, ctx: SelectionContext): unknown | undefined {
   switch (baseType(type)) {
+    case 'String':
+      return name === 'after' ? ctx.after : undefined;
+    case 'BlockSort':
+      return ctx.sort;
     case 'ReservationFilter': {
       if (!ctx.window) return undefined; // first load → server merges its default
       const filter: Record<string, unknown> = { from: ctx.window.from, to: ctx.window.to };
@@ -78,7 +86,7 @@ export function buildVariablesByType(
 ): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const variable of variables) {
-    const value = fillByType(variable.type, ctx);
+    const value = fillByType(variable.name, variable.type, ctx);
     if (value !== undefined) out[variable.name] = value;
   }
   return out;
