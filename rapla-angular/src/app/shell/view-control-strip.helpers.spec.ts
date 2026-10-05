@@ -57,3 +57,27 @@ describe('todayWindow', () => {
     expect(w.from).toBe('2026-06-15T00:00:00');
   });
 });
+
+describe('todayWindow per render mode — PRD 128 OQ15 date jump', () => {
+  const week = { from: '2026-01-05T00:00:00', to: '2026-01-12T00:00:00' };
+  const thursday = new Date('2026-10-08T17:30:00Z');
+
+  it('Tag: exactly that day, not the Monday of its week', () => {
+    expect(todayWindow(week, thursday, 'day').from).toBe('2026-10-08T00:00:00');
+  });
+
+  it('Woche / Tabelle: the week containing the day', () => {
+    expect(todayWindow(week, thursday, 'week')).toEqual({
+      from: '2026-10-05T00:00:00',
+      to: '2026-10-12T00:00:00',
+    });
+    expect(todayWindow(week, thursday, 'table').from).toBe('2026-10-05T00:00:00');
+  });
+
+  it('Monat: the month of the day, even when its Monday lies in the month before', () => {
+    expect(todayWindow(week, new Date('2026-10-01T09:00:00Z'), 'month')).toEqual({
+      from: '2026-10-01T00:00:00',
+      to: '2026-11-01T00:00:00',
+    });
+  });
+});

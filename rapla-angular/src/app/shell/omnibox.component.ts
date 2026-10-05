@@ -9,21 +9,20 @@ import type { SearchResult, SearchResultGroup } from '../search/search.types';
 import { ResourceSelectionStore } from '../state/resource-selection-store';
 import { ViewStateStore } from '../state/view-state-store';
 import { EventSheetComponent, type EventSheetDialogData } from '../event/event-sheet.component';
-import { todayWindow } from './view-control-strip.component';
+import { ONE_WEEK, todayWindow } from './view-control-strip.component';
 import { entityIcon } from './entity-icon';
 import { TPipe } from '../i18n/i18n.service';
 
 /** Span used when no window is set yet: one week (Monday to Monday). */
-const ONE_WEEK = { from: '2026-01-05T00:00:00', to: '2026-01-12T00:00:00' };
 
 /** PRD 106 pattern — at most one server search per interval while typing, last term always sent. */
 const SEARCH_THROTTLE_MS = 300;
 
 /**
- * The one search field of the shell (PRD 119 D3/D4). Every keystroke narrows the resource picker
- * on the left (shared query, no server call); from {@link MIN_QUERY_LENGTH} characters the
- * dropdown lists matching EVENTS — a hit jumps to its week and opens its sheet. A first row points
- * to the resources and groups the picker now shows.
+ * The top search field of the shell (PRD 119 D4/D13). Its term is its own — not persisted, never the
+ * picker's; from {@link MIN_QUERY_LENGTH} characters the dropdown lists matching EVENTS — a hit jumps
+ * to its week and opens its sheet. A first row counts the picker's hits for the term; clicking it
+ * (or Enter) hands the term over to the picker field.
  */
 @Component({
   selector: 'app-omnibox',
@@ -40,8 +39,8 @@ const SEARCH_THROTTLE_MS = 300;
       />
       @if (showResults()) {
         <div class="results">
-          <button type="button" class="countrow" (click)="focusPicker()">
-            {{ 'shell_omnibox_count' | t: store.matchCount() }}
+          <button type="button" class="countrow" (click)="handOver()">
+            {{ 'shell_omnibox_count' | t: store.matchCountFor(term()) }}
           </button>
           @for (g of groups(); track g.kind) {
             <div class="group">
@@ -173,8 +172,7 @@ export class OmniboxComponent {
   private readonly dialog = inject(MatDialog);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  /** Starts from the store so a query restored after a reload (PRD 123 D5) shows in the field. */
-  protected readonly term = signal(this.store.query());
+  protected readonly term = signal('');
   /** Whether the results dropdown is open (closes on Escape / outside-click / action). */
   protected readonly open = signal(false);
 
@@ -190,18 +188,12 @@ export class OmniboxComponent {
     () => this.open() && this.term().length >= MIN_QUERY_LENGTH,
   );
 
-  /** Typing narrows the picker at once (no minimum) and reopens the dropdown. */
   onType(value: string): void {
     this.term.set(value);
-    this.store.setQuery(value);
     this.open.set(true);
   }
 
-  /**
-   * PRD 123 D4 — the keyboard path from the search field: Enter asks the rail to step its first
-   * shown row (Ctrl/⌘ = add; the rail's step is the only row semantics), ↓ hands the focus to
-   * the picker, Esc clears the query.
-   */
+  /** Enter hands the term over like the count row; Esc clears the term. */
   onKeydown(event: KeyboardEvent): void {
     if (event.key === 'Escape') {
       if (this.term()) {
@@ -210,15 +202,9 @@ export class OmniboxComponent {
       }
       return;
     }
-    if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      this.focusPicker();
-      return;
-    }
     if (event.key !== 'Enter') return;
     event.preventDefault();
-    this.store.requestActivateFirst(event.ctrlKey || event.metaKey);
-    this.open.set(false);
+    this.handOver();
   }
 
   @HostListener('document:keydown.escape')
@@ -238,8 +224,9 @@ export class OmniboxComponent {
     return entityIcon(r.kind, r.sublabel);
   }
 
-  /** The count row sends the user to the picker, where the resource hits live. */
-  focusPicker(): void {
+  /** PRD 119 D13 — copy the term into the picker field (overwriting it) and focus that field. */
+  handOver(): void {
+    this.store.setQuery(this.term());
     this.store.requestPickerFocus();
     this.open.set(false);
   }
@@ -248,7 +235,11 @@ export class OmniboxComponent {
   openEvent(r: SearchResult): void {
     if (r.start) {
       this.viewState.setWindow(
-        todayWindow(this.viewState.window() ?? ONE_WEEK, new Date(`${r.start}Z`)),
+        todayWindow(
+          this.viewState.window() ?? ONE_WEEK,
+          new Date(`${r.start}Z`),
+          this.viewState.renderMode(),
+        ),
       );
     }
     this.dialog.open(EventSheetComponent, {

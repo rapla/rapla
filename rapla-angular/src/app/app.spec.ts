@@ -9,11 +9,33 @@ import { App } from './app';
 import { AuthService, Identity } from './auth/auth.service';
 import { UsersService } from './auth/users.service';
 import { ViewCatalogService, type ViewInfo } from './views/view-catalog.service';
+import { ReviewStore } from './state/review-store';
+import { FilterStore } from './state/filter-store';
+import { ViewStateStore } from './state/view-state-store';
+import type { ConflictCount, RequestWire } from './state/review-tree';
 
 const VIEWS: ViewInfo[] = [
   { name: 'Wochenansicht', title: 'Wochenansicht', source: 'CUSTOM' },
   { name: 'rapla_appointments', title: 'Termine', source: 'BUILTIN' },
+  {
+    name: 'rapla_conflicts',
+    title: 'Konflikte',
+    source: 'BUILTIN',
+    selection: 'CONFLICTS',
+    defaultRenderMode: 'day',
+  },
+  { name: 'rapla_requests', title: 'Ressourcenanfragen', source: 'BUILTIN', selection: 'REQUESTS' },
 ];
+
+/** PRD 128 — the review data the shell reads; loads are recorded, not sent. */
+const review = {
+  counts: signal<ConflictCount[]>([]),
+  requests: signal<RequestWire[]>([]),
+  loaded: signal(new Map()),
+  ensureLoaded: vi.fn(),
+  refresh: vi.fn(),
+  loadConflicts: vi.fn(),
+};
 
 const IDENTITY: Identity = {
   userId: 'u-1',
@@ -43,6 +65,7 @@ describe('App', () => {
         provideAnimationsAsync(),
         { provide: UsersService, useValue: { list: () => of([]) } },
         { provide: ViewCatalogService, useValue: { listViews: () => of(VIEWS) } },
+        { provide: ReviewStore, useValue: review },
         {
           provide: AuthService,
           useValue: {
@@ -56,6 +79,91 @@ describe('App', () => {
       ],
     }).compileComponents();
     await TestBed.inject(Router).navigate(['/views', 'rapla_appointments']);
+  });
+
+  describe('PRD 128 D7 — Konflikte / Ressourcenanfragen as views', () => {
+    beforeEach(() => {
+      review.counts.set([]);
+      review.requests.set([]);
+      review.refresh.mockReset();
+    });
+
+    const badges = (el: HTMLElement) =>
+      Array.from(el.querySelectorAll<HTMLAnchorElement>('.view-switch a.review-badge')).map((b) =>
+        b.textContent?.replace(/\s+/g, ' ').trim(),
+      );
+
+    it('red badges next to the selector show the ACTIVE conflicts and the requests, only while > 0', async () => {
+      const f = TestBed.createComponent(App);
+      f.detectChanges();
+      const el = f.nativeElement as HTMLElement;
+      expect(badges(el)).toEqual([]);
+      review.counts.set([
+        { resourceId: 'r1', disabled: false, count: 3 },
+        { resourceId: 'r1', disabled: true, count: 5 },
+      ]);
+      review.requests.set([{} as RequestWire, {} as RequestWire]);
+      f.detectChanges();
+      expect(badges(el)).toEqual(['warning 3', 'pending_actions 2']);
+      el.querySelector<HTMLAnchorElement>('a.review-badge')!.click();
+      await f.whenStable();
+      expect(TestBed.inject(Router).url).toBe('/views/rapla_conflicts');
+    });
+
+    it('the menu entries of both views carry the same icon and count', async () => {
+      review.counts.set([{ resourceId: 'r1', disabled: false, count: 3 }]);
+      const f = TestBed.createComponent(App);
+      f.detectChanges();
+      ((f.nativeElement as HTMLElement).querySelector('.view-trigger') as HTMLElement).click();
+      f.detectChanges();
+      await f.whenStable();
+      const entry = Array.from(document.querySelectorAll('.mat-mdc-menu-panel a')).find((a) =>
+        a.textContent?.includes('Konflikte'),
+      );
+      expect(entry?.querySelector('.review-count')?.textContent?.replace(/\s+/g, '')).toBe(
+        'warning3',
+      );
+    });
+
+    it('the view menu lists the planning views, then the stored ones, then conflicts / requests, each block behind a divider', async () => {
+      const f = TestBed.createComponent(App);
+      f.detectChanges();
+      ((f.nativeElement as HTMLElement).querySelector('.view-trigger') as HTMLElement).click();
+      f.detectChanges();
+      await f.whenStable();
+      const panel = document.querySelector('.mat-mdc-menu-panel')!;
+      const order = Array.from(panel.querySelectorAll('a.mat-mdc-menu-item, mat-divider')).map(
+        (e) =>
+          e.tagName === 'MAT-DIVIDER'
+            ? '---'
+            : (e.querySelector('span')?.textContent?.trim() ?? ''),
+      );
+      expect(order).toEqual([
+        'Termine',
+        '---',
+        'Wochenansicht',
+        '---',
+        'Konflikte',
+        'Ressourcenanfragen',
+      ]);
+    });
+
+    it('a Prüfen view switches the chip context and the left pane; a planning view brings Planen back (D3)', async () => {
+      const filter = TestBed.inject(FilterStore);
+      const f = TestBed.createComponent(App);
+      f.detectChanges();
+      await TestBed.inject(Router).navigate(['/views', 'rapla_conflicts']);
+      f.detectChanges();
+      expect(filter.context()).toBe('conflicts');
+      expect(review.refresh).toHaveBeenCalledWith('conflicts');
+      expect(TestBed.inject(ViewStateStore).renderMode()).toBe('day');
+      expect(
+        (f.nativeElement as HTMLElement).querySelector('app-resource-selection .sechead'),
+      ).toBeNull();
+      await TestBed.inject(Router).navigate(['/views', 'rapla_appointments']);
+      f.detectChanges();
+      expect(filter.context()).toBe('plan');
+    });
   });
 
   it('should create the app', () => {

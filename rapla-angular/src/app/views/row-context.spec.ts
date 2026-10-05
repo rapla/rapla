@@ -130,3 +130,25 @@ describe('block identity sourcing (PRD 095 Phase 3b)', () => {
     expect(ctx.block.appointmentId).toBe('a9');
   });
 });
+
+describe('anonymous blocks (PRD 128 Phase 1b)', () => {
+  it('a block of an unreadable reservation has no subject — no menu, no open, no delete scope', () => {
+    const row = {
+      name: 'nicht sichtbar',
+      reservation: null,
+      reservationId: 'v1',
+      appointment: null,
+      appointmentId: 'a1',
+      start: '2026-10-05T10:00:00',
+    };
+    const ctx = extractRowContext(row, 'rapla_conflicts', []);
+    expect(ctx.primary).toBeNull();
+    expect(ctx.subjects).toEqual([]);
+  });
+
+  it('a reservation-rooted view (flat reservationId, no reservation object) keeps its subject', () => {
+    expect(
+      extractRowContext({ reservationId: 'v1', name: 'X' }, 'rapla_reservations', []).primary,
+    ).toEqual(expect.objectContaining({ kind: 'reservation', id: 'v1' }));
+  });
+});

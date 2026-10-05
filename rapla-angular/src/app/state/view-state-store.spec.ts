@@ -73,4 +73,43 @@ describe('ViewStateStore', () => {
     store.applyViewModes(['table', 'month']);
     expect(store.renderMode()).toBe('table');
   });
+
+  describe('PRD 128 D7 — default render mode per view, remembered per view', () => {
+    const ALL = ['table', 'day', 'week', 'month'] as const;
+
+    it('the first open of a view with defaultRenderMode uses it, even over a remembered mode', () => {
+      store.setRenderMode('week');
+      store.applyViewModes([...ALL], 'rapla_conflicts', 'day');
+      expect(store.renderMode()).toBe('day');
+    });
+
+    it('a mode chosen in that view sticks to it; other views keep theirs', () => {
+      store.applyViewModes([...ALL], 'rapla_appointments');
+      store.setRenderMode('month');
+      store.applyViewModes([...ALL], 'rapla_conflicts', 'day');
+      expect(store.renderMode()).toBe('day');
+      store.setRenderMode('week');
+      store.applyViewModes([...ALL], 'rapla_appointments');
+      expect(store.renderMode()).toBe('month');
+      store.applyViewModes([...ALL], 'rapla_conflicts', 'day');
+      expect(store.renderMode()).toBe('week');
+    });
+
+    it('entering a view sets its remembered or default mode before any query (date jump in an empty selection)', () => {
+      store.setRenderMode('table');
+      store.enterView('rapla_conflicts', 'day');
+      expect(store.renderMode()).toBe('day');
+      store.enterView('rapla_appointments');
+      expect(store.renderMode()).toBe('day');
+    });
+
+    it('survives a reload', () => {
+      store.applyViewModes([...ALL], 'rapla_conflicts', 'day');
+      store.setRenderMode('month');
+      TestBed.resetTestingModule();
+      const fresh = TestBed.inject(ViewStateStore);
+      fresh.applyViewModes([...ALL], 'rapla_conflicts', 'day');
+      expect(fresh.renderMode()).toBe('month');
+    });
+  });
 });

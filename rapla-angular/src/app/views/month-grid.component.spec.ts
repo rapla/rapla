@@ -323,3 +323,19 @@ describe('MonthGridComponent — drag-create day-range selection (PRD 095 Phase 
     expect(emitted).toEqual([]);
   });
 });
+
+describe('MonthGridComponent — PRD 128 D1 pale blocks outside the focus', () => {
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({ imports: [MonthGridComponent] }).compileComponents();
+  });
+
+  it('marks exactly the rows in paleRows as pale', () => {
+    const f = TestBed.createComponent(MonthGridComponent);
+    f.componentRef.setInput('rows', ROWS);
+    f.componentRef.setInput('anchor', '2026-07-07');
+    f.componentRef.setInput('paleRows', new Set([ROWS[1]]));
+    f.detectChanges();
+    expect(chips(f, 'Projektreview')[0].classList).toContain('pale');
+    expect(chips(f, 'Seminar KI')[0].classList).not.toContain('pale');
+  });
+});

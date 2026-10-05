@@ -109,7 +109,7 @@ export class ResourceSelectionStore {
     }),
   );
   readonly activeId = this._activeId.asReadonly();
-  /** PRD 119 D3 — the one search field writes it; the picker narrows by it. */
+  /** PRD 119 D13 — the picker's own search field writes it; the picker narrows by it. */
   readonly query = this._query.asReadonly();
   /** Bumped when the search dropdown sends the user to the picker (PRD 119 D4). */
   readonly pickerFocus = this._pickerFocus.asReadonly();
@@ -177,12 +177,10 @@ export class ResourceSelectionStore {
     }
   }
 
-  /** The picker's search hits for the current query — the dropdown's count row (PRD 119 D4). */
-  readonly matchCount = computed(
-    () =>
-      filterRows(this._resources(), this._query()).length +
-      usersMatching(this._users(), this._query()).length,
-  );
+  /** The picker's hits for the top field's own term — the dropdown's count row (PRD 119 D4/D13). */
+  matchCountFor(term: string): number {
+    return filterRows(this._resources(), term).length + usersMatching(this._users(), term).length;
+  }
 
   /** Loads the lean list once per SPA start. */
   ensureLoaded(): void {

@@ -197,8 +197,7 @@ describe('ResourceSelectionStore', () => {
         users: [{ id: 'u1', username: 'hoermann', name: 'Hörmann' }],
       },
     });
-    store.setQuery('hör');
-    expect(store.matchCount()).toBe(2);
+    expect(store.matchCountFor('hör')).toBe(2);
   });
 
   it('hands the filter the tree order: resources in server order, then users A–Z (PRD 127 OQ6)', () => {
@@ -245,8 +244,20 @@ describe('ResourceSelectionStore', () => {
     expect(store.isFavorite('F')).toBe(false);
   });
 
-  /** PRD 119 D3 — the one search field and the picker share this query. */
-  it('holds the shared query', () => {
+  it('PRD 119 D13 — counts the hits for another term with the picker matcher, without touching the query', () => {
+    store.ensureLoaded();
+    flushList([
+      wire('r1', 'Hörsaal 1', 'room', 'Raum'),
+      wire('r2', 'Hörsaal 2', 'room', 'Raum'),
+      wire('r3', 'Labor', 'room', 'Raum'),
+    ]);
+    store.setQuery('Lab');
+    expect(store.matchCountFor('Hör')).toBe(2);
+    expect(store.query()).toBe('Lab');
+  });
+
+  /** PRD 119 D13 — the picker field's query, persisted (PRD 123 D5). */
+  it('holds the picker query', () => {
     expect(store.query()).toBe('');
     store.setQuery('Hör');
     expect(store.query()).toBe('Hör');
@@ -332,6 +343,13 @@ describe('ResourceSelectionStore', () => {
     expect(fresh.activeChip()).toBe('persons');
     expect(fresh.query()).toBe('Hör');
     expect(fresh.activeId()).toBe('r1');
+  });
+
+  it('PRD 128 D7 — opening a section leaves the chip context alone (the view switches it)', () => {
+    const filter = TestBed.inject(FilterStore);
+    filter.setContext('conflicts');
+    store.setActiveChip('recents');
+    expect(filter.context()).toBe('conflicts');
   });
 
   it('maps an old saved type chip to Ressourcen (PRD 127 D1)', () => {

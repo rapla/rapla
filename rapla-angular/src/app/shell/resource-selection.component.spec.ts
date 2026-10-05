@@ -8,6 +8,7 @@ import { of } from 'rxjs';
 import { ResourceSelectionComponent } from './resource-selection.component';
 import { ResourceSelectionStore } from '../state/resource-selection-store';
 import { FilterStore } from '../state/filter-store';
+import { ViewStateStore } from '../state/view-state-store';
 import { RecentsFavoritesService } from '../state/recents-favorites.service';
 import { ResourceEditDialogComponent } from '../resource/resource-edit-dialog.component';
 import { AuthService, type Identity } from '../auth/auth.service';
@@ -78,6 +79,12 @@ describe('ResourceSelectionComponent', () => {
     )) {
       req.flush({ data: { resources: rows, users } });
     }
+    // PRD 128 — the rail asks for the Konflikte / Ressourcenanfragen heads once.
+    for (const req of http.match(
+      (r) => r.url === '/api/graphql' && String(r.body?.query).includes('conflictStats'),
+    )) {
+      req.flush({ data: { conflictStats: [], resourceRequests: [] } });
+    }
     // PRD 122 — the "+ Neu" button asks for the creatable types once per rail.
     for (const req of http.match(
       (r) => r.url === '/api/graphql' && String(r.body?.query).includes('newResourceOptions'),
@@ -118,10 +125,10 @@ describe('ResourceSelectionComponent', () => {
     (f.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button.newbtn');
 
   // PRD 122 D1/D3 (ruling B1) — the "+ Neu" button in the rail header
-  it('"+ Neu" is hidden when the server offers no creatable type, and with it the header row (PRD 127)', async () => {
+  it('"+ Neu" is hidden when the server offers no creatable type; the header row stays for the search field (PRD 119 D13)', async () => {
     const f = await create([room(1)]);
     expect(newButton(f)).toBeNull();
-    expect((f.nativeElement as HTMLElement).querySelector('.sthead')).toBeNull();
+    expect((f.nativeElement as HTMLElement).querySelector('.sthead input.pksearch')).not.toBeNull();
   });
 
   it('the rail header carries no label, only "+ Neu" (PRD 127, user 2026-10-04)', async () => {
@@ -132,6 +139,7 @@ describe('ResourceSelectionComponent', () => {
     );
     const head = (f.nativeElement as HTMLElement).querySelector('.sthead')!;
     expect(head.textContent?.trim()).toBe('+ Neu');
+    expect(head.firstElementChild?.matches('input.pksearch')).toBe(true);
   });
 
   it('"+ Neu" preselects the type of the last clicked type folder or resource, else the first creatable type (PRD 127 D7)', async () => {
@@ -236,9 +244,71 @@ describe('ResourceSelectionComponent', () => {
     expect(el.querySelector('.grouprow .count')?.textContent?.trim()).toBe('25');
   });
 
-  it('has no search input of its own — the top field drives the list (PRD 119 D3)', async () => {
+  it('PRD 128 D1/OQ15 — a conflict click replaces the chips of its context and jumps to its date; Ctrl adds', async () => {
     const f = await create([room(1)]);
-    expect((f.nativeElement as HTMLElement).querySelector('input')).toBeNull();
+    const viewState = TestBed.inject(ViewStateStore);
+    viewState.setWindow({ from: '2026-06-01T00:00:00', to: '2026-06-08T00:00:00' });
+    filter.setContext('conflicts');
+    const k = (id: string) => ({ id, kind: 'conflict' as const, label: id });
+    const host = f.componentInstance as unknown as {
+      reviewPick(e: { entry: ReturnType<typeof k>; date: string | null; ctrl: boolean }): void;
+    };
+    host.reviewPick({ entry: k('CONFLICT;r1;a;b'), date: '2026-10-07T10:00:00', ctrl: false });
+    expect(filter.entries().map((e) => e.id)).toEqual(['CONFLICT;r1;a;b']);
+    expect(viewState.window()).toEqual({ from: '2026-10-05T00:00:00', to: '2026-10-12T00:00:00' });
+    host.reviewPick({ entry: k('CONFLICT;r1;c;d'), date: null, ctrl: true });
+    expect(filter.entries().map((e) => e.id)).toEqual(['CONFLICT;r1;a;b', 'CONFLICT;r1;c;d']);
+    host.reviewPick({ entry: k('CONFLICT;r1;c;d'), date: null, ctrl: true });
+    expect(filter.entries().map((e) => e.id)).toEqual(['CONFLICT;r1;a;b']);
+    filter.setContext('plan');
+  });
+
+  describe('PRD 119 D13 — the picker search field', () => {
+    const field = (f: { nativeElement: unknown }) =>
+      (f.nativeElement as HTMLElement).querySelector<HTMLInputElement>('input.pksearch')!;
+    const press = (f: { nativeElement: unknown }, key: string, init: KeyboardEventInit = {}) =>
+      field(f).dispatchEvent(
+        new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init }),
+      );
+
+    it('has exactly one search input; typing narrows the picker through the persisted store query', async () => {
+      resources.setActiveChip('resources');
+      const f = await create([room(1), room(2)]);
+      const el = f.nativeElement as HTMLElement;
+      expect(el.querySelectorAll('input').length).toBe(1);
+      field(f).value = '02';
+      field(f).dispatchEvent(new Event('input'));
+      await f.whenStable();
+      expect(resources.query()).toBe('02');
+      expect(el.querySelector('.searchnote')?.textContent).toContain('1 Treffer');
+    });
+
+    it('shows a query restored from storage', async () => {
+      resources.setQuery('Hör');
+      const f = await create([room(1)]);
+      expect(field(f).value).toBe('Hör');
+    });
+
+    it('Enter steps the first shown row, Ctrl+Enter adds, ArrowDown focuses the list, Escape clears (PRD 123 D4)', async () => {
+      resources.setActiveChip('resources');
+      const f = await create([room(2), room(1)]);
+      resources.setQuery('Raum');
+      await f.whenStable();
+      press(f, 'Enter');
+      await f.whenStable();
+      expect(filter.entries().map((e) => e.id)).toEqual(['r2']);
+      resources.setQuery('01');
+      await f.whenStable();
+      press(f, 'Enter', { ctrlKey: true });
+      await f.whenStable();
+      expect(filter.entries().map((e) => e.id)).toEqual(['r2', 'r1']);
+      press(f, 'ArrowDown');
+      expect(document.activeElement).toBe(
+        (f.nativeElement as HTMLElement).querySelector('.stepper'),
+      );
+      press(f, 'Escape');
+      expect(resources.query()).toBe('');
+    });
   });
 
   it("the stepper fills the 290px drawer's border-box content (289px) instead of a fixed width that adds a horizontal scrollbar", async () => {
@@ -432,11 +502,13 @@ describe('ResourceSelectionComponent', () => {
     expect(resources.activeId()).toBe('C348');
   });
 
-  it('a focus request from the search dropdown focuses the list', async () => {
+  it('a focus request from the search dropdown focuses the picker search field (PRD 119 D13)', async () => {
     const f = await create([room(1)]);
     resources.requestPickerFocus();
     await f.whenStable();
-    expect(document.activeElement).toBe((f.nativeElement as HTMLElement).querySelector('.stepper'));
+    expect(document.activeElement).toBe(
+      (f.nativeElement as HTMLElement).querySelector('input.pksearch'),
+    );
   });
 
   it('an activate-first request steps the first shown row of the picker — also in a type folder (PRD 123 M2)', async () => {
@@ -575,7 +647,7 @@ describe('ResourceSelectionComponent', () => {
       const f = await makeList();
       filter.add({ id: 'EXT', kind: 'event', label: 'ext' });
       click(items(f)[0], { ctrlKey: true });
-      expect(chipIds()).toEqual(['EXT', 'r1']);
+      expect(chipIds()).toEqual(['r1', 'EXT']); // PRD 127 OQ6: tree order, unknown ids last
       click(items(f)[1]);
       expect(chipIds()).toEqual(['r2']);
     });
@@ -800,7 +872,7 @@ describe('ResourceSelectionComponent', () => {
       btn().dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true }));
       await f.whenStable();
       f.detectChanges();
-      expect(filter.entries().map((e) => e.id)).toEqual(['r4', 'r1', 'r2']);
+      expect(filter.entries().map((e) => e.id)).toEqual(['r1', 'r2', 'r4']); // PRD 127 OQ6: tree order
       expect(rows(el)).toEqual(['▸ Raum (4)', '▸ Gebäude A (2)', '▸ Gebäude B (1)', 'Aula']);
       expect(btn().textContent?.trim()).toBe('Auswahl aufheben');
       btn().click();

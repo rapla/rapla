@@ -84,4 +84,42 @@ describe('buildVariablesByType', () => {
       ]),
     ).toEqual({ resourceIds: ['r1'], ownerIds: ['u-42', 'u-7'] });
   });
+  it('PRD 128 D1 — a conflict or request chip scopes its resource (deduped)', () => {
+    expect(
+      scopeOf([
+        { id: 'CONFLICT;r1;a1;a2', kind: 'conflict', label: 'K' },
+        { id: 'CONFLICT;r1;a3;a4', kind: 'conflict', label: 'K2' },
+        { id: 'REQUEST;r2;v1', kind: 'request', label: 'A' },
+      ]),
+    ).toEqual({ resourceIds: ['r1', 'r2'], ownerIds: [] });
+  });
+
+  it('PRD 128 D7 — a ConflictFilter gets the scoped resources and the window; a ResourceRequestFilter the resources', () => {
+    expect(
+      buildVariablesByType(
+        [
+          v('filter', 'ReservationFilter!'),
+          v('conflicts', 'ConflictFilter'),
+          v('requests', 'ResourceRequestFilter'),
+        ],
+        { window: W, resourceIds: RES },
+      ),
+    ).toEqual({
+      filter: { from: W.from, to: W.to, resourceMatching: { idIn: RES } },
+      conflicts: { resourceIdsIn: RES, from: W.from, to: W.to },
+      requests: { resourceIdsIn: RES },
+    });
+  });
+
+  it('without a selection both stay unset (the server default; the view host fires no query anyway)', () => {
+    expect(
+      buildVariablesByType(
+        [v('conflicts', 'ConflictFilter'), v('requests', 'ResourceRequestFilter')],
+        {
+          window: W,
+          resourceIds: [],
+        },
+      ),
+    ).toEqual({});
+  });
 });

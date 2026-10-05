@@ -7,6 +7,8 @@ import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { ResourcePickerComponent, type PickEvent } from './resource-picker.component';
 import type { AvailabilityRow } from '../event/availability-search.service';
 import { RecentsFavoritesService } from '../state/recents-favorites.service';
+import { ReviewStore } from '../state/review-store';
+import type { FilterEntry } from '../state/filter-store';
 
 const room = (i: number, typeKey = 'room', typeName = 'Raum') => ({
   id: `r${i}`,
@@ -405,5 +407,131 @@ describe('ResourcePickerComponent', () => {
     expect(document.activeElement).toBe(second);
     second.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     expect(picks.map((p) => p.item.id)).toEqual(['r2']);
+  });
+
+  it('PRD 127 D7 — a click on a search heading counts as a type click for "+ Neu"; the Benutzer heading does not', async () => {
+    const f = await create([room(1), room(2, 'camera', 'Kamera')], { query: 'Raum' }, [
+      { id: 'u1', username: 'raumwart', name: 'Raumwart' },
+    ]);
+    const types: string[] = [];
+    f.componentInstance.typeClick.subscribe((t) => types.push(t));
+    const el = f.nativeElement as HTMLElement;
+    for (const h of Array.from(el.querySelectorAll<HTMLElement>('.typehdr'))) h.click();
+    expect(types).toEqual(['room', 'camera']);
+  });
+
+  describe('PRD 128 D7 — the conflict / request tree as the picker source of a Prüfen view', () => {
+    const bucket = (resourceId: string, disabled: boolean, count: number) => ({
+      keys: [
+        { key: 'RESOURCE', value: resourceId },
+        { key: 'DISABLED', value: String(disabled) },
+      ],
+      count,
+    });
+    const REQUEST = {
+      resource: { id: 'r2', name: 'Raum 02' },
+      reservationId: 'v1',
+      reservation: { name: 'Tagung' },
+      appointments: [{ start: '2026-10-06T09:00:00' }],
+    };
+
+    async function withReview(
+      buckets: unknown[],
+      requests: unknown[],
+      inputs: Record<string, unknown> = {},
+    ): Promise<ComponentFixture<ResourcePickerComponent>> {
+      const f = await create([room(1), room(2)], inputs);
+      TestBed.inject(ReviewStore).ensureLoaded();
+      http
+        .expectOne((r) => String(r.body?.query).includes('conflictStats'))
+        .flush({ data: { conflictStats: buckets, resourceRequests: requests } });
+      await f.whenStable();
+      f.detectChanges();
+      return f;
+    }
+
+    it('the accordion has only the five Planen sections, whatever the review data (D7)', async () => {
+      const f = await withReview([bucket('r1', false, 2)], [REQUEST]);
+      expect(heads(f.nativeElement)).toEqual(['Ressourcen']);
+    });
+
+    it('a review source replaces the accordion by its tree: no section heads, no "Meine Buchungen"', async () => {
+      const f = await withReview([bucket('r1', false, 2)], [REQUEST], { source: 'requests' });
+      const el = f.nativeElement as HTMLElement;
+      expect(heads(el)).toEqual([]);
+      expect(el.querySelector('.sechead')).toBeNull();
+      expect(folders(el)).toEqual(['Raum 1']);
+    });
+
+    it('Konflikte: type → resource; opening a resource loads its conflicts; a click hands out the chip and its date', async () => {
+      const f = await withReview([bucket('r1', false, 1), bucket('r2', true, 3)], [], {
+        source: 'conflicts',
+      });
+      const el = f.nativeElement as HTMLElement;
+      expect(folders(el)).toEqual(['Raum 1', 'Deaktivierte Konflikte 3']);
+      expect(el.querySelector('.grouprow .selectall')).toBeNull();
+      await openFolder(f, 'Raum');
+      await openFolder(f, 'Raum 01');
+      const req = http.expectOne((r) => String(r.body?.query).includes('conflicts(filter'));
+      expect(req.request.body.variables).toEqual({ f: { resourceIdsIn: ['r1'] } });
+      req.flush({
+        data: {
+          conflicts: [
+            {
+              id: 'CONFLICT;r1;a1;a2',
+              startDate: '2026-10-05T10:00:00',
+              disabled: false,
+              description: 'belegt',
+              resource: { id: 'r1', name: 'Raum 01' },
+              reservation1: { name: 'A' },
+              reservation2: null,
+            },
+          ],
+        },
+      });
+      await f.whenStable();
+      f.detectChanges();
+      const picks: { entry: FilterEntry; date: string | null; ctrl: boolean }[] = [];
+      f.componentInstance.reviewPick.subscribe((p) => picks.push(p));
+      const entry = el.querySelector<HTMLElement>('.item.entry')!;
+      expect(entry.textContent).toContain('05.10. 10:00 A ↔ belegt');
+      entry.dispatchEvent(new MouseEvent('click', { ctrlKey: true, bubbles: true }));
+      expect(picks).toEqual([
+        {
+          entry: {
+            id: 'CONFLICT;r1;a1;a2',
+            kind: 'conflict',
+            label: '⚠ Raum 01 · 05.10.',
+            resourceName: 'Raum 01',
+          },
+          date: '2026-10-05T10:00:00',
+          ctrl: true,
+        },
+      ]);
+    });
+
+    it('Ressourcenanfragen lists the requests; a selected chip marks its row', async () => {
+      const f = await withReview([], [REQUEST], {
+        source: 'requests',
+        checked: new Set(['REQUEST;r2;v1']),
+      });
+      await openFolder(f, 'Raum');
+      await openFolder(f, 'Raum 02');
+      const entry = (f.nativeElement as HTMLElement).querySelector('.item.entry')!;
+      expect(entry.textContent).toContain('Tagung · 06.10.');
+      expect(entry.classList).toContain('selected');
+    });
+
+    it('search in Konflikte narrows to matching resources and counts them (OQ16)', async () => {
+      const f = await withReview([bucket('r1', false, 1), bucket('r2', false, 2)], [], {
+        source: 'conflicts',
+        query: 'Raum 02',
+      });
+      const el = f.nativeElement as HTMLElement;
+      expect(heads(el)).toEqual([]);
+      expect(folders(el)).toEqual(['Raum 2', 'Raum 02 2']);
+      expect(el.querySelector('.searchnote')?.textContent).toContain('1 Treffer');
+      expect(el.querySelector('.searchnote .listall')).toBeNull();
+    });
   });
 });

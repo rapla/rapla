@@ -1,3 +1,5 @@
+import { scopedResourceId } from '../state/filter-store';
+
 /**
  * PRD 091 Phase 2.2 — the event sheet's draft model. Pure TS, no Angular.
  *
@@ -120,6 +122,7 @@ export interface ScopeChip {
   id: string;
   kind: string;
   label: string;
+  resourceName?: string;
 }
 
 /**
@@ -133,13 +136,18 @@ export interface ScopeChip {
  * EXACTLY ONE; two or more selected resources pre-allocate nothing, because guessing
  * which of them this event means would silently book resources the user never picked.
  * The SPA has no marked-cell concept yet, so only the fallback applies here.
+ * PRD 128 OQ17 — a conflict/request chip counts as its resource.
  */
 export function scopeAllocations(chips: ScopeChip[]): DraftAllocation[] {
-  const resources = chips.filter((c) => c.kind === 'resource');
-  if (resources.length !== 1) return [];
-  return resources.map((c) => ({
-    resourceId: c.id,
-    resourceName: c.label,
+  const resources = new Map<string, string>();
+  for (const c of chips) {
+    const id = scopedResourceId(c);
+    if (id !== null && !resources.has(id)) resources.set(id, c.resourceName ?? c.label);
+  }
+  if (resources.size !== 1) return [];
+  return [...resources].map(([resourceId, resourceName]) => ({
+    resourceId,
+    resourceName,
     appointmentIds: null,
     requestStatus: null,
   }));

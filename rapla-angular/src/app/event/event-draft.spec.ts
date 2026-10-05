@@ -189,6 +189,32 @@ describe('four-field coupling (withStart / withEnd)', () => {
   });
 });
 
+describe('scopeAllocations — PRD 128 OQ17: conflict/request chips scope their resource', () => {
+  it('one conflict (or two on the same resource) pre-allocates that resource under its name', () => {
+    const k1 = {
+      id: 'CONFLICT;r1;a1;a2',
+      kind: 'conflict',
+      label: '⚠ Raum 1 · 05.10.',
+      resourceName: 'Raum 1',
+    };
+    const k2 = {
+      id: 'CONFLICT;r1;a3;a4',
+      kind: 'conflict',
+      label: '⚠ Raum 1 · 06.10.',
+      resourceName: 'Raum 1',
+    };
+    expect(scopeAllocations([k1, k2])).toEqual([
+      { resourceId: 'r1', resourceName: 'Raum 1', appointmentIds: null, requestStatus: null },
+    ]);
+  });
+
+  it('a request on another resource makes two → nothing pre-allocated', () => {
+    const k1 = { id: 'CONFLICT;r1;a1;a2', kind: 'conflict', label: 'K', resourceName: 'Raum 1' };
+    const q = { id: 'REQUEST;r2;v1', kind: 'request', label: 'A', resourceName: 'Beamer' };
+    expect(scopeAllocations([k1, q])).toEqual([]);
+  });
+});
+
 describe('scopeAllocations / newScopedDraft (Swing parity — PRD 094)', () => {
   const chips = [
     { id: 'r1', kind: 'resource', label: 'Kamera G40' },

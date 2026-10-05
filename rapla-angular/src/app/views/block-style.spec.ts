@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import { CHIP_TEXT_COLOR, chipColor, chipName, chipTime, isMovableRow } from './block-style';
+import {
+  CHIP_TEXT_COLOR,
+  chipColor,
+  chipName,
+  chipTime,
+  isAnonymousRow,
+  isDraggableRow,
+  isMovableRow,
+  paleRows,
+} from './block-style';
+import type { FilterEntry } from '../state/filter-store';
 
 describe('block-style (PRD 100 Phase 1)', () => {
   it('chipColor returns the §12-gated color string', () => {
@@ -72,5 +82,62 @@ describe('isMovableRow — drag gate (PRD 095 D6, fail-closed)', () => {
     expect(isMovableRow({ ...movable, appointment: undefined })).toBe(false);
     // appointment selected WITHOUT the repeating field → unknown → not movable
     expect(isMovableRow({ ...movable, appointment: { id: 'a1' } })).toBe(false);
+  });
+});
+
+describe('paleRows — PRD 128 D1 focus', () => {
+  const block = (app: string, start: string, end: string) => ({
+    appointment: { id: app },
+    start: `2026-10-05T${start}:00`,
+    end: `2026-10-05T${end}:00`,
+  });
+  const a1Hit = block('a1', '10:00', '12:00');
+  const a1Miss = block('a1', '14:00', '15:00');
+  const a2 = block('a2', '11:00', '13:00');
+  const other = block('a9', '11:00', '12:00');
+  const rows = [a1Hit, a1Miss, a2, other];
+  const conflict: FilterEntry = { id: 'CONFLICT;r1;a1;a2', kind: 'conflict', label: 'K' };
+
+  it('without a focus chip nothing is pale', () => {
+    expect(paleRows(rows, [{ id: 'r1', kind: 'resource', label: 'R' }]).size).toBe(0);
+  });
+
+  it('a conflict keeps only the overlapping blocks of both sides normal (Swing overlapsBlock)', () => {
+    expect([...paleRows(rows, [conflict])]).toEqual([a1Miss, other]);
+  });
+
+  it('an anonymous block of an unreadable other side counts by its flat appointmentId (D6, Phase 1b)', () => {
+    const masked = {
+      appointment: null,
+      appointmentId: 'a2',
+      start: '2026-10-05T11:00:00',
+      end: '2026-10-05T13:00:00',
+    };
+    expect([...paleRows([a1Hit, a1Miss, masked, other], [conflict])]).toEqual([a1Miss, other]);
+  });
+
+  it('a request keeps the blocks of its reservation normal (reservation id from the chip id)', () => {
+    const own = { ...block('a5', '09:00', '10:00'), reservation: { id: 'v1' } };
+    const anonymous = { ...block('a6', '09:00', '10:00'), reservation: null, reservationId: 'v1' };
+    const request: FilterEntry = { id: 'REQUEST;r1;v1', kind: 'request', label: 'A' };
+    expect([...paleRows([own, anonymous, ...rows], [request])]).toEqual(rows);
+  });
+});
+
+describe('anonymous blocks — PRD 128 Phase 1b', () => {
+  const anonymous = {
+    name: 'nicht sichtbar',
+    reservation: null,
+    reservationId: 'v1',
+    appointment: null,
+    appointmentId: 'a1',
+  };
+
+  it('are recognised by their explicit null reservation, and are neither movable nor draggable', () => {
+    expect(isAnonymousRow(anonymous)).toBe(true);
+    expect(isAnonymousRow({ name: 'X', reservation: { id: 'v1' } })).toBe(false);
+    expect(isAnonymousRow({ name: 'X' })).toBe(false);
+    expect(isMovableRow(anonymous)).toBe(false);
+    expect(isDraggableRow(anonymous)).toBe(false);
   });
 });

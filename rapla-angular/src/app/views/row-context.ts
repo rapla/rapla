@@ -84,8 +84,10 @@ export function extractRowContext(
     if (primary) break;
   }
   // Scalar fallback for views rooted directly at the entity (no self-reference
-  // in GraphQL): `reservationId: id @hidden` + `canModify @hidden`.
-  if (!primary && typeof row['reservationId'] === 'string') {
+  // in GraphQL): `reservationId: id @hidden` + `canModify @hidden`. An explicit
+  // `reservation: null` is an anonymous block of an unreadable reservation (PRD 128
+  // Phase 1b) — its flat id must not make it a subject.
+  if (!primary && row['reservation'] !== null && typeof row['reservationId'] === 'string') {
     primary = {
       kind: 'reservation',
       id: row['reservationId'],

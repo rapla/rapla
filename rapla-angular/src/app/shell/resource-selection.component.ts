@@ -4,6 +4,7 @@ import {
   computed,
   effect,
   inject,
+  input,
   signal,
   untracked,
   viewChild,
@@ -19,6 +20,10 @@ import { ResourceDataService } from '../resource/resource-data.service';
 import { ResourcePickerComponent, type PickEvent } from '../resource/resource-picker.component';
 import { ResourceSelectionStore, type ResourceItem } from '../state/resource-selection-store';
 import { FilterStore, type FilterEntry } from '../state/filter-store';
+import { ReviewStore } from '../state/review-store';
+import type { SelectionSource } from '../views/view-catalog.service';
+import { ViewStateStore } from '../state/view-state-store';
+import { ONE_WEEK, todayWindow } from './view-control-strip.component';
 import { TableSelection } from '../views/table-selection';
 import { TPipe } from '../i18n/i18n.service';
 
@@ -34,8 +39,16 @@ import { TPipe } from '../i18n/i18n.service';
   imports: [TPipe, MatMenuModule, ResourcePickerComponent],
   template: `
     <div class="stepper" tabindex="0" (keydown)="onListKeydown($event)">
-      @if (newTypeKey()) {
-        <div class="sthead">
+      <div class="sthead">
+        <input
+          class="pksearch"
+          type="search"
+          [placeholder]="'event_resource_search_placeholder' | t"
+          [value]="store.query()"
+          (input)="store.setQuery($any($event.target).value)"
+          (keydown)="onSearchKeydown($event)"
+        />
+        @if (source() === 'resources' && newTypeKey()) {
           <button
             type="button"
             class="newbtn"
@@ -44,10 +57,11 @@ import { TPipe } from '../i18n/i18n.service';
           >
             + {{ 'new' | t }}
           </button>
-        </div>
-      }
+        }
+      </div>
       <app-resource-picker
         mode="rail"
+        [source]="source()"
         [chip]="store.activeChip() ?? 'none'"
         (chipChange)="store.setActiveChip($event)"
         [query]="store.query()"
@@ -58,6 +72,7 @@ import { TPipe } from '../i18n/i18n.service';
         (selectGroup)="selectGroup($event)"
         (menu)="openMenu($event)"
         (typeClick)="lastType.set($event)"
+        (reviewPick)="reviewPick($event)"
       />
       <mat-menu #itemMenu="matMenu">
         <ng-template matMenuContent let-item="item">
@@ -89,18 +104,35 @@ import { TPipe } from '../i18n/i18n.service';
       .sthead {
         display: flex;
         align-items: center;
-        justify-content: flex-end;
+        gap: 0.5rem;
         padding: 0.75rem 0.9rem 0.5rem;
         font-size: 0.7rem;
         font-weight: 700;
         letter-spacing: 0.04em;
         color: rgba(0, 0, 0, 0.55);
       }
-      .newbtn {
+      .pksearch {
+        flex: 1;
+        min-width: 0;
+        height: 2.5rem;
+        border: 1px solid rgba(0, 0, 0, 0.15);
+        border-radius: 8px;
+        padding: 0 0.9rem;
         font: inherit;
-        padding: 1px 8px;
-        border: 1px solid rgba(0, 0, 0, 0.25);
-        border-radius: 999px;
+        font-size: 0.95rem;
+        font-weight: 400;
+        letter-spacing: normal;
+        color: rgba(0, 0, 0, 0.87);
+        background: #fff;
+      }
+      .newbtn {
+        flex: none;
+        height: 2.5rem;
+        font: inherit;
+        font-size: 0.95rem;
+        padding: 0 0.9rem;
+        border: 1px solid rgba(0, 0, 0, 0.15);
+        border-radius: 8px;
         background: transparent;
         color: inherit;
         cursor: pointer;
@@ -118,6 +150,10 @@ export class ResourceSelectionComponent {
   protected readonly filter = inject(FilterStore);
   private readonly dialog = inject(MatDialog);
   private readonly resourceData = inject(ResourceDataService);
+  private readonly review = inject(ReviewStore);
+  /** PRD 128 D7 — the open view's selection source. */
+  readonly source = input<SelectionSource>('resources');
+  private readonly viewState = inject(ViewStateStore);
   private readonly picker = viewChild.required(ResourcePickerComponent);
   private readonly menuTrigger = viewChild.required<MatMenuTrigger>('menuTrigger');
 
@@ -139,6 +175,7 @@ export class ResourceSelectionComponent {
   private readonly selection = new TableSelection<string>();
 
   constructor() {
+    this.review.ensureLoaded();
     this.resourceData.creatableTypes().subscribe({
       next: (types) => this.creatable.set(types),
       error: () => this.creatable.set([]),
@@ -154,7 +191,7 @@ export class ResourceSelectionComponent {
       const request = this.store.pickerFocus();
       if (request === this.focusRequest) return;
       this.focusRequest = request;
-      this.host.nativeElement.querySelector<HTMLElement>('.stepper')?.focus();
+      this.host.nativeElement.querySelector<HTMLElement>('input.pksearch')?.focus();
     });
     // PRD 123 D4 — Enter in the search field steps the first row the picker shows.
     effect(() => {
@@ -171,6 +208,34 @@ export class ResourceSelectionComponent {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   /** The focus request already served — the effect's first run must not steal focus. */
   private focusRequest = this.store.pickerFocus();
+
+  /** PRD 123 D4 — Enter steps the first shown row (Ctrl/⌘ = add), ↓ focuses the list, Esc clears. */
+  onSearchKeydown(event: KeyboardEvent): void {
+    event.stopPropagation();
+    if (event.key === 'Escape') this.store.setQuery('');
+    else if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      this.host.nativeElement.querySelector<HTMLElement>('.stepper')?.focus();
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      this.store.requestActivateFirst(event.ctrlKey || event.metaKey);
+    }
+  }
+
+  /** PRD 128 D1/D3/OQ15 — a conflict/request click replaces the chips of its context (Ctrl toggles) and jumps to its date. */
+  reviewPick(e: { entry: FilterEntry; date: string | null; ctrl: boolean }): void {
+    if (!e.ctrl) this.filter.replace(e.entry);
+    else if (this.filter.has(e.entry.id)) this.filter.remove(e.entry.id);
+    else this.filter.add(e.entry);
+    if (e.date)
+      this.viewState.setWindow(
+        todayWindow(
+          this.viewState.window() ?? ONE_WEEK,
+          new Date(`${e.date}Z`),
+          this.viewState.renderMode(),
+        ),
+      );
+  }
 
   private entry(r: ResourceItem): FilterEntry {
     return { id: r.id, kind: r.kind ?? 'resource', label: r.label, color: r.color };

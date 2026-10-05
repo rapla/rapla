@@ -12,7 +12,14 @@ import {
 
 import { TPipe } from '../i18n/i18n.service';
 import { weekdayName } from './group-format';
-import { CHIP_BASE_CSS, chipColor, chipName, chipTime, isDraggableRow } from './block-style';
+import {
+  CHIP_BASE_CSS,
+  chipColor,
+  chipName,
+  chipTime,
+  isAnonymousRow,
+  isDraggableRow,
+} from './block-style';
 import { type ParkedItem } from '../import/parked-events.service';
 import { ViewStateStore } from '../state/view-state-store';
 import {
@@ -223,6 +230,8 @@ function rowMatchedRefs(row: Row): NamedRef[] {
                 [class.neutral]="!color(b.row)"
                 [class.movable]="movable(b)"
                 [class.dragsource]="movePreview()?.row === b.row || resizePreview()?.row === b.row"
+                [class.pale]="paleRows().has(b.row)"
+                [attr.title]="anonymous(b.row) ? nameOf(b.row) : null"
                 [style.background]="color(b.row)"
                 [style.top]="blockTop(b.startMin)"
                 [style.height]="blockHeight(b.startMin, b.endMin)"
@@ -484,6 +493,10 @@ function rowMatchedRefs(row: Row): NamedRef[] {
       .chip.dragsource {
         opacity: 0.35;
       }
+      .chip.pale {
+        opacity: 0.4;
+        filter: saturate(0.3);
+      }
       .now {
         position: absolute;
         left: 0;
@@ -525,6 +538,8 @@ export class WeekGridComponent {
   /** Reservation ids that are externally LINKED (Dualis-verknüpft) — their chips
    *  carry a link marker so bound and unbound events are distinguishable. */
   readonly linkedIds = input<ReadonlySet<string>>(new Set());
+  /** PRD 128 D1 — blocks outside the conflict/request focus, drawn pale like Swing's other colour. */
+  readonly paleRows = input<ReadonlySet<Row>>(new Set());
   /** Parked chip dropped on a FREE slot → create the event there. */
   readonly placeParked = output<{ item: ParkedItem; day: string; startMin: number }>();
   /** Parked chip dropped ONTO an existing event's chip → verknüpfen. */
@@ -750,6 +765,7 @@ export class WeekGridComponent {
   readonly color = chipColor;
   readonly timeOf = chipTime;
   readonly nameOf = chipName;
+  readonly anonymous = isAnonymousRow;
 
   onChipMenu(ev: MouseEvent, row: Row): void {
     ev.preventDefault();

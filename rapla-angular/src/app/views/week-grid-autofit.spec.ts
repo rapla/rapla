@@ -69,3 +69,42 @@ describe('WeekGridComponent — hour rows auto-fit the viewport height', () => {
     expect(chip.style.height).toContain('var(--wg-hpx)');
   });
 });
+
+describe('WeekGridComponent — PRD 128 D1 pale blocks outside the focus', () => {
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({ imports: [WeekGridComponent] }).compileComponents();
+  });
+
+  it('marks exactly the rows in paleRows as pale', async () => {
+    const focus = block('2026-06-15', '10:00', '11:00', 'Fokus');
+    const rest = block('2026-06-16', '10:00', '11:00', 'Rest');
+    const f = TestBed.createComponent(WeekGridComponent);
+    f.componentRef.setInput('rows', [focus, rest]);
+    f.componentRef.setInput('anchor', '2026-06-15T00:00:00');
+    f.componentRef.setInput('paleRows', new Set([rest]));
+    f.detectChanges();
+    const chip = (name: string) =>
+      Array.from((f.nativeElement as HTMLElement).querySelectorAll('.chip')).find((c) =>
+        (c.textContent ?? '').includes(name),
+      )!;
+    expect(chip('Rest').classList).toContain('pale');
+    expect(chip('Fokus').classList).not.toContain('pale');
+  });
+});
+
+describe('WeekGridComponent — PRD 128 anonymous block', () => {
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({ imports: [WeekGridComponent] }).compileComponents();
+  });
+
+  it('carries its name as tooltip and offers no drag', async () => {
+    const anonymous = {
+      ...block('2026-06-15', '10:00', '11:00', 'nicht sichtbar'),
+      reservation: null,
+    };
+    const f = await make([anonymous]);
+    const chip = (f.nativeElement as HTMLElement).querySelector<HTMLElement>('.chip')!;
+    expect(chip.getAttribute('title')).toBe('nicht sichtbar');
+    expect(chip.classList).not.toContain('movable');
+  });
+});

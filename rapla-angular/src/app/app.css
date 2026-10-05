@@ -48,8 +48,36 @@
 
 .nav .view-switch {
   flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   padding: 8px;
+}
+
+/* PRD 128 D7 — open conflicts / requests next to the view selector; a click opens that view. */
+.nav .review-badge,
+.review-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #c62828;
+  text-decoration: none;
+}
+.nav .review-badge mat-icon,
+.review-count mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  color: #c62828;
+}
+.review-count {
+  margin-left: auto;
+  padding-left: 12px;
 }
 
 /* One row instead of one row per view — everything the picker frees goes to the
@@ -58,7 +86,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  width: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
   padding: 8px 10px;
   font: inherit;
   font-weight: 500;

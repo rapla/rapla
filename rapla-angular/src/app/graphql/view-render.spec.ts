@@ -62,3 +62,20 @@ describe('renderCell', () => {
     expect(renderCell({ x: 'not-a-date' }, col({ type: 'DateTime' }))).toBe('not-a-date');
   });
 });
+
+describe('renderCell — column format (PRD 128)', () => {
+  it('a LocalDateTime column with format renders by the pattern; without format as before', () => {
+    const row = { datum: '2026-12-14T09:00:00' };
+    expect(
+      renderCell(row, {
+        alias: 'datum',
+        header: 'Datum',
+        type: 'LocalDateTime',
+        format: 'dd.MM.yyyy HH:mm',
+      }),
+    ).toBe('14.12.2026 09:00');
+    expect(renderCell(row, { alias: 'datum', header: 'Datum', type: 'LocalDateTime' })).toBe(
+      new Date('2026-12-14T09:00:00').toLocaleString(),
+    );
+  });
+});

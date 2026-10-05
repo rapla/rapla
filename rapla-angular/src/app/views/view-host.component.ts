@@ -81,6 +81,7 @@ import { groupByWeekday, groupByColumn } from '../graphql/weekday-grouping';
 import { ViewStateStore, type DateWindow } from '../state/view-state-store';
 import { FilterStore, type FilterEntry } from '../state/filter-store';
 import { buildVariablesByType, scopeOf } from './variable-binder';
+import { paleRows } from './block-style';
 import { LastViewStore } from './last-view-store';
 import { formatGroupLabel } from './group-format';
 import { isProjectedView, projectRow } from './stat-projection';
@@ -132,6 +133,23 @@ export function pickDateAlias(columns: ViewColumn[]): string {
  * {@code event} chip is a navigation target, not a scope. No scope → the view
  * must not query (performance: an unscoped view is a full-window firehose).
  */
+/**
+ * The rows a renderer draws (root-agnostic: no fixed field name). Calendar modes take the first array root field; the
+ * table takes the one `@view(tableField:)` names — PRD 128 D7: a Prüfen view carries appointmentBlocks for the
+ * calendar and conflicts / resourceRequests for the table.
+ */
+export function rowsOf(
+  data: Record<string, unknown> | undefined,
+  tableField: string | undefined,
+  calendar: boolean,
+): Record<string, unknown>[] {
+  const named = !calendar && tableField ? data?.[tableField] : undefined;
+  if (Array.isArray(named)) return named as Record<string, unknown>[];
+  return (
+    (Object.values(data ?? {}).find(Array.isArray) as Record<string, unknown>[] | undefined) ?? []
+  );
+}
+
 export function hasScope(chips: FilterEntry[]): boolean {
   return chips.some((c) => c.kind !== 'event');
 }
@@ -175,7 +193,7 @@ export function hasScope(chips: FilterEntry[]): boolean {
         <h2 class="view-title">{{ printTitle() }}</h2>
 
         @if (noScope()) {
-          <p class="empty">{{ 'view_no_scope' | t }}</p>
+          <p class="empty">{{ noScopeHint() | t }}</p>
         } @else if (loading()) {
           <p class="meta">{{ 'view_loading' | t }}</p>
         } @else if (error()) {
@@ -186,6 +204,7 @@ export function hasScope(chips: FilterEntry[]): boolean {
             <app-month-grid
               [rows]="displayRows()"
               [anchor]="monthAnchor()"
+              [paleRows]="paleRows()"
               (openRow)="onRowDblClick($event)"
               (openMenu)="onChipMenu($event)"
               (moveBlock)="onMoveBlock($event)"
@@ -200,6 +219,7 @@ export function hasScope(chips: FilterEntry[]): boolean {
               [scopeResources]="scopeResources()"
               [parkedItems]="parked.items()"
               [linkedIds]="linkedIds()"
+              [paleRows]="paleRows()"
               (placeParked)="onPlaceParked($event)"
               (bindParked)="onBindParked($event)"
               (parkCancel)="parked.clear()"
@@ -658,6 +678,12 @@ export class ViewHostComponent {
    *  Sourced from the reservations' durable stamp (2026-08-11 redesign), so
    *  markers survive the Halde row leaving the export window. */
   readonly linkedIds = computed(() => new Set(this.worklist.linked().map((e) => e.id)));
+  /** PRD 128 OQ20 — an empty Prüfen selection asks for a conflict or request, not for a scope. */
+  protected readonly noScopeHint = computed(() =>
+    this.filter.context() === 'plan' ? 'view_no_scope' : 'view_review_hint',
+  );
+  /** PRD 128 D1 — blocks outside the conflict/request focus are drawn pale. */
+  readonly paleRows = computed(() => paleRows(this.displayRows(), this.filter.entries()));
 
   /** Parked chip dropped on a FREE slot: NOW the event is created — the one
    *  undoable "platziert" action (inverse deletes; the Halde item re-opens
@@ -1099,12 +1125,12 @@ export class ViewHostComponent {
       this.loading.set(false);
       return;
     }
-    // Root-agnostic: take whatever array `data` carries, not a fixed field name.
-    const rows =
-      (Object.values(res.data ?? {}).find(Array.isArray) as
-        | Record<string, unknown>[]
-        | undefined) ?? [];
     const viewMeta = res.extensions?.view ?? null;
+    const rows = rowsOf(
+      res.data as Record<string, unknown> | undefined,
+      viewMeta?.tableField,
+      untracked(() => this.isMonth() || this.isWeekGrid() || this.isDayGrid()),
+    );
     this.meta.set(viewMeta);
     this.total.set(rows.length);
     const groupAlias = viewMeta?.groupBy;
@@ -1115,7 +1141,9 @@ export class ViewHostComponent {
     // (restored from localStorage) when this view supports it, else the view's
     // default. Idempotent per response.
     const renderModes = viewMeta?.renderModes ?? ['table' as const];
-    untracked(() => this.viewState.applyViewModes(renderModes));
+    untracked(() =>
+      this.viewState.applyViewModes(renderModes, args.viewName, viewMeta?.defaultRenderMode),
+    );
     // Seed the date-nav window from the server-resolved view window, once
     // (PRD 074 §"Window and inputs directives" — no client-side anchor math).
     if (args.seedWindow) {

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 
-import { FilterStore, type FilterEntry } from './filter-store';
+import { FilterStore, requestChipId, type FilterEntry } from './filter-store';
 import { AuthService } from '../auth/auth.service';
 
 const room = (id: string): FilterEntry => ({ id, kind: 'resource', label: id });
@@ -119,6 +119,90 @@ describe('FilterStore', () => {
       const ms = performance.now() - start;
       expect(store.isEmpty()).toBe(true);
       expect(ms).toBeLessThan(200);
+    });
+  });
+  describe('PRD 128 D3/OQ4 — Planen / Konflikte / Ressourcenanfragen contexts', () => {
+    const conflict = (id: string): FilterEntry => ({ id, kind: 'conflict', label: id });
+    const request = (id: string): FilterEntry => ({ id, kind: 'request', label: id });
+    const reload = () => {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({ providers: [FilterStore, AuthService] });
+      return TestBed.inject(FilterStore);
+    };
+
+    it('starts in Planen; each context keeps its own selection and restores it in every direction', () => {
+      expect(store.context()).toBe('plan');
+      store.setAll([room('r1'), room('r2')]);
+      store.setContext('conflicts');
+      expect(store.entries()).toEqual([]);
+      store.replace(conflict('CONFLICT;r1;a1;a2'));
+      store.setContext('plan');
+      expect(store.entries().map((e) => e.id)).toEqual(['r1', 'r2']);
+      store.setContext('requests');
+      store.add(request('REQUEST;r3;v1'));
+      store.setContext('conflicts');
+      expect(store.entries().map((e) => e.id)).toEqual(['CONFLICT;r1;a1;a2']);
+      store.setContext('requests');
+      expect(store.entries().map((e) => e.id)).toEqual(['REQUEST;r3;v1']);
+      store.setContext('plan');
+      expect(store.entries().map((e) => e.id)).toEqual(['r1', 'r2']);
+    });
+
+    it('all three selections persist per user; a reload always starts in Planen', () => {
+      store.replace(room('r1'));
+      store.setContext('conflicts');
+      store.replace(conflict('CONFLICT;r1;a1;a2'));
+      store.setContext('requests');
+      store.replace(request('REQUEST;r3;v1'));
+      const reloaded = reload();
+      expect(reloaded.context()).toBe('plan');
+      expect(reloaded.entries()).toEqual([room('r1')]);
+      reloaded.setContext('conflicts');
+      expect(reloaded.entries()).toEqual([conflict('CONFLICT;r1;a1;a2')]);
+      reloaded.setContext('requests');
+      expect(reloaded.entries()).toEqual([request('REQUEST;r3;v1')]);
+    });
+
+    it('restore with stale ids of every kind drops them silently and takes the current label', () => {
+      const user = (id: string): FilterEntry => ({ id, kind: 'user', label: id });
+      store.setAll([room('r1'), room('gone'), user('u1'), user('u-gone')]);
+      store.setContext('conflicts');
+      store.setAll([conflict('CONFLICT;r1;a1;a2'), conflict('CONFLICT;r1;a3;a4')]);
+      store.setContext('requests');
+      store.setAll([request('REQUEST;r3;v1'), request('REQUEST;r3;v2')]);
+
+      store.reconcile(new Map([['CONFLICT;r1;a1;a2', 'Raum 1 · 05.10.']]), 'conflicts');
+      store.reconcile(
+        new Map([['REQUEST;r3;v1', { label: 'Beamer · Vorlesung', resourceName: 'Beamer' }]]),
+        'requests',
+      );
+      expect(store.entries()).toEqual([
+        {
+          id: 'REQUEST;r3;v1',
+          kind: 'request',
+          label: 'Beamer · Vorlesung',
+          resourceName: 'Beamer',
+        },
+      ]);
+      store.reconcile(
+        new Map([
+          ['r1', 'Raum 1'],
+          ['u1', 'Ute'],
+        ]),
+      );
+      store.setContext('conflicts');
+      expect(store.entries()).toEqual([
+        { id: 'CONFLICT;r1;a1;a2', kind: 'conflict', label: 'Raum 1 · 05.10.' },
+      ]);
+      store.setContext('plan');
+      expect(store.entries()).toEqual([
+        { id: 'r1', kind: 'resource', label: 'Raum 1' },
+        { id: 'u1', kind: 'user', label: 'Ute' },
+      ]);
+    });
+
+    it('requestChipId composes resource and reservation id', () => {
+      expect(requestChipId('r3', 'v1')).toBe('REQUEST;r3;v1');
     });
   });
 });

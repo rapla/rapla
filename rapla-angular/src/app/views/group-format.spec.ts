@@ -30,3 +30,10 @@ describe('formatGroupLabel', () => {
     expect(formatGroupLabel('2026-06-21T09:00:00', 'EE')).toBe('So'); // Sonntag
   });
 });
+
+describe('formatGroupLabel — time tokens (PRD 128 column format)', () => {
+  it('HH and mm render hour and minute; a date-only value renders 00:00', () => {
+    expect(formatGroupLabel('2026-12-14T09:05:00', 'dd.MM.yyyy HH:mm')).toBe('14.12.2026 09:05');
+    expect(formatGroupLabel('2026-12-14', 'dd.MM. HH:mm')).toBe('14.12. 00:00');
+  });
+});

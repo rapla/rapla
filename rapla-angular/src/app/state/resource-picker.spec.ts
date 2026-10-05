@@ -42,6 +42,11 @@ describe('resource picker (PRD 119 Phase 1)', () => {
       expect(openSection('persons', { ...lists, persons: 0 })).toBe('resources');
     });
 
+    it('PRD 128 D7 — a saved Konflikte / Ressourcenanfragen section (step C) opens the start section', () => {
+      expect(openSection('conflicts', lists)).toBe('resources');
+      expect(openSection('requests', { ...lists, favorites: 1 })).toBe('favorites');
+    });
+
     it("'none' keeps every section closed (D1: at most one open)", () => {
       expect(openSection('none', { ...lists, favorites: 3 })).toBeNull();
     });

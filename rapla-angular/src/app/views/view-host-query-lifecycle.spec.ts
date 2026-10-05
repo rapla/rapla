@@ -249,3 +249,27 @@ describe('ViewHostComponent — switching views keeps the component (route param
     expect(calls[calls.length - 1]['resourceFilter']).toEqual({ idIn: ['scope-1'] });
   });
 });
+
+describe('ViewHostComponent — PRD 128 OQ20 empty Prüfen selection', () => {
+  beforeEach(() => {
+    calls = [];
+  });
+
+  afterEach(() => {
+    TestBed.resetTestingModule();
+  });
+
+  it('shows the conflict/request hint instead of a calendar and fires no query; Planen keeps its own hint', async () => {
+    await configure(immediateGql);
+    const filter = TestBed.inject(FilterStore);
+    filter.setContext('conflicts');
+    const f = mount();
+    const empty = () => (f.nativeElement as HTMLElement).querySelector('.empty')?.textContent ?? '';
+    expect(empty()).toContain('Wähle links einen Konflikt oder eine Ressourcenanfrage');
+    expect(calls.length).toBe(0);
+    filter.setContext('plan');
+    filter.clear();
+    f.detectChanges();
+    expect(empty()).toContain('Wähle links eine Ressource');
+  });
+});

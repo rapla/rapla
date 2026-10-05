@@ -9,6 +9,7 @@ import { localeId } from '../i18n/i18n.service';
  * - {@code d} → day; {@code dd} → zero-padded day
  * - {@code M} → month; {@code MM} → padded; {@code MMM} → short name (Jun); {@code MMMM} → full (Juni)
  * - {@code yy} → 2-digit year; {@code yyyy} → full year
+ * - {@code HH} → hour, {@code mm} → minute (00 for a date-only value; PRD 128 column format)
  *
  * Any other character is a literal. A value that is not a {@code YYYY-MM-DD}
  * (optionally with time) date is returned verbatim — so non-date group columns
@@ -28,6 +29,8 @@ interface ParsedDate {
   month: number; // 1-12
   day: number;
   dow: number; // 0=So … 6=Sa (UTC)
+  hour: number;
+  minute: number;
 }
 
 function parseDate(value: string): ParsedDate | null {
@@ -39,7 +42,15 @@ function parseDate(value: string): ParsedDate | null {
   if (month < 1 || month > 12 || day < 1 || day > 31) return null;
   const utc = new Date(Date.UTC(year, month - 1, day));
   if (utc.getUTCMonth() !== month - 1 || utc.getUTCDate() !== day) return null; // e.g. 02-31
-  return { year, month, day, dow: utc.getUTCDay() };
+  const time = /T(\d{2}):(\d{2})/.exec(value);
+  return {
+    year,
+    month,
+    day,
+    dow: utc.getUTCDay(),
+    hour: time ? Number(time[1]) : 0,
+    minute: time ? Number(time[2]) : 0,
+  };
 }
 
 const pad2 = (n: number): string => String(n).padStart(2, '0');
@@ -56,6 +67,10 @@ function token(letter: string, len: number, d: ParsedDate): string {
       return len === 2 ? pad2(d.month) : String(d.month);
     case 'y':
       return len === 2 ? pad2(d.year % 100) : String(d.year);
+    case 'H':
+      return len >= 2 ? pad2(d.hour) : String(d.hour);
+    case 'm':
+      return len >= 2 ? pad2(d.minute) : String(d.minute);
     default:
       return letter.repeat(len);
   }
@@ -68,7 +83,7 @@ export function formatGroupLabel(value: string, pattern: string): string {
   let i = 0;
   while (i < pattern.length) {
     const c = pattern[i];
-    if ('EdMy'.includes(c)) {
+    if ('EdMyHm'.includes(c)) {
       let j = i;
       while (j < pattern.length && pattern[j] === c) j++;
       out += token(c, j - i, d);

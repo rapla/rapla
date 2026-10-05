@@ -5,6 +5,7 @@ import { MatInputModule } from '@angular/material/input';
 import { provideNativeDateAdapter } from '@angular/material/core';
 
 import { ViewStateStore } from '../state/view-state-store';
+import type { ViewRenderMode } from '../graphql/graphql.service';
 import { TPipe, localeId, t as tr } from '../i18n/i18n.service';
 
 /** Local-midnight {@code Date} for a 'YYYY-MM-DD' string (calendar day, no TZ drift for display). */
@@ -85,15 +86,23 @@ function firstOfMonth(year: number, month: number): string {
   return `${year.toString().padStart(4, '0')}-${month.toString().padStart(2, '0')}-01T00:00:00`;
 }
 
+/** The span a date jump keeps when no window is set yet. */
+export const ONE_WEEK = { from: '2026-01-05T00:00:00', to: '2026-01-12T00:00:00' };
+
 /** Re-anchor a window to this week's Monday, preserving its span (the "Heute" jump). */
 export function todayWindow(
   current: { from: string; to: string },
   now: Date,
+  mode: ViewRenderMode = 'week',
 ): {
   from: string;
   to: string;
 } {
-  const from = weekStartLocalDateTime(now);
+  // PRD 128 OQ15 — a jump to a date shows that date in the current mode (Swing setSelectedDate): the day itself,
+  // its month, or the week containing it.
+  if (mode === 'month') return monthWindowOf(now.toISOString());
+  const from =
+    mode === 'day' ? `${now.toISOString().slice(0, 10)}T00:00:00` : weekStartLocalDateTime(now);
   return { from, to: shiftLocalDateTime(from, daysBetween(current.from, current.to)) };
 }
 
@@ -327,7 +336,7 @@ export class ViewControlStripComponent {
     }
     const w = this.viewState.window();
     if (!w) return;
-    this.viewState.setWindow(todayWindow(w, new Date()));
+    this.viewState.setWindow(todayWindow(w, new Date(), this.viewState.renderMode()));
   }
 
   private shiftMonths(delta: number): void {

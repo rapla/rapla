@@ -1,6 +1,13 @@
 import { Component, computed, input, output, signal } from '@angular/core';
 
-import { CHIP_BASE_CSS, chipColor, chipName, chipTime, isDraggableRow } from './block-style';
+import {
+  CHIP_BASE_CSS,
+  chipColor,
+  chipName,
+  chipTime,
+  isAnonymousRow,
+  isDraggableRow,
+} from './block-style';
 import { weekdayName } from './group-format';
 import { monthGridDays, chunkWeek, TOP0, type WeekChunk } from './month-chunks';
 
@@ -77,6 +84,8 @@ function localToday(): string {
                 [class.neutral]="!color(c.row)"
                 [class.movable]="isMovable(c.row)"
                 [class.dragsource]="moveTarget()?.row === c.row"
+                [class.pale]="paleRows().has(c.row)"
+                [attr.title]="anonymous(c.row) ? nameOf(c.row) : null"
                 [style.background]="color(c.row)"
                 [style.left]="'calc(' + c.col + '/7*100% + 2px)'"
                 [style.width]="'calc(' + c.span + '/7*100% - 5px)'"
@@ -159,6 +168,10 @@ function localToday(): string {
       .chip.dragsource {
         opacity: 0.35;
       }
+      .chip.pale {
+        opacity: 0.4;
+        filter: saturate(0.3);
+      }
       .cell.other {
         background: #f7f7f7;
       }
@@ -203,6 +216,8 @@ function localToday(): string {
 export class MonthGridComponent {
   readonly rows = input.required<Row[]>();
   readonly anchor = input.required<string>();
+  /** PRD 128 D1 — blocks outside the conflict/request focus, drawn pale like Swing's other colour. */
+  readonly paleRows = input<ReadonlySet<Row>>(new Set());
   /** Double-click / Enter on a chip — the view host runs the shared edit path. */
   readonly openRow = output<Row>();
   /** Right-click on a chip — the view host opens the SHARED row menu (PRD 094). */
@@ -259,6 +274,7 @@ export class MonthGridComponent {
   readonly color = chipColor;
   readonly timeOf = chipTime;
   readonly nameOf = chipName;
+  readonly anonymous = isAnonymousRow;
 
   onChipMenu(ev: MouseEvent, row: Row): void {
     ev.preventDefault();

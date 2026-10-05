@@ -13,6 +13,9 @@ import { MatIconModule } from '@angular/material/icon';
 
 import { ResourceSelectionStore, type ResourceItem } from '../state/resource-selection-store';
 import { PAGE_SIZE, openSection, type Section } from '../state/resource-picker';
+import { ReviewStore } from '../state/review-store';
+import { conflictTree, filterReviewTree, requestTree } from '../state/review-tree';
+import type { FilterEntry } from '../state/filter-store';
 import {
   childIndex,
   membersOf,
@@ -42,6 +45,9 @@ const SECTION_ICONS: Record<string, string> = {
   users: 'manage_accounts',
 };
 
+/** PRD 128 — nodes of the Konflikte / Ressourcenanfragen trees: no "alle wählen", no type click. */
+const isReviewNode = (node: TreeNode) => node.key.startsWith('k:') || node.key.startsWith('q:');
+
 /**
  * PRD 123 D1 / PRD 127 D1 — the one resource picker: an accordion of Favoriten / Zuletzt / Ressourcen / Personen /
  * Benutzer, exactly one open; Ressourcen and Personen hold one folder per type (D5) with its group tree (PRD 119 D2,
@@ -55,8 +61,8 @@ const SECTION_ICONS: Record<string, string> = {
   template: `
     @if (query().trim()) {
       <div class="searchnote">
-        <span>{{ 'resource_search_active' | t: query().trim() : allHits().length }}</span>
-        @if (mode() === 'rail' && allHits().length) {
+        <span>{{ 'resource_search_active' | t: query().trim() : hitCount() }}</span>
+        @if (mode() === 'rail' && !reviewSearch() && allHits().length) {
           <button type="button" class="listall" (click)="emitGroup($event, allHits())">
             {{ (allChecked() ? 'resource_deselect_all' : 'resource_select_all') | t }}
           </button>
@@ -134,7 +140,7 @@ const SECTION_ICONS: Record<string, string> = {
           }
           <span class="glabel">{{ row.node.label }}</span>
           <span class="count">{{ row.node.count }}</span>
-          @if (mode() === 'rail') {
+          @if (mode() === 'rail' && !isReviewNode(row.node)) {
             <button
               type="button"
               class="selectall"
@@ -147,6 +153,22 @@ const SECTION_ICONS: Record<string, string> = {
               }}
             </button>
           }
+        </div>
+      } @else if (row.node.kind === 'entry' && row.node.entry) {
+        <div
+          class="item entry"
+          role="button"
+          tabindex="0"
+          [class.selected]="checked().has(row.node.entry.id)"
+          [style.padding-left.rem]="0.9 + row.depth"
+          [title]="row.node.label"
+          (click)="emitReview($event, row.node)"
+          (keydown.enter)="emitReview($event, row.node)"
+        >
+          <mat-icon class="ico">{{
+            row.node.entry.kind === 'conflict' ? 'warning' : 'pending_actions'
+          }}</mat-icon>
+          <span class="lbl">{{ row.node.label }}</span>
         </div>
       } @else if (row.node?.item; as it) {
         <div
@@ -220,7 +242,7 @@ const SECTION_ICONS: Record<string, string> = {
     } @empty {
       <div class="more">{{ 'resource_empty' | t }}</div>
     }
-    @if (!searching() && users()?.mine) {
+    @if (!searching() && !reviewSource() && users()?.mine) {
       <div
         class="sechead mine"
         [class.below]="stickyBelow().has('mine')"
@@ -521,6 +543,8 @@ export class ResourcePickerComponent {
   protected readonly membersOf = membersOf;
 
   readonly mode = input<'rail' | 'assign'>('rail');
+  /** PRD 128 D7 — what the left pane picks from: the resource accordion, or the conflict / request tree of a Prüfen view. */
+  readonly source = input<'resources' | 'conflicts' | 'requests'>('resources');
   /** PRD 127 D1 — the open section as chosen ('' = start section); resolved by {@link section}. Owned by the host. */
   readonly chip = model('');
   readonly query = model('');
@@ -537,6 +561,11 @@ export class ResourcePickerComponent {
   readonly menu = output<{ item: ResourceItem; anchor: EventTarget | null }>();
   /** PRD 127 D7 — the type of the last clicked type folder or resource (Swing: the focused tree node). */
   readonly typeClick = output<string>();
+  /** PRD 128 — a click on a conflict or request: its chip, the date to jump to (D1), Ctrl = add. */
+  readonly reviewPick = output<{ entry: FilterEntry; date: string | null; ctrl: boolean }>();
+
+  private readonly review = inject(ReviewStore);
+  protected readonly isReviewNode = isReviewNode;
 
   /** PRD 123 D9 / PRD 127 OQ4 — rail only (accounts cannot be assigned); `mine` = only the own account is readable. */
   protected readonly users = computed(() =>
@@ -551,6 +580,10 @@ export class ResourcePickerComponent {
       users: !!this.users() && !this.users()!.mine,
     }),
   );
+
+  protected readonly reviewSource = computed(() => this.source() !== 'resources');
+  /** PRD 128 OQ16 — a search in a Prüfen view narrows its tree, not the Planen lists. */
+  protected readonly reviewSearch = computed(() => this.searching() && this.reviewSource());
 
   protected readonly searching = computed(() => !!this.query().trim());
 
@@ -592,6 +625,29 @@ export class ResourcePickerComponent {
     ];
   });
 
+  /** PRD 128 D7 — the tree of a Prüfen view: type → resource → conflict / request. */
+  private readonly reviewTree = computed<TreeNode[]>(() =>
+    this.source() === 'conflicts'
+      ? conflictTree(
+          this.review.counts(),
+          this.review.loaded(),
+          this.store.resources(),
+          tr('resource_conflicts_disabled'),
+        )
+      : requestTree(this.review.requests(), this.store.resources()),
+  );
+
+  /** PRD 128 OQ16 — the Prüfen tree with only the resources whose name matches. */
+  private readonly reviewHits = computed(() => filterReviewTree(this.reviewTree(), this.query()));
+
+  /** The search bar's "n Treffer": Planen hits, or the matching resources of the open Prüfen section. */
+  protected readonly hitCount = computed(() => {
+    if (!this.reviewSearch()) return this.allHits().length;
+    const count = (nodes: readonly TreeNode[]): number =>
+      nodes.reduce((n, c) => n + (c.key.includes('res:') ? 1 : count(c.children)), 0);
+    return count(this.reviewHits());
+  });
+
   private readonly search = computed(() =>
     searchGroups(
       this.store.resources(),
@@ -601,12 +657,30 @@ export class ResourcePickerComponent {
     ),
   );
 
-  private readonly tree = computed(() => (this.searching() ? this.search() : this.sections()));
+  private readonly tree = computed(() =>
+    this.reviewSource()
+      ? this.searching()
+        ? this.reviewHits()
+        : this.reviewTree()
+      : this.searching()
+        ? this.search()
+        : this.sections(),
+  );
 
   protected readonly expandedGroups = computed(() => {
     const section = this.section();
+    const containers = (nodes: readonly TreeNode[]): string[] =>
+      nodes.flatMap((n) => (n.key.includes('res:') ? [] : [n.key, ...containers(n.children)]));
     const open = new Set<string>(
-      this.searching() ? this.search().map((g) => g.key) : section ? [section] : [],
+      this.reviewSource()
+        ? this.searching()
+          ? containers(this.reviewHits())
+          : []
+        : this.searching()
+          ? this.search().map((g) => g.key)
+          : section
+            ? [section]
+            : [],
     );
     for (const [key, isOpen] of this.searching() ? this.searchToggled() : this.expanded()) {
       if (isOpen) open.add(key);
@@ -770,12 +844,24 @@ export class ResourcePickerComponent {
   }
 
   protected toggleGroup(node: TreeNode): void {
-    if (node.kind === 'type') this.typeClick.emit(node.key.slice(1));
+    if (isReviewNode(node)) {
+      const resourceId = /^k:(?:d:)?res:(.*)$/.exec(node.key)?.[1];
+      if (resourceId && !this.expandedGroups().has(node.key)) this.review.loadConflicts(resourceId);
+    } else if (node.kind === 'type' || (node.kind === 'heading' && node.key !== '?users'))
+      this.typeClick.emit(node.key.slice(1));
     else if (node.item?.typeKey) this.typeClick.emit(node.item.typeKey);
     const open = this.expandedGroups().has(node.key);
     (this.searching() ? this.searchToggled : this.expanded).update((map) =>
       new Map(map).set(node.key, !open),
     );
+  }
+
+  protected emitReview(event: Event, node: TreeNode): void {
+    const ctrl =
+      event instanceof MouseEvent || event instanceof KeyboardEvent
+        ? event.ctrlKey || event.metaKey
+        : false;
+    this.reviewPick.emit({ entry: node.entry!, date: node.date ?? null, ctrl });
   }
 
   protected showMoreChildren(key: string): void {

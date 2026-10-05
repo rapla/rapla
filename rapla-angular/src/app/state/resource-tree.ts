@@ -1,12 +1,16 @@
 import type { ResourceItem } from './resource-selection-store';
+import type { FilterEntry } from './filter-store';
 import { PAGE_SIZE, filterRows } from './resource-picker';
 
 /** PRD 119 D2/D11, PRD 127 — a node of the picker tree: a section, a type folder, a search heading, a group level or a resource. */
 export interface TreeNode {
   key: string;
   label: string;
-  kind: 'section' | 'type' | 'heading' | 'group' | 'resource';
+  kind: 'section' | 'type' | 'heading' | 'group' | 'resource' | 'entry';
   item?: ResourceItem;
+  /** PRD 128 — a conflict or request leaf: the chip it makes and the date a click jumps to. */
+  entry?: FilterEntry;
+  date?: string | null;
   children: TreeNode[];
   /** Distinct resources below this node (1 for a resource). */
   count: number;

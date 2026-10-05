@@ -6,6 +6,8 @@
  * docs/architecture/calendar-rendering.md §1.
  */
 
+import type { FilterEntry } from '../state/filter-store';
+
 type Row = Record<string, unknown>;
 
 /**
@@ -31,6 +33,11 @@ export function chipTime(row: Row): string {
 
 export function chipName(row: Row): string {
   return String(row['name'] ?? '');
+}
+
+/** PRD 128 Phase 1b — a block of a reservation the caller cannot read: explicit `reservation: null`, no content. */
+export function isAnonymousRow(row: Row): boolean {
+  return row['reservation'] === null;
 }
 
 /**
@@ -96,3 +103,53 @@ export const CHIP_BASE_CSS = `
     font-variant-numeric: tabular-nums;
   }
 `;
+
+function appointmentIdOf(row: Row): string | null {
+  const appointment = row['appointment'] as Row | null | undefined;
+  if (typeof appointment?.['id'] === 'string') return appointment['id'];
+  return typeof row['appointmentId'] === 'string' ? row['appointmentId'] : null;
+}
+
+function reservationIdOf(row: Row): string | null {
+  const reservation = row['reservation'] as Row | null | undefined;
+  if (typeof reservation?.['id'] === 'string') return reservation['id'];
+  return typeof row['reservationId'] === 'string' ? row['reservationId'] : null;
+}
+
+/**
+ * PRD 128 D1 — with a conflict or request chip set, every block outside the focus is drawn pale. A conflict keeps the
+ * blocks of either side that overlap a block of the other side (Swing `RaplaBuilder` `overlapsBlock` over
+ * `ConflictImpl.getMap`); an unreadable side arrives as an anonymous block with its flat ids (D6). A request keeps the
+ * blocks of its reservation (the chip id `REQUEST;<resource>;<reservation>`). No focus chip → nothing pale.
+ */
+export function paleRows(rows: readonly Row[], chips: readonly FilterEntry[]): ReadonlySet<Row> {
+  const focusChips = chips.filter((c) => c.kind === 'conflict' || c.kind === 'request');
+  if (focusChips.length === 0) return new Set();
+  const requested = new Set(
+    focusChips.filter((c) => c.kind === 'request').map((c) => c.id.split(';')[2]),
+  );
+  const partners = new Map<string, Set<string>>();
+  const link = (a: string, b: string) => partners.set(a, (partners.get(a) ?? new Set()).add(b));
+  for (const c of focusChips) {
+    if (c.kind !== 'conflict') continue;
+    const [, , a, b] = c.id.split(';');
+    link(a, b);
+    link(b, a);
+  }
+  const byAppointment = new Map<string, Row[]>();
+  for (const r of rows) {
+    const id = appointmentIdOf(r);
+    if (id) byAppointment.set(id, [...(byAppointment.get(id) ?? []), r]);
+  }
+  const overlaps = (r: Row, o: Row) =>
+    String(r['start']) < String(o['end']) && String(o['start']) < String(r['end']);
+  const inFocus = (r: Row) => {
+    const reservationId = reservationIdOf(r);
+    if (reservationId && requested.has(reservationId)) return true;
+    const id = appointmentIdOf(r);
+    return [...(partners.get(id ?? '') ?? [])].some((p) =>
+      (byAppointment.get(p) ?? []).some((o) => overlaps(r, o)),
+    );
+  };
+  return new Set(rows.filter((r) => !inFocus(r)));
+}

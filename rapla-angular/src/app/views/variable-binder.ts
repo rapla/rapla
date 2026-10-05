@@ -1,5 +1,5 @@
 import type { ViewVariable } from '../graphql/graphql.service';
-import type { FilterEntry } from '../state/filter-store';
+import { scopedResourceId, type FilterEntry } from '../state/filter-store';
 
 /**
  * Type-driven variable binder. The GUI owns the LOGIC of how each rapla input
@@ -26,13 +26,18 @@ export interface SelectionContext {
   ownerIds?: string[];
 }
 
-/** The scope the chips carry: resource ids and owner (user) ids; event chips are navigation, not scope. */
+/**
+ * The scope the chips carry: resource ids and owner (user) ids; event chips are navigation, not scope. A conflict or
+ * request chip scopes its resource (PRD 128 D1).
+ */
 export function scopeOf(chips: readonly FilterEntry[]): {
   resourceIds: string[];
   ownerIds: string[];
 } {
-  const ids = (kind: FilterEntry['kind']) => chips.filter((c) => c.kind === kind).map((c) => c.id);
-  return { resourceIds: ids('resource'), ownerIds: ids('user') };
+  return {
+    resourceIds: [...new Set(chips.map(scopedResourceId).filter((id) => id !== null))],
+    ownerIds: chips.filter((c) => c.kind === 'user').map((c) => c.id),
+  };
 }
 
 /** Strip GraphQL type wrappers ({@code !}, {@code [ ]}) to the base type name. */
@@ -54,6 +59,14 @@ function fillByType(type: string, ctx: SelectionContext): unknown | undefined {
     }
     case 'ResourceFilter':
       return ctx.resourceIds.length ? { idIn: ctx.resourceIds } : undefined;
+    // PRD 128 D7 — the Prüfen views: conflicts / requests on the resources the chips scope.
+    case 'ConflictFilter':
+      if (!ctx.resourceIds.length) return undefined;
+      return ctx.window
+        ? { resourceIdsIn: ctx.resourceIds, from: ctx.window.from, to: ctx.window.to }
+        : { resourceIdsIn: ctx.resourceIds };
+    case 'ResourceRequestFilter':
+      return ctx.resourceIds.length ? { resourceIdsIn: ctx.resourceIds } : undefined;
     default:
       return undefined; // no filler → leave unset (server default)
   }

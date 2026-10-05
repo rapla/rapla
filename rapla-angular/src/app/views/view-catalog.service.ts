@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import { GraphqlService } from '../graphql/graphql.service';
+import { GraphqlService, type ViewRenderMode } from '../graphql/graphql.service';
 
 export type ViewSource = 'BUILTIN' | 'CUSTOM';
 
@@ -10,9 +10,13 @@ export interface ViewInfo {
   name: string;
   title: string | null;
   source: ViewSource;
+  /** PRD 128 D7 — what the left pane picks from (`@view(selection:)`); absent = the resource picker. */
+  selection?: 'CONFLICTS' | 'REQUESTS' | null;
+  /** PRD 128 D7 — the mode the view opens in until one is chosen there. */
+  defaultRenderMode?: ViewRenderMode | null;
 }
 
-const LIST_VIEWS_QUERY = `{ listViews { name title source valid } }`;
+const LIST_VIEWS_QUERY = `{ listViews { name title source valid selection defaultRenderMode } }`;
 
 /**
  * Reads the view catalog from the server (PRD 074 {@code listViews}) — the
@@ -30,9 +34,19 @@ export class ViewCatalogService {
   }
 }
 
-/** CUSTOM views first (the hand-authored showcase, e.g. Wochenansicht), then BUILTIN; stable within. */
+/** Planning views first, then the stored (CUSTOM) ones, the Prüfen views (conflicts / requests) last; stable within. */
 export function orderViews(views: ViewInfo[]): ViewInfo[] {
-  return [...views].sort(
-    (a, b) => (a.source === 'CUSTOM' ? 0 : 1) - (b.source === 'CUSTOM' ? 0 : 1),
-  );
+  const rank = (v: ViewInfo) => (v.selection ? 2 : v.source === 'BUILTIN' ? 0 : 1);
+  return [...views].sort((a, b) => rank(a) - rank(b));
+}
+
+/** PRD 128 D7 — the left pane's source for a view: the resource picker, or the conflict / request tree. */
+export type SelectionSource = 'resources' | 'conflicts' | 'requests';
+
+export function selectionOf(view: ViewInfo | undefined): SelectionSource {
+  return view?.selection === 'CONFLICTS'
+    ? 'conflicts'
+    : view?.selection === 'REQUESTS'
+      ? 'requests'
+      : 'resources';
 }

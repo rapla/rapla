@@ -82,6 +82,12 @@ export interface ViewMeta {
   renderModes?: ViewRenderMode[];
   /** The operation's variable signature — the type-driven binding contract. */
   variables?: ViewVariable[];
+  /** PRD 128 D7 — the root field the table draws (`@view(tableField:)`); absent = the first one. */
+  tableField?: string;
+  /** PRD 128 D7 — what the left pane picks from (`@view(selection:)`); absent = the resource picker. */
+  selection?: 'CONFLICTS' | 'REQUESTS';
+  /** PRD 128 D7 — the mode a view opens in until the user picks one there (`@view(defaultRenderMode:)`). */
+  defaultRenderMode?: ViewRenderMode;
 }
 
 export interface GqlResponse<T> {

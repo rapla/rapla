@@ -80,16 +80,18 @@ describe('OmniboxComponent', () => {
       .flush({ data: { resources: rows, users: [] } });
   }
 
-  it('typing writes the shared picker query from the first character, without a dropdown', async () => {
+  it('typing leaves the picker query alone and shows no dropdown below three characters (PRD 119 D13)', async () => {
+    resources.setQuery('Lab');
     const f = TestBed.createComponent(OmniboxComponent);
     setTerm(f, 'm');
     await settle(f);
-    expect(resources.query()).toBe('m');
+    expect(resources.query()).toBe('Lab');
     expect((f.nativeElement as HTMLElement).querySelector('.results')).toBeNull();
   });
 
-  it('from three characters the dropdown shows the resource count row and event hits only', async () => {
+  it('from three characters the dropdown shows the count row for its own term and event hits only', async () => {
     loadPicker([room('r1', 'Mathe-Labor'), room('r2', 'Mathe-Raum'), room('r3', 'Chemie')]);
+    resources.setQuery('Chem');
     const f = TestBed.createComponent(OmniboxComponent);
     setTerm(f, 'Mat');
     await settle(f);
@@ -124,13 +126,15 @@ describe('OmniboxComponent', () => {
     expect(el.querySelector('.results')).toBeNull();
   });
 
-  it('clicking the count row asks the picker for focus and closes the dropdown', async () => {
+  it('clicking the count row copies the term into the picker query (overwriting), focuses the picker field and closes the dropdown', async () => {
+    resources.setQuery('Lab');
     const f = TestBed.createComponent(OmniboxComponent);
     setTerm(f, 'Mathe');
     await settle(f);
     const before = resources.pickerFocus();
     (f.nativeElement as HTMLElement).querySelector<HTMLElement>('.countrow')!.click();
     await settle(f);
+    expect(resources.query()).toBe('Mathe');
     expect(resources.pickerFocus()).toBe(before + 1);
     expect((f.nativeElement as HTMLElement).querySelector('.results')).toBeNull();
   });
@@ -169,19 +173,18 @@ describe('OmniboxComponent', () => {
     f.detectChanges();
   }
 
-  it('Enter asks the rail to step its first shown row; Ctrl+Enter asks for an add (PRD 123 D4, M2)', async () => {
+  it('Enter hands the term over like the count row (PRD 119 D13)', async () => {
     const f = TestBed.createComponent(OmniboxComponent);
     setTerm(f, 'Mat');
     await settle(f);
-    const before = resources.activateFirst().n;
+    const before = resources.pickerFocus();
     key(f, 'Enter');
-    expect(resources.activateFirst()).toEqual({ n: before + 1, ctrl: false });
+    expect(resources.query()).toBe('Mat');
+    expect(resources.pickerFocus()).toBe(before + 1);
     expect((f.nativeElement as HTMLElement).querySelector('.results')).toBeNull();
-    key(f, 'Enter', { ctrlKey: true });
-    expect(resources.activateFirst()).toEqual({ n: before + 2, ctrl: true });
   });
 
-  it('shows a query restored from storage in the field, and Escape clears field and store (M1)', async () => {
+  it('starts empty even with a stored picker query; Escape clears only its own term (PRD 119 D13)', async () => {
     resources.setQuery('Hör');
     const f = TestBed.createComponent(OmniboxComponent);
     f.detectChanges();
@@ -190,28 +193,13 @@ describe('OmniboxComponent', () => {
     const input = (f.nativeElement as HTMLElement).querySelector(
       'input.obsearch',
     ) as HTMLInputElement;
-    expect(input.value).toBe('Hör');
+    expect(input.value).toBe('');
+    setTerm(f, 'Mat');
+    await settle(f);
     key(f, 'Escape');
-    expect(resources.query()).toBe('');
     await f.whenStable();
     f.detectChanges();
     expect(input.value).toBe('');
-  });
-
-  it('ArrowDown hands the focus to the picker, Escape clears the query', async () => {
-    const f = TestBed.createComponent(OmniboxComponent);
-    setTerm(f, 'Mat');
-    await settle(f);
-    const before = resources.pickerFocus();
-    key(f, 'ArrowDown');
-    expect(resources.pickerFocus()).toBe(before + 1);
-    key(f, 'Escape');
-    expect(resources.query()).toBe('');
-    await f.whenStable();
-    f.detectChanges();
-    expect((f.nativeElement as HTMLElement).querySelector('input.obsearch')).toHaveProperty(
-      'value',
-      '',
-    );
+    expect(resources.query()).toBe('Hör');
   });
 });

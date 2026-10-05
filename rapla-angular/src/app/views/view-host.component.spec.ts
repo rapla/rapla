@@ -2,7 +2,7 @@ import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { of, Subject } from 'rxjs';
 
-import { ViewHostComponent } from './view-host.component';
+import { ViewHostComponent, rowsOf } from './view-host.component';
 import { GraphqlService, type GqlResponse, type ViewMeta } from '../graphql/graphql.service';
 import { ViewStateStore } from '../state/view-state-store';
 import { FilterStore } from '../state/filter-store';
@@ -278,5 +278,23 @@ describe('ViewHostComponent — grouped rendering (group: true)', () => {
     expect(f.componentInstance.dataSource.sort).toBeNull();
     // DOM: two rendered group rows
     expect((f.nativeElement as HTMLElement).querySelectorAll('tr.group-row').length).toBe(2);
+  });
+});
+
+describe('rowsOf — PRD 128 D7 table field', () => {
+  const data = {
+    appointmentBlocks: [{ start: 'b' }],
+    conflicts: [{ id: 'k' }],
+  };
+
+  it('a calendar mode draws the first root field, the table the field @view(tableField) names', () => {
+    expect(rowsOf(data, 'conflicts', true)).toEqual([{ start: 'b' }]);
+    expect(rowsOf(data, 'conflicts', false)).toEqual([{ id: 'k' }]);
+  });
+
+  it('without tableField (or with an unknown one) every mode takes the first array', () => {
+    expect(rowsOf(data, undefined, false)).toEqual([{ start: 'b' }]);
+    expect(rowsOf(data, 'nope', false)).toEqual([{ start: 'b' }]);
+    expect(rowsOf(undefined, undefined, false)).toEqual([]);
   });
 });

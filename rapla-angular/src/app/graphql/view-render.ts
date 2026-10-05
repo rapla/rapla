@@ -1,4 +1,5 @@
 import { ViewColumn } from './graphql.service';
+import { formatGroupLabel } from '../views/group-format';
 
 /**
  * PRD 078 — pure rendering helpers for the generic view table. Convention over
@@ -28,10 +29,12 @@ function scalarize(value: unknown): string {
   return String(value);
 }
 
-/** Format a scalar string by the column's type hint (only datetime needs work today). */
-function formatScalar(s: string, type?: string): string {
+/** Format a scalar string by the column's type hint (only datetime needs work today); a date column with an
+ *  `@column(format:)` pattern renders by it, like the group header (PRD 128). */
+function formatScalar(s: string, type?: string, format?: string): string {
   if (!s) return s;
   if (type === 'DateTime' || type === 'LocalDateTime') {
+    if (format) return formatGroupLabel(s, format);
     const d = new Date(s);
     if (!isNaN(d.getTime())) return d.toLocaleString();
   }
@@ -52,5 +55,5 @@ export function renderCell(row: Record<string, unknown>, column: ViewColumn): st
       .filter((s) => s.length > 0)
       .join(column.join ?? DEFAULT_JOIN);
   }
-  return formatScalar(scalarize(value), column.type);
+  return formatScalar(scalarize(value), column.type, column.format);
 }
